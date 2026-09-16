@@ -147,13 +147,13 @@ public final class AgentHistoryBatchBehavior {
     }
 
     final var job = jobState.getJob(jobKey);
-    if (!job.hasLeaseToken()) {
+    if (!job.hasJobLeaseToken()) {
       return Either.left(
           new Rejection(RejectionType.NOT_FOUND, ERROR_MSG_JOB_NOT_LEASED.formatted(jobKey)));
     }
 
     if (leaseMismatchHandling == LeaseMismatchHandling.REJECT
-        && !Objects.equals(jobLease, job.getLeaseToken())) {
+        && !Objects.equals(jobLease, job.getJobLeaseToken())) {
       return Either.left(
           new Rejection(RejectionType.NOT_FOUND, ERROR_MSG_JOB_LEASE_MISMATCH.formatted(jobKey)));
     }

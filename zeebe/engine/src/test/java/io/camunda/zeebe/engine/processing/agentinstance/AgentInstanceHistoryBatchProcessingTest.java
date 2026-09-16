@@ -139,19 +139,19 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var jobIndex1 = batch1.getValue().getJobKeys().indexOf(jobKey);
-    final var lease1 = batch1.getValue().getJobs().get(jobIndex1).getLeaseToken();
+    final var lease1 = batch1.getValue().getJobs().get(jobIndex1).getJobLeaseToken();
 
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
         .withType(helper.getJobType())
-        .withLeaseToken(lease1)
+        .withJobLeaseToken(lease1)
         .withRetries(1)
         .fail();
 
     final var batch2 = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobIndex2 = batch2.getValue().getJobKeys().indexOf(jobKey);
-    final var lease2 = batch2.getValue().getJobs().get(jobIndex2).getLeaseToken();
+    final var lease2 = batch2.getValue().getJobs().get(jobIndex2).getJobLeaseToken();
     assertThat(lease2).as("re-activation must advance the lease token").isNotEqualTo(lease1);
 
     // when — the create is sent under lease1, which the job no longer holds
@@ -234,7 +234,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var item =
         new AgentHistoryRecord()
             .setHistoryItemId("item-" + role)
@@ -301,7 +301,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var item =
         new AgentHistoryRecord()
             .setHistoryItemId("item-unspecified")
@@ -402,7 +402,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var userItem =
         new AgentHistoryRecord()
             .setHistoryItemId("item-user")
@@ -470,7 +470,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var userItem =
         new AgentHistoryRecord()
             .setHistoryItemId("item-user")
@@ -533,7 +533,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var configurationItem =
         new AgentHistoryRecord()
             .setHistoryItemId("item-configuration")
@@ -600,7 +600,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -677,7 +677,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -743,7 +743,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -811,7 +811,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -884,7 +884,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -954,7 +954,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -1028,7 +1028,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -1103,7 +1103,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -1168,7 +1168,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
     assertThat(jobIndex)
         .as("activated job batch contains job with key '%d'", jobKey)
         .isNotEqualTo(-1);
-    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getLeaseToken();
+    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -1310,7 +1310,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(leasedBatch.getValue().getJobKeys().indexOf(jobKey1))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -1382,7 +1382,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getKey();
     final var batch1 = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobIndex1 = batch1.getValue().getJobKeys().indexOf(jobKey);
-    final var lease1 = batch1.getValue().getJobs().get(jobIndex1).getLeaseToken();
+    final var lease1 = batch1.getValue().getJobs().get(jobIndex1).getJobLeaseToken();
 
     // baseline: applied inline by CREATE, see AgentInstanceCreateProcessor. Needed so the
     // instance has a real definition to assert on below, since the CONFIGURATION item sent with
@@ -1408,13 +1408,13 @@ public class AgentInstanceHistoryBatchProcessingTest {
         .job()
         .ofInstance(processInstanceKey)
         .withType(helper.getJobType())
-        .withLeaseToken(lease1)
+        .withJobLeaseToken(lease1)
         .withRetries(1)
         .fail();
 
     final var batch2 = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobIndex2 = batch2.getValue().getJobKeys().indexOf(jobKey);
-    final var lease2 = batch2.getValue().getJobs().get(jobIndex2).getLeaseToken();
+    final var lease2 = batch2.getValue().getJobs().get(jobIndex2).getJobLeaseToken();
     assertThat(lease2).as("re-activation must advance the lease token").isNotEqualTo(lease1);
 
     final var assistantItem =
@@ -1540,7 +1540,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(ei1JobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var ei2JobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -1553,7 +1553,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(ei2JobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     final var agentInstanceKey =
         ENGINE
@@ -1632,7 +1632,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
 
     final var batch1 = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobIndex1 = batch1.getValue().getJobKeys().indexOf(jobKey);
-    final var lease1 = batch1.getValue().getJobs().get(jobIndex1).getLeaseToken();
+    final var lease1 = batch1.getValue().getJobs().get(jobIndex1).getJobLeaseToken();
 
     final var configItem =
         new AgentHistoryRecord()
@@ -1655,13 +1655,13 @@ public class AgentInstanceHistoryBatchProcessingTest {
         .job()
         .ofInstance(processInstanceKey)
         .withType(helper.getJobType())
-        .withLeaseToken(lease1)
+        .withJobLeaseToken(lease1)
         .withRetries(1)
         .fail();
 
     final var batch2 = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobIndex2 = batch2.getValue().getJobKeys().indexOf(jobKey);
-    final var lease2 = batch2.getValue().getJobs().get(jobIndex2).getLeaseToken();
+    final var lease2 = batch2.getValue().getJobs().get(jobIndex2).getJobLeaseToken();
     assertThat(lease2).as("re-activation must advance the lease token").isNotEqualTo(lease1);
 
     // worker B (current lease2) sets status=IDLE
@@ -1729,7 +1729,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -1844,7 +1844,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -1966,7 +1966,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -2042,7 +2042,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -2113,7 +2113,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -2182,7 +2182,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     // baseline: applied inline by CREATE, see AgentInstanceCreateProcessor.
     final var baselineConfigItem =
         new AgentHistoryRecord()
@@ -2331,7 +2331,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     // baseline: applied inline by CREATE, see AgentInstanceCreateProcessor.
     final var baselineConfigItem =
         new AgentHistoryRecord()
@@ -2425,7 +2425,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     // baseline: applied inline by CREATE, see AgentInstanceCreateProcessor.
     final var baselineConfigItem =
         new AgentHistoryRecord()
@@ -2506,7 +2506,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -2582,7 +2582,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -2646,7 +2646,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -2720,7 +2720,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -2784,7 +2784,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var userItem =
         new AgentHistoryRecord()
             .setHistoryItemId("item-user")
@@ -2852,7 +2852,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var configItem =
         new AgentHistoryRecord()
             .setHistoryItemId("item-config")
@@ -2929,7 +2929,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     // content/toolCalls are conversation-payload fields that a CONFIGURATION item should never
     // carry in practice, but setting them here proves the COMMITTED event is genuinely built by
     // reading the trimmed record back from state — reusing the untrimmed in-memory `item` instead
@@ -3034,7 +3034,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var configItem =
         new AgentHistoryRecord()
             .setHistoryItemId("item-config")
@@ -3116,7 +3116,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var modelItem =
         new AgentHistoryRecord()
             .setHistoryItemId("item-config-model")
@@ -3193,7 +3193,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var configItem =
         new AgentHistoryRecord()
             .setHistoryItemId("item-config")
@@ -3276,7 +3276,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var userItem =
         new AgentHistoryRecord()
             .setHistoryItemId("item-user")
@@ -3339,7 +3339,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -3420,7 +3420,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -3527,7 +3527,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -3630,7 +3630,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     // baseline: applied inline by CREATE, see AgentInstanceCreateProcessor.
     final var baselineConfigItem =
         new AgentHistoryRecord()
@@ -3740,7 +3740,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -3888,7 +3888,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -4026,7 +4026,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -4139,7 +4139,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(job1Key))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var job2Key =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -4152,7 +4152,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(job2Key))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     // the agent instance is created on EI1; EI1 remains active (parallel multi-instance).
     final var agentInstanceKey =
@@ -4256,7 +4256,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(job1Key))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var job2Key =
         activatedJobs.stream()
             .filter(r -> r.getValue().getElementInstanceKey() == ei2)
@@ -4268,7 +4268,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(job2Key))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     final var agentInstanceKey =
         ENGINE
@@ -4282,7 +4282,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
     // EI1's job fails with no retries left, raising an incident. EI1 itself stays active — job
     // failure and element-instance completion are independent, so the element instance does not
     // reflect that its writer is done.
-    ENGINE.job().withKey(job1Key).withRetries(0).withLeaseToken(job1Lease).fail();
+    ENGINE.job().withKey(job1Key).withRetries(0).withJobLeaseToken(job1Lease).fail();
 
     // when — EI2 pushes a history batch to the same agent instance. EI1 is still active, but its
     // job is no longer ACTIVATED, so EI1 can no longer be mid-write.
@@ -4368,7 +4368,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(job1Key))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var job2Key =
         activatedJobs.stream()
             .filter(r -> r.getValue().getElementInstanceKey() == ei2)
@@ -4380,7 +4380,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(job2Key))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     final var agentInstanceKey =
         ENGINE
@@ -4493,7 +4493,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var jobIndex1 = batch1.getValue().getJobKeys().indexOf(jobKey);
-    final var lease1 = batch1.getValue().getJobs().get(jobIndex1).getLeaseToken();
+    final var lease1 = batch1.getValue().getJobs().get(jobIndex1).getJobLeaseToken();
 
     final var agentInstanceKey =
         ENGINE
@@ -4526,14 +4526,14 @@ public class AgentInstanceHistoryBatchProcessingTest {
         .job()
         .ofInstance(processInstanceKey)
         .withType(helper.getJobType())
-        .withLeaseToken(lease1)
+        .withJobLeaseToken(lease1)
         .withRetries(1)
         .fail();
 
     // Activation 2 (winning): re-activate under a new lease, then resend the same historyItemId.
     final var batch2 = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobIndex2 = batch2.getValue().getJobKeys().indexOf(jobKey);
-    final var lease2 = batch2.getValue().getJobs().get(jobIndex2).getLeaseToken();
+    final var lease2 = batch2.getValue().getJobs().get(jobIndex2).getJobLeaseToken();
 
     // when
     final var secondUpdate =
@@ -4597,7 +4597,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getFirst()
             .getKey();
     final var jobIndex1 = batch1.getValue().getJobKeys().indexOf(jobKey);
-    final var lease1 = batch1.getValue().getJobs().get(jobIndex1).getLeaseToken();
+    final var lease1 = batch1.getValue().getJobs().get(jobIndex1).getJobLeaseToken();
 
     final var agentInstanceKey =
         ENGINE
@@ -4638,7 +4638,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
         .job()
         .ofInstance(processInstanceKey)
         .withType(helper.getJobType())
-        .withLeaseToken(lease1)
+        .withJobLeaseToken(lease1)
         .withRetries(1)
         .fail();
 
@@ -4646,7 +4646,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
     // not completed — then resend the same historyItemId with its own (different) deltas.
     final var batch2 = ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
     final var jobIndex2 = batch2.getValue().getJobKeys().indexOf(jobKey);
-    final var lease2 = batch2.getValue().getJobs().get(jobIndex2).getLeaseToken();
+    final var lease2 = batch2.getValue().getJobs().get(jobIndex2).getJobLeaseToken();
     assertThat(lease2).as("re-activation must advance the lease token").isNotEqualTo(lease1);
 
     final var secondItem =
@@ -4738,7 +4738,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(job1Batch.getValue().getJobKeys().indexOf(job1Key))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     final var agentInstanceKey =
         ENGINE
@@ -4753,7 +4753,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
         .job()
         .ofInstance(processInstanceKey)
         .withType(helper.getJobType())
-        .withLeaseToken(job1Lease)
+        .withJobLeaseToken(job1Lease)
         .complete();
 
     final var ei2 =
@@ -4779,7 +4779,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(job2Batch.getValue().getJobKeys().indexOf(job2Key))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     // when
     final var updated =
@@ -4854,7 +4854,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(job1Batch.getValue().getJobKeys().indexOf(job1Key))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     final var agentInstanceKey =
         ENGINE
@@ -4890,7 +4890,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
         .job()
         .ofInstance(processInstanceKey)
         .withType(helper.getJobType())
-        .withLeaseToken(job1Lease)
+        .withJobLeaseToken(job1Lease)
         .complete();
     RecordingExporter.agentHistoryRecords(AgentHistoryIntent.COMMITTED)
         .withJobKey(job1Key)
@@ -4918,7 +4918,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(job2Batch.getValue().getJobKeys().indexOf(job2Key))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     // when — job2 (a brand-new job, on a brand-new element instance) resends "item-x", with
     // different content
@@ -4996,7 +4996,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobABatch.getValue().getJobKeys().indexOf(jobAKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     final var agentInstanceKeyA =
         ENGINE
@@ -5079,7 +5079,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBBatch.getValue().getJobKeys().indexOf(jobBKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     final var agentInstanceKeyB =
         ENGINE
@@ -5153,7 +5153,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobABatch.getValue().getJobKeys().indexOf(jobAKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     final var agentInstanceKeyA =
         ENGINE
@@ -5209,7 +5209,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBBatch.getValue().getJobKeys().indexOf(jobBKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var agentInstanceKeyB =
         ENGINE
             .agentInstances()
@@ -5292,7 +5292,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -5493,7 +5493,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .getValue()
             .getJobs()
             .get(job1Batch.getValue().getJobKeys().indexOf(job1Key))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     final var agentInstanceKey =
         ENGINE
@@ -5508,7 +5508,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
         .job()
         .ofInstance(processInstanceKey)
         .withType(helper.getJobType())
-        .withLeaseToken(job1Lease)
+        .withJobLeaseToken(job1Lease)
         .complete();
 
     final var ei2 =

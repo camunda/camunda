@@ -103,7 +103,7 @@ public final class AgentInstanceCreateAuthorizationTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     // when
     final var created =

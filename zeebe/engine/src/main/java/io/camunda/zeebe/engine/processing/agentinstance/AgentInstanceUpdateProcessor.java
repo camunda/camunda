@@ -221,7 +221,7 @@ public final class AgentInstanceUpdateProcessor
 
     final var job = validJob.get();
     final var isRequestLevelStale =
-        !Objects.equals(commandValue.getJobLease(), job.getLeaseToken());
+        !Objects.equals(commandValue.getJobLease(), job.getJobLeaseToken());
 
     final var isHistoryValid = historyBatchHelper.validateHistory(commandValue.getHistory());
     if (isHistoryValid.isLeft()) {

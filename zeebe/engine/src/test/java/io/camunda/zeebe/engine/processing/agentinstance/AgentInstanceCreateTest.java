@@ -83,7 +83,7 @@ public class AgentInstanceCreateTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var configItem =
         new AgentHistoryRecord()
             .setHistoryItemId("item-config")
@@ -170,7 +170,7 @@ public class AgentInstanceCreateTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     // when
     final var created =
@@ -236,7 +236,7 @@ public class AgentInstanceCreateTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     // when
     final var created =
@@ -284,7 +284,7 @@ public class AgentInstanceCreateTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     // when
     final var created =
@@ -339,7 +339,7 @@ public class AgentInstanceCreateTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     // when
     final var created =
@@ -414,7 +414,7 @@ public class AgentInstanceCreateTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     // when -- the command tries to set a different status; engine must ignore it.
     final var created =
@@ -457,7 +457,7 @@ public class AgentInstanceCreateTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     // when -- even when the command carries non-default metrics, the engine resets them.
     final var created =
@@ -504,7 +504,7 @@ public class AgentInstanceCreateTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     // when -- limits supplied via a CONFIGURATION history item in CREATE's own history batch are
     // applied inline by AgentInstanceCreateProcessor, before it appends AGENT_INSTANCE:CREATED.
@@ -557,7 +557,7 @@ public class AgentInstanceCreateTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     // when
     final var created =
@@ -611,7 +611,7 @@ public class AgentInstanceCreateTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     // when
     final var created =
@@ -679,14 +679,14 @@ public class AgentInstanceCreateTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(firstJobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var secondJobKey = jobKeys.get(1);
     final var secondJobLease =
         jobBatch
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(secondJobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     // when -- create an agent instance for each child element instance.
     final var firstAgent =
@@ -739,7 +739,7 @@ public class AgentInstanceCreateTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     // when
     final var first =
@@ -855,7 +855,7 @@ public class AgentInstanceCreateTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     final var first =
         ENGINE
@@ -869,7 +869,7 @@ public class AgentInstanceCreateTest {
         .job()
         .ofInstance(processInstanceKey)
         .withType("agent")
-        .withLeaseToken(jobLease)
+        .withJobLeaseToken(jobLease)
         .complete();
     RecordingExporter.incidentRecords(IncidentIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)

@@ -206,7 +206,7 @@ public final class AgentInstanceUpdateAuthorizationTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var agentInstanceKey =
         engine
             .agentInstances()

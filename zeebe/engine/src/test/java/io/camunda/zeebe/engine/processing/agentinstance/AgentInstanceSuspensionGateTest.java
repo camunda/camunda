@@ -239,7 +239,7 @@ public class AgentInstanceSuspensionGateTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     return ENGINE
         .agentInstances()
         .withElementInstanceKey(elementInstanceKey)

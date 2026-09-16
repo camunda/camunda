@@ -173,7 +173,7 @@
                 "businessId": {
                   "type": "keyword"
                 },
-                "leaseToken": {
+                "jobLeaseToken": {
                   "type": "keyword"
                 },
                 "secretReferences": {

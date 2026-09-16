@@ -155,7 +155,7 @@ public class AgentInstanceCompleteTest {
             .getValue()
             .getJobs()
             .get(firstJobBatch.getValue().getJobKeys().indexOf(firstJobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var secondJobBatch = ENGINE.jobs().withType("other-agent").withLease().activate();
     final var secondJobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -168,7 +168,7 @@ public class AgentInstanceCompleteTest {
             .getValue()
             .getJobs()
             .get(secondJobBatch.getValue().getJobKeys().indexOf(secondJobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var thirdJobBatch = ENGINE.jobs().withType("third-agent").withLease().activate();
     final var thirdJobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -181,7 +181,7 @@ public class AgentInstanceCompleteTest {
             .getValue()
             .getJobs()
             .get(thirdJobBatch.getValue().getJobKeys().indexOf(thirdJobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var firstAgentInstanceKey =
         ENGINE
             .agentInstances()
@@ -320,7 +320,7 @@ public class AgentInstanceCompleteTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()

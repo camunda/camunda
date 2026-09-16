@@ -98,7 +98,7 @@ public class MigrateAgentInstanceTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     final long agentInstanceKey =
         engine
@@ -113,7 +113,7 @@ public class MigrateAgentInstanceTest {
         .job()
         .ofInstance(processInstanceKey)
         .withType(AGENT_JOB_TYPE)
-        .withLeaseToken(jobLease)
+        .withJobLeaseToken(jobLease)
         .complete();
 
     assertThat(
@@ -190,7 +190,7 @@ public class MigrateAgentInstanceTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     engine
         .agentInstances()
@@ -203,7 +203,7 @@ public class MigrateAgentInstanceTest {
         .job()
         .ofInstance(processInstanceKey)
         .withType(AGENT_JOB_TYPE)
-        .withLeaseToken(jobLease)
+        .withJobLeaseToken(jobLease)
         .complete();
 
     assertThat(
@@ -328,7 +328,7 @@ public class MigrateAgentInstanceTest {
             .getValue()
             .getJobs()
             .get(firstJobBatch.getValue().getJobKeys().indexOf(firstJobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var firstConfigItem =
         new AgentHistoryRecord()
             .setHistoryItemId("item-config-a")
@@ -362,7 +362,7 @@ public class MigrateAgentInstanceTest {
             .getValue()
             .getJobs()
             .get(secondJobBatch.getValue().getJobKeys().indexOf(secondJobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var secondConfigItem =
         new AgentHistoryRecord()
             .setHistoryItemId("item-config-b")
@@ -511,7 +511,7 @@ public class MigrateAgentInstanceTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     final long agentInstanceKey =
         engine
@@ -594,7 +594,7 @@ public class MigrateAgentInstanceTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     final long agentInstanceKey =
         engine
@@ -685,7 +685,7 @@ public class MigrateAgentInstanceTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     final long agentInstanceKey =
         engine
@@ -764,7 +764,7 @@ public class MigrateAgentInstanceTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     engine
         .agentInstances()
@@ -855,7 +855,7 @@ public class MigrateAgentInstanceTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     engine
         .agentInstances()
@@ -941,7 +941,7 @@ public class MigrateAgentInstanceTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     engine
         .agentInstances()
@@ -956,7 +956,7 @@ public class MigrateAgentInstanceTest {
         .job()
         .ofInstance(processInstanceKey)
         .withType(AGENT_JOB_TYPE)
-        .withLeaseToken(jobLease)
+        .withJobLeaseToken(jobLease)
         .complete();
 
     assertThat(

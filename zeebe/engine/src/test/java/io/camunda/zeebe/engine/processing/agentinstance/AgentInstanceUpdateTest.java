@@ -65,7 +65,7 @@ public class AgentInstanceUpdateTest {
     assertThat(jobIndex)
         .as("activated job batch contains job with key '%d'", jobKey)
         .isNotEqualTo(-1);
-    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getLeaseToken();
+    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -120,7 +120,7 @@ public class AgentInstanceUpdateTest {
     assertThat(jobIndex)
         .as("activated job batch contains job with key '%d'", jobKey)
         .isNotEqualTo(-1);
-    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getLeaseToken();
+    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -182,7 +182,7 @@ public class AgentInstanceUpdateTest {
     assertThat(jobIndex)
         .as("activated job batch contains job with key '%d'", jobKey)
         .isNotEqualTo(-1);
-    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getLeaseToken();
+    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -239,7 +239,7 @@ public class AgentInstanceUpdateTest {
     assertThat(jobIndex)
         .as("activated job batch contains job with key '%d'", jobKey)
         .isNotEqualTo(-1);
-    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getLeaseToken();
+    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -314,7 +314,7 @@ public class AgentInstanceUpdateTest {
     assertThat(jobIndex)
         .as("activated job batch contains job with key '%d'", jobKey)
         .isNotEqualTo(-1);
-    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getLeaseToken();
+    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -368,7 +368,7 @@ public class AgentInstanceUpdateTest {
     assertThat(jobIndex)
         .as("activated job batch contains job with key '%d'", jobKey)
         .isNotEqualTo(-1);
-    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getLeaseToken();
+    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -449,7 +449,7 @@ public class AgentInstanceUpdateTest {
     assertThat(jobIndex)
         .as("activated job batch contains job with key '%d'", jobKey)
         .isNotEqualTo(-1);
-    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getLeaseToken();
+    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -520,7 +520,7 @@ public class AgentInstanceUpdateTest {
         assertThat(jobIndex)
             .as("activated job batch contains job with key '%d'", jobKey)
             .isNotEqualTo(-1);
-        final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getLeaseToken();
+        final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
         final var agentInstanceKey =
             ENGINE
                 .agentInstances()
@@ -613,7 +613,7 @@ public class AgentInstanceUpdateTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(job1Key))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var job2Key =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -626,7 +626,7 @@ public class AgentInstanceUpdateTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(job2Key))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     // Create agent instance on EI₁.
     final var agentInstanceKey =
@@ -641,7 +641,7 @@ public class AgentInstanceUpdateTest {
 
     // EI₁'s job fails (retries remaining, no backoff) so it retries immediately and stops
     // being ACTIVATED, releasing it as the active writer (validateSingleActiveWriter).
-    ENGINE.job().withKey(job1Key).withRetries(1).withLeaseToken(job1Lease).fail();
+    ENGINE.job().withKey(job1Key).withRetries(1).withJobLeaseToken(job1Lease).fail();
 
     // when — UPDATE supplying EI₂ (new association)
     final var updated =
@@ -711,7 +711,7 @@ public class AgentInstanceUpdateTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(job1Key))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var job2Key =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -724,7 +724,7 @@ public class AgentInstanceUpdateTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(job2Key))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     final var agentInstanceKey =
         ENGINE
@@ -739,7 +739,7 @@ public class AgentInstanceUpdateTest {
     // EI₁'s job fails (retries remaining, no backoff) so it retries immediately and stops
     // being ACTIVATED, releasing it as the active writer, so the agent can move to EI₂
     // (validateSingleActiveWriter).
-    ENGINE.job().withKey(job1Key).withRetries(1).withLeaseToken(job1Lease).fail();
+    ENGINE.job().withKey(job1Key).withRetries(1).withJobLeaseToken(job1Lease).fail();
     ENGINE
         .agentInstances()
         .withAgentInstanceKey(agentInstanceKey)
@@ -753,7 +753,7 @@ public class AgentInstanceUpdateTest {
     // can move back to EI₁. EI₁'s job (still tied to the never-completed EI₁ element instance,
     // and already activatable again since its own retry) is re-activated, producing a fresh
     // lease for the re-entry.
-    ENGINE.job().withKey(job2Key).withRetries(1).withLeaseToken(job2Lease).fail();
+    ENGINE.job().withKey(job2Key).withRetries(1).withJobLeaseToken(job2Lease).fail();
     // Cap at 1: EI₂'s job is activatable again too, and must stay that way so it keeps
     // failing validateSingleActiveWriter's ACTIVATED check.
     final var reactivation =
@@ -763,7 +763,7 @@ public class AgentInstanceUpdateTest {
             .getValue()
             .getJobs()
             .get(reactivation.getValue().getJobKeys().indexOf(job1Key))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     // when — UPDATE re-supplies EI₁ (already in the plural list) alongside a status change
     final var updated =
@@ -809,7 +809,7 @@ public class AgentInstanceUpdateTest {
     assertThat(jobIndex)
         .as("activated job batch contains job with key '%d'", jobKey)
         .isNotEqualTo(-1);
-    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getLeaseToken();
+    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -863,7 +863,7 @@ public class AgentInstanceUpdateTest {
     assertThat(jobIndex)
         .as("activated job batch contains job with key '%d'", jobKey)
         .isNotEqualTo(-1);
-    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getLeaseToken();
+    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -932,7 +932,7 @@ public class AgentInstanceUpdateTest {
     assertThat(jobIndex)
         .as("activated job batch contains job with key '%d'", jobKey)
         .isNotEqualTo(-1);
-    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getLeaseToken();
+    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
@@ -948,7 +948,7 @@ public class AgentInstanceUpdateTest {
         .job()
         .ofInstance(processInstanceKey)
         .withType("agent")
-        .withLeaseToken(jobLease)
+        .withJobLeaseToken(jobLease)
         .complete();
     RecordingExporter.incidentRecords().withProcessInstanceKey(processInstanceKey).getFirst();
 
@@ -1015,7 +1015,7 @@ public class AgentInstanceUpdateTest {
     assertThat(jobIndex)
         .as("activated job batch contains job with key '%d'", jobKey)
         .isNotEqualTo(-1);
-    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getLeaseToken();
+    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
 
     final var agentInstanceKey =
         ENGINE
@@ -1084,7 +1084,7 @@ public class AgentInstanceUpdateTest {
     assertThat(jobIndex)
         .as("activated job batch contains job with key '%d'", jobKey)
         .isNotEqualTo(-1);
-    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getLeaseToken();
+    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
 
     final var agentInstanceKey =
         ENGINE
@@ -1167,7 +1167,7 @@ public class AgentInstanceUpdateTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(job1Key))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var job2Key =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -1180,7 +1180,7 @@ public class AgentInstanceUpdateTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(job2Key))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     final var agentInstance1Key =
         ENGINE
@@ -1245,7 +1245,7 @@ public class AgentInstanceUpdateTest {
     assertThat(jobIndex)
         .as("activated job batch contains job with key '%d'", jobKey)
         .isNotEqualTo(-1);
-    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getLeaseToken();
+    final var jobLease = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()

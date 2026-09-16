@@ -78,7 +78,7 @@ public class AgentHistoryItemIdPersistenceTest {
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
