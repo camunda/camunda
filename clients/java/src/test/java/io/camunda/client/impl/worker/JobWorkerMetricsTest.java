@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
+import java.util.function.Supplier;
 import org.jmock.lib.concurrent.DeterministicScheduler;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -44,6 +45,8 @@ final class JobWorkerMetricsTest {
       command -> {
         throw new RejectedExecutionException("The executor has no capacity");
       };
+  private static final Supplier<ActivationDeadline> WITHIN_ACTIVATION = () -> () -> false;
+  private static final Supplier<ActivationDeadline> ACTIVATION_ELAPSED = () -> () -> true;
   private final DeterministicScheduler executor = new AlwaysRunningDeterministicScheduler();
 
   private JobWorkerImpl createWorker(
@@ -72,6 +75,17 @@ final class JobWorkerMetricsTest {
       final JobStreamer streamer,
       final JobWorkerMetrics metrics,
       final JobExecutor jobExecutor) {
+    return createWorker(
+        autoCompleteCount, poller, streamer, metrics, jobExecutor, WITHIN_ACTIVATION);
+  }
+
+  private JobWorkerImpl createWorker(
+      final int autoCompleteCount,
+      final JobPoller poller,
+      final JobStreamer streamer,
+      final JobWorkerMetrics metrics,
+      final JobExecutor jobExecutor,
+      final Supplier<ActivationDeadline> activationDeadlines) {
     return new JobWorkerImpl(
         32,
         executor,
@@ -83,7 +97,8 @@ final class JobWorkerMetricsTest {
         delay -> delay,
         delay -> delay,
         metrics,
-        jobExecutor);
+        jobExecutor,
+        activationDeadlines);
   }
 
   private JobPoller createNoopJobPoller() {
@@ -110,6 +125,7 @@ final class JobWorkerMetricsTest {
     private final AtomicInteger jobsActivated = new AtomicInteger();
     private final AtomicInteger jobsHandled = new AtomicInteger();
     private final AtomicInteger jobsRefused = new AtomicInteger();
+    private final AtomicInteger jobsExpired = new AtomicInteger();
 
     @Override
     public void jobActivated(final int count) {
@@ -124,6 +140,11 @@ final class JobWorkerMetricsTest {
     @Override
     public void jobRefused(final int count) {
       jobsRefused.addAndGet(count);
+    }
+
+    @Override
+    public void jobExpired(final int count) {
+      jobsExpired.addAndGet(count);
     }
   }
 
@@ -254,6 +275,34 @@ final class JobWorkerMetricsTest {
         assertThat(metrics.jobsRefused).hasValue(2);
       }
     }
+
+    @Test
+    void shouldCountAnExpiredJobAsExpired() {
+      // given a worker whose jobs wait out their activation before a handler thread is free
+      final TestJobStreamer streamer = new TestJobStreamer();
+      final TestJobWorkerMetrics metrics = new TestJobWorkerMetrics();
+
+      try (final JobWorkerImpl ignored =
+          createWorker(
+              AUTO_COMPLETE_ALL_JOBS,
+              createNoopJobPoller(),
+              streamer,
+              metrics,
+              executor::execute,
+              ACTIVATION_ELAPSED)) {
+        // when the broker pushes two jobs to it
+        streamer.streamJob();
+        streamer.streamJob();
+
+        // then the jobs are reported as expired rather than as handled, so that a worker dropping
+        // work the broker will offer again shows up as such instead of looking like it kept up
+        executor.runUntilIdle();
+        assertThat(metrics.jobsActivated).hasValue(2);
+        assertThat(metrics.jobsHandled).hasValue(0);
+        assertThat(metrics.jobsRefused).hasValue(0);
+        assertThat(metrics.jobsExpired).hasValue(2);
+      }
+    }
   }
 
   @Nested
@@ -316,6 +365,35 @@ final class JobWorkerMetricsTest {
         assertThat(metrics.jobsActivated).hasValue(2);
         assertThat(metrics.jobsHandled).hasValue(0);
         assertThat(metrics.jobsRefused).hasValue(2);
+      }
+    }
+
+    @Test
+    void shouldCountAnExpiredJobAsExpired() {
+      // given a worker whose jobs wait out their activation before a handler thread is free
+      final TestJobPoller poller = new TestJobPoller();
+      final TestJobWorkerMetrics metrics = new TestJobWorkerMetrics();
+
+      try (final JobWorkerImpl ignored =
+          createWorker(
+              AUTO_COMPLETE_ALL_JOBS,
+              poller,
+              JobStreamer.noop(),
+              metrics,
+              executor::execute,
+              ACTIVATION_ELAPSED)) {
+        // when the poller hands over two jobs
+        executor.tick(1, TimeUnit.MINUTES);
+        poller.produceJob();
+        poller.produceJob();
+
+        // then the jobs are reported as expired rather than as handled, so that a worker dropping
+        // work the broker will offer again shows up as such instead of looking like it kept up
+        executor.runUntilIdle();
+        assertThat(metrics.jobsActivated).hasValue(2);
+        assertThat(metrics.jobsHandled).hasValue(0);
+        assertThat(metrics.jobsRefused).hasValue(0);
+        assertThat(metrics.jobsExpired).hasValue(2);
       }
     }
   }
