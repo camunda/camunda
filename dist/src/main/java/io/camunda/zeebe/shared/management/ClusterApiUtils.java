@@ -564,7 +564,7 @@ final class ClusterApiUtils {
                   updatePartitionDistributorConfigOperation ->
               new Operation()
                   .operation(OperationEnum.UPDATE_PARTITION_DISTRIBUTOR_CONFIG)
-                  .partitionDistributionConfig(
+                  .partitioningConfig(
                       toPartitionDistributionConfig(updatePartitionDistributorConfigOperation));
           case final ModeChangeOperation modeChange ->
               switch (modeChange.mode()) {
@@ -800,8 +800,8 @@ final class ClusterApiUtils {
   /**
    * Maps the multi-partition-group configuration to the REST response, scoped to {@code
    * physicalTenant} when given, or to every known physical tenant otherwise. {@code brokers},
-   * {@code clusterId} and {@code partitionDistribution} always reflect the global configuration, as
-   * they have no tenant dimension.
+   * {@code clusterId} and {@code partitioning} always reflect the global configuration, as they
+   * have no tenant dimension.
    *
    * <p>The remaining top-level fields are mutually exclusive, single-tenant-shaped or
    * multi-tenant-shaped, never both, so a request that predates physical tenants keeps exactly the
@@ -898,8 +898,7 @@ final class ClusterApiUtils {
     configuration
         .globalConfiguration()
         .partitionDistributorConfig()
-        .ifPresent(
-            config -> response.partitionDistribution(mapPartitionDistributionConfig(config)));
+        .ifPresent(config -> response.partitioning(mapPartitionDistributionConfig(config)));
     return response;
   }
 
@@ -1027,7 +1026,7 @@ final class ClusterApiUtils {
             .priority(operation.getPriority())
             .brokers(operation.getBrokers())
             .exporterId(operation.getExporterId())
-            .partitionDistributionConfig(operation.getPartitionDistributionConfig())
+            .partitioningConfig(operation.getPartitioningConfig())
             .exportingState(operation.getExportingState());
     if (completedAt != null) {
       completed.completedAt(mapInstantToDateTime(completedAt));

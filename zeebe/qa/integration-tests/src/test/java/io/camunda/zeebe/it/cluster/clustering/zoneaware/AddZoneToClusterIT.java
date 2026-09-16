@@ -81,7 +81,7 @@ final class AddZoneToClusterIT {
       Awaitility.await()
           .untilAsserted(
               () -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(response));
-      assertThat(actuator.getTopology().getPartitionDistribution().getZones())
+      assertThat(actuator.getTopology().getPartitioning().getZones())
           .contains(new ZoneSpec(scenario.newZone(), 1, priority));
       assertZoneHostsPartitions(actuator, scenario.newZone(), 0);
     }

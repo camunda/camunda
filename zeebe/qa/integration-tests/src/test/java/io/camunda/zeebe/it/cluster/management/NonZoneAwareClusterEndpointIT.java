@@ -99,8 +99,7 @@ final class NonZoneAwareClusterEndpointIT extends ClusterEndpointIT {
               () -> {
                 final var topology = actuator.getTopology();
                 assertThat(topology.getPendingChange()).isNull();
-                assertThat(topology.getPartitionDistribution())
-                    .isEqualTo(scenario.expectedDistribution());
+                assertThat(topology.getPartitioning()).isEqualTo(scenario.expectedDistribution());
               });
 
       // start brokers in the first migration stage
@@ -129,8 +128,7 @@ final class NonZoneAwareClusterEndpointIT extends ClusterEndpointIT {
               () -> {
                 final var topology = actuator.getTopology();
                 assertThat(topology.getPendingChange()).isNull();
-                assertThat(topology.getPartitionDistribution())
-                    .isEqualTo(scenario.expectedDistribution());
+                assertThat(topology.getPartitioning()).isEqualTo(scenario.expectedDistribution());
                 assertThat(topology.getBrokers())
                     .extracting(BrokerState::getId)
                     .allMatch(BrokerId.String.class::isInstance)
