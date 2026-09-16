@@ -118,7 +118,7 @@ export class IdentityRolesDetailsPage {
     const maxRetries = 3;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        await this.selectUserInAssignModal(user.username);
+        await this.selectUserInAssignModal(user.username, user.email);
         break;
       } catch (error) {
         if (attempt === maxRetries) {
@@ -138,7 +138,10 @@ export class IdentityRolesDetailsPage {
     });
   }
 
-  private async selectUserInAssignModal(username: string): Promise<void> {
+  private async selectUserInAssignModal(
+    username: string,
+    email: string,
+  ): Promise<void> {
     await this.assignUserButton.click();
     await expect(this.assignUserModal).toBeVisible();
     // The search field is a design-system MultiSelect: its closed trigger is a
@@ -146,11 +149,11 @@ export class IdentityRolesDetailsPage {
     // cmdk search box that mounts in the popover.
     await this.assignUserModalSearchField.click();
     await this.page.locator('[data-slot="command-input"]').fill(username);
-    // Match on the username: `EntitySearchMultiSelect` passes `getId` as the
-    // option title, so it is always present regardless of the display name.
+    // The option label is "<name> — <email>" and does not echo the username,
+    // so match on the email instead -- it is the unique half of the label.
     const option = this.assignUserModalSearchResult
       .getByRole('option')
-      .filter({hasText: username})
+      .filter({hasText: email})
       .first();
     await expect(option).toBeVisible({timeout: 30000});
     await option.click({timeout: 20000});
