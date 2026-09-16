@@ -17,7 +17,6 @@ import {ForbiddenError} from '#/shared/errors';
 import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
 import {isInstanceRunning, shouldPollProcessInstance} from '#/operate/shared/utils/processInstance';
-import {getClientConfig} from '#/shared/config/getClientConfig';
 
 const POLLING_INTERVAL_MS = 5000;
 
@@ -84,7 +83,7 @@ function useProcessInstance(processInstanceKey: string) {
 }
 
 function useProcessInstanceWaitStateStatistics(processInstance: ProcessInstance) {
-	const enabled = getClientConfig().deployment.waitStatesEnabled && isInstanceRunning(processInstance);
+	const enabled = isInstanceRunning(processInstance);
 	return useQuery({
 		...processInstanceWaitStateStatisticsQuery(processInstance.processInstanceKey),
 		enabled,

@@ -9,14 +9,14 @@
 import {useState} from 'react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {cleanup, render} from 'vitest-browser-react';
-import {afterEach, beforeEach, expect} from 'vitest';
+import {afterEach, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
+import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {it} from '#/vitest-modules/test-extend';
 import {ForbiddenError} from '#/shared/errors';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
-import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 import {
 	mockGetProcessInstanceEndpoint,
@@ -35,27 +35,22 @@ import {
 const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
 const PROCESS_INSTANCE_KEY = '123';
 
-beforeEach(() => {
-	sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
-});
-
 afterEach(async () => {
 	await cleanup();
 	queryClient.clear();
-	sessionStorage.clear();
 });
 
-function WaitStatePreview() {
-	const [active, setActive] = useState(true);
+function WaitStatePreview({initialState = 'ACTIVE'}: {initialState?: ProcessInstance['state']}) {
+	const [state, setState] = useState(initialState);
 	const instance = createProcessInstance({
 		processInstanceKey: PROCESS_INSTANCE_KEY,
-		state: active ? 'ACTIVE' : 'COMPLETED',
+		state,
 		hasIncident: false,
 	});
 	const {data} = useProcessInstanceWaitStateStatistics(instance);
 	return (
 		<>
-			<button onClick={() => setActive(false)}>Complete</button>
+			<button onClick={() => setState('COMPLETED')}>Complete</button>
 			<p>{getWaitStateLabel(data?.[0]?.waitingCount ?? 0) ?? 'No waiting'}</p>
 		</>
 	);
@@ -160,10 +155,11 @@ it('should clear cached waiting state after the instance stops running', async (
 	await expect.element(screen.getByText('No waiting')).toBeVisible();
 });
 
-it('should ignore cached waiting state when the deployment disables wait states', async () => {
-	sessionStorage.setItem(
-		'clientConfig',
-		JSON.stringify(createSystemConfiguration({deployment: {waitStatesEnabled: false}})),
+it('should replace cached waiting state when the existing API returns no statistics', async ({worker}) => {
+	worker.use(
+		mockGetProcessInstanceWaitStateStatisticsEndpoint({
+			successResponse: HttpResponse.json(createPaginatedResponse()),
+		}),
 	);
 	queryClient.setQueryData(processInstanceWaitStateStatisticsQuery(PROCESS_INSTANCE_KEY).queryKey, [
 		{elementId: 'process', waitingCount: 2},
@@ -176,3 +172,19 @@ it('should ignore cached waiting state when the deployment disables wait states'
 	await expect.element(screen.getByText('No waiting')).toBeVisible();
 	await expect.element(screen.getByText('2 waiting')).not.toBeInTheDocument();
 });
+
+it.for(['COMPLETED', 'TERMINATED', 'SUSPENDED'] as const)(
+	'should ignore cached waiting state for %s instances without incidents',
+	async (state) => {
+		queryClient.setQueryData(processInstanceWaitStateStatisticsQuery(PROCESS_INSTANCE_KEY).queryKey, [
+			{elementId: 'process', waitingCount: 2},
+		]);
+		const screen = await render(
+			<QueryClientProvider client={queryClient}>
+				<WaitStatePreview initialState={state} />
+			</QueryClientProvider>,
+		);
+		await expect.element(screen.getByText('No waiting')).toBeVisible();
+		await expect.element(screen.getByText('2 waiting')).not.toBeInTheDocument();
+	},
+);
