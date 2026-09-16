@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -162,6 +163,28 @@ public class FlowNodeInstanceNameFromAdHocActivityHandlerTest {
             eq(entity),
             eq(FlowNodeInstanceNameFromAdHocActivityHandler.SET_IF_NULL_NAME_SCRIPT),
             eq(Map.of(FlowNodeInstanceTemplate.FLOW_NODE_NAME, "List users")));
+  }
+
+  @Test
+  public void shouldUpsertWithoutThrowingWhenFlowNodeNameIsNull() {
+    // given - an entity for this id that this handler's own updateEntity never touched (e.g. the
+    // shared entity was populated only by the colliding FlowNodeInstanceFromProcessInstanceHandler
+    // for the same inner-instance id), so flowNodeName is still null when flush() runs
+    final FlowNodeInstanceEntity entity = new FlowNodeInstanceEntity().setId("111");
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    // when - then (must not throw NullPointerException, see
+    // https://github.com/camunda/camunda/issues/58803)
+    underTest.flush(index, entity, mockRequest);
+
+    verify(mockRequest, times(1))
+        .upsertWithScript(
+            eq(index),
+            eq("111"),
+            eq(entity),
+            eq(FlowNodeInstanceNameFromAdHocActivityHandler.SET_IF_NULL_NAME_SCRIPT),
+            eq(Collections.singletonMap(FlowNodeInstanceTemplate.FLOW_NODE_NAME, null)));
   }
 
   private CachedProcessEntity cachedProcessEntity(
