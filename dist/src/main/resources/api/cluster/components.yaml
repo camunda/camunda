@@ -214,7 +214,7 @@ schemas:
 
   UpdatePartitionDistributionRequest:
     description: >
-      Request body for `PUT /cluster/partition-distribution`. Exactly one of `config` and
+      Request body for `PUT /cluster/partitioning`. Exactly one of `config` and
       `zonePriorities` must be set.
     type: object
     properties:
@@ -330,7 +330,7 @@ schemas:
   ClusterZoneMigrationRequest:
     description: >
       Request to migrate one zone from a bare or partially zoned cluster. The complete zone order,
-      priorities, and replica counts must already be persisted through the partition-distribution
+      priorities, and replica counts must already be persisted through the partitioning
       configuration — that persisted order is what determines which existing (bare) nodes are
       migrated into this zone. When all configured zones have been migrated, the cluster becomes
       fully zoned and subsequent operations address zones by name.
@@ -342,7 +342,7 @@ schemas:
         type: string
         description: >
           Name of the zone to migrate. The zone must already exist in the persisted
-          partition-distribution configuration.
+          partitioning configuration.
         example: eu-west-1
 
   RoutingState:
