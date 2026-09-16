@@ -576,7 +576,11 @@ public class SchemaManager implements CloseableSilently {
         "Validate '{}' existing indices based on '{}' descriptors",
         currentIndices.size(),
         indexDescriptors.size());
-    return schemaValidator.validateIndexMappings(currentIndices, indexDescriptors);
+    final var currentTemplates =
+        searchEngineClient.getMappings(
+            config.connect().getIndexPrefix() + "*", MappingSource.INDEX_TEMPLATE);
+    return schemaValidator.validateIndexMappings(
+        currentIndices, indexDescriptors, currentTemplates);
   }
 
   private Set<String> existingIndexNames(final Collection<IndexDescriptor> indexDescriptors) {
