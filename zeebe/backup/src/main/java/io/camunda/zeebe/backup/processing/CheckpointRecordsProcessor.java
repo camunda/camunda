@@ -255,7 +255,6 @@ public final class CheckpointRecordsProcessor
     // After a leader change, the new leader will not continue taking the backup initiated by
     // previous leader. So mark them as failed, so that the users do not wait forever for it to be
     // completed.
-    backupManager.failInProgressBackup(
-        checkpointState.getLatestCheckpointId(), checkpointState.getLatestBackupId());
+    backupManager.failInProgressBackup(checkpointState.getLatestCheckpointId());
   }
 }

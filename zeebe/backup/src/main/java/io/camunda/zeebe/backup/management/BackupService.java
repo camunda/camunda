@@ -145,9 +145,8 @@ public final class BackupService extends Actor implements BackupManager {
   }
 
   @Override
-  public void failInProgressBackup(final long lastCheckpointId, final long latestBackupId) {
-    internalBackupManager.failInProgressBackups(
-        partitionId.number(), lastCheckpointId, latestBackupId, actor);
+  public void failInProgressBackup(final long lastCheckpointId) {
+    internalBackupManager.failInProgressBackups(partitionId.number(), lastCheckpointId, actor);
   }
 
   @Override

@@ -38,7 +38,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
@@ -47,20 +46,14 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 final class BackupServiceImpl {
   private static final Logger LOG = LoggerFactory.getLogger(BackupServiceImpl.class);
 
-  /** Most backups newer than the latest confirmed one checked for being in progress. */
+  /** Most backups checked for being in progress after a leader change. */
   private static final int IN_PROGRESS_SCAN_LIMIT = 1000;
-
-  /**
-   * Backups at or below the latest confirmed one checked for a copy that completed out of order.
-   */
-  private static final int IN_PROGRESS_SCAN_MARGIN = 20;
 
   private final Set<InProgressBackup> backupsInProgress = new HashSet<>();
   private final BackupStore backupStore;
@@ -283,17 +276,12 @@ final class BackupServiceImpl {
   }
 
   /**
-   * Marks backups a previous leader left in progress as failed. Only backups newer than the latest
-   * confirmed backup can still be in progress, apart from a copy that completed out of order, so
-   * the scan reads those plus a small margin below the latest confirmed backup instead of every
-   * manifest of the partition. The newer end is read newest-first: it is the only bound the scan
-   * has on that side, so a backlog larger than the scan limit must not push it out of the window.
+   * Marks backups a previous leader left in progress as failed. Reading every manifest of the
+   * partition takes minutes on a large store, so only the newest backups are scanned: anything
+   * older was left behind by a leader change that an earlier scan already cleaned up.
    */
   void failInProgressBackups(
-      final int partitionId,
-      final long lastCheckpointId,
-      final long latestBackupId,
-      final ConcurrencyControl executor) {
+      final int partitionId, final long lastCheckpointId, final ConcurrencyControl executor) {
     if (lastCheckpointId == CheckpointState.NO_CHECKPOINT) {
       return;
     }
@@ -301,58 +289,25 @@ final class BackupServiceImpl {
     // racing leadership change) fails the returned future asynchronously instead of throwing
     // RejectedExecutionException synchronously on the caller's thread.
     executor.run(
-        () -> {
-          final var wildcard =
-              new BackupIdentifierWildcardImpl(
-                  Optional.empty(), Optional.of(partitionId), CheckpointPattern.any());
-          final CompletableFuture<List<BackupStatus>> candidates;
-          if (latestBackupId == CheckpointState.NO_CHECKPOINT) {
-            candidates =
-                backupStore.list(
-                    wildcard,
+        () ->
+            backupStore
+                .list(
+                    new BackupIdentifierWildcardImpl(
+                        Optional.empty(), Optional.of(partitionId), CheckpointPattern.any()),
                     ListOptions.newestFirst(
-                        OptionalLong.empty(), OptionalInt.of(IN_PROGRESS_SCAN_LIMIT)));
-          } else {
-            final var newestBackups =
-                backupStore.list(
-                    wildcard,
-                    ListOptions.newestFirst(
-                        OptionalLong.empty(), OptionalInt.of(IN_PROGRESS_SCAN_LIMIT)));
-            final var marginBelowLatestBackup =
-                backupStore.list(
-                    wildcard,
-                    ListOptions.newestFirst(
-                        OptionalLong.of(latestBackupId + 1),
-                        OptionalInt.of(IN_PROGRESS_SCAN_MARGIN)));
-            candidates =
-                newestBackups.thenCombineAsync(
-                    marginBelowLatestBackup,
-                    (newest, margin) ->
-                        // newestBackups has no lower bound of its own — ListOptions has no way to
-                        // express "descending, floored below" — so a partition with fewer than
-                        // IN_PROGRESS_SCAN_LIMIT backups above latestBackupId would otherwise reach
-                        // below it too, double-scanning what marginBelowLatestBackup already covers
-                        // on its own, smaller and intentional terms.
-                        Stream.concat(
-                                newest.stream().filter(b -> b.id().checkpointId() > latestBackupId),
-                                margin.stream())
-                            .toList(),
-                    executor);
-          }
-          candidates
-              .thenAcceptAsync(
-                  backups ->
-                      backups.stream()
-                          .filter(b -> b.id().checkpointId() <= lastCheckpointId)
-                          .forEach(b -> failInProgressBackup(b, executor)),
-                  executor)
-              .exceptionallyAsync(
-                  failure -> {
-                    LOG.warn("Failed to list backups that should be marked as failed", failure);
-                    return null;
-                  },
-                  executor);
-        });
+                        OptionalLong.empty(), OptionalInt.of(IN_PROGRESS_SCAN_LIMIT)))
+                .thenAcceptAsync(
+                    backups ->
+                        backups.stream()
+                            .filter(backup -> backup.id().checkpointId() <= lastCheckpointId)
+                            .forEach(backup -> failInProgressBackup(backup, executor)),
+                    executor)
+                .exceptionallyAsync(
+                    failure -> {
+                      LOG.warn("Failed to list backups that should be marked as failed", failure);
+                      return null;
+                    },
+                    executor));
   }
 
   private void failInProgressBackup(

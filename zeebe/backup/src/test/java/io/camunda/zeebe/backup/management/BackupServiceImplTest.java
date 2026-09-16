@@ -36,7 +36,6 @@ import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.processing.state.CheckpointMetadataValue;
-import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
@@ -316,7 +315,7 @@ class BackupServiceImplTest {
     when(backupStore.markFailed(any(), any()))
         .thenReturn(CompletableFuture.completedFuture(BackupStatusCode.FAILED));
     // when
-    backupService.failInProgressBackups(1, 10, CheckpointState.NO_CHECKPOINT, concurrencyControl);
+    backupService.failInProgressBackups(1, 10, concurrencyControl);
 
     // then
     final var expectedFailureReason = "Backup is cancelled due to leader change.";
@@ -363,8 +362,7 @@ class BackupServiceImplTest {
         .thenReturn(CompletableFuture.completedFuture(BackupStatusCode.FAILED));
 
     // when
-    backupService.failInProgressBackups(
-        1, lastCheckpointId, CheckpointState.NO_CHECKPOINT, concurrencyControl);
+    backupService.failInProgressBackups(1, lastCheckpointId, concurrencyControl);
 
     // then
     final var expectedFailureReason = "Backup is cancelled due to leader change.";
@@ -376,10 +374,10 @@ class BackupServiceImplTest {
   }
 
   @Test
-  void shouldOnlyCheckBackupsAroundTheLatestConfirmedBackupForBeingInProgress() {
-    // given — 50 in-progress copies, the latest confirmed backup is checkpoint 30
+  void shouldOnlyCheckTheNewestBackupsForBeingInProgress() {
+    // given — 1100 in-progress copies, more than the scan reads
     final var statuses =
-        LongStream.rangeClosed(1, 50)
+        LongStream.rangeClosed(1, 1100)
             .mapToObj(checkpointId -> inProgress(new BackupIdentifierImpl(1, 1, checkpointId)))
             .toList();
     stubStoreContent(statuses);
@@ -387,16 +385,16 @@ class BackupServiceImplTest {
         .thenReturn(CompletableFuture.completedFuture(BackupStatusCode.FAILED));
 
     // when
-    backupService.failInProgressBackups(1, 60, 30, concurrencyControl);
+    backupService.failInProgressBackups(1, 1200, concurrencyControl);
 
-    // then — everything newer than the latest confirmed backup plus a margin below it is checked
+    // then — only the newest 1000 backups are checked
     final var expectedFailureReason = "Backup is cancelled due to leader change.";
     verify(backupStore, timeout(1000))
-        .markFailed(new BackupIdentifierImpl(1, 1, 50), expectedFailureReason);
+        .markFailed(new BackupIdentifierImpl(1, 1, 1100), expectedFailureReason);
     verify(backupStore, timeout(1000))
-        .markFailed(new BackupIdentifierImpl(1, 1, 11), expectedFailureReason);
+        .markFailed(new BackupIdentifierImpl(1, 1, 101), expectedFailureReason);
     verify(backupStore, never())
-        .markFailed(new BackupIdentifierImpl(1, 1, 10), expectedFailureReason);
+        .markFailed(new BackupIdentifierImpl(1, 1, 100), expectedFailureReason);
   }
 
   /** Answers paged listings by selecting the page from the given store content. */
