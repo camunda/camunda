@@ -80,20 +80,16 @@ public final class BufferedCommandDrainProcessor
     final var drainValue = command.getValue();
     final long processInstanceKey = drainValue.getProcessInstanceKey();
 
-    final var buffered =
-        suspensionState
-            .findNextBufferedCommand(processInstanceKey, drainValue.getCommandKey())
-            .orElse(null);
-    if (buffered == null) {
-      advanceOrWait(command, drainValue);
-      return;
-    }
-
-    appendBufferedCommand(buffered);
-    appendDrainedEvent(buffered);
-
-    appendNextDrainCommand(buffered.command(), buffered.key());
-    suspensionMetrics.commandDrained();
+    suspensionState
+        .findNextBufferedCommand(processInstanceKey, drainValue.getCommandKey())
+        .ifPresentOrElse(
+            buffered -> {
+              appendBufferedCommand(buffered);
+              appendDrainedEvent(buffered);
+              appendNextDrainCommand(buffered.key(), buffered.command());
+              suspensionMetrics.commandDrained();
+            },
+            () -> advanceOrWait(command, drainValue));
   }
 
   /**
@@ -190,15 +186,15 @@ public final class BufferedCommandDrainProcessor
   }
 
   private void appendNextDrainCommand(
-      final BufferedCommandRecord drainValue, final long lastDrainedCommandKey) {
+      final long drainedCommandKey, final BufferedCommandRecord drainedCommandValue) {
     commandWriter.appendFollowUpCommand(
-        drainValue.getProcessInstanceKey(),
+        drainedCommandValue.getProcessInstanceKey(),
         BufferedCommandIntent.DRAIN,
         new BufferedCommandRecord()
-            .setProcessInstanceKey(drainValue.getProcessInstanceKey())
-            .setProcessDefinitionKey(drainValue.getProcessDefinitionKey())
-            .setTenantId(drainValue.getTenantId())
-            .setCommandKey(lastDrainedCommandKey));
+            .setProcessInstanceKey(drainedCommandValue.getProcessInstanceKey())
+            .setProcessDefinitionKey(drainedCommandValue.getProcessDefinitionKey())
+            .setTenantId(drainedCommandValue.getTenantId())
+            .setCommandKey(drainedCommandKey));
   }
 
   private void appendResumeJobs(final BufferedCommandRecord drainValue) {
