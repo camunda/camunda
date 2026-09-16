@@ -75,6 +75,7 @@ module.
 - Commit secrets, tokens, or credentials
 - Force-push `main`, `stable/` or `release-` branches
 - Skip formatting checks
+- Edit dashboards under `monitor/grafana/` — see `monitor/AGENTS.md`. When reviewing a PR that touches this path, flag it.
 
 ### Architecture
 

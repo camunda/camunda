@@ -53,6 +53,21 @@
   "links": [],
   "panels": [
     {
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 5,
+      "options": {
+        "content": "<center>\n\n\u26a0\ufe0f **This dashboard is not maintained anymore.** Use the dashboards in the [camunda-observability](https://github.com/camunda/camunda-observability) repository instead.\n\n</center>",
+        "mode": "markdown"
+      },
+      "title": "Not maintained",
+      "type": "text"
+    },
+    {
       "datasource": {
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
@@ -115,7 +130,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 0
+        "y": 3
       },
       "id": 1,
       "options": {
@@ -215,7 +230,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 0
+        "y": 3
       },
       "id": 2,
       "options": {
@@ -313,7 +328,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 11
       },
       "id": 3,
       "options": {
@@ -415,7 +430,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 11
       },
       "id": 4,
       "options": {

@@ -22,12 +22,27 @@
   "links": [],
   "panels": [
     {
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 134,
+      "options": {
+        "content": "<center>\n\n\u26a0\ufe0f **This dashboard is not maintained anymore.** Use the dashboards in the [camunda-observability](https://github.com/camunda/camunda-observability) repository instead.\n\n</center>",
+        "mode": "markdown"
+      },
+      "title": "Not maintained",
+      "type": "text"
+    },
+    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 3
       },
       "id": 99,
       "panels": [],
@@ -60,7 +75,7 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 1
+        "y": 4
       },
       "id": 53,
       "options": {
@@ -130,7 +145,7 @@
         "h": 8,
         "w": 6,
         "x": 6,
-        "y": 1
+        "y": 4
       },
       "id": 55,
       "options": {
@@ -200,7 +215,7 @@
         "h": 8,
         "w": 6,
         "x": 12,
-        "y": 1
+        "y": 4
       },
       "id": 57,
       "options": {
@@ -270,7 +285,7 @@
         "h": 8,
         "w": 6,
         "x": 18,
-        "y": 1
+        "y": 4
       },
       "id": 58,
       "options": {
@@ -320,7 +335,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 9
+        "y": 12
       },
       "id": 2,
       "panels": [
@@ -436,7 +451,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 10
+        "y": 13
       },
       "id": 7,
       "panels": [
@@ -3177,7 +3192,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 11
+        "y": 14
       },
       "id": 105,
       "panels": [
@@ -4046,7 +4061,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 12
+        "y": 15
       },
       "id": 21,
       "panels": [
@@ -5382,7 +5397,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 13
+        "y": 16
       },
       "id": 63,
       "panels": [
@@ -6240,7 +6255,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 14
+        "y": 17
       },
       "id": 62,
       "panels": [
@@ -7255,7 +7270,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 15
+        "y": 18
       },
       "id": 119,
       "panels": [
@@ -7966,7 +7981,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 16
+        "y": 19
       },
       "id": 101,
       "panels": [
@@ -8078,7 +8093,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 17
+        "y": 20
       },
       "id": 100,
       "panels": [
@@ -8616,7 +8631,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 18
+        "y": 21
       },
       "id": 47,
       "panels": [
