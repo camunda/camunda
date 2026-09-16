@@ -152,6 +152,7 @@ const JSONEditorField: FC<JSONEditorFieldProps> = ({
           {beautify && (
             <Button
               type="button"
+              disabled={errors?.length > 0}
               onClick={() => onChange?.(beautifyJSON(value))}
               size="sm"
               variant="ghost"
