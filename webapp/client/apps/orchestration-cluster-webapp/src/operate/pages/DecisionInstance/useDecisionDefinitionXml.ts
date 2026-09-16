@@ -14,6 +14,7 @@ function useDecisionDefinitionXml(decisionDefinitionKey?: string) {
 		queryKey: ['decisionDefinitionXml', decisionDefinitionKey] as const,
 		queryFn: decisionDefinitionKey === undefined ? skipToken : () => fetchDecisionDefinitionXml(decisionDefinitionKey),
 		staleTime: 'static',
+		retry: false,
 	});
 }
 

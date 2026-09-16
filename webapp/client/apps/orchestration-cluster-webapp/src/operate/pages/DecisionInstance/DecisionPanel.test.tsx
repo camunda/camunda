@@ -7,7 +7,9 @@
  */
 
 import {describe, expect} from 'vitest';
+import {createInstance} from 'i18next';
 import {HttpResponse} from 'msw';
+import {I18nextProvider} from 'react-i18next';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
@@ -17,6 +19,7 @@ import {
 import {createDecisionInstance} from '#/shared-test-modules/api-mocks/decision-instances';
 import {DMN_XML_WITH_LITERAL_EXPRESSION_AND_HIGHLIGHTABLE_TABLE} from '#/shared-test-modules/api-mocks/decision-definition-xmls';
 import {createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
+import {translationResources} from '#/shared/i18n';
 import {DecisionPanel} from './DecisionPanel';
 
 const DECISION_INSTANCE_ID = '4294980768';
@@ -27,6 +30,17 @@ function renderDecisionPanel() {
 		path: '/operate/decisions/$decisionInstanceId',
 		initialEntry: `/operate/decisions/${DECISION_INSTANCE_ID}`,
 	});
+}
+
+async function createTranslations(language: 'de' | 'fr' | 'es') {
+	const translations = createInstance();
+	await translations.init({
+		lng: language,
+		resources: translationResources,
+		interpolation: {escapeValue: false},
+	});
+
+	return translations;
 }
 
 describe('<DecisionPanel />', () => {
@@ -72,6 +86,43 @@ describe('<DecisionPanel />', () => {
 
 		await expect.element(screen.getByText(/avg_score/)).toBeVisible();
 	});
+
+	it.for(['de', 'fr', 'es'] as const)(
+		'should localize the loaded decision panel landmark label for %s',
+		async (language, {worker}) => {
+			worker.use(
+				mockGetDecisionInstanceEndpoint({
+					successResponse: HttpResponse.json(
+						createDecisionInstance({
+							decisionEvaluationInstanceKey: DECISION_INSTANCE_ID,
+							decisionDefinitionKey: DECISION_DEFINITION_KEY,
+							decisionDefinitionId: 'invoiceClassification',
+						}),
+					),
+				}),
+				mockGetDecisionDefinitionXmlEndpoint({
+					successResponse: HttpResponse.text(DMN_XML_WITH_LITERAL_EXPRESSION_AND_HIGHLIGHTABLE_TABLE),
+				}),
+			);
+			const translations = await createTranslations(language);
+			const screen = await renderWithRouter(
+				() => (
+					<I18nextProvider i18n={translations}>
+						<DecisionPanel decisionEvaluationInstanceKey={DECISION_INSTANCE_ID} />
+					</I18nextProvider>
+				),
+				{
+					path: '/operate/decisions/$decisionInstanceId',
+					initialEntry: `/operate/decisions/${DECISION_INSTANCE_ID}`,
+				},
+			);
+
+			await expect
+				.element(screen.getByRole('region', {name: translations.t('operate.decisionInstance.panel.label')}))
+				.toBeVisible();
+			await expect.element(screen.getByText('Invoice Amount')).toBeVisible();
+		},
+	);
 
 	it('should deduplicate matched rule indexes before highlighting', async ({worker}) => {
 		worker.use(

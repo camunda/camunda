@@ -80,6 +80,8 @@ describe('<DecisionViewer />', () => {
 		);
 
 		await expect.element(screen.getByText('Invoice Amount')).toBeVisible();
-		await expect.element(screen.getByText('#', {exact: true}).first()).toBeVisible();
+		const indexHeader = screen.getByText('#', {exact: true}).first();
+		await expect.element(indexHeader).toBeVisible();
+		expect(indexHeader.element().tagName).toBe('TH');
 	});
 });

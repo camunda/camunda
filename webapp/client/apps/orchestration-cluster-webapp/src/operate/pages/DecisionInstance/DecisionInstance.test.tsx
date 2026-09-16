@@ -7,7 +7,9 @@
  */
 
 import {afterEach, beforeEach, describe, expect} from 'vitest';
+import {createInstance} from 'i18next';
 import {HttpResponse} from 'msw';
+import {I18nextProvider} from 'react-i18next';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
@@ -20,10 +22,22 @@ import {DMN_XML} from '#/shared-test-modules/api-mocks/decision-definition-xmls'
 import {createDecisionInstance} from '#/shared-test-modules/api-mocks/decision-instances';
 import {createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {translationResources} from '#/shared/i18n';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {DecisionInstance, DecisionInstanceShell} from './DecisionInstance';
 
 const DECISION_INSTANCE_ID = '4294980768';
+
+async function createTranslations(language: 'de' | 'fr' | 'es') {
+	const translations = createInstance();
+	await translations.init({
+		lng: language,
+		resources: translationResources,
+		interpolation: {escapeValue: false},
+	});
+
+	return translations;
+}
 
 function renderPage() {
 	return renderWithRouter(
@@ -61,6 +75,28 @@ describe('<DecisionInstance />', () => {
 
 		await expect
 			.element(screen.getByRole('region', {name: 'decision panel'}).getByRole('img', {name: 'loading'}))
+			.toBeVisible();
+	});
+
+	it.for(['de', 'fr', 'es'] as const)('should localize pending route shell landmark label for %s', async (language) => {
+		const translations = await createTranslations(language);
+		const screen = await renderWithRouter(
+			() => (
+				<I18nextProvider i18n={translations}>
+					<div style={{height: '100vh'}}>
+						<DecisionInstanceShell header={<div>Loading decision instance</div>} />
+					</div>
+				</I18nextProvider>
+			),
+			{path: '/operate/decisions/$decisionInstanceId', initialEntry: `/operate/decisions/${DECISION_INSTANCE_ID}`},
+		);
+
+		await expect
+			.element(
+				screen
+					.getByRole('region', {name: translations.t('operate.decisionInstance.panel.label')})
+					.getByRole('img', {name: 'loading'}),
+			)
 			.toBeVisible();
 	});
 

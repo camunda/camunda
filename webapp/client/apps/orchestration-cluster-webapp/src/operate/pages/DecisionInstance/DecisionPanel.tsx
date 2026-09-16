@@ -12,6 +12,7 @@ import {ForbiddenError} from '#/shared/errors';
 import {DiagramShell} from '#/operate/shared/DiagramShell/DiagramShell';
 import {DecisionViewer} from '#/operate/shared/DecisionViewer';
 import {useDecisionInstance} from './decisionInstance.queries';
+import {getHighlightableRules} from './getHighlightableRules';
 import {useDecisionDefinitionXml} from './useDecisionDefinitionXml';
 import {IncidentBanner, Section} from './styled';
 
@@ -34,17 +35,7 @@ const DecisionPanel: React.FC<Props> = ({decisionEvaluationInstanceKey}) => {
 		error: decisionDefinitionXmlError,
 	} = useDecisionDefinitionXml(decisionInstance?.decisionDefinitionKey);
 	const matchedRules = decisionInstance?.matchedRules;
-	const highlightableRules = useMemo(() => {
-		if (matchedRules === undefined) {
-			return [];
-		}
-
-		return Array.from(
-			new Set(
-				matchedRules.map(({ruleIndex}) => ruleIndex).filter((ruleIndex): ruleIndex is number => ruleIndex !== null),
-			),
-		);
-	}, [matchedRules]);
+	const highlightableRules = useMemo(() => getHighlightableRules(matchedRules), [matchedRules]);
 
 	const panelStatus = (() => {
 		if (isDecisionInstancePending || isDecisionDefinitionXmlFetching) {
@@ -60,7 +51,7 @@ const DecisionPanel: React.FC<Props> = ({decisionEvaluationInstanceKey}) => {
 	})() satisfies React.ComponentProps<typeof DiagramShell>['status'];
 
 	return (
-		<Section data-testid="decision-panel" aria-label="decision panel" tabIndex={0}>
+		<Section data-testid="decision-panel" aria-label={t('operate.decisionInstance.panel.label')} tabIndex={0}>
 			{decisionInstance?.state === 'FAILED' && (
 				<IncidentBanner data-testid="incident-banner">
 					{decisionInstance.evaluationFailure ?? t('operate.decisionInstance.panel.unknownEvaluationFailure')}

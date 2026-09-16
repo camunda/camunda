@@ -77,16 +77,13 @@ type ShellProps = {
 	rightPanel?: React.ReactNode;
 };
 
-const DecisionInstanceShell: React.FC<ShellProps> = ({
-	header,
-	topPanel = (
-		<Section aria-label="decision panel" tabIndex={0}>
+const DecisionInstanceShell: React.FC<ShellProps> = ({header, topPanel, rightPanel}) => {
+	const {t} = useTranslation();
+	const pendingTopPanel = (
+		<Section aria-label={t('operate.decisionInstance.panel.label')} tabIndex={0}>
 			<DiagramShell status="loading">{null}</DiagramShell>
 		</Section>
-	),
-	rightPanel,
-}) => {
-	const {t} = useTranslation();
+	);
 
 	return (
 		<>
@@ -95,7 +92,7 @@ const DecisionInstanceShell: React.FC<ShellProps> = ({
 				<InstanceDetail
 					type="decision"
 					header={header}
-					topPanel={topPanel}
+					topPanel={topPanel ?? pendingTopPanel}
 					bottomPanel={<div />}
 					rightPanel={rightPanel}
 				/>
