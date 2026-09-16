@@ -307,15 +307,9 @@ public class SuspensionMeter implements AutoCloseable {
       // normally) for warmup, then cancel. Used to isolate the effect of the fan-out / timer
       // triggers on the cluster without any suspension.
       if (cfg.isSuspendEnabled()) {
-        for (final long key : keys) {
-          try {
-            suspendLatency.record(() -> client.newSuspendProcessInstanceCommand(key).send().join());
-            suspendRequests.increment();
-            suspendedUntil.put(key, Instant.now().plus(cfg.getHoldDuration()));
-          } catch (final Exception e) {
-            suspendErrors.increment();
-            THROTTLED_LOGGER.warn("Failed to suspend target instance {}", key, e);
-          }
+        switch (cfg.getMode()) {
+          case SINGLE -> suspendEachTarget(keys);
+          case BATCH -> suspendTargetsBatch(keys);
         }
 
         // Now that the instances are suspended (subscriptions closed), publish messages that will
@@ -327,16 +321,9 @@ public class SuspensionMeter implements AutoCloseable {
 
         sleep(cfg.getHoldDuration());
 
-        for (final long key : keys) {
-          try {
-            resumeLatency.record(() -> client.newResumeProcessInstanceCommand(key).send().join());
-            resumeRequests.increment();
-          } catch (final Exception e) {
-            resumeErrors.increment();
-            THROTTLED_LOGGER.warn("Failed to resume target instance {}", key, e);
-          } finally {
-            suspendedUntil.remove(key);
-          }
+        switch (cfg.getMode()) {
+          case SINGLE -> resumeEachTarget(keys);
+          case BATCH -> resumeTargetsBatch(keys);
         }
 
         sleep(cfg.getSettle());
@@ -346,6 +333,83 @@ public class SuspensionMeter implements AutoCloseable {
     } finally {
       // Always clean up, even if interrupted, so instances do not accumulate across cycles.
       cancelInstances(keys);
+      keys.forEach(suspendedUntil::remove);
+    }
+  }
+
+  /** SINGLE: one suspend command per target instance, back to back. */
+  private void suspendEachTarget(final List<Long> keys) {
+    for (final long key : keys) {
+      try {
+        suspendLatency.record(() -> client.newSuspendProcessInstanceCommand(key).send().join());
+        suspendRequests.increment();
+        suspendedUntil.put(key, Instant.now().plus(cfg.getHoldDuration()));
+      } catch (final Exception e) {
+        suspendErrors.increment();
+        THROTTLED_LOGGER.warn("Failed to suspend target instance {}", key, e);
+      }
+    }
+  }
+
+  /** SINGLE: one resume command per target instance. */
+  private void resumeEachTarget(final List<Long> keys) {
+    for (final long key : keys) {
+      try {
+        resumeLatency.record(() -> client.newResumeProcessInstanceCommand(key).send().join());
+        resumeRequests.increment();
+      } catch (final Exception e) {
+        resumeErrors.increment();
+        THROTTLED_LOGGER.warn("Failed to resume target instance {}", key, e);
+      } finally {
+        suspendedUntil.remove(key);
+      }
+    }
+  }
+
+  /**
+   * BATCH: a single process-instance suspend batch operation over all active target instances. The
+   * engine's batch executor fans it out asynchronously; the client call only creates the batch, so
+   * no per-instance latency is recorded (measure completion via the broker batch-operation
+   * metrics).
+   */
+  private void suspendTargetsBatch(final List<Long> keys) {
+    try {
+      client
+          .newCreateBatchOperationCommand()
+          .processInstanceSuspend()
+          .filter(
+              f ->
+                  f.processDefinitionId(cfg.getTargetProcessId())
+                      .state(ProcessInstanceState.ACTIVE))
+          .send()
+          .join();
+      suspendRequests.increment();
+      keys.forEach(key -> suspendedUntil.put(key, Instant.now().plus(cfg.getHoldDuration())));
+    } catch (final Exception e) {
+      suspendErrors.increment();
+      THROTTLED_LOGGER.warn("Failed to create target suspend batch operation", e);
+    }
+  }
+
+  /**
+   * BATCH: a single process-instance resume batch operation over all suspended target instances.
+   */
+  private void resumeTargetsBatch(final List<Long> keys) {
+    try {
+      client
+          .newCreateBatchOperationCommand()
+          .processInstanceResume()
+          .filter(
+              f ->
+                  f.processDefinitionId(cfg.getTargetProcessId())
+                      .state(ProcessInstanceState.SUSPENDED))
+          .send()
+          .join();
+      resumeRequests.increment();
+    } catch (final Exception e) {
+      resumeErrors.increment();
+      THROTTLED_LOGGER.warn("Failed to create target resume batch operation", e);
+    } finally {
       keys.forEach(suspendedUntil::remove);
     }
   }
