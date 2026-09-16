@@ -34,14 +34,13 @@ import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {ProcessInstance} from './ProcessInstance';
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
-const INITIAL_ENTRY = `/operate/processes/${PROCESS_INSTANCE_ID}/variables`;
 const PROCESS_XML =
 	'<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"><process id="my-process"><callActivity id="call-activity" /></process></definitions>';
 
 function renderPage() {
 	return renderWithRouter(() => <ProcessInstance processInstanceId={PROCESS_INSTANCE_ID} search={{}} />, {
 		path: '/operate/processes/$processInstanceId/variables',
-		initialEntry: INITIAL_ENTRY,
+		initialEntry: `/operate/processes/${PROCESS_INSTANCE_ID}/variables`,
 	});
 }
 
@@ -50,14 +49,16 @@ function getProcessInstancePageHandlers({
 	callHierarchy = [],
 	processDefinitions = createQueryProcessDefinitionsResponse(),
 	waitStateItems = [],
+	currentUser = createCurrentUser(),
 }: {
 	processInstance?: ReturnType<typeof createProcessInstance>;
 	callHierarchy?: ReturnType<typeof createCallHierarchy>[];
 	processDefinitions?: ReturnType<typeof createQueryProcessDefinitionsResponse>;
 	waitStateItems?: {elementId: string; waitingCount: number}[];
+	currentUser?: ReturnType<typeof createCurrentUser>;
 } = {}) {
 	return [
-		mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
+		mockCurrentUserEndpoint({successResponse: HttpResponse.json(currentUser)}),
 		mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json(processInstance)}),
 		mockQueryProcessDefinitionsEndpoint({successResponse: HttpResponse.json(processDefinitions)}),
 		mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(PROCESS_XML)}),
@@ -93,13 +94,19 @@ describe('<ProcessInstance />', () => {
 	});
 
 	it('should render the shell with header and breadcrumb', async ({worker}) => {
+		sessionStorage.setItem(
+			'clientConfig',
+			JSON.stringify(createSystemConfiguration({deployment: {isMultiTenancyEnabled: true, maxRequestSize: 0}})),
+		);
 		const processInstance = createProcessInstance({
 			processInstanceKey: PROCESS_INSTANCE_ID,
 			processDefinitionName: 'Order',
+			tenantId: 'tenant-a',
 		});
 		worker.use(
 			...getProcessInstancePageHandlers({
 				processInstance,
+				currentUser: createCurrentUser({tenants: [{tenantId: 'tenant-a', name: 'Tenant A', description: null}]}),
 				waitStateItems: [{elementId: processInstance.processDefinitionId, waitingCount: 2}],
 				callHierarchy: [
 					createCallHierarchy({processInstanceKey: '1', processDefinitionName: 'Root Process'}),
@@ -112,7 +119,6 @@ describe('<ProcessInstance />', () => {
 		const screen = await renderPage();
 
 		await expect.element(screen.getByRole('heading', {name: 'Operate Process Instance'})).toBeInTheDocument();
-		await expect.element(screen.getByTestId('instance-header')).toBeVisible();
 		await expect
 			.element(screen.getByRole('link', {name: 'Root Process'}))
 			.toHaveAttribute('href', '/operate/processes/1');
@@ -121,6 +127,11 @@ describe('<ProcessInstance />', () => {
 			.toHaveAttribute('href', '/operate/processes/2');
 		await expect.element(screen.getByText('Start Date')).toBeVisible();
 		await expect.element(screen.getByText('2 waiting')).toBeVisible();
+		await expect.element(screen.getByText('Tenant', {exact: true})).toBeVisible();
+		await expect.element(screen.getByText('Tenant A', {exact: true})).toBeVisible();
+		await expect
+			.element(screen.getByRole('link', {name: /View process .*Tenant A/}))
+			.toHaveAttribute('href', expect.stringContaining('tenantId=tenant-a'));
 	});
 
 	it('should redirect to processes and notify when the process instance is not found', async ({worker}) => {
@@ -145,24 +156,33 @@ describe('<ProcessInstance />', () => {
 			.toContain(`Instance ${PROCESS_INSTANCE_ID} could not be found`);
 	});
 
-	it('should recover from a generic instance read error on retry', async ({worker}) => {
-		worker.use(
-			mockGetProcessInstanceEndpoint({
+	it.for([false, true])(
+		'should recover from a generic instance read error (cached: %s)',
+		async (isCached, {worker}) => {
+			worker.use(...getProcessInstancePageHandlers());
+			const failure = mockGetProcessInstanceEndpoint({
 				successResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
-			}),
-		);
+			});
+			if (!isCached) {
+				worker.use(failure);
+			}
 
-		const screen = await renderPage();
-		await expect.element(screen.getByRole('heading', {name: 'Something went wrong'})).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: 'Try again'})).toBeVisible();
+			const screen = await renderPage();
+			if (isCached) {
+				await expect.element(screen.getByTestId('instance-header')).toBeVisible();
+				worker.use(failure);
+				await screen.queryClient.invalidateQueries({queryKey: ['processInstance', PROCESS_INSTANCE_ID]});
+			}
+			await expect.element(screen.getByRole('heading', {name: 'Something went wrong'})).toBeVisible();
 
-		worker.use(...getProcessInstancePageHandlers());
+			worker.use(...getProcessInstancePageHandlers());
 
-		await userEvent.click(screen.getByRole('button', {name: 'Try again'}));
+			await userEvent.click(screen.getByRole('button', {name: 'Try again'}));
 
-		await expect.element(screen.getByTestId('instance-header')).toBeVisible();
-		await expect.element(screen.getByRole('heading', {name: 'Something went wrong'})).not.toBeInTheDocument();
-	});
+			await expect.element(screen.getByTestId('instance-header')).toBeVisible();
+			await expect.element(screen.getByRole('heading', {name: 'Something went wrong'})).not.toBeInTheDocument();
+		},
+	);
 
 	it.for([true, false])(
 		'should scope draining metadata to this version (matching key: %s)',

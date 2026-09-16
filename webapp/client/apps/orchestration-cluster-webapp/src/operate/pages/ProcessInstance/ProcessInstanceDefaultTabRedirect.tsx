@@ -10,12 +10,9 @@ import {useEffect} from 'react';
 import {useNavigate} from '@tanstack/react-router';
 import {hasProcessLevelWaitState} from '#/operate/shared/utils/waitStates';
 import {isInstanceRunning} from '#/operate/shared/utils/processInstance';
-import {useProcessInstanceWaitStateStatistics} from '#/operate/pages/ProcessInstance/processInstance.queries';
-import {useProcessInstancePage} from '#/operate/pages/ProcessInstance/useProcessInstancePage';
-import {
-	getDefaultProcessInstanceTab,
-	getProcessInstanceTabPath,
-} from '#/operate/pages/ProcessInstance/processInstanceSearch';
+import {useProcessInstanceWaitStateStatistics} from './processInstance.queries';
+import {useProcessInstancePage} from './useProcessInstancePage';
+import {getDefaultProcessInstanceTab, getProcessInstanceTabPath} from './processInstanceSearch';
 
 const ProcessInstanceDefaultTabRedirect: React.FC = () => {
 	const navigate = useNavigate();

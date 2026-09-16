@@ -76,7 +76,7 @@ const ProcessInstance: React.FC<Props> = ({processInstanceId, search, topPanel, 
 		return null;
 	}
 
-	if (isGenericError && processInstance === undefined) {
+	if (isGenericError) {
 		return (
 			<Container>
 				<GenericErrorPage reset={() => void refetch()} />
