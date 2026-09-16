@@ -343,38 +343,40 @@ jobs:
             )
             # Collapse true duplicates: one api_es run can now emit the same failing
             # spec from two report artifacts (-profiles and -all-in-one), both tagged
-            # database=elasticsearch. Distinct databases (rdbms) and tasklist modes
-            # (e2e) remain separate rows.
+            # database=elasticsearch.
             | unique_by([.version, .file, .test_name, (.database // ""), (.tasklist_mode // "")])
-            # Collapse cross-matrix duplicates: the same (file, test_name) failing
-            # across many database engines (api_rdbms) or tasklist modes (e2e) is one
-            # underlying failure, not one entry per variant. Left uncollapsed, a
-            # single test failing on every RDBMS engine can produce dozens of
-            # near-identical rows that fill a version'"'"'s dispatch quota (the
-            # per-version cap below) before genuinely distinct failures -- e.g. an
-            # unrelated E2E test -- ever get a slot (this is what happened on
-            # 2026-09-16: 56 rows from one agent-instance test failing across every
-            # RDBMS engine crowded out 11 distinct main-branch E2E failures). Keep one
-            # representative row per (version, file, test_name) and note the other
-            # variants in its error text so the fix agent still knows it is
-            # cross-engine.
+            # Collapse cross-engine RDBMS duplicates: the same (file, test_name)
+            # failing on every RDBMS engine is one underlying failure, not one entry
+            # per engine -- the fix agent'"'"'s verify step never provisions the real
+            # engine anyway; per qa/c8-orchestration-cluster-e2e-test-suite/AGENTS.md
+            # it always reproduces api_rdbms failures against a single H2 setup, so
+            # collapsing distinct .database values loses no information the agent
+            # acts on. Left uncollapsed, a single test failing on every RDBMS engine
+            # can produce dozens of near-identical rows that fill a version'"'"'s
+            # dispatch quota (the per-version cap below) before genuinely distinct
+            # failures -- e.g. an unrelated E2E test -- ever get a slot (this is what
+            # happened on 2026-09-16: 56 rows from one agent-instance test failing
+            # across every RDBMS engine crowded out 11 distinct main-branch E2E
+            # failures). Keep one representative row per (version, file, test_name)
+            # and note the other engines in its error text.
             #
-            # The group key includes a backend "family" (api_es / api_rdbms / e2e),
-            # not just (version, file, test_name): api_es and api_rdbms are separate
-            # nightly runs with separate run IDs (api_es_run_id / api_rdbms_run_id),
-            # and the fix workflow decides which artifacts to download from each
-            # test_spec'"'"'s .database value. Collapsing across families would keep
-            # only one family'"'"'s .database on the merged row and silently drop the
-            # other family'"'"'s report from diagnosis/verification for a spec that
-            # fails on both. Only distinct RDBMS engines (or e2e tasklist modes)
-            # collapse into each other; es and rdbms rows for the same spec stay
-            # separate rows.
+            # api_es and e2e rows are NOT collapsed across variants, only
+            # deduplicated by the exact match above:
+            #   - api_es is a separate nightly run with its own run ID
+            #     (api_es_run_id); merging it with api_rdbms rows would keep only one
+            #     family'"'"'s .database and silently drop the other family'"'"'s report
+            #     from diagnosis/verification for a spec that fails on both.
+            #   - e2e'"'"'s variant dimension is tasklist_mode (v1/v2), and unlike the
+            #     RDBMS engine the agent'"'"'s own verify step passes tasklist_mode
+            #     verbatim to pick which Tasklist generation to stand up -- collapsing
+            #     v1 and v2 rows together would let it verify in only one mode and
+            #     silently miss (or falsely "fix") a failure specific to the other.
             | group_by([.version, .file, .test_name,
                 (if (.database // "") == "elasticsearch" then "api_es"
                  elif (.database // "") != "" then "api_rdbms"
-                 else "e2e" end)])
+                 else ("e2e:" + (.tasklist_mode // "")) end)])
             | map(
-                (map(.database // .tasklist_mode // empty) | unique) as $variants
+                (map(.database // empty) | unique) as $variants
                 | .[0]
                 | if ($variants | length) > 1
                   then .error = (.error + " [also fails on: " + ($variants | join(", ")) + "]")
