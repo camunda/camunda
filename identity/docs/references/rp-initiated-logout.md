@@ -121,14 +121,20 @@ Logout URLs* entry that can ever match it. A value that skips the prefix can be 
 matched exactly.
 
 Besides `{baseUrl}`, a template may use `{baseScheme}`, `{baseHost}`, `{basePort}`, `{basePath}` and
-`{registrationId}` — but it must still resolve to an absolute URL, so it has to start with
-`{baseUrl}` or spell out a scheme such as `{baseScheme}://{baseHost}`. `{basePath}/goodbye` is
-rejected even though `basePath` is a supported placeholder, because it expands to a relative value
-and the OIDC logout specification requires this parameter to be absolute.
+`{registrationId}` — but it must still resolve to an absolute URL. It has to start with `{baseUrl}`,
+or spell out a scheme *and* put something in the host position that can actually be a host: either
+`{baseHost}` or a literal hostname.
+
+Two rejected examples make the rule concrete, both using supported placeholders:
+
+- `{basePath}/goodbye` expands to a relative value, and the OIDC logout specification requires this
+  parameter to be absolute.
+- `https://{basePath}/goodbye` looks absolute but expands to `https:///goodbye`, with no host.
 
 Any other placeholder is rejected at startup, as is an unbalanced brace, an absolute URL with no
-host, and a value that is none of these forms. Whatever URL you choose must still be registered with
-the IdP as an allowed post-logout redirect.
+host, a fragment (the specification gives this parameter none), and a value that is none of these
+forms. Whatever URL you choose must still be registered with the IdP as an allowed post-logout
+redirect.
 
 Setting `post-logout-redirect-enabled: false` alongside a URI wins: no `post_logout_redirect_uri` is
 sent, and a warning is logged.
