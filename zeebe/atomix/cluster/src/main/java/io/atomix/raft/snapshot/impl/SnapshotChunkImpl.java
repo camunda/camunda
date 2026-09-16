@@ -19,6 +19,7 @@ package io.atomix.raft.snapshot.impl;
 import io.atomix.raft.snapshot.SbeBufferWriterReader;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.nio.ByteBuffer;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -141,6 +142,34 @@ public final class SnapshotChunkImpl
   @Override
   public byte[] getContent() {
     return BufferUtil.bufferAsArray(content);
+  }
+
+  /**
+   * Returns a read-only view of the chunk content without copying it. The view aliases the bytes of
+   * the received message, so it is only valid while the message is being processed. Each call
+   * returns an independent view with its own position and limit.
+   */
+  @Override
+  public ByteBuffer getContentBuffer() {
+    final var capacity = content.capacity();
+    final var wrapAdjustment = content.wrapAdjustment();
+
+    final var byteArray = content.byteArray();
+    if (byteArray != null) {
+      return ByteBuffer.wrap(byteArray, wrapAdjustment, capacity).slice().asReadOnlyBuffer();
+    }
+
+    final var byteBuffer = content.byteBuffer();
+    if (byteBuffer != null) {
+      return byteBuffer
+          .duplicate()
+          .position(wrapAdjustment)
+          .limit(wrapAdjustment + capacity)
+          .slice()
+          .asReadOnlyBuffer();
+    }
+
+    return ByteBuffer.wrap(BufferUtil.bufferAsArray(content)).asReadOnlyBuffer();
   }
 
   @Override
