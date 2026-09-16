@@ -11,11 +11,12 @@ import {Card, CardContent, CardHeader, CardTitle} from '@camunda/design-system';
 import {cn} from '#/shared/cn';
 import {useRunningInstancesCount} from '../useRunningInstancesCount';
 import {NoInstancesEmptyState} from './NoInstancesEmptyState';
+import {MetricPanel} from '../MetricPanel/shadcn.components/MetricPanel';
 
-// Layout shell: MetricPanel, InstancesByProcess and IncidentsByError are still
-// placeholders here and get wired in as their own PRs land. Mirrors the Carbon
-// Dashboard's grid: the metric panel spans the full width on top, the two lists sit side
-// by side below it (or the single list fills the width when there are no instances).
+// Layout shell: InstancesByProcess and IncidentsByError are still placeholders here and
+// get wired in as their own PRs land. Mirrors the Carbon Dashboard's grid: the metric
+// panel spans the full width on top, the two lists sit side by side below it (or the
+// single list fills the width when there are no instances).
 // See docs/migration/operate-dashboard-tiering.md for the component mapping.
 const Dashboard: React.FC = () => {
 	const {t} = useTranslation();
@@ -26,7 +27,9 @@ const Dashboard: React.FC = () => {
 		<div className="flex h-full flex-col gap-4 overflow-hidden p-4">
 			<h1 className="sr-only">{t('operate.dashboard.title')}</h1>
 			<Card data-testid="metric-panel">
-				<CardContent>{/* MetricPanel — wired in a later PR */}</CardContent>
+				<CardContent>
+					<MetricPanel count={count} />
+				</CardContent>
 			</Card>
 			<div className={cn('grid flex-1 gap-4 overflow-hidden', !hasNoInstances && 'grid-cols-2')}>
 				<Card className="flex flex-col overflow-hidden">
