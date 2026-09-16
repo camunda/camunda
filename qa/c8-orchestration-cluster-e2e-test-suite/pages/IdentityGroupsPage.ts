@@ -217,7 +217,11 @@ export class IdentityGroupsPage {
   async assignUserToGroup(userName: string, userEmail: string) {
     await this.assignUserButton.click();
     await expect(this.assignUserModal).toBeVisible();
-    await this.searchBox.fill(userName);
+    // The search field is a design-system MultiSelect: its closed trigger is a
+    // `combobox`-role div (not an input), so open it first, then type into the
+    // cmdk search box that mounts in the popover.
+    await this.searchBox.click();
+    await this.page.locator('[data-slot="command-input"]').fill(userName);
     // Keep matching on the email: this modal leaves `UserMultiSelect`'s
     // default `itemSubTitle`, so the option renders the username as its title
     // and the email beneath it, and the email is the unique half.

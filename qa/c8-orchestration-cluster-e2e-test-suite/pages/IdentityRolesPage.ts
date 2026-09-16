@@ -177,13 +177,17 @@ export class IdentityRolesPage {
       try {
         await this.assignUserButton.click({timeout: 60000});
         await expect(this.assignUserModal).toBeVisible();
-        await this.searchBox.fill(userName);
-        const option = this.searchBoxResult
-          .getByRole('option')
-          .filter({hasText: userName})
-          .first();
-        await expect(option).toBeVisible({timeout: 30000});
-        await option.click({timeout: 20000});
+        // The search field is a design-system MultiSelect: its closed trigger
+        // is a `combobox`-role div (not an input), so open it first, then type
+        // into the cmdk search box that mounts in the popover.
+        await this.searchBox.click();
+        await this.page.locator('[data-slot="command-input"]').fill(userName);
+        // The option label is "<name> — <email>" and does not echo the
+        // username, so instead of matching on label text, wait for the
+        // server-side search to narrow to the single matching row.
+        const options = this.searchBoxResult.getByRole('option');
+        await expect(options).toHaveCount(1, {timeout: 30000});
+        await options.first().click({timeout: 20000});
         await this.assignUserButtonModal.click();
         await expect(this.assignUserModal).toBeHidden();
         return;
