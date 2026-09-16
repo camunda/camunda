@@ -8,6 +8,12 @@ description: |
   up to two minutes per attempt before failing over to the working
   archive.ubuntu.com/security.ubuntu.com mirrors. See INC-6639 / #58992.
 
+  Does not help when a repository serves a corrupt index (INC-7943) --
+  retries re-fetch the same bad data. Callers handle that with
+  `apt-get update || true`, letting the install be the gate. Do not disable
+  /etc/apt/sources.list.d here to achieve it: on 24.04 the Ubuntu archives
+  live in that directory too, so it can leave apt with no sources at all.
+
 inputs: {}
 
 runs:
