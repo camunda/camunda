@@ -25,8 +25,10 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
 import java.util.ArrayList;
+import java.util.List;
 
-public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> {
+public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter>
+    implements OrFilterTransformer<GroupFilter> {
   public GroupFilterTransformer(final IndexDescriptor indexDescriptor) {
     super(indexDescriptor);
   }
@@ -40,14 +42,13 @@ public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> 
       queries.add(createMultipleMemberTypeQuery(filter));
     }
 
-    if (filter.orFilters() != null && !filter.orFilters().isEmpty()) {
-      queries.add(or(filter.orFilters().stream().map(f -> and(toSearchQueryFields(f))).toList()));
-    }
+    toOrClause(filter).ifPresent(queries::add);
 
     return and(queries);
   }
 
-  private ArrayList<SearchQuery> toSearchQueryFields(final GroupFilter filter) {
+  @Override
+  public List<SearchQuery> toSearchQueryFields(final GroupFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
     if (filter.groupIdOperations() != null && !filter.groupIdOperations().isEmpty()) {
       queries.addAll(stringOperations(GROUP_ID, filter.groupIdOperations()));
