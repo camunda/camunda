@@ -84,8 +84,7 @@ public class ConfigValidatorTest {
     // when - then
     assertThatCode(() -> ConfigValidator.validate(config))
         .hasMessageContaining(
-            "CamundaExporter index.prefix must not contain invalid characters [+] when "
-                + "connect.type is opensearch")
+            "CamundaExporter index.prefix must not contain invalid characters [+]")
         .isInstanceOf(ExporterException.class);
   }
 
