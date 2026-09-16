@@ -10,6 +10,13 @@ inputs:
     description: Additional CLI arguments which will be passed to the maven install command as is, e.g. "-am -pl util/"
     default: ""
     required: false
+  retry-max-attempts:
+    description: Attempts for the mvnw install; 1 means no retry. Opt in only from a job whose timeout-minutes affords a second full build.
+    default: "1"
+    required: false
+  retry-timeout-minutes:
+    description: Per-attempt timeout, required when retry-max-attempts > 1. No default, as the cap must fit the calling job's timeout-minutes.
+    required: false
 
 outputs:
   distball:
@@ -19,11 +26,36 @@ outputs:
 runs:
   using: composite
   steps:
+    # Fail here so the error names our input, not nick-fields/retry's timeout_minutes.
+    - name: Validate retry inputs
+      if: ${{ fromJSON(inputs.retry-max-attempts || '1') > 1 && inputs.retry-timeout-minutes == '' }}
+      shell: bash
+      run: |
+        echo "::error::build-zeebe: retry-max-attempts > 1 requires retry-timeout-minutes -- a per-attempt cap leaving room for the rest of the job under its timeout-minutes."
+        exit 1
+
+    # No per-step timeout, so non-opted callers keep their exact build budget.
     - name: Package Zeebe
+      if: ${{ fromJSON(inputs.retry-max-attempts || '1') <= 1 }}
+      shell: bash
+      run: ./mvnw -B -T1C -DskipTests -DskipChecks install ${{ inputs.maven-extra-args }}
+
+    # retry_on: any, not error -- `error` would skip a timeout_minutes kill.
+    - name: Package Zeebe (with retry)
+      if: ${{ fromJSON(inputs.retry-max-attempts || '1') > 1 }}
+      uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+      with:
+        shell: bash
+        max_attempts: ${{ inputs.retry-max-attempts }}
+        retry_on: any
+        retry_wait_seconds: 15
+        timeout_minutes: ${{ inputs.retry-timeout-minutes }}
+        command: ./mvnw -B -T1C -DskipTests -DskipChecks install ${{ inputs.maven-extra-args }}
+
+    - name: Determine Zeebe distball path
       shell: bash
       id: build-java
       run: |
-        ./mvnw -B -T1C -DskipTests -DskipChecks install ${{ inputs.maven-extra-args }}
         export BUILD_DIR=$(./mvnw -pl dist/ help:evaluate -Dexpression=project.build.directory -q -DforceStdout)
         export ARTIFACT=$(./mvnw -pl dist/ help:evaluate -Dexpression=project.build.finalName -q -DforceStdout)
         echo "distball=${BUILD_DIR}/${ARTIFACT}.tar.gz" >> $GITHUB_OUTPUT
