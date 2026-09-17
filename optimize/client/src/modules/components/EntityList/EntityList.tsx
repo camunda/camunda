@@ -167,7 +167,28 @@ export default function EntityList({
   const hasLessThanThreeActions = rows.every(({actions}) => !actions || actions.length <= 2);
   // A row without actions is protected (e.g. the last manager) and must stay non-selectable.
   const selectableRowIds = new Set(rows.filter((row) => row.actions?.length).map((row) => row.id));
+  const allSelectableSelected =
+    selectableRowIds.size > 0 && [...selectableRowIds].every((id) => selection[id]);
   const selectedRows = rows.filter((row) => selection[row.id]);
+
+  // The DS table exposes no per-row selection predicate, so protected rows are dropped here rather
+  // than at the table. Its header "select all" therefore never reaches an all-selected state and can
+  // only ever add rows (never emit the empty set that clears them). Read a select-all that re-adds a
+  // protected row while every selectable row is already selected as the toggle-off it can't express.
+  const changeSelection = (next: Record<string, boolean>) => {
+    const readdsProtectedRow = Object.keys(next).some(
+      (id) => next[id] && !selectableRowIds.has(id)
+    );
+    if (readdsProtectedRow && allSelectableSelected) {
+      setSelection({});
+      return;
+    }
+    setSelection(
+      Object.fromEntries(
+        Object.entries(next).filter(([id, selected]) => selected && selectableRowIds.has(id))
+      )
+    );
+  };
 
   return (
     <div className="EntityList c4-ui">
@@ -203,19 +224,7 @@ export default function EntityList({
         inlineActionsThreshold={hasLessThanThreeActions ? 2 : 0}
         // Owned here rather than by `batchActions`, so callers' bulk action elements keep working.
         rowSelection={
-          bulkActions
-            ? {
-                selectedRowIds: selection,
-                onSelectedRowsChange: (next) =>
-                  setSelection(
-                    Object.fromEntries(
-                      Object.entries(next).filter(
-                        ([id, selected]) => selected && selectableRowIds.has(id)
-                      )
-                    )
-                  ),
-              }
-            : false
+          bulkActions ? {selectedRowIds: selection, onSelectedRowsChange: changeSelection} : false
         }
         sorting={{
           manual: true,
