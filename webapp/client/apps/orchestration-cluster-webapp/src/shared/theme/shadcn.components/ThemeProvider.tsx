@@ -9,6 +9,8 @@
 import {C4Provider, Toaster, useTheme} from '@camunda/design-system';
 import '@camunda/design-system/styles.css';
 import {observer} from 'mobx-react-lite';
+import {useTranslation} from 'react-i18next';
+import {getC4Dictionary, getC4Locale} from '#/shared/i18n/shadcn.components/c4-dictionaries';
 import {themeStore} from '#/shared/theme/theme';
 
 type Props = {
@@ -17,9 +19,11 @@ type Props = {
 
 const ThemeProvider: React.FC<Props> = observer(({children}) => {
 	const {resolvedTheme} = useTheme(themeStore.selectedTheme);
+	const {i18n} = useTranslation();
+	const locale = getC4Locale(i18n.resolvedLanguage);
 
 	return (
-		<C4Provider theme={resolvedTheme}>
+		<C4Provider theme={resolvedTheme} dictionary={getC4Dictionary(locale)} locale={locale}>
 			<Toaster position="top-right" />
 			{children}
 		</C4Provider>
