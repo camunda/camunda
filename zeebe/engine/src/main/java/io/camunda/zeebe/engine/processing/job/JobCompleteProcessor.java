@@ -237,7 +237,10 @@ public final class JobCompleteProcessor
     if (jobBelongsToAgent) {
       commandWriter.appendNewCommand(
           AgentHistoryIntent.COMMIT,
-          new AgentHistoryRecord().setJobKey(command.getKey()).setJobLease(job.getLeaseToken()));
+          new AgentHistoryRecord()
+              .setJobKey(command.getKey())
+              .setJobLease(job.getLeaseToken())
+              .setProcessInstanceKey(job.getProcessInstanceKey()));
     }
 
     jobMetrics.countJobEvent(JobAction.COMPLETED, job.getJobKind(), job.getType());

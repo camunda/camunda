@@ -170,7 +170,11 @@ public class ProcessInstanceMigrationUserTaskBehavior {
       // user-task job (never agentic), so this is a no-op; kept to future-proof job-worker user
       // tasks that carry an associated agent instance.
       commandWriter.appendNewCommand(
-          AgentHistoryIntent.DISCARD, new AgentHistoryRecord().setJobKey(jobKey).ignoreLease());
+          AgentHistoryIntent.DISCARD,
+          new AgentHistoryRecord()
+              .setJobKey(jobKey)
+              .ignoreLease()
+              .setProcessInstanceKey(job.getProcessInstanceKey()));
     }
   }
 
