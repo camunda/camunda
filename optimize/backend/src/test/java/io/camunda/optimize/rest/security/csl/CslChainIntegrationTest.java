@@ -32,6 +32,7 @@ import io.camunda.optimize.service.security.SessionService;
 import io.camunda.optimize.service.security.UserIdMigrationService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
+import io.camunda.security.api.model.CamundaAuthentication;
 import jakarta.servlet.Filter;
 import jakarta.servlet.http.Cookie;
 import java.net.InetSocketAddress;
@@ -41,7 +42,9 @@ import java.security.interfaces.RSAPublicKey;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -54,7 +57,17 @@ import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextImpl;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizedClientRepository;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
+import org.springframework.security.oauth2.core.OAuth2AccessToken.TokenType;
+import org.springframework.security.oauth2.core.oidc.OidcIdToken;
+import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.AbstractSecurityWebApplicationInitializer;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
@@ -62,6 +75,8 @@ import org.springframework.session.MapSession;
 import org.springframework.session.MapSessionRepository;
 import org.springframework.session.Session;
 import org.springframework.session.web.http.SessionRepositoryFilter;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
  * Chain-level integration tests for Optimize's CSL adoption (ADR-0038), for both CCSM and CCSaaS
@@ -93,6 +108,12 @@ class CslChainIntegrationTest {
   private static final Map<String, Session> SESSION_STORE = new ConcurrentHashMap<>();
   private static final MapSessionRepository SESSION_REPO = new MapSessionRepository(SESSION_STORE);
   private static JwksTestServer server;
+
+  /** Stands in for an edition policy that grants, respectively denies, access to Optimize. */
+  private static final OptimizeComponentAccessPolicy GRANT = new FixedPolicy(null);
+
+  private static final OptimizeComponentAccessPolicy DENY =
+      new FixedPolicy("user has no Optimize permission");
 
   @BeforeAll
   static void startServer() throws Exception {
@@ -242,6 +263,50 @@ class CslChainIntegrationTest {
   @Test
   void shouldExemptExternalPathFromCsrfForCcsaas() {
     assertExternalPathExemptFromCsrf(ccsaasRunner());
+  }
+
+  // -------------------------------------------------------------------------
+  // Component access
+  // -------------------------------------------------------------------------
+
+  @Test
+  void shouldDenyWebappNavigationWithoutComponentAccessForCcsm() {
+    assertNavigationDeniedWithoutComponentAccess(componentAccessRunner(ccsmRunner(), DENY));
+  }
+
+  @Test
+  void shouldDenySessionApiCallWithoutComponentAccessForCcsm() {
+    assertSessionApiCallDeniedWithoutComponentAccess(componentAccessRunner(ccsmRunner(), DENY));
+  }
+
+  @Test
+  void shouldServeSessionWithComponentAccessForCcsm() {
+    assertSessionServedWithComponentAccess(componentAccessRunner(ccsmRunner(), GRANT));
+  }
+
+  @Test
+  void shouldServeBearerCallWithoutTheComponentCheckForCcsm() throws Exception {
+    assertBearerCallUnaffectedByComponentCheck(componentAccessRunner(ccsmRunner(), DENY));
+  }
+
+  @Test
+  void shouldDenyWebappNavigationWithoutComponentAccessForCcsaas() {
+    assertNavigationDeniedWithoutComponentAccess(componentAccessRunner(ccsaasRunner(), DENY));
+  }
+
+  @Test
+  void shouldDenySessionApiCallWithoutComponentAccessForCcsaas() {
+    assertSessionApiCallDeniedWithoutComponentAccess(componentAccessRunner(ccsaasRunner(), DENY));
+  }
+
+  @Test
+  void shouldServeSessionWithComponentAccessForCcsaas() {
+    assertSessionServedWithComponentAccess(componentAccessRunner(ccsaasRunner(), GRANT));
+  }
+
+  @Test
+  void shouldServeBearerCallWithoutTheComponentCheckForCcsaas() throws Exception {
+    assertBearerCallUnaffectedByComponentCheck(componentAccessRunner(ccsaasRunner(), DENY));
   }
 
   // -------------------------------------------------------------------------
@@ -550,6 +615,116 @@ class CslChainIntegrationTest {
         });
   }
 
+  private void assertNavigationDeniedWithoutComponentAccess(
+      final WebApplicationContextRunner runner) {
+    runner.run(
+        ctx -> {
+          // given
+          final MockHttpServletRequest request = new MockHttpServletRequest("GET", "/");
+          request.setCookies(oauth2SessionCookie(ctx));
+          final MockHttpServletResponse response = new MockHttpServletResponse();
+          final MockFilterChain downstream = new MockFilterChain();
+
+          // when
+          doFilterWithRequestContext(ctx, request, response, downstream);
+
+          // then
+          // 403 is what OptimizeErrorController renders as the "no authorization to access
+          // Optimize" page, instead of CSL's default redirect to a /forbidden route Optimize
+          // does not serve.
+          assertThat(response.getStatus())
+              .as("navigation without component access, body: %s", response.getContentAsString())
+              .isEqualTo(403);
+          assertThat(downstream.getRequest()).isNull();
+        });
+  }
+
+  private void assertSessionApiCallDeniedWithoutComponentAccess(
+      final WebApplicationContextRunner runner) {
+    runner.run(
+        ctx -> {
+          // given
+          final MockHttpServletRequest request =
+              new MockHttpServletRequest("GET", "/api/report/some-id");
+          request.setCookies(oauth2SessionCookie(ctx));
+          final MockHttpServletResponse response = new MockHttpServletResponse();
+          final MockFilterChain downstream = new MockFilterChain();
+
+          // when
+          doFilterWithRequestContext(ctx, request, response, downstream);
+
+          // then
+          // The single page app authenticates its own calls with the session cookie, and those
+          // run on the API chain, where CSL does not install the filter by itself.
+          assertThat(response.getStatus())
+              .as(
+                  "session API call without component access, body: %s",
+                  response.getContentAsString())
+              .isEqualTo(401);
+          assertThat(downstream.getRequest()).isNull();
+        });
+  }
+
+  private void assertSessionServedWithComponentAccess(final WebApplicationContextRunner runner) {
+    runner.run(
+        ctx -> {
+          // given
+          final Cookie sessionCookie = oauth2SessionCookie(ctx);
+          final MockHttpServletRequest navigation = new MockHttpServletRequest("GET", "/");
+          navigation.setCookies(sessionCookie);
+          final MockHttpServletResponse navigationResponse = new MockHttpServletResponse();
+          final MockFilterChain navigationDownstream = new MockFilterChain();
+          final MockHttpServletRequest apiCall =
+              new MockHttpServletRequest("GET", "/api/report/some-id");
+          apiCall.setCookies(sessionCookie);
+          final MockHttpServletResponse apiResponse = new MockHttpServletResponse();
+          final MockFilterChain apiDownstream = new MockFilterChain();
+
+          // when
+          doFilterWithRequestContext(ctx, navigation, navigationResponse, navigationDownstream);
+          doFilterWithRequestContext(ctx, apiCall, apiResponse, apiDownstream);
+
+          // then
+          assertThat(navigationResponse.getStatus())
+              .as(
+                  "navigation with component access, body: %s",
+                  navigationResponse.getContentAsString())
+              .isEqualTo(200);
+          assertThat(navigationDownstream.getRequest()).isNotNull();
+          assertThat(apiResponse.getStatus())
+              .as(
+                  "session API call with component access, body: %s",
+                  apiResponse.getContentAsString())
+              .isEqualTo(200);
+          assertThat(apiDownstream.getRequest()).isNotNull();
+        });
+  }
+
+  private void assertBearerCallUnaffectedByComponentCheck(final WebApplicationContextRunner runner)
+      throws Exception {
+    // The component check gates login sessions. A bearer caller stays authorized by the audience
+    // check of the API chain, as it is without the check.
+    final String token = signBearerToken();
+    runner.run(
+        ctx -> {
+          // given
+          final MockHttpServletRequest request =
+              new MockHttpServletRequest("GET", "/api/report/some-id");
+          request.addHeader("Authorization", "Bearer " + token);
+          final MockHttpServletResponse response = new MockHttpServletResponse();
+          final MockFilterChain downstream = new MockFilterChain();
+
+          // when
+          doFilterWithRequestContext(ctx, request, response, downstream);
+
+          // then
+          assertThat(response.getStatus())
+              .as("bearer call with a denying policy, body: %s", response.getContentAsString())
+              .isEqualTo(200);
+          assertThat(downstream.getRequest()).isNotNull();
+        });
+  }
+
   // -------------------------------------------------------------------------
   // Runner builders
   // -------------------------------------------------------------------------
@@ -617,6 +792,18 @@ class CslChainIntegrationTest {
     return configurationService;
   }
 
+  /**
+   * Adds Optimize's component-access ports on top of an edition runner, with a fixed policy in
+   * place of the edition's own one. Both editions share every enforcement point, so the policy is
+   * the only part that differs, and it is covered by its own unit tests.
+   */
+  private WebApplicationContextRunner componentAccessRunner(
+      final WebApplicationContextRunner runner, final OptimizeComponentAccessPolicy policy) {
+    return runner
+        .withBean(OptimizeComponentAccessPolicy.class, () -> policy)
+        .withUserConfiguration(OptimizeComponentAccessConfiguration.class);
+  }
+
   // -------------------------------------------------------------------------
   // Helpers
   // -------------------------------------------------------------------------
@@ -651,6 +838,62 @@ class CslChainIntegrationTest {
         "SESSION", Base64.getEncoder().encodeToString("unknown-session-id".getBytes(UTF_8)));
   }
 
+  /**
+   * A {@code SESSION} cookie for an OIDC login session. {@link OptimizeWebAppProviderAdapter}
+   * claims the Optimize component only for such a session, so the component check needs a real
+   * {@link OAuth2AuthenticationToken}, unlike the {@link TestingAuthenticationToken} of {@link
+   * #authenticatedSessionCookie()}. The session also carries an authorized client with an unexpired
+   * access token, because CSL's {@code OAuth2RefreshTokenFilter} logs a session out when it finds
+   * none.
+   */
+  private static Cookie oauth2SessionCookie(final ApplicationContext ctx) {
+    final ClientRegistration registration =
+        ctx.getBean(InMemoryClientRegistrationRepository.class).iterator().next();
+    final Instant now = Instant.now();
+    final var idToken =
+        new OidcIdToken(
+            "id-token", now, now.plusSeconds(300), Map.of("sub", "alice", "iss", "http://idp"));
+    final var user =
+        new DefaultOidcUser(AuthorityUtils.createAuthorityList("ROLE_USER"), idToken, "sub");
+    final var authentication =
+        new OAuth2AuthenticationToken(
+            user, user.getAuthorities(), registration.getRegistrationId());
+    final var authorizedClient =
+        new OAuth2AuthorizedClient(
+            registration,
+            user.getName(),
+            new OAuth2AccessToken(TokenType.BEARER, "access-token", now, now.plusSeconds(300)));
+
+    final MapSession session = SESSION_REPO.createSession();
+    session.setAttribute(
+        HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+        new SecurityContextImpl(authentication));
+    session.setAttribute(
+        HttpSessionOAuth2AuthorizedClientRepository.class.getName() + ".AUTHORIZED_CLIENTS",
+        new HashMap<>(Map.of(registration.getRegistrationId(), authorizedClient)));
+    SESSION_REPO.save(session);
+    return new Cookie(
+        "SESSION", Base64.getEncoder().encodeToString(session.getId().getBytes(UTF_8)));
+  }
+
+  /**
+   * Runs the chain with the request bound to {@link RequestContextHolder}. CSL's authentication
+   * converter injects the current request, which production binds outside the security chain.
+   */
+  private static void doFilterWithRequestContext(
+      final ApplicationContext ctx,
+      final MockHttpServletRequest request,
+      final MockHttpServletResponse response,
+      final MockFilterChain downstream)
+      throws Exception {
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request, response));
+    try {
+      resolveSecurityFilter(ctx).doFilter(request, response, downstream);
+    } finally {
+      RequestContextHolder.resetRequestAttributes();
+    }
+  }
+
   private static String signBearerToken() throws Exception {
     final var header = new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(server.kid()).build();
     final var claims =
@@ -663,6 +906,20 @@ class CslChainIntegrationTest {
     final var jwt = new SignedJWT(header, claims);
     jwt.sign(server.signer());
     return jwt.serialize();
+  }
+
+  private record FixedPolicy(String denialReason) implements OptimizeComponentAccessPolicy {
+
+    @Override
+    public Optional<String> loginDenialReason(
+        final String accessTokenValue, final Map<String, Object> claims) {
+      return Optional.ofNullable(denialReason);
+    }
+
+    @Override
+    public Optional<String> sessionDenialReason(final CamundaAuthentication authentication) {
+      return Optional.ofNullable(denialReason);
+    }
   }
 
   /** Mirrors the {@code JwksTestServer} pattern from {@code PhysicalTenantApiChainIsolationIT}. */

@@ -59,7 +59,7 @@ public final class OptimizeCloudOrganizationValidator implements OAuth2TokenVali
       return OAuth2TokenValidatorResult.success();
     }
 
-    if (claim instanceof final Collection<?> organizations && grantsAllowedRole(organizations)) {
+    if (grantsAllowedRole(claim, organizationId, allowedRoles)) {
       return OAuth2TokenValidatorResult.success();
     }
 
@@ -74,7 +74,16 @@ public final class OptimizeCloudOrganizationValidator implements OAuth2TokenVali
             null));
   }
 
-  private boolean grantsAllowedRole(final Collection<?> organizations) {
+  /**
+   * Whether the {@link #ORGANIZATIONS_CLAIM} value grants {@code organizationId} one of {@code
+   * allowedRoles}. Shared with {@link OptimizeCloudComponentAccessPolicy}, which applies the same
+   * rule to the claims of a login session instead of to a token.
+   */
+  static boolean grantsAllowedRole(
+      final Object claim, final String organizationId, final List<String> allowedRoles) {
+    if (!(claim instanceof final Collection<?> organizations)) {
+      return false;
+    }
     return organizations.stream()
         .filter(Map.class::isInstance)
         .map(org -> (Map<?, ?>) org)
