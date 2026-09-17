@@ -15,6 +15,7 @@ import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
+import io.camunda.zeebe.backup.common.CheckpointIds;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.time.Instant;
@@ -96,7 +97,10 @@ final class ManifestMetadata {
       return Optional.empty();
     }
 
-    final var id = parseIdentifierFromPath(blob.getName(), basePath, manifestBlobName);
+    final var id = parseIdentifier(blob.getName(), basePath, manifestBlobName);
+    if (id.isEmpty()) {
+      return Optional.empty();
+    }
     final var statusCode = BackupStatusCode.valueOf(metadata.get(STATUS_CODE));
     final var failureReason = Optional.ofNullable(metadata.get(FAILURE_REASON));
     final var created = Optional.ofNullable(metadata.get(CREATED_AT)).map(Instant::parse);
@@ -104,10 +108,15 @@ final class ManifestMetadata {
     final var descriptor = parseDescriptor(metadata);
 
     return Optional.of(
-        new BackupStatusImpl(id, descriptor, statusCode, failureReason, created, modified));
+        new BackupStatusImpl(id.get(), descriptor, statusCode, failureReason, created, modified));
   }
 
-  private static BackupIdentifier parseIdentifierFromPath(
+  /**
+   * Parses the backup identifier encoded in the name of a manifest blob. Empty if the checkpoint id
+   * segment is a digit run too long to fit a {@code long} — a foreign or corrupted blob rather than
+   * one this store wrote, left for the caller to skip instead of failing the whole listing.
+   */
+  static Optional<BackupIdentifier> parseIdentifier(
       final String blobName, final String basePath, final String manifestBlobName) {
     // Path format: {basePath}manifests/{partitionId}/{checkpointId}/{nodeId}/manifest.json
     final var manifestsPrefix = basePath + "manifests/";
@@ -115,8 +124,13 @@ final class ManifestMetadata {
         blobName.substring(manifestsPrefix.length(), blobName.length() - manifestBlobName.length());
     // relativePath is now: {partitionId}/{checkpointId}/{nodeId}/
     final var parts = relativePath.split("/");
-    return new BackupIdentifierImpl(
-        Integer.parseInt(parts[2]), Integer.parseInt(parts[0]), Long.parseLong(parts[1]));
+    final var checkpointId = CheckpointIds.tryParse(parts[1]);
+    if (checkpointId.isEmpty()) {
+      return Optional.empty();
+    }
+    return Optional.of(
+        new BackupIdentifierImpl(
+            Integer.parseInt(parts[2]), Integer.parseInt(parts[0]), checkpointId.getAsLong()));
   }
 
   private static Optional<BackupDescriptor> parseDescriptor(final Map<String, String> metadata) {
