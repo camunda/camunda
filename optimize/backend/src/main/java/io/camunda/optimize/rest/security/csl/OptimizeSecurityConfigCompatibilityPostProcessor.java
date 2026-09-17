@@ -118,7 +118,7 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     applyAlwaysOnDefaults(derived);
     bridgeIdentityOidc(env, derived);
     bridgeAuth0Cloud(env, derived);
-    bridgePublicApiJwt(env, derived);
+    bridgePublicApiJwkSetUri(env, derived);
     bridgeAudiences(env, derived);
     bridgeResponseHeaders(env, derived);
     warnObsoleteKeys(env);
@@ -310,13 +310,12 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     // so deriving it fails every login with 'missing_user_name_attribute'. Nothing consumes it:
     // CSL resolves its claims from the ID token, and UserInfo augmentation is off by default and
     // keys on an issuer-uri this bridge deliberately never derives.
-    // The public API's own JWK set URI wins: it belongs to the IdP that signs the API tokens, which
-    // need not be the Identity instance behind issuerBackendUrl.
-    final String publicApiJwks =
-        env.getProperty("SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI");
-    derived.putIfAbsent(
-        OIDC_PREFIX + "jwk-set-uri",
-        isBlank(publicApiJwks) ? back + "/protocol/openid-connect/certs" : publicApiJwks);
+    // Identity's own key set, never the public API's ('api.jwtSetUri'). This URI validates the
+    // login token, which Identity signs; the public API's IdP need not be the Identity instance
+    // behind issuerBackendUrl, so substituting its key set here left nothing able to verify a
+    // login token and failed every login (camunda/camunda#63114). The public API's key set is
+    // added alongside this one by bridgePublicApiJwkSetUri instead.
+    derived.putIfAbsent(OIDC_PREFIX + "jwk-set-uri", back + "/protocol/openid-connect/certs");
   }
 
   private void warnEndpointsDerived(final String frontSource, final String backSource) {
@@ -519,14 +518,30 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     }
   }
 
-  // Public API JWT (api.jwtSetUri / api.audience).
-  private void bridgePublicApiJwt(
+  // 'api.jwtSetUri' is the key set that signs public API tokens. CSL resolves a provider's keys
+  // from one 'jwk-set-uri' plus any 'additional-jwk-set-uris', so this is added to the latter:
+  // mapping it onto the former substituted it for Identity's own key set, which then could not
+  // verify a login token at all (camunda/camunda#63114).
+  //
+  // The key set therefore ends up accepted across the API surface rather than on the public API
+  // paths alone. Per-path key sets need a per-path chain, which camunda/camunda#62798 removed
+  // deliberately, and this matches the audience set already being uniform across that surface.
+  //
+  // Read from the property spelling as well as the environment variable, because Spring has loaded
+  // the operator's own configuration file by the time this runs (this post-processor is ordered
+  // LOWEST_PRECEDENCE), and yaml is a documented source for the key. Optimize's built-in
+  // service-config.yaml is not a Spring config file, so its default never appears here and only a
+  // value the operator actually wrote is bridged.
+  //
+  // Deprecated like every other bridged key: the bridge is what makes it work at all under CSL,
+  // and it goes away with the legacy keys in 8.11, so the operator needs the warning naming the
+  // replacement to set instead.
+  private void bridgePublicApiJwkSetUri(
       final ConfigurableEnvironment env, final Map<String, Object> derived) {
-    mapIfPresent(
-        env,
-        derived,
-        "SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI",
-        OIDC_PREFIX + "jwk-set-uri");
+    final String environmentVariable = "SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI";
+    final String legacyKey =
+        isBlank(env.getProperty(environmentVariable)) ? "api.jwtSetUri" : environmentVariable;
+    mapIfPresent(env, derived, legacyKey, OIDC_PREFIX + "additional-jwk-set-uris");
   }
 
   // CSL has one Set-valued audiences property, so we collect every legacy audience source that
@@ -551,6 +566,13 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     } else {
       addAudience(env, audiences, "CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE");
       addAudience(env, audiences, "CAMUNDA_OPTIMIZE_API_AUDIENCE");
+      // 'api.audience' is the same setting written in Optimize's own configuration file, which
+      // Spring has loaded by the time this runs. Reading only the environment variable dropped a
+      // yaml-configured public API audience (camunda/camunda#63114). Optimize's built-in
+      // service-config.yaml is not a Spring config file, so its 'optimize' default never reaches
+      // here, and an operator who set neither keeps an unconstrained audience set rather than
+      // being narrowed to the default.
+      addAudience(env, audiences, "api.audience");
       // camunda.identity.audience: the login/session-token audience the official camunda-platform
       // Helm chart's Optimize ConfigMap renders in place of CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE.
       // Only bridged when that legacy env var is absent: application-ccsm.yaml mirrors it into
