@@ -235,8 +235,7 @@ public final class JobCompleteProcessor
         command.getKey(), JobIntent.COMPLETED, job, command);
 
     if (jobBelongsToAgent) {
-      commandWriter.appendFollowUpCommand(
-          command.getKey(),
+      commandWriter.appendNewCommand(
           AgentHistoryIntent.COMMIT,
           new AgentHistoryRecord().setJobKey(command.getKey()).setJobLease(job.getLeaseToken()));
     }
