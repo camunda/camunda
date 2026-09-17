@@ -45,6 +45,42 @@ Common options:
   `NaN`.
 - `--output <path>`: write the report to a file.
 
+### Time windows and sampling
+
+Three options control different time ranges when a query summarizes values across the
+report window:
+
+```text
+Report window: 30 minutes                         --duration-seconds
+|
++-- evaluate every 1 minute                       --sample-step
+|   +-- at 10:01, calculate rate over 09:56-10:01 --rate-interval
+|   +-- at 10:02, calculate rate over 09:57-10:02
+|   `-- ...
+|
+`-- summarize approximately 31 values with p50, p99, or an average
+```
+
+- `--duration-seconds` defines the complete period summarized by the report.
+- `--sample-step` controls how often a subquery evaluates an expression within that
+  period. A smaller step preserves more temporal detail but requires more Prometheus
+  computation.
+- `--rate-interval` is the lookback used by `rate()` to calculate one value from a
+  counter. It is not the sampling frequency. A longer interval produces a smoother
+  rate, while a shorter interval reacts faster but must still contain enough Prometheus
+  scrape samples.
+
+Raw gauges can be summarized directly from their Prometheus scrape samples. Calculated
+gauge expressions, such as partition backlog, use `--sample-step` to evaluate the
+expression repeatedly. Counter queries either calculate one rate over the complete
+report window or, for time summaries, calculate rates over `--rate-interval` and use
+`--sample-step` to evaluate them across the report window.
+
+The rate interval and sample step may be equal. This produces mostly non-overlapping
+rate observations and reduces query cost, but a long interval then produces fewer
+observations for p50 or p99. The defaults calculate a five-minute moving rate every
+minute, combining a stable rate with finer temporal resolution.
+
 ### Examples
 
 Port-forwarded Prometheus, JSON:
@@ -138,11 +174,13 @@ Different column types use that window differently:
 - Resource gauges, such as pod counts, CPU limits, memory limits, disk capacity, disk
   usage, heap, and RSS, use a max over the window so a restart or deleted namespace does
   not hide the value.
-- CPU usage p50 and p99 use `rate()` samples from `--rate-interval`, then summarize
-  those samples over the window with `quantile_over_time`.
+- CPU usage p50 and p99 calculate rates over `--rate-interval`, evaluate them every
+  `--sample-step`, and summarize those values with `quantile_over_time`.
 - Average-rate columns, such as throughput, CPU throttling, write IOPS, backpressure,
-  and backlog, use `rate()` or sampled values at `--rate-interval`, then average those
-  samples over the window.
+  calculate each rate over `--rate-interval` and average evaluations taken every
+  `--sample-step`.
+- Backlog columns do not use `--rate-interval`. They evaluate derived gauge differences
+  every `--sample-step` and average those values across the report window.
 - Backpressure and backlog first pick the highest partition value at each sample, then
   average those sampled maxima over the window.
 - Columns computed from seconds-denominated histograms but labeled in milliseconds,
@@ -171,9 +209,9 @@ Variables are substituted in the raw query file before YAML decoding:
 
 - `$NAMESPACE`: exact load-test namespace, for example `c8-ck-baseline-20260814`.
 - `$DURATION_S`: report window duration with an `s` suffix, for example `600s`.
-- `$RATE_INTERVAL`: short `--rate-interval` used for dashboard-style rate samples.
-- `$SAMPLE_STEP`: `--sample-step` subquery resolution used for window summaries, for
-  example in `quantile_over_time` or `avg_over_time`.
+- `$RATE_INTERVAL`: `--rate-interval` lookback used when calculating counter rates.
+- `$SAMPLE_STEP`: `--sample-step` evaluation resolution used by subqueries, for example
+  in `quantile_over_time` or `avg_over_time`.
 
 ## Development
 
