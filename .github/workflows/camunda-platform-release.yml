@@ -758,6 +758,12 @@ jobs:
             gh release download --repo camunda/zeebe-changelog --pattern '*_Linux_i386.tar.gz' --clobber
             tar -xzvf zeebe-changelog_*
             chmod +x zcl
+      - name: Identify previous release version
+        id: prev_version
+        uses: camunda/infra-global-github-actions/previous-version@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # previous-version-1.0.0
+        with:
+          version: "${{ inputs.releaseVersion }}"
+          verbose: 'false'
       - name: Generate Changelog for patch release
         id: gen-changelog
         run: |
@@ -781,12 +787,9 @@ jobs:
             # ZCL_TARGET_REV should be replaced with the tag name for the version you are releasing, and
             # ZCL_FROM_REV should be replaced as the tag name for the previous version, based on the release type:
             #
-            # PATCH: the tag for the previous patch version on the same minor branch. e.g. if you're releasing 1.2.3, then ZCL_FROM_REV=1.2.2.
-
-            # To find the previous patch version we extract the patch version and subtract by one
-            patchVersion=$(echo ${{ inputs.releaseVersion }} | sed 's/8\.[1-9][0-9]*\.//')
-            majorMinor=$(echo ${{ inputs.releaseVersion }} | sed 's/\.[1-9][0-9]*$//')
-            ZCL_FROM_REV="$majorMinor".$(( patchVersion - 1 ))
+            # PATCH: the previous existing release tag on the same minor branch. Resolved from git
+            # tags (not patch minus one) so a skipped patch version does not break the range.
+            ZCL_FROM_REV="${{ steps.prev_version.outputs.previous_version }}"
             ZCL_TARGET_REV="${{ inputs.releaseVersion }}"
 
             # The following command will add labels to the issues on GitHub.
