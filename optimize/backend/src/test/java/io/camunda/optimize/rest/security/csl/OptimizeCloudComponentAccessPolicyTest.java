@@ -32,13 +32,15 @@ class OptimizeCloudComponentAccessPolicyTest {
   @Mock private CloudAuthConfiguration cloudAuthConfiguration;
 
   @Test
-  void shouldAllowLoginForConfiguredOrganizationWithAllowedRole() {
+  void shouldAllowSessionForConfiguredOrganizationWithAllowedRole() {
     // given
     final OptimizeCloudComponentAccessPolicy policy = policyFor("org-1");
+    final CamundaAuthentication authentication =
+        CamundaAuthentication.of(
+            builder -> builder.user("kermit").claims(orgClaims("org-1", "analyst")));
 
     // when
-    final Optional<String> reason =
-        policy.loginDenialReason("token", orgClaims("org-1", "analyst"));
+    final Optional<String> reason = policy.sessionDenialReason(authentication);
 
     // then
     assertThat(reason).isEmpty();
@@ -67,18 +69,6 @@ class OptimizeCloudComponentAccessPolicyTest {
 
     // when
     final Optional<String> reason = policy.sessionDenialReason(authentication);
-
-    // then
-    assertThat(reason).isPresent();
-  }
-
-  @Test
-  void shouldDenyLoginWithoutTheOrganizationsClaim() {
-    // given
-    final OptimizeCloudComponentAccessPolicy policy = policyFor("org-1");
-
-    // when
-    final Optional<String> reason = policy.loginDenialReason("token", Map.of());
 
     // then
     assertThat(reason).isPresent();

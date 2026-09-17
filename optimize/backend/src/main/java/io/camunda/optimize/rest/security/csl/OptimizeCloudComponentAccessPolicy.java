@@ -23,13 +23,13 @@ import org.springframework.stereotype.Component;
 /**
  * CCSaaS component access: the organizations claim must grant the configured organization one of
  * the roles that allow Optimize access. Same rule as {@link OptimizeCloudOrganizationValidator},
- * applied to the claims of a login instead of to a token, so both editions grant Optimize access
+ * applied to the claims of a session instead of to a token, so both editions grant Optimize access
  * through the same components.
  *
- * <p>Denies when the claim is missing, unlike the token validator. Only an interactive login and
- * its session reach this policy, and a SaaS user token always carries the claim, so an absent claim
- * means the caller cannot be shown to hold Optimize access. The validator has to stay lenient
- * because it also sees machine-to-machine tokens, which never carry the claim.
+ * <p>Denies when the claim is missing, unlike the token validator. Only a login session reaches
+ * this policy, and a SaaS user token always carries the claim, so an absent claim means the caller
+ * cannot be shown to hold Optimize access. The validator has to stay lenient because it also sees
+ * machine-to-machine tokens, which never carry the claim.
  */
 @Component
 @Conditional(CCSaaSCondition.class)
@@ -49,12 +49,6 @@ public class OptimizeCloudComponentAccessPolicy implements OptimizeComponentAcce
           "CCSaaS CSL mode requires a non-blank organizationId: Optimize access cannot be"
               + " enforced without it. Check the cloud auth configuration.");
     }
-  }
-
-  @Override
-  public Optional<String> loginDenialReason(
-      final String accessTokenValue, final Map<String, Object> claims) {
-    return denialReason(claims);
   }
 
   @Override

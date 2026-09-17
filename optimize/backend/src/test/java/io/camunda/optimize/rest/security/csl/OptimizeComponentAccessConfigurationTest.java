@@ -15,12 +15,10 @@ import io.camunda.security.core.port.out.AuthorizedComponentsPort;
 import io.camunda.security.spring.security.SecurityHeadersCustomizer;
 import io.camunda.security.spring.spi.WebAppAccessDeniedHandlerPort;
 import io.camunda.security.spring.spi.WebAppProviderPort;
-import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 
 class OptimizeComponentAccessConfigurationTest {
 
@@ -39,7 +37,6 @@ class OptimizeComponentAccessConfigurationTest {
         .run(
             context ->
                 assertThat(context)
-                    .hasSingleBean(OidcUserService.class)
                     .hasSingleBean(WebAppProviderPort.class)
                     .hasSingleBean(AuthorizationCheckPort.class)
                     .hasSingleBean(WebAppAccessDeniedHandlerPort.class)
@@ -92,12 +89,6 @@ class OptimizeComponentAccessConfigurationTest {
 
   private record StubPolicy(Optional<String> denialReason)
       implements OptimizeComponentAccessPolicy {
-
-    @Override
-    public Optional<String> loginDenialReason(
-        final String accessTokenValue, final Map<String, Object> claims) {
-      return denialReason;
-    }
 
     @Override
     public Optional<String> sessionDenialReason(final CamundaAuthentication authentication) {

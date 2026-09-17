@@ -945,12 +945,6 @@ class CslChainIntegrationTest {
   private record RecordingPolicy(Runnable probe) implements OptimizeComponentAccessPolicy {
 
     @Override
-    public Optional<String> loginDenialReason(
-        final String accessTokenValue, final Map<String, Object> claims) {
-      return Optional.empty();
-    }
-
-    @Override
     public Optional<String> sessionDenialReason(final CamundaAuthentication authentication) {
       probe.run();
       return Optional.empty();
@@ -958,12 +952,6 @@ class CslChainIntegrationTest {
   }
 
   private record FixedPolicy(String denialReason) implements OptimizeComponentAccessPolicy {
-
-    @Override
-    public Optional<String> loginDenialReason(
-        final String accessTokenValue, final Map<String, Object> claims) {
-      return Optional.ofNullable(denialReason);
-    }
 
     @Override
     public Optional<String> sessionDenialReason(final CamundaAuthentication authentication) {

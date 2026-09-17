@@ -36,8 +36,8 @@ import org.springframework.security.oauth2.jwt.Jwt;
  * tokens that carry either claim. Unlike OC, Optimize keeps the org role gate.
  *
  * <p>The login id_token is not gated here. {@link OptimizeCloudComponentAccessPolicy} applies the
- * org role rule to the login and to every session request, and denies a missing claim, so the rule
- * lives in one place for both editions.
+ * org role rule to every request of a session, and denies a missing claim, so the rule lives in one
+ * place for both editions.
  *
  * <p>The Auth0 {@code audience} authorize-request parameter and the clusterId-derived servlet
  * context path come from configuration, not code: the config compatibility bridge maps the legacy
