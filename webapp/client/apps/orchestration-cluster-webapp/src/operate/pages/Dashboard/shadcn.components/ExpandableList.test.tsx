@@ -124,6 +124,30 @@ describe('<ExpandableList />', () => {
 		await expect.element(screen.getByText('Version details for order process')).toBeVisible();
 	});
 
+	it('does not render an expand toggle for a row with no expandedContents entry', async () => {
+		const screen = await render(
+			<ExpandableList
+				isPending={false}
+				isError={false}
+				listTestId="list"
+				dataTestId="table"
+				header="Process name"
+				rows={[
+					{id: 'process-1', content: <span>Order process</span>},
+					{id: 'process-2', content: <span>Shipping process</span>},
+				]}
+				expandedContents={{
+					'process-1': <div>Version details for order process</div>,
+				}}
+				isFetchingNextPage={false}
+				isFetchingPreviousPage={false}
+				onScroll={noop}
+			/>,
+		);
+
+		expect(screen.getByRole('button', {name: 'Expand row'}).elements()).toHaveLength(1);
+	});
+
 	it('shows a loading indicator above the list while fetching the previous page', async () => {
 		const screen = await render(
 			<ExpandableList
