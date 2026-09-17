@@ -5,20 +5,19 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.descriptors.index;
+package io.camunda.webapps.schema.descriptors.template;
 
-import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
 
-public class PersistentWebSessionIndexDescriptor extends AbstractIndexDescriptor
+public class PersistentWebSessionTemplate extends AbstractTemplateDescriptor
     implements Prio4Backup {
 
   public static final String INDEX_NAME = "web-session";
   public static final String INDEX_VERSION = "8.8.0";
 
-  public PersistentWebSessionIndexDescriptor(
-      final String indexPrefix, final boolean isElasticsearch) {
+  public PersistentWebSessionTemplate(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
   }
 
