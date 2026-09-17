@@ -117,6 +117,10 @@ export default function EntityList({
     // Sorting is server-side, but TanStack only offers the control on a column with an accessor.
     accessorFn: (row: Row) => (idx === 0 ? row.name : row.meta?.[idx - 1]),
     enableSorting: isObjectHeader(header) && !!header.key && !!sorting,
+    // Honour the caller's first-click direction (e.g. `defaultOrder: 'desc'` on modified columns).
+    ...(isObjectHeader(header) && header.defaultOrder
+      ? {sortDescFirst: header.defaultOrder === 'desc'}
+      : {}),
     cell: ({row}) => {
       if (idx === 0) {
         return (
@@ -161,6 +165,8 @@ export default function EntityList({
   }));
 
   const hasLessThanThreeActions = rows.every(({actions}) => !actions || actions.length <= 2);
+  // A row without actions is protected (e.g. the last manager) and must stay non-selectable.
+  const selectableRowIds = new Set(rows.filter((row) => row.actions?.length).map((row) => row.id));
   const selectedRows = rows.filter((row) => selection[row.id]);
 
   return (
@@ -197,7 +203,19 @@ export default function EntityList({
         inlineActionsThreshold={hasLessThanThreeActions ? 2 : 0}
         // Owned here rather than by `batchActions`, so callers' bulk action elements keep working.
         rowSelection={
-          bulkActions ? {selectedRowIds: selection, onSelectedRowsChange: setSelection} : false
+          bulkActions
+            ? {
+                selectedRowIds: selection,
+                onSelectedRowsChange: (next) =>
+                  setSelection(
+                    Object.fromEntries(
+                      Object.entries(next).filter(
+                        ([id, selected]) => selected && selectableRowIds.has(id)
+                      )
+                    )
+                  ),
+              }
+            : false
         }
         sorting={{
           manual: true,

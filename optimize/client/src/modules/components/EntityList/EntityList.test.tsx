@@ -115,6 +115,22 @@ it('should only allow sorting on object headers once sorting is in use', () => {
   expect(getTable(node).prop('columns')[1]!.enableSorting).toBe(false);
 });
 
+it('should map defaultOrder to the sort-descending-first column option', () => {
+  const node = shallow(
+    <EntityList
+      {...props}
+      headers={[
+        {name: 'Name', key: 'name', defaultOrder: 'desc'},
+        {name: 'Meta 1', key: 'meta1'},
+      ]}
+      sorting={{key: 'name', order: 'asc'}}
+    />
+  );
+
+  expect(getTable(node).prop('columns')[0]!.sortDescFirst).toBe(true);
+  expect(getTable(node).prop('columns')[1]!.sortDescFirst).toBeUndefined();
+});
+
 it('should pass the current sorting to the table', () => {
   const node = shallow(
     <EntityList
@@ -206,6 +222,16 @@ it('should pass the selected rows to the bulk actions', () => {
 
   getSelection(node).onSelectedRowsChange({aCollectionId: true});
 
+  expect(node.find('.bulkAction').prop('selectedEntries')).toEqual([props.rows[0]]);
+});
+
+it('should exclude rows without actions from selection and bulk actions', () => {
+  const node = shallow(<EntityList {...props} bulkActions={<div className="bulkAction" />} />);
+
+  // aDashboardId has no actions, so a select-all must not expose the protected row.
+  getSelection(node).onSelectedRowsChange({aCollectionId: true, aDashboardId: true});
+
+  expect(getSelection(node).selectedRowIds).toEqual({aCollectionId: true});
   expect(node.find('.bulkAction').prop('selectedEntries')).toEqual([props.rows[0]]);
 });
 
