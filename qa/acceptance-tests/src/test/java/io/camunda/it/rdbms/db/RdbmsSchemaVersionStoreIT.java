@@ -33,11 +33,11 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 @Execution(ExecutionMode.SAME_THREAD)
 final class RdbmsSchemaVersionStoreIT {
 
-  private static final long PARTITION_ID = 0L;
-
   @RegisterExtension
   static final CamundaRdbmsInvocationContextProviderExtension TEST_APPLICATIONS =
       CamundaRdbmsInvocationContextProviderExtension.isolated();
+
+  private static final long PARTITION_ID = 0L;
 
   @TestTemplate
   void shouldFindExistingSchemaVersionRegardlessOfVendorIdentifierCasing(
