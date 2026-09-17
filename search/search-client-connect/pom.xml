@@ -58,6 +58,11 @@
       <artifactId>httpasyncclient</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpcore-nio</artifactId>
+    </dependency>
+
     <!-- opensearch -->
 
     <dependency>
