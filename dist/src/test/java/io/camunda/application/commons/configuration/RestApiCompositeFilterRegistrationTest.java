@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.configuration;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.NodeInstance;
 import io.camunda.zeebe.dynamic.nodeid.Version;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
+import io.camunda.zeebe.gateway.rest.impl.filters.FilterLoadException;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -48,6 +50,11 @@ import org.springframework.boot.autoconfigure.context.LifecycleProperties;
  * a plain {@code Filter} bean. The tests below drive {@code onStartup} against the servlet context
  * rather than reading {@code isEnabled()}, so both the mapping and its absence are observed the way
  * the container sees them.
+ *
+ * <p>A filter that cannot be loaded is not silently skipped: {@code FilterRepository.load(List)}
+ * rethrows, so the registration never reaches the "no filters" branch by way of a failed load. The
+ * disabled-registration approach is therefore chosen for its own sake rather than to absorb load
+ * failures, and the two cases below pin that startup still fails loudly.
  *
  * @see <a href="https://github.com/camunda/camunda/issues/35067">Issue #35067</a>
  */
@@ -116,6 +123,28 @@ final class RestApiCompositeFilterRegistrationTest {
         .addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), false, DEFAULT_URL_MAPPING);
   }
 
+  @Test
+  void shouldFailFastWhenBrokerFilterCannotBeLoaded() {
+    // given
+    final var configuration = brokerConfiguration(List.of(unloadableFilterCfg()));
+
+    // when / then
+    assertThatThrownBy(configuration::restApiCompositeFilter)
+        .isInstanceOf(FilterLoadException.class)
+        .hasMessageContaining("cannot load specified class");
+  }
+
+  @Test
+  void shouldFailFastWhenGatewayFilterCannotBeLoaded() {
+    // given
+    final var configuration = gatewayConfiguration(List.of(unloadableFilterCfg()));
+
+    // when / then
+    assertThatThrownBy(configuration::restApiCompositeFilter)
+        .isInstanceOf(FilterLoadException.class)
+        .hasMessageContaining("cannot load specified class");
+  }
+
   private BrokerBasedConfiguration brokerConfiguration(final List<FilterCfg> filters) {
     final var properties = new BrokerBasedProperties();
     properties.getGateway().setFilters(filters);
@@ -141,6 +170,13 @@ final class RestApiCompositeFilterRegistrationTest {
     final var cfg = new FilterCfg();
     cfg.setId("noop");
     cfg.setClassName(NoopFilter.class.getName());
+    return cfg;
+  }
+
+  private static FilterCfg unloadableFilterCfg() {
+    final var cfg = new FilterCfg();
+    cfg.setId("missing");
+    cfg.setClassName("io.camunda.does.not.Exist");
     return cfg;
   }
 
