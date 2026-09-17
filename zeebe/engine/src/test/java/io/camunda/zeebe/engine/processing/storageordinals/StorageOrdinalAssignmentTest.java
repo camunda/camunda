@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
+import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
@@ -237,6 +238,49 @@ public final class StorageOrdinalAssignmentTest {
             .withSignalName("ordinal-signal")
             .getFirst();
     assertThat(subscriptionDeleted.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToConditionalSubscriptionRecords() {
+    // given: a conditional boundary event whose condition is already fulfilled at subscription
+    // time, so the subscription is created and immediately triggered
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("conditional-subscription-process")
+                .startEvent()
+                .userTask("wait-task")
+                .zeebeUserTask()
+                .boundaryEvent("conditional-boundary")
+                .cancelActivity(true)
+                .condition(c -> c.condition("=x > 10").zeebeVariableEvents("create"))
+                .endEvent()
+                .moveToActivity("wait-task")
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId("conditional-subscription-process")
+            .withVariable("x", 11)
+            .create();
+
+    // then: the subscription CREATED event carries the ordinal, and the TRIGGERED event, appended
+    // from the TRIGGER command built off the subscription record, inherits it
+    final var subscriptionCreated =
+        RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(subscriptionCreated.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+
+    final var subscriptionTriggered =
+        RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.TRIGGERED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(subscriptionTriggered.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
   }
 
   @Test
