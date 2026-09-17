@@ -569,8 +569,10 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 "resourceId", "MY_SECRET",
                 "resourceType", "SECRET",
                 "permissionTypes", permissions),
-            "The provided resourceId contains illegal characters. It must match the pattern '%s'."
-                .formatted(AuthorizationRequestValidator.SECRET_RESOURCE_ID_PATTERN.pattern())),
+            "The provided resourceId 'MY_SECRET' cannot match any secret reference. It must be "
+                + "'*' or the full reference in the form 'camunda.secrets.<name>', where <name> "
+                + "matches the pattern '%s'."
+                    .formatted(AuthorizationRequestValidator.SECRET_NAME_PATTERN)),
         Arguments.of(
             // SECRET resourceId with a dot cannot ever match a reference either, since a dot
             // is not a valid secret-name character (camunda/camunda#62736)
@@ -580,8 +582,10 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 "resourceId", "camunda.secrets.tls.crt",
                 "resourceType", "SECRET",
                 "permissionTypes", permissions),
-            "The provided resourceId contains illegal characters. It must match the pattern '%s'."
-                .formatted(AuthorizationRequestValidator.SECRET_RESOURCE_ID_PATTERN.pattern())),
+            "The provided resourceId 'camunda.secrets.tls.crt' cannot match any secret reference. "
+                + "It must be '*' or the full reference in the form 'camunda.secrets.<name>', "
+                + "where <name> matches the pattern '%s'."
+                    .formatted(AuthorizationRequestValidator.SECRET_NAME_PATTERN)),
         // AuthorizationPropertyBasedRequest tests
         Arguments.of(
             // missing ownerId
