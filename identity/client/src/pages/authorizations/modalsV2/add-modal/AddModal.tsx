@@ -10,6 +10,7 @@ import { FC, useEffect, useId } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
   Checkbox,
+  Input,
   Label,
   Select,
   SelectContent,
@@ -39,7 +40,11 @@ import OwnerSelection from "../owner-selection";
 import {
   isValidId,
   isValidResourceId,
+  isValidSecretResourceId,
   getIdPattern,
+  getSecretResourceIdPattern,
+  AUTHORIZATION_WILDCARD,
+  SECRET_REFERENCE_PREFIX,
 } from "src/utility/validate";
 import type {
   OwnerType,
@@ -257,6 +262,69 @@ export const AddModal: FC<
                 )}
               </FormField>
             )}
+          />
+        ) : watchedResourceType === "SECRET" ? (
+          <Controller
+            name="resourceId"
+            control={control}
+            rules={{
+              required: t("resourceIdRequired"),
+              validate: (value) =>
+                isValidSecretResourceId(value ?? "") ||
+                t("pleaseEnterValidSecretResourceId", {
+                  pattern: getSecretResourceIdPattern(),
+                }),
+            }}
+            render={({ field, fieldState }) => {
+              const currentValue = field.value ?? "";
+              const isWildcard = currentValue === AUTHORIZATION_WILDCARD;
+              const name = isWildcard
+                ? AUTHORIZATION_WILDCARD
+                : currentValue.startsWith(SECRET_REFERENCE_PREFIX)
+                  ? currentValue.slice(SECRET_REFERENCE_PREFIX.length)
+                  : currentValue;
+
+              return (
+                <FormField
+                  label={t("resourceId")}
+                  error={fieldState.error?.message}
+                  helperText={t("secretResourceIdHelperText")}
+                >
+                  {(controlProps) => (
+                    <div className="flex items-center gap-1.5">
+                      {!isWildcard && (
+                        <Text as="span" variant="helper" className="shrink-0">
+                          {SECRET_REFERENCE_PREFIX}
+                        </Text>
+                      )}
+                      <Input
+                        {...controlProps}
+                        className="min-w-0 flex-1"
+                        value={name}
+                        placeholder={t("enterSecretName")}
+                        onChange={(e) => {
+                          // Keep the prefix fixed while typing, even if the
+                          // name-so-far happens to be "*" — only resolve to
+                          // the bare wildcard value on blur, below. Doing
+                          // this on every keystroke instead would flip the
+                          // prefix on and off as soon as another character
+                          // is typed after a lone "*".
+                          field.onChange(
+                            SECRET_REFERENCE_PREFIX + e.currentTarget.value,
+                          );
+                        }}
+                        onBlur={() => {
+                          if (name === AUTHORIZATION_WILDCARD) {
+                            field.onChange(AUTHORIZATION_WILDCARD);
+                          }
+                          field.onBlur();
+                        }}
+                      />
+                    </div>
+                  )}
+                </FormField>
+              );
+            }}
           />
         ) : (
           <Controller
