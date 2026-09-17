@@ -68,22 +68,11 @@ public final class MessageSubscriptionRejectProcessor
     stateWriter.appendFollowUpEvent(
         record.getKey(), MessageSubscriptionIntent.REJECTED, subscriptionRecord);
 
-    final var stored =
-        subscriptionState.get(
-            subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer());
-    final long requestedKey = subscriptionRecord.getSubscriptionKey();
-    final boolean isStale =
-        stored != null && requestedKey != -1L && stored.getKey() != requestedKey;
-
-    // For a stale reject (newer generation exists), the REJECTED applier releases the
-    // correlation lock without deleting the live replacement. Skip reroute — the replacement
-    // subscription's own correlateNextMessage handles any buffered messages.
-    if (!isStale) {
-      final var foundSubscription = findSubscriptionToCorrelate(subscriptionRecord);
-      if (!foundSubscription) {
-        writeNotCorrelatedResponse(record);
-      }
-    } else {
+    // The applier already protects a live replacement subscription from deletion when this
+    // reject is stale, so rerouting unconditionally here is safe. It's also necessary: if a
+    // replacement subscription was created before this lock was released, it already missed
+    // its own one-shot chance to pick up the message and needs this to try again.
+    if (!findSubscriptionToCorrelate(subscriptionRecord)) {
       writeNotCorrelatedResponse(record);
     }
   }
