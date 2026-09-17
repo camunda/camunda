@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.rest.security.csl;
 
-import static io.camunda.optimize.rest.security.csl.OptimizeCslLoginSuccessListener.ORIGINAL_USER_ID_CLAIM;
+import static io.camunda.optimize.rest.security.csl.AuthenticationSuccessListener.ORIGINAL_USER_ID_CLAIM;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -48,14 +48,14 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 
 /**
  * Wires the real {@link OAuth2LoginAuthenticationFilter} to a real Spring context holding {@link
- * OptimizeCslLoginSuccessListener} and completes an OIDC authorization-code callback, to prove the
+ * AuthenticationSuccessListener} and completes an OIDC authorization-code callback, to prove the
  * hook actually fires: Spring Security publishes {@code InteractiveAuthenticationSuccessEvent} on
  * login success, the annotated listener receives it, and the migration runs.
  *
  * <p>Only the token exchange is stubbed (via the {@code AuthenticationManager}), so no IdP is
  * needed. Everything between the filter and the listener is the production wiring.
  */
-class OptimizeCslLoginSuccessEventTest {
+class AuthenticationSuccessEventTest {
 
   private static final String REGISTRATION_ID = "auth0";
   private static final String CALLBACK_PATH = "/login/oauth2/code/" + REGISTRATION_ID;
@@ -88,7 +88,7 @@ class OptimizeCslLoginSuccessEventTest {
                 "csl-flag", Map.of("optimize.security.csl.enabled", Boolean.TRUE.toString())));
     context.registerBean(UserIdMigrationService.class, () -> userIdMigrationService);
     context.registerBean(CamundaAuthenticationProvider.class, () -> camundaAuthenticationProvider);
-    context.registerBean(OptimizeCslLoginSuccessListener.class);
+    context.registerBean(AuthenticationSuccessListener.class);
     context.refresh();
   }
 
