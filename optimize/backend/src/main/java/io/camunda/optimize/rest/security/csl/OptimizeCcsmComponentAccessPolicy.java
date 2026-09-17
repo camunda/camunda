@@ -12,7 +12,7 @@ import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.service.security.CCSMTokenService;
 import io.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import io.camunda.security.api.model.CamundaAuthentication;
-import java.util.Optional;
+import io.camunda.security.api.model.Either;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -47,25 +47,25 @@ public class OptimizeCcsmComponentAccessPolicy implements OptimizeComponentAcces
   }
 
   @Override
-  public Optional<String> sessionDenialReason(final CamundaAuthentication authentication) {
-    return denialReason(tokenService.getCurrentUserAuthToken().orElse(null));
+  public Either<String, Void> checkAccess(final CamundaAuthentication authentication) {
+    return checkAccessToken(tokenService.getCurrentUserAuthToken().orElse(null));
   }
 
-  private Optional<String> denialReason(final String accessToken) {
+  private Either<String, Void> checkAccessToken(final String accessToken) {
     if (accessToken == null) {
       LOG.debug("No access token available, skipping the Optimize permission check");
-      return Optional.empty();
+      return Either.right(null);
     }
     try {
       tokenService.verifyAccessToken(accessToken);
-      return Optional.empty();
+      return Either.right(null);
     } catch (final NotAuthorizedException e) {
-      return Optional.of(e.getMessage());
+      return Either.left(e.getMessage());
     } catch (final TokenVerificationException e) {
       // An expired token is renewed by the webapp chain and passed through by the API chain, so
       // treating it as a denial here would log out a user whose permission is intact.
       LOG.debug("Access token could not be verified: {}", e.getMessage());
-      return Optional.empty();
+      return Either.right(null);
     }
   }
 }

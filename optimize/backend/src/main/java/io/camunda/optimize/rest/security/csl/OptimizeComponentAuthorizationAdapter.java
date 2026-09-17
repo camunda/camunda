@@ -15,6 +15,8 @@ import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Answers CSL's component access check from the Optimize access policy. Optimize stores no
@@ -22,6 +24,9 @@ import java.util.Map;
  * enforces on its data are resolved by its own services, not through this port.
  */
 public final class OptimizeComponentAuthorizationAdapter implements AuthorizationCheckPort {
+
+  private static final Logger LOG =
+      LoggerFactory.getLogger(OptimizeComponentAuthorizationAdapter.class);
 
   private final OptimizeComponentAccessPolicy policy;
 
@@ -36,16 +41,17 @@ public final class OptimizeComponentAuthorizationAdapter implements Authorizatio
         || authorization.permissionType() != PermissionType.ACCESS) {
       return Either.right(null);
     }
-    return policy
-        .sessionDenialReason(authentication)
-        .<Either<AuthorizationRejection, Void>>map(
-            reason ->
-                Either.left(
-                    new AuthorizationRejection.Permission(
-                        authorization.resourceType(),
-                        authorization.permissionType(),
-                        resourceId(authorization))))
-        .orElseGet(() -> Either.right(null));
+    final Either<String, Void> access = policy.checkAccess(authentication);
+    if (access.isRight()) {
+      return Either.right(null);
+    }
+    // The rejection carries the required permission, not the reason, so log it here or it is lost.
+    LOG.debug("Denying access to the Optimize component: {}", access.leftValue());
+    return Either.left(
+        new AuthorizationRejection.Permission(
+            authorization.resourceType(),
+            authorization.permissionType(),
+            resourceId(authorization)));
   }
 
   @Override

@@ -16,6 +16,7 @@ import io.camunda.identity.sdk.authentication.exception.TokenVerificationExcepti
 import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.service.security.CCSMTokenService;
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.Either;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,10 +38,10 @@ class OptimizeCcsmComponentAccessPolicyTest {
     doNothing().when(tokenService).verifyAccessToken("token");
 
     // when
-    final Optional<String> reason = policy().sessionDenialReason(AUTHENTICATION);
+    final Either<String, Void> access = policy().checkAccess(AUTHENTICATION);
 
     // then
-    assertThat(reason).isEmpty();
+    assertThat(access.isRight()).isTrue();
   }
 
   @Test
@@ -52,10 +53,11 @@ class OptimizeCcsmComponentAccessPolicyTest {
         .verifyAccessToken("token");
 
     // when
-    final Optional<String> reason = policy().sessionDenialReason(AUTHENTICATION);
+    final Either<String, Void> access = policy().checkAccess(AUTHENTICATION);
 
     // then
-    assertThat(reason).contains("User is not authorized to access Optimize");
+    assertThat(access.isLeft()).isTrue();
+    assertThat(access.leftValue()).isEqualTo("User is not authorized to access Optimize");
   }
 
   @Test
@@ -69,10 +71,10 @@ class OptimizeCcsmComponentAccessPolicyTest {
         .verifyAccessToken("expired");
 
     // when
-    final Optional<String> reason = policy().sessionDenialReason(AUTHENTICATION);
+    final Either<String, Void> access = policy().checkAccess(AUTHENTICATION);
 
     // then
-    assertThat(reason).isEmpty();
+    assertThat(access.isRight()).isTrue();
   }
 
   @Test
@@ -81,10 +83,10 @@ class OptimizeCcsmComponentAccessPolicyTest {
     when(tokenService.getCurrentUserAuthToken()).thenReturn(Optional.empty());
 
     // when
-    final Optional<String> reason = policy().sessionDenialReason(AUTHENTICATION);
+    final Either<String, Void> access = policy().checkAccess(AUTHENTICATION);
 
     // then
-    assertThat(reason).isEmpty();
+    assertThat(access.isRight()).isTrue();
   }
 
   private OptimizeCcsmComponentAccessPolicy policy() {

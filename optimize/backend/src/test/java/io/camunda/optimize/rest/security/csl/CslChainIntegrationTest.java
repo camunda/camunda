@@ -33,6 +33,7 @@ import io.camunda.optimize.service.security.UserIdMigrationService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.Either;
 import jakarta.servlet.Filter;
 import jakarta.servlet.http.Cookie;
 import java.net.InetSocketAddress;
@@ -44,7 +45,6 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterAll;
@@ -945,17 +945,17 @@ class CslChainIntegrationTest {
   private record RecordingPolicy(Runnable probe) implements OptimizeComponentAccessPolicy {
 
     @Override
-    public Optional<String> sessionDenialReason(final CamundaAuthentication authentication) {
+    public Either<String, Void> checkAccess(final CamundaAuthentication authentication) {
       probe.run();
-      return Optional.empty();
+      return Either.right(null);
     }
   }
 
   private record FixedPolicy(String denialReason) implements OptimizeComponentAccessPolicy {
 
     @Override
-    public Optional<String> sessionDenialReason(final CamundaAuthentication authentication) {
-      return Optional.ofNullable(denialReason);
+    public Either<String, Void> checkAccess(final CamundaAuthentication authentication) {
+      return denialReason == null ? Either.right(null) : Either.left(denialReason);
     }
   }
 
