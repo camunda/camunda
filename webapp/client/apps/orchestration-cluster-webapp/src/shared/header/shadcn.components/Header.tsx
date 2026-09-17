@@ -16,6 +16,7 @@ import {
 	useMediaQuery,
 } from '@camunda/design-system';
 import {SaasNotifications} from '@camunda/oc-saas-notifications';
+import {useC3Profile} from '@camunda/camunda-composite-components';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {Link} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
@@ -38,6 +39,12 @@ type Props = {
 	children: React.ReactNode;
 	currentApp: CurrentApp | undefined;
 	initialSaasToken: string | null;
+};
+
+const SaasAccountMenu: React.FC<React.ComponentProps<typeof AccountMenu>> = (props) => {
+	const {onThemeChange} = useC3Profile();
+
+	return <AccountMenu {...props} onThemeChange={onThemeChange} />;
 };
 
 const Header: React.FC<Props> = ({children, currentApp, initialSaasToken}) => {
@@ -112,12 +119,21 @@ const Header: React.FC<Props> = ({children, currentApp, initialSaasToken}) => {
 							actions={
 								<>
 									<HelpMenu isPaidPlan={['paid-cc', 'enterprise'].includes(currentUser.salesPlanType ?? '')} />
-									<AccountMenu
-										displayName={currentUser.displayName}
-										canLogout={canLogout}
-										onLogout={handleLogout}
-										onOpenCookiePreferences={handleCookiePreferences}
-									/>
+									{isSaas && initialSaasToken !== null ? (
+										<SaasAccountMenu
+											displayName={currentUser.displayName}
+											canLogout={canLogout}
+											onLogout={handleLogout}
+											onOpenCookiePreferences={handleCookiePreferences}
+										/>
+									) : (
+										<AccountMenu
+											displayName={currentUser.displayName}
+											canLogout={canLogout}
+											onLogout={handleLogout}
+											onOpenCookiePreferences={handleCookiePreferences}
+										/>
+									)}
 								</>
 							}
 						/>
