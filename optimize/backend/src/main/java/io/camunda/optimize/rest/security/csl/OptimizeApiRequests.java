@@ -10,9 +10,8 @@ package io.camunda.optimize.rest.security.csl;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
- * Tells Optimize's API surface apart from its webapp surface, for the CSL components that have to
- * answer an unauthenticated or denied request differently on each: a machine-readable status on the
- * API, a browser-facing response on the webapp.
+ * Tells Optimize's API surface apart from its webapp surface. A denied request needs a status code
+ * on the API and a browser-facing response on the webapp.
  */
 final class OptimizeApiRequests {
 
@@ -20,7 +19,7 @@ final class OptimizeApiRequests {
 
   private OptimizeApiRequests() {}
 
-  /** Matches the bearer/API surface exactly like Spring's {@code "/api/**"} does. */
+  /** Matches what Spring's {@code "/api/**"} pattern matches, so both surfaces agree. */
   static boolean isApiRequest(final HttpServletRequest request) {
     final String path = request.getRequestURI().substring(request.getContextPath().length());
     return path.equals(API_PATH) || path.startsWith(API_PATH + "/");

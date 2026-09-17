@@ -42,9 +42,8 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 
 /**
- * Unit-level counterpart to {@code CslChainIntegrationTest}'s Bug A scenarios: exercises {@link
- * OptimizeCcsmSessionPermissionEnforcementFilter#doFilterInternal} directly against a mocked {@link
- * CCSMTokenService}, cheaper to extend than only relying on the full chain integration test.
+ * Unit-level counterpart to {@code CslChainIntegrationTest}'s Bug A scenarios, cheaper to extend
+ * than the full chain test.
  */
 @ExtendWith(MockitoExtension.class)
 class OptimizeCcsmSessionPermissionEnforcementFilterTest {
@@ -63,8 +62,7 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
   @Test
   void shouldPassThroughWhenNoSessionAccessTokenIsPresent() throws Exception {
     // given
-    // No OAuth2AuthenticationToken in the context: a bearer-only or anonymous request, which this
-    // filter leaves to CSL's own token validation.
+    // A bearer-only or anonymous request, which this filter leaves to CSL.
     when(ccsmTokenService.getSessionAccessToken(any())).thenReturn(Optional.empty());
     final MockHttpServletRequest request = apiRequest();
     final MockHttpServletResponse response = new MockHttpServletResponse();
@@ -83,10 +81,9 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
   @Test
   void shouldRejectButKeepSessionWhenSessionHoldsNoAccessToken() {
     // given
-    // A session login whose authorized client is gone from the session resolves no token either,
-    // and CSL's converter would then serve the request from the id_token's claims without any
-    // permission check. Only the absence of an OAuth2AuthenticationToken means "not a session
-    // request", so this case must fail closed instead.
+    // A session whose authorized client is gone resolves no token either, and CSL would then serve
+    // the request from the id_token claims. Only a missing OAuth2AuthenticationToken means "not a
+    // session request", so this case must fail closed.
     when(ccsmTokenService.getSessionAccessToken(any())).thenReturn(Optional.empty());
     setOAuth2AuthenticatedSecurityContext();
     final MockHttpServletRequest request = apiRequest();
@@ -124,9 +121,8 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
   @Test
   void shouldPassThroughWithoutVerifyingWhenSessionAccessTokenIsExpired() throws Exception {
     // given
-    // CSL only refreshes the access token on its webapp chain, so on the API chain an expired token
-    // would stay expired for the rest of the session. Denying it there would be worse than not
-    // checking at all, because CSL's id_token fallback keeps such a session working today.
+    // Only CSL's webapp chain refreshes the token, so on the API chain it would stay expired for
+    // the rest of the session.
     final String expiredToken = jwtExpiringAt(Instant.now().minusSeconds(60));
     when(ccsmTokenService.getSessionAccessToken(any())).thenReturn(Optional.of(expiredToken));
     final MockHttpServletRequest request = apiRequest();
@@ -178,9 +174,7 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
     final ThrowingCallable doFilter = () -> filter().doFilterInternal(request, response, chain);
 
     // then
-    // The exception is the denial: ExceptionTranslationFilter turns it into the 401 that
-    // OptimizeOidcAuthenticationEntryPoint answers an API request with, which
-    // CslChainIntegrationTest covers.
+    // The exception is the denial. CslChainIntegrationTest covers the 401 it becomes.
     assertThatThrownBy(doFilter).isInstanceOf(AuthenticationException.class);
     assertThat(chain.getRequest()).as("rejected token must not reach downstream").isNull();
     assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
@@ -190,8 +184,8 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
   @Test
   void shouldDenyWebappRequestWithTerminalForbidden() throws Exception {
     // given
-    // Raising an AuthenticationException on a navigation restarts the OIDC login, and the IdP's
-    // live session re-issues a code right away, so the user loops between Optimize and the IdP.
+    // An AuthenticationException on a navigation would restart the login, and the IdP's live
+    // session re-issues a code right away, so the user would loop.
     when(ccsmTokenService.getSessionAccessToken(any())).thenReturn(Optional.of("token"));
     doThrow(new NotAuthorizedException("no longer authorized"))
         .when(ccsmTokenService)
@@ -232,10 +226,9 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
   @Test
   void shouldRejectButKeepSessionWhenTokenCannotBeVerified() {
     // given
-    // CCSMTokenService#verifyAccessToken throws TokenVerificationException (an IdentityException,
-    // not a NotAuthorizedException) directly for an invalid/expired token, and equally when
-    // Identity is unreachable. That says nothing about the user's permission, so the request is
-    // denied but the session survives: an Identity outage must not log everybody out.
+    // verifyAccessToken raises TokenVerificationException, not NotAuthorizedException, for an
+    // invalid token and when Identity is unreachable. That says nothing about the user's
+    // permission, so an Identity outage must not log everybody out.
     when(ccsmTokenService.getSessionAccessToken(any())).thenReturn(Optional.of("token"));
     doThrow(new TokenVerificationException("token invalid"))
         .when(ccsmTokenService)
@@ -258,8 +251,7 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
   @Test
   void shouldRejectButKeepSessionOnUnexpectedError() {
     // given
-    // A security boundary must fail closed on the unexpected rather than propagate it. Same as the
-    // IdentityException case, the session is not the thing at fault here.
+    // Fail closed rather than propagate. As with IdentityException, the session is not at fault.
     when(ccsmTokenService.getSessionAccessToken(any())).thenReturn(Optional.of("token"));
     doThrow(new IllegalStateException("unexpected"))
         .when(ccsmTokenService)
@@ -288,14 +280,12 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
   }
 
   private static String jwtExpiringAt(final Instant expiresAt) {
-    // Signature and issuer do not matter here: the filter only reads the exp claim itself, the
-    // token's actual validation is CCSMTokenService's job.
+    // The filter only reads the exp claim, CCSMTokenService validates the token.
     return JWT.create().withExpiresAt(expiresAt).sign(Algorithm.none());
   }
 
   private static void setOAuth2AuthenticatedSecurityContext() {
-    // CSL's session login puts an OAuth2AuthenticationToken in the context, which is what
-    // distinguishes a session request from a bearer-only one.
+    // An OAuth2AuthenticationToken is what distinguishes a session request from a bearer-only one.
     final var authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
     final var user = new DefaultOAuth2User(authorities, Map.of("sub", "alice"), "sub");
     SecurityContextHolder.getContext()

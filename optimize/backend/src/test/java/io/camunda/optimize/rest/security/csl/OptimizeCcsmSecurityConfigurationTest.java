@@ -31,18 +31,11 @@ class OptimizeCcsmSecurityConfigurationTest {
   @Test
   void shouldInstallTheSessionPermissionFilterAndLeaveTokenValidationToCsl() {
     // given
-    // The Identity write:* gate applies to session logins only, carried by the
-    // SecurityHeadersCustomizer installer. Bearer tokens stay ungated as they were on legacy CCSM,
-    // so this configuration contributes neither a TokenValidatorFactory nor a JwtDecoderFactory:
-    // CSL's own beans keep validating API tokens, and Spring Security's stock decoder keeps
-    // validating the login id_token.
     final ApplicationContextRunner runner =
         new ApplicationContextRunner()
-            // The chain beans depend on HttpSecurity and OIDC client-registration beans this
-            // minimal context doesn't provide. Registering
-            // LazyInitializationBeanFactoryPostProcessor as a bean marks every bean definition
-            // lazy, which is enough for the context to start, the same pattern
-            // CslSecurityChainSelectionTest uses.
+            // The chain beans need HttpSecurity and OIDC client-registration beans this minimal
+            // context does not provide. Marking every definition lazy is enough for it to start,
+            // as CslSecurityChainSelectionTest does.
             .withBean(
                 LazyInitializationBeanFactoryPostProcessor.class,
                 LazyInitializationBeanFactoryPostProcessor::new)

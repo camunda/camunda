@@ -382,10 +382,8 @@ public class CCSMTokenService {
   }
 
   /**
-   * The CSL session's stored access token for the given request, empty when none resolves, either
-   * because the request is not session-authenticated or because the session holds no authorized
-   * client. Takes the request explicitly for callers that run outside the request-scoped {@link
-   * RequestContextHolder} plumbing {@link #getCurrentUserAuthToken()} relies on, such as a servlet
+   * The CSL session's stored access token, empty when none resolves. Takes the request explicitly
+   * for callers that run before {@link RequestContextHolder} is populated, such as a servlet
    * filter.
    */
   public Optional<String> getSessionAccessToken(final HttpServletRequest request) {

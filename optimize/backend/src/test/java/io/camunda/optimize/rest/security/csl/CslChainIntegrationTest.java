@@ -186,11 +186,8 @@ class CslChainIntegrationTest {
     assertExternalPathExemptFromCsrf(ccsmRunner());
   }
 
-  // -------------------------------------------------------------------------
-  // Bug A: session user whose access token fails the Identity write:* check must be denied,
-  // not silently kept authenticated via the id_token fallback
-  // (OptimizeCcsmSessionPermissionEnforcementFilter).
-  // -------------------------------------------------------------------------
+  // Bug A: a session user whose access token fails the Identity write:* check stayed
+  // authenticated through CSL's id_token fallback.
 
   @Test
   void shouldRejectSessionOnWebappPathWhenAccessTokenNoLongerAuthorizedForCcsm() {
@@ -205,15 +202,8 @@ class CslChainIntegrationTest {
 
               proxy.doFilter(request, response, downstream);
 
-              // Without OptimizeCcsmSessionPermissionEnforcementFilter this would incorrectly
-              // return 200: CSL validates issuer, signature and expiry only, and its
-              // OidcUserAuthenticationConverter#decodeAccessToken falls back to the id_token's
-              // claims on a validation failure instead of denying the request.
-              //
-              // The denial is terminal, rendered by OptimizeErrorController as the CCSM "no
-              // authorization to access Optimize" page. Restarting the login instead would loop:
-              // the IdP's session is still valid, so it re-issues a code and the permission check
-              // denies again.
+              // The denial has to be terminal. Restarting the login would loop, because the IdP
+              // session is still valid and re-issues a code.
               assertThat(response.getStatus())
                   .as(
                       "session with a no-longer-authorized access token on webapp path, body: %s",
@@ -238,8 +228,7 @@ class CslChainIntegrationTest {
 
               proxy.doFilter(request, response, downstream);
 
-              // Counterpart to the webapp case: the API chain's entry point answers 401 rather
-              // than redirecting, so an API client gets a status it can act on.
+              // An API client needs a status it can act on, not a redirect.
               assertThat(response.getStatus())
                   .as(
                       "session with a no-longer-authorized access token on API path, body: %s",
@@ -251,12 +240,9 @@ class CslChainIntegrationTest {
 
   @Test
   void shouldNotResolveASessionOnTheUnprotectedChainForCcsm() {
-    // The filter installer uses SecurityHeadersCustomizer, which CSL also applies to its
-    // unprotected-paths chain, so the filter lands there too. It cannot deny a request to
-    // /api/readyz or /api/external/** for carrying a revoked session cookie, because that chain
-    // resolves no session at all: it installs no SessionRepositoryFilter, and CSL registers the
-    // default one disabled as a servlet filter. Without a restored SecurityContext there is no
-    // OAuth2AuthenticationToken and therefore no token to check.
+    // The installer uses SecurityHeadersCustomizer, so the filter also lands on CSL's
+    // unprotected-paths chain. That chain resolves no session, so the filter has nothing to check
+    // and must not deny /api/readyz or /api/external/**.
     ccsmRunner()
         .run(
             ctx -> {
@@ -282,10 +268,8 @@ class CslChainIntegrationTest {
 
   @Test
   void shouldRejectSessionOnWebappPathWithCleanDenialWhenAccessTokenCannotBeVerifiedForCcsm() {
-    // CCSMTokenService#verifyAccessToken throws TokenVerificationException (not
-    // NotAuthorizedException) directly for an invalid/expired token. Without the filter's broader
-    // catch this would propagate as an uncaught 500 instead of the clean denial this filter exists
-    // to provide.
+    // verifyAccessToken throws TokenVerificationException, not NotAuthorizedException, for an
+    // invalid token. Without the filter's broader catch that becomes an uncaught 500.
     ccsmRunner(CslChainIntegrationTest::mockCcsmTokenServiceWithUnverifiableSessionAccessToken)
         .run(
             ctx -> {
@@ -308,11 +292,9 @@ class CslChainIntegrationTest {
 
   @Test
   void shouldEnforcePermissionAfterTheAccessTokenRefreshForCcsm() {
-    // The permission check must not run before CSL's OAuth2RefreshTokenFilter: a session whose
-    // access token merely expired has to be refreshed first, so the webapp chain re-checks the
-    // permission on a fresh token the way the legacy CCSMAuthenticationCookieFilter did. Asserted
-    // on the filter positions because ordering is what makes the difference, and the refresh
-    // itself needs a real IdP token endpoint to observe end to end.
+    // An expired token must be refreshed before it is checked, so the webapp chain checks a fresh
+    // token as legacy CCSM did. Asserted on the filter order, because observing the refresh itself
+    // needs a real IdP token endpoint.
     ccsmRunner(CslChainIntegrationTest::mockCcsmTokenServiceGrantingSessionAccessToken)
         .run(
             ctx -> {
@@ -334,8 +316,7 @@ class CslChainIntegrationTest {
 
   @Test
   void shouldAllowSessionOnWebappPathWhenAccessTokenStillAuthorizedForCcsm() {
-    // Positive control for the two tests above: a session whose access token still passes
-    // verifyAccessToken must not be rejected by OptimizeCcsmSessionPermissionEnforcementFilter.
+    // Positive control for the two tests above.
     ccsmRunner(CslChainIntegrationTest::mockCcsmTokenServiceGrantingSessionAccessToken)
         .run(
             ctx -> {
@@ -356,16 +337,12 @@ class CslChainIntegrationTest {
             });
   }
 
-  // -------------------------------------------------------------------------
-  // Bug B: /api/public/** and /api/ingestion/variable must be pinned to api.audience the way the
-  // legacy decoder pinned them, while no API path gates a bearer token through Identity
-  // (OptimizeCcsmPublicApi carve-out).
-  // -------------------------------------------------------------------------
+  // Bug B: /api/public/** and /api/ingestion/variable lost the api.audience pin the legacy
+  // decoder applied, while no API path gates a bearer token through Identity.
 
   @Test
   void shouldAllowBearerTokenLackingOptimizePermissionOnPublicApiPathForCcsm() {
-    // The token carries the configured api.audience, which this chain requires the way the legacy
-    // decoder did, and nothing else.
+    // The token carries the configured api.audience and nothing else.
     final String token = signToken(Instant.now().plusSeconds(60), PUBLIC_API_AUDIENCE);
     ccsmRunner(
             CslChainIntegrationTest::mockCcsmTokenServiceDenyingEveryAccessToken,
@@ -381,8 +358,7 @@ class CslChainIntegrationTest {
 
               proxy.doFilter(request, response, downstream);
 
-              // A client-credentials/M2M token with no write:* Identity grant must still be
-              // accepted: legacy CCSM checked the audience and nothing else on the bearer path.
+              // Legacy CCSM checked the audience and nothing else on the bearer path.
               assertThat(response.getStatus())
                   .as(
                       "bearer token lacking write:* on the public API carve-out, body: %s",
@@ -394,9 +370,8 @@ class CslChainIntegrationTest {
 
   @Test
   void shouldAllowBearerTokenLackingOptimizePermissionOnInternalApiPathForCcsm() throws Exception {
-    // An API client authenticates with client credentials, so it has no Identity user and can never
-    // hold the Optimize permission. Gating the bearer path on it would lock out every client that
-    // works on legacy CCSM today, which is why the write:* check stays on the session path.
+    // An API client has no Identity user, so it can never hold the Optimize permission. Gating the
+    // bearer path would lock out every client that works on legacy CCSM today.
     final String token = signBearerToken();
     ccsmRunner(CslChainIntegrationTest::mockCcsmTokenServiceDenyingEveryAccessToken)
         .run(
@@ -421,9 +396,8 @@ class CslChainIntegrationTest {
 
   @Test
   void shouldRejectBearerTokenWithoutPublicApiAudienceOnPublicApiPathForCcsm() {
-    // The legacy decoder required api.audience here. CSL validates against one merged audience set
-    // and accepts a token matching any entry of it, so a token audienced for Identity would
-    // otherwise pass on this chain, which has no Identity gate to stop it.
+    // CSL accepts a token that matches any entry of its merged audience set, so without the pin an
+    // Identity-audience token passes here, and this chain has no Identity gate to stop it.
     final String token = signToken(Instant.now().plusSeconds(60), "optimize-api");
     ccsmRunner(
             CslChainIntegrationTest::mockCcsmTokenServiceDenyingEveryAccessToken,
@@ -451,11 +425,9 @@ class CslChainIntegrationTest {
   @Test
   void shouldApplySharedChainSetupOnPublicApiPathForCcsm() {
     // given
-    // The carve-out chain is built through CSL's ScopedApiSecurityChainBuilder, so the operator's
-    // CORS source, HTTPS-redirect customizers, CSRF configuration and secure headers keep applying
-    // to it. A hand-rolled chain silently dropped all of them for these two paths only. CSL's
-    // property-driven Content-Security-Policy is the marker asserted here, because Spring Security
-    // sets no CSP header on its own, unlike the frame and content-type headers.
+    // A hand-rolled carve-out chain dropped the operator's CORS, HTTPS-redirect, CSRF and header
+    // settings for these two paths only. CSL's property-driven Content-Security-Policy is the
+    // marker, because Spring Security sets no CSP header on its own.
     final String token = signToken(Instant.now().plusSeconds(60), PUBLIC_API_AUDIENCE);
 
     // when
@@ -489,11 +461,9 @@ class CslChainIntegrationTest {
 
   @Test
   void shouldAllowSessionOnApiPathWhenAccessTokenIsExpiredForCcsm() {
-    // Only CSL's webapp chain installs OAuth2RefreshTokenFilter, its API chain restores the
-    // session but never refreshes the token. Verifying an expired token on the API chain would
-    // reject every /api/** call for the rest of the session, while without this filter such a
-    // session keeps working through CSL's id_token fallback. So an expired token is skipped and the
-    // next webapp request refreshes it.
+    // Only CSL's webapp chain refreshes the token. Verifying an expired one on the API chain would
+    // reject every /api/** call for the rest of the session, so it is skipped and the next webapp
+    // request refreshes it.
     ccsmRunner(CslChainIntegrationTest::mockCcsmTokenServiceWithExpiredSessionAccessToken)
         .run(
             ctx -> {
@@ -536,11 +506,9 @@ class CslChainIntegrationTest {
   }
 
   private static CCSMTokenService mockCcsmTokenServiceWithUnverifiableSessionAccessToken() {
-    // Distinct from mockCcsmTokenServiceDenyingSessionAccessToken:
-    // CCSMTokenService#verifyAccessToken
-    // (unlike #verifyToken) does not wrap an invalid/expired token into NotAuthorizedException, so
-    // this proves OptimizeCcsmSessionPermissionEnforcementFilter also fails closed on the raw
-    // TokenVerificationException instead of letting it propagate as an uncaught 500.
+    // Unlike mockCcsmTokenServiceDenyingSessionAccessToken, this raises the raw
+    // TokenVerificationException, which verifyAccessToken does not wrap into
+    // NotAuthorizedException.
     final CCSMTokenService service = mock(CCSMTokenService.class);
     when(service.getSessionAccessToken(any())).thenReturn(Optional.of("session-token"));
     doThrow(new TokenVerificationException("token invalid"))
@@ -990,11 +958,9 @@ class CslChainIntegrationTest {
   }
 
   /**
-   * Default CCSM {@link CCSMTokenService} mock: {@code verifyAccessToken} is a no-op (grants
-   * access) unless a test overrides it with {@code doThrow(...)}. This is what previously let this
-   * bug slip through unnoticed: {@link OptimizeCcsmSecurityConfiguration} was never registered in
-   * {@link #ccsmRunner()} at all, so {@link OptimizeCcsmSessionPermissionEnforcementFilter} was
-   * never exercised by a real chain here.
+   * Grants access unless a test overrides it with {@code doThrow(...)}. {@link
+   * OptimizeCcsmSecurityConfiguration} was missing from {@link #ccsmRunner()} before, which is how
+   * the bug slipped through here.
    */
   private static CCSMTokenService mockCcsmTokenServiceGrantingAccess() {
     return mock(CCSMTokenService.class);

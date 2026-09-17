@@ -32,38 +32,23 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * Enforces the Identity {@code write:*} (OPTIMIZE_PERMISSION) check for session-authenticated CCSM
- * users by re-verifying the session's stored access token, and invalidates the session once
- * Identity revokes the permission. CSL does not cover this path: it validates issuer, signature and
- * expiry only, and {@code OidcUserAuthenticationConverter#decodeAccessToken} even swallows a
- * validation failure and falls back to the id_token's claims, so such a session keeps working
- * indefinitely.
+ * Enforces the Identity {@code write:*} (OPTIMIZE_PERMISSION) check for CCSM session logins. CSL
+ * checks only the issuer, the signature and the expiry. Its {@code
+ * OidcUserAuthenticationConverter#decodeAccessToken} also hides a validation error and then uses
+ * the id_token claims, so a session keeps access after Identity removes the permission.
  *
- * <p>Applies only to session logins, which {@link
- * CCSMTokenService#getSessionAccessToken(HttpServletRequest)} scopes by resolving a token just for
- * an {@code OAuth2AuthenticationToken} context. A bearer request holds none and passes through, the
- * same as on legacy CCSM, which authenticated API tokens on signature and audience alone.
+ * <p>Bearer requests pass through, as they did on legacy CCSM.
  *
- * <p>A session login that resolves no token at all, for example because a failed refresh removed
- * the authorized client, is denied: there is nothing to verify and CSL's id_token fallback would
- * serve the request unchecked.
+ * <p>An expired access token also passes through. Only CSL's webapp chain refreshes the token, so a
+ * check on the API chain would deny each {@code /api/**} call for the rest of the session. The
+ * check is only as fresh as the access token.
  *
- * <p>An expired access token passes through unverified. Only CSL's webapp chain installs {@code
- * OAuth2RefreshTokenFilter}, so verifying it on the API chain would deny every {@code /api/**} call
- * for the rest of the session. The permission check is therefore only as fresh as the access token,
- * and a revoked permission surfaces on the next refresh.
+ * <p>Only {@link NotAuthorizedException} invalidates the session, because only that is Identity's
+ * verdict on the user. Other errors deny the request but keep the session, so an Identity outage
+ * does not log out all users.
  *
- * <p>Only {@link NotAuthorizedException}, Identity's verdict on this user, invalidates the session.
- * {@link IdentityException} (an invalid token or Identity being unreachable) and any other {@link
- * RuntimeException} deny the request but keep the session, so an Identity outage does not log
- * everybody out.
- *
- * <p>An API request is denied by raising {@link InsufficientAuthenticationException}, which the
- * chain's {@link OptimizeOidcAuthenticationEntryPoint} answers with a 401. A webapp request is
- * denied with a terminal 403 instead, rendered by {@code OptimizeErrorController}. Raising the
- * exception there would restart the OIDC login, and since the IdP's own session is still valid it
- * re-issues a code immediately and the user loops between Optimize and the IdP forever. The 403
- * page is also what the CCSM stack without CSL answers with.
+ * <p>A denied webapp request gets a terminal 403 page, not a new login. The IdP session is still
+ * valid, so a new login would issue a code again and the user would loop.
  */
 public class OptimizeCcsmSessionPermissionEnforcementFilter extends OncePerRequestFilter {
 
@@ -85,9 +70,7 @@ public class OptimizeCcsmSessionPermissionEnforcementFilter extends OncePerReque
     final Optional<String> sessionAccessToken = ccsmTokenService.getSessionAccessToken(request);
     if (sessionAccessToken.isEmpty()) {
       if (isSessionAuthenticated()) {
-        // A session login without a stored access token: there is nothing to verify, and CSL's
-        // id_token fallback would serve the request unchecked. Fail closed instead of treating it
-        // like a bearer-only request.
+        // Fail closed: CSL would serve this request from the id_token claims instead.
         LOG.debug("Session holds no access token to verify; denying the request.");
         deny(request, response, "Session holds no access token that could be verified", null);
         return;
@@ -104,17 +87,13 @@ public class OptimizeCcsmSessionPermissionEnforcementFilter extends OncePerReque
         deny(request, response, "Session's access token is not authorized to access Optimize", e);
         return;
       } catch (final IdentityException e) {
-        // Not a decision Identity made about this user: the token is unusable (invalid, expired
-        // past what CSL's refresh could recover) or Identity is unreachable. Denying the request
-        // is required, but destroying the session would log every user out on an Identity outage
-        // and force a fresh login instead of letting the next request succeed.
+        // Not Identity's verdict on the user: the token is unusable, or Identity is unreachable.
+        // Keep the session, or an Identity outage logs out all users.
         LOG.debug("Session's access token could not be verified; denying the request.", e);
         deny(request, response, "Session's access token could not be verified", e);
         return;
       } catch (final RuntimeException e) {
-        // Fail closed: an unexpected error verifying the session's token must not propagate as an
-        // uncaught 500, it must deny the request. Like the IdentityException case it says nothing
-        // about the user's permission, so the session survives.
+        // Fail closed, but keep the session: this says nothing about the user's permission.
         LOG.warn("Unexpected error verifying session's access token; denying the request.", e);
         deny(request, response, "Session's access token could not be verified", e);
         return;
@@ -124,10 +103,8 @@ public class OptimizeCcsmSessionPermissionEnforcementFilter extends OncePerReque
   }
 
   /**
-   * Ends the request as denied: 401 on the API surface, a terminal 403 page on the webapp surface.
-   *
    * @throws InsufficientAuthenticationException for an API request, for the chain's {@code
-   *     AuthenticationEntryPoint} to shape
+   *     AuthenticationEntryPoint} to turn into a 401
    */
   private static void deny(
       final HttpServletRequest request,
@@ -138,24 +115,17 @@ public class OptimizeCcsmSessionPermissionEnforcementFilter extends OncePerReque
     if (isApiRequest(request)) {
       throw new InsufficientAuthenticationException(reason, cause);
     }
-    // The message belongs to OptimizeErrorController, which renders every 403 as the CCSM
-    // "no authorization to access Optimize" page.
+    // OptimizeErrorController renders every 403 as the CCSM "no authorization" page.
     response.sendError(HttpStatus.FORBIDDEN.value());
   }
 
-  /**
-   * Whether CSL's session login authenticated this request, meaning the {@code SecurityContext}
-   * holds an {@code OAuth2AuthenticationToken}. A bearer-only request never holds one.
-   */
+  /** A bearer-only request never holds an {@code OAuth2AuthenticationToken}. */
   private static boolean isSessionAuthenticated() {
     return SecurityContextHolder.getContext().getAuthentication()
         instanceof OAuth2AuthenticationToken;
   }
 
-  /**
-   * Whether the token is past its {@code exp} claim. A token that cannot be decoded is reported as
-   * not expired, so the verification below still runs and Identity decides on it.
-   */
+  /** A token that does not decode counts as not expired, so that Identity decides on it. */
   private static boolean isExpired(final String accessToken) {
     final Date expiresAt;
     try {
