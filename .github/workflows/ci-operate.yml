@@ -129,9 +129,7 @@ jobs:
       matrix:
         shardIndex: [1, 2, 3, 4]
         shardTotal: [4]
-    # Exposes the matrix `shardTotal` so the merge job can assert it downloaded
-    # every shard without duplicating the number. Every matrix leg writes the
-    # same value, so the last writer winning is harmless.
+    # Lets the merge job assert it downloaded every shard.
     outputs:
       shard-total: ${{ steps.shard-total.outputs.value }}
     env:
@@ -141,8 +139,7 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      # First step in the job so the merge job still learns the expected shard
-      # count when the tests themselves fail.
+      # First so the merge job learns the shard count even if tests fail.
       - name: Publish shard total
         id: shard-total
         working-directory: ${{ github.workspace }}
@@ -219,18 +216,10 @@ jobs:
           path: operate/client/.vitest-reports
           pattern: operate-fe-blob-report-*
           merge-multiple: true
-      # `pattern:` matches whatever shards happen to exist, so a shard whose
-      # upload failed would be merged over silently and this job would report a
-      # green, complete-looking report missing a quarter of the tests (INC-7913).
-      #
-      # Checks each shard by the name vitest gives its blob
-      # (`blob-<index>-<total>.json`) rather than counting files, so an extra
-      # file appearing in `.vitest-reports` cannot be mistaken for a present
-      # shard, nor a missing one for an absent report.
-      #
-      # `!cancelled()` rather than the default `success()`: the degraded runs
-      # this guard exists to catch are exactly the ones where an earlier step
-      # failed, and the job itself runs under `!cancelled()`.
+      # `pattern:` merges whatever shards exist, so a failed upload would be
+      # silently merged over and report a green, incomplete run (INC-7913).
+      # Checks each shard by vitest's blob name (`blob-<index>-<total>.json`)
+      # rather than counting files, to avoid false positives/negatives.
       - name: Verify all shard reports were downloaded
         if: ${{ !cancelled() }}
         env:
@@ -403,7 +392,7 @@ jobs:
       matrix:
         shardIndex: [1, 2, 3, 4]
         shardTotal: [4]
-    # See `fe-unit-tests` for why the shard total is published as an output.
+    # See `fe-unit-tests` for why this is published.
     outputs:
       shard-total: ${{ steps.shard-total.outputs.value }}
     env:
@@ -416,8 +405,7 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      # First step in the job so the merge job still learns the expected shard
-      # count when the tests themselves fail.
+      # First so the merge job learns the shard count even if tests fail.
       - name: Publish shard total
         id: shard-total
         working-directory: ${{ github.workspace }}
@@ -497,11 +485,8 @@ jobs:
           path: operate/client/all-blob-reports
           pattern: operate-visual-regression-blob-report-*
           merge-multiple: true
-      # Merge and upload before the completeness check, so a run missing a
-      # shard still publishes the visual diffs of the shards that did arrive --
-      # a partial report is what a reviewer needs to triage the failure. The
-      # check below still fails the job, so an incomplete report is never
-      # mistaken for a green one.
+      # Merge and upload before the completeness check, so a partial report is
+      # still available to triage. The check below still fails the job.
       - name: Merge into HTML Report
         run: npx playwright merge-reports --reporter html ./all-blob-reports
       - name: Upload HTML report
@@ -511,19 +496,10 @@ jobs:
           name: operate-visual-regression-report
           path: operate/client/playwright-report/
           retention-days: "30"
-      # `pattern:` matches whatever shards happen to exist, so a shard whose
-      # upload failed would be merged over silently and this job would report a
-      # green, complete-looking report missing a quarter of the tests (INC-7913).
-      #
-      # Playwright names each shard's blob `report-<commandHash>-<index>.zip`,
-      # where the hash covers the `--project` filters `test:visual` passes, so
-      # only the zero-padded shard suffix is stable enough to match on. Checking
-      # per shard rather than counting files keeps an unrelated extra file in
-      # the directory from standing in for a missing shard.
-      #
-      # `!cancelled()` rather than the default `success()`: the degraded runs
-      # this guard exists to catch are exactly the ones where an earlier step
-      # failed, and the job itself runs under `!cancelled()`.
+      # `pattern:` merges whatever shards exist, so a failed upload would be
+      # silently merged over and report a green, incomplete run (INC-7913).
+      # Playwright's blob name includes a filter hash, so only the zero-padded
+      # shard suffix is stable enough to match on.
       - name: Verify all shard reports were downloaded
         if: ${{ !cancelled() }}
         env:

@@ -22,7 +22,7 @@ inputs:
     required: false
     default: "false"
   if-no-files-found:
-    description: Behaviour when no files match `path` -- `warn`, `error` or `ignore`.
+    description: Behaviour when no files match `path`, one of `warn`, `error` or `ignore`.
     required: false
     default: warn
 
@@ -36,23 +36,13 @@ outputs:
 
 runs:
   using: composite
-  # GitHub Actions has no retry primitive for a `uses:` step, so each attempt is
-  # a literal copy of the step gated on the previous attempt's outcome. Editing
-  # one attempt means editing all of them -- keep the `with:` blocks identical.
+  # No retry primitive exists for a `uses:` step, so each attempt is a literal
+  # copy gated on the previous attempt's outcome. Keep the `with:` blocks in sync.
   #
-  # A skipped step reports `outcome: skipped`, never `failure`, so gating each
-  # attempt on its immediate predecessor is enough: attempt 3 can only run if
-  # attempt 2 ran and failed, which in turn required attempt 1 to fail.
-  #
-  # The last attempt deliberately omits `continue-on-error` so an exhausted
-  # retry fails the job.
-  #
-  # `overwrite: true` is load-bearing, not cosmetic: a failed attempt leaves the
-  # artifact name reserved, so a later attempt would fail with `(409) Conflict`
-  # -- also non-retryable, which makes the 403-then-409 sequence terminal. It is
-  # safe here only because every caller uploads a name unique within the run;
-  # `overwrite` races when parallel jobs share one name (upload-artifact#506),
-  # so check that before reusing this action.
+  # `overwrite: true` is required, not cosmetic: a failed attempt reserves the
+  # artifact name, so a retry without it would hit a non-retryable 409. Safe
+  # here only because every caller uses a name unique within the run; it races
+  # when parallel jobs share one name (upload-artifact#506).
   steps:
     - name: Upload artifact (attempt 1 of 3)
       id: attempt-1
@@ -69,9 +59,7 @@ runs:
     - name: Wait before attempt 2
       if: steps.attempt-1.outcome == 'failure'
       shell: bash
-      # Jittered: matrix shards reach their upload step at nearly the same
-      # moment, so a fixed wait would have them all retry in lockstep and
-      # re-create the burst that a throttling-shaped 403 punishes.
+      # Jittered so matrix shards don't retry in lockstep and recreate the burst.
       run: sleep $(( 10 + RANDOM % 10 ))
 
     - name: Upload artifact (attempt 2 of 3)
@@ -90,7 +78,7 @@ runs:
     - name: Wait before attempt 3
       if: steps.attempt-2.outcome == 'failure'
       shell: bash
-      # Jittered for the same reason as the wait before attempt 2.
+      # Same reason as the wait before attempt 2.
       run: sleep $(( 10 + RANDOM % 10 ))
 
     - name: Upload artifact (attempt 3 of 3)
@@ -105,10 +93,8 @@ runs:
         if-no-files-found: ${{ inputs.if-no-files-found }}
         overwrite: true
 
-    # A retry that succeeds leaves the job green, so without this the only
-    # trace is a collapsed failed step nobody opens. Surfacing it in the run
-    # summary keeps a rising rate of absorbed failures -- a sub-outage
-    # degradation of artifact storage -- visible instead of silent.
+    # A successful retry leaves the job green, so surface it in the run summary
+    # to keep a rising rate of absorbed failures visible instead of silent.
     - name: Report absorbed retries
       if: ${{ !cancelled() && steps.attempt-1.outcome == 'failure' }}
       shell: bash
