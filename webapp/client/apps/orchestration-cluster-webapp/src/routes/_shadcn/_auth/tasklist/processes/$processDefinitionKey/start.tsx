@@ -7,6 +7,9 @@
  */
 
 import {useCallback} from 'react';
+import c4FormJsCss from '@bpmn-io/c4-theme/assets/form-js.css?url';
+import c4TokensCss from '@bpmn-io/c4-theme/assets/tokens.css?url';
+import formJsCss from '@bpmn-io/form-js-viewer/dist/assets/form-js.css?url';
 import {createFileRoute, useNavigate, useRouter, type ErrorComponentProps} from '@tanstack/react-router';
 import {useQueryClient, useSuspenseQuery} from '@tanstack/react-query';
 import {queries} from '#/shared/http/queries';
@@ -55,6 +58,13 @@ function getErrorVariant(error: unknown): StartProcessFormModalErrorVariant {
 }
 
 export const Route = createFileRoute('/_shadcn/_auth/tasklist/processes/$processDefinitionKey/start')({
+	head: () => ({
+		links: [
+			{rel: 'stylesheet', href: formJsCss},
+			{rel: 'stylesheet', href: c4TokensCss},
+			{rel: 'stylesheet', href: c4FormJsCss},
+		],
+	}),
 	loader: async ({context: {queryClient}, params: {processDefinitionKey}}) => {
 		const process = await queryClient.ensureQueryData(queries.getProcessDefinition(processDefinitionKey));
 
