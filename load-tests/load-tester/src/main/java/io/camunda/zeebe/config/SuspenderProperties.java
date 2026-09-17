@@ -48,9 +48,12 @@ public class SuspenderProperties {
   private int batchPageSize = 1000;
 
   // SPACED mode: how many ordinary instances to suspend/resume per cycle, and the gap left between
-  // consecutive suspend commands and consecutive resume commands. Resume of an instance still waits
-  // until its holdDuration has elapsed since its own suspend, so resumeInterval only spaces resumes
-  // that would otherwise be due together.
+  // consecutive suspend commands and consecutive resume commands. Set both intervals to 0 to
+  // suspend (and later resume) all `count` instances back to back as one simultaneous batch.
+  // Resume of an instance still waits until its holdDuration has elapsed since its own suspend, so
+  // resumeInterval only spaces resumes that would otherwise be due together. In SPACED mode
+  // `warmup` doubles as the one-off initial delay before the first cycle (so a pool of instances
+  // exists to suspend), and `batchInterval` is the idle gap between cycles.
   private int count = 100;
   private Duration suspendInterval = Duration.ofSeconds(1);
   private Duration resumeInterval = Duration.ofSeconds(1);

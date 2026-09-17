@@ -226,8 +226,10 @@ public class SuspensionMeter implements AutoCloseable {
 
   private void startSpacedMode() {
     LOG.info(
-        "Spaced mode: each cycle suspend {} '{}' instances spaced by {}, hold {} each, then resume "
-            + "spaced by {}, cycle gap {}",
+        "Spaced mode: warmup {} before first cycle, then each cycle suspend {} '{}' instances "
+            + "spaced by {} (0 = one simultaneous batch), hold {} each, resume spaced by {}, "
+            + "cycle gap {}",
+        cfg.getWarmup(),
         cfg.getCount(),
         cfg.getProcessId(),
         cfg.getSuspendInterval(),
@@ -235,10 +237,15 @@ public class SuspensionMeter implements AutoCloseable {
         cfg.getResumeInterval(),
         cfg.getBatchInterval());
 
-    // Repeating cycle: the fixed delay is the idle gap between cycles; the suspend/hold/resume
-    // timing within a cycle is driven by the sleeps in runSpacedCycle.
+    // Repeating cycle: warmup is the one-off initial delay so a pool of instances exists before the
+    // first suspend; batch-interval is the idle gap between cycles thereafter. The suspend/hold/
+    // resume timing within a cycle is driven by the sleeps in runSpacedCycle (suspend-interval and
+    // resume-interval of 0 make each phase a single simultaneous burst of `count` commands).
     executor.scheduleWithFixedDelay(
-        this::spacedCycle, 0, cfg.getBatchInterval().toMillis(), TimeUnit.MILLISECONDS);
+        this::spacedCycle,
+        cfg.getWarmup().toMillis(),
+        cfg.getBatchInterval().toMillis(),
+        TimeUnit.MILLISECONDS);
   }
 
   private void spacedCycle() {

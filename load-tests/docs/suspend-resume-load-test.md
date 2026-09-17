@@ -175,9 +175,11 @@ starter creates (`load-tester.starter.process-id`).
   suspends `count` instances, picking one **currently-active** instance just before each suspend
   (just-in-time, so a large `suspend-interval` never lands on an instance that already completed)
   and spacing consecutive suspends by `suspend-interval`; it holds each for `hold-duration` after
-  **its own** suspend, then resumes them spaced by `resume-interval`; `batch-interval` is the idle
-  gap between cycles. Instances are **not cancelled** — resume returns them to normal execution and
-  workers complete them. Use with a
+  **its own** suspend, then resumes them spaced by `resume-interval`; `warmup` is the one-off
+  initial delay before the first cycle and `batch-interval` is the idle gap between cycles. Set
+  `suspend-interval`/`resume-interval` to 0 to suspend/resume all `count` at once (a simultaneous
+  batch on a fixed clock). Instances are **not cancelled** — resume returns them to normal execution
+  and workers complete them. Use with a
   realistic starter profile (`load-tester.starter.bpmn-xml-path=...`) to suspend/resume a
   configurable number of realistic PIs with configurable spacing between suspends and resumes.
 
@@ -193,8 +195,9 @@ starter creates (`load-tester.starter.process-id`).
 | `hold-duration` | `30s` | How long an instance stays suspended before resume. |
 | `sample-size` | `100` | Candidates fetched per suspend cycle (single mode). |
 | `count` | `100` | Ordinary instances suspended/resumed per cycle (spaced mode). |
-| `suspend-interval` | `1s` | Gap between consecutive suspend commands (spaced mode). |
-| `resume-interval` | `1s` | Gap between consecutive resume commands (spaced mode); resume still waits for each instance's `hold-duration` first. |
+| `suspend-interval` | `1s` | Gap between consecutive suspend commands (spaced mode); `0` = suspend all `count` at once. |
+| `resume-interval` | `1s` | Gap between consecutive resume commands (spaced mode); `0` = resume all at once. Resume still waits for each instance's `hold-duration` first. |
+| `warmup` | `20s` | Spaced mode: one-off initial delay before the first cycle (also used by target mode). |
 
 The target process id is taken from `load-tester.starter.process-id` (the instances the
 starter creates), not configured separately.
@@ -258,11 +261,19 @@ expires. Collect ~30–60 min of cycles, then tear down:
 
 ### Realistic-profile suspend/resume (`spaced` mode)
 
-Suspend/resume a configurable number of **ordinary** realistic PIs (not the heavy target) at a
-controlled pace. The starter runs a realistic profile and the meter, each cycle, suspends `count`
-of its instances spaced by `suspend-interval`, holds `hold-duration`, resumes spaced by
-`resume-interval`, waits `batch-interval`, and repeats. Set the realistic starter profile the same
-way the `realistic` scenario does (BPMN + extra models + payload).
+Suspend/resume a configurable number of **ordinary** realistic PIs (not the heavy target) on a
+fixed clock. The starter runs a realistic profile; the meter waits `warmup` (so a pool of instances
+exists), then each cycle suspends `count` currently-active instances spaced by `suspend-interval`,
+holds `hold-duration`, resumes spaced by `resume-interval`, waits `batch-interval`, and repeats.
+Set the realistic starter profile the same way the `realistic` scenario does (BPMN + extra models +
+payload).
+
+**Simultaneous batch on a fixed clock.** Set `suspend-interval=0` and `resume-interval=0` so all
+`count` instances are suspended (then resumed) back to back as one burst (~sub-second — these are
+`count` single suspend commands issued together, not one atomic batch operation; the batch-operation
+API cannot be capped to an exact count, so single commands are used to hit an exact `count`). With
+`warmup=5m`, `hold-duration=5m`, `batch-interval=5m` you get: warm up 5 min, at T5 suspend 10, hold,
+at T10 resume 10, at T15 suspend 10, … — each phase 5 min apart.
 
 ```bash
 gh workflow run camunda-load-test.yml --ref 59933-suspend-resume-load-testing \
@@ -270,13 +281,13 @@ gh workflow run camunda-load-test.yml --ref 59933-suspend-resume-load-testing \
   -f ref=59933-suspend-resume-load-testing \
   -f scenario=realistic \
   -f ttl=1 \
-  -f load-test-load="--set global.extraConfig.load-tester.suspender.enabled=true --set global.extraConfig.load-tester.suspender.mode=SPACED --set global.extraConfig.load-tester.suspender.count=100 --set global.extraConfig.load-tester.suspender.suspend-interval=500ms --set global.extraConfig.load-tester.suspender.hold-duration=30s --set global.extraConfig.load-tester.suspender.resume-interval=500ms --set global.extraConfig.load-tester.suspender.batch-interval=30s"
+  -f load-test-load="--set global.extraConfig.load-tester.suspender.enabled=true --set global.extraConfig.load-tester.suspender.mode=SPACED --set global.extraConfig.load-tester.suspender.count=10 --set global.extraConfig.load-tester.suspender.suspend-interval=0s --set global.extraConfig.load-tester.suspender.resume-interval=0s --set global.extraConfig.load-tester.suspender.hold-duration=5m --set global.extraConfig.load-tester.suspender.warmup=5m --set global.extraConfig.load-tester.suspender.batch-interval=5m"
 ```
 
-`target-enabled` stays false (default). Tune `count` and the intervals per run. Read the same
-`suspender_*` client timers and broker `zeebe_process_instance_resume_duration` /
-`zeebe_buffered_commands_events_total` as above. Tear down with
-`kubectl delete namespace c8-spaced-suspend`.
+`target-enabled` stays false (default). Tune `count`, `warmup`, `hold-duration`, `batch-interval`
+per run. Read the same `suspender_*` client timers and broker
+`zeebe_process_instance_resume_duration` / `zeebe_buffered_commands_events_total` as above. Tear
+down with `kubectl delete namespace c8-spaced-suspend`.
 
 ## Deliverables / follow-ups
 
