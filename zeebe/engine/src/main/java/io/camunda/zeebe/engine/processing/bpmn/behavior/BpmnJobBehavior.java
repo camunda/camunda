@@ -830,7 +830,11 @@ public final class BpmnJobBehavior {
         // lease is left empty on purpose: the whole job is gone, so every activation's items must
         // be discarded regardless of the lease they were created with.
         commandWriter.appendNewCommand(
-            AgentHistoryIntent.DISCARD, new AgentHistoryRecord().setJobKey(jobKey).ignoreLease());
+            AgentHistoryIntent.DISCARD,
+            new AgentHistoryRecord()
+                .setJobKey(jobKey)
+                .ignoreLease()
+                .setProcessInstanceKey(job.getProcessInstanceKey()));
       }
     }
   }
