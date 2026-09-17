@@ -257,6 +257,22 @@ public class AgentHistoryCommitTest {
   }
 
   @Test
+  public void shouldEmitAgentHistoryCommitCommandWithUnsetKeyOnJobCompletion() {
+    final var serviceTaskInstance = deployAndCreateProcessInstance();
+    final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
+    final var job = activateJobForProcessInstanceWithLease(processInstanceKey);
+
+    ENGINE.job().withKey(job.key()).withLeaseToken(job.leaseToken()).complete();
+
+    final var commitCommand =
+        RecordingExporter.agentHistoryRecords(AgentHistoryIntent.COMMIT)
+            .onlyCommands()
+            .withJobKey(job.key())
+            .getFirst();
+    assertThat(commitCommand.getKey()).isEqualTo(-1L);
+  }
+
+  @Test
   public void shouldEmitCommittedEventOnCommitCommand() {
     final var serviceTaskInstance = deployAndCreateProcessInstance();
     final var elementInstanceKey = serviceTaskInstance.getKey();
