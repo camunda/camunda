@@ -14,6 +14,8 @@ import org.slf4j.Logger;
 
 public interface RetryStrategy {
 
+  String DEFAULT_OPERATION_NAME = "unknown";
+
   /**
    * Runs the given runnable with the defined retry strategy.
    *

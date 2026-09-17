@@ -19,6 +19,7 @@ import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import org.junit.jupiter.api.Test;
 
 final class PartitionGroupExporterStateInitializerTest {
@@ -296,7 +298,7 @@ final class PartitionGroupExporterStateInitializerTest {
                     .addMember(otherMember, initialPartitionState(config)),
                 "tenant-b",
                 groupWithMember(LOCAL_MEMBER_ID, config)),
-            postRestorePendingState());
+            postRestorePendingState("tenant-a", "tenant-b"));
 
     // when
     final var exporters = Map.of("tenant-a", Set.of("expA"));
@@ -392,7 +394,7 @@ final class PartitionGroupExporterStateInitializerTest {
                     .addMember(otherMember, initialPartitionState(config)),
                 "tenant-b",
                 groupWithMember(LOCAL_MEMBER_ID, config)),
-            postRestorePendingState());
+            postRestorePendingState("tenant-a", "tenant-b"));
 
     // when
     final var exporters = Map.of("tenant-a", Set.of("expA"), "tenant-b", Set.of("expA"));
@@ -440,7 +442,7 @@ final class PartitionGroupExporterStateInitializerTest {
             CurrentClusterConfiguration.INITIAL_VERSION,
             GlobalConfiguration.init(),
             Map.of("tenant-a", groupWithMember(LOCAL_MEMBER_ID, config)),
-            postRestorePendingState());
+            postRestorePendingState("tenant-a"));
     final var exporters = Map.of("tenant-a", Set.of("expA"));
 
     // when
@@ -453,15 +455,20 @@ final class PartitionGroupExporterStateInitializerTest {
     assertThat(result).isEqualTo(configuration);
   }
 
-  private static PhasedChangeState postRestorePendingState() {
+  /**
+   * The post-restore plan as {@code RestoreManager} writes it: one phase naming every restored
+   * partition group. The groups must be the configuration's own — a plan naming fewer groups than
+   * the configuration has is not a shape a restore can produce, and testing against one would let a
+   * single-group-only {@code isAfterRestore()} pass this suite.
+   */
+  private static PhasedChangeState postRestorePendingState(final String... groupIds) {
+    final Map<String, List<PartitionGroupOperation>> operations = new TreeMap<>();
+    for (final var groupId : groupIds) {
+      operations.put(groupId, List.of(new UpdateRoutingState(LOCAL_MEMBER_ID, Optional.empty())));
+    }
     final var plan =
         PhasedChangePlan.initForRestore(
-            List.of(
-                PartitionGroupPhase.sequential(
-                    Map.of(
-                        CurrentClusterConfiguration.DEFAULT_GROUP,
-                        List.of(new UpdateRoutingState(LOCAL_MEMBER_ID, Optional.empty()))))),
-            Instant.EPOCH);
+            List.of(PartitionGroupPhase.sequential(operations)), Instant.EPOCH);
     return new PhasedChangeState(1L, Map.of(plan.id(), plan), List.of());
   }
 

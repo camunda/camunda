@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
 import org.springframework.boot.convert.ApplicationConversionService;
@@ -548,6 +549,29 @@ public class UnifiedConfigurationHelper {
         return newValue;
       }
 
+      if (newValue == null) {
+        // The unified property has no value at all - neither declared nor defaulted - so there is
+        // nothing for the legacy value to conflict with. Fall back to the legacy value instead of
+        // failing startup, which is what a deployment that only configures the legacy property
+        // expects.
+        //
+        // This keys off the resolved value rather than newConfigPresent(), which the sibling modes
+        // use, because the question here is whether a value exists to compare against, not whether
+        // the operator typed the key. Two consequences for whoever revisits this: a unified
+        // property explicitly set to an empty value now yields the legacy value instead of failing,
+        // and a unified property whose default differs from the legacy value still fails, because a
+        // default is a value. Widening that second case would change what a legacy-only deployment
+        // gets for every property that has a default, so it is left as a product decision.
+        LOGGER.warn(
+            "No value is set for '{}', so the value configured in the legacy properties {} is used"
+                + " instead. Those legacy properties are no longer supported and should be removed"
+                + " in favor of '{}'.",
+            newProperty,
+            String.join(", ", legacyProperties),
+            newProperty);
+        return legacyValue;
+      }
+
       final String errorMessage =
           String.format(
               "Ambiguous configuration. The value %s=%s conflicts with the values '%s' from the legacy properties %s",
@@ -670,6 +694,12 @@ public class UnifiedConfigurationHelper {
     final Class<?> rawClass = expectedType.resolve();
     final ResolvableType[] generics = expectedType.getGenerics();
 
+    // structured types with no generics: a legacy property whose value is spread over sub-keys
+    // (foo.bar=1, foo.baz=2) rather than held at the key itself, so there is no string to convert.
+    if (isBindablePojo(expectedType)) {
+      return bindFromEnvironment(legacyProperty, rawClass);
+    }
+
     // simple types
     if (generics.length == 0) {
       final String strValue = getEnvironmentProperty(legacyProperty);
@@ -733,10 +763,37 @@ public class UnifiedConfigurationHelper {
       return !getCollectionFromEnvironment(property).isEmpty();
     } else if (isPropertyMap(expectedType)) {
       return !getMapFromEnvironment(property).isEmpty();
+    } else if (isBindablePojo(expectedType)) {
+      // Nothing is set at the key itself, so presence means "at least one sub-key binds".
+      return bindFromEnvironment(property, expectedType.resolve()) != null;
     } else {
       return environment.containsProperty(property)
           || environment.containsProperty(toDottedKebabCase(property));
     }
+  }
+
+  /**
+   * Whether the expected type has to be assembled from sub-keys rather than parsed from a single
+   * value.
+   *
+   * <p>Scalars, enums and anything else the conversion service can build from a string keep the
+   * plain {@code getProperty} path. Collections and maps have their own branches. What is left is a
+   * structured type — a POJO whose fields come from {@code <property>.<field>} entries — which the
+   * string path can only ever resolve to {@code null}, because no property exists at the bare key.
+   */
+  private static boolean isBindablePojo(final ResolvableType expectedType) {
+    final Class<?> rawClass = expectedType.resolve();
+    return rawClass != null
+        && !rawClass.isEnum()
+        && !isPropertyCollection(expectedType)
+        && !isPropertyMap(expectedType)
+        && !CONVERSION_SERVICE.canConvert(String.class, rawClass);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static <T> T bindFromEnvironment(final String property, final Class<?> rawClass) {
+    final var normalizedProperty = ConfigurationPropertyName.adapt(property, '.').toString();
+    return (T) Binder.get(environment).bind(normalizedProperty, Bindable.of(rawClass)).orElse(null);
   }
 
   private static boolean isPropertyCollection(final ResolvableType expectedType) {

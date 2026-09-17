@@ -29,6 +29,7 @@ describe('<DecisionPanel />', () => {
 		const screen = await renderDecisionPanel({decisionDefinitionSelection: {kind: 'no-match'}});
 
 		await expect.element(screen.getByText('There is no Decision selected')).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: /Delete Decision Definition/})).not.toBeInTheDocument();
 	});
 
 	it('shows an empty message when multiple versions are selected', async () => {
@@ -42,6 +43,7 @@ describe('<DecisionPanel />', () => {
 		await expect
 			.element(screen.getByText('There is more than one Version selected for Decision "Invoice Classification"'))
 			.toBeVisible();
+		await expect.element(screen.getByRole('button', {name: /Delete Decision Definition/})).not.toBeInTheDocument();
 	});
 
 	it('shows an empty message when the selected version exists in multiple tenants', async () => {
@@ -55,6 +57,7 @@ describe('<DecisionPanel />', () => {
 		await expect
 			.element(screen.getByText('Decision "Invoice Classification" exists in more than one Tenant'))
 			.toBeVisible();
+		await expect.element(screen.getByRole('button', {name: /Delete Decision Definition/})).not.toBeInTheDocument();
 	});
 
 	it('renders the decision diagram for a single selected version', async ({worker}) => {
@@ -66,6 +69,17 @@ describe('<DecisionPanel />', () => {
 
 		await expect.element(screen.getByTestId('decision-viewer')).toBeVisible();
 		await expect.element(screen.getByText('Invoice Amount')).toBeVisible();
+		await expect
+			.element(screen.getByRole('button', {name: 'Delete Decision Definition "My Decision - Version 1"'}))
+			.toBeVisible();
+	});
+
+	it('should retain deletion for a resolved single version during selection refetch', async () => {
+		const screen = await renderDecisionPanel({
+			decisionDefinitionSelection: {kind: 'single-version', definition: DEFINITION},
+			isDefinitionSelectionLoading: true,
+		});
+		await expect.element(screen.getByRole('button', {name: /Delete Decision Definition/})).toBeVisible();
 	});
 
 	it('retries loading a decision definition after an error', async ({worker}) => {

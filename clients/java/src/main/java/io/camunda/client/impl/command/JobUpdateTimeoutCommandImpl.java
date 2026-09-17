@@ -141,12 +141,12 @@ public class JobUpdateTimeoutCommandImpl
   }
 
   @Override
-  public UpdateTimeoutJobCommandStep2 withLeaseToken(final String leaseToken) {
-    if (leaseToken == null) {
+  public UpdateTimeoutJobCommandStep2 withJobLeaseToken(final String jobLeaseToken) {
+    if (jobLeaseToken == null) {
       return this;
     }
-    grpcRequestObjectBuilder.setLeaseToken(leaseToken);
-    httpRequestObject.setLeaseToken(leaseToken);
+    grpcRequestObjectBuilder.setJobLeaseToken(jobLeaseToken);
+    httpRequestObject.setJobLeaseToken(jobLeaseToken);
     return this;
   }
 

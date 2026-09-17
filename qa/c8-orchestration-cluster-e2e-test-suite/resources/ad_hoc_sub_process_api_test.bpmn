@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0f1wrj5" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.39.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0f1wrj5" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.39.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
   <bpmn:process id="AdHocSubProcess_API_Test" name="Ad hoc Sub Process APi Test" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1">
       <bpmn:outgoing>Flow_1mwhqz6</bpmn:outgoing>
@@ -7,6 +7,9 @@
     <bpmn:sequenceFlow id="Flow_1mwhqz6" sourceRef="StartEvent_1" targetRef="Before_AdHoc" />
     <bpmn:sequenceFlow id="Flow_09fa3mg" sourceRef="Before_AdHoc" targetRef="AdHoc_Subprocess" />
     <bpmn:adHocSubProcess id="AdHoc_Subprocess" name="Ad Hoc Subprocess">
+      <bpmn:extensionElements>
+        <zeebe:agentDefinition agentType="aiAgentSubProcess" />
+      </bpmn:extensionElements>
       <bpmn:incoming>Flow_09fa3mg</bpmn:incoming>
       <bpmn:outgoing>Flow_0rbz617</bpmn:outgoing>
       <bpmn:task id="Activity_A" name="Acitivity A" />

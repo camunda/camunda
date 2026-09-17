@@ -12,8 +12,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.application.commons.pt.EveryTenantTerminallyFailedException;
 import io.camunda.application.commons.rdbms.RdbmsSchemaInitializer.TerminalSchemaInitializationException;
+import io.camunda.configuration.Rdbms;
 import io.camunda.db.rdbms.NoopSchemaManager;
 import io.camunda.db.rdbms.RdbmsSchemaManager;
+import io.camunda.db.rdbms.exception.RdbmsSchemaMigrationFailedException;
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIncompatibleException;
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIndeterminateException;
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionUnreadableException;
@@ -231,6 +233,12 @@ final class RdbmsSchemaInitializerTest {
             RdbmsSchemaInitializer.isTerminal(
                 new TerminalSchemaInitializationException("no schema manager")))
         .isTrue();
+    assertThat(
+            RdbmsSchemaInitializer.isTerminal(
+                new RdbmsSchemaMigrationFailedException(
+                    "changelog cannot be applied", new IllegalStateException("checksum mismatch"))))
+        .as("an edited changeset stays mismatched however often the changelog is re-run")
+        .isTrue();
   }
 
   @Test
@@ -249,7 +257,7 @@ final class RdbmsSchemaInitializerTest {
   @Test
   void shouldRetryADegradedTenantWithoutABudgetThatRunsOut() {
     // given / when
-    final var retry = RdbmsSchemaInitializer.DEFAULT_RETRY;
+    final var retry = new Rdbms().getRetry();
 
     // then - a finite budget would leave every tenant that was migrating during a transient
     // database outage permanently degraded until an operator restarts the node

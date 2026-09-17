@@ -25,12 +25,12 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.TenantRestoreArguments;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
@@ -169,15 +169,15 @@ final class ProtoBufSerializerTest {
   }
 
   @Test
-  void shouldEncodeAndDecodeForceRemoveZoneRequest() {
+  void shouldEncodeAndDecodeRemoveZoneRequest() {
     // given
-    final var request = new ForceZoneRemoveRequest("us-west-1", true);
+    final var request = new RemoveZoneRequest("us-west-1", true, true);
 
     // when
-    final var encodedRequest = protoBufSerializer.encodeForceRemoveZoneRequest(request);
+    final var encodedRequest = protoBufSerializer.encodeRemoveZoneRequest(request);
 
     // then
-    final var decodedRequest = protoBufSerializer.decodeForceRemoveZoneRequest(encodedRequest);
+    final var decodedRequest = protoBufSerializer.decodeRemoveZoneRequest(encodedRequest);
     assertThat(decodedRequest).isEqualTo(request);
   }
 

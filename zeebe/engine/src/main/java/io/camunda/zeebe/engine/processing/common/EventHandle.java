@@ -103,12 +103,19 @@ public final class EventHandle {
   private long triggeringProcessEvent(
       final long processDefinitionKey,
       final long processInstanceKey,
+      final int storageOrdinal,
       final String tenantId,
       final long eventScopeKey,
       final DirectBuffer catchEventId,
       final DirectBuffer variables) {
     return eventTriggerBehavior.triggeringProcessEvent(
-        processDefinitionKey, processInstanceKey, tenantId, eventScopeKey, catchEventId, variables);
+        processDefinitionKey,
+        processInstanceKey,
+        storageOrdinal,
+        tenantId,
+        eventScopeKey,
+        catchEventId,
+        variables);
   }
 
   public void activateElement(
@@ -128,6 +135,7 @@ public final class EventHandle {
         triggeringProcessEvent(
             elementRecord.getProcessDefinitionKey(),
             elementRecord.getProcessInstanceKey(),
+            elementRecord.getStorageOrdinal(),
             elementRecord.getTenantId(),
             eventScopeKey,
             catchEvent.getId(),
@@ -161,6 +169,7 @@ public final class EventHandle {
     triggeringProcessEvent(
         jobRecord.getProcessDefinitionKey(),
         jobRecord.getProcessInstanceKey(),
+        jobRecord.getStorageOrdinal(),
         jobRecord.getTenantId(),
         jobRecord.getElementInstanceKey(),
         jobRecord.getElementIdBuffer(),
@@ -171,6 +180,7 @@ public final class EventHandle {
     triggeringProcessEvent(
         userTaskRecord.getProcessDefinitionKey(),
         userTaskRecord.getProcessInstanceKey(),
+        userTaskRecord.getStorageOrdinal(),
         userTaskRecord.getTenantId(),
         userTaskRecord.getElementInstanceKey(),
         userTaskRecord.getElementIdBuffer(),
@@ -264,6 +274,9 @@ public final class EventHandle {
     triggeringProcessEvent(
         processDefinitionKey,
         processInstanceKey,
+        // Note: temporarily hard coded, this will be fixed as part of
+        // this: https://github.com/camunda/camunda/issues/62587
+        -1,
         tenantId,
         processDefinitionKey /* The eventScope for the start event is the process definition key */,
         targetElementId,

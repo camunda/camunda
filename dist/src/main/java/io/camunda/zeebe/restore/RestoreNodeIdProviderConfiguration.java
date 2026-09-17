@@ -15,13 +15,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
-import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Cluster;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
-import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
-import io.camunda.zeebe.broker.partitioning.topology.StaticConfigurationGenerator;
 import io.camunda.zeebe.broker.system.BrokerDataDirectoryCopier;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
@@ -33,6 +30,7 @@ import io.camunda.zeebe.dynamic.nodeid.fs.NodeIdBasedDataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.VersionedNodeIdBasedDataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
+import io.camunda.zeebe.restore.PhysicalTenantRestoreConfigurations.PhysicalTenantBrokerConfigurations;
 import io.camunda.zeebe.restore.RestoreApp.PostRestoreAction;
 import io.camunda.zeebe.restore.RestoreApp.PostRestoreActionContext;
 import io.camunda.zeebe.restore.RestoreApp.PreRestoreAction;
@@ -41,9 +39,8 @@ import io.camunda.zeebe.restore.validation.PostRestoreValidator;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -105,9 +102,12 @@ public class RestoreNodeIdProviderConfiguration {
 
   @Bean
   public PostRestoreAction postRestoreAction(
-      final Optional<NodeIdRepository> nodeIdRepository, final BrokerBasedProperties brokerCfg) {
+      final Optional<NodeIdRepository> nodeIdRepository,
+      final BrokerBasedProperties brokerCfg,
+      final PhysicalTenantBrokerConfigurations physicalTenantConfigurations) {
     return switch (cluster.getNodeIdProvider().getType()) {
-      case FIXED -> (context) -> validateAfterRestore(brokerCfg, context);
+      case FIXED ->
+          (context) -> validateAfterRestore(brokerCfg, physicalTenantConfigurations, context);
       case S3 -> {
         if (nodeIdRepository.isEmpty()) {
           throw new IllegalStateException(
@@ -119,7 +119,7 @@ public class RestoreNodeIdProviderConfiguration {
           final var nodeId = context.nodeId();
           // Validate even if we skipped in case the restore was retried with empty disk, but the s3
           // object was not deleted.
-          validateAfterRestore(brokerCfg, context);
+          validateAfterRestore(brokerCfg, physicalTenantConfigurations, context);
 
           if (!context.skippedRestore()) {
             restoreStatusManager.markNodeRestored(restoreId, nodeId);
@@ -133,8 +133,12 @@ public class RestoreNodeIdProviderConfiguration {
   }
 
   private static void validateAfterRestore(
-      final BrokerBasedProperties brokerCfg, final PostRestoreActionContext context) {
-    final var postRestore = createPostRestoreValidator(brokerCfg);
+      final BrokerBasedProperties brokerCfg,
+      final PhysicalTenantBrokerConfigurations physicalTenantConfigurations,
+      final PostRestoreActionContext context) {
+    final var postRestore =
+        createPostRestoreValidator(
+            brokerCfg, physicalTenantConfigurations, context.restoredPhysicalTenantIds());
     if (!postRestore.verifyRestore()) {
       final String message;
       if (context.skippedRestore()) {
@@ -201,31 +205,42 @@ public class RestoreNodeIdProviderConfiguration {
     return initializer;
   }
 
-  private static PostRestoreValidator createPostRestoreValidator(final BrokerCfg brokerCfg) {
+  /**
+   * Verifies the restored data of the physical tenants this run restored.
+   *
+   * <p>Only the tenants it restored: a run covering a subset leaves the rest as they were, so
+   * requiring restored data for them would fail every partial restore. And not the default tenant
+   * alone either — each tenant's partitions live under their own partition-group segment of the
+   * data directory, so a validator built from the default tenant would report success while another
+   * restored tenant's partition directories were missing.
+   *
+   * <p>The partitions to check come from {@link ClusterRestore#localPartitionsOf}, the same static
+   * configuration the restore itself used to decide which partitions this broker replicates.
+   */
+  private static PostRestoreValidator createPostRestoreValidator(
+      final BrokerCfg brokerCfg,
+      final PhysicalTenantBrokerConfigurations physicalTenantConfigurations,
+      final Set<String> restoredPhysicalTenantIds) {
     final var cluster = brokerCfg.getCluster();
     final var localMember = MemberId.from(cluster.getZone(), cluster.getNodeId());
-    final var clusterTopology =
-        new PartitionDistribution(
-            StaticConfigurationGenerator.getStaticConfiguration(
-                    brokerCfg,
-                    Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, brokerCfg),
-                    localMember)
-                .generatePartitionDistribution());
-
-    final var partitionsToRestore =
-        clusterTopology.partitions().stream()
-            .filter(partitionMetadata -> partitionMetadata.members().contains(localMember))
-            .collect(Collectors.toSet());
-
     final var dataDir = brokerCfg.getData().getDirectory();
+
     final var partitionDirectories = new HashMap<PartitionMetadata, Path>();
+    for (final var physicalTenantId : restoredPhysicalTenantIds) {
+      ClusterRestore.localPartitionsOf(
+              brokerCfg, physicalTenantConfigurations.configurations(), physicalTenantId)
+          .forEach(
+              partitionMetadata ->
+                  partitionDirectories.put(
+                      partitionMetadata,
+                      RaftPartitionFactory.getPartitionDirectory(partitionMetadata.id(), dataDir)));
+    }
 
-    partitionsToRestore.forEach(
-        partitionMetadata ->
-            partitionDirectories.put(
-                partitionMetadata,
-                RaftPartitionFactory.getPartitionDirectory(partitionMetadata.id(), dataDir)));
-
-    return new PostRestoreValidator(localMember, partitionDirectories, Path.of(dataDir));
+    // Only a restore covering every configured tenant writes the topology file; a partial one
+    // leaves it to the tenants that still depend on it, so its absence is not a failure here.
+    final var clusterWide =
+        restoredPhysicalTenantIds.containsAll(physicalTenantConfigurations.physicalTenantIds());
+    return new PostRestoreValidator(
+        localMember, partitionDirectories, Path.of(dataDir), clusterWide);
   }
 }

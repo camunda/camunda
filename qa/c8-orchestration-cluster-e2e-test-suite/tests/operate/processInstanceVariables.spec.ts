@@ -505,7 +505,7 @@ test.describe('Process Instance Variables', () => {
     });
   });
 
-  test('Inline JSON edit uses Monaco textarea', async ({
+  test('Inline JSON edit uses CodeMirror editor', async ({
     page,
     operateProcessInstancePage,
     operateHomePage,
@@ -529,11 +529,11 @@ test.describe('Process Instance Variables', () => {
       );
     });
 
-    await test.step('Verify the inline editor is a Monaco textarea, not a plain text input', async () => {
+    await test.step('Verify the inline editor is a CodeMirror editor, not a plain text input', async () => {
       await expect(variable.editor).toBeVisible({timeout: 10000});
     });
 
-    await test.step('Edit the inline value using Monaco and trigger save', async () => {
+    await test.step('Edit the inline value using CodeMirror and trigger save', async () => {
       await operateProcessInstancePage.clearVariableValueInput();
       await operateProcessInstancePage.fillVariableValueInput(
         '{"name":"Charlie","age":35}',

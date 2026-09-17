@@ -149,6 +149,20 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- Backs a JsonMapper test double that cannot produce Jackson 2 trees, covering the
+         assertions against a JSON library other than the one they are built on. -->
+    <dependency>
+      <groupId>tools.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>tools.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>org.wiremock</groupId>
       <artifactId>wiremock-standalone</artifactId>

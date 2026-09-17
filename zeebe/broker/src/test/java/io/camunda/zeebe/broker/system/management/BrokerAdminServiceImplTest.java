@@ -23,7 +23,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 final class BrokerAdminServiceImplTest {
 
   private final BrokerAdminServiceImpl service =
-      new BrokerAdminServiceImpl(mock(PartitionManager.class));
+      new BrokerAdminServiceImpl(() -> mock(PartitionManager.class));
 
   @ParameterizedTest
   @ValueSource(strings = {"pauseExporting", "softPauseExporting", "resumeExporting"})

@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ForceRemoveBrokersRequestTransformer;
-import io.camunda.zeebe.dynamic.config.api.ForceRemoveZoneTransformer;
+import io.camunda.zeebe.dynamic.config.api.RemoveZoneTransformer;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor.NoopClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinatorImpl;
@@ -49,14 +49,15 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * A forced removal is what an operator reaches for once brokers or a whole zone are already gone,
- * so it has to reconfigure every physical tenant's partitions and not only the default tenant's.
- * Force-reconfiguring the default tenant alone left the departing brokers replicating the other
- * tenants' partitions, and the member removal that follows — which checks every partition group —
- * then refused the whole plan during validation, leaving the configuration untouched. A cluster
- * with more than one tenant could not use its recovery paths at all.
+ * Zone and broker removal must reconfigure every physical tenant's partitions and not only the
+ * default tenant's. Force-reconfiguring the default tenant alone left the departing brokers
+ * replicating the other tenants' partitions, and the member removal that follows — which checks
+ * every partition group — then refused the whole plan during validation, leaving the configuration
+ * untouched. A cluster with more than one tenant could not use its recovery paths at all.
  *
  * <p>Driven through the coordinator rather than the transformers, because the refusal came from the
  * appliers rather than from the plan: the coordinator runs the whole plan through the real ones —
@@ -93,7 +94,7 @@ final class PhysicalTenantForcedRemovalTest {
 
     // when — broker 2 is gone
     final var configuration =
-        forceRemove(new ForceRemoveBrokersRequestTransformer(Set.of(BARE_2), BARE_0));
+        simulate(new ForceRemoveBrokersRequestTransformer(Set.of(BARE_2), BARE_0));
 
     // then — tenant A keeps its partition on the broker that survives, the default tenant is
     // untouched, and broker 2 has left
@@ -108,8 +109,9 @@ final class PhysicalTenantForcedRemovalTest {
         .containsOnlyKeys(BARE_0, BARE_1);
   }
 
-  @Test
-  void shouldForceRemoveAZoneFromEveryPhysicalTenant() {
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void shouldRemoveAZoneFromEveryPhysicalTenant(final boolean force) {
     // given — two zones of one broker each, both tenants replicated across both
     final var members = Set.of(ZONE_A_0, ZONE_B_0);
     wire(
@@ -118,8 +120,8 @@ final class PhysicalTenantForcedRemovalTest {
             cluster(members, members).setPartitionDistributorConfig(DUAL_ZONE),
             cluster(members, members)));
 
-    // when — zone-b fails over
-    final var configuration = forceRemove(new ForceRemoveZoneTransformer(ZONE_B));
+    // when — zone-b is removed, either gracefully or by force
+    final var configuration = simulate(new RemoveZoneTransformer(ZONE_B, force));
 
     // then — every tenant is left on the surviving zone, which is also the only one the persisted
     // layout still names
@@ -139,13 +141,12 @@ final class PhysicalTenantForcedRemovalTest {
   /**
    * Runs the request and answers with the configuration it produces.
    *
-   * <p>A dry run rather than a real apply: applying would drive each operation on the broker that
-   * is named by it, and the brokers a forced removal is aimed at are by definition not running. The
-   * dry run still puts the whole plan through the real appliers — the member leave that used to
-   * refuse it among them — so a plan that misses a tenant fails here exactly as it does in a real
+   * <p>A dry run rather than a real apply: it puts the whole plan through the real appliers — the
+   * member leave that used to refuse it among them — without driving operations on a broker that is
+   * being removed. A plan that misses a tenant therefore fails here exactly as it does in a real
    * cluster.
    */
-  private CurrentClusterConfiguration forceRemove(final ConfigurationChangeRequest request) {
+  private CurrentClusterConfiguration simulate(final ConfigurationChangeRequest request) {
     return coordinator.simulateOperations(request).join().finalMultiConfiguration();
   }
 

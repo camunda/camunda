@@ -14,6 +14,7 @@ import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beans.SearchEngineSchemaManagerProperties;
+import java.time.Duration;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -122,5 +123,101 @@ class SearchEngineSchemaManagerPropertiesOverrideTest {
 
     // then
     assertThat(override.isVersionCheckRestrictionEnabled()).isFalse();
+  }
+
+  @Test
+  void shouldApplyRetryForElasticsearch() {
+    // given
+    final Camunda camunda = new Camunda();
+    final SecondaryStorage secondaryStorage = camunda.getData().getSecondaryStorage();
+    secondaryStorage.setType(SecondaryStorageType.elasticsearch);
+    secondaryStorage.getElasticsearch().getRetry().setMaxRetries(7);
+    secondaryStorage.getElasticsearch().getRetry().setMinRetryDelay(Duration.ofSeconds(1));
+    secondaryStorage.getElasticsearch().getRetry().setMaxRetryDelay(Duration.ofSeconds(20));
+
+    final SearchEngineSchemaManagerProperties override = new SearchEngineSchemaManagerProperties();
+
+    // when
+    SearchEngineSchemaManagerPropertiesOverride.applyTo(camunda, override);
+
+    // then
+    assertThat(override.getRetry().getMaxRetries()).isEqualTo(7);
+    assertThat(override.getRetry().getMinRetryDelay()).isEqualTo(Duration.ofSeconds(1));
+    assertThat(override.getRetry().getMaxRetryDelay()).isEqualTo(Duration.ofSeconds(20));
+  }
+
+  @Test
+  void shouldApplyRetryForOpensearch() {
+    // given
+    final Camunda camunda = new Camunda();
+    final SecondaryStorage secondaryStorage = camunda.getData().getSecondaryStorage();
+    secondaryStorage.setType(SecondaryStorageType.opensearch);
+    secondaryStorage.getOpensearch().getRetry().setMaxRetries(7);
+
+    final SearchEngineSchemaManagerProperties override = new SearchEngineSchemaManagerProperties();
+
+    // when
+    SearchEngineSchemaManagerPropertiesOverride.applyTo(camunda, override);
+
+    // then
+    assertThat(override.getRetry().getMaxRetries()).isEqualTo(7);
+  }
+
+  @Test
+  void shouldApplyUnboundedRetryByDefault() {
+    // given
+    final Camunda camunda = new Camunda();
+    final SecondaryStorage secondaryStorage = camunda.getData().getSecondaryStorage();
+    secondaryStorage.setType(SecondaryStorageType.elasticsearch);
+
+    final SearchEngineSchemaManagerProperties override = new SearchEngineSchemaManagerProperties();
+
+    // when
+    SearchEngineSchemaManagerPropertiesOverride.applyTo(camunda, override);
+
+    // then
+    assertThat(override.getRetry().getMaxRetries()).isEqualTo(Integer.MAX_VALUE);
+    assertThat(override.getRetry().getMinRetryDelay()).isEqualTo(Duration.ofMillis(500));
+    assertThat(override.getRetry().getMaxRetryDelay()).isEqualTo(Duration.ofSeconds(10));
+  }
+
+  /**
+   * The override shares its retry instance with the legacy bean after {@code
+   * BeanUtils.copyProperties}, so applying must replace it rather than mutate it in place.
+   */
+  @Test
+  void shouldReplaceRetryInstanceRatherThanMutateIt() {
+    // given
+    final Camunda camunda = new Camunda();
+    final SecondaryStorage secondaryStorage = camunda.getData().getSecondaryStorage();
+    secondaryStorage.setType(SecondaryStorageType.elasticsearch);
+    secondaryStorage.getElasticsearch().getRetry().setMaxRetries(7);
+
+    final SearchEngineSchemaManagerProperties override = new SearchEngineSchemaManagerProperties();
+    final var sharedRetry = override.getRetry();
+    sharedRetry.setMaxRetries(3);
+
+    // when
+    SearchEngineSchemaManagerPropertiesOverride.applyTo(camunda, override);
+
+    // then
+    assertThat(override.getRetry()).isNotSameAs(sharedRetry);
+    assertThat(sharedRetry.getMaxRetries()).isEqualTo(3);
+  }
+
+  @Test
+  void shouldNotTouchRetryForRdbms() {
+    // given
+    final Camunda camunda = new Camunda();
+    camunda.getData().getSecondaryStorage().setType(SecondaryStorageType.rdbms);
+
+    final SearchEngineSchemaManagerProperties override = new SearchEngineSchemaManagerProperties();
+    final var untouchedRetry = override.getRetry();
+
+    // when
+    SearchEngineSchemaManagerPropertiesOverride.applyTo(camunda, override);
+
+    // then
+    assertThat(override.getRetry()).isSameAs(untouchedRetry);
   }
 }

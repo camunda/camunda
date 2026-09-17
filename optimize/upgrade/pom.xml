@@ -171,7 +171,7 @@
     <dependency>
       <groupId>io.github.classgraph</groupId>
       <artifactId>classgraph</artifactId>
-      <version>4.8.194</version>
+      <version>4.8.195</version>
       <scope>provided</scope>
     </dependency>
 
@@ -183,7 +183,7 @@
     <dependency>
       <groupId>com.vdurmont</groupId>
       <artifactId>semver4j</artifactId>
-      <version>3.1.0</version>
+      <version>${version.semver4j}</version>
       <scope>provided</scope>
     </dependency>
 

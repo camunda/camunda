@@ -49,6 +49,13 @@ inputs:
     description: A modifier to use for maven cache key
     required: false
     default: "shared"
+  maven-cache-download-timeout-mins:
+    description: |
+      Upper bound, in minutes, on how long the Maven cache restore may spend downloading a
+      single cache segment before aborting. Raise it only for a job with a legitimately large
+      cache; see the setup-maven-cache action for why the bound exists.
+    required: false
+    default: "3"
   maven-mirrors:
     description: |
       JSON list of extra Maven mirrors.
@@ -165,6 +172,7 @@ runs:
     uses: ./.github/actions/setup-maven-cache
     with:
       maven-cache-key-modifier: ${{ inputs.maven-cache-key-modifier }}
+      cache-download-timeout-mins: ${{ inputs.maven-cache-download-timeout-mins }}
   # Camunda Nexus and extra mirrors/servers must be merged on ids (extra values have precedence).
   - name: Get Maven mirrors and servers to use
     id: maven
@@ -232,7 +240,7 @@ runs:
       mirrors: ${{ steps.maven.outputs.mirrors }}
   - uses: ./.github/actions/apt-fast-mirror-failover
     if: inputs.time-zone != '' && runner.os == 'Linux'
-  # tzdata is not installed in self-hosted runners. `timeout` runs inside the sudo'd
+  # tzdata may be missing on self-hosted runners. `timeout` runs inside the sudo'd
   # root process tree so it can self-terminate a hung apt-get without nick-fields/retry
   # having to kill across the privilege boundary -- doing that externally throws
   # `kill EPERM` and crashes instead of retrying, see
@@ -240,12 +248,20 @@ runs:
   - name: Install tzdata
     if: inputs.time-zone != '' && runner.os == 'Linux'
     uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+    env:
+      TZ_IDENTIFIER: ${{ inputs.time-zone }}
     with:
       max_attempts: 3
       retry_wait_seconds: 10
       timeout_minutes: 2
       shell: bash
-      command: sudo timeout 115 bash -c "apt-get update && apt-get install -y tzdata"
+      # Skip the install when the zone file Set Time Zone symlinks already exists,
+      # so a mirror outage cannot fail an otherwise-ready runner. Check that exact
+      # file, not just /usr/share/zoneinfo -- a partial zoneinfo would leave
+      # /etc/localtime dangling, which `ln -s` reports as success.
+      command: |
+        [ -e "/usr/share/zoneinfo/${TZ_IDENTIFIER}" ] && exit 0
+        sudo timeout 115 bash -c "apt-get update && apt-get install -y tzdata"
   - name: Set Time Zone
     if: inputs.time-zone != '' && runner.os == 'Linux'
     env:
@@ -307,3 +323,10 @@ runs:
       command: |
         printf '%s' "${DOCKER_PASSWORD}" | docker login reg.mini.dev \
           --username minimus --password-stdin
+  - name: Configure Testcontainers
+    # `pull.timeout` is the whole budget Testcontainers allows for pulling an image, retries
+    # included. Its 120s default leaves no headroom for a cold multi-hundred-MB pull on a CI
+    # runner, which is what failed the Keycloak-based ITs. Allow the same 10 minutes the compose
+    # action allows per attempt when it pre-pulls Elasticsearch for the database ITs.
+    run: echo "TESTCONTAINERS_PULL_TIMEOUT=600" >> "$GITHUB_ENV"
+    shell: bash

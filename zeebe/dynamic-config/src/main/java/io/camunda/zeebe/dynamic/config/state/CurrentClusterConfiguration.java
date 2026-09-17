@@ -762,12 +762,18 @@ public record CurrentClusterConfiguration(
   }
 
   /**
-   * Returns true if this configuration was produced by migrating a legacy {@link
-   * ClusterConfiguration} that was itself {@link ClusterConfiguration#isAfterRestore()}: the
-   * pending plan's id is {@link PhasedChangePlan#RESTORED_PLAN_ID} (see {@link
-   * PhasedChangePlan#hasRestorePlanId()}) and it contains exactly one phase with exactly one
+   * Returns true if this configuration was produced by a restore: the pending plan's id is {@link
+   * PhasedChangePlan#RESTORED_PLAN_ID} (see {@link PhasedChangePlan#hasRestorePlanId()}) and it
+   * contains exactly one {@link PartitionGroupPhase} whose every named group runs exactly one
    * operation, an {@link UpdateRoutingState}. Mirrors {@link
    * ClusterConfiguration#isAfterRestore()}.
+   *
+   * <p>The phase may name any number of groups, one per restored physical tenant: {@code
+   * RestoreManager} writes one {@link UpdateRoutingState} per group into a single phase, and {@link
+   * #applyPhase} activates every one of them. Constraining this to a single group would silently
+   * report {@code false} for a multi-tenant restore, switching off the post-restore handling in
+   * {@link io.camunda.zeebe.dynamic.config.PartitionGroupExporterStateInitializer} exactly when it
+   * is needed most — with no error and no log.
    */
   public boolean isAfterRestore() {
     return phasedChangeState.pending().values().stream().anyMatch(this::isRestorePlan);
@@ -777,7 +783,7 @@ public record CurrentClusterConfiguration(
     return plan.hasRestorePlanId()
         && plan.phases().size() == 1
         && plan.phases().get(0) instanceof final PartitionGroupPhase groupPhase
-        && groupPhase.groupGraphs().size() == 1
+        && !groupPhase.groupGraphs().isEmpty()
         && groupPhase.groupOperations().values().stream()
             .allMatch(
                 operations ->

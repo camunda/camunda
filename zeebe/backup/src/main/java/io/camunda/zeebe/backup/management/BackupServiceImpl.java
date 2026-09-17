@@ -18,6 +18,7 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.api.Checkpoint;
+import io.camunda.zeebe.backup.api.ListOptions;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.processing.state.CheckpointMetadataValue;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
@@ -42,6 +43,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.SequencedCollection;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -53,6 +56,10 @@ import org.slf4j.LoggerFactory;
 
 final class BackupServiceImpl {
   private static final Logger LOG = LoggerFactory.getLogger(BackupServiceImpl.class);
+
+  /** Most backups checked for being in progress after a leader change. */
+  private static final int IN_PROGRESS_SCAN_LIMIT = 1000;
+
   private final Set<InProgressBackup> backupsInProgress = new HashSet<>();
   private final BackupStore backupStore;
   private final LogStreamWriter logStreamWriter;
@@ -279,28 +286,39 @@ final class BackupServiceImpl {
     return storeQueries.getBackupStatus(partitionId, checkpointId, executor);
   }
 
+  /**
+   * Marks backups a previous leader left in progress as failed. Reading every manifest of the
+   * partition takes minutes on a large store, so only the newest backups are scanned: anything
+   * older was left behind by a leader change that an earlier scan already cleaned up.
+   */
   void failInProgressBackups(
       final int partitionId, final long lastCheckpointId, final ConcurrencyControl executor) {
-    if (lastCheckpointId != CheckpointState.NO_CHECKPOINT) {
-      executor.run(
-          () ->
-              backupStore
-                  .list(
-                      new BackupIdentifierWildcardImpl(
-                          Optional.empty(), Optional.of(partitionId), CheckpointPattern.any()))
-                  .thenAcceptAsync(
-                      backups ->
-                          backups.stream()
-                              .filter(b -> b.id().checkpointId() <= lastCheckpointId)
-                              .forEach(b -> failInProgressBackup(b, executor)),
-                      executor)
-                  .exceptionallyAsync(
-                      failure -> {
-                        LOG.warn("Failed to list backups that should be marked as failed", failure);
-                        return null;
-                      },
-                      executor));
+    if (lastCheckpointId == CheckpointState.NO_CHECKPOINT) {
+      return;
     }
+    // The store call is deferred into executor.run below so a store that is shutting down (a
+    // racing leadership change) fails the returned future asynchronously instead of throwing
+    // RejectedExecutionException synchronously on the caller's thread.
+    executor.run(
+        () ->
+            backupStore
+                .list(
+                    new BackupIdentifierWildcardImpl(
+                        Optional.empty(), Optional.of(partitionId), CheckpointPattern.any()),
+                    ListOptions.newestFirst(
+                        OptionalLong.empty(), OptionalInt.of(IN_PROGRESS_SCAN_LIMIT)))
+                .thenAcceptAsync(
+                    backups ->
+                        backups.stream()
+                            .filter(backup -> backup.id().checkpointId() <= lastCheckpointId)
+                            .forEach(backup -> failInProgressBackup(backup, executor)),
+                    executor)
+                .exceptionallyAsync(
+                    failure -> {
+                      LOG.warn("Failed to list backups that should be marked as failed", failure);
+                      return null;
+                    },
+                    executor));
   }
 
   private void failInProgressBackup(

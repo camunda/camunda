@@ -164,12 +164,18 @@ export class OperateFiltersPanelPage {
     if (await this.isOptionalFilterDisplayed(filterName)) {
       return;
     }
+    // The dropdown is a Radix menu that mounts its items asynchronously, so
+    // clicking the trigger and immediately clicking the item can race the
+    // menu's open animation under CI load. Wait for the trigger and then the
+    // item to actually be visible, mirroring TaskPanelPage.filterBy()'s
+    // handling of the equivalent Tasklist dropdown.
+    await expect(this.moreFiltersButton).toBeVisible({timeout: 10000});
     await this.moreFiltersButton.click();
-    await this.page
-      .getByRole('menuitem', {
-        name: filterName,
-      })
-      .click();
+    const menuItem = this.page.getByRole('menuitem', {
+      name: filterName,
+    });
+    await expect(menuItem).toBeVisible({timeout: 10000});
+    await menuItem.click();
   }
 
   async removeOptionalFilter(filterName: OptionalFilter) {
@@ -221,14 +227,17 @@ export class OperateFiltersPanelPage {
   async selectFlowNode(option: string) {
     // The flow-node dropdown can fail to open, or render before its options
     // have loaded; retry opening it until the target option is present (same
-    // approach as selectVersion).
+    // approach as selectVersion). Changing the version reloads the diagram,
+    // which rebuilds this option list -- so the option can detach (and the menu
+    // collapse) between resolving it and clicking, making a click outside the
+    // retry burn its whole timeout on a stale element. Open AND click inside
+    // the retry so a detach just re-opens and re-clicks.
     await expect(async () => {
       await this.flowNodeFilter.click();
-      await expect(this.getOptionByName(option, false)).toBeVisible({
-        timeout: 5_000,
-      });
+      const optionLocator = this.getOptionByName(option, false);
+      await expect(optionLocator).toBeVisible({timeout: 5_000});
+      await optionLocator.click({timeout: 5_000});
     }).toPass({timeout: 30_000});
-    await this.getOptionByName(option, false).click({timeout: 30000});
   }
 
   async fillBusinessIdFilter(value: string) {

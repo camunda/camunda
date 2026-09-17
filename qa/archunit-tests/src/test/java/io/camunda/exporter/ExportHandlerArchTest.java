@@ -26,7 +26,7 @@ import io.camunda.exporter.handlers.OrdinalIndexExportHandler;
 import io.camunda.exporter.handlers.auditlog.AuditLogCleanupHandler;
 import io.camunda.exporter.handlers.auditlog.AuditLogHandler;
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.zeebe.protocol.record.value.StorageOrdinalKeyRelated;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -115,7 +115,7 @@ public class ExportHandlerArchTest {
 
   @ArchTest
   static final ArchRule
-      EXPORT_HANDLERS_SHOULD_NOT_IMPLEMENT_MAIN_FOR_STORAGE_ORDINAL_KEY_RELATED_RECORDS =
+      EXPORT_HANDLERS_SHOULD_NOT_IMPLEMENT_MAIN_FOR_STORAGE_ORDINAL_RELATED_RECORDS =
           ArchRuleDefinition.classes()
               .that()
               .areAssignableTo(MainIndexExporterHandler.class)
@@ -123,14 +123,14 @@ public class ExportHandlerArchTest {
               .doNotHaveModifier(JavaModifier.ABSTRACT)
               .should(
                   new ArchCondition<>(
-                      StorageOrdinalKeyRelated.class.getSimpleName()
+                      StorageOrdinalRelated.class.getSimpleName()
                           + " records should not target main indexes") {
                     @Override
                     public void check(final JavaClass item, final ConditionEvents events) {
                       for (final var clazz : item.getClassHierarchy()) {
                         for (final var interf : clazz.getInterfaces()) {
                           for (final var rawType : interf.getAllInvolvedRawTypes()) {
-                            if (rawType.isAssignableTo(StorageOrdinalKeyRelated.class)) {
+                            if (rawType.isAssignableTo(StorageOrdinalRelated.class)) {
                               events.add(
                                   SimpleConditionEvent.violated(
                                       item,
@@ -141,7 +141,7 @@ public class ExportHandlerArchTest {
                                           + " but handles a record type ("
                                           + rawType.getName()
                                           + ") that implements "
-                                          + StorageOrdinalKeyRelated.class.getSimpleName()));
+                                          + StorageOrdinalRelated.class.getSimpleName()));
                             }
                           }
                         }

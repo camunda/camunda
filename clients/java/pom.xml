@@ -26,9 +26,6 @@
     <version.java>8</version.java>
     <license.header.file>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header.file>
     <openapi.dir>${maven.multiModuleProjectDirectory}/zeebe/gateway-protocol/src/main/proto/v2</openapi.dir>
-    <!-- Roaster builds the emitted Java AST inside the maven-antrun-plugin classpath;
-         only used by this module so the version is local. -->
-    <version.roaster>2.31.1.Final</version.roaster>
   </properties>
 
   <dependencies>
@@ -261,6 +258,12 @@
 
     <dependency>
       <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers-junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
@@ -293,6 +296,22 @@
         <directory>src/main/resources</directory>
       </resource>
     </resources>
+    <testResources>
+      <testResource>
+        <filtering>false</filtering>
+        <directory>src/test/resources</directory>
+        <excludes>
+          <exclude>client-java-testcontainers.properties</exclude>
+        </excludes>
+      </testResource>
+      <testResource>
+        <filtering>true</filtering>
+        <directory>src/test/resources</directory>
+        <includes>
+          <include>client-java-testcontainers.properties</include>
+        </includes>
+      </testResource>
+    </testResources>
 
     <plugins>
       <plugin>
@@ -395,8 +414,8 @@
         <dependencies>
           <!-- snakeyaml powers DiscriminatorModelPostProcessor's spec loading; roaster builds
                the emitted Java AST. Listed here because the antrun plugin classloader does not
-               see project compile dependencies. Versions come from parent's
-               dependencyManagement; roaster is local to this module (version.roaster property). -->
+               see project compile dependencies. Versions come from parent's dependencyManagement;
+               roaster uses the shared parent property. -->
           <dependency>
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
@@ -444,6 +463,7 @@
                     <path refid="maven.plugin.classpath"/>
                   </classpath>
                   <arg value="${openapi.dir}"/>
+                  <arg value="${project.build.directory}/generated-sources/openapi/src/main/io/camunda/client/protocol/rest"/>
                   <arg value="${project.build.directory}/generated-sources/openapi/src/main/io/camunda/client/protocol/rest"/>
                 </java>
               </target>

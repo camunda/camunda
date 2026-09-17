@@ -42,7 +42,12 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   /** Maximum number of connections allowed per route in the ES and OS connector connection pool. */
   private Integer maxConnectionsPerRoute;
 
-  /** How many shards the search engine database uses for all indices. */
+  /**
+   * How many shards the search engine database uses for indices that do not pin a shard count of
+   * their own. In practice that is the process-instance-volume indices; the remaining indices
+   * default to a single shard whatever this is set to. Use number-of-shards-per-index to override
+   * an individual index.
+   */
   private int numberOfShards = 1;
 
   /** How many replicas the search engine database uses for all indices. */
@@ -58,7 +63,8 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   private Map<String, Integer> numberOfReplicasPerIndex = new HashMap<>();
 
   /** Per-index shard overrides. */
-  private Map<String, Integer> numberOfShardsPerIndex = new HashMap<>();
+  @NestedConfigurationProperty
+  private NumberOfShardsPerIndex numberOfShardsPerIndex = new NumberOfShardsPerIndex();
 
   /** Per-index refresh interval overrides. */
   private Map<String, String> refreshIntervalByIndexName = new HashMap<>();
@@ -103,6 +109,9 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   private BatchOperation batchOperations = new BatchOperation(databaseName());
 
   @NestedConfigurationProperty private Bulk bulk = new Bulk(databaseName());
+
+  @NestedConfigurationProperty
+  private SchemaManagerRetry retry = new SchemaManagerRetry(databaseName());
 
   @NestedConfigurationProperty
   private DocumentBasedSecondaryStorageBackup backup =
@@ -268,6 +277,14 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     this.bulk = bulk;
   }
 
+  public SchemaManagerRetry getRetry() {
+    return retry;
+  }
+
+  public void setRetry(final SchemaManagerRetry retry) {
+    this.retry = retry;
+  }
+
   public SecondaryStorageSecurity getSecurity() {
     return security;
   }
@@ -344,11 +361,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     this.dateFormat = dateFormat;
   }
 
-  /**
-   * See {@link #getMaxConnections()} for why this is resolved as {@code SUPPORTED}. The field is
-   * unset by default, so comparing a legacy timeout against the unified {@code null} would fail
-   * startup.
-   */
+  /** See {@link #getMaxConnections()} for why this is resolved as {@code SUPPORTED}. */
   public Duration getSocketTimeout() {
     final var socketTimeout =
         UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
@@ -364,11 +377,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     this.socketTimeout = socketTimeout;
   }
 
-  /**
-   * See {@link #getMaxConnections()} for why this is resolved as {@code SUPPORTED}. The field is
-   * unset by default, so comparing a legacy timeout against the unified {@code null} would fail
-   * startup.
-   */
+  /** See {@link #getMaxConnections()} for why this is resolved as {@code SUPPORTED}. */
   public Duration getConnectionTimeout() {
     final var connectionTimeoutInt =
         UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
@@ -386,10 +395,16 @@ public abstract class DocumentBasedSecondaryStorageDatabase
 
   /**
    * Resolved with {@link BackwardsCompatibilityMode#SUPPORTED} rather than the {@code
-   * SUPPORTED_ONLY_IF_VALUES_MATCH} its neighbours use. The neighbours all have a non-null default,
-   * so a legacy value has something to be compared against; this property is unset by default.
-   * Under {@code SUPPORTED_ONLY_IF_VALUES_MATCH} every deployment that configures only the legacy
-   * property would compare it against the unset unified value and fail to start.
+   * SUPPORTED_ONLY_IF_VALUES_MATCH} its neighbours use, and deliberately kept that way.
+   *
+   * <p>{@code SUPPORTED} was originally chosen because matching mode failed startup whenever the
+   * unified value was unset, which is always the case here - the field has no default. {@link
+   * UnifiedConfigurationHelper} now falls back to the legacy value instead of failing, so that
+   * reason no longer applies. The connection-pool and timeout properties stay on {@code SUPPORTED}
+   * on a different one: when a deployment sets both a unified and a differing legacy value, these
+   * properties prefer the unified value and warn, where matching mode would refuse to start.
+   * Realigning them would turn that warning into a startup failure for clusters running today, so
+   * it is a decision of its own rather than a side effect of fixing the validation.
    *
    * @throws IllegalArgumentException if configured with a non-positive value
    */
@@ -431,8 +446,10 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   }
 
   /**
-   * Validates that a connection-pool limit, when set, is a positive value. A value of zero or less
-   * is a misconfiguration that would otherwise fail later with a cryptic Apache HttpClient error.
+   * Validates that a value, when set, is positive. Zero or less is a misconfiguration that would
+   * otherwise surface far from its cause — a cryptic Apache HttpClient error for a connection-pool
+   * limit, or a rejected schema creation naming neither the property nor the index for a shard
+   * count.
    *
    * @throws IllegalArgumentException if the value is set and not positive
    */
@@ -490,16 +507,28 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     this.numberOfReplicasPerIndex = numberOfReplicasPerIndex;
   }
 
-  public Map<String, Integer> getNumberOfShardsPerIndex() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
-        prefix() + ".number-of-shards-per-index",
-        numberOfShardsPerIndex,
-        ResolvableType.forClassWithGenerics(Map.class, String.class, Integer.class),
-        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
-        legacyShardsByIndexNameProperties());
+  /**
+   * @throws IllegalArgumentException if any index is configured with fewer than one shard
+   */
+  public NumberOfShardsPerIndex getNumberOfShardsPerIndex() {
+    final var shardsPerIndex =
+        UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+            prefix() + ".number-of-shards-per-index",
+            numberOfShardsPerIndex,
+            NumberOfShardsPerIndex.class,
+            BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+            legacyShardsByIndexNameProperties());
+
+    shardsPerIndex
+        .toIndexNameMap()
+        .forEach(
+            (indexName, shards) ->
+                validatePositive(".number-of-shards-per-index." + indexName, shards));
+
+    return shardsPerIndex;
   }
 
-  public void setNumberOfShardsPerIndex(final Map<String, Integer> numberOfShardsPerIndex) {
+  public void setNumberOfShardsPerIndex(final NumberOfShardsPerIndex numberOfShardsPerIndex) {
     this.numberOfShardsPerIndex = numberOfShardsPerIndex;
   }
 

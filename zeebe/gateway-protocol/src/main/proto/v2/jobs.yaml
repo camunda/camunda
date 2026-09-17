@@ -403,7 +403,7 @@ components:
         withLease:
           description: >
             Whether to activate the jobs with a lease. When true, each activated job is assigned a
-            distinct, opaque lease token, returned as ActivatedJobResult.leaseToken. The lease
+            distinct, opaque lease token, returned as ActivatedJobResult.jobLeaseToken. The lease
             fences the complete, fail, and throw-error commands against a superseded activation of
             the same job (for example, after the job timed out or failed and was re-activated by
             another worker): a command carrying a stale lease token is rejected rather than racing
@@ -439,7 +439,7 @@ components:
         - elementId
         - jobKey
         - elementInstanceKey
-        - leaseToken
+        - jobLeaseToken
       type: object
       required:
         - type
@@ -463,7 +463,7 @@ components:
         - tags
         - userTask
         - priority
-        - leaseToken
+        - jobLeaseToken
         - physicalTenantId
       properties:
         type:
@@ -566,11 +566,14 @@ components:
             Jobs created before 8.10 have no stored priority; the API returns 0 for such jobs.
           type: integer
           format: int32
-        leaseToken:
+        jobLeaseToken:
           description: >
             The lease token identifying this activation. This is `null` when the job was
             activated without a lease.
           nullable: true
+          x-present-when:
+            request: withLease
+            equals: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
       x-properties-added-in-version:
@@ -590,7 +593,7 @@ components:
           addedInVersion: "8.10"
         - propertyName: businessId
           addedInVersion: "8.10"
-        - propertyName: leaseToken
+        - propertyName: jobLeaseToken
           addedInVersion: "8.10"
         - propertyName: physicalTenantId
           addedInVersion: "8.10"
@@ -1047,10 +1050,10 @@ components:
             associated task.
           type: object
           additionalProperties: true
-        leaseToken:
+        jobLeaseToken:
           description: >
             The token identifying a leased job's activation, obtained from
-            `ActivatedJobResult.leaseToken`.
+            `ActivatedJobResult.jobLeaseToken`.
 
             For a leased job, the matching token must be supplied to prove the command comes from
             the worker that holds the current lease; a command with no token is rejected. A command
@@ -1063,7 +1066,7 @@ components:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
       x-properties-added-in-version:
-        - propertyName: leaseToken
+        - propertyName: jobLeaseToken
           addedInVersion: "8.10"
 
     JobErrorRequest:
@@ -1085,10 +1088,10 @@ components:
             JSON object that will instantiate the variables at the local scope of the error catch event that catches the thrown error.
           type: object
           nullable: true
-        leaseToken:
+        jobLeaseToken:
           description: >
             The token identifying a leased job's activation, obtained from
-            `ActivatedJobResult.leaseToken`.
+            `ActivatedJobResult.jobLeaseToken`.
 
             For a leased job, the matching token must be supplied to prove the command comes from
             the worker that holds the current lease; a command with no token is rejected. A command
@@ -1103,7 +1106,7 @@ components:
       required:
         - errorCode
       x-properties-added-in-version:
-        - propertyName: leaseToken
+        - propertyName: jobLeaseToken
           addedInVersion: "8.10"
 
     JobCompletionRequest:
@@ -1117,10 +1120,10 @@ components:
           nullable: true
         result:
           $ref: '#/components/schemas/JobResult'
-        leaseToken:
+        jobLeaseToken:
           description: >
             The token identifying a leased job's activation, obtained from
-            `ActivatedJobResult.leaseToken`.
+            `ActivatedJobResult.jobLeaseToken`.
 
             For a leased job, the matching token must be supplied to prove the command comes from
             the worker that holds the current lease; a command with no token is rejected. A command
@@ -1150,7 +1153,7 @@ components:
       x-properties-added-in-version:
         - propertyName: result
           addedInVersion: "8.8"
-        - propertyName: leaseToken
+        - propertyName: jobLeaseToken
           addedInVersion: "8.10"
         - propertyName: businessId
           addedInVersion: "8.10"
@@ -1295,10 +1298,10 @@ components:
           $ref: '#/components/schemas/JobChangeset'
         operationReference:
           $ref: "keys.yaml#/components/schemas/OperationReference"
-        leaseToken:
+        jobLeaseToken:
           description: >
             The token identifying a leased job's activation, obtained from
-            `ActivatedJobResult.leaseToken`.
+            `ActivatedJobResult.jobLeaseToken`.
 
             For a leased job, a supplied token is validated to prove the command comes from the
             worker that holds the current lease; a command carrying a stale token is rejected,
@@ -1318,7 +1321,7 @@ components:
       x-properties-added-in-version:
         - propertyName: operationReference
           addedInVersion: "8.8"
-        - propertyName: leaseToken
+        - propertyName: jobLeaseToken
           addedInVersion: "8.10"
 
     JobChangeset:

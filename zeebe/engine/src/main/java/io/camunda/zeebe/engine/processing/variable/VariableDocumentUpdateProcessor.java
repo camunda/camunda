@@ -58,6 +58,9 @@ public final class VariableDocumentUpdateProcessor
   private static final String INVALID_USER_TASK_STATE_MESSAGE =
       "Expected to trigger update transition for user task with key '%d', but it is in state '%s'";
 
+  private static final String ERROR_MESSAGE_USER_TASK_VARIABLES_WHILE_SUSPENDED =
+      "Expected to update variables for Camunda user task with element instance key '%d', but the process instance with key '%d' is suspended. Variable updates on Camunda user tasks are not allowed while the process instance is suspended.";
+
   private final ElementInstanceState elementInstanceState;
   private final MutableUserTaskState userTaskState;
   private final ProcessState processState;
@@ -220,6 +223,7 @@ public final class VariableDocumentUpdateProcessor
     final long processDefinitionKey = scope.getValue().getProcessDefinitionKey();
     final long processInstanceKey = scope.getValue().getProcessInstanceKey();
     final long rootProcessInstanceKey = scope.getValue().getRootProcessInstanceKey();
+    final int storageOrdinal = scope.getValue().getStorageOrdinal();
     final DirectBuffer bpmnProcessId = scope.getValue().getBpmnProcessIdBuffer();
 
     try {
@@ -229,6 +233,7 @@ public final class VariableDocumentUpdateProcessor
             processDefinitionKey,
             processInstanceKey,
             rootProcessInstanceKey,
+            storageOrdinal,
             bpmnProcessId,
             tenantId,
             value.getVariablesBuffer());
@@ -238,6 +243,7 @@ public final class VariableDocumentUpdateProcessor
             processDefinitionKey,
             processInstanceKey,
             rootProcessInstanceKey,
+            storageOrdinal,
             bpmnProcessId,
             tenantId,
             value.getVariablesBuffer());
@@ -278,6 +284,13 @@ public final class VariableDocumentUpdateProcessor
     return getActionForSuspension(record);
   }
 
+  @Override
+  public String rejectionReason(
+      final TypedRecord<VariableDocumentRecord> record, final long processInstanceKey) {
+    return ERROR_MESSAGE_USER_TASK_VARIABLES_WHILE_SUSPENDED.formatted(
+        record.getValue().getScopeKey(), processInstanceKey);
+  }
+
   /**
    * Allow variable updates while suspended for recovery. Reject only Camunda user-task scopes: that
    * path can start an {@code UPDATING} task listener, which cannot complete while suspended.
@@ -301,6 +314,7 @@ public final class VariableDocumentUpdateProcessor
               userTaskRecord.getProcessDefinitionKey(),
               userTaskRecord.getProcessInstanceKey(),
               userTaskRecord.getRootProcessInstanceKey(),
+              userTaskRecord.getStorageOrdinal(),
               userTaskRecord.getBpmnProcessIdBuffer(),
               userTaskRecord.getTenantId(),
               value.getVariablesBuffer());
@@ -310,6 +324,7 @@ public final class VariableDocumentUpdateProcessor
               userTaskRecord.getProcessDefinitionKey(),
               userTaskRecord.getProcessInstanceKey(),
               userTaskRecord.getRootProcessInstanceKey(),
+              userTaskRecord.getStorageOrdinal(),
               userTaskRecord.getBpmnProcessIdBuffer(),
               userTaskRecord.getTenantId(),
               value.getVariablesBuffer());

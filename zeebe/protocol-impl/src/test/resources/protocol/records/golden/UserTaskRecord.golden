@@ -58,7 +58,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   private static final StringValue VARIABLES_VALUE = new StringValue(VARIABLES);
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_VALUE =
       new StringValue("rootProcessInstanceKey");
-  private static final StringValue STORAGE_ORDINAL_KEY_VALUE = new StringValue("storageOrdinalKey");
+  private static final StringValue STORAGE_ORDINAL_VALUE = new StringValue("storageOrdinal");
 
   /**
    * Defines the mapping between names of attributes that may be modified (updated or corrected) and
@@ -112,8 +112,8 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_VALUE, -1L);
-  private final IntegerProperty storageOrdinalKeyProp =
-      new IntegerProperty(STORAGE_ORDINAL_KEY_VALUE, 0);
+  private final IntegerProperty storageOrdinalProp =
+      new IntegerProperty(STORAGE_ORDINAL_VALUE, 0);
   private final StringProperty businessIdProp = new StringProperty("businessId", EMPTY_STRING);
 
   /**
@@ -185,7 +185,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
         .declareProperty(tagsProp)
         .declareProperty(listenersConfigKeyProp)
         .declareProperty(rootProcessInstanceKeyProp)
-        .declareProperty(storageOrdinalKeyProp)
+        .declareProperty(storageOrdinalProp)
         .declareProperty(businessIdProp);
   }
 
@@ -216,7 +216,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     setTags(record.getTags());
     listenersConfigKeyProp.setValue(record.getListenersConfigKey());
     rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
-    storageOrdinalKeyProp.setValue(record.getStorageOrdinalKey());
+    storageOrdinalProp.setValue(record.getStorageOrdinal());
     businessIdProp.setValue(record.getBusinessIdBuffer());
   }
 
@@ -820,12 +820,12 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   }
 
   @Override
-  public int getStorageOrdinalKey() {
-    return storageOrdinalKeyProp.getValue();
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
   }
 
-  public UserTaskRecord setStorageOrdinalKey(final int storageOrdinalKey) {
-    storageOrdinalKeyProp.setValue(storageOrdinalKey);
+  public UserTaskRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
 }

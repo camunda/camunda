@@ -85,7 +85,6 @@ const AssignMappingRulesModal: FC<
         value={selectedMappingRules}
         onChange={setSelectedMappingRules}
         excluded={assignedMappingRules}
-        autoFocus
       />
     </FormModal>
   );

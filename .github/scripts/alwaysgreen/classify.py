@@ -499,6 +499,28 @@ def backported_pr_number(title: str | None) -> int | None:
 
 @dataclass(frozen=True)
 class Blame:
+    """Attribution for the run's head commit -- a lead, not a verdict.
+
+    Three cases, each carrying less certainty than the last, and none of
+    them a confirmed cause:
+
+    * The common case (`via="pr-author"`): the PR whose `merge_commit_sha`
+      equals the run's head commit -- a trigger, not a suspect. The real
+      cause can predate it by days and simply surface on whichever run
+      comes next.
+    * A bot-authored merge (`via="backport-original"`): `author`/`pr_number`
+      instead name the ORIGINAL PR a backport title cites -- a different PR
+      than the one that actually produced the head commit being tested.
+    * No PR's `merge_commit_sha` matched at all: `originating_pr` falls back
+      to the first candidate in the list, which may be an open or ancestor
+      PR with no established relationship to the head commit whatsoever.
+
+    Consumers (the fix-agent's FIX-AGENT.md "Zeroth check") are responsible
+    for verifying relevance before treating any of these as a cause or
+    naming it publicly -- skipping that check is exactly what pinged an
+    uninvolved author once already.
+    """
+
     #: Login to request review from; None when only a bot could be identified.
     reviewer: str | None
     #: Login to name in the PR body, even when it is a bot.

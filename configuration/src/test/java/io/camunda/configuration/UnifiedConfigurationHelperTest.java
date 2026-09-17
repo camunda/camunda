@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -40,7 +41,12 @@ class UnifiedConfigurationHelperTest {
   @BeforeEach
   void setup() {
     mockEnvironment = new MockEnvironment();
-    UnifiedConfigurationHelper.setCustomEnvironment(mockEnvironment);
+    new UnifiedConfigurationHelper(mockEnvironment);
+  }
+
+  @AfterAll
+  static void tearDown() {
+    UnifiedConfigurationHelper.setCustomEnvironment(null);
   }
 
   private void setPropertyValues(final String key, final String value) {
@@ -195,6 +201,25 @@ class UnifiedConfigurationHelperTest {
         UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
             NEW_PROPERTY, newValue, String.class, mode, MULTIPLE_LEGACY_PROPERTIES);
     assertThat(result).isEqualTo(newValue);
+  }
+
+  // the new property has no value at all (no default, not declared) -> the legacy value wins
+  // instead of being reported as a conflict
+  @Test
+  void testFallbackToLegacyValueWhenNewValueIsUnset() {
+    // given
+    final String newValue = null;
+    final BackwardsCompatibilityMode mode = SUPPORTED_ONLY_IF_VALUES_MATCH;
+
+    // when
+    setPropertyValues("legacy.prop1", "legacyValue");
+    setPropertyValues("legacy.prop2", "legacyValue");
+
+    // then
+    final String result =
+        UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+            NEW_PROPERTY, newValue, String.class, mode, MULTIPLE_LEGACY_PROPERTIES);
+    assertThat(result).isEqualTo("legacyValue");
   }
 
   @Test

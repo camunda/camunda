@@ -235,8 +235,7 @@ public final class JobCompleteProcessor
         command.getKey(), JobIntent.COMPLETED, job, command);
 
     if (jobBelongsToAgent) {
-      commandWriter.appendFollowUpCommand(
-          command.getKey(),
+      commandWriter.appendNewCommand(
           AgentHistoryIntent.COMMIT,
           new AgentHistoryRecord().setJobKey(command.getKey()).setJobLease(job.getLeaseToken()));
     }
@@ -414,6 +413,7 @@ public final class JobCompleteProcessor
           targetAdHocSubProcessInstanceValue.getProcessDefinitionKey(),
           targetAdHocSubProcessInstanceValue.getProcessInstanceKey(),
           targetAdHocSubProcessInstanceValue.getRootProcessInstanceKey(),
+          targetAdHocSubProcessInstanceValue.getStorageOrdinal(),
           targetAdHocSubProcessInstanceValue.getBpmnProcessIdBuffer(),
           targetAdHocSubProcessInstanceValue.getTenantId(),
           completingJobRecord.getVariablesBuffer());

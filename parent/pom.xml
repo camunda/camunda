@@ -39,11 +39,11 @@
 
     <!-- EXTERNAL LIBS -->
     <version.agrona>2.6.0</version.agrona>
-    <version.animal-sniffer>1.27</version.animal-sniffer>
+    <version.animal-sniffer>1.28</version.animal-sniffer>
     <version.assertj>3.27.7</version.assertj>
     <version.assertj-assertions-generator>2.2.0</version.assertj-assertions-generator>
     <version.awaitility>4.3.0</version.awaitility>
-    <version.bouncycastle>1.85</version.bouncycastle>
+    <version.bouncycastle>1.86</version.bouncycastle>
     <version.camunda>7.24.0</version.camunda>
     <version.camunda-license-check>2.11.2</version.camunda-license-check>
     <version.camunda-security-library>1.0.0</version.camunda-security-library>
@@ -69,17 +69,20 @@
     <version.gson>2.14.0</version.gson>
     <version.guava>33.7.1-jre</version.guava>
     <version.hamcrest>3.0</version.hamcrest>
+    <version.icu4j>78.3</version.icu4j>
+    <version.json-schema-validator>3.0.7</version.json-schema-validator>
+    <version.maven-surefire-common>3.5.6</version.maven-surefire-common>
     <version.httpasyncclient>4.1.5</version.httpasyncclient>
     <version.httpclient>4.5.14</version.httpclient>
     <version.httpclient5>5.6.4</version.httpclient5>
     <version.httpcore5>5.4.3</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
-    <version.identity>8.10.0-alpha5</version.identity>
+    <version.identity>8.10.0-alpha5.1</version.identity>
     <version.instancio>6.0.0</version.instancio>
     <version.jackson>2.22.2</version.jackson>
     <version.jackson3>3.2.2</version.jackson3>
     <version.json-base>3.0.0</version.json-base>
-    <version.json-flattener>0.18.3</version.json-flattener>
+    <version.json-flattener>0.18.4</version.json-flattener>
     <version.jspecify>1.0.1</version.jspecify>
     <version.junit>6.1.3</version.junit>
     <version.junit4>4.13.2</version.junit4>
@@ -88,9 +91,9 @@
     <version.mockito>5.23.0</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.12</version.msgpack>
-    <version.netty>4.2.17.Final</version.netty>
+    <version.netty>4.2.18.Final</version.netty>
     <version.objenesis>3.6</version.objenesis>
-    <version.opentelemetry>1.65.0</version.opentelemetry>
+    <version.opentelemetry>1.66.0</version.opentelemetry>
     <version.opensearch.client>2.17.0</version.opensearch.client>
     <version.opensearch-java>3.7.0</version.opensearch-java>
     <!-- renovate: datasource=docker depName=opensearchproject/opensearch -->
@@ -107,7 +110,7 @@
     <version.snakeyaml>2.7</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
     <version.wiremock>3.13.2</version.wiremock>
-    <version.wiremock-spring-boot>4.2.2</version.wiremock-spring-boot>
+    <version.wiremock-spring-boot>4.2.3</version.wiremock-spring-boot>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.10.1</version.asm>
     <version.testcontainers>2.0.5</version.testcontainers>
@@ -115,7 +118,7 @@
     <version.postgressql-testcontainer>2.0.2</version.postgressql-testcontainer>
     <version.netflix.concurrency>0.5.4</version.netflix.concurrency>
     <version.zeebe-test-container>3.6.9</version.zeebe-test-container>
-    <version.feel-scala>1.22.0</version.feel-scala>
+    <version.feel-scala>1.22.1</version.feel-scala>
     <version.dmn-scala>1.12.2</version.dmn-scala>
     <version.rest-assured>6.0.1</version.rest-assured>
     <version.spring>7.0.9</version.spring>
@@ -128,6 +131,7 @@
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.2</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
+    <version.dev-failsafe>3.3.2</version.dev-failsafe>
     <version.jetbrains-annotations>26.1.0</version.jetbrains-annotations>
     <version.jqwik>1.10.1</version.jqwik>
     <version.jmock>2.13.1</version.jmock>
@@ -136,10 +140,10 @@
     <version.byte-buddy>1.18.13-jdk5</version.byte-buddy>
     <version.revapi>0.28.4</version.revapi>
     <version.resilience4j>2.4.0</version.resilience4j>
-    <version.kotlin-stdlib>2.4.10</version.kotlin-stdlib>
+    <version.kotlin-stdlib>2.4.20</version.kotlin-stdlib>
     <version.immutables>2.12.2</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
-    <version.classgraph>4.8.194</version.classgraph>
+    <version.classgraph>4.8.195</version.classgraph>
     <version.servlet-api>2.5</version.servlet-api>
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
@@ -150,13 +154,13 @@
     <version.jnr-ffi>2.3.1</version.jnr-ffi>
     <version.jnr-posix>3.2.2</version.jnr-posix>
     <version.jnr-constants>0.11.0</version.jnr-constants>
-    <version.feign>13.14</version.feign>
-    <version.google-sdk>26.88.0</version.google-sdk>
+    <version.feign>13.15</version.feign>
+    <version.google-sdk>26.88.1</version.google-sdk>
     <!-- Must stay >= the version gax-httpjson needs; see the override further down in
          dependencyManagement for why this is pinned at all. -->
     <version.google-http-client>2.2.0</version.google-http-client>
     <version.azure-sdk>1.3.8</version.azure-sdk>
-    <version.awssdk>2.54.13</version.awssdk>
+    <version.awssdk>2.54.17</version.awssdk>
     <version.toxiproxy>2.1.11</version.toxiproxy>
     <version.validation-api>3.1.1</version.validation-api>
     <version.bind-api>4.0.5</version.bind-api>
@@ -167,8 +171,10 @@
     <version.swagger-annotations>2.2.55</version.swagger-annotations>
     <version.swagger-parser>2.1.48</version.swagger-parser>
     <version.checker-qual>4.2.3</version.checker-qual>
-    <version.java-jwt>4.6.0</version.java-jwt>
+    <version.java-jwt>4.6.1</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
+    <version.roaster>2.31.1.Final</version.roaster>
+    <version.surefire-extensions-api>3.5.6</version.surefire-extensions-api>
     <version.postgresql>42.7.13</version.postgresql>
     <version.h2>2.5.250</version.h2>
     <version.aws-advanced-jdbc-wrapper>4.4.0</version.aws-advanced-jdbc-wrapper>
@@ -208,8 +214,8 @@
     <!-- Auth0 Dependencies -->
     <!-- If any of the following version changes, -->
     <!-- please check if they are compatible with "mvc-auth-commons" -->
-    <version.auth0>5.1.0</version.auth0>
-    <version.auth0.commons>1.12.0</version.auth0.commons>
+    <version.auth0>5.2.0</version.auth0>
+    <version.auth0.commons>1.12.1</version.auth0.commons>
     <version.auth0.jwt>4.4.0</version.auth0.jwt>
     <version.okio-jvm>3.18.2</version.okio-jvm>
     <version.jwks-rsa>0.24.1</version.jwks-rsa>
@@ -217,6 +223,8 @@
     <version.nimbus-jose-jwt>10.9.1</version.nimbus-jose-jwt>
     <version.nimbus-sdk>11.38.2</version.nimbus-sdk>
     <version.keycloak>26.7.3</version.keycloak>
+    <!-- renovate: datasource=docker depName=docker.io/camunda/keycloak versioning=regex:^quay-(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)$ -->
+    <version.keycloak.container>quay-26.7.3@sha256:7b164c8d2cdb49020de66a3ec51b647ca2dc92c9d2140dd7d8e6d2969237f38e</version.keycloak.container>
     <version.keycloak-client>26.0.12</version.keycloak-client>
     <version.jna>5.19.1</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
@@ -232,26 +240,27 @@
     <plugin.version.antrun>3.2.0</plugin.version.antrun>
     <plugin.version.appassembler>2.1.0</plugin.version.appassembler>
     <plugin.version.assembly>3.8.0</plugin.version.assembly>
-    <plugin.version.build-helper>3.6.1</plugin.version.build-helper>
+    <plugin.version.build-helper>3.6.2</plugin.version.build-helper>
     <plugin.version.checkstyle>3.6.0</plugin.version.checkstyle>
     <plugin.version.compiler>3.16.0</plugin.version.compiler>
-    <plugin.version.dependency-analyzer>1.17.1</plugin.version.dependency-analyzer>
+    <plugin.version.dependency-analyzer>1.17.2</plugin.version.dependency-analyzer>
     <plugin.version.dependency>3.11.0</plugin.version.dependency>
     <plugin.version.enforcer>3.6.3</plugin.version.enforcer>
-    <plugin.version.exec>3.6.3</plugin.version.exec>
+    <plugin.version.exec>3.6.4</plugin.version.exec>
     <plugin.version.failsafe>3.5.6</plugin.version.failsafe>
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
     <plugin.version.jacoco>0.8.15</plugin.version.jacoco>
     <plugin.version.maven-jar>3.5.1</plugin.version.maven-jar>
-    <plugin.version.protobuf-maven-plugin>5.1.8</plugin.version.protobuf-maven-plugin>
+    <plugin.version.openapi-generator>7.23.0</plugin.version.openapi-generator>
+    <plugin.version.protobuf-maven-plugin>5.1.9</plugin.version.protobuf-maven-plugin>
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
     <plugin.version.resources>3.5.0</plugin.version.resources>
     <plugin.version.revapi>0.15.1</plugin.version.revapi>
     <plugin.version.shade>3.6.2</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
-    <plugin.version.spotbugs>4.9.8.3</plugin.version.spotbugs>
+    <plugin.version.spotbugs>4.10.4.1</plugin.version.spotbugs>
     <plugin.version.surefire>3.5.6</plugin.version.surefire>
-    <plugin.version.versions>2.21.0</plugin.version.versions>
+    <plugin.version.versions>2.22.0</plugin.version.versions>
     <plugin.version.frontend-maven>2.0.2</plugin.version.frontend-maven>
     <plugin.version.maven-source>3.4.0</plugin.version.maven-source>
     <plugin.version.japicmp>0.23.1</plugin.version.japicmp>
@@ -2915,7 +2924,7 @@
         <plugin>
           <groupId>org.openapitools</groupId>
           <artifactId>openapi-generator-maven-plugin</artifactId>
-          <version>7.23.0</version>
+          <version>${plugin.version.openapi-generator}</version>
           <configuration>
             <!-- https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator-maven-plugin -->
             <!-- https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/spring.md -->

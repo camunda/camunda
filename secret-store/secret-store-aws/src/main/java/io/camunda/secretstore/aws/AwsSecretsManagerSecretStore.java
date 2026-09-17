@@ -100,14 +100,7 @@ public final class AwsSecretsManagerSecretStore implements SecretStore {
     final var builder =
         SecretsManagerClient.builder()
             .credentialsProvider(DefaultCredentialsProvider.builder().build())
-            .overrideConfiguration(
-                ClientOverrideConfiguration.builder()
-                    .retryStrategy(
-                        DefaultRetryStrategy.standardStrategyBuilder()
-                            // maxAttempts counts the initial try, maxRetries doesn't
-                            .maxAttempts(config.maxRetries() + 1)
-                            .build())
-                    .build());
+            .overrideConfiguration(overrideConfiguration(config));
     if (config.region() != null && !config.region().isBlank()) {
       builder.region(Region.of(config.region()));
     }
@@ -152,6 +145,35 @@ public final class AwsSecretsManagerSecretStore implements SecretStore {
           e.getMessage(),
           e);
     }
+  }
+
+  /**
+   * The client overrides for a store built from {@code config}: the retry strategy, and the
+   * timeouts that bound how long one call can take.
+   *
+   * <p>The bounds matter beyond the call that hits them. The background resolution reads this store
+   * from an IO-bound actor thread that every partition's exporter shares, so a call with no upper
+   * bound stalls exporting broker-wide rather than only delaying secret resolution
+   * (camunda/camunda#62869). They are also what makes the scheduler's existing defense work at all:
+   * it retries an unavailable store with a backoff and skips it while it cools down, and none of
+   * that can engage until the store reports the failure, which without a timeout it does not do for
+   * minutes.
+   *
+   * <p>Package-private so the bounds can be asserted without building a real client.
+   */
+  static ClientOverrideConfiguration overrideConfiguration(
+      final AwsSecretsManagerStoreConfig config) {
+    return ClientOverrideConfiguration.builder()
+        .retryStrategy(
+            DefaultRetryStrategy.standardStrategyBuilder()
+                // maxAttempts counts the initial try, maxRetries doesn't
+                .maxAttempts(config.maxRetries() + 1)
+                .build())
+        // bounds the whole call, retries included
+        .apiCallTimeout(config.callTimeout())
+        // bounds one HTTP attempt, so a stalled socket does not consume the whole call budget
+        .apiCallAttemptTimeout(config.attemptTimeout())
+        .build();
   }
 
   @Override

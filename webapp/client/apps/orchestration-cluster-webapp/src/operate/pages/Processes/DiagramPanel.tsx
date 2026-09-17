@@ -63,6 +63,7 @@ type Props = {
 	incidents: boolean;
 	completed: boolean;
 	canceled: boolean;
+	suspended: boolean;
 };
 
 const DiagramPanel: React.FC<Props> = ({
@@ -73,6 +74,7 @@ const DiagramPanel: React.FC<Props> = ({
 	incidents,
 	completed,
 	canceled,
+	suspended,
 }) => {
 	const {t} = useTranslation();
 	const selectedDefinitionKey =
@@ -86,7 +88,7 @@ const DiagramPanel: React.FC<Props> = ({
 
 	const {data: diagramData, isFetching: isXmlFetching, isError: isXmlError} = useDiagramXml(selectedDefinitionKey);
 
-	const statisticsFilter = getStatisticsFilter({active, incidents, completed, canceled});
+	const statisticsFilter = getStatisticsFilter({active, incidents, completed, canceled, suspended});
 	const {data: overlaysData} = useDiagramStatisticsOverlays({
 		processDefinitionKey: selectedDefinitionKey,
 		filter: statisticsFilter ?? {},

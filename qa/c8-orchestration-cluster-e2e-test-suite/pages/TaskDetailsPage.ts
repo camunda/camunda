@@ -113,14 +113,19 @@ class TaskDetailsPage {
     this.detailsInfo = page.getByTestId('details-info');
     this.taskCompletedBanner = this.page.getByText('Task completed');
     this.addDynamicListRowButton = page.getByRole('button', {name: 'add new'});
-    this.processTab = page.getByRole('link', {
+    // Same TabListNav migration as the history tab below: this is now a
+    // `role="tab"`, not a Carbon-era nav link.
+    this.processTab = page.getByRole('tab', {
       name: 'show associated bpmn process',
     });
     this.bpmnDiagram = page.getByTestId('diagram');
     this.assignedToMeText = page
       .getByTestId('assignee')
       .getByText('Assigned to me');
-    this.historyTabButton = page.getByRole('link', {
+    // TabListNav renders shadcn/Radix Tabs now, not Carbon nav links — the
+    // history entry is a `role="tab"`, not a `role="link"`. Its accessible
+    // name (`taskDetailsShowHistoryLabel`) is unchanged.
+    this.historyTabButton = page.getByRole('tab', {
       name: 'Show task history',
     });
     this.historyTable = page
@@ -133,10 +138,16 @@ class TaskDetailsPage {
         name: 'Operation type',
       },
     );
+    // The redesigned history table added a new "Open details" action column
+    // (see taskDetailsHistoryDetailsLabel), so the default non-exact name
+    // match for 'Details' now also substring-matches that column's header --
+    // exact: true is required to keep matching only the literal "Details"
+    // column (taskDetailsHistoryDetailsHeader).
     this.historyTableDetailsHeader = this.historyTable.getByRole(
       'columnheader',
       {
         name: 'Details',
+        exact: true,
       },
     );
     this.historyTableActorHeader = this.historyTable.getByRole('columnheader', {
@@ -151,19 +162,84 @@ class TaskDetailsPage {
   }
 
   async clickAssignToMeButton() {
-    if (!(await this.assignedToMeText.isVisible())) {
-      await expect(this.assignToMeButton).toBeVisible({timeout: 60000});
-      await this.assignToMeButton.click({timeout: 60000});
-      await expect(this.unassignButton).toBeVisible({timeout: 30000});
+    if (await this.assignedToMeText.isVisible()) {
+      return;
     }
+    // Fail here, rather than silently doing nothing, if the task is assigned
+    // to somebody else -- the toggle would read "Unassign" in that case.
+    await expect(this.assignToMeButton).toBeVisible({timeout: 60000});
+    await this.toggleAssignment(this.assignToMeButton, this.unassignButton);
   }
 
   async clickUnassignButton() {
     await expect(this.unassignButton).toBeVisible({timeout: 30000});
-    await this.unassignButton.click();
-    // Unassigning is processed asynchronously; the Assign-to-me button can take
-    // a while to reappear under load, so match the assign path's 60s budget.
-    await expect(this.assignToMeButton).toBeVisible({timeout: 60000});
+    await this.toggleAssignment(this.unassignButton, this.assignToMeButton);
+  }
+
+  /**
+   * Clicks the assignment toggle (one button whose label is "Assign to me" or
+   * "Unassign" depending on the task's assignee) and waits for the label to
+   * flip, which only happens once the backend reports the new assignee.
+   *
+   * Re-issues the click between attempts rather than only waiting longer,
+   * because the two ways this can stall need different remedies and the page
+   * cannot tell them apart: while the command is being applied the button is
+   * disabled, and taskAssignmentMachine polls until it settles -- waiting is
+   * all that's needed. But a rejected command (e.g. issued while the task was
+   * still settling from the previous assignment change) drops the machine back
+   * to idle with only a toast, and nothing ever retries it -- so the label will
+   * never flip no matter how long the test waits. Clicking only while the
+   * toggle is idle covers the second case without double-toggling the first.
+   *
+   * Five attempts rather than the default three: this waits on secondary
+   * storage reporting the new assignee, which is spiky under the parallel
+   * nightly load -- most tasks settle within seconds, but 'assign and unassign
+   * task' spent the whole 90s of three attempts unsettled in run 34817452692
+   * while its neighbours settled in under 15s.
+   */
+  private async toggleAssignment(from: Locator, to: Locator): Promise<void> {
+    try {
+      await waitForAssertion({
+        assertion: async () => {
+          if ((await from.isVisible()) && (await from.isEnabled())) {
+            await from.click({timeout: 30000});
+          }
+          await expect(to).toBeVisible({timeout: 30000});
+        },
+        onFailure: async () => {
+          console.log(
+            `Assignment toggle has not flipped yet, reloading and retrying...${await this.pageNotices()}`,
+          );
+          await this.page.reload();
+        },
+        maxRetries: 5,
+      });
+    } catch (error) {
+      // waitForAssertion rethrows the last attempt's error without running
+      // onFailure, so without this the one attempt whose notices matter most --
+      // the one that aborts the test -- would be the one missing from the log.
+      console.log(`Assignment toggle gave up.${await this.pageNotices()}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Whatever the page is currently saying in a toast, for the CI log. A
+   * rejected assignment command surfaces only as a toast, and by the time
+   * anyone opens the trace of a nightly failure the toast has expired -- so
+   * when the toggle gives up, its reason belongs in the log next to it.
+   */
+  private async pageNotices(): Promise<string> {
+    const texts = await this.page
+      .locator('[data-sonner-toast], [role="alert"], [role="status"]')
+      .allInnerTexts()
+      .catch(() => [] as string[]);
+    const notices = texts
+      .map((text) => text.replace(/\s+/g, ' ').trim())
+      .filter((text) => text.length > 0)
+      .slice(0, 5);
+
+    return notices.length === 0 ? '' : ` Page says: ${notices.join(' | ')}`;
   }
 
   async clickCompleteTaskButton() {
@@ -176,8 +252,16 @@ class TaskDetailsPage {
 
   async replaceExistingVariableValue(values: {name: string; value: string}) {
     const {name, value} = values;
-    await this.page.getByTitle(name).clear();
-    await this.page.getByTitle(name).fill(value);
+    // Tasklist migrated its variables editor to the shadcn design system
+    // (@camunda/design-system's Label + LoadingTextarea/TextInput). The
+    // value field's accessible name now comes from a visually-hidden
+    // <label> ("<variable name> Value", via taskVariablesValueLabel)
+    // associated by htmlFor -- the old Carbon input exposed that same string
+    // as an HTML title attribute, which getByTitle matched directly;
+    // getByLabel is the equivalent for a real <label>.
+    const valueField = this.page.getByLabel(name);
+    await valueField.clear();
+    await valueField.fill(value);
   }
 
   getNthVariableNameInput(nth: number) {
@@ -423,7 +507,9 @@ class TaskDetailsPage {
     variableName: string,
     variableValue: string,
   ): Promise<void> {
-    await expect(this.page.getByTitle(variableName + ' Value')).toHaveValue(
+    // See replaceExistingVariableValue above: the value field's accessible
+    // name is now a visually-hidden <label>, not a title attribute.
+    await expect(this.page.getByLabel(variableName + ' Value')).toHaveValue(
       variableValue,
     );
   }

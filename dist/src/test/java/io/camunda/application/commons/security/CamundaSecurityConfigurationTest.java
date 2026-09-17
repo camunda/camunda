@@ -7,8 +7,18 @@
  */
 package io.camunda.application.commons.security;
 
+import static io.camunda.application.commons.security.CamundaSecurityConfiguration.TENANTS_API_DISABLED_WARNING;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import java.util.List;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.apache.logging.log4j.core.test.appender.ListAppender;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -93,6 +103,79 @@ public class CamundaSecurityConfigurationTest {
         .hasMessage(
             "The configured identifier pattern (%s=%s) allows the asterisk ('*') which is a reserved character. Please use a different pattern."
                 .formatted(idPatternProperty, idPatternValue));
+  }
+
+  @Test
+  public void shouldWarnWhenMultiTenancyChecksEnabledButTenantsApiDisabled() {
+    // given
+    final var properties = new CamundaSecurityLibraryProperties();
+    properties.getMultiTenancy().setChecksEnabled(true);
+    properties.getMultiTenancy().setApiEnabled(false);
+
+    // when
+    final var logEvents = validateAndCaptureLogs(properties);
+
+    // then
+    assertThat(logEvents)
+        .singleElement()
+        .satisfies(event -> assertThat(event.getLevel()).isEqualTo(Level.WARN))
+        .satisfies(
+            event ->
+                assertThat(event.getMessage().getFormattedMessage())
+                    .isEqualTo(TENANTS_API_DISABLED_WARNING));
+  }
+
+  @Test
+  public void shouldNotWarnWhenMultiTenancyChecksAndTenantsApiAreBothEnabled() {
+    // given
+    final var properties = new CamundaSecurityLibraryProperties();
+    properties.getMultiTenancy().setChecksEnabled(true);
+    properties.getMultiTenancy().setApiEnabled(true);
+
+    // when
+    final var logEvents = validateAndCaptureLogs(properties);
+
+    // then
+    assertThat(logEvents)
+        .extracting(event -> event.getMessage().getFormattedMessage())
+        .doesNotContain(TENANTS_API_DISABLED_WARNING);
+  }
+
+  @Test
+  public void shouldNotWarnWhenMultiTenancyChecksAreDisabled() {
+    // given
+    final var properties = new CamundaSecurityLibraryProperties();
+    properties.getMultiTenancy().setChecksEnabled(false);
+    properties.getMultiTenancy().setApiEnabled(false);
+
+    // when
+    final var logEvents = validateAndCaptureLogs(properties);
+
+    // then
+    assertThat(logEvents)
+        .extracting(event -> event.getMessage().getFormattedMessage())
+        .doesNotContain(TENANTS_API_DISABLED_WARNING);
+  }
+
+  private static List<LogEvent> validateAndCaptureLogs(
+      final CamundaSecurityLibraryProperties properties) {
+    final var loggerName = CamundaSecurityConfiguration.class.getName();
+    final var appender = new ListAppender("security-configuration-appender");
+    appender.start();
+    final var context = (LoggerContext) LogManager.getContext(false);
+    final var loggerConfig = new LoggerConfig(loggerName, Level.ALL, true);
+    loggerConfig.addAppender(appender, null, null);
+    context.getConfiguration().addLogger(loggerName, loggerConfig);
+    context.updateLoggers();
+
+    try {
+      new CamundaSecurityConfiguration(properties).validate();
+      return appender.getEvents();
+    } finally {
+      context.getConfiguration().removeLogger(loggerName);
+      context.updateLoggers();
+      appender.stop();
+    }
   }
 
   @Configuration

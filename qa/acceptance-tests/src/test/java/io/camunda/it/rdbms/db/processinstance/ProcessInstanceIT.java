@@ -172,6 +172,65 @@ public class ProcessInstanceIT {
   }
 
   @TestTemplate
+  public void shouldClearSuspendedDateWhenSuspendAndFinishLandInSameFlush(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+
+    // given
+    final ProcessInstanceDbModel instance =
+        ProcessInstanceFixtures.createRandomized(
+            b -> b.state(ProcessInstanceState.ACTIVE).suspendedDate(null));
+
+    // when
+    rdbmsWriters.getProcessInstanceWriter().create(instance);
+    rdbmsWriters.getProcessInstanceWriter().suspend(instance.processInstanceKey(), NOW);
+    rdbmsWriters
+        .getProcessInstanceWriter()
+        .finish(instance.processInstanceKey(), ProcessInstanceState.CANCELED, NOW);
+    rdbmsWriters.flush();
+
+    // then
+    final var readInstance =
+        processInstanceReader.findOne(instance.processInstanceKey()).orElse(null);
+
+    assertThat(readInstance).isNotNull();
+    assertThat(readInstance.state()).isEqualTo(ProcessInstanceState.CANCELED);
+    assertThat(readInstance.suspendedDate()).isNull();
+  }
+
+  @TestTemplate
+  public void shouldClearSuspendedDateWhenCancellingAlreadyFlushedSuspendedInstance(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+
+    // given
+    final ProcessInstanceDbModel instance =
+        ProcessInstanceFixtures.createRandomized(
+            b -> b.state(ProcessInstanceState.ACTIVE).suspendedDate(null));
+    createAndSaveProcessInstance(rdbmsWriters, instance);
+    rdbmsWriters.getProcessInstanceWriter().suspend(instance.processInstanceKey(), NOW);
+    rdbmsWriters.flush();
+
+    // when
+    rdbmsWriters
+        .getProcessInstanceWriter()
+        .finish(instance.processInstanceKey(), ProcessInstanceState.CANCELED, NOW);
+    rdbmsWriters.flush();
+
+    // then
+    final var readInstance =
+        processInstanceReader.findOne(instance.processInstanceKey()).orElse(null);
+
+    assertThat(readInstance).isNotNull();
+    assertThat(readInstance.state()).isEqualTo(ProcessInstanceState.CANCELED);
+    assertThat(readInstance.suspendedDate()).isNull();
+  }
+
+  @TestTemplate
   public void shouldFindProcessInstanceByBpmnProcessId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();

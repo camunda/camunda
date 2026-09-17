@@ -11,16 +11,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.RdbmsServiceFactory;
+import io.camunda.db.rdbms.read.replication.ReplicationLagProviderFactory;
+import io.camunda.db.rdbms.read.replication.ReplicationLsnProviderFactory;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.ReplicationType;
 import io.camunda.exporter.rdbms.handlers.AuditLogExportHandler;
 import io.camunda.zeebe.exporter.api.context.Context;
+import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuthorizationAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationCreationAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationLifecycleManagementAuditLogTransformer;
@@ -54,6 +59,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
@@ -94,6 +101,60 @@ class RdbmsExporterWrapperTest {
     assertThatThrownBy(() -> exporterWrapper.configure(context))
         .hasMessageContaining(
             "No RDBMS exporter configuration for physical tenant 'unknowntenant'");
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = ReplicationType.class,
+      names = {"LOG_SEQ", "TIME_LAG"})
+  public void shouldCreateReplicationProviderOnOpen(final ReplicationType replicationType) {
+    // given
+    final var configuration = new ExporterConfiguration();
+    configuration.getAsyncReplication().setEnabled(true);
+    configuration.getAsyncReplication().setType(replicationType);
+    final Context context = mock(Context.class, Mockito.RETURNS_DEEP_STUBS);
+    final Controller controller = mock(Controller.class);
+    final RdbmsServiceFactory rdbmsServiceFactory = mock(RdbmsServiceFactory.class);
+    final RdbmsService rdbmsService = mock(RdbmsService.class, Mockito.RETURNS_DEEP_STUBS);
+    final ReplicationLsnProviderFactory replicationLsnProviderFactory =
+        mock(ReplicationLsnProviderFactory.class);
+    final ReplicationLagProviderFactory replicationLagProviderFactory =
+        mock(ReplicationLagProviderFactory.class);
+    final RdbmsWriters rdbmsWriters = mock(RdbmsWriters.class, Mockito.RETURNS_DEEP_STUBS);
+    final RdbmsSchemaManagerRegistry schemaManagerRegistry = mock(RdbmsSchemaManagerRegistry.class);
+    when(rdbmsServiceFactory.createRdbmsService(Mockito.anyString(), any()))
+        .thenReturn(rdbmsService);
+    when(rdbmsService.getReplicationLsnProviderFactory()).thenReturn(replicationLsnProviderFactory);
+    when(rdbmsService.getReplicationLagProviderFactory()).thenReturn(replicationLagProviderFactory);
+    when(context.getPartitionId()).thenReturn(1);
+    when(context.getPhysicalTenantId()).thenReturn("tenanta");
+    when(rdbmsService.createWriter(any(RdbmsWriterConfig.class))).thenReturn(rdbmsWriters);
+    when(schemaManagerRegistry.isInitialized("tenanta")).thenReturn(true);
+
+    final RdbmsExporterWrapper exporterWrapper =
+        new RdbmsExporterWrapper(
+            rdbmsServiceFactory, schemaManagerRegistry, Map.of("tenanta", configuration));
+
+    // when
+    exporterWrapper.configure(context);
+
+    // then
+    verify(replicationLsnProviderFactory, never()).create();
+    verify(replicationLagProviderFactory, never()).create();
+
+    // when
+    try {
+      exporterWrapper.open(controller);
+    } finally {
+      exporterWrapper.close();
+    }
+
+    // then
+    switch (replicationType) {
+      case LOG_SEQ -> verify(replicationLsnProviderFactory).create();
+      case TIME_LAG -> verify(replicationLagProviderFactory).create();
+      default -> throw new IllegalStateException("Unexpected replication type: " + replicationType);
+    }
   }
 
   @Test

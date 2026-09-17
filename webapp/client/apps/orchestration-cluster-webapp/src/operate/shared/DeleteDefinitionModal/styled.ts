@@ -8,6 +8,7 @@
 
 import styled from 'styled-components';
 import {styles} from '@carbon/type';
+import {UnorderedList as BaseUnorderedList} from '@carbon/react';
 
 const Description = styled.p`
 	margin: 0;
@@ -18,4 +19,8 @@ const WarningContainer = styled.section`
 	margin-top: var(--cds-spacing-06);
 `;
 
-export {Description, WarningContainer};
+const UnorderedList = styled(BaseUnorderedList)`
+	${styles.bodyShort01};
+`;
+
+export {Description, WarningContainer, UnorderedList};

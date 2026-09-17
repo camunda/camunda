@@ -126,7 +126,7 @@ public abstract class AbstractProcessGroupByIdentityInterpreterES
   }
 
   @Override
-  public void addQueryResult(
+  protected void addQueryResult(
       final CompositeCommandResult compositeCommandResult,
       final ResponseBody<?> response,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {

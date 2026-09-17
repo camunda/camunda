@@ -66,8 +66,6 @@ env:
   TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
 
   NAME: ${{ inputs.name }}
-  PROFILER_OPTIONS: ${{ inputs.profiler_options }}
-  PROFILING_DURATION: ${{ inputs.duration-seconds }}
 
 jobs:
   init:
@@ -102,22 +100,16 @@ jobs:
     name: Profile ${{ matrix.pod }}
     needs: init
     runs-on: ubuntu-latest
-    # INVARIANT: timeout-minutes * 60 must stay > duration-seconds * 3, since this job
-    # profiles cpu, wall and alloc *sequentially* against its pod (see the matrix comment
-    # below for why the events can't run in parallel against the same pod), plus a buffer
-    # for the checkout/teleport-auth/kubectl-context/upload-artifact/summary steps.
-    # Profiling is best-effort so this is not sized to let every retry play out
-    # -- a run that fails or times out here is fine. GitHub Actions does not
-    # support arithmetic in `timeout-minutes` expressions (no +/-/*//
-    # operators), so this can't be computed from `inputs.duration-seconds`
-    # automatically -- bump it manually if a caller raises duration-seconds.
-    # Largest known caller today: stress-load-test.yml's profile job passes
-    # duration-seconds: '600' (10 min), i.e. up to 30 minutes of profiling
-    # alone per pod.
+    # INVARIANT: timeout-minutes must cover cpu, wall and alloc running *sequentially*
+    # against the pod (see the matrix comment below for why they can't run in
+    # parallel), including retries, etc.
+    # Bump this manually if a caller raises duration-seconds or the retry
+    # settings below change -- GitHub Actions doesn't support arithmetic in
+    # `timeout-minutes` expressions.
     # If the job timeout is increased, make sure to also increase the Teleport
     # "certificate-ttl" below to keep it roughly greater or equal to the job
     # timeout.
-    timeout-minutes: 40
+    timeout-minutes: 90
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -135,13 +127,18 @@ jobs:
 
     env:
       POD: ${{ matrix.pod }}
-      # Shared nick-fields/retry settings for the "Profile ..." steps below, so tuning them
-      # only has to happen in one place instead of once per event.
-      PROFILE_RETRY_MAX_ATTEMPTS: 5
+      OUTPUT_DIR: profiling/${{ inputs.name }}/${{ matrix.pod }}
+      # The duration of the profiling sessions.
+      PROFILING_DURATION: ${{ inputs.duration-seconds }}
+      PROFILER_OPTIONS: ${{ inputs.profiler_options }}
+
+      # Shared nick-fields/retry settings for the "Profile ..." steps below.
+      # Attempts + wait + timeout must be covered by the job timeout above (see
+      # comment above).
+      PROFILE_RETRY_MAX_ATTEMPTS: 2
       # Give enough time for a preempted pod to come back, if any.
       PROFILE_RETRY_WAIT_SECONDS: 120
       PROFILE_RETRY_TIMEOUT_MINUTES: 15
-      OUTPUT_DIR: profiling/${{ inputs.name }}/${{ matrix.pod }}
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

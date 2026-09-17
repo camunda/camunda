@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -46,15 +47,18 @@ public class DecisionEvaluationEvaluateProcessor
   private final CslAuthorizationCheck cslCheck;
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
+  private final StorageOrdinalProvider storageOrdinalProvider;
 
   public DecisionEvaluationEvaluateProcessor(
       final DecisionBehavior decisionBehavior,
       final KeyGenerator keyGenerator,
+      final StorageOrdinalProvider storageOrdinalProvider,
       final Writers writers,
       final CslAuthorizationCheck cslCheck) {
 
     this.decisionBehavior = decisionBehavior;
     this.keyGenerator = keyGenerator;
+    this.storageOrdinalProvider = storageOrdinalProvider;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
@@ -119,15 +123,15 @@ public class DecisionEvaluationEvaluateProcessor
                   evaluationRecordTuple =
                       decisionBehavior.createDecisionEvaluationEvent(
                           decision, evaluationResult, evaluationRecordKey);
+
+              final DecisionEvaluationRecord evaluationRecord = evaluationRecordTuple.getRight();
+
+              evaluationRecord.setStorageOrdinal(storageOrdinalProvider.getStorageOrdinal());
+
               stateWriter.appendFollowUpEvent(
-                  evaluationRecordKey,
-                  evaluationRecordTuple.getLeft(),
-                  evaluationRecordTuple.getRight());
+                  evaluationRecordKey, evaluationRecordTuple.getLeft(), evaluationRecord);
               responseWriter.writeAcceptedResponseOnCommand(
-                  evaluationRecordKey,
-                  evaluationRecordTuple.getLeft(),
-                  evaluationRecordTuple.getRight(),
-                  command);
+                  evaluationRecordKey, evaluationRecordTuple.getLeft(), evaluationRecord, command);
             },
             rejection -> {
               final String reason = rejection.reason();

@@ -166,11 +166,14 @@ describe('<InstancesByProcess />', () => {
 			.element(screen.getByText('Alpha Process').element().closest('a')!)
 			.toHaveAttribute(
 				'href',
-				'/operate/processes?process=p1&active=true&incidents=true&completed=false&canceled=false',
+				'/operate/processes?process=p1&active=true&incidents=true&completed=false&canceled=false&suspended=false',
 			);
 		await expect
 			.element(screen.getByText('Beta Process').element().closest('a')!)
-			.toHaveAttribute('href', '/operate/processes?process=p2&active=true&incidents=true&completed=true&canceled=true');
+			.toHaveAttribute(
+				'href',
+				'/operate/processes?process=p2&active=true&incidents=true&completed=true&canceled=true&suspended=false',
+			);
 	});
 
 	it('should show an error state when the request fails', async ({worker}) => {

@@ -200,7 +200,7 @@ public class AgentInstanceMigrationIT {
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(elementInstanceKey)
             .jobKey(activatedJob.getKey())
-            .jobLease(activatedJob.getLeaseToken())
+            .jobLeaseToken(activatedJob.getJobLeaseToken())
             .history(
                 List.of(
                     configurationHistoryItem("gpt-4o", "openai", "You are a helpful assistant.")))

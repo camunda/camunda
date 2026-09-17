@@ -123,6 +123,23 @@ Against the LDAP-protected ingress:
 
 zsh users: quote regex-looking arguments to avoid `no matches found` glob errors.
 
+## load_test_report
+
+Builds a wide JSON, CSV, or TSV report for one load-test namespace from Prometheus.
+The tool lives in its own Python subproject:
+[`load_test_report/`](load_test_report/).
+
+Quick start:
+
+```bash
+cd load-tests/docs/scripts/load_test_report
+make test
+uv run load-test-report c8-ck-baseline-20260814 --duration-seconds 1800
+```
+
+See [`load_test_report/README.md`](load_test_report/README.md) for setup, examples,
+query-file documentation, and the Makefile targets used by CI.
+
 ## PartitionDistribution.sh
 
 **Usage:**

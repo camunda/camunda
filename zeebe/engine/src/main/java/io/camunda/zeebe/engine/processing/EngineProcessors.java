@@ -87,6 +87,7 @@ import io.camunda.zeebe.engine.processing.scaling.ScalingProcessors;
 import io.camunda.zeebe.engine.processing.secretreference.SecretReferenceProcessors;
 import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionScheduler;
 import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
@@ -153,6 +154,8 @@ public final class EngineProcessors {
     final int partitionId = typedRecordProcessorContext.getPartitionId();
     final var config = typedRecordProcessorContext.getConfig();
     final var securityConfig = typedRecordProcessorContext.getSecurityConfig();
+
+    final StorageOrdinalProvider storageOrdinalProvider = getStorageOrdinalProvider(config);
 
     final DueDateTimerCheckScheduler timerChecker =
         new DueDateTimerCheckScheduler(
@@ -361,6 +364,7 @@ public final class EngineProcessors {
             routingInfo,
             clock,
             config,
+            storageOrdinalProvider,
             asyncRequestBehavior,
             cslCheck,
             transientProcessMessageSubscriptionState,
@@ -369,7 +373,12 @@ public final class EngineProcessors {
     typedRecordProcessors.withListener(suspensionMetrics);
 
     addDecisionProcessors(
-        typedRecordProcessors, decisionBehavior, writers, processingState, cslCheck);
+        typedRecordProcessors,
+        decisionBehavior,
+        writers,
+        processingState,
+        storageOrdinalProvider,
+        cslCheck);
 
     JobEventProcessors.addJobProcessors(
         typedRecordProcessors,
@@ -558,9 +567,19 @@ public final class EngineProcessors {
         processingState,
         incidentMetrics,
         secretResolutionScheduler,
-        bpmnBehaviors.jobActivationBehavior());
+        bpmnBehaviors.jobActivationBehavior(),
+        secretStoreRegistry.isConfigured(SecretStoreRegistry.DEFAULT_STORE_ID));
 
     return typedRecordProcessors;
+  }
+
+  private static StorageOrdinalProvider getStorageOrdinalProvider(
+      final EngineConfiguration config) {
+    if (config.isArchiverlessEnabled()) {
+      return StorageOrdinalProvider.getFixedProvider(config);
+    } else {
+      return StorageOrdinalProvider.getDisabledProvider();
+    }
   }
 
   /**
@@ -692,6 +711,7 @@ public final class EngineProcessors {
       final RoutingInfo routingInfo,
       final InstantSource clock,
       final EngineConfiguration config,
+      final StorageOrdinalProvider storageOrdinalProvider,
       final AsyncRequestBehavior asyncRequestBehavior,
       final CslAuthorizationCheck cslCheck,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
@@ -710,6 +730,7 @@ public final class EngineProcessors {
         routingInfo,
         clock,
         config,
+        storageOrdinalProvider,
         asyncRequestBehavior,
         cslCheck,
         transientProcessMessageSubscriptionState,
@@ -839,11 +860,16 @@ public final class EngineProcessors {
       final DecisionBehavior decisionBehavior,
       final Writers writers,
       final MutableProcessingState processingState,
+      final StorageOrdinalProvider storageOrdinalProvider,
       final CslAuthorizationCheck cslCheck) {
 
     final DecisionEvaluationEvaluateProcessor decisionEvaluationEvaluateProcessor =
         new DecisionEvaluationEvaluateProcessor(
-            decisionBehavior, processingState.getKeyGenerator(), writers, cslCheck);
+            decisionBehavior,
+            processingState.getKeyGenerator(),
+            storageOrdinalProvider,
+            writers,
+            cslCheck);
     typedRecordProcessors.onCommand(
         ValueType.DECISION_EVALUATION,
         DecisionEvaluationIntent.EVALUATE,

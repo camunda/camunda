@@ -99,7 +99,7 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
   protected Either<Failure, ?> onCompleteInternal(
       final ExecutableUserTask element, final BpmnElementContext context) {
     return variableMappingBehavior
-        .applyOutputMappings(context, element)
+        .applyUserTaskOutputMappings(context, element)
         .thenDo(ok -> eventSubscriptionBehavior.unsubscribeFromEvents(context));
   }
 

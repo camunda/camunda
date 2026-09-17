@@ -740,6 +740,6 @@ final class ClusterScaleRequestTransformerTest {
     assertThat(result).isLeft();
     Assertions.assertThat(result.getLeft())
         .isInstanceOf(InvalidRequest.class)
-        .hasMessageContaining("/partition-distribution");
+        .hasMessageContaining("/partitioning");
   }
 }

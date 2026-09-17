@@ -54,12 +54,12 @@ public class ProcessDistributedByFlowNodeInterpreterES
   }
 
   @Override
-  public ConfigurationService getConfigurationService() {
+  protected ConfigurationService getConfigurationService() {
     return configurationService;
   }
 
   @Override
-  public DefinitionService getDefinitionService() {
+  protected DefinitionService getDefinitionService() {
     return definitionService;
   }
 

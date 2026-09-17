@@ -93,8 +93,8 @@ public class AgentInstanceHistoryDedupIT {
             .getFirst()
             .getElementInstanceKey();
 
-    // CREATE requires a jobKey/jobLease backed by an actual activation of the agentic job; fail
-    // it straight back so the activation below can pick the same job up again
+    // CREATE requires a jobKey/jobLeaseToken backed by an actual activation of the agentic job;
+    // fail it straight back so the activation below can pick the same job up again
     final var creationJob =
         camundaClient
             .newActivateJobsCommand()
@@ -111,7 +111,7 @@ public class AgentInstanceHistoryDedupIT {
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(ei1)
             .jobKey(creationJob.getKey())
-            .jobLease(creationJob.getLeaseToken())
+            .jobLeaseToken(creationJob.getJobLeaseToken())
             .history(
                 List.of(
                     new AgentInstanceHistoryItem()
@@ -149,7 +149,7 @@ public class AgentInstanceHistoryDedupIT {
             .newUpdateAgentInstanceCommand(agentInstanceKey)
             .elementInstanceKey(ei1)
             .jobKey(job1.getKey())
-            .jobLease(job1.getLeaseToken())
+            .jobLeaseToken(job1.getJobLeaseToken())
             .history(
                 List.of(
                     new AgentInstanceHistoryItem()
@@ -205,7 +205,7 @@ public class AgentInstanceHistoryDedupIT {
             .newUpdateAgentInstanceCommand(agentInstanceKey)
             .elementInstanceKey(ei2)
             .jobKey(job2.getKey())
-            .jobLease(job2.getLeaseToken())
+            .jobLeaseToken(job2.getJobLeaseToken())
             .history(
                 List.of(
                     new AgentInstanceHistoryItem()

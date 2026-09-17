@@ -18,8 +18,8 @@ import { roleQueries } from "src/utility/api/roles/queries";
 import type { Role } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const getId = (role: Role) => role.roleId;
-const itemToString = (role: Role) => role.name || role.roleId;
-const itemSubTitle = (role: Role) => role.name;
+const itemLabel = (role: Role) =>
+  `${role.roleId} ${role.name ? `— ${role.name}` : ""}`;
 const search = (search: string) =>
   roleQueries.search(
     search === ""
@@ -42,7 +42,7 @@ export const RoleMultiSelect: FC<EntitySearchMultiSelectProps<Role>> = (
     <EntitySearchMultiSelect
       search={search}
       getId={getId}
-      itemSubTitle={itemSubTitle}
+      itemLabel={itemLabel}
       placeholder={t("searchByRoleId")}
       errorTitle={t("rolesCouldNotLoad")}
       {...props}
@@ -58,8 +58,7 @@ export const RoleSingleSelect: FC<EntitySearchSingleSelectProps<Role>> = (
     <EntitySearchSingleSelect
       search={search}
       getId={getId}
-      itemToString={itemToString}
-      itemSubTitle={itemSubTitle}
+      itemLabel={itemLabel}
       errorTitle={t("rolesCouldNotLoad")}
       {...props}
     />

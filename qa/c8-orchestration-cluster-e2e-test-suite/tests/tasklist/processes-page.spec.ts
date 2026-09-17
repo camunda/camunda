@@ -245,7 +245,13 @@ test.describe('process page', () => {
     await tasklistProcessesPage.clickStartProcessSubButton();
 
     await tasklistHeader.clickTasksTab();
-    await taskPanelPage.openTask('processStartedByForm_user_task');
+    // The task resulting from a start-form submission can take longer than
+    // the default 10s to become searchable (process instantiation + task
+    // creation + indexing), same as the 60s budget task-details.spec.ts
+    // gives its processWithDeployedForm case.
+    await taskPanelPage.openTask('processStartedByForm_user_task', {
+      timeout: 60000,
+    });
     await expect(
       page.getByText('{"name":"jon","address":"earth"}'),
     ).toBeVisible({timeout: 60000});

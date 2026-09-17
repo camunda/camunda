@@ -490,9 +490,9 @@ public final class DbProcessState implements MutableProcessState {
   /**
    * {@inheritDoc}
    *
-   * <p>When the highest version is {@code ACTIVE}, it is returned immediately without loading known
-   * versions. The reverse scan only runs when that version is not {@code ACTIVE}, and it skips
-   * {@code version >= latestVersion} because that version was already checked.
+   * <p>When the highest version is active (see {@link DeployedProcess#isActive()}), it is returned
+   * immediately without loading known versions. The reverse scan only runs when that version is not
+   * active, and it skips {@code version >= latestVersion} because that version was already checked.
    */
   @Override
   public DeployedProcess getLatestActiveProcessVersionByProcessId(
@@ -501,7 +501,7 @@ public final class DbProcessState implements MutableProcessState {
     if (process == null) {
       return null;
     }
-    if (process.getState() == PersistedProcessState.ACTIVE) {
+    if (process.isActive()) {
       return process;
     }
 
@@ -513,7 +513,7 @@ public final class DbProcessState implements MutableProcessState {
         continue;
       }
       process = getProcessByProcessIdAndVersion(processIdBuffer, version, tenantId);
-      if (process != null && process.getState() == PersistedProcessState.ACTIVE) {
+      if (process != null && process.isActive()) {
         return process;
       }
     }

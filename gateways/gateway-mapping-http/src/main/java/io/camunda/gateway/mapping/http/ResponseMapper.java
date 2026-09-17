@@ -261,7 +261,7 @@ public final class ResponseMapper {
         .tags(job.getTags())
         .userTask(toUserTaskProperties(job))
         .priority(job.getPriority())
-        .leaseToken(emptyToNull(job.getLeaseToken()))
+        .jobLeaseToken(emptyToNull(job.getLeaseToken()))
         .physicalTenantId(physicalTenantId)
         .build();
   }

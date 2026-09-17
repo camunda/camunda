@@ -35,10 +35,15 @@ export class IdentityRolesDetailsPage {
     this.assignUserButton = page.getByRole('button', {
       name: 'assign user',
     });
+    // The row's "Remove" action is a design-system EntityList row action
+    // (Members.tsx's menuItems), rendered inline (only one action, below the
+    // 3-action overflow-menu threshold) as a button with visible text
+    // "Remove" -- not an icon-only button with an explicit aria-label like
+    // the old Carbon row action, which is why getByLabel no longer matches.
     this.unassignUserButton = (rowName) =>
       this.assignedUsersList
         .getByRole('row', {name: rowName})
-        .getByLabel('Remove');
+        .getByRole('button', {name: 'Remove'});
     this.assignUserModal = page.getByRole('dialog', {
       name: 'Assign user',
     });
@@ -113,7 +118,7 @@ export class IdentityRolesDetailsPage {
     const maxRetries = 3;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        await this.selectUserInAssignModal(user.username);
+        await this.selectUserInAssignModal(user.username, user.email);
         break;
       } catch (error) {
         if (attempt === maxRetries) {
@@ -133,15 +138,22 @@ export class IdentityRolesDetailsPage {
     });
   }
 
-  private async selectUserInAssignModal(username: string): Promise<void> {
+  private async selectUserInAssignModal(
+    username: string,
+    email: string,
+  ): Promise<void> {
     await this.assignUserButton.click();
     await expect(this.assignUserModal).toBeVisible();
-    await this.assignUserModalSearchField.fill(username);
-    // Match on the username: `EntitySearchMultiSelect` passes `getId` as the
-    // option title, so it is always present regardless of the display name.
+    // The search field is a design-system MultiSelect: its closed trigger is a
+    // `combobox`-role div (not an input), so open it first, then type into the
+    // cmdk search box that mounts in the popover.
+    await this.assignUserModalSearchField.click();
+    await this.page.locator('[data-slot="command-input"]').fill(username);
+    // The option label is "<name> — <email>" and does not echo the username,
+    // so match on the email instead -- it is the unique half of the label.
     const option = this.assignUserModalSearchResult
       .getByRole('option')
-      .filter({hasText: username})
+      .filter({hasText: email})
       .first();
     await expect(option).toBeVisible({timeout: 30000});
     await option.click({timeout: 20000});

@@ -1047,13 +1047,13 @@ public class RequestMapperTest {
   }
 
   @Nested
-  class CompleteJobRequestLeaseTokenTest {
+  class CompleteJobRequestJobLeaseTokenTest {
 
     @Test
-    public void shouldMapLeaseTokenToBrokerRequest() {
+    public void shouldMapJobLeaseTokenToBrokerRequest() {
       // given
       final var grpcRequest =
-          CompleteJobRequest.newBuilder().setJobKey(123L).setLeaseToken("lease-token-1").build();
+          CompleteJobRequest.newBuilder().setJobKey(123L).setJobLeaseToken("lease-token-1").build();
 
       // when
       final var brokerRequest = RequestMapper.toCompleteJobRequest(grpcRequest);
@@ -1063,7 +1063,7 @@ public class RequestMapperTest {
     }
 
     @Test
-    public void shouldNotSetLeaseTokenByDefault() {
+    public void shouldNotSetJobLeaseTokenByDefault() {
       // given
       final var grpcRequest = CompleteJobRequest.newBuilder().setJobKey(123L).build();
 
@@ -1076,13 +1076,13 @@ public class RequestMapperTest {
   }
 
   @Nested
-  class FailJobRequestLeaseTokenTest {
+  class FailJobRequestJobLeaseTokenTest {
 
     @Test
-    public void shouldMapLeaseTokenToBrokerRequest() {
+    public void shouldMapJobLeaseTokenToBrokerRequest() {
       // given
       final var grpcRequest =
-          FailJobRequest.newBuilder().setJobKey(123L).setLeaseToken("lease-token-2").build();
+          FailJobRequest.newBuilder().setJobKey(123L).setJobLeaseToken("lease-token-2").build();
 
       // when
       final var brokerRequest = RequestMapper.toFailJobRequest(grpcRequest);
@@ -1092,7 +1092,7 @@ public class RequestMapperTest {
     }
 
     @Test
-    public void shouldNotSetLeaseTokenByDefault() {
+    public void shouldNotSetJobLeaseTokenByDefault() {
       // given
       final var grpcRequest = FailJobRequest.newBuilder().setJobKey(123L).build();
 
@@ -1105,16 +1105,16 @@ public class RequestMapperTest {
   }
 
   @Nested
-  class ThrowErrorRequestLeaseTokenTest {
+  class ThrowErrorRequestJobLeaseTokenTest {
 
     @Test
-    public void shouldMapLeaseTokenToBrokerRequest() {
+    public void shouldMapJobLeaseTokenToBrokerRequest() {
       // given
       final var grpcRequest =
           ThrowErrorRequest.newBuilder()
               .setJobKey(123L)
               .setErrorCode("error-code")
-              .setLeaseToken("lease-token-3")
+              .setJobLeaseToken("lease-token-3")
               .build();
 
       // when
@@ -1125,7 +1125,7 @@ public class RequestMapperTest {
     }
 
     @Test
-    public void shouldNotSetLeaseTokenByDefault() {
+    public void shouldNotSetJobLeaseTokenByDefault() {
       // given
       final var grpcRequest =
           ThrowErrorRequest.newBuilder().setJobKey(123L).setErrorCode("error-code").build();
@@ -1139,16 +1139,16 @@ public class RequestMapperTest {
   }
 
   @Nested
-  class UpdateJobTimeoutRequestLeaseTokenTest {
+  class UpdateJobTimeoutRequestJobLeaseTokenTest {
 
     @Test
-    public void shouldMapLeaseTokenToBrokerRequest() {
+    public void shouldMapJobLeaseTokenToBrokerRequest() {
       // given
       final var grpcRequest =
           UpdateJobTimeoutRequest.newBuilder()
               .setJobKey(123L)
               .setTimeout(5000L)
-              .setLeaseToken("lease-token-4")
+              .setJobLeaseToken("lease-token-4")
               .build();
 
       // when
@@ -1159,7 +1159,7 @@ public class RequestMapperTest {
     }
 
     @Test
-    public void shouldNotSetLeaseTokenByDefault() {
+    public void shouldNotSetJobLeaseTokenByDefault() {
       // given
       final var grpcRequest =
           UpdateJobTimeoutRequest.newBuilder().setJobKey(123L).setTimeout(5000L).build();
@@ -1173,16 +1173,16 @@ public class RequestMapperTest {
   }
 
   @Nested
-  class UpdateJobRetriesRequestLeaseTokenTest {
+  class UpdateJobRetriesRequestJobLeaseTokenTest {
 
     @Test
-    public void shouldMapLeaseTokenToBrokerRequest() {
+    public void shouldMapJobLeaseTokenToBrokerRequest() {
       // given
       final var grpcRequest =
           UpdateJobRetriesRequest.newBuilder()
               .setJobKey(123L)
               .setRetries(5)
-              .setLeaseToken("lease-token-4")
+              .setJobLeaseToken("lease-token-4")
               .build();
 
       // when
@@ -1193,7 +1193,7 @@ public class RequestMapperTest {
     }
 
     @Test
-    public void shouldNotSetLeaseTokenByDefault() {
+    public void shouldNotSetJobLeaseTokenByDefault() {
       // given
       final var grpcRequest =
           UpdateJobRetriesRequest.newBuilder().setJobKey(123L).setRetries(5).build();
@@ -1210,16 +1210,16 @@ public class RequestMapperTest {
   }
 
   @Nested
-  class UpdateJobPriorityRequestLeaseTokenTest {
+  class UpdateJobPriorityRequestJobLeaseTokenTest {
 
     @Test
-    public void shouldMapLeaseTokenToBrokerRequest() {
+    public void shouldMapJobLeaseTokenToBrokerRequest() {
       // given
       final var grpcRequest =
           UpdateJobPriorityRequest.newBuilder()
               .setJobKey(123L)
               .setPriority(5)
-              .setLeaseToken("lease-token-4")
+              .setJobLeaseToken("lease-token-4")
               .build();
 
       // when
@@ -1231,10 +1231,11 @@ public class RequestMapperTest {
     }
 
     @Test
-    public void shouldNotSetLeaseTokenByDefault() {
+    public void shouldNotSetJobLeaseTokenByDefault() {
       // given
       // priority must still be set: toUpdateJobPriorityRequest requires it regardless of
-      // leaseToken, so this proves absence of a leaseToken specifically, not absence of priority
+      // jobLeaseToken, so this proves absence of a jobLeaseToken specifically, not absence of
+      // priority
       final var grpcRequest =
           UpdateJobPriorityRequest.newBuilder().setJobKey(123L).setPriority(5).build();
 

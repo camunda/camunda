@@ -18,6 +18,8 @@ import {
 	mockQueryBatchOperationItemsEndpoint,
 	mockQueryProcessInstancesEndpoint,
 	mockResolveProcessInstanceIncidentsEndpoint,
+	mockResumeProcessInstanceEndpoint,
+	mockSuspendProcessInstanceEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {
 	createProcessInstance,
@@ -36,7 +38,13 @@ import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {InstancesTable} from './InstancesTable';
 import type {ProcessesSearch} from './processesFilter';
 
-const BASE_SEARCH: ProcessesSearch = {active: true, incidents: true, completed: false, canceled: false};
+const BASE_SEARCH: ProcessesSearch = {
+	active: true,
+	incidents: true,
+	completed: false,
+	canceled: false,
+	suspended: true,
+};
 
 function renderInstancesTable(search: ProcessesSearch = BASE_SEARCH) {
 	return renderWithRouter(
@@ -199,10 +207,30 @@ describe('<InstancesTable />', () => {
 			incidents: false,
 			completed: false,
 			canceled: false,
+			suspended: false,
 		});
 
 		await expect.element(screen.getByText('There are no Instances matching this filter set')).toBeVisible();
 		await expect.element(screen.getByText('To see some results, select at least one Instance state')).toBeVisible();
+	});
+
+	it('should not show the "select a state" hint when suspended alone is selected and empty', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: HttpResponse.json(createQueryProcessInstancesResponse())}),
+		);
+
+		const screen = await renderInstancesTable({
+			active: false,
+			incidents: false,
+			completed: false,
+			canceled: false,
+			suspended: true,
+		});
+
+		await expect.element(screen.getByText('There are no Instances matching this filter set')).toBeVisible();
+		await expect
+			.element(screen.getByText('To see some results, select at least one Instance state'))
+			.not.toBeInTheDocument();
 	});
 
 	it('should still render when a hand-edited URL carries an unparseable date', async ({worker}) => {
@@ -239,6 +267,7 @@ describe('<InstancesTable />', () => {
 			incidents: false,
 			completed: false,
 			canceled: false,
+			suspended: false,
 		});
 		await expect.element(screen.getByText('Order Process')).toBeVisible();
 
@@ -354,6 +383,40 @@ describe('<InstancesTable />', () => {
 		await expect.element(screen.getByText('COMPLETED')).toBeVisible();
 	});
 
+	it('should keep polling a suspended-only view, since a resume elsewhere can change it', async ({worker}) => {
+		vi.useFakeTimers({shouldAdvanceTime: true});
+		let searchRequests = 0;
+		worker.events.on('request:start', ({request}) => {
+			if (request.method === 'POST' && request.url.includes('/process-instances/search')) {
+				searchRequests++;
+			}
+		});
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '1', state: 'SUSPENDED'})],
+					}),
+				),
+			}),
+		);
+
+		await renderInstancesTable({
+			...BASE_SEARCH,
+			active: false,
+			incidents: false,
+			completed: false,
+			canceled: false,
+			suspended: true,
+		});
+		await expect.poll(() => searchRequests).toBe(1);
+
+		await vi.advanceTimersByTimeAsync(5000);
+
+		await expect.poll(() => searchRequests).toBe(2);
+		worker.events.removeAllListeners('request:start');
+	});
+
 	it('should report an operation item request failure instead of an empty state', async ({worker}) => {
 		worker.use(
 			mockQueryProcessInstancesEndpoint({
@@ -464,6 +527,242 @@ describe('<InstancesTable />', () => {
 		await expect.element(screen.getByRole('button', {name: /retry/i})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: /cancel/i})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: /delete/i})).not.toBeInTheDocument();
+	});
+
+	it('should offer suspend for an active instance, and resume for a suspended one', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [
+							createProcessInstance({processInstanceKey: '1', state: 'ACTIVE'}),
+							createProcessInstance({processInstanceKey: '2', state: 'SUSPENDED'}),
+						],
+					}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(createQueryBatchOperationItemsResponse({items: []})),
+			}),
+		);
+
+		const screen = await renderInstancesTable();
+
+		await expect.element(screen.getByRole('button', {name: 'Suspend Instance 1'})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Resume Instance 2'})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Resume Instance 1'})).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('button', {name: 'Suspend Instance 2'})).not.toBeInTheDocument();
+	});
+
+	it('should wait for a suspend command to take effect before clearing the spinner', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '1', state: 'ACTIVE'})],
+					}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(createQueryBatchOperationItemsResponse({items: []})),
+			}),
+			mockSuspendProcessInstanceEndpoint({
+				successResponse: new HttpResponse(null, {status: 204}),
+			}),
+			mockGetProcessInstanceEndpoint({
+				successResponse: HttpResponse.json(createProcessInstance({processInstanceKey: '1', state: 'ACTIVE'})),
+			}),
+		);
+
+		const screen = await renderInstancesTable();
+		await userEvent.click(screen.getByRole('button', {name: 'Suspend Instance 1'}));
+
+		await expect.element(screen.getByTestId('operation-spinner')).toBeVisible();
+
+		worker.use(
+			mockGetProcessInstanceEndpoint({
+				successResponse: HttpResponse.json(createProcessInstance({processInstanceKey: '1', state: 'SUSPENDED'})),
+			}),
+		);
+
+		await expect.element(screen.getByTestId('operation-spinner')).not.toBeInTheDocument();
+	});
+
+	it('should wait for a resume command to take effect before clearing the spinner', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '1', state: 'SUSPENDED'})],
+					}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(createQueryBatchOperationItemsResponse({items: []})),
+			}),
+			mockResumeProcessInstanceEndpoint({
+				successResponse: new HttpResponse(null, {status: 204}),
+			}),
+			mockGetProcessInstanceEndpoint({
+				successResponse: HttpResponse.json(createProcessInstance({processInstanceKey: '1', state: 'SUSPENDED'})),
+			}),
+		);
+
+		const screen = await renderInstancesTable();
+		await userEvent.click(screen.getByRole('button', {name: 'Resume Instance 1'}));
+
+		await expect.element(screen.getByTestId('operation-spinner')).toBeVisible();
+
+		worker.use(
+			mockGetProcessInstanceEndpoint({
+				successResponse: HttpResponse.json(createProcessInstance({processInstanceKey: '1', state: 'ACTIVE'})),
+			}),
+		);
+
+		await expect.element(screen.getByTestId('operation-spinner')).not.toBeInTheDocument();
+	});
+
+	it('should notify the user when a suspend fails', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '1', state: 'ACTIVE'})],
+					}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(createQueryBatchOperationItemsResponse({items: []})),
+			}),
+			mockSuspendProcessInstanceEndpoint({
+				successResponse: new HttpResponse(null, {status: 500, statusText: 'Internal Server Error'}),
+			}),
+		);
+
+		const screen = await renderInstancesTable();
+
+		await userEvent.click(screen.getByRole('button', {name: 'Suspend Instance 1'}));
+
+		await expect.element(screen.getByText('Failed to suspend process instance')).toBeVisible();
+		await expect.element(screen.getByText('Internal Server Error')).toBeVisible();
+	});
+
+	it('should notify the user when a resume fails', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '1', state: 'SUSPENDED'})],
+					}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(createQueryBatchOperationItemsResponse({items: []})),
+			}),
+			mockResumeProcessInstanceEndpoint({
+				successResponse: new HttpResponse(null, {status: 500, statusText: 'Internal Server Error'}),
+			}),
+		);
+
+		const screen = await renderInstancesTable();
+
+		await userEvent.click(screen.getByRole('button', {name: 'Resume Instance 1'}));
+
+		await expect.element(screen.getByText('Failed to resume process instance')).toBeVisible();
+		await expect.element(screen.getByText('Internal Server Error')).toBeVisible();
+	});
+
+	it('should warn the user when suspend is forbidden', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '1', state: 'ACTIVE'})],
+					}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(createQueryBatchOperationItemsResponse({items: []})),
+			}),
+			mockSuspendProcessInstanceEndpoint({
+				successResponse: new HttpResponse(null, {status: 403}),
+			}),
+		);
+
+		const screen = await renderInstancesTable();
+
+		await userEvent.click(screen.getByRole('button', {name: 'Suspend Instance 1'}));
+
+		await expect.element(screen.getByText("You don't have permission to perform this operation")).toBeVisible();
+		await expect.element(screen.getByText('Please contact the administrator if you need access.')).toBeVisible();
+		expect(document.querySelector('.cds--toast-notification--warning')).not.toBeNull();
+	});
+
+	it('should warn the user when resume is forbidden', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '1', state: 'SUSPENDED'})],
+					}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(createQueryBatchOperationItemsResponse({items: []})),
+			}),
+			mockResumeProcessInstanceEndpoint({
+				successResponse: new HttpResponse(null, {status: 403}),
+			}),
+		);
+
+		const screen = await renderInstancesTable();
+
+		await userEvent.click(screen.getByRole('button', {name: 'Resume Instance 1'}));
+
+		await expect.element(screen.getByText("You don't have permission to perform this operation")).toBeVisible();
+		await expect.element(screen.getByText('Please contact the administrator if you need access.')).toBeVisible();
+		expect(document.querySelector('.cds--toast-notification--warning')).not.toBeNull();
+	});
+
+	it('should fail instead of spinning forever if the target state is never observed', async ({worker}) => {
+		vi.useFakeTimers({shouldAdvanceTime: true});
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '1', state: 'ACTIVE'})],
+					}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(createQueryBatchOperationItemsResponse({items: []})),
+			}),
+			mockSuspendProcessInstanceEndpoint({
+				successResponse: new HttpResponse(null, {status: 204}),
+			}),
+			// The command was accepted, but the instance keeps reporting ACTIVE — e.g. it was
+			// canceled elsewhere while the suspend was in flight, so SUSPENDED is never observed.
+			mockGetProcessInstanceEndpoint({
+				successResponse: HttpResponse.json(createProcessInstance({processInstanceKey: '1', state: 'ACTIVE'})),
+			}),
+		);
+
+		const screen = await renderInstancesTable();
+		await userEvent.click(screen.getByRole('button', {name: 'Suspend Instance 1'}));
+
+		await expect.element(screen.getByTestId('operation-spinner')).toBeVisible();
+
+		// Advance one retry delay at a time rather than jumping the full 31s at once, so each
+		// retry's fetch has a full tick to resolve before the next one is scheduled — a single
+		// large jump can race ahead of that chain instead of driving all 30 retries.
+		for (let i = 0; i < 31; i++) {
+			await vi.advanceTimersByTimeAsync(1000);
+		}
+
+		await expect
+			.poll(() => screen.getByText('Failed to suspend process instance').elements().length, {timeout: 10000})
+			.toBeGreaterThan(0);
+		await expect.element(screen.getByTestId('operation-spinner')).not.toBeInTheDocument();
 	});
 
 	it('should disable an action and show a spinner while that operation is active', async ({worker}) => {
@@ -578,6 +877,8 @@ describe('<InstancesTable />', () => {
 
 		await expect.element(screen.getByRole('button', {name: /delete/i})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: /cancel/i})).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('button', {name: /suspend/i})).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('button', {name: /resume/i})).not.toBeInTheDocument();
 	});
 
 	it('should wait for incident retry to finish before refreshing the row', async ({worker}) => {

@@ -48,7 +48,7 @@ For packaging changes:
 
 ## E2E Tests
 
-API and Playwright-based E2E tests live in `e2e_tests/`. These are run by C8Run CI. Run locally only against a fully started C8Run instance.
+API-level E2E tests live in `e2e_tests/`. These are run by C8Run CI. Run locally only against a fully started C8Run instance. Browser-level coverage is not in this module — it belongs to the QA suites in Layer 2.
 
 ### Repositories
 
@@ -63,9 +63,10 @@ API and Playwright-based E2E tests live in `e2e_tests/`. These are run by C8Run 
 **Triggers:** PRs touching `c8run/**`, nightly at 23:30 UTC, and `workflow_dispatch` (can be triggered manually on any branch from the [Actions UI](https://github.com/camunda/camunda/actions/workflows/c8run-build.yaml) — uploads `camunda8-run-build-<os>` artifacts to the run summary)
 
 What runs:
-- Playwright tests (`c8run/e2e_tests/`) on Linux, macOS ARM, macOS Intel
-- `api_tests.sh` — v2 API smoke (process instances, user tasks, Zeebe topology)
-- Windows: same tests via `c8run.exe start --config e2e_tests/prefix-config.yaml`
+- `api_tests.sh` — v2 API smoke (process instances, user tasks, Zeebe topology, centralized secret resolution) on Linux, macOS ARM, and macOS Intel
+- Windows: the same script via `c8run.exe start --config e2e_tests/prefix-config.yaml`
+
+This layer owns no UI assertions. Browser coverage lives in Layer 2, where QA owns the page objects — duplicating locators here only produced drift, since a UI change in `webapp/` does not trigger this workflow.
 
 **RDBMS setup:** c8run starts with `--config e2e_tests/prefix-config.yaml`, which configures H2 file-based as the secondary storage. This is the only layer that passes an explicit config file.
 

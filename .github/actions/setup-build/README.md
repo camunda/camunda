@@ -35,22 +35,23 @@ Vault/WIF hang (see that action's README).
 
 ### Inputs
 
-|          Input           |                             Description                             | Required |  Default  |
-|--------------------------|---------------------------------------------------------------------|----------|-----------|
-| camunda-nexus            | Use Camunda Nexus as a Maven mirror (disabled for fork PRs)         | false    | `"true"`  |
-| dockerhub                | Log into DockerHub with a CI account (disabled for fork PRs)        | false    | `"false"` |
-| dockerhub-readonly       | Log into DockerHub with a read-only account to avoid rate limits    | false    | `"false"` |
-| harbor                   | Log into Harbor with a Harbor robot account (disabled for fork PRs) | false    | `"false"` |
-| minimus                  | Log into Minimus with a CI account (disabled for fork PRs)          | false    | `"false"` |
-| java-distribution        | Java distribution to install                                        | false    | `temurin` |
-| java-version             | JDK version to install                                              | false    | `"21"`    |
-| maven-cache-key-modifier | Modifier for the Maven cache key                                    | false    | `shared`  |
-| maven-mirrors            | JSON list of extra Maven mirrors (merged with Nexus, extras win)    | false    | `'[]'`    |
-| maven-servers            | JSON list of extra Maven servers (merged with Nexus, extras win)    | false    | `'[]'`    |
-| time-zone                | TZ identifier for the build env, e.g. `Europe/Berlin` (Linux only)  | false    |           |
-| vault-address            | Vault URL to retrieve secrets from                                  | false    |           |
-| vault-role-id            | Vault AppRole role id                                               | false    |           |
-| vault-secret-id          | Vault AppRole secret id                                             | false    |           |
+|               Input               |                               Description                                | Required |  Default  |
+|-----------------------------------|--------------------------------------------------------------------------|----------|-----------|
+| camunda-nexus                     | Use Camunda Nexus as a Maven mirror (disabled for fork PRs)              | false    | `"true"`  |
+| dockerhub                         | Log into DockerHub with a CI account (disabled for fork PRs)             | false    | `"false"` |
+| dockerhub-readonly                | Log into DockerHub with a read-only account to avoid rate limits         | false    | `"false"` |
+| harbor                            | Log into Harbor with a Harbor robot account (disabled for fork PRs)      | false    | `"false"` |
+| minimus                           | Log into Minimus with a CI account (disabled for fork PRs)               | false    | `"false"` |
+| java-distribution                 | Java distribution to install                                             | false    | `temurin` |
+| java-version                      | JDK version to install                                                   | false    | `"21"`    |
+| maven-cache-key-modifier          | Modifier for the Maven cache key                                         | false    | `shared`  |
+| maven-cache-download-timeout-mins | Minutes the Maven cache restore may spend on one segment before aborting | false    | `"3"`     |
+| maven-mirrors                     | JSON list of extra Maven mirrors (merged with Nexus, extras win)         | false    | `'[]'`    |
+| maven-servers                     | JSON list of extra Maven servers (merged with Nexus, extras win)         | false    | `'[]'`    |
+| time-zone                         | TZ identifier for the build env, e.g. `Europe/Berlin` (Linux only)       | false    |           |
+| vault-address                     | Vault URL to retrieve secrets from                                       | false    |           |
+| vault-role-id                     | Vault AppRole role id                                                    | false    |           |
+| vault-secret-id                   | Vault AppRole secret id                                                  | false    |           |
 
 ### Outputs
 
@@ -63,6 +64,11 @@ None.
 - The Vault path for the DockerHub account is inferred from the calling workflow's
   file name (`operate-*`, `optimize-*`, `zeebe-*`), defaulting to
   `camunda`.
+- `maven-cache-download-timeout-mins` bounds how long a degraded GHA cache backend can
+  stall the restore. `actions/cache` aborts the download with a warning rather than a
+  failure and hands the job a cold Maven repository, so an unbounded stall surfaces as a
+  job timeout during the build instead of as a cache error (INC-7899). Raise it only for
+  a job whose cache is legitimately large enough to need more than the default.
 
 ## Example
 

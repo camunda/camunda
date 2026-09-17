@@ -37,8 +37,10 @@ import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -66,11 +68,13 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   // transitively; declaring that dependency to read one constant is not worth it, and getting the
   // value wrong here fails loudly at broker startup rather than silently.
   private static final String SECRET_STORE_ID = "default";
+  private static final String OWNER_ONLY = "rwx------";
   private static final Logger LOGGER = LoggerFactory.getLogger(TestStandaloneBroker.class);
 
   private boolean isGatewayEnabled = true;
   private final Map<String, Consumer<Map<String, Object>>> exporterMutators = new HashMap<>();
   private Path secretStoreDirectory;
+  private SecretsWriter secretsWriter;
 
   public TestStandaloneBroker() {
     super(
@@ -260,8 +264,9 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
    * }</pre>
    *
    * <p>The directory is written now, so its secrets are in place before the broker starts, and
-   * deleted when this broker is closed. A test that has to reach it later gets it from {@link
-   * #getFileBasedSecretStoreDirectory()}.
+   * deleted when this broker is closed. Should this broker be started again after that, it is
+   * written a second time, so every start reads the store configured here. A test that has to reach
+   * the directory gets it from {@link #getFileBasedSecretStoreDirectory()}.
    *
    * @param secrets writes the store's secrets into the directory it is handed
    * @return itself for chaining
@@ -269,6 +274,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   public TestStandaloneBroker withFileBasedSecretStore(final SecretsWriter secrets) {
     try {
       secretStoreDirectory = Files.createTempDirectory("secret-store-");
+      secretsWriter = secrets;
       secrets.writeTo(secretStoreDirectory);
     } catch (final IOException e) {
       throw new UncheckedIOException("Failed to write the file-based secret store", e);
@@ -278,6 +284,62 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     store.setPath(secretStoreDirectory.toString());
     unifiedConfig.getSecrets().getStores().getFile().put(SECRET_STORE_ID, store);
     return this;
+  }
+
+  @Override
+  public TestStandaloneBroker start() {
+    recreateSecretStoreDirectoryIfMissing();
+    return super.start();
+  }
+
+  /**
+   * Re-creates the secret store directory when a previous {@link #close()} has deleted it, so this
+   * broker starts against the secrets it was configured with however often it is restarted. A
+   * directory that is still there is left exactly as it is, contents included.
+   *
+   * <p>Without this, only the first start of a given instance has a store to read. A test class
+   * that is re-run in the same JVM — Surefire's {@code rerunFailingTestsCount}, which CI sets — has
+   * its static initializer run only once, so the rerun restarts this same instance rather than
+   * building a new one. The configuration still names the directory the first run deleted, and
+   * every secret lookup fails the whole request with "Failed to read the configured secret store"
+   * instead of retrying whatever actually flaked.
+   */
+  private void recreateSecretStoreDirectoryIfMissing() {
+    // only on a start that actually boots the broker: start() is idempotent, and a test that has
+    // taken the directory away to exercise an unavailable store (SecretStoreUnavailableIT) must
+    // not have it handed back by an incidental start() call on the running broker
+    if (isStarted() || secretsWriter == null || Files.isDirectory(secretStoreDirectory)) {
+      return;
+    }
+    try {
+      createSecretStoreDirectory(secretStoreDirectory);
+      secretsWriter.writeTo(secretStoreDirectory);
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to recreate the file-based secret store", e);
+    }
+    // logged because this only happens on a restart of an instance whose directory was already
+    // deleted, which in practice means a rerun of a failed test: whoever is reading those logs is
+    // triaging the first failure and needs to know the store was rebuilt between the attempts
+    LOGGER.info(
+        "Recreated the deleted secret store directory {} before restarting the broker",
+        secretStoreDirectory);
+  }
+
+  /**
+   * Creates the secret store directory with the owner-only permissions {@code
+   * Files.createTempDirectory} gave it the first time. Creating it plainly would hand the rewritten
+   * store whatever the umask allows, so a restarted broker would keep its secrets more openly than
+   * a freshly built one. The permissions are set as the directory is created, so it is never
+   * readable by anyone else in between.
+   */
+  private static void createSecretStoreDirectory(final Path directory) throws IOException {
+    if (FileSystems.getDefault().supportedFileAttributeViews().contains("posix")) {
+      Files.createDirectories(
+          directory,
+          PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString(OWNER_ONLY)));
+    } else {
+      Files.createDirectories(directory);
+    }
   }
 
   /**
@@ -306,7 +368,9 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     } catch (final IOException e) {
       LOGGER.warn("Failed to delete the secret store directory {}", secretStoreDirectory, e);
     }
-    secretStoreDirectory = null;
+    // the path itself is kept, unlike the directory: the configuration still names it, and a
+    // restart of this instance rebuilds the directory there. See
+    // recreateSecretStoreDirectoryIfMissing().
   }
 
   /**

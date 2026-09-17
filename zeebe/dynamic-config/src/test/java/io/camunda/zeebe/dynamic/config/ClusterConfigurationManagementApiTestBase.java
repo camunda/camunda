@@ -29,12 +29,12 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreResolvedRequest;
@@ -303,8 +303,8 @@ abstract class ClusterConfigurationManagementApiTestBase {
   /**
    * Extra physical broker nodes to start alongside the coordinator, so that {@code
    * communicationService} can route requests to a member other than {@link #coordinatorId}. Used by
-   * tests where the coordinator resolved at request time (e.g. force-remove-zone routing around the
-   * removed zone) differs from the physical coordinator node.
+   * tests where the coordinator resolved at request time (e.g. forced zone-removal routing around
+   * the removed zone) differs from the physical coordinator node.
    */
   protected List<MemberId> extraPhysicalMembers() {
     return List.of();
@@ -761,10 +761,9 @@ abstract class ClusterConfigurationManagementApiTestBase {
   @Test
   void shouldForceRemoveZone() {
     // given
-    // memberFactory.apply(0) is a bare (non-zoned) member so that the request is routed to the
-    // coordinator that the
-    // test's real communicationService actually knows about; the zone members below are the ones
-    // exercised by the force-remove-zone logic itself.
+    // memberFactory.apply(0) is a bare (non-zoned) member so that the forced request is routed to
+    // the coordinator that the test's real communicationService actually knows about; the zone
+    // members below are the ones exercised by the forced zone-removal logic itself.
     final var zoneA0 = MemberId.from("zone-a", 0);
     final var zoneA1 = MemberId.from("zone-a", 1);
     final var zoneB0 = MemberId.from("zone-b", 0);
@@ -784,10 +783,10 @@ abstract class ClusterConfigurationManagementApiTestBase {
                 new ZoneAwareConfig(
                     List.of(new ZoneSpec("zone-a", 2, 1), new ZoneSpec("zone-b", 2, 2))));
     setCurrentTopology(currentTopology);
-    final var request = new ForceZoneRemoveRequest("zone-a", false);
+    final var request = new RemoveZoneRequest("zone-a", false, true);
 
     // when
-    final var changeStatus = clientApi.forceRemoveZone(request).join().get();
+    final var changeStatus = clientApi.removeZone(request).join().get();
 
     // then
     assertThat(changeStatus.legacyResponse().plannedChanges())

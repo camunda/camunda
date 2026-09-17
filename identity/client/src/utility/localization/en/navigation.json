@@ -7,6 +7,8 @@
   "infoCommunityForum": "Community forum",
   "settings": "Settings",
   "notifications": "Notifications",
+  "notificationsLoading": "Loading notifications...",
+  "notificationsEmpty": "You have no notifications.",
   "notificationsDismissAll": "Dismiss all",
   "notificationsEmptyTitle": "No notifications",
   "notificationsEmptyDescription": "New updates regarding your processes, clusters and more will appear here.",

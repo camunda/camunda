@@ -255,10 +255,16 @@ test.describe('Process Definition Draining Deletion — work already in flight',
       await deployUserTaskProcess(processDefinitionId);
     const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
     instancesToCancel.push(instance.processInstanceKey);
+    // Finding the freshly-created user task depends on secondary-storage
+    // propagation; on a loaded shared cluster the default 30s budget can be
+    // too tight (seen on MSSQL), so use the same extended window the other
+    // post-propagation assertions in this file rely on.
     const userTaskKey = await findUserTask(
       request,
       instance.processInstanceKey,
       'CREATED',
+      undefined,
+      extendedAssertionOptions,
     );
 
     await drainProcessDefinition(request, processDefinitionKey);

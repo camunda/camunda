@@ -96,7 +96,13 @@ export async function completeTaskWithRetry(
 ): Promise<void> {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      await taskPanelPage.openTask(taskName);
+      // Give the task list the same 60s per-attempt budget used elsewhere in
+      // the suite for tasks that were just created/completed (e.g.
+      // task-details.spec.ts's processWithDeployedForm calls) -- the default
+      // 10s is regularly too tight for a task to become searchable under CI
+      // load, especially for sequential multi-task flows like the priority
+      // chain in hto-user-flows.spec.ts.
+      await taskPanelPage.openTask(taskName, {timeout: 60000});
       await sleep(500);
       if (!(await taskDetailsPage.assignedToMeText.isVisible())) {
         await taskDetailsPage.clickAssignToMeButton();

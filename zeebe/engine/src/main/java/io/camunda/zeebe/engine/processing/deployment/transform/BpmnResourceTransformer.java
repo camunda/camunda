@@ -21,7 +21,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.validation.StraightTh
 import io.camunda.zeebe.engine.processing.deployment.model.validation.UnsupportedMultiTenantFeaturesValidator;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
-import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -325,10 +324,9 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
       final DirectBuffer lastVersionDigest) {
     return lastVersionDigest != null
         && lastProcess != null
-        // A DRAINING/PENDING_DELETION latest version is on its way out: reusing its key would make
-        // the redeploy vanish once the drain completes. Only an ACTIVE version can be a duplicate;
-        // otherwise mint a fresh version.
-        && lastProcess.getState() == PersistedProcessState.ACTIVE
+        // A DRAINING latest would vanish once its drain completes, so it can never be a duplicate;
+        // mint a fresh version. A resting PENDING_DELETION counts as active and stays eligible.
+        && lastProcess.isActive()
         && lastVersionDigest.equals(resourceDigest)
         && lastProcess.getResourceName().equals(deploymentResource.getResourceNameBuffer());
   }

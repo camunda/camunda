@@ -28,7 +28,7 @@ public class ResourceDeletionRecord extends UnifiedRecordValue
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
   private static final StringValue DELETE_HISTORY_KEY = new StringValue("deleteHistory");
   private static final StringValue BATCH_OPERATION_KEY = new StringValue("batchOperationKey");
-  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinalKey");
+  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
   private static final StringValue BATCH_OPERATION_TYPE = new StringValue("batchOperationType");
   private static final StringValue RESOURCE_TYPE = new StringValue("resourceType");
   private static final StringValue RESOURCE_ID = new StringValue("resourceId");
@@ -37,7 +37,7 @@ public class ResourceDeletionRecord extends UnifiedRecordValue
   private final StringProperty tenantIdProp = new StringProperty(TENANT_ID_KEY, "");
   private final BooleanProperty deleteHistoryProp = new BooleanProperty(DELETE_HISTORY_KEY, false);
   private final LongProperty batchOperationKeyProp = new LongProperty(BATCH_OPERATION_KEY, -1);
-  private final IntegerProperty storageOrdinalKeyProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
   private final EnumProperty<BatchOperationType> batchOperationTypeProp =
       new EnumProperty<>(
           BATCH_OPERATION_TYPE,
@@ -53,7 +53,7 @@ public class ResourceDeletionRecord extends UnifiedRecordValue
         .declareProperty(tenantIdProp)
         .declareProperty(deleteHistoryProp)
         .declareProperty(batchOperationKeyProp)
-        .declareProperty(storageOrdinalKeyProp)
+        .declareProperty(storageOrdinalProp)
         .declareProperty(batchOperationTypeProp)
         .declareProperty(resourceTypeProp)
         .declareProperty(resourceIdProp);
@@ -135,12 +135,12 @@ public class ResourceDeletionRecord extends UnifiedRecordValue
   }
 
   @Override
-  public int getStorageOrdinalKey() {
-    return storageOrdinalKeyProp.getValue();
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
   }
 
-  public ResourceDeletionRecord setStorageOrdinalKey(final int storageOrdinalKey) {
-    storageOrdinalKeyProp.setValue(storageOrdinalKey);
+  public ResourceDeletionRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
 }

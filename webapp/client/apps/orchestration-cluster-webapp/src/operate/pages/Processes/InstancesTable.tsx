@@ -278,7 +278,7 @@ const InstancesTable: React.FC<Props> = ({search, isActionMode, renderActions}) 
 			<EmptyMessage
 				message={t('operate.processes.instancesTable.emptyMessage')}
 				additionalInfo={
-					search.active || search.incidents || search.completed || search.canceled
+					search.active || search.incidents || search.completed || search.canceled || search.suspended
 						? undefined
 						: t('operate.processes.instancesTable.emptyAdditionalInfo')
 				}

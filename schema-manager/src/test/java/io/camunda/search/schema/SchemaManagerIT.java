@@ -18,6 +18,7 @@ import static io.camunda.search.test.utils.SearchDBExtension.CUSTOM_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.assertj.core.api.InstanceOfAssertFactories.type;
 import static org.mockito.ArgumentMatchers.any;
@@ -198,6 +199,28 @@ public class SchemaManagerIT {
   }
 
   @TestTemplate
+  void shouldReadShardCountsOfExistingIndicesOnly(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws Exception {
+    // given
+    config.index().setShardsByIndexName(Map.of(index.getIndexName(), 3));
+    final var searchEngineClient = searchEngineClientFromConfig(config);
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClient, Set.of(index, metadataIndex), Set.of(), config, objectMapper);
+    initialiseResources(schemaManager);
+
+    // when
+    final var shardCounts =
+        searchEngineClient.getNumberOfShards(
+            Set.of(index.getFullQualifiedName(), CUSTOM_PREFIX + "-absent-index"));
+
+    // then — an index that does not exist is absent from the result rather than an error, which is
+    // what lets the startup check run before every index has necessarily been created
+    assertThat(shardCounts).containsExactly(entry(index.getFullQualifiedName(), 3));
+  }
+
+  @TestTemplate
   void shouldOverwriteIndexTemplateIfMappingsFileChanged(
       final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
       throws Exception {
@@ -286,6 +309,43 @@ public class SchemaManagerIT {
 
     assertThat(mappingsMatch(retrievedIndex.get("mappings"), "/mappings-added-property.json"))
         .isTrue();
+    assertThat(
+            mappingsMatch(
+                retrievedIndexTemplate.at("/index_template/template/mappings"),
+                "/mappings-added-property.json"))
+        .isTrue();
+  }
+
+  @RegressionTestTemplate("https://github.com/camunda/camunda/issues/57256")
+  void shouldUpdateTemplateMappingsWhenNoBackingIndexExists(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws Exception {
+    // given
+    config.schemaManager().setCreateSchema(true);
+    final var searchEngineClient = getSearchEngineClient(config);
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClient,
+            Set.of(index, metadataIndex),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
+
+    startupWithRetry(schemaManager, config);
+
+    // when - the runtime index backing the template is dropped, e.g. by an operator, leaving only
+    // the template behind, and the descriptor's mapping is then upgraded
+    searchEngineClient.deleteIndex(indexTemplate.getFullQualifiedName());
+    searchClientAdapter.refresh();
+    indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
+
+    startupWithRetry(schemaManager, config);
+
+    // then - the template itself must reflect the new mapping, otherwise future indices created
+    // off it (e.g. after a rollover) would mismatch the freshly re-created runtime index
+    final var retrievedIndexTemplate =
+        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+
     assertThat(
             mappingsMatch(
                 retrievedIndexTemplate.at("/index_template/template/mappings"),

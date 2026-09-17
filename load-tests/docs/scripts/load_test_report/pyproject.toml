@@ -3,7 +3,7 @@ name = "load-test-report"
 version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
-  "pydantic==2.12.5",
+  "pydantic==2.13.5",
   "pyyaml==6.0.3",
 ]
 
@@ -16,10 +16,12 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
+  "mypy>=2.3.1",
   "pytest==9.1.1",
   "pytest-cov>=7.1.0",
   "pytest-ruff>=0.5",
-  "ruff==0.16.6",
+  "ruff==0.16.7",
+  "types-pyyaml>=6.0.12.20260906",
 ]
 
 [tool.ruff]
@@ -42,3 +44,6 @@ addopts = [
     "--ruff",
     "--ruff-format",
 ]
+
+[tool.mypy]
+strict=true

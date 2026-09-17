@@ -22,13 +22,14 @@ import {
   CardHeader,
   CardTitle,
   PageContentLayout,
+  StatusIcon,
   Text,
 } from "@camunda/design-system";
 import TextField from "src/components/formV2/TextField";
 import useDebounce from "react-debounced";
 import { useForm, FieldPath, FieldPathValue } from "react-hook-form";
 import { CellProperty } from "src/pages/operations-log/CellPropertyV2";
-import { CircleCheck, Plug, User, XCircle } from "@camunda/design-system/icons";
+import { Plug, User } from "@camunda/design-system/icons";
 import AiAgentIcon from "src/assets/images/ai-agent.svg";
 import { DateRangeField } from "src/components/formV2/DateRangeField";
 import {
@@ -285,16 +286,16 @@ const List: FC = () => {
               id: log.auditLogKey,
               result:
                 log.result === "SUCCESS" ? (
-                  <CircleCheck
-                    role="img"
-                    className="h-5 w-5 text-success-foreground-subtle"
-                    aria-label={spaceAndCapitalize(log.result)}
-                  />
+                  <StatusIcon
+                    size="lg"
+                    variant="success"
+                    label={spaceAndCapitalize(log.result)}
+                  ></StatusIcon>
                 ) : (
-                  <XCircle
-                    role="img"
-                    className="h-5 w-5 text-danger-foreground-subtle"
-                    aria-label={spaceAndCapitalize(log.result)}
+                  <StatusIcon
+                    size="lg"
+                    variant="danger"
+                    label={spaceAndCapitalize(log.result)}
                   />
                 ),
               operationType: spaceAndCapitalize(log.operationType),

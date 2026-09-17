@@ -113,6 +113,12 @@ export async function createCancellationBatch(
     }
   }
 
+  // Wait for *every* instance to be searchable, not just the first one. The
+  // cancellation batch below resolves its items from secondary storage when it
+  // is created, so creating it while the rest are still propagating produces a
+  // batch of only the handful that happened to be indexed. Such a batch reaches
+  // a terminal state almost immediately, which makes the suspend/resume tests
+  // fail with a permanent 404 no matter how many instances they asked for.
   await expect(async () => {
     const searchRes = await request.post(
       buildUrl('/process-instances/search'),
@@ -129,10 +135,12 @@ export async function createCancellationBatch(
     );
     await assertStatusCode(searchRes, 200);
     const json = await searchRes.json();
-    expect((json.page?.totalItems ?? 0) > 0).toBe(true);
+    expect(json.page?.totalItems ?? 0).toBe(processInstanceKeys.length);
   }).toPass({
     ...defaultAssertionOptions,
-    timeout: 60_000,
+    // Propagation scales with the number of instances -- 60s is plenty for the
+    // 3-instance default but not for the 500-instance suspension batches.
+    timeout: Math.max(60_000, processInstanceKeys.length * 300),
   });
 
   const result: Record<string, string> = {};

@@ -100,7 +100,7 @@ final class PartitionGroupScalingPhases {
       // Nothing is asked for that the cluster does not already have. Returning before the
       // distributor runs is what keeps such a request a no-op: a placement that has drifted from
       // what the distributor would compute now — after a manual reassignment through
-      // /partition-distribution, say — would otherwise be rebalanced by a request that asked for
+      // /partitioning, say — would otherwise be rebalanced by a request that asked for
       // no change at all. It also keeps a request that asks for nothing answerable while the
       // cluster cannot satisfy its own replication factor, e.g. with a broker down.
       //

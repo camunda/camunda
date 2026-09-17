@@ -694,10 +694,18 @@ jobs:
           fetch-depth: 0 # To fetch tags as well - necessary for the changelog generation
           persist-credentials: false
       - name: Install Zeebe changelog tool
-        run: |
-          gh release download --repo camunda/zeebe-changelog --pattern '*_Linux_i386.tar.gz'
-          tar -xzvf zeebe-changelog_*
-          chmod +x zcl
+        # retry to tolerate transient GitHub API failures (e.g. TLS handshake timeouts)
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          retry_on: any
+          timeout_minutes: 2
+          max_attempts: 3
+          retry_wait_seconds: 10
+          # --clobber so a partial download from a timed-out attempt does not block the retry
+          command: |
+            gh release download --repo camunda/zeebe-changelog --pattern '*_Linux_i386.tar.gz' --clobber
+            tar -xzvf zeebe-changelog_*
+            chmod +x zcl
       - name: Identify previous release version
         id: prev_version
         if: ${{ !inputs.dryRun }}
@@ -859,9 +867,9 @@ jobs:
             secret/data/products/camunda/ci/camunda FOSSA_API_KEY;
       - name: Get FOSSA context
         id: fossa-context
-        uses: camunda/infra-global-github-actions/fossa/info@ee746fa695a43480b4294e944a6bf6e01b4f8459 # fossa-1.0.17
+        uses: camunda/infra-global-github-actions/fossa/info@dd0b262662ff9e944aaca1b710f87bc4524526b5 # fossa-1.0.20
       - name: Wait for FOSSA scan completion
-        uses: camunda/infra-global-github-actions/fossa/wait-for-scan@ee746fa695a43480b4294e944a6bf6e01b4f8459 # fossa-1.0.17
+        uses: camunda/infra-global-github-actions/fossa/wait-for-scan@dd0b262662ff9e944aaca1b710f87bc4524526b5 # fossa-1.0.20
         with:
           api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
           branch: ${{ steps.fossa-context.outputs.head-ref }}
@@ -869,7 +877,7 @@ jobs:
           revision-id: ${{ needs.release.outputs.releaseTagCommitSha }}
           dry-run: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
       - name: Create FOSSA releases and generate reports
-        uses: camunda/infra-global-github-actions/fossa/release@ee746fa695a43480b4294e944a6bf6e01b4f8459 # fossa-1.0.17
+        uses: camunda/infra-global-github-actions/fossa/release@dd0b262662ff9e944aaca1b710f87bc4524526b5 # fossa-1.0.20
         with:
           api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
           branch: ${{ steps.fossa-context.outputs.head-ref }}

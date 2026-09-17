@@ -105,6 +105,7 @@ export const AddModal: FC<AddModalProps> = ({
             placeholder={t("clusterVariableNamePlaceholder")}
             errors={fieldState.error?.message}
             autoFocus
+            autoComplete="off"
           />
         )}
       />

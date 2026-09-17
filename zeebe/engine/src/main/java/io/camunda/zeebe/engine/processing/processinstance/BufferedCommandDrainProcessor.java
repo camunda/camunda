@@ -33,12 +33,11 @@ import java.util.function.Consumer;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * Drains buffered commands one per {@code DRAIN} cycle, then re-checks the buffer — already
- * current, since event appliers run synchronously — to decide the next step: another {@code DRAIN}
- * if more remains, or {@code RESUME_JOBS} to hand off to {@link
- * ProcessInstanceResumeJobsProcessor}, which un-parks jobs and appends {@code COMPLETE_RESUMING}
- * itself. {@link SuspensionAction#PROCESS} is unconditional: gating a {@code DRAIN} would strand
- * the instance in {@code RESUMING} forever.
+ * Drains buffered commands one per {@code DRAIN} cycle: if one is found, it's drained and another
+ * {@code DRAIN} is scheduled unconditionally; the cycle that finds the buffer empty hands off to
+ * {@code RESUME_JOBS} instead, to {@link ProcessInstanceResumeJobsProcessor}, which un-parks jobs
+ * and appends {@code COMPLETE_RESUMING} itself. {@link SuspensionAction#PROCESS} is unconditional:
+ * gating a {@code DRAIN} would strand the instance in {@code RESUMING} forever.
  *
  * <p>A cycle that fails to write (e.g. batch size exceeded) halts rather than drops the command:
  * the default error handling rejects {@code DRAIN} without banning the instance, and it stays
@@ -81,23 +80,16 @@ public final class BufferedCommandDrainProcessor
     final var drainValue = command.getValue();
     final long processInstanceKey = drainValue.getProcessInstanceKey();
 
-    final var buffered = suspensionState.getOldestBufferedCommand(processInstanceKey).orElse(null);
-    if (buffered == null) {
-      advanceOrWait(command, drainValue);
-      return;
-    }
-
-    appendBufferedCommand(buffered);
-    appendDrainedEvent(buffered);
-
-    // DRAINED already applied (event appliers run synchronously), so this reflects the buffer as
-    // it stands now, without an extra empty DRAIN cycle to find out
-    if (suspensionState.getOldestBufferedCommand(processInstanceKey).isEmpty()) {
-      advanceOrWait(command, drainValue);
-    } else {
-      appendNextDrainCommand(drainValue);
-    }
-    suspensionMetrics.commandDrained();
+    suspensionState
+        .findNextBufferedCommand(processInstanceKey, drainValue.getCommandKey())
+        .ifPresentOrElse(
+            buffered -> {
+              appendBufferedCommand(buffered);
+              appendDrainedEvent(buffered);
+              appendNextDrainCommand(buffered.key(), buffered.command());
+              suspensionMetrics.commandDrained();
+            },
+            () -> advanceOrWait(command, drainValue));
   }
 
   /**
@@ -193,14 +185,16 @@ public final class BufferedCommandDrainProcessor
             .setIntent(value.getIntent()));
   }
 
-  private void appendNextDrainCommand(final BufferedCommandRecord drainValue) {
+  private void appendNextDrainCommand(
+      final long drainedCommandKey, final BufferedCommandRecord drainedCommandValue) {
     commandWriter.appendFollowUpCommand(
-        drainValue.getProcessInstanceKey(),
+        drainedCommandValue.getProcessInstanceKey(),
         BufferedCommandIntent.DRAIN,
         new BufferedCommandRecord()
-            .setProcessInstanceKey(drainValue.getProcessInstanceKey())
-            .setProcessDefinitionKey(drainValue.getProcessDefinitionKey())
-            .setTenantId(drainValue.getTenantId()));
+            .setProcessInstanceKey(drainedCommandValue.getProcessInstanceKey())
+            .setProcessDefinitionKey(drainedCommandValue.getProcessDefinitionKey())
+            .setTenantId(drainedCommandValue.getTenantId())
+            .setCommandKey(drainedCommandKey));
   }
 
   private void appendResumeJobs(final BufferedCommandRecord drainValue) {

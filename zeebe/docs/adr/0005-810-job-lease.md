@@ -94,7 +94,7 @@ already-released server, whose ignore-unknown-fields behavior is fixed — and a
 reject-unknown-fields going forward would trade proto3's rolling-upgrade tolerance for a permanent
 availability cliff on every future field addition. Only the worker application knows whether the
 fence is *required* or merely *preferred* — so the contract sits with the worker: check
-`leaseToken` per activated job and, when absent and the fence is required, fail the job with a
+`jobLeaseToken` per activated job and, when absent and the fence is required, fail the job with a
 backoff while preserving retries (a decremented retry would burn a transient infrastructure state
 into an incident). This converges as partition leaders upgrade; against a permanently old cluster
 it manifests as a visible fail loop rather than silent unfenced execution — the intended,
@@ -162,7 +162,8 @@ gap until the job APIs surface activation data at all.
   activation identity, not exactly-once execution.
 - The lease applies uniformly to all job kinds (service tasks, execution/task listeners, ad-hoc
   sub-process jobs) and is orthogonal to logical and physical multi-tenancy.
-- The first consumer is the agent-history commit lifecycle; the mechanism is generic and carries
+- The first consumer is the agent-history commit lifecycle
+  ([0013](0013-810-agent-history-commit-under-job-lease.md)); the mechanism is generic and carries
   no AI-specific semantics.
 
 ## Source

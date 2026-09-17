@@ -78,6 +78,10 @@ Signals to look for:
 - Shared failure description in summaries (same error, same upstream, same timing)
 - Tight timing cluster vs spread over many hours
 - Whether summaries mention the same GHA run URLs
+- Whether summaries mention a shared external dependency (Maven Central, DockerHub, npm registry,
+  Snyk, AWS, Mend/Renovate, etc.) — see Pattern B2 in `references/flood-patterns.md` and the
+  [Third-Party Service Outage runbook](../../../docs/monorepo-docs/ci-runbooks.md#third-party-service-outage)
+  if so
 
 Form a working hypothesis: "probably one cause" vs "probably independent" vs "unclear, need more
 data."

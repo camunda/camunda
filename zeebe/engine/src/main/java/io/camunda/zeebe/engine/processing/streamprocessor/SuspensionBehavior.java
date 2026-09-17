@@ -82,11 +82,14 @@ public final class SuspensionBehavior {
       return passThrough(processInstanceKey);
     }
 
-    return new SuspensionResult(action, processInstanceKey);
+    return new SuspensionResult(
+        action,
+        processInstanceKey,
+        rejectionReasonFor(action, suspensionAware, command, processInstanceKey));
   }
 
   private static SuspensionResult passThrough(final long processInstanceKey) {
-    return new SuspensionResult(SuspensionAction.PROCESS, processInstanceKey);
+    return new SuspensionResult(SuspensionAction.PROCESS, processInstanceKey, null);
   }
 
   /**
@@ -181,11 +184,30 @@ public final class SuspensionBehavior {
     return action;
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  private static @Nullable String rejectionReasonFor(
+      final SuspensionAction action,
+      final SuspensionAware<?> suspensionAware,
+      final TypedRecord<?> command,
+      final long processInstanceKey) {
+    if (action != SuspensionAction.REJECT) {
+      return null;
+    }
+    final String reason =
+        ((SuspensionAware) suspensionAware).rejectionReason(command, processInstanceKey);
+    return reason != null
+        ? reason
+        : SuspensionAware.ERROR_MESSAGE_SUSPENDED_PI.formatted(processInstanceKey);
+  }
+
   /**
    * The gate outcome for a command, with the resolved target process instance key.
    *
    * @param outcome the gate action to take
    * @param processInstanceKey the resolved target instance, or {@code -1}
+   * @param rejectionReason {@code INVALID_STATE} reason when {@code outcome} is {@code REJECT};
+   *     {@code null} otherwise
    */
-  public record SuspensionResult(SuspensionAction outcome, long processInstanceKey) {}
+  public record SuspensionResult(
+      SuspensionAction outcome, long processInstanceKey, @Nullable String rejectionReason) {}
 }

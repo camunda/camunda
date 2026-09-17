@@ -55,6 +55,17 @@ public class Secrets {
   private static final int MIN_DEFAULT_MAX_CONCURRENCY = 8;
 
   /**
+   * Default upper bound on one call to a cloud secret store, retries included, and on a single
+   * attempt within it. Shared by the AWS and GCP stores so both are bounded the same way; mirrored
+   * by {@code AwsSecretsManagerStoreConfig#DEFAULT_CALL_TIMEOUT} and {@code
+   * GcpSecretManagerStoreConfig#DEFAULT_CALL_TIMEOUT} in the store modules, which this module
+   * cannot depend on. Keep them in sync.
+   */
+  private static final Duration DEFAULT_CALL_TIMEOUT = Duration.ofSeconds(5);
+
+  private static final Duration DEFAULT_ATTEMPT_TIMEOUT = Duration.ofSeconds(2);
+
+  /**
    * Twice the core count, not once: the permits bound blocking backend round trips rather than CPU
    * work, and staying clear of the virtual-thread carrier pool (sized to the core count) leaves
    * room for a store whose client pins its carrier. It also keeps the default above
@@ -370,6 +381,22 @@ public class Secrets {
      */
     private @Nullable String containerSecretId;
 
+    /**
+     * Upper bound on one call to AWS Secrets Manager, retries included. The AWS SDK sets no such
+     * bound by default, which lets an unresponsive endpoint hold the caller for minutes. The
+     * background secret resolution calls the store from an IO-bound actor thread shared with every
+     * partition's exporter, so an unbounded call there stalls exporting broker-wide
+     * (camunda/camunda#62869). Must be positive.
+     */
+    private Duration callTimeout = DEFAULT_CALL_TIMEOUT;
+
+    /**
+     * Upper bound on a single HTTP attempt within a call, so one stalled socket does not consume
+     * the whole {@link #callTimeout} budget. Must be positive and not longer than {@link
+     * #callTimeout}, which would make it unreachable.
+     */
+    private Duration attemptTimeout = DEFAULT_ATTEMPT_TIMEOUT;
+
     public @Nullable String getRegion() {
       return region;
     }
@@ -410,6 +437,30 @@ public class Secrets {
       this.containerSecretId = containerSecretId;
     }
 
+    public Duration getCallTimeout() {
+      return callTimeout;
+    }
+
+    /**
+     * @param callTimeout the configured value, or {@code null}, bound to the default the same way
+     *     an unset property is, so an explicitly empty value does not leave the store unbounded
+     */
+    public void setCallTimeout(final @Nullable Duration callTimeout) {
+      this.callTimeout = callTimeout == null ? DEFAULT_CALL_TIMEOUT : callTimeout;
+    }
+
+    public Duration getAttemptTimeout() {
+      return attemptTimeout;
+    }
+
+    /**
+     * @param attemptTimeout the configured value, or {@code null}, bound to the same outcome {@code
+     *     callTimeout} already has for an empty value
+     */
+    public void setAttemptTimeout(final @Nullable Duration attemptTimeout) {
+      this.attemptTimeout = attemptTimeout == null ? DEFAULT_ATTEMPT_TIMEOUT : attemptTimeout;
+    }
+
     /**
      * Mirrors the invariants of {@code io.camunda.secretstore.aws.AwsSecretsManagerStoreConfig}'s
      * canonical constructor in the {@code secret-store-aws} module (not depended on from here, to
@@ -441,6 +492,29 @@ public class Secrets {
                 + storeId
                 + ".batch-enabled and .container-secret-id are mutually exclusive, but both were "
                 + "configured");
+      }
+      if (!callTimeout.isPositive()) {
+        throw new IllegalArgumentException(
+            "camunda.secrets.stores.aws."
+                + storeId
+                + ".call-timeout must be positive, but was "
+                + callTimeout);
+      }
+      if (!attemptTimeout.isPositive()) {
+        throw new IllegalArgumentException(
+            "camunda.secrets.stores.aws."
+                + storeId
+                + ".attempt-timeout must be positive, but was "
+                + attemptTimeout);
+      }
+      if (attemptTimeout.compareTo(callTimeout) > 0) {
+        throw new IllegalArgumentException(
+            "camunda.secrets.stores.aws."
+                + storeId
+                + ".attempt-timeout must not be longer than .call-timeout ("
+                + callTimeout
+                + "), but was "
+                + attemptTimeout);
       }
     }
   }
@@ -502,6 +576,14 @@ public class Secrets {
      */
     private @Nullable String containerSecretId;
 
+    /**
+     * Upper bound on one call to GCP Secret Manager, retries included. gax's defaults let an
+     * unresponsive endpoint hold the caller far longer than that. The background secret resolution
+     * calls the store from an IO-bound actor thread shared with every partition's exporter, so an
+     * unbounded call there stalls exporting broker-wide (camunda/camunda#62869). Must be positive.
+     */
+    private Duration callTimeout = DEFAULT_CALL_TIMEOUT;
+
     public @Nullable String getProjectId() {
       return projectId;
     }
@@ -532,6 +614,18 @@ public class Secrets {
 
     public void setContainerSecretId(final @Nullable String containerSecretId) {
       this.containerSecretId = containerSecretId;
+    }
+
+    public Duration getCallTimeout() {
+      return callTimeout;
+    }
+
+    /**
+     * @param callTimeout the configured value, or {@code null}, bound to the default the same way
+     *     an unset property is, so an explicitly empty value does not leave the store unbounded
+     */
+    public void setCallTimeout(final @Nullable Duration callTimeout) {
+      this.callTimeout = callTimeout == null ? DEFAULT_CALL_TIMEOUT : callTimeout;
     }
 
     /**
@@ -583,6 +677,13 @@ public class Secrets {
                 + "id, but was '"
                 + containerSecretId
                 + "'");
+      }
+      if (!callTimeout.isPositive()) {
+        throw new IllegalArgumentException(
+            "camunda.secrets.stores.gcp."
+                + storeId
+                + ".call-timeout must be positive, but was "
+                + callTimeout);
       }
       if (containerSecretId != null) {
         final int fullLength =

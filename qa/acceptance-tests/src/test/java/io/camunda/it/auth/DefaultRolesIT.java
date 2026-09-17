@@ -13,6 +13,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.MembershipVisibility;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
@@ -75,6 +76,15 @@ final class DefaultRolesIT {
         .username(CONNECTORS_USERNAME)
         .send()
         .join();
+    // shouldResolveSecrets needs the membership readable from secondary storage and
+    // shouldCreateProcessInstances does not, because the two are authorized in different places.
+    // Creating a process instance is authorized inside the engine, against state the command has
+    // already reached by the time it is acknowledged. Resolving a secret is authorized by
+    // SecretServices against the authorization index, where an unindexed membership reads as no
+    // grant at all, and the reference comes back ACCESS_DENIED inside a 200 response. So without
+    // this wait the race fails the assertion rather than the request.
+    MembershipVisibility.awaitUsersVisibleInRole(
+        adminClient, DefaultRole.CONNECTORS.getId(), CONNECTORS_USERNAME);
   }
 
   @RegressionTest("https://github.com/camunda/camunda/issues/38751")
