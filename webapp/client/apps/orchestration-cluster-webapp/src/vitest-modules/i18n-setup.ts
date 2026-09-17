@@ -8,12 +8,13 @@
 
 import i18n from 'i18next';
 import {initReactI18next} from 'react-i18next';
-import en from '#/shared/i18n/locales/en.json';
+import {translationResources} from '#/shared/i18n';
 
 if (!i18n.isInitialized) {
 	i18n.use(initReactI18next).init({
 		lng: 'en',
-		resources: {en},
+		fallbackLng: 'en',
+		resources: translationResources,
 		interpolation: {escapeValue: false},
 	});
 }

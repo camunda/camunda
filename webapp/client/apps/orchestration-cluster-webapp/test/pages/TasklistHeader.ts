@@ -96,6 +96,10 @@ class TasklistHeader extends View {
 		return this.page.getByRole('link', {name: 'Processes', exact: true});
 	}
 
+	getSidebarToggle(name: string) {
+		return this.page.getByRole('button', {name, exact: true});
+	}
+
 	async logout() {
 		await this.openUserSidebar();
 		await this.logoutButton.click();

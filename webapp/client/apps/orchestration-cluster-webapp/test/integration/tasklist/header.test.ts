@@ -98,6 +98,7 @@ test.describe('user sidebar', () => {
 			await expect(tasklistIndexPage.header.productBreadcrumb).toHaveAttribute('href', '/tasklist');
 			await expect(tasklistIndexPage.header.tasksNavItem).toBeVisible();
 			await expect(tasklistIndexPage.header.processesNavItem).toBeVisible();
+			await expect(tasklistIndexPage.header.getSidebarToggle('Expand sidebar')).toBeVisible();
 		});
 
 		await test.step('display user details in the sidebar', async () => {
@@ -121,6 +122,7 @@ test.describe('user sidebar', () => {
 
 			await expect(page.getByRole('link', {name: 'Aufgaben', exact: true})).toBeVisible();
 			await expect(page.getByRole('link', {name: 'Prozesse'})).toBeVisible();
+			await expect(tasklistIndexPage.header.getSidebarToggle('Seitenleiste erweitern')).toBeVisible();
 		});
 	});
 });
