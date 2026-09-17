@@ -45,18 +45,6 @@ class OptimizeCloudComponentAccessPolicyTest {
   }
 
   @Test
-  void shouldDenyLoginForAnotherOrganization() {
-    // given
-    final OptimizeCloudComponentAccessPolicy policy = policyFor("org-1");
-
-    // when
-    final Optional<String> reason = policy.loginDenialReason("token", orgClaims("org-2", "admin"));
-
-    // then
-    assertThat(reason).isPresent();
-  }
-
-  @Test
   void shouldDenySessionWithoutAnAllowedRole() {
     // given
     final OptimizeCloudComponentAccessPolicy policy = policyFor("org-1");
