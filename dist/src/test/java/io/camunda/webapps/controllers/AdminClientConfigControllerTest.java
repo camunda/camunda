@@ -156,7 +156,7 @@ public class AdminClientConfigControllerTest {
   }
 
   @Test
-  void shouldResolveNewDesignSystemFromDeploymentAndExplicitConfiguration() throws Exception {
+  void shouldEnableNewDesignSystemUnlessExplicitlyDisabled() throws Exception {
     // given
     final var selfManagedProperties =
         createCamundaSecurityLibraryProperties(AuthenticationMethod.BASIC, null, false, null, null);
@@ -172,10 +172,14 @@ public class AdminClientConfigControllerTest {
     assertThat(extractConfig(selfManagedProperties, null))
         .containsEntry("isNewDesignSystemEnabled", "true");
     assertThat(extractConfig(saasProperties, null))
-        .containsEntry("isNewDesignSystemEnabled", "false");
+        .containsEntry("isNewDesignSystemEnabled", "true");
+    assertThat(extractConfig(selfManagedProperties, enabledConfiguration))
+        .containsEntry("isNewDesignSystemEnabled", "true");
     assertThat(extractConfig(saasProperties, enabledConfiguration))
         .containsEntry("isNewDesignSystemEnabled", "true");
     assertThat(extractConfig(selfManagedProperties, disabledConfiguration))
+        .containsEntry("isNewDesignSystemEnabled", "false");
+    assertThat(extractConfig(saasProperties, disabledConfiguration))
         .containsEntry("isNewDesignSystemEnabled", "false");
   }
 
