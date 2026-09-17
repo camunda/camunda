@@ -436,7 +436,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   private PutIndicesSettingsRequest putIndexSettingsRequest(
       final List<IndexDescriptor> indexDescriptors,
       final Map<String, String> toAppendSettings,
-      final boolean allowNoIndices) {
+      final boolean allowMissing) {
     final co.elastic.clients.elasticsearch.indices.IndexSettings settings =
         utils.mapToSettings(
             toAppendSettings,
@@ -446,7 +446,8 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     final var builder =
         new PutIndicesSettingsRequest.Builder()
             .index(utils.listIndicesByAlias(indexDescriptors))
-            .allowNoIndices(allowNoIndices)
+            .allowNoIndices(allowMissing)
+            .ignoreUnavailable(allowMissing)
             .settings(settings);
     return builder.build();
   }
