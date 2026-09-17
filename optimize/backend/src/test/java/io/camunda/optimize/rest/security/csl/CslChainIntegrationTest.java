@@ -291,6 +291,11 @@ class CslChainIntegrationTest {
   }
 
   @Test
+  void shouldPermitUnprotectedPathWithoutComponentAccessForCcsm() {
+    assertUnprotectedPathUnaffectedByComponentCheck(componentAccessRunner(ccsmRunner(), DENY));
+  }
+
+  @Test
   void shouldBindTheSessionRequestForTheComponentCheck() {
     // The CCSM policy reads the session's access token through the current request. CSL attaches
     // the session inside the chain, so the request bound outside of it carries none.
@@ -340,6 +345,11 @@ class CslChainIntegrationTest {
   @Test
   void shouldServeBearerCallWithoutTheComponentCheckForCcsaas() throws Exception {
     assertBearerCallUnaffectedByComponentCheck(componentAccessRunner(ccsaasRunner(), DENY));
+  }
+
+  @Test
+  void shouldPermitUnprotectedPathWithoutComponentAccessForCcsaas() {
+    assertUnprotectedPathUnaffectedByComponentCheck(componentAccessRunner(ccsaasRunner(), DENY));
   }
 
   // -------------------------------------------------------------------------
@@ -753,6 +763,29 @@ class CslChainIntegrationTest {
           // then
           assertThat(response.getStatus())
               .as("bearer call with a denying policy, body: %s", response.getContentAsString())
+              .isEqualTo(200);
+          assertThat(downstream.getRequest()).isNotNull();
+        });
+  }
+
+  private void assertUnprotectedPathUnaffectedByComponentCheck(
+      final WebApplicationContextRunner runner) {
+    // The customizer that installs the check runs on every chain, the unprotected one included, so
+    // a denied session must still reach a liveness probe.
+    runner.run(
+        ctx -> {
+          // given
+          final MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/readyz");
+          request.setCookies(oauth2SessionCookie(ctx));
+          final MockHttpServletResponse response = new MockHttpServletResponse();
+          final MockFilterChain downstream = new MockFilterChain();
+
+          // when
+          doFilterWithRequestContext(ctx, request, response, downstream);
+
+          // then
+          assertThat(response.getStatus())
+              .as("unprotected path with a denying policy, body: %s", response.getContentAsString())
               .isEqualTo(200);
           assertThat(downstream.getRequest()).isNotNull();
         });
