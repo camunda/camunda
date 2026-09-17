@@ -28,9 +28,12 @@ on:
       - .github/workflows/optimize-e2e-smoke.yml
   workflow_dispatch: {}
 
+# Limit workflow to 1 concurrent run per ref (branch) and trigger event (push/schedule/etc): new commit -> old runs are canceled to save costs
+# Exception for main + stable/* branches: complete builds for every commit needed for confidenence
+# Exception for deploy jobs that have to wait for each other to avoid overwriting
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
+  group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name, (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/')) && github.sha || github.ref) }}
 
 defaults:
   run:
@@ -44,6 +47,7 @@ permissions:
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
   TEST_PRODUCT: Optimize
+  TEST_OWNER: '@camunda/optimize'
 
 jobs:
   optimize-e2e-smoke:
@@ -53,7 +57,6 @@ jobs:
     permissions: { }
     env:
       TEST_TYPE: E2E
-      TEST_OWNER: '@camunda/bi-intelligence'
 
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
