@@ -179,21 +179,32 @@ class RdbmsTableRowCountProviderTest {
 
   @Test
   void shouldRecoverOnNextAccessAfterAFailedFirstLoad() throws Exception {
-    // given
+    // given - the first load fails; the retry it triggers is parked until released, so its
+    // in-flight state (-1) can be asserted deterministically instead of racing its completion
+    final var retryStarted = new CountDownLatch(1);
+    final var releaseRetry = new CountDownLatch(1);
     when(mapper.countTableRows(anyList()))
         .thenThrow(new RuntimeException("Database error"))
-        .thenReturn(List.of(new TableRowCount("PROCESS_INSTANCE", 42L)));
+        .thenAnswer(
+            invocation -> {
+              retryStarted.countDown();
+              releaseRetry.await();
+              return List.of(new TableRowCount("PROCESS_INSTANCE", 42L));
+            });
     final var provider = provider(DEFAULT_CACHE_DURATION);
 
     // when
     provider.getRowCount("PROCESS_INSTANCE");
     awaitPendingLoad();
     assertThat(provider.getRowCount("PROCESS_INSTANCE")).isEqualTo(-1L);
-
-    // and - that read already triggered the retry; wait for it
-    awaitPendingLoad();
+    assertThat(retryStarted.await(5, TimeUnit.SECONDS))
+        .as("the retry should have started")
+        .isTrue();
+    assertThat(provider.getRowCount("PROCESS_INSTANCE")).isEqualTo(-1L);
 
     // then - recovery happens on the next access, not after a full cacheDuration
+    releaseRetry.countDown();
+    awaitPendingLoad();
     assertThat(provider.getRowCount("PROCESS_INSTANCE")).isEqualTo(42L);
   }
 
