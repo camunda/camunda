@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState.State;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
-import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
@@ -133,7 +132,6 @@ public final class SuspensionBehavior {
         yield scope != null ? scope.getValue().getProcessInstanceKey() : -1;
       }
       case AGENT_INSTANCE -> resolveAgentInstanceProcessInstanceKey(command);
-      case AGENT_HISTORY -> resolveAgentHistoryProcessInstanceKey(command);
       default -> -1;
     };
   }
@@ -152,17 +150,6 @@ public final class SuspensionBehavior {
     }
 
     final var agentInstance = processingState.getAgentInstanceState().getRecord(command.getKey());
-    return agentInstance != null ? agentInstance.getProcessInstanceKey() : -1;
-  }
-
-  /**
-   * Every agent history command (COMMIT, DISCARD) carries {@code agentInstanceKey} on the value;
-   * the target agent instance's process instance key is looked up.
-   */
-  private long resolveAgentHistoryProcessInstanceKey(final TypedRecord<?> command) {
-    final var value = (AgentHistoryRecordValue) command.getValue();
-    final var agentInstance =
-        processingState.getAgentInstanceState().getRecord(value.getAgentInstanceKey());
     return agentInstance != null ? agentInstance.getProcessInstanceKey() : -1;
   }
 
