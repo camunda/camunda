@@ -1093,8 +1093,8 @@ final class BrokerTopologyManagerTest {
 
   @Test
   void shouldNotReportUnknownTenantAsPendingWhenNoBrokerCanAnswer() {
-    // given -- a node that can see no broker of this tenant, as one started before its brokers or
-    // without any cannot
+    // given -- a node that can see no broker for this tenant because it started before the tenant's
+    // brokers, or because the tenant has no brokers
 
     // when / then -- nothing is known to be about to gossip a mode, so the caller is told to get
     // on with it rather than hold off on an answer that may never come. Bounding that ambiguity is
