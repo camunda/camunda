@@ -24,24 +24,21 @@ export const userTab = tabButton.withText('Users');
 export const alertTab = tabButton.withText('Alerts');
 export const sourcesTab = tabButton.withText('Data sources');
 export const activeTab = Selector('.Collection .cds--tab-content:not([hidden])');
-export const addButton = activeTab.find('.cds--toolbar-content > .cds--btn--primary');
+export const addButton = activeTab.find('.entityToolbarAction .cds--btn--primary');
 export const emptyStateAdd = activeTab.find('.EmptyState .cds--btn--primary');
 export const checkbox = (text) => Selector('.Checklist tr').withText(text);
 export const processItem = listItem('process');
-export const userName = (entity) => entity.find('td:nth-child(2) .cds--stack-vertical').child(0);
+export const userName = (entity) => entity.find('.rowName');
 export const carbonRoleOption = (text) =>
   Selector('.Modal.is-visible .cds--radio-button-wrapper').withText(text);
 export const userList = Selector('.UserList');
-// Both navigations: under IS_NAV_V2_ENABLED the design system portals its user menu to
-// <body>, so the log-out entry is no longer inside <header>, and its label loses the space.
-export const logoutButton = Selector(
-  'header button, [data-slot="user-menu-content"] [role="menuitem"]'
-).withText(/log\s?out/i);
-export const usernameDropdown = Selector(
-  'header button[aria-label="Open User"], [data-slot="user-menu-trigger"]'
+// The design system portals its user menu to <body>, so the log-out entry sits outside <header>.
+export const logoutButton = Selector('[data-slot="user-menu-content"] [role="menuitem"]').withText(
+  /log\s?out/i
 );
+export const usernameDropdown = Selector('[data-slot="user-menu-trigger"]');
 export const sourceModalSearchField = Selector('.SourcesModal .cds--search-input');
 export const selectAllCheckbox = Selector('.Table thead .cds--table-column-checkbox label');
 export const itemCheckbox = (idx) =>
   Selector('.Table tbody tr').nth(idx).find('.cds--table-column-checkbox label');
-export const bulkRemove = activeTab.find('.cds--action-list button').withText('Remove');
+export const bulkRemove = activeTab.find('.entityToolbarAction button').withText('Remove');
