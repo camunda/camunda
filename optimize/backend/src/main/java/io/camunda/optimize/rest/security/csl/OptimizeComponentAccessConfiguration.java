@@ -82,14 +82,16 @@ public class OptimizeComponentAccessConfiguration {
 
   /**
    * Extends CSL's webapp authorization filter to the chains it does not install itself, so a
-   * session-authenticated API call is checked as well. The filter is a {@code
-   * OncePerRequestFilter}, so the webapp chain, where CSL already added it, keeps running it once.
+   * session-authenticated API call is checked as well, and binds the chain's request so the check
+   * can read the session's access token. The filters are {@code OncePerRequestFilter}s, so the
+   * webapp chain, where CSL already added the authorization filter, keeps running it once.
    */
   @Bean
-  public SecurityHeadersCustomizer componentAccessFilterOnApiChains(
+  public SecurityHeadersCustomizer componentAccessFilters(
       final ObjectProvider<WebAppAuthorizationCheckFilter> filterProvider) {
-    return http ->
-        filterProvider.ifAvailable(
-            filter -> http.addFilterAfter(filter, AuthorizationFilter.class));
+    return http -> {
+      http.addFilterBefore(new OptimizeRequestContextBindingFilter(), AuthorizationFilter.class);
+      filterProvider.ifAvailable(filter -> http.addFilterAfter(filter, AuthorizationFilter.class));
+    };
   }
 }
