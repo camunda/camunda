@@ -38,12 +38,17 @@ public class SearchEngineDatabaseConfiguration {
    * from the same predicate that decides whether the schema readiness indicator joins the readiness
    * group, so the socket and the probe cannot disagree about what an HTTP node is.
    *
-   * <p>The recovery check reads the gossiped cluster configuration through {@link
-   * BrokerTopologyManager}, which every node has - broker or gateway-only - so a gateway cannot
-   * create the indices a broker was careful not to. It is required rather than optional: the same
-   * component scan brings this class and the topology manager in together, so a context holding one
-   * without the other is a wiring defect, and defaulting it to "nothing is recovering" would answer
-   * that defect by recreating the indices of a tenant mid-restore.
+   * <p>The recovery check goes through {@link BrokerTopologyManager}, which every node has - broker
+   * or gateway-only - so a gateway cannot create the indices a broker was careful not to. It is
+   * required rather than optional: the same component scan brings this class and the topology
+   * manager in together, so a context holding one without the other is a wiring defect, and
+   * defaulting it to "nothing is recovering" would answer that defect by recreating the indices of
+   * a tenant mid-restore.
+   *
+   * <p>The check itself is {@link SchemaInitializationRecoveryCheck}, which asks whether a tenant
+   * is recovering or its mode is pending, rather than whether it is recovering only: schema
+   * initialization runs once before the node can serve, so a tenant whose mode may never be known
+   * has to be initialized rather than waited on forever.
    */
   @Bean
   public SearchEngineSchemaInitializer searchEngineSchemaInitializer(
@@ -61,7 +66,7 @@ public class SearchEngineDatabaseConfiguration {
         physicalTenantScopedIndexDescriptors,
         meterRegistry,
         isAnyHttpGatewayEnabled(environment),
-        brokerTopologyManager::isRecovering);
+        new SchemaInitializationRecoveryCheck(brokerTopologyManager));
   }
 
   /**
