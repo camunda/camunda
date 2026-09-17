@@ -50,6 +50,7 @@ dependencies {
   testImplementation(libs.org.apache.logging.log4j.log4j.api)
   testImplementation(project(":zeebe-backup"))
   testImplementation(project(":zeebe-test-util"))
+  testImplementation(project(":webapps-schema"))
 }
 
 description = "Unified Configuration"
