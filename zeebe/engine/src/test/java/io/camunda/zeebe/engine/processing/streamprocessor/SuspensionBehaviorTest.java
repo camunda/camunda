@@ -18,24 +18,32 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionAction;
+import io.camunda.zeebe.engine.state.immutable.AgentInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState.State;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.ValueTypeMapping;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.Arrays;
+import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 final class SuspensionBehaviorTest {
 
@@ -311,6 +319,69 @@ final class SuspensionBehaviorTest {
     assertThat(result.outcome()).isEqualTo(SuspensionAction.PROCESS);
     assertThat(result.processInstanceKey()).isEqualTo(-1);
     verifyNoClassification(processor);
+  }
+
+  @ParameterizedTest
+  @MethodSource("indirectlyResolvedValueTypes")
+  void shouldResolveIndirectValueTypeWithoutThrowing(final ValueType valueType) {
+    // given - empty state, so each resolver returns -1; a type in the set with no switch case
+    // throws instead
+    stubIndirectResolutionState();
+    final var command = mock(TypedRecord.class);
+    when(command.getValueType()).thenReturn(valueType);
+    when(command.getKey()).thenReturn(1L);
+    doReturn(mockIndirectCommandValue(valueType)).when(command).getValue();
+    final var processor = overridingProcessor(SuspensionAction.PROCESS);
+
+    // when
+    final var result = suspensionBehavior.process(command, processor);
+
+    // then
+    assertThat(result.outcome()).isEqualTo(SuspensionAction.PROCESS);
+    assertThat(result.processInstanceKey()).isEqualTo(-1);
+    verifyNoClassification(processor);
+  }
+
+  @ParameterizedTest
+  @MethodSource("valueTypesNotIndirectlyResolved")
+  void shouldNotResolveValueTypeOutsideIndirectSet(final ValueType valueType) {
+    // given - a type not in the set never enters the switch, even for a SuspensionAware processor
+    final var command = mock(TypedRecord.class);
+    when(command.getValueType()).thenReturn(valueType);
+    when(command.getKey()).thenReturn(1L);
+    doReturn(mock(UnifiedRecordValue.class)).when(command).getValue();
+    final var processor = overridingProcessor(SuspensionAction.REJECT);
+
+    // when
+    final var result = suspensionBehavior.process(command, processor);
+
+    // then
+    assertThat(result.outcome()).isEqualTo(SuspensionAction.PROCESS);
+    assertThat(result.processInstanceKey()).isEqualTo(-1);
+    verifyNoClassification(processor);
+  }
+
+  private void stubIndirectResolutionState() {
+    when(processingState.getJobState()).thenReturn(mock(JobState.class));
+    when(processingState.getIncidentState()).thenReturn(mock(IncidentState.class));
+    when(processingState.getUserTaskState()).thenReturn(mock(UserTaskState.class));
+    when(processingState.getElementInstanceState()).thenReturn(mock(ElementInstanceState.class));
+    when(processingState.getAgentInstanceState()).thenReturn(mock(AgentInstanceState.class));
+  }
+
+  private static UnifiedRecordValue mockIndirectCommandValue(final ValueType valueType) {
+    final Class<?> valueClass = ValueTypeMapping.get(valueType).getValueClass();
+    return mock(UnifiedRecordValue.class, withSettings().extraInterfaces(valueClass));
+  }
+
+  private static Stream<ValueType> indirectlyResolvedValueTypes() {
+    return SuspensionBehavior.INDIRECTLY_RESOLVED_VALUE_TYPES.stream();
+  }
+
+  private static Stream<ValueType> valueTypesNotIndirectlyResolved() {
+    return Arrays.stream(ValueType.values())
+        .filter(
+            valueType -> !SuspensionBehavior.INDIRECTLY_RESOLVED_VALUE_TYPES.contains(valueType));
   }
 
   private void markerIs(final @Nullable State state) {

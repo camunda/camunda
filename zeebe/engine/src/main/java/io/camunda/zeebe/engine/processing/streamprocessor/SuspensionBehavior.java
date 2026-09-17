@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionAction;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState.State;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
@@ -18,6 +19,9 @@ import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Set;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -36,6 +40,25 @@ public final class SuspensionBehavior {
 
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
 
+  /**
+   * Command value types whose process instance key is not taken from {@link ProcessInstanceRelated}
+   * (or whose on-the-wire key may be unset) and is resolved from state instead.
+   *
+   * <p>{@link #resolveProcessInstanceKey} only enters its switch for types in this set; a type in
+   * the set with no switch case throws. The architecture test that requires processors to implement
+   * {@link SuspensionAware} uses the same set so a new special case cannot bypass that rule.
+   */
+  static final Set<ValueType> INDIRECTLY_RESOLVED_VALUE_TYPES =
+      Collections.unmodifiableSet(
+          EnumSet.of(
+              ValueType.JOB,
+              ValueType.INCIDENT,
+              ValueType.USER_TASK,
+              ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION,
+              ValueType.VARIABLE_DOCUMENT,
+              ValueType.AGENT_INSTANCE,
+              ValueType.AGENT_HISTORY));
+
   private final ProcessingState processingState;
 
   public SuspensionBehavior(final ProcessingState processingState) {
@@ -46,8 +69,7 @@ public final class SuspensionBehavior {
    * Decides how to treat the command; commands whose processor is not {@link SuspensionAware}, or
    * whose target is not suspended, are always processed. The resolved target process instance key
    * is returned alongside the decision so callers reuse it rather than re-deriving it (external
-   * {@code JOB}/{@code INCIDENT}/{@code USER_TASK}/{@code AD_HOC_SUB_PROCESS_INSTRUCTION} commands
-   * don't carry it on the wire).
+   * commands in {@link #INDIRECTLY_RESOLVED_VALUE_TYPES} don't carry it on the wire).
    */
   public SuspensionResult process(
       final TypedRecord<?> command, final TypedRecordProcessor<?> processor) {
@@ -91,8 +113,8 @@ public final class SuspensionBehavior {
 
   /**
    * Resolves the process instance a command targets. Most values carry their own {@code
-   * processInstanceKey}. However, a few other external commands only carry the entity key, so the
-   * persisted entity is consulted. Returns {@code -1} when it can't be resolved.
+   * processInstanceKey}. Types in {@link #INDIRECTLY_RESOLVED_VALUE_TYPES} are resolved from state
+   * instead. Returns {@code -1} when it can't be resolved.
    */
   private long resolveProcessInstanceKey(final TypedRecord<?> command) {
     if (command.getValue() instanceof final ProcessInstanceRelated processInstanceRelated) {
@@ -102,8 +124,13 @@ public final class SuspensionBehavior {
       }
     }
 
+    final ValueType valueType = command.getValueType();
+    if (!INDIRECTLY_RESOLVED_VALUE_TYPES.contains(valueType)) {
+      return -1;
+    }
+
     final long key = command.getKey();
-    return switch (command.getValueType()) {
+    return switch (valueType) {
       case JOB -> {
         final var job = processingState.getJobState().getJob(key);
         yield job != null ? job.getProcessInstanceKey() : -1;
@@ -131,7 +158,10 @@ public final class SuspensionBehavior {
       }
       case AGENT_INSTANCE -> resolveAgentInstanceProcessInstanceKey(command);
       case AGENT_HISTORY -> resolveAgentHistoryProcessInstanceKey(command);
-      default -> -1;
+      default ->
+          throw new IllegalStateException(
+              "Value type '%s' is listed as indirectly resolved but has no process instance key resolver."
+                  .formatted(valueType));
     };
   }
 

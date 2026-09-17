@@ -20,14 +20,23 @@ import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
+import io.camunda.zeebe.protocol.record.ValueTypeMapping;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import java.util.Set;
 import org.springframework.core.GenericTypeResolver;
 
 /**
- * Every {@link TypedRecordProcessor} whose command value type implements {@link
- * ProcessInstanceRelated} is gated by the primary suspension gate in {@code Engine.process}. Such a
- * processor must either:
+ * Every {@link TypedRecordProcessor} whose command value is process instance-related is gated by
+ * the primary suspension gate in {@code Engine.process}. That includes:
+ *
+ * <ul>
+ *   <li>values that implement {@link ProcessInstanceRelated}, and
+ *   <li>values whose {@code ValueType} is in {@link
+ *       SuspensionBehavior#INDIRECTLY_RESOLVED_VALUE_TYPES}, whose process instance key is resolved
+ *       from state rather than from the command value.
+ * </ul>
+ *
+ * Such a processor must either:
  *
  * <ul>
  *   <li>implement {@link SuspensionAware}, which forces it to return an explicit
@@ -37,7 +46,8 @@ import org.springframework.core.GenericTypeResolver;
  * </ul>
  *
  * <p>This ensures every process-instance related command processor either makes a conscious,
- * documented suspension decision or is explicitly exempted.
+ * documented suspension decision or is explicitly exempted, including command types that do not
+ * implement {@link ProcessInstanceRelated}.
  */
 @AnalyzeClasses(
     packages = "io.camunda.zeebe.engine.processing",
@@ -68,7 +78,7 @@ public class SuspensionAwareArchTest {
 
   private static DescribedPredicate<JavaClass> processProcessInstanceRelatedCommands() {
     return new DescribedPredicate<>(
-        "are concrete TypedRecordProcessor implementations for a ProcessInstanceRelated command"
+        "are concrete TypedRecordProcessor implementations for a process-instance related command"
             + " value") {
       @Override
       public boolean test(final JavaClass javaClass) {
@@ -87,9 +97,16 @@ public class SuspensionAwareArchTest {
                   + "'. The suspension rule would silently skip it; extend resolveCommandValueType"
                   + " to handle its type hierarchy.");
         }
-        return ProcessInstanceRelated.class.isAssignableFrom(valueType);
+        return ProcessInstanceRelated.class.isAssignableFrom(valueType)
+            || isIndirectlyResolvedCommandValue(valueType);
       }
     };
+  }
+
+  private static boolean isIndirectlyResolvedCommandValue(final Class<?> commandValueType) {
+    return SuspensionBehavior.INDIRECTLY_RESOLVED_VALUE_TYPES.stream()
+        .map(valueType -> ValueTypeMapping.get(valueType).getValueClass())
+        .anyMatch(valueClass -> valueClass.isAssignableFrom(commandValueType));
   }
 
   /**
@@ -114,7 +131,7 @@ public class SuspensionAwareArchTest {
               violated(
                   item,
                   String.format(
-                      "Class '%s' processes a ProcessInstanceRelated command but does not implement"
+                      "Class '%s' processes a process instance-related command but does not implement"
                           + " SuspensionAware, and is not listed in the WHITELIST of"
                           + " SuspensionAwareArchTest. Either implement SuspensionAware (returning an"
                           + " explicit PROCESS/REJECT/BUFFER decision) or add it to the whitelist if"
