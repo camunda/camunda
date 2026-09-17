@@ -269,6 +269,9 @@ func initialize(baseCommand string, baseDir string) *types.State {
 
 func applySecondaryStorageDefaults(baseDir string, settings *types.C8RunSettings) {
 	configPaths := resolveConfigPaths(baseDir, settings.Config)
+	// Store the ordered config sources (highest precedence first) so later stages can
+	// evaluate effective settings with the same precedence Spring applies at startup.
+	settings.ConfigPaths = configPaths
 
 	var secondaryType string
 	var configSource string
