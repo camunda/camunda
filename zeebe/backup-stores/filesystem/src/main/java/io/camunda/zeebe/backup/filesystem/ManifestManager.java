@@ -13,13 +13,18 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
+import io.camunda.zeebe.backup.api.ListOptions;
+import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
+import io.camunda.zeebe.backup.common.CheckpointIds;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.Manifest.InProgressManifest;
 import io.camunda.zeebe.backup.common.Manifest.StatusCode;
+import io.camunda.zeebe.backup.common.PagedReads;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.FileNotFoundException;
@@ -34,8 +39,8 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
@@ -179,14 +184,40 @@ public final class ManifestManager {
     return getManifestWithPath(getManifestPath(id));
   }
 
-  Collection<Manifest> listManifests(final BackupIdentifierWildcard wildcard) {
+  /** Lists the page of manifests selected by the options, reading only the selected files. */
+  List<Manifest> listManifests(final BackupIdentifierWildcard wildcard, final ListOptions options) {
     final var collector = new ManifestCollector(wildcard);
     try {
       Files.walkFileTree(manifestsPath, collector);
     } catch (final IOException e) {
       throw new UncheckedIOException("Unable to list manifests from " + manifestsPath, e);
     }
-    return collector.manifests();
+    return PagedReads.readPage(
+        collector.manifestFiles(),
+        ManifestFile::id,
+        options,
+        manifestFile -> Optional.ofNullable(getManifestWithPath(manifestFile.path())));
+  }
+
+  /**
+   * Parses the identifier from a manifest path: partitionId/checkpointId/memberId/manifest.json.
+   * Empty if the checkpoint id segment is a digit run too long to fit a {@code long} — a foreign or
+   * corrupted file rather than one this store wrote, skipped instead of failing the whole walk.
+   */
+  private Optional<BackupIdentifier> parseIdentifier(final Path manifestFile) {
+    final var relativePath = manifestsPath.relativize(manifestFile);
+    final var checkpointId = CheckpointIds.tryParse(relativePath.getName(1).toString());
+    if (checkpointId.isEmpty()) {
+      LOGGER.warn("Tried interpreting file {} as a backup manifest but failed", manifestFile);
+      return Optional.empty();
+    }
+    final var memberId = BrokerMemberId.from(relativePath.getName(2).toString());
+    return Optional.of(
+        new BackupIdentifierImpl(
+            memberId.nodeIdx(),
+            memberId.zone(),
+            Integer.parseInt(relativePath.getName(0).toString()),
+            checkpointId.getAsLong()));
   }
 
   private Manifest getManifestWithPath(final Path path) {
@@ -235,17 +266,21 @@ public final class ManifestManager {
         .resolve(MANIFEST_FILENAME);
   }
 
+  /** A manifest file and the identifier encoded in its path, collected without reading the file. */
+  record ManifestFile(BackupIdentifier id, Path path) {}
+
   /**
-   * Collects every manifest matching the wildcard, continuing past entries that a concurrent
-   * deletion removes while the traversal is running: an entry gone mid-walk is the same listing the
-   * caller would have seen after the delete, so it is skipped rather than failing the caller. The
-   * traversal keeps its position and everything collected so far — nothing is re-walked.
+   * Collects the path of every manifest matching the wildcard, continuing past entries that a
+   * concurrent deletion removes while the traversal is running: an entry gone mid-walk is the same
+   * listing the caller would have seen after the delete, so it is skipped rather than failing the
+   * caller. The traversal keeps its position and everything collected so far — nothing is
+   * re-walked.
    */
   @VisibleForTesting
   final class ManifestCollector extends SimpleFileVisitor<Path> {
 
     private final BackupIdentifierWildcard wildcard;
-    private final List<Manifest> manifests = new ArrayList<>();
+    private final List<ManifestFile> manifestFiles = new ArrayList<>();
 
     @VisibleForTesting
     ManifestCollector(final BackupIdentifierWildcard wildcard) {
@@ -256,10 +291,9 @@ public final class ManifestManager {
     public @NonNull FileVisitResult visitFile(
         final Path file, final @NonNull BasicFileAttributes attributes) {
       if (filterBlobsByWildcard(wildcard, file.toString())) {
-        final var manifest = getManifestWithPath(file);
-        if (manifest != null && wildcard.matches(manifest.id())) {
-          manifests.add(manifest);
-        }
+        parseIdentifier(file)
+            .filter(wildcard::matches)
+            .ifPresent(id -> manifestFiles.add(new ManifestFile(id, file)));
       }
       return FileVisitResult.CONTINUE;
     }
@@ -287,8 +321,8 @@ public final class ManifestManager {
     }
 
     @VisibleForTesting
-    List<Manifest> manifests() {
-      return manifests;
+    List<ManifestFile> manifestFiles() {
+      return manifestFiles;
     }
   }
 }
