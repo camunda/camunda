@@ -21,13 +21,13 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemovePhysicalTenantRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
@@ -276,25 +276,37 @@ public final class ClusterConfigurationManagementRequestSender {
         TIMEOUT);
   }
 
-  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
-      forceRemoveZone(final ForceZoneRemoveRequest request) {
-    final var coordinator = coordinatorSupplier.getNextCoordinatorExcludingZone(request.zoneId());
-    if (coordinator.isEmpty()) {
-      // No member outside the zone means it is the only remaining zone; removing it is invalid and
-      // there is no live coordinator to reject it, so short-circuit here.
-      return CompletableFuture.completedFuture(
-          Either.left(
-              new ErrorResponse(
-                  ErrorResponse.ErrorCode.INVALID_REQUEST,
-                  "Cannot force remove zone '%s' because it is the last remaining zone."
-                      .formatted(request.zoneId()))));
+  /**
+   * Routes forced removal to a broker outside the zone being removed, which is necessary when the
+   * zone is not reachable from the surviving zones. A non-forced removal is routed to the elected
+   * coordinator, which can gracefully hand off coordination before leaving.
+   */
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> removeZone(
+      final RemoveZoneRequest request) {
+    final MemberId coordinator;
+    if (request.force()) {
+      final var outsideTheZone =
+          coordinatorSupplier.getNextCoordinatorExcludingZone(request.zoneId());
+      if (outsideTheZone.isEmpty()) {
+        // No member outside the zone means it is the only remaining zone; removing it is invalid
+        // and there is no live coordinator to reject it, so short-circuit here.
+        return CompletableFuture.completedFuture(
+            Either.left(
+                new ErrorResponse(
+                    ErrorResponse.ErrorCode.INVALID_REQUEST,
+                    "Cannot remove zone '%s' because it is the last remaining zone."
+                        .formatted(request.zoneId()))));
+      }
+      coordinator = outsideTheZone.get();
+    } else {
+      coordinator = coordinatorSupplier.getDefaultCoordinator();
     }
     return communicationService.send(
-        ClusterConfigurationRequestTopics.FORCE_REMOVE_ZONE.topic(),
+        ClusterConfigurationRequestTopics.REMOVE_ZONE.topic(),
         request,
-        serializer::encodeForceRemoveZoneRequest,
+        serializer::encodeRemoveZoneRequest,
         serializer::decodeTopologyChangeResponse,
-        coordinator.get(),
+        coordinator,
         TIMEOUT);
   }
 

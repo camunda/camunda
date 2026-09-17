@@ -24,13 +24,13 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemovePhysicalTenantRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.TenantRestoreArguments;
@@ -1237,10 +1237,11 @@ public class ProtoBufSerializer
   }
 
   @Override
-  public byte[] encodeForceRemoveZoneRequest(final ForceZoneRemoveRequest request) {
-    return Requests.ForceRemoveZoneRequest.newBuilder()
+  public byte[] encodeRemoveZoneRequest(final RemoveZoneRequest request) {
+    return Requests.RemoveZoneRequest.newBuilder()
         .setZoneId(request.zoneId())
         .setDryRun(request.dryRun())
+        .setForce(request.force())
         .build()
         .toByteArray();
   }
@@ -1625,14 +1626,14 @@ public class ProtoBufSerializer
   }
 
   @Override
-  public ForceZoneRemoveRequest decodeForceRemoveZoneRequest(final byte[] bytes) {
-    final Requests.ForceRemoveZoneRequest proto;
+  public RemoveZoneRequest decodeRemoveZoneRequest(final byte[] bytes) {
+    final Requests.RemoveZoneRequest proto;
     try {
-      proto = Requests.ForceRemoveZoneRequest.parseFrom(bytes);
+      proto = Requests.RemoveZoneRequest.parseFrom(bytes);
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
-    return new ForceZoneRemoveRequest(proto.getZoneId(), proto.getDryRun());
+    return new RemoveZoneRequest(proto.getZoneId(), proto.getDryRun(), proto.getForce());
   }
 
   @Override
