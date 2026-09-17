@@ -50,6 +50,7 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -59,6 +60,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
+// TODO remove this once archiverless support for batch operations is fully implemented
+@Tag("archiverless-wip")
 public class BatchOperationSearchIT {
 
   @MultiDbTestApplication
