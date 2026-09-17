@@ -102,6 +102,17 @@ this **before** picking a repo, because guessing wrong is expensive in both dire
 reverting an intentional change destroys someone's work, and adapting the test to a real
 regression masks the defect the test exists to catch.
 
+**Zeroth check: does the blamed PR even touch anything relevant?** `originating_pr` in
+`classify.py` only ever answers "whose merge produced the commit this run tested" — it is a
+trigger, not a suspect. If the PR's file list has no plausible connection to the failing
+surface (e.g. a Zeebe engine test fix blamed for a Tasklist frontend failure), the
+intended/regression test below does not apply — the real cause predates this commit and
+simply surfaced on the run it happened to trigger. Say so explicitly in the PR body, and go
+find the real cause the normal way (recent commits touching the failing component,
+`git log --oneline -- <path>`). Do not name the blamed author per "Also name the author..."
+below when this check rules them out — mentioning an uninvolved person is exactly the noise
+that instruction exists to avoid causing, not something it should cause instead.
+
 The discriminator is whether the product still agrees with itself. The breaking PR number
 is in your prompt — read what it changed:
 
@@ -247,10 +258,13 @@ suppress re-dispatch. **Omit a fingerprint and the same failure is dispatched ag
 next push.** When updating an existing PR, preserve every line already there — the union,
 never a replacement.
 
-Also name the author of the breaking change in the body (supplied in the prompt). The
+Also name the author of the breaking change in the body (supplied in the prompt) — but only
+once the zeroth check above has confirmed their PR is actually relevant to this failure. The
 workflow tries to add them as a reviewer, but that call fails when they are not a
-collaborator on the repository you opened the PR in, so the body mention is what
-guarantees the signal survives.
+collaborator on the repository you opened the PR in, so the body mention is what guarantees
+the signal survives — for a real suspect. If the zeroth check ruled them out, refer to their
+PR by number only (no `@`) or not at all: naming an uninvolved person still notifies them via
+GitHub's mention handling even inside a sentence explaining that they are not the cause.
 
 ## Constraints
 

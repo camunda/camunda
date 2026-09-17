@@ -499,6 +499,18 @@ def backported_pr_number(title: str | None) -> int | None:
 
 @dataclass(frozen=True)
 class Blame:
+    """Whose merge produced the run's head commit -- a trigger, not a suspect.
+
+    This identifies the PR that happened to be merged as the commit a failing
+    run tested, nothing more. It says nothing about whether that PR's change
+    is actually related to the failure: the real cause can predate it by
+    days and simply surface on whichever run comes next. Consumers (the
+    fix-agent's FIX-AGENT.md "Zeroth check") are responsible for verifying
+    relevance before treating this as a cause or naming it publicly --
+    downgrading "triggering commit" to "confirmed cause" without that check
+    is exactly what pinged an uninvolved author once already.
+    """
+
     #: Login to request review from; None when only a bot could be identified.
     reviewer: str | None
     #: Login to name in the PR body, even when it is a bot.
