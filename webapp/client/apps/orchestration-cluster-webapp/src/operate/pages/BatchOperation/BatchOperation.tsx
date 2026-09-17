@@ -22,6 +22,8 @@ import permissionDeniedIconUrl from '#/operate/assets/permission-denied.svg';
 import {useBatchOperation} from './batchOperation.queries';
 import {formatOperationType, formatDate} from './utils';
 import {BatchItemsTable} from './BatchItemsTable';
+import {BatchOperationActions} from './BatchOperationActions';
+import {notifyBatchOperationGoneOnce, clearBatchOperationGoneNotified} from './useBatchOperationActions';
 import {PageContainer, Header, HeaderTitleContainer, TilesContainer, Tile, TileLabel} from './styled';
 
 const TILE_LABEL_KEYS = [
@@ -69,12 +71,18 @@ const BatchOperation: React.FC<Props> = ({batchOperationKey}) => {
 	const isNotFound = requestError.success && requestError.data.response?.status === 404;
 
 	useEffect(() => {
+		clearBatchOperationGoneNotified(batchOperationKey);
+	}, [batchOperationKey]);
+
+	useEffect(() => {
 		if (isNotFound) {
-			notificationsStore.displayNotification({
-				kind: 'error',
-				title: t('operate.batchOperation.notFoundNotificationTitle', {batchOperationKey}),
-				isDismissable: true,
-			});
+			notifyBatchOperationGoneOnce(batchOperationKey, () =>
+				notificationsStore.displayNotification({
+					kind: 'error',
+					title: t('operate.batchOperation.notFoundNotificationTitle', {batchOperationKey}),
+					isDismissable: true,
+				}),
+			);
 			void navigate({to: '/operate/batch-operations', replace: true});
 		}
 	}, [isNotFound, batchOperationKey, navigate, t]);
@@ -143,6 +151,13 @@ const BatchOperation: React.FC<Props> = ({batchOperationKey}) => {
 					</IconButton>
 					<h3>{operationType}</h3>
 				</HeaderTitleContainer>
+				{data && (
+					<BatchOperationActions
+						key={batchOperationKey}
+						batchOperationKey={batchOperationKey}
+						batchOperationState={data.state}
+					/>
+				)}
 			</Header>
 			{error && !isNotFound && (
 				<InlineNotification

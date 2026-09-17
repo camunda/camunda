@@ -807,6 +807,20 @@
 					"viewDecisionInstance": "View decision instance {{key}}",
 					"failureReason": "Failure reason: {{message}}",
 					"emptyMessage": "No items found"
+				},
+				"actions": {
+					"suspend": "Suspend",
+					"resume": "Resume",
+					"cancel": "Cancel",
+					"overflowMenuLabel": "More actions",
+					"suspendFailed": "Operation cannot be suspended",
+					"resumeFailed": "Operation cannot be resumed",
+					"cancelFailed": "Operation cannot be canceled",
+					"notFoundSubtitle": "Batch operation not found. It may have already completed or failed.",
+					"forbiddenTitle": "You don't have permission to perform this operation",
+					"forbiddenSubtitle": "Please contact the administrator if you need access.",
+					"convergenceUnknownTitle": "Batch operation status could not be confirmed",
+					"convergenceUnknownSubtitle": "The action was sent. Refresh the page to see its current state."
 				}
 			},
 			"shared": {

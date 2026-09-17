@@ -9,9 +9,14 @@
 import {afterEach, describe, expect} from 'vitest';
 import {render} from 'vitest-browser-react';
 import {HttpResponse} from 'msw';
+import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {mockGetBatchOperationEndpoint, mockQueryBatchOperationItemsEndpoint} from '#/shared-test-modules/mock-handlers';
+import {
+	mockGetBatchOperationEndpoint,
+	mockQueryBatchOperationItemsEndpoint,
+	mockSuspendBatchOperationEndpoint,
+} from '#/shared-test-modules/mock-handlers';
 import {
 	createBatchOperation,
 	createQueryBatchOperationItemsResponse,
@@ -72,6 +77,23 @@ describe('<BatchOperation />', () => {
 
 		await expect.element(screen.getByText(/^Completed$/)).toBeVisible();
 		await expect.element(screen.getByText('demo')).toBeVisible();
+	});
+
+	it('should render suspend and cancel actions for an active batch operation', async ({worker}) => {
+		worker.use(
+			mockGetBatchOperationEndpoint({
+				successResponse: HttpResponse.json(
+					createBatchOperation({batchOperationKey: BATCH_OPERATION_KEY, state: 'ACTIVE'}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({successResponse: EMPTY_ITEMS_RESPONSE}),
+		);
+
+		const screen = await renderPage();
+
+		await expect.element(screen.getByRole('button', {name: 'Suspend'})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'More actions'})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Resume'})).not.toBeInTheDocument();
 	});
 
 	it('should show an error notification when the batch operation fails to load', async ({worker}) => {
@@ -135,6 +157,68 @@ describe('<BatchOperation />', () => {
 			observer.disconnect();
 		}
 	});
+
+	it('should render normally on a later visit that finds the batch operation readable again', async ({worker}) => {
+		worker.use(
+			mockGetBatchOperationEndpoint({
+				successResponse: HttpResponse.json(createProblemDetails({status: 404}), {status: 404}),
+			}),
+			mockQueryBatchOperationItemsEndpoint({successResponse: EMPTY_ITEMS_RESPONSE}),
+		);
+
+		const firstVisit = await renderPage();
+		await expect.poll(() => firstVisit.router.state.location.pathname).toBe('/operate/batch-operations');
+		await expect
+			.poll(() => notificationsStore.notifications.map((notification) => notification.title))
+			.toContain(`Batch operation ${BATCH_OPERATION_KEY} could not be found`);
+		await firstVisit.unmount();
+		notificationsStore.reset();
+
+		worker.use(
+			mockGetBatchOperationEndpoint({
+				successResponse: HttpResponse.json(
+					createBatchOperation({batchOperationKey: BATCH_OPERATION_KEY, batchOperationType: 'CANCEL_PROCESS_INSTANCE'}),
+				),
+			}),
+		);
+
+		const secondVisit = await renderPage();
+
+		await expect.element(secondVisit.getByRole('heading', {name: 'Cancel Process Instance'})).toBeVisible();
+		expect(secondVisit.router.state.location.pathname).toBe(`/operate/batch-operations/${BATCH_OPERATION_KEY}`);
+		expect(notificationsStore.notifications).toEqual([]);
+	});
+
+	it('should redirect and notify when a follow-up read after a successful action finds it gone', async ({worker}) => {
+		worker.use(
+			mockGetBatchOperationEndpoint({
+				successResponse: HttpResponse.json(
+					createBatchOperation({batchOperationKey: BATCH_OPERATION_KEY, state: 'ACTIVE'}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({successResponse: EMPTY_ITEMS_RESPONSE}),
+			mockSuspendBatchOperationEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+		);
+
+		const screen = await renderPage();
+		await userEvent.click(screen.getByRole('button', {name: 'Suspend'}));
+
+		worker.use(
+			mockGetBatchOperationEndpoint({
+				successResponse: HttpResponse.json(createProblemDetails({status: 404}), {status: 404}),
+			}),
+		);
+
+		await expect.poll(() => screen.router.state.location.pathname, {timeout: 8000}).toBe('/operate/batch-operations');
+		await expect
+			.poll(() => notificationsStore.notifications, {timeout: 8000})
+			.toEqual([
+				expect.objectContaining({
+					kind: 'error',
+					title: `Batch operation ${BATCH_OPERATION_KEY} could not be found`,
+				}),
+			]);
+	}, 10000);
 });
 
 describe('<BatchOperationSkeleton />', () => {
