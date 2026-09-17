@@ -26,27 +26,27 @@ spec:
                 curl -L -v --connect-timeout 10 --max-time 60 -X POST "{{ .Values.camundaManagementUrl }}/actuator/rebalance"
             {{- else }}
             env:
-            - name: CLIENT_ID
+            - name: CAMUNDA_CLIENT_ID
               valueFrom:
                 secretKeyRef:
                   name: leader-balancer-credentials
                   key: clientId
-            - name: CLIENT_SECRET
+            - name: CAMUNDA_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: leader-balancer-credentials
                   key: clientSecret
-            - name: AUTH_SERVER
+            - name: CAMUNDA_OAUTH_URL
               valueFrom:
                 secretKeyRef:
                   name: leader-balancer-credentials
                   key: authServer
-            - name: AUTHORIZATION_AUDIENCE
+            - name: CAMUNDA_TOKEN_AUDIENCE
               valueFrom:
                 secretKeyRef:
                   name: leader-balancer-credentials
                   key: authorizationAudience
-            - name: ZEEBE_REST_ADDRESS
+            - name: CAMUNDA_BASE_URL
               valueFrom:
                 secretKeyRef:
                   name: leader-balancer-credentials

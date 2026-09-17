@@ -1,15 +1,15 @@
 set -eu
 
 echo "Requesting token for rebalancing"
-if auth_response=$(curl -sS -f --connect-timeout 10 --max-time 60 -X POST "$AUTH_SERVER" \
+if auth_response=$(curl -sS -f --connect-timeout 10 --max-time 60 -X POST "$CAMUNDA_OAUTH_URL" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   --data-urlencode "grant_type=client_credentials" \
-  --data-urlencode "client_id=$CLIENT_ID" \
-  --data-urlencode "client_secret=$CLIENT_SECRET" \
-  --data-urlencode "audience=$AUTHORIZATION_AUDIENCE"); then
+  --data-urlencode "client_id=$CAMUNDA_CLIENT_ID" \
+  --data-urlencode "client_secret=$CAMUNDA_CLIENT_SECRET" \
+  --data-urlencode "audience=$CAMUNDA_TOKEN_AUDIENCE"); then
   :
 else
-  echo "Token request to $AUTH_SERVER failed" >&2
+  echo "Token request to $CAMUNDA_OAUTH_URL failed" >&2
   exit 1
 fi
 
@@ -19,7 +19,7 @@ if [ -z "$token" ]; then
   exit 1
 fi
 
-endpoint="$ZEEBE_REST_ADDRESS/cluster/v2/rebalance"
+endpoint="$CAMUNDA_BASE_URL/cluster/v2/rebalance"
 if status=$(curl -sS -o /dev/null -w '%{http_code}' --connect-timeout 10 --max-time 60 -X POST "$endpoint" \
   -H "Authorization: Bearer $token"); then
   :
