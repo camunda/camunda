@@ -290,7 +290,9 @@ public final class JobWorkerBuilderImpl
             backoffSupplier,
             streamNoJobsBackoffSupplier,
             metrics,
-            jobExecutor);
+            jobExecutor,
+            System::nanoTime,
+            timeout);
     closeables.add(jobWorker);
     return jobWorker;
   }
