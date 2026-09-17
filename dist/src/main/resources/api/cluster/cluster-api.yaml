@@ -308,7 +308,7 @@ paths:
         '504':
           $ref: 'components.yaml#/responses/TimeoutError'
 
-  /partition-distribution:
+  /partitioning:
     put:
       summary:
         Update the partition distribution configuration. Exactly one of `config` and `zonePriorities` must be set.
@@ -331,7 +331,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "components.yaml#/schemas/UpdatePartitionDistributionRequest"
+              $ref: "components.yaml#/schemas/UpdatePartitioningRequest"
       parameters:
         - $ref: '#/components/parameters/DryRunParameter'
       responses:
@@ -355,13 +355,17 @@ paths:
 
   /zones/{zoneId}:
     delete:
-      summary: Force-remove a zone
-      description: Force-evicts the given zone's brokers from the cluster and drops the zone from
-        the persisted partition distribution configuration, in one atomic change. Use this when a
-        zone is down and its brokers are unreachable.
+      summary: Remove a zone
+      description: >
+        Removes the given zone's brokers from the cluster and drops the zone from the
+        persisted partition distribution configuration, in one atomic change.
+        The `force` flag needs to be set when the region to be removed contains the coordinator
+        or it's not currently reachable from the surviving regions.
+
       parameters:
         - $ref: '#/components/parameters/ZoneId'
         - $ref: '#/components/parameters/DryRunParameter'
+        - $ref: '#/components/parameters/ForceParameter'
       responses:
         '202':
           description: Accepted
@@ -381,7 +385,7 @@ paths:
           $ref: 'components.yaml#/responses/TimeoutError'
       x-added-in-version: "8.10.0"
     post:
-      summary: Add back a previously force-removed zone
+      summary: Add back a previously removed zone
       description: Re-adds the operator-supplied brokers and re-includes the given zone in the
         persisted partition distribution configuration, with the supplied replica count and
         priority, in one atomic change.
@@ -418,7 +422,7 @@ paths:
       summary:
         Migrate one zone of a bare or partially zoned cluster to a zone-aware topology. The request
         contains only the zone name. Before migrating a zone, update the persisted partition
-        distribution with `PUT /cluster/partition-distribution` with a zone aware partition distribution.
+        distribution with `PUT /cluster/partitioning` with a zone aware partition distribution.
         For dual-region clusters, migrate the secondary zone first (odd-numbered nodes) and then the primary zone.
 
       requestBody:

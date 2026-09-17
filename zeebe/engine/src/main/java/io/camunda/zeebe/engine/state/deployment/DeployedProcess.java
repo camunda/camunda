@@ -56,6 +56,17 @@ public final class DeployedProcess {
     return persistedProcess.getState() == PersistedProcessState.DRAINING;
   }
 
+  /**
+   * Counts as live for version resolution, instance creation and redeployment: {@code ACTIVE} or
+   * {@code PENDING_DELETION}. PENDING_DELETION is only transient during atomic deletion, so a
+   * definition resting in it is a pre-8.9.18 {@code wrap}-bug corruption artifact that belongs in
+   * ACTIVE. DRAINING is excluded: it is genuinely being deleted.
+   */
+  public boolean isActive() {
+    final var state = persistedProcess.getState();
+    return state == PersistedProcessState.ACTIVE || state == PersistedProcessState.PENDING_DELETION;
+  }
+
   public boolean isDeleteHistory() {
     return persistedProcess.isDeleteHistory();
   }

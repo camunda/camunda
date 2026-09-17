@@ -27,7 +27,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 @TestPropertySource(
     properties = {
       "camunda.processing.engine.storage-ordinals.enable-archiverless=true",
-      "camunda.processing.engine.storage-ordinals.fixed-storage-ordinal-key=1001",
+      "camunda.processing.engine.storage-ordinals.fixed-storage-ordinal=1001",
     })
 public class EngineStorageOrdinalsTest {
   final BrokerBasedProperties brokerCfg;
@@ -40,6 +40,6 @@ public class EngineStorageOrdinalsTest {
   void shouldSetStorageOrdinals() {
     assertThat(brokerCfg.getExperimental().getEngine().getStorageOrdinals())
         .returns(true, StorageOrdinalsCfg::isEnableArchiverless)
-        .returns(1001, StorageOrdinalsCfg::getFixedStorageOrdinalKey);
+        .returns(1001, StorageOrdinalsCfg::getFixedStorageOrdinal);
   }
 }

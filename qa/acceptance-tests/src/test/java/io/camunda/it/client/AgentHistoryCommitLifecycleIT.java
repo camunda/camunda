@@ -160,7 +160,7 @@ public class AgentHistoryCommitLifecycleIT {
     camundaClient
         .newFailCommand(activation1.getKey())
         .retries(1)
-        .withLeaseToken(activation1.getLeaseToken())
+        .withJobLeaseToken(activation1.getJobLeaseToken())
         .execute();
 
     // Activation 2 (winning): same job re-activated under a new lease.
@@ -168,9 +168,9 @@ public class AgentHistoryCommitLifecycleIT {
     assertThat(activation2.getKey())
         .as("re-activation must reuse the same job key")
         .isEqualTo(activation1.getKey());
-    assertThat(activation2.getLeaseToken())
+    assertThat(activation2.getJobLeaseToken())
         .as("re-activation must advance the lease token")
-        .isNotEqualTo(activation1.getLeaseToken());
+        .isNotEqualTo(activation1.getJobLeaseToken());
 
     final long winningItemKey =
         createHistoryItem(
@@ -217,7 +217,7 @@ public class AgentHistoryCommitLifecycleIT {
         .newUpdateAgentInstanceCommand(agentInstanceKey)
         .elementInstanceKey(elementInstanceKey)
         .jobKey(activatedJob.getKey())
-        .jobLease(activatedJob.getLeaseToken())
+        .jobLeaseToken(activatedJob.getJobLeaseToken())
         .history(
             List.of(
                 new AgentInstanceHistoryItem()
@@ -240,7 +240,7 @@ public class AgentHistoryCommitLifecycleIT {
             .newUpdateAgentInstanceCommand(agentInstanceKey)
             .elementInstanceKey(elementInstanceKey)
             .jobKey(activatedJob.getKey())
-            .jobLease(activatedJob.getLeaseToken())
+            .jobLeaseToken(activatedJob.getJobLeaseToken())
             .history(
                 List.of(
                     new AgentInstanceHistoryItem()
@@ -356,7 +356,7 @@ public class AgentHistoryCommitLifecycleIT {
             .newUpdateAgentInstanceCommand(agentInstanceKey)
             .elementInstanceKey(elementInstanceKey1)
             .jobKey(jobA.getKey())
-            .jobLease(jobA.getLeaseToken())
+            .jobLeaseToken(jobA.getJobLeaseToken())
             .history(
                 List.of(
                     new AgentInstanceHistoryItem()
@@ -414,7 +414,7 @@ public class AgentHistoryCommitLifecycleIT {
             .newUpdateAgentInstanceCommand(agentInstanceKey)
             .elementInstanceKey(elementInstanceKey2)
             .jobKey(jobB.getKey())
-            .jobLease(jobB.getLeaseToken())
+            .jobLeaseToken(jobB.getJobLeaseToken())
             .history(
                 List.of(
                     new AgentInstanceHistoryItem()
@@ -525,7 +525,7 @@ public class AgentHistoryCommitLifecycleIT {
             .newUpdateAgentInstanceCommand(agentInstanceKey)
             .elementInstanceKey(elementInstanceKey)
             .jobKey(activatedJob.getKey())
-            .jobLease(activatedJob.getLeaseToken())
+            .jobLeaseToken(activatedJob.getJobLeaseToken())
             .history(
                 List.of(
                     new AgentInstanceHistoryItem()
@@ -688,7 +688,7 @@ public class AgentHistoryCommitLifecycleIT {
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(elementInstanceKey)
             .jobKey(activatedJob.getKey())
-            .jobLease(activatedJob.getLeaseToken())
+            .jobLeaseToken(activatedJob.getJobLeaseToken())
             .history(
                 List.of(
                     new AgentInstanceHistoryItem()
@@ -745,7 +745,7 @@ public class AgentHistoryCommitLifecycleIT {
         .newUpdateAgentInstanceCommand(agentInstanceKey)
         .elementInstanceKey(elementInstanceKey)
         .jobKey(activatedJob.getKey())
-        .jobLease(activatedJob.getLeaseToken())
+        .jobLeaseToken(activatedJob.getJobLeaseToken())
         .history(
             List.of(
                 new AgentInstanceHistoryItem()

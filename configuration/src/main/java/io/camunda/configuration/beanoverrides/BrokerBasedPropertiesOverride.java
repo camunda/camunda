@@ -310,11 +310,6 @@ public class BrokerBasedPropertiesOverride {
         .getEngine()
         .setOutputComparisonMode(
             outputComparisonMode != null ? toEngineOutputMode(outputComparisonMode) : null);
-    override
-        .getExperimental()
-        .getEngine()
-        .setUserTaskCompletionVariableAuditEnabled(
-            camunda.getData().getAuditLog().isUserTaskCompletionVariableAuditEnabled());
   }
 
   private static InputMappingMode toEngineMode(final InputMode mode) {
@@ -1417,7 +1412,6 @@ public class BrokerBasedPropertiesOverride {
     final StorageOrdinalsCfg overrideStorageOrdinals =
         override.getExperimental().getEngine().getStorageOrdinals();
     overrideStorageOrdinals.setEnableArchiverless(camundaStorageOrdinals.isEnableArchiverless());
-    overrideStorageOrdinals.setFixedStorageOrdinalKey(
-        camundaStorageOrdinals.getFixedStorageOrdinalKey());
+    overrideStorageOrdinals.setFixedStorageOrdinal(camundaStorageOrdinals.getFixedStorageOrdinal());
   }
 }

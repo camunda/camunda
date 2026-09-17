@@ -13,7 +13,7 @@ import {deploy, createInstances} from 'utils/zeebeClient';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
-import {findUserTask} from '@requestHelpers';
+import {expectUserTaskUnassigned, findUserTask} from '@requestHelpers';
 import {buildUrl, jsonHeaders} from 'utils/http';
 import {defaultAssertionOptions} from 'utils/constants';
 
@@ -144,7 +144,12 @@ test.describe('task details page', () => {
     );
   });
 
-  test('assign and unassign task', async ({taskPanelPage, taskDetailsPage}) => {
+  test('assign and unassign task', async ({
+    page,
+    request,
+    taskPanelPage,
+    taskDetailsPage,
+  }) => {
     // This task is one of ~24 instances created concurrently in this file's
     // beforeAll -- give openTask's retry-with-reload a generous per-attempt
     // timeout, same as the processWithDeployedForm calls below, instead of
@@ -165,18 +170,37 @@ test.describe('task details page', () => {
       useInnerText: true,
     });
 
-    // Unassigning only flips the button once the backend reports the task out
-    // of ASSIGNING, which under CI load outlives the default 10s wait. Go
-    // through the page object, which waits on that transition with the same
-    // retry-and-reload budget the other unassigning tests use.
+    // The task's own key, for the propagation wait below. openTask navigated
+    // here, so the details URL carries it.
+    const userTaskKey = new URL(page.url()).pathname.split('/').pop() as string;
+
+    // Unassign through the retry-with-reload helper, not a single raw click.
+    // A bare click issues the unassign command exactly once; if the engine
+    // rejects it because the task is still settling from the assign we just
+    // made, the assignment machine drops back to idle with only a toast and
+    // nothing re-issues it -- so /user-tasks never reports the assignee
+    // cleared and the API wait below exhausts its whole budget (this is what
+    // outlived 90s across both retries in the nightly, far longer than the
+    // <15s a real propagation takes). clickUnassignButton() re-clicks while
+    // the toggle is idle on each reload, which recovers exactly that dropped
+    // command, and only returns once the toggle has flipped back to
+    // "Assign to me" -- i.e. the details view already reflects the cleared
+    // assignee. The API wait then keeps a genuine failure honest about which
+    // side is behind.
     await taskDetailsPage.clickUnassignButton();
+    await expectUserTaskUnassigned(request, userTaskKey);
+
+    // No reload here: clickUnassignButton() already synchronised on the toggle
+    // flipping to "Assign to me", so the panel is settled and these assertions
+    // read that confirmed state directly. Reloading instead forced a fresh
+    // task-details fetch that raced the same 30s budget and turned the fixed
+    // test flaky on loaded runners.
+    await expect(taskDetailsPage.assignToMeButton).toBeVisible({
+      timeout: 60000,
+    });
     await expect(taskDetailsPage.completeTaskButton).toBeDisabled();
     await expect(taskDetailsPage.assignee).toHaveText('Unassigned', {
       useInnerText: true,
-    });
-
-    await expect(taskDetailsPage.completeTaskButton).toBeDisabled({
-      timeout: 60000,
     });
   });
 

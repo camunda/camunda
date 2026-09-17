@@ -198,21 +198,48 @@ class TaskDetailsPage {
    * while its neighbours settled in under 15s.
    */
   private async toggleAssignment(from: Locator, to: Locator): Promise<void> {
-    await waitForAssertion({
-      assertion: async () => {
-        if ((await from.isVisible()) && (await from.isEnabled())) {
-          await from.click({timeout: 30000});
-        }
-        await expect(to).toBeVisible({timeout: 30000});
-      },
-      onFailure: async () => {
-        console.log(
-          'Assignment toggle has not flipped yet, reloading and retrying...',
-        );
-        await this.page.reload();
-      },
-      maxRetries: 5,
-    });
+    try {
+      await waitForAssertion({
+        assertion: async () => {
+          if ((await from.isVisible()) && (await from.isEnabled())) {
+            await from.click({timeout: 30000});
+          }
+          await expect(to).toBeVisible({timeout: 30000});
+        },
+        onFailure: async () => {
+          console.log(
+            `Assignment toggle has not flipped yet, reloading and retrying...${await this.pageNotices()}`,
+          );
+          await this.page.reload();
+        },
+        maxRetries: 5,
+      });
+    } catch (error) {
+      // waitForAssertion rethrows the last attempt's error without running
+      // onFailure, so without this the one attempt whose notices matter most --
+      // the one that aborts the test -- would be the one missing from the log.
+      console.log(`Assignment toggle gave up.${await this.pageNotices()}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Whatever the page is currently saying in a toast, for the CI log. A
+   * rejected assignment command surfaces only as a toast, and by the time
+   * anyone opens the trace of a nightly failure the toast has expired -- so
+   * when the toggle gives up, its reason belongs in the log next to it.
+   */
+  private async pageNotices(): Promise<string> {
+    const texts = await this.page
+      .locator('[data-sonner-toast], [role="alert"], [role="status"]')
+      .allInnerTexts()
+      .catch(() => [] as string[]);
+    const notices = texts
+      .map((text) => text.replace(/\s+/g, ' ').trim())
+      .filter((text) => text.length > 0)
+      .slice(0, 5);
+
+    return notices.length === 0 ? '' : ` Page says: ${notices.join(' | ')}`;
   }
 
   async clickCompleteTaskButton() {

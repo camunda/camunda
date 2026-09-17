@@ -65,17 +65,17 @@ public class SchemaManagerConfiguration {
     public static final int DEFAULT_MAX_RETRIES = Integer.MAX_VALUE;
 
     @Override
-    public int defaultMaxRetries() {
+    protected int defaultMaxRetries() {
       return DEFAULT_MAX_RETRIES;
     }
 
     @Override
-    public Duration defaultMinRetryDelay() {
+    protected Duration defaultMinRetryDelay() {
       return DEFAULT_MIN_RETRY_DELAY;
     }
 
     @Override
-    public Duration defaultMaxRetryDelay() {
+    protected Duration defaultMaxRetryDelay() {
       return DEFAULT_MAX_RETRY_DELAY;
     }
   }

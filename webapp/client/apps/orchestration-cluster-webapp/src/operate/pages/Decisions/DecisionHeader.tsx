@@ -13,9 +13,10 @@ import {getDecisionDefinitionName} from './getDecisionDefinitionName';
 
 type Props = {
 	decisionDefinitionSelection: DecisionDefinitionSelection;
+	children?: React.ReactNode;
 };
 
-const DecisionHeader: React.FC<Props> = ({decisionDefinitionSelection}) => {
+const DecisionHeader: React.FC<Props> = ({decisionDefinitionSelection, children}) => {
 	const {t} = useTranslation();
 	const title =
 		decisionDefinitionSelection.kind === 'no-match'
@@ -30,6 +31,7 @@ const DecisionHeader: React.FC<Props> = ({decisionDefinitionSelection}) => {
 					content={decisionDefinitionSelection.definition.decisionDefinitionId}
 				/>
 			)}
+			{children}
 		</PanelHeader>
 	);
 };

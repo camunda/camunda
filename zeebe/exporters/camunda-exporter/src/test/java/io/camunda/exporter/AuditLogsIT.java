@@ -271,7 +271,7 @@ public class AuditLogsIT {
                 ImmutableRecord.builder()
                     .withRecordType(RecordType.EVENT)
                     .withValueType(ValueType.PROCESS)
-                    .withIntent(ProcessIntent.DELETED)
+                    .withIntent(ProcessIntent.DRAINING)
                     .withValue(
                         ImmutableProcess.builder()
                             .withProcessDefinitionKey(2345L)
@@ -288,7 +288,7 @@ public class AuditLogsIT {
                     Map.entry("actorType", "UNKNOWN"),
                     Map.entry("category", "DEPLOYED_RESOURCES"),
                     Map.entry("entityKey", "2345"),
-                    Map.entry("entityOperationIntent", (int) ProcessIntent.DELETED.value()),
+                    Map.entry("entityOperationIntent", (int) ProcessIntent.DRAINING.value()),
                     Map.entry("entityType", "RESOURCE"),
                     Map.entry("entityValueType", (int) ValueType.PROCESS.value()),
                     Map.entry("entityVersion", 0),
@@ -298,6 +298,24 @@ public class AuditLogsIT {
                     Map.entry("result", "SUCCESS"),
                     Map.entry("tenantScope", "TENANT"),
                     Map.entry("timestamp", "2026-07-15T14:05:00.000+0000")))
+            .build(),
+        // A process deletion is audited on DRAINING, so the later DELETED event must be ignored to
+        // avoid a duplicate, misattributed entry. Expect no audit log for it.
+        TestParameter.record(
+                ImmutableRecord.builder()
+                    .withRecordType(RecordType.EVENT)
+                    .withValueType(ValueType.PROCESS)
+                    .withIntent(ProcessIntent.DELETED)
+                    .withValue(
+                        ImmutableProcess.builder()
+                            .withProcessDefinitionKey(2345L)
+                            .withBpmnProcessId("my-process")
+                            .build())
+                    .withKey(2345L)
+                    .withPosition(806L)
+                    .withPartitionId(1)
+                    .withTimestamp(Instant.parse("2026-07-15T14:06:00Z").toEpochMilli())
+                    .build())
             .build(),
         TestParameter.record(
                 ImmutableRecord.builder()

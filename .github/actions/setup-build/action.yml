@@ -56,6 +56,10 @@ inputs:
       cache; see the setup-maven-cache action for why the bound exists.
     required: false
     default: "3"
+  skip-maven-cache:
+    description: Skip Maven cache setup (e.g. when running Gradle instead of Maven)
+    required: false
+    default: "false"
   maven-mirrors:
     description: |
       JSON list of extra Maven mirrors.
@@ -169,6 +173,7 @@ runs:
     shell: bash
     run: echo "::add-matcher::.github/maven-matcher.json"
   - name: Configure Maven cache
+    if: inputs.skip-maven-cache != 'true'
     uses: ./.github/actions/setup-maven-cache
     with:
       maven-cache-key-modifier: ${{ inputs.maven-cache-key-modifier }}
@@ -323,3 +328,10 @@ runs:
       command: |
         printf '%s' "${DOCKER_PASSWORD}" | docker login reg.mini.dev \
           --username minimus --password-stdin
+  - name: Configure Testcontainers
+    # `pull.timeout` is the whole budget Testcontainers allows for pulling an image, retries
+    # included. Its 120s default leaves no headroom for a cold multi-hundred-MB pull on a CI
+    # runner, which is what failed the Keycloak-based ITs. Allow the same 10 minutes the compose
+    # action allows per attempt when it pre-pulls Elasticsearch for the database ITs.
+    run: echo "TESTCONTAINERS_PULL_TIMEOUT=600" >> "$GITHUB_ENV"
+    shell: bash

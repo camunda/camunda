@@ -7,6 +7,8 @@
  */
 
 import {type BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import {useState} from 'react';
+import {TemplateIcon} from './styled';
 import {getBoundaryEventType} from 'modules/bpmn-js/utils/getBoundaryEventType';
 import {getEventType} from 'modules/bpmn-js/utils/getEventType';
 import {getMultiInstanceType} from 'modules/bpmn-js/utils/getMultiInstanceType';
@@ -104,7 +106,9 @@ type Props = {
   className?: string;
 };
 
-const ElementInstanceIcon: React.FC<Props> = ({
+const TEMPLATE_ICON_SOURCE_PATTERN = /^(https?:\/\/|data:image\/)/i;
+
+const DefaultElementInstanceIcon: React.FC<Props> = ({
   diagramBusinessObject,
   className,
   isRootProcess = false,
@@ -375,6 +379,37 @@ const ElementInstanceIcon: React.FC<Props> = ({
   }
 
   return <ElementTask {...svgProps} />;
+};
+
+const ElementInstanceIcon: React.FC<Props> = (props) => {
+  const {diagramBusinessObject, isRootProcess, ...rest} = props;
+  const [failedIcon, setFailedIcon] = useState<string>();
+  const icon = diagramBusinessObject?.get?.('zeebe:modelerTemplateIcon');
+  const canRenderTemplateIcon =
+    diagramBusinessObject?.$instanceOf?.('bpmn:Activity') ||
+    diagramBusinessObject?.$instanceOf?.('bpmn:Event');
+
+  if (
+    !isRootProcess &&
+    canRenderTemplateIcon &&
+    typeof icon === 'string' &&
+    TEMPLATE_ICON_SOURCE_PATTERN.test(icon) &&
+    icon !== failedIcon
+  ) {
+    return (
+      <TemplateIcon
+        {...rest}
+        key={icon}
+        src={icon}
+        alt=""
+        aria-hidden="true"
+        data-testid="element-instance-icon"
+        onError={() => setFailedIcon(icon)}
+      />
+    );
+  }
+
+  return <DefaultElementInstanceIcon {...props} />;
 };
 
 export {ElementInstanceIcon};

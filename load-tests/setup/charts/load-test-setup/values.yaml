@@ -12,6 +12,8 @@ global:
   # ConfigMap still only renders when a key is actually set.
   extraConfig: {}
 
+  performReadBenchmarks: true
+
 # -- Name of the load test.
 name: ""
 

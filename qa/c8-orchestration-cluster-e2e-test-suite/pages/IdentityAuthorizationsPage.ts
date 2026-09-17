@@ -16,6 +16,7 @@ export class IdentityAuthorizationsPage {
   readonly createAuthorizationButton: Locator;
   readonly authorizationsList: Locator;
   readonly createAuthorizationModal: Locator;
+  readonly createAuthorizationOwnerTrigger: Locator;
   readonly createAuthorizationOwnerSearchInput: Locator;
   readonly createAuthorizationResourceIdField: Locator;
   readonly createAuthorizationAccessPermission: (name: string) => Locator;
@@ -49,8 +50,17 @@ export class IdentityAuthorizationsPage {
     this.createAuthorizationModal = page.getByRole('dialog', {
       name: 'Create authorization',
     });
-    this.createAuthorizationOwnerSearchInput =
-      this.createAuthorizationModal.getByPlaceholder('Search by owner ID');
+    // The owner field is a design-system Combobox. Its closed control is a
+    // `combobox`-role trigger that renders the "Search by owner ID" placeholder
+    // as static text (there is no input `placeholder` attribute, which is why
+    // getByPlaceholder no longer resolves it). Typing happens in the cmdk search
+    // box that mounts in the popover only after the trigger is opened.
+    this.createAuthorizationOwnerTrigger = this.createAuthorizationModal
+      .getByRole('combobox')
+      .filter({hasText: 'Search by owner ID'});
+    this.createAuthorizationOwnerSearchInput = this.page.locator(
+      '[data-slot="command-input"]',
+    );
     this.createAuthorizationResourceIdField =
       this.createAuthorizationModal.getByRole('textbox', {
         name: 'Resource ID',
@@ -226,25 +236,28 @@ export class IdentityAuthorizationsPage {
     await this.createAuthorizationOwnerTypeComboBox.click();
     await this.selectOwnerTypeFromDrowdown(authorization.ownerType);
     // Selecting an owner type re-renders the owner field. User, Group and Role
-    // owners all now render the searchable "Search by owner ID" entity input
-    // (#51442) instead of the former "Select an owner" combobox; wait for it
-    // before selecting an owner.
-    await this.createAuthorizationOwnerSearchInput.waitFor({
+    // owners render the design-system entity Combobox, whose closed trigger
+    // shows the "Search by owner ID" placeholder; wait for that trigger before
+    // opening it.
+    await this.createAuthorizationOwnerTrigger.waitFor({
       state: 'visible',
       timeout: 10000,
     });
   }
 
   async selectAuthorizationOwner(authorization: {ownerId: string}) {
+    // Open the Combobox, then type into the cmdk search box that mounts in the
+    // popover. Option labels are owner-type-specific ("<name> — <email>" for
+    // users, "<id> — <name>" for roles/groups) and do not reliably echo the
+    // owner id that was typed, so instead of matching on label text, wait for
+    // the server-side search to narrow to the single row the unique owner id
+    // resolves to and pick it.
+    await this.createAuthorizationOwnerTrigger.click();
     await this.createAuthorizationOwnerSearchInput.fill(authorization.ownerId);
     await expect(this.page.getByRole('listbox')).toBeVisible();
-    const ownerOption = this.page
-      .getByRole('listbox')
-      .getByRole('option')
-      .filter({hasText: authorization.ownerId})
-      .first();
-    await expect(ownerOption).toBeVisible({timeout: 30000});
-    await ownerOption.click({timeout: 20000, force: true});
+    const ownerOptions = this.page.getByRole('listbox').getByRole('option');
+    await expect(ownerOptions).toHaveCount(1, {timeout: 60000});
+    await ownerOptions.first().click({timeout: 20000, force: true});
   }
 
   async findAuthorizationInPaginatedList(

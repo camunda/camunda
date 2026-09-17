@@ -32,6 +32,7 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
   private final Optional<Integer> newReplicationFactor;
   private final Optional<Integer> newPartitionCount;
   private final Optional<String> zone;
+  private final boolean skipScalingOperations;
   private final ArrayList<ClusterConfigurationChangeOperation> generatedOperations =
       new ArrayList<>();
 
@@ -56,10 +57,32 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
       final Optional<Integer> newReplicationFactor,
       final Optional<Integer> newPartitionCount,
       final Optional<String> zone) {
+    this(members, newReplicationFactor, newPartitionCount, zone, false);
+  }
+
+  /**
+   * Creates a scale request without scaling callbacks. This is used when an entire zone is removed:
+   * its brokers release their own node-ID leases as they shut down, so a callback must not touch
+   * lease state while the brokers are still running.
+   */
+  ScaleRequestTransformer(
+      final Set<MemberId> members,
+      final Optional<Integer> newReplicationFactor,
+      final boolean skipScalingOperations) {
+    this(members, newReplicationFactor, Optional.empty(), Optional.empty(), skipScalingOperations);
+  }
+
+  private ScaleRequestTransformer(
+      final Set<MemberId> members,
+      final Optional<Integer> newReplicationFactor,
+      final Optional<Integer> newPartitionCount,
+      final Optional<String> zone,
+      final boolean skipScalingOperations) {
     this.members = members;
     this.newReplicationFactor = newReplicationFactor;
     this.newPartitionCount = newPartitionCount;
     this.zone = zone;
+    this.skipScalingOperations = skipScalingOperations;
   }
 
   /**
@@ -108,7 +131,7 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
     // The callbacks act on the node-id state of the zone being scaled, and there is nothing to
     // prepare when the member set is unchanged.
     final var scalingExecutor =
-        currentMembers.equals(members)
+        skipScalingOperations || currentMembers.equals(members)
             ? Optional.<MemberId>empty()
             : selectPrePostScalingExecutor(currentMembers);
 
@@ -116,7 +139,9 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
     scalingExecutor.ifPresent(id -> before.add(new PreScalingOperation(id, members)));
     before.addAll(joining);
     final var after = new ArrayList<GlobalChangeOperation>(leaving);
-    scalingExecutor.ifPresent(id -> after.add(new PostScalingOperation(id, members)));
+    if (!skipScalingOperations) {
+      scalingExecutor.ifPresent(id -> after.add(new PostScalingOperation(id, members)));
+    }
 
     return PartitionGroupScalingPhases.phases(
             CurrentClusterConfiguration.DEFAULT_GROUP,

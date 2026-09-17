@@ -76,6 +76,7 @@ jobs:
       load-test-setup-changes: ${{ steps.filter.outputs.load-test-setup-changes }}
       scripts-changes: ${{ steps.filter.outputs.scripts-changes }}
       load-test-scripts-changes: ${{ steps.filter.outputs.load-test-scripts-changes }}
+      gradle-changes: ${{ steps.filter.outputs.gradle-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -107,7 +108,7 @@ jobs:
       # renovate: datasource=github-releases depName=rhysd/actionlint
       ACTIONLINT_VERSION: '1.7.12'
       # renovate: datasource=github-tags depName=open-policy-agent/conftest
-      CONFTEST_VERSION: '0.69.0'
+      CONFTEST_VERSION: '0.70.0'
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -208,6 +209,118 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - run: ./mvnw spotless:check
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  gradle-compile-check:
+    if: >-
+      github.event_name != 'schedule' &&
+      needs.detect-changes.outputs.gradle-changes == 'true'
+    name: "Gradle / Test Classes"
+    needs: [ detect-changes ]
+    runs-on: gcp-perf-core-16-default
+    timeout-minutes: 30
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: gradle-compile
+          skip-maven-cache: "true"
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+        with:
+          # Only main and stable pushes warm the shared cache; all other runs only read it.
+          cache-read-only: >-
+            ${{
+              !(
+                github.event_name == 'push' &&
+                (
+                  github.ref == 'refs/heads/main' ||
+                  startsWith(github.ref, 'refs/heads/stable/')
+                )
+              )
+            }}
+      # Build the distribution in the same Gradle invocation as testClasses so the archive
+      # reuses the compilation output instead of compiling the repository again.
+      - name: Compile and package Gradle distribution
+        run: |
+          ./gradlew --no-daemon --console=plain --parallel -Pskip.fe.build \
+            testClasses :camunda-zeebe:distZip
+          ./gradlew --no-daemon --no-configuration-cache --console=plain -Pskip.fe.build \
+            :camunda-zeebe:writeDistDependencyReport
+      - name: Upload Gradle distribution
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: gradle-dist-${{ github.run_id }}
+          path: |
+            dist/build/distributions/camunda-zeebe-*.zip
+            dist/build/reports/dist-dependencies.json
+          retention-days: 2
+          compression-level: 0  # archive is already compressed
+          if-no-files-found: error
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  gradle-dist-parity:
+    if: >-
+      always() &&
+      needs.build-distball.result == 'success' &&
+      needs.gradle-compile-check.result == 'success' &&
+      github.event_name != 'schedule' &&
+      needs.detect-changes.outputs.gradle-changes == 'true'
+    name: "Gradle / Distribution Parity"
+    needs: [ detect-changes, build-distball, gradle-compile-check ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          persist-credentials: false
+      - name: Download Gradle distribution
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: gradle-dist-${{ github.run_id }}
+          path: dist/build/
+      - name: Download Maven distributions
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: distball-${{ github.run_id }}
+          path: dist/target/
+      - name: Compare Gradle and Maven distributions
+        run: |
+          set -euo pipefail
+          gradle_zip=$(find dist/build/distributions -maxdepth 1 -name 'camunda-zeebe-*.zip' -print -quit)
+          maven_zip=$(find dist/target -maxdepth 1 -name 'camunda-zeebe-*.zip' -print -quit)
+          test -n "$gradle_zip" && test -n "$maven_zip"
+          python3 .claude/skills/gradle-build-parity/compare-dist.py \
+            "$gradle_zip" "$maven_zip" \
+            --gradle-manifest dist/build/reports/dist-dependencies.json
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -513,8 +626,15 @@ jobs:
     # workflows can share it too. See #52693 and #56931.
     # Gated on the union of all consumers' conditions so the artifact exists whenever one runs;
     # frontend-changes is included because the webapp back-end UTs run on it; rdbms-integration-tests
-    # is included because its filter is a superset of java-code-changes (adds rdbms-change). See #52693.
-    if: needs.detect-changes.outputs.camunda-docker-tests == 'true' || needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true' || needs.detect-changes.outputs.rdbms-integration-tests == 'true'
+    # is included because its filter is a superset of java-code-changes (adds rdbms-change).
+    # Gradle changes are included because the Gradle distribution parity job consumes the Maven ZIP.
+    # See #52693.
+    if: >-
+      needs.detect-changes.outputs.camunda-docker-tests == 'true' ||
+      needs.detect-changes.outputs.java-code-changes == 'true' ||
+      needs.detect-changes.outputs.frontend-changes == 'true' ||
+      needs.detect-changes.outputs.rdbms-integration-tests == 'true' ||
+      needs.detect-changes.outputs.gradle-changes == 'true'
     needs: [ detect-changes ]
     permissions:
       contents: read
@@ -873,6 +993,17 @@ jobs:
               "docker-file": "camunda.Dockerfile",
               "owner": "@camunda/c8-testing",
               "module": "Testing",
+              "stressRun": 1
+            },
+            {
+              "group": "authentication",
+              "name": "Authentication",
+              "maven-modules": "authentication",
+              "maven-build-threads": 1,
+              "maven-test-fork-count": 1,
+              "runs-on": "gcp-perf-core-8-default",
+              "owner": "@camunda/identity",
+              "module": "Identity",
               "stressRun": 1
             },
             {
@@ -2259,7 +2390,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+      - uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
           distribution: temurin
           java-version: '21'
@@ -2382,7 +2513,6 @@ jobs:
     with:
       runFeTests: ${{ needs.detect-changes.outputs.optimize-frontend-changes == 'true' }}
       runBeTests: ${{ needs.detect-changes.outputs.optimize-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-changes == 'true' }}
-      runE2eTests: ${{ needs.detect-changes.outputs.optimize-frontend-changes == 'true' || needs.detect-changes.outputs.optimize-backend-changes == 'true' }}
       runDockerfileChecks: ${{ needs.detect-changes.outputs.optimize-dockerfile-changes == 'true' }}
       # Fork PRs can't authenticate to GCS (no Vault access, see gcs-build-cache-auth),
       # so fall back to each reusable workflow's build-zeebe path instead of the shared distball.
@@ -2640,6 +2770,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 22
     permissions: {}  # GITHUB_TOKEN unused in this job
+    env:
+      # renovate: datasource=npm depName=renovate
+      RENOVATE_VERSION: '44.90.3'
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -2649,8 +2782,8 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
-      # Retry to absorb transient npm-registry resolution failures when npx resolves
-      # renovate@latest and its transitive deps on a fresh run (see INC-6869, INC-7810).
+      # Retry to absorb transient npm-registry slowness when npx resolves renovate
+      # and its transitive deps on a fresh run (see INC-6869, INC-7810).
       - name: Validate Renovate config
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
@@ -2662,7 +2795,7 @@ jobs:
           # under a minute. Widened from 2min (10min job timeout) because a
           # registry-wide slowdown (INC-7810) left no margin at that budget.
           timeout_minutes: 6
-          command: npx --yes --package "renovate@latest" -- renovate-config-validator --no-global .github/renovate.json* .github/renovate/*
+          command: npx --yes --package "renovate@${{ env.RENOVATE_VERSION }}" -- renovate-config-validator --no-global .github/renovate.json* .github/renovate/*
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -2777,6 +2910,8 @@ jobs:
       - docker-checks
       - general-unit-tests
       - generate-db-versions
+      - gradle-compile-check
+      - gradle-dist-parity
       - history-tests
       - identity-frontend-tests
       - identity-tests

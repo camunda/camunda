@@ -539,22 +539,22 @@ class RequestMapperTest {
   }
 
   @Nested
-  class LeaseTokenMappingTest {
+  class JobLeaseTokenMappingTest {
 
     @Test
-    void shouldMapLeaseTokenOnJobCompletion() {
+    void shouldMapJobLeaseTokenOnJobCompletion() {
       // given
-      final var request = JobCompletionRequest.Builder.create().leaseToken("lease-1").build();
+      final var request = JobCompletionRequest.Builder.create().jobLeaseToken("lease-1").build();
 
       // when
       final var result = RequestMapper.toJobCompletionRequest(request, 1L);
 
       // then
-      assertThat(result.get().leaseToken()).isEqualTo("lease-1");
+      assertThat(result.get().jobLeaseToken()).isEqualTo("lease-1");
     }
 
     @Test
-    void shouldMapAbsentLeaseTokenOnJobCompletion() {
+    void shouldMapAbsentJobLeaseTokenOnJobCompletion() {
       // given
       final var request = JobCompletionRequest.Builder.create().build();
 
@@ -562,7 +562,7 @@ class RequestMapperTest {
       final var result = RequestMapper.toJobCompletionRequest(request, 1L);
 
       // then
-      assertThat(result.get().leaseToken()).isNull();
+      assertThat(result.get().jobLeaseToken()).isNull();
     }
 
     @Test
@@ -620,19 +620,19 @@ class RequestMapperTest {
     }
 
     @Test
-    void shouldMapLeaseTokenOnJobFail() {
+    void shouldMapJobLeaseTokenOnJobFail() {
       // given
-      final var request = JobFailRequest.Builder.create().leaseToken("lease-1").build();
+      final var request = JobFailRequest.Builder.create().jobLeaseToken("lease-1").build();
 
       // when
       final var result = RequestMapper.toJobFailRequest(request, 1L);
 
       // then
-      assertThat(result.leaseToken()).isEqualTo("lease-1");
+      assertThat(result.jobLeaseToken()).isEqualTo("lease-1");
     }
 
     @Test
-    void shouldMapAbsentLeaseTokenOnJobFail() {
+    void shouldMapAbsentJobLeaseTokenOnJobFail() {
       // given
       final var request = JobFailRequest.Builder.create().build();
 
@@ -640,25 +640,25 @@ class RequestMapperTest {
       final var result = RequestMapper.toJobFailRequest(request, 1L);
 
       // then
-      assertThat(result.leaseToken()).isNull();
+      assertThat(result.jobLeaseToken()).isNull();
     }
 
     @Test
-    void shouldMapLeaseTokenOnJobError() {
+    void shouldMapJobLeaseTokenOnJobError() {
       // given
       final var request =
-          JobErrorRequest.Builder.create().errorCode("error-1").leaseToken("lease-1").build();
+          JobErrorRequest.Builder.create().errorCode("error-1").jobLeaseToken("lease-1").build();
 
       // when
       final var result = RequestMapper.toJobErrorRequest(request, 1L);
 
       // then
       assertThat(result.isRight()).isTrue();
-      assertThat(result.get().leaseToken()).isEqualTo("lease-1");
+      assertThat(result.get().jobLeaseToken()).isEqualTo("lease-1");
     }
 
     @Test
-    void shouldMapAbsentLeaseTokenOnJobError() {
+    void shouldMapAbsentJobLeaseTokenOnJobError() {
       // given
       final var request = JobErrorRequest.Builder.create().errorCode("error-1").build();
 
@@ -667,26 +667,26 @@ class RequestMapperTest {
 
       // then
       assertThat(result.isRight()).isTrue();
-      assertThat(result.get().leaseToken()).isNull();
+      assertThat(result.get().jobLeaseToken()).isNull();
     }
 
     @Test
-    void shouldMapLeaseTokenOnJobUpdate() {
+    void shouldMapJobLeaseTokenOnJobUpdate() {
       // given
       final var changeset = JobChangeset.Builder.create().priority(80).build();
       final var request =
-          JobUpdateRequest.Builder.create().changeset(changeset).leaseToken("lease-1").build();
+          JobUpdateRequest.Builder.create().changeset(changeset).jobLeaseToken("lease-1").build();
 
       // when
       final var result = RequestMapper.toJobUpdateRequest(request, 1L);
 
       // then
       assertThat(result.isRight()).isTrue();
-      assertThat(result.get().leaseToken()).isEqualTo("lease-1");
+      assertThat(result.get().jobLeaseToken()).isEqualTo("lease-1");
     }
 
     @Test
-    void shouldMapAbsentLeaseTokenOnJobUpdate() {
+    void shouldMapAbsentJobLeaseTokenOnJobUpdate() {
       // given
       final var changeset = JobChangeset.Builder.create().priority(80).build();
       final var request = JobUpdateRequest.Builder.create().changeset(changeset).build();
@@ -696,7 +696,7 @@ class RequestMapperTest {
 
       // then
       assertThat(result.isRight()).isTrue();
-      assertThat(result.get().leaseToken()).isNull();
+      assertThat(result.get().jobLeaseToken()).isNull();
     }
   }
 }

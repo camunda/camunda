@@ -89,7 +89,7 @@ public class BusinessValueOverviewSchedulerService extends AbstractScheduledServ
   }
 
   @Override
-  public synchronized boolean startScheduling() {
+  protected synchronized boolean startScheduling() {
     LOG.info("Scheduling business-value overview scheduler");
     return super.startScheduling();
   }

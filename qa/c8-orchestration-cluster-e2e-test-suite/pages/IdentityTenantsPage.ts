@@ -177,7 +177,11 @@ export class IdentityTenantsPage {
   }
 
   async fillAssignUserSearch(username: string) {
-    await this.assignUserSearchbox.fill(username);
+    // The search field is a design-system MultiSelect: its closed trigger is a
+    // `combobox`-role div (not an input), so open it first, then type into the
+    // cmdk search box that mounts in the popover.
+    await this.assignUserSearchbox.click();
+    await this.page.locator('[data-slot="command-input"]').fill(username);
   }
 
   async assignUserToTenant(user: {id: string}) {

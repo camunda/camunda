@@ -1,0 +1,107 @@
+import io.camunda.gradle.pom.PomResolver
+import io.camunda.gradle.pom.resolvePomProperty
+import com.github.gradle.node.NodeExtension
+import com.github.gradle.node.npm.task.NpmTask
+import org.gradle.api.provider.Provider
+import org.gradle.jvm.tasks.Jar
+import org.gradle.language.jvm.tasks.ProcessResources
+
+fun Provider<String>.asEnabledFlag(): Provider<Boolean> = map { value ->
+  value.isEmpty() || value.toBoolean()
+}
+
+plugins {
+  id("buildlogic.server-conventions")
+  id("com.github.node-gradle.node")
+}
+
+interface FrontendWebjarExtension {
+  val frontendBuildDirectory: DirectoryProperty
+  val frontendPackagedDirectory: DirectoryProperty
+  val resourceTargetPath: Property<String>
+}
+
+val frontendWebjar = extensions.create<FrontendWebjarExtension>("frontendWebjar")
+val frontendBuildDirectory = frontendWebjar.frontendBuildDirectory
+val frontendPackagedDirectory = frontendWebjar.frontendPackagedDirectory
+val resourceTargetPath = frontendWebjar.resourceTargetPath
+
+val parentPomVersions =
+  PomResolver(providers.fileContents(layout.settingsDirectory.file("parent/pom.xml")).asText.get())
+    .properties()
+
+extensions.configure<NodeExtension> {
+  download.set(true)
+  version.set(resolvePomProperty("version.node", parentPomVersions).removePrefix("v"))
+  npmVersion.set(resolvePomProperty("version.npm", parentPomVersions))
+  distBaseUrl.set(null as String?)
+  workDir.set(layout.settingsDirectory.dir(".gradle/nodejs/${project.name}"))
+  npmWorkDir.set(layout.settingsDirectory.dir(".gradle/npm/${project.name}"))
+  nodeProjectDir.set(layout.projectDirectory)
+}
+
+val skipFrontendBuild =
+  providers
+    .gradleProperty("skip.fe.build")
+    .orElse(providers.gradleProperty("quickly"))
+    .asEnabledFlag()
+    .orElse(false)
+
+val npmVersionPackage =
+  tasks.register<NpmTask>("npmVersionPackage") {
+    enabled = !skipFrontendBuild.get()
+    dependsOn(tasks.named("npmSetup"))
+    args.set(
+      listOf("version", project.version.toString(), "--no-git-tag-version", "--allow-same-version")
+    )
+    inputs.property("projectVersion", project.version)
+    outputs.file(layout.projectDirectory.file("package.json"))
+    // This task mutates a source-tree file, so caching it could restore a stale package.json.
+    outputs.cacheIf { false }
+  }
+
+val npmCi =
+  tasks.register<NpmTask>("npmCi") {
+    enabled = !skipFrontendBuild.get()
+    dependsOn(npmVersionPackage)
+    args.set(listOf("ci"))
+    inputs.files(
+      layout.projectDirectory.file("package.json"),
+      layout.projectDirectory.file("package-lock.json"),
+    )
+    // Do not declare node_modules as an output: it contains symlinked workspace packages and
+    // causes Gradle's file-system watcher to register paths more than once. Without outputs,
+    // npm ci is intentionally run whenever this task is requested.
+    outputs.cacheIf { false }
+  }
+
+val npmBuild =
+  tasks.register<NpmTask>("npmBuild") {
+    enabled = !skipFrontendBuild.get()
+    dependsOn(npmCi)
+    args.set(listOf("run", "build"))
+    inputs
+      .files(
+        provider {
+          val excludes = mutableListOf("node_modules/**", "target/**", ".gradle/**", "build/**")
+          if (frontendBuildDirectory.isPresent) {
+            runCatching {
+              val relPath =
+                frontendBuildDirectory.get().asFile.relativeTo(layout.projectDirectory.asFile).path
+              excludes.add("$relPath/**")
+            }
+          }
+          fileTree(layout.projectDirectory) { exclude(excludes) }
+        }
+      )
+      .withPropertyName("sourceFiles")
+      .withPathSensitivity(PathSensitivity.RELATIVE)
+    outputs.dir(frontendBuildDirectory)
+    outputs.cacheIf { true }
+  }
+
+tasks.named<ProcessResources>("processResources") {
+  from(frontendPackagedDirectory.orElse(frontendBuildDirectory)) { into(resourceTargetPath) }
+}
+
+tasks.named<Jar>("jar") { mustRunAfter(npmBuild) }

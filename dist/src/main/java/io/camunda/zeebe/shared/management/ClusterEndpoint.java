@@ -17,12 +17,12 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterZoneMigrationRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemovePhysicalTenantRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
@@ -47,7 +47,7 @@ import io.camunda.zeebe.management.cluster.PartitionJoinRequest;
 import io.camunda.zeebe.management.cluster.RequestHandlingActivePartitions;
 import io.camunda.zeebe.management.cluster.RequestHandlingAllPartitions;
 import io.camunda.zeebe.management.cluster.RoutingState;
-import io.camunda.zeebe.management.cluster.UpdatePartitionDistributionRequest;
+import io.camunda.zeebe.management.cluster.UpdatePartitioningRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -628,22 +628,21 @@ public class ClusterEndpoint {
     }
   }
 
-  @PutMapping(path = "/partition-distribution", consumes = "application/json")
+  @PutMapping(path = "/partitioning", consumes = "application/json")
   public ResponseEntity<?> updatePartitionDistribution(
-      @RequestBody final UpdatePartitionDistributionRequest request,
+      @RequestBody final UpdatePartitioningRequest request,
       @RequestParam(defaultValue = "false") final boolean dryRun) {
     try {
-      final var partitionDistributionConfig = Optional.ofNullable(request.getConfig());
+      final var partitioningConfig = Optional.ofNullable(request.getConfig());
       final var zonePriorities = Optional.ofNullable(request.getZonePriorities()).orElse(List.of());
-      if (partitionDistributionConfig.isPresent() == !zonePriorities.isEmpty()) {
+      if (partitioningConfig.isPresent() == !zonePriorities.isEmpty()) {
         return invalidRequest("Exactly one of config and zonePriorities must be set.");
       }
       final var result =
-          partitionDistributionConfig.isPresent()
+          partitioningConfig.isPresent()
               ? requestSender.updatePartitionDistribution(
                   new UpdatePartitionDistributorConfigRequest(
-                      ClusterApiUtils.toPartitionDistributorConfig(
-                          partitionDistributionConfig.get()),
+                      ClusterApiUtils.toPartitionDistributorConfig(partitioningConfig.get()),
                       dryRun))
               : requestSender.updateZonePriorities(
                   new UpdateZonePrioritiesRequest(zonePriorities, dryRun));
@@ -667,13 +666,14 @@ public class ClusterEndpoint {
   }
 
   @DeleteMapping(path = "/zones/{zoneId}")
-  public ResponseEntity<?> forceRemoveZone(
+  public ResponseEntity<?> removeZone(
       @PathVariable final String zoneId,
-      @RequestParam(defaultValue = "false") final boolean dryRun) {
+      @RequestParam(defaultValue = "false") final boolean dryRun,
+      @RequestParam(defaultValue = "false") final boolean force) {
     try {
-      final var forceRemoveRequest = new ForceZoneRemoveRequest(zoneId, dryRun);
+      final var removeZoneRequest = new RemoveZoneRequest(zoneId, dryRun, force);
       return ClusterApiUtils.mapOperationResponse(
-          requestSender.forceRemoveZone(forceRemoveRequest).join());
+          requestSender.removeZone(removeZoneRequest).join());
     } catch (final Exception exception) {
       return ClusterApiUtils.mapError(exception);
     }

@@ -36,7 +36,7 @@ public final class SignalSubscriptionRecord extends UnifiedRecordValue
   private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
       new StringValue("rootProcessInstanceKey");
-  private static final StringValue STORAGE_ORDINAL_KEY_KEY = new StringValue("storageOrdinalKey");
+  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
   private static final StringValue BPMN_ELEMENT_TYPE_KEY = new StringValue("bpmnElementType");
 
   private final LongProperty processDefinitionKeyProp =
@@ -52,8 +52,7 @@ public final class SignalSubscriptionRecord extends UnifiedRecordValue
       new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
-  private final IntegerProperty storageOrdinalKeyProp =
-      new IntegerProperty(STORAGE_ORDINAL_KEY_KEY, 0);
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
   private final EnumProperty<BpmnElementType> bpmnElementTypeProp =
       new EnumProperty<>(BPMN_ELEMENT_TYPE_KEY, BpmnElementType.class, BpmnElementType.UNSPECIFIED);
 
@@ -67,7 +66,7 @@ public final class SignalSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(tenantIdProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(rootProcessInstanceKeyProp)
-        .declareProperty(storageOrdinalKeyProp)
+        .declareProperty(storageOrdinalProp)
         .declareProperty(bpmnElementTypeProp);
   }
 
@@ -80,7 +79,7 @@ public final class SignalSubscriptionRecord extends UnifiedRecordValue
     tenantIdProp.setValue(record.getTenantId());
     processInstanceKeyProp.setValue(record.getProcessInstanceKey());
     rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
-    storageOrdinalKeyProp.setValue(record.getStorageOrdinalKey());
+    storageOrdinalProp.setValue(record.getStorageOrdinal());
     bpmnElementTypeProp.setValue(record.getBpmnElementType());
   }
 
@@ -198,12 +197,12 @@ public final class SignalSubscriptionRecord extends UnifiedRecordValue
   }
 
   @Override
-  public int getStorageOrdinalKey() {
-    return storageOrdinalKeyProp.getValue();
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
   }
 
-  public SignalSubscriptionRecord setStorageOrdinalKey(final int storageOrdinalKey) {
-    storageOrdinalKeyProp.setValue(storageOrdinalKey);
+  public SignalSubscriptionRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
 

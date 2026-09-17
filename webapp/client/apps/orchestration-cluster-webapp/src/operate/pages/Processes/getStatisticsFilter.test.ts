@@ -9,7 +9,7 @@
 import {describe, it, expect} from 'vitest';
 import {getStatisticsFilter} from './getStatisticsFilter';
 
-const NONE = {active: false, incidents: false, completed: false, canceled: false};
+const NONE = {active: false, incidents: false, completed: false, canceled: false, suspended: false};
 
 describe('getStatisticsFilter', () => {
 	it('returns undefined when no state is selected', () => {
@@ -43,6 +43,22 @@ describe('getStatisticsFilter', () => {
 	it('combines multiple states with an incidents-in-any-state clause', () => {
 		expect(getStatisticsFilter({...NONE, completed: true, incidents: true})).toEqual({
 			$or: [{state: {$eq: 'COMPLETED'}}, {hasIncident: true}],
+		});
+	});
+
+	it('filters to suspended instances alone', () => {
+		expect(getStatisticsFilter({...NONE, suspended: true})).toEqual({state: {$eq: 'SUSPENDED'}});
+	});
+
+	it('combines suspended with a selected state as separate branches', () => {
+		expect(getStatisticsFilter({...NONE, active: true, suspended: true})).toEqual({
+			$or: [{state: {$eq: 'ACTIVE'}, hasIncident: false}, {state: {$eq: 'SUSPENDED'}}],
+		});
+	});
+
+	it('excludes suspended instances from the incidents branch to avoid asserting two states at once', () => {
+		expect(getStatisticsFilter({...NONE, incidents: true, suspended: true})).toEqual({
+			$or: [{state: {$eq: 'SUSPENDED'}}, {hasIncident: true, state: {$neq: 'SUSPENDED'}}],
 		});
 	});
 });

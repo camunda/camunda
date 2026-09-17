@@ -128,6 +128,8 @@ public final class ProcessingStateMachine implements CloseableSilently {
   private static final double WRITE_RETRY_BACKOFF_FACTOR = 1.2;
   private static final String ERROR_MESSAGE_HANDLING_PROCESSING_ERROR_FAILED =
       "Expected to process command '{} {}' successfully on stream processor, but caught unexpected exception. Failed to handle the exception gracefully.";
+  private static final String RETRY_OPERATION_WRITE = "writeRetry";
+  private static final String RETRY_OPERATION_UPDATE_STATE = "updateStateRetry";
   private final RecordMetadataBlock recordTypeDecoder = new RecordMetadataBlock();
   private final EventFilter processingFilter;
   private final EventFilter isEventOrRejection =
@@ -207,9 +209,11 @@ public final class ProcessingStateMachine implements CloseableSilently {
             new ExponentialBackoffRetryDelay(
                 WRITE_RETRY_BACKOFF_MAX_DELAY,
                 WRITE_RETRY_BACKOFF_MIN_DELAY,
-                WRITE_RETRY_BACKOFF_FACTOR));
+                WRITE_RETRY_BACKOFF_FACTOR),
+            RETRY_OPERATION_WRITE);
     updateStateRetryStrategy =
-        new RecoverableRetryStrategy(actor, context.getMaxRecoverableRetries());
+        new RecoverableRetryStrategy(
+            actor, context.getMaxRecoverableRetries(), RETRY_OPERATION_UPDATE_STATE);
     this.shouldProcessNext = shouldProcessNext;
 
     final int partitionId = context.getLogStream().getPartitionId();

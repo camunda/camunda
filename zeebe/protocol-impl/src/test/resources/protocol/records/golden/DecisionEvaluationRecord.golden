@@ -62,7 +62,7 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty("rootProcessInstanceKey", -1L);
-  private final IntegerProperty storageOrdinalKeyProp = new IntegerProperty("storageOrdinalKey", 0);
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty("storageOrdinal", 0);
   private final StringProperty businessIdProp = new StringProperty("businessId", "");
 
   public DecisionEvaluationRecord() {
@@ -85,7 +85,7 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
         .declareProperty(failedDecisionIdProp)
         .declareProperty(tenantIdProp)
         .declareProperty(rootProcessInstanceKeyProp)
-        .declareProperty(storageOrdinalKeyProp)
+        .declareProperty(storageOrdinalProp)
         .declareProperty(businessIdProp);
   }
 
@@ -371,12 +371,12 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
   }
 
   @Override
-  public int getStorageOrdinalKey() {
-    return storageOrdinalKeyProp.getValue();
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
   }
 
-  public DecisionEvaluationRecord setStorageOrdinalKey(final int storageOrdinalKey) {
-    storageOrdinalKeyProp.setValue(storageOrdinalKey);
+  public DecisionEvaluationRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
 }

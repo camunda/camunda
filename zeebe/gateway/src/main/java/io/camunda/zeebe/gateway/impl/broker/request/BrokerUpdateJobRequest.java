@@ -40,8 +40,8 @@ public class BrokerUpdateJobRequest extends BrokerExecuteCommand<JobRecord> {
     requestDto.setChangedAttributes(changedAttributes);
   }
 
-  public BrokerUpdateJobRequest setLeaseToken(final String leaseToken) {
-    requestDto.setLeaseToken(leaseToken);
+  public BrokerUpdateJobRequest setJobLeaseToken(final String jobLeaseToken) {
+    requestDto.setLeaseToken(jobLeaseToken);
     return this;
   }
 

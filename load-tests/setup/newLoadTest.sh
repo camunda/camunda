@@ -47,7 +47,7 @@ case "$target_version" in
     ;;
   stable-87)
     # renovate: version=camunda-platform-8.7
-    camunda_platform_helm_chart_version="12.13.5"
+    camunda_platform_helm_chart_version="12.13.6"
     allowed_storage=(elasticsearch)
     elasticsearch_version="8.17.4"
     ;;
@@ -300,6 +300,16 @@ global:
     camunda.io/created-by: "$git_author"
   nodeSelector:
     topology.kubernetes.io/zone: $availability_zone
+EOF
+
+  if [[ "$target_version" == "stable-87" ]]; then
+    cat <<'EOF'
+  # 8.7 doesn't have a REST API
+  performReadBenchmarks: false
+EOF
+  fi
+
+  cat <<EOF
 
 name: "$namespace"
 author: "$git_author"

@@ -156,7 +156,7 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
     if (newReplicationFactor.isPresent()) {
       return Optional.of(
           new InvalidRequest(
-              "Change of replication factor is not allowed when zone is set. To change replication factor use `/partition-distribution` endpoint"));
+              "Change of replication factor is not allowed when zone is set. To change replication factor use `/partitioning` endpoint"));
     }
     if (!fullyZoneAware) {
       return Optional.of(

@@ -88,9 +88,9 @@ import io.camunda.zeebe.management.cluster.MessageCorrelationHashMod;
 import io.camunda.zeebe.management.cluster.Operation;
 import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
 import io.camunda.zeebe.management.cluster.PartitionConfig;
-import io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum;
 import io.camunda.zeebe.management.cluster.PartitionState;
 import io.camunda.zeebe.management.cluster.PartitionStateCode;
+import io.camunda.zeebe.management.cluster.PartitioningConfig.SchemeEnum;
 import io.camunda.zeebe.management.cluster.PhysicalTenantInfo;
 import io.camunda.zeebe.management.cluster.PhysicalTenantState;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
@@ -563,8 +563,8 @@ final class ClusterApiUtils {
           case final UpdatePartitionDistributorConfigOperation
                   updatePartitionDistributorConfigOperation ->
               new Operation()
-                  .operation(OperationEnum.UPDATE_PARTITION_DISTRIBUTOR_CONFIG)
-                  .partitionDistributionConfig(
+                  .operation(OperationEnum.UPDATE_PARTITIONING)
+                  .partitioningConfig(
                       toPartitionDistributionConfig(updatePartitionDistributorConfigOperation));
           case final ModeChangeOperation modeChange ->
               switch (modeChange.mode()) {
@@ -800,8 +800,8 @@ final class ClusterApiUtils {
   /**
    * Maps the multi-partition-group configuration to the REST response, scoped to {@code
    * physicalTenant} when given, or to every known physical tenant otherwise. {@code brokers},
-   * {@code clusterId} and {@code partitionDistribution} always reflect the global configuration, as
-   * they have no tenant dimension.
+   * {@code clusterId} and {@code partitioning} always reflect the global configuration, as they
+   * have no tenant dimension.
    *
    * <p>The remaining top-level fields are mutually exclusive, single-tenant-shaped or
    * multi-tenant-shaped, never both, so a request that predates physical tenants keeps exactly the
@@ -898,8 +898,7 @@ final class ClusterApiUtils {
     configuration
         .globalConfiguration()
         .partitionDistributorConfig()
-        .ifPresent(
-            config -> response.partitionDistribution(mapPartitionDistributionConfig(config)));
+        .ifPresent(config -> response.partitioning(mapPartitionDistributionConfig(config)));
     return response;
   }
 
@@ -916,18 +915,16 @@ final class ClusterApiUtils {
     return info;
   }
 
-  private static io.camunda.zeebe.management.cluster.PartitionDistributionConfig
+  private static io.camunda.zeebe.management.cluster.PartitioningConfig
       mapPartitionDistributionConfig(final PartitionDistributorConfig config) {
-    final var result = new io.camunda.zeebe.management.cluster.PartitionDistributionConfig();
+    final var result = new io.camunda.zeebe.management.cluster.PartitioningConfig();
     switch (config) {
       case final PartitionDistributorConfig.RoundRobinConfig ignored ->
-          result.type(
-              io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum.ROUND_ROBIN);
+          result.scheme(
+              io.camunda.zeebe.management.cluster.PartitioningConfig.SchemeEnum.ROUND_ROBIN);
       case final PartitionDistributorConfig.ZoneAwareConfig zoneAware ->
           result
-              .type(
-                  io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum
-                      .ZONE_AWARE)
+              .scheme(io.camunda.zeebe.management.cluster.PartitioningConfig.SchemeEnum.ZONE_AWARE)
               .zones(
                   zoneAware.zones().stream()
                       .map(
@@ -938,14 +935,13 @@ final class ClusterApiUtils {
                                   .priority(z.priority()))
                       .toList());
       case final PartitionDistributorConfig.FixedConfig ignored ->
-          result.type(
-              io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum.FIXED);
+          result.scheme(io.camunda.zeebe.management.cluster.PartitioningConfig.SchemeEnum.FIXED);
     }
     return result;
   }
 
   static PartitionDistributorConfig toPartitionDistributorConfig(
-      final io.camunda.zeebe.management.cluster.PartitionDistributionConfig dto) {
+      final io.camunda.zeebe.management.cluster.PartitioningConfig dto) {
     final List<PartitionDistributorConfig.ZoneSpec> zones =
         dto.getZones().stream()
             .map(
@@ -1031,7 +1027,7 @@ final class ClusterApiUtils {
             .priority(operation.getPriority())
             .brokers(operation.getBrokers())
             .exporterId(operation.getExporterId())
-            .partitionDistributionConfig(operation.getPartitionDistributionConfig())
+            .partitioningConfig(operation.getPartitioningConfig())
             .exportingState(operation.getExportingState());
     if (completedAt != null) {
       completed.completedAt(mapInstantToDateTime(completedAt));
@@ -1039,18 +1035,18 @@ final class ClusterApiUtils {
     return completed;
   }
 
-  private static io.camunda.zeebe.management.cluster.PartitionDistributionConfig
+  private static io.camunda.zeebe.management.cluster.PartitioningConfig
       toPartitionDistributionConfig(final UpdatePartitionDistributorConfigOperation operation) {
-    final var config = new io.camunda.zeebe.management.cluster.PartitionDistributionConfig();
+    final var config = new io.camunda.zeebe.management.cluster.PartitioningConfig();
     switch (operation.config()) {
       case final FixedConfig fixedConfig -> {
-        config.type(TypeEnum.FIXED);
+        config.scheme(SchemeEnum.FIXED);
       }
       case final RoundRobinConfig roundRobinConfig -> {
-        config.type(TypeEnum.ROUND_ROBIN);
+        config.scheme(SchemeEnum.ROUND_ROBIN);
       }
       case final ZoneAwareConfig zoneAwareConfig -> {
-        config.type(TypeEnum.ZONE_AWARE);
+        config.scheme(SchemeEnum.ZONE_AWARE);
         config.zones(
             zoneAwareConfig.zones().stream()
                 .map(

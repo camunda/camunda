@@ -244,6 +244,8 @@ class LiquibaseSchemaManagerTest {
     props.put("errorMessage.size", "4000");
     props.put("treePath.size", "8191");
     props.put("disableFkBeforeTruncate", "false");
+    props.put("tableRowCount.strategy", "live");
+    props.put("tableRowCount.identifierCase", "none");
     return new VendorDatabaseProperties(props);
   }
 

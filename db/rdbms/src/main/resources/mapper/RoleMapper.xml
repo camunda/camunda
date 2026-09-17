@@ -159,6 +159,13 @@ FROM (
       <if test="filter.memberType != null">
         AND rm.ENTITY_TYPE = #{filter.memberType}
       </if>
+
+      <if test="filter.memberIdOperations != null and !filter.memberIdOperations.isEmpty()">
+        <foreach collection="filter.memberIdOperations" item="operation">
+          AND rm.ENTITY_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
     </where>
   </sql>
 

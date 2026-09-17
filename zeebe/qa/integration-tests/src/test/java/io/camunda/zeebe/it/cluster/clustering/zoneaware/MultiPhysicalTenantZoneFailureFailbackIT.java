@@ -42,14 +42,14 @@ import org.junit.jupiter.api.Test;
  * surviving replica - never a Raft majority of two - so the partition group cannot elect a leader
  * on its own; nothing to re-elect to. Recovering it requires an explicit administrative action that
  * reconfigures the raft group to no longer require the dead zone's vote: {@code
- * ClusterActuator#forceRemoveZone}, mirrored end-to-end here from {@code
+ * ClusterActuator#removeZone}, mirrored end-to-end here from {@code
  * ZoneAwareClusterEndpointIT#shouldRecoverZoneAwareClusterAfterForceRemoveZone}, which only ever
  * exercises the default tenant.
  *
- * <p>{@code ForceRemoveZoneTransformer}'s own javadoc names the exact gap this test closes:
- * "Evicting [a zone's brokers] from the default group alone left the other tenants' partitions on
- * the failed zone's brokers... so the first half of the zone failover procedure could not run on a
- * cluster with more than one tenant." {@code PhysicalTenantForcedRemovalTest} (in {@code
+ * <p>{@code RemoveZoneTransformer}'s own javadoc names the exact gap this test closes: "Evicting [a
+ * zone's brokers] from the default group alone left the other tenants' partitions on the failed
+ * zone's brokers... so the first half of the zone failover procedure could not run on a cluster
+ * with more than one tenant." {@code PhysicalTenantForcedRemovalTest} (in {@code
  * zeebe/dynamic-config}) already proves that fix at the config-transformer level, simulated; this
  * proves it through the real REST actuator, against a running cluster, for every tenant.
  *
@@ -136,10 +136,10 @@ final class MultiPhysicalTenantZoneFailureFailbackIT {
     zoneAMembers.forEach(member -> cluster.brokers().get(member).stop());
 
     // when - zone A is force-removed: its brokers are evicted from every physical tenant's
-    // partition group, not only the default one - the exact fix ForceRemoveZoneTransformer's
+    // partition group, not only the default one - the exact fix RemoveZoneTransformer's
     // javadoc describes and PhysicalTenantForcedRemovalTest proves in isolation - and dropped
     // from the distribution config, restoring a single-member majority (zone B) for each tenant.
-    final var forceRemoveResponse = actuator.forceRemoveZone(ZONE_A, false);
+    final var forceRemoveResponse = actuator.removeZone(ZONE_A, false, true);
     Awaitility.await("zone A force-removal is applied")
         .ignoreException(FeignException.class)
         .untilAsserted(

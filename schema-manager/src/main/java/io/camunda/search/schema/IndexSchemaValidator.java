@@ -56,26 +56,36 @@ public class IndexSchemaValidator {
   }
 
   /**
-   * Validates existing indices mappings against index/index template mappings defined.
+   * Validates existing indices mappings against index/index template mappings defined. For an
+   * {@link IndexTemplateDescriptor}, the template's own stored mapping is additionally validated
+   * against the descriptor, independently of whether a backing index currently exists.
    *
    * @param mappings is a map of all the mappings to compare.
    * @param indexDescriptors is the set of all index descriptors representing desired schema states.
+   * @param templateMappings existing index template mappings, keyed by template name
    * @return new mapping properties to add to schemas, so they align with the descriptors.
    * @throws IndexSchemaValidationException if the existing indices cannot be updated with the given
    *     mappings.
    */
   public Map<IndexDescriptor, Collection<IndexMappingProperty>> validateIndexMappings(
-      final Map<String, IndexMapping> mappings, final Collection<IndexDescriptor> indexDescriptors)
+      final Map<String, IndexMapping> mappings,
+      final Collection<IndexDescriptor> indexDescriptors,
+      final Map<String, IndexMapping> templateMappings)
       throws IndexSchemaValidationException {
     final Map<IndexDescriptor, Collection<IndexMappingProperty>> newFields = new HashMap<>();
     for (final IndexDescriptor indexDescriptor : indexDescriptors) {
       final Map<String, IndexMapping> indexMappingsGroup =
           filterIndexMappings(mappings, indexDescriptor);
-      // we don't check indices that were not yet created
       if (!indexMappingsGroup.isEmpty()) {
         final DifferingIndices differingIndices =
             getIndexMappingDifference(indexDescriptor, indexMappingsGroup);
         validateDifferenceAndCollectNewFields(indexDescriptor, differingIndices, newFields);
+      }
+      // Validated independently of the backing-index comparison above because an up-to-date backing
+      // index does not imply an up-to-date template.
+      if (indexDescriptor instanceof final IndexTemplateDescriptor templateDescriptor) {
+        compareWithExistingTemplates(
+            templateDescriptor, templateMappings, !indexMappingsGroup.isEmpty(), newFields);
       }
     }
     return newFields;
@@ -116,6 +126,77 @@ public class IndexSchemaValidator {
     } else {
       LOGGER.debug("Index fields are up to date for Index '{}'.", indexDescriptor.getIndexName());
     }
+  }
+
+  private void compareWithExistingTemplates(
+      final IndexTemplateDescriptor templateDescriptor,
+      final Map<String, IndexMapping> templateMappings,
+      final boolean hasBackingIndex,
+      final Map<IndexDescriptor, Collection<IndexMappingProperty>> newFields) {
+    final IndexMapping existingTemplateMapping =
+        templateMappings.get(templateDescriptor.getTemplateName());
+    if (existingTemplateMapping == null) {
+      // template itself does not exist either - it will be created from scratch
+      return;
+    }
+
+    final IndexMappingDifference difference =
+        filterOutDynamicProperties(
+            IndexMappingDifference.of(
+                IndexMapping.from(templateDescriptor, objectMapper), existingTemplateMapping));
+    if (!hasRealDifference(difference)) {
+      LOGGER.debug(
+          "Template fields are up to date for template '{}'.",
+          templateDescriptor.getTemplateName());
+      return;
+    }
+
+    if (!difference.entriesOnlyOnRight().isEmpty()) {
+      if (hasBackingIndex) {
+        // A backing index exists and is the source of truth: a field only in the stored template
+        // may simply mean this node's descriptor is stale (e.g. an older node racing after a newer
+        // node already upgraded the schema). This comparison alone will not touch the template,
+        // but if the backing-index comparison already scheduled a template update, that update
+        // still fully overwrites the template from the descriptor and will drop this field.
+        if (newFields.containsKey(templateDescriptor)) {
+          LOGGER.info(
+              "Template '{}': Field(s) only present in the stored template will be dropped, as"
+                  + " the template is being updated for a different reason. Fields: {}",
+              templateDescriptor.getTemplateName(),
+              difference.entriesOnlyOnRight());
+        } else {
+          LOGGER.info(
+              "Template '{}': Field(s) only present in the stored template, will be left as is."
+                  + " Fields: {}",
+              templateDescriptor.getTemplateName(),
+              difference.entriesOnlyOnRight());
+        }
+        return;
+      }
+      // No backing index/data exists for this descriptor at all, so it is safe to fully overwrite
+      // the template, including dropping this field.
+      LOGGER.info(
+          "Template '{}': removing field(s) no longer present in the descriptor. Fields: {}",
+          templateDescriptor.getTemplateName(),
+          difference.entriesOnlyOnRight());
+    }
+    if (!difference.entriesDiffering().isEmpty()) {
+      LOGGER.info(
+          "Template '{}': Field types differ from expected. Changes found: {}",
+          templateDescriptor.getTemplateName(),
+          difference.entriesDiffering());
+    }
+
+    final var changedProperties = new HashSet<>(difference.entriesOnlyOnLeft());
+    difference.entriesDiffering().forEach(d -> changedProperties.add(d.leftValue()));
+    newFields.merge(
+        templateDescriptor,
+        changedProperties,
+        (existing, added) -> {
+          final var merged = new HashSet<>(existing);
+          merged.addAll(added);
+          return merged;
+        });
   }
 
   private DifferingIndices getIndexMappingDifference(

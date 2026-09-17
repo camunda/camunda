@@ -26,7 +26,7 @@
     "@tanstack/react-query-devtools": "5.102.0",
     "@tanstack/react-virtual": "3.14.5",
     "@uiw/react-codemirror": "4.25.11",
-    "bpmn-js": "18.27.0",
+    "bpmn-js": "18.28.0",
     "bpmn-moddle": "10.2.0",
     "date-fns": "4.4.0",
     "diagram-js-minimap": "5.4.0",
@@ -43,8 +43,8 @@
     "mobx": "7.0.3",
     "mobx-react": "10.0.2",
     "mobx-react-lite": "5.0.3",
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
     "react-error-boundary": "6.1.1",
     "react-final-form": "7.0.0",
     "react-final-form-arrays": "4.0.0",
@@ -54,7 +54,7 @@
     "remark-gfm": "4.0.1",
     "styled-components": "6.5.0",
     "tiny-svg": "4.1.4",
-    "zod": "4.5.4"
+    "zod": "4.6.5"
   },
   "scripts": {
     "start": "vite",

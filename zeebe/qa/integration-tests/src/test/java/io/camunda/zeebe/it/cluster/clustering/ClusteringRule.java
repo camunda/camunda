@@ -361,8 +361,9 @@ public class ClusteringRule extends ExternalResource {
     brokerCfg.getNetwork().getInternalApi().setPort(internalApiAddresses.get(nodeId).getPort());
     brokerCfg.getCluster().setInitialContactPoints(contactPoints);
 
-    final var brokerSpringConfig = getBrokerConfiguration(brokerBase, brokerCfg);
     final var meterRegistry = new SimpleMeterRegistry();
+    final var brokerSpringConfig = getBrokerConfiguration(brokerBase, brokerCfg);
+    brokerSpringConfig.brokerIdMeterRegistryCustomizer().customize(meterRegistry);
     brokerCfg.init(brokerBase.getAbsolutePath());
 
     final var atomixCluster =

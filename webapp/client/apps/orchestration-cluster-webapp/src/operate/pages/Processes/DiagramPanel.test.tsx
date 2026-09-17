@@ -73,6 +73,7 @@ describe('<DiagramPanel />', () => {
 			incidents: true,
 			completed: false,
 			canceled: false,
+			suspended: false,
 		});
 
 		await expect.element(screen.getByText('There is no Process selected')).toBeVisible();
@@ -89,6 +90,7 @@ describe('<DiagramPanel />', () => {
 			incidents: true,
 			completed: false,
 			canceled: false,
+			suspended: false,
 		});
 
 		await expect
@@ -115,6 +117,7 @@ describe('<DiagramPanel />', () => {
 			incidents: true,
 			completed: false,
 			canceled: false,
+			suspended: false,
 		});
 
 		await expect.element(screen.getByTestId('state-overlay-startEvent_1-active')).toHaveTextContent('3');
@@ -139,6 +142,7 @@ describe('<DiagramPanel />', () => {
 			incidents: true,
 			completed: false,
 			canceled: false,
+			suspended: false,
 		});
 
 		// bpmn-js positions overlays via zero-size anchor divs in this test environment, so the

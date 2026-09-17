@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -46,7 +47,11 @@ final class ManifestManagerTest {
             .buildClient();
     final BlobContainerClient blobContainerClient =
         blobServiceClient.getBlobContainerClient(containerName);
-    manifestManager = new ManifestManager(blobContainerClient, true);
+    manifestManager =
+        new ManifestManager(
+            blobContainerClient,
+            true,
+            Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("test-", 0).factory()));
     backupIdentifier = new BackupIdentifierImpl(1337, 0, 42L);
     backup = createBackup(backupIdentifier);
   }

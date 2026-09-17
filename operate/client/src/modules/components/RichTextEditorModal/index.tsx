@@ -40,6 +40,19 @@ type Props = {
   editModeTitle?: string;
   readOnly?: boolean;
   allowModeToggle?: boolean;
+  variableName?: string;
+};
+
+const getCopyValue = (value: string, variableName: string | undefined) => {
+  if (variableName === undefined) {
+    return value;
+  }
+
+  try {
+    return JSON.stringify({[variableName]: JSON.parse(value)});
+  } catch {
+    return value;
+  }
 };
 
 const RichTextEditorModal: React.FC<Props> = observer(
@@ -53,6 +66,7 @@ const RichTextEditorModal: React.FC<Props> = observer(
     editModeTitle,
     readOnly = false,
     allowModeToggle = false,
+    variableName,
   }) => {
     const [editedValue, setEditedValue] = useState(value);
     const [isValid, setIsValid] = useState(true);
@@ -127,7 +141,7 @@ const RichTextEditorModal: React.FC<Props> = observer(
               {!isInEditMode ? 'Edit' : 'View'}
             </Button>
           )}
-          <CopyButton value={editedValue} />
+          <CopyButton value={getCopyValue(editedValue, variableName)} />
         </Toolbar>
         <Suspense>
           <RichTextEditor

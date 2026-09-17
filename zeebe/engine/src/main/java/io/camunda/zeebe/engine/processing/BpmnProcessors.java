@@ -37,6 +37,7 @@ import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModific
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceResumeJobsProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceResumeProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceSuspendProcessor;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -86,6 +87,7 @@ public final class BpmnProcessors {
       final RoutingInfo routingInfo,
       final InstantSource clock,
       final EngineConfiguration config,
+      final StorageOrdinalProvider storageOrdinalProvider,
       final AsyncRequestBehavior asyncRequestBehavior,
       final CslAuthorizationCheck cslCheck,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
@@ -147,6 +149,7 @@ public final class BpmnProcessors {
         processingState,
         writers,
         bpmnBehaviors,
+        storageOrdinalProvider,
         processEngineMetrics,
         config,
         cslCheck);
@@ -354,6 +357,7 @@ public final class BpmnProcessors {
       final MutableProcessingState processingState,
       final Writers writers,
       final BpmnBehaviors bpmnBehaviors,
+      final StorageOrdinalProvider storageOrdinalProvider,
       final ProcessEngineMetrics metrics,
       final EngineConfiguration config,
       final CslAuthorizationCheck cslCheck) {
@@ -368,6 +372,7 @@ public final class BpmnProcessors {
             processingState.getBannedInstanceState(),
             cslCheck,
             bpmnBehaviors,
+            storageOrdinalProvider,
             config.isBusinessIdUniquenessEnabled());
     final ProcessInstanceCreationCreateProcessor createProcessor =
         new ProcessInstanceCreationCreateProcessor(

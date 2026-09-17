@@ -147,7 +147,7 @@ public abstract class AbstractProcessGroupByModelElementDateInterpreterES
   }
 
   @Override
-  public void addQueryResult(
+  protected void addQueryResult(
       final CompositeCommandResult result,
       final ResponseBody<?> response,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {

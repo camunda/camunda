@@ -25,14 +25,14 @@ public enum ClusterConfigurationRequestTopics {
   FORCE_REMOVE_BROKERS("topology-broker-force-remove"),
   REMOVE_PHYSICAL_TENANT("topology-physical-tenant-remove"),
   UPDATE_ROUTING_STATE("topology-cluster-update-routing-state"),
-  UPDATE_PARTITION_DISTRIBUTION("topology-cluster-update-partition-distribution"),
+  UPDATE_PARTITIONING("topology-cluster-update-partitioning"),
   MODE_CHANGE("topology-mode-change"),
   EXPORTING_STATE_CHANGE("topology-exporting-state-change"),
   RESTORE("cluster-restore"),
   CLUSTER_ADMIN_RESTORE("cluster-admin-restore"),
   ZONE_MIGRATION("topology-cluster-zone-migration"),
   ADD_ZONE("topology-add-zone"),
-  FORCE_REMOVE_ZONE("topology-force-remove-zone"),
+  REMOVE_ZONE("topology-remove-zone"),
   UPDATE_ZONE_PRIORITIES("topology-update-zone-priorities");
 
   private final String topic;

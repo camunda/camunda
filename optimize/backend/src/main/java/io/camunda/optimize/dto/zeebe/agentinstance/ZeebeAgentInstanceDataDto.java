@@ -104,7 +104,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
   }
 
   @Override
-  public int getStorageOrdinalKey() {
+  public int getStorageOrdinal() {
     return -1; // not used in Optimize
   }
 

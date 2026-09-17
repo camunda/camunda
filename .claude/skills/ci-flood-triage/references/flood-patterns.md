@@ -70,14 +70,18 @@ recently active on `merge-queue-high-failure-rate` or `unsuccessful-job` alert r
 Response: re-create the silence if appropriate; route real failures to owning teams.
 
 *Sub-case B2 — Shared infra problem:*
-An upstream goes down (e.g. JBoss Maven repo, AWS, Snyk), affecting many independent nightly
-jobs over hours as they happen to run.
+An upstream goes down (e.g. Maven Central, DockerHub, npm registry, Snyk, AWS, Mend/Renovate),
+affecting many independent nightly jobs over hours as they happen to run. See the
+[status page list](../../../../docs/monorepo-docs/ci-runbooks.md#checking-important-status-pages)
+for the full set of external dependencies to check.
 
 Signal: summaries mention the same external URL or service; failures cluster around the same
 error type (timeouts, 503s, auth failures).
 
-Response: identify the shared upstream, open one incident for it, route nightly job incidents to
-their owning teams.
+Response: identify the shared upstream via the status pages, open one incident for it, route
+nightly job incidents to their owning teams. Follow the
+[Third-Party Service Outage runbook](../../../../docs/monorepo-docs/ci-runbooks.md#third-party-service-outage)
+for mitigation and recovery steps.
 
 **Right response (general):**
 - Do NOT merge unrelated incidents just because they opened in the same window
@@ -93,7 +97,9 @@ If incidents span both merge-queue and nightly names, or if timing and summaries
 archetype cleanly, pull `incident_show` on a representative sample and look for:
 
 - Common error strings across summaries
-- Shared external dependencies (Maven repos, AWS regions, third-party APIs)
+- Shared external dependencies — see the
+  [status page list](../../../../docs/monorepo-docs/ci-runbooks.md#checking-important-status-pages)
+  for the full set to check (Maven Central, DockerHub, npm registry, Snyk, AWS, Mend/Renovate, etc.)
 - Whether the flood started at an unusual hour (silence expiry tends to happen at fixed times)
 
 State your uncertainty explicitly in the triage output rather than forcing a pattern.

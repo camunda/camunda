@@ -16,6 +16,7 @@ import {DecisionViewer} from '#/operate/shared/DecisionViewer';
 import {DiagramShell} from '#/operate/shared/DiagramShell/DiagramShell';
 import {ErrorMessage} from '#/operate/shared/ErrorMessage/ErrorMessage';
 import {DecisionHeader} from './DecisionHeader';
+import {DecisionOperations} from './DecisionOperations/DecisionOperations';
 import {useDecisionDefinitionXml} from './useDecisionDefinitionXml';
 import {getDecisionDefinitionName} from './getDecisionDefinitionName';
 import {DecisionError, Section} from './styled';
@@ -88,7 +89,11 @@ const DecisionPanel: React.FC<Props> = ({
 
 	return (
 		<Section aria-label="Decision Panel">
-			<DecisionHeader decisionDefinitionSelection={decisionDefinitionSelection} />
+			<DecisionHeader decisionDefinitionSelection={decisionDefinitionSelection}>
+				{decisionDefinitionSelection.kind === 'single-version' && (
+					<DecisionOperations definition={decisionDefinitionSelection.definition} />
+				)}
+			</DecisionHeader>
 			{(() => {
 				if (isDefinitionSelectionLoading) {
 					return <DiagramShell status="loading">{null}</DiagramShell>;

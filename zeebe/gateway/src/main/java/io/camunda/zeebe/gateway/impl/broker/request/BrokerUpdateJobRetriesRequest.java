@@ -23,8 +23,8 @@ public final class BrokerUpdateJobRetriesRequest extends BrokerExecuteCommand<Jo
     requestDto.setRetries(retries);
   }
 
-  public BrokerUpdateJobRetriesRequest setLeaseToken(final String leaseToken) {
-    requestDto.setLeaseToken(leaseToken);
+  public BrokerUpdateJobRetriesRequest setJobLeaseToken(final String jobLeaseToken) {
+    requestDto.setLeaseToken(jobLeaseToken);
     return this;
   }
 

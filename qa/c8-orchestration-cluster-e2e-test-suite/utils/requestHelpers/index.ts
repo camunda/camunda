@@ -65,6 +65,7 @@ export {
   activateJobsByType,
   activateSingleJob,
   activateFirstJobVariables,
+  activateJobWithLease,
   completeJob,
   countJobsByType,
   expectJobsByType,
@@ -72,6 +73,7 @@ export {
   type StatisticsJobItem,
   type ActivatedJob,
   type ActivatedJobWithVars,
+  type LeasedJob,
 } from './job-requestHelpers';
 export {
   createGlobalClusterVariable,

@@ -64,7 +64,7 @@ public final class CreateAgentInstanceTest {
                         .newCreateAgentInstanceCommand()
                         .elementInstanceKey(elementInstanceKey)
                         .jobKey(1L)
-                        .jobLease("test-job-lease")
+                        .jobLeaseToken("test-job-lease")
                         .history(
                             List.of(
                                 configurationHistoryItem(
@@ -93,7 +93,7 @@ public final class CreateAgentInstanceTest {
                         .newCreateAgentInstanceCommand()
                         .elementInstanceKey(nonExistingKey)
                         .jobKey(1L)
-                        .jobLease("test-job-lease")
+                        .jobLeaseToken("test-job-lease")
                         .history(
                             List.of(
                                 configurationHistoryItem(
@@ -140,7 +140,7 @@ public final class CreateAgentInstanceTest {
             .getJobs()
             .getFirst();
     final long jobKey = activatedJob.getKey();
-    final String jobLease = activatedJob.getLeaseToken();
+    final String jobLeaseToken = activatedJob.getJobLeaseToken();
 
     // first CREATE — must succeed and return the new agentInstanceKey.
     final var firstResult =
@@ -148,7 +148,7 @@ public final class CreateAgentInstanceTest {
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(elementInstanceKey)
             .jobKey(jobKey)
-            .jobLease(jobLease)
+            .jobLeaseToken(jobLeaseToken)
             .history(
                 List.of(
                     configurationHistoryItem(
@@ -165,7 +165,7 @@ public final class CreateAgentInstanceTest {
                         .newCreateAgentInstanceCommand()
                         .elementInstanceKey(elementInstanceKey)
                         .jobKey(jobKey)
-                        .jobLease(jobLease)
+                        .jobLeaseToken(jobLeaseToken)
                         .history(
                             List.of(
                                 configurationHistoryItem(

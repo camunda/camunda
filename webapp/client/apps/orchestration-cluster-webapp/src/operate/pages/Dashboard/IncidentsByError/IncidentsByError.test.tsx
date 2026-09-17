@@ -125,7 +125,7 @@ describe('<IncidentsByError />', () => {
 			.element(screen.getByText('Alpha Connection Timeout').element().closest('a')!)
 			.toHaveAttribute(
 				'href',
-				'/operate/processes?errorMessage=Alpha+Connection+Timeout&incidents=true&active=false&completed=false&canceled=false',
+				'/operate/processes?errorMessage=Alpha+Connection+Timeout&incidents=true&active=false&completed=false&canceled=false&suspended=false',
 			);
 	});
 

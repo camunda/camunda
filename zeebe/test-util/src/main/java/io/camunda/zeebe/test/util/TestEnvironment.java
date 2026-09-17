@@ -29,10 +29,21 @@ public final class TestEnvironment {
       if (testForkNumberProperty != null) {
         testForkNumber = Integer.parseInt(testForkNumberProperty);
       } else {
-        LOG.warn(
-            "No system property '{}' set, using default value {}",
-            TEST_FORK_NUMBER_PROPERTY_NAME,
-            testForkNumber);
+        // Gradle doesn't expose a per-worker fork number directly. Preserve its worker ID for
+        // diagnostics; SocketUtil uses OS-assigned ports for Gradle workers instead of treating
+        // the global ID as a bounded port-range slot.
+        final String gradleWorkerIdPropName = System.getProperty("test.gradleWorkerIdProperty");
+        if (gradleWorkerIdPropName != null) {
+          final String workerId = System.getProperty(gradleWorkerIdPropName);
+          if (workerId != null) {
+            testForkNumber = Integer.parseInt(workerId) - 1;
+          }
+        } else {
+          LOG.warn(
+              "No system property '{}' set, using default value {}",
+              TEST_FORK_NUMBER_PROPERTY_NAME,
+              testForkNumber);
+        }
       }
     } catch (final Exception e) {
       LOG.warn("Failed to read test fork number system property", e);
