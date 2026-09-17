@@ -20,12 +20,16 @@ incidents affecting the monorepo CI.
 - [DockerHub status](https://www.dockerstatus.com/) (Docker image push/pull)
 - [Maven Central status](https://status.maven.org/) (Maven artifact up-/downloads)
 - [Minimus status](https://docs.minimus.io/status) (Minimus Docker registry)
+- [npm registry status](https://status.npmjs.org/) (npm package up-/downloads)
+- [Snyk status](https://status.snyk.io/) (vulnerability scanning jobs)
+- [AWS status](https://health.aws.amazon.com/health/status) (Aurora/OpenSearch integration test suites)
+- [Mend (Renovate) status](https://status.mend.io/) (see [Renovate](./ci.md#renovate) for details)
 
 ### Third-Party Service Outage
 
 **When:** A dependency we don't control (GitHub Actions, DockerHub, Maven Central, Nexus, Minimus,
-etc.) is degraded or down, and it is causing CI failures across multiple jobs, workflows, or
-branches.
+npm registry, Snyk, AWS, Mend/Renovate, etc.) is degraded or down, and it is causing CI failures
+across multiple jobs, workflows, or branches.
 
 **What:**
 
