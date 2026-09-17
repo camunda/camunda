@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
+import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -201,6 +202,41 @@ public final class StorageOrdinalAssignmentTest {
         .isNotEmpty()
         .extracting(record -> record.getValue().getStorageOrdinal())
         .containsOnly(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToSignalSubscriptionRecords() {
+    // given: an instance waiting at an intermediate signal catch event
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("signal-subscription-process")
+                .startEvent()
+                .intermediateCatchEvent("signal-catch", c -> c.signal("ordinal-signal"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("signal-subscription-process").create();
+
+    // then: the subscription opened for the catch event carries the ordinal
+    final var subscriptionCreated =
+        RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.CREATED)
+            .withSignalName("ordinal-signal")
+            .getFirst();
+    assertThat(subscriptionCreated.getValue().getProcessInstanceKey())
+        .isEqualTo(processInstanceKey);
+    assertThat(subscriptionCreated.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+
+    // when: the signal is broadcast
+    engine.signal().withSignalName("ordinal-signal").broadcast();
+
+    // then: the DELETED event, appended from the stored subscription, inherits the ordinal
+    final var subscriptionDeleted =
+        RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.DELETED)
+            .withSignalName("ordinal-signal")
+            .getFirst();
+    assertThat(subscriptionDeleted.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
   }
 
   @Test
