@@ -129,9 +129,9 @@ public class ProcessDefinitionInstanceStatisticsDocumentReader extends DocumentB
    * io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation#AGGREGATION_TERMS_SIZE}
    * documents per page (an ES/OS terms query can only target one index and does not support an
    * unlimited scroll here), so a deployed version living beyond the first page was previously
-   * invisible — see #51617. Walk every page with a stable cursor until the lookup is exhausted,
-   * keeping at most two distinct versions per requested pair since that is all {@code
-   * hasMultipleVersions} needs to decide.
+   * invisible — see #51617. Walk pages with a stable cursor, stopping as soon as every requested
+   * pair has at least two distinct versions (or the lookup is exhausted), keeping at most two
+   * distinct versions per pair since that is all {@code hasMultipleVersions} needs to decide.
    */
   private Map<Tuple<String, String>, Set<Integer>> fetchDeployedVersionsByProcessAndTenant(
       final List<String> processDefinitionIds,
@@ -175,10 +175,20 @@ public class ProcessDefinitionInstanceStatisticsDocumentReader extends DocumentB
         }
       }
 
-      hasMorePages = !page.items().isEmpty() && page.items().size() >= AGGREGATION_TERMS_SIZE;
+      hasMorePages =
+          !page.items().isEmpty()
+              && page.items().size() >= AGGREGATION_TERMS_SIZE
+              && !allPairsResolved(versionsByProcessAndTenant, requestedPairs);
       cursor = page.endCursor();
     }
 
     return versionsByProcessAndTenant;
+  }
+
+  private static boolean allPairsResolved(
+      final Map<Tuple<String, String>, Set<Integer>> versionsByProcessAndTenant,
+      final Set<Tuple<String, String>> requestedPairs) {
+    return requestedPairs.stream()
+        .allMatch(pair -> versionsByProcessAndTenant.getOrDefault(pair, Set.of()).size() >= 2);
   }
 }
