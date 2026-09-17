@@ -172,10 +172,12 @@ starter creates (`load-tester.starter.process-id`).
   item set). Exercises the batch executor and its batch-record-size rejection path.
 - **`spaced`** — a repeating cycle over the **ordinary starter-created instances** (not the heavy
   target), for suspend/resume of a realistic-profile PI at a controlled, bounded pace. Each cycle
-  picks `count` active instances (oldest first), suspends them one at a time spaced by
-  `suspend-interval`, holds each for `hold-duration` after **its own** suspend, then resumes them
-  spaced by `resume-interval`; `batch-interval` is the idle gap between cycles. Instances are **not
-  cancelled** — resume returns them to normal execution and workers complete them. Use with a
+  suspends `count` instances, picking one **currently-active** instance just before each suspend
+  (just-in-time, so a large `suspend-interval` never lands on an instance that already completed)
+  and spacing consecutive suspends by `suspend-interval`; it holds each for `hold-duration` after
+  **its own** suspend, then resumes them spaced by `resume-interval`; `batch-interval` is the idle
+  gap between cycles. Instances are **not cancelled** — resume returns them to normal execution and
+  workers complete them. Use with a
   realistic starter profile (`load-tester.starter.bpmn-xml-path=...`) to suspend/resume a
   configurable number of realistic PIs with configurable spacing between suspends and resumes.
 

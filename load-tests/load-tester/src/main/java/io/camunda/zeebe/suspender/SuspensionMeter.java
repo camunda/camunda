@@ -254,24 +254,28 @@ public class SuspensionMeter implements AutoCloseable {
   }
 
   private void runSpacedCycle() throws InterruptedException {
-    final List<Long> keys = pickActiveInstances();
-    if (keys.isEmpty()) {
-      return;
-    }
+    final List<Long> suspended = new ArrayList<>();
 
-    // Suspend phase: one command per instance, spaced by suspendInterval. Each records its own
-    // resume deadline (now + holdDuration) so the resume phase can honour per-instance hold.
-    for (int i = 0; i < keys.size(); i++) {
-      suspendKey(keys.get(i));
-      if (i < keys.size() - 1) {
+    // Suspend phase: at each tick pick one *currently* active instance and suspend it. Selection is
+    // just-in-time (not one upfront batch) because with a large suspendInterval and short-lived
+    // ordinary instances, an instance chosen at cycle start would complete before its turn — the
+    // suspend would then fail on a no-longer-active instance. Each suspend records its own resume
+    // deadline (now + holdDuration).
+    for (int i = 0; i < cfg.getCount(); i++) {
+      final Long key = pickOneActive();
+      if (key != null) {
+        suspendKey(key);
+        suspended.add(key);
+      }
+      if (i < cfg.getCount() - 1) {
         sleep(cfg.getSuspendInterval());
       }
     }
 
-    // Resume phase: for each instance wait until its hold has elapsed, resume it, then leave
-    // resumeInterval before the next resume so they do not all fire together.
-    for (int i = 0; i < keys.size(); i++) {
-      final long key = keys.get(i);
+    // Resume phase: for each suspended instance wait until its hold has elapsed, resume it, then
+    // leave resumeInterval before the next resume so they do not all fire together.
+    for (int i = 0; i < suspended.size(); i++) {
+      final long key = suspended.get(i);
       final Instant deadline = suspendedUntil.get(key);
       if (deadline != null) {
         final long waitMs = Duration.between(Instant.now(), deadline).toMillis();
@@ -280,24 +284,33 @@ public class SuspensionMeter implements AutoCloseable {
         }
       }
       resumeKey(key);
-      if (i < keys.size() - 1) {
+      if (i < suspended.size() - 1) {
         sleep(cfg.getResumeInterval());
       }
     }
   }
 
-  /** Up to {@code count} active instances of the ordinary process, oldest first. */
-  private List<Long> pickActiveInstances() {
+  /**
+   * One currently-active instance of the ordinary process (oldest first) that this meter has not
+   * already suspended, or {@code null} if none is available.
+   */
+  private Long pickOneActive() {
     final var response =
         client
             .newProcessInstanceSearchRequest()
             .filter(
                 f -> f.processDefinitionId(cfg.getProcessId()).state(ProcessInstanceState.ACTIVE))
             .sort(s -> s.startDate().asc())
-            .page(p -> p.limit(cfg.getCount()))
+            .page(p -> p.limit(cfg.getSampleSize()))
             .send()
             .join();
-    return response.items().stream().map(ProcessInstance::getProcessInstanceKey).toList();
+    for (final ProcessInstance pi : response.items()) {
+      final long key = pi.getProcessInstanceKey();
+      if (!suspendedUntil.containsKey(key)) {
+        return key;
+      }
+    }
+    return null;
   }
 
   private void suspendKey(final long key) {

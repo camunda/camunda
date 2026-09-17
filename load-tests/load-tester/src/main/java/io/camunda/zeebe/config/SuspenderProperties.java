@@ -23,12 +23,13 @@ public class SuspenderProperties {
     SINGLE,
     BATCH,
     /**
-     * Repeating cycle over the ordinary (starter-created) instances: each cycle picks {@link
-     * #count} active instances, suspends them one at a time spaced by {@link #suspendInterval},
-     * holds each for {@link #holdDuration} after its own suspend, then resumes them spaced by
-     * {@link #resumeInterval}. Instances are not cancelled — resume returns them to normal
-     * execution. Distinct from {@link #SINGLE}, which suspends at a fixed rate with no per-cycle
-     * count cap, and from target mode, which drives a dedicated heavy definition.
+     * Repeating cycle over the ordinary (starter-created) instances: each cycle suspends {@link
+     * #count} instances, picking one currently-active instance just before each suspend and spacing
+     * consecutive suspends by {@link #suspendInterval}, holds each for {@link #holdDuration} after
+     * its own suspend, then resumes them spaced by {@link #resumeInterval}. Instances are not
+     * cancelled — resume returns them to normal execution. Distinct from {@link #SINGLE}, which
+     * suspends at a fixed rate with no per-cycle count cap, and from target mode, which drives a
+     * dedicated heavy definition.
      */
     SPACED
   }
