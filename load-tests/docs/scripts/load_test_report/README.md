@@ -45,42 +45,6 @@ Common options:
   `NaN`.
 - `--output <path>`: write the report to a file.
 
-### Time windows and sampling
-
-Three options control different time ranges when a query summarizes values across the
-report window:
-
-```text
-Report window: 30 minutes                         --duration-seconds
-|
-+-- evaluate every 1 minute                       --sample-step
-|   +-- at 10:01, calculate rate over 09:56-10:01 --rate-interval
-|   +-- at 10:02, calculate rate over 09:57-10:02
-|   `-- ...
-|
-`-- summarize approximately 31 values with p50, p99, or an average
-```
-
-- `--duration-seconds` defines the complete period summarized by the report.
-- `--sample-step` controls how often a subquery evaluates an expression within that
-  period. A smaller step preserves more temporal detail but requires more Prometheus
-  computation.
-- `--rate-interval` is the lookback used by `rate()` to calculate one value from a
-  counter. It is not the sampling frequency. A longer interval produces a smoother
-  rate, while a shorter interval reacts faster but must still contain enough Prometheus
-  scrape samples.
-
-Raw gauges can be summarized directly from their Prometheus scrape samples. Calculated
-gauge expressions, such as partition backlog, use `--sample-step` to evaluate the
-expression repeatedly. Counter queries either calculate one rate over the complete
-report window or, for time summaries, calculate rates over `--rate-interval` and use
-`--sample-step` to evaluate them across the report window.
-
-The rate interval and sample step may be equal. This produces mostly non-overlapping
-rate observations and reduces query cost, but a long interval then produces fewer
-observations for p50 or p99. The defaults calculate a five-minute moving rate every
-minute, combining a stable rate with finer temporal resolution.
-
 ### Examples
 
 Port-forwarded Prometheus, JSON:
@@ -160,6 +124,42 @@ laid out for spreadsheet imports:
 
 Metrics that Prometheus does not return stay visible as `null` in JSON and `NaN` in CSV or TSV
 by default.
+
+#### Time windows and sampling
+
+Three options control different time ranges when a query summarizes values across the
+report window:
+
+```text
+Report window: 30 minutes                         --duration-seconds
+|
++-- evaluate every 1 minute                       --sample-step
+|   +-- at 10:01, calculate rate over 09:56-10:01 --rate-interval
+|   +-- at 10:02, calculate rate over 09:57-10:02
+|   `-- ...
+|
+`-- summarize approximately 31 values with p50, p99, or an average
+```
+
+- `--duration-seconds` defines the complete period summarized by the report.
+- `--sample-step` controls how often a subquery evaluates an expression within that
+  period. A smaller step preserves more temporal detail but requires more Prometheus
+  computation.
+- `--rate-interval` is the lookback used by `rate()` to calculate one value from a
+  counter. It is not the sampling frequency. A longer interval produces a smoother
+  rate, while a shorter interval reacts faster but must still contain enough Prometheus
+  scrape samples.
+
+Raw gauges can be summarized directly from their Prometheus scrape samples. Calculated
+gauge expressions, such as partition backlog, use `--sample-step` to evaluate the
+expression repeatedly. Counter queries either calculate one rate over the complete
+report window or, for time summaries, calculate rates over `--rate-interval` and use
+`--sample-step` to evaluate them across the report window.
+
+The rate interval and sample step may be equal. This produces mostly non-overlapping
+rate observations and reduces query cost, but a long interval then produces fewer
+observations for p50 or p99. The defaults calculate a five-minute moving rate every
+minute, combining a stable rate with finer temporal resolution.
 
 #### Packaged query semantics
 
