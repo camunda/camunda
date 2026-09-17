@@ -125,16 +125,20 @@ function pendingActionsQueryKey(batchOperationKey: string) {
 	return ['batchOperationPendingActions', batchOperationKey] as const;
 }
 
-function goneQueryKey(batchOperationKey: string) {
-	return ['batchOperationGone', batchOperationKey] as const;
+// Cleared on mount, not unmount: a poll's rejection can resolve after the component that started it
+// unmounted, and it must still see this visit's marker.
+const batchOperationKeysWithGoneNotificationShown = new Set<string>();
+
+function notifyBatchOperationGoneOnce(batchOperationKey: string, showNotification: () => void) {
+	if (batchOperationKeysWithGoneNotificationShown.has(batchOperationKey)) {
+		return;
+	}
+	batchOperationKeysWithGoneNotificationShown.add(batchOperationKey);
+	showNotification();
 }
 
-function isBatchOperationAlreadyKnownGone(queryClient: QueryClient, batchOperationKey: string): boolean {
-	return queryClient.getQueryData(goneQueryKey(batchOperationKey)) === true;
-}
-
-function markBatchOperationGone(queryClient: QueryClient, batchOperationKey: string) {
-	queryClient.setQueryData(goneQueryKey(batchOperationKey), true);
+function clearBatchOperationGoneNotified(batchOperationKey: string) {
+	batchOperationKeysWithGoneNotificationShown.delete(batchOperationKey);
 }
 
 const PENDING_ACTION_STORAGE_KEY_PREFIX = 'batchOperationPendingAction:';
@@ -241,17 +245,9 @@ function useBatchOperationActions(batchOperationKey: string) {
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
 
-	const {data: isGone} = useQuery({
-		queryKey: goneQueryKey(batchOperationKey),
-		queryFn: (): boolean => false,
-		initialData: false,
-		staleTime: Infinity,
-	});
 	useEffect(() => {
-		if (isGone) {
-			void navigate({to: '/operate/batch-operations', replace: true});
-		}
-	}, [isGone, navigate]);
+		clearBatchOperationGoneNotified(batchOperationKey);
+	}, [batchOperationKey]);
 
 	const hadExistingPendingActionsCacheEntry =
 		queryClient.getQueryData(pendingActionsQueryKey(batchOperationKey)) !== undefined;
@@ -293,14 +289,14 @@ function useBatchOperationActions(batchOperationKey: string) {
 
 	const showActionError = (error: unknown, failedTitle: string) => {
 		if (error instanceof BatchOperationGoneError) {
-			if (!isBatchOperationAlreadyKnownGone(queryClient, batchOperationKey)) {
+			notifyBatchOperationGoneOnce(batchOperationKey, () =>
 				notificationsStore.displayNotification({
 					kind: 'error',
 					title: t('operate.batchOperation.notFoundNotificationTitle', {batchOperationKey}),
 					isDismissable: true,
-				});
-			}
-			markBatchOperationGone(queryClient, batchOperationKey);
+				}),
+			);
+			void navigate({to: '/operate/batch-operations', replace: true});
 			return;
 		}
 
@@ -422,4 +418,4 @@ function useBatchOperationActions(batchOperationKey: string) {
 	};
 }
 
-export {useBatchOperationActions, isBatchOperationAlreadyKnownGone, markBatchOperationGone};
+export {useBatchOperationActions, notifyBatchOperationGoneOnce, clearBatchOperationGoneNotified};
