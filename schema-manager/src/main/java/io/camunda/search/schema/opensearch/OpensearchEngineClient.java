@@ -577,7 +577,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
   private PutIndicesSettingsRequest putIndexSettingsRequest(
       final List<IndexDescriptor> indexDescriptors,
       final Map<String, String> toAppendSettings,
-      final boolean allowNoIndices) {
+      final boolean allowMissing) {
 
     final org.opensearch.client.opensearch.indices.IndexSettings settings =
         utils.mapToSettings(
@@ -588,12 +588,9 @@ public class OpensearchEngineClient implements SearchEngineClient {
     final var builder =
         new PutIndicesSettingsRequest.Builder()
             .index(utils.listIndicesByAlias(indexDescriptors))
+            .allowNoIndices(allowMissing)
+            .ignoreUnavailable(allowMissing)
             .settings(settings);
-    if (allowNoIndices) {
-      // A single unavailable target still throws unless both flags are set together — verified
-      // against a live cluster; allowNoIndices alone still 404s on a missing literal alias.
-      builder.allowNoIndices(true).ignoreUnavailable(true);
-    }
     return builder.build();
   }
 
