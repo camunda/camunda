@@ -79,6 +79,7 @@ dependencies {
   testImplementation(libs.org.springframework.spring.test)
   testImplementation(libs.org.springframework.spring.beans)
   testImplementation(libs.org.springframework.spring.context)
+  testImplementation(libs.org.springframework.boot.spring.boot.micrometer.metrics)
   testImplementation(libs.org.springframework.boot.spring.boot.actuator)
   testImplementation(libs.org.springframework.boot.spring.boot.autoconfigure)
   testImplementation(libs.org.mockito.mockito.core)
