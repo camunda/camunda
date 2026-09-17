@@ -26,9 +26,10 @@ import org.springframework.stereotype.Component;
  * applied to the claims of a login instead of to a token, so both editions grant Optimize access
  * through the same components.
  *
- * <p>Lenient on absence, like the token validator: claims without the organizations claim pass. The
- * validator stays in place, so the login id token and bearer tokens keep being rejected by token
- * validation itself, and this policy adds the per-request check the validators cannot do.
+ * <p>Denies when the claim is missing, unlike the token validator. Only an interactive login and
+ * its session reach this policy, and a SaaS user token always carries the claim, so an absent claim
+ * means the caller cannot be shown to hold Optimize access. The validator has to stay lenient
+ * because it also sees machine-to-machine tokens, which never carry the claim.
  */
 @Component
 @Conditional(CCSaaSCondition.class)
@@ -62,12 +63,8 @@ public class OptimizeCloudComponentAccessPolicy implements OptimizeComponentAcce
   }
 
   private Optional<String> denialReason(final Map<String, Object> claims) {
-    final Object claim = claims.get(ORGANIZATIONS_CLAIM);
-    if (claim == null) {
-      return Optional.empty();
-    }
     if (OptimizeCloudOrganizationValidator.grantsAllowedRole(
-        claim, organizationId, ALLOWED_ORG_ROLES)) {
+        claims.get(ORGANIZATIONS_CLAIM), organizationId, ALLOWED_ORG_ROLES)) {
       return Optional.empty();
     }
     return Optional.of(

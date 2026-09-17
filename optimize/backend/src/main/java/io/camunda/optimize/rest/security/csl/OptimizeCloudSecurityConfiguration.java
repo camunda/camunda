@@ -35,9 +35,9 @@ import org.springframework.security.oauth2.jwt.Jwt;
  * OptimizeCloudClusterValidator}. Both are lenient on claim absence, so the single chain serves
  * tokens that carry either claim. Unlike OC, Optimize keeps the org role gate.
  *
- * <p>The login id_token is not validated here. {@link OptimizeCloudComponentAccessPolicy} applies
- * the same org role rule to the login and to every session request, so the rule lives in one place
- * for both editions.
+ * <p>The login id_token is not gated here. {@link OptimizeCloudComponentAccessPolicy} applies the
+ * org role rule to the login and to every session request, and denies a missing claim, so the rule
+ * lives in one place for both editions.
  *
  * <p>The Auth0 {@code audience} authorize-request parameter and the clusterId-derived servlet
  * context path come from configuration, not code: the config compatibility bridge maps the legacy

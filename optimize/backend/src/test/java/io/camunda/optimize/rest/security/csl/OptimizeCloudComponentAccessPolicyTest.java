@@ -71,9 +71,7 @@ class OptimizeCloudComponentAccessPolicyTest {
   }
 
   @Test
-  void shouldAllowSessionWithoutTheOrganizationsClaim() {
-    // Lenient on absence, like the token validator: token validation owns the tokens that carry no
-    // organizations claim.
+  void shouldDenySessionWithoutTheOrganizationsClaim() {
     // given
     final OptimizeCloudComponentAccessPolicy policy = policyFor("org-1");
     final CamundaAuthentication authentication =
@@ -83,7 +81,19 @@ class OptimizeCloudComponentAccessPolicyTest {
     final Optional<String> reason = policy.sessionDenialReason(authentication);
 
     // then
-    assertThat(reason).isEmpty();
+    assertThat(reason).isPresent();
+  }
+
+  @Test
+  void shouldDenyLoginWithoutTheOrganizationsClaim() {
+    // given
+    final OptimizeCloudComponentAccessPolicy policy = policyFor("org-1");
+
+    // when
+    final Optional<String> reason = policy.loginDenialReason("token", Map.of());
+
+    // then
+    assertThat(reason).isPresent();
   }
 
   @Test
