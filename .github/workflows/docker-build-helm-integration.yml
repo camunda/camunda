@@ -775,12 +775,13 @@ jobs:
     # zeebeVersion. success() keeps the implicit needs-succeeded gate that a
     # custom `if` would otherwise drop.
     if: success() && needs.build-and-push.outputs.image-tag != ''
-    # Must stay comfortably above the poll loop's own budget in
-    # `wait-downstream` (100 ticks x 30s ~= 50min). When this fires first the
-    # runner kills the step mid-poll, the job lands as `cancelled`, and the
-    # loop's timeout path -- which writes `downstream_conclusion=timeout` and
-    # the AlwaysGreen failure context -- never runs. Keep the loop as the
-    # timeout mechanism and this as the backstop.
+    # Must stay above `wait-downstream`'s own 50min deadline. When this fires
+    # first the runner kills the step mid-poll, the job lands as `cancelled`,
+    # and the loop's timeout path -- which writes
+    # `downstream_conclusion=timeout` and the AlwaysGreen failure context --
+    # never runs. Keep the loop as the timeout mechanism and this as the
+    # backstop for what a deadline cannot bound: a single `gh api` call that
+    # hangs indefinitely rather than returning an error to retry.
     timeout-minutes: 60
     continue-on-error: ${{ github.event_name == 'merge_group' }}
     permissions: { }
@@ -890,6 +891,37 @@ jobs:
           TARGET_REPO="camunda/c8-cross-component-e2e-tests"
           WORKFLOW_FILE="playwright_saas_pr_trigger_monorepo.yml"
 
+          # Bound the wait by wall clock rather than by a tick count. A tick
+          # is not a fixed cost: a poll whose `gh_api_with_retry` exhausts its
+          # backoff burns up to 62s on top of the 30s tick, so counting ticks
+          # says nothing about how long this step runs (100 ticks is ~50min at
+          # best and ~153min at worst). Only an absolute deadline keeps the
+          # loop -- not the runner -- the thing that ends the wait, which is
+          # what lets the timeout path below emit its diagnostics.
+          #
+          # 50min is sized off the downstream run's observed distribution
+          # (median ~35min, p90 ~44min, p95 ~50min over the last 100 runs): a
+          # budget below the median kills roughly half of all waits while the
+          # downstream run is still green and in progress. Raise it if the
+          # downstream suite grows, and keep the job-level `timeout-minutes`
+          # above it.
+          WAIT_DEADLINE=$(( $(date +%s) + 50 * 60 ))
+
+          # Never sleep past the deadline: both the loop condition and the
+          # retry backoff are only re-checked between sleeps, so an unguarded
+          # sleep is exactly how the overshoot creeps back in.
+          deadline_sleep() {
+            local want="$1" remaining
+            remaining=$(( WAIT_DEADLINE - $(date +%s) ))
+            if (( remaining <= 0 )); then
+              return 0
+            fi
+            if (( remaining > want )); then
+              remaining="$want"
+            fi
+            sleep "$remaining"
+          }
+
           gh_api_with_retry() {
             local endpoint="$1"
             local max_attempts="${2:-6}"
@@ -911,7 +943,7 @@ jobs:
                 fi
                 echo "Transient gh/api error (attempt ${attempt}/${max_attempts}) for $endpoint:" >&2
                 echo "$out" >&2
-                sleep "$sleep_s"
+                deadline_sleep "$sleep_s"
                 attempt=$((attempt + 1))
                 sleep_s=$((sleep_s * 2))
                 continue
@@ -927,13 +959,7 @@ jobs:
 
           RUN_ID=""
 
-          # 100 ticks x 30s ~= 50min of wall clock. Sized off the downstream
-          # run's observed distribution (median ~35min, p90 ~44min, p95
-          # ~50min over the last 100 runs), because a budget below the median
-          # kills roughly half of all waits while the downstream run is still
-          # green and in progress. Raise this if the downstream suite grows;
-          # the job-level `timeout-minutes` above must stay above it.
-          for _ in {1..100}; do
+          while (( $(date +%s) < WAIT_DEADLINE )); do
             if [[ -z "$RUN_ID" ]]; then
               # A retry-exhausted poll must not end the wait: this loop is the
               # timeout mechanism, so fall through to the next tick. Only a
@@ -945,7 +971,7 @@ jobs:
                 exit 1
               elif (( RC != 0 )); then
                 echo "Could not list downstream runs on this poll; retrying on the next tick." >&2
-                sleep 30
+                deadline_sleep 30
                 continue
               fi
 
@@ -961,7 +987,7 @@ jobs:
 
               if [[ -z "$RUN_ID" ]]; then
                 echo "No downstream run found yet for correlation id. Sleeping..."
-                sleep 30
+                deadline_sleep 30
                 continue
               fi
 
@@ -976,7 +1002,7 @@ jobs:
               exit 1
             elif (( RC != 0 )); then
               echo "Could not read downstream run $RUN_ID on this poll; retrying on the next tick." >&2
-              sleep 30
+              deadline_sleep 30
               continue
             fi
 
@@ -996,7 +1022,7 @@ jobs:
               fi
             fi
 
-            sleep 30
+            deadline_sleep 30
           done
 
           echo "downstream_conclusion=timeout" >> "$GITHUB_OUTPUT"
