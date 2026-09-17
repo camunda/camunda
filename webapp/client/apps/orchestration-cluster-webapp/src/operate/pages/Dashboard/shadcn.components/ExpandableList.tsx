@@ -6,13 +6,59 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React from 'react';
+import React, {useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {DataTable, Skeleton, type DataTableColumn} from '@camunda/design-system';
+import {ChevronDown, ChevronRight} from '@camunda/design-system/icons';
 import SvgErrorRobot from '#/shared/svg/ErrorRobot';
 import {EmptyState} from '#/operate/components/EmptyState/shadcn.components/EmptyState';
 
 type Row = {id: string; content: React.ReactNode};
+
+type ExpandableRowProps = {
+	row: Row;
+	expandedContent: React.ReactElement<{tabIndex: number}> | undefined;
+};
+
+// DS DataTable's own `expansion` prop injects a toggle for every row unconditionally
+// (`getRowCanExpand` has no public per-row override — confirmed against the installed
+// package's data-table.js). Carbon hid the toggle entirely for rows with nothing to
+// expand, so the expand/collapse control is composed here instead, inside the single
+// content column, rather than through that prop.
+const ExpandableRow: React.FC<ExpandableRowProps> = ({row, expandedContent}) => {
+	const [isExpanded, setIsExpanded] = useState(false);
+	const canExpand = expandedContent !== undefined;
+
+	return (
+		<div>
+			<div className="flex items-center gap-1">
+				{canExpand ? (
+					<button
+						type="button"
+						aria-expanded={isExpanded}
+						aria-label={isExpanded ? 'Collapse row' : 'Expand row'}
+						onClick={() => setIsExpanded((expanded) => !expanded)}
+						className="flex h-6 w-6 shrink-0 items-center justify-center rounded hover:bg-neutral-background-subtle focus-visible:bg-neutral-background-subtle focus-visible:outline-none"
+					>
+						{isExpanded ? (
+							<ChevronDown className="size-4" aria-hidden="true" />
+						) : (
+							<ChevronRight className="size-4" aria-hidden="true" />
+						)}
+					</button>
+				) : (
+					<div className="h-6 w-6 shrink-0" />
+				)}
+				<div className="min-w-0 flex-1">{row.content}</div>
+			</div>
+			{canExpand && isExpanded && (
+				<div className="bg-neutral-background-medium px-4 py-4">
+					{React.cloneElement(expandedContent, {tabIndex: 0})}
+				</div>
+			)}
+		</div>
+	);
+};
 
 type Props = {
 	isPending: boolean;
@@ -71,7 +117,7 @@ const ExpandableList: React.FC<Props> = ({
 		{
 			id: 'content',
 			header: () => <span className="sr-only">{header}</span>,
-			cell: ({row}) => row.original.content,
+			cell: ({row}) => <ExpandableRow row={row.original} expandedContent={expandedContents[row.original.id]} />,
 		},
 	];
 
@@ -83,17 +129,7 @@ const ExpandableList: React.FC<Props> = ({
 				</div>
 			)}
 			<div data-testid={dataTestId}>
-				<DataTable<Row>
-					size="sm"
-					columns={columns}
-					data={rows}
-					aria-label={header}
-					getRowId={(row) => row.id}
-					expansion={(row) => {
-						const content = expandedContents[row.id];
-						return content ? React.cloneElement(content, {tabIndex: 0}) : null;
-					}}
-				/>
+				<DataTable<Row> size="sm" columns={columns} data={rows} aria-label={header} getRowId={(row) => row.id} />
 			</div>
 			{isFetchingNextPage && (
 				<div className="flex justify-center py-2" data-testid={`${listTestId}-loading-next`}>
