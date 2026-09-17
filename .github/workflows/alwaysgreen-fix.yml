@@ -384,12 +384,10 @@ jobs:
           A sibling version directory that is passing must not be touched.
           Failing AlwaysGreen run: ${FAILING_RUN_URL}
           Triage run: ${TRIAGE_RUN_URL}
-          Breaking change: PR #${BLAME_PR} by ${BLAME_AUTHOR}
-          Read what that PR changed before choosing a repo. If it also updated the
-          product's own tests to the new value, the change is intended and the
-          cross-component test is behind; if those tests still assert the old value,
-          the product contradicts itself and it is a regression. The manual's
-          "Regression, or an intended change" section is the full rule.
+          Triggering commit: PR #${BLAME_PR} by ${BLAME_AUTHOR} -- the PR classify.py
+          associated with this run's head commit, not a confirmed cause. Read the manual's
+          "Regression, or an intended change" section FIRST: its zeroth check may rule this PR
+          out entirely before the intended-vs-regression question even applies.
 
           /tmp/test_specs.json  — the failing specs, with retry history per attempt.
           /tmp/fingerprints.json — the fingerprints your PR body MUST claim in its
@@ -481,13 +479,23 @@ jobs:
 
             # Requesting review can legitimately fail: the blamed author may not be a
             # collaborator on the repo the fix landed in. The manual requires the author
-            # to be named in the PR body regardless, so the signal is not lost.
-            if [ -n "${BLAME_REVIEWER}" ]; then
+            # to be named in the PR body too when relevant, so the signal is not lost.
+            #
+            # Gated on the agent's own zeroth-check verdict (FIX-AGENT.md), not just
+            # BLAME_REVIEWER being non-empty: a formal review request notifies the
+            # blamed author exactly like a body mention does, so requesting one for a
+            # PR the agent already ruled unrelated reintroduces the same false-cause
+            # ping the body-mention gating exists to prevent. Defaults to "false" (skip
+            # the request) if the agent didn't record a verdict at all.
+            blame_relevant=$(jq -r '.blame_relevant // false' /tmp/fix-meta.json 2>/dev/null || echo false)
+            if [ -n "${BLAME_REVIEWER}" ] && [ "${blame_relevant}" = "true" ]; then
               if gh pr edit "$num" --repo "$repo" --add-reviewer "${BLAME_REVIEWER}" 2>/dev/null; then
                 echo "review requested from ${BLAME_REVIEWER} on ${repo}#${num}"
               else
                 echo "::warning::could not request review from ${BLAME_REVIEWER} on ${repo}#${num}"
               fi
+            elif [ -n "${BLAME_REVIEWER}" ]; then
+              echo "blame_relevant is not true in fix-meta.json -- skipping review request for ${BLAME_REVIEWER} on ${repo}#${num} (zeroth check ruled them out, or no verdict was recorded)"
             fi
           done
 
