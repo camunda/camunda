@@ -810,6 +810,15 @@ jobs:
       slack_ts: ${{ steps.feedback.outputs.slack_ts }}
       slack_channel: ${{ steps.feedback.outputs.slack_channel }}
     steps:
+      # The waiter's deadline has to be measured on the same clock as this
+      # job's `timeout-minutes`, which starts here -- not when the waiter
+      # step happens to begin. Checkout, Vault/token generation and the
+      # dispatch are all unbounded, so deriving the deadline from the
+      # waiter's own start would make "deadline < job timeout" an assumption
+      # about how long they take rather than a guarantee.
+      - name: Record job start
+        run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
+
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -923,7 +932,13 @@ jobs:
           # downstream run is still green and in progress. Raise it if the
           # downstream suite grows, and keep the job-level `timeout-minutes`
           # above it.
-          WAIT_DEADLINE=$(( $(date +%s) + 50 * 60 ))
+          #
+          # Anchored to the job's start, not this step's, so the 10min of
+          # headroom below the job timeout cannot be eaten by a slow checkout
+          # or a hanging Vault call. The preamble normally costs seconds; if
+          # it ever costs more, the wait shortens instead of the runner
+          # killing the loop before it can report a timeout.
+          WAIT_DEADLINE=$(( ${JOB_STARTED_AT:-$(date +%s)} + 50 * 60 ))
 
           # Never sleep past the deadline: both the loop condition and the
           # retry backoff are only re-checked between sleeps, so an unguarded
@@ -962,6 +977,15 @@ jobs:
                 echo "Transient gh/api error (attempt ${attempt}/${max_attempts}) for $endpoint:" >&2
                 echo "$out" >&2
                 deadline_sleep "$sleep_s"
+                # Do not start another attempt past the deadline. Once the
+                # clamped sleep has run the budget out, a further `gh api`
+                # could stall -- and a stalled call is the one thing a
+                # deadline cannot bound, which would hand the kill back to
+                # the runner and lose the timeout report.
+                if (( $(date +%s) >= WAIT_DEADLINE )); then
+                  echo "Deadline reached while retrying $endpoint; abandoning this poll." >&2
+                  return 1
+                fi
                 attempt=$((attempt + 1))
                 sleep_s=$((sleep_s * 2))
                 continue
