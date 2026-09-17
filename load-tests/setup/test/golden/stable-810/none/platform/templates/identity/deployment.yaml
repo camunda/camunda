@@ -79,6 +79,11 @@ spec:
                 secretKeyRef:
                   name: camunda-credentials
                   key: identity-firstuser-password
+            - name: VALUES_LEADER-BALANCER_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-credentials
+                  key: identity-leader-balancer-client-secret
             - name: IDENTITY_LOG_APPENDER
               value: Stackdriver
           resources:

@@ -5,7 +5,7 @@ metadata:
   labels:
     app: leader-balancer
 spec:
-  concurrencyPolicy: Allow
+  concurrencyPolicy: Forbid
   jobTemplate:
     metadata:
       name: leader-balancer
@@ -17,13 +17,48 @@ spec:
         spec:
           containers:
           - name: leader-balancer
-            image: curlimages/curl:7.87.0
+            image: alpine:3.24
             command: ["/bin/sh", "-c"]
+            {{- if eq .Values.leaderBalancer.endpoint "actuator" }}
             args:
               - |-
-                curl -L -v -X POST "{{ .Values.camundaManagementUrl }}/actuator/rebalance"
+                apk add --quiet --progress=no curl
+                curl -L -v --connect-timeout 10 --max-time 60 -X POST "{{ .Values.camundaManagementUrl }}/actuator/rebalance"
+            {{- else }}
+            env:
+            - name: CAMUNDA_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: leader-balancer-credentials
+                  key: clientId
+            - name: CAMUNDA_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: leader-balancer-credentials
+                  key: clientSecret
+            - name: CAMUNDA_OAUTH_URL
+              valueFrom:
+                secretKeyRef:
+                  name: leader-balancer-credentials
+                  key: authServer
+            - name: CAMUNDA_TOKEN_AUDIENCE
+              valueFrom:
+                secretKeyRef:
+                  name: leader-balancer-credentials
+                  key: authorizationAudience
+            - name: CAMUNDA_BASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: leader-balancer-credentials
+                  key: zeebeRestAddress
+            args:
+              - |-
+                apk add --quiet --progress=no curl jq
+                {{- regexReplaceAll "(?m)^[ \t]+$" (.Files.Get "scripts/rebalance-v2.sh" | trimSuffix "\n" | nindent 16) "" }}
+            {{- end }}
 
           restartPolicy: OnFailure
+      activeDeadlineSeconds: 180
   schedule: '*/10 * * * *'
   failedJobsHistoryLimit: 1
   successfulJobsHistoryLimit: 3

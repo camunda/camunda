@@ -65,6 +65,18 @@ identity:
     secret:
       existingSecret: camunda-credentials
       existingSecretKey: identity-firstuser-password
+  # Dedicated M2M Keycloak client for the leader-balancer CronJob. `read:*` only gets
+  # orchestration-api onto its token; cluster-admin itself is granted below.
+  clients:
+    - id: leader-balancer
+      name: Leader Balancer
+      type: m2m
+      secret:
+        existingSecret: camunda-credentials
+        existingSecretKey: identity-leader-balancer-client-secret
+      permissions:
+        - resourceServerId: orchestration-api
+          definition: read:*
   env:
     # https://docs.camunda.io/docs/self-managed/components/management-identity/miscellaneous/configuration-variables/#google-stackdriver-json-logging
     - name: IDENTITY_LOG_APPENDER
@@ -229,6 +241,10 @@ orchestration:
         zeebe.broker.flowControl.write.enabled: "true"
         zeebe.broker.flowControl.write.limit: 10000
         zeebe.broker.flowControl.write.throttling.enabled: "true"
+        # Grant the dedicated leader-balancer client cluster-admin access, so it can call the
+        # coordinated `/cluster/v2/rebalance` endpoint. Set here, not via `orchestration.env`,
+        # which the Optimize overlays also define and would silently replace.
+        camunda.security.cluster-admin.oidc.clients[0]: leader-balancer
     # This file is loaded after application.yml (higher priority). It is empty by default,
     # but can be overridden via --set-file for specific scenarios (e.g. max) to change settings
     # like disabling consistency checks without duplicating the full application.yml content.

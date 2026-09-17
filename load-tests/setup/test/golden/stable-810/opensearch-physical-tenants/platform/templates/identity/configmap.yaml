@@ -229,6 +229,15 @@ data:
         webmodeler:
           root-url: "http://localhost:8070"
       clients:
+        - id: leader-balancer
+          name: Leader Balancer
+          secret: ${VALUES_LEADER-BALANCER_CLIENT_SECRET:}
+          redirectUris: 
+          rootUrl: 
+          type: m2m
+          permissions:
+            - definition: read:*
+              resourceServerId: orchestration-api
         - id: optimize-loadtest
           name: Optimize Load Tester
           secret: ${VALUES_OPTIMIZE-LOADTEST_CLIENT_SECRET:}

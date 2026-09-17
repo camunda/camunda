@@ -51,6 +51,9 @@ orchestration:
         camunda.processing.flow-control.write.enabled: "true"
         camunda.processing.flow-control.write.limit: 10000
         camunda.processing.flow-control.write.throttle.enabled: "true"
+        # Grant the dedicated leader-balancer client (declared via `identity.clients`) cluster-admin
+        # access, so it can call the coordinated `/cluster/v2/rebalance` endpoint.
+        camunda.security.cluster-admin.oidc.clients[0]: leader-balancer
     # This file is loaded after application.yml (higher priority). It is empty by default,
     # but can be overridden via --set-file for specific scenarios (e.g. max) to change settings
     # like disabling consistency checks without duplicating the full application.yml content.
