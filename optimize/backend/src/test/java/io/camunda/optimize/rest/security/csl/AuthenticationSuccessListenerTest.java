@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.rest.security.csl;
 
-import static io.camunda.optimize.rest.security.csl.OptimizeCslLoginSuccessListener.ORIGINAL_USER_ID_CLAIM;
+import static io.camunda.optimize.rest.security.csl.AuthenticationSuccessListener.ORIGINAL_USER_ID_CLAIM;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -49,7 +49,7 @@ import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
  * id is {@link UserIdMigrationService}'s job and is covered by its own test.
  */
 @ExtendWith(MockitoExtension.class)
-class OptimizeCslLoginSuccessListenerTest {
+class AuthenticationSuccessListenerTest {
 
   private static final String CURRENT_USER_ID = "auth0|new-identity";
   private static final String PREVIOUS_USER_ID = "auth0|old-identity";
@@ -58,7 +58,7 @@ class OptimizeCslLoginSuccessListenerTest {
   @Mock private CamundaAuthenticationProvider camundaAuthenticationProvider;
   @Mock private CamundaAuthentication camundaAuthentication;
 
-  @InjectMocks private OptimizeCslLoginSuccessListener listener;
+  @InjectMocks private AuthenticationSuccessListener listener;
 
   @BeforeEach
   void setUp() {
@@ -155,6 +155,6 @@ class OptimizeCslLoginSuccessListenerTest {
             List.of(),
             "auth0");
     return new InteractiveAuthenticationSuccessEvent(
-        authentication, OptimizeCslLoginSuccessListenerTest.class);
+        authentication, AuthenticationSuccessListenerTest.class);
   }
 }

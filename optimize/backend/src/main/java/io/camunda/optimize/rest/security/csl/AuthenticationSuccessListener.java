@@ -43,17 +43,17 @@ import org.springframework.stereotype.Component;
     name = "optimize.security.csl.enabled",
     havingValue = "true",
     matchIfMissing = true)
-public final class OptimizeCslLoginSuccessListener {
+public final class AuthenticationSuccessListener {
 
   /** Auth0 claim carrying the user's previous SaaS identity, absent unless it changed. */
   static final String ORIGINAL_USER_ID_CLAIM = "https://camunda.com/originalUserId";
 
-  private static final Logger LOG = LoggerFactory.getLogger(OptimizeCslLoginSuccessListener.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AuthenticationSuccessListener.class);
 
   private final UserIdMigrationService userIdMigrationService;
   private final CamundaAuthenticationProvider camundaAuthenticationProvider;
 
-  public OptimizeCslLoginSuccessListener(
+  public AuthenticationSuccessListener(
       final UserIdMigrationService userIdMigrationService,
       final CamundaAuthenticationProvider camundaAuthenticationProvider) {
     this.userIdMigrationService = userIdMigrationService;
