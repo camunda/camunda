@@ -23,7 +23,7 @@ import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestBrokers;
 import io.camunda.zeebe.management.cluster.Operation;
 import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
 import io.camunda.zeebe.management.cluster.PartitioningConfig;
-import io.camunda.zeebe.management.cluster.PartitioningConfig.TypeEnum;
+import io.camunda.zeebe.management.cluster.PartitioningConfig.SchemeEnum;
 import io.camunda.zeebe.management.cluster.ZoneSpec;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
@@ -184,7 +184,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       // when - increase zoneA replicas from 1→2 (RF 2→3)
       final var config =
           new PartitioningConfig()
-              .type(PartitioningConfig.TypeEnum.ZONE_AWARE)
+              .scheme(PartitioningConfig.SchemeEnum.ZONE_AWARE)
               .zones(
                   List.of(
                       new ZoneSpec().name(ZONE_A).numberOfReplicas(2).priority(100),
@@ -200,7 +200,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
           .isEqualTo(
               List.of(
                   new Operation()
-                      .operation(OperationEnum.UPDATE_PARTITION_DISTRIBUTOR_CONFIG)
+                      .operation(OperationEnum.UPDATE_PARTITIONING)
                       // Coordinator
                       .brokerId(brokerId(0))
                       .partitioningConfig(config),
@@ -273,7 +273,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       final var actuator = ClusterActuator.of(cluster.availableGateway());
 
       // when - then
-      final var config = new PartitioningConfig().type(TypeEnum.ZONE_AWARE).zones(List.of());
+      final var config = new PartitioningConfig().scheme(SchemeEnum.ZONE_AWARE).zones(List.of());
       assertThatCode(() -> actuator.patchPartitionDistribution(config, false))
           .isInstanceOf(FeignException.BadRequest.class);
     }
@@ -287,7 +287,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       final var actuator = ClusterActuator.of(cluster.availableGateway());
 
       // when - then
-      final var config = new PartitioningConfig().type(PartitioningConfig.TypeEnum.ROUND_ROBIN);
+      final var config = new PartitioningConfig().scheme(PartitioningConfig.SchemeEnum.ROUND_ROBIN);
       assertThatCode(() -> actuator.patchPartitionDistribution(config, false))
           .isInstanceOf(FeignException.BadRequest.class);
     }
@@ -352,7 +352,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
         ClusterActuatorAssert.assertThat(actuator).hasActiveBroker(brokerId(0).toString());
         final var expectedDistribution =
             new PartitioningConfig()
-                .type(TypeEnum.ZONE_AWARE)
+                .scheme(SchemeEnum.ZONE_AWARE)
                 .zones(
                     List.of(
                         new ZoneSpec().name(ZONE_B).numberOfReplicas(1).priority(10),
@@ -390,7 +390,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       // and - the distribution config now lists zoneB first with the higher priority
       final var expectedDistribution =
           new PartitioningConfig()
-              .type(TypeEnum.ZONE_AWARE)
+              .scheme(SchemeEnum.ZONE_AWARE)
               .zones(
                   List.of(
                       new ZoneSpec().name(ZONE_B).numberOfReplicas(1).priority(100),

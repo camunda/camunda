@@ -42,7 +42,7 @@ import io.camunda.zeebe.management.cluster.Error;
 import io.camunda.zeebe.management.cluster.GetConfigurationChangesResponse;
 import io.camunda.zeebe.management.cluster.GetTopologyResponse;
 import io.camunda.zeebe.management.cluster.PartitioningConfig;
-import io.camunda.zeebe.management.cluster.PartitioningConfig.TypeEnum;
+import io.camunda.zeebe.management.cluster.PartitioningConfig.SchemeEnum;
 import io.camunda.zeebe.management.cluster.UpdatePartitioningRequest;
 import io.camunda.zeebe.management.cluster.ZoneSpec;
 import io.camunda.zeebe.util.Either;
@@ -249,7 +249,7 @@ final class ClusterEndpointTest {
 
     private static PartitioningConfig zoneAwareConfig() {
       return new PartitioningConfig()
-          .type(TypeEnum.ZONE_AWARE)
+          .scheme(SchemeEnum.ZONE_AWARE)
           .zones(List.of(new ZoneSpec().name("zone-a").numberOfReplicas(1).priority(100)));
     }
 
