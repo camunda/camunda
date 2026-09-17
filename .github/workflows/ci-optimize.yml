@@ -1,5 +1,6 @@
-# Unified CI for Optimize. Runs backend unit tests, front end unit tests, dockerfile linting (hadolint), and E2E cloud tests
-# test location: /optimize, /optimize/client, optimize.Dockerfile, /optimize/client/e2e/cloud-tests
+# Unified CI for Optimize. Runs backend unit tests, front end unit tests, and dockerfile linting (hadolint).
+# Self-managed E2E smoke tests live in the standalone optimize-e2e-smoke.yml workflow.
+# test location: /optimize, /optimize/client, optimize.Dockerfile
 # called by: ci.yml
 # type: CI
 # owner: @camunda/core-features
@@ -366,102 +367,6 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           job_name: "hadolint/${{ matrix.dockerfile }}"
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-  optimize-e2e-smoke:
-    name: "E2E / Self-Managed (Smoke)"
-    if: inputs.runFeTests
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions: { }
-    env:
-      TEST_TYPE: E2E
-      TEST_OWNER: '@camunda/optimize-frontend'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-        with:
-          persist-credentials: false
-
-      - name: Print metadata
-        uses: ./.github/actions/print-metadata
-
-      - name: "Parse pom.xml for versions"
-        id: "pom_info"
-        uses: YunaBraska/java-info-action@085d09be3659b484e0a6d0c95aac6612687ce8d9 # 3.0.13
-        with:
-          work-dir: ./optimize
-
-      - name: Setup Maven
-        uses: ./.github/actions/setup-build
-        with:
-          maven-cache-key-modifier: optimize-e2e-smoke
-          time-zone: Europe/Berlin
-          vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-
-      - name: Build frontend
-        uses: ./.github/actions/build-frontend
-        with:
-          directory: ./optimize/client
-
-      - name: Start frontend
-        working-directory: ./optimize/client
-        run: yarn start &
-
-      - name: Start services (Camunda, Keycloak, Identity and Elasticsearch)
-        uses: ./.github/actions/compose
-        with:
-          compose_file: optimize/client/docker-compose.yml
-          project_name: e2e
-          additional_flags: "--profile self-managed"
-
-      - uses: ./.github/actions/build-zeebe
-        id: build-camunda
-        with:
-          maven-extra-args: -PskipFrontendBuild -Dskip.docker
-
-      - name: Create backend logs file
-        run: mkdir -p ./optimize/client/build && touch ./optimize/client/build/backendLogs.log
-
-      - name: Start backend
-        working-directory: ./optimize/client
-        run: |
-          yarn run start-backend ci &> ./build/backendLogs.log &
-
-      - name: Wait for import to complete
-        run: ./.github/optimize/scripts/wait-for-import.sh
-
-      - name: Wait for frontend to start
-        run: ./.github/optimize/scripts/wait-for.sh http://localhost:3000/ready
-
-      - name: Run smoke tests
-        working-directory: ./optimize/client
-        run: yarn run e2e:ci:sm:smoke:headless
-
-      - name: Upload logs
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: always()
-        with:
-          name: optimize-e2e-smoke-logs
-          path: ./optimize/client/build/*.log
-
-      - name: Docker log dump
-        uses: ./.github/actions/docker-logs
-        if: always()
-        continue-on-error: true
-        with:
-          archive_name: optimize-e2e-smoke-docker-logs
-
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
           build_status: ${{ job.status }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
