@@ -235,6 +235,18 @@ it('should exclude rows without actions from selection and bulk actions', () => 
   expect(node.find('.bulkAction').prop('selectedEntries')).toEqual([props.rows[0]]);
 });
 
+it('should clear the selection when select-all is re-triggered with a protected row present', () => {
+  const node = shallow(<EntityList {...props} bulkActions={<div className="bulkAction" />} />);
+
+  // Select-all checks only the editable row; the protected aDashboardId stays unselected.
+  getSelection(node).onSelectedRowsChange({aCollectionId: true, aDashboardId: true});
+  expect(getSelection(node).selectedRowIds).toEqual({aCollectionId: true});
+
+  // A second select-all re-adds the protected row -- the header's only way to ask for a clear.
+  getSelection(node).onSelectedRowsChange({aCollectionId: true, aDashboardId: true});
+  expect(getSelection(node).selectedRowIds).toEqual({});
+});
+
 it('should render the description with the query and the filtered row count', () => {
   const node = shallow(
     <EntityList {...props} description={(query, count) => `${query} ${count}`} />
