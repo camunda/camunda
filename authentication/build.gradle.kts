@@ -62,6 +62,7 @@ dependencies {
   testImplementation(libs.com.google.guava.guava)
   testImplementation(libs.org.springframework.spring.test)
   testImplementation(project(":zeebe-broker-client"))
+  testImplementation(project(":zeebe-test-util"))
   testImplementation(project(":camunda-search-client-query-transformer"))
   testImplementation(libs.org.testcontainers.testcontainers.junit.jupiter)
   testImplementation(libs.com.github.dasniko.testcontainers.keycloak)
