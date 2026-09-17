@@ -15,7 +15,7 @@ export const noDataNotice = Selector('.NoDataNotice');
 export const dashboardReportLink = Selector('.OptimizeReportTile .EntityName a');
 export const breadcrumb = (text) => Selector('.cds--breadcrumb-item a').withText(text);
 export const dashboardView = Selector('.DashboardView');
-export const searchField = Selector('input.cds--search-input');
+export const searchField = Selector('input.entitySearch');
 export const copyTargetsInput = Selector('.CopyModal .cds--combo-box .cds--text-input');
 export const copyModal = Selector('.CopyModal');
 export const definitionSelection = Selector('.DefinitionSelection');
