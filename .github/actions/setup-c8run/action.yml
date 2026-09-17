@@ -72,7 +72,7 @@ runs:
         sudo killall xsp4 || true
 
     - if: ${{ inputs.checkout == 'true' }}
-      uses: actions/checkout@v4
+      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       with:
         fetch-depth: 0
         repository: ${{ inputs.repository }}
@@ -94,7 +94,7 @@ runs:
       run: arch
       shell: bash
 
-    - uses: actions/setup-go@v5
+    - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
       with:
         go-version: ">=1.23.1"
         cache: false # disabling since not working anyways without a cache-dependency-path specified
@@ -107,11 +107,11 @@ runs:
         vault-role-id: ${{ inputs.vault-role-id }}
 
     - name: Setup Node
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
       with:
         node-version: "20"
 
-    - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+    - uses: camunda/infra-global-github-actions/setup-yarn-cache@67d00e9260887361a31f6446252fffbecae4a02e # setup-yarn-cache-1.0.2
       if: ${{ inputs.source-build == 'true' }}
       with:
         directory: ./tasklist/client
@@ -122,12 +122,12 @@ runs:
       shell: bash
       run: yarn
 
-    - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+    - uses: camunda/infra-global-github-actions/setup-yarn-cache@67d00e9260887361a31f6446252fffbecae4a02e # setup-yarn-cache-1.0.2
       if: ${{ inputs.source-build == 'true' }}
       with:
         directory: ./operate/client
 
-    - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+    - uses: camunda/infra-global-github-actions/setup-yarn-cache@67d00e9260887361a31f6446252fffbecae4a02e # setup-yarn-cache-1.0.2
       if: ${{ inputs.source-build == 'true' }}
       with:
         directory: identity/client
@@ -194,7 +194,7 @@ runs:
       shell: bash
       working-directory: ./c8run
 
-    - uses: actions/setup-java@v4
+    - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
       with:
         distribution: 'temurin'
         java-version: '22'
@@ -225,7 +225,7 @@ runs:
       env:
         JAVA_VERSION: 22.0.3
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: camunda8-run-build-${{ inputs.os }}
         path: ./c8run/camunda8-run*

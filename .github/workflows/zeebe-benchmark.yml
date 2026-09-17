@@ -92,7 +92,7 @@ jobs:
     outputs:
       image-tag: ${{ inputs.reuse-tag != '' && inputs.reuse-tag || steps.image-tag.outputs.image-tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ inputs.ref }}
       - name: Get image tag
@@ -110,7 +110,7 @@ jobs:
       contents: 'read'
       id-token: 'write'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ inputs.ref }}
       - uses: ./.github/actions/setup-build
@@ -123,14 +123,14 @@ jobs:
         id: build-zeebe
         with:
           maven-extra-args: -PskipFrontendBuild -Dmaven.test.skip=true -am -pl :camunda-zeebe
-      - uses: google-github-actions/auth@v2
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         id: auth
         with:
           token_format: 'access_token'
           workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
           service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
       - name: Login to GCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: gcr.io
           username: oauth2accesstoken
@@ -152,25 +152,25 @@ jobs:
       id-token: 'write'
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ inputs.ref }}
       # See https://github.com/marketplace/actions/authenticate-to-google-cloud#setup
-      - uses: google-github-actions/auth@v2
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         id: auth
         with:
           token_format: 'access_token'
           workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
           service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
       - name: Login to GCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: gcr.io
           username: oauth2accesstoken
           password: ${{ steps.auth.outputs.access_token }}
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@v3.0.0
+        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -180,7 +180,7 @@ jobs:
             secret/data/github.com/organizations/camunda NEXUS_USR;
             secret/data/github.com/organizations/camunda NEXUS_PSW;
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           distribution: "adopt"
           java-version: "21"
@@ -190,7 +190,7 @@ jobs:
           maven-cache-key-modifier: operate
       # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
       - name: 'Create settings.xml'
-        uses: s4u/maven-settings-action@v3.0.0
+        uses: s4u/maven-settings-action@7802f6aec16c9098b4798ad1f1d8ac75198194bd # v3.0.0
         with:
           githubServer: false
           servers: |
@@ -203,9 +203,9 @@ jobs:
       - name: Build backend
         run: ./mvnw clean install -DskipChecks -P -docker -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
       - name: Build and push to Zeebe gcr.io registry
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         env:
           DOCKER_BUILD_SUMMARY: false
           DOCKER_BUILD_RECORD_UPLOAD: false
@@ -225,17 +225,17 @@ jobs:
       contents: 'read'
       id-token: 'write'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ inputs.ref }}
-      - uses: google-github-actions/auth@v2
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         id: auth
         with:
           token_format: 'access_token'
           workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
           service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
       - name: Login to GCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: gcr.io
           username: oauth2accesstoken
@@ -270,14 +270,14 @@ jobs:
       contents: 'read'
       id-token: 'write'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ inputs.ref }}
-      - uses: google-github-actions/auth@v2
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
           workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
           service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
-      - uses: google-github-actions/get-gke-credentials@v2.2.2
+      - uses: google-github-actions/get-gke-credentials@3da1e46a907576cefaa90c484278bb5b259dd395 # v3.0.0
         with:
           cluster_name: ${{ inputs.cluster }}
           location: ${{ inputs.cluster-region }}

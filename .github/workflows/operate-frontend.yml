@@ -27,11 +27,11 @@ jobs:
       run:
         working-directory: operate/client
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "20"
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@67d00e9260887361a31f6446252fffbecae4a02e # setup-yarn-cache-1.0.2
         with:
           directory: operate/client
       - run: yarn install --frozen-lockfile

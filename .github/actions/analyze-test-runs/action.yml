@@ -21,7 +21,7 @@ runs:
   using: composite
   steps:
   - name: Test Summary
-    uses: test-summary/action@v2
+    uses: test-summary/action@31493c76ec9e7aa675f1585d3ed6f1da69269a86 # v2.4
     if: ${{ inputs.skipSummary == 'false' }}
     with:
       paths: |

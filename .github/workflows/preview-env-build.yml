@@ -42,7 +42,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout ${{ github.head_ref }} branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: refs/heads/${{ github.head_ref }}
           fetch-depth: 0 # fetches all history for all branches and tags
@@ -60,7 +60,7 @@ jobs:
 
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@v3.0.0
+        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -78,7 +78,7 @@ jobs:
           echo "VERSION=pr-$GIT_COMMIT_HASH" >> $GITHUB_ENV
 
       - name: Login to Harbor docker registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: registry.camunda.cloud
           username: ${{ steps.secrets.outputs.NEXUS_USR }}

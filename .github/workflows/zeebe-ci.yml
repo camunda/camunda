@@ -48,7 +48,7 @@ jobs:
             runner: "aws-arm-core-4-longrunning"
             arch: arm64
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly:  ${{ matrix.os != 'macos' && matrix.os != 'windows' }}
@@ -114,7 +114,7 @@ jobs:
     timeout-minutes: 20
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - uses: ./.github/actions/setup-build
         with:
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -168,7 +168,7 @@ jobs:
     env:
       ZEEBE_PERFORMANCE_TEST_RESULTS_DIR: "/tmp/jmh"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - uses: ./.github/actions/setup-build
         with:
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -232,7 +232,7 @@ jobs:
     timeout-minutes: 15
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Install and allow strace tests
         run: |
           sudo apt-get -qq update && sudo apt-get install -y strace
@@ -297,8 +297,8 @@ jobs:
     env:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/zeebe
     steps:
-      - uses: actions/checkout@v4
-      - uses: hadolint/hadolint-action@v3.1.0
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
         with:
           config: ./.hadolint.yaml
           dockerfile: ./Dockerfile
@@ -308,7 +308,7 @@ jobs:
           verbose: true
       - name: Upload Hadolint Results
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4.35.5
         with:
           sarif_file: ./hadolint.sarif
       - uses: ./.github/actions/setup-build
@@ -364,7 +364,7 @@ jobs:
       - docker-checks
       - strace-tests
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - run: exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
 
   # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) and concurrency group based on branch name
@@ -387,7 +387,7 @@ jobs:
       group:  ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.concurrency_group_name }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - uses: ./.github/actions/setup-build
         with:
           dockerhub: true
@@ -428,15 +428,15 @@ jobs:
       contents: 'read'
       id-token: 'write'
     steps:
-      - uses: actions/checkout@v4
-      - uses: google-github-actions/auth@v2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         id: auth
         with:
           token_format: 'access_token'
           workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
           service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
       - name: Login to GCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: gcr.io
           username: oauth2accesstoken
@@ -509,7 +509,7 @@ jobs:
           vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           vault-url: ${{ secrets.VAULT_ADDR }}
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - id: approve-and-merge-backport-renovate
         name: Approve and merge backport PR
         env:

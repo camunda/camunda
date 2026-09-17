@@ -33,7 +33,7 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.ref }}
@@ -161,7 +161,7 @@ jobs:
           fi      
       - name: Wait for required checks
         id: wait_checks
-        uses: camunda/infra-global-github-actions/wait-for-required-checks@main
+        uses: camunda/infra-global-github-actions/wait-for-required-checks@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
         with:
           repository_owner: ${{ github.event.repository.owner.login }}
           repository_name: ${{ github.event.repository.name }}
@@ -170,7 +170,7 @@ jobs:
 
       - name: Generate GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@67d00e9260887361a31f6446252fffbecae4a02e # generate-github-app-token-from-vault-secrets-1.1.1
         with:
           github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
@@ -211,7 +211,7 @@ jobs:
       - name: Monitor merge queue status
         id: monitor_merge
         if: steps.wait_checks.outcome != 'failure'
-        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@main
+        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
         with:
           pr-number: ${{ github.event.pull_request.number }}
           timeout-minutes: ${{ env.MERGE_QUEUE_TIMEOUT_MINUTES }}
@@ -235,7 +235,7 @@ jobs:
       - name: Report auto-merge result to Monorepo Release Process
         if: always() && env.DRY_RUN != 'true'
         continue-on-error: true
-        uses: camunda-community-hub/camunda-platform-8-github-action@8.3.0
+        uses: camunda-community-hub/camunda-platform-8-github-action@0fe490e4cf6f0cf59a5c86a127c4354b4b1fc3b7 # 8.3.0
         with:
           clientConfig: ${{ steps.secrets.outputs.clientConfig }}
           operation: publishMessage

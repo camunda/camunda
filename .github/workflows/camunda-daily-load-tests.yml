@@ -29,7 +29,7 @@ jobs:
     outputs:
       benchmark: ${{ steps.data.outputs.benchmark }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Collect benchmark data
         id: data
         run: |
@@ -80,9 +80,9 @@ jobs:
     timeout-minutes: 5
     permissions: { }
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - id: slack-notify
-        uses: slackapi/slack-github-action@v2.1.1
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_RELIABILITY_TESTING_CH }}
           webhook-type: incoming-webhook

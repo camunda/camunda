@@ -48,7 +48,7 @@ jobs:
       test-tag: ${{ steps.prepare_tag.outputs.test-tag }}
     steps:
       - id: sanitize
-        uses: camunda/infra-global-github-actions/sanitize-branch-name@main
+        uses: camunda/infra-global-github-actions/sanitize-branch-name@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # sanitize-branch-name-1.0.0
         with:
           branch: ${{ inputs.name }}
           max_length: 50  # reduced to account for load-test prefix "c8-" and potential suffixes for uniqueness
@@ -84,9 +84,9 @@ jobs:
     if: failure()
     permissions: {}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - id: slack-notify
-        uses: slackapi/slack-github-action@v2.1.1
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_RELIABILITY_TESTING_CH }}
           webhook-type: incoming-webhook
