@@ -12,7 +12,6 @@ import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.service.security.CCSMTokenService;
 import io.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import io.camunda.security.api.model.CamundaAuthentication;
-import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,12 +44,6 @@ public class OptimizeCcsmComponentAccessPolicy implements OptimizeComponentAcces
 
   public OptimizeCcsmComponentAccessPolicy(final CCSMTokenService tokenService) {
     this.tokenService = tokenService;
-  }
-
-  @Override
-  public Optional<String> loginDenialReason(
-      final String accessTokenValue, final Map<String, Object> claims) {
-    return denialReason(accessTokenValue);
   }
 
   @Override

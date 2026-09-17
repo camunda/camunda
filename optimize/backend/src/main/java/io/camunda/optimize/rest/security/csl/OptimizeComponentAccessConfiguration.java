@@ -21,19 +21,16 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 
 /**
  * Enforces access to the Optimize component through CSL's own component authorization, driven by
- * the edition's {@link OptimizeComponentAccessPolicy}. Two enforcement points, one policy:
+ * the edition's {@link OptimizeComponentAccessPolicy}.
  *
- * <ul>
- *   <li>the OIDC callback, through {@link OptimizeComponentAccessOidcUserService}, so a user who
- *       may not access Optimize cannot complete the login
- *   <li>every request of an established session, through CSL's {@link
- *       WebAppAuthorizationCheckFilter}, so access ends when the grant is revoked
- * </ul>
+ * <p>CSL's {@link WebAppAuthorizationCheckFilter} asks the policy on every request of an
+ * established session, so access ends when the grant is revoked, and a user who may not access
+ * Optimize is answered by {@link OptimizeWebAppAccessDeniedAdapter} instead of reaching the
+ * application.
  *
  * <p>CSL adds its filter to the webapp chain only. Optimize's single page app authenticates its
  * calls with the session cookie, and those calls are served by the API chain, so the filter is
@@ -47,13 +44,6 @@ import org.springframework.security.web.access.intercept.AuthorizationFilter;
     matchIfMissing = true)
 @ConditionalOnBean(OptimizeComponentAccessPolicy.class)
 public class OptimizeComponentAccessConfiguration {
-
-  /** Installed by CSL on the webapp login, see {@link OptimizeComponentAccessOidcUserService}. */
-  @Bean
-  public OidcUserService componentAccessOidcUserService(
-      final OptimizeComponentAccessPolicy policy) {
-    return new OptimizeComponentAccessOidcUserService(policy);
-  }
 
   @Bean
   public WebAppProviderPort webAppProviderPort() {

@@ -16,7 +16,6 @@ import io.camunda.identity.sdk.authentication.exception.TokenVerificationExcepti
 import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.service.security.CCSMTokenService;
 import io.camunda.security.api.model.CamundaAuthentication;
-import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,29 +31,16 @@ class OptimizeCcsmComponentAccessPolicyTest {
   @Mock private CCSMTokenService tokenService;
 
   @Test
-  void shouldAllowLoginWhenTokenHoldsTheOptimizePermission() {
+  void shouldAllowSessionWhenTokenHoldsTheOptimizePermission() {
     // given
+    when(tokenService.getCurrentUserAuthToken()).thenReturn(Optional.of("token"));
     doNothing().when(tokenService).verifyAccessToken("token");
 
     // when
-    final Optional<String> reason = policy().loginDenialReason("token", Map.of());
+    final Optional<String> reason = policy().sessionDenialReason(AUTHENTICATION);
 
     // then
     assertThat(reason).isEmpty();
-  }
-
-  @Test
-  void shouldDenyLoginWhenTokenLacksTheOptimizePermission() {
-    // given
-    doThrow(new NotAuthorizedException("User is not authorized to access Optimize"))
-        .when(tokenService)
-        .verifyAccessToken("token");
-
-    // when
-    final Optional<String> reason = policy().loginDenialReason("token", Map.of());
-
-    // then
-    assertThat(reason).contains("User is not authorized to access Optimize");
   }
 
   @Test
