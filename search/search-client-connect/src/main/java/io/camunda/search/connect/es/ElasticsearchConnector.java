@@ -32,6 +32,7 @@ import org.apache.http.client.config.RequestConfig.Builder;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.http.impl.nio.reactor.IOReactorConfig;
 import org.apache.http.message.BasicHeader;
 import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
@@ -138,6 +139,7 @@ public final class ElasticsearchConnector {
     }
 
     setupConnectionPool(httpAsyncClientBuilder, configuration);
+    setupKeepAlive(httpAsyncClientBuilder);
 
     for (final HttpRequestInterceptor interceptor : interceptors) {
       httpAsyncClientBuilder.addInterceptorLast(interceptor);
@@ -174,6 +176,17 @@ public final class ElasticsearchConnector {
     if (elsConfig.getMaxConnectionsPerRoute() != null) {
       httpAsyncClientBuilder.setMaxConnPerRoute(elsConfig.getMaxConnectionsPerRoute());
     }
+  }
+
+  /**
+   * Enables TCP keepalive on the NIO sockets, which the Apache HttpAsyncClient leaves off by
+   * default. Without it, a firewall or NAT device between this client and Elasticsearch drops its
+   * connection tracking entry for an idle connection without sending a RST or FIN, and the next
+   * request to reuse that pooled connection blocks until the socket timeout expires.
+   */
+  private void setupKeepAlive(final HttpAsyncClientBuilder httpAsyncClientBuilder) {
+    httpAsyncClientBuilder.setDefaultIOReactorConfig(
+        IOReactorConfig.custom().setSoKeepAlive(true).build());
   }
 
   @VisibleForTesting
