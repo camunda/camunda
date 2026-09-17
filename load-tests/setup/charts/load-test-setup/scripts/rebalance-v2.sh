@@ -1,5 +1,6 @@
 set -eu
 
+echo "Requesting token for rebalancing"
 if auth_response=$(curl -sS -f --connect-timeout 10 --max-time 60 -X POST "$AUTH_SERVER" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   --data-urlencode "grant_type=client_credentials" \
