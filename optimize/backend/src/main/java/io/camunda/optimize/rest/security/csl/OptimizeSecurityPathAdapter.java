@@ -103,6 +103,18 @@ public final class OptimizeSecurityPathAdapter implements SecurityPathPort {
   }
 
   /**
+   * No suffix is exempt from the component access check. CSL's default exempts any URI ending in a
+   * static-asset suffix, but Optimize takes the file name of an export as the last path segment,
+   * for example {@code /api/export/csv/{reportId}/{fileName}}, so a caller could name the file
+   * {@code report.js} and reach the data without the check. Optimize serves its own assets from
+   * {@link #unprotectedPaths()}, where no check runs anyway, so nothing needs the exemption.
+   */
+  @Override
+  public Set<String> staticResourceSuffixes() {
+    return Set.of();
+  }
+
+  /**
    * ADR-0038: send a {@code post_logout_redirect_uri} back to Optimize's root after IdP logout so
    * the user lands on the login flow again instead of the IdP's generic logged-out page. CSL
    * expands this to {@code {baseUrl}/}; the unauthenticated root then triggers the webapp chain to

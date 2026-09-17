@@ -296,6 +296,11 @@ class CslChainIntegrationTest {
   }
 
   @Test
+  void shouldDenySessionApiCallWithAnAssetLikeNameForCcsm() {
+    assertAssetLikeApiCallDeniedWithoutComponentAccess(componentAccessRunner(ccsmRunner(), DENY));
+  }
+
+  @Test
   void shouldBindTheSessionRequestForTheComponentCheck() {
     // The CCSM policy reads the session's access token through the current request. CSL attaches
     // the session inside the chain, so the request bound outside of it carries none.
@@ -350,6 +355,11 @@ class CslChainIntegrationTest {
   @Test
   void shouldPermitUnprotectedPathWithoutComponentAccessForCcsaas() {
     assertUnprotectedPathUnaffectedByComponentCheck(componentAccessRunner(ccsaasRunner(), DENY));
+  }
+
+  @Test
+  void shouldDenySessionApiCallWithAnAssetLikeNameForCcsaas() {
+    assertAssetLikeApiCallDeniedWithoutComponentAccess(componentAccessRunner(ccsaasRunner(), DENY));
   }
 
   // -------------------------------------------------------------------------
@@ -765,6 +775,33 @@ class CslChainIntegrationTest {
               .as("bearer call with a denying policy, body: %s", response.getContentAsString())
               .isEqualTo(200);
           assertThat(downstream.getRequest()).isNotNull();
+        });
+  }
+
+  private void assertAssetLikeApiCallDeniedWithoutComponentAccess(
+      final WebApplicationContextRunner runner) {
+    runner.run(
+        ctx -> {
+          // given
+          // The file name of an export is the last path segment and the caller picks it. CSL
+          // exempts a URI ending in a static-asset suffix from the check, so this name would be a
+          // way around it if OptimizeSecurityPathAdapter kept that exemption.
+          final MockHttpServletRequest request =
+              new MockHttpServletRequest("GET", "/api/export/csv/some-id/report.js");
+          request.setCookies(oauth2SessionCookie(ctx));
+          final MockHttpServletResponse response = new MockHttpServletResponse();
+          final MockFilterChain downstream = new MockFilterChain();
+
+          // when
+          doFilterWithRequestContext(ctx, request, response, downstream);
+
+          // then
+          assertThat(response.getStatus())
+              .as(
+                  "export named like a static asset, without component access, body: %s",
+                  response.getContentAsString())
+              .isEqualTo(401);
+          assertThat(downstream.getRequest()).isNull();
         });
   }
 
