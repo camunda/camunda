@@ -35,6 +35,24 @@ export const AUTHORIZATION_WILDCARD = "*";
 export const isValidResourceId = (id: string): boolean =>
   isValidId(id) || id === AUTHORIZATION_WILDCARD;
 
+/** The prefix every {@link isValidSecretResourceId}-matching reference starts with. */
+export const SECRET_REFERENCE_PREFIX = "camunda.secrets.";
+
+// Keep in sync with
+// `io.camunda.gateway.mapping.http.validator.AuthorizationRequestValidator.SECRET_RESOURCE_ID_PATTERN`.
+const SECRET_RESOURCE_ID_PATTERN = /^(\*|camunda\.secrets\.[A-Za-z0-9_-]+)$/;
+
+export const getSecretResourceIdPattern = (): string =>
+  SECRET_RESOURCE_ID_PATTERN.toString();
+
+/**
+ * A SECRET authorization's resource id must be the wildcard or a full
+ * `camunda.secrets.<name>` reference — anything else can never match a secret
+ * reference (camunda/camunda#62736).
+ */
+export const isValidSecretResourceId = (id: string): boolean =>
+  SECRET_RESOURCE_ID_PATTERN.test(id);
+
 /**
  * Because tenant IDs are used widely in the system and also part of many messages and events,
  * they are more heavily restricted than other IDs.
