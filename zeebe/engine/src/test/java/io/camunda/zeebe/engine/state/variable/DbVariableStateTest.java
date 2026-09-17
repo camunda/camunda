@@ -25,7 +25,6 @@ import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.instance.ParentScopeKey;
-import io.camunda.zeebe.engine.state.instance.VariableDocumentState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -45,8 +44,6 @@ final class DbVariableStateTest {
     final ColumnFamily<DbLong, ParentScopeKey> childParentColumnFamily = mock(ColumnFamily.class);
     final ColumnFamily<DbCompositeKey<DbLong, DbString>, VariableInstance> variableColumnFamily =
         mock(ColumnFamily.class);
-    final ColumnFamily<DbLong, VariableDocumentState> variableDocumentColumnFamily =
-        mock(ColumnFamily.class);
 
     when(zeebeDb.createColumnFamily(
             eq(ZbColumnFamilies.ELEMENT_INSTANCE_CHILD_PARENT),
@@ -60,13 +57,6 @@ final class DbVariableStateTest {
             org.mockito.ArgumentMatchers.<DbCompositeKey<DbLong, DbString>>any(),
             any(VariableInstance.class)))
         .thenReturn(variableColumnFamily);
-    when(zeebeDb.createColumnFamily(
-            eq(ZbColumnFamilies.VARIABLE_DOCUMENT_STATE_BY_SCOPE_KEY),
-            eq(transactionContext),
-            any(DbLong.class),
-            any(VariableDocumentState.class)))
-        .thenReturn(variableDocumentColumnFamily);
-
     final var parentScope = new ParentScopeKey();
     parentScope.set(PARENT_SCOPE_KEY);
     final var noParentScope = new ParentScopeKey();
