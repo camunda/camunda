@@ -21,6 +21,7 @@ import io.camunda.zeebe.gateway.RestApiCompositeFilter;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.rest.impl.filters.FilterRepository;
 import io.camunda.zeebe.util.MemberIdUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.servlet.Filter;
 import java.time.Duration;
 import java.util.List;
@@ -29,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.context.LifecycleProperties;
+import org.springframework.boot.micrometer.metrics.autoconfigure.MeterRegistryCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -62,6 +64,17 @@ public class BrokerBasedConfiguration {
 
   public BrokerCfg config() {
     return properties;
+  }
+
+  /**
+   * Adds a {@code broker-id} common tag to all broker metrics, set to the broker's member id
+   * ({@code $zone_$nodeId}, or the bare {@code $nodeId} when no zone is configured).
+   */
+  @Bean
+  public MeterRegistryCustomizer<MeterRegistry> brokerIdMeterRegistryCustomizer() {
+    final var cluster = properties.getCluster();
+    final var brokerId = MemberIdUtil.memberIdString(cluster.getZone(), cluster.getNodeId());
+    return registry -> registry.config().commonTags("broker-id", brokerId);
   }
 
   public WorkingDirectory workingDirectory() {
