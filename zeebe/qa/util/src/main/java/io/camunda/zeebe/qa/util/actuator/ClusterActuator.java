@@ -27,10 +27,10 @@ import io.camunda.zeebe.management.cluster.ClusterZoneMigrationRequest;
 import io.camunda.zeebe.management.cluster.ConfigurationChange;
 import io.camunda.zeebe.management.cluster.GetConfigurationChangesResponse;
 import io.camunda.zeebe.management.cluster.GetTopologyResponse;
-import io.camunda.zeebe.management.cluster.PartitionDistributionConfig;
+import io.camunda.zeebe.management.cluster.PartitioningConfig;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.management.cluster.RoutingState;
-import io.camunda.zeebe.management.cluster.UpdatePartitionDistributionRequest;
+import io.camunda.zeebe.management.cluster.UpdatePartitioningRequest;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import java.util.List;
@@ -465,26 +465,25 @@ public interface ClusterActuator {
   @Headers({"Content-Type: application/json", "accept: application/json"})
   void patchRoutingState(@Param boolean dryRun, @Param final String physicalTenant);
 
-  @RequestLine("PUT /partition-distribution?dryRun={dryRun}")
+  @RequestLine("PUT /partitioning?dryRun={dryRun}")
   @Headers({"Content-Type: application/json", "accept: application/json"})
   PlannedOperationsResponse updatePartitionDistribution(
-      @RequestBody final UpdatePartitionDistributionRequest request, @Param boolean dryRun);
+      @RequestBody final UpdatePartitioningRequest request, @Param boolean dryRun);
 
-  /** Applies a full partition distribution config via {@code PUT /partition-distribution}. */
+  /** Applies a full partition distribution config via {@code PUT /partitioning}. */
   default PlannedOperationsResponse patchPartitionDistribution(
-      final PartitionDistributionConfig config, final boolean dryRun) {
-    return updatePartitionDistribution(
-        new UpdatePartitionDistributionRequest().config(config), dryRun);
+      final PartitioningConfig config, final boolean dryRun) {
+    return updatePartitionDistribution(new UpdatePartitioningRequest().config(config), dryRun);
   }
 
   /**
-   * Performs a leader switchover via {@code PUT /partition-distribution}: re-orders the existing
-   * per-zone priorities by {@code zonePriorities} (highest first).
+   * Performs a leader switchover via {@code PUT /partitioning}: re-orders the existing per-zone
+   * priorities by {@code zonePriorities} (highest first).
    */
   default PlannedOperationsResponse updateZonePriorities(
       final List<String> zonePriorities, final boolean dryRun) {
     return updatePartitionDistribution(
-        new UpdatePartitionDistributionRequest().zonePriorities(zonePriorities), dryRun);
+        new UpdatePartitioningRequest().zonePriorities(zonePriorities), dryRun);
   }
 
   @RequestLine("PUT /zones?dryRun={dryRun}")
