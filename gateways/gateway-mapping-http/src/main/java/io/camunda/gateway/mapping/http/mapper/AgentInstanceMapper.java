@@ -64,8 +64,8 @@ public class AgentInstanceMapper {
             record.setJobKey(Long.parseLong(request.getJobKey()));
           }
 
-          if (request.getJobLease() != null) {
-            record.setJobLease(request.getJobLease());
+          if (request.getJobLeaseToken() != null) {
+            record.setJobLease(request.getJobLeaseToken());
           }
 
           if (request.getHistory() != null) {
@@ -96,8 +96,8 @@ public class AgentInstanceMapper {
             record.setJobKey(Long.parseLong(request.getJobKey()));
           }
 
-          if (request.getJobLease() != null) {
-            record.setJobLease(request.getJobLease());
+          if (request.getJobLeaseToken() != null) {
+            record.setJobLease(request.getJobLeaseToken());
           }
 
           if (request.getHistory() != null) {

@@ -182,7 +182,7 @@ rules:
   # response property is present (required, non-null) iff the named top-level
   # request-body field equals the given scalar; otherwise it is absent. This is
   # the ground-truth SDK generators derive request→response dependent typing
-  # from (e.g. ActivatedJobResult.leaseToken vs JobActivationRequest.withLease).
+  # from (e.g. ActivatedJobResult.jobLeaseToken vs JobActivationRequest.withLease).
   # The marker is inert on the wire: the property keeps its declared nullable
   # shape for any consumer that does not derive from it.
   #

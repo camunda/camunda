@@ -94,7 +94,7 @@ already-released server, whose ignore-unknown-fields behavior is fixed — and a
 reject-unknown-fields going forward would trade proto3's rolling-upgrade tolerance for a permanent
 availability cliff on every future field addition. Only the worker application knows whether the
 fence is *required* or merely *preferred* — so the contract sits with the worker: check
-`leaseToken` per activated job and, when absent and the fence is required, fail the job with a
+`jobLeaseToken` per activated job and, when absent and the fence is required, fail the job with a
 backoff while preserving retries (a decremented retry would burn a transient infrastructure state
 into an incident). This converges as partition leaders upgrade; against a permanently old cluster
 it manifests as a visible fail loop rather than silent unfenced execution — the intended,

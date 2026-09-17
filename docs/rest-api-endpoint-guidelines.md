@@ -76,6 +76,36 @@ All descriptive text (summaries, descriptions, property docs) should follow the 
 | **Tags**: Sentence case, no trailing period              | `tags: [Process definition]`                                       |
 | **Resource references in text**: lower case              | ✅ "the process definition" ❌ "the Process Definition"              |
 
+#### Values that cross an entity boundary
+
+Within one entity's own request and response, a property name usually omits the entity context:
+most Job schema fields carry no `job` prefix. Once a value crosses from one entity's response into a
+*different* entity's request, that context is gone — the receiving schema no longer says where the
+value came from — so the name must carry its origin. When a property is going to cross that boundary,
+it is qualified everywhere it appears, including on the entity that originates it, so both sides use
+the same name instead of being renamed at the crossing:
+
+```yaml
+# jobs.yaml — the activation response is where the value originates; already qualified here
+# because it is destined to cross into another entity's request below
+ActivatedJobResult:
+  properties:
+    jobLeaseToken: ...
+
+# agent-instances.yaml — a different entity consuming that same value, same name
+AgentInstanceCreationRequest:
+  properties:
+    jobLeaseToken: ...
+```
+
+The qualified name is what lets a caller — or a compiler, linter, or model — see that the two sides
+are the same value, rather than having to recover the correlation from prose.
+
+This is the same reason every key property is `${entity}Key` and never a bare `key`: keys are
+chained from one response into the next request. `no-ambiguous-identifier-property` (§3.3) enforces
+only the narrowest case, bare `id` and `key`. The general rule is not linted, so apply it in review
+whenever a new property carries a value that another entity produced.
+
 ### 2.3 Path and operation conventions
 
 **Every operation MUST have:**
@@ -1402,12 +1432,12 @@ cross-check the value against the `@ClusterScoped` annotation in Java directly
 ### 2.21 Conditional-presence annotation (`x-present-when`)
 
 Some response properties are only meaningful for certain request shapes. The
-canonical case is `activateJobs`: `ActivatedJobResult.leaseToken` is populated
+canonical case is `activateJobs`: `ActivatedJobResult.jobLeaseToken` is populated
 only when the request was made with `withLease: true`; when `withLease` is
 `false` or omitted, the server returns no lease token. OpenAPI 3.x binds exactly
 one response schema per operation/status, so it cannot express that a response
 field's presence depends on a request field. Left unannotated, every generated
-SDK types `leaseToken` as always-nullable, and a user who reads it after an
+SDK types `jobLeaseToken` as always-nullable, and a user who reads it after an
 unleased activation writes code that compiles but fails at runtime.
 
 `x-present-when` encodes that request→response dependency as ground truth on the
@@ -1423,9 +1453,9 @@ Place the marker on the response property whose presence is conditional:
 ActivatedJobResult:
   required:
     - ...
-    - leaseToken        # stays required + nullable on the wire (see below)
+    - jobLeaseToken # stays required + nullable on the wire (see below)
   properties:
-    leaseToken:
+    jobLeaseToken:
       description: The lease token; `null` when activated without a lease.
       nullable: true
       x-present-when:
@@ -1453,7 +1483,7 @@ transitively (including through arrays and nested objects) for any property
 annotated `x-present-when: { request: F, equals: V }`, where `F` is a top-level
 property of `R`. Project the property three ways on the compile-time value of
 `F`, and propagate the projection outward through every enclosing type (e.g.
-`JobActivationResult.jobs[] → ActivatedJobResult.leaseToken`):
+`JobActivationResult.jobs[] → ActivatedJobResult.jobLeaseToken`):
 
 |                                                               `F` at the call site                                                                |                                                                                              Projection of the annotated property                                                                                               |
 |---------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -1540,22 +1570,24 @@ spectral lint "zeebe/gateway-protocol/src/main/proto/v2/*.yaml" \
 
 The ruleset lives in `zeebe/gateway-protocol/.spectral.yaml`. Custom functions are in `spectral-functions/`.
 
-|                    Rule                    | Severity |                                          What it checks                                           |
-|--------------------------------------------|----------|---------------------------------------------------------------------------------------------------|
-| `operation-tag-defined`                    | error    | Every operation must have at least one tag                                                        |
-| `no-period-in-summary`                     | error    | Path summaries must not end with a period                                                         |
-| `no-flow-node-in-*` (5 rules)              | error    | "flow node" terminology is banned; use "element"                                                  |
-| `require-property-descriptions`            | error    | Every schema property must have a `description`                                                   |
-| `operation-key-properties-must-be-strings` | warn     | Path parameters ending in `Key` must be `type: string`                                            |
-| `schema-key-properties-must-be-strings`    | warn     | Schema properties ending in `Key` must be `type: string` (or compose `BasicStringFilterProperty`) |
-| `required-properties-must-exist`           | error    | Every entry in `required` must exist in `properties` or `allOf`                                   |
-| `array-properties-must-be-required`        | error    | Response array properties must be `required` and not `nullable`                                   |
-| `no-eventually-consistent-on-commands`     | error    | Command operations must not have `x-eventually-consistent: true`                                  |
-| `valid-deprecated-enum-members`            | error    | `x-deprecated-enum-members` must be well-formed                                                   |
-| `require-added-in-version`                 | error    | Every operation must declare `x-added-in-version` (see §2.17)                                     |
-| `properties-added-in-version-shape`        | error    | `x-properties-added-in-version` entries must be `{propertyName, addedInVersion}` only (see §2.17) |
-| `require-scope`                            | error    | Every operation must declare `x-scope` as `cluster-wide` or `physical-tenant` (see §2.20)         |
-| `oas3-valid-schema-example`                | error    | Schemas must be valid per OpenAPI 3.0 JSON Schema rules                                           |
+|                    Rule                    | Severity |                                                                 What it checks                                                                  |
+|--------------------------------------------|----------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| `operation-tag-defined`                    | error    | Every operation must have at least one tag                                                                                                      |
+| `no-period-in-summary`                     | error    | Path summaries must not end with a period                                                                                                       |
+| `no-flow-node-in-*` (5 rules)              | error    | "flow node" terminology is banned; use "element"                                                                                                |
+| `require-property-descriptions`            | error    | Every schema property must have a `description`                                                                                                 |
+| `operation-key-properties-must-be-strings` | warn     | Path parameters ending in `Key` must be `type: string`                                                                                          |
+| `schema-key-properties-must-be-strings`    | warn     | Schema properties ending in `Key` must be `type: string` (or compose `BasicStringFilterProperty`)                                               |
+| `required-properties-must-exist`           | error    | Every entry in `required` must exist in `properties` or `allOf`                                                                                 |
+| `array-properties-must-be-required`        | error    | Response array properties must be `required` and not `nullable`                                                                                 |
+| `no-eventually-consistent-on-commands`     | error    | Command operations must not have `x-eventually-consistent: true`                                                                                |
+| `valid-deprecated-enum-members`            | error    | `x-deprecated-enum-members` must be well-formed                                                                                                 |
+| `require-added-in-version`                 | error    | Every operation must declare `x-added-in-version` (see §2.17)                                                                                   |
+| `properties-added-in-version-shape`        | error    | `x-properties-added-in-version` entries must be `{propertyName, addedInVersion}` only (see §2.17)                                               |
+| `require-scope`                            | error    | Every operation must declare `x-scope` as `cluster-wide` or `physical-tenant` (see §2.20)                                                       |
+| `oas3-valid-schema-example`                | error    | Schemas must be valid per OpenAPI 3.0 JSON Schema rules                                                                                         |
+| `no-ambiguous-identifier-property`         | error    | Schema properties must not be a bare `id` or `key` — use a qualified name (see §2.2). Pre-existing contracts are grandfathered via an allowlist |
+| `no-ambiguous-identifier-property-inline`  | error    | Same check for inline request/response/parameter schemas, with no allowlist                                                                     |
 
 ### 3.4 Adding new Spectral rules
 

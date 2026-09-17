@@ -50,7 +50,7 @@ public class AgentInstanceHistorySearchIT {
   private static long agentInstanceKey;
   private static long elementInstanceKey;
   private static long jobKey;
-  private static String jobLease;
+  private static String jobLeaseToken;
   private static long historyItemKey0;
   private static long historyItemKey1;
   private static long historyItemKey2;
@@ -101,7 +101,7 @@ public class AgentInstanceHistorySearchIT {
         .as("expected to activate one agent job for process instance %d", processInstanceKey)
         .isNotEmpty();
     jobKey = activatedJobs.get(0).getKey();
-    jobLease = activatedJobs.get(0).getLeaseToken();
+    jobLeaseToken = activatedJobs.get(0).getJobLeaseToken();
 
     // The initial CONFIGURATION history item establishing model/provider/systemPrompt is
     // produced before the USER/ASSISTANT/TOOL_RESULT items added below, so give it an earlier
@@ -111,7 +111,7 @@ public class AgentInstanceHistorySearchIT {
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(elementInstanceKey)
             .jobKey(jobKey)
-            .jobLease(jobLease)
+            .jobLeaseToken(jobLeaseToken)
             .history(
                 List.of(
                     new AgentInstanceHistoryItem()
@@ -138,7 +138,7 @@ public class AgentInstanceHistorySearchIT {
             .newUpdateAgentInstanceCommand(agentInstanceKey)
             .elementInstanceKey(elementInstanceKey)
             .jobKey(jobKey)
-            .jobLease(jobLease)
+            .jobLeaseToken(jobLeaseToken)
             .history(
                 List.of(
                     new AgentInstanceHistoryItem()
@@ -187,7 +187,7 @@ public class AgentInstanceHistorySearchIT {
 
     // Complete the job so JobCompleteProcessor emits AGENT_HISTORY:COMMIT,
     // causing history items to transition to COMMITTED and become searchable.
-    camundaClient.newCompleteCommand(jobKey).withLeaseToken(jobLease).execute();
+    camundaClient.newCompleteCommand(jobKey).withJobLeaseToken(jobLeaseToken).execute();
 
     waitForHistoryItemsToBeIndexed(camundaClient, agentInstanceKey, 4);
   }
@@ -380,7 +380,7 @@ public class AgentInstanceHistorySearchIT {
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(job.elementInstanceKey())
             .jobKey(job.jobKey())
-            .jobLease(job.jobLease())
+            .jobLeaseToken(job.jobLeaseToken())
             .history(
                 List.of(
                     new AgentInstanceHistoryItem()
@@ -408,7 +408,7 @@ public class AgentInstanceHistorySearchIT {
 
     waitForAgentInstanceToBeIndexed(camundaClient, agentInstanceKey);
 
-    camundaClient.newCompleteCommand(job.jobKey()).withLeaseToken(job.jobLease()).execute();
+    camundaClient.newCompleteCommand(job.jobKey()).withJobLeaseToken(job.jobLeaseToken()).execute();
     waitForHistoryItemsToBeIndexed(camundaClient, agentInstanceKey, 2);
 
     // then
@@ -442,7 +442,7 @@ public class AgentInstanceHistorySearchIT {
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(job.elementInstanceKey())
             .jobKey(job.jobKey())
-            .jobLease(job.jobLease())
+            .jobLeaseToken(job.jobLeaseToken())
             .history(
                 List.of(
                     new AgentInstanceHistoryItem()
@@ -467,7 +467,7 @@ public class AgentInstanceHistorySearchIT {
             .newUpdateAgentInstanceCommand(agentInstanceKey)
             .elementInstanceKey(job.elementInstanceKey())
             .jobKey(job.jobKey())
-            .jobLease(job.jobLease())
+            .jobLeaseToken(job.jobLeaseToken())
             .history(
                 List.of(
                     new AgentInstanceHistoryItem()
@@ -501,7 +501,7 @@ public class AgentInstanceHistorySearchIT {
     final long toolResultItemKey = updatedHistory.get(2).getHistoryItemKey();
 
     // Complete the job so all three PENDING items commit and become searchable.
-    camundaClient.newCompleteCommand(job.jobKey()).withLeaseToken(job.jobLease()).execute();
+    camundaClient.newCompleteCommand(job.jobKey()).withJobLeaseToken(job.jobLeaseToken()).execute();
     waitForHistoryItemsToBeIndexed(
         camundaClient,
         agentInstanceKey,
@@ -578,7 +578,7 @@ public class AgentInstanceHistorySearchIT {
         .isNotEmpty();
 
     return new AgentJob(
-        elementInstanceKey, activatedJobs.get(0).getKey(), activatedJobs.get(0).getLeaseToken());
+        elementInstanceKey, activatedJobs.get(0).getKey(), activatedJobs.get(0).getJobLeaseToken());
   }
 
   private static void waitForHistoryItemsToBeIndexed(
@@ -602,5 +602,5 @@ public class AgentInstanceHistorySearchIT {
             });
   }
 
-  private record AgentJob(long elementInstanceKey, long jobKey, String jobLease) {}
+  private record AgentJob(long elementInstanceKey, long jobKey, String jobLeaseToken) {}
 }

@@ -218,17 +218,20 @@ public final class CompleteJobTest {
 
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
-  public void shouldCompleteLeasedJobWithMatchingLeaseToken(
+  public void shouldCompleteLeasedJobWithMatchingJobLeaseToken(
       final boolean useRest, final TestInfo testInfo) {
     // given
     final String jobType = "job-" + testInfo.getDisplayName();
     final var job = activateLeasedJob(client, useRest, jobType);
-    assertThat(job.getLeaseToken())
+    assertThat(job.getJobLeaseToken())
         .describedAs("Expected the leased job to carry a lease token")
         .isNotEmpty();
 
     // when
-    getCommand(client, useRest, job.getKey()).withLeaseToken(job.getLeaseToken()).send().join();
+    getCommand(client, useRest, job.getKey())
+        .withJobLeaseToken(job.getJobLeaseToken())
+        .send()
+        .join();
 
     // then
     ZeebeAssertHelper.assertJobCompleted(jobType);
@@ -236,12 +239,12 @@ public final class CompleteJobTest {
 
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
-  public void shouldRejectCompleteLeasedJobWithWrongLeaseToken(
+  public void shouldRejectCompleteLeasedJobWithWrongJobLeaseToken(
       final boolean useRest, final TestInfo testInfo) {
     // given
     final String jobType = "job-" + testInfo.getDisplayName();
     final var job = activateLeasedJob(client, useRest, jobType);
-    assertThat(job.getLeaseToken())
+    assertThat(job.getJobLeaseToken())
         .describedAs("Expected the leased job to carry a lease token")
         .isNotEmpty();
 
@@ -254,7 +257,7 @@ public final class CompleteJobTest {
     assertThatThrownBy(
             () ->
                 getCommand(client, useRest, job.getKey())
-                    .withLeaseToken("wrong-lease-token")
+                    .withJobLeaseToken("wrong-lease-token")
                     .send()
                     .join())
         .hasMessageContaining(expectedMessage);
@@ -262,12 +265,12 @@ public final class CompleteJobTest {
 
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
-  public void shouldRejectCompleteLeasedJobWithoutLeaseToken(
+  public void shouldRejectCompleteLeasedJobWithoutJobLeaseToken(
       final boolean useRest, final TestInfo testInfo) {
     // given
     final String jobType = "job-" + testInfo.getDisplayName();
     final var job = activateLeasedJob(client, useRest, jobType);
-    assertThat(job.getLeaseToken())
+    assertThat(job.getJobLeaseToken())
         .describedAs("Expected the leased job to carry a lease token")
         .isNotEmpty();
 
@@ -283,12 +286,12 @@ public final class CompleteJobTest {
 
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
-  public void shouldCompleteLeasedJobWithLeaseTokenCarriedFromActivatedJob(
+  public void shouldCompleteLeasedJobWithJobLeaseTokenCarriedFromActivatedJob(
       final boolean useRest, final TestInfo testInfo) {
     // given
     final String jobType = "job-" + testInfo.getDisplayName();
     final var job = activateLeasedJob(client, useRest, jobType);
-    assertThat(job.getLeaseToken())
+    assertThat(job.getJobLeaseToken())
         .describedAs("Expected the leased job to carry a lease token")
         .isNotEmpty();
 
