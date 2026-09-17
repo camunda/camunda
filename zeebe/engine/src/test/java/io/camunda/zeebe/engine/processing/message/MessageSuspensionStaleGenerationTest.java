@@ -67,7 +67,7 @@ public final class MessageSuspensionStaleGenerationTest {
    */
   @Test
   public void shouldSendRejectForStaleGenerationCorrelate() {
-    // given — instance on P1 with subscription K1 on a different partition
+    // given
     final String processId = Strings.newRandomValidBpmnId();
     final String messageName = Strings.newRandomValidBpmnId();
     final String correlationKey = correlationKeyForPartitionOtherThan(PROCESS_INSTANCE_PARTITION);
@@ -76,7 +76,6 @@ public final class MessageSuspensionStaleGenerationTest {
     final long processInstanceKey =
         deployAndStart(processId, messageName, correlationKey, PROCESS_INSTANCE_PARTITION);
 
-    // wait for K1 subscription to be fully established on message partition
     final Record<MessageSubscriptionRecordValue> k1Created =
         RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -84,12 +83,12 @@ public final class MessageSuspensionStaleGenerationTest {
     assertThat(k1Created.getPartitionId()).isEqualTo(subscriptionPartition);
     final long k1Key = k1Created.getKey();
 
-    // and K1 subscription acknowledged on PI partition (so PI side has subscriptionKey = K1)
     RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
         .await();
 
-    // intercept and capture the CORRELATE command (message partition → PI partition)
+    // capture the CORRELATE instead of letting it reach the PI partition, simulating the delay
+    // that lets the upcoming suspend/resume cycle race ahead of it
     final var capturedCorrelate = new AtomicReference<ProcessMessageSubscriptionRecord>();
     engine.interceptInterPartitionCommands(
         (receiverPartitionId, valueType, intent, recordKey, command) -> {
@@ -100,12 +99,11 @@ public final class MessageSuspensionStaleGenerationTest {
               copy.wrap((ProcessMessageSubscriptionRecord) command);
               capturedCorrelate.set(copy);
             }
-            return false; // drop all CORRELATE commands to PI partition
+            return false;
           }
           return true;
         });
 
-    // publish a message that matches K1 — sets CORRELATING + correlation lock on P2
     engine
         .message()
         .onPartition(subscriptionPartition)
@@ -118,13 +116,12 @@ public final class MessageSuspensionStaleGenerationTest {
         .withProcessInstanceKey(processInstanceKey)
         .await();
 
-    // suspend — deletes K1 on message partition (but does NOT release correlation lock)
+    // suspend deletes K1 without releasing the correlation lock it holds
     engine.processInstance().withInstanceKey(processInstanceKey).suspend();
     RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.DELETED)
         .withProcessInstanceKey(processInstanceKey)
         .await();
 
-    // resume — creates K2 on message partition
     engine.processInstance().withInstanceKey(processInstanceKey).resume();
     final Record<MessageSubscriptionRecordValue> k2Created =
         RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
@@ -135,13 +132,11 @@ public final class MessageSuspensionStaleGenerationTest {
     final long k2Key = k2Created.getKey();
     assertThat(k2Key).isNotEqualTo(k1Key);
 
-    // wait for K2 to be acknowledged on PI partition
     RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
         .skip(1)
         .await();
 
-    // install a recording interceptor: allow all, but track if REJECT is sent
     final var rejectSentToMessagePartition = new AtomicBoolean(false);
     engine.interceptInterPartitionCommands(
         (receiverPartitionId, valueType, intent, recordKey, command) -> {
@@ -153,7 +148,7 @@ public final class MessageSuspensionStaleGenerationTest {
           return true;
         });
 
-    // when — write the captured stale CORRELATE(K1) to the PI partition
+    // when — release the captured, now-stale CORRELATE(K1)
     assertThat(capturedCorrelate.get())
         .as("interceptor should have captured a CORRELATE command")
         .isNotNull();
@@ -167,7 +162,7 @@ public final class MessageSuspensionStaleGenerationTest {
         ProcessMessageSubscriptionIntent.CORRELATE,
         capturedCorrelate.get());
 
-    // then — the stale CORRELATE is rejected on P1 (stale generation guard fires)
+    // then
     final var rejection =
         RecordingExporter.processMessageSubscriptionRecords(
                 ProcessMessageSubscriptionIntent.CORRELATE)
@@ -177,7 +172,7 @@ public final class MessageSuspensionStaleGenerationTest {
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
     assertThat(rejection.getRejectionReason()).contains("superseded subscription generation");
 
-    // verify K2 is still functional: publish a second message that correlates to K2
+    // K2 must still be able to correlate a new message
     engine
         .message()
         .onPartition(subscriptionPartition)
@@ -186,14 +181,11 @@ public final class MessageSuspensionStaleGenerationTest {
         .withTimeToLive(Duration.ofMinutes(1))
         .publish();
 
-    // the process should complete via K2
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
         .withProcessInstanceKey(processInstanceKey)
         .withElementType(BpmnElementType.PROCESS)
         .await();
 
-    // fixed: REJECT is now sent back to the message partition for the stale CORRELATE,
-    // so the correlation lock can be released
     assertThat(rejectSentToMessagePartition.get())
         .as("stale-generation CORRELATE must send a REJECT back to release the correlation lock")
         .isTrue();
@@ -206,7 +198,7 @@ public final class MessageSuspensionStaleGenerationTest {
    */
   @Test
   public void shouldReleaseCorrelationLockForStaleGenerationRejectWithoutDeletingReplacement() {
-    // given — instance on P1 with subscription K1 on a different partition
+    // given
     final String processId = Strings.newRandomValidBpmnId();
     final String messageName = Strings.newRandomValidBpmnId();
     final String correlationKey = correlationKeyForPartitionOtherThan(PROCESS_INSTANCE_PARTITION);
@@ -215,7 +207,6 @@ public final class MessageSuspensionStaleGenerationTest {
     final long processInstanceKey =
         deployAndStart(processId, messageName, correlationKey, PROCESS_INSTANCE_PARTITION);
 
-    // wait for K1 subscription fully established
     final Record<MessageSubscriptionRecordValue> k1Created =
         RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -227,7 +218,7 @@ public final class MessageSuspensionStaleGenerationTest {
         .withProcessInstanceKey(processInstanceKey)
         .await();
 
-    // intercept CORRELATE to PI partition — prevents process from completing
+    // keep the CORRELATE from reaching the PI partition, so K1 stays locked on this message
     engine.interceptInterPartitionCommands(
         (receiverPartitionId, valueType, intent, recordKey, command) -> {
           if (receiverPartitionId == PROCESS_INSTANCE_PARTITION
@@ -237,7 +228,6 @@ public final class MessageSuspensionStaleGenerationTest {
           return true;
         });
 
-    // publish message → K1 CORRELATING + correlation lock on message partition
     engine
         .message()
         .onPartition(subscriptionPartition)
@@ -252,13 +242,12 @@ public final class MessageSuspensionStaleGenerationTest {
             .getFirst();
     final long messageKey = correlating.getValue().getMessageKey();
 
-    // suspend → K1 DELETED (correlation lock stays), resume → K2 CREATED
+    // suspend deletes K1 without releasing the correlation lock it holds
     engine.processInstance().withInstanceKey(processInstanceKey).suspend();
     RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.DELETED)
         .withProcessInstanceKey(processInstanceKey)
         .await();
 
-    // allow inter-partition commands again before resume
     engine.interceptInterPartitionCommands(
         (receiverPartitionId, valueType, intent, recordKey, command) -> true);
 
@@ -276,8 +265,8 @@ public final class MessageSuspensionStaleGenerationTest {
         .skip(1)
         .await();
 
-    // when — inject a stale REJECT(K1) on the message partition,
-    // simulating what the PI partition would send if the PI-side bug were fixed
+    // when — inject a stale REJECT(K1) directly, simulating what the PI partition would send
+    // once its own stale-CORRELATE handling is fixed
     final var rejectRecord =
         new MessageSubscriptionRecord()
             .setProcessInstanceKey(processInstanceKey)
@@ -294,12 +283,12 @@ public final class MessageSuspensionStaleGenerationTest {
     engine.writeCommandOnPartition(
         subscriptionPartition, -1L, MessageSubscriptionIntent.REJECT, rejectRecord);
 
-    // then — REJECTED event is written (applier releases correlation lock)
+    // then
     RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.REJECTED)
         .withProcessInstanceKey(processInstanceKey)
         .await();
 
-    // verify K2 still works: publish a second message that correlates to K2
+    // K2 must still exist and be able to correlate a new message
     engine
         .message()
         .onPartition(subscriptionPartition)
@@ -308,7 +297,110 @@ public final class MessageSuspensionStaleGenerationTest {
         .withTimeToLive(Duration.ofMinutes(1))
         .publish();
 
-    // K2 subscription must still exist — the applier did not delete the replacement
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
+  }
+
+  /**
+   * Verifies that a stale REJECT(K1) also reroutes the message that was buffered against K1 to the
+   * live replacement subscription K2, so the process completes using that same message without it
+   * ever being republished.
+   */
+  @Test
+  public void shouldDeliverOriginalMessageToReplacementAfterStaleGenerationReject() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    final String messageName = Strings.newRandomValidBpmnId();
+    final String correlationKey = correlationKeyForPartitionOtherThan(PROCESS_INSTANCE_PARTITION);
+    final int subscriptionPartition = getSubscriptionPartitionId(correlationKey);
+
+    final long processInstanceKey =
+        deployAndStart(processId, messageName, correlationKey, PROCESS_INSTANCE_PARTITION);
+
+    final Record<MessageSubscriptionRecordValue> k1Created =
+        RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(k1Created.getPartitionId()).isEqualTo(subscriptionPartition);
+    final long k1Key = k1Created.getKey();
+
+    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // keep the CORRELATE from reaching the PI partition, so K1 stays locked on this message
+    engine.interceptInterPartitionCommands(
+        (receiverPartitionId, valueType, intent, recordKey, command) -> {
+          if (receiverPartitionId == PROCESS_INSTANCE_PARTITION
+              && intent == ProcessMessageSubscriptionIntent.CORRELATE) {
+            return false;
+          }
+          return true;
+        });
+
+    // the message that gets stuck against K1: published once, never republished later
+    engine
+        .message()
+        .onPartition(subscriptionPartition)
+        .withName(messageName)
+        .withCorrelationKey(correlationKey)
+        .withTimeToLive(Duration.ofMinutes(5))
+        .publish();
+
+    final var correlating =
+        RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    final long messageKey = correlating.getValue().getMessageKey();
+    final long elementInstanceKey = correlating.getValue().getElementInstanceKey();
+
+    // suspend deletes K1 without releasing the correlation lock it holds
+    engine.processInstance().withInstanceKey(processInstanceKey).suspend();
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.DELETED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    engine.interceptInterPartitionCommands(
+        (receiverPartitionId, valueType, intent, recordKey, command) -> true);
+
+    engine.processInstance().withInstanceKey(processInstanceKey).resume();
+    final Record<MessageSubscriptionRecordValue> k2Created =
+        RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .skip(1)
+            .getFirst();
+    final long k2Key = k2Created.getKey();
+    assertThat(k2Key).isNotEqualTo(k1Key);
+
+    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .skip(1)
+        .await();
+
+    // when — inject the stale REJECT(K1) directly, releasing the lock it holds on `messageKey`
+    final var rejectRecord =
+        new MessageSubscriptionRecord()
+            .setProcessInstanceKey(processInstanceKey)
+            .setElementInstanceKey(elementInstanceKey)
+            .setProcessDefinitionKey(correlating.getValue().getProcessDefinitionKey())
+            .setBpmnProcessId(BufferUtil.wrapString(correlating.getValue().getBpmnProcessId()))
+            .setMessageName(BufferUtil.wrapString(correlating.getValue().getMessageName()))
+            .setCorrelationKey(BufferUtil.wrapString(correlating.getValue().getCorrelationKey()))
+            .setMessageKey(messageKey)
+            .setInterrupting(false)
+            .setTenantId(correlating.getValue().getTenantId())
+            .setSubscriptionKey(k1Key);
+
+    engine.writeCommandOnPartition(
+        subscriptionPartition, -1L, MessageSubscriptionIntent.REJECT, rejectRecord);
+
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.REJECTED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // then — completes via K2 correlating the same message, without publishing a second one
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
         .withProcessInstanceKey(processInstanceKey)
         .withElementType(BpmnElementType.PROCESS)
