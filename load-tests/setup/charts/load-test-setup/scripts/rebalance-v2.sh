@@ -13,8 +13,7 @@ else
   exit 1
 fi
 
-# tolerate optional whitespace around the JSON colon (pretty-printed responses)
-token=$(printf '%s' "$auth_response" | sed -n 's/.*"access_token"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+token=$(printf '%s' "$auth_response" | jq -r '.access_token // empty')
 if [ -z "$token" ]; then
   echo "Failed to obtain an access token for the cluster-admin API" >&2
   exit 1
