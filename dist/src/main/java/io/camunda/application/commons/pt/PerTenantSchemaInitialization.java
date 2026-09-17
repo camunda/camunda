@@ -264,6 +264,7 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
       final var backoff =
           IntervalFunction.ofExponentialRandomBackoff(
               retry.getMinRetryDelay(), retry.getRetryDelayMultiplier(), retry.getMaxRetryDelay());
+      final long deferralPollMillis = Math.max(1L, retry.getMinRetryDelay().toMillis());
 
       int attemptNumber = 1;
       int consecutiveDeferrals = 0;
@@ -275,7 +276,7 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
           // still opens its gate and comes up. That is what keeps the operator able to reach the
           // node that has to be told the deferral is over.
           stopTrying(state);
-          if (!sleep(backoff.apply(consecutiveDeferrals))) {
+          if (!sleep(deferralPollMillis)) {
             return;
           }
           continue;
