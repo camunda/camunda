@@ -760,6 +760,9 @@ jobs:
             chmod +x zcl
       - name: Identify previous release version
         id: prev_version
+        # Only the supported 8.x release path; skips dry-run versions (e.g. 0.8.2, *-alpha1)
+        # for which the action would find no predecessor tag and fail.
+        if: ${{ startsWith(inputs.releaseVersion, '8.') && !contains(inputs.releaseVersion, '-') }}
         uses: camunda/infra-global-github-actions/previous-version@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # previous-version-1.0.0
         with:
           version: "${{ inputs.releaseVersion }}"
