@@ -206,9 +206,9 @@ class CslChainIntegrationTest {
               proxy.doFilter(request, response, downstream);
 
               // Without OptimizeCcsmSessionPermissionEnforcementFilter this would incorrectly
-              // return 200: CSL's OidcUserAuthenticationConverter#decodeAccessToken swallows the
-              // JwtValidationException OptimizeIdentityPermissionValidator throws and falls back
-              // to the id_token's claims instead of denying the request.
+              // return 200: CSL validates issuer, signature and expiry only, and its
+              // OidcUserAuthenticationConverter#decodeAccessToken falls back to the id_token's
+              // claims on a validation failure instead of denying the request.
               //
               // The denial is terminal, rendered by OptimizeErrorController as the CCSM "no
               // authorization to access Optimize" page. Restarting the login instead would loop:
@@ -357,9 +357,9 @@ class CslChainIntegrationTest {
   }
 
   // -------------------------------------------------------------------------
-  // Bug B: /api/public/** and /api/ingestion/variable must stay audience-only (no Identity
-  // write:* gate), while an ordinary internal API path stays gated (OptimizeCcsmPublicApi
-  // carve-out).
+  // Bug B: /api/public/** and /api/ingestion/variable must be pinned to api.audience the way the
+  // legacy decoder pinned them, while no API path gates a bearer token through Identity
+  // (OptimizeCcsmPublicApi carve-out).
   // -------------------------------------------------------------------------
 
   @Test
@@ -382,8 +382,7 @@ class CslChainIntegrationTest {
               proxy.doFilter(request, response, downstream);
 
               // A client-credentials/M2M token with no write:* Identity grant must still be
-              // accepted here: legacy CCSM never gated /api/public/** or
-              // /api/ingestion/variable through Identity, only checked the audience.
+              // accepted: legacy CCSM checked the audience and nothing else on the bearer path.
               assertThat(response.getStatus())
                   .as(
                       "bearer token lacking write:* on the public API carve-out, body: %s",
@@ -394,9 +393,10 @@ class CslChainIntegrationTest {
   }
 
   @Test
-  void shouldRejectBearerTokenLackingOptimizePermissionOnInternalApiPathForCcsm() throws Exception {
-    // Proves the carve-out is scoped, not a blanket bypass: the same token that is accepted on
-    // /api/public/** must still be rejected on an ordinary internal API path.
+  void shouldAllowBearerTokenLackingOptimizePermissionOnInternalApiPathForCcsm() throws Exception {
+    // An API client authenticates with client credentials, so it has no Identity user and can never
+    // hold the Optimize permission. Gating the bearer path on it would lock out every client that
+    // works on legacy CCSM today, which is why the write:* check stays on the session path.
     final String token = signBearerToken();
     ccsmRunner(CslChainIntegrationTest::mockCcsmTokenServiceDenyingEveryAccessToken)
         .run(
@@ -414,8 +414,8 @@ class CslChainIntegrationTest {
                   .as(
                       "bearer token lacking write:* on an internal API path, body: %s",
                       response.getContentAsString())
-                  .isEqualTo(401);
-              assertThat(downstream.getRequest()).isNull();
+                  .isEqualTo(200);
+              assertThat(downstream.getRequest()).isNotNull();
             });
   }
 
@@ -993,8 +993,8 @@ class CslChainIntegrationTest {
    * Default CCSM {@link CCSMTokenService} mock: {@code verifyAccessToken} is a no-op (grants
    * access) unless a test overrides it with {@code doThrow(...)}. This is what previously let this
    * bug slip through unnoticed: {@link OptimizeCcsmSecurityConfiguration} was never registered in
-   * {@link #ccsmRunner()} at all, so neither {@link OptimizeIdentityPermissionValidator} nor {@link
-   * OptimizeCcsmSessionPermissionEnforcementFilter} were ever exercised by a real chain here.
+   * {@link #ccsmRunner()} at all, so {@link OptimizeCcsmSessionPermissionEnforcementFilter} was
+   * never exercised by a real chain here.
    */
   private static CCSMTokenService mockCcsmTokenServiceGrantingAccess() {
     return mock(CCSMTokenService.class);

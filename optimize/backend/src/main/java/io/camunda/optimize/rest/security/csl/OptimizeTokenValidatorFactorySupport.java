@@ -15,9 +15,9 @@ import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 /**
- * Builds the {@link TokenValidatorFactory} that {@link OptimizeCloudSecurityConfiguration} (CCSaaS)
- * and {@link OptimizeCcsmSecurityConfiguration} (CCSM) use to override CSL's default with
- * edition-specific validators.
+ * Builds a {@link TokenValidatorFactory} with edition-specific validators on top of CSL's own
+ * checks: {@link OptimizeCloudSecurityConfiguration} (CCSaaS) overrides CSL's default bean with it,
+ * {@link OptimizeCcsmSecurityConfiguration} (CCSM) uses it for the public API carve-out chain.
  */
 final class OptimizeTokenValidatorFactorySupport {
 

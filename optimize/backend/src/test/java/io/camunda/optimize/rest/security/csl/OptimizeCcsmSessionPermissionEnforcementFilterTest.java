@@ -44,9 +44,7 @@ import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 /**
  * Unit-level counterpart to {@code CslChainIntegrationTest}'s Bug A scenarios: exercises {@link
  * OptimizeCcsmSessionPermissionEnforcementFilter#doFilterInternal} directly against a mocked {@link
- * CCSMTokenService}, mirroring how {@code OptimizeIdentityPermissionValidatorTest} covers {@link
- * OptimizeIdentityPermissionValidator} — cheaper to extend than only relying on the full chain
- * integration test.
+ * CCSMTokenService}, cheaper to extend than only relying on the full chain integration test.
  */
 @ExtendWith(MockitoExtension.class)
 class OptimizeCcsmSessionPermissionEnforcementFilterTest {
@@ -65,8 +63,8 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
   @Test
   void shouldPassThroughWhenNoSessionAccessTokenIsPresent() throws Exception {
     // given
-    // No OAuth2AuthenticationToken in the context: a bearer-only or anonymous request, which
-    // OptimizeIdentityPermissionValidator gates on its own.
+    // No OAuth2AuthenticationToken in the context: a bearer-only or anonymous request, which this
+    // filter leaves to CSL's own token validation.
     when(ccsmTokenService.getSessionAccessToken(any())).thenReturn(Optional.empty());
     final MockHttpServletRequest request = apiRequest();
     final MockHttpServletResponse response = new MockHttpServletResponse();
@@ -260,8 +258,7 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
   @Test
   void shouldRejectButKeepSessionOnUnexpectedError() {
     // given
-    // A security boundary must fail closed on the unexpected rather than propagate it, mirroring
-    // OptimizeIdentityPermissionValidator's final RuntimeException catch-all. Same as the
+    // A security boundary must fail closed on the unexpected rather than propagate it. Same as the
     // IdentityException case, the session is not the thing at fault here.
     when(ccsmTokenService.getSessionAccessToken(any())).thenReturn(Optional.of("token"));
     doThrow(new IllegalStateException("unexpected"))

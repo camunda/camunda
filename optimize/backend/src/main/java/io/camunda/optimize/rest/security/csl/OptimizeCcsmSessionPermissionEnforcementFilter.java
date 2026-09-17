@@ -34,15 +34,15 @@ import org.springframework.web.filter.OncePerRequestFilter;
 /**
  * Enforces the Identity {@code write:*} (OPTIMIZE_PERMISSION) check for session-authenticated CCSM
  * users by re-verifying the session's stored access token, and invalidates the session once
- * Identity revokes the permission. CSL does not cover this path: {@code
- * OidcUserAuthenticationConverter#decodeAccessToken} catches the {@code JwtException} {@link
- * OptimizeIdentityPermissionValidator} throws and its caller falls back to the id_token's claims,
- * so such a session keeps working indefinitely.
+ * Identity revokes the permission. CSL does not cover this path: it validates issuer, signature and
+ * expiry only, and {@code OidcUserAuthenticationConverter#decodeAccessToken} even swallows a
+ * validation failure and falls back to the id_token's claims, so such a session keeps working
+ * indefinitely.
  *
  * <p>Applies only to session logins, which {@link
  * CCSMTokenService#getSessionAccessToken(HttpServletRequest)} scopes by resolving a token just for
- * an {@code OAuth2AuthenticationToken} context. A bearer request holds none and passes through,
- * {@link OptimizeIdentityPermissionValidator} gates it on every call anyway.
+ * an {@code OAuth2AuthenticationToken} context. A bearer request holds none and passes through, the
+ * same as on legacy CCSM, which authenticated API tokens on signature and audience alone.
  *
  * <p>A session login that resolves no token at all, for example because a failed refresh removed
  * the authorized client, is denied: there is nothing to verify and CSL's id_token fallback would
@@ -112,10 +112,9 @@ public class OptimizeCcsmSessionPermissionEnforcementFilter extends OncePerReque
         deny(request, response, "Session's access token could not be verified", e);
         return;
       } catch (final RuntimeException e) {
-        // Same fail-closed reasoning as OptimizeIdentityPermissionValidator#validate: an
-        // unexpected error verifying the session's token must not propagate as an uncaught 500,
-        // it must deny the request. Like the IdentityException case it says nothing about the
-        // user's permission, so the session survives.
+        // Fail closed: an unexpected error verifying the session's token must not propagate as an
+        // uncaught 500, it must deny the request. Like the IdentityException case it says nothing
+        // about the user's permission, so the session survives.
         LOG.warn("Unexpected error verifying session's access token; denying the request.", e);
         deny(request, response, "Session's access token could not be verified", e);
         return;

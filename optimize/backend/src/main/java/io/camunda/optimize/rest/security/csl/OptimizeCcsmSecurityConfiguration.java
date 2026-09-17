@@ -38,21 +38,14 @@ import org.springframework.security.web.access.intercept.AuthorizationFilter;
 /**
  * CCSM security wiring under CSL, active on the self-managed profile unless {@code
  * optimize.security.csl.enabled=false}. Enforces the Identity {@code write:*} (OPTIMIZE_PERMISSION)
- * gate through CSL's host extension points, which CSL's default {@link TokenValidatorFactory} does
- * not cover: it only checks issuer, signature and expiry, so any principal the IdP authenticates
+ * gate on session logins through {@link OptimizeCcsmSessionPermissionEnforcementFilter}, which CSL
+ * does not cover: CSL only checks issuer, signature and expiry, so any user the IdP authenticates
  * would reach Optimize.
  *
- * <p>The gate applies to bearer tokens through {@link #tokenValidatorFactory} and to session logins
- * through {@link OptimizeCcsmSessionPermissionEnforcementFilter}, because CSL swallows a validation
- * failure on the session path and falls back to the id_token's claims.
- *
- * <p>The login id_token itself is exempt: unlike {@link OptimizeCloudSecurityConfiguration}
- * (CCSaaS) this configuration does not override {@code idTokenDecoderFactory}, which leaves Spring
- * Security's stock decoder in place. {@link OptimizeIdentityPermissionValidator} requires a {@code
- * write:*} permission claim the id_token does not carry, and rejects its {@code aud} on top of that
- * whenever {@code camunda.identity.audience} is configured, because the id_token is audienced to
- * the OIDC client-id instead. Routing it through the validator would therefore reject every
- * interactive login.
+ * <p>Bearer tokens on {@code /api/**} stay ungated, as they were on legacy CCSM, which
+ * authenticated them on signature and {@code api.audience} alone. A client-credentials caller has
+ * no Identity user and can therefore never hold the Optimize permission, so gating the bearer path
+ * would lock out every existing API client.
  */
 @Configuration
 @Conditional(CCSMCondition.class)
@@ -64,21 +57,6 @@ public class OptimizeCcsmSecurityConfiguration {
 
   private static final List<String> PUBLIC_API_CARVE_OUT_PATHS =
       List.of("/api/public/**", "/api/ingestion/variable");
-
-  /**
-   * Token validation for bearer/API tokens: CSL's checks plus the Identity permission gate.
-   * Overrides CSL's {@code @ConditionalOnMissingBean} default.
-   */
-  @Bean
-  public TokenValidatorFactory tokenValidatorFactory(
-      final OidcProviderConfigurationPort oidcProviderConfigurationPort,
-      final CamundaSecurityLibraryProperties cslProperties,
-      final CCSMTokenService ccsmTokenService) {
-    final List<OAuth2TokenValidator<Jwt>> extraValidators =
-        List.of(new OptimizeIdentityPermissionValidator(ccsmTokenService));
-    return OptimizeTokenValidatorFactorySupport.tokenValidatorFactory(
-        oidcProviderConfigurationPort, cslProperties, extraValidators);
-  }
 
   /**
    * Installs {@link OptimizeCcsmSessionPermissionEnforcementFilter} into CSL's chains. {@link
@@ -107,19 +85,18 @@ public class OptimizeCcsmSecurityConfiguration {
 
   /**
    * Chain for {@code /api/public/**} and {@code /api/ingestion/variable}, the client-credentials
-   * surface that is audience-checked but not gated through Identity. {@link
-   * OptimizeSecurityPathAdapter#apiPaths()} places both paths in the shared API chain, where {@link
-   * OptimizeIdentityPermissionValidator} would reject any token without a {@code write:*} Identity
-   * grant. Ordered ahead of CSL's {@code oidcApiSecurityFilterChain} ({@code
+   * surface that legacy CCSM pinned to {@code api.audience}. {@link
+   * OptimizeSecurityPathAdapter#apiPaths()} places both paths in the shared API chain, which does
+   * not apply that audience. Ordered ahead of CSL's {@code oidcApiSecurityFilterChain} ({@code
    * CamundaSecurityFilterChainConstants#ORDER_API}) so it claims both paths first; sharing {@code
    * ORDER_UNPROTECTED} with CSL's public chain is safe because their path patterns never overlap.
    *
-   * <p>Its {@link JwtDecoder} applies CSL's own issuer, signature, expiry and audience checks
-   * without the Identity gate, plus {@code api.audience}. CSL validates against one merged audience
-   * set that {@code OptimizeSecurityConfigCompatibilityPostProcessor} bridges both the Identity and
-   * the public API audience into, and accepts a token matching any entry of it, so without pinning
-   * {@code api.audience} an Identity-audience token would pass here and no Identity gate would
-   * catch it. An unset {@code api.audience} leaves the merged set as the only audience check.
+   * <p>Its {@link JwtDecoder} applies CSL's own issuer, signature, expiry and audience checks, plus
+   * {@code api.audience}. CSL validates against one merged audience set that {@code
+   * OptimizeSecurityConfigCompatibilityPostProcessor} bridges both the Identity and the public API
+   * audience into, and accepts a token matching any entry of it, so without pinning {@code
+   * api.audience} an Identity-audience token would reach the public API. An unset {@code
+   * api.audience} leaves the merged set as the only audience check.
    *
    * <p>Assembled by CSL's {@link ScopedApiSecurityChainBuilder}, the same builder its own API chain
    * uses, so the operator's CORS source, HTTPS-redirect customizers, CSRF configuration, secure
@@ -141,7 +118,7 @@ public class OptimizeCcsmSecurityConfiguration {
       final ConfigurationService configurationService,
       final ScopedApiSecurityChainBuilder scopedApiSecurityChainBuilder)
       throws Exception {
-    final TokenValidatorFactory validatorFactoryWithoutIdentityGate =
+    final TokenValidatorFactory validatorFactoryWithPublicApiAudience =
         OptimizeTokenValidatorFactorySupport.tokenValidatorFactory(
             oidcProviderConfigurationPort,
             cslProperties,
@@ -150,7 +127,7 @@ public class OptimizeCcsmSecurityConfiguration {
         oidcAccessTokenDecoderFactory.selectAccessTokenDecoder(
             allClientRegistrations(clientRegistrationRepository),
             oidcProviderConfigurationPort.getOidcAuthenticationConfigurations(),
-            validatorFactoryWithoutIdentityGate);
+            validatorFactoryWithPublicApiAudience);
 
     return scopedApiSecurityChainBuilder.buildOidcApiChain(
         http, PUBLIC_API_CARVE_OUT_PATHS, List.of(), decoder);
