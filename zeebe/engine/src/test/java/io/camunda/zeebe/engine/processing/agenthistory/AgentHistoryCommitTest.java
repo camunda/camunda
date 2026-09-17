@@ -295,6 +295,22 @@ public class AgentHistoryCommitTest {
   }
 
   @Test
+  public void shouldPopulateProcessInstanceKeyOnCommitCommandWhenJobCompletes() {
+    final var serviceTaskInstance = deployAndCreateProcessInstance();
+    final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
+    final var job = activateJobForProcessInstanceWithLease(processInstanceKey);
+
+    ENGINE.job().withKey(job.key()).withLeaseToken(job.leaseToken()).complete();
+
+    final var commitCommand =
+        RecordingExporter.agentHistoryRecords(AgentHistoryIntent.COMMIT)
+            .onlyCommands()
+            .withJobKey(job.key())
+            .getFirst();
+    assertThat(commitCommand.getValue().getProcessInstanceKey()).isEqualTo(processInstanceKey);
+  }
+
+  @Test
   public void shouldStripContentToolCallsAndMetricsFromCommittedEvent() {
     final var serviceTaskInstance = deployAndCreateProcessInstance();
     final var elementInstanceKey = serviceTaskInstance.getKey();

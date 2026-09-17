@@ -62,7 +62,7 @@ public class AgentHistoryDiscardOnJobDestructionTest {
     ENGINE.processInstance().withInstanceKey(fixture.processInstanceKey).cancel();
 
     // then
-    assertItemDiscarded(fixture.jobKey, fixture.itemKey);
+    assertItemDiscarded(fixture);
   }
 
   @Test
@@ -78,7 +78,7 @@ public class AgentHistoryDiscardOnJobDestructionTest {
             .job(JobIntent.CANCEL, new JobRecord().setType(AGENTIC_JOB_TYPE)));
 
     // then
-    assertItemDiscarded(fixture.jobKey, fixture.itemKey);
+    assertItemDiscarded(fixture);
   }
 
   @Test
@@ -98,7 +98,7 @@ public class AgentHistoryDiscardOnJobDestructionTest {
         .throwError();
 
     // then
-    assertItemDiscarded(fixture.jobKey, fixture.itemKey);
+    assertItemDiscarded(fixture);
   }
 
   @Test
@@ -122,7 +122,7 @@ public class AgentHistoryDiscardOnJobDestructionTest {
             .job(JobIntent.CANCEL, new JobRecord().setType(EXTERNAL_AGENT_JOB_TYPE)));
 
     // then
-    assertItemDiscarded(fixture.jobKey, fixture.itemKey);
+    assertItemDiscarded(fixture);
   }
 
   @Test
@@ -152,7 +152,7 @@ public class AgentHistoryDiscardOnJobDestructionTest {
         .throwError();
 
     // then
-    assertItemDiscarded(fixture.jobKey, fixture.itemKey);
+    assertItemDiscarded(fixture);
   }
 
   @Test
@@ -173,7 +173,7 @@ public class AgentHistoryDiscardOnJobDestructionTest {
     ENGINE.processInstance().withInstanceKey(fixture.processInstanceKey).cancel();
 
     // then
-    assertItemDiscarded(fixture.jobKey, fixture.itemKey);
+    assertItemDiscarded(fixture);
   }
 
   @Test
@@ -216,24 +216,26 @@ public class AgentHistoryDiscardOnJobDestructionTest {
         .isFalse();
   }
 
-  private void assertItemDiscarded(final long jobKey, final long itemKey) {
+  private void assertItemDiscarded(final Fixture fixture) {
     // the DISCARD follow-up command is emitted for the destroyed job
     final var discardCommand =
         RecordingExporter.agentHistoryRecords(AgentHistoryIntent.DISCARD)
             .onlyCommands()
-            .withJobKey(jobKey)
+            .withJobKey(fixture.jobKey)
             .getFirst();
     assertThat(discardCommand.getRecordType()).isEqualTo(RecordType.COMMAND);
     assertThat(discardCommand.getKey()).isEqualTo(-1L);
     assertThat(discardCommand.getValue().getJobLease()).isEmpty();
+    assertThat(discardCommand.getValue().getProcessInstanceKey())
+        .isEqualTo(fixture.processInstanceKey);
 
     // and the pending item is discarded
     final var discarded =
         RecordingExporter.agentHistoryRecords(AgentHistoryIntent.DISCARDED)
-            .withRecordKey(itemKey)
+            .withRecordKey(fixture.itemKey)
             .getFirst();
-    assertThat(discarded.getKey()).isEqualTo(itemKey);
-    assertThat(discarded.getValue().getJobKey()).isEqualTo(jobKey);
+    assertThat(discarded.getKey()).isEqualTo(fixture.itemKey);
+    assertThat(discarded.getValue().getJobKey()).isEqualTo(fixture.jobKey);
   }
 
   // --- fixture / helpers ---
