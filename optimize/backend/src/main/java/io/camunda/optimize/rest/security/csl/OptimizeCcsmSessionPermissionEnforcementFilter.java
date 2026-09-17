@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.rest.security.csl;
 
+import static io.camunda.optimize.rest.security.csl.OptimizeApiRequests.isApiRequest;
+
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.exceptions.JWTDecodeException;
 import io.camunda.identity.sdk.exception.IdentityException;
@@ -23,6 +25,7 @@ import java.util.Date;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -53,9 +56,14 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * <p>Only {@link NotAuthorizedException}, Identity's verdict on this user, invalidates the session.
  * {@link IdentityException} (an invalid token or Identity being unreachable) and any other {@link
  * RuntimeException} deny the request but keep the session, so an Identity outage does not log
- * everybody out. Denials are raised as {@link InsufficientAuthenticationException} so each chain's
- * own {@code AuthenticationEntryPoint} shapes the response: a login redirect on the webapp chain, a
- * 401 on the API chain.
+ * everybody out.
+ *
+ * <p>An API request is denied by raising {@link InsufficientAuthenticationException}, which the
+ * chain's {@link OptimizeOidcAuthenticationEntryPoint} answers with a 401. A webapp request is
+ * denied with a terminal 403 instead, rendered by {@code OptimizeErrorController}. Raising the
+ * exception there would restart the OIDC login, and since the IdP's own session is still valid it
+ * re-issues a code immediately and the user loops between Optimize and the IdP forever. The 403
+ * page is also what the CCSM stack without CSL answers with.
  */
 public class OptimizeCcsmSessionPermissionEnforcementFilter extends OncePerRequestFilter {
 
@@ -81,8 +89,8 @@ public class OptimizeCcsmSessionPermissionEnforcementFilter extends OncePerReque
         // id_token fallback would serve the request unchecked. Fail closed instead of treating it
         // like a bearer-only request.
         LOG.debug("Session holds no access token to verify; denying the request.");
-        throw new InsufficientAuthenticationException(
-            "Session holds no access token that could be verified");
+        deny(request, response, "Session holds no access token that could be verified", null);
+        return;
       }
       filterChain.doFilter(request, response);
       return;
@@ -93,27 +101,47 @@ public class OptimizeCcsmSessionPermissionEnforcementFilter extends OncePerReque
       } catch (final NotAuthorizedException e) {
         LOG.debug("Session's access token no longer authorized; invalidating session.", e);
         invalidateSession(request);
-        throw new InsufficientAuthenticationException(
-            "Session's access token is not authorized to access Optimize", e);
+        deny(request, response, "Session's access token is not authorized to access Optimize", e);
+        return;
       } catch (final IdentityException e) {
         // Not a decision Identity made about this user: the token is unusable (invalid, expired
         // past what CSL's refresh could recover) or Identity is unreachable. Denying the request
         // is required, but destroying the session would log every user out on an Identity outage
         // and force a fresh login instead of letting the next request succeed.
         LOG.debug("Session's access token could not be verified; denying the request.", e);
-        throw new InsufficientAuthenticationException(
-            "Session's access token could not be verified", e);
+        deny(request, response, "Session's access token could not be verified", e);
+        return;
       } catch (final RuntimeException e) {
         // Same fail-closed reasoning as OptimizeIdentityPermissionValidator#validate: an
         // unexpected error verifying the session's token must not propagate as an uncaught 500,
         // it must deny the request. Like the IdentityException case it says nothing about the
         // user's permission, so the session survives.
         LOG.warn("Unexpected error verifying session's access token; denying the request.", e);
-        throw new InsufficientAuthenticationException(
-            "Session's access token could not be verified", e);
+        deny(request, response, "Session's access token could not be verified", e);
+        return;
       }
     }
     filterChain.doFilter(request, response);
+  }
+
+  /**
+   * Ends the request as denied: 401 on the API surface, a terminal 403 page on the webapp surface.
+   *
+   * @throws InsufficientAuthenticationException for an API request, for the chain's {@code
+   *     AuthenticationEntryPoint} to shape
+   */
+  private static void deny(
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final String reason,
+      final Throwable cause)
+      throws IOException {
+    if (isApiRequest(request)) {
+      throw new InsufficientAuthenticationException(reason, cause);
+    }
+    // The message belongs to OptimizeErrorController, which renders every 403 as the CCSM
+    // "no authorization to access Optimize" page.
+    response.sendError(HttpStatus.FORBIDDEN.value());
   }
 
   /**

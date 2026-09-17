@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -67,7 +68,7 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
     // No OAuth2AuthenticationToken in the context: a bearer-only or anonymous request, which
     // OptimizeIdentityPermissionValidator gates on its own.
     when(ccsmTokenService.getSessionAccessToken(any())).thenReturn(Optional.empty());
-    final MockHttpServletRequest request = new MockHttpServletRequest();
+    final MockHttpServletRequest request = apiRequest();
     final MockHttpServletResponse response = new MockHttpServletResponse();
     final MockFilterChain chain = new MockFilterChain();
 
@@ -90,7 +91,7 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
     // request", so this case must fail closed instead.
     when(ccsmTokenService.getSessionAccessToken(any())).thenReturn(Optional.empty());
     setOAuth2AuthenticatedSecurityContext();
-    final MockHttpServletRequest request = new MockHttpServletRequest();
+    final MockHttpServletRequest request = apiRequest();
     request.getSession(true);
     final MockHttpServletResponse response = new MockHttpServletResponse();
     final MockFilterChain chain = new MockFilterChain();
@@ -109,7 +110,7 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
     // given
     when(ccsmTokenService.getSessionAccessToken(any())).thenReturn(Optional.of("token"));
     // verifyAccessToken("token") stays a no-op (granted) by Mockito default.
-    final MockHttpServletRequest request = new MockHttpServletRequest();
+    final MockHttpServletRequest request = apiRequest();
     final MockHttpServletResponse response = new MockHttpServletResponse();
     final MockFilterChain chain = new MockFilterChain();
 
@@ -130,7 +131,7 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
     // checking at all, because CSL's id_token fallback keeps such a session working today.
     final String expiredToken = jwtExpiringAt(Instant.now().minusSeconds(60));
     when(ccsmTokenService.getSessionAccessToken(any())).thenReturn(Optional.of(expiredToken));
-    final MockHttpServletRequest request = new MockHttpServletRequest();
+    final MockHttpServletRequest request = apiRequest();
     final MockHttpServletResponse response = new MockHttpServletResponse();
     final MockFilterChain chain = new MockFilterChain();
 
@@ -150,7 +151,7 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
     doThrow(new NotAuthorizedException("no longer authorized"))
         .when(ccsmTokenService)
         .verifyAccessToken(validToken);
-    final MockHttpServletRequest request = new MockHttpServletRequest();
+    final MockHttpServletRequest request = apiRequest();
     final MockHttpServletResponse response = new MockHttpServletResponse();
     final MockFilterChain chain = new MockFilterChain();
 
@@ -170,7 +171,7 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
         .when(ccsmTokenService)
         .verifyAccessToken("token");
     setAuthenticatedSecurityContext();
-    final MockHttpServletRequest request = new MockHttpServletRequest();
+    final MockHttpServletRequest request = apiRequest();
     request.getSession(true);
     final MockHttpServletResponse response = new MockHttpServletResponse();
     final MockFilterChain chain = new MockFilterChain();
@@ -179,13 +180,55 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
     final ThrowingCallable doFilter = () -> filter().doFilterInternal(request, response, chain);
 
     // then
-    // The exception is the denial: ExceptionTranslationFilter turns it into whatever the chain's
-    // own AuthenticationEntryPoint answers with (login redirect on the webapp chain, 401 on the
-    // API chain), which CslChainIntegrationTest covers.
+    // The exception is the denial: ExceptionTranslationFilter turns it into the 401 that
+    // OptimizeOidcAuthenticationEntryPoint answers an API request with, which
+    // CslChainIntegrationTest covers.
     assertThatThrownBy(doFilter).isInstanceOf(AuthenticationException.class);
     assertThat(chain.getRequest()).as("rejected token must not reach downstream").isNull();
     assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     assertThat(request.getSession(false)).as("session must be invalidated").isNull();
+  }
+
+  @Test
+  void shouldDenyWebappRequestWithTerminalForbidden() throws Exception {
+    // given
+    // Raising an AuthenticationException on a navigation restarts the OIDC login, and the IdP's
+    // live session re-issues a code right away, so the user loops between Optimize and the IdP.
+    when(ccsmTokenService.getSessionAccessToken(any())).thenReturn(Optional.of("token"));
+    doThrow(new NotAuthorizedException("no longer authorized"))
+        .when(ccsmTokenService)
+        .verifyAccessToken("token");
+    setAuthenticatedSecurityContext();
+    final MockHttpServletRequest request = webappRequest();
+    request.getSession(true);
+    final MockHttpServletResponse response = new MockHttpServletResponse();
+    final MockFilterChain chain = new MockFilterChain();
+
+    // when
+    filter().doFilterInternal(request, response, chain);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.FORBIDDEN.value());
+    assertThat(chain.getRequest()).as("rejected token must not reach downstream").isNull();
+    assertThat(request.getSession(false)).as("session must be invalidated").isNull();
+  }
+
+  @Test
+  void shouldDenyWebappRequestWithTerminalForbiddenWhenSessionHoldsNoAccessToken()
+      throws Exception {
+    // given
+    when(ccsmTokenService.getSessionAccessToken(any())).thenReturn(Optional.empty());
+    setOAuth2AuthenticatedSecurityContext();
+    final MockHttpServletRequest request = webappRequest();
+    final MockHttpServletResponse response = new MockHttpServletResponse();
+    final MockFilterChain chain = new MockFilterChain();
+
+    // when
+    filter().doFilterInternal(request, response, chain);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.FORBIDDEN.value());
+    assertThat(chain.getRequest()).as("session without a token must not reach downstream").isNull();
   }
 
   @Test
@@ -200,7 +243,7 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
         .when(ccsmTokenService)
         .verifyAccessToken("token");
     setAuthenticatedSecurityContext();
-    final MockHttpServletRequest request = new MockHttpServletRequest();
+    final MockHttpServletRequest request = apiRequest();
     request.getSession(true);
     final MockHttpServletResponse response = new MockHttpServletResponse();
     final MockFilterChain chain = new MockFilterChain();
@@ -225,7 +268,7 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
         .when(ccsmTokenService)
         .verifyAccessToken("token");
     setAuthenticatedSecurityContext();
-    final MockHttpServletRequest request = new MockHttpServletRequest();
+    final MockHttpServletRequest request = apiRequest();
     request.getSession(true);
     final MockHttpServletResponse response = new MockHttpServletResponse();
     final MockFilterChain chain = new MockFilterChain();
@@ -237,6 +280,14 @@ class OptimizeCcsmSessionPermissionEnforcementFilterTest {
     assertThatThrownBy(doFilter).isInstanceOf(AuthenticationException.class);
     assertThat(chain.getRequest()).as("unexpected error must not reach downstream").isNull();
     assertThat(request.getSession(false)).as("session must survive").isNotNull();
+  }
+
+  private static MockHttpServletRequest apiRequest() {
+    return new MockHttpServletRequest("GET", "/api/definition");
+  }
+
+  private static MockHttpServletRequest webappRequest() {
+    return new MockHttpServletRequest("GET", "/dashboards");
   }
 
   private static String jwtExpiringAt(final Instant expiresAt) {

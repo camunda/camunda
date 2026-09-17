@@ -210,15 +210,16 @@ class CslChainIntegrationTest {
               // JwtValidationException OptimizeIdentityPermissionValidator throws and falls back
               // to the id_token's claims instead of denying the request.
               //
-              // The denial goes through the webapp chain's own AuthenticationEntryPoint, the same
-              // one an unauthenticated navigation hits (assertUnauthenticatedRejectedOnWebappPath),
-              // so the browser lands on the login instead of an empty 401 page.
+              // The denial is terminal, rendered by OptimizeErrorController as the CCSM "no
+              // authorization to access Optimize" page. Restarting the login instead would loop:
+              // the IdP's session is still valid, so it re-issues a code and the permission check
+              // denies again.
               assertThat(response.getStatus())
                   .as(
                       "session with a no-longer-authorized access token on webapp path, body: %s",
                       response.getContentAsString())
-                  .isEqualTo(302);
-              assertThat(response.getHeader("Location")).isEqualTo("/oauth2/authorization/oidc");
+                  .isEqualTo(403);
+              assertThat(response.getHeader("Location")).isNull();
               assertThat(downstream.getRequest()).isNull();
             });
   }
@@ -280,8 +281,7 @@ class CslChainIntegrationTest {
   }
 
   @Test
-  void
-      shouldRejectSessionOnWebappPathWithCleanUnauthorizedWhenAccessTokenCannotBeVerifiedForCcsm() {
+  void shouldRejectSessionOnWebappPathWithCleanDenialWhenAccessTokenCannotBeVerifiedForCcsm() {
     // CCSMTokenService#verifyAccessToken throws TokenVerificationException (not
     // NotAuthorizedException) directly for an invalid/expired token. Without the filter's broader
     // catch this would propagate as an uncaught 500 instead of the clean denial this filter exists
@@ -301,7 +301,7 @@ class CslChainIntegrationTest {
                   .as(
                       "session with an unverifiable access token on webapp path, body: %s",
                       response.getContentAsString())
-                  .isEqualTo(302);
+                  .isEqualTo(403);
               assertThat(downstream.getRequest()).isNull();
             });
   }
