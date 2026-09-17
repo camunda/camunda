@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.rest.security.csl;
 
+import static io.camunda.optimize.rest.security.csl.OptimizeApiRequests.isApiRequest;
+
 import io.camunda.security.spring.spi.OidcAuthenticationEntryPoint;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,8 +38,6 @@ import org.springframework.security.web.authentication.LoginUrlAuthenticationEnt
  */
 public final class OptimizeOidcAuthenticationEntryPoint implements OidcAuthenticationEntryPoint {
 
-  private static final String API_PATH = "/api";
-
   private final AuthenticationEntryPoint apiEntryPoint =
       new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED);
   private final AuthenticationEntryPoint navigationEntryPoint;
@@ -52,10 +52,7 @@ public final class OptimizeOidcAuthenticationEntryPoint implements OidcAuthentic
       final HttpServletResponse response,
       final AuthenticationException authException)
       throws IOException, ServletException {
-    final String path = request.getRequestURI().substring(request.getContextPath().length());
-    // Match the bearer/API surface exactly like Spring's "/api/**" does, i.e. "/api" and
-    // "/api/...".
-    if (path.equals(API_PATH) || path.startsWith(API_PATH + "/")) {
+    if (isApiRequest(request)) {
       apiEntryPoint.commence(request, response, authException);
     } else {
       navigationEntryPoint.commence(request, response, authException);
