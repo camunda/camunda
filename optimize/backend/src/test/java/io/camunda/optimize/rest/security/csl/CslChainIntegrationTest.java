@@ -297,7 +297,14 @@ class CslChainIntegrationTest {
 
   @Test
   void shouldDenySessionApiCallWithAnAssetLikeNameForCcsm() {
-    assertAssetLikeApiCallDeniedWithoutComponentAccess(componentAccessRunner(ccsmRunner(), DENY));
+    assertExportDeniedWithoutComponentAccess(
+        componentAccessRunner(ccsmRunner(), DENY), "report.js");
+  }
+
+  @Test
+  void shouldDenySessionApiCallNamedLikeTheForbiddenPageForCcsm() {
+    assertExportDeniedWithoutComponentAccess(
+        componentAccessRunner(ccsmRunner(), DENY), "forbidden");
   }
 
   @Test
@@ -359,7 +366,14 @@ class CslChainIntegrationTest {
 
   @Test
   void shouldDenySessionApiCallWithAnAssetLikeNameForCcsaas() {
-    assertAssetLikeApiCallDeniedWithoutComponentAccess(componentAccessRunner(ccsaasRunner(), DENY));
+    assertExportDeniedWithoutComponentAccess(
+        componentAccessRunner(ccsaasRunner(), DENY), "report.js");
+  }
+
+  @Test
+  void shouldDenySessionApiCallNamedLikeTheForbiddenPageForCcsaas() {
+    assertExportDeniedWithoutComponentAccess(
+        componentAccessRunner(ccsaasRunner(), DENY), "forbidden");
   }
 
   // -------------------------------------------------------------------------
@@ -778,16 +792,16 @@ class CslChainIntegrationTest {
         });
   }
 
-  private void assertAssetLikeApiCallDeniedWithoutComponentAccess(
-      final WebApplicationContextRunner runner) {
+  private void assertExportDeniedWithoutComponentAccess(
+      final WebApplicationContextRunner runner, final String fileName) {
     runner.run(
         ctx -> {
           // given
-          // The file name of an export is the last path segment and the caller picks it. CSL
-          // exempts a URI ending in a static-asset suffix from the check, so this name would be a
-          // way around it if OptimizeSecurityPathAdapter kept that exemption.
+          // The file name of an export is the last path segment and the caller picks it. CSL's own
+          // filter skips the check for a URI ending in a static-asset suffix or in /forbidden, so
+          // such a name would be a way around it.
           final MockHttpServletRequest request =
-              new MockHttpServletRequest("GET", "/api/export/csv/some-id/report.js");
+              new MockHttpServletRequest("GET", "/api/export/csv/some-id/" + fileName);
           request.setCookies(oauth2SessionCookie(ctx));
           final MockHttpServletResponse response = new MockHttpServletResponse();
           final MockFilterChain downstream = new MockFilterChain();
@@ -798,8 +812,8 @@ class CslChainIntegrationTest {
           // then
           assertThat(response.getStatus())
               .as(
-                  "export named like a static asset, without component access, body: %s",
-                  response.getContentAsString())
+                  "export named %s, without component access, body: %s",
+                  fileName, response.getContentAsString())
               .isEqualTo(401);
           assertThat(downstream.getRequest()).isNull();
         });
@@ -807,8 +821,8 @@ class CslChainIntegrationTest {
 
   private void assertUnprotectedPathUnaffectedByComponentCheck(
       final WebApplicationContextRunner runner) {
-    // The customizer that installs the check runs on every chain, the unprotected one included, so
-    // a denied session must still reach a liveness probe.
+    // The check runs on every chain, the unprotected one included, so a denied session must still
+    // reach a liveness probe.
     runner.run(
         ctx -> {
           // given
