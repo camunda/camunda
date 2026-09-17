@@ -15,11 +15,67 @@ incidents affecting the monorepo CI.
 
 **What:** Check the following:
 
-- [Camunda CI Platform status](https://status.camunda.cloud/) (Infra team)
-- [GitHub status](https://www.githubstatus.com/) (Actions, PRs, API, Git, etc.)
+- [Camunda CI Platform status](https://status.camunda.cloud/) (Infra team; also covers Nexus, which
+  is hosted infra rather than a third party with its own public status page)
+- [GitHub status](https://www.githubstatus.com/) (Actions, PRs, API, Git, etc.; the official page
+  can be slow to acknowledge problems, so also check
+  [Downdetector for GitHub](https://downdetector.com/status/github/) for a faster user-reported
+  signal)
 - [DockerHub status](https://www.dockerstatus.com/) (Docker image push/pull)
 - [Maven Central status](https://status.maven.org/) (Maven artifact up-/downloads)
 - [Minimus status](https://docs.minimus.io/status) (Minimus Docker registry)
+- [npm registry status](https://status.npmjs.org/) (npm package up-/downloads)
+- [Snyk status](https://status.snyk.io/) (vulnerability scanning jobs)
+- [AWS status](https://health.aws.amazon.com/health/status) (Aurora/OpenSearch integration test suites)
+- [Mend (Renovate) status](https://status.mend.io/) (see [Renovate](./ci.md#renovate) for details)
+- [FOSSA status](https://status.fossa.com/) (license checks, see [Check Licenses Workflow High
+  Failure Rate](#check-licenses-workflow-high-failure-rate))
+
+### Third-Party Service Outage
+
+**When:** An external dependency (GitHub Actions, DockerHub, Maven Central, Minimus, npm registry,
+Snyk, AWS, Mend/Renovate, etc.) or Infra-hosted service (Nexus) is degraded or down, and it is
+causing CI failures across multiple jobs, workflows, or branches.
+
+**What:**
+
+1. **Confirm it's actually external.** Check the [status pages](#checking-important-status-pages)
+   for the suspected service. If the status page is green, don't assume the service is fine —
+   partial outages and regional issues often lag behind status pages — but treat a same-shape
+   failure across unrelated jobs/branches as a stronger signal than the status page itself.
+2. **Look for the shared symptom**, not the individual failures: connection timeouts/resets pulling
+   a specific image, `401`/`403`/`429`/`5xx` responses from a registry, Maven artifact resolution
+   failures, GitHub API rate-limiting, etc. Cross-reference recent alerts — if several unsuccessful
+   jobs/merge-queue/disconnect alerts fire together, check whether they share the same root cause
+   before treating them as separate incidents (see [Base Branch Unsuccessful
+   Job](#base-branch-unsuccessful-job) and [Merge Queue High Failure
+   Rate](#merge-queue-high-failure-rate)).
+3. **Stop the bleeding, don't fix the third party.** We cannot resolve someone else's outage, so
+   focus on unblocking engineers:
+   - If a specific step is affected (e.g. pulling an image from a particular registry) and there is
+     a working mirror/cache, switch to it temporarily.
+   - If retries are likely to succeed (rate-limiting, transient network blips), re-run the affected
+     jobs/workflows rather than investigating further.
+   - If the merge queue is broken because of this, do **not** bypass it outright — see [Bypassing
+     GitHub Merge Queue](#bypassing-github-merge-queue) for the proper procedure, and only use it if
+     merging is genuinely time-critical (e.g. a fix for the outage itself).
+   - If a non-essential step (e.g. a license scan, a non-blocking smoke test) is the only thing
+     failing, consider temporarily disabling it rather than blocking all merges — see [Temporarily
+     Disable Tests To Lessen Impact](#temporarily-disable-tests-to-lessen-impact).
+4. **Communicate status.** Note in the incident channel/ticket which dependency is affected, a
+   link to its status page, and whether resolution is outside our control (external service) or
+   needs the Infra team (Nexus). This avoids duplicate investigation by other engineers hitting the
+   same symptom.
+5. **Wait for recovery, then verify.** Once the status page reports resolution (or failures stop
+   reproducing on retry), re-run previously failed jobs to confirm CI is healthy again before
+   closing the incident. Don't close purely on the status page turning green — confirm with an
+   actual green CI run.
+6. **Follow up if recurring.** If a particular third party causes repeated incidents, consider
+   whether we need a more resilient setup (e.g. a caching proxy/mirror, retries with backoff, or
+   pinning to a more stable alternative) and raise it as a follow-up issue rather than solving it
+   mid-incident.
+
+---
 
 ### Temporarily Disable Tests To Lessen Impact
 
