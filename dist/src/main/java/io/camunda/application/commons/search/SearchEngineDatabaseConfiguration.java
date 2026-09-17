@@ -15,6 +15,7 @@ import io.camunda.search.connect.tenant.SearchClients;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.broker.Broker;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,13 @@ public class SearchEngineDatabaseConfiguration {
    * a physical tenant is serviceable, hence a flag rather than a bean condition. The flag comes
    * from the same predicate that decides whether the schema readiness indicator joins the readiness
    * group, so the socket and the probe cannot disagree about what an HTTP node is.
+   *
+   * <p>The recovery check reads the gossiped cluster configuration through {@link
+   * BrokerTopologyManager}, which every node has - broker or gateway-only - so a gateway cannot
+   * create the indices a broker was careful not to. It is required rather than optional: the same
+   * component scan brings this class and the topology manager in together, so a context holding one
+   * without the other is a wiring defect, and defaulting it to "nothing is recovering" would answer
+   * that defect by recreating the indices of a tenant mid-restore.
    */
   @Bean
   public SearchEngineSchemaInitializer searchEngineSchemaInitializer(
@@ -45,14 +53,15 @@ public class SearchEngineDatabaseConfiguration {
           final Map<String, IndexDescriptors> physicalTenantScopedIndexDescriptors,
       final MeterRegistry meterRegistry,
       final Environment environment,
-      @Autowired(required = false)
-          final Broker broker // if present, then it will ensure that the broker is started first
-      ) {
+      final BrokerTopologyManager brokerTopologyManager,
+      // if present, then it will ensure that the broker is started first
+      @Autowired(required = false) final Broker broker) {
     return new SearchEngineSchemaInitializer(
         searchEngineConfigurationsByTenant,
         physicalTenantScopedIndexDescriptors,
         meterRegistry,
-        isAnyHttpGatewayEnabled(environment));
+        isAnyHttpGatewayEnabled(environment),
+        brokerTopologyManager::isRecovering);
   }
 
   /**
