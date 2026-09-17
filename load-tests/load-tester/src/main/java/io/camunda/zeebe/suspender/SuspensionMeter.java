@@ -108,6 +108,7 @@ public class SuspensionMeter implements AutoCloseable {
     switch (cfg.getMode()) {
       case SINGLE -> startSingleMode();
       case BATCH -> startBatchMode();
+      case SPACED -> startSpacedMode();
     }
   }
 
@@ -218,6 +219,107 @@ public class SuspensionMeter implements AutoCloseable {
         THROTTLED_LOGGER.warn("Failed to resume instance {}", key, e);
         // Keep the key so a later sweep retries it rather than leaking a suspended instance.
       }
+    }
+  }
+
+  // ---- SPACED mode (bounded count over ordinary instances, spaced suspends and resumes) --------
+
+  private void startSpacedMode() {
+    LOG.info(
+        "Spaced mode: each cycle suspend {} '{}' instances spaced by {}, hold {} each, then resume "
+            + "spaced by {}, cycle gap {}",
+        cfg.getCount(),
+        cfg.getProcessId(),
+        cfg.getSuspendInterval(),
+        cfg.getHoldDuration(),
+        cfg.getResumeInterval(),
+        cfg.getBatchInterval());
+
+    // Repeating cycle: the fixed delay is the idle gap between cycles; the suspend/hold/resume
+    // timing within a cycle is driven by the sleeps in runSpacedCycle.
+    executor.scheduleWithFixedDelay(
+        this::spacedCycle, 0, cfg.getBatchInterval().toMillis(), TimeUnit.MILLISECONDS);
+  }
+
+  private void spacedCycle() {
+    try {
+      runSpacedCycle();
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+    } catch (final Exception e) {
+      // Never let an exception escape to the scheduler — scheduleWithFixedDelay cancels the task on
+      // an uncaught throwable, which would silently stop all further cycles.
+      THROTTLED_LOGGER.warn("Spaced suspend/resume cycle failed", e);
+    }
+  }
+
+  private void runSpacedCycle() throws InterruptedException {
+    final List<Long> keys = pickActiveInstances();
+    if (keys.isEmpty()) {
+      return;
+    }
+
+    // Suspend phase: one command per instance, spaced by suspendInterval. Each records its own
+    // resume deadline (now + holdDuration) so the resume phase can honour per-instance hold.
+    for (int i = 0; i < keys.size(); i++) {
+      suspendKey(keys.get(i));
+      if (i < keys.size() - 1) {
+        sleep(cfg.getSuspendInterval());
+      }
+    }
+
+    // Resume phase: for each instance wait until its hold has elapsed, resume it, then leave
+    // resumeInterval before the next resume so they do not all fire together.
+    for (int i = 0; i < keys.size(); i++) {
+      final long key = keys.get(i);
+      final Instant deadline = suspendedUntil.get(key);
+      if (deadline != null) {
+        final long waitMs = Duration.between(Instant.now(), deadline).toMillis();
+        if (waitMs > 0) {
+          Thread.sleep(waitMs);
+        }
+      }
+      resumeKey(key);
+      if (i < keys.size() - 1) {
+        sleep(cfg.getResumeInterval());
+      }
+    }
+  }
+
+  /** Up to {@code count} active instances of the ordinary process, oldest first. */
+  private List<Long> pickActiveInstances() {
+    final var response =
+        client
+            .newProcessInstanceSearchRequest()
+            .filter(
+                f -> f.processDefinitionId(cfg.getProcessId()).state(ProcessInstanceState.ACTIVE))
+            .sort(s -> s.startDate().asc())
+            .page(p -> p.limit(cfg.getCount()))
+            .send()
+            .join();
+    return response.items().stream().map(ProcessInstance::getProcessInstanceKey).toList();
+  }
+
+  private void suspendKey(final long key) {
+    try {
+      suspendLatency.record(() -> client.newSuspendProcessInstanceCommand(key).send().join());
+      suspendRequests.increment();
+      suspendedUntil.put(key, Instant.now().plus(cfg.getHoldDuration()));
+    } catch (final Exception e) {
+      suspendErrors.increment();
+      THROTTLED_LOGGER.warn("Failed to suspend instance {}", key, e);
+    }
+  }
+
+  private void resumeKey(final long key) {
+    try {
+      resumeLatency.record(() -> client.newResumeProcessInstanceCommand(key).send().join());
+      resumeRequests.increment();
+    } catch (final Exception e) {
+      resumeErrors.increment();
+      THROTTLED_LOGGER.warn("Failed to resume instance {}", key, e);
+    } finally {
+      suspendedUntil.remove(key);
     }
   }
 

@@ -21,7 +21,16 @@ public class SuspenderProperties {
   /** Suspend/resume driver: per-instance commands, or process-instance batch operations. */
   public enum Mode {
     SINGLE,
-    BATCH
+    BATCH,
+    /**
+     * Repeating cycle over the ordinary (starter-created) instances: each cycle picks {@link
+     * #count} active instances, suspends them one at a time spaced by {@link #suspendInterval},
+     * holds each for {@link #holdDuration} after its own suspend, then resumes them spaced by
+     * {@link #resumeInterval}. Instances are not cancelled — resume returns them to normal
+     * execution. Distinct from {@link #SINGLE}, which suspends at a fixed rate with no per-cycle
+     * count cap, and from target mode, which drives a dedicated heavy definition.
+     */
+    SPACED
   }
 
   private boolean enabled = false;
@@ -33,9 +42,17 @@ public class SuspenderProperties {
   private Duration rateDuration = Duration.ofSeconds(1);
   private int sampleSize = 100;
 
-  // batch mode
+  // batch mode; also the idle gap between cycles in SPACED and target mode
   private Duration batchInterval = Duration.ofSeconds(10);
   private int batchPageSize = 1000;
+
+  // SPACED mode: how many ordinary instances to suspend/resume per cycle, and the gap left between
+  // consecutive suspend commands and consecutive resume commands. Resume of an instance still waits
+  // until its holdDuration has elapsed since its own suspend, so resumeInterval only spaces resumes
+  // that would otherwise be due together.
+  private int count = 100;
+  private Duration suspendInterval = Duration.ofSeconds(1);
+  private Duration resumeInterval = Duration.ofSeconds(1);
 
   /** How long an instance stays suspended before it is resumed. */
   private Duration holdDuration = Duration.ofSeconds(30);
@@ -141,6 +158,30 @@ public class SuspenderProperties {
 
   public void setBatchPageSize(final int batchPageSize) {
     this.batchPageSize = batchPageSize;
+  }
+
+  public int getCount() {
+    return count;
+  }
+
+  public void setCount(final int count) {
+    this.count = count;
+  }
+
+  public Duration getSuspendInterval() {
+    return suspendInterval;
+  }
+
+  public void setSuspendInterval(final Duration suspendInterval) {
+    this.suspendInterval = suspendInterval;
+  }
+
+  public Duration getResumeInterval() {
+    return resumeInterval;
+  }
+
+  public void setResumeInterval(final Duration resumeInterval) {
+    this.resumeInterval = resumeInterval;
   }
 
   public Duration getHoldDuration() {

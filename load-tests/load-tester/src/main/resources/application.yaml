@@ -112,7 +112,9 @@ load-tester:
   # starter creates), not set here.
   suspender:
     enabled: ${LOAD_TESTER_SUSPENDER_ENABLED:false}
-    # SINGLE = per-instance commands, BATCH = process-instance batch operations
+    # SINGLE = per-instance commands, BATCH = process-instance batch operations,
+    # SPACED = repeating cycle over ordinary instances with a per-cycle count and spaced
+    # suspends/resumes (does not cancel the instances; use for realistic-profile suspend/resume).
     mode: ${LOAD_TESTER_SUSPENDER_MODE:SINGLE}
     rate: ${LOAD_TESTER_SUSPENDER_RATE:10}
     rate-duration: ${LOAD_TESTER_SUSPENDER_RATE_DURATION:1s}
@@ -120,6 +122,12 @@ load-tester:
     batch-interval: ${LOAD_TESTER_SUSPENDER_BATCH_INTERVAL:10s}
     batch-page-size: ${LOAD_TESTER_SUSPENDER_BATCH_PAGE_SIZE:1000}
     hold-duration: ${LOAD_TESTER_SUSPENDER_HOLD_DURATION:30s}
+    # SPACED mode: instances suspended/resumed per cycle, and the gap left between consecutive
+    # suspend commands and consecutive resume commands. Resume still waits for each instance's
+    # hold-duration first; resume-interval only spaces resumes that would otherwise be due together.
+    count: ${LOAD_TESTER_SUSPENDER_COUNT:100}
+    suspend-interval: ${LOAD_TESTER_SUSPENDER_SUSPEND_INTERVAL:1s}
+    resume-interval: ${LOAD_TESTER_SUSPENDER_RESUME_INTERVAL:1s}
     # Target mode: deploy a dedicated heavy process (large job + subscription fan-out + many short
     # timers), and each cycle create -> warm up -> suspend -> hold -> resume -> settle -> cancel a
     # fresh instance, while the starter's workload runs untouched (blast-radius / interference

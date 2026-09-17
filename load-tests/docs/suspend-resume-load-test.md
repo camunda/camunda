@@ -170,18 +170,29 @@ starter creates (`load-tester.starter.process-id`).
   filter matching a bounded page of active instances; after the hold, issue the matching
   `processInstanceResume` batch operation (or resume by the recorded batch-operation key's
   item set). Exercises the batch executor and its batch-record-size rejection path.
+- **`spaced`** — a repeating cycle over the **ordinary starter-created instances** (not the heavy
+  target), for suspend/resume of a realistic-profile PI at a controlled, bounded pace. Each cycle
+  picks `count` active instances (oldest first), suspends them one at a time spaced by
+  `suspend-interval`, holds each for `hold-duration` after **its own** suspend, then resumes them
+  spaced by `resume-interval`; `batch-interval` is the idle gap between cycles. Instances are **not
+  cancelled** — resume returns them to normal execution and workers complete them. Use with a
+  realistic starter profile (`load-tester.starter.bpmn-xml-path=...`) to suspend/resume a
+  configurable number of realistic PIs with configurable spacing between suspends and resumes.
 
 ### Config knobs (`load-tester.suspender.*`, env `LOAD_TESTER_SUSPENDER_*`)
 
 | Property | Default | Meaning |
 |---|---|---|
 | `enabled` | `false` | Master switch (off = the A/B baseline arm). |
-| `mode` | `SINGLE` | `SINGLE` or `BATCH`. |
+| `mode` | `SINGLE` | `SINGLE`, `BATCH`, or `SPACED`. |
 | `rate` / `rate-duration` | `10` / `1s` | Suspend attempts per interval (single mode). |
-| `batch-interval` | `10s` | Interval between batch operations (batch mode). |
+| `batch-interval` | `10s` | Interval between batch operations (batch mode); idle gap between cycles (spaced/target mode). |
 | `batch-page-size` | `1000` | Max instances per batch operation. |
 | `hold-duration` | `30s` | How long an instance stays suspended before resume. |
 | `sample-size` | `100` | Candidates fetched per suspend cycle (single mode). |
+| `count` | `100` | Ordinary instances suspended/resumed per cycle (spaced mode). |
+| `suspend-interval` | `1s` | Gap between consecutive suspend commands (spaced mode). |
+| `resume-interval` | `1s` | Gap between consecutive resume commands (spaced mode); resume still waits for each instance's `hold-duration` first. |
 
 The target process id is taken from `load-tester.starter.process-id` (the instances the
 starter creates), not configured separately.
@@ -242,6 +253,28 @@ cancel → 60 s quiet. Drop `generate-resume-correlations` to isolate the buffer
 The run does **not stop on its own** — it loops until the namespace is deleted or the `ttl` (days)
 expires. Collect ~30–60 min of cycles, then tear down:
 `kubectl delete namespace c8-blast-suspend` (or `make clean namespace=c8-blast-suspend`).
+
+### Realistic-profile suspend/resume (`spaced` mode)
+
+Suspend/resume a configurable number of **ordinary** realistic PIs (not the heavy target) at a
+controlled pace. The starter runs a realistic profile and the meter, each cycle, suspends `count`
+of its instances spaced by `suspend-interval`, holds `hold-duration`, resumes spaced by
+`resume-interval`, waits `batch-interval`, and repeats. Set the realistic starter profile the same
+way the `realistic` scenario does (BPMN + extra models + payload).
+
+```bash
+gh workflow run camunda-load-test.yml --ref 59933-suspend-resume-load-testing \
+  -f name=spaced-suspend \
+  -f ref=59933-suspend-resume-load-testing \
+  -f scenario=realistic \
+  -f ttl=1 \
+  -f load-test-load="--set global.extraConfig.load-tester.suspender.enabled=true --set global.extraConfig.load-tester.suspender.mode=SPACED --set global.extraConfig.load-tester.suspender.count=100 --set global.extraConfig.load-tester.suspender.suspend-interval=500ms --set global.extraConfig.load-tester.suspender.hold-duration=30s --set global.extraConfig.load-tester.suspender.resume-interval=500ms --set global.extraConfig.load-tester.suspender.batch-interval=30s"
+```
+
+`target-enabled` stays false (default). Tune `count` and the intervals per run. Read the same
+`suspender_*` client timers and broker `zeebe_process_instance_resume_duration` /
+`zeebe_buffered_commands_events_total` as above. Tear down with
+`kubectl delete namespace c8-spaced-suspend`.
 
 ## Deliverables / follow-ups
 
