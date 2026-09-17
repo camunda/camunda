@@ -6,18 +6,12 @@ imports.
 
 ## Setup
 
-Install `uv` once:
+This project uses the [`uv` package manager](https://docs.astral.sh/uv/).
+
+To install it, run the following (see [the official installation guide](https://docs.astral.sh/uv/getting-started/installation/) for more options):
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
-uv --version
-```
-
-If `uv` is not on your `PATH` after installation, restart your shell or add the
-installation directory printed by the installer. A Python-packaged fallback also works:
-
-```bash
-python3 -m pip install --user uv
 uv --version
 ```
 
