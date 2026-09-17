@@ -11,24 +11,29 @@ import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProces
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
- * Finds process definitions that were <b>partially deleted</b> across partitions and can never
- * reconcile.
+ * Finds process definitions that are <b>draining without valid coordination</b> and can therefore
+ * never finish deleting.
  *
- * <p>Draining is reliable, so under normal operation every partition converges on the same view of
- * a definition. This scan detects the one rare exception left behind by a pre-draining defect: a
- * process-definition deletion issued while the deployment queue was blocked could reach some
- * partitions but not others. The deployment partition (P1) removed the definition, while other
- * partitions still carry it — and once the cluster upgrades to a draining-capable version those
- * stragglers surface as {@code DRAINING}. With the definition and its coordination bookkeeping gone
- * from P1, nothing remains to finalize the drain, so the definition is stranded and secondary
- * storage is left inconsistent with primary storage.
+ * <p>A definition scheduled for deletion is marked {@code DRAINING} on the partitions that still
+ * hold it, and the deployment partition (P1) records one {@code
+ * PENDING_PROCESS_DELETIONS_PER_PARTITION} coordination entry per still-draining partition. Each
+ * partition removes the definition locally once its last instance finishes and reports back, which
+ * clears its entry on P1; when the last entry clears, the definition is fully deleted. During a
+ * healthy in-progress drain every {@code DRAINING} partition therefore has a matching pending entry
+ * on P1 — <b>even after P1 has removed the definition from its own state</b>, since P1 keeps the
+ * other partitions' entries until they report.
  *
- * <p>The concrete signature is cross-partition: a definition {@code DRAINING} on at least one
- * partition while <b>absent</b> from the deployment partition. Because process definitions are
- * deployed cluster-wide through P1, absence on P1 means deletion, not "never deployed".
- * Deliberately free of any RocksDB wiring so it can be unit-tested with hand-built partition maps.
+ * <p>A pre-draining defect could leave a definition {@code DRAINING} on a partition with no
+ * matching pending entry on P1: the coordination was never set up, so nothing will ever finalize
+ * the drain and the definition is stuck. The signature is exactly that mismatch — {@code DRAINING}
+ * on a partition that P1 is not tracking as pending — not P1's absence of the definition, which
+ * also occurs in a normal drain and would be a false positive.
+ *
+ * <p>Deliberately free of any RocksDB wiring so it can be unit-tested with hand-built partition
+ * maps.
  */
 final class ProcessDefinitionDeletionScan {
 
@@ -43,13 +48,18 @@ final class ProcessDefinitionDeletionScan {
    *     key → state). Must include the deployment partition.
    * @param definitions metadata for every definition seen {@code DRAINING} on any partition, keyed
    *     by definition key, used only for reporting.
+   * @param pendingByDefinition the deployment partition's coordination view: definition key → set
+   *     of partition ids P1 still tracks as pending for that definition. A draining partition
+   *     absent from this set has no coordination.
+   * @param definitionsWithActiveInstances definition keys that still have at least one active
+   *     process instance on any scanned partition, used to flag remaining orphaned instances.
    */
   List<Finding> scan(
       final Map<Integer, Map<Long, PersistedProcessState>> partitionStates,
-      final Map<Long, DefinitionInfo> definitions) {
-    final Map<Long, PersistedProcessState> deploymentStates =
-        partitionStates.get(deploymentPartitionId);
-    if (deploymentStates == null) {
+      final Map<Long, DefinitionInfo> definitions,
+      final Map<Long, Set<Integer>> pendingByDefinition,
+      final Set<Long> definitionsWithActiveInstances) {
+    if (!partitionStates.containsKey(deploymentPartitionId)) {
       throw new IllegalArgumentException(
           "Missing state for the deployment partition (id " + deploymentPartitionId + ")");
     }
@@ -57,28 +67,34 @@ final class ProcessDefinitionDeletionScan {
     final var findings = new ArrayList<Finding>();
     for (final var entry : definitions.entrySet()) {
       final long processDefinitionKey = entry.getKey();
-
-      // Stranded only when the deployment partition no longer holds the definition: with P1 gone
-      // there is no coordinator left, so the draining stragglers can never finalize.
-      if (deploymentStates.containsKey(processDefinitionKey)) {
-        continue;
-      }
+      final Set<Integer> pendingPartitions =
+          pendingByDefinition.getOrDefault(processDefinitionKey, Set.of());
 
       final var drainingPartitions = new ArrayList<Integer>();
-      final var absentPartitions = new ArrayList<Integer>();
+      final var uncoordinatedPartitions = new ArrayList<Integer>();
       for (final var partition : partitionStates.entrySet()) {
         final PersistedProcessState state = partition.getValue().get(processDefinitionKey);
-        if (state == null) {
-          absentPartitions.add(partition.getKey());
-        } else if (state == PersistedProcessState.DRAINING) {
-          drainingPartitions.add(partition.getKey());
+        if (state != PersistedProcessState.DRAINING) {
+          continue;
+        }
+        final int partitionId = partition.getKey();
+        drainingPartitions.add(partitionId);
+        // Draining but P1 is not tracking this partition as pending: coordination is missing, so
+        // this partition can never finalize the drain on its own.
+        if (!pendingPartitions.contains(partitionId)) {
+          uncoordinatedPartitions.add(partitionId);
         }
       }
 
-      if (!drainingPartitions.isEmpty()) {
+      if (!uncoordinatedPartitions.isEmpty()) {
         drainingPartitions.sort(null);
-        absentPartitions.sort(null);
-        findings.add(new Finding(entry.getValue(), drainingPartitions, absentPartitions));
+        uncoordinatedPartitions.sort(null);
+        findings.add(
+            new Finding(
+                entry.getValue(),
+                drainingPartitions,
+                uncoordinatedPartitions,
+                definitionsWithActiveInstances.contains(processDefinitionKey)));
       }
     }
     findings.sort(
@@ -88,20 +104,16 @@ final class ProcessDefinitionDeletionScan {
     return findings;
   }
 
-  /** Display metadata for a definition, captured from a partition that still holds it. */
   record DefinitionInfo(
-      long processDefinitionKey,
-      String bpmnProcessId,
-      int version,
-      String tenantId,
-      boolean deleteHistory) {}
+      long processDefinitionKey, String bpmnProcessId, int version, String tenantId) {}
 
   /**
-   * A stranded, partially-deleted definition with the partitions still draining it and gone from
-   * it.
+   * {@code uncoordinatedPartitions} is the subset of {@code drainingPartitions} that the deployment
+   * partition holds no pending entry for — the reason the definition is stuck.
    */
   record Finding(
       DefinitionInfo definition,
       List<Integer> drainingPartitions,
-      List<Integer> absentPartitions) {}
+      List<Integer> uncoordinatedPartitions,
+      boolean orphanedInstances) {}
 }

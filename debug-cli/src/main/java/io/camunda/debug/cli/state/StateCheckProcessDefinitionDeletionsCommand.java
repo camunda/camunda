@@ -12,12 +12,15 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.debug.cli.state.ProcessDefinitionDeletionScan.DefinitionInfo;
 import io.camunda.debug.cli.state.ProcessDefinitionDeletionScan.Finding;
+import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.el.ExpressionLanguageMetrics;
-import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
-import io.camunda.zeebe.engine.state.deployment.DbProcessState;
+import io.camunda.zeebe.db.impl.DbCompositeKey;
+import io.camunda.zeebe.db.impl.DbInt;
+import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
+import io.camunda.zeebe.engine.state.routing.DbRoutingState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
@@ -28,44 +31,47 @@ import java.io.PrintWriter;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Instant;
-import java.time.InstantSource;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.stream.Stream;
+import org.agrona.collections.MutableBoolean;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Spec;
 
 /**
- * Scans every partition's snapshot for process definitions that were <b>partially deleted</b> —
- * left {@code DRAINING} on some partitions while already gone from the deployment partition — and
- * can therefore never reconcile. This is a rare remnant of a pre-draining defect (a deletion issued
- * while the deployment queue was blocked); draining under a supported version is reliable and needs
- * no such check. See {@link ProcessDefinitionDeletionScan} for the detection rationale.
+ * Scans every partition's snapshot for process definitions that are stuck {@code DRAINING} without
+ * valid deletion coordination and can therefore never finish deleting. This is a rare remnant of a
+ * pre-draining defect (a deletion in flight while the deployment queue was blocked, carried across
+ * an upgrade); draining under a supported version is reliable and needs no such check. See {@link
+ * ProcessDefinitionDeletionScan} for the detection rationale.
  *
- * <p>Point {@code --root} at the broker's {@code raft-partition/partitions} directory. The command
- * reads the latest snapshot of every partition subdirectory it finds, so that directory must hold
- * <b>all</b> partitions of the cluster (including the deployment partition); gather them first if
- * they are spread across brokers. Each snapshot is copied into a throwaway runtime and read
- * strictly read-only.
+ * <p>Point {@code --root} at the broker's {@code raft-partition/partitions} directory. The scan is
+ * cross-partition and refuses to run on incomplete input: it reads the routing state to learn which
+ * partitions the cluster has, and requires every one of them to be present with a readable snapshot
+ * under {@code --root}. Gather all partitions there first if they are spread across brokers. Each
+ * snapshot is copied into a throwaway runtime and read strictly read-only.
  *
- * <p>Output convention: a human-readable report goes to stderr; one machine-readable line per
- * stranded definition, plus a trailing summary line, goes to stdout. Exit {@code 0} = none found,
- * {@code 2} = stranded definitions found, {@code 1} = configuration/IO error.
+ * <p>Output convention: a human-readable report goes to stderr; one machine-readable line per stuck
+ * definition, plus a trailing summary line, goes to stdout. Exit {@code 0} = none found, {@code 2}
+ * = stuck definitions found, {@code 1} = configuration/IO error (including missing partition data).
  */
 @Command(
     name = "check-process-definition-deletions",
     description =
-        "Scan all partition snapshots for process definitions partially deleted across partitions "
-            + "(DRAINING on some, gone from the deployment partition).")
+        "Scan all partition snapshots for process definitions stuck DRAINING without valid deletion "
+            + "coordination.")
 public class StateCheckProcessDefinitionDeletionsCommand implements Callable<Integer> {
 
   @Spec private CommandSpec spec;
@@ -74,7 +80,7 @@ public class StateCheckProcessDefinitionDeletionsCommand implements Callable<Int
       names = {"-r", "--root"},
       description =
           "Path of the 'raft-partition/partitions' directory holding a subdirectory per partition. "
-              + "Must contain all partitions of the cluster, including the deployment partition.",
+              + "Must contain the data of all partitions of the cluster, including partition 1.",
       required = true)
   private Path root;
 
@@ -100,13 +106,24 @@ public class StateCheckProcessDefinitionDeletionsCommand implements Callable<Int
       err.println("No partition subdirectories found under " + root);
       return 1;
     }
-    if (!partitionDirs.containsKey(Protocol.DEPLOYMENT_PARTITION)) {
+    final Path deploymentDir = partitionDirs.get(Protocol.DEPLOYMENT_PARTITION);
+    if (deploymentDir == null) {
       err.println(
           "No subdirectory for the deployment partition (id "
               + Protocol.DEPLOYMENT_PARTITION
               + ") under "
               + root
-              + ". The scan needs it to tell whether a definition was deleted there.");
+              + ". The scan needs it to read the cluster's routing and deletion-coordination state.");
+      return 1;
+    }
+    final Optional<Path> deploymentSnapshot = latestSnapshot(deploymentDir);
+    if (deploymentSnapshot.isEmpty()) {
+      err.println(
+          "The deployment partition (id "
+              + Protocol.DEPLOYMENT_PARTITION
+              + ") has no snapshot under "
+              + deploymentDir
+              + "; cannot read routing or coordination state.");
       return 1;
     }
 
@@ -134,38 +151,95 @@ public class StateCheckProcessDefinitionDeletionsCommand implements Callable<Int
     // target's parent to already exist.
     Files.createDirectories(runtimeRoot);
 
-    err.println("=== Scanning for partially-deleted process definitions ===");
+    err.println("=== Scanning for stuck DRAINING process definitions ===");
 
     try {
-      final var partitionStates = new TreeMap<Integer, Map<Long, PersistedProcessState>>();
       final var definitions = new HashMap<Long, DefinitionInfo>();
+      final var definitionsWithActiveInstances = new HashSet<Long>();
 
-      for (final var partition : partitionDirs.entrySet()) {
-        final int partitionId = partition.getKey();
-        final Optional<Path> snapshot = latestSnapshot(partition.getValue());
-        if (snapshot.isEmpty()) {
-          if (partitionId == Protocol.DEPLOYMENT_PARTITION) {
-            err.println(
-                "The deployment partition (id "
-                    + partitionId
-                    + ") has no snapshot under "
-                    + partition.getValue()
-                    + "; cannot determine deletions.");
-            return 1;
-          }
-          err.println("Skipping partition " + partitionId + ": no snapshot found.");
+      // Read the deployment partition first: it carries the routing state (which partitions exist)
+      // and the deletion-coordination state used to tell a stuck drain from a healthy one.
+      err.println(
+          "Partition " + Protocol.DEPLOYMENT_PARTITION + ": reading " + deploymentSnapshot.get());
+      final DeploymentPartitionData deployment =
+          readDeploymentPartition(
+              deploymentSnapshot.get(),
+              runtimeRoot.resolve("p" + Protocol.DEPLOYMENT_PARTITION),
+              definitions,
+              definitionsWithActiveInstances);
+
+      // Determine the authoritative set of partitions to scan. Fall back to the discovered
+      // directories only when routing state is unavailable (very old clusters).
+      final Set<Integer> expectedPartitions;
+      if (deployment.currentPartitions().isEmpty()) {
+        expectedPartitions = new TreeSet<>(partitionDirs.keySet());
+        err.println(
+            "Warning: routing state is empty; cannot verify the full partition set. Falling back to"
+                + " the "
+                + expectedPartitions.size()
+                + " partition directories found under --root.");
+      } else {
+        expectedPartitions = new TreeSet<>(deployment.currentPartitions());
+      }
+
+      // Refuse to run on incomplete input: every expected partition must be present with a readable
+      // snapshot, otherwise a stuck definition living only on a missing partition is silently
+      // missed.
+      final Map<Integer, Path> snapshotsToScan = new TreeMap<>();
+      final List<Integer> missingDirs = new ArrayList<>();
+      final List<Integer> missingSnapshots = new ArrayList<>();
+      for (final int partitionId : expectedPartitions) {
+        if (partitionId == Protocol.DEPLOYMENT_PARTITION) {
           continue;
         }
+        final Path dir = partitionDirs.get(partitionId);
+        if (dir == null) {
+          missingDirs.add(partitionId);
+          continue;
+        }
+        final Optional<Path> snapshot = latestSnapshot(dir);
+        if (snapshot.isEmpty()) {
+          missingSnapshots.add(partitionId);
+          continue;
+        }
+        snapshotsToScan.put(partitionId, snapshot.get());
+      }
+      if (!missingDirs.isEmpty() || !missingSnapshots.isEmpty()) {
+        err.println("Cannot run: the partition data under --root is incomplete.");
+        if (!missingDirs.isEmpty()) {
+          err.println("  Missing partition directories: " + missingDirs);
+        }
+        if (!missingSnapshots.isEmpty()) {
+          err.println("  Partitions without a snapshot: " + missingSnapshots);
+        }
+        err.println(
+            "The check is cross-partition and needs every partition of the cluster "
+                + expectedPartitions
+                + ". Gather the missing partitions' data under --root and re-run.");
+        return 1;
+      }
 
-        err.println("Partition " + partitionId + ": reading " + snapshot.get());
+      final var partitionStates = new TreeMap<Integer, Map<Long, PersistedProcessState>>();
+      partitionStates.put(Protocol.DEPLOYMENT_PARTITION, deployment.states());
+      for (final var entry : snapshotsToScan.entrySet()) {
+        final int partitionId = entry.getKey();
+        err.println("Partition " + partitionId + ": reading " + entry.getValue());
         final Map<Long, PersistedProcessState> states =
-            readProcessStates(snapshot.get(), runtimeRoot.resolve("p" + partitionId), definitions);
+            readPartition(
+                entry.getValue(),
+                runtimeRoot.resolve("p" + partitionId),
+                definitions,
+                definitionsWithActiveInstances);
         partitionStates.put(partitionId, states);
       }
 
       final List<Finding> findings =
           new ProcessDefinitionDeletionScan(Protocol.DEPLOYMENT_PARTITION)
-              .scan(partitionStates, definitions);
+              .scan(
+                  partitionStates,
+                  definitions,
+                  deployment.pendingByDefinition(),
+                  definitionsWithActiveInstances);
 
       report(err, out, partitionStates.keySet(), findings);
       return findings.isEmpty() ? 0 : 2;
@@ -195,10 +269,6 @@ public class StateCheckProcessDefinitionDeletionsCommand implements Callable<Int
     return dirs;
   }
 
-  /**
-   * Picks the latest snapshot directory (highest snapshot id) under {@code
-   * <partitionDir>/snapshots}.
-   */
   private static Optional<Path> latestSnapshot(final Path partitionDir) {
     final Path snapshotsDir = partitionDir.resolve(FileBasedSnapshotStoreImpl.SNAPSHOTS_DIRECTORY);
     if (!Files.isDirectory(snapshotsDir)) {
@@ -222,52 +292,119 @@ public class StateCheckProcessDefinitionDeletionsCommand implements Callable<Int
     }
   }
 
-  /**
-   * Reads a partition snapshot's {@code PROCESS_CACHE} into a definition-key → state map, and
-   * records display metadata for every definition it sees {@code DRAINING} (fields are copied out
-   * because the persisted process's buffers are only valid during the iteration).
-   */
-  private static Map<Long, PersistedProcessState> readProcessStates(
-      final Path snapshotPath, final Path runtime, final Map<Long, DefinitionInfo> definitions)
+  private static Map<Long, PersistedProcessState> readPartition(
+      final Path snapshotPath,
+      final Path runtime,
+      final Map<Long, DefinitionInfo> definitions,
+      final Set<Long> definitionsWithActiveInstances)
       throws Exception {
-    final Map<Long, PersistedProcessState> states = new LinkedHashMap<>();
-    try (final ZeebeDb<ZbColumnFamilies> db = openReadOnly(snapshotPath, runtime)) {
-      openProcessState(db)
-          .forEachProcess(
-              null,
-              process -> {
-                final long key = process.getKey();
-                final PersistedProcessState state = process.getState();
-                states.put(key, state);
-                if (state == PersistedProcessState.DRAINING) {
-                  definitions.putIfAbsent(
-                      key,
-                      new DefinitionInfo(
-                          key,
-                          bufferAsString(process.getBpmnProcessId()),
-                          process.getVersion(),
-                          process.getTenantId(),
-                          process.isDeleteHistory()));
-                }
-                return true;
-              });
+    try (final ZeebeDb<ZbColumnFamilies> db =
+        new SnapshotUtil().openReadOnly(snapshotPath, runtime)) {
+      final TransactionContext context = db.createContext();
+      final var states = new LinkedHashMap<Long, PersistedProcessState>();
+      readProcessCacheAndInstances(
+          db, context, definitions, definitionsWithActiveInstances, states);
+      return states;
     }
-    return states;
   }
 
-  @SuppressWarnings("unchecked")
-  private static ZeebeDb<ZbColumnFamilies> openReadOnly(
-      final Path snapshotPath, final Path runtime) {
-    return (ZeebeDb<ZbColumnFamilies>) new SnapshotUtil().openSnapshot(snapshotPath, runtime);
+  /**
+   * The deployment partition additionally holds the routing state and the pending-deletion
+   * coordination entries that only it has.
+   */
+  private static DeploymentPartitionData readDeploymentPartition(
+      final Path snapshotPath,
+      final Path runtime,
+      final Map<Long, DefinitionInfo> definitions,
+      final Set<Long> definitionsWithActiveInstances)
+      throws Exception {
+    try (final ZeebeDb<ZbColumnFamilies> db =
+        new SnapshotUtil().openReadOnly(snapshotPath, runtime)) {
+      final TransactionContext context = db.createContext();
+      final var states = new LinkedHashMap<Long, PersistedProcessState>();
+      final var pendingByDefinition = new HashMap<Long, Set<Integer>>();
+      readProcessCacheAndInstances(
+          db, context, definitions, definitionsWithActiveInstances, states);
+      readPendingDeletions(db, context, pendingByDefinition);
+      final var currentPartitions =
+          new TreeSet<>(new DbRoutingState(db, context).currentPartitions());
+      return new DeploymentPartitionData(states, pendingByDefinition, currentPartitions);
+    }
   }
 
-  private static DbProcessState openProcessState(final ZeebeDb<ZbColumnFamilies> db) {
-    final var stateTransformer =
-        BpmnFactory.createTransformer(
-            InstantSource.fixed(Instant.EPOCH),
-            ExpressionLanguageMetrics.noop(),
-            Integer.MAX_VALUE);
-    return new DbProcessState(db, db.createContext(), new EngineConfiguration(), stateTransformer);
+  // DefinitionInfo fields are copied out during iteration because the persisted process's buffers
+  // are only valid for the duration of the forEachProcess callback.
+  private static void readProcessCacheAndInstances(
+      final ZeebeDb<ZbColumnFamilies> db,
+      final TransactionContext context,
+      final Map<Long, DefinitionInfo> definitions,
+      final Set<Long> definitionsWithActiveInstances,
+      final Map<Long, PersistedProcessState> states) {
+    SnapshotUtil.openProcessState(db, context)
+        .forEachProcess(
+            null,
+            process -> {
+              final long key = process.getKey();
+              final PersistedProcessState state = process.getState();
+              states.put(key, state);
+              if (state == PersistedProcessState.DRAINING) {
+                definitions.putIfAbsent(
+                    key,
+                    new DefinitionInfo(
+                        key,
+                        bufferAsString(process.getBpmnProcessId()),
+                        process.getVersion(),
+                        process.getTenantId()));
+              }
+              return true;
+            });
+
+    // Only DRAINING definitions can be stuck, so limit the (potentially large) instance lookup to
+    // them. PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY holds one entry per active root instance.
+    final DbLong processDefinitionKey = new DbLong();
+    final DbLong processInstanceKey = new DbLong();
+    final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil> instancesByDefinition =
+        db.createColumnFamily(
+            ZbColumnFamilies.PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY,
+            context,
+            new DbCompositeKey<>(processDefinitionKey, processInstanceKey),
+            DbNil.INSTANCE);
+    for (final var entry : states.entrySet()) {
+      if (entry.getValue() != PersistedProcessState.DRAINING
+          || definitionsWithActiveInstances.contains(entry.getKey())) {
+        continue;
+      }
+      processDefinitionKey.wrapLong(entry.getKey());
+      final var hasInstance = new MutableBoolean(false);
+      instancesByDefinition.whileEqualPrefix(
+          processDefinitionKey,
+          (key, nil) -> {
+            hasInstance.set(true);
+            return false;
+          });
+      if (hasInstance.get()) {
+        definitionsWithActiveInstances.add(entry.getKey());
+      }
+    }
+  }
+
+  private static void readPendingDeletions(
+      final ZeebeDb<ZbColumnFamilies> db,
+      final TransactionContext context,
+      final Map<Long, Set<Integer>> pendingByDefinition) {
+    final DbLong processDefinitionKey = new DbLong();
+    final DbInt partitionId = new DbInt();
+    final ColumnFamily<DbCompositeKey<DbLong, DbInt>, DbNil> pendingDeletions =
+        db.createColumnFamily(
+            ZbColumnFamilies.PENDING_PROCESS_DELETIONS_PER_PARTITION,
+            context,
+            new DbCompositeKey<>(processDefinitionKey, partitionId),
+            DbNil.INSTANCE);
+    pendingDeletions.forEach(
+        (key, nil) ->
+            pendingByDefinition
+                .computeIfAbsent(key.first().getValue(), ignored -> new HashSet<>())
+                .add(key.second().getValue()));
   }
 
   private void report(
@@ -275,51 +412,55 @@ public class StateCheckProcessDefinitionDeletionsCommand implements Callable<Int
       final PrintWriter out,
       final Iterable<Integer> scannedPartitions,
       final List<Finding> findings) {
-    // Human-readable overview on stderr.
     err.println("=== Done ===");
     err.println("Partitions scanned: " + scannedPartitions);
-    err.println("Stranded definitions: " + findings.size());
+    err.println("Stuck definitions: " + findings.size());
     if (!findings.isEmpty()) {
       reportFindingDetails(err, findings);
       reportRemediation(err);
     }
 
-    // Machine-readable output on stdout: one stable line per finding plus a summary line. Keep this
-    // format byte-stable; downstream tooling parses it.
+    // Machine-readable stdout: keep this format byte-stable, downstream tooling parses it.
     for (final Finding f : findings) {
       final DefinitionInfo d = f.definition();
       out.printf(
-          "key=%d bpmnProcessId=%s version=%d tenant=%s deleteHistory=%s draining=%s absent=%s%n",
+          "key=%d bpmnProcessId=%s version=%d tenant=%s draining=%s uncoordinated=%s "
+              + "orphanedInstances=%s%n",
           d.processDefinitionKey(),
           d.bpmnProcessId(),
           d.version(),
           d.tenantId(),
-          d.deleteHistory(),
           f.drainingPartitions(),
-          f.absentPartitions());
+          f.uncoordinatedPartitions(),
+          f.orphanedInstances());
     }
     out.printf("stranded=%d partitions=%s%n", findings.size(), scannedPartitions);
   }
 
   private static void reportFindingDetails(final PrintWriter err, final List<Finding> findings) {
     err.println();
-    err.println("Stranded process definitions");
-    err.println("----------------------------");
+    err.println("Stuck process definitions");
+    err.println("-------------------------");
     int index = 0;
     for (final Finding f : findings) {
       final DefinitionInfo d = f.definition();
       err.printf(
           "[%d] %s  (processDefinitionKey %d)%n",
           ++index, d.bpmnProcessId(), d.processDefinitionKey());
-      err.printf("    version        %d%n", d.version());
-      err.printf("    tenant         %s%n", d.tenantId());
-      err.printf("    deleteHistory  %s%n", d.deleteHistory());
+      err.printf("    version            %d%n", d.version());
+      err.printf("    tenant             %s%n", d.tenantId());
       err.printf(
-          "    draining on    partitions %s  - still hold the definition, waiting to drain%n",
+          "    draining on        partitions %s  - still hold the definition, waiting to drain%n",
           f.drainingPartitions());
       err.printf(
-          "    absent from    partitions %s  - deployment partition, already deleted%n",
-          f.absentPartitions());
+          "    no coordination on partitions %s  - deletion cannot finish here%n",
+          f.uncoordinatedPartitions());
+      err.printf(
+          "    orphaned instances %s  - %s%n",
+          f.orphanedInstances() ? "yes" : "no",
+          f.orphanedInstances()
+              ? "running instances remain and must be finished first"
+              : "no running instances remain");
     }
   }
 
@@ -327,12 +468,22 @@ public class StateCheckProcessDefinitionDeletionsCommand implements Callable<Int
     err.println();
     err.println("How to resolve");
     err.println("--------------");
-    err.println("For each stranded definition above:");
+    err.println("For each stuck definition above:");
     err.println(
-        "  1. Complete, terminate, or migrate its running instances so the deletion can complete.");
+        "  1. If it has orphaned instances, complete, terminate, or migrate them so the deletion");
+    err.println("     can finish.");
     err.println(
-        "  2. Then re-issue resource deletion with deleteHistory=true to purge the leftover history");
-    err.println("     from secondary storage.");
+        "  2. Then decide on history: if the definition's history should also be removed, re-issue");
+    err.println(
+        "     resource deletion with deleteHistory=true to purge the leftover history from secondary");
+    err.println(
+        "     storage. The original deletion's history intent is not recoverable from the state, so");
+    err.println("     this is a deliberate choice.");
     err.println("  3. Re-run this scan; a resolved cluster reports stranded=0.");
   }
+
+  private record DeploymentPartitionData(
+      Map<Long, PersistedProcessState> states,
+      Map<Long, Set<Integer>> pendingByDefinition,
+      Set<Integer> currentPartitions) {}
 }
