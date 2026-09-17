@@ -139,15 +139,19 @@ export class IdentityRolesDetailsPage {
   private async selectUserInAssignModal(username: string): Promise<void> {
     await this.assignUserButton.click();
     await expect(this.assignUserModal).toBeVisible();
-    await this.assignUserModalSearchField.fill(username);
-    // Match on the username: `EntitySearchMultiSelect` passes `getId` as the
-    // option title, so it is always present regardless of the display name.
-    const option = this.assignUserModalSearchResult
-      .getByRole('option')
-      .filter({hasText: username})
-      .first();
-    await expect(option).toBeVisible({timeout: 30000});
-    await option.click({timeout: 20000});
+    // The search field is a design-system MultiSelect: its closed trigger is a
+    // `combobox`-role div (not an input), so `.fill()` on it fails with "Element
+    // is not an <input>". Open it first, then type into the cmdk search box that
+    // mounts in the popover -- mirrors IdentityRolesPage.assignUserToRole, which
+    // was already migrated for the same design-system bump (#63145).
+    await this.assignUserModalSearchField.click();
+    await this.page.locator('[data-slot="command-input"]').fill(username);
+    // The option label is "<name> — <email>" and does not echo the username, so
+    // wait for the server-side search to narrow to the single matching row
+    // instead of matching on the option text.
+    const options = this.assignUserModalSearchResult.getByRole('option');
+    await expect(options).toHaveCount(1, {timeout: 30000});
+    await options.first().click({timeout: 20000});
     await this.assignUserModalAssignButton.click();
     await expect(this.assignUserModal).toBeHidden();
   }
