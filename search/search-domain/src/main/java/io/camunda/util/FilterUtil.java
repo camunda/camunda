@@ -34,9 +34,16 @@ public final class FilterUtil {
     return mapDefaultToOperation(CollectionUtil.collectValues(typeMapper, value, values));
   }
 
+  /**
+   * Unlike {@link ObjectUtils#isNotEmpty}, a {@link String} is considered present as soon as it is
+   * non-null — an explicitly supplied empty string ("") is a meaningful exact-match criterion, not
+   * an absent one. Collections/maps/arrays keep the generic null-or-empty-means-absent semantics,
+   * since some filter fields are normalized to an empty collection rather than left null when
+   * unset.
+   */
   public static boolean hasAnyNonEmpty(final Object... values) {
     for (final var value : values) {
-      if (ObjectUtils.isNotEmpty(value)) {
+      if (value instanceof String || ObjectUtils.isNotEmpty(value)) {
         return true;
       }
     }
