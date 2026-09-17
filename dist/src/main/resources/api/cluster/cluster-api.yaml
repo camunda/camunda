@@ -308,7 +308,7 @@ paths:
         '504':
           $ref: 'components.yaml#/responses/TimeoutError'
 
-  /partition-distribution:
+  /partitioning:
     put:
       summary:
         Update the partition distribution configuration. Exactly one of `config` and `zonePriorities` must be set.
@@ -331,7 +331,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "components.yaml#/schemas/UpdatePartitionDistributionRequest"
+              $ref: "components.yaml#/schemas/UpdatePartitioningRequest"
       parameters:
         - $ref: '#/components/parameters/DryRunParameter'
       responses:
@@ -418,7 +418,7 @@ paths:
       summary:
         Migrate one zone of a bare or partially zoned cluster to a zone-aware topology. The request
         contains only the zone name. Before migrating a zone, update the persisted partition
-        distribution with `PUT /cluster/partition-distribution` with a zone aware partition distribution.
+        distribution with `PUT /cluster/partitioning` with a zone aware partition distribution.
         For dual-region clusters, migrate the secondary zone first (odd-numbered nodes) and then the primary zone.
 
       requestBody:

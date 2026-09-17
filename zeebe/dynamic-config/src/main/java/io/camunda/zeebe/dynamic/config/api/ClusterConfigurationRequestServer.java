@@ -217,7 +217,7 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
 
   private void registerUpdatePartitionDistributionHandler() {
     communicationService.replyTo(
-        ClusterConfigurationRequestTopics.UPDATE_PARTITION_DISTRIBUTION.topic(),
+        ClusterConfigurationRequestTopics.UPDATE_PARTITIONING.topic(),
         serializer::decodeUpdatePartitionDistributorConfigRequest,
         request ->
             mapResponse(clusterConfigurationManagementApi.updatePartitionDistribution(request)),

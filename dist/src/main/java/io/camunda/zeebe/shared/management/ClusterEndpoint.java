@@ -47,7 +47,7 @@ import io.camunda.zeebe.management.cluster.PartitionJoinRequest;
 import io.camunda.zeebe.management.cluster.RequestHandlingActivePartitions;
 import io.camunda.zeebe.management.cluster.RequestHandlingAllPartitions;
 import io.camunda.zeebe.management.cluster.RoutingState;
-import io.camunda.zeebe.management.cluster.UpdatePartitionDistributionRequest;
+import io.camunda.zeebe.management.cluster.UpdatePartitioningRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -628,22 +628,21 @@ public class ClusterEndpoint {
     }
   }
 
-  @PutMapping(path = "/partition-distribution", consumes = "application/json")
+  @PutMapping(path = "/partitioning", consumes = "application/json")
   public ResponseEntity<?> updatePartitionDistribution(
-      @RequestBody final UpdatePartitionDistributionRequest request,
+      @RequestBody final UpdatePartitioningRequest request,
       @RequestParam(defaultValue = "false") final boolean dryRun) {
     try {
-      final var partitionDistributionConfig = Optional.ofNullable(request.getConfig());
+      final var partitioningConfig = Optional.ofNullable(request.getConfig());
       final var zonePriorities = Optional.ofNullable(request.getZonePriorities()).orElse(List.of());
-      if (partitionDistributionConfig.isPresent() == !zonePriorities.isEmpty()) {
+      if (partitioningConfig.isPresent() == !zonePriorities.isEmpty()) {
         return invalidRequest("Exactly one of config and zonePriorities must be set.");
       }
       final var result =
-          partitionDistributionConfig.isPresent()
+          partitioningConfig.isPresent()
               ? requestSender.updatePartitionDistribution(
                   new UpdatePartitionDistributorConfigRequest(
-                      ClusterApiUtils.toPartitionDistributorConfig(
-                          partitionDistributionConfig.get()),
+                      ClusterApiUtils.toPartitionDistributorConfig(partitioningConfig.get()),
                       dryRun))
               : requestSender.updateZonePriorities(
                   new UpdateZonePrioritiesRequest(zonePriorities, dryRun));

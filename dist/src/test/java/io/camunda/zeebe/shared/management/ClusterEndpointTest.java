@@ -41,9 +41,9 @@ import io.camunda.zeebe.management.cluster.ConfigurationChange;
 import io.camunda.zeebe.management.cluster.Error;
 import io.camunda.zeebe.management.cluster.GetConfigurationChangesResponse;
 import io.camunda.zeebe.management.cluster.GetTopologyResponse;
-import io.camunda.zeebe.management.cluster.PartitionDistributionConfig;
-import io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum;
-import io.camunda.zeebe.management.cluster.UpdatePartitionDistributionRequest;
+import io.camunda.zeebe.management.cluster.PartitioningConfig;
+import io.camunda.zeebe.management.cluster.PartitioningConfig.SchemeEnum;
+import io.camunda.zeebe.management.cluster.UpdatePartitioningRequest;
 import io.camunda.zeebe.management.cluster.ZoneSpec;
 import io.camunda.zeebe.util.Either;
 import jakarta.servlet.http.HttpServletRequest;
@@ -247,9 +247,9 @@ final class ClusterEndpointTest {
   @Nested
   class UpdatePartitionDistributionEndpoint {
 
-    private static PartitionDistributionConfig zoneAwareConfig() {
-      return new PartitionDistributionConfig()
-          .type(TypeEnum.ZONE_AWARE)
+    private static PartitioningConfig zoneAwareConfig() {
+      return new PartitioningConfig()
+          .scheme(SchemeEnum.ZONE_AWARE)
           .zones(List.of(new ZoneSpec().name("zone-a").numberOfReplicas(1).priority(100)));
     }
 
@@ -275,7 +275,7 @@ final class ClusterEndpointTest {
       // when
       final var response =
           endpoint.updatePartitionDistribution(
-              new UpdatePartitionDistributionRequest().config(config), false);
+              new UpdatePartitioningRequest().config(config), false);
 
       // then
       assertThat(response.getStatusCode().value()).isEqualTo(202);
@@ -302,7 +302,7 @@ final class ClusterEndpointTest {
       // when - dryRun flag is forwarded
       final var response =
           endpoint.updatePartitionDistribution(
-              new UpdatePartitionDistributionRequest().zonePriorities(zoneOrder), true);
+              new UpdatePartitioningRequest().zonePriorities(zoneOrder), true);
 
       // then
       assertThat(response.getStatusCode().value()).isEqualTo(202);
@@ -318,7 +318,7 @@ final class ClusterEndpointTest {
       // when
       final var response =
           endpoint.updatePartitionDistribution(
-              new UpdatePartitionDistributionRequest()
+              new UpdatePartitioningRequest()
                   .config(zoneAwareConfig())
                   .zonePriorities(List.of("zone-a")),
               false);
@@ -336,7 +336,7 @@ final class ClusterEndpointTest {
 
       // when
       final var response =
-          endpoint.updatePartitionDistribution(new UpdatePartitionDistributionRequest(), false);
+          endpoint.updatePartitionDistribution(new UpdatePartitioningRequest(), false);
 
       // then
       assertThat(response.getStatusCode().value()).isEqualTo(400);

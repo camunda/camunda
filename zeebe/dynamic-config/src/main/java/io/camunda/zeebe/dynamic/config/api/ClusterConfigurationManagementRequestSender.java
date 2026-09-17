@@ -257,7 +257,7 @@ public final class ClusterConfigurationManagementRequestSender {
   public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
       updatePartitionDistribution(final UpdatePartitionDistributorConfigRequest request) {
     return communicationService.send(
-        ClusterConfigurationRequestTopics.UPDATE_PARTITION_DISTRIBUTION.topic(),
+        ClusterConfigurationRequestTopics.UPDATE_PARTITIONING.topic(),
         request,
         serializer::encodeUpdatePartitionDistributorConfigRequest,
         serializer::decodeTopologyChangeResponse,
