@@ -233,10 +233,10 @@ public sealed interface ClusterConfigurationManagementRequest {
    * Removes a zone: its brokers leave the member set and the zone is dropped from the persisted
    * {@code ZoneAwareConfig}, in one atomic change.
    *
-   * <p>Without {@code force}, the request is handled by the elected coordinator. Set {@code force}
-   * when the zone contains the coordinator or is not reachable from the surviving zones. Forced
-   * removal evicts the brokers without moving their partitions first, at the cost of the replicas
-   * they held.
+   * <p>Without {@code force}, the request is handled by the elected coordinator and the replicas on
+   * the departing brokers are removed before those brokers leave. Set {@code force} when the zone
+   * is not reachable from the surviving zones. Forced removal evicts the brokers without removing
+   * replicas first, at the cost of the replicas they held.
    *
    * @param force whether to evict the zone's brokers without first moving their partitions
    */

@@ -493,8 +493,8 @@ public interface ClusterActuator {
 
   /**
    * Removes the given zone: its brokers leave the cluster and the zone is dropped from the
-   * partition distribution config. With {@code force}, the brokers are evicted without moving their
-   * partitions off them first.
+   * partition distribution config. With {@code force}, the brokers are evicted without removing
+   * their replicas first.
    *
    * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
    */
