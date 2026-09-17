@@ -26,6 +26,7 @@ import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState.State;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
@@ -238,6 +239,30 @@ final class SuspensionBehaviorTest {
     final var result = suspensionBehavior.process(command, processor);
 
     // then - callers reuse the resolved key instead of re-deriving it
+    assertThat(result.processInstanceKey()).isEqualTo(PROCESS_INSTANCE_KEY);
+    verifyOnSuspended(processor, command);
+  }
+
+  @Test
+  void shouldResolveProcessInstanceKeyFromValueForAgentHistoryCommand() {
+    // given - an AGENT_HISTORY COMMIT/DISCARD command; every production caller populates
+    // processInstanceKey directly on the value
+    markerIs(State.SUSPENDED);
+    final var command = mock(TypedRecord.class);
+    when(command.getValue())
+        .thenReturn(
+            new AgentHistoryRecord()
+                .setJobKey(JOB_KEY)
+                .setProcessInstanceKey(PROCESS_INSTANCE_KEY)
+                .ignoreLease());
+    when(command.getValueType()).thenReturn(ValueType.AGENT_HISTORY);
+    final var processor = overridingProcessor(SuspensionAction.REJECT);
+
+    // when
+    final var result = suspensionBehavior.process(command, processor);
+
+    // then - the process instance key is resolved
+    assertThat(result.outcome()).isEqualTo(SuspensionAction.REJECT);
     assertThat(result.processInstanceKey()).isEqualTo(PROCESS_INSTANCE_KEY);
     verifyOnSuspended(processor, command);
   }
