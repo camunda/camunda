@@ -24,7 +24,7 @@ import io.camunda.security.spring.session.WebSessionAttributeConverter;
 import io.camunda.security.spring.session.WebSessionConfiguration;
 import io.camunda.security.spring.session.WebSessionRepository;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
-import io.camunda.webapps.schema.descriptors.index.PersistentWebSessionIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.template.PersistentWebSessionTemplate;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.lang.Thread.UncaughtExceptionHandler;
@@ -76,11 +76,11 @@ public class WebSessionRepositoryConfiguration {
     SecondaryStorageType.elasticsearch,
     SecondaryStorageType.opensearch
   })
-  public PersistentWebSessionIndexDescriptor persistentWebSessionIndex() {
+  public PersistentWebSessionTemplate persistentWebSessionIndex() {
     final var indexPrefix = connectConfiguration.getIndexPrefix();
     final var isElasticsearch =
         ConnectionTypes.from(connectConfiguration.getType()).equals(ConnectionTypes.ELASTICSEARCH);
-    return new PersistentWebSessionIndexDescriptor(indexPrefix, isElasticsearch);
+    return new PersistentWebSessionTemplate(indexPrefix, isElasticsearch);
   }
 
   @Bean("persistentWebSessionClientProvider")
