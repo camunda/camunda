@@ -102,6 +102,27 @@ this **before** picking a repo, because guessing wrong is expensive in both dire
 reverting an intentional change destroys someone's work, and adapting the test to a real
 regression masks the defect the test exists to catch.
 
+**Zeroth check: does the blamed PR even touch anything relevant?** `originating_pr` in
+`classify.py` matches the PR whose merge produced the commit this run tested — a trigger, not
+a suspect, and that is the *strong* case. Two weaker cases exist: a bot-authored merge (e.g. a
+backport) attributes to a different, original PR instead; and when no PR's merge matches the
+head commit at all, the fallback is just the first candidate in the list, with no established
+connection to this commit whatsoever. See `Blame`'s docstring in `classify.py` for the exact
+three cases. Treat all three as leads, never verdicts.
+
+Whichever case applies, check it before running the intended/regression test below: if the
+blamed PR's file list has no plausible connection to the failing surface (e.g. a Zeebe engine
+test fix blamed for a Tasklist frontend failure), that test does not apply — the real cause
+predates this commit and simply surfaced on the run it happened to trigger, or no commit-level
+attribution exists at all. Say so explicitly in the PR body, and go find the real cause the
+normal way (recent commits touching the failing component, `git log --oneline -- <path>`).
+
+Record the verdict as `"blame_relevant": true` or `false` in `/tmp/fix-meta.json` (omit only
+when the prompt supplied no blame PR at all). The workflow reads this before requesting review
+from, or naming, the blamed author — see "Also name the author..." below. Do not name them in
+the PR body when this is `false`: mentioning an uninvolved person is exactly the noise this
+check exists to prevent, not something it should cause instead.
+
 The discriminator is whether the product still agrees with itself. The breaking PR number
 is in your prompt — read what it changed:
 
@@ -247,10 +268,15 @@ suppress re-dispatch. **Omit a fingerprint and the same failure is dispatched ag
 next push.** When updating an existing PR, preserve every line already there — the union,
 never a replacement.
 
-Also name the author of the breaking change in the body (supplied in the prompt). The
-workflow tries to add them as a reviewer, but that call fails when they are not a
-collaborator on the repository you opened the PR in, so the body mention is what
-guarantees the signal survives.
+When `blame_relevant` is `true`, name the author of the triggering commit in the body
+(supplied in the prompt). The workflow requests review from them too, gated on the same
+`blame_relevant` flag you wrote to `/tmp/fix-meta.json` — that request can still legitimately
+fail when they are not a collaborator on the repository you opened the PR in, which is why the
+body mention also carries the signal. When `blame_relevant` is `false` (or omitted because no
+blame PR was supplied), do not name them anywhere in the PR body and do not expect a review
+request either — refer to their PR by number only (no `@`) if you must reference it at all:
+naming an uninvolved person still notifies them via GitHub's mention handling even inside a
+sentence explaining that they are not the cause.
 
 ## Constraints
 
