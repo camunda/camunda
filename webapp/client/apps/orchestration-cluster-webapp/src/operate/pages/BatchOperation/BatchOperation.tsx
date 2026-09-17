@@ -9,7 +9,6 @@
 import {useEffect, useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from '@tanstack/react-router';
-import {useQueryClient} from '@tanstack/react-query';
 import {IconButton, SkeletonText, InlineNotification} from '@carbon/react';
 import {ArrowLeft} from '@carbon/react/icons';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
@@ -24,7 +23,7 @@ import {useBatchOperation} from './batchOperation.queries';
 import {formatOperationType, formatDate} from './utils';
 import {BatchItemsTable} from './BatchItemsTable';
 import {BatchOperationActions} from './BatchOperationActions';
-import {isBatchOperationAlreadyKnownGone, markBatchOperationGone} from './useBatchOperationActions';
+import {notifyBatchOperationGoneOnce, clearBatchOperationGoneNotified} from './useBatchOperationActions';
 import {PageContainer, Header, HeaderTitleContainer, TilesContainer, Tile, TileLabel} from './styled';
 
 const TILE_LABEL_KEYS = [
@@ -65,7 +64,6 @@ type Props = {
 const BatchOperation: React.FC<Props> = ({batchOperationKey}) => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
-	const queryClient = useQueryClient();
 	const {data, error} = useBatchOperation(batchOperationKey);
 
 	const requestError = requestErrorSchema.safeParse(error);
@@ -73,18 +71,21 @@ const BatchOperation: React.FC<Props> = ({batchOperationKey}) => {
 	const isNotFound = requestError.success && requestError.data.response?.status === 404;
 
 	useEffect(() => {
+		clearBatchOperationGoneNotified(batchOperationKey);
+	}, [batchOperationKey]);
+
+	useEffect(() => {
 		if (isNotFound) {
-			if (!isBatchOperationAlreadyKnownGone(queryClient, batchOperationKey)) {
+			notifyBatchOperationGoneOnce(batchOperationKey, () =>
 				notificationsStore.displayNotification({
 					kind: 'error',
 					title: t('operate.batchOperation.notFoundNotificationTitle', {batchOperationKey}),
 					isDismissable: true,
-				});
-			}
-			markBatchOperationGone(queryClient, batchOperationKey);
+				}),
+			);
 			void navigate({to: '/operate/batch-operations', replace: true});
 		}
-	}, [isNotFound, batchOperationKey, navigate, queryClient, t]);
+	}, [isNotFound, batchOperationKey, navigate, t]);
 
 	const operationType = formatOperationType(data?.batchOperationType ?? '');
 

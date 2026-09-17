@@ -158,6 +158,37 @@ describe('<BatchOperation />', () => {
 		}
 	});
 
+	it('should render normally on a later visit that finds the batch operation readable again', async ({worker}) => {
+		worker.use(
+			mockGetBatchOperationEndpoint({
+				successResponse: HttpResponse.json(createProblemDetails({status: 404}), {status: 404}),
+			}),
+			mockQueryBatchOperationItemsEndpoint({successResponse: EMPTY_ITEMS_RESPONSE}),
+		);
+
+		const firstVisit = await renderPage();
+		await expect.poll(() => firstVisit.router.state.location.pathname).toBe('/operate/batch-operations');
+		await expect
+			.poll(() => notificationsStore.notifications.map((notification) => notification.title))
+			.toContain(`Batch operation ${BATCH_OPERATION_KEY} could not be found`);
+		await firstVisit.unmount();
+		notificationsStore.reset();
+
+		worker.use(
+			mockGetBatchOperationEndpoint({
+				successResponse: HttpResponse.json(
+					createBatchOperation({batchOperationKey: BATCH_OPERATION_KEY, batchOperationType: 'CANCEL_PROCESS_INSTANCE'}),
+				),
+			}),
+		);
+
+		const secondVisit = await renderPage();
+
+		await expect.element(secondVisit.getByRole('heading', {name: 'Cancel Process Instance'})).toBeVisible();
+		expect(secondVisit.router.state.location.pathname).toBe(`/operate/batch-operations/${BATCH_OPERATION_KEY}`);
+		expect(notificationsStore.notifications).toEqual([]);
+	});
+
 	it('should redirect and notify when a follow-up read after a successful action finds it gone', async ({worker}) => {
 		worker.use(
 			mockGetBatchOperationEndpoint({
