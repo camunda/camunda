@@ -9,10 +9,8 @@ package io.camunda.webapps.schema.descriptors.template;
 
 import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
-import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
 
-public class PersistentWebSessionTemplate extends AbstractTemplateDescriptor
-    implements Prio4Backup {
+public class PersistentWebSessionTemplate extends AbstractTemplateDescriptor {
 
   public static final String INDEX_NAME = "web-session";
   public static final String INDEX_VERSION = "8.8.0";

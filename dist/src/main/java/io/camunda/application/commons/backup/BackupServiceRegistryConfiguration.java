@@ -64,7 +64,6 @@ import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
 import io.camunda.webapps.schema.descriptors.template.MessageTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
-import io.camunda.webapps.schema.descriptors.template.PersistentWebSessionTemplate;
 import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTemplate;
@@ -254,7 +253,6 @@ public class BackupServiceRegistryConfiguration {
             new AuthorizationIndex(indexPrefix, isElasticsearch),
             new GroupIndex(indexPrefix, isElasticsearch),
             new MappingRuleIndex(indexPrefix, isElasticsearch),
-            new PersistentWebSessionTemplate(indexPrefix, isElasticsearch),
             new RoleIndex(indexPrefix, isElasticsearch),
             new TenantIndex(indexPrefix, isElasticsearch),
             new UserIndex(indexPrefix, isElasticsearch),
