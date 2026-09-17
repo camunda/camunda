@@ -1028,7 +1028,8 @@
             <configuration>
               <failIfNoTests>false</failIfNoTests>
               <groups>multi-db-test</groups>
-              <excludedGroups>rdbms, history</excludedGroups>
+              <!-- TODO remove archiverless-wip once archiverless support is fully implemented -->
+              <excludedGroups>rdbms, history, archiverless-wip</excludedGroups>
               <systemPropertyVariables>
                 <test.integration.camunda.archiverless.enabled>true</test.integration.camunda.archiverless.enabled>
                 <camunda.test.preferred.extension>multi-db</camunda.test.preferred.extension>
