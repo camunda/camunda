@@ -166,10 +166,14 @@ starter creates (`load-tester.starter.process-id`).
   not-yet-suspended benchmark instances; suspend each; record the key + a resume deadline;
   a second scheduled task resumes instances whose hold has elapsed. An in-flight set guards
   against double-suspending the same instance.
-- **`batch`** — on an interval, issue one `processInstanceSuspend` batch operation over a
-  filter matching a bounded page of active instances; after the hold, issue the matching
-  `processInstanceResume` batch operation (or resume by the recorded batch-operation key's
-  item set). Exercises the batch executor and its batch-record-size rejection path.
+- **`batch`** — a warmup delay, then a repeating cycle that issues **one
+  `processInstanceSuspend` batch operation over all currently-active instances** of the process
+  (filter = `processDefinitionId` + `state=ACTIVE`), holds `hold-duration`, then issues one
+  `processInstanceResume` batch operation over all suspended instances, then waits `batch-interval`
+  and repeats. `warmup` is the one-off initial delay so a pool exists before the first suspend. This
+  is the true atomic-batch driver: it suspends *every* active instance at once (no count cap — at a
+  low creation rate that is naturally ~the whole live pool), and exercises the batch executor and
+  its batch-record-size rejection path. Instances are not cancelled.
 - **`spaced`** — a repeating cycle over the **ordinary starter-created instances** (not the heavy
   target), for suspend/resume of a realistic-profile PI at a controlled, bounded pace. Each cycle
   suspends `count` instances, picking one **currently-active** instance just before each suspend
@@ -268,26 +272,30 @@ holds `hold-duration`, resumes spaced by `resume-interval`, waits `batch-interva
 Set the realistic starter profile the same way the `realistic` scenario does (BPMN + extra models +
 payload).
 
-**Simultaneous batch on a fixed clock.** Set `suspend-interval=0` and `resume-interval=0` so all
-`count` instances are suspended (then resumed) back to back as one burst (~sub-second — these are
-`count` single suspend commands issued together, not one atomic batch operation; the batch-operation
-API cannot be capped to an exact count, so single commands are used to hit an exact `count`). With
-`warmup=5m`, `hold-duration=5m`, `batch-interval=5m` you get: warm up 5 min, at T5 suspend 10, hold,
-at T10 resume 10, at T15 suspend 10, … — each phase 5 min apart.
+**Atomic batch on a fixed clock (recommended).** Use `mode=BATCH`: each cycle suspends **all
+currently-active instances** of the process in one batch operation, holds, then resumes them all in
+one batch operation. No count cap — at a low creation rate this is naturally ~the whole live pool
+(~10 at 1 PI/s). With `warmup=5m`, `hold-duration=5m`, `batch-interval=5m` you get: warm up 5 min,
+at T5 suspend all, hold, at T10 resume all, at T15 suspend all, … — each phase 5 min apart.
 
 ```bash
 gh workflow run camunda-load-test.yml --ref 59933-suspend-resume-load-testing \
-  -f name=spaced-suspend \
+  -f name=batch-suspend \
   -f ref=59933-suspend-resume-load-testing \
   -f scenario=realistic \
   -f ttl=1 \
-  -f load-test-load="--set global.extraConfig.load-tester.suspender.enabled=true --set global.extraConfig.load-tester.suspender.mode=SPACED --set global.extraConfig.load-tester.suspender.count=10 --set global.extraConfig.load-tester.suspender.suspend-interval=0s --set global.extraConfig.load-tester.suspender.resume-interval=0s --set global.extraConfig.load-tester.suspender.hold-duration=5m --set global.extraConfig.load-tester.suspender.warmup=5m --set global.extraConfig.load-tester.suspender.batch-interval=5m"
+  -f load-test-load="--set global.extraConfig.load-tester.suspender.enabled=true --set global.extraConfig.load-tester.suspender.mode=BATCH --set global.extraConfig.load-tester.suspender.hold-duration=5m --set global.extraConfig.load-tester.suspender.warmup=5m --set global.extraConfig.load-tester.suspender.batch-interval=5m"
 ```
 
-`target-enabled` stays false (default). Tune `count`, `warmup`, `hold-duration`, `batch-interval`
-per run. Read the same `suspender_*` client timers and broker
-`zeebe_process_instance_resume_duration` / `zeebe_buffered_commands_events_total` as above. Tear
-down with `kubectl delete namespace c8-spaced-suspend`.
+**Exact count instead of all.** If you need a fixed number rather than "all active" (e.g. suspend
+exactly 10 of a larger pool), use `mode=SPACED` with `count`, `suspend-interval=0s`,
+`resume-interval=0s` — that issues `count` single suspend commands back to back (~sub-second, not
+one atomic batch op; the batch-operation API cannot be capped to an exact count).
+
+`target-enabled` stays false (default). Tune `warmup`, `hold-duration`, `batch-interval` per run.
+Read the same `suspender_*` client timers and broker `zeebe_process_instance_resume_duration` /
+`zeebe_buffered_commands_events_total` as above. Tear down with
+`kubectl delete namespace c8-batch-suspend`.
 
 ## Deliverables / follow-ups
 

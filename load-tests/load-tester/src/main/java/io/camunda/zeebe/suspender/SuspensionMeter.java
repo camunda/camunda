@@ -617,20 +617,37 @@ public class SuspensionMeter implements AutoCloseable {
   // ---- BATCH mode ------------------------------------------------------------------------------
 
   private void startBatchMode() {
-    final long intervalMs = cfg.getBatchInterval().toMillis();
     LOG.info(
-        "Batch mode: suspend batch every {}ms, resume batch offset by holdDuration {}",
-        intervalMs,
-        cfg.getHoldDuration());
+        "Batch mode: warmup {} before first cycle, then each cycle suspend ALL active '{}' "
+            + "instances via one batch operation, hold {}, resume them via one batch operation, "
+            + "cycle gap {}",
+        cfg.getWarmup(),
+        cfg.getProcessId(),
+        cfg.getHoldDuration(),
+        cfg.getBatchInterval());
 
+    // A single scheduled cycle keeps the suspend and resume batches on one clock: warmup is the
+    // one-off initial delay so a pool of instances exists before the first suspend; batch-interval
+    // is the idle gap between cycles. Suspend-all -> hold -> resume-all -> gap, repeat.
     executor.scheduleWithFixedDelay(
-        this::suspendBatch, intervalMs, intervalMs, TimeUnit.MILLISECONDS);
-    // Offset the resume cycle by the hold duration so suspended instances are held before resume.
-    executor.scheduleWithFixedDelay(
-        this::resumeBatch,
-        cfg.getHoldDuration().toMillis() + intervalMs,
-        intervalMs,
+        this::batchCycle,
+        cfg.getWarmup().toMillis(),
+        cfg.getBatchInterval().toMillis(),
         TimeUnit.MILLISECONDS);
+  }
+
+  private void batchCycle() {
+    try {
+      suspendBatch();
+      sleep(cfg.getHoldDuration());
+      resumeBatch();
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+    } catch (final Exception e) {
+      // Never let an exception escape to the scheduler — scheduleWithFixedDelay cancels the task on
+      // an uncaught throwable, which would silently stop all further cycles.
+      THROTTLED_LOGGER.warn("Batch suspend/resume cycle failed", e);
+    }
   }
 
   private void suspendBatch() {
