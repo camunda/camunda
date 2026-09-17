@@ -70,6 +70,15 @@ on:
         required: false
         type: string
         default: 'stable/8.10'
+      e2e-ref:
+        description: |
+          Git ref of camunda/c8-cross-component-e2e-tests to run the specs from.
+          Unlike the ref-8-* inputs (which pick the product build under test),
+          this picks the test code itself, so a spec or page-object fix can be
+          verified against a preview env from its PR branch before merge.
+        required: false
+        type: string
+        default: 'main'
 
 env:
   # Default owner for CI-analytics attribution: observe-build-status falls back
@@ -86,6 +95,8 @@ jobs:
   # git-ref characters before anything consumes them. Always runs (trivially
   # green on scheduled runs, where inputs are empty) so the deploy jobs'
   # implicit success() dependency doesn't skip the default path.
+  # e2e-ref only reaches actions/checkout's `ref`, which is not a shell sink, so
+  # it needs no gate of its own -- it rides along to keep one rule for all refs.
   validate-ref-inputs:
     name: Validate ref override inputs
     runs-on: ubuntu-latest
@@ -98,8 +109,9 @@ jobs:
           REF_8_8: ${{ inputs.ref-8-8 }}
           REF_8_9: ${{ inputs.ref-8-9 }}
           REF_8_10: ${{ inputs.ref-8-10 }}
+          REF_E2E: ${{ inputs.e2e-ref }}
         run: |
-          for ref in "$REF_8_8" "$REF_8_9" "$REF_8_10"; do
+          for ref in "$REF_8_8" "$REF_8_9" "$REF_8_10" "$REF_E2E"; do
             if [[ -n "$ref" && ! "$ref" =~ ^[A-Za-z0-9._/-]+$ ]]; then
               echo "::error::Invalid ref override (allowed: A-Z a-z 0-9 . _ / -): ${ref}"
               exit 1
@@ -327,7 +339,11 @@ jobs:
           repository: camunda/c8-cross-component-e2e-tests
           token: ${{ steps.github-token.outputs.token }}
           path: e2e-tests
-          ref: main
+          # The || fallback stays despite the input default: input defaults only
+          # apply to workflow_dispatch, and on scheduled runs the inputs context
+          # is empty -- an empty ref would check out the default branch by
+          # accident rather than by intent.
+          ref: ${{ inputs.e2e-ref || 'main' }}
           persist-credentials: false
 
       - name: Setup Node.js
