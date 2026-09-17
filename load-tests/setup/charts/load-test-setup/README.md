@@ -199,7 +199,6 @@ routes through it.
 
 `PodMonitor`s are wired automatically for the Cluster's and (when enabled) the Pooler's own connection metrics — no separate toggle.
 
-
 ## k6 tests
 
 TODO:
@@ -208,3 +207,4 @@ TODO:
 * how to use the helpers lib
 * how to run locally: `k6 run xxx.js`
 * what to expect
+
