@@ -7,6 +7,9 @@
  */
 
 import type {Variable} from '@camunda/camunda-api-zod-schemas/8.10';
+import c4FormJsCss from '@bpmn-io/c4-theme/assets/form-js.css?url';
+import c4TokensCss from '@bpmn-io/c4-theme/assets/tokens.css?url';
+import formJsCss from '@bpmn-io/form-js-viewer/dist/assets/form-js.css?url';
 import {useInfiniteQuery, useSuspenseQuery} from '@tanstack/react-query';
 import {createFileRoute, useSearch} from '@tanstack/react-router';
 import {useCallback, useMemo} from 'react';
@@ -23,6 +26,13 @@ type LoaderData = {
 };
 
 export const Route = createFileRoute('/_shadcn/_auth/tasklist/_tasks/$userTaskKey/')({
+	head: () => ({
+		links: [
+			{rel: 'stylesheet', href: formJsCss},
+			{rel: 'stylesheet', href: c4TokensCss},
+			{rel: 'stylesheet', href: c4FormJsCss},
+		],
+	}),
 	loader: async ({context: {queryClient}, params: {userTaskKey}}): Promise<LoaderData> => {
 		const task = await queryClient.query(queries.getUserTask(userTaskKey));
 

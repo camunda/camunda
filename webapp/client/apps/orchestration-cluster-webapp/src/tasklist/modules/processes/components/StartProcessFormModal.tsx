@@ -13,6 +13,8 @@ import type {DocumentReference} from '@camunda/camunda-api-zod-schemas/8.10';
 import {
 	Alert,
 	Button,
+	Card,
+	CardContent,
 	Dialog,
 	DialogBody,
 	DialogClose,
@@ -147,32 +149,35 @@ const StartProcessFormModal: React.FC<Props> = ({
 				</DialogFooter>
 			}
 		>
-			<CamundaFormRenderer
-				schema={schema}
-				layerLevel={1}
-				handleSubmit={onSubmit}
-				handleFileUpload={onFileUpload}
-				onMount={(formManager) => {
-					formManagerRef.current = formManager;
-				}}
-				onSubmitStart={() => {
-					setIsSubmitting(true);
-					setHasSubmissionFailed(false);
-				}}
-				onImportError={(cause) => {
-					setFormImportFailure({cause});
-				}}
-				onSubmitError={() => {
-					setHasSubmissionFailed(true);
-					setIsSubmitting(false);
-				}}
-				onSubmitSuccess={() => {
-					setIsSubmitting(false);
-				}}
-				onValidationError={() => {
-					setIsSubmitting(false);
-				}}
-			/>
+			<Card className="pt-0">
+				<CardContent>
+					<CamundaFormRenderer
+						schema={schema}
+						handleSubmit={onSubmit}
+						handleFileUpload={onFileUpload}
+						onMount={(formManager) => {
+							formManagerRef.current = formManager;
+						}}
+						onSubmitStart={() => {
+							setIsSubmitting(true);
+							setHasSubmissionFailed(false);
+						}}
+						onImportError={(cause) => {
+							setFormImportFailure({cause});
+						}}
+						onSubmitError={() => {
+							setHasSubmissionFailed(true);
+							setIsSubmitting(false);
+						}}
+						onSubmitSuccess={() => {
+							setIsSubmitting(false);
+						}}
+						onValidationError={() => {
+							setIsSubmitting(false);
+						}}
+					/>
+				</CardContent>
+			</Card>
 			{hasSubmissionFailed ? (
 				<Alert
 					className="mt-2"
