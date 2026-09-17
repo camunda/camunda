@@ -50,6 +50,11 @@ public interface SearchEngineClient extends CloseableSilently {
   void putSettings(
       final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings);
 
+  void putSettings(
+      final List<IndexDescriptor> indexDescriptors,
+      final Map<String, String> toAppendSettings,
+      final boolean allowNoIndices);
+
   /**
    * Reads the primary shard count of already-created indices. Shards are immutable after creation,
    * so this is the only way to tell whether the configured count is actually in effect.

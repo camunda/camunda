@@ -19,6 +19,7 @@ import io.camunda.search.schema.metrics.SchemaManagerMetrics;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
+import io.camunda.webapps.schema.descriptors.template.PersistentWebSessionTemplate;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
@@ -363,11 +364,16 @@ public class SchemaManager implements CloseableSilently {
       searchEngineClient.updateIndexTemplateSettings(
           indexTemplateDescriptor, indexSettingsFromConfig);
     }
-    searchEngineClient.putSettings(
-        List.of(indexDescriptor),
+    final var replicaSettings =
         Map.of(
             "index.number_of_replicas",
-            String.valueOf(indexSettingsFromConfig.getNumberOfReplicas())));
+            String.valueOf(indexSettingsFromConfig.getNumberOfReplicas()));
+    if (indexDescriptor instanceof PersistentWebSessionTemplate) {
+      // The web-session index can be missing after a restore, recreated on its first write
+      searchEngineClient.putSettings(List.of(indexDescriptor), replicaSettings, true);
+    } else {
+      searchEngineClient.putSettings(List.of(indexDescriptor), replicaSettings);
+    }
   }
 
   @VisibleForTesting

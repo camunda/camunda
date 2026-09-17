@@ -217,7 +217,15 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   @Override
   public void putSettings(
       final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {
-    final var request = putIndexSettingsRequest(indexDescriptors, toAppendSettings);
+    putSettings(indexDescriptors, toAppendSettings, false);
+  }
+
+  @Override
+  public void putSettings(
+      final List<IndexDescriptor> indexDescriptors,
+      final Map<String, String> toAppendSettings,
+      final boolean allowNoIndices) {
+    final var request = putIndexSettingsRequest(indexDescriptors, toAppendSettings, allowNoIndices);
 
     try {
       client.indices().putSettings(request);
@@ -435,35 +443,6 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     }
   }
 
-  private PutIndicesSettingsRequest putIndexSettingsRequest(
-      final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {
-    final co.elastic.clients.elasticsearch.indices.IndexSettings settings =
-        utils.mapToSettings(
-            toAppendSettings,
-            (inp) ->
-                deserializeJson(
-                    co.elastic.clients.elasticsearch.indices.IndexSettings._DESERIALIZER, inp));
-    return new PutIndicesSettingsRequest.Builder()
-        .index(utils.listIndicesByAlias(indexDescriptors))
-        .settings(settings)
-        .build();
-  }
-
-  public PutLifecycleRequest putLifecycleRequest(
-      final String policyName, final String deletionMinAge) {
-    return new PutLifecycleRequest.Builder()
-        .name(policyName)
-        .policy(
-            policy ->
-                policy.phases(
-                    phase ->
-                        phase.delete(
-                            del ->
-                                del.minAge(m -> m.time(deletionMinAge))
-                                    .actions(a -> a.delete(DeleteAction.of(d -> d))))))
-        .build();
-  }
-
   @Override
   public Set<String> getIndexNames(final String pattern) {
     try {
@@ -483,6 +462,39 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   @Override
   public String getEngineName() {
     return DatabaseConfig.ELASTICSEARCH;
+  }
+
+  private PutIndicesSettingsRequest putIndexSettingsRequest(
+      final List<IndexDescriptor> indexDescriptors,
+      final Map<String, String> toAppendSettings,
+      final boolean allowNoIndices) {
+    final co.elastic.clients.elasticsearch.indices.IndexSettings settings =
+        utils.mapToSettings(
+            toAppendSettings,
+            (inp) ->
+                deserializeJson(
+                    co.elastic.clients.elasticsearch.indices.IndexSettings._DESERIALIZER, inp));
+    final var builder =
+        new PutIndicesSettingsRequest.Builder()
+            .index(utils.listIndicesByAlias(indexDescriptors))
+            .allowNoIndices(allowNoIndices)
+            .settings(settings);
+    return builder.build();
+  }
+
+  public PutLifecycleRequest putLifecycleRequest(
+      final String policyName, final String deletionMinAge) {
+    return new PutLifecycleRequest.Builder()
+        .name(policyName)
+        .policy(
+            policy ->
+                policy.phases(
+                    phase ->
+                        phase.delete(
+                            del ->
+                                del.minAge(m -> m.time(deletionMinAge))
+                                    .actions(a -> a.delete(DeleteAction.of(d -> d))))))
+        .build();
   }
 
   private Map<String, TypeMapping> getCurrentMappings(
