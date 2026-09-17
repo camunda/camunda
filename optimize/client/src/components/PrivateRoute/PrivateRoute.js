@@ -10,7 +10,6 @@ import React, {useEffect} from 'react';
 import {Route} from 'react-router-dom';
 import {addHandler, removeHandler} from 'request';
 import {storePostLoginRedirect} from 'postLoginRedirect';
-import {IS_NAV_V2_ENABLED} from 'feature-flags';
 
 import {Header} from '..';
 
@@ -43,12 +42,8 @@ export function PrivateRoute({component: Component, ...rest}) {
         return (
           <>
             <Header />
-            <main className={IS_NAV_V2_ENABLED ? 'nav-v2' : undefined}>
-              <div
-                className={'PrivateRoute' + (IS_NAV_V2_ENABLED ? ' nav-v2' : '')}
-                id="main-content"
-                tabIndex={-1}
-              >
+            <main className="nav-v2">
+              <div className="PrivateRoute nav-v2" id="main-content" tabIndex={-1}>
                 {rest.render ? rest.render(props) : <Component {...props} />}
               </div>
             </main>

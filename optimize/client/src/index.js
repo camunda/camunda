@@ -8,11 +8,11 @@
 
 import {createRoot} from 'react-dom/client';
 
+import '@camunda/design-system/styles.css';
 import './style.scss';
 import 'polyfills';
 
 import {restorePostLoginRedirect} from 'postLoginRedirect';
-import {IS_NAV_V2_ENABLED} from 'feature-flags';
 
 import App from './App';
 
@@ -22,12 +22,7 @@ import App from './App';
 restorePostLoginRedirect();
 
 // On the body rather than the root, because modals render through a portal into the body.
-document.body.classList.toggle('optimize-nav-v2', IS_NAV_V2_ENABLED);
-
-// Dynamic so the stylesheet stays off the legacy path; a static import is hoisted past the flag.
-if (IS_NAV_V2_ENABLED) {
-  import('@camunda/design-system/styles.css');
-}
+document.body.classList.add('optimize-nav-v2');
 
 const root = createRoot(document.getElementById('root'));
 root.render(<App />);
