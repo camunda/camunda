@@ -18,9 +18,9 @@
 		"lint:knip": "knip"
 	},
 	"dependencies": {
+		"@bpmn-io/c4-theme": "0.0.1-alpha.0",
 		"@bpmn-io/element-template-icon-renderer": "1.0.0",
-		"@bpmn-io/form-js-carbon-styles": "1.26.1",
-		"@bpmn-io/form-js-viewer": "1.26.1",
+		"@bpmn-io/form-js-viewer": "2.0.0-alpha.0",
 		"@bpmn-io/shadcn-theme": "0.0.1",
 		"@camunda/camunda-api-zod-schemas": "0.0.93",
 		"@camunda/camunda-composite-components": "0.25.4",
@@ -29,7 +29,6 @@
 		"@camunda/session-heartbeat": "0.0.1",
 		"@carbon/layout": "11.59.0",
 		"@carbon/react": "1.112.0",
-		"@carbon/styles": "1.114.0",
 		"@carbon/type": "11.67.0",
 		"@devbookhq/splitter": "1.4.2",
 		"@monaco-editor/react": "4.7.0",

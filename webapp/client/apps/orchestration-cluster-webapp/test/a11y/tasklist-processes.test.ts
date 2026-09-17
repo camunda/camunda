@@ -118,8 +118,7 @@ test('should have no accessibility violations in the filtered empty state with t
 	expect(accessibilityScanResults.violations).toEqual([]);
 });
 
-// Will be fixed with #60223
-test.skip('should have no accessibility violations in the start-process form modal', async ({
+test('should have no accessibility violations in the start-process form modal', async ({
 	network,
 	tasklistProcessesPage,
 	makeAxeBuilder,
