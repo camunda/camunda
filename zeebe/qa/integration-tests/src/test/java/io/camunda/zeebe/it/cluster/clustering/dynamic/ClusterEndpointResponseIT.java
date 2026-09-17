@@ -81,7 +81,7 @@ final class ClusterEndpointResponseIT {
               }
             },
             "clusterId": "cluster-id",
-            "partitioning":{"type":"ROUND_ROBIN","zones":[]}
+            "partitioning":{"scheme":"ROUND_ROBIN","zones":[]}
           }""");
     }
   }

@@ -235,19 +235,19 @@ schemas:
     description: The partition distributor configuration agreed on by the cluster.
     type: object
     required:
-      - type
+      - scheme
     properties:
-      type:
+      scheme:
         type: string
         enum: [ROUND_ROBIN, ZONE_AWARE, FIXED]
         description: >
-          The distributor type. ROUND_ROBIN assigns partitions evenly across all brokers.
+          The partitioning scheme. ROUND_ROBIN assigns partitions evenly across all brokers.
           ZONE_AWARE places replicas according to zone specs. FIXED uses a static mapping
           defined in each broker's local configuration.
       zones:
         type: array
         description: >
-          Zone specifications; present only when type is ZONE_AWARE. While migrating a bare or
+          Zone specifications; present only when scheme is ZONE_AWARE. While migrating a bare or
           partially zoned cluster to zone-aware, the order of this array matters: it determines
           which existing (bare) nodes get migrated into which zone. Outside of migration, order is
           irrelevant — every operation addresses a zone by its `name`, never by its position in
@@ -594,7 +594,7 @@ schemas:
           - UPDATE_INCARNATION_NUMBER
           - PRE_SCALING
           - POST_SCALING
-          - UPDATE_PARTITION_DISTRIBUTOR_CONFIG
+          - UPDATE_PARTITIONING
           - ENTER_RECOVERY
           - EXIT_RECOVERY
           - AWAIT_MODE_CHANGE
