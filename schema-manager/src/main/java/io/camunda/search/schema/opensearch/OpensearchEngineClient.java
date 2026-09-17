@@ -231,7 +231,15 @@ public class OpensearchEngineClient implements SearchEngineClient {
   @Override
   public void putSettings(
       final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {
-    final var request = putIndexSettingsRequest(indexDescriptors, toAppendSettings);
+    putSettings(indexDescriptors, toAppendSettings, false);
+  }
+
+  @Override
+  public void putSettings(
+      final List<IndexDescriptor> indexDescriptors,
+      final Map<String, String> toAppendSettings,
+      final boolean allowNoIndices) {
+    final var request = putIndexSettingsRequest(indexDescriptors, toAppendSettings, allowNoIndices);
 
     try {
       client.indices().putSettings(request);
@@ -434,6 +442,27 @@ public class OpensearchEngineClient implements SearchEngineClient {
     }
   }
 
+  @Override
+  public Set<String> getIndexNames(final String pattern) {
+    try {
+      return new HashSet<>(
+          client
+              .indices()
+              .get(req -> req.index(pattern).ignoreUnavailable(true))
+              .result()
+              .keySet());
+    } catch (final IOException | OpenSearchException e) {
+      final var errMsg = String.format("Failed to retrieve index names for pattern [%s]", pattern);
+      LOG.error(errMsg, e);
+      throw new SearchEngineException(errMsg, e);
+    }
+  }
+
+  @Override
+  public String getEngineName() {
+    return DatabaseConfig.OPENSEARCH;
+  }
+
   private Request createIndexStateManagementPolicy(
       final String policyName, final String deletionMinAge) {
     try (final var policyJson = getClass().getResourceAsStream(OPERATE_DELETE_ARCHIVED_POLICY)) {
@@ -515,7 +544,9 @@ public class OpensearchEngineClient implements SearchEngineClient {
   }
 
   private PutIndicesSettingsRequest putIndexSettingsRequest(
-      final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {
+      final List<IndexDescriptor> indexDescriptors,
+      final Map<String, String> toAppendSettings,
+      final boolean allowNoIndices) {
 
     final org.opensearch.client.opensearch.indices.IndexSettings settings =
         utils.mapToSettings(
@@ -523,10 +554,16 @@ public class OpensearchEngineClient implements SearchEngineClient {
             (inp) ->
                 deserializeJson(
                     org.opensearch.client.opensearch.indices.IndexSettings._DESERIALIZER, inp));
-    return new PutIndicesSettingsRequest.Builder()
-        .index(utils.listIndicesByAlias(indexDescriptors))
-        .settings(settings)
-        .build();
+    final var builder =
+        new PutIndicesSettingsRequest.Builder()
+            .index(utils.listIndicesByAlias(indexDescriptors))
+            .settings(settings);
+    if (allowNoIndices) {
+      // A single unavailable target still throws unless both flags are set together — verified
+      // against a live cluster; allowNoIndices alone still 404s on a missing literal alias.
+      builder.allowNoIndices(true).ignoreUnavailable(true);
+    }
+    return builder.build();
   }
 
   private String dynamicFromMappings(final TypeMapping mapping) {
@@ -777,27 +814,6 @@ public class OpensearchEngineClient implements SearchEngineClient {
         throw new RuntimeException(e);
       }
     }
-  }
-
-  @Override
-  public Set<String> getIndexNames(final String pattern) {
-    try {
-      return new HashSet<>(
-          client
-              .indices()
-              .get(req -> req.index(pattern).ignoreUnavailable(true))
-              .result()
-              .keySet());
-    } catch (final IOException | OpenSearchException e) {
-      final var errMsg = String.format("Failed to retrieve index names for pattern [%s]", pattern);
-      LOG.error(errMsg, e);
-      throw new SearchEngineException(errMsg, e);
-    }
-  }
-
-  @Override
-  public String getEngineName() {
-    return DatabaseConfig.OPENSEARCH;
   }
 
   record ISMPolicyState(boolean exists, int seqNo, int primaryTerm) {
