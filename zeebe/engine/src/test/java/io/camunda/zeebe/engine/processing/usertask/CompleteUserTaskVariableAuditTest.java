@@ -23,12 +23,9 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public final class CompleteUserTaskVariableAuditEnabledTest {
+public final class CompleteUserTaskVariableAuditTest {
 
-  @ClassRule
-  public static final EngineRule ENGINE =
-      EngineRule.singlePartition()
-          .withEngineConfig(config -> config.setUserTaskCompletionVariableAuditEnabled(true));
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =

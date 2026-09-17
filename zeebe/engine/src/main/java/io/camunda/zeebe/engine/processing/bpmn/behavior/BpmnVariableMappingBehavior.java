@@ -55,17 +55,14 @@ public final class BpmnVariableMappingBehavior {
       final VariableBehavior variableBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
       final MappingResolver<InputMappings> inputMappingResolver,
-      final MappingResolver<OutputMappings> outputMappingResolver,
-      final boolean userTaskCompletionVariableAuditEnabled) {
+      final MappingResolver<OutputMappings> outputMappingResolver) {
     this.expressionProcessor = expressionProcessor;
     inputMappingExpressionProcessor = expressionProcessor.withSecretReferenceContext();
     elementInstanceState = processingState.getElementInstanceState();
     variablesState = processingState.getVariableState();
     this.variableBehavior = variableBehavior;
     userTaskCompletionVariableBehavior =
-        userTaskCompletionVariableAuditEnabled
-            ? variableBehavior.withVariableSource(VariableSourceRecord.userTaskCompletion())
-            : variableBehavior;
+        variableBehavior.withVariableSource(VariableSourceRecord.userTaskCompletion());
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
     this.eventTriggerBehavior = eventTriggerBehavior;
     this.inputMappingResolver = inputMappingResolver;
