@@ -215,6 +215,40 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
     }
   }
 
+  /**
+   * Makes one attempt for a physical tenant on the calling thread, outside that tenant's background
+   * task, and marks it initialized if the attempt succeeds.
+   *
+   * <p>For a caller that needs the schema applied at a point of its own choosing rather than
+   * whenever the retry loop next comes round — a restore establishing that the storage it is about
+   * to restore into carries every index. The failure is propagated rather than retried here,
+   * because that caller is the one that knows whether retrying is still worth anything.
+   *
+   * <p>A deferral is deliberately not consulted here. The background task defers a recovering
+   * tenant because creating its indices would break the snapshot restore it is in the middle of;
+   * this path <em>is</em> that restore, asking for the schema at the one point in it where the
+   * indices are meant to exist. Honouring the deferral here would deadlock the restore against the
+   * condition the deferral exists to protect.
+   *
+   * <p>Safe to run alongside the tenant's own task: the attempt is required to be idempotent, and
+   * both paths only ever mark the tenant ready.
+   *
+   * @throws IllegalArgumentException if the physical tenant is not one of this node's
+   */
+  public void initializeNow(final String physicalTenantId) {
+    final TenantState state = tenants.get(physicalTenantId);
+    if (state == null) {
+      throw new IllegalArgumentException(
+          "Cannot initialize the schema of unknown physical tenant '" + physicalTenantId + "'");
+    }
+    attempt.accept(physicalTenantId);
+    markReady(state);
+    LOG.info(
+        "Schema for physical tenant '{}' is initialized, on request rather than by its own"
+            + " initialization task.",
+        physicalTenantId);
+  }
+
   /** Whether the physical tenant's schema has been applied. An unknown tenant is never ready. */
   @Override
   public boolean isInitialized(final String physicalTenantId) {

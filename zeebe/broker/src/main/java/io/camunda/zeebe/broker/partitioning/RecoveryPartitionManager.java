@@ -35,6 +35,7 @@ import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.restore.PartitionRestoreService;
+import io.camunda.zeebe.restore.SecondaryStorageSchemaInitializer;
 import io.camunda.zeebe.restore.ValidatePartitionCount;
 import io.camunda.zeebe.restore.validation.RestoreValidator;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -72,6 +73,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.IntFunction;
+import java.util.function.Supplier;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -118,10 +120,13 @@ public final class RecoveryPartitionManager
   private final AtomixServerTransport gatewayBrokerTransport;
   private final @Nullable IntFunction<Long> exportedPositionSupplier;
   private final BrokerHealthCheckService healthCheckService;
+  private final Supplier<@Nullable SecondaryStorageSchemaInitializer> schemaInitializerSupplier;
   private final Map<Integer, HealthMonitorable> registeredHealthComponents = new LinkedHashMap<>();
   private boolean stopped = false;
   private @Nullable BackupStore backupStore;
   private @Nullable ExecutorService restoreExecutor;
+  private @Nullable CompletableFuture<Void> schemaInitialization;
+  private int preRestoresInFlight;
 
   public RecoveryPartitionManager(
       final String partitionGroup,
@@ -135,8 +140,10 @@ public final class RecoveryPartitionManager
       final AtomixServerTransport gatewayBrokerTransport,
       final @Nullable IntFunction<Long> exportedPositionSupplier,
       final TopologyManagerImpl topologyManager,
-      final BrokerHealthCheckService healthCheckService) {
+      final BrokerHealthCheckService healthCheckService,
+      final Supplier<@Nullable SecondaryStorageSchemaInitializer> schemaInitializerSupplier) {
     this.healthCheckService = healthCheckService;
+    this.schemaInitializerSupplier = schemaInitializerSupplier;
     this.partitionGroup = partitionGroup;
     this.concurrencyControl = concurrencyControl;
     actorSchedulingService = schedulingService;
@@ -337,6 +344,10 @@ public final class RecoveryPartitionManager
 
   private void stopInternal(final ActorFuture<Void> result) {
     stopped = true;
+    // the next manager re-checks from scratch: this one's result described a storage that may well
+    // have changed while it was down
+    schemaInitialization = null;
+    preRestoresInFlight = 0;
     // Unregister the readiness and health state this manager contributed, so the next manager's
     // registration starts from a clean slate: after exiting recovery, readiness must be gated on
     // the partitions genuinely rejoining Raft rather than on the recovery-mode "installed" marks.
@@ -388,9 +399,12 @@ public final class RecoveryPartitionManager
             return;
           }
           final var partitionDir = partitionDirectory(new PartitionId(partitionGroup, partitionId));
-          CompletableFuture.runAsync(() -> deleteDirectory(partitionDir), executor)
+          preRestoresInFlight++;
+          initializeSecondaryStorageSchema(executor)
+              .thenRunAsync(() -> deleteDirectory(partitionDir), executor)
               .whenCompleteAsync(
                   (ok, error) -> {
+                    preRestoreFinished();
                     if (error != null) {
                       result.completeExceptionally(FuturesUtil.unwrapCompletionException(error));
                     } else {
@@ -467,6 +481,54 @@ public final class RecoveryPartitionManager
                   concurrencyControl);
         });
     return result;
+  }
+
+  /**
+   * Applies this physical tenant's secondary-storage schema once per restore, however many
+   * partitions this broker restores: the schema is the tenant's, not the partition's.
+   *
+   * <p>Scoped to one restore rather than to this manager. A tenant stays in recovery across as many
+   * restores as the operator needs, and a secondary storage they restore between two of them is
+   * exactly what this check exists to catch - so a result cached for the whole recovery session
+   * would let the second restore drop its partition data against a storage nothing had looked at.
+   *
+   * <p>The restore plan leaves every pre-restore free of dependencies, so a broker runs all of its
+   * own at once; {@link #preRestoresInFlight} is what turns that overlap into the restore's
+   * boundary. Should they ever stop overlapping, this degrades to one initialization per partition,
+   * which is wasteful but never stale.
+   *
+   * <p>Other brokers run their own initialization against the same storage concurrently, which the
+   * initializer is required to tolerate - there is no cluster-wide coordination here.
+   *
+   * <p>Must be called on {@link #concurrencyControl}, which is what serializes the bookkeeping.
+   */
+  private CompletableFuture<Void> initializeSecondaryStorageSchema(final ExecutorService executor) {
+    final var initializer = schemaInitializerSupplier.get();
+    if (initializer == null) {
+      LOG.debug("No secondary storage schema is managed for partition group {}", partitionGroup);
+      return CompletableFuture.completedFuture(null);
+    }
+    if (schemaInitialization == null) {
+      LOG.info("Initializing the secondary storage schema of partition group {}", partitionGroup);
+      schemaInitialization =
+          CompletableFuture.runAsync(initializer::initialize, executor)
+              .whenCompleteAsync(
+                  (ok, error) -> {
+                    if (error != null) {
+                      schemaInitialization = null;
+                    }
+                  },
+                  concurrencyControl);
+    }
+    return schemaInitialization;
+  }
+
+  private void preRestoreFinished() {
+    preRestoresInFlight--;
+    if (preRestoresInFlight <= 0) {
+      preRestoresInFlight = 0;
+      schemaInitialization = null;
+    }
   }
 
   private static void deleteDirectory(final Path directory) {

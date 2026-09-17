@@ -52,6 +52,19 @@ public class SearchEngineSchemaInitializer
   private final Map<String, ClientAdapter> clientsByTenant = new ConcurrentHashMap<>();
 
   /**
+   * One monitor per physical tenant, held for the whole of that tenant's attempt.
+   *
+   * <p>A tenant's attempts are no longer necessarily sequential: {@link #initializeNow} runs one on
+   * the caller's thread while the tenant's background task may be part-way through another. They
+   * share {@link #clientsByTenant}, and an attempt releases that client when it succeeds - so
+   * without this, one attempt closes the client the other is still using, and the second fails
+   * against a closed client rather than against anything real. Serializing is preferable to giving
+   * each attempt its own client: two attempts applying the same schema at once is work neither
+   * needs, and whichever waits finds the schema already applied.
+   */
+  private final Map<String, Object> attemptMonitors = new ConcurrentHashMap<>();
+
+  /**
    * @param holdsStartup whether this node keeps its listening socket closed until a physical tenant
    *     is serviceable. Only a node with an HTTP gateway does; every other node has no consumer
    *     that benefits from waiting. It also decides whether the node can abort: the abort belongs
@@ -156,6 +169,23 @@ public class SearchEngineSchemaInitializer
   }
 
   /**
+   * Applies a physical tenant's schema now, on the calling thread, and reports the failure to the
+   * caller instead of retrying it. Blocking: the attempt talks to the search engine.
+   *
+   * <p>Used by a restore to establish that the secondary storage it restores into carries every
+   * index this version expects. Going through the same attempt as the retry loop is what makes the
+   * tenant count as initialized afterwards, so a node whose schema was applied this way reports
+   * itself ready without waiting for its own loop to come round again.
+   *
+   * <p>Runs even while the tenant is recovering, which the background task refuses to do. The
+   * refusal protects a snapshot restore from having its indices recreated underneath it; this
+   * caller is that restore, at the step where the schema is supposed to be applied.
+   */
+  public void initializeNow(final String physicalTenantId) {
+    initialization.initializeNow(physicalTenantId);
+  }
+
+  /**
    * Returns true if the schema initialization completed successfully for <em>all</em> physical
    * tenants. This can be used by dependent components to check if they should proceed with their
    * initialization.
@@ -168,7 +198,8 @@ public class SearchEngineSchemaInitializer
   }
 
   /**
-   * One attempt at applying a tenant's schema. Any failure propagates to the retry loop.
+   * One attempt at applying a tenant's schema, serialized against this tenant's other attempts. Any
+   * failure propagates to the caller - the retry loop, or {@link #initializeNow}.
    *
    * <p>The client is built once per tenant and reused across that tenant's attempts, not rebuilt on
    * each one: building it opens a connection pool and its I/O threads, and a tenant whose storage
@@ -178,6 +209,14 @@ public class SearchEngineSchemaInitializer
    */
   @VisibleForTesting
   void initializeTenant(final String physicalTenantId) {
+    synchronized (attemptMonitors.computeIfAbsent(physicalTenantId, id -> new Object())) {
+      initializeTenantExclusively(physicalTenantId);
+    }
+  }
+
+  /** One attempt, with this tenant's monitor held. */
+  @VisibleForTesting
+  void initializeTenantExclusively(final String physicalTenantId) {
     final SearchEngineConfiguration configuration = configs.get(physicalTenantId);
     final IndexDescriptors indexDescriptors = descriptors.get(physicalTenantId);
     if (indexDescriptors == null) {
