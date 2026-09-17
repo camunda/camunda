@@ -793,7 +793,13 @@ jobs:
     # zeebeVersion. success() keeps the implicit needs-succeeded gate that a
     # custom `if` would otherwise drop.
     if: success() && needs.build-and-push.outputs.image-tag != ''
-    timeout-minutes: 30
+    # Must stay comfortably above the poll loop's own budget in
+    # `wait-downstream` (100 ticks x 30s ~= 50min). When this fires first the
+    # runner kills the step mid-poll, the job lands as `cancelled`, and the
+    # loop's timeout path -- which writes `downstream_conclusion=timeout` and
+    # the AlwaysGreen failure context -- never runs. Keep the loop as the
+    # timeout mechanism and this as the backstop.
+    timeout-minutes: 60
     permissions: { }
     steps:
       - name: Checkout repository
@@ -844,7 +850,7 @@ jobs:
             {
               echo "### SaaS E2E tests skipped"
               echo ""
-              echo "The downstream workflow (\`playwright_saas_pr_trigger_monorepo.yml\` in camunda/c8-cross-component-e2e-tests) is currently **${STATE}**, not active -- skipping dispatch instead of waiting for a run that will never start."
+              echo "The downstream workflow (\`playwright_saas_pr_trigger_monorepo.yml\` in camunda/c8-cross-component-e2e-tests) is currently **${STATE}**, not active -- skipping dispatch instead of waiting up to 50 minutes for a run that will never start."
             } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "Downstream workflow state: $STATE"
@@ -926,7 +932,13 @@ jobs:
 
           RUN_ID=""
 
-          for _ in {1..80}; do
+          # 100 ticks x 30s ~= 50min of wall clock. Sized off the downstream
+          # run's observed distribution (median ~35min, p90 ~44min, p95
+          # ~50min over the last 100 runs), because a budget below the median
+          # kills roughly half of all waits while the downstream run is still
+          # green and in progress. Raise this if the downstream suite grows;
+          # the job-level `timeout-minutes` above must stay above it.
+          for _ in {1..100}; do
             if [[ -z "$RUN_ID" ]]; then
               # A retry-exhausted poll must not end the wait: this loop is the
               # timeout mechanism, so fall through to the next tick. Only a
