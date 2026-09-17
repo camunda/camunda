@@ -42,7 +42,7 @@ import {
   isValidResourceId,
   isValidSecretResourceId,
   getIdPattern,
-  getSecretResourceIdPattern,
+  getSecretNamePattern,
   AUTHORIZATION_WILDCARD,
   SECRET_REFERENCE_PREFIX,
 } from "src/utility/validate";
@@ -272,7 +272,7 @@ export const AddModal: FC<
               validate: (value) =>
                 isValidSecretResourceId(value ?? "") ||
                 t("pleaseEnterValidSecretResourceId", {
-                  pattern: getSecretResourceIdPattern(),
+                  pattern: getSecretNamePattern(),
                 }),
             }}
             render={({ field, fieldState }) => {
