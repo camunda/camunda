@@ -213,11 +213,10 @@ public class MultiPartitionDeploymentLifecycleTest {
     assertThat(
             RecordingExporter.commandDistributionRecords(CommandDistributionIntent.ACKNOWLEDGE)
                 .withDistributionPartitionId(2)
-                .limit(3))
+                .limit(r -> r.getRecordType().equals(RecordType.COMMAND_REJECTION)))
         .extracting(Record::getRecordType)
-        .describedAs("Expect second command to be rejected")
-        .containsExactlyInAnyOrder(
-            RecordType.COMMAND, RecordType.COMMAND, RecordType.COMMAND_REJECTION);
+        .describedAs("Expect subsequent command(s) to be rejected")
+        .containsSequence(RecordType.COMMAND, RecordType.COMMAND, RecordType.COMMAND_REJECTION);
   }
 
   @Test
