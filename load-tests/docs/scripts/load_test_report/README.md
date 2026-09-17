@@ -45,7 +45,7 @@ Common options:
   `NaN`.
 - `--output <path>`: write the report to a file.
 
-## Examples
+### Examples
 
 Port-forwarded Prometheus, JSON:
 
@@ -88,9 +88,9 @@ uv run load-test-report c8-ck-baseline-20260814 \
   --format csv > /tmp/load-test-report.csv
 ```
 
-## Queries
+### Queries
 
-### Query selection
+#### Query selection
 
 Use `--queries` to select a YAML query file. The default is the packaged
 [`report-queries.yaml`](src/load_test_report/report-queries.yaml), which covers the
@@ -109,7 +109,7 @@ Custom files use the same top-level `queries:` schema.
 
 The custom file case is useful when a report needs its own column set or custom PromQL queries.
 
-### Output shape
+#### Output shape
 
 CSV and TSV column order follow the selected query file. The packaged query sets are
 laid out for spreadsheet imports:
@@ -125,7 +125,7 @@ laid out for spreadsheet imports:
 Metrics that Prometheus does not return stay visible as `null` in JSON and `NaN` in CSV or TSV
 by default.
 
-### Packaged query semantics
+#### Packaged query semantics
 
 The report window ends at `--at`, at `--end` when `--start --end` are provided, or at
 Prometheus's current evaluation time.
@@ -148,7 +148,7 @@ Different column types use that window differently:
 - Columns computed from seconds-denominated histograms but labeled in milliseconds,
   such as `ProcLat p50 (ms)`, multiply the PromQL result by `1000`.
 
-### Query file schema
+#### Query file schema
 
 Each query entry is one report column, in emission order. The order controls the JSON
 key order and the CSV or TSV column order.
@@ -165,7 +165,7 @@ Fields:
 Packaged YAML entries keep the field order `key`, `description`, `header`, then
 `valueLabel` when needed, then `query`.
 
-### Query substitutions
+#### Query substitutions
 
 Variables are substituted in the raw query file before YAML decoding:
 
