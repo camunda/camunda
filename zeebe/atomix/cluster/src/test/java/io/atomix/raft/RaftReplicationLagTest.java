@@ -22,6 +22,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.test.util.junit.SlowTest;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
@@ -33,7 +34,9 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
+@Category(SlowTest.class)
 public class RaftReplicationLagTest {
 
   @Rule public RaftRule raftRule = RaftRule.withBootstrappedNodes(3);

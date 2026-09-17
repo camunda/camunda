@@ -28,6 +28,7 @@ import io.atomix.raft.protocol.LeadershipTransferResultResponse;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
 import io.atomix.raft.roles.LeaderRole;
+import io.camunda.zeebe.test.util.junit.SlowTest;
 import java.time.Duration;
 import java.util.Comparator;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -38,7 +39,9 @@ import java.util.concurrent.TimeoutException;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
+@Category(SlowTest.class)
 public class RaftCoordinatedLeadershipTransferTest {
 
   @Rule public RaftRule raftRule = RaftRule.withBootstrappedNodes(3);
