@@ -20,11 +20,13 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 
 class OptimizeComponentAccessConfigurationTest {
+
+  private static final OptimizeComponentAccessPolicy GRANT = new StubPolicy(Optional.empty());
+  private static final OptimizeComponentAccessPolicy DENY =
+      new StubPolicy(Optional.of("no permission"));
 
   private final ApplicationContextRunner runner =
       new ApplicationContextRunner()
@@ -33,7 +35,7 @@ class OptimizeComponentAccessConfigurationTest {
   @Test
   void shouldRegisterTheAccessPortsWhenAnEditionPolicyIsPresent() {
     runner
-        .withUserConfiguration(GrantingPolicyConfiguration.class)
+        .withBean(OptimizeComponentAccessPolicy.class, () -> GRANT)
         .run(
             context ->
                 assertThat(context)
@@ -57,7 +59,7 @@ class OptimizeComponentAccessConfigurationTest {
   @Test
   void shouldBackOffWhenCslIsDisabled() {
     runner
-        .withUserConfiguration(GrantingPolicyConfiguration.class)
+        .withBean(OptimizeComponentAccessPolicy.class, () -> GRANT)
         .withPropertyValues("optimize.security.csl.enabled=false")
         .run(context -> assertThat(context).doesNotHaveBean(WebAppProviderPort.class));
   }
@@ -65,7 +67,7 @@ class OptimizeComponentAccessConfigurationTest {
   @Test
   void shouldReportOptimizeAsAuthorizedComponentWhenThePolicyAllows() {
     runner
-        .withUserConfiguration(GrantingPolicyConfiguration.class)
+        .withBean(OptimizeComponentAccessPolicy.class, () -> GRANT)
         .run(
             context ->
                 assertThat(
@@ -78,7 +80,7 @@ class OptimizeComponentAccessConfigurationTest {
   @Test
   void shouldReportNoAuthorizedComponentWhenThePolicyDenies() {
     runner
-        .withUserConfiguration(DenyingPolicyConfiguration.class)
+        .withBean(OptimizeComponentAccessPolicy.class, () -> DENY)
         .run(
             context ->
                 assertThat(
@@ -86,24 +88,6 @@ class OptimizeComponentAccessConfigurationTest {
                             .getBean(AuthorizedComponentsPort.class)
                             .resolve(CamundaAuthentication.of(builder -> builder.user("kermit"))))
                     .isEmpty());
-  }
-
-  @Configuration
-  static class GrantingPolicyConfiguration {
-
-    @Bean
-    OptimizeComponentAccessPolicy policy() {
-      return new StubPolicy(Optional.empty());
-    }
-  }
-
-  @Configuration
-  static class DenyingPolicyConfiguration {
-
-    @Bean
-    OptimizeComponentAccessPolicy policy() {
-      return new StubPolicy(Optional.of("no permission"));
-    }
   }
 
   private record StubPolicy(Optional<String> denialReason)
