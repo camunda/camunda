@@ -39,6 +39,7 @@ import io.camunda.zeebe.dynamic.config.util.ZoneAwarePartitionDistributor;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Nested;
@@ -110,15 +111,46 @@ final class RemoveZoneTransformerTest {
     assertThat(result.get())
         .containsExactly(
             new UpdatePartitionDistributorConfigOperation(ZONE_A_0, expectedConfig),
-            new PreScalingOperation(ZONE_A_0, Set.of(ZONE_A_0)),
             new PartitionDemoteOperation(ZONE_B_0, 1),
             new PartitionLeaveOperation(ZONE_B_0, 1, 1),
             new PartitionReconfigurePriorityOperation(ZONE_A_0, 1, 1),
             new PartitionDemoteOperation(ZONE_B_0, 2),
             new PartitionLeaveOperation(ZONE_B_0, 2, 1),
             new PartitionReconfigurePriorityOperation(ZONE_A_0, 2, 1),
-            new MemberLeaveOperation(ZONE_B_0),
-            new PostScalingOperation(ZONE_A_0, Set.of(ZONE_A_0)));
+            new MemberLeaveOperation(ZONE_B_0));
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void shouldRespectSkipScalingOperations(final boolean skipScalingOperations) {
+    // given
+    final var currentTopology =
+        buildTopology(DUAL_ZONE_CONFIG, DUAL_ZONE_MEMBERS)
+            .updateGlobalConfiguration(
+                globalConfiguration ->
+                    globalConfiguration.setPartitionDistributorConfig(
+                        new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 1, 1000)))));
+
+    // when
+    final var result =
+        plannedOperations(
+            new ScaleRequestTransformer(Set.of(ZONE_A_0), Optional.of(1), skipScalingOperations),
+            currentTopology);
+
+    // then
+    EitherAssert.assertThat(result).isRight();
+    if (skipScalingOperations) {
+      assertThat(result.get())
+          .noneMatch(
+              operation ->
+                  operation instanceof PreScalingOperation
+                      || operation instanceof PostScalingOperation);
+    } else {
+      assertThat(result.get())
+          .contains(
+              new PreScalingOperation(ZONE_A_0, Set.of(ZONE_A_0)),
+              new PostScalingOperation(ZONE_A_0, Set.of(ZONE_A_0)));
+    }
   }
 
   @ParameterizedTest
@@ -156,19 +188,22 @@ final class RemoveZoneTransformerTest {
   }
 
   @Test
-  void shouldRejectRemovalWithoutForceWhenTheZoneContainsTheElectedCoordinator() {
+  void shouldGracefullyRemoveZoneContainingTheElectedCoordinator() {
     // given: zone-a holds the elected coordinator (lowest member id, ZONE_A_0)
     final var currentTopology = buildTopology(DUAL_ZONE_CONFIG, DUAL_ZONE_MEMBERS);
 
     // when
     final var result = plannedOperations(new RemoveZoneTransformer(ZONE_A, false), currentTopology);
 
-    // then
-    EitherAssert.assertThat(result).isLeft();
-    assertThat(result.getLeft())
-        .isInstanceOf(ClusterConfigurationRequestFailedException.InvalidRequest.class)
-        .hasMessageContaining("elected coordinator")
-        .hasMessageContaining("force=true");
+    // then: scaling callbacks are skipped because the removed zone releases its leases as it shuts
+    // down
+    EitherAssert.assertThat(result).isRight();
+    assertThat(result.get())
+        .contains(new MemberLeaveOperation(ZONE_A_0))
+        .noneMatch(
+            operation ->
+                operation instanceof PreScalingOperation
+                    || operation instanceof PostScalingOperation);
   }
 
   @Test
@@ -277,7 +312,7 @@ final class RemoveZoneTransformerTest {
      * cluster never describes a zone layout its members do not match.
      */
     @Test
-    void shouldGracefullyMoveEveryPhysicalTenantOffTheRemovedZone() {
+    void shouldGracefullyRemoveReplicasFromEveryPhysicalTenant() {
       // given
       final var configuration =
           withMirroredTenant(buildTopology(DUAL_ZONE_CONFIG, DUAL_ZONE_MEMBERS));
@@ -285,14 +320,13 @@ final class RemoveZoneTransformerTest {
       // when
       final var phases = new RemoveZoneTransformer(ZONE_B, false).phases(configuration);
 
-      // then — persist the shrunk layout, move every tenant's partitions, then remove the broker
+      // then — persist the shrunk layout, remove every tenant's replicas, then remove the broker
       EitherAssert.assertThat(phases).isRight();
-      assertThat(phases.get()).hasSize(4);
+      assertThat(phases.get()).hasSize(3);
       assertThat(((GlobalPhase) phases.get().getFirst()).operations())
           .containsExactly(
               new UpdatePartitionDistributorConfigOperation(ZONE_A_0, SURVIVING_CONFIG));
-      assertThat(phases.get().get(1)).isInstanceOf(GlobalPhase.class);
-      assertThat(phases.get().get(2)).isInstanceOf(PartitionGroupPhase.class);
+      assertThat(phases.get().get(1)).isInstanceOf(PartitionGroupPhase.class);
 
       assertThat(partitionGroupPhase(phases.get()).groupOperations())
           .containsOnlyKeys(CurrentClusterConfiguration.DEFAULT_GROUP, TENANT_A)

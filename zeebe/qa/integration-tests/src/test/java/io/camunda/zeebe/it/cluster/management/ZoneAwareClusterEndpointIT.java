@@ -379,7 +379,8 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       // when - remove the healthy zoneB without forcing broker eviction
       final var response = actuator.removeZone(ZONE_B, false, false);
 
-      // then - replicas move off zoneB before its broker leaves and the zone disappears from config
+      // then - replicas are removed from zoneB before its broker leaves and the zone disappears
+      // from config
       Awaitility.await()
           .atMost(Duration.ofMinutes(1))
           .untilAsserted(
@@ -389,6 +390,35 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
           new PartitionDistributionConfig()
               .type(TypeEnum.ZONE_AWARE)
               .zones(List.of(new ZoneSpec().name(ZONE_A).numberOfReplicas(1).priority(100)));
+      assertThat(actuator.getTopology().getPartitionDistribution()).isEqualTo(expectedDistribution);
+    }
+  }
+
+  @Test
+  void shouldGracefullyRemoveHealthyZoneContainingCoordinator() {
+    try (final var cluster = createCluster(minReplicationFactor())) {
+      // given - zoneA (brokers 0 and 2) is healthy and holds broker 0, the cluster's default
+      // coordinator (the lowest member ID); use the zoneB broker as the actuator, since it is the
+      // only one that stays alive throughout the test
+      cluster.awaitCompleteTopology();
+      final var actuator = ClusterActuator.of(cluster.brokers().get(memberIdForBroker(1)));
+
+      // when - remove the healthy coordinator zone without forcing broker eviction
+      final var response = actuator.removeZone(ZONE_A, false, false);
+
+      // then - the request is accepted: coordination hands off to a broker in the surviving zone,
+      // replicas are removed from zoneA before its brokers leave, and the zone disappears from the
+      // distribution config
+      Awaitility.await()
+          .atMost(Duration.ofMinutes(1))
+          .untilAsserted(
+              () -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(response));
+      ClusterActuatorAssert.assertThat(actuator).doesNotHaveBroker(brokerId(0));
+      ClusterActuatorAssert.assertThat(actuator).doesNotHaveBroker(brokerId(2));
+      final var expectedDistribution =
+          new PartitionDistributionConfig()
+              .type(TypeEnum.ZONE_AWARE)
+              .zones(List.of(new ZoneSpec().name(ZONE_B).numberOfReplicas(1).priority(10)));
       assertThat(actuator.getTopology().getPartitionDistribution()).isEqualTo(expectedDistribution);
     }
   }
