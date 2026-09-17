@@ -817,38 +817,39 @@ public final class NettyMessagingService implements ManagedMessagingService {
     bootstrap.remoteAddress(socketAddress);
     bootstrap.handler(new BasicClientChannelInitializer(future));
 
-    final Channel channel =
-        bootstrap
-            .connect()
-            .addListener(
-                onConnect -> {
-                  if (!onConnect.isSuccess()) {
-                    future.completeExceptionally(
-                        new ConnectException(
-                            String.format(
-                                "Failed to connect channel for address %s (resolved: %s) : %s",
-                                address, address.getAddress(), onConnect.cause())));
-                  }
-                })
-            .channel();
+    final var connectFuture = bootstrap.connect();
+    final Channel channel = connectFuture.channel();
+    connectFuture.addListener(
+        onConnect -> {
+          if (!onConnect.isSuccess()) {
+            future.completeExceptionally(
+                new ConnectException(
+                    String.format(
+                        "Failed to connect channel for address %s (resolved: %s) : %s",
+                        address, address.getAddress(), onConnect.cause())));
+          }
+        });
 
     // immediately ensure we're notified of the channel being closed. the common case is that the
     // channel is closed after we've handled the request (and response in the case of a
     // sendAndReceive operation), so the future is already completed by then. If it isn't, then the
     // channel was closed too early, which should be handled as a failure from the consumer point
-    // of view.
+    // of view. Wait for the connection attempt to complete first, so a failed connection is always
+    // reported as a ConnectException rather than racing with the close listener.
     channel
         .closeFuture()
         .addListener(
-            onClose -> {
-              if (!future.isDone()) {
-                future.completeExceptionally(
-                    new MessagingException.ConnectionClosed(
-                        String.format(
-                            "Channel %s for address %s was closed unexpectedly before the request was handled",
-                            channel, address)));
-              }
-            });
+            onClose ->
+                connectFuture.addListener(
+                    onConnect -> {
+                      if (onConnect.isSuccess() && !future.isDone()) {
+                        future.completeExceptionally(
+                            new MessagingException.ConnectionClosed(
+                                String.format(
+                                    "Channel %s for address %s was closed unexpectedly before the request was handled",
+                                    channel, address)));
+                      }
+                    }));
 
     return future;
   }
