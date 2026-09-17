@@ -277,9 +277,9 @@ public final class ClusterConfigurationManagementRequestSender {
   }
 
   /**
-   * Routes forced removal to a broker outside the zone being removed. This is necessary when the
-   * zone contains the elected coordinator or is not reachable from the surviving zones. A
-   * non-forced removal is routed to the elected coordinator.
+   * Routes forced removal to a broker outside the zone being removed, which is necessary when the
+   * zone is not reachable from the surviving zones. A non-forced removal is routed to the elected
+   * coordinator, which can gracefully hand off coordination before leaving.
    */
   public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> removeZone(
       final RemoveZoneRequest request) {
