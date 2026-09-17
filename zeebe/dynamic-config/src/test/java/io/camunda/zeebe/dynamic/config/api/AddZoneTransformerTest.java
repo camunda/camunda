@@ -19,6 +19,8 @@ import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PostScalingOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
@@ -78,6 +80,8 @@ final class AddZoneTransformerTest {
     assertThat(operations)
         .containsExactly(
             new MemberJoinOperation(ZONE_B_0),
+            new PreScalingOperation(ZONE_B_0, Set.of(ZONE_A_0, ZONE_B_0)),
+            new PostScalingOperation(ZONE_B_0, Set.of(ZONE_A_0, ZONE_B_0)),
             new UpdatePartitionDistributorConfigOperation(ZONE_A_0, expectedConfig),
             new PartitionJoinOperation(ZONE_B_0, 1, 1, true),
             new PartitionPromoteOperation(ZONE_B_0, 1),
@@ -290,6 +294,29 @@ final class AddZoneTransformerTest {
       assertThat(((GlobalPhase) phases.get().getFirst()).operations())
           .containsExactly(
               new MemberJoinOperation(ZONE_B_0),
+              new PreScalingOperation(ZONE_B_0, Set.of(ZONE_A_0, ZONE_B_0)),
+              new PostScalingOperation(ZONE_B_0, Set.of(ZONE_A_0, ZONE_B_0)),
+              new UpdatePartitionDistributorConfigOperation(ZONE_A_0, RESTORED_CONFIG));
+    }
+
+    @Test
+    void shouldBootstrapOneReturningBrokerBeforeJoiningTheRemainingBrokers() {
+      // given
+      final var configuration = buildTopology(SINGLE_ZONE_CONFIG, SINGLE_ZONE_MEMBERS);
+      final var brokers = Set.of(ZONE_B_0, ZONE_B_1);
+
+      // when
+      final var phases = new AddZoneTransformer(ZONE_B, 1, 500, brokers).phases(configuration);
+
+      // then
+      EitherAssert.assertThat(phases).isRight();
+      assertThat(phases.get()).hasSize(2);
+      assertThat(((GlobalPhase) phases.get().getFirst()).operations())
+          .containsExactly(
+              new MemberJoinOperation(ZONE_B_0),
+              new PreScalingOperation(ZONE_B_0, Set.of(ZONE_A_0, ZONE_B_0, ZONE_B_1)),
+              new MemberJoinOperation(ZONE_B_1),
+              new PostScalingOperation(ZONE_B_0, Set.of(ZONE_A_0, ZONE_B_0, ZONE_B_1)),
               new UpdatePartitionDistributorConfigOperation(ZONE_A_0, RESTORED_CONFIG));
     }
 
