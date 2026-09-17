@@ -27,7 +27,7 @@ export const isTenantsApiEnabled = getClientConfigBoolean(
 );
 export const isNewDesignSystemEnabled = getClientConfigBoolean(
   "isNewDesignSystemEnabled",
-  false,
+  true,
 );
 export const isAdditionalIdpConfigured = getClientConfigBoolean(
   "isAdditionalIdpConfigured",
