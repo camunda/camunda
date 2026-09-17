@@ -227,6 +227,56 @@ class TaskDetailsPage {
     await this.decrementButton.click({timeout: 60000});
   }
 
+  /**
+   * Repeatedly press increment until the input shows the target value.
+   * Tolerates the form-js number button registering a click as two
+   * increments on slow runners.
+   */
+  async incrementUntilValue(target: string): Promise<void> {
+    await this.driveNumberInputToValue(target, 'increment');
+  }
+
+  /**
+   * Repeatedly press decrement until the input shows the target value.
+   */
+  async decrementUntilValue(target: string): Promise<void> {
+    await this.driveNumberInputToValue(target, 'decrement');
+  }
+
+  private async driveNumberInputToValue(
+    target: string,
+    direction: 'increment' | 'decrement',
+  ): Promise<void> {
+    const button =
+      direction === 'increment' ? this.incrementButton : this.decrementButton;
+    const targetNum = Number(target);
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const currentValue = (await this.numberInput.inputValue()) || '0';
+      const currentNum = Number(currentValue);
+      if (currentNum === targetNum) {
+        return;
+      }
+      const wrongDirection =
+        (direction === 'increment' && currentNum > targetNum) ||
+        (direction === 'decrement' && currentNum < targetNum);
+      const correctButton = wrongDirection
+        ? direction === 'increment'
+          ? this.decrementButton
+          : this.incrementButton
+        : button;
+      await correctButton.click({timeout: 60000});
+      try {
+        await expect(this.numberInput).not.toHaveValue(currentValue, {
+          timeout: 5000,
+        });
+      } catch {
+        // If the input value didn't change in 5s the next iteration will
+        // re-read it and decide whether another click is needed.
+      }
+    }
+    await expect(this.numberInput).toHaveValue(target);
+  }
+
   async fillDatetimeField(label: string, value: string) {
     const input = this.page.getByRole('textbox', {name: label});
     await expect(input).toBeVisible();

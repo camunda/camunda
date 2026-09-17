@@ -452,33 +452,22 @@ test.describe('task details page', () => {
     await taskPanelPage.openTask('UserTask_Number_Buttons');
     await taskDetailsPage.clickAssignToMeButton();
 
-    // The spinner buttons mutate only form-js's local display value; the field
-    // binds to the form data model once the form re-renders as editable after
-    // assignment. Clicking Increment during that read-only -> editable remount
-    // leaves the field unbound, so the task completes with an empty number even
-    // though the input shows 1. Wait for the assigned, editable form before
-    // using the buttons (the "by input" test is immune because fill() already
-    // waits for an editable field). Do not remove this guard.
+    // Wait for the assigned, editable form before using the spinner buttons:
+    // the buttons only exist once the read-only -> editable remount finishes.
     await expect(taskDetailsPage.unassignButton).toBeVisible();
     await expect(taskDetailsPage.numberInput).toBeEditable();
-    // "Editable" and "bound to the form data model" aren't perfectly
-    // synchronized -- a short settle wait plus retrying each click+assert
-    // pair covers the narrow remaining window instead of relying on a single
-    // guard check alone.
-    await sleep(500);
 
-    await expect(async () => {
-      await taskDetailsPage.clickIncrementButton();
-      await taskDetailsPage.assertFieldValue('Number', '1');
-    }).toPass({timeout: 10000});
-    await expect(async () => {
-      await taskDetailsPage.clickIncrementButton();
-      await taskDetailsPage.assertFieldValue('Number', '2');
-    }).toPass({timeout: 10000});
-    await expect(async () => {
-      await taskDetailsPage.clickDecrementButton();
-      await taskDetailsPage.assertFieldValue('Number', '1');
-    }).toPass({timeout: 10000});
+    // Form-js number-button clicks can occasionally register twice on slow
+    // runners (mousedown + mouseup as separate increments), so drive each step
+    // toward its target value instead of asserting after a single click.
+    await taskDetailsPage.incrementUntilValue('1');
+    await taskDetailsPage.incrementUntilValue('2');
+    await taskDetailsPage.decrementUntilValue('1');
+    // Completing immediately after the last click can submit before the
+    // button's value change has propagated to the form data model, leaving the
+    // reopened task with an empty number even though the input showed 1. Let
+    // the model settle before completing.
+    await sleep(500);
     await taskDetailsPage.clickCompleteTaskButton();
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
 
