@@ -46,6 +46,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -287,6 +288,38 @@ class CslChainIntegrationTest {
   @Test
   void shouldServeBearerCallWithoutTheComponentCheckForCcsm() throws Exception {
     assertBearerCallUnaffectedByComponentCheck(componentAccessRunner(ccsmRunner(), DENY));
+  }
+
+  @Test
+  void shouldBindTheSessionRequestForTheComponentCheck() {
+    // The CCSM policy reads the session's access token through the current request. CSL attaches
+    // the session inside the chain, so the request bound outside of it carries none.
+    final AtomicReference<Boolean> sawSession = new AtomicReference<>();
+    final OptimizeComponentAccessPolicy recordingPolicy =
+        new RecordingPolicy(
+            () ->
+                sawSession.set(
+                    ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes())
+                            .getRequest()
+                            .getSession(false)
+                        != null));
+
+    componentAccessRunner(ccsmRunner(), recordingPolicy)
+        .run(
+            ctx -> {
+              // given
+              final MockHttpServletRequest navigation = new MockHttpServletRequest("GET", "/");
+              navigation.setCookies(oauth2SessionCookie(ctx));
+              final MockHttpServletResponse response = new MockHttpServletResponse();
+
+              // when
+              doFilterWithRequestContext(ctx, navigation, response, new MockFilterChain());
+
+              // then
+              assertThat(sawSession.get())
+                  .as("the component check saw the request that carries the session")
+                  .isTrue();
+            });
   }
 
   @Test
@@ -906,6 +939,22 @@ class CslChainIntegrationTest {
     final var jwt = new SignedJWT(header, claims);
     jwt.sign(server.signer());
     return jwt.serialize();
+  }
+
+  /** Reports the session as authorized and runs the given probe on every session check. */
+  private record RecordingPolicy(Runnable probe) implements OptimizeComponentAccessPolicy {
+
+    @Override
+    public Optional<String> loginDenialReason(
+        final String accessTokenValue, final Map<String, Object> claims) {
+      return Optional.empty();
+    }
+
+    @Override
+    public Optional<String> sessionDenialReason(final CamundaAuthentication authentication) {
+      probe.run();
+      return Optional.empty();
+    }
   }
 
   private record FixedPolicy(String denialReason) implements OptimizeComponentAccessPolicy {
