@@ -188,8 +188,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             InputMappingResolvers.forMode(
                 config.getInputMappingMode(), config.getInputComparisonMode()),
             OutputMappingResolvers.forMode(
-                config.getOutputMappingMode(), config.getOutputComparisonMode()),
-            config.isUserTaskCompletionVariableAuditEnabled());
+                config.getOutputMappingMode(), config.getOutputComparisonMode()));
 
     eventSubscriptionBehavior =
         new BpmnEventSubscriptionBehavior(

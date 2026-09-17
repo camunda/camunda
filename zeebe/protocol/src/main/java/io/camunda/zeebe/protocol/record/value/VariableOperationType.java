@@ -19,8 +19,7 @@ package io.camunda.zeebe.protocol.record.value;
  * Defines the type of the variable operation. This is used to distinguish between variable
  * operations that are triggered by the API, native user task completion, and other sources (e.g.,
  * internal operations). {@link #USER_TASK_COMPLETION} identifies variables produced by native user
- * task output processing when {@code
- * camunda.data.audit-log.user-task-completion-variable-audit-enabled} is enabled.
+ * task output processing.
  */
 public enum VariableOperationType {
   API,
