@@ -55,6 +55,13 @@ class OptimizeSecurityPathAdapterTest {
   }
 
   @Test
+  void shouldExemptNoSuffixFromTheComponentAccessCheck() {
+    // An export takes its file name as the last path segment, so a caller could name it
+    // report.js and pass CSL's default static-asset exemption with a session that is denied.
+    assertThat(pathAdapter.staticResourceSuffixes()).isEmpty();
+  }
+
+  @Test
   void shouldUnprotectActuatorAtDefaultBasePath() {
     OptimizeResourceConstants.ACTUATOR_ENDPOINT = "/actuator";
     assertThat(pathAdapter.unprotectedPaths()).contains("/actuator/**");
