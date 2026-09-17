@@ -22,6 +22,7 @@ import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.template.PersistentWebSessionTemplate;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.time.Duration;
@@ -119,10 +120,8 @@ class SchemaUpdateIT {
       config.schemaManager().getRetry().setMaxRetries(numberOfThreads);
       config.schemaManager().getRetry().setMaxRetryDelay(Duration.ofSeconds(1));
     }
-    config
-        .schemaManager()
-        .setVersionCheckRestrictionEnabled(
-            false); // skip version check for the test to allow 8.7.0-SNAPSHOT to 8.8.0-SNAPSHOT
+    // skip version check for the test to allow 8.7.0-SNAPSHOT to 8.8.0-SNAPSHOT
+    config.schemaManager().setVersionCheckRestrictionEnabled(false);
     final var indexDescriptors =
         new IndexDescriptors(
             config.connect().getIndexPrefix(), config.connect().getTypeEnum().isElasticSearch());
@@ -215,19 +214,23 @@ class SchemaUpdateIT {
       final List<IndexTemplateDescriptor> indexTemplateDescriptors) {
     final int archivePeriodInDays = 20;
     final LocalDate today = LocalDate.now();
-    for (final var indexTemplate : indexTemplateDescriptors) {
-      IntStream.range(0, archivePeriodInDays)
-          .mapToObj(i -> today.minusDays(i).format(DateTimeFormatter.ISO_DATE))
-          .map(date -> indexTemplate.getIndexPattern().replace("*", date))
-          .forEach(
-              indexName -> {
-                try {
-                  searchClientAdapter.createIndex(indexName, config.index().getNumberOfReplicas());
-                } catch (final IOException e) {
-                  throw new RuntimeException(e);
-                }
-              });
-    }
-    return archivePeriodInDays * indexTemplateDescriptors.size();
+    indexTemplateDescriptors.stream()
+        .filter(descriptor -> !(descriptor instanceof PersistentWebSessionTemplate))
+        .forEach(
+            indexTemplate -> {
+              IntStream.range(0, archivePeriodInDays)
+                  .mapToObj(i -> today.minusDays(i).format(DateTimeFormatter.ISO_DATE))
+                  .map(date -> indexTemplate.getIndexPattern().replace("*", date))
+                  .forEach(
+                      indexName -> {
+                        try {
+                          searchClientAdapter.createIndex(
+                              indexName, config.index().getNumberOfReplicas());
+                        } catch (final IOException e) {
+                          throw new RuntimeException(e);
+                        }
+                      });
+            });
+    return archivePeriodInDays * (indexTemplateDescriptors.size() - 1);
   }
 }
