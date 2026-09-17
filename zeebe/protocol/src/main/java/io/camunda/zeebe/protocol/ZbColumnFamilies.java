@@ -347,11 +347,11 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // FIFO prefix iteration of buffered commands for a process instance (bufferedCommandKey is
   // KeyGenerator-issued and therefore monotonically increasing, so key order == FIFO insertion
   // order), and also stores the record directly so a visit/drain never needs a second point lookup
-  BUFFERED_COMMANDS_BY_PROCESS_INSTANCE_KEY(157, PARTITION_LOCAL),
+  BUFFERED_COMMANDS_BY_PROCESS_INSTANCE_KEY(158, PARTITION_LOCAL),
 
   // (processDefinitionKey, partitionId) → ∅: partitions that still owe a drain report for a
   // definition being deleted while it has running instances. Lives on the aggregating partition.
-  PENDING_PROCESS_DELETIONS_PER_PARTITION(158, PARTITION_LOCAL),
+  PENDING_PROCESS_DELETIONS_PER_PARTITION(159, PARTITION_LOCAL),
 
   // holder processInstanceKey -> (bpmnProcessId, correlationKey, tenantId, messageKey).
   // Origin entry for a cross-partition message-start holder, written on P_B so it can push a
@@ -359,18 +359,18 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // Present only on P_B — the symmetric STARTED on P_K writes nothing here. See
   // CrossPartitionMessageStartHolderOrigin and the STARTED / PUSHED appliers for the full
   // write/delete lifecycle and the migration rationale.
-  CROSS_PARTITION_MESSAGE_START_HOLDER_ORIGIN(159, PARTITION_LOCAL),
+  CROSS_PARTITION_MESSAGE_START_HOLDER_ORIGIN(160, PARTITION_LOCAL),
 
   // (processDefinitionKey, elementId) -> agentDefinitionKey. Minted once per AI agent element at
   // deploy time and replicated identically to every partition (like process/decision/form
   // definitions), so this is GLOBAL rather than PARTITION_LOCAL.
-  AGENT_DEFINITION_KEY_BY_PROCESS_DEFINITION_KEY_AND_ELEMENT_ID(160, GLOBAL),
+  AGENT_DEFINITION_KEY_BY_PROCESS_DEFINITION_KEY_AND_ELEMENT_ID(161, GLOBAL),
 
   // agentDefinitionKey -> DbAgentDefinition (the full AgentDefinitionRecord). Populated alongside
   // AGENT_DEFINITION_KEY_BY_PROCESS_DEFINITION_KEY_AND_ELEMENT_ID at deploy time, so the record can
   // be fully retrieved, without re-deriving it from the parsed BPMN model. GLOBAL for the same
   // reason as the sibling CF above.
-  AGENT_DEFINITION_BY_KEY(161, GLOBAL),
+  AGENT_DEFINITION_BY_KEY(162, GLOBAL),
 
   /**
    * Indexes every job of a process instance, keyed [processInstanceKey | jobKey], so resume can
@@ -381,7 +381,7 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
    * for every currently {@code SUSPENDED} job but not an authoritative "all jobs of this instance"
    * list.
    */
-  JOBS_BY_PROCESS_INSTANCE(162, PARTITION_LOCAL),
+  JOBS_BY_PROCESS_INSTANCE(163, PARTITION_LOCAL),
 
   // (agentInstanceKey, historyItemId) -> agentHistoryKey. Records every history item ever
   // committed for an agent instance, so a later job resending an id that an earlier, already-
@@ -389,7 +389,7 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // this, since a committed item is deleted from it. Retained for the agent instance's whole
   // lifetime and deleted in one pass when the instance completes (see
   // AgentInstanceCompletedApplier).
-  AGENT_HISTORY_COMMITTED_IDS(163, PARTITION_LOCAL),
+  AGENT_HISTORY_COMMITTED_IDS(164, PARTITION_LOCAL),
 
   // (agentInstanceKey, historyItemId) -> ∅. Records every history item whose metrics were ever
   // accumulated for an agent instance, independent of AGENT_HISTORY_COMMITTED_IDS: a discarded
@@ -397,7 +397,7 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // re-accumulate its metrics. Written when an item is first created (see
   // AgentHistoryCreatedApplier), survives commit/discard, and is deleted in one pass when the
   // instance completes (see AgentInstanceCompletedApplier).
-  AGENT_HISTORY_METRICS_ACCUMULATED_IDS(164, PARTITION_LOCAL);
+  AGENT_HISTORY_METRICS_ACCUMULATED_IDS(165, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;
