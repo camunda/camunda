@@ -247,6 +247,7 @@ public class JobThrowErrorProcessor
         .setBpmnProcessId(job.getBpmnProcessIdBuffer())
         .setProcessDefinitionKey(job.getProcessDefinitionKey())
         .setProcessInstanceKey(job.getProcessInstanceKey())
+        .setStorageOrdinal(job.getStorageOrdinal())
         .setElementId(getElementId(job))
         .setElementInstanceKey(job.getElementInstanceKey())
         .setTenantId(job.getTenantId())

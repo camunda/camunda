@@ -10,13 +10,18 @@ package io.camunda.zeebe.engine.processing.storageordinals;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
@@ -240,5 +245,122 @@ public final class StorageOrdinalAssignmentTest {
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
     assertThat(decisionEvaluated.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToIncidentRecordsOfAJobWithoutRetries() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("job-fail-incident-process")
+                .startEvent()
+                .serviceTask("service-task", t -> t.zeebeJobType("ordinal-failing-job"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("job-fail-incident-process").create();
+    engine.jobs().withType("ordinal-failing-job").withMaxJobsToActivate(1).activate();
+
+    // when
+    engine
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("ordinal-failing-job")
+        .withRetries(0)
+        .fail();
+
+    // then
+    final var incidentCreated =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(incidentCreated.getValue().getErrorType()).isEqualTo(ErrorType.JOB_NO_RETRIES);
+    assertThat(incidentCreated.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToIncidentRecordsOfAnUncaughtJobError() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("job-error-incident-process")
+                .startEvent()
+                .serviceTask("service-task", t -> t.zeebeJobType("ordinal-error-job"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("job-error-incident-process").create();
+
+    // when - the thrown error has no matching catch event
+    engine
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("ordinal-error-job")
+        .withErrorCode("uncaught-error")
+        .throwError();
+
+    // then
+    final var incidentCreated =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(incidentCreated.getValue().getErrorType())
+        .isEqualTo(ErrorType.UNHANDLED_ERROR_EVENT);
+    assertThat(incidentCreated.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToIncidentRecordsOfAFailedSecretResolution() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("secret-incident-process")
+                .startEvent()
+                .serviceTask("service-task", t -> t.zeebeJobType("ordinal-secret-job"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("secret-incident-process").create();
+    final long jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getKey();
+
+    final var resolutionRequested =
+        new SecretReferenceRecord()
+            .setStoreId("ordinal-store")
+            .setSecretReference("ordinal-secret");
+    resolutionRequested.addJobKey(jobKey);
+    final var batchCreateIncidents =
+        new SecretReferenceRecord()
+            .setStoreId("ordinal-store")
+            .setSecretReference("ordinal-secret");
+    batchCreateIncidents.addJobKey(jobKey);
+
+    // when - the job is seeded as waiting on the secret reference and the drain is processed
+    engine.stop();
+    engine.writeRecords(
+        RecordToWrite.event()
+            .secretReference(SecretReferenceIntent.RESOLUTION_REQUESTED, resolutionRequested),
+        RecordToWrite.command()
+            .secretReference(SecretReferenceIntent.BATCH_CREATE_INCIDENTS, batchCreateIncidents));
+    // starting the engine re-exports the whole partition log, so clear the previously seen records
+    RecordingExporter.reset();
+    engine.start();
+
+    // then
+    final var incidentCreated =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withErrorType(ErrorType.SECRET_RESOLUTION_ERROR)
+            .withJobKey(jobKey)
+            .getFirst();
+    assertThat(incidentCreated.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
   }
 }
