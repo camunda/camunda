@@ -46,7 +46,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 const id = 'flowNodeInstanceIdB';
 const shortError = 'No data found for query $.orderId.';
 const longError =
-  'Cannot compare values of different types: INTEGER and BOOLEAN';
+  'Cannot compare values of different types: INTEGER and BOOLEAN. Expected the left- and right-hand operands of the comparison expression to share a compatible type, but the FEEL expression evaluated to incompatible operand types at runtime.';
 
 const firstIncident = createEnhancedIncident({
   errorType: 'IO_MAPPING_ERROR',
@@ -65,6 +65,24 @@ const secondIncident = createEnhancedIncident({
   elementInstanceKey: id,
 });
 
+const stackTraceError = `Expected result of the expression 'order.total > threshold' to be 'BOOLEAN', but was 'NULL'.
+\tat io.camunda.zeebe.el.impl.FeelExpressionLanguage.evaluateExpression(FeelExpressionLanguage.java:112)
+\tat io.camunda.zeebe.engine.processing.common.ExpressionProcessor.evaluateBooleanExpression(ExpressionProcessor.java:87)`;
+
+const multilineIncident = createEnhancedIncident({
+  errorType: 'EXTRACT_VALUE_ERROR',
+  processInstanceKey: '1',
+  errorMessage: stackTraceError,
+  elementId: 'Gateway_1',
+  elementInstanceKey: '18239123812940',
+});
+
 const incidentsMock = [firstIncident, secondIncident];
 
-export {Wrapper, incidentsMock, firstIncident, secondIncident};
+export {
+  Wrapper,
+  incidentsMock,
+  firstIncident,
+  secondIncident,
+  multilineIncident,
+};

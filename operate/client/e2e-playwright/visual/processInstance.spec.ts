@@ -342,8 +342,10 @@ test.describe('process instance page', () => {
     await page.getByRole('link', {name: 'Incidents'}).click();
 
     await page.getByRole('button', {name: /expand current row/i}).click();
-    await expect(page.getByText('Job ID')).toBeVisible();
-    await expect(page.getByText('Error message')).toBeVisible();
+
+    const expandedRow = page.getByRole('row').last();
+    await expect(expandedRow.getByText('Job ID')).toBeVisible();
+    await expect(expandedRow.getByText('Error message')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });

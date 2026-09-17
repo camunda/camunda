@@ -8,7 +8,7 @@
 
 import {IncidentsTable} from '..';
 import {createProcessInstance} from 'modules/testUtils';
-import {render, screen} from 'modules/testing-library';
+import {render, screen, within} from 'modules/testing-library';
 import {Wrapper, firstIncident, incidentsMock} from './mocks';
 import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 
@@ -35,10 +35,31 @@ describe('Sorting', () => {
       {wrapper: Wrapper},
     );
 
-    expect(screen.getByText('Type')).toBeEnabled();
-    expect(screen.getByText('Failing Element')).toBeEnabled();
-    expect(screen.getByText('Created')).toBeEnabled();
-    expect(await screen.findByText('Operations')).toBeInTheDocument();
+    const withinHeaderRow = within(screen.getAllByRole('row')[0]!);
+
+    expect(withinHeaderRow.getByText('Error message')).toBeEnabled();
+    expect(withinHeaderRow.getByText('Type')).toBeEnabled();
+    expect(withinHeaderRow.getByText('Failing Element')).toBeEnabled();
+    expect(withinHeaderRow.getByText('Created')).toBeEnabled();
+    expect(await withinHeaderRow.findByText('Operations')).toBeInTheDocument();
+  });
+
+  it('should disable sorting for errorMessage', () => {
+    render(
+      <IncidentsTable
+        state="content"
+        processInstanceKey="1"
+        incidents={incidentsMock}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    expect(
+      screen.getByRole('button', {name: 'Sort by Type'}),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: 'Sort by Error message'}),
+    ).not.toBeInTheDocument();
   });
 
   it('should disable sorting for elementName', () => {

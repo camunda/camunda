@@ -78,6 +78,18 @@ const getElementName = (
   return incident.elementName;
 };
 
+// The expanded row wraps the full message, so the modal is reserved for
+// stack traces and unusually large single-line messages where its dedicated
+// viewer adds value over the inline content.
+const MODAL_WORTHY_ERROR_MESSAGE_LENGTH = 200;
+
+function shouldOfferErrorMessageModal(errorMessage: string): boolean {
+  return (
+    errorMessage.includes('\n') ||
+    errorMessage.length >= MODAL_WORTHY_ERROR_MESSAGE_LENGTH
+  );
+}
+
 type ChildInstanceWithIncident = {
   type: 'process' | 'decision';
   key: string;
@@ -146,7 +158,7 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
                 <FieldLabel>Error message</FieldLabel>
                 <FlexContainer>
                   <ErrorMessageCell>{incident.errorMessage}</ErrorMessageCell>
-                  {incident.errorMessage.length >= 58 && (
+                  {shouldOfferErrorMessageModal(incident.errorMessage) && (
                     <Button
                       size="sm"
                       kind="ghost"
@@ -245,6 +257,11 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
           onVerticalScrollEndReach={onVerticalScrollEndReach}
           headerColumns={[
             {
+              header: 'Error message',
+              key: 'errorMessage',
+              isDisabled: true,
+            },
+            {
               header: 'Type',
               key: 'errorType',
             },
@@ -270,6 +287,11 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
 
             return {
               id: incident.incidentKey,
+              errorMessage: (
+                <span title={incident.errorMessage}>
+                  {incident.errorMessage}
+                </span>
+              ),
               errorType: getIncidentErrorName(incident.errorType),
               elementName: getElementName(
                 incident,
