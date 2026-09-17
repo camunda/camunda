@@ -7,7 +7,7 @@
  */
 package io.camunda.gateway.mapping.http.validator;
 
-import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_ILLEGAL_CHARACTER;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_SECRET_RESOURCE_ID;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 
 import io.camunda.gateway.protocol.model.AuthorizationIdBasedRequest;
@@ -25,14 +25,21 @@ import org.springframework.http.ProblemDetail;
 public final class AuthorizationRequestValidator {
 
   /**
+   * Charset and length for the {@code <name>} portion of a {@code camunda.secrets.<name>}
+   * reference. The charset mirrors {@code SecretReference.REFERENCE_PATTERN} in {@code
+   * zeebe-engine}; duplicated here in a single constant rather than depending on that module, which
+   * this gateway-mapping layer has no other reason to pull in. The length bound mirrors {@code
+   * SecretServices.MAX_REFERENCE_LENGTH} (256) minus {@code SecretServices.REFERENCE_PREFIX}'s own
+   * length (16): a name any longer could never fit in a resolvable reference.
+   */
+  public static final String SECRET_NAME_PATTERN = "[\\p{Alnum}_-]{1,240}";
+
+  /**
    * Matches a SECRET resource id that can actually address a {@code camunda.secrets.<name>}
-   * reference: the wildcard, or the full reference. The name charset mirrors {@code
-   * SecretReference.REFERENCE_PATTERN} in {@code zeebe-engine}; duplicated here in a single
-   * constant rather than depending on that module, which this gateway-mapping layer has no other
-   * reason to pull in.
+   * reference: the wildcard, or the full reference.
    */
   public static final Pattern SECRET_RESOURCE_ID_PATTERN =
-      Pattern.compile("\\*|camunda\\.secrets\\.[\\p{Alnum}_-]+");
+      Pattern.compile("\\*|camunda\\.secrets\\." + SECRET_NAME_PATTERN);
 
   private final AuthorizationValidator authorizationValidator;
 
@@ -72,8 +79,7 @@ public final class AuthorizationRequestValidator {
         && resourceId != null
         && !SECRET_RESOURCE_ID_PATTERN.matcher(resourceId).matches()) {
       violations.add(
-          ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted(
-              "resourceId", SECRET_RESOURCE_ID_PATTERN.pattern()));
+          ERROR_MESSAGE_INVALID_SECRET_RESOURCE_ID.formatted(resourceId, SECRET_NAME_PATTERN));
     }
   }
 

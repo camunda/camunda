@@ -8,7 +8,7 @@
 
 import { FC, useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Checkbox, CheckboxGroup, Dropdown } from "@carbon/react";
+import { Checkbox, CheckboxGroup, Dropdown, TextInput } from "@carbon/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { authorizationMutations } from "src/utility/api/authorizations/mutations";
 import useTranslate from "src/utility/localization";
@@ -31,7 +31,11 @@ import { useDropdownAutoFocus } from "./useDropdownAutoFocus";
 import {
   isValidId,
   isValidResourceId,
+  isValidSecretResourceId,
   getIdPattern,
+  getSecretNamePattern,
+  AUTHORIZATION_WILDCARD,
+  SECRET_REFERENCE_PREFIX,
 } from "src/utility/validate";
 import type {
   OwnerType,
@@ -218,6 +222,72 @@ export const AddModal: FC<
                     invalid={!!fieldState.error}
                     invalidText={fieldState.error?.message}
                   />
+                );
+              }}
+            />
+          ) : watchedResourceType === "SECRET" ? (
+            <Controller
+              name="resourceId"
+              control={control}
+              rules={{
+                required: t("resourceIdRequired"),
+                validate: (value) =>
+                  isValidSecretResourceId(value ?? "") ||
+                  t("pleaseEnterValidSecretResourceId", {
+                    pattern: getSecretNamePattern(),
+                  }),
+              }}
+              render={({ field, fieldState }) => {
+                const currentValue = field.value ?? "";
+                const isWildcard = currentValue === AUTHORIZATION_WILDCARD;
+                const name = isWildcard
+                  ? AUTHORIZATION_WILDCARD
+                  : currentValue.startsWith(SECRET_REFERENCE_PREFIX)
+                    ? currentValue.slice(SECRET_REFERENCE_PREFIX.length)
+                    : currentValue;
+
+                return (
+                  <div className="cds--form-item">
+                    <span className="cds--label">{t("resourceId")}</span>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.375rem",
+                      }}
+                    >
+                      {!isWildcard && (
+                        <Caption>{SECRET_REFERENCE_PREFIX}</Caption>
+                      )}
+                      <TextInput
+                        id="secret-resource-id"
+                        labelText={t("resourceId")}
+                        hideLabel
+                        value={name}
+                        placeholder={t("enterSecretName")}
+                        helperText={t("secretResourceIdHelperText")}
+                        invalid={!!fieldState.error}
+                        invalidText={fieldState.error?.message}
+                        onChange={(e) => {
+                          // Keep the prefix fixed while typing, even if the
+                          // name-so-far happens to be "*" — only resolve to
+                          // the bare wildcard value on blur, below. Doing
+                          // this on every keystroke instead would flip the
+                          // prefix on and off as soon as another character
+                          // is typed after a lone "*".
+                          field.onChange(
+                            SECRET_REFERENCE_PREFIX + e.currentTarget.value,
+                          );
+                        }}
+                        onBlur={() => {
+                          if (name === AUTHORIZATION_WILDCARD) {
+                            field.onChange(AUTHORIZATION_WILDCARD);
+                          }
+                          field.onBlur();
+                        }}
+                      />
+                    </div>
+                  </div>
                 );
               }}
             />

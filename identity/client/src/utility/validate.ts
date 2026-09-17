@@ -39,11 +39,23 @@ export const isValidResourceId = (id: string): boolean =>
 export const SECRET_REFERENCE_PREFIX = "camunda.secrets.";
 
 // Keep in sync with
-// `io.camunda.gateway.mapping.http.validator.AuthorizationRequestValidator.SECRET_RESOURCE_ID_PATTERN`.
-const SECRET_RESOURCE_ID_PATTERN = /^(\*|camunda\.secrets\.[A-Za-z0-9_-]+)$/;
+// `io.camunda.gateway.mapping.http.validator.AuthorizationRequestValidator.SECRET_NAME_PATTERN`.
+// 240 = SecretServices.MAX_REFERENCE_LENGTH (256) minus SECRET_REFERENCE_PREFIX's own length
+// (16): a name any longer could never fit in a resolvable reference.
+const SECRET_NAME_PATTERN = /^[A-Za-z0-9_-]{1,240}$/;
 
-export const getSecretResourceIdPattern = (): string =>
-  SECRET_RESOURCE_ID_PATTERN.toString();
+/**
+ * Pattern for just the `<name>` portion a user types into the Resource ID field — the
+ * `camunda.secrets.` prefix is rendered outside the input, so a message about the full
+ * reference pattern would describe characters the field never lets them type.
+ */
+export const getSecretNamePattern = (): string =>
+  SECRET_NAME_PATTERN.toString();
+
+// Keep in sync with
+// `io.camunda.gateway.mapping.http.validator.AuthorizationRequestValidator.SECRET_RESOURCE_ID_PATTERN`.
+const SECRET_RESOURCE_ID_PATTERN =
+  /^(\*|camunda\.secrets\.[A-Za-z0-9_-]{1,240})$/;
 
 /**
  * A SECRET authorization's resource id must be the wildcard or a full
