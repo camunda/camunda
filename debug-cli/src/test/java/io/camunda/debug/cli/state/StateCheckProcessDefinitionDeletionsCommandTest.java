@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.InstantSource;
@@ -141,6 +142,22 @@ class StateCheckProcessDefinitionDeletionsCommandTest {
   }
 
   @Test
+  void shouldScanUsingRoutingStateWhenAllPartitionsPresent() {
+    // given - routing state lists partitions 1 and 2, both provided; the definition is stuck on P2
+    final Path partitions = tempDir.resolve("partitions");
+    seedPartition(partitions, 1, seeding -> seeding.initializeRouting(2));
+    seedPartition(partitions, 2, seeding -> seeding.markDraining());
+
+    // when
+    final int exitCode = run(partitions);
+
+    // then - detected via the routing path, not the empty-routing fallback
+    assertThat(exitCode).isEqualTo(2);
+    assertThat(err.toString()).doesNotContain("routing state is empty");
+    assertThat(out.toString()).contains("draining=[2]").contains("uncoordinated=[2]");
+  }
+
+  @Test
   void shouldFailWhenAnExpectedPartitionIsMissing() {
     // given - routing state says the cluster has partitions 1..3, but only 1 and 2 are provided
     final Path partitions = tempDir.resolve("partitions");
@@ -153,6 +170,24 @@ class StateCheckProcessDefinitionDeletionsCommandTest {
     // then
     assertThat(exitCode).isOne();
     assertThat(err.toString()).contains("incomplete").contains("[3]");
+  }
+
+  @Test
+  void shouldFailWhenAPartitionHasNoSnapshot() throws Exception {
+    // given - partition 2's directory exists but holds no snapshot
+    final Path partitions = tempDir.resolve("partitions");
+    seedPartition(partitions, 1, seeding -> {});
+    Files.createDirectories(partitions.resolve("2"));
+
+    // when
+    final int exitCode = run(partitions);
+
+    // then
+    assertThat(exitCode).isOne();
+    assertThat(err.toString())
+        .contains("incomplete")
+        .contains("without a snapshot")
+        .contains("[2]");
   }
 
   private int run(final Path partitions) {
@@ -173,6 +208,11 @@ class StateCheckProcessDefinitionDeletionsCommandTest {
       context.runInTransaction(() -> seed.accept(seeding));
       new SnapshotUtil().takeSnapshot(runtime, partitionDir, "1-1-1-1-1", 1L);
     }
+  }
+
+  private static BpmnTransformer transformer() {
+    return BpmnFactory.createTransformer(
+        InstantSource.fixed(Instant.EPOCH), ExpressionLanguageMetrics.noop(), Integer.MAX_VALUE);
   }
 
   /** Test helper that writes the various column families the command reads. */
@@ -226,10 +266,5 @@ class StateCheckProcessDefinitionDeletionsCommandTest {
     void initializeRouting(final int partitionCount) {
       routingState.initializeRoutingInfo(partitionCount);
     }
-  }
-
-  private static BpmnTransformer transformer() {
-    return BpmnFactory.createTransformer(
-        InstantSource.fixed(Instant.EPOCH), ExpressionLanguageMetrics.noop(), Integer.MAX_VALUE);
   }
 }
