@@ -184,7 +184,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       // when - increase zoneA replicas from 1→2 (RF 2→3)
       final var config =
           new PartitioningConfig()
-              .scheme(PartitioningConfig.SchemeEnum.ZONE_AWARE)
+              .scheme(SchemeEnum.ZONE_AWARE)
               .zones(
                   List.of(
                       new ZoneSpec().name(ZONE_A).numberOfReplicas(2).priority(100),
@@ -287,7 +287,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       final var actuator = ClusterActuator.of(cluster.availableGateway());
 
       // when - then
-      final var config = new PartitioningConfig().scheme(PartitioningConfig.SchemeEnum.ROUND_ROBIN);
+      final var config = new PartitioningConfig().scheme(SchemeEnum.ROUND_ROBIN);
       assertThatCode(() -> actuator.patchPartitionDistribution(config, false))
           .isInstanceOf(FeignException.BadRequest.class);
     }
@@ -387,10 +387,10 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
               () -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(response));
       ClusterActuatorAssert.assertThat(actuator).doesNotHaveBroker(brokerId(1));
       final var expectedDistribution =
-          new PartitionDistributionConfig()
-              .type(TypeEnum.ZONE_AWARE)
+          new PartitioningConfig()
+              .scheme(SchemeEnum.ZONE_AWARE)
               .zones(List.of(new ZoneSpec().name(ZONE_A).numberOfReplicas(1).priority(100)));
-      assertThat(actuator.getTopology().getPartitionDistribution()).isEqualTo(expectedDistribution);
+      assertThat(actuator.getTopology().getPartitioning()).isEqualTo(expectedDistribution);
     }
   }
 
@@ -416,10 +416,10 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       ClusterActuatorAssert.assertThat(actuator).doesNotHaveBroker(brokerId(0));
       ClusterActuatorAssert.assertThat(actuator).doesNotHaveBroker(brokerId(2));
       final var expectedDistribution =
-          new PartitionDistributionConfig()
-              .type(TypeEnum.ZONE_AWARE)
+          new PartitioningConfig()
+              .scheme(SchemeEnum.ZONE_AWARE)
               .zones(List.of(new ZoneSpec().name(ZONE_B).numberOfReplicas(1).priority(10)));
-      assertThat(actuator.getTopology().getPartitionDistribution()).isEqualTo(expectedDistribution);
+      assertThat(actuator.getTopology().getPartitioning()).isEqualTo(expectedDistribution);
     }
   }
 
