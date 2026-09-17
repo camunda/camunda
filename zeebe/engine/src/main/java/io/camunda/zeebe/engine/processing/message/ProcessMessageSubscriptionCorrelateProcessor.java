@@ -33,6 +33,8 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.InstantSource;
 import org.agrona.DirectBuffer;
 
 @ExcludeAuthorizationCheck
@@ -66,6 +68,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final SideEffectWriter sideEffectWriter;
   private final SuspensionState suspensionState;
+  private final InstantSource clock;
 
   private final EventHandle eventHandle;
 
@@ -75,10 +78,12 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
       final MutableProcessingState processingState,
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
-      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
+      final InstantSource clock) {
     this.subscriptionState = subscriptionState;
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
     this.subscriptionCommandSender = subscriptionCommandSender;
+    this.clock = clock;
     processState = processingState.getProcessState();
     elementInstanceState = processingState.getElementInstanceState();
     suspensionState = processingState.getSuspensionState();
@@ -146,6 +151,15 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
       // isSuspended(); see onSuspended() below for why RESUMING must fall through instead.
       // Checked last so a stale or duplicate correlate goes through those paths instead, without
       // releasing a live replacement's correlation lock.
+      if (subscription.isOpening()) {
+        // The suspend pass skips OPENING subscriptions (no confirmed message-side row to close
+        // yet). If the message side found an already-buffered message during its own CREATE, it
+        // sends this CORRELATE instead of a plain open-ack, so the late-handshake close in
+        // ProcessMessageSubscriptionCreateProcessor never runs for it. Close it the same way
+        // here, so it is driven to the durable resume manifest instead of live-locking on
+        // retried CREATEs for the message's whole TTL.
+        closeLateHandshake(subscription, record.getSubscriptionKey());
+      }
       rejectCommand(command, RejectionType.INVALID_STATE, SUSPENDED_PI_MESSAGE);
       return;
     }
@@ -205,6 +219,47 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
     final long commandKey = command.getSubscriptionKey();
     final long storedKey = subscription.getRecord().getSubscriptionKey();
     return commandKey != -1L && storedKey != -1L && commandKey != storedKey;
+  }
+
+  /**
+   * Mirrors {@link ProcessMessageSubscriptionCreateProcessor}'s own {@code closeLateHandshake} for
+   * the CREATE-ack path: puts the still-OPENING row into CLOSING with {@code closedForSuspend} set,
+   * enrolls it for retry, and sends the close to the message partition so its ack drains it to the
+   * OPENED resume manifest. Keep the two in sync if the closing mechanics change.
+   */
+  private void closeLateHandshake(
+      final ProcessMessageSubscription subscription, final long confirmedSubscriptionKey) {
+    final var storedRecord = subscription.getRecord();
+    final int partitionId = storedRecord.getSubscriptionPartitionId();
+    final long piKey = storedRecord.getProcessInstanceKey();
+    final long elementInstanceKey = storedRecord.getElementInstanceKey();
+    final long pdKey = storedRecord.getProcessDefinitionKey();
+    final String messageName = storedRecord.getMessageName();
+    final String tenantId = storedRecord.getTenantId();
+    final int ordinal = storedRecord.getStorageOrdinal();
+
+    final var eventRecord = new ProcessMessageSubscriptionRecord();
+    eventRecord.wrap(storedRecord);
+    eventRecord.setSubscriptionKey(confirmedSubscriptionKey);
+    stateWriter.appendFollowUpEvent(
+        subscription.getKey(),
+        ProcessMessageSubscriptionIntent.DELETING,
+        eventRecord.setClosedForSuspend(true));
+
+    final var pending = new PendingSubscription(elementInstanceKey, messageName, tenantId);
+    sideEffectWriter.appendSideEffect(
+        () -> transientProcessMessageSubscriptionState.update(pending, clock.millis()));
+    sideEffectWriter.appendSideEffect(
+        () ->
+            subscriptionCommandSender.sendDirectCloseMessageSubscription(
+                partitionId,
+                piKey,
+                elementInstanceKey,
+                pdKey,
+                BufferUtil.wrapString(messageName),
+                tenantId,
+                confirmedSubscriptionKey,
+                ordinal));
   }
 
   private boolean hasAlreadyBeenCorrelated(
