@@ -100,7 +100,6 @@ import org.springframework.session.web.http.SessionRepositoryFilter;
 @Execution(ExecutionMode.SAME_THREAD)
 class CslChainIntegrationTest {
 
-  private static final String PUBLIC_API_AUDIENCE = "optimize-public-api";
   private static final Map<String, Session> SESSION_STORE = new ConcurrentHashMap<>();
   private static final MapSessionRepository SESSION_REPO = new MapSessionRepository(SESSION_STORE);
   private static JwksTestServer server;
@@ -337,16 +336,16 @@ class CslChainIntegrationTest {
             });
   }
 
-  // Bug B: /api/public/** and /api/ingestion/variable lost the api.audience pin the legacy
-  // decoder applied, while no API path gates a bearer token through Identity.
+  // Bug B: no API path gates a bearer token through Identity, on the public API paths as well as
+  // the internal ones.
 
   @Test
   void shouldAllowBearerTokenLackingOptimizePermissionOnPublicApiPathForCcsm() {
-    // The token carries the configured api.audience and nothing else.
-    final String token = signToken(Instant.now().plusSeconds(60), PUBLIC_API_AUDIENCE);
-    ccsmRunner(
-            CslChainIntegrationTest::mockCcsmTokenServiceDenyingEveryAccessToken,
-            CslChainIntegrationTest::ccsmConfigurationWithPublicApiAudience)
+    // The public API paths sit on CSL's shared API chain, so they accept any audience of CSL's
+    // merged set. Legacy CCSM pinned them to api.audience, and that narrowing is given up here:
+    // operators move the public API client audience into the CSL audiences instead.
+    final String token = signBearerToken();
+    ccsmRunner(CslChainIntegrationTest::mockCcsmTokenServiceDenyingEveryAccessToken)
         .run(
             ctx -> {
               final Filter proxy = resolveSecurityFilter(ctx);
@@ -358,10 +357,9 @@ class CslChainIntegrationTest {
 
               proxy.doFilter(request, response, downstream);
 
-              // Legacy CCSM checked the audience and nothing else on the bearer path.
               assertThat(response.getStatus())
                   .as(
-                      "bearer token lacking write:* on the public API carve-out, body: %s",
+                      "bearer token lacking write:* on a public API path, body: %s",
                       response.getContentAsString())
                   .isEqualTo(200);
               assertThat(downstream.getRequest()).isNotNull();
@@ -392,71 +390,6 @@ class CslChainIntegrationTest {
                   .isEqualTo(200);
               assertThat(downstream.getRequest()).isNotNull();
             });
-  }
-
-  @Test
-  void shouldRejectBearerTokenWithoutPublicApiAudienceOnPublicApiPathForCcsm() {
-    // CSL accepts a token that matches any entry of its merged audience set, so without the pin an
-    // Identity-audience token passes here, and this chain has no Identity gate to stop it.
-    final String token = signToken(Instant.now().plusSeconds(60), "optimize-api");
-    ccsmRunner(
-            CslChainIntegrationTest::mockCcsmTokenServiceDenyingEveryAccessToken,
-            CslChainIntegrationTest::ccsmConfigurationWithPublicApiAudience)
-        .run(
-            ctx -> {
-              final Filter proxy = resolveSecurityFilter(ctx);
-              final MockHttpServletRequest request =
-                  new MockHttpServletRequest("GET", "/api/public/some-resource");
-              request.addHeader("Authorization", "Bearer " + token);
-              final MockHttpServletResponse response = new MockHttpServletResponse();
-              final MockFilterChain downstream = new MockFilterChain();
-
-              proxy.doFilter(request, response, downstream);
-
-              assertThat(response.getStatus())
-                  .as(
-                      "bearer token missing the configured api.audience, body: %s",
-                      response.getContentAsString())
-                  .isEqualTo(401);
-              assertThat(downstream.getRequest()).isNull();
-            });
-  }
-
-  @Test
-  void shouldApplySharedChainSetupOnPublicApiPathForCcsm() {
-    // given
-    // A hand-rolled carve-out chain dropped the operator's CORS, HTTPS-redirect, CSRF and header
-    // settings for these two paths only. CSL's property-driven Content-Security-Policy is the
-    // marker, because Spring Security sets no CSP header on its own.
-    final String token = signToken(Instant.now().plusSeconds(60), PUBLIC_API_AUDIENCE);
-
-    // when
-    ccsmRunner(
-            CslChainIntegrationTest::mockCcsmTokenServiceDenyingEveryAccessToken,
-            CslChainIntegrationTest::ccsmConfigurationWithPublicApiAudience)
-        .run(
-            ctx -> {
-              final Filter proxy = resolveSecurityFilter(ctx);
-              final MockHttpServletRequest request =
-                  new MockHttpServletRequest("GET", "/api/public/some-resource");
-              request.addHeader("Authorization", "Bearer " + token);
-              final MockHttpServletResponse response = new MockHttpServletResponse();
-              final MockFilterChain downstream = new MockFilterChain();
-
-              proxy.doFilter(request, response, downstream);
-
-              // then
-              assertThat(response.getHeader("Content-Security-Policy"))
-                  .as("CSL's shared chain setup must apply to the public API carve-out")
-                  .isNotBlank();
-            });
-  }
-
-  private static ConfigurationService ccsmConfigurationWithPublicApiAudience() {
-    final ConfigurationService configurationService =
-        ConfigurationServiceBuilder.createDefaultConfiguration();
-    configurationService.getOptimizeApiConfiguration().setAudience(PUBLIC_API_AUDIENCE);
-    return configurationService;
   }
 
   @Test
@@ -935,16 +868,10 @@ class CslChainIntegrationTest {
 
   private WebApplicationContextRunner ccsmRunner(
       final Supplier<CCSMTokenService> ccsmTokenServiceSupplier) {
-    return ccsmRunner(
-        ccsmTokenServiceSupplier, ConfigurationServiceBuilder::createDefaultConfiguration);
-  }
-
-  private WebApplicationContextRunner ccsmRunner(
-      final Supplier<CCSMTokenService> ccsmTokenServiceSupplier,
-      final Supplier<ConfigurationService> configurationServiceSupplier) {
     return baseRunner()
         .withPropertyValues("spring.profiles.active=ccsm")
-        .withBean(ConfigurationService.class, configurationServiceSupplier::get)
+        .withBean(
+            ConfigurationService.class, ConfigurationServiceBuilder::createDefaultConfiguration)
         .withBean(
             CustomPreAuthenticatedAuthenticationProvider.class,
             () -> mock(CustomPreAuthenticatedAuthenticationProvider.class))
@@ -1031,14 +958,10 @@ class CslChainIntegrationTest {
   }
 
   private static String signBearerToken() {
-    return signToken(Instant.now().plusSeconds(60), null);
+    return signToken(Instant.now().plusSeconds(60));
   }
 
   private static String signToken(final Instant expiresAt) {
-    return signToken(expiresAt, null);
-  }
-
-  private static String signToken(final Instant expiresAt, final String audience) {
     final var header = new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(server.kid()).build();
     final var claimsBuilder =
         new JWTClaimsSet.Builder()
@@ -1046,9 +969,6 @@ class CslChainIntegrationTest {
             .issuer(server.issuerUri())
             .issueTime(Date.from(Instant.now()))
             .expirationTime(Date.from(expiresAt));
-    if (audience != null) {
-      claimsBuilder.audience(audience);
-    }
     final var claims = claimsBuilder.build();
     final var jwt = new SignedJWT(header, claims);
     try {
