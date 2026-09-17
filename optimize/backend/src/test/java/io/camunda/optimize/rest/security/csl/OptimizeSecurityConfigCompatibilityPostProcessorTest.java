@@ -23,6 +23,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.event.Level;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.context.config.ConfigDataEnvironmentPostProcessor;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.env.StandardEnvironment;
 
@@ -247,8 +248,15 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
         .isEqualTo(backend + "/protocol/openid-connect/auth");
     assertThat(env.getProperty(OIDC + "token-uri"))
         .isEqualTo(backend + "/protocol/openid-connect/token");
-    // The public API's own JWK set URI wins over the derived one: it may belong to a different IdP.
+    // Identity's derived key set, not the public API's: it validates login tokens, and the public
+    // API's IdP may be a different one entirely (camunda/camunda#63114).
     assertThat(env.getProperty(OIDC + "jwk-set-uri"))
+        .isEqualTo(backend + "/protocol/openid-connect/certs");
+    // ...and the public API's key set still reaches CSL alongside it. This overlap of derivation
+    // and a configured 'api.jwtSetUri' is the shape the bug was reported against, so asserting
+    // only the derived URI here would let a change that stops bridging the public API key set
+    // whenever derivation runs pass unnoticed.
+    assertThat(env.getProperty(OIDC + "additional-jwk-set-uris"))
         .isEqualTo("https://public-api-idp.example.com/keys");
     // The credentials must come with them: a registration cannot be built without a client id, so
     // the guard that withholds them when there is no issuer has to count the derived endpoints.
@@ -257,7 +265,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
   }
 
   @Test
-  void shouldDeriveTheJwkSetUriFromTheBackendUrlWhenThePublicApiConfiguresNone() {
+  void shouldDeriveTheJwkSetUriFromTheBackendUrl() {
     final String backend = "http://identity.svc:18080/auth/realms/camunda-platform";
     final Map<String, Object> legacy = cslEnabledConfig();
     legacy.put("camunda.identity.issuer", "");
@@ -980,7 +988,10 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
   }
 
   @Test
-  void shouldBridgePublicApiJwtConfig() {
+  void shouldAddThePublicApiKeySetAlongsideIdentitysRatherThanReplacingIt() {
+    // Substituting it for the global 'jwk-set-uri' left nothing able to verify a login token,
+    // which Identity signs, so every login failed (camunda/camunda#63114). CSL resolves a
+    // provider's keys from 'jwk-set-uri' plus 'additional-jwk-set-uris', so both key sets apply.
     final Map<String, Object> legacy = cslEnabledConfig();
     legacy.put(
         "SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI",
@@ -990,14 +1001,78 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     final StandardEnvironment env = environmentWith(legacy);
     processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
-    assertThat(env.getProperty(OIDC + "jwk-set-uri"))
+    assertThat(env.getProperty(OIDC + "additional-jwk-set-uris"))
         .isEqualTo("https://idp.example.com/.well-known/jwks.json");
+    assertThat(env.getProperty(OIDC + "jwk-set-uri")).isNull();
     assertThat(env.getProperty(OIDC + "audiences")).isEqualTo("optimize-public-api");
+    // Deprecated like every other bridged key: the bridge is the only reason it works under CSL
+    // and it goes away in 8.11, so the operator has to be told what to set instead.
     logs.assertContains(
         entry ->
             entry.getMessage().contains("SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI")
-                && entry.getMessage().contains(OIDC + "jwk-set-uri"),
-        "expected deprecation warning for the public-API JWK set uri");
+                && entry.getMessage().contains(OIDC + "additional-jwk-set-uris"),
+        "expected a deprecation warning naming the additional-jwk-set-uris replacement");
+  }
+
+  @Test
+  void shouldKeepBothPublicApiKeySetSpellingsWhenAnOperatorSetsEach() {
+    // An operator migrating off the environment variable adds 'api.jwtSetUri' and leaves the old
+    // value in place. The CSL property is List-valued, so both are kept: picking one would drop
+    // the value they just added, and the deprecation warning would name only the spelling that
+    // did take effect, giving no hint that the other was ignored.
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put(
+        "SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI",
+        "https://old-idp.example.com/keys");
+    legacy.put("api.jwtSetUri", "https://new-idp.example.com/keys");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
+
+    assertThat(env.getProperty(OIDC + "additional-jwk-set-uris"))
+        .isEqualTo("https://old-idp.example.com/keys,https://new-idp.example.com/keys");
+    logs.assertContains(
+        entry -> entry.getMessage().contains("api.jwtSetUri"),
+        "both spellings are deprecated, so both must be named");
+  }
+
+  @Test
+  void shouldBridgeThePublicApiKeysFromTheOperatorsOwnConfigurationFile() {
+    // The reported configuration shape: both keys set in Optimize's yaml and neither environment
+    // variable present. This post-processor is ordered LOWEST_PRECEDENCE, so Spring has already
+    // loaded the operator's file and the keys are readable as ordinary properties. Loaded through
+    // spring.config.additional-location here rather than stubbed, because the whole bug was an
+    // assumption about which sources are visible at this point.
+    final StandardEnvironment env = new StandardEnvironment();
+    env.getPropertySources()
+        .addFirst(
+            new MapPropertySource(
+                "operator-config-location",
+                Map.of(
+                    "optimize.security.csl.enabled",
+                    "true",
+                    "spring.config.additional-location",
+                    "classpath:public-api-operator-config.yaml")));
+    ConfigDataEnvironmentPostProcessor.applyTo(env);
+
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
+
+    assertThat(env.getProperty(OIDC + "audiences")).isEqualTo("my-yaml-audience");
+    assertThat(env.getProperty(OIDC + "additional-jwk-set-uris"))
+        .isEqualTo("https://public-api-idp.example.com/.well-known/jwks.json");
+  }
+
+  @Test
+  void shouldNotBridgeAnAudienceTheOperatorNeverSet() {
+    // Optimize's built-in service-config.yaml defaults api.audience to 'optimize', but it is not a
+    // Spring config file so that default is invisible here. It must stay that way: contributing it
+    // would turn an empty CSL audience set, which accepts any audience, into one that accepts only
+    // 'optimize', breaking every deployment that configured no audience at all.
+    final StandardEnvironment env = environmentWith(cslEnabledConfig());
+
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
+
+    assertThat(env.getProperty(OIDC + "audiences")).isNull();
   }
 
   @Test
