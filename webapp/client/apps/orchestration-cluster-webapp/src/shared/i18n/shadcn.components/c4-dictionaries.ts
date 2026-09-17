@@ -120,4 +120,3 @@ function getC4Dictionary(locale: C4Locale): ShadcnDictionary | undefined {
 }
 
 export {getC4Dictionary, getC4Locale};
-export type {ShadcnDictionary, ShadcnDictionaryKey};
