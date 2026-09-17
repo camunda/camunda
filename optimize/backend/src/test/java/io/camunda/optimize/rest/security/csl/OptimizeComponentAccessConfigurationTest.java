@@ -10,21 +10,21 @@ package io.camunda.optimize.rest.security.csl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.Either;
 import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.security.core.port.out.AuthorizedComponentsPort;
 import io.camunda.security.spring.security.SecurityHeadersCustomizer;
 import io.camunda.security.spring.spi.WebAppAccessDeniedHandlerPort;
 import io.camunda.security.spring.spi.WebAppProviderPort;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 class OptimizeComponentAccessConfigurationTest {
 
-  private static final OptimizeComponentAccessPolicy GRANT = new StubPolicy(Optional.empty());
+  private static final OptimizeComponentAccessPolicy GRANT = new StubPolicy(Either.right(null));
   private static final OptimizeComponentAccessPolicy DENY =
-      new StubPolicy(Optional.of("no permission"));
+      new StubPolicy(Either.left("no permission"));
 
   private final ApplicationContextRunner runner =
       new ApplicationContextRunner()
@@ -87,12 +87,11 @@ class OptimizeComponentAccessConfigurationTest {
                     .isEmpty());
   }
 
-  private record StubPolicy(Optional<String> denialReason)
-      implements OptimizeComponentAccessPolicy {
+  private record StubPolicy(Either<String, Void> access) implements OptimizeComponentAccessPolicy {
 
     @Override
-    public Optional<String> sessionDenialReason(final CamundaAuthentication authentication) {
-      return denialReason;
+    public Either<String, Void> checkAccess(final CamundaAuthentication authentication) {
+      return access;
     }
   }
 }

@@ -65,9 +65,7 @@ public class OptimizeComponentAccessConfiguration {
   public AuthorizedComponentsPort authorizedComponentsPort(
       final OptimizeComponentAccessPolicy policy) {
     return authentication ->
-        policy.sessionDenialReason(authentication).isEmpty()
-            ? List.of(OPTIMIZE_WEB_APP)
-            : List.of();
+        policy.checkAccess(authentication).isRight() ? List.of(OPTIMIZE_WEB_APP) : List.of();
   }
 
   /**

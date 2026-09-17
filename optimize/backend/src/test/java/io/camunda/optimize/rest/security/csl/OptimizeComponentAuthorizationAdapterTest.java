@@ -11,12 +11,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.Either;
 import io.camunda.security.api.model.authz.AuthorizationRejection;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import java.util.Map;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -33,7 +33,7 @@ class OptimizeComponentAuthorizationAdapterTest {
   @Test
   void shouldGrantComponentAccessWhenThePolicyAllows() {
     // given
-    when(policy.sessionDenialReason(AUTHENTICATION)).thenReturn(Optional.empty());
+    when(policy.checkAccess(AUTHENTICATION)).thenReturn(Either.right(null));
 
     // when
     final var result = adapter().check(AUTHENTICATION, componentAccess());
@@ -45,7 +45,7 @@ class OptimizeComponentAuthorizationAdapterTest {
   @Test
   void shouldRejectComponentAccessWhenThePolicyDenies() {
     // given
-    when(policy.sessionDenialReason(AUTHENTICATION)).thenReturn(Optional.of("no permission"));
+    when(policy.checkAccess(AUTHENTICATION)).thenReturn(Either.left("no permission"));
 
     // when
     final var result = adapter().check(AUTHENTICATION, componentAccess());
@@ -79,9 +79,9 @@ class OptimizeComponentAuthorizationAdapterTest {
   @Test
   void shouldRejectComponentAccessForClaimsWhenThePolicyDenies() {
     // given
-    when(policy.sessionDenialReason(
+    when(policy.checkAccess(
             CamundaAuthentication.of(builder -> builder.claims(Map.of("sub", "kermit")))))
-        .thenReturn(Optional.of("no permission"));
+        .thenReturn(Either.left("no permission"));
 
     // when
     final var result = adapter().check(Map.of("sub", "kermit"), componentAccess());

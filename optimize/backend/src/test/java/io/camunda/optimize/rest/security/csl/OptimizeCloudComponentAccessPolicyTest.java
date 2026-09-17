@@ -16,9 +16,9 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.security.AuthConfiguration;
 import io.camunda.optimize.service.util.configuration.security.CloudAuthConfiguration;
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.Either;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -40,10 +40,10 @@ class OptimizeCloudComponentAccessPolicyTest {
             builder -> builder.user("kermit").claims(orgClaims("org-1", "analyst")));
 
     // when
-    final Optional<String> reason = policy.sessionDenialReason(authentication);
+    final Either<String, Void> access = policy.checkAccess(authentication);
 
     // then
-    assertThat(reason).isEmpty();
+    assertThat(access.isRight()).isTrue();
   }
 
   @Test
@@ -54,10 +54,10 @@ class OptimizeCloudComponentAccessPolicyTest {
         CamundaAuthentication.of(builder -> builder.user("kermit").claims(orgClaims("org-1", "")));
 
     // when
-    final Optional<String> reason = policy.sessionDenialReason(authentication);
+    final Either<String, Void> access = policy.checkAccess(authentication);
 
     // then
-    assertThat(reason).isPresent();
+    assertThat(access.isLeft()).isTrue();
   }
 
   @Test
@@ -68,10 +68,10 @@ class OptimizeCloudComponentAccessPolicyTest {
         CamundaAuthentication.of(builder -> builder.user("kermit"));
 
     // when
-    final Optional<String> reason = policy.sessionDenialReason(authentication);
+    final Either<String, Void> access = policy.checkAccess(authentication);
 
     // then
-    assertThat(reason).isPresent();
+    assertThat(access.isLeft()).isTrue();
   }
 
   @Test

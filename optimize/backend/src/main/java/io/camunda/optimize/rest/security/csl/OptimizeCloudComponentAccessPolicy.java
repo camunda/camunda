@@ -13,8 +13,8 @@ import static io.camunda.optimize.rest.security.csl.OptimizeCloudOrganizationVal
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.Either;
 import java.util.Map;
-import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Conditional;
@@ -52,16 +52,16 @@ public class OptimizeCloudComponentAccessPolicy implements OptimizeComponentAcce
   }
 
   @Override
-  public Optional<String> sessionDenialReason(final CamundaAuthentication authentication) {
-    return denialReason(authentication.claims());
+  public Either<String, Void> checkAccess(final CamundaAuthentication authentication) {
+    return checkClaims(authentication.claims());
   }
 
-  private Optional<String> denialReason(final Map<String, Object> claims) {
+  private Either<String, Void> checkClaims(final Map<String, Object> claims) {
     if (OptimizeCloudOrganizationValidator.grantsAllowedRole(
         claims.get(ORGANIZATIONS_CLAIM), organizationId, ALLOWED_ORG_ROLES)) {
-      return Optional.empty();
+      return Either.right(null);
     }
-    return Optional.of(
+    return Either.left(
         "User does not hold one of the roles %s in organization %s"
             .formatted(ALLOWED_ORG_ROLES, organizationId));
   }
