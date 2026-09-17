@@ -22,6 +22,8 @@ import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.filter.UntypedOperation;
+import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.reader.AuthorizationCheck;
@@ -487,6 +489,51 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
               assertIsSearchTermQuery(
                   (hasChildQuery.query().queryOption()), "activityId", "activity_123");
               assertThat(hasChildQuery.type()).isEqualTo("activity");
+            });
+  }
+
+  @Test
+  public void shouldQueryByVariableValueNotIn() {
+    // given
+    final var variableFilter =
+        new VariableValueFilter.Builder()
+            .name("status")
+            .valueOperation(UntypedOperation.of(Operation.notIn("done", "cancelled")))
+            .build();
+    final var processInstanceFilter =
+        FilterBuilders.processInstance(f -> f.variables(List.of(variableFilter)));
+
+    // when
+    final var searchRequest = transformQuery(processInstanceFilter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(2);
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(0).queryOption(),
+        "joinRelation",
+        "processInstance");
+
+    assertThat(((SearchBoolQuery) queryVariant).must().get(1).queryOption())
+        .isInstanceOfSatisfying(
+            SearchHasChildQuery.class,
+            hasChildQuery -> {
+              assertThat(hasChildQuery.type()).isEqualTo("variable");
+              final var innerBoolQuery = (SearchBoolQuery) hasChildQuery.query().queryOption();
+              assertThat(innerBoolQuery.must()).hasSize(2);
+              assertIsSearchTermQuery(
+                  innerBoolQuery.must().get(0).queryOption(), "varName", "status");
+
+              final var valueBoolQuery =
+                  (SearchBoolQuery) innerBoolQuery.must().get(1).queryOption();
+              assertThat(valueBoolQuery.mustNot()).hasSize(1);
+              final var termsQuery =
+                  (SearchTermsQuery) valueBoolQuery.mustNot().getFirst().queryOption();
+              assertThat(termsQuery.field()).isEqualTo("varValue");
+              assertThat(termsQuery.values())
+                  .extracting(TypedValue::stringValue)
+                  .containsExactlyInAnyOrder("done", "cancelled");
             });
   }
 
