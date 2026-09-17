@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.debug.cli.state.ProcessDefinitionDeletionScan.DefinitionInfo;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class ProcessDefinitionDeletionScanTest {
@@ -26,21 +27,21 @@ class ProcessDefinitionDeletionScanTest {
       new ProcessDefinitionDeletionScan(DEPLOYMENT_PARTITION);
 
   private static DefinitionInfo info(final long key) {
-    return new DefinitionInfo(key, "order-process", 3, "<default>", true);
+    return new DefinitionInfo(key, "order-process", 3, "<default>");
   }
 
   @Test
-  void shouldFlagDefinitionDrainingWhileAbsentFromDeploymentPartition() {
-    // given - draining on partitions 2 and 3, already gone from partitions 1 (deployment) and 4
+  void shouldFlagDefinitionDrainingWithoutCoordination() {
+    // given - draining on partitions 2 and 3, but P1 tracks no pending deletion for either: the
+    // deletion coordination was never set up, so it can never finish
     final var partitionStates =
         Map.of(
             1, Map.<Long, PersistedProcessState>of(),
             2, Map.of(KEY, DRAINING),
-            3, Map.of(KEY, DRAINING),
-            4, Map.<Long, PersistedProcessState>of());
+            3, Map.of(KEY, DRAINING));
 
     // when
-    final var findings = scan.scan(partitionStates, Map.of(KEY, info(KEY)));
+    final var findings = scan.scan(partitionStates, Map.of(KEY, info(KEY)), Map.of(), Set.of());
 
     // then
     assertThat(findings)
@@ -49,67 +50,99 @@ class ProcessDefinitionDeletionScanTest {
             f -> {
               assertThat(f.definition().processDefinitionKey()).isEqualTo(KEY);
               assertThat(f.drainingPartitions()).containsExactly(2, 3);
-              assertThat(f.absentPartitions()).containsExactly(1, 4);
+              assertThat(f.uncoordinatedPartitions()).containsExactly(2, 3);
+              assertThat(f.orphanedInstances()).isFalse();
             });
   }
 
   @Test
-  void shouldNotFlagDefinitionStillPresentOnDeploymentPartition() {
-    // given - draining everywhere, including the deployment partition: a normal in-progress drain
-    final var partitionStates =
-        Map.of(
-            1, Map.of(KEY, DRAINING),
-            2, Map.of(KEY, DRAINING));
-
-    // when
-    final var findings = scan.scan(partitionStates, Map.of(KEY, info(KEY)));
-
-    // then
-    assertThat(findings).isEmpty();
-  }
-
-  @Test
-  void shouldNotFlagWhenDeploymentPartitionStillHasItActive() {
-    // given - deployment partition still holds the definition (here ACTIVE), so it was not deleted
-    final var partitionStates =
-        Map.of(
-            1, Map.of(KEY, ACTIVE),
-            2, Map.of(KEY, DRAINING));
-
-    // when
-    final var findings = scan.scan(partitionStates, Map.of(KEY, info(KEY)));
-
-    // then
-    assertThat(findings).isEmpty();
-  }
-
-  @Test
-  void shouldNotFlagActiveStragglerWithNoDraining() {
-    // given - definition gone from the deployment partition but the straggler is ACTIVE, not
-    // DRAINING; without a draining partition there is nothing stranded to reconcile. Such a
-    // definition is not reported DRAINING anywhere, so it never enters the metadata map.
+  void shouldNotFlagHealthyInProgressDrain() {
+    // given - P1 has already finalized locally (removed the definition from its own state) while
+    // partition 2 is still DRAINING; the pending coordination entry for partition 2 still exists,
+    // so the deletion is on track and must not be reported
     final var partitionStates =
         Map.of(
             1, Map.<Long, PersistedProcessState>of(),
-            2, Map.of(KEY, ACTIVE));
+            2, Map.of(KEY, DRAINING));
 
     // when
-    final var findings = scan.scan(partitionStates, Map.of());
+    final var findings =
+        scan.scan(partitionStates, Map.of(KEY, info(KEY)), Map.of(KEY, Set.of(2)), Set.of());
 
     // then
     assertThat(findings).isEmpty();
   }
 
   @Test
-  void shouldFlagOnlyTheStrandedDefinitionAmongMany() {
-    // given - key 42 stranded (draining on 2, gone from 1); key 99 healthy (draining everywhere)
+  void shouldFlagOnlyThePartitionsMissingCoordination() {
+    // given - draining on 2 and 3; P1 still tracks partition 2 (healthy) but not partition 3
+    // (stuck)
     final var partitionStates =
         Map.of(
-            1, Map.of(99L, DRAINING),
+            1, Map.<Long, PersistedProcessState>of(),
+            2, Map.of(KEY, DRAINING),
+            3, Map.of(KEY, DRAINING));
+
+    // when
+    final var findings =
+        scan.scan(partitionStates, Map.of(KEY, info(KEY)), Map.of(KEY, Set.of(2)), Set.of());
+
+    // then
+    assertThat(findings)
+        .singleElement()
+        .satisfies(
+            f -> {
+              assertThat(f.drainingPartitions()).containsExactly(2, 3);
+              assertThat(f.uncoordinatedPartitions()).containsExactly(3);
+            });
+  }
+
+  @Test
+  void shouldReportOrphanedInstancesWhenPresent() {
+    // given - a stuck definition that still has active instances somewhere in the cluster
+    final var partitionStates =
+        Map.of(
+            1, Map.<Long, PersistedProcessState>of(),
+            2, Map.of(KEY, DRAINING));
+
+    // when
+    final var findings = scan.scan(partitionStates, Map.of(KEY, info(KEY)), Map.of(), Set.of(KEY));
+
+    // then
+    assertThat(findings).singleElement().satisfies(f -> assertThat(f.orphanedInstances()).isTrue());
+  }
+
+  @Test
+  void shouldNotFlagActiveDefinitionThatIsNotDraining() {
+    // given - the definition is ACTIVE, not DRAINING, so it is not being deleted at all
+    final var partitionStates =
+        Map.of(
+            1, Map.of(KEY, ACTIVE),
+            2, Map.of(KEY, ACTIVE));
+
+    // when
+    final var findings = scan.scan(partitionStates, Map.of(), Map.of(), Set.of());
+
+    // then
+    assertThat(findings).isEmpty();
+  }
+
+  @Test
+  void shouldFlagOnlyTheStuckDefinitionAmongMany() {
+    // given - key 42 stuck (draining on 2, no coordination); key 99 healthy (draining on 2,
+    // tracked)
+    final var partitionStates =
+        Map.of(
+            1, Map.<Long, PersistedProcessState>of(),
             2, Map.of(42L, DRAINING, 99L, DRAINING));
 
     // when
-    final var findings = scan.scan(partitionStates, Map.of(42L, info(42L), 99L, info(99L)));
+    final var findings =
+        scan.scan(
+            partitionStates,
+            Map.of(42L, info(42L), 99L, info(99L)),
+            Map.of(99L, Set.of(2)),
+            Set.of());
 
     // then
     assertThat(findings)
@@ -123,7 +156,7 @@ class ProcessDefinitionDeletionScanTest {
     final var partitionStates = Map.of(2, Map.of(KEY, DRAINING));
 
     // when / then
-    assertThatThrownBy(() -> scan.scan(partitionStates, Map.of(KEY, info(KEY))))
+    assertThatThrownBy(() -> scan.scan(partitionStates, Map.of(KEY, info(KEY)), Map.of(), Set.of()))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("deployment partition");
   }

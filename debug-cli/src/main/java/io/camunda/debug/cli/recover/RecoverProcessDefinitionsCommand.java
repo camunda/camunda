@@ -20,10 +20,6 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.el.ExpressionLanguageMetrics;
-import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
-import io.camunda.zeebe.engine.state.deployment.DbProcessState;
 import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
@@ -32,8 +28,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Instant;
-import java.time.InstantSource;
 import java.util.concurrent.Callable;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Model.CommandSpec;
@@ -266,8 +260,9 @@ public class RecoverProcessDefinitionsCommand implements Callable<Integer> {
               batchSize,
               err);
 
-      try (final ZeebeDb<ZbColumnFamilies> db = openReadOnly(snapshotPath, runtime)) {
-        final var processState = openProcessState(db);
+      try (final ZeebeDb<ZbColumnFamilies> db =
+          new SnapshotUtil().openReadOnly(snapshotPath, runtime)) {
+        final var processState = SnapshotUtil.openProcessState(db, db.createContext());
         final Summary summary =
             recovery.run(
                 consumer ->
@@ -328,21 +323,6 @@ public class RecoverProcessDefinitionsCommand implements Callable<Integer> {
       case "opensearch" -> DatabaseType.OPENSEARCH.toString();
       default -> null;
     };
-  }
-
-  @SuppressWarnings("unchecked")
-  private static ZeebeDb<ZbColumnFamilies> openReadOnly(
-      final Path snapshotPath, final Path runtime) {
-    return (ZeebeDb<ZbColumnFamilies>) new SnapshotUtil().openSnapshot(snapshotPath, runtime);
-  }
-
-  private static DbProcessState openProcessState(final ZeebeDb<ZbColumnFamilies> db) {
-    final var stateTransformer =
-        BpmnFactory.createTransformer(
-            InstantSource.fixed(Instant.EPOCH),
-            ExpressionLanguageMetrics.noop(),
-            Integer.MAX_VALUE);
-    return new DbProcessState(db, db.createContext(), new EngineConfiguration(), stateTransformer);
   }
 
   private void printSummary(final PrintWriter err, final PrintWriter out, final Summary summary) {
