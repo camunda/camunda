@@ -746,7 +746,7 @@
       ],
       automerge: false,
       prBodyNotes: [
-        "**Manual verification required before merging:** maven-failsafe-plugin must be updated together with maven-surefire-plugin. Check that [apache/maven-surefire#3203](https://github.com/apache/maven-surefire/issues/3203) (inner class test report bug in 3.5.4) and the ArchUnit issue in 3.5.3 are fixed before updating both plugins.",
+        "**Manual verification required before merging:** maven-failsafe-plugin must be updated together with maven-surefire-plugin.",
       ],
     },
 
