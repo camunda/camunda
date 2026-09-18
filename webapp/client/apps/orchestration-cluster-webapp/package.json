@@ -66,7 +66,7 @@
 		"styled-components": "6.5.3",
 		"tailwind-merge": "3.7.0",
 		"tailwindcss": "4.3.3",
-		"xstate": "5.33.0",
+		"xstate": "5.33.2",
 		"zod": "4.6.5"
 	},
 	"devDependencies": {
