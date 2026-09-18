@@ -15,6 +15,7 @@ import io.camunda.search.connect.jackson.JacksonConfiguration;
 import io.camunda.search.connect.os.json.SearchRequestJacksonJsonpMapperWrapper;
 import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.search.connect.util.SecurityUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Optional;
@@ -165,6 +166,7 @@ public final class OpensearchConnector {
     }
   }
 
+  @VisibleForTesting
   protected HttpAsyncClientBuilder configureHttpClient(
       final HttpAsyncClientBuilder httpAsyncClientBuilder,
       final ConnectConfiguration osConfig,
@@ -180,7 +182,8 @@ public final class OpensearchConnector {
     return httpAsyncClientBuilder;
   }
 
-  private RequestConfig.Builder setTimeouts(
+  @VisibleForTesting
+  protected RequestConfig.Builder setTimeouts(
       final RequestConfig.Builder builder, final ConnectConfiguration os) {
     // ensure we have default timeouts - as otherwise timeouts are infinite
     final var socketTimeoutMillis =
