@@ -673,6 +673,195 @@ public final class StorageOrdinalAssignmentTest {
   }
 
   @Test
+  public void shouldAssignConfiguredOrdinalToProcessEventTriggeredByJobCompletion() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("job-completion-event-process")
+                .startEvent()
+                .serviceTask("service-task", t -> t.zeebeJobType("ordinal-completing-job"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("job-completion-event-process").create();
+
+    // when
+    engine
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("ordinal-completing-job")
+        .withVariable("result", "done")
+        .complete();
+
+    // then
+    assertProcessEventTriggeringCarriesOrdinal(processInstanceKey);
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .isNotEmpty()
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToProcessEventTriggeredByUserTaskCompletion() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("user-task-completion-event-process")
+                .startEvent()
+                .userTask("user-task")
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("user-task-completion-event-process").create();
+    final long userTaskKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getValue()
+            .getUserTaskKey();
+
+    // when
+    engine.userTask().withKey(userTaskKey).withVariable("result", "done").complete();
+
+    // then
+    assertProcessEventTriggeringCarriesOrdinal(processInstanceKey);
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .isNotEmpty()
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToNonInterruptingBoundaryEventRecords() {
+    // given: a user task with a non-interrupting signal boundary event, so the trigger activates
+    // the boundary event next to the still-running task
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("non-interrupting-boundary-process")
+                .startEvent()
+                .userTask("wait-task")
+                .zeebeUserTask()
+                .boundaryEvent("signal-boundary")
+                .cancelActivity(false)
+                .signal("ordinal-boundary-signal")
+                .endEvent("boundary-end")
+                .moveToActivity("wait-task")
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("non-interrupting-boundary-process").create();
+    RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.CREATED)
+        .withSignalName("ordinal-boundary-signal")
+        .await();
+
+    // when
+    engine.signal().withSignalName("ordinal-boundary-signal").broadcast();
+
+    // then
+    assertProcessEventTriggeringCarriesOrdinal(processInstanceKey);
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("boundary-end")
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(
+                    r ->
+                        "boundary-end".equals(r.getValue().getElementId())
+                            && r.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .isNotEmpty()
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToCaughtErrorEventRecords() {
+    // given: a service task with an error boundary event
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("caught-error-process")
+                .startEvent()
+                .serviceTask("service-task", t -> t.zeebeJobType("ordinal-erroring-job"))
+                .boundaryEvent("error-boundary", b -> b.error("ordinal-error"))
+                .endEvent("error-end")
+                .moveToActivity("service-task")
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("caught-error-process").create();
+
+    // when
+    engine
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("ordinal-erroring-job")
+        .withErrorCode("ordinal-error")
+        .throwError();
+
+    // then
+    assertProcessEventTriggeringCarriesOrdinal(processInstanceKey);
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .isNotEmpty()
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToTimerCatchEventRecords() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("timer-catch-process")
+                .startEvent()
+                .intermediateCatchEvent("timer-catch", c -> c.timerWithDuration("PT10S"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("timer-catch-process").create();
+    RecordingExporter.timerRecords(TimerIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    engine.increaseTime(Duration.ofSeconds(11));
+
+    // then
+    assertProcessEventTriggeringCarriesOrdinal(processInstanceKey);
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .isNotEmpty()
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+  }
+
+  @Test
   public void shouldAssignConfiguredOrdinalToProcessInstanceBatchRecords() {
     // given
     engine
