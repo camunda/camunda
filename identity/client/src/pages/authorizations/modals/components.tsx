@@ -29,3 +29,14 @@ export const Caption = styled.div`
   }
   color: var(--cds-text-secondary);
 `;
+
+export const PrefixedFieldRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  width: 100%;
+
+  .cds--text-input-wrapper {
+    min-width: 0;
+  }
+`;
