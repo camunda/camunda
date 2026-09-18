@@ -27,10 +27,9 @@ public final class AuthorizationRequestValidator {
   /**
    * Charset and length for the {@code <name>} portion of a {@code camunda.secrets.<name>}
    * reference. The charset mirrors {@code SecretReference.REFERENCE_PATTERN} in {@code
-   * zeebe-engine}; duplicated here in a single constant rather than depending on that module, which
-   * this gateway-mapping layer has no other reason to pull in. The length bound mirrors {@code
-   * SecretServices.MAX_REFERENCE_LENGTH} (256) minus {@code SecretServices.REFERENCE_PREFIX}'s own
-   * length (16): a name any longer could never fit in a resolvable reference.
+   * zeebe-engine}. The length bound mirrors {@code SecretServices.MAX_REFERENCE_LENGTH} (256) minus
+   * {@code SecretServices.REFERENCE_PREFIX}'s own length (16): a name any longer could never fit in
+   * a resolvable reference.
    */
   public static final String SECRET_NAME_PATTERN = "[\\p{Alnum}_-]{1,240}";
 

@@ -49,8 +49,7 @@ const SECRET_NAME_PATTERN = /^[A-Za-z0-9_-]{1,240}$/;
  * `camunda.secrets.` prefix is rendered outside the input, so a message about the full
  * reference pattern would describe characters the field never lets them type.
  */
-export const getSecretNamePattern = (): string =>
-  SECRET_NAME_PATTERN.toString();
+export const SECRET_NAME_PATTERN_TEXT = SECRET_NAME_PATTERN.toString();
 
 // Keep in sync with
 // `io.camunda.gateway.mapping.http.validator.AuthorizationRequestValidator.SECRET_RESOURCE_ID_PATTERN`.

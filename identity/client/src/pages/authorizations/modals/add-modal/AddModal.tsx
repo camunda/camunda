@@ -25,7 +25,12 @@ import { useNotifications } from "src/components/notifications";
 import TextField from "src/components/form/TextField";
 import Divider from "src/components/form/Divider";
 import { DocumentationLink } from "src/components/documentation";
-import { Caption, Row, TextFieldContainer } from "../components";
+import {
+  Caption,
+  PrefixedFieldRow,
+  Row,
+  TextFieldContainer,
+} from "../components";
 import OwnerSelection from "../owner-selection";
 import { useDropdownAutoFocus } from "./useDropdownAutoFocus";
 import {
@@ -33,7 +38,7 @@ import {
   isValidResourceId,
   isValidSecretResourceId,
   getIdPattern,
-  getSecretNamePattern,
+  SECRET_NAME_PATTERN_TEXT,
   AUTHORIZATION_WILDCARD,
   SECRET_REFERENCE_PREFIX,
 } from "src/utility/validate";
@@ -234,13 +239,13 @@ export const AddModal: FC<
                 validate: (value) =>
                   isValidSecretResourceId(value ?? "") ||
                   t("pleaseEnterValidSecretResourceId", {
-                    pattern: getSecretNamePattern(),
+                    pattern: SECRET_NAME_PATTERN_TEXT,
                   }),
               }}
               render={({ field, fieldState }) => {
                 const currentValue = field.value ?? "";
                 const isWildcard = currentValue === AUTHORIZATION_WILDCARD;
-                const name = isWildcard
+                const displayValue = isWildcard
                   ? AUTHORIZATION_WILDCARD
                   : currentValue.startsWith(SECRET_REFERENCE_PREFIX)
                     ? currentValue.slice(SECRET_REFERENCE_PREFIX.length)
@@ -249,13 +254,7 @@ export const AddModal: FC<
                 return (
                   <div className="cds--form-item">
                     <span className="cds--label">{t("resourceId")}</span>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.375rem",
-                      }}
-                    >
+                    <PrefixedFieldRow>
                       {!isWildcard && (
                         <Caption>{SECRET_REFERENCE_PREFIX}</Caption>
                       )}
@@ -263,30 +262,27 @@ export const AddModal: FC<
                         id="secret-resource-id"
                         labelText={t("resourceId")}
                         hideLabel
-                        value={name}
+                        value={displayValue}
                         placeholder={t("enterSecretName")}
                         helperText={t("secretResourceIdHelperText")}
                         invalid={!!fieldState.error}
                         invalidText={fieldState.error?.message}
                         onChange={(e) => {
-                          // Keep the prefix fixed while typing, even if the
-                          // name-so-far happens to be "*" — only resolve to
-                          // the bare wildcard value on blur, below. Doing
-                          // this on every keystroke instead would flip the
-                          // prefix on and off as soon as another character
-                          // is typed after a lone "*".
+                          // Resolve the wildcard on every keystroke rather
+                          // than on blur: the form validates on change, and
+                          // the modal submits on Enter without blurring, so
+                          // deferring left a lone "*" both flagged invalid
+                          // and unsubmittable from the keyboard.
+                          const input = e.currentTarget.value;
                           field.onChange(
-                            SECRET_REFERENCE_PREFIX + e.currentTarget.value,
+                            input === AUTHORIZATION_WILDCARD
+                              ? AUTHORIZATION_WILDCARD
+                              : SECRET_REFERENCE_PREFIX + input,
                           );
                         }}
-                        onBlur={() => {
-                          if (name === AUTHORIZATION_WILDCARD) {
-                            field.onChange(AUTHORIZATION_WILDCARD);
-                          }
-                          field.onBlur();
-                        }}
+                        onBlur={field.onBlur}
                       />
-                    </div>
+                    </PrefixedFieldRow>
                   </div>
                 );
               }}
