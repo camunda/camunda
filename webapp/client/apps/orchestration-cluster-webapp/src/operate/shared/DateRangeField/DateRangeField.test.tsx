@@ -229,8 +229,6 @@ describe('<DateRangeField />', () => {
 	});
 
 	it('should show validation error on invalid time format', async () => {
-		vi.useFakeTimers({shouldAdvanceTime: true});
-
 		const screen = await render(<MockDateRangeField />, {wrapper: getWrapper()});
 		const TIME_ERROR = 'Time has to be in the format hh:mm:ss';
 
@@ -242,13 +240,16 @@ describe('<DateRangeField />', () => {
 			toDay: '20',
 		});
 
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 		await screen.getByTestId('fromTime').fill('1111');
 
+		await vi.advanceTimersByTimeAsync(749);
 		await expect.element(screen.getByTestId('fromTime')).not.toBeInvalid();
 		await expect.element(screen.getByText(TIME_ERROR)).not.toBeInTheDocument();
 		await expect.element(screen.getByRole('button', {name: 'Apply'})).not.toBeDisabled();
 
-		vi.runOnlyPendingTimers();
+		await vi.advanceTimersByTimeAsync(1);
+		vi.useRealTimers();
 
 		await expect.element(screen.getByText(TIME_ERROR)).toBeVisible();
 		await expect.element(screen.getByTestId('fromTime')).toBeInvalid();
