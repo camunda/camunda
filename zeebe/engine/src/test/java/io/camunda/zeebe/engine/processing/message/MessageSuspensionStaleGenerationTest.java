@@ -547,6 +547,288 @@ public final class MessageSuspensionStaleGenerationTest {
         .isEqualTo(1);
   }
 
+  /**
+   * Reproduces a second review comment on #61099: {@code MessageSubscriptionRejectedV2Applier}
+   * calls {@code removeMessageCorrelation} unconditionally, with no check for whether a newer
+   * generation (K2) has since re-claimed the very message this reject concerns. A duplicate/delayed
+   * stale REJECT(K1) for a message K2 already correlated therefore clears the "message already
+   * correlated to this process" lock that K2's completed correlation relies on, even though nothing
+   * re-acquires it afterwards — leaving the message eligible to be selected again for the same
+   * process.
+   *
+   * <p>Duplicate stale REJECT(K1) commands for the same message are not merely theoretical: {@code
+   * PendingMessageSubscriptionCheckScheduler} resends an un-acked CORRELATE(K1) every 30s while
+   * it's pending, and {@code ProcessMessageSubscriptionCorrelateProcessor#isStaleGeneration} sends
+   * a REJECT for every copy of a stale CORRELATE it sees, with no deduplication.
+   */
+  @Test
+  public void shouldNotReleaseCorrelationLockForDuplicateStaleGenerationRejectOfSameMessage() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    final String messageName = Strings.newRandomValidBpmnId();
+    final String correlationKey = correlationKeyForPartitionOtherThan(PROCESS_INSTANCE_PARTITION);
+    final int subscriptionPartition = getSubscriptionPartitionId(correlationKey);
+
+    final long processInstanceKey =
+        deployAndStartWithNonInterruptingBoundaryEvent(
+            processId, messageName, correlationKey, PROCESS_INSTANCE_PARTITION);
+
+    final Record<MessageSubscriptionRecordValue> k1Created =
+        RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(k1Created.getPartitionId()).isEqualTo(subscriptionPartition);
+    final long k1Key = k1Created.getKey();
+
+    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // keep the CORRELATE from reaching the PI partition, so K1 stays locked on this message
+    engine.interceptInterPartitionCommands(
+        (receiverPartitionId, valueType, intent, recordKey, command) -> {
+          if (receiverPartitionId == PROCESS_INSTANCE_PARTITION
+              && intent == ProcessMessageSubscriptionIntent.CORRELATE) {
+            return false;
+          }
+          return true;
+        });
+
+    engine
+        .message()
+        .onPartition(subscriptionPartition)
+        .withName(messageName)
+        .withCorrelationKey(correlationKey)
+        .withTimeToLive(Duration.ofMinutes(5))
+        .publish();
+
+    final var correlating =
+        RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    final long messageKey = correlating.getValue().getMessageKey();
+    final long elementInstanceKey = correlating.getValue().getElementInstanceKey();
+
+    // suspend deletes K1 without releasing the correlation lock it holds
+    engine.processInstance().withInstanceKey(processInstanceKey).suspend();
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.DELETED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    engine.interceptInterPartitionCommands(
+        (receiverPartitionId, valueType, intent, recordKey, command) -> true);
+
+    engine.processInstance().withInstanceKey(processInstanceKey).resume();
+    final Record<MessageSubscriptionRecordValue> k2Created =
+        RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .skip(1)
+            .getFirst();
+    final long k2Key = k2Created.getKey();
+    assertThat(k2Key).isNotEqualTo(k1Key);
+
+    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .skip(1)
+        .await();
+
+    final var staleReject =
+        new MessageSubscriptionRecord()
+            .setProcessInstanceKey(processInstanceKey)
+            .setElementInstanceKey(elementInstanceKey)
+            .setProcessDefinitionKey(correlating.getValue().getProcessDefinitionKey())
+            .setBpmnProcessId(BufferUtil.wrapString(correlating.getValue().getBpmnProcessId()))
+            .setMessageName(BufferUtil.wrapString(correlating.getValue().getMessageName()))
+            .setCorrelationKey(BufferUtil.wrapString(correlating.getValue().getCorrelationKey()))
+            .setMessageKey(messageKey)
+            .setInterrupting(false)
+            .setTenantId(correlating.getValue().getTenantId())
+            .setSubscriptionKey(k1Key);
+
+    // when — release the stale lock so K2 correlates the buffered message for the first time
+    engine.writeCommandOnPartition(
+        subscriptionPartition, -1L, MessageSubscriptionIntent.REJECT, staleReject);
+
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withRecordKey(k2Key)
+        .await();
+
+    // a second, duplicate/delayed stale REJECT(K1) for the SAME message arrives later
+    engine.writeCommandOnPartition(
+        subscriptionPartition, -1L, MessageSubscriptionIntent.REJECT, staleReject);
+
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.REJECTED)
+        .withProcessInstanceKey(processInstanceKey)
+        .limit(2)
+        .asList();
+
+    // then — a second instance of the SAME process (same bpmnProcessId), matching the same
+    // message name + correlation key, must not be able to pick up the message: if the duplicate
+    // reject wrongly cleared the lock, this bystander's own CREATE-time scan would grab it
+    final long bystanderProcessInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .onPartition(subscriptionPartition)
+            .create();
+    final long bystanderSubscriptionKey =
+        RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+            .withProcessInstanceKey(bystanderProcessInstanceKey)
+            .getFirst()
+            .getKey();
+
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    RecordingExporter.messageSubscriptionRecords(
+                            MessageSubscriptionIntent.CORRELATING)
+                        .withRecordKey(bystanderSubscriptionKey)
+                        .exists()))
+        .as(
+            "duplicate stale REJECT must not clear the lock K2's completed correlation relies"
+                + " on, letting a bystander subscription of the same process correlate the same"
+                + " message")
+        .isFalse();
+  }
+
+  /**
+   * Reproduces a third review comment on #61099: both {@code
+   * MessageSubscriptionRejectProcessor#hasAlreadyBeenCorrelated} and {@code
+   * MessageSubscriptionRejectedV2Applier#newerGenerationAlreadyCorrelatedMessage} inferred "K2
+   * already correlated this message" from key ordering alone (messageKey <= / >= K2's last
+   * correlated key). That assumption breaks when K2's own CREATE-time scan skips a message that's
+   * still locked by K1's stale claim and correlates a *later* one instead: K2 never touched the
+   * locked message, but its last-correlated key is still numerically ahead of it.
+   *
+   * <p>Sequence: M1 is published and locks K1. Suspend/resume replaces K1 with K2 without releasing
+   * M1's lock. M2 is published while M1 is still locked. K2's own CREATE-time scan finds M1 locked,
+   * skips it, and correlates M2 instead — so K2's last-correlated key (M2) is numerically past M1,
+   * even though K2 never saw M1. The stale REJECT(K1, M1) then arrives: with the key-ordering
+   * check, {@code M1 <= M2} wrongly reads as "K2 already has it", so the reject neither reroutes M1
+   * to K2 nor releases M1's lock — M1 is silently lost until its TTL expires, the exact symptom
+   * #61099 was filed for, reappearing through this side door.
+   */
+  @Test
+  public void shouldRerouteLockedMessageAfterReplacementSkippedAheadToLaterMessage() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    final String messageName = Strings.newRandomValidBpmnId();
+    final String correlationKey = correlationKeyForPartitionOtherThan(PROCESS_INSTANCE_PARTITION);
+    final int subscriptionPartition = getSubscriptionPartitionId(correlationKey);
+
+    final long processInstanceKey =
+        deployAndStartWithNonInterruptingBoundaryEvent(
+            processId, messageName, correlationKey, PROCESS_INSTANCE_PARTITION);
+
+    final Record<MessageSubscriptionRecordValue> k1Created =
+        RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(k1Created.getPartitionId()).isEqualTo(subscriptionPartition);
+    final long k1Key = k1Created.getKey();
+
+    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // keep the CORRELATE from reaching the PI partition, so K1 stays locked on M1
+    engine.interceptInterPartitionCommands(
+        (receiverPartitionId, valueType, intent, recordKey, command) -> {
+          if (receiverPartitionId == PROCESS_INSTANCE_PARTITION
+              && intent == ProcessMessageSubscriptionIntent.CORRELATE) {
+            return false;
+          }
+          return true;
+        });
+
+    // M1: locks K1 and stays locked (K1 never acks it, since the CORRELATE is dropped)
+    engine
+        .message()
+        .onPartition(subscriptionPartition)
+        .withName(messageName)
+        .withCorrelationKey(correlationKey)
+        .withTimeToLive(Duration.ofMinutes(5))
+        .publish();
+
+    final var correlatingM1 =
+        RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    final long m1Key = correlatingM1.getValue().getMessageKey();
+    final long elementInstanceKey = correlatingM1.getValue().getElementInstanceKey();
+    final var bpmnProcessIdBuffer =
+        BufferUtil.wrapString(correlatingM1.getValue().getBpmnProcessId());
+
+    // M2: published while M1 is still locked, so it's buffered and waiting for the next scan
+    engine
+        .message()
+        .onPartition(subscriptionPartition)
+        .withName(messageName)
+        .withCorrelationKey(correlationKey)
+        .withTimeToLive(Duration.ofMinutes(5))
+        .publish();
+
+    // suspend deletes K1 without releasing the lock M1 holds
+    engine.processInstance().withInstanceKey(processInstanceKey).suspend();
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.DELETED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    engine.interceptInterPartitionCommands(
+        (receiverPartitionId, valueType, intent, recordKey, command) -> true);
+
+    engine.processInstance().withInstanceKey(processInstanceKey).resume();
+    final Record<MessageSubscriptionRecordValue> k2Created =
+        RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .skip(1)
+            .getFirst();
+    final long k2Key = k2Created.getKey();
+    assertThat(k2Key).isNotEqualTo(k1Key);
+
+    // sanity: K2's own CREATE-time scan must skip locked M1 and correlate M2 instead — this is
+    // the exact setup the review comment describes, not just an assumption
+    final var correlatedM2 =
+        RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withRecordKey(k2Key)
+            .getFirst();
+    assertThat(correlatedM2.getValue().getMessageKey())
+        .as("K2's CREATE-time scan should skip the still-locked M1 and correlate M2 instead")
+        .isNotEqualTo(m1Key);
+
+    final var staleRejectForM1 =
+        new MessageSubscriptionRecord()
+            .setProcessInstanceKey(processInstanceKey)
+            .setElementInstanceKey(elementInstanceKey)
+            .setProcessDefinitionKey(correlatingM1.getValue().getProcessDefinitionKey())
+            .setBpmnProcessId(BufferUtil.wrapString(correlatingM1.getValue().getBpmnProcessId()))
+            .setMessageName(BufferUtil.wrapString(correlatingM1.getValue().getMessageName()))
+            .setCorrelationKey(BufferUtil.wrapString(correlatingM1.getValue().getCorrelationKey()))
+            .setMessageKey(m1Key)
+            .setInterrupting(false)
+            .setTenantId(correlatingM1.getValue().getTenantId())
+            .setSubscriptionKey(k1Key);
+
+    // when — the stale REJECT for M1 (the message K2 skipped, not the one it just correlated)
+    // arrives
+    engine.writeCommandOnPartition(
+        subscriptionPartition, -1L, MessageSubscriptionIntent.REJECT, staleRejectForM1);
+
+    // then — M1 must still reach K2, even though K2's last-correlated key (M2) is numerically
+    // past it
+    final var correlatedM1 =
+        RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withRecordKey(k2Key)
+            .skip(1)
+            .getFirst();
+    assertThat(correlatedM1.getValue().getMessageKey())
+        .as("the skipped-over M1 must be rerouted to K2, not lost")
+        .isEqualTo(m1Key);
+  }
+
   private long deployAndStart(
       final String processId,
       final String messageName,
