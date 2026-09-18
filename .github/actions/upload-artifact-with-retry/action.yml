@@ -25,6 +25,18 @@ inputs:
     description: Behaviour when no files match `path`, one of `warn`, `error` or `ignore`.
     required: false
     default: warn
+  retry-delay-seconds:
+    description: >
+      Base seconds to wait before each retry. `0` retries immediately.
+    required: false
+    default: "10"
+  retry-jitter-seconds:
+    description: >
+      Upper bound, inclusive, on a random extra wait added to
+      `retry-delay-seconds`. Keeps matrix shards off a lockstep retry, so `0`
+      is only safe for a single unsharded upload.
+    required: false
+    default: "10"
 
 outputs:
   attempts:
@@ -43,6 +55,20 @@ runs:
   # here only because every caller uses a name unique within the run; it races
   # when parallel jobs share one name (upload-artifact#506).
   steps:
+    # Up front, not in the wait steps: bash arithmetic reads a non-numeric value
+    # as 0, so a typo would silently drop the backoff even on a run that retries.
+    - name: Validate retry backoff inputs
+      shell: bash
+      env:
+        DELAY: ${{ inputs.retry-delay-seconds }}
+        JITTER: ${{ inputs.retry-jitter-seconds }}
+      run: |
+        set -euo pipefail
+        if ! [[ "$DELAY" =~ ^[0-9]+$ && "$JITTER" =~ ^[0-9]+$ ]]; then
+          echo "::error::retry delay and jitter must be whole seconds, got '$DELAY' and '$JITTER'."
+          exit 1
+        fi
+
     - name: Upload artifact (attempt 1 of 3)
       id: attempt-1
       continue-on-error: true
@@ -59,7 +85,10 @@ runs:
       if: steps.attempt-1.outcome == 'failure'
       shell: bash
       # Jittered so matrix shards don't retry in lockstep and recreate the burst.
-      run: sleep $(( 10 + RANDOM % 10 ))
+      env:
+        DELAY: ${{ inputs.retry-delay-seconds }}
+        JITTER: ${{ inputs.retry-jitter-seconds }}
+      run: sleep $(( DELAY + RANDOM % (JITTER + 1) ))
 
     - name: Upload artifact (attempt 2 of 3)
       id: attempt-2
@@ -78,7 +107,10 @@ runs:
       if: steps.attempt-2.outcome == 'failure'
       shell: bash
       # Same reason as the wait before attempt 2.
-      run: sleep $(( 10 + RANDOM % 10 ))
+      env:
+        DELAY: ${{ inputs.retry-delay-seconds }}
+        JITTER: ${{ inputs.retry-jitter-seconds }}
+      run: sleep $(( DELAY + RANDOM % (JITTER + 1) ))
 
     - name: Upload artifact (attempt 3 of 3)
       id: attempt-3
