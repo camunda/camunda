@@ -79,7 +79,7 @@ const MoveAction: React.FC<Props> = observer(({isRunningSelection}) => {
     }
 
     if (elementId === undefined || isNil(businessObject)) {
-      return 'Please select an element from the diagram first.';
+      return 'Select an element from the diagram first.';
     }
     if (!isTypeSupported(businessObject)) {
       return 'The selected element type is not supported.';

@@ -89,7 +89,7 @@ test('should show a generic error message', async ({network, tasklistLoginPage})
 	await tasklistLoginPage.fillCredentials('demo', 'demo');
 	await tasklistLoginPage.submitButton.click();
 
-	await expect(tasklistLoginPage.errorMessage).toContainText(/credentials could not be verified/i);
+	await expect(tasklistLoginPage.errorMessage).toContainText(/couldn't verify credentials/i);
 });
 
 test('should show a loading state while the login form is submitting', async ({network, tasklistLoginPage}) => {

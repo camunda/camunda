@@ -406,7 +406,7 @@ test('should prevent process creation when form validation fails', async ({netwo
 	await tasklistProcessesPage.startProcessFormButton.click();
 
 	await expect(tasklistProcessesPage.startProcessDialog.getByRole('alert')).toContainText(
-		'Please review 1 field: Customer name',
+		'Review 1 field: Customer name',
 	);
 });
 
@@ -474,7 +474,9 @@ test('should show non-retryable errors for missing, form-less, forbidden, and in
 		}),
 	);
 	await page.reload();
-	await expect(tasklistProcessesPage.startProcessFormError).toContainText('We were not able to render the form.');
+	await expect(tasklistProcessesPage.startProcessFormError).toContainText(
+		"We couldn't render the form. Contact your process administrator to fix the form schema.",
+	);
 	await expect(page).toHaveURL(`/tasklist/processes/${processDefinitionKey}/start`);
 });
 
@@ -488,7 +490,9 @@ test('should retry after a transient start-form loading failure', async ({networ
 	);
 
 	await tasklistProcessesPage.gotoStartForm(processDefinitionKey);
-	await expect(tasklistProcessesPage.startProcessFormError).toContainText('We were not able to load the form.');
+	await expect(tasklistProcessesPage.startProcessFormError).toContainText(
+		"We couldn't load the form. Try again or contact your Tasklist administrator.",
+	);
 
 	network.use(
 		mockGetProcessStartFormEndpoint({

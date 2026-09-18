@@ -433,7 +433,7 @@ describe('<InstancesTable />', () => {
 
 		const screen = await renderInstancesTable({...BASE_SEARCH, batchOperationKey: 'batch-op-1'});
 
-		await expect.element(screen.getByText('Data could not be fetched')).toBeVisible();
+		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
 	});
 
 	it('should announce operation state loading once without assertive cell announcements', async ({worker}) => {
@@ -694,7 +694,7 @@ describe('<InstancesTable />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Suspend Instance 1'}));
 
 		await expect.element(screen.getByText("You don't have permission to perform this operation")).toBeVisible();
-		await expect.element(screen.getByText('Please contact the administrator if you need access.')).toBeVisible();
+		await expect.element(screen.getByText('Contact the administrator if you need access.')).toBeVisible();
 		expect(document.querySelector('.cds--toast-notification--warning')).not.toBeNull();
 	});
 
@@ -720,7 +720,7 @@ describe('<InstancesTable />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Resume Instance 1'}));
 
 		await expect.element(screen.getByText("You don't have permission to perform this operation")).toBeVisible();
-		await expect.element(screen.getByText('Please contact the administrator if you need access.')).toBeVisible();
+		await expect.element(screen.getByText('Contact the administrator if you need access.')).toBeVisible();
 		expect(document.querySelector('.cds--toast-notification--warning')).not.toBeNull();
 	});
 
@@ -985,7 +985,7 @@ describe('<InstancesTable />', () => {
 		await userEvent.click(screen.getByRole('button', {name: /retry/i}));
 
 		await expect.element(screen.getByText("You don't have permission to perform this operation")).toBeVisible();
-		await expect.element(screen.getByText('Please contact the administrator if you need access.')).toBeVisible();
+		await expect.element(screen.getByText('Contact the administrator if you need access.')).toBeVisible();
 		expect(document.querySelector('.cds--toast-notification--warning')).not.toBeNull();
 	});
 });

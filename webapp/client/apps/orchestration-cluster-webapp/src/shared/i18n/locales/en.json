@@ -24,7 +24,7 @@
 		"notificationLogOutTitle": "Log Out",
 		"notificationLogOutSubtitle": "You are being logged out...",
 		"loginErrorUsernamePasswordMismatch": "Username and password do not match",
-		"loginErrorCredentialsNotVerified": "Credentials could not be verified",
+		"loginErrorCredentialsNotVerified": "Couldn't verify credentials",
 		"loginErrorUsernameRequired": "Username is required",
 		"loginErrorPasswordRequired": "Password is required",
 		"loginLogoLabel": "Camunda logo",
@@ -37,15 +37,15 @@
 		"loginLoggingInMessage": "Logging in",
 		"loginButtonLabel": "Login",
 		"notFoundPageTitle": "404 - Page not found",
-		"notFoundPageDescription": "We're sorry! The requested URL you're looking for could not be found.",
+		"notFoundPageDescription": "Couldn't find the requested URL.",
 		"notFoundPageButtonLabel": "Go to home",
 		"forbiddenPageTitle": "You need permission",
-		"forbiddenPageDesc": "Please contact the owner to get access.",
+		"forbiddenPageDesc": "Contact the owner to get access.",
 		"componentAccessDeniedPageTitle": "You don’t have access to this component",
-		"componentAccessDeniedPageDesc": "It looks like you don’t have the necessary permissions to access this component. <strong>Please contact your cluster admin</strong> to request access.",
+		"componentAccessDeniedPageDesc": "It looks like you don’t have the necessary permissions to access this component. <strong>Contact your cluster admin</strong> to request access.",
 		"componentAccessDeniedPageLinkLabel": "Learn more about roles and permissions",
 		"errorGenericErrorPageTitle": "Something went wrong",
-		"errorGenericErrorPageMessage": "The page couldn't be loaded. Please try again later.",
+		"errorGenericErrorPageMessage": "Couldn't load the page. Try again later.",
 		"errorGenericErrorPageButtonLabel": "Try again",
 		"notificationActionButtonLabel": "Action",
 		"sessionWatcherExpiredTitle": "Session expired",
@@ -92,10 +92,10 @@
 			"headerNonProductionLicenseTitle": "Non-production license. For production usage details, visit our terms & conditions page or contact our sales team.",
 			"headerNonCommercialLicenseLabel": "Non-commercial license",
 			"headerNonCommercialLicenseExpiredLabel": "Non-commercial license - expired",
-			"headerNonCommercialLicenseExpiredTitle": "To continue using all features, please renew your license.",
+			"headerNonCommercialLicenseExpiredTitle": "To continue using all features, renew your license.",
 			"headerNonCommercialLicenseExpiringLabel_one": "Non-commercial license - {{count}} day left",
 			"headerNonCommercialLicenseExpiringLabel_other": "Non-commercial license - {{count}} days left",
-			"headerNonCommercialLicenseExpiringTitle": "Please renew and provide new license keys to continue production use of Camunda.",
+			"headerNonCommercialLicenseExpiringTitle": "Renew and provide new license keys to continue production use of Camunda.",
 			"taskActionForbidden": "You don't have the necessary permissions. Contact your admin to request access.",
 			"taskDetailsResetDiagramZoom": "Reset diagram zoom",
 			"taskDetailsZoomInDiagram": "Zoom in diagram",
@@ -111,13 +111,13 @@
 			"taskStateCancelingMessage": "The task is being cancelled. Please wait...",
 			"taskStateCompletingMessage": "Completing...",
 			"taskDetailsFailedToFetchVariablesErrorTitle": "Something went wrong",
-			"taskDetailsFailedToFetchVariablesErrorSubtitle": "We could not fetch the task variables. Please try again or contact your Tasklist administrator.",
+			"taskDetailsFailedToFetchVariablesErrorSubtitle": "We couldn't fetch the task variables. Try again or contact your Tasklist administrator.",
 			"taskDetailsTruncatedVariablesErrorTitle": "Variables are too large",
-			"taskDetailsTruncatedVariablesErrorSubtitle": "Please contact your Tasklist administrator.",
+			"taskDetailsTruncatedVariablesErrorSubtitle": "Contact your Tasklist administrator.",
 			"taskDetailsHistoryErrorTitle": "Something went wrong",
-			"taskDetailsHistoryErrorMessage": "We could not load the task history. Please try again or contact your Tasklist administrator.",
+			"taskDetailsHistoryErrorMessage": "We couldn't load the task history. Try again or contact your Tasklist administrator.",
 			"taskDetailsHistoryForbiddenTitle": "You don't have permission to view task history",
-			"taskDetailsHistoryForbiddenDesc": "It looks like you don't have the necessary permissions to view the history for this task. <strong>Please contact your cluster admin</strong> to request access.",
+			"taskDetailsHistoryForbiddenDesc": "It looks like you don't have the necessary permissions to view the history for this task. <strong>Contact your cluster admin</strong> to request access.",
 			"taskDetailsHistoryForbiddenLinkLabel": "Learn more about roles and permissions",
 			"taskDetailsHistoryOperationHeader": "Operation type",
 			"taskDetailsHistoryDetailsHeader": "Details",
@@ -148,8 +148,8 @@
 			"taskDetailsHistoryOperationSuspend": "Suspend task",
 			"taskDetailsHistoryOperationUnassign": "Unassign task",
 			"taskDetailsHistoryOperationUpdate": "Update task",
-			"taskDetailsFormJSSingleFieldError": "Please review 1 field",
-			"taskDetailsFormJSMultipleFieldError": "Please review {{count}} fields",
+			"taskDetailsFormJSSingleFieldError": "Review 1 field",
+			"taskDetailsFormJSMultipleFieldError": "Review {{count}} fields",
 			"formJSPoweredByLabel": "Powered by",
 			"formJSPoweredByLogoLabel": "Camunda logo",
 			"formJSLargeFilePayloadError": "File size exceeds the limit of {{size}}. Try to upload smaller files.",
@@ -170,13 +170,13 @@
 			"processesFirstTimeModalBodyPart2": "You can execute all of your processes at any time as long as you are eligible to work on tasks inside your project.",
 			"processesFirstTimeModalBodyPart3": "By starting processes on demand you are able to trigger tasks and directly start assigning these.",
 			"processesHistoryTitle": "History",
-			"processesHistoryFetchingErrorTitle": "Oops! Something went wrong while fetching the history",
-			"processesHistoryFetchingErrorBody": "Please check your internet connection and try again.",
+			"processesHistoryFetchingErrorTitle": "Something went wrong while fetching the history",
+			"processesHistoryFetchingErrorBody": "Check your internet connection and try again.",
 			"processesHistoryNoEntriesFoundPart1": "No history entries found",
 			"processesHistoryNoEntriesFoundPart2": "There is no history to display. Start a new process to see it here.",
 			"processesFilterDropdownLabel": "Filter processes",
 			"processesSubtitle": "Browse and run processes published by your organization.",
-			"processesFetchFailed": "Processes could not be fetched",
+			"processesFetchFailed": "Couldn't fetch processes",
 			"processesStartFormNotFound": "Process does not exist or has no start form",
 			"processesProcessNoFormOrNotExistError": "Process {{processDisplayName}} does not exist or has no start form",
 			"processesProcessNotFoundError": "We could not find any process with that name",
@@ -192,9 +192,9 @@
 			"processesTileStartProcessButtonLabel": "Start process",
 			"processesStartProcessWithFormStartButtonLabel": "Start process",
 			"processesFetchErrorMissingTenant": "You must first select a tenant to start a process.",
-			"processesStartProcessWithModalSubmissionFailed": "Form could not be submitted. Please try again later.",
-			"processesStartProcessWithModalFormLoadFailed": "We were not able to load the form. Please try again or contact your Tasklist administrator.",
-			"processesStartProcessWithModalFormRenderingFailed": "We were not able to render the form. Please contact your process administrator to fix the form schema.",
+			"processesStartProcessWithModalSubmissionFailed": "Couldn't submit the form. Try again later.",
+			"processesStartProcessWithModalFormLoadFailed": "We couldn't load the form. Try again or contact your Tasklist administrator.",
+			"processesStartProcessWithModalFormRenderingFailed": "We couldn't render the form. Contact your process administrator to fix the form schema.",
 			"processesStartProcessPendingStatusText": "Starting process...",
 			"processesStartProcessWaitForTasksText": "Waiting for tasks...",
 			"processesStartProcessSuccess": "Process started",
@@ -203,7 +203,7 @@
 			"processesNewTaskNotification": "Process \"{{processName}}\" reached task \"{{taskName}}\"",
 			"processesNewTaskNotificationAction": "Open task",
 			"processesProcessTileAttributes": "Process Attributes",
-			"processesStartProcessFailedMissingTenant": "Process start failed. Please select a tenant.",
+			"processesStartProcessFailedMissingTenant": "Process start failed. Select a tenant.",
 			"processesProcessTileAttributeRequiresForm": "Requires form input",
 			"processesFormFilterRequiresForm": "Requires form input to start",
 			"processesFormFilterRequiresNoForm": "Does not require form input to start",
@@ -214,16 +214,16 @@
 			"startProcessFromFormCloseWindowInstruction": "You can close this window now.",
 			"startProcessFromFormErrorRobot": "Error robot",
 			"startProcessFromFormPageNotFoundHeading": "404 - Page not found",
-			"startProcessFromFormPageNotFoundDescription": "We're sorry! The requested URL you're looking for could not be found.",
+			"startProcessFromFormPageNotFoundDescription": "Couldn't find the requested URL.",
 			"startProcessFromFormSubmissionFailedHeading": "Something went wrong",
-			"startProcessFromFormSubmissionFailedDescription": "Please try again later and reload the page.",
+			"startProcessFromFormSubmissionFailedDescription": "Try again later and reload the page.",
 			"startProcessFromFormReloadButton": "Reload",
 			"startProcessFromFormInvalidFormHeading": "Invalid form",
-			"startProcessFromFormInvalidFormDescription": "Something went wrong and the form could not be displayed. Please contact your provider.",
+			"startProcessFromFormInvalidFormDescription": "Couldn't display the form. Contact your provider.",
 			"startProcessFromFormWithFileComponentsHeading": "Form contains file components",
-			"startProcessFromFormWithFileComponentsDescription": "This form contains file components which are not supported in the public start form. Please contact your process administrator.",
+			"startProcessFromFormWithFileComponentsDescription": "This form contains file components which are not supported in the public start form. Contact your process administrator.",
 			"startProcessFromFormV2ApiNotSupportedHeading": "Public forms not supported",
-			"startProcessFromFormV2ApiNotSupportedDescription": "Public forms are not supported for this version. Please contact your administrator.",
+			"startProcessFromFormV2ApiNotSupportedDescription": "Public forms are not supported for this version. Contact your administrator.",
 			"assigneeTagUnassignedTitle": "Task unassigned",
 			"assigneeTagUnassigned": "Unassigned",
 			"assigneeTagAssignedToMeAria": "Task assigned to me",
@@ -383,8 +383,8 @@
 			"taskDetailsNoDueDateLabel": "No due date",
 			"taskDetailsFollowUpDateLabel": "Follow up date",
 			"taskDetailsBusinessIdLabel": "Business ID",
-			"taskDetailsTaskUnassignmentError": "Task could not be unassigned",
-			"taskDetailsTaskAssignmentError": "Task could not be assigned",
+			"taskDetailsTaskUnassignmentError": "Couldn't unassign the task",
+			"taskDetailsTaskAssignmentError": "Couldn't assign the task",
 			"taskDetailsTaskCompletionRejectionErrorSubtitle": "The task completion was rejected by the system",
 			"taskDetailsAssignmentDelayInfoTitle": "Task assignment delayed",
 			"taskDetailsUnassignmentDelayInfoTitle": "Task unassignment delayed",
@@ -406,8 +406,8 @@
 			"taskDetailsShowHistoryLabel": "Show task history",
 			"taskDetailsNavLabel": "Task Details Navigation",
 			"taskDetailsProcessForbiddenTitle": "You don't have permission to view the process",
-			"taskDetailsProcessLoadErrorTitle": "Process could not be loaded",
-			"taskDetailsProcessLoadErrorDesc": "The BPMN process diagram could not be loaded. Please try again later.",
+			"taskDetailsProcessLoadErrorTitle": "Couldn't load the process",
+			"taskDetailsProcessLoadErrorDesc": "Couldn't load the BPMN process diagram. Try again later.",
 			"taskDetailsProcessRetryButtonLabel": "Try again",
 			"turnOnNotificationTitle": "Don't miss new assignments",
 			"turnOnNotificationSubtitle": "Turn on notifications in your browser to get notified when new tasks are assigned to you.",
@@ -417,7 +417,7 @@
 			"taskNotCompletedAssignedToOther": "Task assigned to another user",
 			"taskNotCompletedNotReachable": "Service is not reachable",
 			"taskCompletedNotification": "Task completed",
-			"taskCouldNotBeCompletedNotification": "Task could not be completed",
+			"taskCouldNotBeCompletedNotification": "Couldn't complete the task",
 			"taskCompletionDelayedInfoTitle": "Task completion delayed",
 			"taskCompletionDelayedInfoSubtitle": "The task completion is taking longer than expected to process. It will complete shortly",
 			"processViewProcessVersion": "Version: {{version}}",
@@ -444,7 +444,7 @@
 			"variableEditorVariableValueLabel_ordinal_other": "{{count}}th variable value",
 			"variableEditorOpenJsonLabel": "Open JSON code editor",
 			"variableEditorNamePlaceholder": "Name",
-			"variablesFullValueFetchError": "The full variable value could not be loaded",
+			"variablesFullValueFetchError": "Couldn't load the full variable value",
 			"processesLoadMore": "Load more",
 			"processesLoadingMore": "Loading...",
 			"deniedReason": "The task {{type}} was rejected by the system."
@@ -470,7 +470,7 @@
 				"instancesInVersion_one": "1 Instance in Version {{version}}",
 				"instancesInVersion_other": "{{count}} Instances in Version {{version}}",
 				"version": "Version {{version}}",
-				"fetchErrorHeading": "Data could not be fetched",
+				"fetchErrorHeading": "Couldn't fetch data",
 				"fetchErrorDescription": "Refresh the page to try again",
 				"versionDetailsFetchError": "Failed to load version details",
 				"incidentDetailsFetchError": "Failed to load incident details",
@@ -500,18 +500,18 @@
 					"ignoreNonIncident": "Instances without an incident in your selection will be ignored.",
 					"ignoreNonActive": "Instances that aren't active in your selection will be ignored.",
 					"ignoreNonSuspended": "Instances that aren't suspended in your selection will be ignored.",
-					"noFinished": "No finished process instances selected. Please select at least one completed or canceled process instance to delete.",
-					"noRunning": "No running process instances selected. Please select at least one active or incident process instance to cancel.",
-					"noRunningToSuspend": "No running process instances selected. Please select at least one active or incident process instance to suspend.",
-					"noIncidents": "No process instances with an incident selected. Please select at least one process instance with an incident to retry.",
-					"noSuspended": "No suspended process instances selected. Please select at least one suspended process instance to resume.",
+					"noFinished": "No finished process instances selected. Select at least one completed or canceled process instance to delete.",
+					"noRunning": "No running process instances selected. Select at least one active or incident process instance to cancel.",
+					"noRunningToSuspend": "No running process instances selected. Select at least one active or incident process instance to suspend.",
+					"noIncidents": "No process instances with an incident selected. Select at least one process instance with an incident to retry.",
+					"noSuspended": "No suspended process instances selected. Select at least one suspended process instance to resume.",
 					"actionMode": "Not available in batch modification mode",
 					"started": "The batch operation \"{{operationType}}\" has been started",
 					"progressSubtitle": "You can track its progress in the Batch Operation page",
 					"details": "Go to operation details",
-					"failed": "Operation could not be created",
+					"failed": "Couldn't create operation",
 					"forbidden": "You don't have permission to perform this operation",
-					"contactAdministrator": "Please contact the administrator if you need access.",
+					"contactAdministrator": "Contact the administrator if you need access.",
 					"progressUnavailable": "Batch operation progress is temporarily unavailable"
 				},
 				"title": "Processes",
@@ -567,7 +567,7 @@
 						"suspendFailed": "Failed to suspend process instance",
 						"resumeFailed": "Failed to resume process instance",
 						"forbiddenTitle": "You don't have permission to perform this operation",
-						"forbiddenSubtitle": "Please contact the administrator if you need access."
+						"forbiddenSubtitle": "Contact the administrator if you need access."
 					},
 					"parentProcessInstanceKey": "Parent Process Instance Key",
 					"viewInstance": "View instance {{key}}",
@@ -602,7 +602,7 @@
 					"selectSingleTenant": "To see a Decision Table or a Literal Expression, select a single Tenant",
 					"noDecisionSelected": "There is no Decision selected",
 					"selectDecisionInFilters": "To see a Decision Table or a Literal Expression, select a Decision in the Filters panel",
-					"decisionNotFoundTitle": "Decision could not be found"
+					"decisionNotFoundTitle": "Couldn't find the decision"
 				},
 				"filters": {
 					"tenant": "Tenant",
@@ -672,7 +672,7 @@
 			"decisionInstance": {
 				"title": "Operate Decision Instance",
 				"pageTitle": "Operate: Decision Instance {{decisionInstanceId}} of {{name}}",
-				"notFoundNotificationTitle": "Decision instance {{decisionInstanceId}} could not be found",
+				"notFoundNotificationTitle": "Couldn't find decision instance {{decisionInstanceId}}",
 				"header": {
 					"decisionInstanceKeyColumn": "Decision Instance Key",
 					"versionColumn": "Version",
@@ -769,7 +769,7 @@
 					"openDetails": "Open details"
 				},
 				"notifications": {
-					"fetchFailed": "Audit logs could not be fetched"
+					"fetchFailed": "Couldn't fetch audit logs"
 				}
 			},
 			"batchOperations": {
@@ -778,7 +778,7 @@
 			"batchOperation": {
 				"title": "Batch Operations",
 				"pageTitle": "Operate: Batch Operation {{name}}",
-				"notFoundNotificationTitle": "Batch operation {{batchOperationKey}} could not be found",
+				"notFoundNotificationTitle": "Couldn't find batch operation {{batchOperationKey}}",
 				"loadErrorTitle": "Failed to load batch operation details",
 				"backButton": "Back to batch operations",
 				"forbidden": {
@@ -818,14 +818,14 @@
 					"cancelFailed": "Operation cannot be canceled",
 					"notFoundSubtitle": "Batch operation not found. It may have already completed or failed.",
 					"forbiddenTitle": "You don't have permission to perform this operation",
-					"forbiddenSubtitle": "Please contact the administrator if you need access.",
-					"convergenceUnknownTitle": "Batch operation status could not be confirmed",
+					"forbiddenSubtitle": "Contact the administrator if you need access.",
+					"convergenceUnknownTitle": "Couldn't confirm batch operation status",
 					"convergenceUnknownSubtitle": "The action was sent. Refresh the page to see its current state."
 				}
 			},
 			"shared": {
 				"errorMessage": {
-					"message": "Data could not be fetched",
+					"message": "Couldn't fetch data",
 					"additionalInfo": "Refresh the page to try again"
 				},
 				"operations": {
@@ -837,9 +837,9 @@
 					"suspendTitle": "Suspend Instance {{processInstanceKey}}",
 					"resumeTitle": "Resume Instance {{processInstanceKey}}",
 					"deleteButtonLabel": "Delete",
-					"creationErrorTitle": "Operation could not be created",
+					"creationErrorTitle": "Couldn't create operation",
 					"forbiddenTitle": "You don't have permission to perform this operation",
-					"forbiddenSubtitle": "Please contact the administrator if you need access.",
+					"forbiddenSubtitle": "Contact the administrator if you need access.",
 					"cancelConfirmationModal": {
 						"heading": "Apply Operation",
 						"applyButton": "Apply",
@@ -847,7 +847,7 @@
 						"body": "About to cancel Instance {{processInstanceKey}}. In case there are called instances, these will be canceled too.",
 						"hint": "Click \"Apply\" to proceed.",
 						"verificationLoading": "Checking whether this instance can be canceled...",
-						"verificationError": "Cancellation availability could not be checked. Close this dialog and try again."
+						"verificationError": "Couldn't check cancellation availability. Close this dialog and try again."
 					},
 					"cancelRootInstanceModal": {
 						"heading": "Cancel Instance",
@@ -870,7 +870,7 @@
 				},
 				"diagramShell": {
 					"forbiddenMessage": "Missing permissions to view the Definition",
-					"forbiddenAdditionalInfo": "Please contact your organization owner or admin to give you the necessary permissions to read this definition"
+					"forbiddenAdditionalInfo": "Contact your organization owner or admin to give you the necessary permissions to read this definition"
 				},
 				"collapsablePanel": {
 					"expand": "Expand {{label}}",
@@ -923,7 +923,7 @@
 				"deleteDefinitionModal": {
 					"deleteButton": "Delete",
 					"cancelButton": "Cancel",
-					"confirmationError": "Please tick this box if you want to proceed."
+					"confirmationError": "Tick this box if you want to proceed."
 				}
 			}
 		}

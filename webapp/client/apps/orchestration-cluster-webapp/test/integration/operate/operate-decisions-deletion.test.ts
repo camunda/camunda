@@ -107,7 +107,7 @@ test('should delete the selected DRD, refresh decisions and preserve tenant and 
 	await expect(page).toHaveURL(
 		(url) => url.searchParams.get('businessId') === 'previous' && !url.searchParams.has('decisionDefinitionId'),
 	);
-	await expect(page.getByText('Decision could not be found', {exact: true})).not.toBeVisible();
+	await expect(page.getByText("Couldn't find the decision", {exact: true})).not.toBeVisible();
 });
 
 test('should recover from forbidden deletion without losing the selected version', async ({

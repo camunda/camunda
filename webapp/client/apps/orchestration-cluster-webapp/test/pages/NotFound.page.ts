@@ -23,7 +23,7 @@ class NotFoundPage extends View {
 	}
 
 	get description() {
-		return this.page.getByText(/the requested URL.*could not be found/i);
+		return this.page.getByText("Couldn't find the requested URL.");
 	}
 
 	get goToHomeButton() {

@@ -158,7 +158,7 @@ describe('<AssignButton />', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Assign to me'}));
 
-		await expect.element(screen.getByText('Task could not be assigned')).toBeVisible();
+		await expect.element(screen.getByText("Couldn't assign the task")).toBeVisible();
 		await expect.element(screen.getByText(PERMISSION_ERROR)).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Assign to me'})).toBeVisible();
 	});
@@ -190,7 +190,7 @@ describe('<AssignButton />', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Unassign'}));
 
-		await expect.element(screen.getByText('Task could not be unassigned')).toBeVisible();
+		await expect.element(screen.getByText("Couldn't unassign the task")).toBeVisible();
 		await expect.element(screen.getByText(PERMISSION_ERROR)).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Unassign'})).toBeVisible();
 	});
@@ -216,7 +216,7 @@ describe('<AssignButton />', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Assign to me'}));
 
-		await expect.element(screen.getByText('Task could not be assigned')).toBeVisible();
+		await expect.element(screen.getByText("Couldn't assign the task")).toBeVisible();
 		await expect.element(screen.getByText('User not in candidate list')).toBeVisible();
 	});
 

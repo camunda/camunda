@@ -36,10 +36,8 @@ describe('<TaskDetailsProcessError />', () => {
 			<TaskDetailsProcessRouteError error={failedResponseError(500)} info={{componentStack: ''}} reset={reset} />,
 		);
 
-		await expect.element(screen.getByText('Process could not be loaded')).toBeVisible();
-		await expect
-			.element(screen.getByText('The BPMN process diagram could not be loaded. Please try again later.'))
-			.toBeVisible();
+		await expect.element(screen.getByText("Couldn't load the process")).toBeVisible();
+		await expect.element(screen.getByText("Couldn't load the BPMN process diagram. Try again later.")).toBeVisible();
 
 		await userEvent.click(screen.getByRole('button', {name: 'Try again'}));
 

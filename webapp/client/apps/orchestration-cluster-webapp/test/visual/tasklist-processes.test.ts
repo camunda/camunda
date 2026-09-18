@@ -121,7 +121,9 @@ test('should match the start-process form error snapshots', async ({network, tas
 		}),
 	);
 	await page.reload();
-	await expect(tasklistProcessesPage.startProcessFormError).toContainText('We were not able to render the form.');
+	await expect(tasklistProcessesPage.startProcessFormError).toContainText(
+		"We couldn't render the form. Contact your process administrator to fix the form schema.",
+	);
 	await expect(page).toHaveScreenshot('start-process-form-render-error.png');
 });
 
