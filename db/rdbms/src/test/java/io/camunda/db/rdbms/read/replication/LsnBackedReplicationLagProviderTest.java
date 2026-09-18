@@ -18,23 +18,25 @@ class LsnBackedReplicationLagProviderTest {
 
   @Test
   void shouldMapLsnStatusesToLagStatusesDroppingLogStatus() {
-    // given
+    // given - includes the primary's own synthetic entry
     final var lsnProvider = mock(ReplicationLsnProvider.class);
     when(lsnProvider.getReplicationStatuses())
         .thenReturn(
             List.of(
                 new ReplicationLsnStatus(10L, "replica-1", 1_000L, 5_000L),
-                new ReplicationLsnStatus(20L, "replica-2", 2_000L, 6_000L)));
+                new ReplicationLsnStatus(20L, "replica-2", 2_000L, 6_000L),
+                new ReplicationLsnStatus(30L, "primary", 0L, 7_000L, "us-east-primary", true)));
     final var lagProvider = new LsnBackedReplicationLagProvider(lsnProvider);
 
     // when
     final var statuses = lagProvider.getReplicationStatuses();
 
-    // then - logStatus is dropped, but replicationLagMs and the as-of point carry through
+    // then - logStatus is dropped; isPrimary carries through
     assertThat(statuses)
         .containsExactly(
             new ReplicationLagStatus("replica-1", 1_000L, 5_000L),
-            new ReplicationLagStatus("replica-2", 2_000L, 6_000L));
+            new ReplicationLagStatus("replica-2", 2_000L, 6_000L),
+            new ReplicationLagStatus("primary", 0L, 7_000L, "us-east-primary", true));
   }
 
   @Test

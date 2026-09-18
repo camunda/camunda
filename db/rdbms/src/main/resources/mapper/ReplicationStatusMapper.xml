@@ -17,6 +17,8 @@
       <arg column="replicaId" javaType="java.lang.String" name="replicaId"/>
       <arg column="replicationLagMs" javaType="java.lang.Long" name="replicationLagMs"/>
       <arg column="replicatedUntilMs" javaType="java.lang.Long" name="replicatedUntilMs"/>
+      <arg column="replicaLabel" javaType="java.lang.String" name="replicaLabel"/>
+      <arg column="isPrimary" javaType="_boolean" name="isPrimary"/>
     </constructor>
   </resultMap>
 
@@ -31,16 +33,31 @@
 
   <!-- Neither replicationLagMs nor replicatedUntilMs is coalesced when replay_lag is NULL, so an
        unmeasured replica (e.g. missing the pg_monitor grant - see hasRequiredPrivileges below) is
-       never mistaken for one that is perfectly caught up. -->
+       never mistaken for one that is perfectly caught up. application_name is the replica's own
+       self-declared label (set via its connection string). UNION ALL appends a synthetic row for
+       the primary itself (isPrimary), carrying its own current LSN and live cluster_name label, so
+       a single query returns everything RegionAwareQuorum needs - replicaId has no natural
+       connection-scoped analog for the primary, hence the literal placeholder. -->
   <select id="getReplicationStatus" resultMap="replicationLsnStatusResultMap"
     databaseId="postgresql">
     SELECT COALESCE(pg_wal_lsn_diff(replay_lsn, '0/0'), 0)::bigint AS logStatus,
            pid::text                                               AS replicaId,
            (EXTRACT(EPOCH FROM replay_lag) * 1000)::bigint         AS replicationLagMs,
            (EXTRACT(EPOCH FROM (clock_timestamp() - replay_lag)) * 1000)::bigint
-                                                                    AS replicatedUntilMs
+                                                                    AS replicatedUntilMs,
+           application_name                                        AS replicaLabel,
+           false                                                   AS isPrimary
     FROM pg_stat_replication
-    WHERE pid IS NOT NULL;
+    WHERE pid IS NOT NULL
+
+    UNION ALL
+
+    SELECT pg_wal_lsn_diff(pg_current_wal_lsn(), '0/0')::bigint    AS logStatus,
+           'primary'                                                AS replicaId,
+           0::bigint                                                AS replicationLagMs,
+           (EXTRACT(EPOCH FROM clock_timestamp()) * 1000)::bigint  AS replicatedUntilMs,
+           current_setting('cluster_name')                         AS replicaLabel,
+           true                                                    AS isPrimary
   </select>
 
   <!--
@@ -76,20 +93,41 @@
     GUID identifying the same AG-member database across replicas, unlike database_id which is a
     replica-local id). pri.database_id = DB_ID() scopes the primary side to the exporter's own
     database - see getCurrentLogStatus above for why that's necessary; the secondary side is then
-    already correctly scoped transitively via the group_database_id join.
+    already correctly scoped transitively via the group_database_id join. UNION ALL appends a
+    synthetic row for the primary itself (isPrimary) - unlike Postgres, the primary is just another
+    row (is_local = 1) in the same view/join, with its own real replica_id, so no placeholder is
+    needed; logStatus/replicatedUntilMs reuse the same expressions as getCurrentLogStatus/
+    getCurrentDbTime above.
       -->
   <select id="getReplicationStatus" resultMap="replicationLsnStatusResultMap" databaseId="mssql">
     SELECT CONVERT(bigint, ISNULL(secondary.last_commit_lsn, 0)) AS logStatus,
            CONVERT(nvarchar(36), secondary.replica_id)          AS replicaId,
            DATEDIFF_BIG(millisecond, secondary.last_commit_time, pri.last_commit_time) AS replicationLagMs,
-           DATEDIFF_BIG(millisecond, '19700101', secondary.last_commit_time) AS replicatedUntilMs
+           DATEDIFF_BIG(millisecond, '19700101', secondary.last_commit_time) AS replicatedUntilMs,
+           ar.replica_server_name                                AS replicaLabel,
+           CONVERT(bit, 0)                                       AS isPrimary
     FROM sys.dm_hadr_database_replica_states secondary
            JOIN sys.dm_hadr_database_replica_states pri
                 ON secondary.group_database_id = pri.group_database_id
                   AND pri.is_local = 1
                   AND pri.database_id = DB_ID()
+           JOIN sys.availability_replicas ar
+                ON ar.replica_id = secondary.replica_id
     WHERE secondary.is_local = 0
       AND secondary.last_commit_time IS NOT NULL
+
+    UNION ALL
+
+    SELECT CONVERT(bigint, ISNULL(pri.last_commit_lsn, 0))       AS logStatus,
+           CONVERT(nvarchar(36), pri.replica_id)                 AS replicaId,
+           CONVERT(bigint, 0)                                    AS replicationLagMs,
+           DATEDIFF_BIG(millisecond, '19700101', pri.last_commit_time) AS replicatedUntilMs,
+           ar.replica_server_name                                AS replicaLabel,
+           CONVERT(bit, 1)                                       AS isPrimary
+    FROM sys.dm_hadr_database_replica_states pri
+           JOIN sys.availability_replicas ar
+                ON ar.replica_id = pri.replica_id
+    WHERE pri.is_local = 1 AND pri.database_id = DB_ID()
   </select>
 
   <!--
@@ -193,10 +231,11 @@
   </select>
 
   <!--
-    Returns per-replica replication status for Aurora Global Database (PostgreSQL). Each non-primary
-    instance reports its durable_lsn together with visibility_lag_in_msec; neither replicationLagMs
-    nor replicatedUntilMs (the database's own current time minus that lag) is coalesced when the lag
-    itself is NULL, so an unmeasured replica is never mistaken for one that is perfectly caught up.
+    Returns every instance's row for Aurora Global Database (PostgreSQL) - no WHERE filter, so
+    primary and secondaries both come back in one query, the primary flagged via isPrimary. Each
+    instance reports its durable_lsn together with visibility_lag_in_msec; neither
+    replicationLagMs nor replicatedUntilMs is coalesced when the lag itself is NULL. server_id is
+    also exposed as replicaLabel.
   -->
   <select id="getAuroraReplicationStatus" resultMap="replicationLsnStatusResultMap"
     databaseId="postgresql">
@@ -204,16 +243,18 @@
            server_id                AS replicaId,
            visibility_lag_in_msec   AS replicationLagMs,
            (EXTRACT(EPOCH FROM clock_timestamp()) * 1000 - visibility_lag_in_msec)::bigint
-                                     AS replicatedUntilMs
+                                     AS replicatedUntilMs,
+           server_id                AS replicaLabel,
+           (session_id = 'MASTER_SESSION_ID') AS isPrimary
     FROM aurora_global_db_instance_status()
-    WHERE session_id != 'MASTER_SESSION_ID'
   </select>
 
   <!--
-    Returns per-replica replication status for Aurora Global Database (MySQL). Reads from
+    Returns every instance's row for Aurora Global Database (MySQL) - see the PostgreSQL variant
+    above for why no WHERE filter is needed. Reads from
     information_schema.aurora_global_db_instance_status (table, not function on MySQL);
-    replicationLagMs/replicatedUntilMs mirror the PostgreSQL variant above, including leaving
-    both un-coalesced when the lag itself is NULL.
+    replicationLagMs/replicatedUntilMs mirror the PostgreSQL variant, including leaving both
+    un-coalesced when the lag itself is NULL. SERVER_ID is also exposed as replicaLabel.
   -->
   <select id="getAuroraReplicationStatus" resultMap="replicationLsnStatusResultMap"
     databaseId="mysql">
@@ -221,9 +262,10 @@
            SERVER_ID                AS replicaId,
            VISIBILITY_LAG_IN_MSEC   AS replicationLagMs,
            CAST(UNIX_TIMESTAMP(NOW(3)) * 1000 AS SIGNED) - VISIBILITY_LAG_IN_MSEC
-                                     AS replicatedUntilMs
+                                     AS replicatedUntilMs,
+           SERVER_ID                AS replicaLabel,
+           (SESSION_ID = 'MASTER_SESSION_ID') AS isPrimary
     FROM information_schema.aurora_global_db_instance_status
-    WHERE SESSION_ID != 'MASTER_SESSION_ID'
   </select>
 
 </mapper>
