@@ -17,10 +17,15 @@
     "lint": "tsc && eslint .",
     "lint:fix": "eslint . --fix"
   },
+  "overrides": {
+    "@camunda/oc-saas-notifications": {
+      "@camunda/design-system": "$@camunda/design-system"
+    }
+  },
   "dependencies": {
     "@camunda/camunda-api-zod-schemas": "0.0.93",
     "@camunda/camunda-composite-components": "0.25.4",
-    "@camunda/design-system": "0.57.0",
+    "@camunda/design-system": "0.59.0",
     "@camunda/oc-saas-notifications": "0.0.1",
     "@camunda/session-heartbeat": "0.0.1",
     "@carbon/elements": "11.97.0",
