@@ -22,7 +22,6 @@ import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import io.camunda.webapps.schema.descriptors.template.PersistentWebSessionTemplate;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.time.Duration;
@@ -214,23 +213,23 @@ class SchemaUpdateIT {
       final List<IndexTemplateDescriptor> indexTemplateDescriptors) {
     final int archivePeriodInDays = 20;
     final LocalDate today = LocalDate.now();
-    indexTemplateDescriptors.stream()
-        .filter(descriptor -> !(descriptor instanceof PersistentWebSessionTemplate))
-        .forEach(
-            indexTemplate -> {
-              IntStream.range(0, archivePeriodInDays)
-                  .mapToObj(i -> today.minusDays(i).format(DateTimeFormatter.ISO_DATE))
-                  .map(date -> indexTemplate.getIndexPattern().replace("*", date))
-                  .forEach(
-                      indexName -> {
-                        try {
-                          searchClientAdapter.createIndex(
-                              indexName, config.index().getNumberOfReplicas());
-                        } catch (final IOException e) {
-                          throw new RuntimeException(e);
-                        }
-                      });
-            });
-    return archivePeriodInDays * (indexTemplateDescriptors.size() - 1);
+    final var templatesWithDatedIndices =
+        indexTemplateDescriptors.stream().filter(descriptor -> !descriptor.allowMissing()).toList();
+    templatesWithDatedIndices.forEach(
+        indexTemplate -> {
+          IntStream.range(0, archivePeriodInDays)
+              .mapToObj(i -> today.minusDays(i).format(DateTimeFormatter.ISO_DATE))
+              .map(date -> indexTemplate.getIndexPattern().replace("*", date))
+              .forEach(
+                  indexName -> {
+                    try {
+                      searchClientAdapter.createIndex(
+                          indexName, config.index().getNumberOfReplicas());
+                    } catch (final IOException e) {
+                      throw new RuntimeException(e);
+                    }
+                  });
+        });
+    return archivePeriodInDays * templatesWithDatedIndices.size();
   }
 }

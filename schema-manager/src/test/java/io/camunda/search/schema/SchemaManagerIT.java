@@ -47,6 +47,7 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
+import io.camunda.webapps.schema.descriptors.template.PersistentWebSessionTemplate;
 import io.camunda.zeebe.test.util.junit.RegressionTestTemplate;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
@@ -1536,6 +1537,39 @@ public class SchemaManagerIT {
         .isThrownBy(
             () ->
                 searchClientAdapter.getIndexTemplateAsNode(secondIndexTemplate.getTemplateName()));
+  }
+
+  @TestTemplate
+  void shouldNotFailStartupWhenOptionalTemplateIndexIsMissing(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws Exception {
+    // given
+    final var webSessionTemplate =
+        new PersistentWebSessionTemplate(
+            config.connect().getIndexPrefix(), config.connect().getTypeEnum().isElasticSearch());
+    final var searchEngineClient = getSearchEngineClient(config);
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClient,
+            Set.of(metadataIndex),
+            Set.of(webSessionTemplate),
+            config,
+            objectMapper);
+    startupWithRetry(schemaManager, config);
+    searchEngineClient.deleteIndex(webSessionTemplate.getFullQualifiedName());
+    searchClientAdapter.refresh();
+
+    // when
+    final var restartedSchemaManager =
+        new SchemaManager(
+            searchEngineClient,
+            Set.of(metadataIndex),
+            Set.of(webSessionTemplate),
+            config,
+            objectMapper);
+
+    // then
+    assertThatNoException().isThrownBy(() -> startupWithRetry(restartedSchemaManager, config));
   }
 
   @TestTemplate
