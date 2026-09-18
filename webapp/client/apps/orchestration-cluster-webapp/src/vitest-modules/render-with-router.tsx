@@ -7,6 +7,7 @@
  */
 
 import {render} from 'vitest-browser-react';
+import {TooltipProvider} from '@camunda/design-system';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {
 	Outlet,
@@ -60,9 +61,11 @@ async function renderWithRouter(
 	await router.load();
 
 	const screen = await render(
-		<QueryClientProvider client={queryClient}>
-			<RouterProvider router={router} />
-		</QueryClientProvider>,
+		<TooltipProvider>
+			<QueryClientProvider client={queryClient}>
+				<RouterProvider router={router} />
+			</QueryClientProvider>
+		</TooltipProvider>,
 	);
 
 	return {...screen, router, queryClient};
