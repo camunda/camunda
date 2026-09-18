@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior.MessageData;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -80,6 +81,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
       final BannedInstanceState bannedInstanceState,
       final boolean businessIdUniquenessEnabled,
       final VariableBehavior variableBehavior,
+      final StorageOrdinalProvider storageOrdinalProvider,
       final MessageCorrelationMetrics metrics) {
     this.partitionId = partitionId;
     this.messageState = messageState;
@@ -98,7 +100,8 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
             writers,
             processState,
             eventTriggerBehavior,
-            stateBehavior);
+            stateBehavior,
+            storageOrdinalProvider);
     correlateBehavior =
         new MessageCorrelateBehavior(
             startEventSubscriptionState,
