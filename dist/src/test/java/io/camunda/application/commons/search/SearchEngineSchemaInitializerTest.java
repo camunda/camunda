@@ -334,6 +334,42 @@ class SearchEngineSchemaInitializerTest {
     assertThat(overlapped).isFalse();
   }
 
+  @Test
+  void shouldNotReportAStorageValidationAsReadyBeforeRestoreCompletes() {
+    // given - a search schema validation that succeeds, while the local partition data still needs
+    // to be restored
+    initializer =
+        new SearchEngineSchemaInitializer(
+            configsFor(tenants(camunda -> {}, Map.of())),
+            descriptorsFor(tenants(camunda -> {}, Map.of())),
+            new SimpleMeterRegistry(),
+            false,
+            tenantId -> false) {
+          @Override
+          void initializeTenantExclusively(final String physicalTenantId) {
+            // The search engine is not involved in this readiness assertion.
+          }
+        };
+
+    // when
+    initializer.initializeNowForRestore(DEFAULT_TENANT);
+
+    // then
+    assertThat(initializer.isInitialized(DEFAULT_TENANT)).isFalse();
+  }
+
+  @Test
+  void shouldRejectAnOnDemandInitializationAfterShutdown() {
+    // given
+    initializer = backgroundInitializerFor(tenants(camunda -> {}, Map.of()));
+    initializer.destroy();
+
+    // when / then
+    assertThatThrownBy(() -> initializer.initializeNow(DEFAULT_TENANT))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("shutting down");
+  }
+
   /**
    * An initializer whose attempt blocks until released, standing in for one waiting on its search
    * engine. Overriding the attempt rather than the locking keeps the real per-tenant serialization

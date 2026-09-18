@@ -241,12 +241,29 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
       throw new IllegalArgumentException(
           "Cannot initialize the schema of unknown physical tenant '" + physicalTenantId + "'");
     }
+    ensureNotShuttingDown();
     attempt.accept(physicalTenantId);
     markReady(state);
     LOG.info(
         "Schema for physical tenant '{}' is initialized, on request rather than by its own"
             + " initialization task.",
         physicalTenantId);
+  }
+
+  /**
+   * Applies a tenant's schema for a restore without reporting the tenant ready yet. The restore
+   * still has to delete and repopulate its local partition data, so request-time readiness must
+   * remain false until the normal initialization loop observes the tenant after recovery.
+   */
+  public void initializeNowForRestore(final String physicalTenantId) {
+    final TenantState state = tenants.get(physicalTenantId);
+    if (state == null) {
+      throw new IllegalArgumentException(
+          "Cannot initialize the schema of unknown physical tenant '" + physicalTenantId + "'");
+    }
+    ensureNotShuttingDown();
+    markNotReady(state);
+    attempt.accept(physicalTenantId);
   }
 
   /** Whether the physical tenant's schema has been applied. An unknown tenant is never ready. */
@@ -267,6 +284,12 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
     // storage read may not observe the interrupt before its client's socket timeout, and shutdown
     // must not wait that long.
     signalGateChanged();
+  }
+
+  private void ensureNotShuttingDown() {
+    if (shutdown.get()) {
+      throw new IllegalStateException("Schema initialization is shutting down");
+    }
   }
 
   /** Must be called with {@link #gateLock} held. */
@@ -483,6 +506,15 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
       state.ready.set(true);
       state.settled = true;
       gateChanged.signalAll();
+    } finally {
+      gateLock.unlock();
+    }
+  }
+
+  private void markNotReady(final TenantState state) {
+    gateLock.lock();
+    try {
+      state.ready.set(false);
     } finally {
       gateLock.unlock();
     }

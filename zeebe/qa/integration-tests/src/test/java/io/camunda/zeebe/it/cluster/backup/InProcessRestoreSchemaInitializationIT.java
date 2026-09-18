@@ -15,6 +15,7 @@ import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupRuntimeResponse;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
+import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -136,8 +137,7 @@ final class InProcessRestoreSchemaInitializationIT {
   }
 
   private static void awaitChangeCompleted(final TestCluster cluster, final long changeId) {
-    final var actuator =
-        io.camunda.zeebe.qa.util.actuator.ClusterActuator.of(cluster.availableGateway());
+    final var actuator = ClusterActuator.of(cluster.anyGateway());
     Awaitility.await("cluster configuration change %d completes".formatted(changeId))
         .atMost(Duration.ofMinutes(2))
         .untilAsserted(

@@ -863,6 +863,33 @@ final class PerTenantSchemaInitializationTest {
   }
 
   @Test
+  void shouldNotMarkTenantInitializedWhenSchemaIsCheckedForRestore() {
+    // given
+    try (final var initialization = initialization(Set.of(TENANT_A), tenantId -> {})) {
+
+      // when
+      initialization.initializeNowForRestore(TENANT_A);
+
+      // then - the local partition data still has to be deleted and restored before requests may
+      // use the tenant again
+      assertThat(initialization.isInitialized(TENANT_A)).isFalse();
+    }
+  }
+
+  @Test
+  void shouldRejectAnOnDemandInitializationAfterShutdown() {
+    // given
+    try (final var initialization = initialization(Set.of(TENANT_A), tenantId -> {})) {
+      initialization.close();
+
+      // when / then - no new storage work may start once shutdown has begun
+      assertThatThrownBy(() -> initialization.initializeNow(TENANT_A))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("shutting down");
+    }
+  }
+
+  @Test
   void shouldInitializeOnRequestEvenWhileTheTenantIsDeferred() {
     // given - a tenant deferred because it is recovering, which is the state a restore asking for
     // its schema is necessarily in
