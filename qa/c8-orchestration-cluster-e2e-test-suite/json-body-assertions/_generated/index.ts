@@ -14,6 +14,16 @@ import {
 import type {PlaywrightAPIResponse} from 'assert-json-body';
 
 export const RESPONSE_INDEX = {
+  '/agent-definitions/{agentDefinitionKey}': {
+    GET: {
+      '200': 1,
+    },
+  },
+  '/agent-definitions/search': {
+    POST: {
+      '200': 1,
+    },
+  },
   '/agent-instances': {
     POST: {
       '200': 1,
@@ -23,15 +33,13 @@ export const RESPONSE_INDEX = {
     GET: {
       '200': 1,
     },
+    PATCH: {
+      '200': 1,
+    },
   },
   '/agent-instances/search': {
     POST: {
       '200': 1,
-    },
-  },
-  '/agent-instances/{agentInstanceKey}/history': {
-    POST: {
-      '201': 1,
     },
   },
   '/agent-instances/{agentInstanceKey}/history/search': {
@@ -93,6 +101,19 @@ export const RESPONSE_INDEX = {
     },
   },
   '/backups/runtime/{backupId}': {
+    GET: {
+      '200': 1,
+    },
+  },
+  '/backups/history': {
+    GET: {
+      '200': 1,
+    },
+    POST: {
+      '202': 1,
+    },
+  },
+  '/backups/history/{backupId}': {
     GET: {
       '200': 1,
     },
@@ -601,12 +622,6 @@ export const RESPONSE_INDEX = {
       '200': 1,
     },
   },
-  '/cluster/v2/status': {
-    GET: {
-      '200': 1,
-      '503': 1,
-    },
-  },
   '/system/usage-metrics': {
     GET: {
       '200': 1,
@@ -676,6 +691,85 @@ export const RESPONSE_INDEX = {
     },
     POST: {
       '202': 1,
+    },
+  },
+  '/cluster/v2/exporting': {
+    GET: {
+      '200': 1,
+    },
+  },
+  '/cluster/v2/backups/runtime': {
+    GET: {
+      '200': 1,
+    },
+    POST: {
+      '202': 1,
+      '400': 1,
+      '409': 1,
+      '500': 1,
+      '502': 1,
+      '503': 1,
+      '504': 1,
+    },
+  },
+  '/cluster/v2/backups/runtime/state': {
+    GET: {
+      '200': 1,
+    },
+  },
+  '/cluster/v2/backups/runtime/state/sync': {
+    POST: {
+      '200': 1,
+    },
+  },
+  '/cluster/v2/backups/runtime/{backupId}': {
+    GET: {
+      '200': 1,
+    },
+  },
+  '/cluster/v2/backups/history': {
+    GET: {
+      '200': 1,
+    },
+    POST: {
+      '202': 1,
+    },
+  },
+  '/cluster/v2/backups/history/{backupId}': {
+    GET: {
+      '200': 1,
+    },
+  },
+  '/cluster/v2/mode': {
+    PATCH: {
+      '200': 1,
+    },
+  },
+  '/cluster/v2/rebalance': {
+    GET: {
+      '200': 1,
+    },
+    POST: {
+      '202': 1,
+    },
+    DELETE: {
+      '200': 1,
+    },
+  },
+  '/cluster/v2/restore': {
+    POST: {
+      '202': 1,
+    },
+  },
+  '/cluster/v2/status': {
+    GET: {
+      '200': 1,
+      '503': 1,
+    },
+  },
+  '/cluster/v2/topology': {
+    GET: {
+      '200': 1,
     },
   },
   '/users': {
