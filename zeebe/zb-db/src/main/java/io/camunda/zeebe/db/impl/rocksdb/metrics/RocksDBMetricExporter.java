@@ -56,7 +56,7 @@ public final class RocksDBMetricExporter {
 
     for (final var metric : RocksDbMetricsDoc.values()) {
       final var gauge = metrics.computeIfAbsent(metric, this::registerMetric);
-      exportMetric(database, metric.propertyName(), gauge);
+      exportMetric(database, metric, gauge);
     }
 
     exportIoStallMetrics(database);
@@ -71,18 +71,19 @@ public final class RocksDBMetricExporter {
   private StatefulGauge registerMetric(final RocksDbMeterDoc doc) {
     return StatefulGauge.builder(doc.getName())
         .description(doc.getDescription())
+        .baseUnit(doc.getBaseUnit())
         .register(registry);
   }
 
   private void exportMetric(
-      final RocksDB database, final String propertyName, final StatefulGauge gauge) {
+      final RocksDB database, final RocksDbMeterDoc doc, final StatefulGauge gauge) {
     try {
-      final var value = database.getProperty(propertyName);
+      final var value = database.getProperty(doc.propertyName());
       if (value != null) {
-        gauge.set(Double.parseDouble(value));
+        gauge.set(doc.convertToBaseUnit(Double.parseDouble(value)));
       }
     } catch (final Exception exception) {
-      LOG.debug("Error occurred on exporting metric {}", propertyName, exception);
+      LOG.debug("Error occurred on exporting metric {}", doc.propertyName(), exception);
     }
   }
 
@@ -126,7 +127,7 @@ public final class RocksDBMetricExporter {
     for (final var metric : RocksDbTickerMetricsDoc.values()) {
       final var gauge = tickerMetrics.computeIfAbsent(metric, this::registerMetric);
       try {
-        gauge.set(statistics.getTickerCount(metric.ticker()));
+        gauge.set(metric.convertToBaseUnit(statistics.getTickerCount(metric.ticker())));
       } catch (final Exception exception) {
         LOG.debug("Error occurred on exporting ticker {}", metric.propertyName(), exception);
       }
@@ -137,8 +138,8 @@ public final class RocksDBMetricExporter {
       try {
         final var data = statistics.getHistogramData(metric.histogram());
         gauges.count().set(data.getCount());
-        gauges.sum().set(data.getSum());
-        gauges.p99().set(data.getPercentile99());
+        gauges.sum().set(metric.convertToBaseUnit(data.getSum()));
+        gauges.p99().set(metric.convertToBaseUnit(data.getPercentile99()));
       } catch (final Exception exception) {
         LOG.debug("Error occurred on exporting histogram {}", metric.propertyName(), exception);
       }
@@ -156,6 +157,7 @@ public final class RocksDBMetricExporter {
       final RocksDbHistogramMetricsDoc doc, final Statistic statistic) {
     return StatefulGauge.builder(doc.nameFor(statistic))
         .description(doc.descriptionFor(statistic))
+        .baseUnit(statistic == Statistic.COUNT ? null : doc.getBaseUnit())
         .register(registry);
   }
 

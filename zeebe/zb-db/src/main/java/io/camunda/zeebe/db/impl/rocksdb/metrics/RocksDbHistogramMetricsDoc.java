@@ -10,6 +10,7 @@ package io.camunda.zeebe.db.impl.rocksdb.metrics;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
+import io.micrometer.core.instrument.binder.BaseUnits;
 import org.rocksdb.HistogramType;
 
 /**
@@ -25,31 +26,44 @@ import org.rocksdb.HistogramType;
  * RocksDB accumulates its histograms since the database was opened and we never reset them, so
  * {@code .p99} flattens out over the lifetime of a partition and is only meaningful early on or as
  * a coarse ceiling. The useful signal is {@code rate(sum) / rate(count)}, which gives the mean
- * within the query window. All times are microseconds.
+ * within the query window. Durations are exported in milliseconds.
  */
 public enum RocksDbHistogramMetricsDoc implements RocksDbMeterDoc {
   DB_GET(
       HistogramType.DB_GET,
-      "db.get.micros",
-      "Time spent inside RocksDB serving a point get, in microseconds"),
+      "db.get",
+      "Time spent inside RocksDB serving a point get, in milliseconds",
+      BaseUnits.MILLISECONDS,
+      1.0 / 1000.0),
   DB_SEEK(
       HistogramType.DB_SEEK,
-      "db.seek.micros",
-      "Time spent inside RocksDB serving an iterator seek, in microseconds"),
+      "db.seek",
+      "Time spent inside RocksDB serving an iterator seek, in milliseconds",
+      BaseUnits.MILLISECONDS,
+      1.0 / 1000.0),
   DB_WRITE(
       HistogramType.DB_WRITE,
-      "db.write.micros",
-      "Time spent inside RocksDB applying a write batch, in microseconds"),
+      "db.write",
+      "Time spent inside RocksDB applying a write batch, in milliseconds",
+      BaseUnits.MILLISECONDS,
+      1.0 / 1000.0),
   SST_READ_MICROS(
       HistogramType.SST_READ_MICROS,
-      "sst.read.micros",
-      "Time spent in a single SST file read, in microseconds. A rising mean here means reads are going to the filesystem rather than the block cache"),
+      "sst.read",
+      "Time spent in a single SST file read, in milliseconds. A rising mean here means reads are going to the filesystem rather than the block cache",
+      BaseUnits.MILLISECONDS,
+      1.0 / 1000.0),
   READ_BLOCK_GET_MICROS(
       HistogramType.READ_BLOCK_GET_MICROS,
-      "read.block.get.micros",
-      "Time spent fetching a block on behalf of a get, in microseconds"),
+      "read.block.get",
+      "Time spent fetching a block on behalf of a get, in milliseconds",
+      BaseUnits.MILLISECONDS,
+      1.0 / 1000.0),
   BYTES_PER_READ(
-      HistogramType.BYTES_PER_READ, "bytes.per.read", "Distribution of bytes returned per read");
+      HistogramType.BYTES_PER_READ,
+      "bytes.per.read",
+      "Distribution of bytes returned per read",
+      BaseUnits.BYTES);
 
   /** The gauge suffixes each histogram is expanded into. */
   public enum Statistic {
@@ -80,12 +94,28 @@ public enum RocksDbHistogramMetricsDoc implements RocksDbMeterDoc {
   private final HistogramType histogram;
   private final String suffix;
   private final String description;
+  private final String baseUnit;
+  private final double scale;
 
   RocksDbHistogramMetricsDoc(
-      final HistogramType histogram, final String suffix, final String description) {
+      final HistogramType histogram,
+      final String suffix,
+      final String description,
+      final String baseUnit) {
+    this(histogram, suffix, description, baseUnit, 1.0);
+  }
+
+  RocksDbHistogramMetricsDoc(
+      final HistogramType histogram,
+      final String suffix,
+      final String description,
+      final String baseUnit,
+      final double scale) {
     this.histogram = histogram;
     this.suffix = suffix;
     this.description = description;
+    this.baseUnit = baseUnit;
+    this.scale = scale;
   }
 
   public HistogramType histogram() {
@@ -109,6 +139,16 @@ public enum RocksDbHistogramMetricsDoc implements RocksDbMeterDoc {
   @Override
   public String getName() {
     return ZEEBE_NAMESPACE + "." + HISTOGRAM_NAMESPACE + "." + suffix;
+  }
+
+  @Override
+  public String getBaseUnit() {
+    return baseUnit;
+  }
+
+  @Override
+  public double convertToBaseUnit(final double value) {
+    return value * scale;
   }
 
   @Override
