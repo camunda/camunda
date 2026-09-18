@@ -12,6 +12,7 @@ import {
   DataTable,
   type DataTableColumn,
   type DataTableRowAction,
+  FilterBar,
   type PaginationConfig,
   type RowSelectionConfig,
   type SortingConfig,
@@ -276,23 +277,27 @@ const EntityList = <D extends EntityData>({
     );
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       {(searchKey || addEntityLabel) && (
-        <div className="flex items-center gap-3 justify-end">
-          {searchKey && (
-            <SearchBar
-              searchKey={searchKey}
-              searchPlaceholder={searchPlaceholder}
-              onSearch={setSearch}
-            />
-          )}
-          {addEntityLabel && (
-            <Button onClick={onAddEntity} disabled={addEntityDisabled}>
-              <Plus data-icon="inline-start" aria-hidden="true" />
-              {addEntityLabel}
-            </Button>
-          )}
-        </div>
+        <FilterBar
+          search={
+            searchKey && (
+              <SearchBar
+                searchKey={searchKey}
+                searchPlaceholder={searchPlaceholder}
+                onSearch={setSearch}
+              />
+            )
+          }
+          actions={
+            addEntityLabel && (
+              <Button onClick={onAddEntity} disabled={addEntityDisabled}>
+                <Plus data-icon="inline-start" aria-hidden="true" />
+                {addEntityLabel}
+              </Button>
+            )
+          }
+        />
       )}
       <DataTable<D>
         columns={columns}
