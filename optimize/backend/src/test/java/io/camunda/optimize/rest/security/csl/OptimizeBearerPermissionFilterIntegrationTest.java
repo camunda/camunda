@@ -8,8 +8,11 @@
 package io.camunda.optimize.rest.security.csl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -215,6 +218,7 @@ class OptimizeBearerPermissionFilterIntegrationTest {
 
               // then
               assertThat(response.getStatus()).isEqualTo(200);
+              verify(ctx.getBean(CCSMTokenService.class), never()).verifyAccessToken(anyString());
             });
   }
 
