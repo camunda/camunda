@@ -40,8 +40,6 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
-import io.camunda.zeebe.protocol.record.value.VariableOperationType;
-import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.util.Map;
 import java.util.Optional;
 
@@ -236,10 +234,6 @@ public record AuditLogInfo(
   }
 
   private static AuditLogOperationCategory getOperationCategory(final Record<?> record) {
-    if (record.getValue() instanceof final VariableRecordValue variable
-        && VariableOperationType.USER_TASK_COMPLETION.equals(variable.getSource().getType())) {
-      return AuditLogOperationCategory.USER_TASKS;
-    }
     return OPERATION_CATEGORY_MAP.getOrDefault(
         record.getValueType(), AuditLogOperationCategory.UNKNOWN);
   }
