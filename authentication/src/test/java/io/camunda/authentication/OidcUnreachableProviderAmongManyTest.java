@@ -82,15 +82,15 @@ public class OidcUnreachableProviderAmongManyTest {
   static final String ANSWERING_CLIENT_ID = "camunda-answering";
   static final String SILENT_CLIENT_ID = "camunda-silent";
 
-  private static final String ANSWERING_REALM = "camunda-answering";
-  private static final String SILENT_REALM = "camunda-silent";
-
   @RegisterExtension
   static WireMockExtension wireMock =
       WireMockExtension.newInstance()
           .configureStaticDsl(true)
           .options(wireMockConfig().notifier(new Slf4jNotifier(false)).dynamicPort())
           .build();
+
+  private static final String ANSWERING_REALM = "camunda-answering";
+  private static final String SILENT_REALM = "camunda-silent";
 
   private static RSAKey signingKey;
 

@@ -67,15 +67,15 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
     })
 public class OidcUserInfoAugmentationPerIssuerTest extends AbstractWebSecurityConfigTest {
 
-  private static final String ANSWERING_ISSUER_PATH = "/answering";
-  private static final String SILENT_ISSUER_PATH = "/silent";
-
   @RegisterExtension
   static WireMockExtension wireMock =
       WireMockExtension.newInstance()
           .configureStaticDsl(true)
           .options(wireMockConfig().notifier(new Slf4jNotifier(false)).dynamicPort())
           .build();
+
+  private static final String ANSWERING_ISSUER_PATH = "/answering";
+  private static final String SILENT_ISSUER_PATH = "/silent";
 
   @Autowired private OidcTokenAuthenticationConverter converter;
 
