@@ -36,6 +36,7 @@ import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionScheduler;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler;
@@ -79,6 +80,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final ExpressionLanguage expressionLanguage;
   private final AgentInstanceBehavior agentInstanceBehavior;
   private final AgentDefinitionBehavior agentDefinitionBehavior;
+  private final StorageOrdinalProvider storageOrdinalProvider;
 
   public BpmnBehaviorsImpl(
       final MutableProcessingState processingState,
@@ -93,6 +95,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final ExpressionLanguageMetrics expressionMetrics,
       final EngineConfiguration config,
+      final StorageOrdinalProvider storageOrdinalProvider,
       final IncidentMetrics incidentMetrics,
       final MessageCorrelationMetrics messageCorrelationMetrics,
       final ProcessDefinitionMetrics processDefinitionMetrics,
@@ -101,6 +104,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final CslTenantCheck tenantCheck,
       final SecretStoreRegistry secretStoreRegistry,
       final SecretResolutionScheduler secretResolutionScheduler) {
+
+    this.storageOrdinalProvider = storageOrdinalProvider;
 
     // The expression endpoint reports which trusted secrets an evaluation touched; only its
     // contexts record into the collector. The BPMN path uses collector-free contexts, so its
@@ -204,6 +209,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getKeyGenerator(),
             eventTriggerBehavior,
             stateBehavior,
+            storageOrdinalProvider,
             writers);
 
     processResultSenderBehavior =
@@ -215,6 +221,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getKeyGenerator(),
             eventTriggerBehavior,
             stateBehavior,
+            storageOrdinalProvider,
             writers,
             subscriptionCommandSender,
             routingInfo,
@@ -490,6 +497,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public BpmnProcessDeletionBehavior processDeletionBehavior() {
     return processDeletionBehavior;
+  }
+
+  @Override
+  public StorageOrdinalProvider storageOrdinalProvider() {
+    return storageOrdinalProvider;
   }
 
   public ExpressionBehavior expressionBehavior() {
