@@ -130,6 +130,15 @@ final class RocksDBMetricExporterTest {
                   assertThat(registry.find(doc.getName()).gauge())
                       .as("gauge '%s' is not registered", doc.getName())
                       .isNull());
+      assertThat(RocksDbHistogramMetricsDoc.values())
+          .allSatisfy(
+              doc -> {
+                for (final var statistic : Statistic.values()) {
+                  assertThat(registry.find(doc.nameFor(statistic)).gauge())
+                      .as("gauge '%s' is not registered", doc.nameFor(statistic))
+                      .isNull();
+                }
+              });
     }
   }
 
