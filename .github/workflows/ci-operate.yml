@@ -129,6 +129,9 @@ jobs:
       matrix:
         shardIndex: [1, 2, 3, 4]
         shardTotal: [4]
+    # Lets the merge job assert it downloaded every shard.
+    outputs:
+      shard-total: ${{ steps.shard-total.outputs.value }}
     env:
       TEST_TYPE: Unit
       TEST_OWNER: '@camunda/operate-frontend'
@@ -136,6 +139,11 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
+      # First so the merge job learns the shard count even if tests fail.
+      - name: Publish shard total
+        id: shard-total
+        working-directory: ${{ github.workspace }}
+        run: echo "value=${{ matrix.shardTotal }}" >> "$GITHUB_OUTPUT"
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
@@ -157,12 +165,12 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=8192
       - name: Upload blob report
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: operate-fe-blob-report-${{ matrix.shardIndex }}
           path: operate/client/.vitest-reports/*
-          include-hidden-files: true
-          retention-days: 1
+          include-hidden-files: "true"
+          retention-days: "1"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -208,6 +216,32 @@ jobs:
           path: operate/client/.vitest-reports
           pattern: operate-fe-blob-report-*
           merge-multiple: true
+      # `pattern:` merges whatever shards exist, so a failed upload would be
+      # silently merged over and report a green, incomplete run (INC-7913).
+      # Checks each shard by vitest's blob name (`blob-<index>-<total>.json`)
+      # rather than counting files, to avoid false positives/negatives.
+      - name: Verify all shard reports were downloaded
+        if: ${{ !cancelled() }}
+        env:
+          EXPECTED_SHARDS: ${{ needs.fe-unit-tests.outputs.shard-total }}
+        run: |
+          if [ -z "$EXPECTED_SHARDS" ]; then
+            echo "::error::Expected shard count unavailable; cannot verify the merged report is complete."
+            exit 1
+          fi
+          missing=""
+          for index in $(seq 1 "$EXPECTED_SHARDS"); do
+            if [ ! -f ".vitest-reports/blob-${index}-${EXPECTED_SHARDS}.json" ]; then
+              missing="${missing} ${index}"
+            fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing blob report for shard(s):${missing} of $EXPECTED_SHARDS." \
+              "Those test results are absent, so the merged report would be incomplete."
+            echo "Downloaded files:"
+            find .vitest-reports -type f
+            exit 1
+          fi
       - name: Merge reports
         run: npx vitest --merge-reports
 
@@ -330,12 +364,13 @@ jobs:
         run: npm run build
       - name: Run A11y tests
         run: npm run test:a11y
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - name: Upload a11y report
         if: always()
+        uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: operate-a11y-report
           path: operate/client/playwright-report/
-          retention-days: 30
+          retention-days: "30"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -357,6 +392,9 @@ jobs:
       matrix:
         shardIndex: [1, 2, 3, 4]
         shardTotal: [4]
+    # See `fe-unit-tests` for why this is published.
+    outputs:
+      shard-total: ${{ steps.shard-total.outputs.value }}
     env:
       TEST_TYPE: visual-regression
       TEST_OWNER: '@camunda/operate-frontend'
@@ -367,6 +405,11 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
+      # First so the merge job learns the shard count even if tests fail.
+      - name: Publish shard total
+        id: shard-total
+        working-directory: ${{ github.workspace }}
+        run: echo "value=${{ matrix.shardTotal }}" >> "$GITHUB_OUTPUT"
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - name: Check out repository code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -390,11 +433,11 @@ jobs:
         run: npm run test:visual -- --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
       - name: Upload blob report
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: operate-visual-regression-blob-report-${{ matrix.shardIndex }}
           path: operate/client/blob-report
-          retention-days: 1
+          retention-days: "1"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -442,14 +485,45 @@ jobs:
           path: operate/client/all-blob-reports
           pattern: operate-visual-regression-blob-report-*
           merge-multiple: true
+      # Merge and upload before the completeness check, so a partial report is
+      # still available to triage. The check below still fails the job.
       - name: Merge into HTML Report
         run: npx playwright merge-reports --reporter html ./all-blob-reports
       - name: Upload HTML report
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: operate-visual-regression-report
           path: operate/client/playwright-report/
-          retention-days: 30
+          retention-days: "30"
+      # `pattern:` merges whatever shards exist, so a failed upload would be
+      # silently merged over and report a green, incomplete run (INC-7913).
+      # Playwright's blob name includes a filter hash, so only the zero-padded
+      # shard suffix is stable enough to match on.
+      - name: Verify all shard reports were downloaded
+        if: ${{ !cancelled() }}
+        env:
+          EXPECTED_SHARDS: ${{ needs.operate-fe-visual-regression-tests.outputs.shard-total }}
+        run: |
+          if [ -z "$EXPECTED_SHARDS" ]; then
+            echo "::error::Expected shard count unavailable; cannot verify the merged report is complete."
+            exit 1
+          fi
+          width=${#EXPECTED_SHARDS}
+          missing=""
+          for index in $(seq 1 "$EXPECTED_SHARDS"); do
+            padded=$(printf "%0${width}d" "$index")
+            if ! ls all-blob-reports/*-"${padded}".zip >/dev/null 2>&1; then
+              missing="${missing} ${index}"
+            fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing blob report for shard(s):${missing} of $EXPECTED_SHARDS." \
+              "Those test results are absent, so the merged report is incomplete."
+            echo "Downloaded files:"
+            find all-blob-reports -type f
+            exit 1
+          fi
 
   operate-update-screenshots:
     if: inputs.runFeTests
@@ -484,12 +558,13 @@ jobs:
       - name: Run Playwright
         working-directory: ${{ env.CLIENT_DIR }}
         run: npm run generate-screenshots
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - name: Upload screenshots
         if: always()
+        uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: Playwright report
           path: ./operate/client/e2e-playwright/docs-screenshots
-          retention-days: 3
+          retention-days: "3"
       - name: Observe build status
         if: always()
         continue-on-error: true
