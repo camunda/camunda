@@ -20,7 +20,9 @@ import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
+import io.camunda.zeebe.engine.state.instance.DbElementInstanceState;
 import io.camunda.zeebe.engine.state.routing.DbRoutingState;
+import io.camunda.zeebe.engine.state.variable.DbVariableState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
@@ -44,7 +46,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.stream.Stream;
-import org.agrona.collections.MutableBoolean;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
@@ -153,6 +154,10 @@ public class StateCheckProcessDefinitionDeletionsCommand implements Callable<Int
 
     err.println("=== Scanning for stuck DRAINING process definitions ===");
 
+    // One SnapshotUtil is shared across all partitions so its 512MB RocksDB block cache is
+    // allocated once, not once per partition.
+    final SnapshotUtil snapshotUtil = new SnapshotUtil();
+
     try {
       final var definitions = new HashMap<Long, DefinitionInfo>();
       final var definitionsWithActiveInstances = new HashSet<Long>();
@@ -163,6 +168,7 @@ public class StateCheckProcessDefinitionDeletionsCommand implements Callable<Int
           "Partition " + Protocol.DEPLOYMENT_PARTITION + ": reading " + deploymentSnapshot.get());
       final DeploymentPartitionData deployment =
           readDeploymentPartition(
+              snapshotUtil,
               deploymentSnapshot.get(),
               runtimeRoot.resolve("p" + Protocol.DEPLOYMENT_PARTITION),
               definitions,
@@ -226,6 +232,7 @@ public class StateCheckProcessDefinitionDeletionsCommand implements Callable<Int
         err.println("Partition " + partitionId + ": reading " + entry.getValue());
         final Map<Long, PersistedProcessState> states =
             readPartition(
+                snapshotUtil,
                 entry.getValue(),
                 runtimeRoot.resolve("p" + partitionId),
                 definitions,
@@ -293,13 +300,13 @@ public class StateCheckProcessDefinitionDeletionsCommand implements Callable<Int
   }
 
   private static Map<Long, PersistedProcessState> readPartition(
+      final SnapshotUtil snapshotUtil,
       final Path snapshotPath,
       final Path runtime,
       final Map<Long, DefinitionInfo> definitions,
       final Set<Long> definitionsWithActiveInstances)
       throws Exception {
-    try (final ZeebeDb<ZbColumnFamilies> db =
-        new SnapshotUtil().openReadOnly(snapshotPath, runtime)) {
+    try (final ZeebeDb<ZbColumnFamilies> db = snapshotUtil.openReadOnly(snapshotPath, runtime)) {
       final TransactionContext context = db.createContext();
       final var states = new LinkedHashMap<Long, PersistedProcessState>();
       readProcessCacheAndInstances(
@@ -313,13 +320,13 @@ public class StateCheckProcessDefinitionDeletionsCommand implements Callable<Int
    * coordination entries that only it has.
    */
   private static DeploymentPartitionData readDeploymentPartition(
+      final SnapshotUtil snapshotUtil,
       final Path snapshotPath,
       final Path runtime,
       final Map<Long, DefinitionInfo> definitions,
       final Set<Long> definitionsWithActiveInstances)
       throws Exception {
-    try (final ZeebeDb<ZbColumnFamilies> db =
-        new SnapshotUtil().openReadOnly(snapshotPath, runtime)) {
+    try (final ZeebeDb<ZbColumnFamilies> db = snapshotUtil.openReadOnly(snapshotPath, runtime)) {
       final TransactionContext context = db.createContext();
       final var states = new LinkedHashMap<Long, PersistedProcessState>();
       final var pendingByDefinition = new HashMap<Long, Set<Integer>>();
@@ -360,29 +367,16 @@ public class StateCheckProcessDefinitionDeletionsCommand implements Callable<Int
             });
 
     // Only DRAINING definitions can be stuck, so limit the (potentially large) instance lookup to
-    // them. PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY holds one entry per active root instance.
-    final DbLong processDefinitionKey = new DbLong();
-    final DbLong processInstanceKey = new DbLong();
-    final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil> instancesByDefinition =
-        db.createColumnFamily(
-            ZbColumnFamilies.PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY,
-            context,
-            new DbCompositeKey<>(processDefinitionKey, processInstanceKey),
-            DbNil.INSTANCE);
+    // them. Reuse the engine's own active-instance check so the definition of "active" stays in
+    // sync with how the engine finalizes a drain.
+    final var elementInstanceState =
+        new DbElementInstanceState(db, context, new DbVariableState(db, context));
     for (final var entry : states.entrySet()) {
       if (entry.getValue() != PersistedProcessState.DRAINING
           || definitionsWithActiveInstances.contains(entry.getKey())) {
         continue;
       }
-      processDefinitionKey.wrapLong(entry.getKey());
-      final var hasInstance = new MutableBoolean(false);
-      instancesByDefinition.whileEqualPrefix(
-          processDefinitionKey,
-          (key, nil) -> {
-            hasInstance.set(true);
-            return false;
-          });
-      if (hasInstance.get()) {
+      if (elementInstanceState.hasActiveProcessInstances(entry.getKey(), List.of())) {
         definitionsWithActiveInstances.add(entry.getKey());
       }
     }
