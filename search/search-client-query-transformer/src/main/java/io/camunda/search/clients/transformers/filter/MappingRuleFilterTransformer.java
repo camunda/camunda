@@ -23,8 +23,10 @@ import io.camunda.search.filter.MappingRuleFilter;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
+import java.util.List;
 
-public class MappingRuleFilterTransformer extends IndexFilterTransformer<MappingRuleFilter> {
+public class MappingRuleFilterTransformer extends IndexFilterTransformer<MappingRuleFilter>
+    implements OrFilterTransformer<MappingRuleFilter> {
 
   public MappingRuleFilterTransformer(final IndexDescriptor indexDescriptor) {
     super(indexDescriptor);
@@ -34,14 +36,13 @@ public class MappingRuleFilterTransformer extends IndexFilterTransformer<Mapping
   public SearchQuery toSearchQuery(final MappingRuleFilter filter) {
     final var queries = new ArrayList<>(toSearchQueryFields(filter));
 
-    if (filter.orFilters() != null && !filter.orFilters().isEmpty()) {
-      queries.add(or(filter.orFilters().stream().map(f -> and(toSearchQueryFields(f))).toList()));
-    }
+    toOrClause(filter).ifPresent(queries::add);
 
     return and(queries);
   }
 
-  private ArrayList<SearchQuery> toSearchQueryFields(final MappingRuleFilter filter) {
+  @Override
+  public List<SearchQuery> toSearchQueryFields(final MappingRuleFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
     queries.add(stringTerms(CLAIM_NAME, filter.claimNames()));
     if (filter.claimName() != null) {

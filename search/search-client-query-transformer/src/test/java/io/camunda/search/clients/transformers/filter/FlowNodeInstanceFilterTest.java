@@ -551,4 +551,29 @@ public final class FlowNodeInstanceFilterTest extends AbstractTransformerTest {
               assertThat(t.value().longValue()).isEqualTo(123L);
             });
   }
+
+  @Test
+  public void shouldIgnoreOrClauseWhenItContainsAnEmptyFilter() {
+    // given
+    final var filter =
+        FilterBuilders.flowNodeInstance(
+            f ->
+                f.processInstanceKeys(123L)
+                    .orFilters(
+                        List.of(
+                            new FlowNodeInstanceFilter.Builder().build(),
+                            new FlowNodeInstanceFilter.Builder().states("COMPLETED").build())));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    assertThat(searchRequest.queryOption())
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("processInstanceKey");
+              assertThat(t.value().longValue()).isEqualTo(123L);
+            });
+  }
 }

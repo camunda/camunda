@@ -28,7 +28,22 @@ public record MappingRuleFilter(
     String groupId,
     String roleId,
     List<MappingRuleFilter> orFilters)
-    implements FilterBase {
+    implements OrFilter<MappingRuleFilter> {
+
+  @Override
+  public boolean isEmpty() {
+    return !FilterUtil.hasAnyNonEmpty(
+        mappingRuleIdOperations,
+        claimName,
+        claimNames,
+        claimValue,
+        nameOperations,
+        claims,
+        tenantId,
+        mappingRuleIds,
+        groupId,
+        roleId);
+  }
 
   public MappingRuleFilter.Builder toBuilder() {
     return new Builder()

@@ -14,6 +14,7 @@ import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.query.SearchWildcardQuery;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
+import io.camunda.search.filter.RoleFilter;
 import io.camunda.security.api.model.authz.EntityType;
 import java.util.List;
 import java.util.Map;
@@ -130,6 +131,30 @@ class RoleFilterTransformerTest extends AbstractTransformerTest {
                         assertThat(termValue(or.should().get(0))).isEqualTo("role-1");
                         assertThat(termValue(or.should().get(1))).isEqualTo("role-2");
                       });
+            });
+  }
+
+  @Test
+  void shouldIgnoreOrClauseWhenItContainsAnEmptyFilter() {
+    final var filter =
+        FilterBuilders.role(
+            f ->
+                f.roleId("role-top")
+                    .orFilters(
+                        List.of(
+                            new RoleFilter.Builder().build(),
+                            FilterBuilders.role(f1 -> f1.roleId("role-1")))));
+
+    final var searchQuery = transformQuery(filter);
+
+    assertThat(searchQuery.queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            bool -> {
+              // an empty $or group matches everything, collapsing the whole $or clause into a
+              // no-op: only the top-level roleId and the unconditional JOIN term remain
+              assertThat(bool.must()).hasSize(2);
+              assertThat(termValue(bool.must().get(0))).isEqualTo("role-top");
             });
   }
 
