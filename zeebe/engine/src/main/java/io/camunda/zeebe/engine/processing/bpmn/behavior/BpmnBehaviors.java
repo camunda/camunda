@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 
 public interface BpmnBehaviors {
@@ -68,4 +69,6 @@ public interface BpmnBehaviors {
   AgentDefinitionBehavior agentDefinitionBehavior();
 
   BpmnProcessDeletionBehavior processDeletionBehavior();
+
+  StorageOrdinalProvider storageOrdinalProvider();
 }
