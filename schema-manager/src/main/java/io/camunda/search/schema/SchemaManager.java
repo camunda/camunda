@@ -298,7 +298,7 @@ public class SchemaManager implements CloseableSilently {
           indexTemplateDescriptor, indexSettingsFromConfig);
     }
     searchEngineClient.putSettings(
-        List.of(indexDescriptor),
+        indexDescriptor,
         Map.of(
             "index.number_of_replicas",
             String.valueOf(indexSettingsFromConfig.getNumberOfReplicas())));

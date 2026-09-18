@@ -18,7 +18,7 @@ import io.camunda.search.clients.PersistentWebSessionSearchImpl;
 import io.camunda.search.clients.PhysicalTenantScopedPersistentWebSessionClient;
 import io.camunda.search.schema.SchemaManagerContainer;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
-import io.camunda.webapps.schema.descriptors.index.PersistentWebSessionIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.template.PersistentWebSessionTemplate;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -60,7 +60,7 @@ public final class PhysicalTenantScopedPersistentWebSessionClientFactory {
                     + "' does not implement DocumentBasedWriteClient: "
                     + client.getClass().getName());
           }
-          final var descriptor = descriptors.get(PersistentWebSessionIndexDescriptor.class);
+          final var descriptor = descriptors.get(PersistentWebSessionTemplate.class);
           final PersistentWebSessionClient searchClient =
               new PersistentWebSessionSearchImpl(client, writeClient, descriptor);
           byTenant.put(

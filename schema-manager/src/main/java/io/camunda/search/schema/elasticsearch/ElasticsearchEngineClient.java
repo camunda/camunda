@@ -27,6 +27,7 @@ import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
 import co.elastic.clients.elasticsearch.indices.Alias;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
+import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import co.elastic.clients.elasticsearch.indices.IndexTemplate;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
@@ -215,18 +216,44 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
   @Override
   public void putSettings(
-      final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {
-    final var request = putIndexSettingsRequest(indexDescriptors, toAppendSettings);
+      final IndexDescriptor indexDescriptor, final Map<String, String> toAppendSettings) {
+    final var request = putIndexSettingsRequest(indexDescriptor, toAppendSettings);
 
     try {
       client.indices().putSettings(request);
     } catch (final IOException | ElasticsearchException e) {
       final var errMsg =
           String.format(
-              "settings PUT failed for the following indices [%s]",
-              utils.listIndicesByAlias(indexDescriptors));
+              "settings PUT failed for the following indices [%s]", indexDescriptor.getAlias());
       LOG.error(errMsg, e);
       throw new SearchEngineException(errMsg, e);
+    }
+  }
+
+  @Override
+  public Map<String, Integer> getNumberOfShards(final Collection<String> indexNames) {
+    if (indexNames.isEmpty()) {
+      return Map.of();
+    }
+
+    try {
+      return client
+          .indices()
+          .getSettings(req -> req.index(List.copyOf(indexNames)).ignoreUnavailable(true))
+          .result()
+          .entrySet()
+          .stream()
+          .flatMap(
+              entry ->
+                  Optional.ofNullable(entry.getValue().settings())
+                      .map(IndexSettings::index)
+                      .map(IndexSettings::numberOfShards)
+                      .map(shards -> Map.entry(entry.getKey(), Integer.parseInt(shards)))
+                      .stream())
+          .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+    } catch (final IOException | ElasticsearchException e) {
+      throw new SearchEngineException(
+          String.format("Failed to retrieve shard counts for indices '%s'", indexNames), e);
     }
   }
 
@@ -404,35 +431,6 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     }
   }
 
-  private PutIndicesSettingsRequest putIndexSettingsRequest(
-      final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {
-    final co.elastic.clients.elasticsearch.indices.IndexSettings settings =
-        utils.mapToSettings(
-            toAppendSettings,
-            (inp) ->
-                deserializeJson(
-                    co.elastic.clients.elasticsearch.indices.IndexSettings._DESERIALIZER, inp));
-    return new PutIndicesSettingsRequest.Builder()
-        .index(utils.listIndicesByAlias(indexDescriptors))
-        .settings(settings)
-        .build();
-  }
-
-  public PutLifecycleRequest putLifecycleRequest(
-      final String policyName, final String deletionMinAge) {
-    return new PutLifecycleRequest.Builder()
-        .name(policyName)
-        .policy(
-            policy ->
-                policy.phases(
-                    phase ->
-                        phase.delete(
-                            del ->
-                                del.minAge(m -> m.time(deletionMinAge))
-                                    .actions(a -> a.delete(DeleteAction.of(d -> d))))))
-        .build();
-  }
-
   @Override
   public Set<String> getIndexNames(final String pattern) {
     try {
@@ -452,6 +450,38 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   @Override
   public String getEngineName() {
     return DatabaseConfig.ELASTICSEARCH;
+  }
+
+  private PutIndicesSettingsRequest putIndexSettingsRequest(
+      final IndexDescriptor indexDescriptor, final Map<String, String> toAppendSettings) {
+    final co.elastic.clients.elasticsearch.indices.IndexSettings settings =
+        utils.mapToSettings(
+            toAppendSettings,
+            (inp) ->
+                deserializeJson(
+                    co.elastic.clients.elasticsearch.indices.IndexSettings._DESERIALIZER, inp));
+    final var builder =
+        new PutIndicesSettingsRequest.Builder()
+            .index(indexDescriptor.getAlias())
+            .allowNoIndices(indexDescriptor.allowMissing())
+            .ignoreUnavailable(indexDescriptor.allowMissing())
+            .settings(settings);
+    return builder.build();
+  }
+
+  public PutLifecycleRequest putLifecycleRequest(
+      final String policyName, final String deletionMinAge) {
+    return new PutLifecycleRequest.Builder()
+        .name(policyName)
+        .policy(
+            policy ->
+                policy.phases(
+                    phase ->
+                        phase.delete(
+                            del ->
+                                del.minAge(m -> m.time(deletionMinAge))
+                                    .actions(a -> a.delete(DeleteAction.of(d -> d))))))
+        .build();
   }
 
   private Map<String, TypeMapping> getCurrentMappings(
