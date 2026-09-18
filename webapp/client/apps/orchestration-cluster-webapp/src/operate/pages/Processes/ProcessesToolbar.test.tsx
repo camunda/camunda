@@ -413,8 +413,8 @@ describe('Processes bulk toolbar', () => {
 
 	for (const [response, title] of [
 		[new HttpResponse(null, {status: 403}), "You don't have permission to perform this operation"],
-		[new HttpResponse(null, {status: 500}), 'Operation could not be created'],
-		[HttpResponse.error(), 'Operation could not be created'],
+		[new HttpResponse(null, {status: 500}), 'Couldn't create operation'],
+		[HttpResponse.error(), 'Couldn't create operation'],
 	] as const) {
 		it(`should recover from ${response.status} without dropping selection`, async ({worker}) => {
 			worker.use(list(), mockCreateCancellationBatchOperationEndpoint({successResponse: response}));

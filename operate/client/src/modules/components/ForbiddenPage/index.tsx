@@ -21,9 +21,9 @@ const ForbiddenPage: React.FC = () => {
           <Stack gap={3}>
             <Title>You don’t have access to this component</Title>
             <Description>
-              It looks like you don’t have the necessary permissions to access
-              this component. <strong>Please contact your cluster admin</strong>{' '}
-              to request access.
+              You don’t have the necessary permissions to access this
+              component. <strong>Contact your cluster admin</strong> to
+              request access.
             </Description>
           </Stack>
           <Link

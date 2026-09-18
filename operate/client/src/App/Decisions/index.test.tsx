@@ -132,7 +132,7 @@ describe('<Decisions />', () => {
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       isDismissable: true,
       kind: 'error',
-      title: 'Decision could not be found',
+      title: 'Couldn't find the decision',
     });
   });
 });

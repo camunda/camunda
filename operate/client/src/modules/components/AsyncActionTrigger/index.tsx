@@ -50,8 +50,8 @@ const AsyncActionTrigger: React.FC<AsyncActionTriggerProps> = (props) => {
 
   const description: Record<typeof props.status, string> = {
     pending: props.pendingLabel ?? 'Pending...',
-    success: props.successLabel ?? 'Successful!',
-    error: props.errorLabel ?? 'Failed!',
+    success: props.successLabel ?? 'Successful',
+    error: props.errorLabel ?? 'Failed',
   };
 
   return (

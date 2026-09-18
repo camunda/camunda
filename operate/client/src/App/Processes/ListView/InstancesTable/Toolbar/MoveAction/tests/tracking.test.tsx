@@ -53,7 +53,7 @@ describe('<MoveAction /> - tracking', () => {
       const button = screen.getByRole('button', {name: /move/i});
       const title = button.getAttribute('title');
       expect(title).not.toBe(
-        'Please select an element from the diagram first.',
+        'Select an element from the diagram first.',
       );
     });
 

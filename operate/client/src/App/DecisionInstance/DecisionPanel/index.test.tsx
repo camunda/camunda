@@ -94,7 +94,7 @@ describe('<DecisionPanel />', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'Please contact your organization owner or admin to give you the necessary permissions to read this definition',
+        'Contact your organization owner or admin to give you the necessary permissions to read this definition',
       ),
     ).toBeInTheDocument();
   });
@@ -108,7 +108,7 @@ describe('<DecisionPanel />', () => {
     });
 
     expect(
-      await screen.findByText('Data could not be fetched'),
+      await screen.findByText('Couldn't fetch data'),
     ).toBeInTheDocument();
   });
 });

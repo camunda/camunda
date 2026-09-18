@@ -67,7 +67,7 @@ export default function App({error}) {
 
   if (error) {
     return (
-      <ErrorPage noLink text="Optimize could not be loaded, please make sure the server is running">
+      <ErrorPage noLink text="Optimize couldn't load. Make sure the server is running">
         <Button kind="ghost" onClick={() => window.location.reload(true)}>
           Reload
         </Button>

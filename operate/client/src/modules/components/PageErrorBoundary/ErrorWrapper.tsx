@@ -17,7 +17,7 @@ const ErrorWrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
       <h1>Something went wrong</h1>
       {children}
       <p>
-        Please <Link href={document.location.href}>reload the page</Link> or try
+        <Link href={document.location.href}>Reload the page</Link> or try
         again later.
       </p>
     </Stack>

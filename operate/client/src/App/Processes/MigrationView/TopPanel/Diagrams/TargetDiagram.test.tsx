@@ -239,7 +239,7 @@ describe('Target Diagram', () => {
     await user.click(screen.getByRole('option', {name: 'New demo process'}));
 
     expect(
-      await screen.findByText('Data could not be fetched'),
+      await screen.findByText('Couldn't fetch data'),
     ).toBeInTheDocument();
   });
 

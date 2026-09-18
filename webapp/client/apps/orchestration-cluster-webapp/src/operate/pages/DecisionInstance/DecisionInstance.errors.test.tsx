@@ -60,7 +60,7 @@ describe.each([
 		});
 
 		await expect.element(screen.getByRole('heading', {name: 'Something went wrong'})).toBeVisible();
-		await expect.element(screen.getByText("The page couldn't be loaded. Please try again later.")).toBeVisible();
+		await expect.element(screen.getByText("Couldn't load the page. Try again later.")).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Try again'})).toBeVisible();
 		await expect
 			.element(screen.getByRole('button', {name: 'Open Decision Requirements Diagram'}))

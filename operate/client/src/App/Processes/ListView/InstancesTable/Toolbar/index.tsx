@@ -302,7 +302,7 @@ const Toolbar: React.FC<Props> = observer(
                 batchModificationStore.state.isEnabled
                   ? 'Not available in batch modification mode'
                   : !hasSelectedRunningInstances
-                    ? 'No active process instances selected. Please select at least one active process instance to suspend.'
+                    ? 'No active process instances selected. Select at least one active process instance to suspend.'
                     : undefined
               }
             >
@@ -319,7 +319,7 @@ const Toolbar: React.FC<Props> = observer(
                 batchModificationStore.state.isEnabled
                   ? 'Not available in batch modification mode'
                   : !hasSelectedSuspendedInstances
-                    ? 'No suspended process instances selected. Please select at least one suspended process instance to resume.'
+                    ? 'No suspended process instances selected. Select at least one suspended process instance to resume.'
                     : undefined
               }
             >
@@ -336,7 +336,7 @@ const Toolbar: React.FC<Props> = observer(
                 batchModificationStore.state.isEnabled
                   ? 'Not available in batch modification mode'
                   : !hasSelectedFinishedInstances
-                    ? 'No finished process instances selected. Please select at least one completed or canceled process instance to delete.'
+                    ? 'No finished process instances selected. Select at least one completed or canceled process instance to delete.'
                     : undefined
               }
               data-testid="delete-batch-operation"
@@ -354,7 +354,7 @@ const Toolbar: React.FC<Props> = observer(
                 batchModificationStore.state.isEnabled
                   ? 'Not available in batch modification mode'
                   : !hasSelectedRunningInstances
-                    ? 'No running process instances selected. Please select at least one active or incident process instance to cancel.'
+                    ? 'No running process instances selected. Select at least one active or incident process instance to cancel.'
                     : undefined
               }
               data-testid="cancel-batch-operation"
@@ -372,7 +372,7 @@ const Toolbar: React.FC<Props> = observer(
                 batchModificationStore.state.isEnabled
                   ? 'Not available in batch modification mode'
                   : !hasSelectedInstancesWithIncidents
-                    ? 'No process instances with an incident selected. Please select at least one process instance with an incident to retry.'
+                    ? 'No process instances with an incident selected. Select at least one process instance with an incident to retry.'
                     : undefined
               }
               data-testid="retry-batch-operation"

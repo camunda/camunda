@@ -316,7 +316,7 @@ describe('<BatchOperationActions />', () => {
 				expect.objectContaining({
 					kind: 'warning',
 					title: "You don't have permission to perform this operation",
-					subtitle: 'Please contact the administrator if you need access.',
+					subtitle: 'Contact the administrator if you need access.',
 				}),
 			]);
 	});
@@ -339,7 +339,7 @@ describe('<BatchOperationActions />', () => {
 			.toEqual([
 				expect.objectContaining({
 					kind: 'error',
-					title: `Batch operation ${BATCH_OPERATION_KEY} could not be found`,
+					title: `Couldn't find batch operation ${BATCH_OPERATION_KEY}`,
 				}),
 			]);
 	});
@@ -364,7 +364,7 @@ describe('<BatchOperationActions />', () => {
 				expect.objectContaining({
 					kind: 'warning',
 					title: "You don't have permission to perform this operation",
-					subtitle: 'Please contact the administrator if you need access.',
+					subtitle: 'Contact the administrator if you need access.',
 				}),
 			]);
 		await expect.element(suspendButton).not.toBeDisabled();
@@ -419,7 +419,7 @@ describe('<BatchOperationActions />', () => {
 			.toEqual([
 				expect.objectContaining({
 					kind: 'warning',
-					title: 'Batch operation status could not be confirmed',
+					title: 'Couldn't confirm batch operation status',
 					subtitle: 'The action was sent. Refresh the page to see its current state.',
 				}),
 			]);
@@ -448,7 +448,7 @@ describe('<BatchOperationActions />', () => {
 			.toEqual([
 				expect.objectContaining({
 					kind: 'warning',
-					title: 'Batch operation status could not be confirmed',
+					title: 'Couldn't confirm batch operation status',
 					subtitle: 'The action was sent. Refresh the page to see its current state.',
 				}),
 			]);
@@ -473,7 +473,7 @@ describe('<BatchOperationActions />', () => {
 			.toEqual([
 				expect.objectContaining({
 					kind: 'error',
-					title: `Batch operation ${BATCH_OPERATION_KEY} could not be found`,
+					title: `Couldn't find batch operation ${BATCH_OPERATION_KEY}`,
 				}),
 			]);
 	});

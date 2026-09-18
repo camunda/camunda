@@ -207,7 +207,7 @@ describe('<ProcessOperations />', () => {
       screen.getByRole('button', {
         name: 'Retry',
         description:
-          'No process instances with an incident selected. Please select at least one process instance with an incident to retry.',
+          'No process instances with an incident selected. Select at least one process instance with an incident to retry.',
       }),
     ).toBeDisabled();
   });

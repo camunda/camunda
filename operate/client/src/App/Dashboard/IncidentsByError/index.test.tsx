@@ -104,7 +104,7 @@ describe('IncidentsByError', () => {
       },
     );
 
-    expect(screen.getByText('Data could not be fetched')).toBeInTheDocument();
+    expect(screen.getByText('Couldn't fetch data')).toBeInTheDocument();
   });
 
   it('should display information message when there are no incidents', () => {

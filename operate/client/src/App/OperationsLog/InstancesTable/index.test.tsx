@@ -444,7 +444,7 @@ describe('OperationsLog InstancesTable', () => {
       expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
         isDismissable: true,
         kind: 'error',
-        title: 'Audit logs could not be fetched',
+        title: 'Couldn't fetch audit logs',
       }),
     );
   });

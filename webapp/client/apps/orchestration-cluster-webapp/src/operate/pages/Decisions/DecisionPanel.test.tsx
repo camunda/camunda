@@ -93,7 +93,7 @@ describe('<DecisionPanel />', () => {
 			decisionDefinitionSelection: {kind: 'single-version', definition: DEFINITION},
 		});
 
-		await expect.element(screen.getByText('Data could not be fetched')).toBeVisible();
+		await expect.element(screen.getByText('Couldn't fetch data')).toBeVisible();
 		worker.use(mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}));
 
 		await screen.getByRole('button', {name: 'Try again'}).click();
