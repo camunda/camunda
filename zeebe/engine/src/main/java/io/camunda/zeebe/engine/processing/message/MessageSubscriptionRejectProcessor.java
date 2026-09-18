@@ -126,12 +126,14 @@ public final class MessageSubscriptionRejectProcessor
     // we only want to reroute a subscription once per message (by key)
     final var messageKey = subscriptionRecord.getMessageKey();
 
-    // return true if it has already been correlated, otherwise false
+    // Exact match only: unlike a subscription's own retried commands (which are strictly ordered,
+    // see ProcessMessageSubscriptionCorrelateProcessor#hasAlreadyBeenCorrelated), a candidate found
+    // here may belong to a different generation whose own CREATE-time scan skipped this exact
+    // message (still locked by the stale subscription) and correlated a later one instead. Its
+    // last-correlated key being numerically ahead of this one does not mean it ever saw this
+    // message.
     final var lastCorrelatedMessageKey = subscription.getRecord().getMessageKey();
-    // as correlations are ordered per message, a message is considered to have been correlated
-    // either if it is the last correlated message (keys are equal), or if it was a message prior to
-    // the last correlated one (messageKey is less than lastCorrelatedMessageKey).
-    return messageKey <= lastCorrelatedMessageKey;
+    return messageKey == lastCorrelatedMessageKey;
   }
 
   private void sendCorrelateCommand(final MessageSubscriptionRecord subscription) {
