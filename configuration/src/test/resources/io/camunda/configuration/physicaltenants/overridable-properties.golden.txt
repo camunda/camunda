@@ -21,6 +21,7 @@ data.export.distribution-interval
 data.export.migration-status-scan-max-records
 data.export.skip-records
 data.exporters
+data.exporters-assigned
 data.extension-properties.inbound-connector-type-property
 data.extension-properties.tool-name-property
 data.extension-properties.tool-properties-prefix
@@ -365,6 +366,7 @@ data.secondary-storage.retention.usage-metrics-minimum-age
 data.secondary-storage.type
 data.snapshot-period
 data.wait-states.enabled
+document.assigned
 document.default-store-id
 document.thread-pool-size
 expression.timeout
@@ -516,6 +518,7 @@ security.authentication.oidc.user-info-augmentation.negative-cache-ttl
 security.authentication.oidc.user-info-enabled
 security.authentication.oidc.user-info-uri
 security.authentication.oidc.username-claim
+security.authentication.providers.assigned
 security.authentication.providers.oidc
 security.authorizations
 security.authorizations.enabled
