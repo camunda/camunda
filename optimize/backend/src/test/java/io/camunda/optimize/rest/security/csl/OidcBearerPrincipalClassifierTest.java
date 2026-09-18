@@ -128,6 +128,18 @@ class OidcBearerPrincipalClassifierTest {
   }
 
   @Test
+  void shouldKeepFailingClosedOnRepeatedUnclassifiableClaims() {
+    // given
+    final var classifier = classifierWith(false);
+    final Map<String, Object> claims = Map.of("sub", "irrelevant");
+
+    // when / then: calling twice must not throw, and must return true both times (the
+    // one-time-warn bookkeeping must not affect the actual classification decision)
+    assertThat(classifier.requiresOptimizePermissionCheck(claims)).isTrue();
+    assertThat(classifier.requiresOptimizePermissionCheck(claims)).isTrue();
+  }
+
+  @Test
   void shouldSubjectAnM2mTokenToTheCheckWhenItsIdpDoesNotUseTheDefaultClientIdClaim() {
     // given: an M2M token from an IdP that identifies clients via a different claim (e.g. Entra's
     // "azp"), with no client-id-claim override configured. This is the deliberate, documented
