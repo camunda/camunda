@@ -524,26 +524,22 @@ final class VersionCompatibilityMatrix {
 
     @Override
     public Stream<VersionInfo> discoverVersions() {
-      // Mark latest versions, enrich with release status, and filter to released only
+      // Verify every discovered tag has a corresponding GitHub release; if not, fall back to the
+      // previous version instead of using this tag.
       final var releasedVersions =
           delegate
               .discoverVersions()
               .map(
                   info -> {
-                    if (info.isLatest()) {
-                      final var isReleased = api.fetchRelease(info.version()).isPresent();
-                      return new VersionInfo(info.version(), isReleased, info.isLatest());
-                    } else {
-                      return info;
-                    }
+                    final var isReleased = api.fetchRelease(info.version()).isPresent();
+                    return new VersionInfo(info.version(), isReleased, info.isLatest());
                   })
               .peek(
                   info -> {
                     if (!info.isReleased()) {
                       LOG.warn(
-                          "{} has no corresponding GitHub release yet. Using previous patch as latest for minor {}.",
-                          info.version(),
-                          info.version().minor());
+                          "{} has no corresponding GitHub release. Excluding it from the compatibility matrix.",
+                          info.version());
                     }
                   })
               .filter(VersionInfo::isReleased)
