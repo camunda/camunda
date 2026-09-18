@@ -217,6 +217,25 @@ class OpensearchConnectorTest {
   }
 
   @Test
+  void shouldConfigureTimeoutsWhenSet() {
+    // given
+    final var configuration = new ConnectConfiguration();
+    configuration.setSocketTimeout(125456);
+    configuration.setConnectTimeout(654321);
+
+    final var connector =
+        new OpensearchConnector(configuration, new ObjectMapper(), null, new PluginRepository());
+    final var builder = Mockito.mock(RequestConfig.Builder.class);
+
+    // when
+    connector.setTimeouts(builder, configuration);
+
+    // then
+    Mockito.verify(builder).setResponseTimeout(Timeout.of(125456L, TimeUnit.MILLISECONDS));
+    Mockito.verify(builder).setConnectTimeout(Timeout.of(654321L, TimeUnit.MILLISECONDS));
+  }
+
+  @Test
   void shouldConfigureDefaultTimeouts() {
     // given
     final var configuration = new ConnectConfiguration();
