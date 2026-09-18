@@ -79,6 +79,8 @@ import org.slf4j.LoggerFactory;
  *     |                                                       expired)
  *     |                              COMPLETED(PHYSICAL_TENANT_DISABLED)  (as above, observed
  *     |                                                                    mid-transfer)
+ *     |                              COMPLETED(TIMEOUT_NOW_EXHAUSTED)  (confirmed against the
+ *     |                                                                 topology first)
  *     |
  *     | leader reports TRANSFERRED, or the topology confirms the desired leader first
  *     v
@@ -107,6 +109,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
   private final Duration leaderWaitTimeout;
   private final RebalanceConfiguration configuration;
   private final Duration heartbeatInterval;
+  private final Duration electionTimeout;
 
   /** The transfer each partition is currently in, if any. */
   private final Map<PartitionId, ActiveTransfer> activeTransfers = new HashMap<>();
@@ -122,7 +125,8 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
       final ClusterRebalanceMetrics metrics,
       final Duration leaderWaitTimeout,
       final RebalanceConfiguration configuration,
-      final Duration heartbeatInterval) {
+      final Duration heartbeatInterval,
+      final Duration electionTimeout) {
     this.localMemberId = localMemberId;
     this.executor = executor;
     this.partitionLeaders = partitionLeaders;
@@ -132,6 +136,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
     this.leaderWaitTimeout = leaderWaitTimeout;
     this.configuration = configuration;
     this.heartbeatInterval = heartbeatInterval;
+    this.electionTimeout = electionTimeout;
   }
 
   @Override
@@ -207,7 +212,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
             + "the rebalance was planned",
         rebalance.id(),
         partition);
-    resolveWithOutcome(
+    handleTransferOutcome(
         rebalance, index, PartitionRebalanceOutcome.PHYSICAL_TENANT_DISABLED, completion);
     return true;
   }
@@ -223,7 +228,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
             + "the rebalance was planned",
         rebalance.id(),
         partition);
-    resolveWithOutcome(
+    handleTransferOutcome(
         rebalance, index, PartitionRebalanceOutcome.PHYSICAL_TENANT_RECOVERING, completion);
     return true;
   }
@@ -245,7 +250,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
           rebalance.id(),
           rebalance.partition(index),
           timeout);
-      resolveWithOutcome(rebalance, index, PartitionRebalanceOutcome.NO_LEADER, completion);
+      handleTransferOutcome(rebalance, index, PartitionRebalanceOutcome.NO_LEADER, completion);
       return;
     }
     final var delay =
@@ -348,36 +353,14 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
         LEADERSHIP_OBSERVATION_INTERVAL,
         () -> {
           if (isOver(rebalance, completion)
-              || rebalance.partition(index).progress() != PartitionRebalanceProgress.TRANSFERRING) {
+              || rebalance.partition(index).progress() != PartitionRebalanceProgress.TRANSFERRING
+              || rebalance.isConfirmingLateTransfer()) {
             return;
           }
           if (resolveIfPhysicalTenantDisabled(rebalance, index, completion)) {
             return;
           }
-          final var partition = rebalance.partition(index);
-          final var observed =
-              partitionLeaders
-                  .forGroup(partition.physicalTenantId())
-                  .currentLeader(partition.partitionId());
-          if (observed.map(partition.desiredLeader()::equals).orElse(false)) {
-            LOG.info(
-                "Rebalance {} saw partition {} led by desired leader {} without notification from "
-                    + "previous leader",
-                rebalance.id(),
-                partition,
-                observed.get());
-            resolveTransferred(rebalance, index, completion);
-            return;
-          }
-          if (observed.isPresent()
-              && !Objects.equals(observed.get(), partition.currentLeader())
-              && !observed.get().equals(partition.desiredLeader())) {
-            LOG.warn(
-                "Rebalance {} saw partition {} led by {} instead of the current or desired leader",
-                rebalance.id(),
-                partition,
-                observed.get());
-            resolveLeaderChanged(rebalance, index, observed.get(), completion);
+          if (resolveIfLeadershipObserved(rebalance, index, completion, () -> {})) {
             return;
           }
           final var waitedSoFar = waited.plus(LEADERSHIP_OBSERVATION_INTERVAL);
@@ -387,9 +370,10 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
                 "Rebalance {} giving up on transferring partition {}: current leader neither"
                     + " reported an outcome nor gave up leadership within {}",
                 rebalance.id(),
-                partition,
+                rebalance.partition(index),
                 timeout);
-            resolveWithOutcome(rebalance, index, PartitionRebalanceOutcome.NO_RESPONSE, completion);
+            handleTransferOutcome(
+                rebalance, index, PartitionRebalanceOutcome.NO_RESPONSE, completion);
             return;
           }
           watchTransfer(rebalance, index, waitedSoFar, completion);
@@ -465,7 +449,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
         rebalance.id(),
         partition,
         rejectionReason);
-    resolveWithOutcome(
+    handleTransferOutcome(
         rebalance, index, LeadershipTransferResultMapping.toOutcome(rejectionReason), completion);
   }
 
@@ -501,12 +485,123 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
         rebalance.id(),
         partition,
         result.result());
-    resolveWithOutcome(
+    handleTransferOutcome(
         rebalance, index, LeadershipTransferResultMapping.toOutcome(result.result()), completion);
   }
 
+  /**
+   * Handles a partition's outcome. {@link PartitionRebalanceOutcome#TIMEOUT_NOW_EXHAUSTED} defers
+   * completion to confirm against the topology first; every other outcome is finalized immediately.
+   */
+  private void handleTransferOutcome(
+      final RebalanceRun rebalance,
+      final int index,
+      final PartitionRebalanceOutcome outcome,
+      final ActorFuture<Void> completion) {
+    if (outcome == PartitionRebalanceOutcome.TIMEOUT_NOW_EXHAUSTED) {
+      final var partition = rebalance.partition(index);
+      LOG.warn(
+          "Rebalance {} partition {} exhausted its TimeoutNow attempts; waiting up to {} to see "
+              + "if the desired leader takes over anyway before reporting a failed transfer",
+          rebalance.id(),
+          partition,
+          electionTimeout);
+      rebalance.startConfirmingLateTransfer();
+      awaitLateTransfer(rebalance, index, Duration.ZERO, completion);
+      return;
+    }
+    finalizeWithOutcome(rebalance, index, outcome, completion);
+  }
+
+  /** Watches for the desired leader taking over anyway, for up to one election timeout. */
+  private void awaitLateTransfer(
+      final RebalanceRun rebalance,
+      final int index,
+      final Duration waited,
+      final ActorFuture<Void> completion) {
+    final var remaining = electionTimeout.minus(waited);
+    if (remaining.isZero() || remaining.isNegative()) {
+      giveUpOnLateTransfer(rebalance, index, completion);
+      return;
+    }
+    final var delay =
+        remaining.compareTo(LEADERSHIP_OBSERVATION_INTERVAL) < 0
+            ? remaining
+            : LEADERSHIP_OBSERVATION_INTERVAL;
+    executor.schedule(
+        delay,
+        () -> {
+          if (!rebalance.isConfirmingLateTransfer()) {
+            return;
+          }
+          if (isOver(rebalance, completion)
+              || rebalance.partition(index).progress() != PartitionRebalanceProgress.TRANSFERRING) {
+            rebalance.stopConfirmingLateTransfer();
+            return;
+          }
+          if (resolveIfPhysicalTenantDisabled(rebalance, index, completion)) {
+            rebalance.stopConfirmingLateTransfer();
+            return;
+          }
+          if (resolveIfLeadershipObserved(
+              rebalance, index, completion, rebalance::stopConfirmingLateTransfer)) {
+            return;
+          }
+          awaitLateTransfer(rebalance, index, waited.plus(delay), completion);
+        });
+  }
+
+  /** Resolves the partition if the topology shows the desired or an unexpected leader. */
+  private boolean resolveIfLeadershipObserved(
+      final RebalanceRun rebalance,
+      final int index,
+      final ActorFuture<Void> completion,
+      final Runnable beforeResolving) {
+    final var partition = rebalance.partition(index);
+    final var observed =
+        partitionLeaders
+            .forGroup(partition.physicalTenantId())
+            .currentLeader(partition.partitionId());
+    if (observed.map(partition.desiredLeader()::equals).orElse(false)) {
+      LOG.info(
+          "Rebalance {} saw partition {} led by desired leader {}",
+          rebalance.id(),
+          partition,
+          observed.get());
+      beforeResolving.run();
+      resolveTransferred(rebalance, index, completion);
+      return true;
+    }
+    if (observed.isPresent()
+        && !Objects.equals(observed.get(), partition.currentLeader())
+        && !observed.get().equals(partition.desiredLeader())) {
+      LOG.warn(
+          "Rebalance {} saw partition {} led by {} instead of the current or desired leader",
+          rebalance.id(),
+          partition,
+          observed.get());
+      beforeResolving.run();
+      resolveLeaderChanged(rebalance, index, observed.get(), completion);
+      return true;
+    }
+    return false;
+  }
+
+  private void giveUpOnLateTransfer(
+      final RebalanceRun rebalance, final int index, final ActorFuture<Void> completion) {
+    LOG.warn(
+        "Rebalance {} giving up on partition {}: desired leader did not appear within {} of its "
+            + "TimeoutNow exhaustion",
+        rebalance.id(),
+        rebalance.partition(index),
+        electionTimeout);
+    rebalance.stopConfirmingLateTransfer();
+    finalizeWithOutcome(
+        rebalance, index, PartitionRebalanceOutcome.TIMEOUT_NOW_EXHAUSTED, completion);
+  }
+
   /** Completes a partition with a given outcome and moves on to the next. */
-  private void resolveWithOutcome(
+  private void finalizeWithOutcome(
       final RebalanceRun rebalance,
       final int index,
       final PartitionRebalanceOutcome outcome,

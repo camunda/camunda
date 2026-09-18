@@ -37,6 +37,7 @@ public final class RebalanceRun {
   private long partitionStartedAtNanos = System.nanoTime();
   private boolean cancelRequested;
   private boolean abandoned;
+  private boolean confirmingLateTransfer;
   private @Nullable Instant finishedAt;
 
   public RebalanceRun(
@@ -97,6 +98,21 @@ public final class RebalanceRun {
   /** How long the rebalance has been working on the latest partition it got to. */
   public Duration partitionElapsed() {
     return Duration.ofNanos(System.nanoTime() - partitionStartedAtNanos);
+  }
+
+  /** Marks that this run is confirming a late transfer for the partition currently in flight. */
+  public void startConfirmingLateTransfer() {
+    confirmingLateTransfer = true;
+  }
+
+  /** Clears the late-transfer confirmation marker for the partition currently in flight. */
+  public void stopConfirmingLateTransfer() {
+    confirmingLateTransfer = false;
+  }
+
+  /** Whether this run is confirming a late transfer for the partition currently in flight. */
+  public boolean isConfirmingLateTransfer() {
+    return confirmingLateTransfer;
   }
 
   /**
