@@ -65,7 +65,7 @@ class StateCheckProcessDefinitionDeletionsCommandTest {
     // given - the definition is DRAINING on P2 but the deployment partition tracks no pending
     // deletion for it: the deletion can never finish
     final Path partitions = tempDir.resolve("partitions");
-    seedPartition(partitions, 1, seeding -> {});
+    seedPartition(partitions, 1, seeding -> seeding.initializeRouting(2));
     seedPartition(partitions, 2, seeding -> seeding.markDraining());
 
     // when
@@ -92,6 +92,7 @@ class StateCheckProcessDefinitionDeletionsCommandTest {
         partitions,
         1,
         seeding -> {
+          seeding.initializeRouting(2);
           seeding.markDraining();
           seeding.addPendingDeletion(1);
           seeding.addPendingDeletion(2);
@@ -110,7 +111,7 @@ class StateCheckProcessDefinitionDeletionsCommandTest {
   void shouldReportOrphanedInstancesWhenTheyRemain() {
     // given - a stuck definition on P2 that still has an active process instance
     final Path partitions = tempDir.resolve("partitions");
-    seedPartition(partitions, 1, seeding -> {});
+    seedPartition(partitions, 1, seeding -> seeding.initializeRouting(2));
     seedPartition(
         partitions,
         2,
@@ -151,10 +152,25 @@ class StateCheckProcessDefinitionDeletionsCommandTest {
     // when
     final int exitCode = run(partitions);
 
-    // then - detected via the routing path, not the empty-routing fallback
+    // then
     assertThat(exitCode).isEqualTo(2);
-    assertThat(err.toString()).doesNotContain("routing state is empty");
     assertThat(out.toString()).contains("draining=[2]").contains("uncoordinated=[2]");
+  }
+
+  @Test
+  void shouldFailWhenRoutingStateEmpty() {
+    // given - the deployment partition snapshot carries no routing state, so the authoritative
+    // partition set is unknown
+    final Path partitions = tempDir.resolve("partitions");
+    seedPartition(partitions, 1, seeding -> {});
+    seedPartition(partitions, 2, seeding -> seeding.markDraining());
+
+    // when
+    final int exitCode = run(partitions);
+
+    // then
+    assertThat(exitCode).isOne();
+    assertThat(err.toString()).contains("routing state is empty");
   }
 
   @Test
@@ -176,7 +192,7 @@ class StateCheckProcessDefinitionDeletionsCommandTest {
   void shouldFailWhenAPartitionHasNoSnapshot() throws Exception {
     // given - partition 2's directory exists but holds no snapshot
     final Path partitions = tempDir.resolve("partitions");
-    seedPartition(partitions, 1, seeding -> {});
+    seedPartition(partitions, 1, seeding -> seeding.initializeRouting(2));
     Files.createDirectories(partitions.resolve("2"));
 
     // when

@@ -128,11 +128,11 @@ public class StateCheckProcessDefinitionDeletionsCommand implements Callable<Int
       return 1;
     }
 
+    final boolean missingRuntime = runtimePath == null || runtimePath.toString().isBlank();
     final Path runtimeRoot;
-    final Path ephemeralParent;
-    if (runtimePath == null) {
+    if (missingRuntime) {
       try {
-        ephemeralParent = Files.createTempDirectory("cdbg-check-pd-deletions-");
+        runtimeRoot = Files.createTempDirectory("cdbg-check-pd-deletions-");
       } catch (final IOException e) {
         err.println(
             "Failed to create a temporary runtime directory under "
@@ -142,9 +142,7 @@ public class StateCheckProcessDefinitionDeletionsCommand implements Callable<Int
                 + ". Retry with --runtime pointing at a directory the current user can write to.");
         return 1;
       }
-      runtimeRoot = ephemeralParent;
     } else {
-      ephemeralParent = null;
       runtimeRoot = runtimePath;
     }
 
@@ -174,19 +172,20 @@ public class StateCheckProcessDefinitionDeletionsCommand implements Callable<Int
               definitions,
               definitionsWithActiveInstances);
 
-      // Determine the authoritative set of partitions to scan. Fall back to the discovered
-      // directories only when routing state is unavailable (very old clusters).
-      final Set<Integer> expectedPartitions;
+      // The routing state is the authoritative set of partitions to scan. Any cluster that can hit
+      // the pre-draining defect this command looks for runs a version that maintains routing state,
+      // so an empty set means the input is wrong (e.g. a non-deployment snapshot) rather than an
+      // old cluster; fail instead of guessing from the directory listing.
       if (deployment.currentPartitions().isEmpty()) {
-        expectedPartitions = new TreeSet<>(partitionDirs.keySet());
         err.println(
-            "Warning: routing state is empty; cannot verify the full partition set. Falling back to"
-                + " the "
-                + expectedPartitions.size()
-                + " partition directories found under --root.");
-      } else {
-        expectedPartitions = new TreeSet<>(deployment.currentPartitions());
+            "Cannot run: routing state is empty in the deployment partition snapshot. "
+                + "Verify --root points at the broker's 'raft-partition/partitions' directory and "
+                + "that the deployment partition (id "
+                + Protocol.DEPLOYMENT_PARTITION
+                + ") snapshot is intact.");
+        return 1;
       }
+      final Set<Integer> expectedPartitions = new TreeSet<>(deployment.currentPartitions());
 
       // Refuse to run on incomplete input: every expected partition must be present with a readable
       // snapshot, otherwise a stuck definition living only on a missing partition is silently
@@ -251,8 +250,8 @@ public class StateCheckProcessDefinitionDeletionsCommand implements Callable<Int
       report(err, out, partitionStates.keySet(), findings);
       return findings.isEmpty() ? 0 : 2;
     } finally {
-      if (ephemeralParent != null) {
-        FileUtil.deleteFolderIfExists(ephemeralParent);
+      if (missingRuntime) {
+        FileUtil.deleteFolderIfExists(runtimeRoot);
       }
     }
   }
