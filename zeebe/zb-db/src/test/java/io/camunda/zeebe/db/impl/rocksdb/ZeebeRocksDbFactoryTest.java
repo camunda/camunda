@@ -25,6 +25,11 @@ import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources.RuntimeInfo;
+import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDbHistogramMetricsDoc;
+import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDbHistogramMetricsDoc.Statistic;
+import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDbIoStallMetricsDoc;
+import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDbMetricsDoc;
+import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDbTickerMetricsDoc;
 import io.camunda.zeebe.util.ByteValue;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
@@ -169,6 +174,52 @@ final class ZeebeRocksDbFactoryTest {
         .isEqualTo(DataBlockIndexType.kDataBlockBinaryAndHash);
     assertThat(tableConfig.dataBlockHashTableUtilRatio()).isEqualTo(0.75);
     assertThat(tableConfig.wholeKeyFiltering()).isTrue();
+  }
+
+  @Test
+  void shouldNotRegisterStatisticsMetricsByDefault(final @TempDir File pathName) {
+    // given
+    final var registry = new SimpleMeterRegistry();
+    final var factory =
+        new ZeebeRocksDbFactory<DefaultColumnFamily>(
+            new RocksDbConfiguration(),
+            new ConsistencyChecksSettings(),
+            new AccessMetricsConfiguration(Kind.NONE),
+            () -> registry);
+
+    // when
+    try (final var db = factory.createDb(pathName)) {
+      db.exportMetrics();
+
+      // then
+      assertThat(RocksDbTickerMetricsDoc.values())
+          .allSatisfy(
+              doc ->
+                  assertThat(registry.find(doc.getName()).gauge())
+                      .as("gauge '%s' is not registered", doc.getName())
+                      .isNull());
+      assertThat(RocksDbHistogramMetricsDoc.values())
+          .allSatisfy(
+              doc -> {
+                for (final var statistic : Statistic.values()) {
+                  assertThat(registry.find(doc.nameFor(statistic)).gauge())
+                      .as("gauge '%s' is not registered", doc.nameFor(statistic))
+                      .isNull();
+                }
+              });
+      assertThat(RocksDbMetricsDoc.values())
+          .allSatisfy(
+              doc ->
+                  assertThat(registry.find(doc.getName()).gauge())
+                      .as("gauge '%s' is registered", doc.getName())
+                      .isNotNull());
+      assertThat(RocksDbIoStallMetricsDoc.values())
+          .allSatisfy(
+              doc ->
+                  assertThat(registry.find(doc.getName()).gauge())
+                      .as("gauge '%s' is registered", doc.getName())
+                      .isNotNull());
+    }
   }
 
   @Test
