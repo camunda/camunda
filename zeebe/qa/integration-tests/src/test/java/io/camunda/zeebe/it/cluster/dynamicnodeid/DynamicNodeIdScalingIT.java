@@ -9,6 +9,7 @@ package io.camunda.zeebe.it.cluster.dynamicnodeid;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.NodeIdProvider.S3;
 import io.camunda.configuration.NodeIdProvider.Type;
@@ -19,6 +20,7 @@ import io.camunda.configuration.Zone;
 import io.camunda.configuration.ZoneAware;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3ClientConfig;
+import io.camunda.zeebe.management.cluster.AddZoneRequest;
 import io.camunda.zeebe.management.cluster.BrokerStateCode;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestBrokers;
@@ -29,11 +31,14 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
@@ -44,6 +49,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.junit.jupiter.Container;
@@ -72,10 +79,13 @@ public class DynamicNodeIdScalingIT {
   private static final String CLUSTER_NAME = "dynamic-node-id-scaling-test";
   private static final List<Optional<String>> ZONES =
       List.of(Optional.empty(), Optional.of("zoneA"), Optional.of("zoneB"));
-  private final Map<Optional<String>, String> bucketNames =
-      ZONES.stream()
-          .map(name -> Map.entry(name, UUID.randomUUID().toString()))
-          .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+  /**
+   * S3 stores the dynamic node-ID lease state. Each test invocation, including each parameterized
+   * scenario, therefore gets unique buckets from this lifecycle-managed map.
+   */
+  private final Map<Optional<String>, String> bucketNames = newBucketNames();
+
   private final List<AutoCloseable> resourcesToClose = new java.util.ArrayList<>();
 
   @BeforeAll
@@ -90,12 +100,29 @@ public class DynamicNodeIdScalingIT {
 
   @BeforeEach
   void setup() {
-    bucketNames.values().forEach(bucketName -> s3Client.createBucket(b -> b.bucket(bucketName)));
+    createBuckets(bucketNames);
   }
 
   @AfterEach
   void cleanup() throws Exception {
-    bucketNames
+    for (final var autoCloseable : resourcesToClose) {
+      autoCloseable.close();
+    }
+    deleteBuckets(bucketNames);
+  }
+
+  private static Map<Optional<String>, String> newBucketNames() {
+    return ZONES.stream()
+        .map(name -> Map.entry(name, UUID.randomUUID().toString()))
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+  }
+
+  private static void createBuckets(final Map<Optional<String>, String> buckets) {
+    buckets.values().forEach(bucketName -> s3Client.createBucket(b -> b.bucket(bucketName)));
+  }
+
+  private static void deleteBuckets(final Map<Optional<String>, String> buckets) {
+    buckets
         .values()
         .forEach(
             bucketName -> {
@@ -104,24 +131,30 @@ public class DynamicNodeIdScalingIT {
                   .forEach(obj -> s3Client.deleteObject(b -> b.bucket(bucketName).key(obj.key())));
               s3Client.deleteBucket(b -> b.bucket(bucketName));
             });
-
-    for (final var autoCloseable : resourcesToClose) {
-      autoCloseable.close();
-    }
   }
 
   private void configureBroker(final Camunda cfg, final int clusterSize) {
+    configureBroker(cfg, clusterSize, bucketNames);
+  }
+
+  private void configureBroker(
+      final Camunda cfg, final int clusterSize, final Map<Optional<String>, String> buckets) {
     cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
 
     cfg.getCluster().setSize(clusterSize);
-    configureS3NodeIdProvider(cfg);
+    configureS3NodeIdProvider(cfg, buckets);
   }
 
   private void configureS3NodeIdProvider(final Camunda cfg) {
+    configureS3NodeIdProvider(cfg, bucketNames);
+  }
+
+  private void configureS3NodeIdProvider(
+      final Camunda cfg, final Map<Optional<String>, String> buckets) {
     cfg.getCluster().getNodeIdProvider().setType(Type.S3);
     final S3 s3 = cfg.getCluster().getNodeIdProvider().s3();
     s3.setTaskId(UUID.randomUUID().toString());
-    s3.setBucketName(bucketNames.get(Optional.ofNullable(cfg.getCluster().getZone())));
+    s3.setBucketName(buckets.get(Optional.ofNullable(cfg.getCluster().getZone())));
     s3.setLeaseDuration(LEASE_DURATION);
     s3.setEndpoint(S3.getEndpoint().toString());
     s3.setRegion(S3.getRegion());
@@ -142,6 +175,141 @@ public class DynamicNodeIdScalingIT {
             .filter(b -> b.getState() == BrokerStateCode.ACTIVE)
             .collect(Collectors.toList());
     assertThat(activeBrokers).hasSize(targetClusterSize);
+  }
+
+  private TestCluster createZoneFailbackCluster(
+      final List<Zone> zones, final Map<Optional<String>, String> buckets) {
+    return TestCluster.builder()
+        .withName("dynamic-node-id-zone-failback")
+        .withBrokersCount(3)
+        .withPartitionsCount(PARTITIONS_COUNT)
+        .withReplicationFactor(2)
+        .withoutNodeId()
+        .multiZone(zones)
+        .withBrokerConfig(
+            broker ->
+                broker.withUnifiedConfig(
+                    cfg ->
+                        configureBroker(
+                            cfg, zones.stream().mapToInt(Zone::numberOfBrokers).sum(), buckets)))
+        .build();
+  }
+
+  private TestStandaloneBroker createDynamicBrokerInZone(
+      final TestCluster cluster,
+      final String zone,
+      final int stalePoolSize,
+      final List<Zone> zones,
+      final Map<Optional<String>, String> buckets) {
+    final var contactPoint =
+        cluster.brokers().values().stream()
+            .filter(TestSpringApplication::isStarted)
+            .findFirst()
+            .orElseThrow()
+            .address(TestZeebePort.CLUSTER);
+    return new TestStandaloneBroker()
+        .withUnauthenticatedAccess()
+        .withUnifiedConfig(
+            cfg -> {
+              cfg.getCluster().setName(cluster.name());
+              cfg.getCluster().setInitialContactPoints(List.of(contactPoint));
+              cfg.getCluster().setZone(zone);
+              cfg.getCluster().setPartitionCount(PARTITIONS_COUNT);
+              cfg.getCluster().setReplicationFactor(2);
+              final var partitioning = new Partitioning();
+              partitioning.setScheme(Scheme.ZONE_AWARE);
+              partitioning.setZoneAware(new ZoneAware(zones));
+              cfg.getCluster().setPartitioning(partitioning);
+              configureBroker(cfg, stalePoolSize, buckets);
+            });
+  }
+
+  @ParameterizedTest(name = "restored zone count {0}")
+  @ValueSource(ints = {1, 2, 3})
+  void shouldReconcileLeasesWhenRemovingAndRestoringAZone(final int restoredZoneCount) {
+    // TestClusterBuilder assigns brokers round-robin by zone order; put zone B first so it gets
+    // the two initial brokers represented by its S3 lease pool.
+    final var zones = List.of(new Zone("zoneB", 2, 1, 100), new Zone("zoneA", 1, 1, 1000));
+    try (final var cluster = createZoneFailbackCluster(zones, bucketNames)) {
+      // given - zone B owns two leases, while zone A remains available as the coordinator
+      cluster.start();
+      cluster.awaitHealthyTopology();
+      final var zoneABroker =
+          cluster.brokers().values().stream()
+              .filter(broker -> broker.nodeId().isInZone("zoneA"))
+              .findFirst()
+              .orElseThrow();
+      final var zoneBBrokers =
+          cluster.brokers().values().stream()
+              .filter(broker -> broker.nodeId().isInZone("zoneB"))
+              .toList();
+      final var actuator = ClusterActuator.of(zoneABroker);
+
+      // when - remove the healthy zone gracefully, retaining its old two-lease pool in S3
+      final var removeResponse = actuator.removeZone("zoneB", false, false);
+      Awaitility.await()
+          .untilAsserted(
+              () -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(removeResponse));
+      zoneBBrokers.forEach(TestStandaloneBroker::close);
+
+      final var activeBrokers = new ArrayList<TestStandaloneBroker>();
+      final var startFutures = new ArrayList<CompletableFuture<Void>>();
+      // Start all replacements with the stale pool size. If the requested count is greater than
+      // two, the extra broker remains blocked until PreScaling expands the S3 lease pool.
+      for (int nodeId = 0; nodeId < restoredZoneCount; nodeId++) {
+        final var broker = createDynamicBrokerInZone(cluster, "zoneB", 2, zones, bucketNames);
+        activeBrokers.add(broker);
+        resourcesToClose.add(broker);
+        if (nodeId == 0) {
+          broker.start();
+          assertThat(broker.nodeId()).isEqualTo(MemberId.from("zoneB", 0));
+        } else {
+          startFutures.add(CompletableFuture.runAsync(broker::start));
+        }
+      }
+
+      final var addResponse =
+          actuator.addZone(
+              "zoneB",
+              new AddZoneRequest()
+                  .numberOfReplicas(1)
+                  .priority(100)
+                  .numberOfBrokers(restoredZoneCount),
+              false);
+
+      // then - adding the zone reconciles the stale pool before the remaining brokers join
+      Awaitility.await()
+          .untilAsserted(
+              () -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(addResponse));
+      startFutures.forEach(CompletableFuture::join);
+
+      final var topology = actuator.getTopology();
+      assertThat(topology.getPendingChange()).isNull();
+      assertThat(topology.getBrokers())
+          .filteredOn(broker -> broker.getState() == BrokerStateCode.ACTIVE)
+          .hasSize(1 + restoredZoneCount);
+      assertThat(topology.getPartitioning().getZones())
+          .extracting(zone -> zone.getName())
+          .containsExactlyInAnyOrder("zoneA", "zoneB");
+      assertThat(topology.getPartitioning().getZones())
+          .filteredOn(zone -> zone.getName().equals("zoneB"))
+          .singleElement()
+          .satisfies(zone -> assertThat(zone.getNumberOfReplicas()).isEqualTo(1));
+      for (int nodeId = 0; nodeId < restoredZoneCount; nodeId++) {
+        ClusterActuatorAssert.assertThat(actuator)
+            .hasActiveBroker(MemberId.from("zoneB", nodeId).toString());
+      }
+      ClusterActuatorAssert.assertThat(actuator).hasActiveBroker(zoneABroker.nodeId().toString());
+
+      // Every active broker must be ready, not merely present and active in the topology.
+      activeBrokers.add(zoneABroker);
+      Awaitility.await()
+          .untilAsserted(
+              () -> {
+                assertThat(activeBrokers).allSatisfy(broker -> broker.brokerHealth().ready());
+                TestCluster.assertHealthyTopology(zoneABroker);
+              });
+    }
   }
 
   @Nested
