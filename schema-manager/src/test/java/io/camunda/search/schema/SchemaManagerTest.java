@@ -15,7 +15,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -34,7 +33,6 @@ import io.camunda.search.schema.utils.TestTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
-import io.camunda.webapps.schema.descriptors.template.PersistentWebSessionTemplate;
 import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
 import io.camunda.zeebe.test.util.logging.LogCapturer;
 import java.util.Collection;
@@ -227,8 +225,7 @@ class SchemaManagerTest {
         .forEach(
             indexDescriptor ->
                 verify(searchEngineClient)
-                    .putSettings(
-                        List.of(indexDescriptor), Map.of("index.number_of_replicas", "1")));
+                    .putSettings(indexDescriptor, Map.of("index.number_of_replicas", "1")));
     searchEngineClient.putIndexLifeCyclePolicy(
         config.retention().getPolicyName(), config.retention().getMinimumAge());
     searchEngineClient.putIndexLifeCyclePolicy(
@@ -615,61 +612,6 @@ class SchemaManagerTest {
         assertThat(logs.messagesAt(Level.WARN))
             .noneSatisfy(message -> assertThat(message).contains("is pinned to"));
       }
-    }
-  }
-
-  @Nested
-  class WebSessionSettingsToleranceTest {
-
-    private SearchEngineClient client;
-    private SearchEngineConfiguration cfg;
-    private MetadataIndex metaIndex;
-    private PersistentWebSessionTemplate webSessionTemplate;
-    private TestIndexDescriptor otherIndex;
-
-    @BeforeEach
-    void setUp() {
-      client = mock(SearchEngineClient.class);
-      cfg = SearchEngineConfiguration.of(c -> c);
-      cfg.schemaManager().setCreateSchema(true);
-      cfg.schemaManager().getRetry().setMaxRetries(1);
-      cfg.connect().setIndexPrefix("test");
-      metaIndex = new MetadataIndex("test", true);
-      webSessionTemplate = new PersistentWebSessionTemplate("test", true);
-      otherIndex = new TestIndexDescriptor("test", "mappings.json");
-      when(client.indexExists(metaIndex.getFullQualifiedName())).thenReturn(true);
-      when(client.getDocument(metaIndex.getFullQualifiedName(), SCHEMA_VERSION_METADATA_ID))
-          .thenReturn(null);
-    }
-
-    @Test
-    void shouldToleratesAMissingWebSessionIndexButKeepOtherDescriptorsStrict() {
-      // given — the web-session index may legitimately be missing (e.g. deliberately excluded
-      // from a restore, recreated on its first write), so its settings update must tolerate that
-      // instead of failing schema initialization; every other descriptor stays strict.
-      final var mgr =
-          new SchemaManager(
-              client,
-              List.of(metaIndex, otherIndex),
-              List.of(webSessionTemplate),
-              cfg,
-              mock(IndexSchemaValidator.class),
-              "8.8.0",
-              null);
-
-      // when
-      startupWithRetry(mgr, cfg);
-
-      // then — web-session goes through the tolerant overload, never the strict one
-      verify(client)
-          .putSettings(List.of(webSessionTemplate), Map.of("index.number_of_replicas", "1"), true);
-      verify(client, never())
-          .putSettings(List.of(webSessionTemplate), Map.of("index.number_of_replicas", "1"));
-      verify(client, never()).putSettings(eq(List.of(webSessionTemplate)), any(), eq(false));
-
-      // every other descriptor keeps going through the strict overload, never the tolerant one
-      verify(client).putSettings(List.of(otherIndex), Map.of("index.number_of_replicas", "1"));
-      verify(client, never()).putSettings(eq(List.of(otherIndex)), any(), anyBoolean());
     }
   }
 
