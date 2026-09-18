@@ -542,14 +542,14 @@ public class SchemaManager implements CloseableSilently {
       return true;
     }
 
-    return getMissingIndices(allIndexDescriptors).isEmpty()
+    return getMissingIndices(requiredIndexDescriptors()).isEmpty()
         && getMissingIndexTemplates(indexTemplateDescriptors).isEmpty()
         && validateIndices().isEmpty()
         && isAliasIntegrityValid(false);
   }
 
   public boolean isAllIndicesExist() {
-    return getMissingIndices(allIndexDescriptors).isEmpty();
+    return getMissingIndices(requiredIndexDescriptors()).isEmpty();
   }
 
   @Override
@@ -558,15 +558,16 @@ public class SchemaManager implements CloseableSilently {
   }
 
   public boolean isAliasIntegrityValid(final boolean throwException) {
+    final var descriptorsWithAliasValidation = descriptorsWithAliasValidation();
     final List<String> indexNames =
-        allIndexDescriptors.stream().map(IndexDescriptor::getFullQualifiedName).toList();
+        descriptorsWithAliasValidation.stream().map(IndexDescriptor::getFullQualifiedName).toList();
 
     final Map<String, Set<String>> aliasByIndex = searchEngineClient.getAliases(indexNames);
 
     final Set<String> indexesWithMissingAliases = new LinkedHashSet<>();
     final Map<String, Set<String>> aliasToIndices = new HashMap<>();
 
-    for (final IndexDescriptor indexDescriptor : allIndexDescriptors) {
+    for (final IndexDescriptor indexDescriptor : descriptorsWithAliasValidation) {
       final Set<String> aliases =
           aliasByIndex.getOrDefault(indexDescriptor.getFullQualifiedName(), Set.of());
 
@@ -612,5 +613,19 @@ public class SchemaManager implements CloseableSilently {
 
     LOG.warn(errorMessage);
     return false;
+  }
+
+  private List<IndexDescriptor> requiredIndexDescriptors() {
+    return allIndexDescriptors.stream().filter(descriptor -> !descriptor.allowMissing()).toList();
+  }
+
+  private List<IndexDescriptor> descriptorsWithAliasValidation() {
+    final var existingIndexNames = existingIndexNames(allIndexDescriptors);
+    return allIndexDescriptors.stream()
+        .filter(
+            descriptor ->
+                !descriptor.allowMissing()
+                    || existingIndexNames.contains(descriptor.getFullQualifiedName()))
+        .toList();
   }
 }
