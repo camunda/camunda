@@ -27,12 +27,11 @@ inputs:
     default: warn
 
 outputs:
-  retried:
+  attempts:
     description: >
-      `true` when the first upload attempt failed and a retry was needed.
-      Exposed so a caller can detect an absorbed failure that left the job
-      green.
-    value: ${{ steps.attempt-1.outcome == 'failure' }}
+      Number of upload attempts made. More than 1 means a transient failure was
+      absorbed and left the job green.
+    value: ${{ steps.attempts.outputs.count }}
 
 runs:
   using: composite
@@ -95,21 +94,33 @@ runs:
 
     # A successful retry leaves the job green, so surface it in the run summary
     # to keep a rising rate of absorbed failures visible instead of silent.
-    - name: Report absorbed retries
-      if: ${{ !cancelled() && steps.attempt-1.outcome == 'failure' }}
+    # `always()`, not `!cancelled()`: an exhausted retry has already failed the
+    # job here, and a failed step skips its successors.
+    - name: Count attempts and report absorbed retries
+      id: attempts
+      if: ${{ always() }}
       shell: bash
       env:
         ARTIFACT_NAME: ${{ inputs.name }}
         ATTEMPT_2_OUTCOME: ${{ steps.attempt-2.outcome }}
         ATTEMPT_3_OUTCOME: ${{ steps.attempt-3.outcome }}
       run: |
-        if [ "$ATTEMPT_2_OUTCOME" = "success" ]; then
-          attempts=2
-        elif [ "$ATTEMPT_3_OUTCOME" = "success" ]; then
-          attempts=3
-        else
-          attempts="all 3"
+        set -euo pipefail
+
+        # Any outcome other than `skipped` means the attempt ran.
+        count=1
+        if [ "$ATTEMPT_2_OUTCOME" != "skipped" ]; then count=2; fi
+        if [ "$ATTEMPT_3_OUTCOME" != "skipped" ]; then count=3; fi
+        echo "count=${count}" >> "$GITHUB_OUTPUT"
+
+        if [ "$count" -eq 1 ]; then
+          exit 0
         fi
-        echo "::warning::Artifact '${ARTIFACT_NAME}' needed ${attempts} upload attempt(s)."
-        echo "Artifact \`${ARTIFACT_NAME}\` needed ${attempts} upload attempt(s)." \
-          >> "$GITHUB_STEP_SUMMARY"
+
+        if [ "$ATTEMPT_3_OUTCOME" = "failure" ]; then
+          detail="failed after all ${count} upload attempts"
+        else
+          detail="needed ${count} upload attempts"
+        fi
+        echo "::warning::Artifact '${ARTIFACT_NAME}' ${detail}."
+        echo "Artifact \`${ARTIFACT_NAME}\` ${detail}." >> "$GITHUB_STEP_SUMMARY"
