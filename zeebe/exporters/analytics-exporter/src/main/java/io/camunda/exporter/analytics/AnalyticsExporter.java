@@ -73,11 +73,12 @@ public class AnalyticsExporter implements Exporter {
     scheduleMetricFlush();
     scheduleHeartbeat();
     LOG.info(
-        "Analytics exporter configured: endpoint={}, clusterId={}, partitionId={}, exporterDigest={}",
+        "Analytics exporter configured: endpoint={}, clusterId={}, partitionId={}, exporterDigest={}, activeCategories={}",
         config.getEndpoint(),
         analyticsContext.clusterId(),
         analyticsContext.partitionId(),
-        analyticsContext.exporterDigest());
+        analyticsContext.exporterDigest(),
+        config.getActiveCategories());
   }
 
   @Override
