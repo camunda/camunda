@@ -19,9 +19,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Answers CSL's component access check from the Optimize access policy. Optimize stores no
- * authorizations of its own, so every other requirement is granted: the permissions Optimize
- * enforces on its data are resolved by its own services, not through this port.
+ * Answers CSL's component access check from the Optimize access policy, and <b>grants every other
+ * authorization requirement without checking it</b>. Optimize stores no authorizations of its own,
+ * so a new requirement routed through this port is waved through until it is handled here: the
+ * permissions Optimize enforces on its data are resolved by its own services, not through this
+ * port.
  */
 public final class OptimizeComponentAuthorizationAdapter implements AuthorizationCheckPort {
 
@@ -46,7 +48,11 @@ public final class OptimizeComponentAuthorizationAdapter implements Authorizatio
       return Either.right(null);
     }
     // The rejection carries the required permission, not the reason, so log it here or it is lost.
-    LOG.debug("Denying access to the Optimize component: {}", access.leftValue());
+    // A denial is an expected outcome the caller can repeat at will, so it stays at debug level.
+    LOG.debug(
+        "Denying user '{}' access to the Optimize component: {}",
+        authentication.authenticatedUsername(),
+        access.leftValue());
     return Either.left(
         new AuthorizationRejection.Permission(
             authorization.resourceType(),
