@@ -1300,6 +1300,8 @@ public class BrokerBasedPropertiesOverride {
           }
           override.getExporters().put(name, newCfg);
         });
+
+    ExporterIsolationValidation.validate(override.getExporters(), camunda);
   }
 
   private static void warnReservedRdbmsExporter(final String genericProperty) {
