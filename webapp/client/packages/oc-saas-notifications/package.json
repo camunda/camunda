@@ -45,7 +45,7 @@
 	},
 	"peerDependencies": {
 		"@camunda/camunda-composite-components": "0.25.4",
-		"@camunda/design-system": "^0.59.0",
+		"@camunda/design-system": ">=0.59.0 <1.0.0",
 		"react": ">=19.0.0",
 		"react-dom": ">=19.0.0"
 	}
