@@ -38,7 +38,7 @@ runs:
     - name: Set up Docker Buildx (attempt 1 of 3)
       id: attempt-1
       continue-on-error: true
-      uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+      uses: docker/setup-buildx-action@594f3bf4285d9ea8dc53c9a0c9c4092420091003 # v4.4.0
       with:
         driver-opts: ${{ inputs.driver-opts }}
         buildkitd-flags: ${{ inputs.buildkitd-flags }}
@@ -53,7 +53,7 @@ runs:
       id: attempt-2
       if: steps.attempt-1.outcome == 'failure'
       continue-on-error: true
-      uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+      uses: docker/setup-buildx-action@594f3bf4285d9ea8dc53c9a0c9c4092420091003 # v4.4.0
       with:
         driver-opts: ${{ inputs.driver-opts }}
         buildkitd-flags: ${{ inputs.buildkitd-flags }}
@@ -66,7 +66,7 @@ runs:
 
     - name: Set up Docker Buildx (attempt 3 of 3)
       if: steps.attempt-2.outcome == 'failure'
-      uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+      uses: docker/setup-buildx-action@594f3bf4285d9ea8dc53c9a0c9c4092420091003 # v4.4.0
       with:
         driver-opts: ${{ inputs.driver-opts }}
         buildkitd-flags: ${{ inputs.buildkitd-flags }}
