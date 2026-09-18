@@ -122,12 +122,14 @@ public final class StatefulGauge extends AbstractMeter implements Gauge {
   static StatefulGauge registerAsGauge(
       final Meter.Id id, final Builder builder, final MeterRegistry registry) {
     final var state = builder.state;
-    final var gauge =
+    final var gaugeBuilder =
         Gauge.builder(id.getName(), state, StatefulGauge::longAsDouble)
             .description(id.getDescription())
-            .tags(id.getTags())
-            .baseUnit(id.getBaseUnit())
-            .register(registry);
+            .tags(id.getTags());
+    if (id.getBaseUnit() != null) {
+      gaugeBuilder.baseUnit(id.getBaseUnit());
+    }
+    final var gauge = gaugeBuilder.register(registry);
 
     return new StatefulGauge(gauge, state);
   }
@@ -196,10 +198,10 @@ public final class StatefulGauge extends AbstractMeter implements Gauge {
      * Prometheus, this adds a suffix to the metric name. Use with caution when working with
      * pre-existing metrics to avoid backwards compatibility breaks.
      *
-     * @param unit Base unit of the eventual gauge.
+     * @param unit Base unit of the eventual gauge, or null when it is unitless.
      * @return The gauge builder with added base unit.
      */
-    public Builder baseUnit(final String unit) {
+    public Builder baseUnit(final @Nullable String unit) {
       baseUnit = unit;
       return this;
     }

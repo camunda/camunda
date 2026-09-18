@@ -10,6 +10,8 @@ package io.camunda.zeebe.db.impl.rocksdb.metrics;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
+import io.micrometer.core.instrument.binder.BaseUnits;
+import org.jspecify.annotations.Nullable;
 import org.rocksdb.TickerType;
 
 /**
@@ -75,12 +77,14 @@ public enum RocksDbTickerMetricsDoc implements RocksDbMeterDoc {
       TickerType.BLOCK_CACHE_BYTES_READ,
       "rocksdb.cache",
       "bytes.read",
-      "Cumulative bytes read out of the block cache"),
+      "Cumulative bytes read out of the block cache",
+      BaseUnits.BYTES),
   BLOCK_CACHE_BYTES_WRITE(
       TickerType.BLOCK_CACHE_BYTES_WRITE,
       "rocksdb.cache",
       "bytes.write",
-      "Cumulative bytes inserted into the block cache"),
+      "Cumulative bytes inserted into the block cache",
+      BaseUnits.BYTES),
 
   // ---- bloom filters ----
   BLOOM_FILTER_USEFUL(
@@ -118,7 +122,11 @@ public enum RocksDbTickerMetricsDoc implements RocksDbMeterDoc {
   NUMBER_KEYS_READ(
       TickerType.NUMBER_KEYS_READ, "rocksdb.reads", "keys", "Cumulative number of keys read"),
   BYTES_READ(
-      TickerType.BYTES_READ, "rocksdb.reads", "bytes", "Cumulative bytes read by point gets"),
+      TickerType.BYTES_READ,
+      "rocksdb.reads",
+      "bytes",
+      "Cumulative bytes read by point gets",
+      BaseUnits.BYTES),
   MEMTABLE_HIT(
       TickerType.MEMTABLE_HIT,
       "rocksdb.reads",
@@ -179,7 +187,8 @@ public enum RocksDbTickerMetricsDoc implements RocksDbMeterDoc {
       TickerType.ITER_BYTES_READ,
       "rocksdb.iterators",
       "bytes.read",
-      "Cumulative bytes read through iterators. Compare against reads.bytes to see how much of the read path is iteration"),
+      "Cumulative bytes read through iterators. Compare against reads.bytes to see how much of the read path is iteration",
+      BaseUnits.BYTES),
   NO_ITERATOR_CREATED(
       TickerType.NO_ITERATOR_CREATED,
       "rocksdb.iterators",
@@ -212,7 +221,12 @@ public enum RocksDbTickerMetricsDoc implements RocksDbMeterDoc {
       "rocksdb.writes",
       "keys",
       "Cumulative number of keys written"),
-  BYTES_WRITTEN(TickerType.BYTES_WRITTEN, "rocksdb.writes", "bytes", "Cumulative bytes written"),
+  BYTES_WRITTEN(
+      TickerType.BYTES_WRITTEN,
+      "rocksdb.writes",
+      "bytes",
+      "Cumulative bytes written",
+      BaseUnits.BYTES),
   WRITE_DONE_BY_SELF(
       TickerType.WRITE_DONE_BY_SELF,
       "rocksdb.writes",
@@ -226,25 +240,30 @@ public enum RocksDbTickerMetricsDoc implements RocksDbMeterDoc {
   STALL_MICROS(
       TickerType.STALL_MICROS,
       "rocksdb.writes",
-      "stall.micros",
-      "Cumulative microseconds writes were stalled waiting on flushes or compactions"),
+      "stall",
+      "Cumulative milliseconds writes were stalled waiting on flushes or compactions",
+      BaseUnits.MILLISECONDS,
+      1.0 / 1000.0),
 
   // ---- background work ----
   COMPACT_READ_BYTES(
       TickerType.COMPACT_READ_BYTES,
       "rocksdb.compaction",
       "read.bytes",
-      "Cumulative bytes read by compaction"),
+      "Cumulative bytes read by compaction",
+      BaseUnits.BYTES),
   COMPACT_WRITE_BYTES(
       TickerType.COMPACT_WRITE_BYTES,
       "rocksdb.compaction",
       "write.bytes",
-      "Cumulative bytes written by compaction"),
+      "Cumulative bytes written by compaction",
+      BaseUnits.BYTES),
   FLUSH_WRITE_BYTES(
       TickerType.FLUSH_WRITE_BYTES,
       "rocksdb.compaction",
       "flush.write.bytes",
-      "Cumulative bytes written by memtable flushes"),
+      "Cumulative bytes written by memtable flushes",
+      BaseUnits.BYTES),
   COMPACTION_KEY_DROP_OBSOLETE(
       TickerType.COMPACTION_KEY_DROP_OBSOLETE,
       "rocksdb.compaction",
@@ -276,16 +295,39 @@ public enum RocksDbTickerMetricsDoc implements RocksDbMeterDoc {
   private final String namespace;
   private final String suffix;
   private final String description;
+  private final @Nullable String baseUnit;
+  private final double scale;
 
   RocksDbTickerMetricsDoc(
       final TickerType ticker,
       final String namespace,
       final String suffix,
       final String description) {
+    this(ticker, namespace, suffix, description, null);
+  }
+
+  RocksDbTickerMetricsDoc(
+      final TickerType ticker,
+      final String namespace,
+      final String suffix,
+      final String description,
+      final @Nullable String baseUnit) {
+    this(ticker, namespace, suffix, description, baseUnit, 1.0);
+  }
+
+  RocksDbTickerMetricsDoc(
+      final TickerType ticker,
+      final String namespace,
+      final String suffix,
+      final String description,
+      final @Nullable String baseUnit,
+      final double scale) {
     this.ticker = ticker;
     this.namespace = namespace;
     this.suffix = suffix;
     this.description = description;
+    this.baseUnit = baseUnit;
+    this.scale = scale;
   }
 
   public TickerType ticker() {
@@ -295,6 +337,16 @@ public enum RocksDbTickerMetricsDoc implements RocksDbMeterDoc {
   @Override
   public String getDescription() {
     return description;
+  }
+
+  @Override
+  public @Nullable String getBaseUnit() {
+    return baseUnit;
+  }
+
+  @Override
+  public double convertToBaseUnit(final double value) {
+    return value * scale;
   }
 
   @Override

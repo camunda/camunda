@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDbHistogramMetricsDoc;
 import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDbHistogramMetricsDoc.Statistic;
 import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDbIoStallMetricsDoc;
 import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDbTickerMetricsDoc;
+import io.micrometer.core.instrument.binder.BaseUnits;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import org.junit.jupiter.api.Test;
@@ -76,6 +77,13 @@ final class RocksDBMetricExporterTest {
   }
 
   @Test
+  void shouldConvertStatisticsToMicrometerUnits() {
+    // then
+    assertThat(RocksDbHistogramMetricsDoc.DB_GET.convertToBaseUnit(1_000)).isEqualTo(1.0);
+    assertThat(RocksDbTickerMetricsDoc.STALL_MICROS.convertToBaseUnit(1_000)).isEqualTo(1.0);
+  }
+
+  @Test
   void shouldRegisterAllStatisticsGaugesWhenStatisticsAreEnabled(@TempDir final File dir)
       throws Exception {
     // given
@@ -106,6 +114,35 @@ final class RocksDBMetricExporterTest {
                       .isNotNull();
                 }
               });
+
+      assertThat(
+              registry
+                  .find(RocksDbHistogramMetricsDoc.DB_GET.nameFor(Statistic.SUM))
+                  .gauge()
+                  .getId()
+                  .getBaseUnit())
+          .isEqualTo(BaseUnits.MILLISECONDS);
+      assertThat(
+              registry
+                  .find(RocksDbHistogramMetricsDoc.DB_GET.nameFor(Statistic.COUNT))
+                  .gauge()
+                  .getId()
+                  .getBaseUnit())
+          .isNull();
+      assertThat(
+              registry
+                  .find(RocksDbTickerMetricsDoc.STALL_MICROS.getName())
+                  .gauge()
+                  .getId()
+                  .getName())
+          .isEqualTo("zeebe.rocksdb.writes.stall");
+      assertThat(
+              registry
+                  .find(RocksDbTickerMetricsDoc.STALL_MICROS.getName())
+                  .gauge()
+                  .getId()
+                  .getBaseUnit())
+          .isEqualTo(BaseUnits.MILLISECONDS);
     }
   }
 
