@@ -38,9 +38,9 @@ gated on the previous attempt's `outcome`. See [Notes](#notes) before editing th
 
 ### Outputs
 
-|   Output   |                            Description                            |
-|------------|-------------------------------------------------------------------|
-| `attempts` | Number of upload attempts made: `1` when the first one succeeded  |
+|   Output   |                           Description                            |
+|------------|------------------------------------------------------------------|
+| `attempts` | Number of upload attempts made: `1` when the first one succeeded |
 
 More than `1` means a retry was needed, and `0` that invalid backoff inputs stopped the action
 before it tried. `attempts` exists because a successful retry leaves the job green, hiding the
