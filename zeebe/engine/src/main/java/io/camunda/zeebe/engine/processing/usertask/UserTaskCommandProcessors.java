@@ -48,7 +48,8 @@ public final class UserTaskCommandProcessors {
             writers,
             processingState.getProcessState(),
             bpmnBehaviors.eventTriggerBehavior(),
-            bpmnBehaviors.stateBehavior());
+            bpmnBehaviors.stateBehavior(),
+            bpmnBehaviors.storageOrdinalProvider());
 
     final var userTaskAuth = new UserTaskAuthorizationCheck(cslCheck);
 
