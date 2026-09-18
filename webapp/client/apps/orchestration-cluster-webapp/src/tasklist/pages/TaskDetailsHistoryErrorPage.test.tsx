@@ -25,7 +25,7 @@ describe('<TaskDetailsHistoryErrorPage />', () => {
 		);
 
 		await expect.element(screen.getByText('Something went wrong')).toBeVisible();
-		await expect.element(screen.getByText(/could not load the task history/i)).toBeVisible();
+		await expect.element(screen.getByText(/couldn't load the task history/i)).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Try again'})).toBeVisible();
 	});
 

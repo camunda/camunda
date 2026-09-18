@@ -167,7 +167,9 @@ test('should have no accessibility violations in the start-process form error st
 		}),
 	);
 	await tasklistProcessesPage.startProcessDialog.getByRole('button', {name: 'Try again'}).click();
-	await expect(tasklistProcessesPage.startProcessFormError).toContainText('We were not able to render the form.');
+	await expect(tasklistProcessesPage.startProcessFormError).toContainText(
+		"We couldn't render the form. Contact your process administrator to fix the form schema.",
+	);
 
 	accessibilityScanResults = await makeAxeBuilder().analyze();
 	expect(accessibilityScanResults.violations).toEqual([]);

@@ -55,7 +55,7 @@ const BatchModificationNotification: React.FC<Props> = observer(
           title=""
           subtitle={
             sourceElementName === '' || targetElementName === ''
-              ? 'Please select where you want to move the selected instances on the diagram.'
+              ? 'Select where you want to move the selected instances on the diagram.'
               : `Modification scheduled: Move ${pluralSuffix(
                   instancesCount,
                   'instance',

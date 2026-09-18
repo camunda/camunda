@@ -280,7 +280,7 @@ describe('ElementInstanceLog', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'Please contact your organization owner or admin to give you the necessary permissions to access this instance history',
+        'Contact your organization owner or admin to give you the necessary permissions to access this instance history',
       ),
     ).toBeInTheDocument();
   });
@@ -305,7 +305,7 @@ describe('ElementInstanceLog', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'Please contact your organization owner or admin to give you the necessary permissions to access this instance history',
+        'Contact your organization owner or admin to give you the necessary permissions to access this instance history',
       ),
     ).toBeInTheDocument();
   });

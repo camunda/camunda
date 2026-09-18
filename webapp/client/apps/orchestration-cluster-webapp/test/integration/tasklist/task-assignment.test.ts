@@ -136,9 +136,7 @@ test.describe('Task assignment', () => {
 		await taskDetailPage.goto('2251799813685281');
 		await taskDetailPage.assignButton.click();
 
-		await expect(
-			taskDetailPage.header.notifications.getByNotificationTitle('Task could not be assigned'),
-		).toBeVisible();
+		await expect(taskDetailPage.header.notifications.getByNotificationTitle("Couldn't assign the task")).toBeVisible();
 		await expect(taskDetailPage.assignButton).toBeVisible();
 	});
 

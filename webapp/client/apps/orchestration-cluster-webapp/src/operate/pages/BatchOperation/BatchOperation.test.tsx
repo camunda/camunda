@@ -151,7 +151,7 @@ describe('<BatchOperation />', () => {
 			await expect.poll(() => screen.router.state.location.pathname).toBe('/operate/batch-operations');
 			await expect
 				.poll(() => notificationsStore.notifications.map((notification) => notification.title))
-				.toContain(`Batch operation ${BATCH_OPERATION_KEY} could not be found`);
+				.toContain(`Couldn't find batch operation ${BATCH_OPERATION_KEY}`);
 			expect(renderedErrors).toEqual([]);
 		} finally {
 			observer.disconnect();
@@ -170,7 +170,7 @@ describe('<BatchOperation />', () => {
 		await expect.poll(() => firstVisit.router.state.location.pathname).toBe('/operate/batch-operations');
 		await expect
 			.poll(() => notificationsStore.notifications.map((notification) => notification.title))
-			.toContain(`Batch operation ${BATCH_OPERATION_KEY} could not be found`);
+			.toContain(`Couldn't find batch operation ${BATCH_OPERATION_KEY}`);
 		await firstVisit.unmount();
 		notificationsStore.reset();
 
@@ -215,7 +215,7 @@ describe('<BatchOperation />', () => {
 			.toEqual([
 				expect.objectContaining({
 					kind: 'error',
-					title: `Batch operation ${BATCH_OPERATION_KEY} could not be found`,
+					title: `Couldn't find batch operation ${BATCH_OPERATION_KEY}`,
 				}),
 			]);
 	}, 10000);

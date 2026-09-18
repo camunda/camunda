@@ -705,10 +705,12 @@ describe('<BottomPanelTabs />', () => {
       wrapper: getWrapper(path),
     });
 
-    expect(await screen.findByTestId('pathname')).toHaveTextContent(
-      Paths.processInstanceDetails({
-        processInstanceId: PROCESS_INSTANCE_ID,
-      }),
+    await waitFor(() =>
+      expect(screen.getByTestId('pathname')).toHaveTextContent(
+        Paths.processInstanceDetails({
+          processInstanceId: PROCESS_INSTANCE_ID,
+        }),
+      ),
     );
   });
 

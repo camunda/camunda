@@ -99,18 +99,18 @@ describe('<DecisionOperations />', () => {
 			name: 'a forbidden response',
 			response: new HttpResponse(null, {status: 403}),
 			title: "You don't have permission to perform this operation",
-			subtitle: 'Please contact the administrator if you need access.',
+			subtitle: 'Contact the administrator if you need access.',
 		},
 		{
 			name: 'a server error',
 			response: new HttpResponse(null, {status: 500}),
-			title: 'Operation could not be created',
+			title: "Couldn't create operation",
 			subtitle: undefined,
 		},
 		{
 			name: 'a network error',
 			response: HttpResponse.error(),
-			title: 'Operation could not be created',
+			title: "Couldn't create operation",
 			subtitle: undefined,
 		},
 	])('should recover from $name without changing the selection', async ({response, title, subtitle}, {worker}) => {

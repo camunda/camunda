@@ -223,7 +223,7 @@ describe('ProcessInstanceOperations', () => {
 
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'error',
-      title: 'Operation could not be created',
+      title: "Couldn't create operation",
       isDismissable: true,
     });
   });
@@ -274,7 +274,7 @@ describe('ProcessInstanceOperations', () => {
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'warning',
       title: "You don't have permission to perform this operation",
-      subtitle: 'Please contact the administrator if you need access.',
+      subtitle: 'Contact the administrator if you need access.',
       isDismissable: true,
     });
   });
