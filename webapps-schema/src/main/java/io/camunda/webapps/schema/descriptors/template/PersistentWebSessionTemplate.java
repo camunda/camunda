@@ -25,6 +25,11 @@ public class PersistentWebSessionTemplate extends AbstractTemplateDescriptor {
   }
 
   @Override
+  public boolean allowMissing() {
+    return true;
+  }
+
+  @Override
   public String getVersion() {
     return INDEX_VERSION;
   }
