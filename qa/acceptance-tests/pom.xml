@@ -994,8 +994,6 @@
 
     <!--
     This profile will run all tests annotated with @Tag("multiDbTest") in archiver-less mode.
-
-    NB. this runs the identity tests too.
     -->
     <profile>
       <id>archiverless</id>
@@ -1009,6 +1007,34 @@
               <groups>multi-db-test</groups>
               <!-- TODO remove archiverless-wip once archiverless support is fully implemented -->
               <excludedGroups>rdbms, history, archiverless-wip</excludedGroups>
+              <excludes>
+                <exclude>${identity-packages}</exclude>
+                <exclude>**/*$*.java</exclude>
+              </excludes>
+              <systemPropertyVariables>
+                <test.integration.camunda.archiverless.enabled>true</test.integration.camunda.archiverless.enabled>
+                <camunda.test.preferred.extension>multi-db</camunda.test.preferred.extension>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <id>archiverless-identity</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <failIfNoTests>false</failIfNoTests>
+              <groups>multi-db-test</groups>
+              <excludedGroups>rdbms, history</excludedGroups>
+              <includes>
+                <include>${identity-packages}</include>
+              </includes>
               <systemPropertyVariables>
                 <test.integration.camunda.archiverless.enabled>true</test.integration.camunda.archiverless.enabled>
                 <camunda.test.preferred.extension>multi-db</camunda.test.preferred.extension>
