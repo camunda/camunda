@@ -9,7 +9,6 @@ package io.camunda.application.commons.rdbms;
 
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.PerTenantSchemaConfig;
-import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.RdbmsSchemaManagers;
 import io.camunda.db.rdbms.RdbmsSchemaMigrationStatusProvider;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
@@ -43,7 +42,7 @@ public class MyBatisConfiguration {
    * node, the bean that initializes each tenant's schema in isolation.
    */
   @Bean
-  public RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry(
+  public RdbmsSchemaInitializer rdbmsSchemaManagerRegistry(
       final RdbmsDataSources rdbmsDataSources,
       final PhysicalTenantResolver physicalTenantResolver) {
     // VersionUtil.getVersion() may not be a valid semantic version during local development;
