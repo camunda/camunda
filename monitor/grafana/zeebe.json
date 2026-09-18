@@ -2508,7 +2508,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "max (zeebe_log_appender_last_committed_position{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}) by (physicalTenant, partition) - max (zeebe_exporter_last_exported_position{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}) by (physicalTenant, partition)",
+              "expr": "clamp_min(max by (physicalTenant, partition, pod) (zeebe_log_appender_last_committed_position{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}) - on (physicalTenant, partition, pod) topk by (physicalTenant, partition) (1, max by (physicalTenant, partition, pod) (zeebe_exporter_last_exported_position{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"})), 0)",
               "format": "time_series",
               "instant": false,
               "interval": "",
