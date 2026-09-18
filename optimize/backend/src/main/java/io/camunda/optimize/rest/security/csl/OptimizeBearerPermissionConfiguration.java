@@ -39,14 +39,9 @@ public class OptimizeBearerPermissionConfiguration {
   }
 
   @Bean
-  public OptimizeBearerPermissionFilter optimizeBearerPermissionFilter(
-      final OidcBearerPrincipalClassifier classifier, final CCSMTokenService tokenService) {
-    return new OptimizeBearerPermissionFilter(classifier, tokenService);
-  }
-
-  @Bean
   public SecurityHeadersCustomizer bearerPermissionFilterCustomizer(
-      final OptimizeBearerPermissionFilter filter) {
+      final OidcBearerPrincipalClassifier classifier, final CCSMTokenService tokenService) {
+    final var filter = new OptimizeBearerPermissionFilter(classifier, tokenService);
     return http -> http.addFilterAfter(filter, AuthorizationFilter.class);
   }
 }
