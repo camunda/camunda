@@ -377,6 +377,20 @@ const agentProcessWithOneActiveInstance: InstanceMock = {
         role: 'ASSISTANT',
         content: [
           {
+            contentType: 'OBJECT',
+            object: {
+              'camunda.agenticai.content.type': 'reasoning',
+              text: [
+                'I need to inspect the order details before answering.',
+                'The status and tracking number should come from the tool result.',
+              ].join('\n'),
+              payload: {
+                type: 'reasoning',
+                encrypted_content: 'opaque-provider-payload',
+              },
+            },
+          },
+          {
             contentType: 'TEXT',
             text: [
               "I'll look into that for you. Here's my plan for **order #12345**:",

@@ -139,8 +139,7 @@ describe('<LatestAgentMessage />', () => {
             {
               contentType: 'OBJECT',
               object: {
-                provider: 'openai',
-                payload: {type: 'reasoning'},
+                'camunda.agenticai.content.type': 'reasoning',
                 text: 'Look up the policy first.',
               },
             },

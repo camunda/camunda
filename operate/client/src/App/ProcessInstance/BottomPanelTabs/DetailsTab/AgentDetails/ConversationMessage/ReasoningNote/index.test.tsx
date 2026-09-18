@@ -7,25 +7,28 @@
  */
 
 import {currentTheme} from 'modules/stores/currentTheme';
-import {render, screen} from 'modules/testing-library';
+import {render, screen, within} from 'modules/testing-library';
 import {ReasoningNote} from './index';
 
 const REASONING =
-  'Coverage must be established before estimating a settlement, so I need to confirm the policy is active before sizing the payout.';
+  'Coverage must be established before estimating a settlement.\n' +
+  'The complete evidence remains visible. '.repeat(30);
 
 describe('<ReasoningNote />', () => {
   it('should render full reasoning without interactive chrome', () => {
     render(<ReasoningNote reasoning={REASONING} />);
 
     const note = screen.getByRole('region', {name: 'Thinking'});
-    expect(note).toHaveTextContent(REASONING);
-    expect(note).toHaveStyle({maxHeight: '160px'});
-    expect(screen.getByText(REASONING)).toHaveStyle({
-      fontSize: 'var(--cds-label-01-font-size)',
-      fontStyle: 'italic',
-      lineHeight: 'var(--cds-label-01-line-height)',
-      overflowY: 'auto',
-    });
+    const reasoning = within(note).getByText(
+      /Coverage must be established before estimating a settlement/,
+    );
+    expect(reasoning.textContent).toBe(REASONING);
+    expect(screen.getByText('Thinking')).toHaveClass('text-xs');
+    expect(reasoning).toHaveClass(
+      'text-sm',
+      'italic',
+      'text-neutral-foreground-subtle',
+    );
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 

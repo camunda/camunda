@@ -6,31 +6,40 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import '@camunda/design-system/styles.css';
 import {C4Provider, Text} from '@camunda/design-system';
 import {observer} from 'mobx-react';
+import {useId} from 'react';
 import {currentTheme} from 'modules/stores/currentTheme';
-import {Reasoning, Root} from './styled';
+import {Root} from './styled';
 
 type ReasoningNoteProps = {
   reasoning: string;
 };
 
-const ReasoningNote = observer(({reasoning}: ReasoningNoteProps) => (
-  <C4Provider theme={currentTheme.theme}>
-    <Root aria-label="Thinking">
-      <Text
-        as="div"
-        variant="label-sm"
-        className="font-medium text-neutral-foreground-subtle"
-      >
-        Thinking
-      </Text>
-      <Reasoning as="p" variant="helper">
-        {reasoning}
-      </Reasoning>
-    </Root>
-  </C4Provider>
-));
+const ReasoningNote = observer(({reasoning}: ReasoningNoteProps) => {
+  const labelId = useId();
+
+  return (
+    <C4Provider theme={currentTheme.theme}>
+      <Root aria-labelledby={labelId}>
+        <Text
+          id={labelId}
+          as="span"
+          variant="label-sm"
+          className="font-medium text-neutral-foreground-subtle"
+        >
+          Thinking
+        </Text>
+        <Text
+          as="p"
+          variant="body-subtle"
+          className="m-0 break-words whitespace-pre-wrap italic text-neutral-foreground-subtle"
+        >
+          {reasoning}
+        </Text>
+      </Root>
+    </C4Provider>
+  );
+});
 
 export {ReasoningNote};
