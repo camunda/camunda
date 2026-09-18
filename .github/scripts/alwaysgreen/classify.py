@@ -125,6 +125,11 @@ IGNORED_JOB_PREFIXES = ("Observe Helm chart Integration Tests status",)
 #: name (camunda-platform-helm#6841) — a plain prefix can't skip over that.
 _SURFACE_PREFIXES: tuple[tuple[str | re.Pattern[str], str], ...] = (
     (re.compile(r"^Playwright e2e .*after install\b"), SURFACE_SM_E2E),
+    # preview-env-smoke-test.yml's `Run ${{ matrix.deployment.version }} Smoke
+    # Tests`. The version is required to be rendered so the skipped/unrendered
+    # form never matches, and it runs the same tests/SM-8.x specs from the same
+    # e2e repository as the helm-chart SM e2e job, so it shares that surface.
+    (re.compile(r"^Run \d+\.\d+ Smoke Tests$"), SURFACE_SM_E2E),
     ("Trigger SaaS E2E tests", SURFACE_SAAS_E2E),
     ("install for install on", SURFACE_HELM_INSTALL),
     ("Cleanup - install on", SURFACE_HELM_CLEANUP),
@@ -166,6 +171,46 @@ def surface_for_job(job_name: str) -> str | None:
         return SURFACE_BUILD
 
     return None
+
+
+# ---------------------------------------------------------------------------
+# preview-env-smoke-test.yml: one run, four branches
+# ---------------------------------------------------------------------------
+
+_PREVIEW_ENV_JOB_RE = re.compile(r"^Run (?P<version>\d+\.\d+) Smoke Tests$")
+
+#: Branch each preview-env matrix leg actually tests. The workflow deploys four
+#: refs in one run, so the caller's own ref describes none of them: 8.11 is
+#: tracked on main and every released minor has its own stable branch. The `ref-8-x`
+#: dispatch overrides are deliberately not honoured — they point at unmerged PR
+#: branches, which the fix agent does not accept as a target.
+PREVIEW_ENV_BASE_REFS = {
+    "8.8": "stable/8.8",
+    "8.9": "stable/8.9",
+    "8.10": "stable/8.10",
+    "8.11": "main",
+}
+
+
+def preview_env_version(job_name: str) -> str | None:
+    """Return the minor version a preview-env smoke-test job ran, if it is one."""
+    match = _PREVIEW_ENV_JOB_RE.match(job_leaf_name(job_name))
+    return match.group("version") if match else None
+
+
+def base_ref_for_job(job_name: str, default: str) -> str:
+    """Base ref a failing job belongs to, which is not always the run's own ref.
+
+    Every other pipeline runs one branch per run, so `default` (the caller's ref)
+    is correct there. preview-env-smoke-test.yml fans out to four branches in a
+    single run, and the ref decides the fix agent's target branch and is part of
+    every fingerprint — sharing one ref across the legs would target the wrong
+    branch and collapse four independent failures onto one dispatch key.
+    """
+    version = preview_env_version(job_name)
+    if version is None:
+        return default
+    return PREVIEW_ENV_BASE_REFS.get(version, default)
 
 
 # ---------------------------------------------------------------------------

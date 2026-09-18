@@ -363,10 +363,14 @@ jobs:
           DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD: demo
           DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET: admin
           DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD: admin
+          # The json reporter prints to stdout unless it is told where to write;
+          # AlwaysGreen triage reads this file out of the artifact below to name
+          # the failing specs.
+          PLAYWRIGHT_JSON_OUTPUT_NAME: playwright-results.json
         run: |
           npx playwright test "tests/${MINOR_VERSION}/smoke-tests.spec.ts" \
             --project=chromium \
-            --reporter=list,html \
+            --reporter=list,html,json \
             --retries=${{ inputs.fast-feedback && '0' || '2' }}
 
       - name: Upload Test Artifacts
@@ -377,6 +381,18 @@ jobs:
           path: |
             e2e-tests/html-report/
             e2e-tests/test-results/
+          retention-days: 7
+
+      # Kept separate from the report above so triage downloads one small JSON per
+      # version instead of every leg's html-report and traces. The name is what
+      # discover.py globs for, per matrix leg.
+      - name: Upload Playwright JSON Report
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-results-json-${{ matrix.deployment.version }}-${{ github.run_number }}
+          path: e2e-tests/playwright-results.json
+          if-no-files-found: warn
           retention-days: 7
       - name: Observe build status
         if: always()
@@ -614,3 +630,32 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  # Classifies the failing smoke-test legs and (once enabled) dispatches the fix
+  # agent, the same way docker-build-helm-integration.yml does. Only the `test`
+  # job is classifiable: a `Deploy 8.x Preview Environment` failure is an ArgoCD
+  # or chart-deploy problem reported under the inner reusable workflow's own job
+  # names, which map to no surface, and notify-failure already routes those to
+  # the eng-ops medic.
+  #
+  # One job covers every version: each leg's base ref is resolved from its job
+  # name (classify.PREVIEW_ENV_BASE_REFS), so 8.8..8.11 failing in the same run
+  # stay four separate dispatch keys against four branches. `base_ref` here is
+  # only the fallback for a failing job that is not a recognised leg.
+  #
+  # Scheduled runs only, mirroring notify-failure: a manual run may point the
+  # ref-8-x inputs at unmerged branches, which the version-to-branch mapping does
+  # not — and the fix agent cannot — follow.
+  #
+  # dry_run stays true until the classification has been confirmed against real
+  # failing scheduled runs; dropping it lets the Vault flag decide.
+  alwaysgreen-triage:
+    name: AlwaysGreen triage and fix dispatch
+    if: ${{ always() && github.event_name == 'schedule' && needs.test.result == 'failure' }}
+    needs:
+    - test
+    uses: camunda/camunda/.github/workflows/alwaysgreen-triage.yml@main
+    secrets: inherit
+    with:
+      base_ref: main
+      dry_run: true
