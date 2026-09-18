@@ -184,7 +184,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       // when - increase zoneA replicas from 1→2 (RF 2→3)
       final var config =
           new PartitioningConfig()
-              .scheme(PartitioningConfig.SchemeEnum.ZONE_AWARE)
+              .scheme(SchemeEnum.ZONE_AWARE)
               .zones(
                   List.of(
                       new ZoneSpec().name(ZONE_A).numberOfReplicas(2).priority(100),
@@ -287,7 +287,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       final var actuator = ClusterActuator.of(cluster.availableGateway());
 
       // when - then
-      final var config = new PartitioningConfig().scheme(PartitioningConfig.SchemeEnum.ROUND_ROBIN);
+      final var config = new PartitioningConfig().scheme(SchemeEnum.ROUND_ROBIN);
       assertThatCode(() -> actuator.patchPartitionDistribution(config, false))
           .isInstanceOf(FeignException.BadRequest.class);
     }
@@ -324,7 +324,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       cluster.brokers().get(memberIdForBroker(2)).close();
 
       // when - force-remove zoneA: force-evict its brokers and drop it from the distribution config
-      final var forceRemoveResponse = actuator.forceRemoveZone(ZONE_A, false);
+      final var forceRemoveResponse = actuator.removeZone(ZONE_A, false, true);
       Awaitility.await()
           .ignoreException(FeignException.class)
           .untilAsserted(
@@ -361,6 +361,65 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       } finally {
         newZoneABroker.close();
       }
+    }
+  }
+
+  @Test
+  void shouldGracefullyRemoveHealthyZoneWithoutLeaders() {
+    try (final var cluster = createCluster(minReplicationFactor())) {
+      // given - zoneB has follower replicas only, while zoneA contains every partition leader
+      cluster.awaitCompleteTopology();
+      final var actuator = ClusterActuator.of(cluster.availableGateway());
+      Awaitility.await()
+          .untilAsserted(
+              () ->
+                  ZoneHelpers.assertLeadersInZone(
+                      cluster, DEFAULT_PHYSICAL_TENANT_ID, ZONE_A, partitionCount()));
+
+      // when - remove the healthy zoneB without forcing broker eviction
+      final var response = actuator.removeZone(ZONE_B, false, false);
+
+      // then - replicas are removed from zoneB before its broker leaves and the zone disappears
+      // from config
+      Awaitility.await()
+          .atMost(Duration.ofMinutes(1))
+          .untilAsserted(
+              () -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(response));
+      ClusterActuatorAssert.assertThat(actuator).doesNotHaveBroker(brokerId(1));
+      final var expectedDistribution =
+          new PartitioningConfig()
+              .scheme(SchemeEnum.ZONE_AWARE)
+              .zones(List.of(new ZoneSpec().name(ZONE_A).numberOfReplicas(1).priority(100)));
+      assertThat(actuator.getTopology().getPartitioning()).isEqualTo(expectedDistribution);
+    }
+  }
+
+  @Test
+  void shouldGracefullyRemoveHealthyZoneContainingCoordinator() {
+    try (final var cluster = createCluster(minReplicationFactor())) {
+      // given - zoneA (brokers 0 and 2) is healthy and holds broker 0, the cluster's default
+      // coordinator (the lowest member ID); use the zoneB broker as the actuator, since it is the
+      // only one that stays alive throughout the test
+      cluster.awaitCompleteTopology();
+      final var actuator = ClusterActuator.of(cluster.brokers().get(memberIdForBroker(1)));
+
+      // when - remove the healthy coordinator zone without forcing broker eviction
+      final var response = actuator.removeZone(ZONE_A, false, false);
+
+      // then - the request is accepted: coordination hands off to a broker in the surviving zone,
+      // replicas are removed from zoneA before its brokers leave, and the zone disappears from the
+      // distribution config
+      Awaitility.await()
+          .atMost(Duration.ofMinutes(1))
+          .untilAsserted(
+              () -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(response));
+      ClusterActuatorAssert.assertThat(actuator).doesNotHaveBroker(brokerId(0));
+      ClusterActuatorAssert.assertThat(actuator).doesNotHaveBroker(brokerId(2));
+      final var expectedDistribution =
+          new PartitioningConfig()
+              .scheme(SchemeEnum.ZONE_AWARE)
+              .zones(List.of(new ZoneSpec().name(ZONE_B).numberOfReplicas(1).priority(10)));
+      assertThat(actuator.getTopology().getPartitioning()).isEqualTo(expectedDistribution);
     }
   }
 
@@ -455,7 +514,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
           ClusterActuator.of(clusterAfterZoneRemoval.brokers().get(memberIdForBroker(1)));
       clusterAfterZoneRemoval.brokers().get(memberIdForBroker(0)).close();
       clusterAfterZoneRemoval.brokers().get(memberIdForBroker(2)).close();
-      final var forceRemoveResponse = actuatorAfterZoneRemoval.forceRemoveZone(ZONE_A, false);
+      final var forceRemoveResponse = actuatorAfterZoneRemoval.removeZone(ZONE_A, false, true);
       Awaitility.await()
           .untilAsserted(
               () ->
@@ -468,7 +527,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       // given - the shared cluster is running with both zones present
 
       // when - then
-      assertThatCode(() -> actuator.forceRemoveZone("zoneUnknown", false))
+      assertThatCode(() -> actuator.removeZone("zoneUnknown", false, true))
           .isInstanceOf(FeignException.BadRequest.class)
           .hasMessageContaining("unknown zone");
     }
@@ -478,7 +537,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       // given - zoneA has already been force-removed from the shared cluster
 
       // when - then - force-removing the last remaining zone is rejected
-      assertThatCode(() -> actuatorAfterZoneRemoval.forceRemoveZone(ZONE_B, false))
+      assertThatCode(() -> actuatorAfterZoneRemoval.removeZone(ZONE_B, false, true))
           .isInstanceOf(FeignException.BadRequest.class)
           .hasMessageContaining("last remaining zone");
     }

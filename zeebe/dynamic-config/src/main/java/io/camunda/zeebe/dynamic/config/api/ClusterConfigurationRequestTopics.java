@@ -32,7 +32,7 @@ public enum ClusterConfigurationRequestTopics {
   CLUSTER_ADMIN_RESTORE("cluster-admin-restore"),
   ZONE_MIGRATION("topology-cluster-zone-migration"),
   ADD_ZONE("topology-add-zone"),
-  FORCE_REMOVE_ZONE("topology-force-remove-zone"),
+  REMOVE_ZONE("topology-remove-zone"),
   UPDATE_ZONE_PRIORITIES("topology-update-zone-priorities");
 
   private final String topic;

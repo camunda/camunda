@@ -55,6 +55,8 @@ import java.util.concurrent.CompletableFuture;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.MediaType;
 
 final class ClusterEndpointTest {
@@ -568,6 +570,41 @@ final class ClusterEndpointTest {
     private ClusterConfigurationManagementRequestSender senderAcceptingPatch() {
       final var sender = mock(ClusterConfigurationManagementRequestSender.class);
       when(sender.patchCluster(any()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  Either.right(
+                      new ClusterConfigurationChangeResponse(
+                          1L,
+                          new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
+                              Map.of(), Map.of(), List.of()),
+                          null))));
+      return sender;
+    }
+  }
+
+  @Nested
+  class RemoveZoneEndpoint {
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldPassForceOnToTheRemoveZoneRequest(final boolean force) {
+      // given
+      final var sender = senderAcceptingRemoveZone();
+      final var endpoint = new ClusterEndpoint(sender);
+
+      // when
+      final var response = endpoint.removeZone("zone-a", false, force);
+
+      // then
+      assertThat(response.getStatusCode().value()).isEqualTo(202);
+      verify(sender)
+          .removeZone(
+              new ClusterConfigurationManagementRequest.RemoveZoneRequest("zone-a", false, force));
+    }
+
+    private ClusterConfigurationManagementRequestSender senderAcceptingRemoveZone() {
+      final var sender = mock(ClusterConfigurationManagementRequestSender.class);
+      when(sender.removeZone(any()))
           .thenReturn(
               CompletableFuture.completedFuture(
                   Either.right(

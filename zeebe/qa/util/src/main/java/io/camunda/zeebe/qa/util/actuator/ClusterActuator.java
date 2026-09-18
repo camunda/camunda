@@ -492,14 +492,16 @@ public interface ClusterActuator {
       @RequestBody final ClusterZoneMigrationRequest request, @Param boolean dryRun);
 
   /**
-   * Force-removes the given zone: force-evicts the zone's brokers and drops the zone from the
-   * partition distribution config.
+   * Removes the given zone: its brokers leave the cluster and the zone is dropped from the
+   * partition distribution config. With {@code force}, the brokers are evicted without removing
+   * their replicas first.
    *
    * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
    */
-  @RequestLine("DELETE /zones/{zoneId}?dryRun={dryRun}")
+  @RequestLine("DELETE /zones/{zoneId}?dryRun={dryRun}&force={force}")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
-  PlannedOperationsResponse forceRemoveZone(@Param final String zoneId, @Param boolean dryRun);
+  PlannedOperationsResponse removeZone(
+      @Param final String zoneId, @Param boolean dryRun, @Param boolean force);
 
   /**
    * Adds back the given zone: re-adds the given brokers and re-includes the zone in the partition

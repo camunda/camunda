@@ -17,12 +17,12 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterZoneMigrationRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemovePhysicalTenantRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
@@ -666,13 +666,14 @@ public class ClusterEndpoint {
   }
 
   @DeleteMapping(path = "/zones/{zoneId}")
-  public ResponseEntity<?> forceRemoveZone(
+  public ResponseEntity<?> removeZone(
       @PathVariable final String zoneId,
-      @RequestParam(defaultValue = "false") final boolean dryRun) {
+      @RequestParam(defaultValue = "false") final boolean dryRun,
+      @RequestParam(defaultValue = "false") final boolean force) {
     try {
-      final var forceRemoveRequest = new ForceZoneRemoveRequest(zoneId, dryRun);
+      final var removeZoneRequest = new RemoveZoneRequest(zoneId, dryRun, force);
       return ClusterApiUtils.mapOperationResponse(
-          requestSender.forceRemoveZone(forceRemoveRequest).join());
+          requestSender.removeZone(removeZoneRequest).join());
     } catch (final Exception exception) {
       return ClusterApiUtils.mapError(exception);
     }

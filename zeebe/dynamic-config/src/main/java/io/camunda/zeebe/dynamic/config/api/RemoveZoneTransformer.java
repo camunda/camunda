@@ -27,25 +27,24 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Force-evicts a failed zone's brokers from the member set (no data movement, since the zone is
- * down) and drops the zone from the persisted {@link ZoneAwareConfig}, in one atomic change.
+ * Removes a zone from the cluster: its brokers leave the member set and the zone is dropped from
+ * the persisted {@link ZoneAwareConfig}, in one atomic change.
+ *
+ * <p>Without {@code force}, the request is handled by the elected coordinator and the replicas on
+ * the departing brokers are removed before those brokers leave. Set {@code force} when the zone is
+ * not reachable from the surviving zones; its brokers are then evicted without removing replicas
+ * first, at the cost of the replicas they held.
  */
-public final class ForceRemoveZoneTransformer implements ConfigurationChangeRequest {
+public final class RemoveZoneTransformer implements ConfigurationChangeRequest {
 
   private final String zoneId;
+  private final boolean force;
 
-  public ForceRemoveZoneTransformer(final String zoneId) {
+  public RemoveZoneTransformer(final String zoneId, final boolean force) {
     this.zoneId = zoneId;
+    this.force = force;
   }
 
-  /**
-   * Evicts the zone's brokers from every physical tenant's partition group, by handing the brokers
-   * that survive it to {@link
-   * ForceScaleDownRequestTransformer#phases(CurrentClusterConfiguration)}. Evicting them from the
-   * default group alone left the other tenants' partitions on the failed zone's brokers, and the
-   * member removal that follows then refused the whole plan — so the first half of the zone
-   * failover procedure could not run on a cluster with more than one tenant.
-   */
   @Override
   public Either<Exception, List<Phase>> phases(final CurrentClusterConfiguration configuration) {
     return zoneRemoval(
@@ -53,15 +52,54 @@ public final class ForceRemoveZoneTransformer implements ConfigurationChangeRequ
             configuration.globalConfiguration().members().keySet())
         .flatMap(
             removal ->
-                new ForceScaleDownRequestTransformer(
-                        removal.membersToRetain(), removal.coordinator())
-                    .phases(configuration)
-                    .map(phases -> withLayoutUpdateLast(phases, removal.updateLayout())));
+                force
+                    ? forcedPhases(configuration, removal)
+                    : regularPhases(configuration, removal));
   }
 
   @Override
   public boolean isForced() {
-    return true;
+    return force;
+  }
+
+  /**
+   * Evicts the zone's brokers from every physical tenant's partition group, by handing the brokers
+   * that survive it to {@link
+   * ForceScaleDownRequestTransformer#phases(CurrentClusterConfiguration)}. Evicting them from the
+   * default group alone would leave the other tenants' partitions on the removed zone's brokers,
+   * and the member removal that follows would refuse the whole plan.
+   */
+  private static Either<Exception, List<Phase>> forcedPhases(
+      final CurrentClusterConfiguration configuration, final ZoneRemoval removal) {
+    return new ForceScaleDownRequestTransformer(removal.membersToRetain(), removal.coordinator())
+        .phases(configuration)
+        .map(phases -> withLayoutUpdateLast(phases, removal.updateLayout()));
+  }
+
+  /**
+   * Persists the shrunk layout first and then plans an ordinary scale-down that removes replicas
+   * from the departing brokers.
+   *
+   * <p>The layout has to be persisted before the partition work rather than after it, the opposite
+   * of the forced plan: the scale-down is computed against the shrunk layout, so it has to be the
+   * one in effect. Scaling callbacks are skipped because the removed brokers release their own
+   * node-ID leases as they shut down.
+   */
+  private static Either<Exception, List<Phase>> regularPhases(
+      final CurrentClusterConfiguration configuration, final ZoneRemoval removal) {
+    return new ScaleRequestTransformer(
+            removal.membersToRetain(),
+            Optional.of(removal.shrunkLayout().replicationFactor()),
+            true)
+        .phases(
+            configuration.updateGlobalConfiguration(
+                global -> global.setPartitionDistributorConfig(removal.shrunkLayout())))
+        .map(
+            phases ->
+                Stream.concat(
+                        Stream.of(new GlobalPhase(List.of(removal.updateLayout()))),
+                        phases.stream())
+                    .toList());
   }
 
   /**
@@ -73,14 +111,11 @@ public final class ForceRemoveZoneTransformer implements ConfigurationChangeRequ
    */
   private static List<Phase> withLayoutUpdateLast(
       final List<Phase> phases, final GlobalChangeOperation updateLayout) {
-    if (!phases.isEmpty() && phases.getLast() instanceof final GlobalPhase trailing) {
-      final var merged = new ArrayList<>(trailing.operations());
-      merged.add(updateLayout);
-      return Stream.concat(
-              phases.stream().limit(phases.size() - 1L), Stream.of(new GlobalPhase(merged)))
-          .toList();
-    }
-    return Stream.concat(phases.stream(), Stream.of(new GlobalPhase(List.of(updateLayout))))
+    final var trailing = (GlobalPhase) phases.getLast();
+    final var merged = new ArrayList<>(trailing.operations());
+    merged.add(updateLayout);
+    return Stream.concat(
+            phases.stream().limit(phases.size() - 1L), Stream.of(new GlobalPhase(merged)))
         .toList();
   }
 
@@ -102,7 +137,7 @@ public final class ForceRemoveZoneTransformer implements ConfigurationChangeRequ
     } else {
       return Either.left(
           new InvalidRequest(
-              "ForceRemove requires a persisted zone-aware partition distribution config, but was %s."
+              "Remove zone requires a persisted zone-aware partition distribution config, but was %s."
                   .formatted(
                       partitionDistributorConfig
                           .map(c -> c.getClass().getSimpleName())
@@ -112,7 +147,7 @@ public final class ForceRemoveZoneTransformer implements ConfigurationChangeRequ
     final var zones = zoneAwareConfig.zones();
     if (zones.stream().noneMatch(zone -> zone.name().equals(zoneId))) {
       return Either.left(
-          new InvalidRequest("Force Remove request targets unknown zone '" + zoneId + "'."));
+          new InvalidRequest("Remove zone request targets unknown zone '" + zoneId + "'."));
     }
 
     final var zoneMembers =
@@ -120,14 +155,14 @@ public final class ForceRemoveZoneTransformer implements ConfigurationChangeRequ
     if (zoneMembers.isEmpty()) {
       return Either.left(
           new InvalidRequest(
-              "Force Remove request targets zone '" + zoneId + "' which has no current members."));
+              "Remove zone request targets zone '" + zoneId + "' which has no current members."));
     }
 
     final var remainingZones = zones.stream().filter(zone -> !zone.name().equals(zoneId)).toList();
     if (remainingZones.isEmpty()) {
       return Either.left(
           new InvalidRequest(
-              "Cannot force remove zone '"
+              "Cannot remove zone '"
                   + zoneId
                   + "' because it is the last remaining zone in the partition distribution config."));
     }
@@ -137,26 +172,24 @@ public final class ForceRemoveZoneTransformer implements ConfigurationChangeRequ
     if (retain.isEmpty()) {
       return Either.left(
           new InvalidRequest(
-              "Cannot force remove zone '"
+              "Cannot remove zone '"
                   + zoneId
                   + "' because it would leave the cluster with no brokers."));
     }
 
-    final var coordinator =
-        ClusterConfigurationCoordinatorSupplier.ofMembers(members)
-            .getNextCoordinatorExcluding(zoneMembers);
+    final var coordinatorSupplier = ClusterConfigurationCoordinatorSupplier.ofMembers(members);
+    final var coordinator = coordinatorSupplier.getNextCoordinatorExcluding(zoneMembers);
 
-    return Either.right(
-        new ZoneRemoval(
-            retain,
-            coordinator,
-            new UpdatePartitionDistributorConfigOperation(
-                coordinator, new ZoneAwareConfig(remainingZones))));
+    return Either.right(new ZoneRemoval(retain, coordinator, new ZoneAwareConfig(remainingZones)));
   }
 
   /** What removing the zone amounts to, once the request is known to be valid. */
   private record ZoneRemoval(
-      Set<MemberId> membersToRetain,
-      MemberId coordinator,
-      UpdatePartitionDistributorConfigOperation updateLayout) {}
+      Set<MemberId> membersToRetain, MemberId coordinator, ZoneAwareConfig shrunkLayout) {
+
+    /** The operation that persists the layout the zone has been dropped from. */
+    UpdatePartitionDistributorConfigOperation updateLayout() {
+      return new UpdatePartitionDistributorConfigOperation(coordinator, shrunkLayout);
+    }
+  }
 }

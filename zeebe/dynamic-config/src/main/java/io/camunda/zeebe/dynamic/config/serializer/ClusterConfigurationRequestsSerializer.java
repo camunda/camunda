@@ -14,10 +14,10 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterRestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterZoneMigrationRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemovePhysicalTenantRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
@@ -71,7 +71,7 @@ public interface ClusterConfigurationRequestsSerializer {
 
   byte[] encodeClusterZoneMigrationRequest(ClusterZoneMigrationRequest request);
 
-  byte[] encodeForceRemoveZoneRequest(ForceZoneRemoveRequest request);
+  byte[] encodeRemoveZoneRequest(RemoveZoneRequest request);
 
   byte[] encodeAddZoneRequest(AddZoneRequest request);
 
@@ -136,7 +136,7 @@ public interface ClusterConfigurationRequestsSerializer {
 
   ClusterZoneMigrationRequest decodeClusterZoneMigrationRequest(byte[] bytes);
 
-  ForceZoneRemoveRequest decodeForceRemoveZoneRequest(byte[] bytes);
+  RemoveZoneRequest decodeRemoveZoneRequest(byte[] bytes);
 
   AddZoneRequest decodeAddZoneRequest(byte[] bytes);
 
