@@ -12,7 +12,7 @@ import {NotFoundPage} from '#/shared/pages/NotFoundPage';
 import {GenericErrorPage} from '#/shared/pages/GenericErrorPage';
 import {Notifications} from '#/shared/notifications/components/Notifications';
 import {NetworkStatusWatcher} from '#/shared/notifications/components/NetworkStatusWatcher';
-import './index.scss';
+import appCss from './index.scss?url';
 
 const Route = createFileRoute('/_carbon')({
 	notFoundComponent: () => (
@@ -25,17 +25,19 @@ const Route = createFileRoute('/_carbon')({
 			<GenericErrorPage reset={reset} />
 		</ThemeProvider>
 	),
-	component: CarbonLayout,
+	component: function CarbonLayout() {
+		return (
+			<ThemeProvider>
+				<Notifications />
+				<NetworkStatusWatcher />
+				<Outlet />
+			</ThemeProvider>
+		);
+	},
+	head: () => ({
+		meta: [],
+		links: [{rel: 'stylesheet', href: appCss}],
+	}),
 });
-
-function CarbonLayout() {
-	return (
-		<ThemeProvider>
-			<Notifications />
-			<NetworkStatusWatcher />
-			<Outlet />
-		</ThemeProvider>
-	);
-}
 
 export {Route};

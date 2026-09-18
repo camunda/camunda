@@ -12,6 +12,7 @@ import {useSuspenseQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {queries} from '#/shared/http/queries';
+import {GenericErrorPage} from '#/shared/pages/GenericErrorPage';
 import {InstanceHeader, type Column} from '#/operate/shared/InstanceHeader/InstanceHeader';
 import {InstanceHeaderSkeleton} from '#/operate/shared/InstanceHeader/InstanceHeaderSkeleton';
 import {useDecisionInstance} from './decisionInstance.queries';
@@ -28,7 +29,12 @@ const Header: React.FC<Props> = ({decisionEvaluationInstanceKey, onOpenDrd}) => 
 	const isMultiTenancyEnabled = getClientConfig().deployment.isMultiTenancyEnabled;
 	const {data: tenants} = useSuspenseQuery({...queries.getCurrentUser(), select: ({tenants}) => tenants});
 	const tenantsById = Object.fromEntries(tenants.map(({tenantId, name}) => [tenantId, name]));
-	const {data: decisionInstance, status} = useDecisionInstance(decisionEvaluationInstanceKey);
+	const {query, isGenericError} = useDecisionInstance(decisionEvaluationInstanceKey);
+	const {data: decisionInstance, status, refetch} = query;
+
+	if (isGenericError) {
+		return <GenericErrorPage reset={() => void refetch()} />;
+	}
 
 	if (status === 'pending') {
 		return <InstanceHeaderSkeleton headerColumns={getHeaderColumns(t, {isMultiTenancyEnabled})} />;

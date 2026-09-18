@@ -7,7 +7,7 @@
  */
 
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {Layer, Stack} from '@carbon/react';
+import {Separator} from '@camunda/design-system';
 import type {DocumentReference} from '@camunda/camunda-api-zod-schemas/8.10';
 import set from 'lodash/set';
 import {useTranslation} from 'react-i18next';
@@ -20,9 +20,6 @@ import {usePrefersReducedMotion} from './usePrefersReducedMotion';
 import {FormLevelErrorMessage} from './FormLevelErrorMessage';
 import {toHumanReadableBytes} from './toHumanReadableBytes';
 import {extractFilePath} from './extractFilePath';
-import styles from './CamundaFormRenderer.module.scss';
-import '@bpmn-io/form-js-viewer/dist/assets/form-js-base.css';
-import '@bpmn-io/form-js-carbon-styles/src/carbon-styles.scss';
 
 type FormManagerRef = {
 	current: FormManager;
@@ -37,7 +34,6 @@ type Props = {
 	handleSubmit: (variables: PartialVariable[]) => Promise<void>;
 	handleFileUpload?: (files: Map<string, File[]>) => Promise<Map<string, DocumentReference[]>>;
 	schema: string;
-	layerLevel?: React.ComponentProps<typeof Layer>['level'];
 	data?: Record<string, unknown>;
 	readOnly?: boolean;
 	onMount?: (formManager: FormManager) => void;
@@ -126,7 +122,6 @@ function injectFileMetadataIntoData(options: {
 const CamundaFormRenderer: React.FC<Props> = ({
 	handleSubmit,
 	schema,
-	layerLevel,
 	data = {},
 	readOnly,
 	onMount,
@@ -248,12 +243,12 @@ const CamundaFormRenderer: React.FC<Props> = ({
 	}, [readOnly]);
 
 	return (
-		<Layer className={styles.container} level={layerLevel}>
-			<div ref={formContainerRef} className={styles.formRoot} />
+		<div className="w-full max-w-[900px] [&_.fjs-form-field_button[type='submit']]:hidden [&_.fjs-powered-by]:hidden lg:[&_.fjs-form]:-mx-8">
+			<div ref={formContainerRef} className="w-full" />
 
 			{hasInvalidFields || hasLargeFilePayload ? (
-				<Stack orientation="vertical" className={styles.formLevelErrorContainer} gap={3}>
-					<hr className={styles.hr} />
+				<div className="flex w-full flex-col gap-2">
+					<Separator />
 					{hasInvalidFields ? (
 						<ValidationMessage fieldIds={invalidFields.ids} fieldLabels={invalidFields.labels} />
 					) : null}
@@ -264,9 +259,9 @@ const CamundaFormRenderer: React.FC<Props> = ({
 							})}
 						/>
 					) : null}
-				</Stack>
+				</div>
 			) : null}
-		</Layer>
+		</div>
 	);
 };
 

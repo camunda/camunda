@@ -9,6 +9,7 @@
 import {t} from 'i18next';
 import {assign, fromPromise, setup, type SnapshotFrom} from 'xstate';
 import type {useNavigate} from '@tanstack/react-router';
+import {toast} from '@camunda/design-system';
 import type {
 	CreateProcessInstanceResponseBody,
 	ProcessDefinition,
@@ -17,7 +18,6 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {endpoints} from '#/shared/http/endpoints';
 import {request, requestErrorSchema} from '#/shared/http/request';
-import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 
 const HTTP_STATUS_FORBIDDEN = 403;
@@ -125,7 +125,10 @@ const startProcessMachine = setup({
 		})),
 		closeStartForm: ({context, event}) => {
 			if (event.process.hasStartForm) {
-				void context.navigate({to: '/tasklist/processes', search: true});
+				context.navigate({
+					to: '/tasklist/processes',
+					search: true,
+				});
 			}
 		},
 		storeProcessInstanceKey: assign((_, params: {processInstanceKey: string}) => ({
@@ -143,11 +146,7 @@ const startProcessMachine = setup({
 			failureReason: getStartProcessFailureReason(params.error),
 		})),
 		notifySuccess: () => {
-			notificationsStore.displayNotification({
-				kind: 'success',
-				title: t('tasklist.processesStartProcessNotificationSuccess'),
-				isDismissable: true,
-			});
+			toast.success(t('tasklist.processesStartProcessNotificationSuccess'));
 		},
 		notifyFailure: ({context}) => {
 			const process = context.selectedProcess;
@@ -157,44 +156,41 @@ const startProcessMachine = setup({
 			}
 
 			if (context.failureReason === 'forbidden') {
-				notificationsStore.displayNotification({
-					kind: 'error',
-					title: t('tasklist.processesStartProcessFailed'),
-					subtitle: t('tasklist.taskActionForbidden'),
-					isDismissable: true,
+				toast.error(t('tasklist.processesStartProcessFailed'), {
+					description: t('tasklist.taskActionForbidden'),
 				});
 				return;
 			}
 
-			notificationsStore.displayNotification({
-				kind: 'error',
-				title:
-					getClientConfig().deployment.isMultiTenancyEnabled && process.tenantId === undefined
-						? t('tasklist.processesStartProcessFailedMissingTenant')
-						: t('tasklist.processesStartProcessFailed'),
-				subtitle: process.name ?? process.processDefinitionId,
-				isDismissable: false,
-			});
+			toast.error(
+				getClientConfig().deployment.isMultiTenancyEnabled && process.tenantId === undefined
+					? t('tasklist.processesStartProcessFailedMissingTenant')
+					: t('tasklist.processesStartProcessFailed'),
+				{
+					description: process.name ?? process.processDefinitionId,
+				},
+			);
 		},
 		notifyNewTasks: ({context}) => {
 			context.tasks.forEach(({elementId, name, processDefinitionId, processName, userTaskKey}) => {
-				notificationsStore.displayNotification({
-					kind: 'success',
-					title: t('tasklist.processesNewTaskNotification', {
+				toast.success(
+					t('tasklist.processesNewTaskNotification', {
 						processName: processName ?? processDefinitionId,
 						taskName: name ?? elementId,
 					}),
-					isDismissable: false,
-					isActionable: true,
-					actionButtonLabel: t('tasklist.processesNewTaskNotificationAction'),
-					onActionButtonClick: () => {
-						void context.navigate({
-							to: '/tasklist/$userTaskKey',
-							params: {userTaskKey},
-							search: {filter: 'all-open', sortBy: 'creation'},
-						});
+					{
+						action: {
+							label: t('tasklist.processesNewTaskNotificationAction'),
+							onClick: () => {
+								context.navigate({
+									to: '/tasklist/$userTaskKey',
+									params: {userTaskKey},
+									search: {filter: 'all-open', sortBy: 'creation'},
+								});
+							},
+						},
 					},
-				});
+				);
 			});
 		},
 	},
@@ -295,7 +291,10 @@ const startProcessMachine = setup({
 			tags: 'status:waiting_for_tasks',
 			invoke: {
 				src: 'navigateToTask',
-				input: ({context}) => ({navigate: context.navigate, userTaskKey: context.tasks[0]?.userTaskKey ?? ''}),
+				input: ({context}) => ({
+					navigate: context.navigate,
+					userTaskKey: context.tasks[0]?.userTaskKey ?? '',
+				}),
 				onDone: {target: 'Succeeded'},
 				onError: {target: 'Succeeded'},
 			},

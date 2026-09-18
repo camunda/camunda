@@ -27,7 +27,7 @@ describe('<DeleteDefinitionModal />', () => {
 		await expect.element(screen.getByRole('checkbox')).not.toBeChecked();
 	});
 
-	it('shows a validation error and does not delete when submitted unconfirmed', async () => {
+	it('disables the delete button until the checkbox is confirmed', async () => {
 		const onDelete = vi.fn();
 		const screen = await render(
 			<DeleteDefinitionModal
@@ -41,9 +41,7 @@ describe('<DeleteDefinitionModal />', () => {
 			/>,
 		);
 
-		await screen.getByRole('button', {name: 'Delete'}).click();
-
-		await expect.element(screen.getByText('Please tick this box if you want to proceed.')).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Delete'})).toBeDisabled();
 		expect(onDelete).not.toHaveBeenCalled();
 	});
 

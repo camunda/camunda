@@ -7,6 +7,7 @@
 		"headerSidebarFeedbackAndSupportLink": "Feedback and Support",
 		"headerSidebarCommunityForumLink": "Community Forum",
 		"headerAppBarLabel": "Camunda Apps",
+		"headerContextLabel": "Camunda context",
 		"headerNonProductionLicenseLabel": "Non-Production License",
 		"headerNonProductionLicenseText": "Non-Production License. If you would like information on production usage, please refer to our <2>terms & conditions page</2> or <6>contact sales</6>.",
 		"headerInfoLabel": "Info",
@@ -17,6 +18,9 @@
 		"headerPrivacyPolicyLabel": "Privacy policy",
 		"headerImprintLabel": "Imprint",
 		"headerLogOutLabel": "Log out",
+		"headerNotificationsLabel": "Notifications",
+		"headerNotificationsLoading": "Loading notifications...",
+		"headerNotificationsEmptyDescription": "You have no notifications.",
 		"notificationLogOutTitle": "Log Out",
 		"notificationLogOutSubtitle": "You are being logged out...",
 		"loginErrorUsernamePasswordMismatch": "Username and password do not match",
@@ -184,6 +188,7 @@
 			"processesStartProcessWithForm": "Start process {{processDisplayName}}",
 			"processesStartProcessWithFormCopyURLButtonLabel": "Copied",
 			"processesStartProcessWithFormShareURLAriaLabel": "Share process URL",
+			"processesStartProcessWithFormShareButtonLabel": "Copy link",
 			"processesTileStartProcessButtonLabel": "Start process",
 			"processesStartProcessWithFormStartButtonLabel": "Start process",
 			"processesFetchErrorMissingTenant": "You must first select a tenant to start a process.",
@@ -368,6 +373,7 @@
 			"taskDetailsHeader": "Task details header",
 			"taskDetailsRightPanel": "Task details right panel",
 			"taskDetailsDetailsLabel": "Details",
+			"taskDetailsPanelTooltip": "Task details",
 			"taskDetailsPriorityLabel": "Priority",
 			"taskDetailsCreationDateLabel": "Creation date",
 			"taskDetailsCandidatesLabel": "Candidates",
@@ -390,6 +396,7 @@
 			"taskErrorTaskStillAssigning": "Task is still assigning",
 			"taskDetailsUnassign": "Unassign",
 			"taskDetailsAssignToMe": "Assign to me",
+			"taskDetailsBackToListLabel": "Back to list",
 			"processInstanceCancelledNotification": "Process instance cancelled",
 			"taskDetailsTaskTabLabel": "Task",
 			"taskDetailsShowTaskLabel": "Show task",
@@ -466,9 +473,47 @@
 				"fetchErrorHeading": "Data could not be fetched",
 				"fetchErrorDescription": "Refresh the page to try again",
 				"versionDetailsFetchError": "Failed to load version details",
-				"incidentDetailsFetchError": "Failed to load incident details"
+				"incidentDetailsFetchError": "Failed to load incident details",
+				"draining": "Draining",
+				"drainingDescriptionAllVersions": "One or more versions of this process definition are scheduled for deletion. They stay until their running instances finish, then are removed automatically.",
+				"drainingDescriptionVersion": "This process definition version is scheduled for deletion and will be removed automatically once all of its running instances finish."
 			},
 			"processes": {
+				"toolbar": {
+					"delete": "Delete",
+					"cancel": "Cancel",
+					"retry": "Retry",
+					"suspend": "Suspend",
+					"resume": "Resume",
+					"discard": "Discard",
+					"selectAll": "Select all items",
+					"selectRow": "Select instance {{key}}",
+					"selected_other": "{{total}} items selected",
+					"selected_one": "{{total}} item selected",
+					"heading": "Apply operation",
+					"apply": "Apply",
+					"confirm_other": "{{total}} instances selected for \"{{action}}\" operation.",
+					"confirm_one": "{{total}} instance selected for \"{{action}}\" operation.",
+					"permanent": "This permanently deletes the selected process instances and their history. This cannot be undone.",
+					"calledInstances": "In case there are called instances, these will be canceled too.",
+					"ignoreFinished": "Finished instances in your selection will be ignored.",
+					"ignoreNonIncident": "Instances without an incident in your selection will be ignored.",
+					"ignoreNonActive": "Instances that aren't active in your selection will be ignored.",
+					"ignoreNonSuspended": "Instances that aren't suspended in your selection will be ignored.",
+					"noFinished": "No finished process instances selected. Please select at least one completed or canceled process instance to delete.",
+					"noRunning": "No running process instances selected. Please select at least one active or incident process instance to cancel.",
+					"noRunningToSuspend": "No running process instances selected. Please select at least one active or incident process instance to suspend.",
+					"noIncidents": "No process instances with an incident selected. Please select at least one process instance with an incident to retry.",
+					"noSuspended": "No suspended process instances selected. Please select at least one suspended process instance to resume.",
+					"actionMode": "Not available in batch modification mode",
+					"started": "The batch operation \"{{operationType}}\" has been started",
+					"progressSubtitle": "You can track its progress in the Batch Operation page",
+					"details": "Go to operation details",
+					"failed": "Operation could not be created",
+					"forbidden": "You don't have permission to perform this operation",
+					"contactAdministrator": "Please contact the administrator if you need access.",
+					"progressUnavailable": "Batch operation progress is temporarily unavailable"
+				},
 				"title": "Processes",
 				"filters": {
 					"processSection": "Process",
@@ -484,6 +529,7 @@
 					"finishedInstances": "Finished Instances",
 					"active": "Active",
 					"incidents": "Incidents",
+					"suspended": "Suspended",
 					"completed": "Completed",
 					"canceled": "Canceled",
 					"tenant": "Tenant",
@@ -500,6 +546,36 @@
 					"startDatePopoverTitle": "Filter instances by start date",
 					"endDatePopoverTitle": "Filter instances by end date"
 				},
+				"instancesTable": {
+					"title": "Process Instances",
+					"name": "Name",
+					"processInstanceKey": "Process Instance Key",
+					"version": "Version",
+					"versionTag": "Version Tag",
+					"businessId": "Business ID",
+					"tenant": "Tenant",
+					"startDate": "Start Date",
+					"endDate": "End Date",
+					"operationState": "Operation State",
+					"operationStateLoading": "Loading...",
+					"operations": {
+						"header": "Operations",
+						"resolveIncidentsFailed": "Failed to retry incidents",
+						"cancelFailed": "Failed to cancel process instance",
+						"deleteFailed": "Failed to delete process instance",
+						"deleteScheduled": "Instance is scheduled for deletion",
+						"suspendFailed": "Failed to suspend process instance",
+						"resumeFailed": "Failed to resume process instance",
+						"forbiddenTitle": "You don't have permission to perform this operation",
+						"forbiddenSubtitle": "Please contact the administrator if you need access."
+					},
+					"parentProcessInstanceKey": "Parent Process Instance Key",
+					"viewInstance": "View instance {{key}}",
+					"viewParentInstance": "View parent instance {{key}}",
+					"none": "None",
+					"emptyMessage": "There are no Instances matching this filter set",
+					"emptyAdditionalInfo": "To see some results, select at least one Instance state"
+				},
 				"diagramHeader": {
 					"title": "Process",
 					"processName": "Process name",
@@ -515,6 +591,19 @@
 			},
 			"decisions": {
 				"title": "Decisions",
+				"diagramHeader": {
+					"title": "Decision",
+					"copyButtonDescription": "Decision ID / Click to copy"
+				},
+				"diagramPanel": {
+					"multipleVersionsSelected": "There is more than one Version selected for Decision \"{{name}}\"",
+					"selectSingleVersion": "To see a Decision Table or a Literal Expression, select a single Version",
+					"multipleTenantsSelected": "Decision \"{{name}}\" exists in more than one Tenant",
+					"selectSingleTenant": "To see a Decision Table or a Literal Expression, select a single Tenant",
+					"noDecisionSelected": "There is no Decision selected",
+					"selectDecisionInFilters": "To see a Decision Table or a Literal Expression, select a Decision in the Filters panel",
+					"decisionNotFoundTitle": "Decision could not be found"
+				},
 				"filters": {
 					"tenant": "Tenant",
 					"decisionSection": "Decision",
@@ -564,10 +653,20 @@
 					"deleteModalBody_other": "{{count}} instances selected for delete operation. This permanently deletes the selected decision instances and their history. This cannot be undone.",
 					"deleteSuccessTitle": "The batch operation \"{{operationType}}\" has been started",
 					"deleteSuccessSubtitle": "You can track its progress in the Batch Operation page",
-					"deleteSuccessActionLabel": "Go to operation details",
-					"deleteErrorTitle": "Operation could not be created",
-					"forbiddenTitle": "You don't have permission to perform this operation",
-					"forbiddenSubtitle": "Please contact the administrator if you need access."
+					"deleteSuccessActionLabel": "Go to operation details"
+				},
+				"definitionDeletion": {
+					"buttonTitle": "Delete Decision Definition \"{{name}} - Version {{version}}\"",
+					"title": "Delete DRD",
+					"description": "You are about to delete the following DRD:",
+					"confirmation": "Yes, I confirm I want to delete this DRD and all related instances.",
+					"warningTitle": "Deleting a decision definition will delete the DRD and will impact the following:",
+					"warningDrd": "By deleting a decision definition, you will be deleting the DRD which contains this decision definition. All other decision tables and literal expressions that are part of the DRD will also be deleted.",
+					"warningIncidents": "Deleting the only existing version of a decision definition could result in process incidents.",
+					"documentation": "Read more about deleting a decision definition",
+					"details": "DRD Details",
+					"drdName": "DRD name",
+					"successTitle": "Operation created"
 				}
 			},
 			"decisionInstance": {
@@ -676,6 +775,54 @@
 			"batchOperations": {
 				"title": "Batch Operations"
 			},
+			"batchOperation": {
+				"title": "Batch Operations",
+				"pageTitle": "Operate: Batch Operation {{name}}",
+				"notFoundNotificationTitle": "Batch operation {{batchOperationKey}} could not be found",
+				"loadErrorTitle": "Failed to load batch operation details",
+				"backButton": "Back to batch operations",
+				"forbidden": {
+					"heading": "403 - You do not have permission to view this information",
+					"description": "Contact your administrator to get access.",
+					"learnMoreLink": "Learn more about permissions"
+				},
+				"tiles": {
+					"state": "Batch state",
+					"summaryOfItems": "Summary of items",
+					"startDate": "Start date",
+					"endDate": "End date",
+					"actor": "Actor"
+				},
+				"itemsTable": {
+					"title": "Items",
+					"state": "Batch state",
+					"date": "Date",
+					"processInstanceKey": "Process instance key",
+					"decisionInstanceKey": "Decision instance key",
+					"incidentKey": "Incident key",
+					"noProcessInstance": "No process instance",
+					"noDecisionInstance": "No decision instance",
+					"noIncident": "No incident",
+					"viewProcessInstance": "View process instance {{key}}",
+					"viewDecisionInstance": "View decision instance {{key}}",
+					"failureReason": "Failure reason: {{message}}",
+					"emptyMessage": "No items found"
+				},
+				"actions": {
+					"suspend": "Suspend",
+					"resume": "Resume",
+					"cancel": "Cancel",
+					"overflowMenuLabel": "More actions",
+					"suspendFailed": "Operation cannot be suspended",
+					"resumeFailed": "Operation cannot be resumed",
+					"cancelFailed": "Operation cannot be canceled",
+					"notFoundSubtitle": "Batch operation not found. It may have already completed or failed.",
+					"forbiddenTitle": "You don't have permission to perform this operation",
+					"forbiddenSubtitle": "Please contact the administrator if you need access.",
+					"convergenceUnknownTitle": "Batch operation status could not be confirmed",
+					"convergenceUnknownSubtitle": "The action was sent. Refresh the page to see its current state."
+				}
+			},
 			"shared": {
 				"errorMessage": {
 					"message": "Data could not be fetched",
@@ -687,7 +834,12 @@
 					"cancelTitle": "Cancel Instance {{processInstanceKey}}",
 					"modifyTitle": "Modify Instance {{processInstanceKey}}",
 					"deleteTitle": "Delete Instance {{processInstanceKey}}",
+					"suspendTitle": "Suspend Instance {{processInstanceKey}}",
+					"resumeTitle": "Resume Instance {{processInstanceKey}}",
 					"deleteButtonLabel": "Delete",
+					"creationErrorTitle": "Operation could not be created",
+					"forbiddenTitle": "You don't have permission to perform this operation",
+					"forbiddenSubtitle": "Please contact the administrator if you need access.",
 					"cancelConfirmationModal": {
 						"heading": "Apply Operation",
 						"applyButton": "Apply",

@@ -15,15 +15,21 @@ import {Checkbox, ComboBox, Dropdown, Stack} from '@carbon/react';
 import {queries} from '#/shared/http/queries';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
-import {InstancesList} from '#/operate/shared/InstancesList/InstancesList';
+import {ProcessesLayout} from './ProcessesLayout';
 import {FiltersPanel} from '#/operate/shared/FiltersPanel/FiltersPanel';
 import {Title, Form as StyledForm} from '#/operate/shared/FiltersPanel/styled';
 import {AutoSubmit} from '#/operate/shared/AutoSubmit/AutoSubmit';
 import {TenantField} from '#/operate/shared/TenantField/TenantField';
-import {RadioButtonChecked, WarningFilled, CheckmarkOutline} from '#/operate/shared/StateIcon/styled';
+import {
+	RadioButtonChecked,
+	WarningFilled,
+	CheckmarkOutline,
+	PauseOutlineFilled,
+} from '#/operate/shared/StateIcon/styled';
 import {IndentedGroup, CanceledIcon} from './styled';
 import {OptionalFiltersFormGroup, type OptionalFilter, type OptionalFilterValues} from './OptionalFiltersFormGroup';
 import {DiagramPanel, type ProcessDefinitionSelection} from './DiagramPanel';
+import {InstancesTable} from './InstancesTable';
 
 type FiltersFormValues = OptionalFilterValues & {tenantId?: string};
 
@@ -35,6 +41,8 @@ type Props = {
 	incidents: boolean;
 	completed: boolean;
 	canceled: boolean;
+	suspended: boolean;
+	sort?: string;
 } & FiltersFormValues;
 
 type ProcessItem = {id: string; label: string};
@@ -47,6 +55,7 @@ const Processes: React.FC<Props> = ({
 	incidents,
 	completed,
 	canceled,
+	suspended,
 	tenantId,
 	processInstanceKey,
 	parentProcessInstanceKey,
@@ -58,6 +67,7 @@ const Processes: React.FC<Props> = ({
 	startDateTo,
 	endDateFrom,
 	endDateTo,
+	sort,
 }) => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
@@ -140,8 +150,8 @@ const Processes: React.FC<Props> = ({
 		return definition === undefined ? {kind: 'no-match'} : {kind: 'single-version', definition};
 	}, [data, process, version]);
 
-	const runningChecked = active && incidents;
-	const runningIndeterminate = !runningChecked && (active || incidents);
+	const runningChecked = active && incidents && suspended;
+	const runningIndeterminate = !runningChecked && (active || incidents || suspended);
 	const finishedChecked = completed && canceled;
 	const finishedIndeterminate = !finishedChecked && (completed || canceled);
 
@@ -151,6 +161,7 @@ const Processes: React.FC<Props> = ({
 	const isResetDisabled =
 		active &&
 		incidents &&
+		suspended &&
 		!completed &&
 		!canceled &&
 		!process &&
@@ -183,7 +194,7 @@ const Processes: React.FC<Props> = ({
 	};
 
 	return (
-		<InstancesList
+		<ProcessesLayout
 			type="process"
 			leftPanel={
 				<Form<FiltersFormValues> onSubmit={handleFiltersSubmit} initialValues={{tenantId, ...optionalFilterValues}}>
@@ -274,7 +285,7 @@ const Processes: React.FC<Props> = ({
 													onChange={(_, {checked}) => {
 														void navigate({
 															to: '.',
-															search: (prev) => ({...prev, active: checked, incidents: checked}),
+															search: (prev) => ({...prev, active: checked, incidents: checked, suspended: checked}),
 														});
 													}}
 												/>
@@ -303,6 +314,19 @@ const Processes: React.FC<Props> = ({
 														checked={incidents}
 														onChange={(_, {checked}) => {
 															void navigate({to: '.', search: (prev) => ({...prev, incidents: checked})});
+														}}
+													/>
+													<Checkbox
+														id="filter-suspended"
+														labelText={
+															<Stack orientation="horizontal" gap={3}>
+																<PauseOutlineFilled size={20} />
+																<div>{t('operate.processes.filters.suspended')}</div>
+															</Stack>
+														}
+														checked={suspended}
+														onChange={(_, {checked}) => {
+															void navigate({to: '.', search: (prev) => ({...prev, suspended: checked})});
 														}}
 													/>
 												</IndentedGroup>
@@ -376,9 +400,35 @@ const Processes: React.FC<Props> = ({
 					incidents={incidents}
 					completed={completed}
 					canceled={canceled}
+					suspended={suspended}
 				/>
 			}
-			bottomPanel={<div />}
+			bottomPanel={
+				<InstancesTable
+					search={{
+						process,
+						version,
+						elementId,
+						tenantId,
+						processInstanceKey,
+						parentProcessInstanceKey,
+						businessId,
+						batchOperationKey,
+						errorMessage,
+						hasRetriesLeft,
+						startDateFrom,
+						startDateTo,
+						endDateFrom,
+						endDateTo,
+						active,
+						incidents,
+						completed,
+						canceled,
+						suspended,
+						sort,
+					}}
+				/>
+			}
 		/>
 	);
 };

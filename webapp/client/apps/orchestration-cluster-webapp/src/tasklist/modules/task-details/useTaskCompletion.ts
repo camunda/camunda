@@ -10,11 +10,10 @@ import {useActorRef, useSelector} from '@xstate/react';
 import {useQueryClient} from '@tanstack/react-query';
 import type {SnapshotFrom} from 'xstate';
 import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
-import type {InlineLoadingProps} from '@carbon/react';
 import {useCallback, useEffect} from 'react';
 import {taskCompletionMachine} from './taskCompletionMachine';
 
-type CompletionStatus = NonNullable<InlineLoadingProps['status']>;
+type CompletionStatus = 'inactive' | 'active' | 'finished' | 'error';
 
 function deriveCompletionStatus(snapshot: SnapshotFrom<typeof taskCompletionMachine>): CompletionStatus {
 	if (snapshot.hasTag('status:completing')) {

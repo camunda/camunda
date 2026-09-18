@@ -6,15 +6,28 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {AppHeader, AppSidebar, CamundaLogo, SidebarProvider, toast, TooltipProvider} from '@camunda/design-system';
+import {
+	AppHeader,
+	AppSidebar,
+	CamundaLogo,
+	SidebarProvider,
+	toast,
+	TooltipProvider,
+	useMediaQuery,
+} from '@camunda/design-system';
+import {SaasNotifications} from '@camunda/oc-saas-notifications';
+import {useC3Profile} from '@camunda/camunda-composite-components';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {Link} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import {authenticationStore} from '#/shared/auth/authentication.store';
+import {C3Provider, type CurrentApp} from '#/shared/c3/components/C3Provider';
+import {getBootConfig} from '#/shared/config/getBootConfig';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {queries} from '#/shared/http/queries';
 import {useSidebarNavigation} from '#/shared/header/useSidebarNavigation.shadcn';
 import {AccountMenu} from './AccountMenu';
+import {Breadcrumbs} from './Breadcrumbs';
 import {HelpMenu} from './HelpMenu';
 import {LicenseBadges} from './LicenseBadges';
 import {useCallback, useMemo} from 'react';
@@ -24,14 +37,49 @@ const SIDEBAR_EXPANDED_WIDTH = '12.25rem';
 
 type Props = {
 	children: React.ReactNode;
+	currentApp: CurrentApp | undefined;
+	initialSaasToken: string | null;
 };
 
-const Header: React.FC<Props> = ({children}) => {
-	const {t} = useTranslation();
+const SaasAccountMenu: React.FC<React.ComponentProps<typeof AccountMenu>> = (props) => {
+	const {onThemeChange} = useC3Profile();
+
+	return <AccountMenu {...props} onThemeChange={onThemeChange} />;
+};
+
+const Header: React.FC<Props> = ({children, currentApp, initialSaasToken}) => {
+	const {t, i18n} = useTranslation();
 	const {data: currentUser} = useSuspenseQuery(queries.getCurrentUser());
 	const {data: license} = useSuspenseQuery(queries.getLicense());
 	const {ariaLabel, homeRoute, items} = useSidebarNavigation(currentUser);
 	const {canLogout} = getClientConfig().authentication;
+	const {organizationId, clusterId} = getBootConfig();
+	const isSaas = organizationId !== null && clusterId !== null;
+	const isBelowLg = useMediaQuery('(width < 64rem)');
+	const breadcrumb =
+		currentApp === undefined ? undefined : <Breadcrumbs currentApp={currentApp} webappLinks={currentUser.c8Links} />;
+	const globalActions = useMemo(
+		() =>
+			isSaas && initialSaasToken !== null
+				? [
+						{
+							key: 'notifications',
+							label: t('headerNotificationsLabel'),
+							element: (
+								<SaasNotifications
+									locale={i18n.resolvedLanguage}
+									labels={{
+										title: t('headerNotificationsLabel'),
+										loading: t('headerNotificationsLoading'),
+										empty: t('headerNotificationsEmptyDescription'),
+									}}
+								/>
+							),
+						},
+					]
+				: undefined,
+		[i18n.resolvedLanguage, initialSaasToken, isSaas, t],
+	);
 
 	const handleLogout = useCallback(() => {
 		toast.info(t('notificationLogOutTitle'), {
@@ -50,48 +98,61 @@ const Header: React.FC<Props> = ({children}) => {
 	);
 
 	return (
-		<TooltipProvider>
-			<SidebarProvider
-				defaultExpanded={false}
-				defaultWidth={SIDEBAR_EXPANDED_WIDTH}
-				collapsedWidth={SIDEBAR_COLLAPSED_WIDTH}
-			>
-				<div className="h-dvh overflow-hidden bg-background text-neutral-foreground-strong">
-					<AppHeader
-						skipToContentTargetId="main-content"
-						logo={
-							<Link aria-label={t('loginLogoLabel')} className="flex items-center" to={homeRoute}>
-								<CamundaLogo />
-							</Link>
-						}
-						trailing={<LicenseBadges license={license} />}
-						actions={
-							<>
-								<HelpMenu isPaidPlan={['paid-cc', 'enterprise'].includes(currentUser.salesPlanType ?? '')} />
-								<AccountMenu
-									displayName={currentUser.displayName}
-									canLogout={canLogout}
-									onLogout={handleLogout}
-									onOpenCookiePreferences={handleCookiePreferences}
-								/>
-							</>
-						}
-					/>
-					<AppSidebar
-						ariaLabel={ariaLabel}
-						items={items}
-						linkComponent={Link}
-						resizable={false}
-						expandedWidth={SIDEBAR_EXPANDED_WIDTH}
-						collapsedWidth={SIDEBAR_COLLAPSED_WIDTH}
-					/>
-					<div className="flex h-[calc(100dvh-3rem)]">
-						<div className="w-(--app-sidebar-width) shrink-0 transition-[width] duration-150 ease-out" />
-						<div className="min-w-0 flex-1 overflow-auto">{children}</div>
+		<C3Provider currentApp={currentApp} initialSaasToken={initialSaasToken}>
+			<TooltipProvider>
+				<SidebarProvider
+					defaultExpanded={false}
+					defaultWidth={SIDEBAR_EXPANDED_WIDTH}
+					collapsedWidth={SIDEBAR_COLLAPSED_WIDTH}
+				>
+					<div className="h-dvh overflow-hidden bg-background text-neutral-foreground-strong">
+						<AppHeader
+							skipToContentTargetId="main-content"
+							logo={
+								<Link aria-label={t('loginLogoLabel')} className="flex items-center" to={homeRoute}>
+									<CamundaLogo />
+								</Link>
+							}
+							breadcrumb={breadcrumb}
+							trailing={isBelowLg ? undefined : <LicenseBadges license={license} />}
+							globalActions={globalActions}
+							actions={
+								<>
+									<HelpMenu isPaidPlan={['paid-cc', 'enterprise'].includes(currentUser.salesPlanType ?? '')} />
+									{isSaas && initialSaasToken !== null ? (
+										<SaasAccountMenu
+											displayName={currentUser.displayName}
+											canLogout={canLogout}
+											onLogout={handleLogout}
+											onOpenCookiePreferences={handleCookiePreferences}
+										/>
+									) : (
+										<AccountMenu
+											displayName={currentUser.displayName}
+											canLogout={canLogout}
+											onLogout={handleLogout}
+											onOpenCookiePreferences={handleCookiePreferences}
+										/>
+									)}
+								</>
+							}
+						/>
+						<AppSidebar
+							ariaLabel={ariaLabel}
+							items={items}
+							linkComponent={Link}
+							resizable={false}
+							expandedWidth={SIDEBAR_EXPANDED_WIDTH}
+							collapsedWidth={SIDEBAR_COLLAPSED_WIDTH}
+						/>
+						<div className="flex h-[calc(100dvh-3rem)]">
+							<div className="w-(--app-sidebar-width) shrink-0 transition-[width] duration-150 ease-out" />
+							<div className="min-w-0 flex-1 overflow-auto">{children}</div>
+						</div>
 					</div>
-				</div>
-			</SidebarProvider>
-		</TooltipProvider>
+				</SidebarProvider>
+			</TooltipProvider>
+		</C3Provider>
 	);
 };
 

@@ -7,7 +7,7 @@
  */
 
 import {Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@camunda/design-system';
-import {HelpCircle} from 'lucide-react';
+import {HelpCircle} from '@camunda/design-system/icons';
 import {useCallback} from 'react';
 import {useTranslation} from 'react-i18next';
 

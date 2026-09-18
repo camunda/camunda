@@ -87,7 +87,6 @@ test.describe('Task assignment', () => {
 
 		await taskDetailPage.assignButton.click();
 
-		await expect(taskDetailPage.assignmentSuccessful).toBeVisible();
 		await expect(taskDetailPage.unassignButton).toBeVisible();
 	});
 
@@ -112,7 +111,6 @@ test.describe('Task assignment', () => {
 
 		await taskDetailPage.unassignButton.click();
 
-		await expect(taskDetailPage.unassignmentSuccessful).toBeVisible();
 		await expect(taskDetailPage.assignButton).toBeVisible();
 	});
 

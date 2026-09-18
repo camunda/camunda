@@ -11,12 +11,17 @@ import {http, HttpResponse, type PathParams} from 'msw';
 import {endpoints, type QueryProcessDefinitionsRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {mockCurrentUserEndpoint, mockQueryProcessDefinitionsEndpoint} from '#/shared-test-modules/mock-handlers';
+import {
+	mockCurrentUserEndpoint,
+	mockQueryProcessDefinitionsEndpoint,
+	mockQueryProcessInstancesEndpoint,
+} from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {
 	createProcessDefinition,
 	createQueryProcessDefinitionsResponse,
 } from '#/shared-test-modules/api-mocks/process-definitions';
+import {createQueryProcessInstancesResponse} from '#/shared-test-modules/api-mocks/process-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {ProcessesHarness} from './ProcessesHarness';
 
@@ -46,6 +51,8 @@ const CURRENT_USER = HttpResponse.json(
 	}),
 );
 
+const EMPTY_PROCESS_INSTANCES = HttpResponse.json(createQueryProcessInstancesResponse());
+
 describe('Multi tenancy', () => {
 	beforeEach(() => {
 		sessionStorage.setItem(
@@ -64,7 +71,10 @@ describe('Multi tenancy', () => {
 
 	it('should hide the tenant filter when multi tenancy is not enabled', async ({worker}) => {
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
-		worker.use(mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}));
+		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+		);
 
 		const screen = await renderProcessesPage();
 
@@ -74,6 +84,8 @@ describe('Multi tenancy', () => {
 
 	it('should load the tenant value from the URL', async ({worker}) => {
 		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+
 			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
 			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
 		);
@@ -85,6 +97,8 @@ describe('Multi tenancy', () => {
 
 	it('should set the tenant to the URL on change', async ({worker}) => {
 		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+
 			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
 			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
 		);
@@ -100,6 +114,8 @@ describe('Multi tenancy', () => {
 
 	it('should clear the process and version filters when the tenant changes', async ({worker}) => {
 		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+
 			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
 			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
 		);
@@ -122,6 +138,8 @@ describe('Multi tenancy', () => {
 	it('should scope the process-definitions request to the selected tenant', async ({worker}) => {
 		let requestedFilter: unknown;
 		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+
 			http.post<PathParams, QueryProcessDefinitionsRequestBody>(
 				endpoints.queryProcessDefinitions.getUrl(),
 				async ({request}) => {
@@ -140,6 +158,8 @@ describe('Multi tenancy', () => {
 	it('should not scope the process-definitions request when "all tenants" is selected', async ({worker}) => {
 		let requestedFilter: unknown;
 		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+
 			http.post<PathParams, QueryProcessDefinitionsRequestBody>(
 				endpoints.queryProcessDefinitions.getUrl(),
 				async ({request}) => {

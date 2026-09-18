@@ -7,19 +7,10 @@
  */
 
 import {test, expect} from '#/pw-modules/test-extend';
-import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
-import {createLicense} from '#/shared-test-modules/api-mocks/license';
+import {HttpResponse} from 'msw';
 import {
-	createGetProcessDefinitionResponse,
-	createProcessDefinition,
-	createProcessStartFormResponse,
-	createQueryProcessDefinitionsResponse,
-} from '#/shared-test-modules/api-mocks/process-definitions';
-import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
-import {createQueryUserTasksResponse} from '#/shared-test-modules/api-mocks/user-tasks';
-import {
-	mockCurrentUserEndpoint,
 	mockCreateProcessInstanceEndpoint,
+	mockCurrentUserEndpoint,
 	mockGetProcessDefinitionEndpoint,
 	mockGetProcessStartFormEndpoint,
 	mockLicenseEndpoint,
@@ -27,7 +18,16 @@ import {
 	mockQueryUserTasksEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
-import {HttpResponse} from 'msw';
+import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createLicense} from '#/shared-test-modules/api-mocks/license';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {createQueryUserTasksResponse} from '#/shared-test-modules/api-mocks/user-tasks';
+import {
+	createGetProcessDefinitionResponse,
+	createProcessDefinition,
+	createProcessStartFormResponse,
+	createQueryProcessDefinitionsResponse,
+} from '#/shared-test-modules/api-mocks/process-definitions';
 
 test.beforeEach(async ({network, page}) => {
 	await page.addInitScript(() => {

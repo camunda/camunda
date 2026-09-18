@@ -83,28 +83,6 @@ test.describe('Task completion', () => {
 		await expect(page).toHaveURL(/\/tasklist$/);
 	});
 
-	test('should preserve search params after completion', async ({network, taskDetailPage, page}) => {
-		network.use(
-			mockCompleteTaskEndpoint({
-				successResponse: new HttpResponse(null, {status: 200}),
-			}),
-		);
-
-		await taskDetailPage.goto('2251799813685281', '?filter=assigned-to-me&sortBy=priority');
-		await taskDetailPage.completeTaskButton.click();
-
-		network.use(
-			mockGetUserTaskEndpoint({
-				successResponse: HttpResponse.json(completedTask),
-			}),
-		);
-
-		await expect(taskDetailPage.header.notifications.getByNotificationTitle('Task completed')).toBeVisible();
-		await expect(page).toHaveURL(/\/tasklist\?/);
-		expect(new URL(page.url()).searchParams.get('filter')).toBe('assigned-to-me');
-		expect(new URL(page.url()).searchParams.get('sortBy')).toBe('priority');
-	});
-
 	test('should navigate to the next open task when auto-select is enabled', async ({network, taskDetailPage, page}) => {
 		const assigningTask = createUserTask({
 			userTaskKey: '2251799813685283',

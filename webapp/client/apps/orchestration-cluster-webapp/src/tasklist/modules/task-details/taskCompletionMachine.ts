@@ -10,10 +10,10 @@ import {setup, assign, emit, fromPromise} from 'xstate';
 import {t} from 'i18next';
 import type {QueryClient} from '@tanstack/react-query';
 import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
+import {toast} from '@camunda/design-system';
 import {endpoints} from '#/shared/http/endpoints';
 import {queries} from '#/shared/http/queries';
 import {request, requestErrorSchema} from '#/shared/http/request';
-import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {storeStateLocally} from '#/shared/browser-storage/local-storage';
 import {isTaskTimeoutError} from './taskErrorHandling';
 import {parseDenialReason} from './parseDenialReason';
@@ -128,11 +128,8 @@ const taskCompletionMachine = setup({
 			}
 		},
 		notifyCompletionDelayed: () => {
-			notificationsStore.displayNotification({
-				kind: 'info',
-				title: t('tasklist.taskDetailsCompletionDelayInfoTitle'),
-				subtitle: t('tasklist.taskDetailsCompletionDelayInfoSubtitle'),
-				isDismissable: true,
+			toast.info(t('tasklist.taskDetailsCompletionDelayInfoTitle'), {
+				description: t('tasklist.taskDetailsCompletionDelayInfoSubtitle'),
 			});
 		},
 		commitTask: ({context}, params: {task: UserTask | undefined}) => {
@@ -145,21 +142,14 @@ const taskCompletionMachine = setup({
 			queryClient.invalidateQueries({queryKey: ['userTasks']});
 		},
 		notifyCompletionSuccess: () => {
-			notificationsStore.displayNotification({
-				kind: 'success',
-				title: t('tasklist.taskCompletedNotification'),
-				isDismissable: true,
-			});
+			toast.success(t('tasklist.taskCompletedNotification'));
 		},
 		storeCompletionLocally: () => {
 			storeStateLocally('tasklist.hasCompletedTask', true);
 		},
 		notifyCompletionFailure: (_, params: {error: CompletionFailure | undefined}) => {
-			notificationsStore.displayNotification({
-				kind: 'error',
-				title: t('tasklist.taskCouldNotBeCompletedNotification'),
-				subtitle: params.error?.reason === 'failed' ? params.error.subtitle : undefined,
-				isDismissable: true,
+			toast.error(t('tasklist.taskCouldNotBeCompletedNotification'), {
+				description: params.error?.reason === 'failed' ? params.error.subtitle : undefined,
 			});
 		},
 		complete: emit({type: 'task.completed'}),

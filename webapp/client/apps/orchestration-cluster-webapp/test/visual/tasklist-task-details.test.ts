@@ -46,7 +46,7 @@ test.beforeEach(({network}) => {
 	);
 });
 
-test('should match the task details page snapshot', async ({network, taskDetailPage, page}) => {
+test('should match the task details page snapshot', {tag: '@desktop'}, async ({network, taskDetailPage, page}) => {
 	network.use(
 		mockGetUserTaskEndpoint({
 			successResponse: HttpResponse.json(
@@ -83,6 +83,53 @@ test('should match the task details page snapshot', async ({network, taskDetailP
 	await expect(taskDetailPage.taskName('Review purchase order')).toBeVisible();
 	await expect(taskDetailPage.aside.getByText('ORDER-2024-0042')).toBeVisible();
 	await expect(taskDetailPage.completeTaskButton).toBeEnabled();
+	await taskDetailPage.assignmentButton.focus();
+
+	await expect(page).toHaveScreenshot();
+});
+
+test('should match the task details sheet snapshot', {tag: '@tablet'}, async ({network, taskDetailPage, page}) => {
+	network.use(
+		mockGetUserTaskEndpoint({
+			successResponse: HttpResponse.json(
+				createUserTask({
+					userTaskKey: USER_TASK_KEY,
+					state: 'CREATED',
+					name: 'Review purchase order',
+					processName: 'Procurement process',
+					assignee: 'demo',
+					candidateUsers: ['alice', 'bob'],
+					candidateGroups: ['managers'],
+					priority: 60,
+					businessId: 'ORDER-2024-0042',
+					dueDate: '2024-06-15T17:00:00.000Z',
+					creationDate: '2024-01-10T09:30:00.000Z',
+				}),
+			),
+		}),
+		mockQueryVariablesByUserTaskEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryVariablesByUserTaskResponse({
+					items: [
+						createVariable({name: 'orderTotal', value: '249.99'}),
+						createVariable({name: 'currency', value: '"EUR"', variableKey: '2251799813685284'}),
+					],
+				}),
+			),
+		}),
+	);
+	await taskDetailPage.seedHideNotificationBanner();
+	await taskDetailPage.goto(USER_TASK_KEY);
+	await expect(taskDetailPage.taskName('Review purchase order')).toBeVisible();
+	await expect(taskDetailPage.completeTaskButton).toBeEnabled();
+	await expect(taskDetailPage.detailsButton).toBeVisible();
+	await expect(taskDetailPage.detailsSheet).not.toBeVisible();
+	await taskDetailPage.assignmentButton.focus();
+	await expect(page).toHaveScreenshot();
+
+	await taskDetailPage.detailsButton.click();
+	await expect(taskDetailPage.detailsSheet).toBeVisible();
+	await expect(taskDetailPage.aside.getByText('ORDER-2024-0042')).toBeVisible();
 
 	await expect(page).toHaveScreenshot();
 });
@@ -107,7 +154,7 @@ test('should match the new variable row snapshot', async ({network, taskDetailPa
 	await taskDetailPage.addVariableButton.click();
 	await expect(taskDetailPage.firstNewVariableNameInput).toBeFocused();
 	await expect(taskDetailPage.firstNewVariableValueInput).toBeVisible();
-	await taskDetailPage.variablesHeading.click();
+	await taskDetailPage.assignmentButton.focus();
 
 	await expect(page).toHaveScreenshot();
 });
@@ -139,6 +186,7 @@ test('should match the variable validation error snapshot', async ({network, tas
 	await taskDetailPage.variableValueInput('validationAmount').fill('{invalid');
 	await taskDetailPage.variablesHeading.click();
 	await expect(taskDetailPage.invalidVariableValueError).toBeVisible();
+	await taskDetailPage.assignmentButton.focus();
 
 	await expect(page).toHaveScreenshot();
 });
@@ -211,6 +259,7 @@ test('should match the task details process tab snapshot', async ({network, task
 	await expect(taskDetailPage.processName('Procurement process')).toBeVisible();
 	await expect(taskDetailPage.processVersion(3)).toBeVisible();
 	await expect(taskDetailPage.processDiagramZoomReset).toBeVisible();
+	await taskDetailPage.assignmentButton.focus();
 
 	await expect(page).toHaveScreenshot();
 });
@@ -240,6 +289,7 @@ test('should match the task details process forbidden snapshot', async ({network
 	await taskDetailPage.seedHideNotificationBanner();
 	await taskDetailPage.gotoProcess('2251799813685281');
 	await expect(taskDetailPage.processForbiddenError).toBeVisible();
+	await taskDetailPage.assignmentButton.focus();
 
 	await expect(page).toHaveScreenshot();
 });
@@ -266,6 +316,7 @@ test('should match the unassigned task details snapshot', async ({network, taskD
 	await expect(taskDetailPage.detailsInfo).toBeVisible();
 	await expect(taskDetailPage.taskName('Review supplier onboarding')).toBeVisible();
 	await expect(taskDetailPage.completeTaskButton).toBeDisabled();
+	await taskDetailPage.assignmentButton.focus();
 
 	await expect(page).toHaveScreenshot();
 });
@@ -332,24 +383,46 @@ test('should match the task details snapshot with an active transition', async (
 	await expect(page).toHaveScreenshot();
 });
 
-test('should match the notification permission banner snapshot', async ({network, taskDetailPage, page}) => {
+test('should match the task details 404 page snapshot', async ({network, taskDetailPage, notFoundPage, page}) => {
 	network.use(
 		mockGetUserTaskEndpoint({
-			successResponse: HttpResponse.json(
-				createUserTask({
-					state: 'CREATED',
-					name: 'Review contract',
-					processName: 'Legal process',
-					assignee: null,
-					creationDate: '2024-04-01T11:00:00.000Z',
-				}),
-			),
+			successResponse: new HttpResponse(null, {status: 404}),
 		}),
 	);
 
-	await taskDetailPage.seedShowNotificationBanner();
-	await taskDetailPage.goto('2251799813685281');
-	await expect(taskDetailPage.notificationBannerAction).toBeVisible();
+	await taskDetailPage.goto(USER_TASK_KEY);
+	await expect(notFoundPage.heading).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});
+
+test('should match the task details forbidden page snapshot', async ({
+	network,
+	taskDetailPage,
+	forbiddenPage,
+	page,
+}) => {
+	network.use(
+		mockGetUserTaskEndpoint({
+			successResponse: new HttpResponse(null, {status: 403}),
+		}),
+	);
+
+	await taskDetailPage.goto(USER_TASK_KEY);
+	await expect(forbiddenPage.heading).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});
+
+test('should match the task details generic error page snapshot', async ({network, taskDetailPage, page}) => {
+	network.use(
+		mockGetUserTaskEndpoint({
+			successResponse: new HttpResponse(null, {status: 500}),
+		}),
+	);
+
+	await taskDetailPage.goto(USER_TASK_KEY);
+	await expect(page.getByRole('heading', {name: 'Something went wrong'})).toBeVisible();
 
 	await expect(page).toHaveScreenshot();
 });

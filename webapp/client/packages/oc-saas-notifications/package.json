@@ -1,0 +1,52 @@
+{
+	"name": "@camunda/oc-saas-notifications",
+	"version": "0.0.1",
+	"license": "LicenseRef-Camunda-1.0",
+	"description": "SaaS notifications for Camunda orchestration cluster webapps",
+	"homepage": "https://github.com/camunda/camunda#readme",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/camunda/camunda.git"
+	},
+	"bugs": {
+		"url": "https://github.com/camunda/camunda/issues"
+	},
+	"keywords": [
+		"camunda",
+		"notifications",
+		"orchestration-cluster"
+	],
+	"type": "module",
+	"private": false,
+	"sideEffects": false,
+	"files": [
+		"lib"
+	],
+	"exports": {
+		".": {
+			"types": "./lib/index.ts",
+			"import": "./lib/index.ts"
+		},
+		"./package.json": "./package.json"
+	},
+	"scripts": {
+		"typecheck": "tsc"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"packageManager": "npm@12.0.2",
+	"devDependencies": {
+		"@camunda/camunda-composite-components": "0.25.4",
+		"@camunda/design-system": "0.59.0",
+		"@types/react": "19.3.0",
+		"@types/react-dom": "19.3.0",
+		"typescript": "7.0.2"
+	},
+	"peerDependencies": {
+		"@camunda/camunda-composite-components": "0.25.4",
+		"@camunda/design-system": "^0.59.0",
+		"react": ">=19.0.0",
+		"react-dom": ">=19.0.0"
+	}
+}

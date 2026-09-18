@@ -6,17 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {ReactNode} from 'react';
 import {useNavigate} from '@tanstack/react-router';
 import {useActorRef} from '@xstate/react';
 import {StartProcessContext} from './startProcessContext';
 import {startProcessMachine} from './startProcessMachine';
 
-function StartProcessProvider({children}: {children: ReactNode}) {
+const StartProcessProvider: React.FC<{children: React.ReactNode}> = ({children}) => {
 	const navigate = useNavigate();
 	const actorRef = useActorRef(startProcessMachine, {input: {navigate}});
 
 	return <StartProcessContext.Provider value={actorRef}>{children}</StartProcessContext.Provider>;
-}
+};
 
 export {StartProcessProvider};

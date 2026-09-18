@@ -38,10 +38,10 @@ describe('<HistoryTable />', () => {
 			{path: '/tasklist/$userTaskKey/history', initialEntry: '/tasklist/2251799813685281/history'},
 		);
 
-		await expect.element(screen.getByRole('columnheader', {name: /sort by operation type/i})).toBeVisible();
-		await expect.element(screen.getByRole('columnheader', {name: /^details$/i})).toBeVisible();
-		await expect.element(screen.getByRole('columnheader', {name: /sort by actor/i})).toBeVisible();
-		await expect.element(screen.getByRole('columnheader', {name: /sort by date/i})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: /sort by operation type/i})).toBeVisible();
+		await expect.element(screen.getByText(/^details$/i)).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: /sort by actor/i})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: /sort by date/i})).toBeVisible();
 		await expect.element(screen.getByText('Create task')).toBeVisible();
 		await expect.element(screen.getByText('Assign task')).toBeVisible();
 		await expect.element(screen.getByText('jane')).toBeVisible();
@@ -63,10 +63,10 @@ describe('<HistoryTable />', () => {
 			{path: '/tasklist/$userTaskKey/history', initialEntry: '/tasklist/2251799813685281/history'},
 		);
 
-		await expect.element(screen.getByRole('columnheader', {name: /sort by operation type/i})).toBeVisible();
-		await expect.element(screen.getByRole('columnheader', {name: /sort by actor/i})).toBeVisible();
-		await expect.element(screen.getByRole('columnheader', {name: /sort by date/i})).toBeVisible();
-		await expect.element(screen.getByRole('columnheader', {name: /^details$/i})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: /sort by operation type/i})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: /sort by actor/i})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: /sort by date/i})).toBeVisible();
+		await expect.element(screen.getByText(/^details$/i)).toBeVisible();
 	});
 
 	it('should open a history entry from the details action', async () => {
@@ -101,7 +101,7 @@ describe('<HistoryTable />', () => {
 			{path: '/tasklist/$userTaskKey/history', initialEntry: '/tasklist/2251799813685281/history'},
 		);
 
-		await userEvent.click(screen.getByRole('columnheader', {name: /sort by operation type/i}));
+		await userEvent.click(screen.getByRole('button', {name: /sort by operation type/i}));
 
 		await expect.poll(() => router.state.location.search).toEqual({sort: 'operationType+asc'});
 	});
@@ -112,7 +112,7 @@ describe('<HistoryTable />', () => {
 			{path: '/tasklist/$userTaskKey/history', initialEntry: '/tasklist/2251799813685281/history'},
 		);
 
-		await userEvent.click(screen.getByRole('columnheader', {name: /sort by actor/i}));
+		await userEvent.click(screen.getByRole('button', {name: /sort by actor/i}));
 
 		await expect.poll(() => router.state.location.search).toEqual({sort: 'actorId+asc'});
 	});
@@ -126,7 +126,7 @@ describe('<HistoryTable />', () => {
 			},
 		);
 
-		await userEvent.click(screen.getByRole('columnheader', {name: /sort by date/i}));
+		await userEvent.click(screen.getByRole('button', {name: /sort by date/i}));
 
 		await expect.poll(() => router.state.location.search).toEqual({sort: 'timestamp+desc'});
 	});

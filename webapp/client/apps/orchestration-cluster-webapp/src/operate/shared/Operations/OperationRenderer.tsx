@@ -11,6 +11,8 @@ import {OperationItem} from '#/operate/shared/OperationItem/OperationItem';
 import {Cancel} from './Cancel';
 import {Delete} from './Delete';
 import {ResolveIncident} from './ResolveIncident';
+import {Suspend} from './Suspend';
+import {Resume} from './Resume';
 import type {OperationConfig} from './types';
 
 type Props = {
@@ -33,6 +35,10 @@ const OperationRenderer: React.FC<Props> = ({operation, processInstanceKey}) => 
 			return <Cancel {...baseProps} />;
 		case 'DELETE_PROCESS_INSTANCE':
 			return <Delete {...baseProps} />;
+		case 'SUSPEND_PROCESS_INSTANCE':
+			return <Suspend {...baseProps} />;
+		case 'RESUME_PROCESS_INSTANCE':
+			return <Resume {...baseProps} />;
 		case 'ENTER_MODIFICATION_MODE':
 			return (
 				<OperationItem

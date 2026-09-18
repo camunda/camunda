@@ -8,37 +8,46 @@
 
 import {useMatchRoute, type RegisteredRouter} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
-import {ListTodo, Workflow} from 'lucide-react';
-import type {SidebarNode} from '@camunda/design-system';
+import {ListTodo, Workflow} from '@camunda/design-system/icons';
+import {camundaAppIcons, type NavIcon, type SidebarNode} from '@camunda/design-system';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
 import {hasComponentAccess} from '#/shared/componentAccess';
-import {useHasRouteMatch} from '#/shared/useHasRouteMatch';
+import {useActiveComponentHomeRoute} from '#/shared/useActiveComponentHomeRoute';
 
 type FileRouteTypes = RegisteredRouter['routeTree']['types']['fileRouteTypes'];
 const tabRoutes = {
-	tasklistIndex: '/shadcn/tasklist',
-	tasklistProcesses: '/shadcn/tasklist/processes',
+	tasklistIndex: '/tasklist',
+	tasklistProcesses: '/tasklist/processes',
 } as const satisfies Record<string, FileRouteTypes['to']>;
 
 type SidebarNavigation = {
 	ariaLabel: string;
 	homeRoute: FileRouteTypes['to'];
 	items: SidebarNode[];
+	product?: {
+		icon: NavIcon;
+		label: string;
+	};
 };
 
 function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 	const {t} = useTranslation();
 	const matchRoute = useMatchRoute();
-	const hasRouteMatch = useHasRouteMatch();
 	const {authorizedComponents} = currentUser;
 	const isProcessesRoute = matchRoute({to: tabRoutes['tasklistProcesses'], fuzzy: true}) !== false;
+	const activeComponentHomeRoute = useActiveComponentHomeRoute();
+	const isTasklistRoute = activeComponentHomeRoute === tabRoutes['tasklistIndex'];
 
-	if (matchRoute({to: tabRoutes['tasklistIndex'], fuzzy: true}) !== false) {
+	if (isTasklistRoute) {
 		const hasTasklistAccess = hasComponentAccess('tasklist', authorizedComponents);
 
 		return {
 			ariaLabel: t('tasklist.taskPanelNavAria'),
-			homeRoute: tabRoutes['tasklistIndex'],
+			homeRoute: activeComponentHomeRoute,
+			product: {
+				icon: camundaAppIcons.tasklist,
+				label: 'Tasklist',
+			},
 			items: hasTasklistAccess
 				? [
 						{
@@ -46,7 +55,7 @@ function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 							key: 'tasks',
 							label: t('tasklist.headerNavItemTasks'),
 							icon: ListTodo,
-							isActive: !isProcessesRoute && hasRouteMatch('/shadcn/tasklist'),
+							isActive: !isProcessesRoute,
 							linkProps: {
 								to: tabRoutes['tasklistIndex'],
 								activeOptions: {

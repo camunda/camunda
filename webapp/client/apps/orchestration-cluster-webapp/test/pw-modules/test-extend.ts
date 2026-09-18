@@ -17,14 +17,12 @@ import {TaskDetailPage} from '#/pages/TaskDetail.page';
 import {OperateIndexPage} from '#/pages/OperateIndex.page';
 import {OperateBatchOperationsPage} from '#/pages/OperateBatchOperations.page';
 import {OperateProcessesPage} from '#/pages/OperateProcesses.page';
+import {OperateDecisionsPage} from '#/pages/OperateDecisions.page';
 import {AdminIndexPage} from '#/pages/AdminIndex.page';
 import {NotFoundPage} from '#/pages/NotFound.page';
 import {ForbiddenPage} from '#/pages/Forbidden.page';
 import {ComponentAccessDeniedPage} from '#/pages/ComponentAccessDenied.page';
 import {TasklistLoginPage} from '#/pages/TasklistLogin.page';
-import {ShadcnTasklistIndexPage} from '#/pages/ShadcnTasklistIndex.page';
-import {ShadcnTasklistProcessesPage} from '#/pages/ShadcnTasklistProcesses.page';
-import {ShadcnTasklistLoginPage} from '#/pages/ShadcnTasklistLogin.page';
 
 type Fixtures = {
 	handlers: Array<AnyHandler>;
@@ -32,19 +30,17 @@ type Fixtures = {
 	makeAxeBuilder: () => AxeBuilder;
 	loginPage: LoginPage;
 	tasklistLoginPage: TasklistLoginPage;
-	shadcnTasklistLoginPage: ShadcnTasklistLoginPage;
-	shadcnTasklistProcessesPage: ShadcnTasklistProcessesPage;
 	tasklistIndexPage: TasklistIndexPage;
 	tasklistProcessesPage: TasklistProcessesPage;
 	taskDetailPage: TaskDetailPage;
 	operateIndexPage: OperateIndexPage;
 	operateBatchOperationsPage: OperateBatchOperationsPage;
 	operateProcessesPage: OperateProcessesPage;
+	operateDecisionsPage: OperateDecisionsPage;
 	adminIndexPage: AdminIndexPage;
 	notFoundPage: NotFoundPage;
 	forbiddenPage: ForbiddenPage;
 	componentAccessDeniedPage: ComponentAccessDeniedPage;
-	shadcnTasklistIndexPage: ShadcnTasklistIndexPage;
 };
 
 const test = base.extend<Fixtures>({
@@ -57,12 +53,6 @@ const test = base.extend<Fixtures>({
 	},
 	tasklistLoginPage: async ({page}, use) => {
 		await use(new TasklistLoginPage(page));
-	},
-	shadcnTasklistLoginPage: async ({page}, use) => {
-		await use(new ShadcnTasklistLoginPage(page));
-	},
-	shadcnTasklistProcessesPage: async ({page}, use) => {
-		await use(new ShadcnTasklistProcessesPage(page));
 	},
 	tasklistIndexPage: async ({page}, use) => {
 		await use(new TasklistIndexPage(page));
@@ -82,6 +72,9 @@ const test = base.extend<Fixtures>({
 	operateProcessesPage: async ({page}, use) => {
 		await use(new OperateProcessesPage(page));
 	},
+	operateDecisionsPage: async ({page}, use) => {
+		await use(new OperateDecisionsPage(page));
+	},
 	adminIndexPage: async ({page}, use) => {
 		await use(new AdminIndexPage(page));
 	},
@@ -93,9 +86,6 @@ const test = base.extend<Fixtures>({
 	},
 	componentAccessDeniedPage: async ({page}, use) => {
 		await use(new ComponentAccessDeniedPage(page));
-	},
-	shadcnTasklistIndexPage: async ({page}, use) => {
-		await use(new ShadcnTasklistIndexPage(page));
 	},
 	handlers: [[], {option: true}],
 	network: [

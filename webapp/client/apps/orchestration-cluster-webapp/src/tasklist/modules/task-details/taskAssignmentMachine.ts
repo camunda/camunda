@@ -10,10 +10,10 @@ import {setup, assign, fromPromise} from 'xstate';
 import {t} from 'i18next';
 import type {QueryClient} from '@tanstack/react-query';
 import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
+import {toast} from '@camunda/design-system';
 import {queries} from '#/shared/http/queries';
 import {request, requestErrorSchema} from '#/shared/http/request';
 import {endpoints} from '#/shared/http/endpoints';
-import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {isTaskTimeoutError} from './taskErrorHandling';
 import {parseDenialReason} from './parseDenialReason';
 
@@ -156,11 +156,8 @@ const taskAssignmentMachine = setup({
 			}
 		},
 		notifyAssignmentDelayed: () => {
-			notificationsStore.displayNotification({
-				kind: 'info',
-				title: t('tasklist.taskDetailsAssignmentDelayInfoTitle'),
-				subtitle: t('tasklist.taskDetailsAssignmentDelayInfoSubtitle'),
-				isDismissable: true,
+			toast.info(t('tasklist.taskDetailsAssignmentDelayInfoTitle'), {
+				description: t('tasklist.taskDetailsAssignmentDelayInfoSubtitle'),
 			});
 		},
 		setOptimisticUnassigning: ({context}) => {
@@ -175,11 +172,8 @@ const taskAssignmentMachine = setup({
 			}
 		},
 		notifyUnassignmentDelayed: () => {
-			notificationsStore.displayNotification({
-				kind: 'info',
-				title: t('tasklist.taskDetailsUnassignmentDelayInfoTitle'),
-				subtitle: t('tasklist.taskDetailsUnassignmentDelayInfoSubtitle'),
-				isDismissable: true,
+			toast.info(t('tasklist.taskDetailsUnassignmentDelayInfoTitle'), {
+				description: t('tasklist.taskDetailsUnassignmentDelayInfoSubtitle'),
 			});
 		},
 		commitTask: ({context}, params: {task: UserTask | undefined}) => {
@@ -192,19 +186,13 @@ const taskAssignmentMachine = setup({
 			queryClient.invalidateQueries({queryKey: ['userTasks']});
 		},
 		notifyAssignFailure: (_, params: {error: AssignmentFailure | undefined}) => {
-			notificationsStore.displayNotification({
-				kind: 'error',
-				title: t('tasklist.taskDetailsTaskAssignmentError'),
-				subtitle: params.error?.reason === 'failed' ? params.error.subtitle : undefined,
-				isDismissable: true,
+			toast.error(t('tasklist.taskDetailsTaskAssignmentError'), {
+				description: params.error?.reason === 'failed' ? params.error.subtitle : undefined,
 			});
 		},
 		notifyUnassignFailure: (_, params: {error: AssignmentFailure | undefined}) => {
-			notificationsStore.displayNotification({
-				kind: 'error',
-				title: t('tasklist.taskDetailsTaskUnassignmentError'),
-				subtitle: params.error?.reason === 'failed' ? params.error.subtitle : undefined,
-				isDismissable: true,
+			toast.error(t('tasklist.taskDetailsTaskUnassignmentError'), {
+				description: params.error?.reason === 'failed' ? params.error.subtitle : undefined,
 			});
 		},
 		resetRetryCount: assign({pollRetryCount: 0}),

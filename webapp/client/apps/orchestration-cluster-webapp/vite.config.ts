@@ -100,10 +100,17 @@ const config = defineConfig(({mode}) => ({
 	test: {
 		include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
 		reporters: process.env['CI'] ? ['default', 'github-actions', 'html', 'junit'] : ['default'],
-		outputFile: process.env['CI'] ? {junit: 'TEST-unit.xml'} : undefined,
+		outputFile: process.env['CI']
+			? {
+					html: 'test-artifacts/html/index.html',
+					junit: 'TEST-unit.xml',
+				}
+			: undefined,
+		retry: process.env['CI'] ? 3 : 0,
 		browser: {
 			enabled: true,
-			screenshotFailures: false,
+			screenshotFailures: Boolean(process.env['CI']),
+			screenshotDirectory: 'test-artifacts/screenshots',
 			headless: true,
 			viewport: {
 				width: 1280,
@@ -123,8 +130,6 @@ const config = defineConfig(({mode}) => ({
 						'src/routes/_carbon/**/*.test.tsx',
 						'src/shared/**/*.test.ts',
 						'src/shared/**/*.test.tsx',
-						'src/tasklist/**/*.test.ts',
-						'src/tasklist/**/*.test.tsx',
 						'src/vitest-modules/**/*.test.ts',
 						'src/vitest-modules/**/*.test.tsx',
 					],
@@ -137,8 +142,10 @@ const config = defineConfig(({mode}) => ({
 					include: [
 						'src/**/shadcn.components/**/*.test.ts',
 						'src/**/shadcn.components/**/*.test.tsx',
-						'src/routes/shadcn/**/*.test.ts',
-						'src/routes/shadcn/**/*.test.tsx',
+						'src/routes/_shadcn/**/*.test.ts',
+						'src/routes/_shadcn/**/*.test.tsx',
+						'src/tasklist/**/*.test.ts',
+						'src/tasklist/**/*.test.tsx',
 					],
 					setupFiles: ['./src/vitest-modules/vitest-shadcn.setup.ts'],
 				},

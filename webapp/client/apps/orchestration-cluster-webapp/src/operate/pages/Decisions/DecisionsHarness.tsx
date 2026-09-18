@@ -16,6 +16,15 @@ function toOptionalString(value: unknown) {
 	return value === undefined ? undefined : String(value);
 }
 
+function toOptionalNumber(value: unknown) {
+	if (value === undefined) {
+		return undefined;
+	}
+
+	const number = Number(value);
+	return Number.isFinite(number) ? number : undefined;
+}
+
 function DecisionsHarness() {
 	const search = useSearch({strict: false}) as Record<string, unknown>;
 
@@ -25,9 +34,7 @@ function DecisionsHarness() {
 		<div style={{height: '100vh'}}>
 			<Decisions
 				decisionDefinitionId={toOptionalString(search.decisionDefinitionId)}
-				decisionDefinitionVersion={
-					typeof search.decisionDefinitionVersion === 'number' ? search.decisionDefinitionVersion : undefined
-				}
+				decisionDefinitionVersion={toOptionalNumber(search.decisionDefinitionVersion)}
 				tenantId={toOptionalString(search.tenantId)}
 				evaluated={search.evaluated === undefined ? true : Boolean(search.evaluated)}
 				failed={search.failed === undefined ? true : Boolean(search.failed)}
