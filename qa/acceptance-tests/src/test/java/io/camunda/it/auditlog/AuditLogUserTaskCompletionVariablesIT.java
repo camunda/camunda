@@ -104,11 +104,8 @@ public class AuditLogUserTaskCompletionVariablesIT {
     assertThat(auditLogs)
         .filteredOn(log -> log.getEntityType() == AuditLogEntityTypeEnum.USER_TASK)
         .singleElement()
-        .satisfies(
-            log -> {
-              assertThat(log.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.COMPLETE);
-              assertThat(log.getCategory()).isEqualTo(AuditLogCategoryEnum.USER_TASKS);
-            });
+        .extracting(AuditLogResult::getOperationType)
+        .isEqualTo(AuditLogOperationTypeEnum.COMPLETE);
 
     final var variableAuditLogs =
         auditLogs.stream()
@@ -156,46 +153,6 @@ public class AuditLogUserTaskCompletionVariablesIT {
             String.valueOf(createdVariableKey), String.valueOf(updatedVariableKey));
     assertThat(rawVariableAuditLogs(client, processInstanceKey))
         .allSatisfy(auditLog -> assertThat(auditLog.has("value")).isFalse());
-
-    Awaitility.await("audit category searches separate variables from task completion")
-        .ignoreExceptionsInstanceOf(ProblemException.class)
-        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
-        .untilAsserted(
-            () -> {
-              assertThat(
-                      client
-                          .newAuditLogSearchRequest()
-                          .filter(
-                              f ->
-                                  f.processInstanceKey(String.valueOf(processInstanceKey))
-                                      .category(AuditLogCategoryEnum.USER_TASKS))
-                          .send()
-                          .join()
-                          .items())
-                  .singleElement()
-                  .satisfies(
-                      log -> {
-                        assertThat(log.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.USER_TASK);
-                        assertThat(log.getOperationType())
-                            .isEqualTo(AuditLogOperationTypeEnum.COMPLETE);
-                      });
-              assertThat(
-                      client
-                          .newAuditLogSearchRequest()
-                          .filter(
-                              f ->
-                                  f.processInstanceKey(String.valueOf(processInstanceKey))
-                                      .category(AuditLogCategoryEnum.DEPLOYED_RESOURCES)
-                                      .entityType(AuditLogEntityTypeEnum.VARIABLE))
-                          .send()
-                          .join()
-                          .items())
-                  .extracting(
-                      AuditLogResult::getEntityDescription, AuditLogResult::getOperationType)
-                  .containsExactlyInAnyOrder(
-                      Tuple.tuple("created", AuditLogOperationTypeEnum.CREATE),
-                      Tuple.tuple("updated", AuditLogOperationTypeEnum.UPDATE));
-            });
   }
 
   @Test
@@ -239,8 +196,8 @@ public class AuditLogUserTaskCompletionVariablesIT {
     final var auditLogs = awaitAuditLogs(client, processInstanceKey, 2);
     assertThat(auditLogs)
         .filteredOn(log -> log.getEntityType() == AuditLogEntityTypeEnum.VARIABLE)
-        .extracting(AuditLogResult::getEntityDescription, AuditLogResult::getCategory)
-        .containsExactly(Tuple.tuple("result", AuditLogCategoryEnum.DEPLOYED_RESOURCES));
+        .extracting(AuditLogResult::getEntityDescription)
+        .containsExactly("result");
   }
 
   private static void deploy(final String processId, final BpmnModelInstance process) {

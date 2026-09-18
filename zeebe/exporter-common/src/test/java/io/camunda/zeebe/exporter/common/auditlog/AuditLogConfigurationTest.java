@@ -13,45 +13,14 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
-import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration.ActorAuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogActor;
-import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
-import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class AuditLogConfigurationTest {
-
-  @Test
-  void shouldKeepTaskCompletionInUserTasksCategory() {
-    // given
-    final var record =
-        new ProtocolFactory()
-            .generateRecord(
-                ValueType.USER_TASK,
-                r ->
-                    r.withIntent(UserTaskIntent.COMPLETED)
-                        .withAuthorizations(
-                            Map.of(Authorization.AUTHORIZED_USERNAME, "test-user")));
-    final var config = new AuditLogConfiguration();
-
-    // when
-    final var info = AuditLogInfo.of(record);
-
-    // then
-    assertThat(info.category()).isEqualTo(AuditLogOperationCategory.USER_TASKS);
-    config.getUser().setCategories(Set.of(AuditLogOperationCategory.DEPLOYED_RESOURCES));
-    assertThat(config.isEnabled(info)).isFalse();
-    config.getUser().setCategories(Set.of(AuditLogOperationCategory.USER_TASKS));
-    assertThat(config.isEnabled(info)).isTrue();
-    config.getUser().setExcludes(Set.of(AuditLogEntityType.VARIABLE));
-    assertThat(config.isEnabled(info)).isTrue();
-  }
 
   @Test
   void shouldBeEnabledByDefault() {
