@@ -20,7 +20,11 @@ import picocli.CommandLine.Command;
 @Command(
     name = "state",
     description = "State management commands",
-    subcommands = {StateUpdateKeyCommand.class, StateResetIncidentPositionCommand.class})
+    subcommands = {
+      StateUpdateKeyCommand.class,
+      StateResetIncidentPositionCommand.class,
+      StateCheckProcessDefinitionDeletionsCommand.class
+    })
 public class StateCommand {
 
   private final ZeebeDbFactory zeebeDbFactory;
