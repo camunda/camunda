@@ -243,6 +243,103 @@ histogram_quantile(0.99, sum by (le) (rate(starter_response_latency_seconds_buck
 
 ---
 
+### Worker job-intake delay
+
+Time a job spends between the broker activating it and a worker thread picking it up: the whole
+delivery path — broker, gateway, the client's job stream or activation response, and the client's
+own handler queue. It is the only segment of the job round-trip none of the timers below cover,
+which makes it the one to read when the worker has idle threads and still falls short of the offered
+job rate.
+
+Derived from the job deadline, which the broker sets to the activation instant plus the configured
+job timeout, so it is measured against the broker's clock rather than the worker's. A clock offset
+between the two shifts every sample by the same amount: compare runs on the same pods and read the
+difference, not the absolute value. Samples that skew negative are dropped.
+
+The bucket at 100 ms is the default client poll interval — polled jobs spread evenly below it,
+whereas streamed jobs are pushed on creation and should sit far lower.
+
+- **Unit:** seconds (quantiles)
+- **Measurement:** p50, p90, p99
+
+```promql
+histogram_quantile(0.99, sum by (le) (rate(worker_intake_delay_seconds_bucket{namespace=~"$namespace"}[$__rate_interval])))
+```
+
+---
+
+### Worker message-publish latency
+
+Time the worker spends on the synchronous message publication it issues while handling a job, from
+sending the command until the response arrives. Tagged by `outcome` (`success`, `timeout`, `error`).
+Measured in the Worker, so it includes authentication and authorization overhead on the gateway.
+
+- **Unit:** seconds (quantiles)
+- **Measurement:** p50, p90, p99
+
+```promql
+histogram_quantile(0.99, sum by (le) (rate(worker_publish_duration_seconds_bucket{namespace=~"$namespace", outcome="success"}[$__rate_interval])))
+```
+
+---
+
+### Worker job-handling duration
+
+Total time a worker thread is occupied by a single job: the message publication, the configured
+completion delay and the dispatch of the complete command. Recorded on every path, including the
+one where the publication failed and the job is left to time out.
+
+Since a worker can only handle `capacity` jobs concurrently, this bounds achievable throughput at
+`capacity / p50`. Compare it against the configured completion delay (300 ms by default): the excess
+above that floor is added per-job latency, and it is what turns into lost PI/s when the worker
+concurrency is low.
+
+- **Unit:** seconds (quantiles)
+- **Measurement:** p50, p90, p99
+
+```promql
+histogram_quantile(0.99, sum by (le) (rate(worker_handle_duration_seconds_bucket{namespace=~"$namespace"}[$__rate_interval])))
+```
+
+---
+
+### Worker job-completion latency
+
+Round-trip time of the complete command the worker dispatches at the end of job handling. Tagged by
+`outcome` (`success`, `backpressure`, `error`), where `backpressure` covers both transports —
+`RESOURCE_EXHAUSTED` over gRPC and HTTP 429/503 over REST.
+
+The completion is sent without being awaited, so this latency is invisible in the job-handling
+duration above — but it still delays the broker observing the job as done, and with it the next job
+of the process instance. That makes it the metric to check when throughput drops while the
+job-handling duration stays flat.
+
+- **Unit:** seconds (quantiles)
+- **Measurement:** p50, p90, p99
+
+```promql
+histogram_quantile(0.99, sum by (le) (rate(worker_complete_duration_seconds_bucket{namespace=~"$namespace", outcome="success"}[$__rate_interval])))
+```
+
+---
+
+### Worker completion-queue depth
+
+Number of dispatched completions whose response has not been checked yet. By Little's law this is
+the completion latency multiplied by the completion rate, so it rises whenever completions are sent
+faster than the broker answers them. It is a coarser view of the metric above and predates it;
+prefer the latency histogram, and read the depth as the saturation signal — once it reaches the
+queue capacity (10 000), response tracking is dropped for further completions.
+
+- **Unit:** count
+- **Measurement:** current value
+
+```promql
+max by (pod) (worker_completion_queue_depth{namespace=~"$namespace"})
+```
+
+---
+
 ## Resources
 
 The following metrics apply to all running applications (Camunda and secondary storage). Replace
