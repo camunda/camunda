@@ -112,9 +112,7 @@ class OptimizeBearerPermissionFilterTest {
     filter.doFilter(request, response, chain);
 
     // then
-    verify(response)
-        .sendError(
-            HttpServletResponse.SC_UNAUTHORIZED, "User is not authorized to access Optimize");
+    verify(response).sendError(HttpServletResponse.SC_UNAUTHORIZED);
     verifyNoInteractions(chain);
   }
 

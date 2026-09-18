@@ -70,7 +70,7 @@ public final class OptimizeBearerPermissionFilter extends OncePerRequestFilter {
       tokenService.verifyAccessToken(jwt.getTokenValue());
     } catch (final NotAuthorizedException e) {
       LOG.debug("Denying bearer request at {}: {}", request.getRequestURI(), e.getMessage());
-      response.sendError(HttpServletResponse.SC_UNAUTHORIZED, e.getMessage());
+      response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
       return;
     } catch (final TokenVerificationException e) {
       // The bearer chain already verified signature and audience before this filter runs; a fresh
