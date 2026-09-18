@@ -19,11 +19,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
-import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
 
 /**
  * CCSaaS security wiring for the CSL adoption, active under the cloud profile whenever CSL is
@@ -35,10 +32,12 @@ import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
  *
  * <p>Mirrors OC's {@code OidcOverrideBeansConfiguration}: one shared {@link TokenValidatorFactory}
  * carries an {@link OptimizeCloudOrganizationValidator} and an {@link
- * OptimizeCloudClusterValidator}, and {@code idTokenDecoderFactory} reuses it. Both validators are
- * lenient on claim absence, so the single chain serves both the login id_token (carries {@code
- * orgs}, not the cluster id) and M2M bearer tokens (carry the cluster id, not {@code orgs}). Unlike
- * OC, Optimize keeps the org role gate.
+ * OptimizeCloudClusterValidator}. Both are lenient on claim absence, so the single chain serves
+ * tokens that carry either claim. Unlike OC, Optimize keeps the org role gate.
+ *
+ * <p>The login id_token is not gated here. {@link OptimizeCloudComponentAccessPolicy} applies the
+ * org role rule to every request of a session, and denies a missing claim, so the rule lives in one
+ * place for both editions.
  *
  * <p>The Auth0 {@code audience} authorize-request parameter and the clusterId-derived servlet
  * context path come from configuration, not code: the config compatibility bridge maps the legacy
@@ -54,7 +53,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
 public class OptimizeCloudSecurityConfiguration {
 
   /**
-   * Shared token validation for the login id_token and bearer/public-API tokens. Overrides CSL's
+   * Shared validation for bearer and public-API tokens. Overrides CSL's
    * {@code @ConditionalOnMissingBean} default to append the SaaS org and cluster gates. The
    * organization id and cluster id must be configured: a blank value fails startup rather than
    * silently disabling a gate.
@@ -78,19 +77,6 @@ public class OptimizeCloudSecurityConfiguration {
         oidcProviderConfigurationPort.getOidcAuthenticationConfigurations(),
         cslProperties.getAuthentication().getOidc().getClockSkew(),
         extraValidators);
-  }
-
-  /**
-   * Interactive login id_token validation. Reuses the shared {@link #tokenValidatorFactory} so the
-   * login token runs through the same org/cluster gates as bearer tokens, overriding CSL's
-   * {@code @ConditionalOnMissingBean} default.
-   */
-  @Bean
-  public JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory(
-      final TokenValidatorFactory tokenValidatorFactory) {
-    final OidcIdTokenDecoderFactory decoderFactory = new OidcIdTokenDecoderFactory();
-    decoderFactory.setJwtValidatorFactory(tokenValidatorFactory::createTokenValidator);
-    return decoderFactory;
   }
 
   private static CloudAuthConfiguration cloudConfig(
