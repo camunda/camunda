@@ -734,8 +734,7 @@ final class SequentialRebalanceRunnerTest {
   }
 
   @Test
-  void
-      shouldCompleteWithPhysicalTenantDisabledDuringLateTransferConfirmationWithoutWaitingOutTheElectionTimeout() {
+  void shouldCompleteWithPhysicalTenantDisabledDuringLateTransferConfirmation() {
     // given
     leaders.computeIfAbsent(GROUP, ignored -> new HashMap<>()).put(1, MEMBER_1);
     final var configuration = groupConfiguration(GROUP, Map.of(MEMBER_1, 1, MEMBER_2, 2));
