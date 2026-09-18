@@ -59,12 +59,12 @@ public final class AgentHistoryBatchBehavior {
   static final String ERROR_MSG_JOB_KEY_REQUIRED =
       "Expected to update agent instance, but no jobKey was provided. A command must always be "
           + "attributed to the active job that produced it.";
-  static final String ERROR_MSG_JOB_LEASE_REQUIRED =
+  static final String ERROR_MSG_JOB_LEASE_TOKEN_REQUIRED =
       "Expected to update agent instance related to job with key '%d', but no jobLeaseToken was "
           + "provided. A command must always carry the lease its job was activated with.";
   static final String ERROR_MSG_JOB_NOT_ACTIVE =
       "Expected to update agent instance related to job with key '%d', but job was not active.";
-  static final String ERROR_MSG_JOB_LEASE_MISMATCH =
+  static final String ERROR_MSG_JOB_LEASE_TOKEN_MISMATCH =
       "Expected to update agent instance related to job with key '%d', but job did not hold the "
           + "supplied lease. The job may have been re-activated.";
   static final String ERROR_MSG_JOB_NOT_LEASED =
@@ -94,8 +94,8 @@ public final class AgentHistoryBatchBehavior {
   }
 
   /**
-   * Whether {@link #validateJobContext} rejects a command whose {@code jobLease} does not match the
-   * job's current lease, or accepts it as stale.
+   * Whether {@link #validateJobContext} rejects a command whose {@code jobLeaseToken} does not
+   * match the job's current lease, or accepts it as stale.
    */
   public enum LeaseMismatchHandling {
     /**
@@ -112,21 +112,22 @@ public final class AgentHistoryBatchBehavior {
   }
 
   /**
-   * Validates the job context a command carries. {@code jobKey} and {@code jobLease} are always
-   * required — a command must always be attributed to the active job that produced it and carry the
-   * lease it was activated with, and is rejected outright if either is unset. The referenced job
-   * must be currently active, must hold a lease, and must belong to {@code elementInstanceKey}.
+   * Validates the job context a command carries. {@code jobKey} and {@code jobLeaseToken} are
+   * always required — a command must always be attributed to the active job that produced it and
+   * carry the lease it was activated with, and is rejected outright if either is unset. The
+   * referenced job must be currently active, must hold a lease, and must belong to {@code
+   * elementInstanceKey}.
    *
-   * <p>{@code jobLease} is a fencing token, not an authorization check (see ADR 0005-810): whether
-   * a mismatch against the job's current lease is fatal depends on {@code leaseMismatchHandling},
-   * see {@link LeaseMismatchHandling}.
+   * <p>{@code jobLeaseToken} is a fencing token, not an authorization check (see ADR 0005-810):
+   * whether a mismatch against the job's current lease is fatal depends on {@code
+   * leaseMismatchHandling}, see {@link LeaseMismatchHandling}.
    *
    * @return the active {@link JobRecord} if {@code jobKey} refers to a valid job, otherwise the
    *     {@link Rejection} to surface
    */
   public Either<Rejection, JobRecord> validateJobContext(
       final long jobKey,
-      final String jobLease,
+      final String jobLeaseToken,
       final long elementInstanceKey,
       final LeaseMismatchHandling leaseMismatchHandling) {
 
@@ -134,10 +135,11 @@ public final class AgentHistoryBatchBehavior {
       return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, ERROR_MSG_JOB_KEY_REQUIRED));
     }
 
-    if (jobLease == null || jobLease.isBlank()) {
+    if (jobLeaseToken == null || jobLeaseToken.isBlank()) {
       return Either.left(
           new Rejection(
-              RejectionType.INVALID_ARGUMENT, ERROR_MSG_JOB_LEASE_REQUIRED.formatted(jobKey)));
+              RejectionType.INVALID_ARGUMENT,
+              ERROR_MSG_JOB_LEASE_TOKEN_REQUIRED.formatted(jobKey)));
     }
 
     final var jobState = processingState.getJobState();
@@ -147,15 +149,16 @@ public final class AgentHistoryBatchBehavior {
     }
 
     final var job = jobState.getJob(jobKey);
-    if (!job.hasLeaseToken()) {
+    if (!job.hasJobLeaseToken()) {
       return Either.left(
           new Rejection(RejectionType.NOT_FOUND, ERROR_MSG_JOB_NOT_LEASED.formatted(jobKey)));
     }
 
     if (leaseMismatchHandling == LeaseMismatchHandling.REJECT
-        && !Objects.equals(jobLease, job.getLeaseToken())) {
+        && !Objects.equals(jobLeaseToken, job.getJobLeaseToken())) {
       return Either.left(
-          new Rejection(RejectionType.NOT_FOUND, ERROR_MSG_JOB_LEASE_MISMATCH.formatted(jobKey)));
+          new Rejection(
+              RejectionType.NOT_FOUND, ERROR_MSG_JOB_LEASE_TOKEN_MISMATCH.formatted(jobKey)));
     }
 
     final var jobElementInstanceKey = job.getElementInstanceKey();
@@ -248,8 +251,8 @@ public final class AgentHistoryBatchBehavior {
   /**
    * Applies an already-validated batch onto {@code target}, in array order: builds one {@code
    * AGENT_HISTORY} event per item (a full copy of the item, with its record-context fields
-   * overwritten to match {@code target}/{@code jobKey}/{@code jobLease}) and accumulates metrics
-   * immediately. Never applies a {@link AgentHistoryRole#CONFIGURATION} item's own
+   * overwritten to match {@code target}/{@code jobKey}/{@code jobLeaseToken}) and accumulates
+   * metrics immediately. Never applies a {@link AgentHistoryRole#CONFIGURATION} item's own
    * model/provider/systemPrompt/tools/limits changes itself — that is always the caller's explicit
    * responsibility, via {@link #applyConfigurationChanges(AgentInstanceRecord,
    * AgentHistoryRecordValue)}, at whichever point the caller considers the item committed
@@ -259,9 +262,10 @@ public final class AgentHistoryBatchBehavior {
    * <p><strong>Mutates {@code target} in place</strong> (metrics, history — never
    * definition/tools/limits) and does not itself emit any event — the caller is responsible for
    * turning {@code target.getHistory()} into {@code AGENT_HISTORY:CREATED} follow-up events. An
-   * item already pending under the same {@code (jobKey, jobLease)} pair is echoed back with {@code
-   * isDuplicate} set instead: it is skipped for metrics accumulation, and the caller must filter it
-   * out rather than turn it into a {@code CREATED} event or apply its configuration changes.
+   * item already pending under the same {@code (jobKey, jobLeaseToken)} pair is echoed back with
+   * {@code isDuplicate} set instead: it is skipped for metrics accumulation, and the caller must
+   * filter it out rather than turn it into a {@code CREATED} event or apply its configuration
+   * changes.
    *
    * @return the {@code AgentInstanceRecord} attribute names that actually changed as a result
    *     (currently only ever {@link AgentInstanceRecord#ATTR_METRICS})
@@ -269,13 +273,13 @@ public final class AgentHistoryBatchBehavior {
   Set<String> applyInstanceChangesFromHistory(
       final AgentInstanceRecord target,
       final long jobKey,
-      final String jobLease,
+      final String jobLeaseToken,
       final long elementInstanceKey,
       final List<? extends AgentHistoryRecordValue> history) {
     final var changedAttributes = new HashSet<String>();
     final var items = new ArrayList<AgentHistoryRecord>(history.size());
     final var agentHistoryState = processingState.getAgentHistoryState();
-    final var pendingByHistoryItemId = collectPendingByHistoryItemId(jobKey, jobLease);
+    final var pendingByHistoryItemId = collectPendingByHistoryItemId(jobKey, jobLeaseToken);
 
     for (final var item : history) {
       final var historyItemId = item.getHistoryItemId();
@@ -301,7 +305,7 @@ public final class AgentHistoryBatchBehavior {
           .setProcessDefinitionKey(target.getProcessDefinitionKey())
           .setTenantId(target.getTenantId())
           .setJobKey(jobKey)
-          .setJobLease(jobLease)
+          .setJobLeaseToken(jobLeaseToken)
           .setDuplicate(isDuplicate);
 
       // A duplicate is skipped entirely: no metrics accumulation — re-applying values the
@@ -322,19 +326,19 @@ public final class AgentHistoryBatchBehavior {
 
   /**
    * Collects, by {@code historyItemId}, the {@code agentHistoryKey} of every history item already
-   * pending under this exact {@code (jobKey, jobLease)} pair. A pending item stored under a
+   * pending under this exact {@code (jobKey, jobLeaseToken)} pair. A pending item stored under a
    * different lease is never a duplicate — that item belongs to an attempt that may still lose — so
-   * an unleased request ({@code jobLease} empty) only matches other pending items that were
+   * an unleased request ({@code jobLeaseToken} empty) only matches other pending items that were
    * themselves pushed without a lease for the same job.
    */
   private Map<String, Long> collectPendingByHistoryItemId(
-      final long jobKey, final String jobLease) {
+      final long jobKey, final String jobLeaseToken) {
     final var pendingByHistoryItemId = new HashMap<String, Long>();
     final AgentHistoryState.AgentHistoryVisitor collect =
         pending ->
             pendingByHistoryItemId.putIfAbsent(
                 pending.getHistoryItemId(), pending.getAgentHistoryKey());
-    processingState.getAgentHistoryState().visitByJobLease(jobKey, jobLease, collect);
+    processingState.getAgentHistoryState().visitByJobLeaseToken(jobKey, jobLeaseToken, collect);
     return pendingByHistoryItemId;
   }
 

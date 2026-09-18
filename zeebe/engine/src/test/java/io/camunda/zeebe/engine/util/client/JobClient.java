@@ -133,8 +133,8 @@ public final class JobClient {
     return this;
   }
 
-  public JobClient withLeaseToken(final String leaseToken) {
-    jobRecord.setLeaseToken(leaseToken);
+  public JobClient withJobLeaseToken(final String jobLeaseToken) {
+    jobRecord.setJobLeaseToken(jobLeaseToken);
     return this;
   }
 

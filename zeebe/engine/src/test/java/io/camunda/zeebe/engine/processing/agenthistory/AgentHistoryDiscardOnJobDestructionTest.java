@@ -93,7 +93,7 @@ public class AgentHistoryDiscardOnJobDestructionTest {
         .job()
         .ofInstance(fixture.processInstanceKey)
         .withType(AGENTIC_JOB_TYPE)
-        .withLeaseToken(fixture.jobLease)
+        .withJobLeaseToken(fixture.jobLeaseToken)
         .withErrorCode(ERROR_CODE)
         .throwError();
 
@@ -147,7 +147,7 @@ public class AgentHistoryDiscardOnJobDestructionTest {
         .job()
         .ofInstance(fixture.processInstanceKey)
         .withType(EXTERNAL_AGENT_JOB_TYPE)
-        .withLeaseToken(fixture.jobLease)
+        .withJobLeaseToken(fixture.jobLeaseToken)
         .withErrorCode(ERROR_CODE)
         .throwError();
 
@@ -225,7 +225,7 @@ public class AgentHistoryDiscardOnJobDestructionTest {
             .getFirst();
     assertThat(discardCommand.getRecordType()).isEqualTo(RecordType.COMMAND);
     assertThat(discardCommand.getKey()).isEqualTo(-1L);
-    assertThat(discardCommand.getValue().getJobLease()).isEmpty();
+    assertThat(discardCommand.getValue().getJobLeaseToken()).isEmpty();
     assertThat(discardCommand.getValue().getProcessInstanceKey())
         .isEqualTo(fixture.processInstanceKey);
 
@@ -278,19 +278,19 @@ public class AgentHistoryDiscardOnJobDestructionTest {
             .withType(jobType)
             .getFirst()
             .getKey();
-    final String jobLease =
+    final String jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
 
     final long agentInstanceKey =
         ENGINE
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
 
@@ -300,7 +300,7 @@ public class AgentHistoryDiscardOnJobDestructionTest {
         .withAgentInstanceKey(agentInstanceKey)
         .withElementInstanceKey(elementInstanceKey)
         .withJobKey(jobKey)
-        .withJobLease(jobLease)
+        .withJobLeaseToken(jobLeaseToken)
         .withHistory(
             List.of(
                 new AgentHistoryRecord()
@@ -319,13 +319,13 @@ public class AgentHistoryDiscardOnJobDestructionTest {
             .getFirst()
             .getKey();
 
-    return new Fixture(processInstanceKey, elementInstanceKey, jobKey, jobLease, itemKey);
+    return new Fixture(processInstanceKey, elementInstanceKey, jobKey, jobLeaseToken, itemKey);
   }
 
   private record Fixture(
       long processInstanceKey,
       long elementInstanceKey,
       long jobKey,
-      String jobLease,
+      String jobLeaseToken,
       long itemKey) {}
 }

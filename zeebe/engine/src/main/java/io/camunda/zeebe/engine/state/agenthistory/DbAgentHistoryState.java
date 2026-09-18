@@ -25,14 +25,15 @@ public final class DbAgentHistoryState implements MutableAgentHistoryState {
   private final DbAgentHistory dbAgentHistory = new DbAgentHistory();
   private final ColumnFamily<DbLong, DbAgentHistory> agentHistoryColumnFamily;
 
-  // Secondary index: (jobKey, jobLease, historyItemKey) -> nil
-  // Supports prefix search by jobKey alone, or by (jobKey, jobLease)
+  // Secondary index: (jobKey, jobLeaseToken, historyItemKey) -> nil
+  // Supports prefix search by jobKey alone, or by (jobKey, jobLeaseToken)
   private final DbLong jobKey = new DbLong();
-  private final DbString jobLease = new DbString();
-  private final DbCompositeKey<DbLong, DbString> jobKeyAndLease =
-      new DbCompositeKey<>(jobKey, jobLease);
+  private final DbString jobLeaseToken = new DbString();
+  private final DbCompositeKey<DbLong, DbString> jobKeyAndJobLeaseToken =
+      new DbCompositeKey<>(jobKey, jobLeaseToken);
   private final DbCompositeKey<DbCompositeKey<DbLong, DbString>, DbLong>
-      jobKeyLeaseAndHistoryItemKey = new DbCompositeKey<>(jobKeyAndLease, historyItemKey);
+      jobKeyJobLeaseTokenAndHistoryItemKey =
+          new DbCompositeKey<>(jobKeyAndJobLeaseToken, historyItemKey);
   private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbLong, DbString>, DbLong>, DbNil>
       byJobKeyColumnFamily;
 
@@ -68,7 +69,7 @@ public final class DbAgentHistoryState implements MutableAgentHistoryState {
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.AGENT_HISTORY_BY_JOB_KEY,
             transactionContext,
-            jobKeyLeaseAndHistoryItemKey,
+            jobKeyJobLeaseTokenAndHistoryItemKey,
             DbNil.INSTANCE);
     committedHistoryItemIdsColumnFamily =
         zeebeDb.createColumnFamily(
@@ -105,12 +106,12 @@ public final class DbAgentHistoryState implements MutableAgentHistoryState {
   }
 
   @Override
-  public void visitByJobLease(
-      final long jobKeyValue, final String leaseValue, final AgentHistoryVisitor visitor) {
+  public void visitByJobLeaseToken(
+      final long jobKeyValue, final String jobLeaseTokenValue, final AgentHistoryVisitor visitor) {
     jobKey.wrapLong(jobKeyValue);
-    jobLease.wrapString(leaseValue);
+    jobLeaseToken.wrapString(jobLeaseTokenValue);
     byJobKeyColumnFamily.whileEqualPrefix(
-        jobKeyAndLease,
+        jobKeyAndJobLeaseToken,
         (compositeKey, nil) -> {
           final var item = get(compositeKey.second().getValue());
           if (item != null) {
@@ -123,10 +124,10 @@ public final class DbAgentHistoryState implements MutableAgentHistoryState {
   public void insert(final long key, final AgentHistoryRecord record) {
     historyItemKey.wrapLong(key);
     jobKey.wrapLong(record.getJobKey());
-    jobLease.wrapString(record.getJobLease());
+    jobLeaseToken.wrapString(record.getJobLeaseToken());
     dbAgentHistory.setRecord(record);
     agentHistoryColumnFamily.insert(historyItemKey, dbAgentHistory);
-    byJobKeyColumnFamily.insert(jobKeyLeaseAndHistoryItemKey, DbNil.INSTANCE);
+    byJobKeyColumnFamily.insert(jobKeyJobLeaseTokenAndHistoryItemKey, DbNil.INSTANCE);
   }
 
   @Override
@@ -142,9 +143,9 @@ public final class DbAgentHistoryState implements MutableAgentHistoryState {
   public void delete(final long key, final AgentHistoryRecord record) {
     historyItemKey.wrapLong(key);
     jobKey.wrapLong(record.getJobKey());
-    jobLease.wrapString(record.getJobLease());
+    jobLeaseToken.wrapString(record.getJobLeaseToken());
     agentHistoryColumnFamily.deleteIfExists(historyItemKey);
-    byJobKeyColumnFamily.deleteIfExists(jobKeyLeaseAndHistoryItemKey);
+    byJobKeyColumnFamily.deleteIfExists(jobKeyJobLeaseTokenAndHistoryItemKey);
   }
 
   @Override

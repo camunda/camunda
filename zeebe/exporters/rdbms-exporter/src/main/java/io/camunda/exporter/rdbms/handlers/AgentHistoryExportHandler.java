@@ -77,7 +77,7 @@ public class AgentHistoryExportHandler implements RdbmsExportHandler<AgentHistor
             .tenantId(value.getTenantId())
             .partitionId(record.getPartitionId())
             .jobKey(value.getJobKey())
-            .jobLease(value.getJobLease())
+            .jobLeaseToken(value.getJobLeaseToken())
             .loopIteration(value.getLoopIteration())
             .role(mapRole(value.getRole()))
             .commitStatus(mapCommitStatus(intent))

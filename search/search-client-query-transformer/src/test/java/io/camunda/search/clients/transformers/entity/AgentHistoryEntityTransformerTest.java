@@ -47,7 +47,7 @@ class AgentHistoryEntityTransformerTest {
     source.setTenantId("<default>");
     source.setPartitionId(1);
     source.setJobKey(500L);
-    source.setJobLease("lease-token");
+    source.setJobLeaseToken("lease-token");
     source.setLoopIteration(3);
     source.setHistoryItemId("history-item-1");
     source.setRole(AgentHistoryRole.ASSISTANT);
@@ -85,7 +85,7 @@ class AgentHistoryEntityTransformerTest {
     assertThat(result.processDefinitionId()).isEqualTo("my-process");
     assertThat(result.tenantId()).isEqualTo("<default>");
     assertThat(result.jobKey()).isEqualTo(500L);
-    assertThat(result.jobLease()).isEqualTo("lease-token");
+    assertThat(result.jobLeaseToken()).isEqualTo("lease-token");
     assertThat(result.loopIteration()).isEqualTo(3);
     assertThat(result.role()).isEqualTo(AgentInstanceHistoryRole.ASSISTANT);
     assertThat(result.commitStatus()).isEqualTo(AgentInstanceHistoryCommitStatus.COMMITTED);
@@ -130,6 +130,20 @@ class AgentHistoryEntityTransformerTest {
 
     // then
     assertThat(result.toolCalls()).isEmpty();
+  }
+
+  @Test
+  void shouldMapMissingJobLeaseTokenToEmptyString() {
+    // given — a document indexed before the field was renamed carries no jobLeaseToken, so Jackson
+    // leaves it null; AgentInstanceHistoryEntity rejects a null, which would fail the whole search
+    final var source = buildSource();
+    source.setJobLeaseToken(null);
+
+    // when
+    final AgentInstanceHistoryEntity result = transformer.apply(source);
+
+    // then
+    assertThat(result.jobLeaseToken()).isEmpty();
   }
 
   @Test

@@ -222,7 +222,7 @@ class ResponseMapperTest {
               .setWorker("worker")
               .setRetries(3)
               .setDeadline(0L)
-              .setLeaseToken("lease-token-1")
+              .setJobLeaseToken("lease-token-1")
               .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
       final byte[] emptyVariables = MsgPackConverter.convertToMsgPack(Collections.emptyMap());
@@ -516,7 +516,7 @@ class ResponseMapperTest {
           .setDeadline(jobRecord.getDeadline())
           .setTenantId(jobRecord.getTenantId())
           .setBusinessId(jobRecord.getBusinessId())
-          .setLeaseToken(jobRecord.getLeaseToken());
+          .setJobLeaseToken(jobRecord.getJobLeaseToken());
 
       // Set variables as empty MsgPack map
       final byte[] emptyVariables = MsgPackConverter.convertToMsgPack(Collections.emptyMap());

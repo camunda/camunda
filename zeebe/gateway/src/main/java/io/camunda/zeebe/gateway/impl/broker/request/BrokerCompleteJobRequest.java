@@ -37,7 +37,7 @@ public final class BrokerCompleteJobRequest extends BrokerExecuteCommand<JobReco
   }
 
   public BrokerCompleteJobRequest setJobLeaseToken(final String jobLeaseToken) {
-    requestDto.setLeaseToken(jobLeaseToken);
+    requestDto.setJobLeaseToken(jobLeaseToken);
     return this;
   }
 

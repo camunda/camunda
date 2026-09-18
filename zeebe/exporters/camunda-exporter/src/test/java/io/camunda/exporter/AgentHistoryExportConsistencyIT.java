@@ -224,7 +224,7 @@ final class AgentHistoryExportConsistencyIT {
         .withProcessDefinitionKey(400L)
         .withTenantId("<default>")
         .withJobKey(500L)
-        .withJobLease("lease-token")
+        .withJobLeaseToken("lease-token")
         .withLoopIteration(1)
         .withRole(io.camunda.zeebe.protocol.record.value.AgentHistoryRole.ASSISTANT)
         .withProducedAt(ORIGINAL_PRODUCED_AT_MS)

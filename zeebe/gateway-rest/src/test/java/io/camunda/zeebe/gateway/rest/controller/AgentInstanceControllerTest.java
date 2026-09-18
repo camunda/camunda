@@ -817,7 +817,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
               assertArg(
                   record -> {
                     assertThat(record.getJobKey()).isEqualTo(JOB_KEY);
-                    assertThat(record.getJobLease()).isEqualTo("lease-abc");
+                    assertThat(record.getJobLeaseToken()).isEqualTo("lease-abc");
                     assertThat(record.getHistory()).hasSize(3);
                     assertThat(record.getHistory().get(0).getHistoryItemId()).isEqualTo("item-1");
                     assertThat(record.getHistory().get(0).getContent().get(0).getText())
@@ -889,7 +889,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
               assertArg(
                   record -> {
                     assertThat(record.getJobKey()).isEqualTo(JOB_KEY);
-                    assertThat(record.getJobLease()).isEqualTo("lease-abc");
+                    assertThat(record.getJobLeaseToken()).isEqualTo("lease-abc");
                     assertThat(record.getHistory()).hasSize(2);
                   }),
               any());
@@ -958,7 +958,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                   record -> {
                     assertThat(record.getStatus().name()).isEqualTo("THINKING");
                     assertThat(record.getJobKey()).isEqualTo(JOB_KEY);
-                    assertThat(record.getJobLease()).isEqualTo("lease-abc");
+                    assertThat(record.getJobLeaseToken()).isEqualTo("lease-abc");
                     assertThat(record.getHistory()).hasSize(2);
                     assertThat(record.getHistory().get(0).getHistoryItemId()).isEqualTo("item-1");
                     assertThat(record.getHistory().get(1).getHistoryItemId()).isEqualTo("item-2");
@@ -1181,7 +1181,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                   record -> {
                     assertThat(record.getElementInstanceKey()).isEqualTo(ELEMENT_INSTANCE_KEY);
                     assertThat(record.getJobKey()).isEqualTo(JOB_KEY);
-                    assertThat(record.getJobLease()).isEqualTo("lease-abc");
+                    assertThat(record.getJobLeaseToken()).isEqualTo("lease-abc");
                     assertThat(record.getHistory()).hasSize(3);
                     assertThat(record.getHistory().get(0).getHistoryItemId()).isEqualTo("item-0");
                     assertThat(record.getHistory().get(1).getHistoryItemId()).isEqualTo("item-1");
@@ -1266,7 +1266,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
               assertArg(
                   record -> {
                     assertThat(record.getJobKey()).isEqualTo(JOB_KEY);
-                    assertThat(record.getJobLease()).isEqualTo("lease-abc");
+                    assertThat(record.getJobLeaseToken()).isEqualTo("lease-abc");
                     assertThat(record.getHistory()).hasSize(2);
                   }),
               any());

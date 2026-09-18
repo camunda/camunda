@@ -352,7 +352,7 @@ public class BpmnJobActivationBehavior {
     jobRecord.setDeadline(deadline);
     jobRecord.setWorker(properties.worker());
     if (properties.withLease()) {
-      jobRecord.setLeaseToken(LeaseTokens.generate());
+      jobRecord.setJobLeaseToken(LeaseTokens.generate());
     }
   }
 
@@ -452,7 +452,7 @@ public class BpmnJobActivationBehavior {
 
     @Override
     public boolean test(final JobActivationProperties jobActivationProperties) {
-      if (jobActivationProperties.withLease() || !jobRecord.hasLeaseToken()) {
+      if (jobActivationProperties.withLease() || !jobRecord.hasJobLeaseToken()) {
         return true;
       }
       leasedJobSkipped = true;

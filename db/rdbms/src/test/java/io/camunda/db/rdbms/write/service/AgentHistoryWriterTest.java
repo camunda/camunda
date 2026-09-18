@@ -81,11 +81,11 @@ class AgentHistoryWriterTest {
   }
 
   @Test
-  void shouldTruncateJobLeaseOnCreate() {
+  void shouldTruncateJobLeaseTokenOnCreate() {
     // given — column size of 10; value longer than 10 chars
     when(vendorDatabaseProperties.userCharColumnSize()).thenReturn(10);
-    final String longLease = "a".repeat(20);
-    final var model = buildModel(3L, longLease);
+    final String longJobLeaseToken = "a".repeat(20);
+    final var model = buildModel(3L, longJobLeaseToken);
 
     // when
     writer.create(model);
@@ -95,11 +95,11 @@ class AgentHistoryWriterTest {
     final var captor = ArgumentCaptor.forClass(QueueItem.class);
     verify(executionQueue).executeInQueue(captor.capture());
     final var queuedModel = (AgentHistoryDbModel) captor.getValue().parameter();
-    assertThat(queuedModel.jobLease()).hasSize(10);
-    assertThat(longLease).startsWith(queuedModel.jobLease());
+    assertThat(queuedModel.jobLeaseToken()).hasSize(10);
+    assertThat(longJobLeaseToken).startsWith(queuedModel.jobLeaseToken());
   }
 
-  private AgentHistoryDbModel buildModel(final long key, final String jobLease) {
+  private AgentHistoryDbModel buildModel(final long key, final String jobLeaseToken) {
     return new AgentHistoryDbModel.Builder()
         .agentHistoryKey(key)
         .agentInstanceKey(100L)
@@ -111,7 +111,7 @@ class AgentHistoryWriterTest {
         .tenantId("myTenant")
         .partitionId(1)
         .jobKey(600L)
-        .jobLease(jobLease)
+        .jobLeaseToken(jobLeaseToken)
         .role(AgentInstanceHistoryRole.USER)
         .commitStatus(AgentInstanceHistoryCommitStatus.PENDING)
         .producedAt(OffsetDateTime.now())

@@ -14,9 +14,9 @@ import io.camunda.zeebe.util.Either;
 /**
  * Fences job commands against a stale lease token.
  *
- * <p>A stored (persisted) job carries a {@code leaseToken} that is non-empty only when the job was
- * activated with a lease. Incoming commands carry a {@code leaseToken} as well. Two flavors of
- * fencing are provided:
+ * <p>A stored (persisted) job carries a {@code jobLeaseToken} that is non-empty only when the job
+ * was activated with a lease. Incoming commands carry a {@code jobLeaseToken} as well. Two flavors
+ * of fencing are provided:
  *
  * <ul>
  *   <li>{@link #forLifecycleCommand()} - used by lifecycle commands (complete, fail, throw error)
@@ -34,10 +34,10 @@ import io.camunda.zeebe.util.Either;
  */
 public final class JobLeaseFencingCheck {
 
-  private static final String LEASE_TOKEN_MISSING_MESSAGE =
+  private static final String JOB_LEASE_TOKEN_MISSING_MESSAGE =
       "Expected to process job with key '%d', but a matching lease token must be provided "
           + "because the job is currently leased";
-  private static final String LEASE_TOKEN_MISMATCH_MESSAGE =
+  private static final String JOB_LEASE_TOKEN_MISMATCH_MESSAGE =
       "Expected to process job with key '%d', but the supplied lease token does not match. "
           + "The job may have been re-activated by another worker.";
 
@@ -49,24 +49,24 @@ public final class JobLeaseFencingCheck {
    */
   public static JobCommandCheck forLifecycleCommand() {
     return (command, jobRecord) -> {
-      final var storedLeaseToken = jobRecord.getLeaseToken();
-      if (storedLeaseToken.isEmpty()) {
+      final var storedJobLeaseToken = jobRecord.getJobLeaseToken();
+      if (storedJobLeaseToken.isEmpty()) {
         return Either.right(jobRecord);
       }
 
-      final var suppliedLeaseToken = command.getValue().getLeaseToken();
-      if (suppliedLeaseToken.isEmpty()) {
+      final var suppliedJobLeaseToken = command.getValue().getJobLeaseToken();
+      if (suppliedJobLeaseToken.isEmpty()) {
         return Either.left(
             new Rejection(
                 RejectionType.INVALID_STATE,
-                LEASE_TOKEN_MISSING_MESSAGE.formatted(command.getKey())));
+                JOB_LEASE_TOKEN_MISSING_MESSAGE.formatted(command.getKey())));
       }
 
-      if (!suppliedLeaseToken.equals(storedLeaseToken)) {
+      if (!suppliedJobLeaseToken.equals(storedJobLeaseToken)) {
         return Either.left(
             new Rejection(
                 RejectionType.INVALID_STATE,
-                LEASE_TOKEN_MISMATCH_MESSAGE.formatted(command.getKey())));
+                JOB_LEASE_TOKEN_MISMATCH_MESSAGE.formatted(command.getKey())));
       }
 
       return Either.right(jobRecord);
@@ -81,18 +81,18 @@ public final class JobLeaseFencingCheck {
    */
   public static JobCommandCheck forUpdateCommand() {
     return (command, jobRecord) -> {
-      final var storedLeaseToken = jobRecord.getLeaseToken();
-      final var suppliedLeaseToken = command.getValue().getLeaseToken();
+      final var storedJobLeaseToken = jobRecord.getJobLeaseToken();
+      final var suppliedJobLeaseToken = command.getValue().getJobLeaseToken();
 
-      if (storedLeaseToken.isEmpty() || suppliedLeaseToken.isEmpty()) {
+      if (storedJobLeaseToken.isEmpty() || suppliedJobLeaseToken.isEmpty()) {
         return Either.right(jobRecord);
       }
 
-      if (!suppliedLeaseToken.equals(storedLeaseToken)) {
+      if (!suppliedJobLeaseToken.equals(storedJobLeaseToken)) {
         return Either.left(
             new Rejection(
                 RejectionType.INVALID_STATE,
-                LEASE_TOKEN_MISMATCH_MESSAGE.formatted(command.getKey())));
+                JOB_LEASE_TOKEN_MISMATCH_MESSAGE.formatted(command.getKey())));
       }
 
       return Either.right(jobRecord);

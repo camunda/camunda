@@ -190,7 +190,7 @@ public final class AgentInstanceCreateProcessor
     final var validJob =
         historyBatchHelper.validateJobContext(
             commandValue.getJobKey(),
-            commandValue.getJobLease(),
+            commandValue.getJobLeaseToken(),
             commandValue.getElementInstanceKey(),
             LeaseMismatchHandling.REJECT);
     if (validJob.isLeft()) {
@@ -239,7 +239,7 @@ public final class AgentInstanceCreateProcessor
       historyBatchHelper.applyInstanceChangesFromHistory(
           event,
           commandValue.getJobKey(),
-          commandValue.getJobLease(),
+          commandValue.getJobLeaseToken(),
           commandValue.getElementInstanceKey(),
           commandValue.getHistory());
     }

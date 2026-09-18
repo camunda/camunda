@@ -239,7 +239,7 @@ public final class JobCompleteProcessor
           AgentHistoryIntent.COMMIT,
           new AgentHistoryRecord()
               .setJobKey(command.getKey())
-              .setJobLease(job.getLeaseToken())
+              .setJobLeaseToken(job.getJobLeaseToken())
               .setProcessInstanceKey(job.getProcessInstanceKey()));
     }
 

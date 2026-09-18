@@ -1059,7 +1059,7 @@ public class RequestMapperTest {
       final var brokerRequest = RequestMapper.toCompleteJobRequest(grpcRequest);
 
       // then
-      assertThat(brokerRequest.getRequestWriter().getLeaseToken()).isEqualTo("lease-token-1");
+      assertThat(brokerRequest.getRequestWriter().getJobLeaseToken()).isEqualTo("lease-token-1");
     }
 
     @Test
@@ -1071,7 +1071,7 @@ public class RequestMapperTest {
       final var brokerRequest = RequestMapper.toCompleteJobRequest(grpcRequest);
 
       // then
-      assertThat(brokerRequest.getRequestWriter().getLeaseToken()).isEmpty();
+      assertThat(brokerRequest.getRequestWriter().getJobLeaseToken()).isEmpty();
     }
   }
 
@@ -1088,7 +1088,7 @@ public class RequestMapperTest {
       final var brokerRequest = RequestMapper.toFailJobRequest(grpcRequest);
 
       // then
-      assertThat(brokerRequest.getRequestWriter().getLeaseToken()).isEqualTo("lease-token-2");
+      assertThat(brokerRequest.getRequestWriter().getJobLeaseToken()).isEqualTo("lease-token-2");
     }
 
     @Test
@@ -1100,7 +1100,7 @@ public class RequestMapperTest {
       final var brokerRequest = RequestMapper.toFailJobRequest(grpcRequest);
 
       // then
-      assertThat(brokerRequest.getRequestWriter().getLeaseToken()).isEmpty();
+      assertThat(brokerRequest.getRequestWriter().getJobLeaseToken()).isEmpty();
     }
   }
 
@@ -1121,7 +1121,7 @@ public class RequestMapperTest {
       final var brokerRequest = RequestMapper.toThrowErrorRequest(grpcRequest);
 
       // then
-      assertThat(brokerRequest.getRequestWriter().getLeaseToken()).isEqualTo("lease-token-3");
+      assertThat(brokerRequest.getRequestWriter().getJobLeaseToken()).isEqualTo("lease-token-3");
     }
 
     @Test
@@ -1134,7 +1134,7 @@ public class RequestMapperTest {
       final var brokerRequest = RequestMapper.toThrowErrorRequest(grpcRequest);
 
       // then
-      assertThat(brokerRequest.getRequestWriter().getLeaseToken()).isEmpty();
+      assertThat(brokerRequest.getRequestWriter().getJobLeaseToken()).isEmpty();
     }
   }
 
@@ -1155,7 +1155,7 @@ public class RequestMapperTest {
       final var brokerRequest = RequestMapper.toUpdateJobTimeoutRequest(grpcRequest);
 
       // then
-      assertThat(brokerRequest.getRequestWriter().getLeaseToken()).isEqualTo("lease-token-4");
+      assertThat(brokerRequest.getRequestWriter().getJobLeaseToken()).isEqualTo("lease-token-4");
     }
 
     @Test
@@ -1168,7 +1168,7 @@ public class RequestMapperTest {
       final var brokerRequest = RequestMapper.toUpdateJobTimeoutRequest(grpcRequest);
 
       // then
-      assertThat(brokerRequest.getRequestWriter().getLeaseToken()).isEmpty();
+      assertThat(brokerRequest.getRequestWriter().getJobLeaseToken()).isEmpty();
     }
   }
 
@@ -1189,7 +1189,7 @@ public class RequestMapperTest {
       final var brokerRequest = RequestMapper.toUpdateJobRetriesRequest(grpcRequest);
 
       // then
-      assertThat(brokerRequest.getRequestWriter().getLeaseToken()).isEqualTo("lease-token-4");
+      assertThat(brokerRequest.getRequestWriter().getJobLeaseToken()).isEqualTo("lease-token-4");
     }
 
     @Test
@@ -1202,7 +1202,7 @@ public class RequestMapperTest {
       final var brokerRequest = RequestMapper.toUpdateJobRetriesRequest(grpcRequest);
 
       // then
-      assertThat(brokerRequest.getRequestWriter().getLeaseToken())
+      assertThat(brokerRequest.getRequestWriter().getJobLeaseToken())
           .describedAs(
               "Expected no lease token on the broker request when the gRPC request omits it")
           .isEmpty();
@@ -1227,7 +1227,7 @@ public class RequestMapperTest {
 
       // then
       final var requestWriter = (JobRecord) brokerRequest.getRequestWriter();
-      assertThat(requestWriter.getLeaseToken()).isEqualTo("lease-token-4");
+      assertThat(requestWriter.getJobLeaseToken()).isEqualTo("lease-token-4");
     }
 
     @Test
@@ -1244,7 +1244,7 @@ public class RequestMapperTest {
 
       // then
       final var requestWriter = (JobRecord) brokerRequest.getRequestWriter();
-      assertThat(requestWriter.getLeaseToken())
+      assertThat(requestWriter.getJobLeaseToken())
           .describedAs(
               "Expected no lease token on the broker request when the gRPC request omits it")
           .isEmpty();

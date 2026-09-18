@@ -26,7 +26,7 @@
       TENANT_ID,
       PARTITION_ID,
       JOB_KEY,
-      JOB_LEASE,
+      JOB_LEASE_TOKEN,
       LOOP_ITERATION,
       ROLE,
       COMMIT_STATUS,
@@ -59,7 +59,7 @@
       #{tenantId},
       #{partitionId},
       #{jobKey},
-      #{jobLease},
+      #{jobLeaseToken},
       #{loopIteration},
       #{role},
       #{commitStatus},
@@ -122,7 +122,7 @@
       <arg column="TENANT_ID" javaType="java.lang.String" name="tenantId"/>
       <arg column="PARTITION_ID" javaType="_int" name="partitionId"/>
       <arg column="JOB_KEY" javaType="_long" name="jobKey"/>
-      <arg column="JOB_LEASE" javaType="java.lang.String" name="jobLease"/>
+      <arg column="JOB_LEASE_TOKEN" javaType="java.lang.String" name="jobLeaseToken"/>
       <arg column="LOOP_ITERATION" javaType="_int" name="loopIteration"/>
       <arg column="ROLE"
         javaType="io.camunda.search.entities.AgentInstanceHistoryEntity$AgentInstanceHistoryRole"
@@ -166,7 +166,7 @@
           ah.TENANT_ID,
           ah.PARTITION_ID,
           ah.JOB_KEY,
-          ah.JOB_LEASE,
+          ah.JOB_LEASE_TOKEN,
           ah.LOOP_ITERATION,
           ah.ROLE,
           ah.COMMIT_STATUS,

@@ -197,7 +197,7 @@ class AgentInstanceMapperTest {
       assertThat(result.isRight()).isTrue();
       final var record = result.get();
       assertThat(record.getJobKey()).isEqualTo(2251799813685249L);
-      assertThat(record.getJobLease()).isEqualTo("lease-abc");
+      assertThat(record.getJobLeaseToken()).isEqualTo("lease-abc");
     }
 
     @Test
@@ -376,7 +376,7 @@ class AgentInstanceMapperTest {
       assertThat(result.isRight()).isTrue();
       final var record = result.get();
       assertThat(record.getJobKey()).isEqualTo(2251799813685249L);
-      assertThat(record.getJobLease()).isEqualTo("lease-abc");
+      assertThat(record.getJobLeaseToken()).isEqualTo("lease-abc");
       assertThat(record.getHistory()).hasSize(3);
       assertThat(record.getHistory().get(0).getHistoryItemId()).isEqualTo("item-0");
       assertThat(record.getHistory().get(1).getHistoryItemId()).isEqualTo("item-1");
