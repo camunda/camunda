@@ -78,6 +78,7 @@ public class AnalyticsExporter implements Exporter {
         analyticsContext.clusterId(),
         analyticsContext.partitionId(),
         analyticsContext.exporterDigest());
+    LOG.info("Analytics exporter started with active categories: {}", config.getActiveCategories());
   }
 
   @Override
