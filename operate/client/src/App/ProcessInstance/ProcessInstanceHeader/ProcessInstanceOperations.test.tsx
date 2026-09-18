@@ -223,7 +223,7 @@ describe('ProcessInstanceOperations', () => {
 
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'error',
-      title: 'Couldn't create operation',
+      title: "Couldn't create operation",
       isDismissable: true,
     });
   });

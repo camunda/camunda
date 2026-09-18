@@ -85,7 +85,7 @@ describe('<InstancesTable />', () => {
       screen.queryByTestId('data-table-skeleton'),
     );
 
-    expect(screen.getByText('Couldn't fetch data')).toBeInTheDocument();
+    expect(screen.getByText('Data could not be fetched')).toBeInTheDocument();
     expect(screen.queryByText(/results found/)).not.toBeInTheDocument();
   });
 

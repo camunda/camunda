@@ -52,9 +52,7 @@ describe('<MoveAction /> - tracking', () => {
     await waitFor(() => {
       const button = screen.getByRole('button', {name: /move/i});
       const title = button.getAttribute('title');
-      expect(title).not.toBe(
-        'Select an element from the diagram first.',
-      );
+      expect(title).not.toBe('Select an element from the diagram first.');
     });
 
     await user.click(screen.getByRole('button', {name: /move/i}));

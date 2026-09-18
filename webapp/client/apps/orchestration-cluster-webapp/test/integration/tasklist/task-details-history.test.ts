@@ -184,7 +184,7 @@ test.describe('Task details history', () => {
 		await taskDetailPage.gotoHistory(USER_TASK_KEY);
 
 		await expect(taskDetailPage.historyLoadError).toBeVisible();
-		await expect(page.getByText(/could not load the task history/i)).toBeVisible();
+		await expect(page.getByText(/couldn't load the task history/i)).toBeVisible();
 
 		network.use(
 			mockQueryUserTaskAuditLogsEndpoint({
