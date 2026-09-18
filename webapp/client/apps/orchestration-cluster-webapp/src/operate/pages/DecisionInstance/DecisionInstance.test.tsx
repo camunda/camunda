@@ -87,6 +87,6 @@ describe('<DecisionInstance />', () => {
 		await expect.element(screen.getByRole('button', {name: 'Try again'})).not.toBeInTheDocument();
 		await expect
 			.poll(() => notificationsStore.notifications.map((notification) => notification.title))
-			.toContain(`Decision instance ${DECISION_INSTANCE_ID} could not be found`);
+			.toContain(`Couldn't find decision instance ${DECISION_INSTANCE_ID}`);
 	});
 });

@@ -23,11 +23,11 @@ const ErrorContent: FC<PropsWithChildren> = ({ children }) => {
   const { Translate } = useTranslate();
 
   return (
-    <ErrorPage title={<Translate>Failmunda - Unknown Error</Translate>}>
+    <ErrorPage title={<Translate>Failmunda - unknown error</Translate>}>
       <p>
         <Translate>
-          An unknown error has occurred. Please{" "}
-          <Link href={document.location.href}>reload the page</Link> or try
+          Something went wrong.{" "}
+          <Link href={document.location.href}>Reload the page</Link> or try
           again later.
         </Translate>
       </p>

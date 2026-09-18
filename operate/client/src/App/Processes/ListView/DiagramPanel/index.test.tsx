@@ -213,7 +213,7 @@ describe('DiagramPanel', () => {
 
     expect(await screen.findByText('Big variable process')).toBeInTheDocument();
     expect(
-      await screen.findByText('Data could not be fetched'),
+      await screen.findByText('Couldn't fetch data'),
     ).toBeInTheDocument();
     expect(
       screen.queryByText(/There is no Process selected/),
@@ -288,7 +288,7 @@ describe('DiagramPanel', () => {
     });
 
     const notificationText =
-      'Please select where you want to move the selected instances on the diagram.';
+      'Select where you want to move the selected instances on the diagram.';
 
     expect(screen.queryByText(notificationText)).not.toBeInTheDocument();
 

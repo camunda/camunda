@@ -342,7 +342,7 @@ describe('<DecisionInstance />', () => {
 
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'error',
-      title: `Decision instance ${DECISION_INSTANCE_ID} could not be found`,
+      title: `Couldn't find decision instance ${DECISION_INSTANCE_ID}`,
       isDismissable: true,
     });
   });

@@ -265,7 +265,7 @@ describe('TopPanel', () => {
     });
 
     expect(
-      await screen.findByText('Data could not be fetched'),
+      await screen.findByText('Couldn't fetch data'),
     ).toBeInTheDocument();
   });
 
@@ -281,7 +281,7 @@ describe('TopPanel', () => {
     });
 
     expect(
-      await screen.findByText('Data could not be fetched'),
+      await screen.findByText('Couldn't fetch data'),
     ).toBeInTheDocument();
 
     consoleErrorMock.mockRestore();
@@ -300,7 +300,7 @@ describe('TopPanel', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'Please contact your organization owner or admin to give you the necessary permissions to read this definition',
+        'Contact your organization owner or admin to give you the necessary permissions to read this definition',
       ),
     ).toBeInTheDocument();
   });

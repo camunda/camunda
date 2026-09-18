@@ -99,7 +99,7 @@ describe('InstancesByProcessDefinition', () => {
       },
     );
 
-    expect(screen.getByText('Data could not be fetched')).toBeInTheDocument();
+    expect(screen.getByText('Couldn't fetch data')).toBeInTheDocument();
   });
 
   it('should render items with more than one processes versions', async () => {

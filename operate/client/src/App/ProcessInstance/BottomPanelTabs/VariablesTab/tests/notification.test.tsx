@@ -183,7 +183,7 @@ describe('VariablesTab notifications', () => {
         isDismissable: true,
         kind: 'warning',
         title: "You don't have permission to perform this operation",
-        subtitle: 'Please contact the administrator if you need access.',
+        subtitle: 'Contact the administrator if you need access.',
       }),
     );
 

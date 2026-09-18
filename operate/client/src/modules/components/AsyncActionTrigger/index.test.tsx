@@ -38,14 +38,14 @@ describe('<AsyncActionTrigger />', () => {
         <button>Cancel</button>
       </AsyncActionTrigger>,
     );
-    expect(screen.getByText('Successful!')).toBeInTheDocument();
+    expect(screen.getByText('Successful')).toBeInTheDocument();
 
     rerender(
       <AsyncActionTrigger status="error">
         <button>Cancel</button>
       </AsyncActionTrigger>,
     );
-    expect(screen.getByText('Failed!')).toBeInTheDocument();
+    expect(screen.getByText('Failed')).toBeInTheDocument();
   });
 
   it('should render custom labels', () => {

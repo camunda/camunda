@@ -21,7 +21,7 @@ describe('non selectable table', () => {
     expect(screen.getByTestId('data-table-loader')).toBeInTheDocument();
     expect(screen.queryByText('List is empty')).not.toBeInTheDocument();
     expect(
-      screen.queryByText('Data could not be fetched'),
+      screen.queryByText('Couldn't fetch data'),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('checkbox', {name: 'Select all rows'}),
@@ -39,7 +39,7 @@ describe('non selectable table', () => {
     expect(screen.queryByTestId('data-table-skeleton')).not.toBeInTheDocument();
     expect(screen.getByText('List is empty')).toBeInTheDocument();
     expect(
-      screen.queryByText('Data could not be fetched'),
+      screen.queryByText('Couldn't fetch data'),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('checkbox', {name: 'Select all rows'}),
@@ -56,7 +56,7 @@ describe('non selectable table', () => {
     expect(screen.queryByTestId('data-table-loader')).not.toBeInTheDocument();
     expect(screen.queryByTestId('data-table-skeleton')).not.toBeInTheDocument();
     expect(screen.queryByText('List is empty')).not.toBeInTheDocument();
-    expect(screen.getByText('Data could not be fetched')).toBeInTheDocument();
+    expect(screen.getByText('Couldn't fetch data')).toBeInTheDocument();
     expect(
       screen.queryByRole('checkbox', {name: 'Select all rows'}),
     ).not.toBeInTheDocument();
@@ -73,7 +73,7 @@ describe('non selectable table', () => {
     expect(screen.getByTestId('data-table-skeleton')).toBeInTheDocument();
     expect(screen.queryByText('List is empty')).not.toBeInTheDocument();
     expect(
-      screen.queryByText('Data could not be fetched'),
+      screen.queryByText('Couldn't fetch data'),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('checkbox', {name: 'Select all rows'}),
@@ -92,7 +92,7 @@ describe('non selectable table', () => {
     expect(screen.queryByTestId('data-table-loader')).not.toBeInTheDocument();
     expect(screen.queryByText('List is empty')).not.toBeInTheDocument();
     expect(
-      screen.queryByText('Data could not be fetched'),
+      screen.queryByText('Couldn't fetch data'),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('checkbox', {name: 'Select all rows'}),
