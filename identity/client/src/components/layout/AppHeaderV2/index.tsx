@@ -16,7 +16,6 @@ import {
   type UserMenuItem,
 } from "@camunda/design-system";
 import { SaasNotifications } from "@camunda/oc-saas-notifications";
-import { useC3Profile } from "@camunda/camunda-composite-components";
 import { useCallback, useMemo, type MouseEvent } from "react";
 import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -74,12 +73,6 @@ const VersionFooter = () => {
       </Text>
     </div>
   );
-};
-
-const SaasThemeSelector = () => {
-  const { onThemeChange } = useC3Profile();
-
-  return <ThemeSelector onThemeChange={onThemeChange} />;
 };
 
 const AppHeaderV2 = ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
@@ -193,7 +186,7 @@ const AppHeaderV2 = ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
               items={userMenuItems}
               customSection={
                 <>
-                  {isSaaS ? <SaasThemeSelector /> : <ThemeSelector />}
+                  <ThemeSelector />
                   <VersionFooter />
                 </>
               }
