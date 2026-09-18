@@ -47,7 +47,8 @@ class VariableAddUpdateAuditLogTransformerTest {
 
     // then
     assertThat(transformer.supports(record)).isTrue();
-    assertThat(AuditLogInfo.of(record).category()).isEqualTo(AuditLogOperationCategory.USER_TASKS);
+    assertThat(AuditLogInfo.of(record).category())
+        .isEqualTo(AuditLogOperationCategory.DEPLOYED_RESOURCES);
   }
 
   @Test
