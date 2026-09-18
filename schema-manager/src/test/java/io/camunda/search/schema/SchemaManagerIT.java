@@ -1570,6 +1570,20 @@ public class SchemaManagerIT {
 
     // then
     assertThatNoException().isThrownBy(() -> startupWithRetry(restartedSchemaManager, config));
+    searchEngineClient.deleteIndex(webSessionTemplate.getFullQualifiedName());
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              assertThat(searchEngineClient.indexExists(webSessionTemplate.getFullQualifiedName()))
+                  .isFalse();
+              assertThat(restartedSchemaManager.isSchemaReadyForUse()).isTrue();
+            });
+
+    searchClientAdapter.deleteIndexTemplate(webSessionTemplate.getTemplateName());
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(() -> assertThat(restartedSchemaManager.isSchemaReadyForUse()).isFalse());
   }
 
   @TestTemplate
