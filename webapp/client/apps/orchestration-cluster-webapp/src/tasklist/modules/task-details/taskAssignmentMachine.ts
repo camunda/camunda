@@ -141,6 +141,7 @@ const taskAssignmentMachine = setup({
 		isInitiallyUnassigning: ({context}) => context.initialTaskState === 'ASSIGNING' && context.initialAssignee !== null,
 		isTaskAssigned: (_, params: {taskState: UserTask['state']; assignee: string | null}) =>
 			typeof params.assignee === 'string' && params.taskState !== 'ASSIGNING',
+hasCurrentUser: ({context}) => Boolean(context.currentUser?.trim()),
 	},
 	actions: {
 		setOptimisticAssigning: ({context}) => {
@@ -190,6 +191,11 @@ const taskAssignmentMachine = setup({
 				description: params.error?.reason === 'failed' ? params.error.subtitle : undefined,
 			});
 		},
+		notifyMissingCurrentUser: () => {
+			toast.error(t('tasklist.taskDetailsTaskAssignmentError'), {
+				description: t('tasklist.taskDetailsMissingCurrentUserSubtitle'),
+			});
+		},
 		notifyUnassignFailure: (_, params: {error: AssignmentFailure | undefined}) => {
 			toast.error(t('tasklist.taskDetailsTaskUnassignmentError'), {
 				description: params.error?.reason === 'failed' ? params.error.subtitle : undefined,
@@ -228,7 +234,13 @@ const taskAssignmentMachine = setup({
 						},
 						target: 'Unassigning',
 					},
-					{target: 'Assigning'},
+					{
+						guard: 'hasCurrentUser',
+						target: 'Assigning',
+					},
+					{
+						actions: 'notifyMissingCurrentUser',
+					},
 				],
 			},
 		},

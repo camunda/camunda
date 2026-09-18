@@ -381,6 +381,7 @@
 			"taskDetailsBusinessIdLabel": "ID de negocio",
 			"taskDetailsTaskUnassignmentError": "La tarea no pudo ser desasignada",
 			"taskDetailsTaskAssignmentError": "La tarea no pudo ser asignada",
+			"taskDetailsMissingCurrentUserSubtitle": "No tiene nombre de usuario. Contacte con su administrador de Tasklist.",
 			"taskDetailsTaskCompletionRejectionErrorSubtitle": "La finalización de la tarea fue rechazada por el sistema",
 			"taskDetailsAssignmentDelayInfoTitle": "Asignación de tarea retrasada",
 			"taskDetailsUnassignmentDelayInfoTitle": "Desasignación de tarea retrasada",
