@@ -63,7 +63,7 @@ import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
-import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2AccessToken.TokenType;
@@ -964,8 +964,7 @@ class CslChainIntegrationTest {
    * none.
    */
   private static Cookie oauth2SessionCookie(final ApplicationContext ctx) {
-    final ClientRegistration registration =
-        ctx.getBean(InMemoryClientRegistrationRepository.class).iterator().next();
+    final ClientRegistration registration = firstClientRegistration(ctx);
     final Instant now = Instant.now();
     final var idToken =
         new OidcIdToken(
@@ -991,6 +990,18 @@ class CslChainIntegrationTest {
     SESSION_REPO.save(session);
     return new Cookie(
         "SESSION", Base64.getEncoder().encodeToString(session.getId().getBytes(UTF_8)));
+  }
+
+  /**
+   * The first client registration of the context. The repository resolves its registrations on
+   * first use, so the bean type says nothing about how many it holds; every implementation in play
+   * here exposes them as an {@link Iterable}.
+   */
+  @SuppressWarnings("unchecked")
+  private static ClientRegistration firstClientRegistration(final ApplicationContext ctx) {
+    return ((Iterable<ClientRegistration>) ctx.getBean(ClientRegistrationRepository.class))
+        .iterator()
+        .next();
   }
 
   /**
