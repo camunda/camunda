@@ -42,7 +42,7 @@ import {
   isValidResourceId,
   isValidSecretResourceId,
   getIdPattern,
-  getSecretNamePattern,
+  SECRET_NAME_PATTERN_TEXT,
   AUTHORIZATION_WILDCARD,
   SECRET_REFERENCE_PREFIX,
 } from "src/utility/validate";
@@ -272,13 +272,13 @@ export const AddModal: FC<
               validate: (value) =>
                 isValidSecretResourceId(value ?? "") ||
                 t("pleaseEnterValidSecretResourceId", {
-                  pattern: getSecretNamePattern(),
+                  pattern: SECRET_NAME_PATTERN_TEXT,
                 }),
             }}
             render={({ field, fieldState }) => {
               const currentValue = field.value ?? "";
               const isWildcard = currentValue === AUTHORIZATION_WILDCARD;
-              const name = isWildcard
+              const displayValue = isWildcard
                 ? AUTHORIZATION_WILDCARD
                 : currentValue.startsWith(SECRET_REFERENCE_PREFIX)
                   ? currentValue.slice(SECRET_REFERENCE_PREFIX.length)
@@ -300,25 +300,21 @@ export const AddModal: FC<
                       <Input
                         {...controlProps}
                         className="min-w-0 flex-1"
-                        value={name}
+                        value={displayValue}
                         placeholder={t("enterSecretName")}
                         onChange={(e) => {
-                          // Keep the prefix fixed while typing, even if the
-                          // name-so-far happens to be "*" — only resolve to
-                          // the bare wildcard value on blur, below. Doing
-                          // this on every keystroke instead would flip the
-                          // prefix on and off as soon as another character
-                          // is typed after a lone "*".
+                          // The form validates on change, and
+                          // the modal submits on Enter without blurring, so
+                          // deferring left a lone "*" both flagged invalid
+                          // and unsubmittable from the keyboard.
+                          const input = e.currentTarget.value;
                           field.onChange(
-                            SECRET_REFERENCE_PREFIX + e.currentTarget.value,
+                            input === AUTHORIZATION_WILDCARD
+                              ? AUTHORIZATION_WILDCARD
+                              : SECRET_REFERENCE_PREFIX + input,
                           );
                         }}
-                        onBlur={() => {
-                          if (name === AUTHORIZATION_WILDCARD) {
-                            field.onChange(AUTHORIZATION_WILDCARD);
-                          }
-                          field.onBlur();
-                        }}
+                        onBlur={field.onBlur}
                       />
                     </div>
                   )}

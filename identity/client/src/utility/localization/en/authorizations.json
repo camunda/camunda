@@ -40,6 +40,6 @@
   "pleaseEnterValidClientId": "Please enter a valid Client ID, max 256 characters and matching the pattern {{pattern}}",
   "pleaseEnterValidResourceId": "Please enter a valid Resource ID, max 256 characters and matching the pattern {{pattern}}",
   "enterSecretName": "Enter secret name, or * for all secrets",
-  "secretResourceIdHelperText": "Automatically prefixed with \"camunda.secrets.\", the reference a process would use. Enter * instead to grant access to all secrets.",
+  "secretResourceIdHelperText": "Automatically prefixed with \"camunda.secrets.\".",
   "pleaseEnterValidSecretResourceId": "Please enter a valid secret name matching the pattern {{pattern}}, or *"
 }
