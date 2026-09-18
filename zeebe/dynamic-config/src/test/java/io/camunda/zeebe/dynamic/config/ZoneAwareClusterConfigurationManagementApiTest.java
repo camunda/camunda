@@ -16,6 +16,8 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PostScalingOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
@@ -113,6 +115,8 @@ final class ZoneAwareClusterConfigurationManagementApiTest
     assertThat(changeStatus.legacyResponse().plannedChanges())
         .containsExactly(
             new MemberJoinOperation(ZONE_B_0),
+            new PreScalingOperation(ZONE_B_0, Set.of(ZONE_A_0, ZONE_A_1, ZONE_B_0)),
+            new PostScalingOperation(ZONE_B_0, Set.of(ZONE_A_0, ZONE_A_1, ZONE_B_0)),
             new UpdatePartitionDistributorConfigOperation(
                 ZONE_A_0,
                 new ZoneAwareConfig(
