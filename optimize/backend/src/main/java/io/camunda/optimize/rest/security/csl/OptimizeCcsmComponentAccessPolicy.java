@@ -63,7 +63,9 @@ public class OptimizeCcsmComponentAccessPolicy implements OptimizeComponentAcces
       return Either.left(e.getMessage());
     } catch (final TokenVerificationException e) {
       // An expired token is renewed by the webapp chain and passed through by the API chain, so
-      // treating it as a denial here would log out a user whose permission is intact.
+      // treating it as a denial here would log out a user whose permission is intact. The cost is
+      // that a revoked user keeps API access until the token is renewed, at most for its remaining
+      // lifetime, while the next web app request denies them right away.
       LOG.debug("Access token could not be verified: {}", e.getMessage());
       return Either.right(null);
     }
