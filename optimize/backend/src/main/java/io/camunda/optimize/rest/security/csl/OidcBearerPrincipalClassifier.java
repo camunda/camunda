@@ -11,6 +11,7 @@ import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.core.oidc.OidcPrincipalLoader;
 import io.camunda.security.core.oidc.OidcPrincipalLoader.OidcPrincipals;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,13 +45,17 @@ public final class OidcBearerPrincipalClassifier {
 
   private final OidcPrincipalLoader principalLoader;
   private final boolean preferUsernameClaim;
+  private final String usernameClaim;
+  private final String clientIdClaim;
+  private final AtomicBoolean warnedAboutUnclassifiableClaims = new AtomicBoolean(false);
 
   public OidcBearerPrincipalClassifier(final OidcConfiguration oidcConfiguration) {
-    final String clientIdClaim =
+    usernameClaim = oidcConfiguration.getUsernameClaim();
+    clientIdClaim =
         StringUtils.isBlank(oidcConfiguration.getClientIdClaim())
             ? DEFAULT_CLIENT_ID_CLAIM
             : oidcConfiguration.getClientIdClaim();
-    principalLoader = new OidcPrincipalLoader(oidcConfiguration.getUsernameClaim(), clientIdClaim);
+    principalLoader = new OidcPrincipalLoader(usernameClaim, clientIdClaim);
     preferUsernameClaim = oidcConfiguration.isPreferUsernameClaim();
   }
 
@@ -68,7 +73,21 @@ public final class OidcBearerPrincipalClassifier {
     }
 
     if (principals.username() == null && principals.clientId() == null) {
-      LOG.debug("Bearer token carries neither a username nor a client ID claim, assuming a user");
+      if (warnedAboutUnclassifiableClaims.compareAndSet(false, true)) {
+        LOG.warn(
+            "Bearer token carries neither a username nor a client ID claim (checked claims: {} and"
+                + " {}); assuming a user and requiring the Optimize permission. If this IdP uses"
+                + " different claim names, configure"
+                + " camunda.security.authentication.oidc.username-claim /"
+                + " camunda.security.authentication.oidc.client-id-claim. Further occurrences are"
+                + " logged at DEBUG.",
+            // do NOT log claim values (may contain PII) — only the two configured claim names
+            // being checked, to help the operator find the right property to set
+            usernameClaim,
+            clientIdClaim);
+      } else {
+        LOG.debug("Bearer token carries neither a username nor a client ID claim, assuming a user");
+      }
       return true;
     }
 
