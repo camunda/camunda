@@ -7,7 +7,9 @@
  */
 package io.camunda.application.commons.search;
 
+import io.camunda.application.commons.pt.PerTenantSchemaInitialization.Deferral;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
 import java.util.function.Predicate;
@@ -68,10 +70,30 @@ public final class SchemaInitializationRecoveryCheck implements Predicate<String
 
   @Override
   public boolean test(final String physicalTenantId) {
-    if (topologyManager.isRecoveringOrUnknown(physicalTenantId)) {
-      return true;
+    return shouldDefer(physicalTenantId) != Deferral.NONE;
+  }
+
+  /** Returns whether initialization should proceed, be deferred, or wait for discovery. */
+  public Deferral shouldDefer(final String physicalTenantId) {
+    final var partitionGroup =
+        topologyManager.getClusterConfiguration().partitionGroup(physicalTenantId);
+    final boolean recovering =
+        partitionGroup == null
+            || partitionGroup.members().isEmpty()
+            || partitionGroup.members().values().stream()
+                .anyMatch(member -> member.mode() == Mode.RECOVERING);
+    if (!recovering) {
+      return Deferral.NONE;
     }
-    return topologyManager.isRecovering(physicalTenantId) && withinDiscoveryGrace();
+
+    final boolean knownConfiguration =
+        partitionGroup != null && !partitionGroup.members().isEmpty();
+    final boolean brokersAvailable =
+        !topologyManager.getTopology(physicalTenantId).getBrokers().isEmpty();
+    if (knownConfiguration || brokersAvailable) {
+      return Deferral.DEFERRED;
+    }
+    return withinDiscoveryGrace() ? Deferral.PENDING : Deferral.NONE;
   }
 
   private boolean withinDiscoveryGrace() {

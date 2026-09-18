@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.MemberId;
+import io.camunda.application.commons.pt.PerTenantSchemaInitialization.Deferral;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
@@ -58,6 +59,7 @@ final class SchemaInitializationRecoveryCheckTest {
 
     // when / then - it holds off rather than answering into a restore it may simply not see yet
     assertThat(check.test(TENANT)).isTrue();
+    assertThat(check.shouldDefer(TENANT)).isEqualTo(Deferral.PENDING);
   }
 
   @Test
@@ -83,6 +85,7 @@ final class SchemaInitializationRecoveryCheckTest {
     // when / then - that broker will gossip the mode, so there is nothing ambiguous left to time
     // out
     assertThat(check.test(TENANT)).isTrue();
+    assertThat(check.shouldDefer(TENANT)).isEqualTo(Deferral.DEFERRED);
   }
 
   @Test
@@ -93,6 +96,7 @@ final class SchemaInitializationRecoveryCheckTest {
 
     // when / then - the grace never applies to a decided answer; the restore may take hours
     assertThat(check.test(TENANT)).isTrue();
+    assertThat(check.shouldDefer(TENANT)).isEqualTo(Deferral.DEFERRED);
   }
 
   @Test
@@ -103,6 +107,7 @@ final class SchemaInitializationRecoveryCheckTest {
 
     // when / then - a decided answer costs no wait at all
     assertThat(check.test(TENANT)).isFalse();
+    assertThat(check.shouldDefer(TENANT)).isEqualTo(Deferral.NONE);
   }
 
   private static SchemaInitializationRecoveryCheck checkFor(
@@ -114,8 +119,6 @@ final class SchemaInitializationRecoveryCheckTest {
     final var topologyManager = mock(BrokerTopologyManager.class);
     when(topologyManager.getClusterConfiguration()).thenReturn(configuration);
     when(topologyManager.getTopology(anyString())).thenReturn(topology);
-    when(topologyManager.isRecovering(anyString())).thenCallRealMethod();
-    when(topologyManager.isRecoveringOrUnknown(anyString())).thenCallRealMethod();
     return new SchemaInitializationRecoveryCheck(topologyManager, discoveryGrace);
   }
 
