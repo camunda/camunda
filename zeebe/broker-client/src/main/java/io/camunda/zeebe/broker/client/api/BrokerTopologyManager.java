@@ -59,6 +59,28 @@ public interface BrokerTopologyManager extends ClusterConfigurationUpdateListene
   }
 
   /**
+   * {@link #isRecovering(String)} for a caller that cannot hold off forever: a tenant whose mode
+   * this node has not seen counts as recovering only while some broker is still around to gossip
+   * it.
+   *
+   * <p>An absent mode is not evidence the tenant is idle - the configuration may simply not have
+   * reached this node yet. But with no broker of the tenant in the membership either, nothing will
+   * refresh that view, so the caller is told to proceed and bounds that ambiguity itself. {@link
+   * #isRecovering(String)} folds the two cases into one answer, which suits work retried on a
+   * schedule but not work that must happen once before the node can serve.
+   */
+  default boolean isRecoveringOrUnknown(final String physicalTenantId) {
+    if (!isRecovering(physicalTenantId)) {
+      return false;
+    }
+    final var partitionGroup = getClusterConfiguration().partitionGroup(physicalTenantId);
+    final boolean knownConfiguration =
+        partitionGroup != null && !partitionGroup.members().isEmpty();
+    final boolean brokersAvailable = !getTopology(physicalTenantId).getBrokers().isEmpty();
+    return knownConfiguration || brokersAvailable;
+  }
+
+  /**
    * Adds the topology listener. For each existing broker-group pair, the listener will be notified
    * via {@link BrokerTopologyListener#brokerAdded(BrokerMemberId, String)}. After that, the
    * listener gets notified of every new broker added or removed events.

@@ -8,6 +8,7 @@
 package io.camunda.application.commons.search;
 
 import io.camunda.application.commons.pt.PerTenantSchemaInitialization;
+import io.camunda.application.commons.pt.PerTenantSchemaInitialization.DeferralCheck;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.SchemaManagerContainer;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -55,12 +57,50 @@ public class SearchEngineSchemaInitializer
    *     that benefits from waiting. It also decides whether the node can abort: the abort belongs
    *     to the gate, so a node that does not wait at one stays up with every tenant degraded, as it
    *     does today.
+   * @param recovering whether a physical tenant is being recovered. Creating the indices of a
+   *     tenant mid-recovery is not merely redundant work: an Elasticsearch/OpenSearch snapshot
+   *     cannot be restored into indices that already exist, so a node restarted during a restore
+   *     would break the very restore it came back up into. The tenant is left alone until it
+   *     returns to processing mode, and its schema is applied then.
    */
   public SearchEngineSchemaInitializer(
       final Map<String, SearchEngineConfiguration> configsByTenant,
       final Map<String, IndexDescriptors> descriptorsByTenant,
       final MeterRegistry meterRegistry,
-      final boolean holdsStartup) {
+      final boolean holdsStartup,
+      final Predicate<String> recovering) {
+    this(
+        configsByTenant,
+        descriptorsByTenant,
+        meterRegistry,
+        holdsStartup,
+        DeferralCheck.of(
+            tenantId ->
+                recovering.test(tenantId)
+                    ? PerTenantSchemaInitialization.Deferral.DEFERRED
+                    : PerTenantSchemaInitialization.Deferral.NONE));
+  }
+
+  public SearchEngineSchemaInitializer(
+      final Map<String, SearchEngineConfiguration> configsByTenant,
+      final Map<String, IndexDescriptors> descriptorsByTenant,
+      final MeterRegistry meterRegistry,
+      final boolean holdsStartup,
+      final SchemaInitializationRecoveryCheck recoveryCheck) {
+    this(
+        configsByTenant,
+        descriptorsByTenant,
+        meterRegistry,
+        holdsStartup,
+        DeferralCheck.of(recoveryCheck::shouldDefer));
+  }
+
+  private SearchEngineSchemaInitializer(
+      final Map<String, SearchEngineConfiguration> configsByTenant,
+      final Map<String, IndexDescriptors> descriptorsByTenant,
+      final MeterRegistry meterRegistry,
+      final boolean holdsStartup,
+      final DeferralCheck deferral) {
     configs = configsByTenant;
     descriptors = descriptorsByTenant;
     this.meterRegistry = meterRegistry;
@@ -70,7 +110,8 @@ public class SearchEngineSchemaInitializer
             configs.keySet(),
             this::initializeTenant,
             SearchEngineSchemaInitializer::isTerminal,
-            tenantId -> configs.get(tenantId).schemaManager().getRetry());
+            tenantId -> configs.get(tenantId).schemaManager().getRetry(),
+            deferral);
   }
 
   @Override
