@@ -19723,7 +19723,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_rocksdb_cache_hit{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition) / clamp_min(sum(rate(zeebe_rocksdb_cache_hit{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition) + sum(rate(zeebe_rocksdb_cache_miss{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition), 1)",
+              "expr": "sum(rate(zeebe_rocksdb_cache_hit{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition) / clamp_min(sum(rate(zeebe_rocksdb_cache_hit{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition) + sum(rate(zeebe_rocksdb_cache_miss{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition), 1e-9)",
               "interval": "",
               "legendFormat": "{{physicalTenant}} {{pod}} p{{partition}}",
               "range": true,
@@ -19848,11 +19848,35 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
+              "expr": "sum(rate(zeebe_rocksdb_cache_index_hit{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition)",
+              "interval": "",
+              "legendFormat": "{{pod}} p{{partition}} index hit",
+              "range": true,
+              "refId": "C"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
               "expr": "sum(rate(zeebe_rocksdb_cache_index_miss{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition)",
               "interval": "",
               "legendFormat": "{{pod}} p{{partition}} index miss",
               "range": true,
-              "refId": "C"
+              "refId": "D"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(zeebe_rocksdb_cache_filter_hit{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition)",
+              "interval": "",
+              "legendFormat": "{{pod}} p{{partition}} filter hit",
+              "range": true,
+              "refId": "E"
             },
             {
               "datasource": {
@@ -19864,7 +19888,7 @@
               "interval": "",
               "legendFormat": "{{pod}} p{{partition}} filter miss",
               "range": true,
-              "refId": "D"
+              "refId": "F"
             }
           ],
           "title": "Block cache hits and misses by block type",
@@ -20098,7 +20122,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_rocksdb_bloom_prefix_useful{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition) / clamp_min(sum(rate(zeebe_rocksdb_bloom_prefix_checked{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition), 1)",
+              "expr": "sum(rate(zeebe_rocksdb_bloom_prefix_useful{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition) / clamp_min(sum(rate(zeebe_rocksdb_bloom_prefix_checked{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition), 1e-9)",
               "interval": "",
               "legendFormat": "{{pod}} p{{partition}} prefix",
               "range": true,
@@ -20110,7 +20134,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_rocksdb_bloom_useful{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition) / clamp_min(sum(rate(zeebe_rocksdb_bloom_useful{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition) + sum(rate(zeebe_rocksdb_bloom_full_positive{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition), 1)",
+              "expr": "sum(rate(zeebe_rocksdb_bloom_useful{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition) / clamp_min(sum(rate(zeebe_rocksdb_bloom_useful{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition) + sum(rate(zeebe_rocksdb_bloom_full_positive{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition), 1e-9)",
               "interval": "",
               "legendFormat": "{{pod}} p{{partition}} whole key",
               "range": true,
@@ -20711,7 +20735,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_rocksdb_histogram_db_get_micros_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition) / clamp_min(sum(rate(zeebe_rocksdb_histogram_db_get_micros_count{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition), 1)",
+              "expr": "sum(rate(zeebe_rocksdb_histogram_db_get_micros_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition) / clamp_min(sum(rate(zeebe_rocksdb_histogram_db_get_micros_count{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition), 1e-9)",
               "interval": "",
               "legendFormat": "{{pod}} p{{partition}} get",
               "range": true,
@@ -20723,7 +20747,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_rocksdb_histogram_db_seek_micros_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition) / clamp_min(sum(rate(zeebe_rocksdb_histogram_db_seek_micros_count{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition), 1)",
+              "expr": "sum(rate(zeebe_rocksdb_histogram_db_seek_micros_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition) / clamp_min(sum(rate(zeebe_rocksdb_histogram_db_seek_micros_count{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition), 1e-9)",
               "interval": "",
               "legendFormat": "{{pod}} p{{partition}} seek",
               "range": true,
@@ -20735,7 +20759,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_rocksdb_histogram_db_write_micros_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition) / clamp_min(sum(rate(zeebe_rocksdb_histogram_db_write_micros_count{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition), 1)",
+              "expr": "sum(rate(zeebe_rocksdb_histogram_db_write_micros_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition) / clamp_min(sum(rate(zeebe_rocksdb_histogram_db_write_micros_count{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition), 1e-9)",
               "interval": "",
               "legendFormat": "{{pod}} p{{partition}} write",
               "range": true,
@@ -20836,7 +20860,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_rocksdb_histogram_sst_read_micros_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition) / clamp_min(sum(rate(zeebe_rocksdb_histogram_sst_read_micros_count{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition), 1)",
+              "expr": "sum(rate(zeebe_rocksdb_histogram_sst_read_micros_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition) / clamp_min(sum(rate(zeebe_rocksdb_histogram_sst_read_micros_count{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition), 1e-9)",
               "interval": "",
               "legendFormat": "{{pod}} p{{partition}} SST read",
               "range": true,
@@ -20848,7 +20872,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_rocksdb_histogram_read_block_get_micros_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition) / clamp_min(sum(rate(zeebe_rocksdb_histogram_read_block_get_micros_count{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition), 1)",
+              "expr": "sum(rate(zeebe_rocksdb_histogram_read_block_get_micros_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition) / clamp_min(sum(rate(zeebe_rocksdb_histogram_read_block_get_micros_count{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, physicalTenant, partition), 1e-9)",
               "interval": "",
               "legendFormat": "{{pod}} p{{partition}} block read for get",
               "range": true,
