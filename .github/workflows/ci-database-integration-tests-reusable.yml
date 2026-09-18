@@ -95,6 +95,24 @@ on:
           elsewhere in the same run, instead of running a local build-zeebe reactor.
           Leave false if the calling run has no build-distball job, so the
           build-zeebe fallback runs. See #52693 and #56931.
+      timeout-minutes:
+        required: false
+        type: number
+        default: 20
+        description: >-
+          Job timeout. A non-blocking, schedule/dispatch-only caller may raise it if its own
+          worst-case fork runtime needs more room than 20 minutes allows. Keep
+          failsafe-timeout-seconds in step with it so a stuck fork still fails inside the job budget.
+      failsafe-timeout-seconds:
+        required: false
+        type: number
+        default: 0
+        description: >-
+          Overrides the pom's default -D failsafe.timeout (max seconds a single Maven fork
+          may run before it's killed as hung), letting a wedged fork fail with a real report
+          instead of the job's timeout-minutes cancelling it. Leave 0 to use
+          the pom's safe default; set explicitly only for callers whose worst-case fork
+          runtime has been measured against this job's timeout-minutes.
     outputs:
       flakyTests:
         description: "Flaky tests detected during database integration tests"
@@ -118,8 +136,7 @@ jobs:
     permissions:
       contents: read
       id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
-    # Temporary increase (PT tests create schemas for multiple tenants sequentially); revert after #60105 lands.
-    timeout-minutes: 20
+    timeout-minutes: ${{ inputs.timeout-minutes }}
     runs-on: ${{ inputs.runs-on }}
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
@@ -205,6 +222,7 @@ jobs:
           ${{ inputs.physical-tenant != '' && format('-D test.integration.camunda.physical-tenant={0}', inputs.physical-tenant) || '' }}
           ${{ inputs.physical-tenant-elasticsearch-url != '' && format('-D test.integration.camunda.physical-tenant.elasticsearch.url={0}', inputs.physical-tenant-elasticsearch-url) || '' }}
           ${{ inputs.physical-tenant-opensearch-url != '' && format('-D test.integration.camunda.physical-tenant.opensearch.url={0}', inputs.physical-tenant-opensearch-url) || '' }}
+          ${{ inputs.failsafe-timeout-seconds != 0 && format('-D failsafe.timeout={0}', inputs.failsafe-timeout-seconds) || '' }}
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild,${{inputs.maven-profiles}}
           -pl 'qa/acceptance-tests'
           verify
