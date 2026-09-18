@@ -415,6 +415,7 @@ security.authentication.oidc.idp-logout-enabled
 security.authentication.oidc.issuer-uri
 security.authentication.oidc.jwk-set-uri
 security.authentication.oidc.organization-id
+security.authentication.oidc.post-logout-redirect-enabled
 security.authentication.oidc.prefer-id-token-claims
 security.authentication.oidc.prefer-username-claim
 security.authentication.oidc.redirect-uri
