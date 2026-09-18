@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {TooltipProvider} from '@camunda/design-system';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {describe, expect, vi} from 'vitest';
@@ -26,16 +25,14 @@ describe('<AvailableTasks />', () => {
 
 		const screen = await renderWithRouter(
 			() => (
-				<TooltipProvider>
-					<AvailableTasks
-						pages={[createQueryUserTasksResponse({items: tasks})]}
-						currentUser={currentUser}
-						hasNextPage={false}
-						hasPreviousPage={false}
-						onScrollDown={noop}
-						onScrollUp={noop}
-					/>
-				</TooltipProvider>
+				<AvailableTasks
+					pages={[createQueryUserTasksResponse({items: tasks})]}
+					currentUser={currentUser}
+					hasNextPage={false}
+					hasPreviousPage={false}
+					onScrollDown={noop}
+					onScrollUp={noop}
+				/>
 			),
 			{path: '/tasklist/$userTaskKey', initialEntry: '/tasklist/1'},
 		);
