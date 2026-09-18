@@ -133,7 +133,7 @@ public class AuditLogUserTaskCompletionVariablesIT {
     assertThat(variableAuditLogs)
         .allSatisfy(
             auditLog -> {
-              assertThat(auditLog.getCategory()).isEqualTo(AuditLogCategoryEnum.USER_TASKS);
+              assertThat(auditLog.getCategory()).isEqualTo(AuditLogCategoryEnum.DEPLOYED_RESOURCES);
               assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
               assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
               assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
