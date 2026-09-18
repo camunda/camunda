@@ -21,10 +21,10 @@ warn[msg] {
     # only enforced on workflows that opted-in
     input.env.GHA_BEST_PRACTICES_LINTER == "enabled"
 
-    count(get_jobs_with_timeoutminutes_higher_than(input.jobs, 30)) > 0
+    count(get_jobs_with_timeoutminutes_higher_than(input, 30)) > 0
 
     msg := sprintf("There are GitHub Actions jobs with too high (>30) timeout-minutes! Affected job IDs: %s",
-        [concat(", ", get_jobs_with_timeoutminutes_higher_than(input.jobs, 30))])
+        [concat(", ", get_jobs_with_timeoutminutes_higher_than(input, 30))])
 }
 
 deny[msg] {
@@ -151,16 +151,51 @@ get_jobs_without_timeoutminutes(jobInput) = jobs_without_timeoutminutes {
     }
 }
 
-get_jobs_with_timeoutminutes_higher_than(jobInput, max_timeout) = jobs_without_timeoutminutes {
-    jobs_without_timeoutminutes := { job_id |
-        job := jobInput[job_id]
+get_jobs_with_timeoutminutes_higher_than(wf, max_timeout) = jobs_over_timeoutminutes {
+    jobs_over_timeoutminutes := jobs_over_own_timeoutminutes(wf, max_timeout) | jobs_over_caller_timeoutminutes(wf, max_timeout)
+}
 
-        # not enforced on jobs that invoke other reusable workflows (instead enforced there)
+jobs_over_own_timeoutminutes(wf, max_timeout) = jobs_over {
+    jobs_over := { job_id |
+        job := wf.jobs[job_id]
+
+        # jobs that invoke a reusable workflow are checked separately, by
+        # jobs_over_caller_timeoutminutes below, since they have no own timeout-minutes field
         not job.uses
 
-        # check if timeout-minutes is higher than allowed maximum
-        job["timeout-minutes"] > max_timeout
+        # check if timeout-minutes is higher than allowed maximum.
+        resolved_timeoutminutes(wf, job) > max_timeout
     }
+}
+
+# A caller job (uses: a reusable workflow) has no own timeout-minutes field, but can still pass a
+# literal timeout-minutes value through `with:` to a reusable workflow that exposes it as an input.
+jobs_over_caller_timeoutminutes(wf, max_timeout) = jobs_over {
+    jobs_over := { job_id |
+        job := wf.jobs[job_id]
+        job.uses
+        is_number(job.with["timeout-minutes"])
+        job.with["timeout-minutes"] > max_timeout
+    }
+}
+
+# Resolves a job's timeout-minutes to a number for the cap check. A literal resolves to itself;
+# a bare `${{ inputs.<name> }}` expression resolves to that input's declared default (comparing
+# the raw string to a number would always be "too high" -- Rego ranks strings above numbers).
+# Anything else unresolvable is left out of enforcement, same as the `not job.uses` exemption.
+resolved_timeoutminutes(wf, job) = value {
+    is_number(job["timeout-minutes"])
+    value := job["timeout-minutes"]
+}
+
+resolved_timeoutminutes(wf, job) = value {
+    is_string(job["timeout-minutes"])
+    matches := regex.find_all_string_submatch_n(`^\$\{\{\s*inputs\.([A-Za-z0-9_-]+)\s*\}\}$`, job["timeout-minutes"], 1)
+    count(matches) > 0
+    input_name := matches[0][1]
+    # The "on" key is parsed as the boolean `true` (YAML 1.1 bareword quirk) -- see
+    # conftest-gha-best-practices.rego for the same workaround elsewhere in this repo.
+    value := to_number(wf["true"].workflow_call.inputs[input_name].default)
 }
 
 get_jobs_without_cihealth(jobInput) = jobs_without_cihealth {

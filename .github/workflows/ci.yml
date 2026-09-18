@@ -1175,6 +1175,7 @@ jobs:
       # Fork PRs can't authenticate to GCS (no Vault access, see gcs-build-cache-auth),
       # so fall back to each reusable workflow's build-zeebe path instead of the shared distball.
       use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
+      failsafe-timeout-seconds: 780
 
   history-tests:
     name: "History Integration Tests / ${{ matrix.name }}"
@@ -1202,6 +1203,7 @@ jobs:
       # Fork PRs can't authenticate to GCS (no Vault access, see gcs-build-cache-auth),
       # so fall back to each reusable workflow's build-zeebe path instead of the shared distball.
       use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
+      failsafe-timeout-seconds: 780
 
   identity-tests:
     name: "Identity Integration Tests / ${{ matrix.name }}"
@@ -1228,6 +1230,7 @@ jobs:
       # Fork PRs can't authenticate to GCS (no Vault access, see gcs-build-cache-auth),
       # so fall back to each reusable workflow's build-zeebe path instead of the shared distball.
       use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
+      failsafe-timeout-seconds: 780
 
   physical-tenant-acceptance-tests:
     name: "Physical Tenant Acceptance Tests / ${{ matrix.database-name }}"
@@ -1276,6 +1279,7 @@ jobs:
       # Fork PRs can't authenticate to GCS (no Vault access, see gcs-build-cache-auth),
       # so fall back to each reusable workflow's build-zeebe path instead of the shared distball.
       use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
+      failsafe-timeout-seconds: 960
 
   physical-tenant-identity-tests:
     name: "Physical Tenant Acceptance Tests / Identity / ${{ matrix.database-name }}"
@@ -1316,6 +1320,7 @@ jobs:
       # Fork PRs can't authenticate to GCS (no Vault access, see gcs-build-cache-auth),
       # so fall back to each reusable workflow's build-zeebe path instead of the shared distball.
       use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
+      failsafe-timeout-seconds: 960
 
   physical-tenant-history-tests:
     name: "Physical Tenant Acceptance Tests / History / ${{ matrix.database-name }}"
@@ -1356,6 +1361,7 @@ jobs:
       # Fork PRs can't authenticate to GCS (no Vault access, see gcs-build-cache-auth),
       # so fall back to each reusable workflow's build-zeebe path instead of the shared distball.
       use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
+      failsafe-timeout-seconds: 960
 
   rdbms-integration-tests:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
