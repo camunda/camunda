@@ -15,7 +15,7 @@ plugins {
   id("buildlogic.server-conventions")
   id("buildlogic.distribution-dependency-report-conventions")
   alias(libs.plugins.spring.boot)
-  id("org.openapi.generator")
+  id("buildlogic.openapi-conventions")
 }
 
 // OpenAPI generation tasks for the dist module (4 executions matching Maven pom.xml)

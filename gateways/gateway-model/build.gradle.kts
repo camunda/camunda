@@ -4,7 +4,7 @@
 
 plugins {
   id("buildlogic.server-conventions")
-  id("org.openapi.generator")
+  id("buildlogic.openapi-conventions")
 }
 
 val openapiDir = "${project.rootDir}/zeebe/gateway-protocol/src/main/proto/v2"
