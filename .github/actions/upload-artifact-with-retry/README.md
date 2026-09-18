@@ -33,21 +33,27 @@ gated on the previous attempt's `outcome`. See [Notes](#notes) before editing th
 | retention-days       | Days to keep the artifact; empty uses the repository default | false    | `""`    |
 | include-hidden-files | Whether to include hidden files under `path`                 | false    | `false` |
 | if-no-files-found    | `warn`, `error` or `ignore`                                  | false    | `warn`  |
+| retry-delay-seconds  | Base seconds to wait before each retry; `0` retries at once  | false    | `10`    |
+| retry-jitter-seconds | Inclusive upper bound on a random wait added to the delay    | false    | `10`    |
 
 ### Outputs
 
-|  Output   |                         Description                         |
-|-----------|-------------------------------------------------------------|
-| `retried` | `true` when the first attempt failed and a retry was needed |
+|   Output   |                            Description                            |
+|------------|-------------------------------------------------------------------|
+| `attempts` | Number of upload attempts made: `1` when the first one succeeded  |
 
-`retried` exists because a successful retry leaves the job green, hiding the absorbed failure. The
-action also emits a warning annotation and a run-summary line in that case.
+More than `1` means a retry was needed, and `0` that invalid backoff inputs stopped the action
+before it tried. `attempts` exists because a successful retry leaves the job green, hiding the
+absorbed failure. The action also emits a warning annotation and a run-summary line in that case.
 
 ## Notes
 
-- **Three attempts, 10-20s apart, hard-coded.** A composite action has no loop, so change the
-  attempt count by adding or removing an attempt block.
-- **The backoff is jittered (`10 + RANDOM % 10`)** so matrix shards don't retry in lockstep.
+- **Three attempts, hard-coded.** A composite action has no loop, so change the attempt count by
+  adding or removing an attempt block.
+- **The backoff is configurable, and jittered by default.** Each wait is
+  `retry-delay-seconds + RANDOM % (retry-jitter-seconds + 1)`, so the defaults give 10-20s
+  inclusive. The jitter keeps matrix shards off a lockstep retry, so only drop it
+  (`retry-jitter-seconds: "0"`) for a single unsharded upload.
 - **`overwrite: true` is required.** A failed attempt reserves the artifact name, so a retry
   without it hits a non-retryable 409
   ([dotnet/orleans#10961](https://github.com/dotnet/orleans/issues/10961)).
