@@ -26,13 +26,15 @@ public final class MicrometerJobWorkerMetrics implements JobWorkerMetrics {
   private final Counter zeebeJobActivatedCounter;
   private final Counter zeebeJobHandledCounter;
   private final Counter jobRefusedCounter;
+  private final Counter jobExpiredCounter;
 
   public MicrometerJobWorkerMetrics(
       final Counter jobActivatedCounter,
       final Counter jobHandledCounter,
       final Counter zeebeJobActivatedCounter,
       final Counter zeebeJobHandledCounter,
-      final Counter jobRefusedCounter) {
+      final Counter jobRefusedCounter,
+      final Counter jobExpiredCounter) {
     this.jobActivatedCounter =
         Objects.requireNonNull(jobActivatedCounter, "must specify a job activated counter");
     this.jobHandledCounter =
@@ -43,6 +45,8 @@ public final class MicrometerJobWorkerMetrics implements JobWorkerMetrics {
         Objects.requireNonNull(zeebeJobHandledCounter, "must specify a job handled counter");
     this.jobRefusedCounter =
         Objects.requireNonNull(jobRefusedCounter, "must specify a job refused counter");
+    this.jobExpiredCounter =
+        Objects.requireNonNull(jobExpiredCounter, "must specify a job expired counter");
   }
 
   @Override
@@ -60,5 +64,10 @@ public final class MicrometerJobWorkerMetrics implements JobWorkerMetrics {
   @Override
   public void jobRefused(final int count) {
     jobRefusedCounter.increment(count);
+  }
+
+  @Override
+  public void jobExpired(final int count) {
+    jobExpiredCounter.increment(count);
   }
 }
