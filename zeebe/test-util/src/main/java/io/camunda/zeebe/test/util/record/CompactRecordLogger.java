@@ -622,7 +622,7 @@ public class CompactRecordLogger {
         .append(" ")
         .append(shortenKey(value.getJobKey()))
         .append("#")
-        .append(value.getJobLease());
+        .append(value.getJobLeaseToken());
 
     final var metrics = value.getMetrics();
     if (metrics != null) {

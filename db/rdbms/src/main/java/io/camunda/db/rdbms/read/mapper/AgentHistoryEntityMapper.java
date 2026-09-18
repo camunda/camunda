@@ -33,7 +33,7 @@ public class AgentHistoryEntityMapper {
         nullToEmpty(dbModel.processDefinitionId()),
         nullToEmpty(dbModel.tenantId()),
         dbModel.jobKey(),
-        nullToEmpty(dbModel.jobLease()),
+        nullToEmpty(dbModel.jobLeaseToken()),
         dbModel.loopIteration(),
         dbModel.role(),
         contentItems != null ? contentItems : List.of(),

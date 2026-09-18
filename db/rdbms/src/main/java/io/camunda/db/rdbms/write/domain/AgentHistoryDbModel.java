@@ -37,7 +37,7 @@ public record AgentHistoryDbModel(
     String tenantId,
     int partitionId,
     long jobKey,
-    String jobLease,
+    String jobLeaseToken,
     int loopIteration,
     AgentInstanceHistoryRole role,
     AgentInstanceHistoryCommitStatus commitStatus,
@@ -72,12 +72,13 @@ public record AgentHistoryDbModel(
   }
 
   public AgentHistoryDbModel truncate(final int sizeLimit, final Integer byteLimit) {
-    final var truncatedJobLease = TruncateUtil.truncateValue(jobLease, sizeLimit, byteLimit);
+    final var truncatedJobLeaseToken =
+        TruncateUtil.truncateValue(jobLeaseToken, sizeLimit, byteLimit);
     final var truncatedHistoryItemId =
         TruncateUtil.truncateValue(historyItemId, sizeLimit, byteLimit);
     final var truncatedModel = TruncateUtil.truncateValue(model, sizeLimit, byteLimit);
     final var truncatedProvider = TruncateUtil.truncateValue(provider, sizeLimit, byteLimit);
-    if (Objects.equals(truncatedJobLease, jobLease)
+    if (Objects.equals(truncatedJobLeaseToken, jobLeaseToken)
         && Objects.equals(truncatedHistoryItemId, historyItemId)
         && Objects.equals(truncatedModel, model)
         && Objects.equals(truncatedProvider, provider)) {
@@ -95,7 +96,7 @@ public record AgentHistoryDbModel(
         tenantId,
         partitionId,
         jobKey,
-        truncatedJobLease,
+        truncatedJobLeaseToken,
         loopIteration,
         role,
         commitStatus,
@@ -229,7 +230,7 @@ public record AgentHistoryDbModel(
         .tenantId(tenantId)
         .partitionId(partitionId)
         .jobKey(jobKey)
-        .jobLease(jobLease)
+        .jobLeaseToken(jobLeaseToken)
         .loopIteration(loopIteration)
         .role(role)
         .commitStatus(commitStatus)
@@ -272,7 +273,7 @@ public record AgentHistoryDbModel(
     private String tenantId;
     private int partitionId;
     private long jobKey;
-    private String jobLease;
+    private String jobLeaseToken;
     private int loopIteration;
     private AgentInstanceHistoryRole role;
     private AgentInstanceHistoryCommitStatus commitStatus;
@@ -363,8 +364,8 @@ public record AgentHistoryDbModel(
       return this;
     }
 
-    public Builder jobLease(final String jobLease) {
-      this.jobLease = jobLease;
+    public Builder jobLeaseToken(final String jobLeaseToken) {
+      this.jobLeaseToken = jobLeaseToken;
       return this;
     }
 
@@ -481,7 +482,7 @@ public record AgentHistoryDbModel(
           tenantId,
           partitionId,
           jobKey,
-          jobLease,
+          jobLeaseToken,
           loopIteration,
           role,
           commitStatus,

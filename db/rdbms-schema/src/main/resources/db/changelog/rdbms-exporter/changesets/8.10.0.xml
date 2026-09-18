@@ -596,7 +596,7 @@
       <column name="TENANT_ID" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="PARTITION_ID" type="INTEGER"/>
       <column name="JOB_KEY" type="BIGINT"/>
-      <column name="JOB_LEASE" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="JOB_LEASE_TOKEN" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="LOOP_ITERATION" type="INTEGER"/>
       <column name="ROLE" type="VARCHAR(20)"/>
       <column name="COMMIT_STATUS" type="VARCHAR(20)"/>

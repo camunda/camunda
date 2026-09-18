@@ -484,12 +484,17 @@ public final class JobThrowErrorTest {
     final Record<JobBatchRecordValue> batch =
         ENGINE.jobs().withType(jobType).withLease().activate(username);
     final Long jobKey = batch.getValue().getJobKeys().get(0);
-    final String leaseToken = batch.getValue().getJobs().get(0).getLeaseToken();
-    assertThat(leaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
+    final String jobLeaseToken = batch.getValue().getJobs().get(0).getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
 
     // when
     final Record<JobRecordValue> result =
-        ENGINE.job().withKey(jobKey).withLeaseToken(leaseToken).withErrorCode("error").throwError();
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .withJobLeaseToken(jobLeaseToken)
+            .withErrorCode("error")
+            .throwError();
 
     // then
     Assertions.assertThat(result)
@@ -506,8 +511,8 @@ public final class JobThrowErrorTest {
     final Record<JobBatchRecordValue> batch =
         ENGINE.jobs().withType(jobType).withLease().activate(username);
     final Long jobKey = batch.getValue().getJobKeys().get(0);
-    final String leaseToken = batch.getValue().getJobs().get(0).getLeaseToken();
-    assertThat(leaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
+    final String jobLeaseToken = batch.getValue().getJobs().get(0).getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
 
     // when
     final Record<JobRecordValue> result =
@@ -517,7 +522,9 @@ public final class JobThrowErrorTest {
     Assertions.assertThat(result)
         .describedAs("A throw-error command without a lease token on a leased job is rejected")
         .hasRejectionType(RejectionType.INVALID_STATE);
-    assertThat(result.getRejectionReason()).contains("must be provided").doesNotContain(leaseToken);
+    assertThat(result.getRejectionReason())
+        .contains("must be provided")
+        .doesNotContain(jobLeaseToken);
   }
 
   @Test
@@ -527,15 +534,15 @@ public final class JobThrowErrorTest {
     final Record<JobBatchRecordValue> batch =
         ENGINE.jobs().withType(jobType).withLease().activate(username);
     final Long jobKey = batch.getValue().getJobKeys().get(0);
-    final String leaseToken = batch.getValue().getJobs().get(0).getLeaseToken();
-    assertThat(leaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
+    final String jobLeaseToken = batch.getValue().getJobs().get(0).getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
 
     // when
     final Record<JobRecordValue> result =
         ENGINE
             .job()
             .withKey(jobKey)
-            .withLeaseToken("stale-lease-token")
+            .withJobLeaseToken("stale-lease-token")
             .withErrorCode("error")
             .expectRejection()
             .throwError();
@@ -544,7 +551,9 @@ public final class JobThrowErrorTest {
     Assertions.assertThat(result)
         .describedAs("A throw-error command with a non-matching lease token is rejected")
         .hasRejectionType(RejectionType.INVALID_STATE);
-    assertThat(result.getRejectionReason()).contains("does not match").doesNotContain(leaseToken);
+    assertThat(result.getRejectionReason())
+        .contains("does not match")
+        .doesNotContain(jobLeaseToken);
   }
 
   @Test

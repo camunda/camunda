@@ -65,7 +65,7 @@ public final class ActivatableJobsPushWithLeaseTest {
   }
 
   @Test
-  public void shouldPushJobWithNonEmptyLeaseTokenWhenStreamIsLeasing() {
+  public void shouldPushJobWithNonEmptyJobLeaseTokenWhenStreamIsLeasing() {
     // given
     final RecordingJobStream jobStream = registerStream(true);
 
@@ -74,7 +74,7 @@ public final class ActivatableJobsPushWithLeaseTest {
 
     // then
     await().untilAsserted(() -> assertThat(jobStream.getActivatedJobs()).hasSize(1));
-    assertThat(jobStream.getActivatedJobs().getFirst().jobRecord().getLeaseToken())
+    assertThat(jobStream.getActivatedJobs().getFirst().jobRecord().getJobLeaseToken())
         .describedAs("a job pushed to a leasing stream carries a non-empty lease token")
         .isNotEmpty();
   }
@@ -91,14 +91,14 @@ public final class ActivatableJobsPushWithLeaseTest {
     // then
     await().untilAsserted(() -> assertThat(jobStream.getActivatedJobs()).hasSize(2));
     assertThat(jobStream.getActivatedJobs())
-        .extracting(activatedJob -> activatedJob.jobRecord().getLeaseToken())
+        .extracting(activatedJob -> activatedJob.jobRecord().getJobLeaseToken())
         .describedAs("each job pushed to a leasing stream carries a distinct lease token")
         .allSatisfy(token -> assertThat(token).isNotEmpty())
         .doesNotHaveDuplicates();
   }
 
   @Test
-  public void shouldPersistLeaseTokenMatchingPushedToken() {
+  public void shouldPersistJobLeaseTokenMatchingPushedToken() {
     // given
     final RecordingJobStream jobStream = registerStream(true);
 
@@ -107,25 +107,25 @@ public final class ActivatableJobsPushWithLeaseTest {
     await().untilAsserted(() -> assertThat(jobStream.getActivatedJobs()).hasSize(1));
 
     // then
-    final String wireToken = jobStream.getActivatedJobs().getFirst().jobRecord().getLeaseToken();
+    final String wireToken = jobStream.getActivatedJobs().getFirst().jobRecord().getJobLeaseToken();
     assertThat(wireToken)
         .describedAs("the job pushed on the wire carries a non-empty lease token")
         .isNotEmpty();
 
     // non-empty asserted before equality: wire and state derive from separate code paths
-    final String stateToken = persistedLeaseToken();
+    final String stateToken = persistedJobLeaseToken();
     assertThat(stateToken)
         .describedAs("the token pushed on the wire equals the token persisted in state")
         .isEqualTo(wireToken);
   }
 
   @Test
-  public void shouldRetainLeaseTokenAfterReplay() {
+  public void shouldRetainJobLeaseTokenAfterReplay() {
     // given
     registerStream(true);
     ENGINE.createJob(jobType, PROCESS_ID);
     jobBatchRecords(ACTIVATED).withType(jobType).await();
-    final String leaseToken = persistedLeaseToken();
+    final String jobLeaseToken = persistedJobLeaseToken();
 
     // when
     ENGINE.replay();
@@ -136,23 +136,24 @@ public final class ActivatableJobsPushWithLeaseTest {
         Duration.ofMillis(TIMEOUT_MS)
             .plus(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL));
     final JobRecordValue timedOut = jobRecords(TIMED_OUT).withType(jobType).getFirst().getValue();
-    assertThat(leaseToken).describedAs("the job was leased on push").isNotEmpty();
-    assertThat(timedOut.getLeaseToken())
+    assertThat(jobLeaseToken).describedAs("the job was leased on push").isNotEmpty();
+    assertThat(timedOut.getJobLeaseToken())
         .describedAs("the lease token survives an engine restart and log replay")
-        .isEqualTo(leaseToken);
+        .isEqualTo(jobLeaseToken);
   }
 
   @Test
-  public void shouldRejectCompleteWithLeaseTokenSupersededByPushReactivation() {
+  public void shouldRejectCompleteWithJobLeaseTokenSupersededByPushReactivation() {
     // given a job pushed with a lease, then failed with retries so it is immediately re-pushed
     final RecordingJobStream jobStream = registerStream(true);
     final long jobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
     await().untilAsserted(() -> assertThat(jobStream.getActivatedJobs()).hasSize(1));
-    final String firstToken = jobStream.getActivatedJobs().getFirst().jobRecord().getLeaseToken();
+    final String firstToken =
+        jobStream.getActivatedJobs().getFirst().jobRecord().getJobLeaseToken();
 
-    ENGINE.job().withKey(jobKey).withLeaseToken(firstToken).withRetries(1).fail();
+    ENGINE.job().withKey(jobKey).withJobLeaseToken(firstToken).withRetries(1).fail();
     await().untilAsserted(() -> assertThat(jobStream.getActivatedJobs()).hasSize(2));
-    final String secondToken = jobStream.getActivatedJobs().get(1).jobRecord().getLeaseToken();
+    final String secondToken = jobStream.getActivatedJobs().get(1).jobRecord().getJobLeaseToken();
     assertThat(secondToken)
         .describedAs("failing with retries re-pushes the job with a new, distinct lease token")
         .isNotEmpty()
@@ -160,7 +161,7 @@ public final class ActivatableJobsPushWithLeaseTest {
 
     // when completing with the token from the superseded first push
     final Record<JobRecordValue> rejection =
-        ENGINE.job().withKey(jobKey).withLeaseToken(firstToken).expectRejection().complete();
+        ENGINE.job().withKey(jobKey).withJobLeaseToken(firstToken).expectRejection().complete();
 
     // then
     Assertions.assertThat(rejection)
@@ -169,7 +170,7 @@ public final class ActivatableJobsPushWithLeaseTest {
   }
 
   @Test
-  public void shouldNotSetLeaseTokenWhenStreamIsNotLeasing() {
+  public void shouldNotSetJobLeaseTokenWhenStreamIsNotLeasing() {
     // given
     final RecordingJobStream jobStream = registerStream(false);
 
@@ -178,7 +179,7 @@ public final class ActivatableJobsPushWithLeaseTest {
 
     // then
     await().untilAsserted(() -> assertThat(jobStream.getActivatedJobs()).hasSize(1));
-    assertThat(jobStream.getActivatedJobs().getFirst().jobRecord().getLeaseToken())
+    assertThat(jobStream.getActivatedJobs().getFirst().jobRecord().getJobLeaseToken())
         .describedAs("a freshly created job pushed to a non-leasing stream carries no lease token")
         .isEmpty();
   }
@@ -192,7 +193,7 @@ public final class ActivatableJobsPushWithLeaseTest {
         ENGINE.jobs().withType(jobType).withLease().activate();
     final JobRecordValue job = batchRecord.getValue().getJobs().getFirst();
     final long jobKey = batchRecord.getValue().getJobKeys().getFirst();
-    final String leaseToken = job.getLeaseToken();
+    final String jobLeaseToken = job.getJobLeaseToken();
     final RecordingJobStream jobStream = registerStream(false);
 
     // when
@@ -200,7 +201,7 @@ public final class ActivatableJobsPushWithLeaseTest {
         .job()
         .withKey(jobKey)
         .ofInstance(job.getProcessInstanceKey())
-        .withLeaseToken(leaseToken)
+        .withJobLeaseToken(jobLeaseToken)
         .withRetries(3)
         .fail();
 
@@ -230,13 +231,13 @@ public final class ActivatableJobsPushWithLeaseTest {
         ENGINE.jobs().withType(jobType).withLease().activate();
     final JobRecordValue job = batchRecord.getValue().getJobs().getFirst();
     final long jobKey = batchRecord.getValue().getJobKeys().getFirst();
-    final String leaseToken = job.getLeaseToken();
+    final String jobLeaseToken = job.getJobLeaseToken();
     final Duration backOff = Duration.ofDays(1);
     ENGINE
         .job()
         .withKey(jobKey)
         .ofInstance(job.getProcessInstanceKey())
-        .withLeaseToken(leaseToken)
+        .withJobLeaseToken(jobLeaseToken)
         .withRetries(3)
         .withBackOff(backOff)
         .fail();
@@ -274,12 +275,12 @@ public final class ActivatableJobsPushWithLeaseTest {
         ENGINE.jobs().withType(jobType).withLease().activate();
     final JobRecordValue job = batchRecord.getValue().getJobs().getFirst();
     final long jobKey = batchRecord.getValue().getJobKeys().getFirst();
-    final String leaseToken = job.getLeaseToken();
+    final String jobLeaseToken = job.getJobLeaseToken();
     ENGINE
         .job()
         .withKey(jobKey)
         .ofInstance(processInstanceKey)
-        .withLeaseToken(leaseToken)
+        .withJobLeaseToken(jobLeaseToken)
         .withRetries(0)
         .fail();
     ENGINE.job().ofInstance(processInstanceKey).withType(jobType).withRetries(1).updateRetries();
@@ -312,7 +313,7 @@ public final class ActivatableJobsPushWithLeaseTest {
     final long timeout = 10L;
     final Record<JobBatchRecordValue> batchRecord =
         ENGINE.jobs().withType(jobType).withTimeout(timeout).withLease().activate();
-    assertThat(batchRecord.getValue().getJobs().getFirst().getLeaseToken())
+    assertThat(batchRecord.getValue().getJobs().getFirst().getJobLeaseToken())
         .describedAs("the job under test must actually be leased")
         .isNotEmpty();
     final int notificationsBefore = JOB_STREAMER.notificationsForJob(jobType);
@@ -337,7 +338,7 @@ public final class ActivatableJobsPushWithLeaseTest {
         ENGINE.jobs().withType(jobType).withLease().activate();
     final JobRecordValue job = batchRecord.getValue().getJobs().getFirst();
     final long jobKey = batchRecord.getValue().getJobKeys().getFirst();
-    assertThat(job.getLeaseToken())
+    assertThat(job.getJobLeaseToken())
         .describedAs("the job under test must actually be leased")
         .isNotEmpty();
     final int notificationsBefore = JOB_STREAMER.notificationsForJob(jobType);
@@ -362,7 +363,7 @@ public final class ActivatableJobsPushWithLeaseTest {
         ENGINE.jobs().withType(jobType).withLease().activate();
     final JobRecordValue job = batchRecord.getValue().getJobs().getFirst();
     final long jobKey = batchRecord.getValue().getJobKeys().getFirst();
-    final String leaseToken = job.getLeaseToken();
+    final String jobLeaseToken = job.getJobLeaseToken();
 
     final RecordingJobStream nonLeasingStream = registerStream(false);
     final RecordingJobStream leasingStream = registerStream(true);
@@ -372,7 +373,7 @@ public final class ActivatableJobsPushWithLeaseTest {
         .job()
         .withKey(jobKey)
         .ofInstance(job.getProcessInstanceKey())
-        .withLeaseToken(leaseToken)
+        .withJobLeaseToken(jobLeaseToken)
         .withRetries(3)
         .fail();
 
@@ -454,13 +455,13 @@ public final class ActivatableJobsPushWithLeaseTest {
         .count();
   }
 
-  private String persistedLeaseToken() {
+  private String persistedJobLeaseToken() {
     return jobBatchRecords(ACTIVATED)
         .withType(jobType)
         .getFirst()
         .getValue()
         .getJobs()
         .getFirst()
-        .getLeaseToken();
+        .getJobLeaseToken();
   }
 }

@@ -73,18 +73,18 @@ public class AgentHistoryItemIdPersistenceTest {
             .withType(JOB_TYPE)
             .getFirst()
             .getKey();
-    final var jobLease =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
+            .getJobLeaseToken();
     final var agentInstanceKey =
         ENGINE
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease(jobLease)
+            .withJobLeaseToken(jobLeaseToken)
             .create()
             .getKey();
 
@@ -94,7 +94,7 @@ public class AgentHistoryItemIdPersistenceTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease("lease-committed")
+            .withJobLeaseToken("lease-committed")
             .withHistory(List.of(historyItem("history-item-committed")))
             .update();
     final long committedItemKey =
@@ -106,14 +106,14 @@ public class AgentHistoryItemIdPersistenceTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(jobKey)
-            .withJobLease("lease-discarded")
+            .withJobLeaseToken("lease-discarded")
             .withHistory(List.of(historyItem("history-item-discarded")))
             .update();
     final long discardedItemKey =
         discardedUpdate.getValue().getHistory().get(0).getAgentHistoryKey();
 
     // when
-    ENGINE.agentHistories().withJobKey(jobKey).withJobLease("lease-committed").commit();
+    ENGINE.agentHistories().withJobKey(jobKey).withJobLeaseToken("lease-committed").commit();
 
     // then
     assertThat(

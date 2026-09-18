@@ -210,7 +210,7 @@ public final class AgentInstanceUpdateProcessor
     final var validJob =
         historyBatchHelper.validateJobContext(
             commandValue.getJobKey(),
-            commandValue.getJobLease(),
+            commandValue.getJobLeaseToken(),
             commandValue.getElementInstanceKey(),
             LeaseMismatchHandling.ALLOW_STALE);
     if (validJob.isLeft()) {
@@ -221,7 +221,7 @@ public final class AgentInstanceUpdateProcessor
 
     final var job = validJob.get();
     final var isRequestLevelStale =
-        !Objects.equals(commandValue.getJobLease(), job.getLeaseToken());
+        !Objects.equals(commandValue.getJobLeaseToken(), job.getJobLeaseToken());
 
     final var isHistoryValid = historyBatchHelper.validateHistory(commandValue.getHistory());
     if (isHistoryValid.isLeft()) {
@@ -260,7 +260,7 @@ public final class AgentInstanceUpdateProcessor
           historyBatchHelper.applyInstanceChangesFromHistory(
               current,
               commandValue.getJobKey(),
-              commandValue.getJobLease(),
+              commandValue.getJobLeaseToken(),
               commandValue.getElementInstanceKey(),
               commandValue.getHistory());
 

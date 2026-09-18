@@ -101,7 +101,7 @@ public class AgentHistoryHandler
         .setProcessDefinitionKey(value.getProcessDefinitionKey())
         .setTenantId(value.getTenantId())
         .setJobKey(value.getJobKey())
-        .setJobLease(value.getJobLease())
+        .setJobLeaseToken(value.getJobLeaseToken())
         .setLoopIteration(value.getLoopIteration())
         .setRole(mapRole(value.getRole()))
         .setCommitStatus(mapCommitStatusFromIntent(intent));

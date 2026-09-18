@@ -46,7 +46,7 @@
             "jobKey": {
               "type": "long"
             },
-            "jobLease": {
+            "jobLeaseToken": {
               "type": "keyword"
             },
             "loopIteration": {

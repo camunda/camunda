@@ -208,7 +208,7 @@ class ResponseMapperTest {
     void shouldMapJobLeaseTokenToActivatedJob() {
       // given
       final JobRecord jobRecord = mockJobRecord(JobKind.BPMN_ELEMENT, Map.of());
-      when(jobRecord.getLeaseToken()).thenReturn("lease-token-123");
+      when(jobRecord.getJobLeaseToken()).thenReturn("lease-token-123");
       final var activatedJob = mockActivatedJob(jobRecord);
 
       // when
@@ -306,7 +306,7 @@ class ResponseMapperTest {
       when(jobRecord.getTenantId()).thenReturn(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
       when(jobRecord.getLength()).thenReturn(1);
       when(jobRecord.getBusinessId()).thenReturn("");
-      when(jobRecord.getLeaseToken()).thenReturn("");
+      when(jobRecord.getJobLeaseToken()).thenReturn("");
       return jobRecord;
     }
 

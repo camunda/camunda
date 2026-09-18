@@ -44,7 +44,7 @@ final class DbAgentHistoryStateTest {
     final var stored = state.get(historyItemKey);
     assertThat(stored).isNotNull();
     assertThat(stored.getJobKey()).isEqualTo(100L);
-    assertThat(stored.getJobLease()).isEqualTo("lease-a");
+    assertThat(stored.getJobLeaseToken()).isEqualTo("lease-a");
   }
 
   @Test
@@ -69,7 +69,7 @@ final class DbAgentHistoryStateTest {
   }
 
   @Test
-  void shouldVisitItemsByJobLease() {
+  void shouldVisitItemsByJobLeaseToken() {
     // given
     final long jobKey = 42L;
     state.insert(1L, sampleRecord(jobKey, "lease-a"));
@@ -78,7 +78,7 @@ final class DbAgentHistoryStateTest {
 
     // when
     final List<String> visited = new ArrayList<>();
-    state.visitByJobLease(jobKey, "lease-a", item -> visited.add(item.getJobLease()));
+    state.visitByJobLeaseToken(jobKey, "lease-a", item -> visited.add(item.getJobLeaseToken()));
 
     // then
     assertThat(visited).hasSize(2).allMatch("lease-a"::equals);
@@ -320,7 +320,7 @@ final class DbAgentHistoryStateTest {
   private static AgentHistoryRecord sampleRecord(final long jobKey, final String lease) {
     return new AgentHistoryRecord()
         .setJobKey(jobKey)
-        .setJobLease(lease)
+        .setJobLeaseToken(lease)
         .setAgentHistoryKey(jobKey * 1000L);
   }
 

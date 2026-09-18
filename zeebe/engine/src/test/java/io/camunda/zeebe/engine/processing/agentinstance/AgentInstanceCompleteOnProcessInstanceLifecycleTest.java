@@ -69,7 +69,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
             .agentInstances()
             .withElementInstanceKey(agentTaskInstance.getKey())
             .withJobKey(job.jobKey())
-            .withJobLease(job.leaseToken())
+            .withJobLeaseToken(job.jobLeaseToken())
             .create()
             .getKey();
 
@@ -78,7 +78,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
         .job()
         .ofInstance(processInstanceKey)
         .withType(AGENT_JOB_TYPE)
-        .withLeaseToken(job.leaseToken())
+        .withJobLeaseToken(job.jobLeaseToken())
         .complete();
 
     // then — the batch AGENT_INSTANCE:COMPLETE command is emitted as a follow-up to
@@ -138,7 +138,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
             .agentInstances()
             .withElementInstanceKey(adHocSubProcessInstanceKey)
             .withJobKey(job.jobKey())
-            .withJobLease(job.leaseToken())
+            .withJobLeaseToken(job.jobLeaseToken())
             .create()
             .getKey();
 
@@ -149,7 +149,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
         .job()
         .ofInstance(processInstanceKey)
         .withType(AGENT_JOB_TYPE)
-        .withLeaseToken(job.leaseToken())
+        .withJobLeaseToken(job.jobLeaseToken())
         .withResult(jobResult)
         .complete();
 
@@ -199,7 +199,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
             .agentInstances()
             .withElementInstanceKey(agentTaskInstance.getKey())
             .withJobKey(job.jobKey())
-            .withJobLease(job.leaseToken())
+            .withJobLeaseToken(job.jobLeaseToken())
             .create()
             .getKey();
 
@@ -241,7 +241,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
             .agentInstances()
             .withElementInstanceKey(elementInstanceKey)
             .withJobKey(job.jobKey())
-            .withJobLease(job.leaseToken())
+            .withJobLeaseToken(job.jobLeaseToken())
             .create()
             .getKey();
 
@@ -251,7 +251,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
         .withAgentInstanceKey(agentInstanceKey)
         .withElementInstanceKey(elementInstanceKey)
         .withJobKey(job.jobKey())
-        .withJobLease(job.leaseToken())
+        .withJobLeaseToken(job.jobLeaseToken())
         .withHistory(
             List.of(
                 new AgentHistoryRecord()
@@ -326,7 +326,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
             .agentInstances()
             .withElementInstanceKey(firstTaskInstance.getKey())
             .withJobKey(firstJob.jobKey())
-            .withJobLease(firstJob.leaseToken())
+            .withJobLeaseToken(firstJob.jobLeaseToken())
             .create()
             .getKey();
     final var secondAgentInstanceKey =
@@ -334,7 +334,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
             .agentInstances()
             .withElementInstanceKey(secondTaskInstance.getKey())
             .withJobKey(secondJob.jobKey())
-            .withJobLease(secondJob.leaseToken())
+            .withJobLeaseToken(secondJob.jobLeaseToken())
             .create()
             .getKey();
 
@@ -362,7 +362,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
             .agentInstances()
             .withElementInstanceKey(unrelatedTaskInstance.getKey())
             .withJobKey(unrelatedJob.jobKey())
-            .withJobLease(unrelatedJob.leaseToken())
+            .withJobLeaseToken(unrelatedJob.jobLeaseToken())
             .create()
             .getKey();
 
@@ -372,13 +372,13 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
         .job()
         .ofInstance(processInstanceKey)
         .withType(AGENT_JOB_TYPE)
-        .withLeaseToken(firstJob.leaseToken())
+        .withJobLeaseToken(firstJob.jobLeaseToken())
         .complete();
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
         .withType(otherAgentJobType)
-        .withLeaseToken(secondJob.leaseToken())
+        .withJobLeaseToken(secondJob.jobLeaseToken())
         .complete();
 
     // then — a single AGENT_INSTANCE:COMPLETE command is written as a follow-up of the process
@@ -485,7 +485,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
             .agentInstances()
             .withElementInstanceKey(agentTaskInstance.getKey())
             .withJobKey(job.jobKey())
-            .withJobLease(job.leaseToken())
+            .withJobLeaseToken(job.jobLeaseToken())
             .create()
             .getKey();
 
@@ -495,7 +495,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
         .job()
         .ofInstance(childProcessInstanceKey)
         .withType(AGENT_JOB_TYPE)
-        .withLeaseToken(job.leaseToken())
+        .withJobLeaseToken(job.jobLeaseToken())
         .complete();
 
     // then
@@ -585,7 +585,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
             .agentInstances()
             .withElementInstanceKey(agentTaskInstance.getKey())
             .withJobKey(job.jobKey())
-            .withJobLease(job.leaseToken())
+            .withJobLeaseToken(job.jobLeaseToken())
             .create()
             .getKey();
 
@@ -754,14 +754,14 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
             .withType(jobType)
             .getFirst()
             .getKey();
-    final var leaseToken =
+    final var jobLeaseToken =
         jobBatch
             .getValue()
             .getJobs()
             .get(jobBatch.getValue().getJobKeys().indexOf(jobKey))
-            .getLeaseToken();
-    return new ActivatedAgentJob(jobKey, leaseToken);
+            .getJobLeaseToken();
+    return new ActivatedAgentJob(jobKey, jobLeaseToken);
   }
 
-  private record ActivatedAgentJob(long jobKey, String leaseToken) {}
+  private record ActivatedAgentJob(long jobKey, String jobLeaseToken) {}
 }

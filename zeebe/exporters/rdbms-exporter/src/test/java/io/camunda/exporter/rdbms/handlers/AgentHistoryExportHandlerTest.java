@@ -131,7 +131,7 @@ class AgentHistoryExportHandlerTest {
     assertThat(model.tenantId()).isEqualTo(recordValue.getTenantId());
     assertThat(model.partitionId()).isEqualTo(record.getPartitionId());
     assertThat(model.jobKey()).isEqualTo(recordValue.getJobKey());
-    assertThat(model.jobLease()).isEqualTo(recordValue.getJobLease());
+    assertThat(model.jobLeaseToken()).isEqualTo(recordValue.getJobLeaseToken());
     assertThat(model.loopIteration()).isEqualTo(recordValue.getLoopIteration());
 
     // role
@@ -733,7 +733,7 @@ class AgentHistoryExportHandlerTest {
         .withProcessDefinitionKey(500L)
         .withTenantId("myTenant")
         .withJobKey(600L)
-        .withJobLease("myLease")
+        .withJobLeaseToken("myLease")
         .withLoopIteration(1)
         .withRole(AgentHistoryRole.ASSISTANT)
         .withProducedAt(1_700_000_000_000L)
