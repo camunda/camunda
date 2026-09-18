@@ -8,6 +8,7 @@
 package io.camunda.webapps.schema.descriptors;
 
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.assignableTo;
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.equivalentTo;
 
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
@@ -18,11 +19,15 @@ import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
 import io.camunda.archunit.DoNotIncludeTestsOrTestJars;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriority;
+import io.camunda.webapps.schema.descriptors.template.PersistentWebSessionTemplate;
 
 /**
  * Enforces that every concrete ES/OS index descriptor in webapps-schema declares a backup priority
  * tier. Descriptors that do not implement {@link BackupPriority} are silently excluded from backup
  * and cause data loss on restore.
+ *
+ * <p>{@link PersistentWebSessionTemplate} is the one deliberate exception: it is excluded from
+ * backup on purpose, since a restore excludes it too and it is recreated on its first write.
  *
  * @see <a href="https://github.com/camunda/camunda/issues/55578">Issue #55578</a>
  */
@@ -43,11 +48,14 @@ public final class BackupPriorityDescriptorArchTest {
                           return !input.getModifiers().contains(JavaModifier.ABSTRACT)
                               && !input.isInterface();
                         }
-                      }))
+                      })
+                  .and(DescribedPredicate.not(equivalentTo(PersistentWebSessionTemplate.class))))
           .should()
           .implement(BackupPriority.class)
           .because(
               "every ES/OS index descriptor in webapps-schema must declare a backup priority"
                   + " tier (Prio1Backup-Prio4Backup); descriptors missing this contract are"
-                  + " silently excluded from backup and cause data loss on restore");
+                  + " silently excluded from backup and cause data loss on restore ("
+                  + PersistentWebSessionTemplate.class.getSimpleName()
+                  + " is the one deliberate, documented exception)");
 }

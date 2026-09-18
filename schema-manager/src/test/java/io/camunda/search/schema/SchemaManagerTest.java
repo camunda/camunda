@@ -225,8 +225,7 @@ class SchemaManagerTest {
         .forEach(
             indexDescriptor ->
                 verify(searchEngineClient)
-                    .putSettings(
-                        List.of(indexDescriptor), Map.of("index.number_of_replicas", "1")));
+                    .putSettings(indexDescriptor, Map.of("index.number_of_replicas", "1")));
     searchEngineClient.putIndexLifeCyclePolicy(
         config.retention().getPolicyName(), config.retention().getMinimumAge());
     searchEngineClient.putIndexLifeCyclePolicy(

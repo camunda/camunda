@@ -44,6 +44,10 @@ public interface IndexDescriptor {
     return OptionalInt.empty();
   }
 
+  default boolean allowMissing() {
+    return false;
+  }
+
   default Optional<String> getTenantIdField() {
     return Optional.empty();
   }

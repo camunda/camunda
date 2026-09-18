@@ -12,7 +12,6 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -48,7 +47,7 @@ public interface SearchEngineClient extends CloseableSilently {
   Map<String, Set<String>> getAliases(Collection<String> indexNames);
 
   void putSettings(
-      final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings);
+      final IndexDescriptor indexDescriptor, final Map<String, String> toAppendSettings);
 
   /**
    * Reads the primary shard count of already-created indices. Shards are immutable after creation,
