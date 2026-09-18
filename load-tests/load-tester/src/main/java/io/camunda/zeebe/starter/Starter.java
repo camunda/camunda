@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
+import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.ProcessInstance;
@@ -51,6 +52,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -74,6 +76,12 @@ public class Starter implements CommandLineRunner {
   private static final long NANOS_PER_SECOND = Duration.ofSeconds(1).toNanos();
   private static final TypeReference<HashMap<String, Object>> VARIABLES_TYPE_REF =
       new TypeReference<>() {};
+  private static final String PROCESS_ID_PLACEHOLDER = "__PROCESS_ID__";
+  private static final String SECRET_PLACEHOLDER = "__SECRET__";
+
+  /** Keeps one deployment well below the gateway's maximum message size. */
+  private static final int VARIANT_DEPLOY_BATCH_SIZE = 50;
+
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final CamundaClient client;
@@ -282,13 +290,14 @@ public class Starter implements CommandLineRunner {
             processInstancesStartedCounter.increment();
 
             final var startTime = System.nanoTime();
+            final var processId = nextProcessId();
             final CompletionStage<?> requestFuture;
             if (starterCfg.isStartViaMessage()) {
               requestFuture = startInstanceByMessagePublishing(vars);
             } else if (starterCfg.isWithResults()) {
-              requestFuture = startInstanceWithAwaitingResult(starterCfg.getProcessId(), vars);
+              requestFuture = startInstanceWithAwaitingResult(processId, vars);
             } else {
-              requestFuture = startInstance(startTime, starterCfg.getProcessId(), vars);
+              requestFuture = startInstance(startTime, processId, vars);
             }
             requestFuture.whenComplete(
                 (noop, error) -> {
@@ -377,21 +386,70 @@ public class Starter implements CommandLineRunner {
   }
 
   private void deployProcess() {
-    final var deployCmd = constructDeploymentCommand();
+    if (starterCfg.getSecretVariants() > 0) {
+      deployVariants();
+      return;
+    }
 
+    final var result = sendWithRetry(constructDeploymentCommand());
+    final var benchmarkProcessDefinitionKey =
+        result.getProcesses().stream()
+            .filter(p -> p.getBpmnProcessId().equals(starterCfg.getProcessId()))
+            .findFirst()
+            .map(Process::getProcessDefinitionKey)
+            .orElse(0L);
+    if (properties.isPerformReadBenchmarks()) {
+      dataReadMeter.setContextProcessDefinitionKey(benchmarkProcessDefinitionKey);
+    }
+  }
+
+  /**
+   * Deploys one variant of the configured model per secret, each with its own process id and its
+   * own secret name, so the variants together hold as many distinct static secret references as
+   * configured. No process definition key is handed to the read benchmarks here, and {@code
+   * extra-bpmn-models} are not deployed: neither has a meaning when no single definition represents
+   * the workload.
+   */
+  private void deployVariants() {
+    final int variants = starterCfg.getSecretVariants();
+    final String template = payloadReader.readPayload(starterCfg.getBpmnXmlPath());
+    if (!template.contains(PROCESS_ID_PLACEHOLDER)) {
+      // every variant would deploy under the same process id, which reads as a working run of a
+      // single definition rather than the configured number of them
+      throw new IllegalStateException(
+          "Model '%s' holds no %s placeholder, so it cannot be deployed as %d variants"
+              .formatted(starterCfg.getBpmnXmlPath(), PROCESS_ID_PLACEHOLDER, variants));
+    }
+    LOG.info(
+        "Deploying {} variants of template {} in batches of {}",
+        variants,
+        starterCfg.getBpmnXmlPath(),
+        VARIANT_DEPLOY_BATCH_SIZE);
+
+    for (int first = 0; first < variants; first += VARIANT_DEPLOY_BATCH_SIZE) {
+      final int last = Math.min(first + VARIANT_DEPLOY_BATCH_SIZE, variants);
+      DeployResourceCommandStep2 deployCmd = null;
+      for (int variant = first; variant < last; variant++) {
+        final String processId = variantProcessId(variant);
+        final String resource =
+            template
+                .replace(PROCESS_ID_PLACEHOLDER, processId)
+                .replace(SECRET_PLACEHOLDER, variantSecretName(variant));
+        final String resourceName = processId + ".bpmn";
+        deployCmd =
+            deployCmd == null
+                ? client.newDeployResourceCommand().addResourceStringUtf8(resource, resourceName)
+                : deployCmd.addResourceStringUtf8(resource, resourceName);
+      }
+      sendWithRetry(deployCmd);
+      LOG.info("Deployed variants {}..{} of {}", first, last - 1, variants);
+    }
+  }
+
+  private DeploymentEvent sendWithRetry(final DeployResourceCommandStep2 deployCmd) {
     while (true) {
       try {
-        final var result = deployCmd.send().join();
-        final var benchmarkProcessDefinitionKey =
-            result.getProcesses().stream()
-                .filter(p -> p.getBpmnProcessId().equals(starterCfg.getProcessId()))
-                .findFirst()
-                .map(Process::getProcessDefinitionKey)
-                .orElse(0L);
-        if (properties.isPerformReadBenchmarks()) {
-          dataReadMeter.setContextProcessDefinitionKey(benchmarkProcessDefinitionKey);
-        }
-        break;
+        return deployCmd.send().join();
       } catch (final Exception e) {
         THROTTLED_LOGGER.warn("Failed to deploy process, retrying", e);
         try {
@@ -401,6 +459,22 @@ public class Starter implements CommandLineRunner {
         }
       }
     }
+  }
+
+  /** The process the next instance is started on: a random variant, or the configured process. */
+  private String nextProcessId() {
+    final int variants = starterCfg.getSecretVariants();
+    return variants > 0
+        ? variantProcessId(ThreadLocalRandom.current().nextInt(variants))
+        : starterCfg.getProcessId();
+  }
+
+  private String variantProcessId(final int variant) {
+    return starterCfg.getProcessId() + "-" + variant;
+  }
+
+  private static String variantSecretName(final int variant) {
+    return "s" + variant;
   }
 
   private DeployResourceCommandStep2 constructDeploymentCommand() {
