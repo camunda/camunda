@@ -1,6 +1,6 @@
 {
 	"name": "@camunda/oc-saas-notifications",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"license": "LicenseRef-Camunda-1.0",
 	"description": "SaaS notifications for Camunda orchestration cluster webapps",
 	"homepage": "https://github.com/camunda/camunda#readme",
