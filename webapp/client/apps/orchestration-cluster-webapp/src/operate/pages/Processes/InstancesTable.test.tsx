@@ -433,7 +433,7 @@ describe('<InstancesTable />', () => {
 
 		const screen = await renderInstancesTable({...BASE_SEARCH, batchOperationKey: 'batch-op-1'});
 
-		await expect.element(screen.getByText('Couldn't fetch data')).toBeVisible();
+		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
 	});
 
 	it('should announce operation state loading once without assertive cell announcements', async ({worker}) => {

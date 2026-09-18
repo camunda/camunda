@@ -138,6 +138,6 @@ describe('<IncidentsByError />', () => {
 
 		const screen = await renderWithRouter(() => <IncidentsByError />, {path: '/operate'});
 
-		await expect.element(screen.getByText('Couldn't fetch data')).toBeVisible();
+		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
 	});
 });

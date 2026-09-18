@@ -104,13 +104,13 @@ describe('<DecisionOperations />', () => {
 		{
 			name: 'a server error',
 			response: new HttpResponse(null, {status: 500}),
-			title: 'Couldn't create operation',
+			title: "Couldn't create operation",
 			subtitle: undefined,
 		},
 		{
 			name: 'a network error',
 			response: HttpResponse.error(),
-			title: 'Couldn't create operation',
+			title: "Couldn't create operation",
 			subtitle: undefined,
 		},
 	])('should recover from $name without changing the selection', async ({response, title, subtitle}, {worker}) => {
