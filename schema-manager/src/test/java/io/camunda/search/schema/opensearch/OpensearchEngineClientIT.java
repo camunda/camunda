@@ -282,7 +282,7 @@ public class OpensearchEngineClientIT {
 
     // when
     final Map<String, String> newSettings = Map.of("index.refresh_interval", "5s");
-    opensearchEngineClient.putSettings(List.of(index), newSettings);
+    opensearchEngineClient.putSettings(index, newSettings);
 
     // then
     final var indices =

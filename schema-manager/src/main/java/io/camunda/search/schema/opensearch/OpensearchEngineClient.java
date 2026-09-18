@@ -231,24 +231,15 @@ public class OpensearchEngineClient implements SearchEngineClient {
 
   @Override
   public void putSettings(
-      final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {
-    putSettings(indexDescriptors, toAppendSettings, false);
-  }
-
-  @Override
-  public void putSettings(
-      final List<IndexDescriptor> indexDescriptors,
-      final Map<String, String> toAppendSettings,
-      final boolean allowNoIndices) {
-    final var request = putIndexSettingsRequest(indexDescriptors, toAppendSettings, allowNoIndices);
+      final IndexDescriptor indexDescriptor, final Map<String, String> toAppendSettings) {
+    final var request = putIndexSettingsRequest(indexDescriptor, toAppendSettings);
 
     try {
       client.indices().putSettings(request);
     } catch (final IOException | OpenSearchException e) {
       final var errMsg =
           String.format(
-              "settings PUT failed for the following indices [%s]",
-              utils.listIndicesByAlias(indexDescriptors));
+              "settings PUT failed for the following indices [%s]", indexDescriptor.getAlias());
       LOG.error(errMsg, e);
       throw new SearchEngineException(errMsg, e);
     }
@@ -575,9 +566,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
   }
 
   private PutIndicesSettingsRequest putIndexSettingsRequest(
-      final List<IndexDescriptor> indexDescriptors,
-      final Map<String, String> toAppendSettings,
-      final boolean allowMissing) {
+      final IndexDescriptor indexDescriptor, final Map<String, String> toAppendSettings) {
 
     final org.opensearch.client.opensearch.indices.IndexSettings settings =
         utils.mapToSettings(
@@ -587,9 +576,9 @@ public class OpensearchEngineClient implements SearchEngineClient {
                     org.opensearch.client.opensearch.indices.IndexSettings._DESERIALIZER, inp));
     final var builder =
         new PutIndicesSettingsRequest.Builder()
-            .index(utils.listIndicesByAlias(indexDescriptors))
-            .allowNoIndices(allowMissing)
-            .ignoreUnavailable(allowMissing)
+            .index(indexDescriptor.getAlias())
+            .allowNoIndices(indexDescriptor.allowMissing())
+            .ignoreUnavailable(indexDescriptor.allowMissing())
             .settings(settings);
     return builder.build();
   }
