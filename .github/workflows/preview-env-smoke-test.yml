@@ -654,6 +654,13 @@ jobs:
     if: ${{ always() && github.event_name == 'schedule' && needs.test.result == 'failure' }}
     needs:
     - test
+    # Mirrors alwaysgreen-triage.yml's own block: it reads this run's jobs and
+    # artifacts, and dispatches alwaysgreen-fix.yml (actions: write). Repeated here
+    # because this workflow sets permissions per job rather than at the top level.
+    permissions:
+      actions: write
+      contents: read
+      pull-requests: read
     uses: camunda/camunda/.github/workflows/alwaysgreen-triage.yml@main
     secrets: inherit
     with:
