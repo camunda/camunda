@@ -45,10 +45,9 @@ public class SearchEngineDatabaseConfiguration {
    * defaulting it to "nothing is recovering" would answer that defect by recreating the indices of
    * a tenant mid-restore.
    *
-   * <p>The check itself is {@link SchemaInitializationRecoveryCheck}, which asks whether a tenant
-   * is recovering or its mode is pending, rather than whether it is recovering only: schema
-   * initialization runs once before the node can serve, so a tenant whose mode may never be known
-   * has to be initialized rather than waited on forever.
+   * <p>The check itself is {@link SchemaInitializationRecoveryCheck}, which distinguishes genuine
+   * recovery from pending discovery. Genuine recovery is deferred without holding the gate, while
+   * pending discovery keeps the tenant unsettled until the bounded grace period expires.
    */
   @Bean
   public SearchEngineSchemaInitializer searchEngineSchemaInitializer(

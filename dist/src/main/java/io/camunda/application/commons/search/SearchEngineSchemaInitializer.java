@@ -8,6 +8,7 @@
 package io.camunda.application.commons.search;
 
 import io.camunda.application.commons.pt.PerTenantSchemaInitialization;
+import io.camunda.application.commons.pt.PerTenantSchemaInitialization.DeferralCheck;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.SchemaManagerContainer;
@@ -67,6 +68,38 @@ public class SearchEngineSchemaInitializer
       final MeterRegistry meterRegistry,
       final boolean holdsStartup,
       final Predicate<String> recovering) {
+    this(
+        configsByTenant,
+        descriptorsByTenant,
+        meterRegistry,
+        holdsStartup,
+        DeferralCheck.of(
+            tenantId ->
+                recovering.test(tenantId)
+                    ? PerTenantSchemaInitialization.Deferral.DEFERRED
+                    : PerTenantSchemaInitialization.Deferral.NONE));
+  }
+
+  public SearchEngineSchemaInitializer(
+      final Map<String, SearchEngineConfiguration> configsByTenant,
+      final Map<String, IndexDescriptors> descriptorsByTenant,
+      final MeterRegistry meterRegistry,
+      final boolean holdsStartup,
+      final SchemaInitializationRecoveryCheck recoveryCheck) {
+    this(
+        configsByTenant,
+        descriptorsByTenant,
+        meterRegistry,
+        holdsStartup,
+        DeferralCheck.of(recoveryCheck::shouldDefer));
+  }
+
+  private SearchEngineSchemaInitializer(
+      final Map<String, SearchEngineConfiguration> configsByTenant,
+      final Map<String, IndexDescriptors> descriptorsByTenant,
+      final MeterRegistry meterRegistry,
+      final boolean holdsStartup,
+      final DeferralCheck deferral) {
     configs = configsByTenant;
     descriptors = descriptorsByTenant;
     this.meterRegistry = meterRegistry;
@@ -77,7 +110,7 @@ public class SearchEngineSchemaInitializer
             this::initializeTenant,
             SearchEngineSchemaInitializer::isTerminal,
             tenantId -> configs.get(tenantId).schemaManager().getRetry(),
-            recovering);
+            deferral);
   }
 
   @Override
