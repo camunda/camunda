@@ -141,7 +141,7 @@ const taskAssignmentMachine = setup({
 		isInitiallyUnassigning: ({context}) => context.initialTaskState === 'ASSIGNING' && context.initialAssignee !== null,
 		isTaskAssigned: (_, params: {taskState: UserTask['state']; assignee: string | null}) =>
 			typeof params.assignee === 'string' && params.taskState !== 'ASSIGNING',
-		hasCurrentUser: ({context}) => context.currentUser.length > 0,
+hasCurrentUser: ({context}) => Boolean(context.currentUser?.trim()),
 	},
 	actions: {
 		setOptimisticAssigning: ({context}) => {
