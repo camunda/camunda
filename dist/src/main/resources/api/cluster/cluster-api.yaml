@@ -359,8 +359,8 @@ paths:
       description: >
         Removes the given zone's brokers from the cluster and drops the zone from the
         persisted partition distribution configuration, in one atomic change.
-        The `force` flag needs to be set when the region to be removed contains the coordinator
-        or it's not currently reachable from the surviving regions.
+        The `force` flag needs to be set when the brokers in the region to be removed are not
+        currently reachable from the surviving regions.
 
       parameters:
         - $ref: '#/components/parameters/ZoneId'
