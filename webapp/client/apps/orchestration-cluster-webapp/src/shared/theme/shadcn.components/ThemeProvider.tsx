@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {C4Provider, Toaster, useTheme} from '@camunda/design-system';
+import {C4Provider, Toaster, TooltipProvider, useTheme} from '@camunda/design-system';
 import '@camunda/design-system/styles.css';
 import {observer} from 'mobx-react-lite';
 import {useTranslation} from 'react-i18next';
@@ -24,8 +24,10 @@ const ThemeProvider: React.FC<Props> = observer(({children}) => {
 
 	return (
 		<C4Provider theme={resolvedTheme} dictionary={getC4Dictionary(locale)} locale={locale}>
-			<Toaster position="top-right" />
-			{children}
+			<TooltipProvider>
+				<Toaster position="top-right" />
+				{children}
+			</TooltipProvider>
 		</C4Provider>
 	);
 });

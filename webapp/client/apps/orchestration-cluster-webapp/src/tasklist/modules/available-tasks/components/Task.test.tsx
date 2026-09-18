@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {TooltipProvider} from '@camunda/design-system';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {describe, expect} from 'vitest';
@@ -31,11 +30,7 @@ const baseProps: TaskProps = {
 	currentUser,
 };
 
-const TestTask: React.FC<Partial<TaskProps>> = (props) => (
-	<TooltipProvider>
-		<Task {...baseProps} {...props} />
-	</TooltipProvider>
-);
+const TestTask: React.FC<Partial<TaskProps>> = (props) => <Task {...baseProps} {...props} />;
 
 describe('<Task />', () => {
 	it('should render the task display name and process name', async () => {

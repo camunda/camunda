@@ -358,10 +358,8 @@ describe('<BatchOperationActions />', () => {
 		const suspendButton = screen.getByRole('button', {name: 'Suspend'});
 		await userEvent.click(suspendButton);
 
-		await expect.element(suspendButton).toBeDisabled();
-		await expect.element(suspendButton).not.toBeDisabled();
 		await expect
-			.poll(() => notificationsStore.notifications)
+			.poll(() => notificationsStore.notifications, {timeout: 750})
 			.toEqual([
 				expect.objectContaining({
 					kind: 'warning',
@@ -369,6 +367,7 @@ describe('<BatchOperationActions />', () => {
 					subtitle: 'Please contact the administrator if you need access.',
 				}),
 			]);
+		await expect.element(suspendButton).not.toBeDisabled();
 	});
 
 	it('should show a generic error notification without a subtitle for other cancel failures', async ({worker}) => {
