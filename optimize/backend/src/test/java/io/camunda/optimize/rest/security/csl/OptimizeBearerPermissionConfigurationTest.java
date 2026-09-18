@@ -14,17 +14,18 @@ import io.camunda.optimize.service.security.CCSMTokenService;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.security.SecurityHeadersCustomizer;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class OptimizeBearerPermissionConfigurationTest {
 
   @Test
-  void shouldBuildAClassifierFromTheCslPropertiesBean() {
-    // given
+  void shouldBuildAClassifierThatActuallyUsesTheConfiguredClientIdClaim() {
+    // given: a non-default claim name, so a stub that just built its own OidcConfiguration
+    // instead of threading the injected properties through would fail this assertion
     final var cslProperties = new CamundaSecurityLibraryProperties();
     final OidcConfiguration oidc = cslProperties.getAuthentication().getOidc();
-    oidc.setUsernameClaim("preferred_username");
-    oidc.setClientIdClaim("client_id");
+    oidc.setClientIdClaim("custom_client_id_claim");
     final var configuration = new OptimizeBearerPermissionConfiguration();
 
     // when
@@ -32,21 +33,23 @@ class OptimizeBearerPermissionConfigurationTest {
         configuration.oidcBearerPrincipalClassifier(cslProperties);
 
     // then
-    assertThat(classifier).isNotNull();
+    assertThat(
+            classifier.requiresOptimizePermissionCheck(
+                Map.of("custom_client_id_claim", "some-client")))
+        .as("a client_id-shaped claim under the CONFIGURED claim name must classify as a client")
+        .isFalse();
   }
 
   @Test
   void shouldExposeANonNullSecurityHeadersCustomizer() {
     // given
     final var configuration = new OptimizeBearerPermissionConfiguration();
-    final var classifier =
-        configuration.oidcBearerPrincipalClassifier(new CamundaSecurityLibraryProperties());
-    final var filter =
-        configuration.optimizeBearerPermissionFilter(classifier, mock(CCSMTokenService.class));
 
     // when
     final SecurityHeadersCustomizer customizer =
-        configuration.bearerPermissionFilterCustomizer(filter);
+        configuration.bearerPermissionFilterCustomizer(
+            configuration.oidcBearerPrincipalClassifier(new CamundaSecurityLibraryProperties()),
+            mock(CCSMTokenService.class));
 
     // then
     assertThat(customizer).isNotNull();
