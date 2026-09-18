@@ -213,7 +213,7 @@ describe('DiagramPanel', () => {
 
     expect(await screen.findByText('Big variable process')).toBeInTheDocument();
     expect(
-      await screen.findByText('Couldn't fetch data'),
+      await screen.findByText('Data could not be fetched'),
     ).toBeInTheDocument();
     expect(
       screen.queryByText(/There is no Process selected/),

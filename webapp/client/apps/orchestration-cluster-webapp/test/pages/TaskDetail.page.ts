@@ -261,7 +261,7 @@ class TaskDetailPage extends BasePage {
 	}
 
 	get processLoadError() {
-		return this.processTabContent.getByText('Process could not be loaded');
+		return this.processTabContent.getByText("Couldn't load the process");
 	}
 
 	get processRetryButton() {

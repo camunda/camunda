@@ -100,7 +100,7 @@ describe('<Drd />', () => {
     );
 
     expect(
-      await screen.findByText('Couldn't fetch data'),
+      await screen.findByText('Data could not be fetched'),
     ).toBeInTheDocument();
   });
 
@@ -120,7 +120,7 @@ describe('<Drd />', () => {
     );
 
     expect(
-      await screen.findByText('Couldn't fetch data'),
+      await screen.findByText('Data could not be fetched'),
     ).toBeInTheDocument();
   });
 });

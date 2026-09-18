@@ -340,7 +340,7 @@ describe('Footer', () => {
 
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'error',
-      title: 'Couldn't create operation',
+      title: "Couldn't create operation",
       subtitle: undefined,
       isDismissable: true,
     });

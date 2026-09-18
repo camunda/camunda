@@ -161,7 +161,7 @@ test.describe('Task completion', () => {
 
 		await expect(taskDetailPage.completionFailed).toBeVisible();
 		await expect(
-			taskDetailPage.header.notifications.getByNotificationTitle('Task could not be completed'),
+			taskDetailPage.header.notifications.getByNotificationTitle("Couldn't complete the task"),
 		).toBeVisible();
 		await expect(taskDetailPage.completeTaskButton).toBeVisible();
 		await expect(page).toHaveURL(/\/tasklist\/2251799813685281$/);

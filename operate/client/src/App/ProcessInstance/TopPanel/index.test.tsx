@@ -265,7 +265,7 @@ describe('TopPanel', () => {
     });
 
     expect(
-      await screen.findByText('Couldn't fetch data'),
+      await screen.findByText('Data could not be fetched'),
     ).toBeInTheDocument();
   });
 
@@ -281,7 +281,7 @@ describe('TopPanel', () => {
     });
 
     expect(
-      await screen.findByText('Couldn't fetch data'),
+      await screen.findByText('Data could not be fetched'),
     ).toBeInTheDocument();
 
     consoleErrorMock.mockRestore();
