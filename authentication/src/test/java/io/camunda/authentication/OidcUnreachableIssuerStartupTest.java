@@ -64,18 +64,18 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 @ActiveProfiles("consolidated-auth")
 public class OidcUnreachableIssuerStartupTest {
 
-  private static final String REALM = "camunda-test";
-  private static final String DISCOVERY_ENDPOINT =
-      "/realms/" + REALM + "/.well-known/openid-configuration";
-  private static final String PROTECTED_RESOURCE_METADATA_ENDPOINT =
-      "/.well-known/oauth-protected-resource";
-
   @RegisterExtension
   static WireMockExtension wireMock =
       WireMockExtension.newInstance()
           .configureStaticDsl(true)
           .options(wireMockConfig().notifier(new Slf4jNotifier(false)).dynamicPort())
           .build();
+
+  private static final String REALM = "camunda-test";
+  private static final String DISCOVERY_ENDPOINT =
+      "/realms/" + REALM + "/.well-known/openid-configuration";
+  private static final String PROTECTED_RESOURCE_METADATA_ENDPOINT =
+      "/.well-known/oauth-protected-resource";
 
   @Autowired MockMvcTester mockMvcTester;
 
