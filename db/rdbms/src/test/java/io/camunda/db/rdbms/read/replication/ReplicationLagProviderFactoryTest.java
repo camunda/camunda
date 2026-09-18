@@ -19,11 +19,12 @@ import org.junit.jupiter.api.Test;
 class ReplicationLagProviderFactoryTest {
 
   @Test
-  void shouldDeriveLagProviderFromLsnProviderForMssql() {
+  void shouldDeriveLagProviderFromLsnProviderForMssqlWhenNotAzureSqlDatabase() {
     // given
     final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
     when(vendorDatabaseProperties.databaseId()).thenReturn("mssql");
     final var mapper = mock(ReplicationStatusMapper.class);
+    when(mapper.isAzureSqlDatabase()).thenReturn(false);
     when(mapper.hasRequiredPrivileges()).thenReturn(true);
     final var factory = new ReplicationLagProviderFactory(vendorDatabaseProperties, mapper);
 
@@ -32,6 +33,22 @@ class ReplicationLagProviderFactoryTest {
 
     // then
     assertThat(provider).isInstanceOf(LsnBackedReplicationLagProvider.class);
+  }
+
+  @Test
+  void shouldCreateAzureGeoReplicationLagProviderWhenAzureSqlDetected() {
+    // given
+    final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
+    when(vendorDatabaseProperties.databaseId()).thenReturn("mssql");
+    final var mapper = mock(ReplicationStatusMapper.class);
+    when(mapper.isAzureSqlDatabase()).thenReturn(true);
+    final var factory = new ReplicationLagProviderFactory(vendorDatabaseProperties, mapper);
+
+    // when
+    final var provider = factory.create();
+
+    // then
+    assertThat(provider).isInstanceOf(AzureGeoReplicationLagProvider.class);
   }
 
   @Test
