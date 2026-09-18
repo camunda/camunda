@@ -251,6 +251,9 @@ jobs:
 
           # Project names contain the target branch, setting the target reference is not yet supported
           # for containers. So projects are named using this pattern: `zeebe(BRANCH):path/to/buildFile`
+          #
+          # The snyk CLI wrapper on the runner `eval`s its arguments, so the `()` in the project name
+          # breaks it unless `--project-name` is wrapped in literal single quotes. Keep them - see 8.8.39.
           for project in "${JAVA_PROJECTS[@]}"; do
             PROJECT_NAME="zeebe(${TARGET}):${project}/pom.xml"
             ensureExists "${project}/pom.xml"
@@ -259,7 +262,7 @@ jobs:
               SARIF_ARGS=("--sarif-file-output=sarif-results/${project/\//-}.sarif")
             fi
             # shellcheck disable=SC2153
-            runSnykWithRetry "${SNYK_COMMAND}" --file="${project}/pom.xml" "--project-name=${PROJECT_NAME}" "${SNYK_ARGS[@]}" "${SARIF_ARGS[@]}" || updateMaxExitCode "$?"
+            runSnykWithRetry "${SNYK_COMMAND}" --file="${project}/pom.xml" "'--project-name=${PROJECT_NAME}'" "${SNYK_ARGS[@]}" "${SARIF_ARGS[@]}" || updateMaxExitCode "$?"
           done
 
           # The `container` command does not yet support setting a target reference, as this is a beta
@@ -270,7 +273,7 @@ jobs:
           if [ "${SARIF}" == 'true' ]; then
             SARIF_ARGS=("--sarif-file-output=sarif-results/docker.sarif")
           fi
-          runSnykWithRetry container "${SNYK_COMMAND}" "${DOCKER_IMAGE}" --file=Dockerfile "--project-name=${PROJECT_NAME}" "${SNYK_ARGS[@]}" "${SARIF_ARGS[@]}" || updateMaxExitCode "$?"
+          runSnykWithRetry container "${SNYK_COMMAND}" "${DOCKER_IMAGE}" --file=Dockerfile "'--project-name=${PROJECT_NAME}'" "${SNYK_ARGS[@]}" "${SARIF_ARGS[@]}" || updateMaxExitCode "$?"
 
           # Fail only on operational errors (>1); findings-only scans (1) still report success.
           if [[ $exitCode -gt 1 ]]; then
