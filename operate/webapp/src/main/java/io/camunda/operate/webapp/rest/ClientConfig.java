@@ -53,12 +53,10 @@ public class ClientConfig {
 
   @PostConstruct
   public void logNavV2Resolution() {
-    final boolean isSaas = isSaas();
     LOGGER.debug(
-        "Operate nav v2 resolved to {} (explicit override={}, isSaas={})",
-        operateProperties.resolveNavV2Enabled(isSaas),
-        operateProperties.getNavV2Enabled(),
-        isSaas);
+        "Operate nav v2 resolved to {} (explicit override={})",
+        operateProperties.resolveNavV2Enabled(),
+        operateProperties.getNavV2Enabled());
   }
 
   public String asJson() {
@@ -76,16 +74,12 @@ public class ClientConfig {
     multiTenancyEnabled = cslProperties.getMultiTenancy().isChecksEnabled();
     databaseType = environmentService.getDatabaseType();
     waitStatesEnabled = waitStatesEnabledProperty;
-    isNavV2Enabled = operateProperties.resolveNavV2Enabled(isSaas());
+    isNavV2Enabled = operateProperties.resolveNavV2Enabled();
     try {
       return String.format(
           "window.clientConfig = %s;", new ObjectMapper().writeValueAsString(this));
     } catch (final JsonProcessingException e) {
       return "window.clientConfig = {};";
     }
-  }
-
-  private boolean isSaas() {
-    return cslProperties.getSaas() != null && cslProperties.getSaas().getClusterId() != null;
   }
 }
