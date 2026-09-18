@@ -409,6 +409,21 @@ public final class MessageStateTest {
   }
 
   @Test
+  void shouldRemoveMessageCorrelationOwnerOnMessageRemoval() {
+    // given
+    final long messageKey = 7L;
+    final var message = createMessage("name", "correlationKey", "{}", "id1", 1234);
+    messageState.put(messageKey, message);
+    messageState.putMessageCorrelation(messageKey, wrapString("a"), 99L);
+
+    // when
+    messageState.remove(messageKey);
+
+    // then
+    assertThat(messageState.correlationOwner(messageKey, wrapString("a"))).isEqualTo(-1L);
+  }
+
+  @Test
   void shouldRemoveMessageWithoutId() {
     // given
     final var message = createMessage("name", "correlationKey");
