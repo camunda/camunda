@@ -7,7 +7,7 @@
  */
 
 import {useTranslation} from 'react-i18next';
-import {Card, CardContent, CardHeader, CardTitle} from '@camunda/design-system';
+import {Card, CardContent, DataTable} from '@camunda/design-system';
 import {cn} from '#/shared/cn';
 import {useRunningInstancesCount} from '../useRunningInstancesCount';
 
@@ -15,7 +15,10 @@ import {useRunningInstancesCount} from '../useRunningInstancesCount';
 // PRs land (MetricPanel, InstancesByProcess, IncidentsByError, the empty states). Mirrors
 // the Carbon Dashboard's grid: the metric panel spans the full width on top, the two lists
 // sit side by side below it (or the single list fills the width when there are no
-// instances). See docs/migration/operate-dashboard-tiering.md for the component mapping.
+// instances). The two lists use DS DataTable directly (its own `title` prop replaces the
+// Card/CardHeader wrapper) rather than a Card, since both will end up rendering columns
+// and rows against it once InstancesByProcess/IncidentsByError land — see
+// docs/migration/operate-dashboard-tiering.md for the component mapping.
 const Dashboard: React.FC = () => {
 	const {t} = useTranslation();
 	const {data: count} = useRunningInstancesCount();
@@ -28,21 +31,23 @@ const Dashboard: React.FC = () => {
 				<CardContent>{/* MetricPanel — wired in a later PR */}</CardContent>
 			</Card>
 			<div className={cn('grid flex-1 gap-4 overflow-hidden', !hasNoInstances && 'grid-cols-2')}>
-				<Card className="flex flex-col overflow-hidden">
-					<CardHeader>
-						<CardTitle>{t('operate.dashboard.processesByNameTitle')}</CardTitle>
-					</CardHeader>
-					<CardContent className="flex-1 overflow-auto">
-						{/* NoInstancesEmptyState or InstancesByProcess — wired in a later PR */}
-					</CardContent>
-				</Card>
+				{/* NoInstancesEmptyState or the real columns/data for InstancesByProcess — wired in a later PR */}
+				<DataTable
+					title={t('operate.dashboard.processesByNameTitle')}
+					columns={[]}
+					data={[]}
+					loading
+					className="flex flex-col overflow-hidden"
+				/>
 				{!hasNoInstances && (
-					<Card className="flex flex-col overflow-hidden">
-						<CardHeader>
-							<CardTitle>{t('operate.dashboard.incidentsByErrorTitle')}</CardTitle>
-						</CardHeader>
-						<CardContent className="flex-1 overflow-auto">{/* IncidentsByError — wired in a later PR */}</CardContent>
-					</Card>
+					// Real columns/data for IncidentsByError — wired in a later PR
+					<DataTable
+						title={t('operate.dashboard.incidentsByErrorTitle')}
+						columns={[]}
+						data={[]}
+						loading
+						className="flex flex-col overflow-hidden"
+					/>
 				)}
 			</div>
 		</div>
