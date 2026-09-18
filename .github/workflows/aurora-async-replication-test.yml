@@ -318,12 +318,10 @@ jobs:
           fi
 
           TUNNEL_PID="$(cat /tmp/ssm-tunnel.pid)"
-          if kill -0 "${TUNNEL_PID}" 2>/dev/null; then
-            kill -- "-${TUNNEL_PID}" 2>/dev/null || kill "${TUNNEL_PID}" 2>/dev/null || true
-          fi
+          kill -- "-${TUNNEL_PID}" 2>/dev/null || true
 
           for _ in $(seq 1 10); do
-            if ! kill -0 "${TUNNEL_PID}" 2>/dev/null; then
+            if ! kill -0 -- "-${TUNNEL_PID}" 2>/dev/null; then
               echo "SSM tunnel stopped"
               exit 0
             fi
@@ -331,7 +329,7 @@ jobs:
           done
 
           echo "::warning::SSM tunnel did not stop gracefully"
-          kill -KILL -- "-${TUNNEL_PID}" 2>/dev/null || kill -KILL "${TUNNEL_PID}" 2>/dev/null || true
+          kill -KILL -- "-${TUNNEL_PID}" 2>/dev/null || true
 
       - name: Warn about kept infrastructure
         if: always() && inputs.skip_destroy == true
@@ -407,20 +405,36 @@ jobs:
             echo "STATE_KEY=${STATE_KEY}"
           } >> "$GITHUB_ENV"
 
-          if ! aws s3api head-bucket \
-              --bucket "${TF_STATE_BUCKET}" \
-              --region "${TF_STATE_BUCKET_REGION}" 2>/dev/null; then
-            echo "No Terraform state bucket found; there is nothing to destroy"
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-            exit 0
+          set +e
+          HEAD_BUCKET_ERROR="$(aws s3api head-bucket \
+            --bucket "${TF_STATE_BUCKET}" \
+            --region "${TF_STATE_BUCKET_REGION}" 2>&1 >/dev/null)"
+          HEAD_BUCKET_STATUS=$?
+          set -e
+          if [[ "${HEAD_BUCKET_STATUS}" -ne 0 ]]; then
+            if [[ "${HEAD_BUCKET_ERROR}" =~ (^|[^0-9])404([^0-9]|$) ]]; then
+              echo "No Terraform state bucket found; there is nothing to destroy"
+              echo "exists=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            printf '%s\n' "${HEAD_BUCKET_ERROR}" >&2
+            exit "${HEAD_BUCKET_STATUS}"
           fi
 
-          if ! aws s3api head-object \
-              --bucket "${TF_STATE_BUCKET}" \
-              --key "${STATE_KEY}" >/dev/null 2>&1; then
-            echo "No Terraform state found for ${NAME_PREFIX}; there is nothing to destroy"
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-            exit 0
+          set +e
+          HEAD_OBJECT_ERROR="$(aws s3api head-object \
+            --bucket "${TF_STATE_BUCKET}" \
+            --key "${STATE_KEY}" 2>&1 >/dev/null)"
+          HEAD_OBJECT_STATUS=$?
+          set -e
+          if [[ "${HEAD_OBJECT_STATUS}" -ne 0 ]]; then
+            if [[ "${HEAD_OBJECT_ERROR}" =~ (^|[^0-9])404([^0-9]|$) ]]; then
+              echo "No Terraform state found for ${NAME_PREFIX}; there is nothing to destroy"
+              echo "exists=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            printf '%s\n' "${HEAD_OBJECT_ERROR}" >&2
+            exit "${HEAD_OBJECT_STATUS}"
           fi
 
           echo "Terraform state found for ${NAME_PREFIX}"
@@ -472,7 +486,7 @@ jobs:
           RAW=$(aws s3api list-object-versions \
             --bucket "${TF_STATE_BUCKET}" \
             --prefix "${STATE_KEY}" \
-            --output json 2>/dev/null || echo '{}')
+            --output json)
           OBJECTS=$(echo "${RAW}" | jq '{Objects: ((.Versions // []) + (.DeleteMarkers // [])) | map({Key: .Key, VersionId: .VersionId})}')
           COUNT=$(echo "${OBJECTS}" | jq '.Objects | length')
           if [ "${COUNT}" -gt 0 ]; then
