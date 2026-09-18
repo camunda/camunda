@@ -419,7 +419,7 @@ describe('<BatchOperationActions />', () => {
 			.toEqual([
 				expect.objectContaining({
 					kind: 'warning',
-					title: 'Couldn't confirm batch operation status',
+					title: "Couldn't confirm batch operation status",
 					subtitle: 'The action was sent. Refresh the page to see its current state.',
 				}),
 			]);
@@ -448,7 +448,7 @@ describe('<BatchOperationActions />', () => {
 			.toEqual([
 				expect.objectContaining({
 					kind: 'warning',
-					title: 'Couldn't confirm batch operation status',
+					title: "Couldn't confirm batch operation status",
 					subtitle: 'The action was sent. Refresh the page to see its current state.',
 				}),
 			]);
