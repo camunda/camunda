@@ -41,7 +41,7 @@
     "react-dom": "19.3.0",
     "react-hook-form": "7.88.0",
     "react-i18next": "17.0.14",
-    "react-router-dom": "7.18.3",
+    "react-router-dom": "7.18.4",
     "react-transition-group": "4.4.5",
     "styled-components": "6.5.3",
     "zod": "4.6.5"
