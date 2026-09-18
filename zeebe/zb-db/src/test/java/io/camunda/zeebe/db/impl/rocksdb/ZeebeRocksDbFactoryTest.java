@@ -192,21 +192,7 @@ final class ZeebeRocksDbFactoryTest {
       db.exportMetrics();
 
       // then
-      assertThat(RocksDbTickerMetricsDoc.values())
-          .allSatisfy(
-              doc ->
-                  assertThat(registry.find(doc.getName()).gauge())
-                      .as("gauge '%s' is not registered", doc.getName())
-                      .isNull());
-      assertThat(RocksDbHistogramMetricsDoc.values())
-          .allSatisfy(
-              doc -> {
-                for (final var statistic : Statistic.values()) {
-                  assertThat(registry.find(doc.nameFor(statistic)).gauge())
-                      .as("gauge '%s' is not registered", doc.nameFor(statistic))
-                      .isNull();
-                }
-              });
+      assertStatisticsMetricsRegistered(registry, false);
       assertThat(RocksDbMetricsDoc.values())
           .allSatisfy(
               doc ->
@@ -220,6 +206,45 @@ final class ZeebeRocksDbFactoryTest {
                       .as("gauge '%s' is registered", doc.getName())
                       .isNotNull());
     }
+  }
+
+  @Test
+  void shouldRegisterStatisticsMetricsWhenEnabled(final @TempDir File pathName) {
+    // given
+    final var registry = new SimpleMeterRegistry();
+    final var factory =
+        new ZeebeRocksDbFactory<DefaultColumnFamily>(
+            new RocksDbConfiguration().setStatisticsEnabled(true),
+            new ConsistencyChecksSettings(),
+            new AccessMetricsConfiguration(Kind.NONE),
+            () -> registry);
+
+    // when
+    try (final var db = factory.createDb(pathName)) {
+      db.exportMetrics();
+
+      // then
+      assertStatisticsMetricsRegistered(registry, true);
+    }
+  }
+
+  private static void assertStatisticsMetricsRegistered(
+      final SimpleMeterRegistry registry, final boolean expected) {
+    assertThat(RocksDbTickerMetricsDoc.values())
+        .allSatisfy(
+            doc ->
+                assertThat(registry.find(doc.getName()).gauge() != null)
+                    .as("gauge '%s' registration state", doc.getName())
+                    .isEqualTo(expected));
+    assertThat(RocksDbHistogramMetricsDoc.values())
+        .allSatisfy(
+            doc -> {
+              for (final var statistic : Statistic.values()) {
+                assertThat(registry.find(doc.nameFor(statistic)).gauge() != null)
+                    .as("gauge '%s' registration state", doc.nameFor(statistic))
+                    .isEqualTo(expected);
+              }
+            });
   }
 
   @Test

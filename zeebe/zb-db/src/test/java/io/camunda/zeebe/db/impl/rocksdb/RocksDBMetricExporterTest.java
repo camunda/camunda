@@ -163,6 +163,15 @@ final class RocksDBMetricExporterTest {
           registry.find(RocksDbTickerMetricsDoc.NUMBER_KEYS_READ.getName()).gauge();
       assertThat(keysRead).isNotNull();
       assertThat(keysRead.value()).isPositive();
+
+      final var dbGetCount =
+          registry.find(RocksDbHistogramMetricsDoc.DB_GET.nameFor(Statistic.COUNT)).gauge();
+      final var dbGetSum =
+          registry.find(RocksDbHistogramMetricsDoc.DB_GET.nameFor(Statistic.SUM)).gauge();
+      assertThat(dbGetCount).isNotNull();
+      assertThat(dbGetCount.value()).isPositive();
+      assertThat(dbGetSum).isNotNull();
+      assertThat(dbGetSum.value()).isPositive();
     }
   }
 }
