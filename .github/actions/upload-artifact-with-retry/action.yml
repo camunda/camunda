@@ -42,7 +42,8 @@ outputs:
   attempts:
     description: >
       Number of upload attempts made. More than 1 means a transient failure was
-      absorbed and left the job green.
+      absorbed and left the job green; `0` means invalid backoff inputs stopped
+      the action before it tried.
     value: ${{ steps.attempts.outputs.count }}
 
 runs:
@@ -134,18 +135,22 @@ runs:
       shell: bash
       env:
         ARTIFACT_NAME: ${{ inputs.name }}
+        ATTEMPT_1_OUTCOME: ${{ steps.attempt-1.outcome }}
         ATTEMPT_2_OUTCOME: ${{ steps.attempt-2.outcome }}
         ATTEMPT_3_OUTCOME: ${{ steps.attempt-3.outcome }}
       run: |
         set -euo pipefail
 
-        # Any outcome other than `skipped` means the attempt ran.
-        count=1
+        # Any outcome other than `skipped` means the attempt ran. Counting from
+        # attempt 1 rather than assuming it: the validation step above can fail
+        # and skip every upload, and `attempts` must not claim one happened.
+        count=0
+        if [ "$ATTEMPT_1_OUTCOME" != "skipped" ]; then count=1; fi
         if [ "$ATTEMPT_2_OUTCOME" != "skipped" ]; then count=2; fi
         if [ "$ATTEMPT_3_OUTCOME" != "skipped" ]; then count=3; fi
         echo "count=${count}" >> "$GITHUB_OUTPUT"
 
-        if [ "$count" -eq 1 ]; then
+        if [ "$count" -le 1 ]; then
           exit 0
         fi
 
