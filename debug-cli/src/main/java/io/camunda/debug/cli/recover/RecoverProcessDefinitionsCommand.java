@@ -7,10 +7,8 @@
  */
 package io.camunda.debug.cli.recover;
 
-import static io.camunda.debug.cli.util.ErrorMessageUtil.rootMessage;
-
 import io.camunda.debug.cli.recover.ProcessDefinitionRecovery.Summary;
-import io.camunda.debug.cli.state.SnapshotUtil;
+import io.camunda.debug.cli.state.SnapshotReader;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.handlers.EmbeddedFormHandler;
 import io.camunda.exporter.handlers.ProcessCreatedHandler;
@@ -27,7 +25,6 @@ import io.camunda.zeebe.engine.state.deployment.DbProcessState;
 import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
-import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
@@ -192,26 +189,6 @@ public class RecoverProcessDefinitionsCommand implements Callable<Integer> {
       return 1;
     }
 
-    final Path runtime;
-    final Path ephemeralParent;
-    if (runtimePath == null) {
-      try {
-        ephemeralParent = Files.createTempDirectory("cdbg-recover-");
-      } catch (final IOException e) {
-        err.println(
-            "Failed to create a temporary runtime directory under "
-                + System.getProperty("java.io.tmpdir")
-                + ": "
-                + rootMessage(e)
-                + ". Retry with --runtime pointing at a directory the current user can write to.");
-        return 1;
-      }
-      runtime = ephemeralParent.resolve("runtime");
-    } else {
-      ephemeralParent = null;
-      runtime = runtimePath;
-    }
-
     err.println("=== Recovering process definitions ===");
     err.println("Reading snapshot: " + snapshotPath);
     err.println(
@@ -266,24 +243,28 @@ public class RecoverProcessDefinitionsCommand implements Callable<Integer> {
               batchSize,
               err);
 
-      try (final ZeebeDb<ZbColumnFamilies> db = openReadOnly(snapshotPath, runtime)) {
-        final var processState = openProcessState(db);
+      try {
         final Summary summary =
-            recovery.run(
-                consumer ->
-                    processState.forEachProcess(
-                        null,
-                        process -> {
-                          consumer.accept(process);
-                          return true;
-                        }));
-
+            SnapshotReader.read(
+                root,
+                snapshotId,
+                runtimePath,
+                db -> {
+                  final var processState = openProcessState(db);
+                  return recovery.run(
+                      consumer ->
+                          processState.forEachProcess(
+                              null,
+                              process -> {
+                                consumer.accept(process);
+                                return true;
+                              }));
+                });
         printSummary(err, out, summary);
         return summary.hasFailures() ? 2 : 0;
-      }
-    } finally {
-      if (ephemeralParent != null) {
-        FileUtil.deleteFolderIfExists(ephemeralParent);
+      } catch (final IOException e) {
+        err.println(e.getMessage());
+        return 1;
       }
     }
   }
@@ -328,12 +309,6 @@ public class RecoverProcessDefinitionsCommand implements Callable<Integer> {
       case "opensearch" -> DatabaseType.OPENSEARCH.toString();
       default -> null;
     };
-  }
-
-  @SuppressWarnings("unchecked")
-  private static ZeebeDb<ZbColumnFamilies> openReadOnly(
-      final Path snapshotPath, final Path runtime) {
-    return (ZeebeDb<ZbColumnFamilies>) new SnapshotUtil().openSnapshot(snapshotPath, runtime);
   }
 
   private static DbProcessState openProcessState(final ZeebeDb<ZbColumnFamilies> db) {

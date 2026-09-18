@@ -67,14 +67,44 @@ alias debug-cli="java -jar target/cdbg-${version}.jar"
 #### `state`
 
 - **Description:**
-  Offline manipulation of a stopped broker's RocksDB snapshot. Each subcommand opens the source
-  snapshot, applies the edit, and persists a new checksum-valid snapshot that preserves the
-  index/term/processed/exported positions. The broker must be stopped while these commands run.
+  Offline inspection and manipulation of a stopped broker's RocksDB snapshot. Read-only commands
+  open a copied runtime, while editing commands persist a new checksum-valid snapshot that
+  preserves the index/term/processed/exported positions. The broker must be stopped while these
+  commands run.
 
-##### `state update-key`
+  ##### `state summary`
+
+  Print JSON entry counts for every column family known by the CLI version:
+
+  ```
+  debug-cli state summary -r /path/to/partition -s <snapshot-id>
+  ```
+
+  ##### `state list`
+
+  Print bounded JSON entries for one column family. Keys use the zdb-compatible
+  column-family format when known, with `keyHex` retaining the key payload
+  without the column-family prefix. MessagePack object values are exposed
+  through `value`; raw database values are exposed through `valueHex`. The
+  source snapshot is copied into a temporary runtime before it is read, and
+  output is limited to 1,000 entries by default.
+
+  ```
+  debug-cli state list -r /path/to/partition -s <snapshot-id> \
+    --column-family INCIDENTS --limit 100
+  ```
+
+  Use `--key-format hex` to print the key bytes, or provide a custom key format
+  using `s`, `l`, `i`, `b`, and `B`.
+
+  The column-family names and serialized layouts are branch-specific. Use a `debug-cli` artifact
+  from the same Camunda minor release line as the snapshot.
+
+  ##### `state update-key`
 
 - **Description:** Overwrite the next key (and optionally the max key) in the key-generator column
   family.
+
 - **Key options:** `-r/--root`, `--runtime`, `-s/--snapshot`, `--partition-id`, `-k/--key`,
   `--max-key`.
 
@@ -182,4 +212,3 @@ alias debug-cli="java -jar target/cdbg-${version}.jar"
 ## License
 
 [Camunda License 1.0](../LICENSE)
-
