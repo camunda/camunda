@@ -7,9 +7,15 @@
  */
 
 import {useTranslation} from 'react-i18next';
-import {DataTable, Heading} from '@camunda/design-system';
+import {DataTable, Heading, type DataTableColumn} from '@camunda/design-system';
 import {cn} from '#/shared/cn';
 import {useRunningInstancesCount} from '../useRunningInstancesCount';
+
+// A DataTable with zero columns renders zero-cell skeleton rows, which collapse to no
+// height at all — no loading indication shows up. One columnless placeholder column
+// gives the loading skeleton a cell to paint into; real columns replace this once
+// InstancesByProcess/IncidentsByError land.
+const PLACEHOLDER_COLUMNS: DataTableColumn<never>[] = [{id: 'placeholder', header: ''}];
 
 // Layout-only shell: content tiles are placeholders here and get wired in as their own
 // PRs land (MetricPanel, InstancesByProcess, IncidentsByError, the empty states). Mirrors
@@ -41,7 +47,7 @@ const Dashboard: React.FC = () => {
 				{/* NoInstancesEmptyState or the real columns/data for InstancesByProcess — wired in a later PR */}
 				<DataTable
 					title={t('operate.dashboard.processesByNameTitle')}
-					columns={[]}
+					columns={PLACEHOLDER_COLUMNS}
 					data={[]}
 					loading
 					className="flex flex-col overflow-hidden"
@@ -50,7 +56,7 @@ const Dashboard: React.FC = () => {
 					// Real columns/data for IncidentsByError — wired in a later PR
 					<DataTable
 						title={t('operate.dashboard.incidentsByErrorTitle')}
-						columns={[]}
+						columns={PLACEHOLDER_COLUMNS}
 						data={[]}
 						loading
 						className="flex flex-col overflow-hidden"
