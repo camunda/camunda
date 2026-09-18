@@ -88,6 +88,15 @@ public final class MessageSubscriptionRejectProcessor
       return false;
     }
 
+    if (isOwnedByAnotherGeneration(subscriptionRecord)) {
+      // Some other generation's claim on this exact message is still unresolved (its own
+      // correlate/reject handshake hasn't concluded) — whether or not its own subscription row
+      // currently exists, e.g. it was suspended mid-flight. Must not reroute the message
+      // elsewhere, nor (via the caller) report NOT_CORRELATED for an outstanding request: the
+      // message IS being handled, just not observably via a live row right now.
+      return true;
+    }
+
     final var foundSubscription = new AtomicBoolean(false);
     subscriptionState.visitSubscriptions(
         subscriptionRecord.getTenantId(),
@@ -100,8 +109,7 @@ public final class MessageSubscriptionRejectProcessor
               correlatingSubscription
                       .getBpmnProcessIdBuffer()
                       .equals(subscriptionRecord.getBpmnProcessIdBuffer())
-                  && !subscription.isCorrelating()
-                  && !hasAlreadyBeenCorrelated(subscriptionRecord, subscription);
+                  && !subscription.isCorrelating();
 
           if (canBeCorrelated) {
             correlatingSubscription
@@ -121,19 +129,38 @@ public final class MessageSubscriptionRejectProcessor
     return foundSubscription.get();
   }
 
-  private boolean hasAlreadyBeenCorrelated(
-      final MessageSubscriptionRecord subscriptionRecord, final MessageSubscription subscription) {
-    // we only want to reroute a subscription once per message (by key)
-    final var messageKey = subscriptionRecord.getMessageKey();
+  /**
+   * True when a generation other than this reject's own still owns the correlation lock for this
+   * exact message — ownership-based and row-independent: it consults the lock's recorded owner (see
+   * {@link MessageState#correlationOwner}) first, which answers correctly even when that other
+   * generation's own subscription row no longer exists (e.g. suspended mid-correlate). Only when no
+   * owner was ever recorded (a lock claimed before owner-tracking existed — see {@link
+   * io.camunda.zeebe.engine.state.appliers.MessageSubscriptionRejectedV2Applier}) does it fall back
+   * to the live subscription row: a different, still-alive generation whose row currently shows it
+   * owns exactly this message is trusted as legacy evidence of ownership.
+   *
+   * <p>{@code subscriptionKey == -1} mirrors the applier's own convention: a reject carrying no
+   * generation info at all predates/opts out of generation-tracking, so this always returns {@code
+   * false} and the normal, unconditional reroute-eligibility scan proceeds.
+   */
+  private boolean isOwnedByAnotherGeneration(final MessageSubscriptionRecord subscriptionRecord) {
+    if (subscriptionRecord.getSubscriptionKey() == -1L) {
+      return false;
+    }
 
-    // Exact match only: unlike a subscription's own retried commands (which are strictly ordered,
-    // see ProcessMessageSubscriptionCorrelateProcessor#hasAlreadyBeenCorrelated), a candidate found
-    // here may belong to a different generation whose own CREATE-time scan skipped this exact
-    // message (still locked by the stale subscription) and correlated a later one instead. Its
-    // last-correlated key being numerically ahead of this one does not mean it ever saw this
-    // message.
-    final var lastCorrelatedMessageKey = subscription.getRecord().getMessageKey();
-    return messageKey == lastCorrelatedMessageKey;
+    final var messageKey = subscriptionRecord.getMessageKey();
+    final var bpmnProcessId = subscriptionRecord.getBpmnProcessIdBuffer();
+    final var owner = messageState.correlationOwner(messageKey, bpmnProcessId);
+    if (owner != -1L) {
+      return owner != subscriptionRecord.getSubscriptionKey();
+    }
+
+    final MessageSubscription stored =
+        subscriptionState.get(
+            subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer());
+    return stored != null
+        && stored.getKey() != subscriptionRecord.getSubscriptionKey()
+        && stored.getRecord().getMessageKey() == messageKey;
   }
 
   private void sendCorrelateCommand(final MessageSubscriptionRecord subscription) {

@@ -126,6 +126,19 @@ public final class DbMessageState implements MutableMessageState {
       correlatedMessageColumnFamily;
 
   /**
+   * <pre>key | bpmn process id -> subscription key
+   *
+   * parallel marker CF recording which subscription claimed the correlation lock above, keyed by
+   * the same (message key, bpmn process id) pair — see {@link
+   * #putMessageCorrelation(long, DirectBuffer, long)} and {@link
+   * #removeMessageCorrelationOwnedBy(long, DirectBuffer, long)}
+   */
+  private final DbLong correlationOwner;
+
+  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbString>, DbLong>
+      correlationOwnerColumnFamily;
+
+  /**
    * <pre> bpmn process id | correlation key -> []
    *
    * check if a process instance is created by this correlation key
@@ -251,6 +264,14 @@ public final class DbMessageState implements MutableMessageState {
             messageBpmnProcessIdKey,
             DbNil.INSTANCE);
 
+    correlationOwner = new DbLong();
+    correlationOwnerColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.MESSAGE_CORRELATION_OWNER,
+            transactionContext,
+            messageBpmnProcessIdKey,
+            correlationOwner);
+
     bpmnProcessIdCorrelationKey = new DbCompositeKey<>(bpmnProcessIdKey, correlationKey);
     activeProcessInstancesByCorrelationKeyColumnFamily =
         zeebeDb.createColumnFamily(
@@ -347,6 +368,20 @@ public final class DbMessageState implements MutableMessageState {
   }
 
   @Override
+  public void putMessageCorrelation(
+      final long messageKey, final DirectBuffer bpmnProcessId, final long subscriptionKey) {
+    ensureGreaterThan("message key", messageKey, 0);
+    ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
+
+    this.messageKey.wrapLong(messageKey);
+    bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
+    correlatedMessageColumnFamily.insert(messageBpmnProcessIdKey, DbNil.INSTANCE);
+
+    correlationOwner.wrapLong(subscriptionKey);
+    correlationOwnerColumnFamily.upsert(messageBpmnProcessIdKey, correlationOwner);
+  }
+
+  @Override
   public void removeMessageCorrelation(final long messageKey, final DirectBuffer bpmnProcessId) {
     ensureGreaterThan("message key", messageKey, 0);
     ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
@@ -355,6 +390,29 @@ public final class DbMessageState implements MutableMessageState {
     bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
 
     correlatedMessageColumnFamily.deleteIfExists(messageBpmnProcessIdKey);
+  }
+
+  @Override
+  public boolean removeMessageCorrelationOwnedBy(
+      final long messageKey, final DirectBuffer bpmnProcessId, final long subscriptionKey) {
+    ensureGreaterThan("message key", messageKey, 0);
+    ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
+
+    this.messageKey.wrapLong(messageKey);
+    bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
+
+    // subscriptionKey == -1 mirrors MessageSubscriptionRejectedV2Applier#isStaleGeneration's own
+    // convention: a reject that carries no generation info is trusted as the current/only
+    // generation and may always release, exactly like the plain (unconditional)
+    // removeMessageCorrelation did before ownership tracking existed.
+    final var owner = correlationOwnerColumnFamily.get(messageBpmnProcessIdKey);
+    if (owner != null && subscriptionKey != -1L && owner.getValue() != subscriptionKey) {
+      return false;
+    }
+
+    correlatedMessageColumnFamily.deleteIfExists(messageBpmnProcessIdKey);
+    correlationOwnerColumnFamily.deleteIfExists(messageBpmnProcessIdKey);
+    return true;
   }
 
   @Override
@@ -550,6 +608,13 @@ public final class DbMessageState implements MutableMessageState {
 
     correlatedMessageColumnFamily.whileEqualPrefix(
         messageKey, (correlatedMessageColumnFamily::deleteExisting));
+
+    // MESSAGE_CORRELATION_OWNER is a new CF (no historical rows predate it), so this cleanup
+    // cannot change how any previously-written event replays — see the golden-file docs' allowed-
+    // change exception. Without it, a message's owner row would outlive the message forever
+    // (message keys are never reused, so nothing would ever read or clean it up again).
+    correlationOwnerColumnFamily.whileEqualPrefix(
+        messageKey, (correlationOwnerColumnFamily::deleteExisting));
   }
 
   @Override
@@ -561,6 +626,18 @@ public final class DbMessageState implements MutableMessageState {
     bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
 
     return correlatedMessageColumnFamily.exists(messageBpmnProcessIdKey);
+  }
+
+  @Override
+  public long correlationOwner(final long messageKey, final DirectBuffer bpmnProcessId) {
+    ensureGreaterThan("message key", messageKey, 0);
+    ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
+
+    this.messageKey.wrapLong(messageKey);
+    bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
+
+    final var owner = correlationOwnerColumnFamily.get(messageBpmnProcessIdKey);
+    return owner == null ? -1L : owner.getValue();
   }
 
   @Override

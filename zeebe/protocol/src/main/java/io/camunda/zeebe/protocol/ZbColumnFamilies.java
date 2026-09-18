@@ -397,7 +397,15 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // re-accumulate its metrics. Written when an item is first created (see
   // AgentHistoryCreatedApplier), survives commit/discard, and is deleted in one pass when the
   // instance completes (see AgentInstanceCompletedApplier).
-  AGENT_HISTORY_METRICS_ACCUMULATED_IDS(165, PARTITION_LOCAL);
+  AGENT_HISTORY_METRICS_ACCUMULATED_IDS(165, PARTITION_LOCAL),
+
+  // (messageKey, bpmnProcessId) -> subscriptionKey. Parallel marker CF recording which subscription
+  // claimed the MESSAGE_CORRELATED lock entry for that key, so a stale-generation REJECTED applier
+  // can tell "did MY generation still own this exact message's lock" from the lock's owner rather
+  // than from the claimant's own subscription row, which only ever reflects its latest message. See
+  // MutableMessageState#putMessageCorrelation(long, DirectBuffer, long) and
+  // #removeMessageCorrelationOwnedBy.
+  MESSAGE_CORRELATION_OWNER(166, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

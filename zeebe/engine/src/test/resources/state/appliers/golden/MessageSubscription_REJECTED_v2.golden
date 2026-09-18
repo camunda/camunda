@@ -21,11 +21,23 @@ import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
  * released.
  *
  * <p>The lock release itself is guarded too: a duplicate/delayed stale reject for a message the
- * newer generation already correlated (its stored record's message key is at or past this reject's)
- * must not clear a lock that generation's completed correlation still relies on. Duplicate stale
- * rejects for the same message aren't theoretical — {@code
+ * newer generation has since claimed must not clear a lock that generation's correlation relies on.
+ * That claim is tracked primarily by ownership — see {@link
+ * MutableMessageState#removeMessageCorrelationOwnedBy} — not by this subscription row's message-key
+ * snapshot, because the row only reflects the newer generation's <em>latest</em> message; once it
+ * moves on to a later one, the row can no longer vouch for an earlier message it legitimately still
+ * owns the lock for. Duplicate stale rejects for the same message aren't theoretical — {@code
  * PendingMessageSubscriptionCheckScheduler} resends an un-acked CORRELATE every 30s, and each copy
  * that reaches the stale-generation branch on the process-instance side sends its own REJECT.
+ *
+ * <p>Ownership is only recorded going forward (see {@link
+ * MessageSubscriptionCorrelatingV2Applier}). A lock claimed by a V1 CORRELATING event — replayed
+ * from before owner-tracking existed, or from a snapshot taken before this change — has no recorded
+ * owner. For that legacy case, {@link #mayReleaseCorrelationLock} falls back to the live
+ * subscription row: if a different, still-alive generation's row currently shows it owns exactly
+ * this message, that's trusted as evidence of ownership, the same signal the original
+ * (pre-ownership) fix used, safe here specifically because it's checked against <em>this</em>
+ * message rather than inferred from a possibly-later one.
  *
  * <p>See <a href="https://github.com/camunda/camunda/issues/61099">#61099</a>.
  */
@@ -48,16 +60,18 @@ public final class MessageSubscriptionRejectedV2Applier
         subscriptionState.get(value.getElementInstanceKey(), value.getMessageNameBuffer());
     final boolean isStaleGeneration = isStaleGeneration(stored, value.getSubscriptionKey());
 
+    // Captured before subscriptionState.remove() below can invalidate the shared, reused `stored`
+    // buffer by re-fetching on the same column family.
+    final long storedSubscriptionKey = stored == null ? -1L : stored.getKey();
+    final long storedMessageKey = stored == null ? -1L : stored.getRecord().getMessageKey();
+
     if (!isStaleGeneration) {
-      // subscriptionState.remove(...) re-fetches by the same key, overwriting the shared
-      // ColumnFamily#get(key) value instance `stored` points to. Safe only because
-      // newerGenerationAlreadyCorrelatedMessage short-circuits without reading `stored` whenever
-      // isStaleGeneration is false — the one branch where this remove() runs.
       subscriptionState.remove(value.getElementInstanceKey(), value.getMessageNameBuffer());
     }
-    if (!newerGenerationAlreadyCorrelatedMessage(
-        stored, isStaleGeneration, value.getMessageKey())) {
-      messageState.removeMessageCorrelation(value.getMessageKey(), value.getBpmnProcessIdBuffer());
+
+    if (mayReleaseCorrelationLock(storedSubscriptionKey, storedMessageKey, value)) {
+      messageState.removeMessageCorrelationOwnedBy(
+          value.getMessageKey(), value.getBpmnProcessIdBuffer(), value.getSubscriptionKey());
     }
   }
 
@@ -70,16 +84,27 @@ public final class MessageSubscriptionRejectedV2Applier
     return stored != null && eventSubscriptionKey != -1L && stored.getKey() != eventSubscriptionKey;
   }
 
-  /**
-   * True when the newer generation has already correlated exactly this message, meaning the
-   * correlation lock is legitimately held on its behalf and must not be released by this (possibly
-   * duplicate/delayed) reject. Exact match only: the newer generation's own CREATE-time scan may
-   * have skipped this exact message (still locked by the stale subscription) and correlated a later
-   * one instead, so its last-correlated key being numerically ahead of this one does not mean it
-   * ever claimed this message.
-   */
-  private boolean newerGenerationAlreadyCorrelatedMessage(
-      final MessageSubscription stored, final boolean isStaleGeneration, final long messageKey) {
-    return isStaleGeneration && stored.getRecord().getMessageKey() == messageKey;
+  private boolean mayReleaseCorrelationLock(
+      final long storedSubscriptionKey,
+      final long storedMessageKey,
+      final MessageSubscriptionRecord value) {
+    if (value.getSubscriptionKey() == -1L) {
+      // subscriptionKey == -1 mirrors isStaleGeneration's own convention: a reject that carries
+      // no generation info at all predates/opts out of generation-tracking and is always safe to
+      // release, matching the plain, unconditional release semantics this reject type has always
+      // had.
+      return true;
+    }
+
+    final var owner =
+        messageState.correlationOwner(value.getMessageKey(), value.getBpmnProcessIdBuffer());
+    if (owner != -1L) {
+      return owner == value.getSubscriptionKey();
+    }
+
+    // legacy fallback (see class javadoc)
+    return storedSubscriptionKey == -1L
+        || storedSubscriptionKey == value.getSubscriptionKey()
+        || storedMessageKey != value.getMessageKey();
   }
 }

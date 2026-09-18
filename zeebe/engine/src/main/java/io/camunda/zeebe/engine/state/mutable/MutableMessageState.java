@@ -18,7 +18,31 @@ public interface MutableMessageState extends MessageState, StreamProcessorLifecy
 
   void putMessageCorrelation(long messageKey, DirectBuffer bpmnProcessId);
 
+  /**
+   * Claims the correlation lock for {@code (messageKey, bpmnProcessId)} on behalf of {@code
+   * subscriptionKey}, in addition to the plain {@link #putMessageCorrelation(long, DirectBuffer)}
+   * marker. Reclaiming an already-locked message (e.g. rerouting it to a newer-generation
+   * subscription after a stale reject released the previous claimant's lock) simply overwrites the
+   * recorded owner — a message is correlated to at most one subscription of a given process at a
+   * time, so there is never a legitimate second claimant to preserve.
+   */
+  void putMessageCorrelation(long messageKey, DirectBuffer bpmnProcessId, long subscriptionKey);
+
   void removeMessageCorrelation(long messageKey, DirectBuffer bpmnProcessId);
+
+  /**
+   * Releases the correlation lock for {@code (messageKey, bpmnProcessId)} only if it is not
+   * currently owned by a different subscription key than {@code subscriptionKey} (including when it
+   * has no recorded owner at all, e.g. a lock claimed before this method existed). Used by a
+   * stale-generation reject so a duplicate/delayed copy can never clear a lock that a
+   * newer-generation subscription has since reclaimed for this exact message — see {@link
+   * io.camunda.zeebe.engine.state.immutable.MessageState#correlationOwner}.
+   *
+   * @return {@code true} when the lock was released, {@code false} when it was left alone because a
+   *     different subscription key owns it
+   */
+  boolean removeMessageCorrelationOwnedBy(
+      long messageKey, DirectBuffer bpmnProcessId, long subscriptionKey);
 
   void putActiveProcessInstance(DirectBuffer bpmnProcessId, DirectBuffer correlationKey);
 
