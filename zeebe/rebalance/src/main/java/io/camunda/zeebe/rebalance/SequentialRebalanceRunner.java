@@ -212,7 +212,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
             + "the rebalance was planned",
         rebalance.id(),
         partition);
-    resolveWithOutcome(
+    handleTransferOutcome(
         rebalance, index, PartitionRebalanceOutcome.PHYSICAL_TENANT_DISABLED, completion);
     return true;
   }
@@ -228,7 +228,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
             + "the rebalance was planned",
         rebalance.id(),
         partition);
-    resolveWithOutcome(
+    handleTransferOutcome(
         rebalance, index, PartitionRebalanceOutcome.PHYSICAL_TENANT_RECOVERING, completion);
     return true;
   }
@@ -250,7 +250,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
           rebalance.id(),
           rebalance.partition(index),
           timeout);
-      resolveWithOutcome(rebalance, index, PartitionRebalanceOutcome.NO_LEADER, completion);
+      handleTransferOutcome(rebalance, index, PartitionRebalanceOutcome.NO_LEADER, completion);
       return;
     }
     final var delay =
@@ -372,7 +372,8 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
                 rebalance.id(),
                 rebalance.partition(index),
                 timeout);
-            resolveWithOutcome(rebalance, index, PartitionRebalanceOutcome.NO_RESPONSE, completion);
+            handleTransferOutcome(
+                rebalance, index, PartitionRebalanceOutcome.NO_RESPONSE, completion);
             return;
           }
           watchTransfer(rebalance, index, waitedSoFar, completion);
@@ -448,7 +449,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
         rebalance.id(),
         partition,
         rejectionReason);
-    resolveWithOutcome(
+    handleTransferOutcome(
         rebalance, index, LeadershipTransferResultMapping.toOutcome(rejectionReason), completion);
   }
 
@@ -484,12 +485,15 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
         rebalance.id(),
         partition,
         result.result());
-    resolveWithOutcome(
+    handleTransferOutcome(
         rebalance, index, LeadershipTransferResultMapping.toOutcome(result.result()), completion);
   }
 
-  /** Completes a partition with a given outcome, or confirms it first if it timed out. */
-  private void resolveWithOutcome(
+  /**
+   * Handles a partition's outcome. {@link PartitionRebalanceOutcome#TIMEOUT_NOW_EXHAUSTED} defers
+   * completion to confirm against the topology first; every other outcome is finalized immediately.
+   */
+  private void handleTransferOutcome(
       final RebalanceRun rebalance,
       final int index,
       final PartitionRebalanceOutcome outcome,
