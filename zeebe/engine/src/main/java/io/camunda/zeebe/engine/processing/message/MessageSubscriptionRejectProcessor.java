@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
+import io.camunda.zeebe.engine.state.message.MessageSubscription;
 import io.camunda.zeebe.engine.state.message.StoredMessage;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageCorrelationState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
@@ -99,7 +100,8 @@ public final class MessageSubscriptionRejectProcessor
               correlatingSubscription
                       .getBpmnProcessIdBuffer()
                       .equals(subscriptionRecord.getBpmnProcessIdBuffer())
-                  && !subscription.isCorrelating();
+                  && !subscription.isCorrelating()
+                  && !hasAlreadyBeenCorrelated(subscriptionRecord, subscription);
 
           if (canBeCorrelated) {
             correlatingSubscription
@@ -117,6 +119,19 @@ public final class MessageSubscriptionRejectProcessor
         });
 
     return foundSubscription.get();
+  }
+
+  private boolean hasAlreadyBeenCorrelated(
+      final MessageSubscriptionRecord subscriptionRecord, final MessageSubscription subscription) {
+    // we only want to reroute a subscription once per message (by key)
+    final var messageKey = subscriptionRecord.getMessageKey();
+
+    // return true if it has already been correlated, otherwise false
+    final var lastCorrelatedMessageKey = subscription.getRecord().getMessageKey();
+    // as correlations are ordered per message, a message is considered to have been correlated
+    // either if it is the last correlated message (keys are equal), or if it was a message prior to
+    // the last correlated one (messageKey is less than lastCorrelatedMessageKey).
+    return messageKey <= lastCorrelatedMessageKey;
   }
 
   private void sendCorrelateCommand(final MessageSubscriptionRecord subscription) {
