@@ -9,8 +9,11 @@ package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
+import io.camunda.zeebe.auth.Authorization;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
@@ -21,7 +24,11 @@ import io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableOperationType;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class VariableAddUpdateAuditLogTransformerTest {
 
@@ -39,15 +46,38 @@ class VariableAddUpdateAuditLogTransformerTest {
     assertThat(transformer.supports(record)).isTrue();
   }
 
-  @Test
-  void shouldSupportVariableRecordWithUserTaskCompletionSource() {
+  @ParameterizedTest
+  @CsvSource({
+    "API, CREATED, CREATE",
+    "API, UPDATED, UPDATE",
+    "USER_TASK_COMPLETION, CREATED, CREATE",
+    "USER_TASK_COMPLETION, UPDATED, UPDATE"
+  })
+  void shouldClassifyAndFilterVariableChangesAsDeployedResources(
+      final VariableOperationType source,
+      final VariableIntent intent,
+      final AuditLogOperationType operation) {
     // given
-    final var record =
-        variableRecord(VariableIntent.UPDATED, VariableSourceRecord.userTaskCompletion());
+    final var record = variableRecord(intent, new VariableSourceRecord().setType(source));
+    final var config = new AuditLogConfiguration();
+
+    // when
+    final var info = AuditLogInfo.of(record);
+    final var entry = AuditLogEntry.of(record);
+    transformer.transform(record, entry);
 
     // then
     assertThat(transformer.supports(record)).isTrue();
-    assertThat(AuditLogInfo.of(record).category()).isEqualTo(AuditLogOperationCategory.USER_TASKS);
+    assertThat(entry.getCategory()).isEqualTo(AuditLogOperationCategory.DEPLOYED_RESOURCES);
+    assertThat(entry.getEntityType()).isEqualTo(AuditLogEntityType.VARIABLE);
+    assertThat(entry.getOperationType()).isEqualTo(operation);
+
+    config.getUser().setCategories(Set.of(AuditLogOperationCategory.USER_TASKS));
+    assertThat(config.isEnabled(info)).isFalse();
+    config.getUser().setCategories(Set.of(AuditLogOperationCategory.DEPLOYED_RESOURCES));
+    assertThat(config.isEnabled(info)).isTrue();
+    config.getUser().setExcludes(Set.of(AuditLogEntityType.VARIABLE));
+    assertThat(config.isEnabled(info)).isFalse();
   }
 
   @Test
@@ -100,6 +130,10 @@ class VariableAddUpdateAuditLogTransformerTest {
             .build();
 
     return factory.generateRecord(
-        ValueType.VARIABLE, r -> r.withIntent(intent).withValue(recordValue));
+        ValueType.VARIABLE,
+        r ->
+            r.withIntent(intent)
+                .withValue(recordValue)
+                .withAuthorizations(Map.of(Authorization.AUTHORIZED_USERNAME, "test-user")));
   }
 }
