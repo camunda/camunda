@@ -32,10 +32,13 @@ import io.micrometer.core.instrument.Tag;
  * <ul>
  *   <li>A counter for the jobs activated count
  *   <li>A counter for the jobs handled count
+ *   <li>A counter for the jobs refused count
+ *   <li>A counter for the jobs expired count
  * </ul>
  *
  * From these counters you can derive the rate of jobs activated, the rate of jobs handled, and
- * subtract both to estimate the count/rate of jobs queued in a given worker.
+ * subtract the handled, refused and expired counts from the activated one to estimate the
+ * count/rate of jobs queued in a given worker.
  *
  * <p>NOTE: the names may be changed depending on the registry backing Micrometer (e.g. Prometheus
  * names will replace the periods with underscore, etc.)
@@ -114,6 +117,14 @@ public interface MicrometerJobWorkerMetricsBuilder {
       @Override
       public String asString() {
         return "camunda.client.worker.job.refused";
+      }
+    },
+
+    /** Counter name backing the {@link JobWorkerMetrics#jobExpired(int)} count. */
+    JOB_EXPIRED {
+      @Override
+      public String asString() {
+        return "camunda.client.worker.job.expired";
       }
     }
   }
