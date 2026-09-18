@@ -20,6 +20,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Optional;
 import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -48,6 +49,9 @@ import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 public final class OpensearchConnector {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchConnector.class);
+
+  private static final int DEFAULT_CONNECT_TIMEOUT_MILLIS = 1000;
+  private static final int DEFAULT_SOCKET_TIMEOUT_MILLIS = 30000;
 
   private final ConnectConfiguration configuration;
   private final ObjectMapper objectMapper;
@@ -206,13 +210,15 @@ public final class OpensearchConnector {
 
   private RequestConfig.Builder setTimeouts(
       final RequestConfig.Builder builder, final ConnectConfiguration os) {
-    if (os.getSocketTimeout() != null) {
-      // builder.setSocketTimeout(os.getSocketTimeout());
-      builder.setResponseTimeout(Timeout.ofMilliseconds(os.getSocketTimeout()));
-    }
-    if (os.getConnectTimeout() != null) {
-      builder.setConnectTimeout(Timeout.ofMilliseconds(os.getConnectTimeout()));
-    }
+    // ensure we have default timeouts - as otherwise timeouts are infinite
+    final var socketTimeoutMillis =
+        Optional.ofNullable(os.getSocketTimeout()).orElse(DEFAULT_SOCKET_TIMEOUT_MILLIS);
+    builder.setResponseTimeout(Timeout.ofMilliseconds(socketTimeoutMillis));
+
+    final var connectTimeoutMillis =
+        Optional.ofNullable(os.getConnectTimeout()).orElse(DEFAULT_CONNECT_TIMEOUT_MILLIS);
+    builder.setConnectTimeout(Timeout.ofMilliseconds(connectTimeoutMillis));
+
     return builder;
   }
 
