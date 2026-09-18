@@ -128,6 +128,23 @@ class OidcBearerPrincipalClassifierTest {
   }
 
   @Test
+  void shouldSubjectAnM2mTokenToTheCheckWhenItsIdpDoesNotUseTheDefaultClientIdClaim() {
+    // given: an M2M token from an IdP that identifies clients via a different claim (e.g. Entra's
+    // "azp"), with no client-id-claim override configured. This is the deliberate, documented
+    // trade-off of failing closed: such a client is now subjected to the permission check rather
+    // than silently exempted, and must either be granted the Optimize permission or have the
+    // operator configure the correct claim-id-claim for their IdP.
+    final var classifier = new OidcBearerPrincipalClassifier(new OidcConfiguration());
+    final Map<String, Object> claims = Map.of("azp", "some-m2m-client-id");
+
+    // when
+    final boolean result = classifier.requiresOptimizePermissionCheck(claims);
+
+    // then
+    assertThat(result).isTrue();
+  }
+
+  @Test
   void shouldTreatAnUnconfiguredClassifierAsRequiringTheCheckForAGenuineUserToken() {
     // given: the same unconfigured OidcConfiguration, but a token with no client_id claim at all —
     // OidcConfiguration's own default usernameClaim ("sub") is present on every token, but that

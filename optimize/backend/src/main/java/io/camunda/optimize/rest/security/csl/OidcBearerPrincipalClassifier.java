@@ -21,9 +21,13 @@ import org.slf4j.LoggerFactory;
  * AuthenticationHandler} already uses for gRPC callers.
  *
  * <p>Unlike that gRPC handler, which rejects a token outright when neither claim resolves, this
- * classifier fails closed by assuming the token belongs to a user: a legacy M2M client whose IdP
- * does not populate the configured claim paths must not be newly rejected by this class, but a user
- * token must not silently skip the Optimize permission check either. See camunda/camunda#63372.
+ * classifier fails closed by assuming the token belongs to a user and requiring the Optimize
+ * permission check. This is deliberately the safer default for a security check, but it means an
+ * M2M client on an IdP that does not populate the configured client-id claim under its default name
+ * (Keycloak's {@value #DEFAULT_CLIENT_ID_CLAIM}, e.g. Entra's {@code azp}/{@code appid} or Okta's
+ * {@code cid}) is newly subjected to the permission check, not exempted from it. An operator on
+ * such an IdP should configure {@code camunda.security.authentication.oidc.client-id-claim} to the
+ * correct claim name. See camunda/camunda#63372.
  *
  * <p>When {@link OidcConfiguration#getClientIdClaim()} is not configured, this class falls back to
  * {@value #DEFAULT_CLIENT_ID_CLAIM} — the claim Keycloak populates on a client-credentials token's
