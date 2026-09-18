@@ -30,6 +30,8 @@ import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.Either;
 import jakarta.servlet.Filter;
 import jakarta.servlet.http.Cookie;
+import java.io.IOException;
+import java.net.ServerSocket;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Date;
@@ -254,6 +256,36 @@ class CslChainIntegrationTest {
   @Test
   void shouldExemptExternalPathFromCsrfForCcsaas() {
     assertExternalPathExemptFromCsrf(ccsaasRunner());
+  }
+
+  // -------------------------------------------------------------------------
+  // Identity provider outage
+  // -------------------------------------------------------------------------
+
+  /**
+   * An unreachable identity provider must not keep Optimize from starting. Optimize reads the
+   * client registrations to pick the target of its login redirect, and a read of a registration
+   * performs OIDC discovery, so a provider that is down would fail the application context.
+   */
+  @Test
+  void shouldBuildTheChainsWhileTheIssuerIsUnreachable() throws Exception {
+    // given a context configured against a provider that answers nothing
+    ccsmRunner(runnerWithIssuerOnly(unreachableIssuerUri()))
+        .run(
+            ctx -> {
+              assertThat(ctx).hasNotFailed();
+
+              // when a browser navigates to a protected path
+              final Filter proxy = resolveSecurityFilter(ctx);
+              final MockHttpServletRequest request = new MockHttpServletRequest("GET", "/");
+              final MockHttpServletResponse response = new MockHttpServletResponse();
+
+              proxy.doFilter(request, response, new MockFilterChain());
+
+              // then the login redirect is served from configuration alone, without discovery
+              assertThat(response.getStatus()).isEqualTo(302);
+              assertThat(response.getHeader("Location")).isEqualTo("/oauth2/authorization/oidc");
+            });
   }
 
   // -------------------------------------------------------------------------
@@ -837,6 +869,22 @@ class CslChainIntegrationTest {
   // -------------------------------------------------------------------------
 
   private static WebApplicationContextRunner baseRunner() {
+    return runnerWith(
+        "camunda.security.authentication.oidc.issuer-uri=" + server.issuerUri(),
+        "camunda.security.authentication.oidc.authorization-uri=" + server.issuerUri() + "/auth",
+        "camunda.security.authentication.oidc.token-uri=" + server.issuerUri() + "/token",
+        "camunda.security.authentication.oidc.jwk-set-uri=" + server.issuerUri() + "/jwks");
+  }
+
+  /**
+   * A runner that names the issuer alone. Every other endpoint then comes from discovery, which is
+   * what an installation configures and what makes a provider outage observable here.
+   */
+  private static WebApplicationContextRunner runnerWithIssuerOnly(final String issuerUri) {
+    return runnerWith("camunda.security.authentication.oidc.issuer-uri=" + issuerUri);
+  }
+
+  private static WebApplicationContextRunner runnerWith(final String... oidcProperties) {
     return new WebApplicationContextRunner()
         .withBean(ObjectMapper.class, ObjectMapper::new)
         .withBean(SessionRepositoryFilter.class, () -> new SessionRepositoryFilter<>(SESSION_REPO))
@@ -845,18 +893,25 @@ class CslChainIntegrationTest {
             "camunda.security.authentication.catch-all-unhandled-paths-enabled=false",
             "camunda.security.authentication.method=oidc",
             "camunda.security.authentication.oidc.client-id=test-client",
-            "camunda.security.authentication.oidc.client-secret=test-secret",
-            "camunda.security.authentication.oidc.issuer-uri=" + server.issuerUri(),
-            "camunda.security.authentication.oidc.authorization-uri="
-                + server.issuerUri()
-                + "/auth",
-            "camunda.security.authentication.oidc.token-uri=" + server.issuerUri() + "/token",
-            "camunda.security.authentication.oidc.jwk-set-uri=" + server.issuerUri() + "/jwks");
+            "camunda.security.authentication.oidc.client-secret=test-secret")
+        .withPropertyValues(oidcProperties);
+  }
+
+  /** A port nothing listens on, so every call to this issuer is refused at once. */
+  private static String unreachableIssuerUri() {
+    try (final ServerSocket socket = new ServerSocket(0)) {
+      return "http://localhost:" + socket.getLocalPort() + "/unreachable";
+    } catch (final IOException e) {
+      throw new IllegalStateException("Failed to reserve a closed port", e);
+    }
   }
 
   private WebApplicationContextRunner ccsmRunner() {
-    return baseRunner()
-        .withPropertyValues("spring.profiles.active=ccsm")
+    return ccsmRunner(baseRunner());
+  }
+
+  private WebApplicationContextRunner ccsmRunner(final WebApplicationContextRunner base) {
+    return base.withPropertyValues("spring.profiles.active=ccsm")
         .withBean(
             ConfigurationService.class, ConfigurationServiceBuilder::createDefaultConfiguration)
         .withBean(
