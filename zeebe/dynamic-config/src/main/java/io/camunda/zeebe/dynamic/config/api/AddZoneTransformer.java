@@ -56,9 +56,11 @@ public final class AddZoneTransformer implements ConfigurationChangeRequest {
    * the re-included zone layout to {@link
    * UpdatePartitionDistributionTransformer#phases(CurrentClusterConfiguration)}.
    *
-   * <p>One returning broker joins first so it can execute the scaling callbacks. The callbacks use
-   * the final member set, then the remaining brokers join before the layout is persisted and
-   * partitions are reassigned.
+   * <p>One returning broker joins first so it can execute the scaling callbacks. Although it may
+   * already own a lease from the previous deployment, the zone's lease pool may still be too small
+   * when more brokers are requested than before. Pre-scaling expands that pool before the remaining
+   * brokers join and is a no-op when the existing pool is already large enough. The callbacks use
+   * the final member set, then the layout is persisted and partitions are reassigned.
    */
   @Override
   public Either<Exception, List<Phase>> phases(final CurrentClusterConfiguration configuration) {
@@ -90,28 +92,30 @@ public final class AddZoneTransformer implements ConfigurationChangeRequest {
               "Expected the first add-zone operation to be a MemberJoinOperation, but was %s"
                   .formatted(joins.getFirst().getClass().getSimpleName())));
     }
-    if (!phases.isEmpty() && phases.getFirst() instanceof final GlobalPhase leading) {
-      final var targetMembers = new HashSet<>(configuration.getMembers());
-      targetMembers.addAll(joins.stream().map(GlobalChangeOperation::memberId).toList());
-
-      final var merged = new ArrayList<GlobalChangeOperation>();
-      // The bootstrap member must join first so it can execute the scaling callbacks.
-      merged.add(bootstrap);
-      // Pre-scaling expands the lease pool before the remaining brokers acquire node IDs.
-      merged.add(new PreScalingOperation(bootstrap.memberId(), targetMembers));
-      // The remaining members join only after the lease pool can accommodate them.
-      merged.addAll(joins.subList(1, joins.size()));
-      // Post-scaling reconciles the lease pool after every target member has joined.
-      merged.add(new PostScalingOperation(bootstrap.memberId(), targetMembers));
-      merged.addAll(leading.operations());
-      return Either.right(
-          Stream.concat(Stream.of(new GlobalPhase(merged)), phases.stream().skip(1)).toList());
+    if (phases.isEmpty() || !(phases.getFirst() instanceof final GlobalPhase leading)) {
+      final var firstPhase =
+          phases.isEmpty() ? "no phases" : phases.getFirst().getClass().getSimpleName();
+      return Either.left(
+          new IllegalStateException(
+              "Expected the first add-zone phase to be a GlobalPhase, but was %s"
+                  .formatted(firstPhase)));
     }
+
+    final var targetMembers = new HashSet<>(configuration.getMembers());
+    targetMembers.addAll(joins.stream().map(GlobalChangeOperation::memberId).toList());
+
+    final var merged = new ArrayList<GlobalChangeOperation>();
+    // The bootstrap member must join first so it can execute the scaling callbacks.
+    merged.add(bootstrap);
+    // Pre-scaling expands the lease pool before the remaining brokers acquire node IDs.
+    merged.add(new PreScalingOperation(bootstrap.memberId(), targetMembers));
+    // The remaining members join only after the lease pool can accommodate them.
+    merged.addAll(joins.subList(1, joins.size()));
+    // Post-scaling reconciles the lease pool after every target member has joined.
+    merged.add(new PostScalingOperation(bootstrap.memberId(), targetMembers));
+    merged.addAll(leading.operations());
     return Either.right(
-        Stream.concat(
-                Stream.of(new GlobalPhase(new ArrayList<GlobalChangeOperation>(joins))),
-                phases.stream())
-            .toList());
+        Stream.concat(Stream.of(new GlobalPhase(merged)), phases.stream().skip(1)).toList());
   }
 
   /**
