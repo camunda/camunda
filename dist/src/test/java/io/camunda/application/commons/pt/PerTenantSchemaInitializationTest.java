@@ -759,6 +759,43 @@ final class PerTenantSchemaInitializationTest {
   }
 
   @Test
+  void shouldKeepTheGateClosedWhileDiscoveryIsPending() throws Exception {
+    // given - topology discovery has not decided whether the only tenant is recovering
+    final var discoveryPending = new AtomicBoolean(true);
+    final var attempts = new AtomicInteger();
+    final var initialization =
+        new PerTenantSchemaInitialization(
+            Set.of(TENANT_A),
+            tenantId -> attempts.incrementAndGet(),
+            TerminalFailure.class::isInstance,
+            retryConfig(),
+            PerTenantSchemaInitialization.DeferralCheck.of(
+                tenantId ->
+                    discoveryPending.get()
+                        ? PerTenantSchemaInitialization.Deferral.PENDING
+                        : PerTenantSchemaInitialization.Deferral.NONE));
+    try {
+      final var gateOpened = startInBackground(initialization);
+
+      // then - unresolved discovery is not the ADR's genuine-recovery deferral: startup must not
+      // release before the tenant has been examined, and schema initialization must not race a
+      // restore that the topology may still reveal
+      assertThat(gateOpened.await(200, TimeUnit.MILLISECONDS)).isFalse();
+      assertThat(attempts).hasValue(0);
+
+      // when - discovery resolves that the tenant is not recovering
+      discoveryPending.set(false);
+
+      // then - initialization starts and the gate opens only after the schema is applied
+      assertThat(gateOpened.await(10, TimeUnit.SECONDS)).isTrue();
+      assertThat(attempts).hasValue(1);
+      assertThat(initialization.isInitialized(TENANT_A)).isTrue();
+    } finally {
+      initialization.close();
+    }
+  }
+
+  @Test
   void shouldInitializeOnceTheDeferralLifts() throws Exception {
     // given - a tenant deferred at startup, as one restarted mid-restore is
     final var deferred = new AtomicBoolean(true);
