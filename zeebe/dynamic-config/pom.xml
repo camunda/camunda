@@ -145,25 +145,12 @@
     </dependency>
 
     <dependency>
-      <groupId>net.jqwik</groupId>
-      <artifactId>jqwik</artifactId>
+      <groupId>dev.hegel</groupId>
+      <artifactId>hegel-jna</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>net.jqwik</groupId>
-      <artifactId>jqwik-api</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>net.jqwik</groupId>
-      <artifactId>jqwik-time</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <!--  Ensure non-jqwik junit5 tests can be run -->
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-engine</artifactId>
       <scope>test</scope>
@@ -194,9 +181,6 @@
             <!-- Required by javac annotation processor for nullaway -->
             <ignoredNonTestScopedDependency>org.agrona:agrona</ignoredNonTestScopedDependency>
           </ignoredNonTestScopedDependencies>
-          <usedDependencies>
-            <dependency>net.jqwik:jqwik</dependency>
-          </usedDependencies>
         </configuration>
       </plugin>
     </plugins>

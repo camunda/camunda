@@ -7,8 +7,14 @@
  */
 package io.atomix.raft;
 
+import static dev.hegel.Generators.longs;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.hegel.HealthCheck;
+import dev.hegel.HegelTest;
+import dev.hegel.OptBoolean;
+import dev.hegel.Phase;
+import dev.hegel.TestCase;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.impl.RaftContext;
@@ -21,16 +27,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import net.jqwik.api.Arbitraries;
-import net.jqwik.api.Arbitrary;
-import net.jqwik.api.EdgeCasesMode;
-import net.jqwik.api.ForAll;
-import net.jqwik.api.Property;
-import net.jqwik.api.PropertyDefaults;
-import net.jqwik.api.Provide;
-import net.jqwik.api.ShrinkingMode;
-import net.jqwik.api.lifecycle.AfterTry;
-import net.jqwik.api.lifecycle.BeforeProperty;
+import org.junit.jupiter.api.BeforeEach;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +36,6 @@ import org.slf4j.LoggerFactory;
  * so that its removal commits without its own participation. Mirrors the structure of {@link
  * RandomizedRaftJoinTest}, but with three bootstrapped ACTIVE members.
  */
-@PropertyDefaults(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
 public class RandomizedRaftScaleDownTest {
 
   private static final Logger LOG = LoggerFactory.getLogger(RandomizedRaftScaleDownTest.class);
@@ -52,7 +48,7 @@ public class RandomizedRaftScaleDownTest {
   private MemberId member2;
   private List<RaftOperation> operationsWithRestarts;
 
-  @BeforeProperty
+  @BeforeEach
   public void initMembers() {
     member0 = MemberId.from("0");
     member1 = MemberId.from("1");
@@ -60,8 +56,114 @@ public class RandomizedRaftScaleDownTest {
     operationsWithRestarts = RaftOperation.getRaftOperationsWithRestarts();
   }
 
-  @AfterTry
-  public void shutDownRaftNodes() throws IOException {
+  @HegelTest(
+      testCases = 10,
+      phases = {Phase.EXPLICIT, Phase.REUSE, Phase.GENERATE},
+      derandomize = OptBoolean.FALSE,
+      suppressHealthCheck = HealthCheck.TOO_SLOW)
+  void scaleDownCompletes(final TestCase tc) throws Exception {
+    // The seed drawn from Hegel determines the operation sequence, the members each operation is
+    // applied to, and the raft nodes' own randomness, so a reported seed replays the whole case.
+    final long seed = tc.draw(longs(), "seed");
+    LOG.info("Running test case with seed {}", seed);
+    final var random = new Random(seed);
+    final var raftOperations = RandomSequence.of(random, operationsWithRestarts, OPERATION_SIZE);
+    final var raftMembers =
+        RandomSequence.of(random, List.of(member0, member1, member2), OPERATION_SIZE);
+    setUpRaftNodes(random);
+    try {
+      // Both operations fail fast on CONFIGURATION_ERROR or when the member restarts while they are
+      // pending, so they are simply re-issued until they complete: first the demotion, then the
+      // leave.
+      var demoteFuture = raftContexts.demote(member2);
+      CompletableFuture<Void> leaveFuture = null;
+
+      // given - when there are failures such as message loss
+      final var memberIter = raftMembers.iterator();
+      for (final RaftOperation operation : raftOperations) {
+        final MemberId member = memberIter.next();
+        if ("Restart member".equals(operation.toString()) && member.equals(member2)) {
+          // Known pre-existing residuals, outside this task's scope: a member that restarts during
+          // the demote/leave window can miss the corresponding configuration entries and fall back
+          // to a stale or initial configuration whose index the leader ignores as "no information"
+          // (LeaderAppender#updateConfigurationIndex), so it is never re-configured and its local
+          // demote() runs against a wrong self-view; a removed member restarting during the
+          // append-to-commit window additionally transitions itself INACTIVE at bootstrap. Skip
+          // restarts of the leaving member instead of fighting these here.
+          continue;
+        }
+        LOG.info("{} on {}", operation, member);
+        operation.run(raftContexts, member);
+        // sample the safety invariant on every step: it records the vote of each member at the
+        // term it is currently in, so a vote that is overwritten between two steps is only
+        // observable while it is still recorded
+        raftContexts.assertAtMostOneVotePerMemberAndTerm();
+        if (leaveFuture == null) {
+          if (shouldRetryDemote(demoteFuture)) {
+            LOG.info("Demoting member 2...");
+            demoteFuture = raftContexts.demote(member2);
+          } else if (demoteFuture.isDone()) {
+            LOG.info("Demote completed. Leaving...");
+            leaveFuture = raftContexts.leave(member2);
+          }
+        } else if (leaveFuture.isCompletedExceptionally()) {
+          LOG.info("Leave failed. Retrying...");
+          leaveFuture = raftContexts.leave(member2);
+        }
+      }
+
+      raftContexts.runUntilDone();
+      raftContexts.processAllMessage();
+      raftContexts.tickHeartbeatTimeout();
+
+      // when - no more message loss or restarts
+
+      LOG.info("Stopping failures, waiting for demote and leave to complete");
+
+      final var remainingMembers = Set.of(member0, member1);
+      int maxStepsToReplicateEntries = 10100;
+      while (!(leaveFuture != null
+              && leaveFuture.isDone()
+              && !leaveFuture.isCompletedExceptionally()
+              && raftContexts.allMembersAreReady(remainingMembers)
+              && raftContexts.hasLeaderAtTheLatestTerm())
+          && maxStepsToReplicateEntries-- > 0) {
+
+        if (leaveFuture == null) {
+          if (shouldRetryDemote(demoteFuture)) {
+            LOG.info("Demoting member 2...");
+            demoteFuture = raftContexts.demote(member2);
+          } else if (demoteFuture.isDone()) {
+            LOG.info("Demote completed. Leaving...");
+            leaveFuture = raftContexts.leave(member2);
+          }
+        } else if (leaveFuture.isCompletedExceptionally()) {
+          LOG.info("Leave failed. Retrying...");
+          leaveFuture = raftContexts.leave(member2);
+        }
+
+        raftContexts.runUntilDone();
+        raftContexts.processAllMessage();
+        raftContexts.tickHeartbeatTimeout();
+      }
+
+      // then - the leave is only ever issued once the leader's configuration has member 2 as
+      // PASSIVE, so a completed leave also witnesses that the demotion phase took effect
+      assertThat(demoteFuture)
+          .describedAs("Demotion of member 2 should be completed")
+          .isCompleted();
+      assertThat(leaveFuture).describedAs("Leave of member 2 should be completed").isCompleted();
+      assertThat(raftContexts.hasLeaderAtTheLatestTerm()).describedAs("There is a leader").isTrue();
+      assertThat(raftContexts.allMembersAreReady(remainingMembers))
+          .describedAs("The remaining members are ready")
+          .isTrue();
+      raftContexts.assertAllLogsEqual(remainingMembers);
+    } finally {
+      shutDownRaftNodes();
+    }
+  }
+
+  private void shutDownRaftNodes() throws IOException {
     if (raftContexts != null) {
       raftContexts.shutdown();
     }
@@ -69,100 +171,6 @@ public class RandomizedRaftScaleDownTest {
       FileUtil.deleteFolder(raftDataDirectory);
       raftDataDirectory = null;
     }
-  }
-
-  @Property
-  void scaleDownCompletes(
-      @ForAll("raftOperations") final List<RaftOperation> raftOperations,
-      @ForAll("raftMembers") final List<MemberId> raftMembers,
-      @ForAll("seeds") final long seed)
-      throws Exception {
-    setUpRaftNodes(new Random(seed));
-
-    // Both operations fail fast on CONFIGURATION_ERROR or when the member restarts while they are
-    // pending, so they are simply re-issued until they complete: first the demotion, then the
-    // leave.
-    var demoteFuture = raftContexts.demote(member2);
-    CompletableFuture<Void> leaveFuture = null;
-
-    // given - when there are failures such as message loss
-    final var memberIter = raftMembers.iterator();
-    for (final RaftOperation operation : raftOperations) {
-      final MemberId member = memberIter.next();
-      if ("Restart member".equals(operation.toString()) && member.equals(member2)) {
-        // Known pre-existing residuals, outside this task's scope: a member that restarts during
-        // the demote/leave window can miss the corresponding configuration entries and fall back
-        // to a stale or initial configuration whose index the leader ignores as "no information"
-        // (LeaderAppender#updateConfigurationIndex), so it is never re-configured and its local
-        // demote() runs against a wrong self-view; a removed member restarting during the
-        // append-to-commit window additionally transitions itself INACTIVE at bootstrap. Skip
-        // restarts of the leaving member instead of fighting these here.
-        continue;
-      }
-      LOG.info("{} on {}", operation, member);
-      operation.run(raftContexts, member);
-      // sample the safety invariant on every step: it records the vote of each member at the
-      // term it is currently in, so a vote that is overwritten between two steps is only
-      // observable while it is still recorded
-      raftContexts.assertAtMostOneVotePerMemberAndTerm();
-      if (leaveFuture == null) {
-        if (shouldRetryDemote(demoteFuture)) {
-          LOG.info("Demoting member 2...");
-          demoteFuture = raftContexts.demote(member2);
-        } else if (demoteFuture.isDone()) {
-          LOG.info("Demote completed. Leaving...");
-          leaveFuture = raftContexts.leave(member2);
-        }
-      } else if (leaveFuture.isCompletedExceptionally()) {
-        LOG.info("Leave failed. Retrying...");
-        leaveFuture = raftContexts.leave(member2);
-      }
-    }
-
-    raftContexts.runUntilDone();
-    raftContexts.processAllMessage();
-    raftContexts.tickHeartbeatTimeout();
-
-    // when - no more message loss or restarts
-
-    LOG.info("Stopping failures, waiting for demote and leave to complete");
-
-    final var remainingMembers = Set.of(member0, member1);
-    int maxStepsToReplicateEntries = 10100;
-    while (!(leaveFuture != null
-            && leaveFuture.isDone()
-            && !leaveFuture.isCompletedExceptionally()
-            && raftContexts.allMembersAreReady(remainingMembers)
-            && raftContexts.hasLeaderAtTheLatestTerm())
-        && maxStepsToReplicateEntries-- > 0) {
-
-      if (leaveFuture == null) {
-        if (shouldRetryDemote(demoteFuture)) {
-          LOG.info("Demoting member 2...");
-          demoteFuture = raftContexts.demote(member2);
-        } else if (demoteFuture.isDone()) {
-          LOG.info("Demote completed. Leaving...");
-          leaveFuture = raftContexts.leave(member2);
-        }
-      } else if (leaveFuture.isCompletedExceptionally()) {
-        LOG.info("Leave failed. Retrying...");
-        leaveFuture = raftContexts.leave(member2);
-      }
-
-      raftContexts.runUntilDone();
-      raftContexts.processAllMessage();
-      raftContexts.tickHeartbeatTimeout();
-    }
-
-    // then - the leave is only ever issued once the leader's configuration has member 2 as
-    // PASSIVE, so a completed leave also witnesses that the demotion phase took effect
-    assertThat(demoteFuture).describedAs("Demotion of member 2 should be completed").isCompleted();
-    assertThat(leaveFuture).describedAs("Leave of member 2 should be completed").isCompleted();
-    assertThat(raftContexts.hasLeaderAtTheLatestTerm()).describedAs("There is a leader").isTrue();
-    assertThat(raftContexts.allMembersAreReady(remainingMembers))
-        .describedAs("The remaining members are ready")
-        .isTrue();
-    raftContexts.assertAllLogsEqual(remainingMembers);
   }
 
   /**
@@ -199,7 +207,7 @@ public class RandomizedRaftScaleDownTest {
 
     // Create ControllableRaftContexts with 3 nodes. Reduce the quorum response timeout to make
     // the wall-clock gated leader step-down reachable under the deterministic scheduler, see
-    // RandomizedRaftJoinTest. Created per try because shutdown() runs after every try, see
+    // RandomizedRaftJoinTest. Created per test case because shutdown() runs after every case, see
     // RandomizedRaftJoinTest#setUpRaftNodes.
     raftContexts =
         new ControllableRaftContexts(
@@ -209,22 +217,5 @@ public class RandomizedRaftScaleDownTest {
     raftContexts.setup(raftDataDirectory, random);
 
     LOG.info("Set up 3-node raft cluster");
-  }
-
-  @Provide
-  Arbitrary<List<RaftOperation>> raftOperations() {
-    final var operation = Arbitraries.of(operationsWithRestarts);
-    return operation.list().ofSize(OPERATION_SIZE);
-  }
-
-  @Provide
-  Arbitrary<List<MemberId>> raftMembers() {
-    final var members = Arbitraries.of(member0, member1, member2);
-    return members.list().ofSize(OPERATION_SIZE);
-  }
-
-  @Provide
-  Arbitrary<Long> seeds() {
-    return Arbitraries.longs();
   }
 }

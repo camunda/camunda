@@ -9,26 +9,26 @@ package io.camunda.zeebe.dynamic.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.hegel.Generator;
+import dev.hegel.HegelTest;
+import dev.hegel.OptBoolean;
+import dev.hegel.TestCase;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.util.ClusterTopologyDomain;
 import java.io.IOException;
 import java.nio.file.Files;
-import net.jqwik.api.ForAll;
-import net.jqwik.api.Property;
-import net.jqwik.api.domains.Domain;
-import net.jqwik.api.domains.DomainContext;
 
 final class PersistedClusterConfigurationRandomizedPropertyTest {
 
-  @Property(tries = 100)
-  @Domain(ClusterTopologyDomain.class)
-  @Domain(DomainContext.Global.class)
-  void shouldUpdatePersistedFile(
-      @ForAll final ClusterConfiguration initialTopology,
-      @ForAll final ClusterConfiguration updatedTopology)
-      throws IOException {
+  private static final Generator<ClusterConfiguration> CLUSTER_CONFIGURATIONS =
+      ClusterTopologyDomain.clusterTopologies();
+
+  @HegelTest(testCases = 100, derandomize = OptBoolean.FALSE)
+  void shouldUpdatePersistedFile(final TestCase tc) throws IOException {
     // given
+    final var initialTopology = tc.draw(CLUSTER_CONFIGURATIONS, "initialTopology");
+    final var updatedTopology = tc.draw(CLUSTER_CONFIGURATIONS, "updatedTopology");
     final var tmp = Files.createTempDirectory("topology");
     final var topologyFile = tmp.resolve("topology.meta");
     final var serializer = new ProtoBufSerializer();

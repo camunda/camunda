@@ -7,8 +7,12 @@
  */
 package io.camunda.zeebe.dynamic.config.util;
 
+import static dev.hegel.Generators.booleans;
+import static dev.hegel.Generators.integers;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.hegel.HegelTest;
+import dev.hegel.TestCase;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
@@ -22,9 +26,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import net.jqwik.api.ForAll;
-import net.jqwik.api.Property;
-import net.jqwik.api.constraints.IntRange;
 
 /**
  * Property-based tests for {@link ZoneAwareAdditivePartitionReassigner}, in the style of {@link
@@ -50,18 +51,19 @@ final class ZoneAwareAdditivePartitionReassignerPropertyTest {
 
   private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
 
-  @Property(tries = 100)
-  void shouldSatisfyDistributionInvariantsWhenAddingPartitions(
-      @ForAll @IntRange(min = 2, max = 3) final int zoneCount,
-      @ForAll @IntRange(min = 1, max = 4) final int zoneAReplicas,
-      @ForAll @IntRange(min = 1, max = 4) final int zoneBReplicas,
-      @ForAll @IntRange(min = 1, max = 4) final int zoneCReplicas,
-      @ForAll @IntRange(min = 0, max = 4) final int zoneAExtraBrokers,
-      @ForAll @IntRange(min = 0, max = 4) final int zoneBExtraBrokers,
-      @ForAll @IntRange(min = 0, max = 4) final int zoneCExtraBrokers,
-      @ForAll final boolean topZonesTied,
-      @ForAll @IntRange(min = 1, max = 15) final int oldPartitionCount,
-      @ForAll @IntRange(min = 0, max = 15) final int additionalPartitionCount) {
+  @HegelTest(testCases = 100)
+  void shouldSatisfyDistributionInvariantsWhenAddingPartitions(final TestCase tc) {
+    final int zoneCount = tc.draw(integers().min(2).max(3), "zoneCount");
+    final int zoneAReplicas = tc.draw(integers().min(1).max(4), "zoneAReplicas");
+    final int zoneBReplicas = tc.draw(integers().min(1).max(4), "zoneBReplicas");
+    final int zoneCReplicas = tc.draw(integers().min(1).max(4), "zoneCReplicas");
+    final int zoneAExtraBrokers = tc.draw(integers().min(0).max(4), "zoneAExtraBrokers");
+    final int zoneBExtraBrokers = tc.draw(integers().min(0).max(4), "zoneBExtraBrokers");
+    final int zoneCExtraBrokers = tc.draw(integers().min(0).max(4), "zoneCExtraBrokers");
+    final boolean topZonesTied = tc.draw(booleans(), "topZonesTied");
+    final int oldPartitionCount = tc.draw(integers().min(1).max(15), "oldPartitionCount");
+    final int additionalPartitionCount =
+        tc.draw(integers().min(0).max(15), "additionalPartitionCount");
     final List<ZoneSpec> zoneSpecs =
         buildZoneSpecs(zoneCount, zoneAReplicas, zoneBReplicas, zoneCReplicas, topZonesTied);
     final int replicationFactor = zoneSpecs.stream().mapToInt(ZoneSpec::numberOfReplicas).sum();
