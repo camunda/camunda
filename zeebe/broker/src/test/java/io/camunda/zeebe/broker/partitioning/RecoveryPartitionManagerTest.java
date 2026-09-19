@@ -31,6 +31,7 @@ import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.protocol.record.PartitionRole;
+import io.camunda.zeebe.restore.SecondaryStorageSchemaInitializer;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -48,7 +49,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -124,6 +129,13 @@ final class RecoveryPartitionManagerTest {
 
   private RecoveryPartitionManager buildManager(
       final BrokerCfg brokerCfg, final ActorSchedulingService schedulingService) {
+    return buildManager(brokerCfg, schedulingService, () -> null);
+  }
+
+  private RecoveryPartitionManager buildManager(
+      final BrokerCfg brokerCfg,
+      final ActorSchedulingService schedulingService,
+      final Supplier<SecondaryStorageSchemaInitializer> schemaInitializerSupplier) {
     return new RecoveryPartitionManager(
         GROUP,
         brokerCfg,
@@ -136,7 +148,8 @@ final class RecoveryPartitionManagerTest {
         transport,
         null,
         topologyManager,
-        healthCheckService);
+        healthCheckService,
+        schemaInitializerSupplier);
   }
 
   private PartitionMetadata localPartitionMetadata(final int partitionId) {
@@ -751,6 +764,134 @@ final class RecoveryPartitionManagerTest {
       // then
       await().atMost(Duration.ofSeconds(10)).until(() -> future.get() != null);
       assertThat(future.get()).failsWithin(Duration.ofSeconds(10));
+    }
+
+    @Test
+    void shouldInitializeSecondaryStorageSchemaOnceForOneRestore(@TempDir final Path tempDir)
+        throws InterruptedException {
+      // given: an initializer held open, so the partitions of one restore are in flight together
+      // as they are in a real one - the restore plan leaves every pre-restore free of
+      // dependencies, so a broker runs all of its own at once
+      final var initializations = new AtomicInteger();
+      final var release = new CountDownLatch(1);
+      startManagerWithSchemaInitializer(
+          tempDir,
+          () -> {
+            initializations.incrementAndGet();
+            awaitLatch(release);
+          });
+
+      // when: both local partitions are pre-restored
+      final var first = startPreRestore(PARTITION_ID);
+      final var second = startPreRestore(PARTITION_ID_2);
+      release.countDown();
+
+      // then: the schema is the tenant's, not the partition's, so one initialization covers the
+      // whole restore
+      assertThat(first).succeedsWithin(Duration.ofSeconds(10));
+      assertThat(second).succeedsWithin(Duration.ofSeconds(10));
+      assertThat(initializations).hasValue(1);
+    }
+
+    @Test
+    void shouldInitializeSecondaryStorageSchemaAgainForTheNextRestore(@TempDir final Path tempDir) {
+      // given: one restore has already run to completion
+      final var initializations = new AtomicInteger();
+      startManagerWithSchemaInitializer(tempDir, initializations::incrementAndGet);
+      preRestore(PARTITION_ID);
+
+      // when: the operator restores again while the tenant is still recovering
+      preRestore(PARTITION_ID);
+
+      // then: the second restore checks the storage for itself. Carrying the first restore's
+      // result over would let this one drop its partition data against a secondary storage that
+      // was restored in between and that nothing has looked at since.
+      assertThat(initializations).hasValue(2);
+    }
+
+    @Test
+    void shouldKeepLocalPartitionDataWhenSchemaInitializationFails(@TempDir final Path tempDir) {
+      // given
+      startManagerWithSchemaInitializer(
+          tempDir,
+          () -> {
+            throw new IllegalStateException("secondary storage is not restored");
+          });
+      final var partitionDir = partitionDirectory(tempDir, PARTITION_ID);
+      writeMarkerFile(partitionDir);
+
+      // when
+      final var preRestore = preRestore(PARTITION_ID);
+
+      // then: the operation fails and the data is still there to be restored again, rather than
+      // dropped against a secondary storage that cannot take it
+      assertThat(preRestore).failsWithin(Duration.ofSeconds(10));
+      assertThat(preRestore.getException()).hasMessage("secondary storage is not restored");
+      assertThat(partitionDir).isNotEmptyDirectory();
+    }
+
+    @Test
+    void shouldRetrySchemaInitializationAfterFailure(@TempDir final Path tempDir) {
+      // given: an initializer that fails once, as one run against a storage that is not restored
+      // yet does, and succeeds once the storage is there
+      final var attempts = new AtomicInteger();
+      startManagerWithSchemaInitializer(
+          tempDir,
+          () -> {
+            if (attempts.incrementAndGet() == 1) {
+              throw new IllegalStateException("secondary storage is not restored");
+            }
+          });
+      assertThat(preRestore(PARTITION_ID)).failsWithin(Duration.ofSeconds(10));
+
+      // when: the cluster change retries the operation
+      final var retry = preRestore(PARTITION_ID);
+
+      // then: the retry runs the initialization again instead of replaying the earlier failure
+      assertThat(retry).succeedsWithin(Duration.ofSeconds(10));
+      assertThat(attempts).hasValue(2);
+    }
+
+    private void startManagerWithSchemaInitializer(
+        final Path dataDirectory, final SecondaryStorageSchemaInitializer schemaInitializer) {
+      final var brokerCfg = new BrokerCfg();
+      brokerCfg.getData().setDirectory(dataDirectory.toString());
+      partitionManager = buildManager(brokerCfg, actorScheduler, () -> schemaInitializer);
+      assertThat(partitionManager.start()).succeedsWithin(Duration.ofSeconds(10));
+    }
+
+    /** Issues a pre-restore without waiting for it, so several can be in flight at once. */
+    private ActorFuture<Void> startPreRestore(final int partitionId) {
+      final var future = new AtomicReference<ActorFuture<Void>>();
+      controlActor.run(() -> future.set(partitionManager.preRestore(partitionId)));
+      await().atMost(Duration.ofSeconds(10)).until(() -> future.get() != null);
+      return future.get();
+    }
+
+    private static void awaitLatch(final CountDownLatch latch) {
+      try {
+        if (!latch.await(10, TimeUnit.SECONDS)) {
+          throw new IllegalStateException("schema initialization was never released");
+        }
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new IllegalStateException(e);
+      }
+    }
+
+    private ActorFuture<Void> preRestore(final int partitionId) {
+      final var future = new AtomicReference<ActorFuture<Void>>();
+      controlActor.run(() -> future.set(partitionManager.preRestore(partitionId)));
+      await().atMost(Duration.ofSeconds(10)).until(() -> future.get() != null);
+      await().atMost(Duration.ofSeconds(10)).until(() -> future.get().isDone());
+      return future.get();
+    }
+
+    private Path partitionDirectory(final Path dataDirectory, final int partitionId) {
+      return dataDirectory
+          .resolve(GROUP)
+          .resolve("partitions")
+          .resolve(String.valueOf(partitionId));
     }
 
     private void writeMarkerFile(final Path partitionDir) {

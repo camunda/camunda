@@ -11,6 +11,7 @@ import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
+import io.camunda.zeebe.restore.SecondaryStorageSchemaInitializer;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
@@ -37,6 +38,7 @@ public class SpringBrokerBridge {
   private Supplier<Collection<JobStreamService>> jobStreamServicesSupplier;
   private Function<String, JobStreamService> jobStreamServiceByTenantLookup;
   private Supplier<JobStreamClient> jobStreamClientSupplier;
+  private Function<String, SecondaryStorageSchemaInitializer> schemaInitializerByTenantLookup;
 
   private BiConsumer<Integer, String> shutdownHelper;
 
@@ -115,6 +117,29 @@ public class SpringBrokerBridge {
   /** Returns the {@link JobStreamService} for the given physical tenant, if any. */
   public Optional<JobStreamService> getJobStreamService(final String physicalTenantId) {
     return Optional.ofNullable(jobStreamServiceByTenantLookup)
+        .flatMap(lookup -> Optional.ofNullable(lookup.apply(physicalTenantId)));
+  }
+
+  /**
+   * Registers a lookup resolving the {@link SecondaryStorageSchemaInitializer} of a physical
+   * tenant.
+   *
+   * <p>Registered by the Spring side and read by the broker, the opposite direction to most of this
+   * class. The initializer is a Spring bean that is only created once the broker has started, so
+   * the broker cannot be handed one when it is built and has to resolve it on use instead.
+   */
+  public void registerSecondaryStorageSchemaInitializerLookup(
+      final Function<String, SecondaryStorageSchemaInitializer> schemaInitializerByTenantLookup) {
+    this.schemaInitializerByTenantLookup = schemaInitializerByTenantLookup;
+  }
+
+  /**
+   * Returns the {@link SecondaryStorageSchemaInitializer} of the given physical tenant, or empty if
+   * the tenant has no secondary storage whose schema this node applies.
+   */
+  public Optional<SecondaryStorageSchemaInitializer> getSecondaryStorageSchemaInitializer(
+      final String physicalTenantId) {
+    return Optional.ofNullable(schemaInitializerByTenantLookup)
         .flatMap(lookup -> Optional.ofNullable(lookup.apply(physicalTenantId)));
   }
 

@@ -35,11 +35,15 @@ import io.camunda.search.schema.exceptions.IndexSchemaValidationException;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -287,6 +291,122 @@ class SearchEngineSchemaInitializerTest {
   private SearchEngineSchemaInitializer gatewayInitializerFor(
       final PhysicalTenantResolver resolver) {
     return initializerFor(resolver, true);
+  }
+
+  @Test
+  void shouldNotRunAnOnDemandAttemptWhileTheBackgroundAttemptHoldsTheTenant()
+      throws InterruptedException {
+    // given - a tenant whose attempt has started and not finished, as the background task's does
+    // while its storage is slow to answer
+    final var attempts = new AtomicInteger();
+    final var inFlight = new AtomicInteger();
+    final var overlapped = new AtomicBoolean();
+    final var inAttempt = new CountDownLatch(1);
+    final var release = new CountDownLatch(1);
+    final var blocking = blockingInitializer(attempts, inFlight, overlapped, inAttempt, release);
+    initializer = blocking;
+
+    final var background =
+        Thread.ofPlatform()
+            .name("background-attempt")
+            .start(() -> blocking.initializeTenant(DEFAULT_TENANT));
+    assertThat(inAttempt.await(10, TimeUnit.SECONDS)).isTrue();
+
+    // when - a restore asks for the schema on demand while that attempt is still in flight
+    final var onDemand =
+        Thread.ofPlatform()
+            .name("on-demand-attempt")
+            .start(() -> blocking.initializeNow(DEFAULT_TENANT));
+
+    // then - it waits its turn. Running now would share the in-flight attempt's search client,
+    // which whichever attempt finishes first closes and removes, leaving the other talking to a
+    // closed client and failing against nothing real.
+    Awaitility.await("the on-demand attempt stays out")
+        .during(Duration.ofMillis(300))
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(() -> assertThat(attempts).hasValue(1));
+
+    // and - once the first attempt returns the second runs, and the two never overlapped
+    release.countDown();
+    background.join();
+    onDemand.join();
+    assertThat(attempts).hasValue(2);
+    assertThat(overlapped).isFalse();
+  }
+
+  @Test
+  void shouldNotReportAStorageValidationAsReadyBeforeRestoreCompletes() {
+    // given - a search schema validation that succeeds, while the local partition data still needs
+    // to be restored
+    initializer =
+        new SearchEngineSchemaInitializer(
+            configsFor(tenants(camunda -> {}, Map.of())),
+            descriptorsFor(tenants(camunda -> {}, Map.of())),
+            new SimpleMeterRegistry(),
+            false,
+            tenantId -> false) {
+          @Override
+          void initializeTenantExclusively(final String physicalTenantId) {
+            // The search engine is not involved in this readiness assertion.
+          }
+        };
+
+    // when
+    initializer.initializeNowForRestore(DEFAULT_TENANT);
+
+    // then
+    assertThat(initializer.isInitialized(DEFAULT_TENANT)).isFalse();
+  }
+
+  @Test
+  void shouldRejectAnOnDemandInitializationAfterShutdown() {
+    // given
+    initializer = backgroundInitializerFor(tenants(camunda -> {}, Map.of()));
+    initializer.destroy();
+
+    // when / then
+    assertThatThrownBy(() -> initializer.initializeNow(DEFAULT_TENANT))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("shutting down");
+  }
+
+  /**
+   * An initializer whose attempt blocks until released, standing in for one waiting on its search
+   * engine. Overriding the attempt rather than the locking keeps the real per-tenant serialization
+   * in {@code initializeTenant} under test.
+   */
+  private SearchEngineSchemaInitializer blockingInitializer(
+      final AtomicInteger attempts,
+      final AtomicInteger inFlight,
+      final AtomicBoolean overlapped,
+      final CountDownLatch inAttempt,
+      final CountDownLatch release) {
+    final PhysicalTenantResolver resolver = tenants(camunda -> {}, Map.of());
+    return new SearchEngineSchemaInitializer(
+        configsFor(resolver),
+        descriptorsFor(resolver),
+        new SimpleMeterRegistry(),
+        false,
+        tenantId -> false) {
+      @Override
+      void initializeTenantExclusively(final String physicalTenantId) {
+        attempts.incrementAndGet();
+        if (inFlight.incrementAndGet() > 1) {
+          overlapped.set(true);
+        }
+        inAttempt.countDown();
+        try {
+          if (!release.await(10, TimeUnit.SECONDS)) {
+            throw new IllegalStateException("attempt was never released");
+          }
+        } catch (final InterruptedException e) {
+          Thread.currentThread().interrupt();
+          throw new IllegalStateException(e);
+        } finally {
+          inFlight.decrementAndGet();
+        }
+      }
+    };
   }
 
   /** A node without one: it starts the tasks and carries on. */

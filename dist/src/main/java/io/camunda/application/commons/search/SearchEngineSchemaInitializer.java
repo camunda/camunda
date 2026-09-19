@@ -22,6 +22,8 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +52,22 @@ public class SearchEngineSchemaInitializer
    * failing keeps its entry, and its client, for its next attempt.
    */
   private final Map<String, ClientAdapter> clientsByTenant = new ConcurrentHashMap<>();
+
+  /**
+   * One lock per physical tenant, held for the whole of that tenant's attempt.
+   *
+   * <p>A tenant's attempts are no longer necessarily sequential: on-demand initialization runs one
+   * on the caller's thread while the tenant's background task may be part-way through another. They
+   * share {@link #clientsByTenant}, and an attempt releases that client when it succeeds - so
+   * without this, one attempt closes the client the other is still using, and the second fails
+   * against a closed client rather than against anything real. Serializing is preferable to giving
+   * each attempt its own client: two attempts applying the same schema at once is work neither
+   * needs, and whichever waits finds the schema already applied.
+   */
+  private final Map<String, ReentrantLock> attemptLocks = new ConcurrentHashMap<>();
+
+  private final ReentrantLock clientLifecycleLock = new ReentrantLock();
+  private final AtomicBoolean shuttingDown = new AtomicBoolean();
 
   /**
    * @param holdsStartup whether this node keeps its listening socket closed until a physical tenant
@@ -143,11 +161,18 @@ public class SearchEngineSchemaInitializer
 
   @Override
   public void destroy() {
+    shuttingDown.set(true);
     // Stop the tasks before taking their clients away, so that a task still mid-attempt fails
     // against a closed client only after it has already been told to stop, where the failure is
     // logged as a shutdown and not as a degraded tenant.
     initialization.close();
-    clientsByTenant.keySet().forEach(this::releaseClientOf);
+    clientLifecycleLock.lock();
+    try {
+      clientsByTenant.forEach((tenantId, clientAdapter) -> closeQuietly(clientAdapter, tenantId));
+      clientsByTenant.clear();
+    } finally {
+      clientLifecycleLock.unlock();
+    }
   }
 
   @Override
@@ -168,7 +193,50 @@ public class SearchEngineSchemaInitializer
   }
 
   /**
-   * One attempt at applying a tenant's schema. Any failure propagates to the retry loop.
+   * Applies a physical tenant's schema now, on the calling thread, and reports the failure to the
+   * caller instead of retrying it. Blocking: the attempt talks to the search engine.
+   *
+   * <p>Used by a restore to establish that the secondary storage it restores into carries every
+   * index this version expects. Going through the same attempt as the retry loop marks the tenant
+   * ready when it succeeds.
+   *
+   * <p>Runs even while the tenant is recovering, which the background task refuses to do. The
+   * refusal protects a snapshot restore from having its indices recreated underneath it; this
+   * caller is that restore, at the step where the schema is supposed to be applied.
+   */
+  public void initializeNow(final String physicalTenantId) {
+    final var lock = attemptLocks.computeIfAbsent(physicalTenantId, id -> new ReentrantLock());
+    lock.lock();
+    try {
+      if (shuttingDown.get()) {
+        throw new IllegalStateException("Schema initialization is shutting down");
+      }
+      initialization.initializeNow(physicalTenantId);
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  /**
+   * Applies a tenant's schema for a restore without reporting the tenant ready yet. Local partition
+   * data is still deleted and repopulated after this validation.
+   */
+  public void initializeNowForRestore(final String physicalTenantId) {
+    final var lock = attemptLocks.computeIfAbsent(physicalTenantId, id -> new ReentrantLock());
+    lock.lock();
+    try {
+      if (shuttingDown.get()) {
+        throw new IllegalStateException("Schema initialization is shutting down");
+      }
+      initialization.initializeNowForRestore(physicalTenantId);
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  /**
+   * One attempt at applying a tenant's schema, serialized against this tenant's other attempts. Any
+   * failure propagates to the caller - the retry loop, or {@link #initializeNow}.
    *
    * <p>The client is built once per tenant and reused across that tenant's attempts, not rebuilt on
    * each one: building it opens a connection pool and its I/O threads, and a tenant whose storage
@@ -178,6 +246,18 @@ public class SearchEngineSchemaInitializer
    */
   @VisibleForTesting
   void initializeTenant(final String physicalTenantId) {
+    final var lock = attemptLocks.computeIfAbsent(physicalTenantId, id -> new ReentrantLock());
+    lock.lock();
+    try {
+      initializeTenantExclusively(physicalTenantId);
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  /** One attempt, with this tenant's monitor held. */
+  @VisibleForTesting
+  void initializeTenantExclusively(final String physicalTenantId) {
     final SearchEngineConfiguration configuration = configs.get(physicalTenantId);
     final IndexDescriptors indexDescriptors = descriptors.get(physicalTenantId);
     if (indexDescriptors == null) {
@@ -187,8 +267,7 @@ public class SearchEngineSchemaInitializer
           "No index descriptors are configured for physical tenant '" + physicalTenantId + "'");
     }
 
-    final ClientAdapter clientAdapter =
-        clientsByTenant.computeIfAbsent(physicalTenantId, id -> newClientAdapter(configuration));
+    final ClientAdapter clientAdapter = clientOf(physicalTenantId, configuration);
     try (final SchemaManager schemaManager =
         new SchemaManager(
             clientAdapter.getSearchEngineClient(),
@@ -221,9 +300,28 @@ public class SearchEngineSchemaInitializer
    * gets the adapter closes it, and the other gets nothing.
    */
   private void releaseClientOf(final String physicalTenantId) {
-    final ClientAdapter clientAdapter = clientsByTenant.remove(physicalTenantId);
-    if (clientAdapter != null) {
-      closeQuietly(clientAdapter, physicalTenantId);
+    clientLifecycleLock.lock();
+    try {
+      final ClientAdapter clientAdapter = clientsByTenant.remove(physicalTenantId);
+      if (clientAdapter != null) {
+        closeQuietly(clientAdapter, physicalTenantId);
+      }
+    } finally {
+      clientLifecycleLock.unlock();
+    }
+  }
+
+  private ClientAdapter clientOf(
+      final String physicalTenantId, final SearchEngineConfiguration configuration) {
+    clientLifecycleLock.lock();
+    try {
+      if (shuttingDown.get()) {
+        throw new IllegalStateException("Schema initialization is shutting down");
+      }
+      return clientsByTenant.computeIfAbsent(
+          physicalTenantId, id -> newClientAdapter(configuration));
+    } finally {
+      clientLifecycleLock.unlock();
     }
   }
 

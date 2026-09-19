@@ -843,6 +843,103 @@ final class PerTenantSchemaInitializationTest {
     }
   }
 
+  @Test
+  void shouldMarkTenantInitializedWhenInitializedOnRequest() {
+    // given - the tasks are never started, as on a caller that only wants this one tenant's
+    // schema applied at a moment of its own choosing
+    final var attempts = new AtomicInteger();
+    try (final var initialization =
+        initialization(Set.of(TENANT_A, TENANT_B), tenantId -> attempts.incrementAndGet())) {
+
+      // when
+      initialization.initializeNow(TENANT_A);
+
+      // then - the tenant counts as initialized from here on, so the node reports itself ready
+      // for it without waiting for a retry loop to come round
+      assertThat(attempts).hasValue(1);
+      assertThat(initialization.isInitialized(TENANT_A)).isTrue();
+      assertThat(initialization.isInitialized(TENANT_B)).isFalse();
+    }
+  }
+
+  @Test
+  void shouldNotMarkTenantInitializedWhenSchemaIsCheckedForRestore() {
+    // given
+    try (final var initialization = initialization(Set.of(TENANT_A), tenantId -> {})) {
+
+      // when
+      initialization.initializeNowForRestore(TENANT_A);
+
+      // then - the local partition data still has to be deleted and restored before requests may
+      // use the tenant again
+      assertThat(initialization.isInitialized(TENANT_A)).isFalse();
+    }
+  }
+
+  @Test
+  void shouldRejectAnOnDemandInitializationAfterShutdown() {
+    // given
+    try (final var initialization = initialization(Set.of(TENANT_A), tenantId -> {})) {
+      initialization.close();
+
+      // when / then - no new storage work may start once shutdown has begun
+      assertThatThrownBy(() -> initialization.initializeNow(TENANT_A))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("shutting down");
+    }
+  }
+
+  @Test
+  void shouldInitializeOnRequestEvenWhileTheTenantIsDeferred() {
+    // given - a tenant deferred because it is recovering, which is the state a restore asking for
+    // its schema is necessarily in
+    final var attempts = new AtomicInteger();
+    try (final var initialization =
+        initialization(
+            Set.of(TENANT_A), tenantId -> attempts.incrementAndGet(), tenantId -> true)) {
+
+      // when
+      initialization.initializeNow(TENANT_A);
+
+      // then - the deferral does not bind the caller driving the recovery. Honouring it here
+      // would have the restore wait on a condition only the restore itself can lift.
+      assertThat(attempts).hasValue(1);
+      assertThat(initialization.isInitialized(TENANT_A)).isTrue();
+    }
+  }
+
+  @Test
+  void shouldPropagateFailureWhenInitializingOnRequest() {
+    // given
+    try (final var initialization =
+        initialization(
+            Set.of(TENANT_A),
+            tenantId -> {
+              throw new IllegalStateException("storage is not reachable");
+            })) {
+
+      // when / then - the caller owns the retry here, so it has to see the failure rather than
+      // have it swallowed into a background loop it is not watching
+      assertThatThrownBy(() -> initialization.initializeNow(TENANT_A))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessage("storage is not reachable");
+      assertThat(initialization.isInitialized(TENANT_A)).isFalse();
+    }
+  }
+
+  @Test
+  void shouldRejectInitializingAnUnknownTenantOnRequest() {
+    // given
+    try (final var initialization = initialization(Set.of(TENANT_A), tenantId -> {})) {
+
+      // when / then - silently succeeding would report a tenant this node does not have as
+      // initialized, which is the one answer the caller must not get
+      assertThatThrownBy(() -> initialization.initializeNow("unknown"))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("unknown");
+    }
+  }
+
   /** Runs the gate wait off the test thread, so that "the gate stays shut" is assertable. */
   private static CountDownLatch startInBackground(
       final PerTenantSchemaInitialization initialization) {

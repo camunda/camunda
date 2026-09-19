@@ -10,6 +10,8 @@ package io.camunda.zeebe.broker;
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
+import io.camunda.application.commons.rdbms.RdbmsSchemaInitializer;
+import io.camunda.application.commons.search.SearchEngineSchemaInitializer;
 import io.camunda.application.commons.secrets.SecretStoreRegistries;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
@@ -25,6 +27,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
+import io.camunda.zeebe.restore.SecondaryStorageSchemaInitializer;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.FileUtil;
@@ -38,6 +41,7 @@ import java.util.function.Function;
 import java.util.function.IntFunction;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -79,6 +83,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final WorkingDirectory workingDirectory;
   private final SecretStoreRegistries secretStoreRegistries;
   private final ResolvedDataDirectory resolvedDataDirectory;
+  private final ObjectProvider<SearchEngineSchemaInitializer> searchEngineSchemaInitializer;
+  private final ObjectProvider<RdbmsSchemaInitializer> rdbmsSchemaInitializer;
 
   private Broker broker;
 
@@ -104,7 +110,9 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       final NodeIdProvider nodeIdProvider,
       final WorkingDirectory workingDirectory,
       final SecretStoreRegistries secretStoreRegistries,
-      final ResolvedDataDirectory resolvedDataDirectory) {
+      final ResolvedDataDirectory resolvedDataDirectory,
+      final ObjectProvider<SearchEngineSchemaInitializer> searchEngineSchemaInitializer,
+      final ObjectProvider<RdbmsSchemaInitializer> rdbmsSchemaInitializer) {
     this.configuration = configuration;
     this.springBrokerBridge = springBrokerBridge;
     this.actorScheduler = actorScheduler;
@@ -124,6 +132,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.workingDirectory = workingDirectory;
     this.secretStoreRegistries = secretStoreRegistries;
     this.resolvedDataDirectory = resolvedDataDirectory;
+    this.searchEngineSchemaInitializer = searchEngineSchemaInitializer;
+    this.rdbmsSchemaInitializer = rdbmsSchemaInitializer;
   }
 
   @Bean(destroyMethod = "close")
@@ -159,6 +169,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             .withResolvedDataDirectory(resolvedDataDirectory)
             .createSystemContext();
     springBrokerBridge.registerShutdownHelper(shutdownHelper::initiateShutdown);
+    springBrokerBridge.registerSecondaryStorageSchemaInitializerLookup(
+        this::secondaryStorageSchemaInitializer);
     broker = new Broker(systemContext, springBrokerBridge, Collections.emptyList());
 
     // already initiate starting the broker
@@ -182,6 +194,29 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     } finally {
       cleanupWorkingDirectory();
     }
+  }
+
+  private @Nullable SecondaryStorageSchemaInitializer secondaryStorageSchemaInitializer(
+      final String physicalTenantId) {
+    final var initializer = searchEngineSchemaInitializer.getIfAvailable();
+    if (initializer != null) {
+      return () -> initializer.initializeNowForRestore(physicalTenantId);
+    }
+
+    final var rdbms = rdbmsSchemaInitializer.getIfAvailable();
+    if (rdbms == null) {
+      return null;
+    }
+    return () -> {
+      if (!rdbms.isInitialized(physicalTenantId)) {
+        throw new IllegalStateException(
+            "The RDBMS schema of physical tenant '"
+                + physicalTenantId
+                + "' is not initialized; refusing to delete local partition data for restore");
+      }
+      LOGGER.info(
+          "Validated the RDBMS schema of physical tenant '{}' before restore", physicalTenantId);
+    };
   }
 
   private static Map<String, IntFunction<Long>> exportedPositionSuppliers(
