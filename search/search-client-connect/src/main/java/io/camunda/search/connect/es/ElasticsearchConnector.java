@@ -39,6 +39,17 @@ public final class ElasticsearchConnector {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchConnector.class);
 
+  /**
+   * Apache HttpClient 4.x's own default for {@code connectionRequestTimeout} (time to lease a
+   * connection from the pool) is -1, i.e. unbounded, and {@code RestClientBuilder}'s defaults never
+   * touch it either, so a starved connection pool blocks a request indefinitely even though
+   * connect/socket timeouts are always bounded. Falls back to {@code socketTimeout}'s own default
+   * magnitude rather than {@code connectTimeout}'s: a lease wait queues behind other in-flight
+   * *requests* on the pool, which is the same kind of wait socketTimeout bounds, not a TCP
+   * handshake.
+   */
+  private static final int CONNECTION_REQUEST_TIMEOUT_DEFAULT_MILLIS = 30_000;
+
   private final ConnectConfiguration configuration;
   private final ObjectMapper objectMapper;
   private final PluginRepository pluginRepository;
@@ -99,10 +110,10 @@ public final class ElasticsearchConnector {
     final var httpHosts = getHttpHosts(configuration);
     final var restClientBuilder = RestClient.builder(httpHosts);
 
-    if (configuration.getConnectTimeout() != null || configuration.getSocketTimeout() != null) {
-      restClientBuilder.setRequestConfigCallback(
-          configCallback -> setTimeouts(configCallback, configuration));
-    }
+    // always set, not gated on explicit config: connectionRequestTimeout has no bounded default
+    // of its own to fall back on, unlike connect/socket timeout.
+    restClientBuilder.setRequestConfigCallback(
+        configCallback -> setTimeouts(configCallback, configuration));
 
     final Header[] defaultHeaders =
         new Header[] {
@@ -177,6 +188,10 @@ public final class ElasticsearchConnector {
     if (elsConfig.getConnectTimeout() != null) {
       builder.setConnectTimeout(elsConfig.getConnectTimeout());
     }
+    builder.setConnectionRequestTimeout(
+        elsConfig.getSocketTimeout() != null
+            ? elsConfig.getSocketTimeout()
+            : CONNECTION_REQUEST_TIMEOUT_DEFAULT_MILLIS);
     return builder;
   }
 

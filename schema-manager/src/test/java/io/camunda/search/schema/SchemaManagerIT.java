@@ -23,6 +23,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 import static org.assertj.core.api.InstanceOfAssertFactories.type;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
@@ -32,6 +33,8 @@ import static org.mockito.Mockito.verify;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.rekawek.toxiproxy.ToxiproxyClient;
+import eu.rekawek.toxiproxy.model.ToxicDirection;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
@@ -60,6 +63,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
@@ -70,6 +74,8 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.testcontainers.Testcontainers;
+import org.testcontainers.toxiproxy.ToxiproxyContainer;
 
 @DisabledIfSystemProperty(
     named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
@@ -1725,6 +1731,193 @@ public class SchemaManagerIT {
     // verify template pattern matches the created index
     assertThat(retrievedTemplate.at("/index_template/index_patterns").toString())
         .contains(indexTemplate.getIndexPattern());
+  }
+
+  /**
+   * Regression test for the camunda-14 startup hang (120 physical tenants, ES yellow with a
+   * backlogged master task queue, 2026-09-18): a schema mutation was accepted by the search engine
+   * but never acknowledged within the process's lifetime. {@link SchemaManager#joinOnFutures} gives
+   * up after {@link SchemaManager#INDEX_CREATION_TIMEOUT_SECONDS} and cancels the future, but that
+   * alone does not stop the virtual thread already running it — {@link CompletableFuture#cancel}
+   * never interrupts the underlying task. What used to leave the tenant's init thread stuck forever
+   * — exactly where the incident's thread dump showed it: {@code SchemaManager.close() ->
+   * ThreadPerTaskExecutor.close() -> awaitTermination() -> CountDownLatch.await()} — is {@link
+   * #close()} itself now bounding that wait and escalating to {@code shutdownNow()} instead of
+   * relying on the JDK's unbounded {@code ExecutorService.close()}.
+   */
+  @TestTemplate
+  void shouldNotHangOnCloseWhenAnIndexTemplateCreationNeverCompletes(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws Exception {
+    // given - createIndexTemplate is accepted but never returns, standing in for a call queued
+    // behind an overloaded Elasticsearch master that never gets to it
+    final SearchEngineClient searchEngineClient = spy(getSearchEngineClient(config));
+    final var neverCompletes = new CountDownLatch(1);
+    doAnswer(
+            invocation -> {
+              neverCompletes.await();
+              return invocation.callRealMethod();
+            })
+        .when(searchEngineClient)
+        .createIndexTemplate(eq(indexTemplate), any(), eq(true));
+
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClient, Set.of(metadataIndex), Set.of(indexTemplate), config, objectMapper);
+
+    // when - startupOnce() times out because the future never completes, and close() runs on
+    // the way out, exactly like SearchEngineSchemaInitializer.initializeTenant()'s
+    // try-with-resources does for a real physical tenant
+    final var tenantInitThread =
+        new Thread(
+            () -> {
+              try {
+                schemaManager.startupOnce();
+              } catch (final Exception timedOut) {
+                // expected: INDEX_CREATION_TIMEOUT_SECONDS elapses because the mocked call
+                // never completes
+              } finally {
+                schemaManager.close();
+              }
+            },
+            "schema-init-pt-under-test");
+    tenantInitThread.setDaemon(true);
+    tenantInitThread.start();
+
+    try {
+      // then - close() returns within a bound instead of hanging forever: it first waits
+      // gracefully for up to INDEX_CREATION_TIMEOUT_SECONDS (the abandoned task never finishes
+      // naturally, since the mock blocks on a latch with no timeout of its own), then escalates to
+      // shutdownNow(), whose interrupt reaches the latch's await() and ends the task
+      tenantInitThread.join(
+          Duration.ofSeconds(2L * SchemaManager.INDEX_CREATION_TIMEOUT_SECONDS + 15).toMillis());
+
+      assertThat(tenantInitThread.isAlive())
+          .as(
+              "SchemaManager.close() should not hang forever waiting on a virtual-thread task"
+                  + " abandoned by a timed-out attempt")
+          .isFalse();
+    } finally {
+      // cleanup - release the blocked call in case it is still running in the background
+      neverCompletes.countDown();
+      tenantInitThread.join(Duration.ofSeconds(10).toMillis());
+    }
+  }
+
+  /**
+   * Regression test for the same camunda-14 hang as {@link
+   * #shouldNotHangOnCloseWhenAnIndexTemplateCreationNeverCompletes}, but against a real search
+   * engine instead of a mock, to confirm the fix holds under the search-engine SDK's own bounded
+   * defaults (connectTimeout=1s, socketTimeout=30s — see {@code
+   * RestClientBuilder.createHttpClient()}) rather than being an artifact of mocking.
+   *
+   * <p>A Toxiproxy adds real, bounded per-request latency between the client and the real search
+   * engine — well under the 30s socket timeout, so no individual call ever throws — and the
+   * connection pool is shrunk to a single connection, so that far more than {@link
+   * SchemaManager#INDEX_CREATION_TIMEOUT_SECONDS} of genuinely-succeeding work is serialized behind
+   * it. {@code initialiseIndexTemplates() -> joinOnFutures()} times out with real work still queued
+   * for that one connection, and {@code close()} — run exactly as {@code
+   * SearchEngineSchemaInitializer.initializeTenant()}'s try-with-resources runs it on the way out
+   * of a failed attempt — then bounds its own wait on that same, still genuinely-running, real work
+   * instead of hanging on it forever.
+   */
+  @TestTemplate
+  void shouldNotHangOnCloseUnderRealSearchEngineWithSlowConnectionPool(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws Exception {
+    // given - the real search engine is reachable only through a Toxiproxy that delays every
+    // request by latencyMillis (well under the SDK's own 30s socket timeout, so no call ever
+    // throws), and the connection pool is shrunk to one, so genuinely-succeeding template
+    // creations are fully serialized behind a single slow connection
+    final var toxiproxyListenPort = 10_000;
+    final var latencyMillis = 6_000L;
+    final var templateCount = 20;
+
+    // OpensearchConnector parses the URL with java.net.URI, which needs an explicit scheme to
+    // find the host at all (a bare "host:port" is parsed as an opaque URI with scheme=host and a
+    // null host) - ElasticsearchContainer's address has none, OpenSearchContainer's does, so the
+    // proxied URL below must carry over whichever the original had.
+    final var upstreamUrl = config.connect().getUrl();
+    final var schemePrefix =
+        upstreamUrl.contains("://") ? upstreamUrl.substring(0, upstreamUrl.indexOf("://") + 3) : "";
+    final var upstreamPort =
+        Integer.parseInt(upstreamUrl.substring(upstreamUrl.lastIndexOf(':') + 1));
+    Testcontainers.exposeHostPorts(upstreamPort);
+
+    final var toxiproxy =
+        new ToxiproxyContainer("ghcr.io/shopify/toxiproxy:2.5.0").withAccessToHost(true);
+    toxiproxy.addExposedPorts(toxiproxyListenPort);
+    toxiproxy.start();
+    closeables.add(toxiproxy);
+
+    final var toxiproxyClient =
+        new ToxiproxyClient(toxiproxy.getHost(), toxiproxy.getControlPort());
+    final var proxy =
+        toxiproxyClient.createProxy(
+            "search-engine",
+            "0.0.0.0:" + toxiproxyListenPort,
+            "host.testcontainers.internal:" + upstreamPort);
+    proxy.toxics().latency("slow-search-engine", ToxicDirection.UPSTREAM, latencyMillis);
+
+    config
+        .connect()
+        .setUrl(
+            schemePrefix
+                + toxiproxy.getHost()
+                + ":"
+                + toxiproxy.getMappedPort(toxiproxyListenPort));
+    config.connect().setMaxConnections(1);
+    config.connect().setMaxConnectionsPerRoute(1);
+    config.connect().setConnectTimeout(1_000);
+    config.connect().setSocketTimeout(30_000);
+
+    final var manyTemplates = new HashSet<IndexTemplateDescriptor>();
+    for (int i = 0; i < templateCount; i++) {
+      manyTemplates.add(createTestTemplateDescriptor("hang_template_" + i, "/mappings.json"));
+    }
+
+    final SearchEngineClient searchEngineClient = getSearchEngineClient(config);
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClient, Set.of(metadataIndex), manyTemplates, config, objectMapper);
+
+    // when - drive it exactly like SearchEngineSchemaInitializer.initializeTenant() drives a single
+    // attempt for a real physical tenant: startupOnce() times out with real work still queued
+    // behind the single connection, and close() runs on the way out of that failed attempt
+    final var tenantInitThread =
+        new Thread(
+            () -> {
+              try {
+                schemaManager.startupOnce();
+              } catch (final Exception timedOut) {
+                // expected: INDEX_CREATION_TIMEOUT_SECONDS elapses while real work for
+                // templateCount templates is still queued behind the single connection
+              } finally {
+                schemaManager.close();
+              }
+            },
+            "schema-init-pt-under-test-real-search-engine");
+    tenantInitThread.setDaemon(true);
+    tenantInitThread.start();
+
+    try {
+      // then - close() returns within a bound instead of hanging forever on the real,
+      // still-running search-engine calls, even though close() itself first waits gracefully for
+      // up to INDEX_CREATION_TIMEOUT_SECONDS before escalating to an interrupt
+      tenantInitThread.join(
+          Duration.ofSeconds(2L * SchemaManager.INDEX_CREATION_TIMEOUT_SECONDS + 30).toMillis());
+
+      assertThat(tenantInitThread.isAlive())
+          .as(
+              "SchemaManager.close() should not hang forever waiting on real, still-running"
+                  + " search-engine calls queued behind a slow connection pool")
+          .isFalse();
+    } finally {
+      // cleanup - remove the toxic so any remaining real, queued work can drain immediately and
+      // the thread (and the JVM) can actually terminate, instead of waiting out the full latency
+      proxy.toxics().get("slow-search-engine").remove();
+      tenantInitThread.join(Duration.ofSeconds(60).toMillis());
+    }
   }
 
   private String retentionMinAge(final JsonNode policyNode) {

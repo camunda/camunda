@@ -28,6 +28,7 @@ import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult;
 import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Compatible;
 import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Incompatible;
 import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Indeterminate;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -39,6 +40,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -49,6 +51,15 @@ import org.slf4j.LoggerFactory;
 public class SchemaManager implements CloseableSilently {
 
   public static final int INDEX_CREATION_TIMEOUT_SECONDS = 60;
+
+  /**
+   * Fallback when neither {@code maxConnectionsPerRoute} nor {@code maxConnections} is configured —
+   * matches {@code RestClientBuilder}'s own {@code DEFAULT_MAX_CONN_PER_ROUTE}, so schema mutations
+   * never fire more concurrent requests than the search engine client's own connection pool can
+   * serve, even with the default pool size.
+   */
+  private static final int DEFAULT_MAX_CONCURRENT_REQUESTS = 10;
+
   private static final String INDICES_MISSING_ALIAS = "Indices missing their expected alias: ";
   private static final String ALIAS_INTEGRITY_ERR = "Alias '%s' points to more than 1 index: [%s]";
   private static final Logger LOG = LoggerFactory.getLogger(SchemaManager.class);
@@ -58,6 +69,16 @@ public class SchemaManager implements CloseableSilently {
   private final SearchEngineConfiguration config;
   private final IndexSchemaValidator schemaValidator;
   private final ExecutorService virtualThreadExecutor;
+
+  /**
+   * Bounds how many schema-mutation requests this instance keeps in flight at once, sized to the
+   * connection pool rather than to the number of descriptors. Without it, a physical tenant with
+   * many missing templates fires one virtual thread per descriptor, all competing for a pool an
+   * order of magnitude smaller — the excess simply queues inside the HTTP client waiting for a
+   * connection to free up, invisibly, on top of whatever the search engine itself is slow to ack.
+   */
+  private final Semaphore concurrencyLimiter;
+
   private final SchemaManagerMetrics schemaManagerMetrics;
   private final SchemaMetadataStore schemaMetadataStore;
   private final String currentVersion;
@@ -104,6 +125,7 @@ public class SchemaManager implements CloseableSilently {
       final String currentVersion,
       final SchemaManagerMetrics schemaManagerMetrics) {
     virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
+    concurrencyLimiter = new Semaphore(maxConcurrentRequests(config));
     this.searchEngineClient = searchEngineClient;
     this.indexTemplateDescriptors = indexTemplateDescriptors;
     allIndexDescriptors =
@@ -272,6 +294,41 @@ public class SchemaManager implements CloseableSilently {
     }
   }
 
+  private static int maxConcurrentRequests(final SearchEngineConfiguration config) {
+    final var connect = config.connect();
+    if (connect.getMaxConnectionsPerRoute() != null) {
+      return connect.getMaxConnectionsPerRoute();
+    }
+    if (connect.getMaxConnections() != null) {
+      return connect.getMaxConnections();
+    }
+    return DEFAULT_MAX_CONCURRENT_REQUESTS;
+  }
+
+  /**
+   * Runs {@code task} on the virtual-thread executor, but gated behind {@link #concurrencyLimiter}
+   * so at most one pool's worth of schema mutations are ever actually in flight at once — the rest
+   * park on the semaphore rather than queue inside the HTTP client's own connection pool.
+   */
+  private CompletableFuture<Void> submitBounded(final Runnable task) {
+    return CompletableFuture.runAsync(
+        () -> {
+          try {
+            concurrencyLimiter.acquire();
+          } catch (final InterruptedException e) {
+            // close() gave up on us before we ever got a permit; don't fire the request at all.
+            Thread.currentThread().interrupt();
+            return;
+          }
+          try {
+            task.run();
+          } finally {
+            concurrencyLimiter.release();
+          }
+        },
+        virtualThreadExecutor);
+  }
+
   private void startSchemaCleanup() {
     LOG.debug("Starting legacy indexes cleanup...");
     final boolean performCleanup = config.schemaManager().isPerformCleanup();
@@ -347,11 +404,7 @@ public class SchemaManager implements CloseableSilently {
   private void updateSchemaSettings() {
     final var futures =
         allIndexDescriptors.stream()
-            .map(
-                descriptor ->
-                    // run creation of indices async as virtual thread
-                    CompletableFuture.runAsync(
-                        () -> updateIndexSettings(descriptor), virtualThreadExecutor))
+            .map(descriptor -> submitBounded(() -> updateIndexSettings(descriptor)))
             .toArray(CompletableFuture[]::new);
 
     joinOnFutures(futures);
@@ -383,14 +436,12 @@ public class SchemaManager implements CloseableSilently {
         missingIndices.stream()
             .map(
                 descriptor ->
-                    // run creation of indices async as virtual thread
-                    CompletableFuture.runAsync(
+                    submitBounded(
                         () -> {
                           LOG.debug("Create missing index '{}'", descriptor.getFullQualifiedName());
                           searchEngineClient.createIndex(
                               descriptor, getIndexSettingsFromConfig(descriptor));
-                        },
-                        virtualThreadExecutor))
+                        }))
             .toArray(CompletableFuture[]::new);
 
     // We need to wait for the completion, to make sure all indices has been created successfully
@@ -420,11 +471,7 @@ public class SchemaManager implements CloseableSilently {
     LOG.info("Found '{}' missing index templates", missingIndexTemplates.size());
     final var futures =
         missingIndexTemplates.stream()
-            .map(
-                descriptor ->
-                    // run creation of indices async as virtual thread
-                    CompletableFuture.runAsync(
-                        () -> createIndexTemplate(descriptor), virtualThreadExecutor))
+            .map(descriptor -> submitBounded(() -> createIndexTemplate(descriptor)))
             .toArray(CompletableFuture[]::new);
 
     // We need to wait for the completion, to make sure all indices and templates have been created
@@ -474,12 +521,20 @@ public class SchemaManager implements CloseableSilently {
    * <p>All exceptions, including timeout exception, are rethrown as unchecked exception. To reduce
    * boilerplate (exception handling), but make sure startup fails.
    *
+   * <p>On timeout, every future still outstanding is cancelled. {@link CompletableFuture#cancel}
+   * does not interrupt the task already running on the virtual-thread executor — the JDK never uses
+   * interrupts for that — so this does not stop the underlying request. What it does do is mark the
+   * future itself done, so nothing downstream mistakes it for a request that is still meaningfully
+   * being waited on. {@link #close()} is what actually bounds how long a caller waits for the task
+   * itself to finish.
+   *
    * @param futures futures that be joined on
    */
   private void joinOnFutures(final CompletableFuture<?>[] futures) {
     try {
       CompletableFuture.allOf(futures).get(INDEX_CREATION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
     } catch (final Exception e) {
+      Arrays.stream(futures).forEach(future -> future.cancel(true));
       LangUtil.rethrowUnchecked(e);
     }
   }
@@ -640,9 +695,41 @@ public class SchemaManager implements CloseableSilently {
     return getMissingIndices(requiredIndexDescriptors()).isEmpty();
   }
 
+  /**
+   * Closes the executor without waiting on it unboundedly.
+   *
+   * <p>{@code ExecutorService.close()} shuts down and then loops {@code awaitTermination(1, DAYS)}
+   * until the executor terminates — effectively an unbounded wait. A caller that retries on a
+   * timeout (see {@code PerTenantSchemaInitialization}) constructs a fresh {@code SchemaManager} —
+   * and therefore a fresh executor — per attempt and calls {@code close()} on the previous one
+   * before starting the next; if the previous attempt's request is still genuinely running against
+   * an overloaded search engine, that unbounded wait is exactly what left tenant-init threads
+   * permanently parked in {@code CountDownLatch.await()}.
+   *
+   * <p>Shutdown is graceful first — plain {@code shutdown()}, which lets already-running tasks
+   * (e.g. {@link #startSchemaCleanup}'s fire-and-forget cleanup) finish undisturbed, exactly as
+   * before. Only once the bounded wait for that is exhausted do we escalate to {@code
+   * shutdownNow()}, a best-effort attempt to interrupt whatever is still running, which can end a
+   * blocked I/O call early. Either way this method returns instead of blocking forever; a task that
+   * survives the interrupt simply keeps running in the background until the search engine itself
+   * responds — it no longer holds up the caller.
+   */
   @Override
   public void close() {
-    virtualThreadExecutor.close();
+    virtualThreadExecutor.shutdown();
+    try {
+      if (!virtualThreadExecutor.awaitTermination(
+          INDEX_CREATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+        LOG.warn(
+            "SchemaManager executor did not terminate within {}s; interrupting still-running tasks"
+                + " and giving up the wait.",
+            INDEX_CREATION_TIMEOUT_SECONDS);
+        virtualThreadExecutor.shutdownNow();
+      }
+    } catch (final InterruptedException e) {
+      virtualThreadExecutor.shutdownNow();
+      Thread.currentThread().interrupt();
+    }
   }
 
   public boolean isAliasIntegrityValid(final boolean throwException) {
