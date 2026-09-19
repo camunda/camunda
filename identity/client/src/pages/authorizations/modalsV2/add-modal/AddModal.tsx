@@ -10,6 +10,7 @@ import { FC, useEffect, useId } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
   Checkbox,
+  Input,
   Label,
   Select,
   SelectContent,
@@ -39,7 +40,11 @@ import OwnerSelection from "../owner-selection";
 import {
   isValidId,
   isValidResourceId,
+  isValidSecretResourceId,
   getIdPattern,
+  SECRET_NAME_PATTERN_TEXT,
+  AUTHORIZATION_WILDCARD,
+  SECRET_REFERENCE_PREFIX,
 } from "src/utility/validate";
 import type {
   OwnerType,
@@ -257,6 +262,65 @@ export const AddModal: FC<
                 )}
               </FormField>
             )}
+          />
+        ) : watchedResourceType === "SECRET" ? (
+          <Controller
+            name="resourceId"
+            control={control}
+            rules={{
+              required: t("resourceIdRequired"),
+              validate: (value) =>
+                isValidSecretResourceId(value ?? "") ||
+                t("pleaseEnterValidSecretResourceId", {
+                  pattern: SECRET_NAME_PATTERN_TEXT,
+                }),
+            }}
+            render={({ field, fieldState }) => {
+              const currentValue = field.value ?? "";
+              const isWildcard = currentValue === AUTHORIZATION_WILDCARD;
+              const displayValue = isWildcard
+                ? AUTHORIZATION_WILDCARD
+                : currentValue.startsWith(SECRET_REFERENCE_PREFIX)
+                  ? currentValue.slice(SECRET_REFERENCE_PREFIX.length)
+                  : currentValue;
+
+              return (
+                <FormField
+                  label={t("resourceId")}
+                  error={fieldState.error?.message}
+                  helperText={t("secretResourceIdHelperText")}
+                >
+                  {(controlProps) => (
+                    <div className="flex items-center gap-1.5">
+                      {!isWildcard && (
+                        <Text as="span" variant="helper" className="shrink-0">
+                          {SECRET_REFERENCE_PREFIX}
+                        </Text>
+                      )}
+                      <Input
+                        {...controlProps}
+                        className="min-w-0 flex-1"
+                        value={displayValue}
+                        placeholder={t("enterSecretName")}
+                        onChange={(e) => {
+                          // The form validates on change, and
+                          // the modal submits on Enter without blurring, so
+                          // deferring left a lone "*" both flagged invalid
+                          // and unsubmittable from the keyboard.
+                          const input = e.currentTarget.value;
+                          field.onChange(
+                            input === AUTHORIZATION_WILDCARD
+                              ? AUTHORIZATION_WILDCARD
+                              : SECRET_REFERENCE_PREFIX + input,
+                          );
+                        }}
+                        onBlur={field.onBlur}
+                      />
+                    </div>
+                  )}
+                </FormField>
+              );
+            }}
           />
         ) : (
           <Controller
