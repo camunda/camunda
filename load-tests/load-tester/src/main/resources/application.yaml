@@ -104,6 +104,10 @@ load-tester:
     send-message: ${LOAD_TESTER_WORKER_SEND_MESSAGE:false}
     message-name: ${LOAD_TESTER_WORKER_MESSAGE_NAME:messageName}
     correlation-key-variable-name: ${LOAD_TESTER_WORKER_CORRELATION_KEY_VARIABLE_NAME:correlationKey-var}
+    # Agent-visibility scenario baseline/treatment toggle; only meaningful for the
+    # ad-hoc-sub-process orchestrator job type. Set via global.extraEnvVars on the treatment
+    # dispatch only - see load-tests/setup/scenarios/load-tester-values-agent-visibility.yaml.
+    agent-instance-simulation-enabled: ${LOAD_TESTER_WORKER_AGENT_INSTANCE_SIMULATION_ENABLED:false}
 
   # Optional Optimize report-evaluation meter (starter-only); requires api.jwtAuthForApiEnabled=true.
   optimize:

@@ -30,8 +30,8 @@ defaults:
 
 env:
   TEST_OWNER: '@camunda/reliability-testing'
-  CLUSTER: camunda-benchmark-prod
-  TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
+  CLUSTER: camunda-benchmark-dev  # TEMP: switched from camunda-benchmark-prod for agent-visibility experimentation - revert before merging
+  TELEPORT_JOIN_TOKEN: infra-benchmark-dev-github-action-zeebe  # TEMP: switched from infra-benchmark-prod-github-action-zeebe - revert before merging
 
 jobs:
   delete-load-test:
