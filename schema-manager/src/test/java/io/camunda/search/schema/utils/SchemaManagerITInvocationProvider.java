@@ -70,6 +70,9 @@ public class SchemaManagerITInvocationProvider
     }
     config.connect().setClusterName(connectionType.name());
     config.connect().setType(connectionType.toString());
+    // make sure we don't get stuck waiting on the connection in the tests
+    config.connect().setConnectTimeout(10_000);
+    config.connect().setSocketTimeout(60_000);
     config.schemaManager().getRetry().setMaxRetries(3); // cap the retries to avoid long test runs
     return config;
   }
