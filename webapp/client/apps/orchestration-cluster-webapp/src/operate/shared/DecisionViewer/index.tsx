@@ -17,6 +17,14 @@ type Props = {
 	onDefinitionsChange?: (definitions: Definitions | undefined) => void;
 };
 
+function addRuleIndexColumnHeader(container: HTMLElement) {
+	container.querySelectorAll('th.index-column').forEach((ruleIndexColumnHeader) => {
+		if (ruleIndexColumnHeader instanceof HTMLTableCellElement && ruleIndexColumnHeader.textContent?.trim() === '') {
+			ruleIndexColumnHeader.textContent = '#';
+		}
+	});
+}
+
 function DecisionViewer({xml, decisionViewId, highlightableRules = [], onDefinitionsChange}: Props) {
 	const dmnJSRef = useRef<DmnJS | null>(null);
 	const viewerCanvasRef = useRef<HTMLDivElement | null>(null);
@@ -34,7 +42,18 @@ function DecisionViewer({xml, decisionViewId, highlightableRules = [], onDefinit
 			return;
 		}
 
-		dmnJSRef.current!.render(viewerCanvasRef.current, xml, decisionViewId);
+		const viewerCanvas = viewerCanvasRef.current;
+		const observer = new MutationObserver(() => {
+			addRuleIndexColumnHeader(viewerCanvas);
+		});
+		observer.observe(viewerCanvas, {childList: true, subtree: true});
+		void dmnJSRef.current!.render(viewerCanvas, xml, decisionViewId).then(() => {
+			addRuleIndexColumnHeader(viewerCanvas);
+		});
+
+		return () => {
+			observer.disconnect();
+		};
 	}, [decisionViewId, xml]);
 
 	useEffect(() => {

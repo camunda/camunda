@@ -679,6 +679,10 @@
 					"heading": "403 - Vous n'avez pas la permission de consulter ces informations",
 					"description": "Contactez votre administrateur pour obtenir l'accès.",
 					"learnMoreLink": "En savoir plus sur les autorisations"
+				},
+				"panel": {
+					"label": "panneau de décision",
+					"unknownEvaluationFailure": "L'évaluation a échoué avec une erreur inconnue"
 				}
 			},
 			"operations": {

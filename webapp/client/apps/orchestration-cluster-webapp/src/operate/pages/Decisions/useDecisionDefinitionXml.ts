@@ -6,23 +6,30 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useSuspenseQuery} from '@tanstack/react-query';
+import {queryOptions, useSuspenseQuery} from '@tanstack/react-query';
 import {request} from '#/shared/http/request';
+import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
 
-function useDecisionDefinitionXml(decisionDefinitionKey: string) {
-	return useSuspenseQuery({
-		queryKey: ['decisionDefinitionXml', decisionDefinitionKey] as const,
-		queryFn: async () => {
-			const {response, error} = await request(endpoints.getDecisionDefinitionXml({decisionDefinitionKey}));
-			if (error !== null) {
-				throw error;
-			}
+async function fetchDecisionDefinitionXml(decisionDefinitionKey: string) {
+	const {response, error} = await request(endpoints.getDecisionDefinitionXml({decisionDefinitionKey}));
+	if (error !== null) {
+		throw mapQueryError(error);
+	}
 
-			return response.text();
-		},
+	return response.text();
+}
+
+function decisionDefinitionXmlQuery(decisionDefinitionKey: string) {
+	return queryOptions({
+		queryKey: ['decisionDefinitionXml', decisionDefinitionKey] as const,
+		queryFn: () => fetchDecisionDefinitionXml(decisionDefinitionKey),
 		staleTime: 'static',
 	});
 }
 
-export {useDecisionDefinitionXml};
+function useDecisionDefinitionXml(decisionDefinitionKey: string) {
+	return useSuspenseQuery(decisionDefinitionXmlQuery(decisionDefinitionKey));
+}
+
+export {useDecisionDefinitionXml, fetchDecisionDefinitionXml};
