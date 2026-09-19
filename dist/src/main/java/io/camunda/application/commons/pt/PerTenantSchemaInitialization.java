@@ -48,6 +48,10 @@ import org.slf4j.LoggerFactory;
  *
  * <p>{@link #isInitialized(String)} is a one-way latch: it asserts that the schema described in the
  * source code was applied, never that the tenant's storage is currently reachable.
+ *
+ * <p>A tenant may also be <em>deferred</em>: its schema must not be touched at all for now, which
+ * is not a failure and is not retried against a budget. A deferred tenant stops counting as still
+ * trying, so it never holds the gate shut, and it stays uninitialized until the deferral lifts.
  */
 @NullMarked
 public final class PerTenantSchemaInitialization implements SchemaInitialization {
@@ -63,6 +67,7 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
   private final Consumer<String> attempt;
   private final Predicate<Throwable> terminal;
   private final Function<String, RetryConfiguration> retryConfig;
+  private final DeferralCheck deferral;
 
   private final Map<String, TenantState> tenants;
 
@@ -80,15 +85,59 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
    *     terminal stops trying, and if every tenant is classified that way the gate aborts startup
    *     rather than releasing, so the bar is "certainly not repairable without operator action".
    * @param retryConfig the backoff applied between a tenant's attempts
+   * @see #PerTenantSchemaInitialization(Set, Consumer, Predicate, Function, Predicate) for the
+   *     variant that can defer a tenant; this one never defers one.
    */
   public PerTenantSchemaInitialization(
       final Set<String> tenantIds,
       final Consumer<String> attempt,
       final Predicate<Throwable> terminal,
       final Function<String, RetryConfiguration> retryConfig) {
+    this(tenantIds, attempt, terminal, retryConfig, tenantId -> false);
+  }
+
+  /**
+   * @param deferred whether a tenant's schema must not be applied yet. Consulted before every
+   *     attempt, so a deferral that lifts while the node runs is picked up on its own. A deferred
+   *     tenant costs no attempt from its retry budget and produces no failure: the reason it is
+   *     deferred is a state of the cluster, not of the storage, and classifying it as either
+   *     success or failure would misreport it in both the logs and the gate.
+   */
+  public PerTenantSchemaInitialization(
+      final Set<String> tenantIds,
+      final Consumer<String> attempt,
+      final Predicate<Throwable> terminal,
+      final Function<String, RetryConfiguration> retryConfig,
+      final Predicate<String> deferred) {
+    this(
+        tenantIds,
+        attempt,
+        terminal,
+        retryConfig,
+        DeferralCheck.of(tenantId -> deferred.test(tenantId) ? Deferral.DEFERRED : Deferral.NONE));
+  }
+
+  /**
+   * Creates an initializer with a deferral check that can distinguish genuine recovery from pending
+   * discovery. Pending discovery keeps the tenant trying and unsettled; genuine recovery releases
+   * it from the gate as required by the per-tenant schema initialization ADR.
+   *
+   * @param tenantIds the physical tenants to initialize, one background task each
+   * @param attempt applies one tenant's schema in a single attempt; throws to report failure
+   * @param terminal decides whether one failure will not be repaired by retrying
+   * @param retryConfig the backoff applied between a tenant's attempts
+   * @param deferral returns the current deferral state for a tenant
+   */
+  public PerTenantSchemaInitialization(
+      final Set<String> tenantIds,
+      final Consumer<String> attempt,
+      final Predicate<Throwable> terminal,
+      final Function<String, RetryConfiguration> retryConfig,
+      final DeferralCheck deferral) {
     this.attempt = attempt;
     this.terminal = terminal;
     this.retryConfig = retryConfig;
+    this.deferral = deferral;
 
     // insertion-ordered so that tasks are started, and logged, in the order the tenants are
     // configured in
@@ -101,6 +150,7 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
    * Starts one background task per physical tenant and returns as soon as they are running. A
    * storage failure degrades its own tenant and nothing else.
    */
+  @Override
   public void start() {
     tenants.forEach(
         (tenantId, state) -> {
@@ -143,6 +193,7 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
    * @throws EveryTenantTerminallyFailedException if the gate opened with no serviceable tenant and
    *     every tenant terminal, which aborts the caller's startup
    */
+  @Override
   public void awaitGate() {
     gateLock.lock();
     try {
@@ -165,6 +216,7 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
   }
 
   /** Whether the physical tenant's schema has been applied. An unknown tenant is never ready. */
+  @Override
   public boolean isInitialized(final String physicalTenantId) {
     final TenantState state = tenants.get(physicalTenantId);
     return state != null && state.ready.get();
@@ -237,8 +289,52 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
       final var backoff =
           IntervalFunction.ofExponentialRandomBackoff(
               retry.getMinRetryDelay(), retry.getRetryDelayMultiplier(), retry.getMaxRetryDelay());
+      final long deferralPollMillis = Math.max(1L, retry.getMinRetryDelay().toMillis());
 
-      for (int attemptNumber = 1; !shutdown.get(); attemptNumber++) {
+      int attemptNumber = 1;
+      int consecutiveDeferrals = 0;
+      boolean recoveryDeferred = false;
+      while (!shutdown.get()) {
+        switch (deferral.check(physicalTenantId)) {
+          case DEFERRED -> {
+            consecutiveDeferrals++;
+            logDeferred(physicalTenantId, consecutiveDeferrals, deferralPollMillis);
+            // Stops this tenant counting as still trying, so a node whose every tenant is deferred
+            // still opens its gate and comes up. That is what keeps the operator able to reach the
+            // node that has to be told the deferral is over.
+            if (!recoveryDeferred) {
+              stopTrying(state);
+              recoveryDeferred = true;
+            }
+            if (!sleep(deferralPollMillis)) {
+              return;
+            }
+            continue;
+          }
+          case PENDING -> {
+            consecutiveDeferrals++;
+            logDiscoveryPending(physicalTenantId, consecutiveDeferrals, deferralPollMillis);
+            // Pending discovery is not the ADR's genuine-recovery case. Keep the tenant unsettled
+            // and trying, otherwise the gate can open before this tenant has ever been examined.
+            if (recoveryDeferred) {
+              startTrying(state);
+              recoveryDeferred = false;
+            }
+            if (!sleep(deferralPollMillis)) {
+              return;
+            }
+            continue;
+          }
+          case NONE -> {
+            consecutiveDeferrals = 0;
+            if (recoveryDeferred) {
+              startTrying(state);
+              recoveryDeferred = false;
+            }
+          }
+          default -> throw new IllegalStateException("Unknown schema initialization deferral");
+        }
+
         final long retryDelayMillis;
         try {
           attempt.accept(physicalTenantId);
@@ -288,6 +384,7 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
               failure);
         }
 
+        attemptNumber++;
         if (!sleep(retryDelayMillis)) {
           return;
         }
@@ -374,12 +471,64 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
     }
   }
 
+  private void startTrying(final TenantState state) {
+    gateLock.lock();
+    try {
+      if (!state.trying) {
+        state.trying = true;
+        gateChanged.signalAll();
+      }
+    } finally {
+      gateLock.unlock();
+    }
+  }
+
   private void signalGateChanged() {
     gateLock.lock();
     try {
       gateChanged.signalAll();
     } finally {
       gateLock.unlock();
+    }
+  }
+
+  private void logDeferred(
+      final String physicalTenantId,
+      final int consecutiveDeferrals,
+      final long deferralPollMillis) {
+    if (consecutiveDeferrals == 1) {
+      LOG.info(
+          "Not initializing the schema of physical tenant '{}' yet: the tenant is recovering;"
+              + " checking again in {}ms.",
+          physicalTenantId,
+          deferralPollMillis);
+    } else {
+      LOG.debug(
+          "Schema initialization for physical tenant '{}' is still deferred because the tenant is"
+              + " recovering, after {} checks; checking again in {}ms.",
+          physicalTenantId,
+          consecutiveDeferrals,
+          deferralPollMillis);
+    }
+  }
+
+  private void logDiscoveryPending(
+      final String physicalTenantId,
+      final int consecutiveDeferrals,
+      final long deferralPollMillis) {
+    if (consecutiveDeferrals == 1) {
+      LOG.info(
+          "Not initializing the schema of physical tenant '{}' yet: recovery status is still"
+              + " being discovered; checking again in {}ms.",
+          physicalTenantId,
+          deferralPollMillis);
+    } else {
+      LOG.debug(
+          "Schema initialization for physical tenant '{}' is still waiting for recovery status"
+              + " after {} checks; checking again in {}ms.",
+          physicalTenantId,
+          consecutiveDeferrals,
+          deferralPollMillis);
     }
   }
 
@@ -417,6 +566,23 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
     return false;
   }
 
+  /** Supplies one consistent deferral decision to the tenant loop. */
+  public static final class DeferralCheck {
+    private final Function<String, Deferral> check;
+
+    private DeferralCheck(final Function<String, Deferral> check) {
+      this.check = check;
+    }
+
+    public static DeferralCheck of(final Function<String, Deferral> check) {
+      return new DeferralCheck(check);
+    }
+
+    private Deferral check(final String physicalTenantId) {
+      return check.apply(physicalTenantId);
+    }
+  }
+
   /**
    * One tenant's contribution to the gate. {@code settled}, {@code trying} and {@code
    * terminalFailure} are written and read only under {@link #gateLock}; {@code ready} is also
@@ -433,5 +599,14 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
     private boolean settled;
     private boolean trying = true;
     private @Nullable Throwable terminalFailure;
+  }
+
+  public enum Deferral {
+    /** The tenant is not recovering and can be initialized. */
+    NONE,
+    /** The tenant is genuinely recovering and must be left untouched. */
+    DEFERRED,
+    /** Discovery has not resolved whether the tenant is recovering yet. */
+    PENDING
   }
 }

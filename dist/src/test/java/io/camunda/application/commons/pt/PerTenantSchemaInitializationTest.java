@@ -20,9 +20,11 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.RepeatedTest;
@@ -728,6 +730,119 @@ final class PerTenantSchemaInitializationTest {
     }
   }
 
+  private static Function<String, RetryConfiguration> singleAttemptRetryConfig() {
+    final var retry = fastRetry();
+    retry.setMaxRetries(1);
+    return tenantId -> retry;
+  }
+
+  @Test
+  void shouldNotAttemptWhileEveryTenantIsDeferred() throws Exception {
+    // given - both tenants are being restored, so their schemas must not be touched at all
+    final var attempts = new AtomicInteger();
+    try (final var initialization =
+        initialization(bothTenants(), tenantId -> attempts.incrementAndGet(), tenantId -> true)) {
+
+      // when
+      final var gateOpened = startInBackground(initialization);
+
+      // then - the node comes up. Holding here would leave nobody able to reach the node that has
+      // to be told the restore is done, which is the one thing that lifts the deferral.
+      assertThat(gateOpened.await(10, TimeUnit.SECONDS)).isTrue();
+
+      // then - and it comes up having applied no schema, so a restore into these tenants still
+      // finds the indices absent
+      assertAttemptCountStopsGrowing(attempts, 0);
+      assertThat(initialization.isInitialized(TENANT_A)).isFalse();
+      assertThat(initialization.isInitialized(TENANT_B)).isFalse();
+    }
+  }
+
+  @Test
+  void shouldKeepTheGateClosedWhileDiscoveryIsPending() throws Exception {
+    // given - topology discovery has not decided whether the only tenant is recovering
+    final var discoveryPending = new AtomicBoolean(true);
+    final var attempts = new AtomicInteger();
+    final var initialization =
+        new PerTenantSchemaInitialization(
+            Set.of(TENANT_A),
+            tenantId -> attempts.incrementAndGet(),
+            TerminalFailure.class::isInstance,
+            retryConfig(),
+            PerTenantSchemaInitialization.DeferralCheck.of(
+                tenantId ->
+                    discoveryPending.get()
+                        ? PerTenantSchemaInitialization.Deferral.PENDING
+                        : PerTenantSchemaInitialization.Deferral.NONE));
+    try {
+      final var gateOpened = startInBackground(initialization);
+
+      // then - unresolved discovery is not the ADR's genuine-recovery deferral: startup must not
+      // release before the tenant has been examined, and schema initialization must not race a
+      // restore that the topology may still reveal
+      assertThat(gateOpened.await(200, TimeUnit.MILLISECONDS)).isFalse();
+      assertThat(attempts).hasValue(0);
+
+      // when - discovery resolves that the tenant is not recovering
+      discoveryPending.set(false);
+
+      // then - initialization starts and the gate opens only after the schema is applied
+      assertThat(gateOpened.await(10, TimeUnit.SECONDS)).isTrue();
+      assertThat(attempts).hasValue(1);
+      assertThat(initialization.isInitialized(TENANT_A)).isTrue();
+    } finally {
+      initialization.close();
+    }
+  }
+
+  @Test
+  void shouldInitializeOnceTheDeferralLifts() throws Exception {
+    // given - a tenant deferred at startup, as one restarted mid-restore is
+    final var deferred = new AtomicBoolean(true);
+    final var attempts = new AtomicInteger();
+    try (final var initialization =
+        initialization(
+            Set.of(TENANT_A), tenantId -> attempts.incrementAndGet(), tenantId -> deferred.get())) {
+      startInBackground(initialization);
+      assertAttemptCountStopsGrowing(attempts, 0);
+
+      // when - the restore finishes and the tenant returns to processing mode
+      deferred.set(false);
+
+      // then - it picks the deferral lifting up on its own. Requiring a restart here would leave
+      // the tenant rejecting every request until an operator noticed.
+      Awaitility.await("the tenant initializes")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(() -> assertThat(initialization.isInitialized(TENANT_A)).isTrue());
+      assertThat(attempts.get()).isEqualTo(1);
+    }
+  }
+
+  @Test
+  void shouldNotSpendTheRetryBudgetWhileDeferred() throws Exception {
+    // given - a tenant deferred over many checks, on a budget of a single attempt
+    final var deferred = new AtomicBoolean(true);
+    final var attempts = new AtomicInteger();
+    try (final var initialization =
+        initialization(
+            Set.of(TENANT_A),
+            tenantId -> attempts.incrementAndGet(),
+            tenantId -> deferred.get(),
+            singleAttemptRetryConfig())) {
+      startInBackground(initialization);
+      assertAttemptCountStopsGrowing(attempts, 0);
+
+      // when
+      deferred.set(false);
+
+      // then - the attempt is still there to be made. Counting deferrals against the budget would
+      // give away a tenant's every attempt to a restore that was never its failure to begin with.
+      Awaitility.await("the tenant initializes")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(() -> assertThat(initialization.isInitialized(TENANT_A)).isTrue());
+    }
+  }
+
   /** Runs the gate wait off the test thread, so that "the gate stays shut" is assertable. */
   private static CountDownLatch startInBackground(
       final PerTenantSchemaInitialization initialization) {
@@ -755,6 +870,22 @@ final class PerTenantSchemaInitializationTest {
       final Set<String> tenantIds, final Consumer<String> attempt) {
     return new PerTenantSchemaInitialization(
         tenantIds, attempt, TerminalFailure.class::isInstance, retryConfig());
+  }
+
+  private static PerTenantSchemaInitialization initialization(
+      final Set<String> tenantIds,
+      final Consumer<String> attempt,
+      final Predicate<String> deferred) {
+    return initialization(tenantIds, attempt, deferred, retryConfig());
+  }
+
+  private static PerTenantSchemaInitialization initialization(
+      final Set<String> tenantIds,
+      final Consumer<String> attempt,
+      final Predicate<String> deferred,
+      final Function<String, RetryConfiguration> retryConfig) {
+    return new PerTenantSchemaInitialization(
+        tenantIds, attempt, TerminalFailure.class::isInstance, retryConfig, deferred);
   }
 
   private static Function<String, RetryConfiguration> retryConfig() {
