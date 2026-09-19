@@ -79,6 +79,35 @@ class ConfigTest {
     assertThat(optimizeCfg.getEvaluationInterval()).hasSeconds(60);
     assertThat(optimizeCfg.getInitialDelay()).hasSeconds(10);
     assertThat(optimizeCfg.getRequestTimeout()).hasSeconds(30);
+
+    // suspender
+    final var suspenderCfg = properties.getSuspender();
+    assertThat(suspenderCfg).isNotNull();
+    assertThat(suspenderCfg.isEnabled()).isFalse();
+    assertThat(suspenderCfg.getMode()).isEqualTo(SuspenderProperties.Mode.SINGLE);
+    assertThat(suspenderCfg.getProcessId()).isEqualTo("benchmark");
+    assertThat(suspenderCfg.getRate()).isEqualTo(10.0);
+    assertThat(suspenderCfg.getRateDuration()).hasSeconds(1);
+    assertThat(suspenderCfg.getRatePerSecond()).isEqualTo(10.0);
+    assertThat(suspenderCfg.getSampleSize()).isEqualTo(100);
+    assertThat(suspenderCfg.getBatchInterval()).hasSeconds(10);
+    assertThat(suspenderCfg.getBatchPageSize()).isEqualTo(1000);
+    assertThat(suspenderCfg.getHoldDuration()).hasSeconds(30);
+    assertThat(suspenderCfg.getCount()).isEqualTo(100);
+    assertThat(suspenderCfg.getSuspendInterval()).hasSeconds(1);
+    assertThat(suspenderCfg.getResumeInterval()).hasSeconds(1);
+    assertThat(suspenderCfg.isTargetEnabled()).isFalse();
+    assertThat(suspenderCfg.isSuspendEnabled()).isTrue();
+    assertThat(suspenderCfg.getTargetBpmnPath()).isEqualTo("bpmn/suspend_target.bpmn");
+    assertThat(suspenderCfg.getTargetProcessId()).isEqualTo("suspendTarget");
+    assertThat(suspenderCfg.getTargetInstances()).isEqualTo(1);
+    assertThat(suspenderCfg.getJobCount()).isEqualTo(500);
+    assertThat(suspenderCfg.getSubscriptionCount()).isEqualTo(500);
+    assertThat(suspenderCfg.getTimerCount()).isEqualTo(2000);
+    assertThat(suspenderCfg.getTimerDuration()).hasSeconds(30);
+    assertThat(suspenderCfg.getWarmup()).hasSeconds(20);
+    assertThat(suspenderCfg.getSettle()).hasSeconds(15);
+    assertThat(suspenderCfg.isGenerateResumeCorrelations()).isFalse();
   }
 
   @Nested
@@ -137,6 +166,31 @@ class ConfigTest {
       assertThat(optimizeCfg.getEvaluationInterval()).hasSeconds(30);
       assertThat(optimizeCfg.getInitialDelay()).hasSeconds(5);
       assertThat(optimizeCfg.getRequestTimeout()).hasSeconds(20);
+
+      // suspender overrides
+      final var suspenderCfg = properties.getSuspender();
+      assertThat(suspenderCfg.isEnabled()).isTrue();
+      assertThat(suspenderCfg.getMode()).isEqualTo(SuspenderProperties.Mode.BATCH);
+      assertThat(suspenderCfg.getProcessId()).isEqualTo("benchmark");
+      assertThat(suspenderCfg.getRate()).isEqualTo(25.0);
+      assertThat(suspenderCfg.getRateDuration()).hasSeconds(2);
+      assertThat(suspenderCfg.getSampleSize()).isEqualTo(250);
+      assertThat(suspenderCfg.getBatchInterval()).hasSeconds(5);
+      assertThat(suspenderCfg.getBatchPageSize()).isEqualTo(2000);
+      assertThat(suspenderCfg.getHoldDuration()).hasMinutes(1);
+      assertThat(suspenderCfg.getCount()).isEqualTo(50);
+      assertThat(suspenderCfg.getSuspendInterval()).hasSeconds(2);
+      assertThat(suspenderCfg.getResumeInterval()).hasSeconds(3);
+      assertThat(suspenderCfg.isTargetEnabled()).isTrue();
+      assertThat(suspenderCfg.isSuspendEnabled()).isFalse();
+      assertThat(suspenderCfg.getTargetInstances()).isEqualTo(3);
+      assertThat(suspenderCfg.getJobCount()).isEqualTo(800);
+      assertThat(suspenderCfg.getSubscriptionCount()).isEqualTo(800);
+      assertThat(suspenderCfg.getTimerCount()).isEqualTo(3000);
+      assertThat(suspenderCfg.getTimerDuration()).hasSeconds(45);
+      assertThat(suspenderCfg.getWarmup()).hasSeconds(30);
+      assertThat(suspenderCfg.getSettle()).hasSeconds(20);
+      assertThat(suspenderCfg.isGenerateResumeCorrelations()).isTrue();
     }
   }
 }

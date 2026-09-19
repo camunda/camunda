@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="suspend_target_definitions" targetNamespace="http://camunda.org/loadtest" exporter="Camunda Modeler" exporterVersion="5.47.0">
+  <bpmn:message id="suspend_target_message" name="suspend-target-msg">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=subItem" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:process id="suspendTarget" name="Suspend target" isExecutable="true">
+    <bpmn:startEvent id="start">
+      <bpmn:outgoing>flow_start_fork</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:parallelGateway id="fork">
+      <bpmn:incoming>flow_start_fork</bpmn:incoming>
+      <bpmn:outgoing>flow_fork_jobs</bpmn:outgoing>
+      <bpmn:outgoing>flow_fork_subs</bpmn:outgoing>
+      <bpmn:outgoing>flow_fork_timers</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:serviceTask id="jobs" name="jobs">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="suspend-target-noop" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>flow_fork_jobs</bpmn:incoming>
+      <bpmn:outgoing>flow_jobs_end</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=jobs" inputElement="jobItem" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:serviceTask>
+    <bpmn:receiveTask id="subs" name="subs" messageRef="suspend_target_message">
+      <bpmn:incoming>flow_fork_subs</bpmn:incoming>
+      <bpmn:outgoing>flow_subs_end</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=subs" inputElement="subItem" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:receiveTask>
+    <bpmn:subProcess id="timers" name="timers">
+      <bpmn:incoming>flow_fork_timers</bpmn:incoming>
+      <bpmn:outgoing>flow_timers_end</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=timers" inputElement="timerItem" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:startEvent id="timer_sub_start">
+        <bpmn:outgoing>flow_timer_wait</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:intermediateCatchEvent id="timer_wait" name="duration">
+        <bpmn:incoming>flow_timer_wait</bpmn:incoming>
+        <bpmn:outgoing>flow_timer_done</bpmn:outgoing>
+        <bpmn:timerEventDefinition id="timer_def">
+          <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">=timerDuration</bpmn:timeDuration>
+        </bpmn:timerEventDefinition>
+      </bpmn:intermediateCatchEvent>
+      <bpmn:endEvent id="timer_sub_end">
+        <bpmn:incoming>flow_timer_done</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="flow_timer_wait" sourceRef="timer_sub_start" targetRef="timer_wait" />
+      <bpmn:sequenceFlow id="flow_timer_done" sourceRef="timer_wait" targetRef="timer_sub_end" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="end_jobs">
+      <bpmn:incoming>flow_jobs_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="end_subs">
+      <bpmn:incoming>flow_subs_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="end_timers">
+      <bpmn:incoming>flow_timers_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="flow_start_fork" sourceRef="start" targetRef="fork" />
+    <bpmn:sequenceFlow id="flow_fork_jobs" sourceRef="fork" targetRef="jobs" />
+    <bpmn:sequenceFlow id="flow_fork_subs" sourceRef="fork" targetRef="subs" />
+    <bpmn:sequenceFlow id="flow_fork_timers" sourceRef="fork" targetRef="timers" />
+    <bpmn:sequenceFlow id="flow_jobs_end" sourceRef="jobs" targetRef="end_jobs" />
+    <bpmn:sequenceFlow id="flow_subs_end" sourceRef="subs" targetRef="end_subs" />
+    <bpmn:sequenceFlow id="flow_timers_end" sourceRef="timers" targetRef="end_timers" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="diagram">
+    <bpmndi:BPMNPlane id="plane" bpmnElement="suspendTarget">
+      <bpmndi:BPMNShape id="start_di" bpmnElement="start">
+        <dc:Bounds x="160" y="242" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="fork_di" bpmnElement="fork">
+        <dc:Bounds x="250" y="235" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="jobs_di" bpmnElement="jobs">
+        <dc:Bounds x="380" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="subs_di" bpmnElement="subs">
+        <dc:Bounds x="380" y="220" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="timers_di" bpmnElement="timers" isExpanded="true">
+        <dc:Bounds x="380" y="360" width="360" height="160" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="timer_sub_start_di" bpmnElement="timer_sub_start">
+        <dc:Bounds x="420" y="422" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="timer_wait_di" bpmnElement="timer_wait">
+        <dc:Bounds x="512" y="422" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="511" y="458" width="40" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="timer_sub_end_di" bpmnElement="timer_sub_end">
+        <dc:Bounds x="612" y="422" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="flow_timer_wait_di" bpmnElement="flow_timer_wait">
+        <di:waypoint x="456" y="440" />
+        <di:waypoint x="512" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_timer_done_di" bpmnElement="flow_timer_done">
+        <di:waypoint x="548" y="440" />
+        <di:waypoint x="612" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="end_jobs_di" bpmnElement="end_jobs">
+        <dc:Bounds x="562" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="end_subs_di" bpmnElement="end_subs">
+        <dc:Bounds x="562" y="242" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="end_timers_di" bpmnElement="end_timers">
+        <dc:Bounds x="802" y="422" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="flow_start_fork_di" bpmnElement="flow_start_fork">
+        <di:waypoint x="196" y="260" />
+        <di:waypoint x="250" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_fork_jobs_di" bpmnElement="flow_fork_jobs">
+        <di:waypoint x="275" y="235" />
+        <di:waypoint x="275" y="120" />
+        <di:waypoint x="380" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_fork_subs_di" bpmnElement="flow_fork_subs">
+        <di:waypoint x="300" y="260" />
+        <di:waypoint x="380" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_fork_timers_di" bpmnElement="flow_fork_timers">
+        <di:waypoint x="275" y="285" />
+        <di:waypoint x="275" y="440" />
+        <di:waypoint x="380" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_jobs_end_di" bpmnElement="flow_jobs_end">
+        <di:waypoint x="480" y="120" />
+        <di:waypoint x="562" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_subs_end_di" bpmnElement="flow_subs_end">
+        <di:waypoint x="480" y="260" />
+        <di:waypoint x="562" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_timers_end_di" bpmnElement="flow_timers_end">
+        <di:waypoint x="740" y="440" />
+        <di:waypoint x="802" y="440" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
