@@ -35,7 +35,7 @@ import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.testcontainers.MinioContainer;
+import io.camunda.zeebe.test.testcontainers.S3MockTestContainer;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.HashSet;
@@ -56,7 +56,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 @ZeebeIntegration
 class BackupPartialPartitionTest {
-  @Container private static final MinioContainer S3 = new MinioContainer();
+  @Container private static final S3MockTestContainer S3 = new S3MockTestContainer();
   private static final String CORRELATION_KEY = "key";
   private static final String MESSAGE_NAME = "message";
   private static final String CORRELATION_KEY_VALUE_FOR_PARTITION_2 = "item-1";
