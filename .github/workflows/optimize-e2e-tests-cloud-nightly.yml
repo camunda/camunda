@@ -21,6 +21,7 @@ on:
     paths:
       - ".github/workflows/optimize-e2e-tests-cloud-nightly.yml"
       - "optimize/client/e2e/cloud-tests/**"
+      - "optimize/client/e2e/testcafe/**"
       - "optimize/client/e2e/config.js"
       - "optimize/client/scripts/start-backend.js"
 
