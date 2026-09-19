@@ -206,7 +206,7 @@
     <dependency>
       <groupId>org.mock-server</groupId>
       <artifactId>mockserver-netty</artifactId>
-      <version>7.6.0</version>
+      <version>8.0.0</version>
       <scope>test</scope>
     </dependency>
 
