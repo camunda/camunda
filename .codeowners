@@ -274,6 +274,15 @@ optimize.Dockerfile         @camunda/core-features
 /service/                   @camunda/core-features
 
 # Webapp (unified orchestration cluster BFF)
+# NOTE: this broad rule also covers the Tasklist frontend source (now under
+# webapp/client/apps/orchestration-cluster-webapp/src/tasklist/, formerly
+# tasklist/client/ with its own ci-tasklist.yml). That attribution is wrong —
+# it misroutes Tasklist-frontend-only CI (ci-webapp-client.yml's frontend
+# jobs on main; fe-tests/fe-type-check/fe-stylelint/fe-visual-regression-tests
+# on stable branches still carrying ci-tasklist.yml) to Core Features instead
+# of the Tasklist frontend pod. No GitHub team has been confirmed as that
+# pod's yet — see camunda/camunda#61505 (open question on the team handle)
+# and camunda/camunda#62663. Do not assign a team here until that's resolved.
 /webapp/                @camunda/core-features
 
 # Gateways
