@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
+import io.camunda.zeebe.engine.state.message.MessageSubscription;
 import io.camunda.zeebe.engine.state.message.StoredMessage;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageCorrelationState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
@@ -65,30 +66,14 @@ public final class MessageSubscriptionRejectProcessor
 
     final MessageSubscriptionRecord subscriptionRecord = record.getValue();
 
-    final var stored =
-        subscriptionState.get(
-            subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer());
-    final long requestedKey = subscriptionRecord.getSubscriptionKey();
-    if (stored != null && requestedKey != -1L && stored.getKey() != requestedKey) {
-      // Stale reject: the stored row is a newer generation. REJECTED removes by element/message
-      // name, which would delete the live replacement, so reject instead; its own
-      // correlateNextMessage picks up any buffered message.
-      final var reason =
-          String.format(
-              STALE_REJECT_MESSAGE,
-              subscriptionRecord.getElementInstanceKey(),
-              subscriptionRecord.getMessageName(),
-              requestedKey,
-              stored.getKey());
-      rejectionWriter.appendRejection(record, RejectionType.INVALID_STATE, reason);
-      return;
-    }
-
     stateWriter.appendFollowUpEvent(
         record.getKey(), MessageSubscriptionIntent.REJECTED, subscriptionRecord);
 
-    final var foundSubscription = findSubscriptionToCorrelate(subscriptionRecord);
-    if (!foundSubscription) {
+    // The applier already protects a live replacement subscription from deletion when this
+    // reject is stale, so rerouting unconditionally here is safe. It's also necessary: if a
+    // replacement subscription was created before this lock was released, it already missed
+    // its own one-shot chance to pick up the message and needs this to try again.
+    if (!findSubscriptionToCorrelate(subscriptionRecord)) {
       writeNotCorrelatedResponse(record);
     }
   }
@@ -101,6 +86,15 @@ public final class MessageSubscriptionRejectProcessor
     final StoredMessage storedMessage = messageState.getMessage(messageKey);
     if (storedMessage == null) {
       return false;
+    }
+
+    if (isOwnedByAnotherGeneration(subscriptionRecord)) {
+      // Some other generation's claim on this exact message is still unresolved (its own
+      // correlate/reject handshake hasn't concluded) — whether or not its own subscription row
+      // currently exists, e.g. it was suspended mid-flight. Must not reroute the message
+      // elsewhere, nor (via the caller) report NOT_CORRELATED for an outstanding request: the
+      // message IS being handled, just not observably via a live row right now.
+      return true;
     }
 
     final var foundSubscription = new AtomicBoolean(false);
@@ -133,6 +127,40 @@ public final class MessageSubscriptionRejectProcessor
         });
 
     return foundSubscription.get();
+  }
+
+  /**
+   * True when a generation other than this reject's own still owns the correlation lock for this
+   * exact message — ownership-based and row-independent: it consults the lock's recorded owner (see
+   * {@link MessageState#correlationOwner}) first, which answers correctly even when that other
+   * generation's own subscription row no longer exists (e.g. suspended mid-correlate). Only when no
+   * owner was ever recorded (a lock claimed before owner-tracking existed — see {@link
+   * io.camunda.zeebe.engine.state.appliers.MessageSubscriptionRejectedV2Applier}) does it fall back
+   * to the live subscription row: a different, still-alive generation whose row currently shows it
+   * owns exactly this message is trusted as legacy evidence of ownership.
+   *
+   * <p>{@code subscriptionKey == -1} mirrors the applier's own convention: a reject carrying no
+   * generation info at all predates/opts out of generation-tracking, so this always returns {@code
+   * false} and the normal, unconditional reroute-eligibility scan proceeds.
+   */
+  private boolean isOwnedByAnotherGeneration(final MessageSubscriptionRecord subscriptionRecord) {
+    if (subscriptionRecord.getSubscriptionKey() == -1L) {
+      return false;
+    }
+
+    final var messageKey = subscriptionRecord.getMessageKey();
+    final var bpmnProcessId = subscriptionRecord.getBpmnProcessIdBuffer();
+    final var owner = messageState.correlationOwner(messageKey, bpmnProcessId);
+    if (owner != -1L) {
+      return owner != subscriptionRecord.getSubscriptionKey();
+    }
+
+    final MessageSubscription stored =
+        subscriptionState.get(
+            subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer());
+    return stored != null
+        && stored.getKey() != subscriptionRecord.getSubscriptionKey()
+        && stored.getRecord().getMessageKey() == messageKey;
   }
 
   private void sendCorrelateCommand(final MessageSubscriptionRecord subscription) {

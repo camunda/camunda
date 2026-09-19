@@ -15,6 +15,20 @@ public interface MessageState {
 
   boolean existMessageCorrelation(long messageKey, DirectBuffer bpmnProcessId);
 
+  /**
+   * Returns the subscription key that claimed the correlation lock for {@code (messageKey,
+   * bpmnProcessId)}, or {@code -1} when no lock is held. Recorded by {@link
+   * io.camunda.zeebe.engine.state.mutable.MutableMessageState#putMessageCorrelation(long,
+   * DirectBuffer, long)} whenever a message subscription starts correlating a message, and never
+   * cleared on a successful correlation — only a stale-generation reject entitled to release that
+   * exact claim (see {@link
+   * io.camunda.zeebe.engine.state.mutable.MutableMessageState#removeMessageCorrelationOwnedBy})
+   * clears it. Unlike the claimant's own subscription row, which only ever reflects its
+   * <em>latest</em> message, this is keyed per message and so still answers "who owns this exact
+   * message's lock" after the claimant has moved on to a later one.
+   */
+  long correlationOwner(long messageKey, DirectBuffer bpmnProcessId);
+
   boolean existActiveProcessInstance(
       final String tenantId, DirectBuffer bpmnProcessId, DirectBuffer correlationKey);
 

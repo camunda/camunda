@@ -579,11 +579,21 @@ public final class EventAppliers implements EventApplier {
         new MessageSubscriptionCorrelatingApplier(
             state.getMessageSubscriptionState(), state.getMessageState()));
     register(
+        MessageSubscriptionIntent.CORRELATING,
+        2,
+        new MessageSubscriptionCorrelatingV2Applier(
+            state.getMessageSubscriptionState(), state.getMessageState()));
+    register(
         MessageSubscriptionIntent.CORRELATED,
         new MessageSubscriptionCorrelatedApplier(state.getMessageSubscriptionState()));
     register(
         MessageSubscriptionIntent.REJECTED,
         new MessageSubscriptionRejectedApplier(
+            state.getMessageState(), state.getMessageSubscriptionState()));
+    register(
+        MessageSubscriptionIntent.REJECTED,
+        2,
+        new MessageSubscriptionRejectedV2Applier(
             state.getMessageState(), state.getMessageSubscriptionState()));
     register(
         MessageSubscriptionIntent.DELETED,
