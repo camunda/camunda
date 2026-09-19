@@ -100,7 +100,7 @@ public class ClusterAdminOidcAuthenticationIT {
         c -> {
           c.getAuthentication().getOidc().setIssuerUri(issuerUri);
           c.getAuthentication().getOidc().setClientId("example");
-          c.getAuthentication().getOidc().setRedirectUri("https://example.com");
+          c.getAuthentication().getOidc().setRedirectUri("https://example.com/sso-callback");
         });
     BROKER.start();
 

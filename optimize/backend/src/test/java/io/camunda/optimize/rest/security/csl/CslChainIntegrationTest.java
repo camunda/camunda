@@ -36,7 +36,9 @@ import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.Either;
 import jakarta.servlet.Filter;
 import jakarta.servlet.http.Cookie;
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
@@ -63,7 +65,7 @@ import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
-import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2AccessToken.TokenType;
@@ -264,6 +266,36 @@ class CslChainIntegrationTest {
   @Test
   void shouldExemptExternalPathFromCsrfForCcsaas() {
     assertExternalPathExemptFromCsrf(ccsaasRunner());
+  }
+
+  // -------------------------------------------------------------------------
+  // Identity provider outage
+  // -------------------------------------------------------------------------
+
+  /**
+   * An unreachable identity provider must not keep Optimize from starting. Optimize reads the
+   * client registrations to pick the target of its login redirect, and a read of a registration
+   * performs OIDC discovery, so a provider that is down would fail the application context.
+   */
+  @Test
+  void shouldBuildTheChainsWhileTheIssuerIsUnreachable() throws Exception {
+    // given a context configured against a provider that answers nothing
+    ccsmRunner(runnerWithIssuerOnly(unreachableIssuerUri()))
+        .run(
+            ctx -> {
+              assertThat(ctx).hasNotFailed();
+
+              // when a browser navigates to a protected path
+              final Filter proxy = resolveSecurityFilter(ctx);
+              final MockHttpServletRequest request = new MockHttpServletRequest("GET", "/");
+              final MockHttpServletResponse response = new MockHttpServletResponse();
+
+              proxy.doFilter(request, response, new MockFilterChain());
+
+              // then the login redirect is served from configuration alone, without discovery
+              assertThat(response.getStatus()).isEqualTo(302);
+              assertThat(response.getHeader("Location")).isEqualTo("/oauth2/authorization/oidc");
+            });
   }
 
   // -------------------------------------------------------------------------
@@ -847,6 +879,22 @@ class CslChainIntegrationTest {
   // -------------------------------------------------------------------------
 
   private static WebApplicationContextRunner baseRunner() {
+    return runnerWith(
+        "camunda.security.authentication.oidc.issuer-uri=" + server.issuerUri(),
+        "camunda.security.authentication.oidc.authorization-uri=" + server.issuerUri() + "/auth",
+        "camunda.security.authentication.oidc.token-uri=" + server.issuerUri() + "/token",
+        "camunda.security.authentication.oidc.jwk-set-uri=" + server.issuerUri() + "/jwks");
+  }
+
+  /**
+   * A runner that names the issuer alone. Every other endpoint then comes from discovery, which is
+   * what an installation configures and what makes a provider outage observable here.
+   */
+  private static WebApplicationContextRunner runnerWithIssuerOnly(final String issuerUri) {
+    return runnerWith("camunda.security.authentication.oidc.issuer-uri=" + issuerUri);
+  }
+
+  private static WebApplicationContextRunner runnerWith(final String... oidcProperties) {
     return new WebApplicationContextRunner()
         .withBean(ObjectMapper.class, ObjectMapper::new)
         .withBean(SessionRepositoryFilter.class, () -> new SessionRepositoryFilter<>(SESSION_REPO))
@@ -855,18 +903,25 @@ class CslChainIntegrationTest {
             "camunda.security.authentication.catch-all-unhandled-paths-enabled=false",
             "camunda.security.authentication.method=oidc",
             "camunda.security.authentication.oidc.client-id=test-client",
-            "camunda.security.authentication.oidc.client-secret=test-secret",
-            "camunda.security.authentication.oidc.issuer-uri=" + server.issuerUri(),
-            "camunda.security.authentication.oidc.authorization-uri="
-                + server.issuerUri()
-                + "/auth",
-            "camunda.security.authentication.oidc.token-uri=" + server.issuerUri() + "/token",
-            "camunda.security.authentication.oidc.jwk-set-uri=" + server.issuerUri() + "/jwks");
+            "camunda.security.authentication.oidc.client-secret=test-secret")
+        .withPropertyValues(oidcProperties);
+  }
+
+  /** A port nothing listens on, so every call to this issuer is refused at once. */
+  private static String unreachableIssuerUri() {
+    try (final ServerSocket socket = new ServerSocket(0)) {
+      return "http://localhost:" + socket.getLocalPort() + "/unreachable";
+    } catch (final IOException e) {
+      throw new IllegalStateException("Failed to reserve a closed port", e);
+    }
   }
 
   private WebApplicationContextRunner ccsmRunner() {
-    return baseRunner()
-        .withPropertyValues("spring.profiles.active=ccsm")
+    return ccsmRunner(baseRunner());
+  }
+
+  private WebApplicationContextRunner ccsmRunner(final WebApplicationContextRunner base) {
+    return base.withPropertyValues("spring.profiles.active=ccsm")
         .withBean(
             ConfigurationService.class, ConfigurationServiceBuilder::createDefaultConfiguration)
         .withBean(
@@ -964,8 +1019,7 @@ class CslChainIntegrationTest {
    * none.
    */
   private static Cookie oauth2SessionCookie(final ApplicationContext ctx) {
-    final ClientRegistration registration =
-        ctx.getBean(InMemoryClientRegistrationRepository.class).iterator().next();
+    final ClientRegistration registration = firstClientRegistration(ctx);
     final Instant now = Instant.now();
     final var idToken =
         new OidcIdToken(
@@ -991,6 +1045,18 @@ class CslChainIntegrationTest {
     SESSION_REPO.save(session);
     return new Cookie(
         "SESSION", Base64.getEncoder().encodeToString(session.getId().getBytes(UTF_8)));
+  }
+
+  /**
+   * The first client registration of the context. The repository resolves its registrations on
+   * first use, so the bean type says nothing about how many it holds; every implementation in play
+   * here exposes them as an {@link Iterable}.
+   */
+  @SuppressWarnings("unchecked")
+  private static ClientRegistration firstClientRegistration(final ApplicationContext ctx) {
+    return ((Iterable<ClientRegistration>) ctx.getBean(ClientRegistrationRepository.class))
+        .iterator()
+        .next();
   }
 
   /**
