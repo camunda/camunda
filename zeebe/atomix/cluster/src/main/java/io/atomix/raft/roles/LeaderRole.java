@@ -186,6 +186,23 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     final var currentMembers = raft.getCluster().getMembers();
     final var updatedMembers = request.members();
 
+    // A configuration with members but no ACTIVE ones could neither elect a leader nor commit
+    // entries, permanently stranding the remaining members. The empty configuration stays allowed:
+    // it is the result of the last member leaving when scaling a partition down to zero.
+    final var hasActiveMember =
+        updatedMembers.stream().anyMatch(member -> member.getType() == RaftMember.Type.ACTIVE);
+    if (!updatedMembers.isEmpty() && !hasActiveMember) {
+      return CompletableFuture.completedFuture(
+          logResponse(
+              ReconfigureResponse.builder()
+                  .withStatus(RaftResponse.Status.ERROR)
+                  .withError(
+                      Type.CONFIGURATION_ERROR,
+                      "Requested configuration %s must be empty or have at least one active member"
+                          .formatted(updatedMembers))
+                  .build()));
+    }
+
     if (equalMembership(currentMembers, updatedMembers)) {
       return CompletableFuture.completedFuture(
           logResponse(
