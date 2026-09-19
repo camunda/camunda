@@ -335,6 +335,9 @@ jobs:
             eid="${EVIDENCE_RUN_URL##*/}"
             dl "${EVIDENCE_REPO}" "$eid" 'playwright-results-json*'
             dl "${EVIDENCE_REPO}" "$eid" 'playwright-traces*'
+            # preview-env-smoke-test.yml ships traces and screenshots inside its
+            # per-version html report instead of a separate traces artifact.
+            dl "${EVIDENCE_REPO}" "$eid" 'playwright-report-*'
             dl "${EVIDENCE_REPO}" "$eid" 'json-report*'
             dl "${EVIDENCE_REPO}" "$eid" 'Playwright Report*'
           fi

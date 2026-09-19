@@ -205,7 +205,14 @@ def failing_jobs(run_id: str) -> list[dict]:
 
 
 def sm_candidates(run_id: str, base_ref: str, job_name: str, workdir: Path) -> planning.Candidate:
-    """Build the SM candidate from playwright-results-json on the AlwaysGreen run."""
+    """Build the SM candidate from playwright-results-json on the AlwaysGreen run.
+
+    The artifact pattern and the download directory are both keyed on the job when
+    it is a preview-env matrix leg: that workflow produces one JSON report per
+    version in the same run, so a single shared `playwright-results-json*` download
+    would hand every leg the same pile of reports and attribute 8.8's failures to
+    8.10 as well.
+    """
     cand = planning.Candidate(
         base_ref=base_ref,
         surface=classify.SURFACE_SM_E2E,
@@ -213,9 +220,11 @@ def sm_candidates(run_id: str, base_ref: str, job_name: str, workdir: Path) -> p
         evidence_run_url=f"https://github.com/{REPO}/actions/runs/{run_id}",
         evidence_repo=REPO,
     )
-    dest = workdir / "sm"
-    if not download_artifacts(run_id, REPO, "playwright-results-json*", dest):
-        log("::warning::no playwright-results-json artifact for the SM e2e failure")
+    version = classify.preview_env_version(job_name)
+    pattern = f"playwright-results-json-{version}-*" if version else "playwright-results-json*"
+    dest = workdir / (f"sm-{version}" if version else "sm")
+    if not download_artifacts(run_id, REPO, pattern, dest):
+        log(f"::warning::no {pattern} artifact for the SM e2e failure")
         return cand
 
     for report in read_json_files(dest, "playwright-results.json"):
@@ -683,6 +692,12 @@ def build_candidates(run_id: str, base_ref: str, workdir: Path):
         if surface is None:
             continue
 
+        # Not necessarily the run's ref: preview-env-smoke-test.yml tests four
+        # branches in one run.
+        job_base_ref = classify.base_ref_for_job(name, base_ref)
+        if job_base_ref != base_ref:
+            log(f"base_ref for '{classify.job_leaf_name(name)}': {job_base_ref}")
+
         verdict = classify.noise_verdict(
             conclusion="failure",
             step_count=len(job.get("steps") or []),
@@ -694,9 +709,9 @@ def build_candidates(run_id: str, base_ref: str, workdir: Path):
             continue
 
         if surface == classify.SURFACE_SM_E2E:
-            candidates.append(sm_candidates(run_id, base_ref, name, workdir))
+            candidates.append(sm_candidates(run_id, job_base_ref, name, workdir))
         elif surface == classify.SURFACE_SAAS_E2E:
-            candidates.append(saas_candidate(run_id, base_ref, name, workdir))
+            candidates.append(saas_candidate(run_id, job_base_ref, name, workdir))
         elif surface == classify.SURFACE_HELM_INSTALL:
             text = job_log(str(job.get("id") or ""))
             if text is None:
@@ -710,7 +725,7 @@ def build_candidates(run_id: str, base_ref: str, workdir: Path):
                 continue
             candidates.append(
                 planning.Candidate(
-                    base_ref=base_ref, surface=surface, job_name=name, job_level=True,
+                    base_ref=job_base_ref, surface=surface, job_name=name, job_level=True,
                     evidence_run_url=f"https://github.com/{REPO}/actions/runs/{run_id}",
                     evidence_repo=REPO,
                 )
@@ -718,7 +733,7 @@ def build_candidates(run_id: str, base_ref: str, workdir: Path):
         else:
             candidates.append(
                 planning.Candidate(
-                    base_ref=base_ref, surface=surface, job_name=name, job_level=True,
+                    base_ref=job_base_ref, surface=surface, job_name=name, job_level=True,
                     evidence_run_url=f"https://github.com/{REPO}/actions/runs/{run_id}",
                     evidence_repo=REPO,
                 )
