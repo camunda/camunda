@@ -50,11 +50,17 @@ import org.slf4j.LoggerFactory;
 
 public class SchemaManager implements CloseableSilently {
   public static final int INDEX_CREATION_TIMEOUT_SECONDS = 60;
+<<<<<<< HEAD
   public static final String PI_ARCHIVING_BLOCKED_META_KEY = "processInstanceArchivingBlocked";
 
   /** Maximum length of a comma-delimited index-pattern string passed in a URL request. */
   static final int MAX_INDEX_PATTERN_REQUEST_LENGTH = 4096;
 
+=======
+  @VisibleForTesting static final int CLOSE_GRACE_PERIOD_SECONDS = 5;
+  private static final String INDICES_MISSING_ALIAS = "Indices missing their expected alias: ";
+  private static final String ALIAS_INTEGRITY_ERR = "Alias '%s' points to more than 1 index: [%s]";
+>>>>>>> 0f5bf4fe (fix: bound SchemaManager.close() so a stalled schema mutation cannot hang startup)
   private static final Logger LOG = LoggerFactory.getLogger(SchemaManager.class);
   private final SearchEngineClient searchEngineClient;
   private final Collection<IndexDescriptor> allIndexDescriptors;
@@ -614,8 +620,36 @@ public class SchemaManager implements CloseableSilently {
     return getMissingIndices(allIndexDescriptors).isEmpty();
   }
 
+  /**
+   * Shuts the executor down within a bounded amount of time, whatever its tasks are doing.
+   *
+   * <p>{@code ExecutorService.close()} shuts down and then loops {@code awaitTermination(1, DAYS)}
+   * until every task finishes on its own. A schema mutation that the search engine accepted but has
+   * not acknowledged keeps its task running long after {@link #joinOnFutures} gave up on it, and
+   * cancelling that future does not stop it — the JDK never interrupts a task to cancel a {@link
+   * CompletableFuture}. So a caller that times out and retries, building a fresh {@link
+   * SchemaManager} per attempt and closing the previous one first, ends up parked here for as long
+   * as the abandoned request runs. That is the hang this bounds.
+   *
+   * <p>Shutdown stays graceful first, so {@link #startSchemaCleanup()}'s fire-and-forget cleanup —
+   * the one task legitimately still running at close on a successful startup — is left to finish.
+   * Only once that short grace is exhausted does this escalate to {@code shutdownNow()}. Either way
+   * the method returns; a task that somehow survives the interrupt keeps running in the background
+   * without holding up the caller.
+   */
   @Override
   public void close() {
-    virtualThreadExecutor.close();
+    virtualThreadExecutor.shutdown();
+    try {
+      if (!virtualThreadExecutor.awaitTermination(CLOSE_GRACE_PERIOD_SECONDS, TimeUnit.SECONDS)) {
+        LOG.warn(
+            "Schema manager tasks did not finish within {}s of shutdown; interrupting them and giving up the wait.",
+            CLOSE_GRACE_PERIOD_SECONDS);
+        virtualThreadExecutor.shutdownNow();
+      }
+    } catch (final InterruptedException e) {
+      virtualThreadExecutor.shutdownNow();
+      Thread.currentThread().interrupt();
+    }
   }
 }
