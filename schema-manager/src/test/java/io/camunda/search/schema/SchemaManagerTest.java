@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -32,10 +33,16 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
 import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
+import io.camunda.zeebe.test.util.junit.RegressionTest;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -354,6 +361,73 @@ class SchemaManagerTest {
     // the executor it was dispatched to, so this does not race the async task.
     schemaManager.close();
     verify(searchEngineClient, times(1)).getIndexNames(anyString());
+  }
+
+  /**
+   * Regression test for #63543. A schema mutation the search engine accepted but never acknowledges
+   * keeps its task running long after {@link SchemaManager#INDEX_CREATION_TIMEOUT_SECONDS} elapsed,
+   * and cancelling the future does not stop it. {@code ExecutorService.close()} then waits on that
+   * task effectively forever, which is what parked a physical tenant's schema-init thread
+   * permanently in production. The mutation here ignores interruption on purpose: the contract
+   * under test is that {@code close()} returns whether or not the task can be stopped.
+   */
+  @RegressionTest("https://github.com/camunda/zeebe/issues/63543")
+  void shouldReturnFromCloseWhileASchemaMutationIsStillInFlight() throws Exception {
+    // given - a template creation that has started and will not finish or respond to an interrupt
+    final var mutationStarted = new CountDownLatch(1);
+    final var mutationFinished = new AtomicBoolean(false);
+    final var releaseMutation = new AtomicBoolean(false);
+    when(searchEngineClient.getMappings(anyString(), eq(MappingSource.INDEX_TEMPLATE)))
+        .thenReturn(Map.of());
+    doAnswer(
+            invocation -> {
+              mutationStarted.countDown();
+              while (!releaseMutation.get()) {
+                LockSupport.parkNanos(Duration.ofMillis(10).toNanos());
+              }
+              mutationFinished.set(true);
+              return null;
+            })
+        .when(searchEngineClient)
+        .createIndexTemplate(eq(testTemplateDescriptor), any(), eq(true));
+
+    schemaManager =
+        new SchemaManager(
+            searchEngineClient,
+            indexDescriptors,
+            templateDescriptors,
+            config,
+            mock(IndexSchemaValidator.class),
+            "8.8.0",
+            null);
+
+    // the caller that gives up: it blocks in joinOnFutures until its own timeout, exactly as a
+    // tenant's schema-init attempt does, while the test drives close() from the outside
+    final var initialization =
+        new Thread(schemaManager::initialiseIndexTemplates, "schema-init-under-test");
+    initialization.setDaemon(true);
+    initialization.start();
+    assertThat(mutationStarted.await(10, TimeUnit.SECONDS))
+        .as("the template creation should have started")
+        .isTrue();
+
+    try {
+      // when
+      final var startedAt = System.nanoTime();
+      schemaManager.close();
+      final var closeDuration = Duration.ofNanos(System.nanoTime() - startedAt);
+
+      // then - close() returns on its own bound, with the mutation demonstrably still running
+      assertThat(closeDuration)
+          .as("close() must not wait on a schema mutation the caller has already given up on")
+          .isLessThan(Duration.ofSeconds(SchemaManager.CLOSE_GRACE_PERIOD_SECONDS + 10L));
+      assertThat(mutationFinished)
+          .as("close() is expected to return while the mutation is still in flight")
+          .isFalse();
+    } finally {
+      releaseMutation.set(true);
+      initialization.join(Duration.ofSeconds(10).toMillis());
+    }
   }
 
   private SchemaManager createSpySchemaManager(final String currentVersion) {
