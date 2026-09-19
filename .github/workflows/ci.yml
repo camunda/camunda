@@ -2652,7 +2652,7 @@ jobs:
     permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       # renovate: datasource=npm depName=renovate
-      RENOVATE_VERSION: '44.94.0'
+      RENOVATE_VERSION: '44.94.1'
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
