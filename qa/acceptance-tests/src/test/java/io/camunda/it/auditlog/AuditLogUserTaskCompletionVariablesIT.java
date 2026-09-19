@@ -55,8 +55,7 @@ public class AuditLogUserTaskCompletionVariablesIT {
           .withBasicAuth()
           .withMultiTenancyEnabled()
           .withAuthorizationsEnabled()
-          .withAuthenticatedAccess()
-          .withProperty("camunda.data.audit-log.user-task-completion-variable-audit-enabled", true);
+          .withAuthenticatedAccess();
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().findAndRegisterModules();
   private static CamundaClient adminClient;
