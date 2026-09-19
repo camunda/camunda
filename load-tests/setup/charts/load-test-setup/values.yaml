@@ -214,17 +214,6 @@ keycloak:
       # `global.identity.keycloak.auth.secret.existingSecretKey`.
       key: identity-keycloak-admin-password
 
-  # -- The namespace to host the Keycloak instance.
-  # We deploy Keycloak using the Keycloak Operator, which is currently limited
-  # to managed custom resources in a single namespace only.
-  # As such, we **have** to deploy Keycloak in the same namespace as the
-  # Keycloak Operator and we can't simply deploy Keycloak in the load test
-  # namespace.
-  # This option allows configuring in which namespace Keycloak will be
-  # managed.
-  # This probably should not be changed.
-  namespace: keycloak-operator
-
   # -- Configure the PostgreSQL cluster to be used by Keycloak.
   postgresql:
     # -- The name of the CNPG Cluster resource deployed for Keycloak.
