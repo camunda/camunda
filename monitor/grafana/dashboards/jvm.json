@@ -37,13 +37,28 @@
   "links": [],
   "panels": [
     {
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 140,
+      "options": {
+        "content": "<center>\n\n\u26a0\ufe0f **This dashboard is not maintained anymore.** Use the dashboards in the [camunda-observability](https://github.com/camunda/camunda-observability) repository instead.\n\n</center>",
+        "mode": "markdown"
+      },
+      "title": "Not maintained",
+      "type": "text"
+    },
+    {
       "collapsed": false,
       "datasource": null,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 3
       },
       "id": 125,
       "panels": [],
@@ -76,7 +91,7 @@
         "h": 3,
         "w": 6,
         "x": 0,
-        "y": 1
+        "y": 4
       },
       "height": "",
       "id": 63,
@@ -163,7 +178,7 @@
         "h": 3,
         "w": 6,
         "x": 6,
-        "y": 1
+        "y": 4
       },
       "height": "",
       "id": 92,
@@ -250,7 +265,7 @@
         "h": 3,
         "w": 6,
         "x": 12,
-        "y": 1
+        "y": 4
       },
       "id": 65,
       "interval": null,
@@ -335,7 +350,7 @@
         "h": 3,
         "w": 6,
         "x": 18,
-        "y": 1
+        "y": 4
       },
       "id": 75,
       "interval": null,
@@ -412,7 +427,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 4
+        "y": 7
       },
       "id": 126,
       "panels": [],
@@ -432,7 +447,7 @@
         "h": 7,
         "w": 6,
         "x": 0,
-        "y": 5
+        "y": 8
       },
       "hiddenSeries": false,
       "id": 111,
@@ -526,7 +541,7 @@
         "h": 7,
         "w": 6,
         "x": 6,
-        "y": 5
+        "y": 8
       },
       "hiddenSeries": false,
       "id": 112,
@@ -617,7 +632,7 @@
         "h": 7,
         "w": 6,
         "x": 12,
-        "y": 5
+        "y": 8
       },
       "hiddenSeries": false,
       "id": 113,
@@ -717,7 +732,7 @@
         "h": 7,
         "w": 6,
         "x": 18,
-        "y": 5
+        "y": 8
       },
       "hiddenSeries": false,
       "id": 119,
@@ -844,7 +859,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 12
+        "y": 15
       },
       "id": 127,
       "panels": [],
@@ -874,7 +889,7 @@
         "h": 7,
         "w": 6,
         "x": 0,
-        "y": 13
+        "y": 16
       },
       "hiddenSeries": false,
       "id": 24,
@@ -999,7 +1014,7 @@
         "h": 7,
         "w": 6,
         "x": 6,
-        "y": 13
+        "y": 16
       },
       "hiddenSeries": false,
       "id": 25,
@@ -1125,7 +1140,7 @@
         "h": 7,
         "w": 6,
         "x": 12,
-        "y": 13
+        "y": 16
       },
       "hiddenSeries": false,
       "id": 26,
@@ -1251,7 +1266,7 @@
         "h": 7,
         "w": 6,
         "x": 18,
-        "y": 13
+        "y": 16
       },
       "hiddenSeries": false,
       "id": 86,
@@ -1367,7 +1382,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 20
+        "y": 23
       },
       "id": 128,
       "panels": [],
@@ -1397,7 +1412,7 @@
         "h": 7,
         "w": 6,
         "x": 0,
-        "y": 21
+        "y": 24
       },
       "hiddenSeries": false,
       "id": 106,
@@ -1524,7 +1539,7 @@
         "h": 7,
         "w": 6,
         "x": 6,
-        "y": 21
+        "y": 24
       },
       "hiddenSeries": false,
       "id": 93,
@@ -1641,7 +1656,7 @@
         "h": 7,
         "w": 6,
         "x": 12,
-        "y": 21
+        "y": 24
       },
       "hiddenSeries": false,
       "id": 32,
@@ -1774,7 +1789,7 @@
         "h": 7,
         "w": 6,
         "x": 18,
-        "y": 21
+        "y": 24
       },
       "hiddenSeries": false,
       "id": 124,
@@ -1882,7 +1897,7 @@
         "h": 7,
         "w": 18,
         "x": 0,
-        "y": 28
+        "y": 31
       },
       "height": "",
       "hiddenSeries": false,
@@ -2007,7 +2022,7 @@
         "h": 7,
         "w": 6,
         "x": 18,
-        "y": 28
+        "y": 31
       },
       "hiddenSeries": false,
       "id": 61,
@@ -2113,7 +2128,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 35
+        "y": 38
       },
       "id": 129,
       "panels": [],
@@ -2143,7 +2158,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 36
+        "y": 39
       },
       "hiddenSeries": false,
       "id": 3,
@@ -2287,7 +2302,7 @@
         "h": 7,
         "w": 8,
         "x": 8,
-        "y": 36
+        "y": 39
       },
       "hiddenSeries": false,
       "id": 134,
@@ -2433,7 +2448,7 @@
         "h": 7,
         "w": 8,
         "x": 16,
-        "y": 36
+        "y": 39
       },
       "hiddenSeries": false,
       "id": 135,
@@ -2564,7 +2579,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 43
+        "y": 46
       },
       "id": 130,
       "panels": [],
@@ -2594,7 +2609,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 44
+        "y": 47
       },
       "hiddenSeries": false,
       "id": 78,
@@ -2738,7 +2753,7 @@
         "h": 7,
         "w": 8,
         "x": 8,
-        "y": 44
+        "y": 47
       },
       "hiddenSeries": false,
       "id": 136,
@@ -2884,7 +2899,7 @@
         "h": 7,
         "w": 8,
         "x": 16,
-        "y": 44
+        "y": 47
       },
       "hiddenSeries": false,
       "id": 137,
@@ -3030,7 +3045,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 51
+        "y": 54
       },
       "hiddenSeries": false,
       "id": 138,
@@ -3176,7 +3191,7 @@
         "h": 7,
         "w": 8,
         "x": 8,
-        "y": 51
+        "y": 54
       },
       "hiddenSeries": false,
       "id": 139,
@@ -3307,7 +3322,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 58
+        "y": 61
       },
       "id": 131,
       "panels": [],
@@ -3327,7 +3342,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 59
+        "y": 62
       },
       "hiddenSeries": false,
       "id": 98,
@@ -3418,7 +3433,7 @@
         "h": 7,
         "w": 8,
         "x": 8,
-        "y": 59
+        "y": 62
       },
       "hiddenSeries": false,
       "id": 101,
@@ -3519,7 +3534,7 @@
         "h": 7,
         "w": 8,
         "x": 16,
-        "y": 59
+        "y": 62
       },
       "hiddenSeries": false,
       "id": 99,
@@ -3613,7 +3628,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 66
+        "y": 69
       },
       "id": 132,
       "panels": [],
@@ -3643,7 +3658,7 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 67
+        "y": 70
       },
       "hiddenSeries": false,
       "id": 37,
@@ -3752,7 +3767,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 67
+        "y": 70
       },
       "hiddenSeries": false,
       "id": 38,
@@ -3849,7 +3864,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 74
+        "y": 77
       },
       "id": 133,
       "panels": [],
@@ -3879,7 +3894,7 @@
         "h": 7,
         "w": 6,
         "x": 0,
-        "y": 75
+        "y": 78
       },
       "hiddenSeries": false,
       "id": 33,
@@ -3997,7 +4012,7 @@
         "h": 7,
         "w": 6,
         "x": 6,
-        "y": 75
+        "y": 78
       },
       "hiddenSeries": false,
       "id": 83,
@@ -4107,7 +4122,7 @@
         "h": 7,
         "w": 6,
         "x": 12,
-        "y": 75
+        "y": 78
       },
       "hiddenSeries": false,
       "id": 85,
@@ -4225,7 +4240,7 @@
         "h": 7,
         "w": 6,
         "x": 18,
-        "y": 75
+        "y": 78
       },
       "hiddenSeries": false,
       "id": 84,

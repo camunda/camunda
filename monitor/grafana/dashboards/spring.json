@@ -22,13 +22,28 @@
   "links": [],
   "panels": [
     {
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 103,
+      "options": {
+        "content": "<center>\n\n\u26a0\ufe0f **This dashboard is not maintained anymore.** Use the dashboards in the [camunda-observability](https://github.com/camunda/camunda-observability) repository instead.\n\n</center>",
+        "mode": "markdown"
+      },
+      "title": "Not maintained",
+      "type": "text"
+    },
+    {
       "collapsed": false,
       "datasource": "Prometheus",
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 3
       },
       "id": 54,
       "panels": [],
@@ -60,7 +75,7 @@
         "h": 3,
         "w": 6,
         "x": 0,
-        "y": 1
+        "y": 4
       },
       "height": "",
       "id": 52,
@@ -147,7 +162,7 @@
         "h": 6,
         "w": 5,
         "x": 6,
-        "y": 1
+        "y": 4
       },
       "id": 58,
       "interval": null,
@@ -232,7 +247,7 @@
         "h": 6,
         "w": 5,
         "x": 11,
-        "y": 1
+        "y": 4
       },
       "id": 60,
       "interval": null,
@@ -314,7 +329,7 @@
         "h": 6,
         "w": 8,
         "x": 16,
-        "y": 1
+        "y": 4
       },
       "hiddenSeries": false,
       "id": 66,
@@ -424,7 +439,7 @@
         "h": 3,
         "w": 6,
         "x": 0,
-        "y": 4
+        "y": 7
       },
       "height": "",
       "id": 56,
@@ -498,7 +513,7 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 7
+        "y": 10
       },
       "hiddenSeries": false,
       "id": 95,
@@ -596,7 +611,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 7
+        "y": 10
       },
       "hiddenSeries": false,
       "id": 96,
@@ -689,7 +704,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 14
+        "y": 17
       },
       "id": 48,
       "panels": [],
@@ -708,7 +723,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 15
+        "y": 18
       },
       "hiddenSeries": false,
       "id": 85,
@@ -822,7 +837,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 15
+        "y": 18
       },
       "hiddenSeries": false,
       "id": 97,
@@ -938,7 +953,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 15
+        "y": 18
       },
       "hiddenSeries": false,
       "id": 98,
@@ -1054,7 +1069,7 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 23
+        "y": 26
       },
       "hiddenSeries": false,
       "id": 88,
@@ -1168,7 +1183,7 @@
         "h": 8,
         "w": 6,
         "x": 6,
-        "y": 23
+        "y": 26
       },
       "hiddenSeries": false,
       "id": 99,
@@ -1284,7 +1299,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 23
+        "y": 26
       },
       "hiddenSeries": false,
       "id": 80,
@@ -1374,7 +1389,7 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 31
+        "y": 34
       },
       "hiddenSeries": false,
       "id": 102,
@@ -1490,7 +1505,7 @@
         "h": 8,
         "w": 6,
         "x": 12,
-        "y": 31
+        "y": 34
       },
       "hiddenSeries": false,
       "id": 100,
@@ -1606,7 +1621,7 @@
         "h": 8,
         "w": 6,
         "x": 18,
-        "y": 31
+        "y": 34
       },
       "hiddenSeries": false,
       "id": 101,
@@ -1723,7 +1738,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 39
+        "y": 42
       },
       "hiddenSeries": false,
       "id": 50,
@@ -1815,7 +1830,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 39
+        "y": 42
       },
       "hiddenSeries": false,
       "id": 83,
@@ -1912,7 +1927,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 46
+        "y": 49
       },
       "hiddenSeries": false,
       "id": 78,
@@ -2009,7 +2024,7 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 47
+        "y": 50
       },
       "hiddenSeries": false,
       "id": 82,
@@ -2106,7 +2121,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 54
+        "y": 57
       },
       "hiddenSeries": false,
       "id": 68,
@@ -2206,7 +2221,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 62
+        "y": 65
       },
       "id": 72,
       "panels": [],
@@ -2225,7 +2240,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 63
+        "y": 66
       },
       "hiddenSeries": false,
       "id": 74,
@@ -2318,7 +2333,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 63
+        "y": 66
       },
       "hiddenSeries": false,
       "id": 76,
@@ -2406,7 +2421,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 73
+        "y": 76
       },
       "id": 34,
       "panels": [
@@ -2960,7 +2975,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 74
+        "y": 77
       },
       "id": 18,
       "panels": [],
@@ -2979,7 +2994,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 75
+        "y": 78
       },
       "hiddenSeries": false,
       "id": 4,
@@ -3072,7 +3087,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 82
+        "y": 85
       },
       "hiddenSeries": false,
       "id": 2,
@@ -3159,7 +3174,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 89
+        "y": 92
       },
       "id": 22,
       "panels": [
@@ -3626,7 +3641,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 90
+        "y": 93
       },
       "id": 8,
       "panels": [],
@@ -3645,7 +3660,7 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 91
+        "y": 94
       },
       "hiddenSeries": false,
       "id": 6,
@@ -3739,7 +3754,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 91
+        "y": 94
       },
       "hiddenSeries": false,
       "id": 10,
@@ -3833,7 +3848,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 98
+        "y": 101
       },
       "hiddenSeries": false,
       "id": 14,
@@ -3927,7 +3942,7 @@
         "h": 7,
         "w": 8,
         "x": 8,
-        "y": 98
+        "y": 101
       },
       "hiddenSeries": false,
       "id": 16,
@@ -4021,7 +4036,7 @@
         "h": 7,
         "w": 8,
         "x": 16,
-        "y": 98
+        "y": 101
       },
       "hiddenSeries": false,
       "id": 20,

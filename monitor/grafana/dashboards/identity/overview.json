@@ -48,12 +48,27 @@
   "links": [],
   "panels": [
     {
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 22,
+      "options": {
+        "content": "<center>\n\n\u26a0\ufe0f **This dashboard is not maintained anymore.** Use the dashboards in the [camunda-observability](https://github.com/camunda/camunda-observability) repository instead.\n\n</center>",
+        "mode": "markdown"
+      },
+      "title": "Not maintained",
+      "type": "text"
+    },
+    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 3
       },
       "id": 2,
       "panels": [],
@@ -109,7 +124,7 @@
         "h": 8,
         "w": 7,
         "x": 0,
-        "y": 1
+        "y": 4
       },
       "id": 11,
       "options": {
@@ -260,7 +275,7 @@
         "h": 8,
         "w": 17,
         "x": 7,
-        "y": 1
+        "y": 4
       },
       "id": 1,
       "options": {
@@ -364,7 +379,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 9
+        "y": 12
       },
       "id": 3,
       "options": {
@@ -474,7 +489,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 9
+        "y": 12
       },
       "id": 4,
       "options": {
@@ -534,7 +549,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 17
+        "y": 20
       },
       "id": 12,
       "title": "Zeebe Engine - Authorization",
@@ -606,7 +621,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 18
+        "y": 21
       },
       "id": 13,
       "options": {
@@ -733,7 +748,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 18
+        "y": 21
       },
       "id": 14,
       "options": {
@@ -832,7 +847,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 26
+        "y": 29
       },
       "id": 15,
       "options": {
@@ -923,7 +938,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 26
+        "y": 29
       },
       "id": 16,
       "options": {
@@ -985,7 +1000,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 34
+        "y": 37
       },
       "id": 17,
       "panels": [],
@@ -1058,7 +1073,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 35
+        "y": 38
       },
       "id": 18,
       "options": {
@@ -1171,7 +1186,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 35
+        "y": 38
       },
       "id": 19,
       "options": {
@@ -1284,7 +1299,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 43
+        "y": 46
       },
       "id": 20,
       "options": {
@@ -1397,7 +1412,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 43
+        "y": 46
       },
       "id": 21,
       "options": {
@@ -1450,7 +1465,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 51
+        "y": 54
       },
       "id": 7,
       "panels": [],
@@ -1519,7 +1534,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 52
+        "y": 55
       },
       "id": 9,
       "options": {
@@ -1599,7 +1614,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 52
+        "y": 55
       },
       "id": 6,
       "options": {
@@ -1730,7 +1745,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 60
+        "y": 63
       },
       "id": 10,
       "options": {
@@ -1817,7 +1832,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 60
+        "y": 63
       },
       "id": 8,
       "options": {
