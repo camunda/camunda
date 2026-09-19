@@ -23,6 +23,8 @@
   <properties>
     <version.maven-surefire-junit5-tree-reporter>1.5.1</version.maven-surefire-junit5-tree-reporter>
     <identity-packages>io/camunda/it/auth/*,io/camunda/it/identity/*,io/camunda/it/csrf/*,io/camunda/it/logout/*,io/camunda/it/oidc/*</identity-packages>
+    <!-- Slow tests should override via -D failsafe.timeout. -->
+    <failsafe.timeout>900</failsafe.timeout>
   </properties>
 
   <dependencies>
@@ -747,7 +749,7 @@
             <identity.docker.image.version>${version.identity}</identity.docker.image.version>
           </systemPropertyVariables>
           <excludedGroups>rdbms, rdbms-aurora, rdbms-aurora-mysql, multi-db-test, compatibility-test, dl-nightly, async-repl</excludedGroups>
-          <forkedProcessTimeoutInSeconds>10800</forkedProcessTimeoutInSeconds>
+          <forkedProcessTimeoutInSeconds>${failsafe.timeout}</forkedProcessTimeoutInSeconds>
         </configuration>
         <dependencies>
           <dependency>
