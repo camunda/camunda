@@ -738,7 +738,8 @@ public final class SearchQueryResponseMapper {
               final var jobType,
               final var jobKind,
               final var listenerEventType,
-              final var retries) ->
+              final var retries,
+              final var secretResolutionPending) ->
           base.details(
                   JobWaitStateDetails.Builder.create()
                       .waitStateType(WaitStateTypeEnum.JOB.name())
@@ -751,6 +752,7 @@ public final class SearchQueryResponseMapper {
                               ? null
                               : JobListenerEventTypeEnum.fromValue(listenerEventType.name()))
                       .retries(retries)
+                      .secretResolutionPending(secretResolutionPending)
                       .build())
               .build();
       case WaitStateMessageDetails(final var messageName, final var correlationKey) ->
