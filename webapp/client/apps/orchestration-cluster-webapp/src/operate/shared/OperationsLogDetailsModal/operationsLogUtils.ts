@@ -54,9 +54,8 @@ type EntityKeyData = {
 };
 
 /**
- * Maps an audit log entry to its entity-key link. `link` is a plain `href` for
- * PROCESS_INSTANCE, DECISION and BATCH entity types because their detail pages are not
- * migrated to the unified webapp yet (tracked separately from this page's migration).
+ * Maps an audit log entry to entity-key display data. `link` is a plain `href` only for
+ * entity types whose detail pages are not yet migrated to TanStack Router links in this area.
  */
 function mapToCellEntityKeyData(
 	t: TFunction,
@@ -74,7 +73,6 @@ function mapToCellEntityKeyData(
 		case 'PROCESS_INSTANCE':
 			return {
 				name: processDefinitionName,
-				link: `/operate/processes/${item.entityKey}`,
 				linkLabel: t('operate.operationsLog.entityLinks.viewProcessInstance', {key: item.entityKey}),
 				label: item.entityKey,
 			};
