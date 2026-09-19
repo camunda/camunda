@@ -10,9 +10,18 @@
 
 camunda: # Type: io.camunda.configuration.Camunda  
   api: # Type: io.camunda.configuration.Api  
+    # Enables the gateway (gRPC, REST and MCP API). For a broker with an embedded gateway, disables the
+    # embedded gateway entirely. For a standalone gateway process, disables its REST and MCP endpoints
+    # (the gRPC API itself is controlled independently by how the process is started) — mirroring the
+    # scope the legacy `zeebe.broker.gateway.enable` property already had before this property existed.
+    enabled: true # Type: Boolean, Env: CAMUNDA_API_ENABLED
     grpc: # Type: io.camunda.configuration.Grpc  
       # Sets the address the gateway binds to
       address: null # Type: String, Env: CAMUNDA_API_GRPC_ADDRESS
+      # Sets the maximum number of threads the gateway will use to handle gRPC requests
+      grpc-max-threads: null # Type: Integer, Env: CAMUNDA_API_GRPC_GRPCMAXTHREADS
+      # Sets the minimum number of threads the gateway will use to handle gRPC requests
+      grpc-min-threads: null # Type: Integer, Env: CAMUNDA_API_GRPC_GRPCMINTHREADS
       # Sets the interceptors
       interceptors: null # Type: List<io.camunda.configuration.Interceptor>, Env: CAMUNDA_API_GRPC_INTERCEPTORS
       # Sets the number of threads the gateway will use to communicate with the broker cluster
@@ -576,6 +585,13 @@ camunda: # Type: io.camunda.configuration.Camunda
         # more stable performance by avoiding write spikes consuming all available IOPS, leading to more
         # predictable read rates.
         io-rate-bytes-per-second: 0 # Type: Integer, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_IORATEBYTESPERSECOND
+        # Configures the maximum fraction of total system memory that RocksDB is allowed to use, as a safety
+        # cap on top of the static memory sizes configured via {@link #memoryAllocationStrategy}. Only checked
+        # when that strategy is not 'FRACTION' (which sizes RocksDB as a fraction of total memory directly,
+        # via {@link #memoryFraction}, so this cap does not apply there). The value must be greater than 0 and
+        # at most 1, or -1 to disable the check (the default). For example, a value of 0.5 means RocksDB is
+        # never allowed to use more than 50% of total system memory.
+        max-memory-fraction: -1 # Type: Double, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MAXMEMORYFRACTION
         # Configures how many files are kept open by RocksDB, per default it is unlimited (-1). This is a
         # performance optimization: if you set a value greater than zero, it will keep track and cap the
         # number of open files in the TableCache. On accessing the files it needs to look them up in the
@@ -751,8 +767,7 @@ camunda: # Type: io.camunda.configuration.Camunda
         # single shard whatever this is set to. Use number-of-shards-per-index to override an individual
         # index.
         number-of-shards: 1 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDS
-        # Per-index shard overrides.
-        number-of-shards-per-index: # Type: io.camunda.configuration.NumberOfShardsPerIndex
+        number-of-shards-per-index: # Type: io.camunda.configuration.NumberOfShardsPerIndex  
           # Primary shards for the agent definition index (agent-definition).
           agent-definition: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_AGENTDEFINITION
           # Primary shards for the agent history index (agent-history).
@@ -835,6 +850,7 @@ camunda: # Type: io.camunda.configuration.Camunda
           wait-state: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_WAITSTATE
           # Primary shards for the persistent web session index (web-session).
           web-session: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_WEBSESSION
+        
         # Password for the database configured as secondary storage.
         password: "" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PASSWORD
         # Whether to schedule the cleanup of legacy indexes
@@ -1000,8 +1016,7 @@ camunda: # Type: io.camunda.configuration.Camunda
         # single shard whatever this is set to. Use number-of-shards-per-index to override an individual
         # index.
         number-of-shards: 1 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDS
-        # Per-index shard overrides.
-        number-of-shards-per-index: # Type: io.camunda.configuration.NumberOfShardsPerIndex
+        number-of-shards-per-index: # Type: io.camunda.configuration.NumberOfShardsPerIndex  
           # Primary shards for the agent definition index (agent-definition).
           agent-definition: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_AGENTDEFINITION
           # Primary shards for the agent history index (agent-history).
@@ -1084,6 +1099,7 @@ camunda: # Type: io.camunda.configuration.Camunda
           wait-state: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_WAITSTATE
           # Primary shards for the persistent web session index (web-session).
           web-session: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_WEBSESSION
+        
         # Password for the database configured as secondary storage.
         password: "" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PASSWORD
         # Whether to schedule the cleanup of legacy indexes
@@ -1697,6 +1713,11 @@ camunda: # Type: io.camunda.configuration.Camunda
         retry-max-delay: "30s" # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_SECRETS_RETRYMAXDELAY
         wake-delay: "50ms" # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_SECRETS_WAKEDELAY
       
+      startup: # Type: io.camunda.configuration.EngineStartup  
+        # Configures whether the one-time migration that re-exports existing RPA resources runs on broker
+        # startup.
+        rpa-reexport-migration-enabled: null # Type: Boolean, Env: CAMUNDA_PROCESSING_ENGINE_STARTUP_RPAREEXPORTMIGRATIONENABLED
+      
       storage-ordinals: # Type: io.camunda.configuration.EngineStorageOrdinals  
         # Controls whether the archiverless mode is enabled.
         enable-archiverless: null # Type: Boolean, Env: CAMUNDA_PROCESSING_ENGINE_STORAGEORDINALS_ENABLEARCHIVERLESS
@@ -1940,6 +1961,10 @@ camunda: # Type: io.camunda.configuration.Camunda
     # Controls the number of io threads to be used. These threads are used for workloads that write data
     # to disk. While writing, these threads are blocked which means that they yield the CPU.
     io-thread-count: 2 # Type: Integer, Env: CAMUNDA_SYSTEM_IOTHREADCOUNT
+    legacy-query-api: # Type: io.camunda.configuration.LegacyQueryApi  
+      # Enables the broker's internal legacy query API.
+      enabled: false # Type: Boolean, Env: CAMUNDA_SYSTEM_LEGACYQUERYAPI_ENABLED
+    
     restore: # Type: io.camunda.configuration.Restore  
       ignore-files-in-target: null # Type: List<String>, Env: CAMUNDA_SYSTEM_RESTORE_IGNOREFILESINTARGET
       validate-config: true # Type: Boolean, Env: CAMUNDA_SYSTEM_RESTORE_VALIDATECONFIG

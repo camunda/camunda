@@ -55,6 +55,8 @@ public class ApiGrpcGatewayPropertiesTest {
         "camunda.api.grpc.port=27900",
         "camunda.api.grpc.min-keep-alive-interval=40s",
         "camunda.api.grpc.management-threads=5",
+        "camunda.api.grpc.grpc-min-threads=3",
+        "camunda.api.grpc.grpc-max-threads=7",
         "camunda.api.grpc.max-connection-age=2h",
         "camunda.api.grpc.max-connection-age-grace=45s",
       })
@@ -87,6 +89,16 @@ public class ApiGrpcGatewayPropertiesTest {
     }
 
     @Test
+    void shouldSetGrpcMinThreads() {
+      assertThat(gatewayCfg.getThreads().getGrpcMinThreads()).isEqualTo(3);
+    }
+
+    @Test
+    void shouldSetGrpcMaxThreads() {
+      assertThat(gatewayCfg.getThreads().getGrpcMaxThreads()).isEqualTo(7);
+    }
+
+    @Test
     void shouldSetMaxConnectionAge() {
       assertThat(gatewayCfg.getNetwork().getMaxConnectionAge()).isEqualTo(Duration.ofHours(2));
     }
@@ -105,6 +117,8 @@ public class ApiGrpcGatewayPropertiesTest {
         "zeebe.broker.gateway.network.port=38900",
         "zeebe.broker.gateway.network.minKeepAliveInterval=50s",
         "zeebe.broker.gateway.threads.managementThreads=10",
+        "zeebe.broker.gateway.threads.grpcMinThreads=9",
+        "zeebe.broker.gateway.threads.grpcMaxThreads=11",
       })
   class WithOnlyLegacyBrokerPropertiesSet {
     final GatewayBasedProperties gatewayCfg;
@@ -139,6 +153,18 @@ public class ApiGrpcGatewayPropertiesTest {
       assertThat(gatewayCfg.getThreads().getManagementThreads())
           .isEqualTo(DEFAULT_MANAGEMENT_THREADS);
     }
+
+    @Test
+    void shouldNotSetGrpcMinThreadsFromLegacyBrokerThreads() {
+      assertThat(gatewayCfg.getThreads().getGrpcMinThreads())
+          .isEqualTo(Runtime.getRuntime().availableProcessors());
+    }
+
+    @Test
+    void shouldNotSetGrpcMaxThreadsFromLegacyBrokerThreads() {
+      assertThat(gatewayCfg.getThreads().getGrpcMaxThreads())
+          .isEqualTo(2 * Runtime.getRuntime().availableProcessors());
+    }
   }
 
   @Nested
@@ -148,6 +174,8 @@ public class ApiGrpcGatewayPropertiesTest {
         "zeebe.gateway.network.port=28900",
         "zeebe.gateway.network.minKeepAliveInterval=60s",
         "zeebe.gateway.threads.managementThreads=6",
+        "zeebe.gateway.threads.grpcMinThreads=13",
+        "zeebe.gateway.threads.grpcMaxThreads=17",
       })
   class WithOnlyLegacyGatewayPropertiesSet {
     final GatewayBasedProperties gatewayCfg;
@@ -176,6 +204,16 @@ public class ApiGrpcGatewayPropertiesTest {
     void shouldSetManagementThreadsFromLegacyGatewayThreads() {
       assertThat(gatewayCfg.getThreads().getManagementThreads()).isEqualTo(6);
     }
+
+    @Test
+    void shouldSetGrpcMinThreadsFromLegacyGatewayThreads() {
+      assertThat(gatewayCfg.getThreads().getGrpcMinThreads()).isEqualTo(13);
+    }
+
+    @Test
+    void shouldSetGrpcMaxThreadsFromLegacyGatewayThreads() {
+      assertThat(gatewayCfg.getThreads().getGrpcMaxThreads()).isEqualTo(17);
+    }
   }
 
   @Nested
@@ -186,6 +224,8 @@ public class ApiGrpcGatewayPropertiesTest {
         "camunda.api.grpc.port=27900",
         "camunda.api.grpc.min-keep-alive-interval=40s",
         "camunda.api.grpc.management-threads=5",
+        "camunda.api.grpc.grpc-min-threads=3",
+        "camunda.api.grpc.grpc-max-threads=7",
         "camunda.api.grpc.max-connection-age=2h",
         "camunda.api.grpc.max-connection-age-grace=45s",
         // legacy broker configuration
@@ -194,11 +234,15 @@ public class ApiGrpcGatewayPropertiesTest {
         "zeebe.broker.gateway.network.minKeepAliveInterval=60s",
         "zeebe.broker.gateway.network.maxMessageSize=50MB",
         "zeebe.broker.gateway.threads.managementThreads=10",
+        "zeebe.broker.gateway.threads.grpcMinThreads=9",
+        "zeebe.broker.gateway.threads.grpcMaxThreads=11",
         // legacy gateway configuration
         "zeebe.gateway.network.host=192.0.0.1",
         "zeebe.gateway.network.port=28900",
         "zeebe.gateway.network.minKeepAliveInterval=50s",
         "zeebe.gateway.threads.managementThreads=6",
+        "zeebe.gateway.threads.grpcMinThreads=13",
+        "zeebe.gateway.threads.grpcMaxThreads=17",
       })
   class WithNewAndLegacySet {
     final GatewayBasedProperties gatewayCfg;
@@ -226,6 +270,16 @@ public class ApiGrpcGatewayPropertiesTest {
     @Test
     void shouldSetManagementThreads() {
       assertThat(gatewayCfg.getThreads().getManagementThreads()).isEqualTo(5);
+    }
+
+    @Test
+    void shouldSetGrpcMinThreadsFromNew() {
+      assertThat(gatewayCfg.getThreads().getGrpcMinThreads()).isEqualTo(3);
+    }
+
+    @Test
+    void shouldSetGrpcMaxThreadsFromNew() {
+      assertThat(gatewayCfg.getThreads().getGrpcMaxThreads()).isEqualTo(7);
     }
 
     @Test
