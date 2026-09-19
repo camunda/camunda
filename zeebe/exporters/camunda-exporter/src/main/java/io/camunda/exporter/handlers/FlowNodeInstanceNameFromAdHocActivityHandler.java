@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -115,12 +116,21 @@ public class FlowNodeInstanceNameFromAdHocActivityHandler
     // inserted first by FlowNodeInstanceFromProcessInstanceHandler, since the engine writes the
     // inner instance's own ELEMENT_ACTIVATING before the entry child's. The upsert here is a
     // defensive fallback: it lets ES/OS create the document rather than fail if it is missing.
+    //
+    // entity.getFlowNodeName() can be null here even though updateEntity() above always resolves
+    // a non-null name: the exporter framework shares one entity instance per id across every
+    // handler that targets it (see FlowNodeInstanceFromProcessInstanceHandler, which writes the
+    // same inner-instance id and deliberately leaves flowNodeName unset), so flush() can run on an
+    // entity this handler's own updateEntity() never touched in this batch. Map.of() rejects a
+    // null value, so use Collections.singletonMap(), which permits one; the script above already
+    // no-ops when its own params.flowNodeName is null (it only assigns when the stored value is
+    // still null, so assigning null-to-null changes nothing).
     batchRequest.upsertWithScript(
         index,
         entity.getId(),
         entity,
         SET_IF_NULL_NAME_SCRIPT,
-        Map.of(FlowNodeInstanceTemplate.FLOW_NODE_NAME, entity.getFlowNodeName()));
+        Collections.singletonMap(FlowNodeInstanceTemplate.FLOW_NODE_NAME, entity.getFlowNodeName()));
   }
 
   @Override
