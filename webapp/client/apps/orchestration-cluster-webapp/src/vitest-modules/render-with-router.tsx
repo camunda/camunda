@@ -16,6 +16,7 @@ import {
 	createRootRouteWithContext,
 	createRoute,
 	createRouter,
+	joinPaths,
 	type RegisteredRouter,
 } from '@tanstack/react-router';
 
@@ -26,10 +27,12 @@ async function renderWithRouter(
 	Component: React.ComponentType,
 	{
 		path,
-		initialEntry = path,
+		basepath = '',
+		initialEntry = joinPaths([basepath, path]),
 	}: {
 		path: ValidRoutes;
 		initialEntry?: string;
+		basepath?: string;
 	},
 ) {
 	const queryClient = new QueryClient({
@@ -51,6 +54,7 @@ async function renderWithRouter(
 	const router = createRouter({
 		routeTree: rootRoute.addChildren([testRoute]),
 		history: createMemoryHistory({initialEntries: [initialEntry]}),
+		basepath,
 		defaultPendingMinMs: 0,
 		defaultNotFoundComponent: () => null,
 		context: {

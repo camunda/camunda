@@ -17,6 +17,7 @@ import {
 	type GetIncidentProcessInstanceStatisticsByErrorRequestBody,
 	type GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
 	type QueryProcessInstancesRequestBody,
+	type QueryProcessInstanceIncidentsRequestBody,
 	type CancelProcessInstanceRequestBody,
 	type DeleteProcessInstanceRequestBody,
 	type SuspendProcessInstanceRequestBody,
@@ -271,6 +272,14 @@ const endpoints = {
 		new Request(getFullURL(unifiedAPIEndpoints.queryProcessInstances.getUrl()), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.queryProcessInstances.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryProcessInstanceIncidents: (processInstanceKey: string, body: QueryProcessInstanceIncidentsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryProcessInstanceIncidents.getUrl({processInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryProcessInstanceIncidents.method,
 			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),
@@ -538,6 +547,13 @@ const endpoints = {
 		new Request(getFullURL(unifiedAPIEndpoints.getProcessInstanceCallHierarchy.getUrl({processInstanceKey})), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.getProcessInstanceCallHierarchy.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getProcessInstanceWaitStateStatistics: (processInstanceKey: string) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getProcessInstanceWaitStateStatistics.getUrl({processInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getProcessInstanceWaitStateStatistics.method,
 			headers: {'Content-Type': 'application/json'},
 		}),
 };

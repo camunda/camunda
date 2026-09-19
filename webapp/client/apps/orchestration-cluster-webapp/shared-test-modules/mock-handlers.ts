@@ -124,6 +124,11 @@ const mockGetProcessInstanceEndpoint = createEndpointMock({
 	method: endpoints.getProcessInstance.method,
 });
 
+const mockQueryProcessInstanceIncidentsEndpoint = createEndpointMock({
+	endpoint: endpoints.queryProcessInstanceIncidents.getUrl({processInstanceKey: ':processInstanceKey'}),
+	method: endpoints.queryProcessInstanceIncidents.method,
+});
+
 const mockQueryDecisionDefinitionsEndpoint = createEndpointMock({
 	endpoint: endpoints.queryDecisionDefinitions.getUrl(),
 	method: endpoints.queryDecisionDefinitions.method,
@@ -247,6 +252,11 @@ const mockGetProcessInstanceCallHierarchyEndpoint = createEndpointMock({
 	method: endpoints.getProcessInstanceCallHierarchy.method,
 });
 
+const mockGetProcessInstanceWaitStateStatisticsEndpoint = createEndpointMock({
+	endpoint: endpoints.getProcessInstanceWaitStateStatistics.getUrl({processInstanceKey: ':processInstanceKey'}),
+	method: endpoints.getProcessInstanceWaitStateStatistics.method,
+});
+
 const mockCreateCancellationBatchOperationEndpoint = createEndpointMock({
 	endpoint: endpoints.createCancellationBatchOperation.getUrl(),
 	method: endpoints.createCancellationBatchOperation.method,
@@ -307,6 +317,7 @@ export {
 	mockQueryBatchOperationsEndpoint,
 	mockQueryProcessInstancesEndpoint,
 	mockGetProcessInstanceEndpoint,
+	mockQueryProcessInstanceIncidentsEndpoint,
 	mockQueryBatchOperationItemsEndpoint,
 	mockGetBatchOperationEndpoint,
 	mockSuspendBatchOperationEndpoint,
@@ -325,4 +336,5 @@ export {
 	mockDeleteResourceEndpoint,
 	mockQueryAuditLogsEndpoint,
 	mockGetProcessInstanceCallHierarchyEndpoint,
+	mockGetProcessInstanceWaitStateStatisticsEndpoint,
 };

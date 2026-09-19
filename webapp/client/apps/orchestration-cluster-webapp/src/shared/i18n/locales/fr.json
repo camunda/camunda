@@ -681,6 +681,39 @@
 					"learnMoreLink": "En savoir plus sur les autorisations"
 				}
 			},
+			"processInstance": {
+				"title": "Instance de processus Operate",
+				"pageTitle": "Operate : Instance de processus {{processInstanceId}} de {{name}}",
+				"notFoundNotificationTitle": "L'instance {{processInstanceId}} n'a pas pu être trouvée",
+				"breadcrumb": {
+					"view": "Afficher le processus {{name}} - instance {{key}}",
+					"current": "Processus {{name}} - instance {{key}}",
+					"more": "Plus"
+				},
+				"header": {
+					"key": "Clé d'instance de processus",
+					"waiting": "En attente",
+					"waitingCount": "{{count}} en attente",
+					"version": "Version",
+					"versionTag": "Tag de version",
+					"versionTagDescription": "Libellé défini par l'utilisateur pour identifier une définition.",
+					"businessId": "ID métier",
+					"tenant": "Client",
+					"startDate": "Date de début",
+					"endDate": "Date de fin",
+					"calledInstances": "Instances appelées",
+					"versionLinkTitle": "Afficher les instances du processus \"{{name}} version {{version}}\"",
+					"versionLinkTitleWithTenant": "Afficher les instances du processus \"{{name}} version {{version}}\" - {{tenant}}",
+					"viewCalledInstances": "Tout afficher",
+					"viewCalledInstancesTitle": "Afficher toutes les instances appelées",
+					"none": "Aucune"
+				},
+				"forbidden": {
+					"heading": "403 - Vous n'avez pas la permission de consulter ces informations",
+					"description": "Contactez votre administrateur pour obtenir l'accès.",
+					"learnMoreLink": "En savoir plus sur les autorisations"
+				}
+			},
 			"operations": {
 				"title": "Opérations"
 			},
