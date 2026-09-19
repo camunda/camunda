@@ -151,7 +151,7 @@
     <version.archunit>1.5.0</version.archunit>
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
-    <version.jnr-ffi>2.3.1</version.jnr-ffi>
+    <version.jnr-ffi>2.3.3</version.jnr-ffi>
     <version.jnr-posix>3.2.2</version.jnr-posix>
     <version.jnr-constants>0.11.0</version.jnr-constants>
     <version.feign>13.15</version.feign>
