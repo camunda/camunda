@@ -31,10 +31,10 @@ import java.util.Collections;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.context.LifecycleProperties;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.web.filter.CompositeFilter;
 
 @Configuration(proxyBeanMethods = false)
 @Profile("!broker")
@@ -59,13 +59,35 @@ public final class GatewayBasedConfiguration {
     return lifecycleProperties.getTimeoutPerShutdownPhase();
   }
 
+  /**
+   * Registers the user-defined REST API filters configured under {@code zeebe.gateway.filters}.
+   *
+   * <p>Returned as a {@link FilterRegistrationBean} rather than a bare {@link
+   * org.springframework.web.filter.CompositeFilter} bean so the registration can be switched off.
+   * Spring Boot maps every {@link Filter}-typed bean onto {@code /*}, and configuring no filters is
+   * the common case, so the registration is disabled unless at least one filter was loaded.
+   *
+   * <p>An empty composite filter is not inert, so this is a behaviour change for deployments with
+   * no filters configured. {@link RestApiCompositeFilter} wraps the rest of the chain in a {@code
+   * catch (Exception)} that renders a {@code 500} {@code application/problem+json} body titled
+   * "Filter issue"; with an empty filter list {@code CompositeFilter} invokes the original chain
+   * directly, so that catch-all still applied to everything downstream — including the {@code
+   * DispatcherServlet}, since the registration has the lowest precedence and is therefore the
+   * innermost filter. Once the registration is disabled those exceptions take the container's error
+   * dispatch to {@code /error}, where {@code GlobalErrorController} answers with the same status
+   * and content type and the title "Internal Server Error". {@code /error} is listed in {@code
+   * SecurityPaths.UNPROTECTED_PATHS}, so the re-entry into the security chains on the error
+   * dispatch is served by the unprotected chain and an anonymous request still sees the 500.
+   */
   @ConditionalOnAnyHttpGatewayEnabled
   @Bean
-  public CompositeFilter restApiCompositeFilter() {
+  public FilterRegistrationBean<RestApiCompositeFilter> restApiCompositeFilter() {
     final List<FilterCfg> filterCfgs = properties.getFilters();
     final List<Filter> filters = new FilterRepository().load(filterCfgs).instantiate().toList();
 
-    return new RestApiCompositeFilter(filters);
+    final var registration = new FilterRegistrationBean<>(new RestApiCompositeFilter(filters));
+    registration.setEnabled(!filters.isEmpty());
+    return registration;
   }
 
   @Bean
