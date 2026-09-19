@@ -26,8 +26,12 @@ import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.model.bpmn.instance.Process;
 import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
 import java.io.ByteArrayInputStream;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
 /**
@@ -38,6 +42,19 @@ import org.camunda.bpm.model.xml.instance.ModelElementInstance;
  * sequence flows for coverage analysis.
  */
 public class ModelCreator {
+
+  /**
+   * The elements of a model, kept for as long as the model is measured against.
+   *
+   * <p>A suite reports itself after every test, and reporting measures every coverage of every run
+   * it collected so far against the model it describes the process by. Reading the elements of that
+   * model from its XML each time would parse it once per coverage, so the number of parses would
+   * grow with the square of the tests in the suite. A model never changes, so its elements are read
+   * once and shared from here. There is an entry per model the suite deployed, which the suite
+   * holds on to anyway.
+   */
+  private static final Map<ProcessModel, CoverableElements> COVERABLE_ELEMENTS_BY_MODEL =
+      new ConcurrentHashMap<>();
 
   /**
    * Creates a model object from a process definition in the Camunda engine.
@@ -53,48 +70,160 @@ public class ModelCreator {
    */
   public static ProcessModel createModel(
       final CoverageTestData testResults, final String processDefinitionId) {
+    return createModel(testResults, processDefinitionId, null);
+  }
+
+  /**
+   * Creates a model object from a process definition in the Camunda engine.
+   *
+   * <p>A process definition id can be deployed several times within a test run, for example when a
+   * mock deploys a stub of a process that is also deployed for real. The deployment that the
+   * instance ran describes it; the other deployments describe a different process under the same
+   * id, so no other deployment stands in for it.
+   *
+   * @param testResults The data source to retrieve process definition data
+   * @param processDefinitionId The ID of the process definition to create a model for
+   * @param processDefinitionKey The key of the deployment that ran, or {@code null} if unknown
+   * @return A Model object containing process structure information and element counts
+   * @throws IllegalArgumentException if the model cannot be read from the process definition
+   */
+  public static ProcessModel createModel(
+      final CoverageTestData testResults,
+      final String processDefinitionId,
+      final Long processDefinitionKey) {
 
     final CoverageProcessDefinitionData processDefinitionData =
+        selectDeployment(testResults, processDefinitionId, processDefinitionKey)
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException(
+                        "No process definition data found for ID: "
+                            + processDefinitionId
+                            + (processDefinitionKey == null
+                                ? ""
+                                : " deployed under key: " + processDefinitionKey)));
+
+    final BpmnModelInstance modelInstance =
+        readModel(processDefinitionData.getXml(), processDefinitionId);
+
+    final ProcessDefinition processDefinition = processDefinitionData.getProcessDefinition();
+
+    return ImmutableProcessModel.builder()
+        .processDefinitionId(processDefinition.getProcessDefinitionId())
+        .processName(processDefinition.getName())
+        .totalElementCount(
+            coverableElements(modelInstance, processDefinition.getProcessDefinitionId()).count())
+        .version(String.valueOf(processDefinition.getVersion()))
+        .xml(Bpmn.convertToString(modelInstance))
+        .build();
+  }
+
+  /**
+   * Selects the deployment that the instance ran, out of the deployments of a process definition
+   * id.
+   *
+   * <p>Another deployment of the id does not stand in for it: it describes a different process, so
+   * its model would neither explain what the instance ran nor let its elements count as coverage.
+   *
+   * @param testResults The data source to retrieve process definition data
+   * @param processDefinitionId The ID of the process definition
+   * @param processDefinitionKey The key of the deployment that ran, or {@code null} if unknown
+   * @return The deployment that ran, or any deployment of the id when the key is unknown
+   */
+  private static Optional<CoverageProcessDefinitionData> selectDeployment(
+      final CoverageTestData testResults,
+      final String processDefinitionId,
+      final Long processDefinitionKey) {
+
+    final Stream<CoverageProcessDefinitionData> deploymentsOfId =
         testResults.getProcessDefinitionData().stream()
             .filter(
                 data ->
                     data.getProcessDefinition()
                         .getProcessDefinitionId()
-                        .equals(processDefinitionId))
-            .findFirst()
-            .orElseThrow(
-                () ->
-                    new IllegalArgumentException(
-                        "No process definition data found for ID: " + processDefinitionId));
+                        .equals(processDefinitionId));
 
-    final ByteArrayInputStream inputStream =
-        new ByteArrayInputStream(processDefinitionData.getXml().getBytes());
-    final BpmnModelInstance modelInstance = Bpmn.readModelFromStream(inputStream);
+    if (processDefinitionKey == null) {
+      return deploymentsOfId.findFirst();
+    }
+
+    return deploymentsOfId
+        .filter(
+            data ->
+                processDefinitionKey.equals(data.getProcessDefinition().getProcessDefinitionKey()))
+        .findFirst();
+  }
+
+  /**
+   * Collects the elements a model can cover, which are the elements counted by {@link
+   * #createModel}.
+   *
+   * @param processModel The model to collect the elements of
+   * @return The flow nodes and sequence flows of the executable process, by kind
+   */
+  public static CoverableElements coverableElements(final ProcessModel processModel) {
+    return COVERABLE_ELEMENTS_BY_MODEL.computeIfAbsent(
+        processModel,
+        model ->
+            coverableElements(
+                readModel(model.getXml(), model.getProcessDefinitionId()),
+                model.getProcessDefinitionId()));
+  }
+
+  /**
+   * Collects the elements a model can cover, which are the elements counted by {@link
+   * #createModel}.
+   *
+   * @param modelInstance The parsed BPMN model
+   * @param processDefinitionId The ID of the executable process within the model
+   * @return The flow nodes and sequence flows of the executable process, by kind
+   */
+  public static CoverableElements coverableElements(
+      final BpmnModelInstance modelInstance, final String processDefinitionId) {
+
+    final Set<FlowNode> definitionFlowNodes =
+        modelInstance.getModelElementsByType(FlowNode.class).stream()
+            .filter(node -> isExecutable(node, processDefinitionId))
+            .collect(Collectors.toSet());
+
+    final Set<String> definitionSequenceFlowIds =
+        modelInstance.getModelElementsByType(SequenceFlow.class).stream()
+            .filter(sequenceFlow -> definitionFlowNodes.contains(sequenceFlow.getSource()))
+            .map(SequenceFlow::getId)
+            .collect(Collectors.toSet());
+
+    return new CoverableElements(
+        definitionFlowNodes.stream().map(FlowNode::getId).collect(Collectors.toSet()),
+        definitionSequenceFlowIds);
+  }
+
+  /**
+   * Selects the model that describes more of the process out of two models sharing a process
+   * definition id.
+   *
+   * <p>A process definition id can be deployed with different models within the same suite, for
+   * example when tests use fixtures that differ in their elements. The report describes such a
+   * process by its richest model, so that the elements of the other models cannot count as coverage
+   * of a model that does not have them.
+   *
+   * @param model A model of the process
+   * @param otherModel Another model of the same process
+   * @return The model with the higher element count, or the first one if both are equal
+   */
+  public static ProcessModel selectMostCompleteModel(
+      final ProcessModel model, final ProcessModel otherModel) {
+    return otherModel.getTotalElementCount() > model.getTotalElementCount() ? otherModel : model;
+  }
+
+  private static BpmnModelInstance readModel(final String xml, final String processDefinitionId) {
+    final BpmnModelInstance modelInstance =
+        Bpmn.readModelFromStream(new ByteArrayInputStream(xml.getBytes()));
 
     if (modelInstance == null) {
       throw new IllegalArgumentException(
           "Cannot read model from process definition: " + processDefinitionId);
     }
-
-    final ProcessDefinition processDefinition = processDefinitionData.getProcessDefinition();
-
-    final Set<FlowNode> definitionFlowNodes =
-        modelInstance.getModelElementsByType(FlowNode.class).stream()
-            .filter(node -> isExecutable(node, processDefinition.getProcessDefinitionId()))
-            .collect(Collectors.toSet());
-
-    final Set<SequenceFlow> definitionSequenceFlows =
-        modelInstance.getModelElementsByType(SequenceFlow.class).stream()
-            .filter(s -> definitionFlowNodes.contains(s.getSource()))
-            .collect(Collectors.toSet());
-
-    return ImmutableProcessModel.builder()
-        .processDefinitionId(processDefinition.getProcessDefinitionId())
-        .processName(processDefinition.getName())
-        .totalElementCount(definitionFlowNodes.size() + definitionSequenceFlows.size())
-        .version(String.valueOf(processDefinition.getVersion()))
-        .xml(Bpmn.convertToString(modelInstance))
-        .build();
+    return modelInstance;
   }
 
   /**

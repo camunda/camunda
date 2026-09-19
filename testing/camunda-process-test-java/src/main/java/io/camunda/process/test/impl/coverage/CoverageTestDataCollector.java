@@ -15,9 +15,7 @@
  */
 package io.camunda.process.test.impl.coverage;
 
-import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.client.api.search.response.DecisionInstance;
-import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.coverage.data.CoverageTestData;
@@ -50,20 +48,20 @@ public class CoverageTestDataCollector {
                     .build())
         .forEach(builder::addProcessInstanceData);
 
+    // a definition per deployment that ran, not per id: a test can run several deployments of one
+    // id, for example when a mock deploys a stub of a process that is also deployed for real
     processInstances.stream()
-        .map(ProcessInstance::getProcessDefinitionId)
+        .map(ProcessInstance::getProcessDefinitionKey)
         .distinct()
         .map(
-            processDefinitionId -> {
-              final ProcessDefinition processDefinition =
-                  dataSource.findProcessDefinitionByProcessDefinitionId(processDefinitionId);
-              return ImmutableCoverageProcessDefinitionData.builder()
-                  .processDefinition(processDefinition)
-                  .xml(
-                      dataSource.getProcessDefinitionXmlByProcessDefinitionKey(
-                          processDefinition.getProcessDefinitionKey()))
-                  .build();
-            })
+            processDefinitionKey ->
+                ImmutableCoverageProcessDefinitionData.builder()
+                    .processDefinition(
+                        dataSource.getProcessDefinitionByProcessDefinitionKey(processDefinitionKey))
+                    .xml(
+                        dataSource.getProcessDefinitionXmlByProcessDefinitionKey(
+                            processDefinitionKey))
+                    .build())
         .forEach(builder::addProcessDefinitionData);
 
     final List<DecisionInstance> decisionInstances = dataSource.findDecisionInstances(f -> {});
@@ -79,20 +77,21 @@ public class CoverageTestDataCollector {
                     .build())
         .forEach(builder::addDecisionInstanceData);
 
+    // a definition per deployment that was evaluated, not per id: a test can evaluate several
+    // deployments of one id, for example when suites deploy fixtures that differ in their rules
     decisionInstances.stream()
-        .map(DecisionInstance::getDecisionDefinitionId)
+        .map(DecisionInstance::getDecisionDefinitionKey)
         .distinct()
         .map(
-            decisionDefinitionId -> {
-              final DecisionDefinition decisionDefinition =
-                  dataSource.findDecisionDefinitionByDecisionDefinitionId(decisionDefinitionId);
-              return ImmutableCoverageDecisionDefinitionData.builder()
-                  .decisionDefinition(decisionDefinition)
-                  .xml(
-                      dataSource.getDecisionDefinitionXmlByDecisionDefinitionKey(
-                          decisionDefinition.getDecisionKey()))
-                  .build();
-            })
+            decisionDefinitionKey ->
+                ImmutableCoverageDecisionDefinitionData.builder()
+                    .decisionDefinition(
+                        dataSource.getDecisionDefinitionByDecisionDefinitionKey(
+                            decisionDefinitionKey))
+                    .xml(
+                        dataSource.getDecisionDefinitionXmlByDecisionDefinitionKey(
+                            decisionDefinitionKey))
+                    .build())
         .forEach(builder::addDecisionDefinitionData);
 
     return builder.build();

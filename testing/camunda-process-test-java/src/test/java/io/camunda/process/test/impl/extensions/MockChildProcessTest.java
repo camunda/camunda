@@ -17,7 +17,9 @@ package io.camunda.process.test.impl.extensions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -25,7 +27,6 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
-import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaClockClient;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
@@ -72,7 +73,7 @@ public class MockChildProcessTest {
 
   @Captor private ArgumentCaptor<BpmnModelInstance> processModelCaptor;
 
-  private CamundaProcessTestContext processTestContext;
+  private CamundaProcessTestContextImpl processTestContext;
 
   @BeforeEach
   void configureMocks() {
@@ -111,6 +112,50 @@ public class MockChildProcessTest {
 
     // the process has no service tasks (it's a simple start → end)
     assertThat(deployedModel.getModelElementsByType(ServiceTask.class)).isEmpty();
+  }
+
+  /**
+   * The stub is deployed under the id of the process it mocks, so only its process definition key
+   * tells its instances from the instances of the process itself.
+   */
+  @Test
+  void shouldRememberTheDeployedStub() {
+    // given
+    mockStubDeployment(123L);
+
+    // when
+    processTestContext.mockChildProcess(CHILD_PROCESS_ID);
+
+    // then
+    assertThat(processTestContext.getMockedChildProcessDefinitionKeys()).containsExactly(123L);
+  }
+
+  @Test
+  void shouldForgetTheDeployedStubWhenCleared() {
+    // given
+    mockStubDeployment(123L);
+    processTestContext.mockChildProcess(CHILD_PROCESS_ID);
+
+    // when
+    processTestContext.clearMockedChildProcessDefinitionKeys();
+
+    // then
+    assertThat(processTestContext.getMockedChildProcessDefinitionKeys()).isEmpty();
+  }
+
+  /** Lets the deployment of the stub report the given process definition key. */
+  private void mockStubDeployment(final long processDefinitionKey) {
+    final io.camunda.client.api.response.Process deployedProcess =
+        mock(io.camunda.client.api.response.Process.class);
+    when(deployedProcess.getProcessDefinitionKey()).thenReturn(processDefinitionKey);
+
+    when(camundaClient
+            .newDeployResourceCommand()
+            .addProcessModel(any(), anyString())
+            .send()
+            .join()
+            .getProcesses())
+        .thenReturn(Collections.singletonList(deployedProcess));
   }
 
   @Test

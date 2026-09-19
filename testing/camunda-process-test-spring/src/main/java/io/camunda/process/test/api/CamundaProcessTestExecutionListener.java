@@ -99,7 +99,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   private CoverageCollector coverageCollector;
   private CamundaProcessTestRuntime runtime;
   private CamundaProcessTestResultCollector processTestResultCollector;
-  private CamundaProcessTestContext camundaProcessTestContext;
+  private CamundaProcessTestContextImpl camundaProcessTestContext;
   private CamundaManagementClient camundaManagementClient;
   private CamundaDataSource dataSource;
   private boolean clockResetEnabled = true;
@@ -167,6 +167,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   @Override
   public void beforeTestMethod(final TestContext testContext) {
+    camundaProcessTestContext.clearMockedChildProcessDefinitionKeys();
+
     client = createClient(camundaProcessTestContext);
 
     // fill proxies
@@ -228,7 +230,11 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
       final String runName = testMethod.getName();
       final String displayName = getDisplayName(testMethod);
       coverageCollector.collectTestRunCoverage(
-          testContext.getTestClass(), runName, displayName, coverageTestData);
+          testContext.getTestClass(),
+          runName,
+          displayName,
+          coverageTestData,
+          camundaProcessTestContext.getMockedChildProcessDefinitionKeys());
     } catch (final Throwable t) {
       LOG.warn("Failed to collect test process coverage, skipping.", t);
     }
