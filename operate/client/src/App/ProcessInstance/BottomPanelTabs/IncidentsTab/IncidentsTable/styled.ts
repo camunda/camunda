@@ -26,10 +26,8 @@ const FieldLabel = styled.span`
 `;
 
 const ErrorMessageCell = styled.div`
-  max-width: 404px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: pre-wrap;
+  word-break: break-word;
 `;
 
 const FlexContainer = styled.div`

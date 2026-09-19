@@ -9,7 +9,13 @@
 import {IncidentsTable} from '..';
 import {formatDate} from 'modules/utils/date';
 import {render, screen, within} from 'modules/testing-library';
-import {Wrapper, incidentsMock, firstIncident, secondIncident} from './mocks';
+import {
+  Wrapper,
+  incidentsMock,
+  firstIncident,
+  secondIncident,
+  multilineIncident,
+} from './mocks';
 import {
   createEnhancedIncident,
   createProcessInstance,
@@ -86,10 +92,65 @@ describe('IncidentsTable', () => {
       }),
     );
 
-    expect(screen.getByText('Job ID')).toBeInTheDocument();
-    expect(screen.getByText(firstIncident.jobKey!)).toBeInTheDocument();
-    expect(screen.getByText('Error message')).toBeInTheDocument();
-    expect(screen.getByText(firstIncident.errorMessage)).toBeInTheDocument();
+    const withinExpandedRow = within(screen.getAllByRole('row').at(-1)!);
+
+    expect(withinExpandedRow.getByText('Job ID')).toBeInTheDocument();
+    expect(
+      withinExpandedRow.getByText(firstIncident.jobKey!),
+    ).toBeInTheDocument();
+    expect(withinExpandedRow.getByText('Error message')).toBeInTheDocument();
+    expect(
+      withinExpandedRow.getByText(firstIncident.errorMessage),
+    ).toBeInTheDocument();
+  });
+
+  it('should render the error message as the leading column with a tooltip', () => {
+    render(
+      <IncidentsTable
+        state="content"
+        processInstanceKey="1"
+        incidents={[multilineIncident]}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    const cell = screen.getByTestId('cell-errorMessage');
+    const headerRow = screen.getAllByRole('row')[0]!;
+    const columnHeaders = within(headerRow).getAllByRole('columnheader');
+
+    expect(columnHeaders[1]).toBe(
+      within(headerRow).getByRole('columnheader', {name: 'Error message'}),
+    );
+    expect(
+      within(cell).getByTitle(/Expected result of the expression/),
+    ).toHaveAttribute('title', multilineIncident.errorMessage);
+    expect(cell).toHaveTextContent(
+      "Expected result of the expression 'order.total > threshold'",
+    );
+  });
+
+  it('should not offer the modal for an error message that fits', async () => {
+    const {user} = render(
+      <IncidentsTable
+        state="content"
+        processInstanceKey="1"
+        incidents={[firstIncident]}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    await user.click(
+      screen.getByRole('button', {
+        name: /expand current row/i,
+      }),
+    );
+
+    const withinExpandedRow = within(screen.getAllByRole('row').at(-1)!);
+
+    expect(
+      withinExpandedRow.getByText(firstIncident.errorMessage),
+    ).toBeInTheDocument();
+    expect(withinExpandedRow.queryByText('More')).not.toBeInTheDocument();
   });
 
   it('should show dash for empty jobKey in expanded row', async () => {
@@ -124,10 +185,13 @@ describe('IncidentsTable', () => {
       {wrapper: Wrapper},
     );
 
-    expect(screen.getByText('Type')).toBeInTheDocument();
-    expect(screen.getByText('Failing Element')).toBeInTheDocument();
-    expect(screen.getByText('Created')).toBeInTheDocument();
-    expect(screen.getByText('Operations')).toBeInTheDocument();
+    const withinHeaderRow = within(screen.getAllByRole('row')[0]!);
+
+    expect(withinHeaderRow.getByText('Error message')).toBeInTheDocument();
+    expect(withinHeaderRow.getByText('Type')).toBeInTheDocument();
+    expect(withinHeaderRow.getByText('Failing Element')).toBeInTheDocument();
+    expect(withinHeaderRow.getByText('Created')).toBeInTheDocument();
+    expect(withinHeaderRow.getByText('Operations')).toBeInTheDocument();
   });
 
   it('should render the right column headers for restricted user', async () => {
@@ -142,10 +206,13 @@ describe('IncidentsTable', () => {
       {wrapper: Wrapper},
     );
 
-    expect(screen.getByText('Type')).toBeInTheDocument();
-    expect(screen.getByText('Failing Element')).toBeInTheDocument();
-    expect(screen.getByText('Created')).toBeInTheDocument();
-    expect(screen.getByText('Operations')).toBeInTheDocument();
+    const withinHeaderRow = within(screen.getAllByRole('row')[0]!);
+
+    expect(withinHeaderRow.getByText('Error message')).toBeInTheDocument();
+    expect(withinHeaderRow.getByText('Type')).toBeInTheDocument();
+    expect(withinHeaderRow.getByText('Failing Element')).toBeInTheDocument();
+    expect(withinHeaderRow.getByText('Created')).toBeInTheDocument();
+    expect(withinHeaderRow.getByText('Operations')).toBeInTheDocument();
   });
 
   it('should provide a link for incidents in child process instances', () => {
@@ -174,16 +241,16 @@ describe('IncidentsTable', () => {
       <IncidentsTable
         state="content"
         processInstanceKey="1"
-        incidents={incidentsMock}
+        incidents={[secondIncident]}
       />,
       {wrapper: Wrapper},
     );
 
-    const expandButtons = screen.getAllByRole('button', {
-      name: /expand current row/i,
-    });
-
-    await user.click(expandButtons[1]!);
+    await user.click(
+      screen.getByRole('button', {
+        name: /expand current row/i,
+      }),
+    );
 
     expect(screen.getByText('More')).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -198,6 +265,49 @@ describe('IncidentsTable', () => {
     expect(
       within(modal).getByText(`Element "${secondIncident.elementName}" Error`),
     ).toBeInTheDocument();
+  });
+
+  it('should offer the modal for a multi-line error message regardless of length', async () => {
+    const {user} = render(
+      <IncidentsTable
+        state="content"
+        processInstanceKey="1"
+        incidents={[multilineIncident]}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    await user.click(
+      screen.getByRole('button', {
+        name: /expand current row/i,
+      }),
+    );
+
+    expect(screen.getByText('More')).toBeInTheDocument();
+  });
+
+  it('should not offer the modal for a single-line message below the modal threshold', async () => {
+    const {user} = render(
+      <IncidentsTable
+        state="content"
+        processInstanceKey="1"
+        incidents={[
+          {
+            ...firstIncident,
+            errorMessage: 'a'.repeat(100),
+          },
+        ]}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    await user.click(
+      screen.getByRole('button', {
+        name: /expand current row/i,
+      }),
+    );
+
+    expect(screen.queryByText('More')).not.toBeInTheDocument();
   });
 
   it('should provide a retry operation for incidents in the open process instance', async () => {
