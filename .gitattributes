@@ -1,2 +1,4 @@
 .github/workflows/*.lock.yml linguist-generated=true
 load-tests/setup/test/golden/** linguist-generated=true
+.github/actions/release-notes/generate/dist/index.js linguist-generated=true
+.github/actions/release-notes/lint/dist/index.js linguist-generated=true

@@ -73,6 +73,9 @@ export interface PullMeta {
    *  exemption). Absent means "not exempt", so a missing author degrades to a
    *  stricter check, never a looser one. */
   readonly authorLogin?: string;
+  /** ISO-8601 merge timestamp, absent on an open PR. The generator keys the
+   *  post-gate anomaly rule on it; the gate does not read it. */
+  readonly mergedAt?: string;
 }
 
 /** How the linked PR was delivered — a direct PR, or a backport hop to an original. */

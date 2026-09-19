@@ -307,6 +307,13 @@ class Summary {
         this.buf += `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>\n`;
         return this;
     }
+    /** Appends already-formatted Markdown verbatim — GITHUB_STEP_SUMMARY renders
+     *  as GitHub-flavored Markdown, so a pre-rendered document (e.g. the
+     *  generated changelog) is written as-is rather than escaped as HTML. */
+    addRaw(markdown) {
+        this.buf += `${markdown}\n`;
+        return this;
+    }
     async write() {
         appendEnvFile('GITHUB_STEP_SUMMARY', this.buf);
         this.buf = '';
@@ -330,11 +337,107 @@ exports.summary = new Summary();
  */
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.GITHUB_API = void 0;
+exports.fetchWithRetry = fetchWithRetry;
+exports.fetchJsonWithRetry = fetchJsonWithRetry;
 exports.githubHeaders = githubHeaders;
 exports.repoApiUrl = repoApiUrl;
 exports.GITHUB_API = 'https://api.github.com';
 const USER_AGENT = 'camunda-release-notes-gate';
 const GITHUB_API_VERSION = '2022-11-28';
+/** A real secondary rate limit clears within minutes; past this, something else is wrong and must surface. */
+const MAX_RETRIES = 5;
+/** Longest `retry-after` this honours; beyond it the job should fail rather
+ *  than hold a runner. GitHub's own secondary-limit hints stay well under. */
+const MAX_RETRY_AFTER_MS = 60_000;
+/** GitHub reports a throttled REST request as HTTP 429, or HTTP 403 carrying a
+ *  `retry-after` (a 403 without one is a real permission failure and must not
+ *  be retried). 5xx is a transient backend failure. Mirrors resolve/index.ts's
+ *  GraphQL-side retryableStatus — same throttle shapes, REST transport. */
+async function retryableStatus(res) {
+    if (res.status === 429 || res.status >= 500)
+        return true;
+    if (res.status !== 403)
+        return false;
+    if (res.headers.get('retry-after') !== null)
+        return true;
+    if (res.headers.get('x-ratelimit-remaining') === '0')
+        return true;
+    // GitHub's SECONDARY rate limit — the one that fires on concurrency rather
+    // than on volume — answers 403 and often names itself only in the body, with
+    // the primary counter still reading full. Indistinguishable from a permission
+    // failure by status alone, so read the body of a 403 (from a clone, leaving
+    // the caller's stream intact) before deciding this job cannot proceed.
+    try {
+        return /rate limit/i.test(await res.clone().text());
+    }
+    catch {
+        return false;
+    }
+}
+/** The server's own wait, when it names one, else exponential backoff. `null`
+ *  when the request never produced a response at all. */
+function backoffMs(res, attempt) {
+    const header = res?.headers.get('retry-after') ?? null;
+    const seconds = header === null ? NaN : Number(header);
+    if (Number.isFinite(seconds) && seconds >= 0)
+        return Math.min(seconds * 1000, MAX_RETRY_AFTER_MS);
+    return 2 ** attempt * 1000;
+}
+/**
+ * `fetch`, retrying a throttled or transiently failed REST request with
+ * backoff instead of aborting the whole generation job on one bad response.
+ * Never retries a non-throttle failure (e.g. a bare 403, a 404) — the caller
+ * sees those immediately.
+ */
+async function fetchWithRetry(url, init, sleepImpl = (ms) => new Promise((resolve) => setTimeout(resolve, ms))) {
+    for (let attempt = 0;; attempt++) {
+        let res;
+        try {
+            res = await fetch(url, init);
+        }
+        catch (error) {
+            // `fetch` REJECTS on a socket-level failure — connection reset, socket
+            // hang-up, DNS blip — rather than returning a Response, so none of the
+            // status handling below ever sees it. Left unguarded this aborts the
+            // whole job on one blip, which over the thousands of calls a minor
+            // release makes is close to certain.
+            if (attempt >= MAX_RETRIES - 1) {
+                const detail = error instanceof Error ? error.message : String(error);
+                throw new Error(`GitHub API request never completed past ${MAX_RETRIES} attempts (${url}): ${detail}`);
+            }
+            await sleepImpl(backoffMs(null, attempt));
+            continue;
+        }
+        if (res.ok || !(await retryableStatus(res)))
+            return res;
+        if (attempt >= MAX_RETRIES - 1) {
+            throw new Error(`GitHub API kept returning HTTP ${res.status} past ${MAX_RETRIES} attempts (${url}).`);
+        }
+        await sleepImpl(backoffMs(res, attempt));
+    }
+}
+/**
+ * `fetchWithRetry` plus the body read, so a truncated or empty body is retried
+ * like any other transient instead of throwing a SyntaxError past the retry
+ * loop. GitHub answers that way under load exactly as readily as it answers
+ * 502, and parsing outside the loop meant one such body killed the run.
+ */
+async function fetchJsonWithRetry(url, init, sleepImpl = (ms) => new Promise((resolve) => setTimeout(resolve, ms))) {
+    for (let attempt = 0;; attempt++) {
+        const res = await fetchWithRetry(url, init, sleepImpl);
+        if (!res.ok)
+            return { ok: false, status: res.status };
+        try {
+            return { ok: true, status: res.status, data: (await res.json()) };
+        }
+        catch {
+            if (attempt >= MAX_RETRIES - 1) {
+                throw new Error(`GitHub API returned an unparseable body past ${MAX_RETRIES} attempts (${url}).`);
+            }
+            await sleepImpl(backoffMs(null, attempt));
+        }
+    }
+}
 /** Auth + content-negotiation headers for the plain `GITHUB_TOKEN` every
  *  caller passes in. This action resolves from the PR head on `pull_request`
  *  (see the gate workflow's security-model header), so it must never be
@@ -834,6 +937,7 @@ function decide(refs, optOut) {
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.GithubResolver = void 0;
+exports.prioritizeAndCap = prioritizeAndCap;
 const github_1 = __nccwpck_require__(631);
 /** A PR body can carry at most this many refs to the API. A legitimate PR never
  *  needs more than a handful — this bounds the worst case (a body stuffed with
@@ -862,17 +966,40 @@ function priorityOf(ref) {
  *
  * ponytail: plain fetch (Node 24 global) over octokit — we hit exactly one
  * endpoint; octokit would inline the whole REST client into the bundle.
+ * Throttled/transient responses are retried via fetchWithRetry (../github) —
+ * the generator processes PRs serially, so one un-retried 5xx or secondary
+ * rate limit anywhere in that chain would otherwise abort the whole job.
  */
+/**
+ * The refs a caller will actually classify: closing/backport refs sorted ahead
+ * of merely-informational ones so that when the cap has to drop something, it
+ * drops the least consequential first.
+ *
+ * Exported so a caller that pre-resolves in bulk applies the SAME policy. A
+ * copied `MAX_REFS` would let the gate cap at one number and the generator at
+ * another the moment either changed — the gate/generator divergence C4 exists
+ * to prevent. One function, two callers, no constant to copy.
+ */
+function prioritizeAndCap(refs) {
+    return [...refs].sort((first, second) => priorityOf(first) - priorityOf(second)).slice(0, MAX_REFS);
+}
 class GithubResolver {
     token;
     owner;
     repo;
+    sleepImpl;
     repoUrl;
     headers;
-    constructor(token, owner, repo) {
+    /** Titles seen while classifying refs, keyed by same-repo number (issues and
+     *  PRs alike — `/issues/N` serves both). `classify` and `fetchIssueTitle` hit
+     *  that same endpoint, and the generator asks for the title of a ref it has
+     *  just classified, so the second call is served from here. */
+    titlesByNumber = new Map();
+    constructor(token, owner, repo, sleepImpl = (ms) => new Promise((resolve) => setTimeout(resolve, ms))) {
         this.token = token;
         this.owner = owner;
         this.repo = repo;
+        this.sleepImpl = sleepImpl;
         this.repoUrl = (0, github_1.repoApiUrl)(owner, repo);
         this.headers = (0, github_1.githubHeaders)(token);
     }
@@ -888,8 +1015,7 @@ class GithubResolver {
         // original order, so when the cap below has to drop something, it drops
         // the least consequential refs first instead of whichever came last in
         // the body.
-        const prioritized = [...refs].sort((first, second) => priorityOf(first) - priorityOf(second));
-        const capped = prioritized.slice(0, MAX_REFS);
+        const capped = prioritizeAndCap(refs);
         const cache = new Map();
         const classifyCached = (ref) => {
             const key = `${ref.repo ?? ''}#${ref.number}`;
@@ -929,6 +1055,18 @@ class GithubResolver {
         return pull?.body ?? null;
     }
     /**
+     * Fetch a same-repo pull request's full fields for the generator's backport
+     * hop (attribution + inherit-original title/mergedAt), or null if it does
+     * not exist. A cross-repo marker (`Backport of owner/other#N`) resolves to
+     * null for the same reason as {@link fetchPullBody}: #N there would name an
+     * unrelated PR in THIS repo.
+     */
+    async fetchOriginalPull(number, repo) {
+        if (this.isCrossRepo(repo))
+            return null;
+        return this.fetchPull(number);
+    }
+    /**
      * Fetch the fields the gate evaluates for one same-repo pull request, or null
      * if it does not exist.
      *
@@ -938,15 +1076,38 @@ class GithubResolver {
      * can never evaluate an out-of-date body.
      */
     async fetchPull(number) {
-        const res = await fetch(`${this.repoUrl}/pulls/${number}`, {
-            headers: this.headers,
-        });
+        const res = await (0, github_1.fetchJsonWithRetry)(`${this.repoUrl}/pulls/${number}`, { headers: this.headers }, this.sleepImpl);
         if (res.status === 404)
             return null;
         if (!res.ok)
             throw new Error(`GitHub API ${res.status} fetching PR #${number}`);
-        const data = (await res.json());
-        return { body: data.body ?? '', title: data.title ?? '', authorLogin: data.user?.login };
+        const { data } = res;
+        return {
+            body: data.body ?? '',
+            title: data.title ?? '',
+            authorLogin: data.user?.login,
+            mergedAt: data.merged_at ?? undefined,
+        };
+    }
+    /**
+     * The live title of a same-repo issue, or null if it doesn't exist. Used by
+     * the generator (#57713) to show the issue's own customer-facing wording
+     * in release notes rather than the delivering PR's dev-facing title.
+     */
+    async fetchIssueTitle(number) {
+        const cached = this.titlesByNumber.get(number);
+        if (cached !== undefined)
+            return cached;
+        const res = await (0, github_1.fetchJsonWithRetry)(`${this.repoUrl}/issues/${number}`, { headers: this.headers }, this.sleepImpl);
+        if (res.status === 404) {
+            this.titlesByNumber.set(number, null);
+            return null;
+        }
+        if (!res.ok)
+            throw new Error(`GitHub API ${res.status} fetching issue #${number}`);
+        const title = res.data.title ?? null;
+        this.titlesByNumber.set(number, title);
+        return title;
     }
     /** A ref points at a different repo than the one being gated (case-insensitive). */
     isCrossRepo(repo) {
@@ -959,15 +1120,13 @@ class GithubResolver {
     async classify(ref) {
         if (this.isCrossRepo(ref.repo))
             return { target: 'missing', crossRepo: true };
-        const res = await fetch(`${this.repoUrl}/issues/${ref.number}`, {
-            headers: this.headers,
-        });
+        const res = await (0, github_1.fetchJsonWithRetry)(`${this.repoUrl}/issues/${ref.number}`, { headers: this.headers }, this.sleepImpl);
         if (res.status === 404)
             return { target: 'missing', crossRepo: false };
         if (!res.ok)
             throw new Error(`GitHub API ${res.status} resolving #${ref.number}`);
-        const data = (await res.json());
-        return { target: data.pull_request ? 'pullRequest' : 'issue', crossRepo: false };
+        this.titlesByNumber.set(ref.number, res.data.title ?? null);
+        return { target: res.data.pull_request ? 'pullRequest' : 'issue', crossRepo: false };
     }
 }
 exports.GithubResolver = GithubResolver;
