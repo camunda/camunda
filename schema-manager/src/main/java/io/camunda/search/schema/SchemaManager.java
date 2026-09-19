@@ -28,6 +28,7 @@ import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult;
 import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Compatible;
 import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Incompatible;
 import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Indeterminate;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -39,6 +40,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -350,9 +352,8 @@ public class SchemaManager implements CloseableSilently {
             .map(
                 descriptor ->
                     // run creation of indices async as virtual thread
-                    CompletableFuture.runAsync(
-                        () -> updateIndexSettings(descriptor), virtualThreadExecutor))
-            .toArray(CompletableFuture[]::new);
+                    virtualThreadExecutor.submit(() -> updateIndexSettings(descriptor)))
+            .toList();
 
     joinOnFutures(futures);
   }
@@ -384,14 +385,13 @@ public class SchemaManager implements CloseableSilently {
             .map(
                 descriptor ->
                     // run creation of indices async as virtual thread
-                    CompletableFuture.runAsync(
+                    virtualThreadExecutor.submit(
                         () -> {
                           LOG.debug("Create missing index '{}'", descriptor.getFullQualifiedName());
                           searchEngineClient.createIndex(
                               descriptor, getIndexSettingsFromConfig(descriptor));
-                        },
-                        virtualThreadExecutor))
-            .toArray(CompletableFuture[]::new);
+                        }))
+            .toList();
 
     // We need to wait for the completion, to make sure all indices has been created successfully
     // Doing this in parallel is still speeding up the bootstrap time
@@ -423,9 +423,8 @@ public class SchemaManager implements CloseableSilently {
             .map(
                 descriptor ->
                     // run creation of indices async as virtual thread
-                    CompletableFuture.runAsync(
-                        () -> createIndexTemplate(descriptor), virtualThreadExecutor))
-            .toArray(CompletableFuture[]::new);
+                    virtualThreadExecutor.submit(() -> createIndexTemplate(descriptor)))
+            .toList();
 
     // We need to wait for the completion, to make sure all indices and templates have been created
     // successfully
@@ -469,17 +468,31 @@ public class SchemaManager implements CloseableSilently {
   }
 
   /**
-   * Join on given futures with {@link SchemaManager#INDEX_CREATION_TIMEOUT_SECONDS} as timeout.
+   * Join on given futures, sharing {@link SchemaManager#INDEX_CREATION_TIMEOUT_SECONDS} as an
+   * overall deadline across all of them.
    *
    * <p>All exceptions, including timeout exception, are rethrown as unchecked exception. To reduce
    * boilerplate (exception handling), but make sure startup fails.
    *
+   * <p>The futures must be handles returned directly from {@link ExecutorService#submit}, not
+   * {@link CompletableFuture}s — only such a handle's {@code cancel(true)} actually interrupts the
+   * thread running the task. On failure or timeout, every future that hasn't completed yet is
+   * cancelled this way, so the underlying searchEngineClient call is interrupted instead of running
+   * in the background (and potentially racing a subsequent retry's requests) after this method has
+   * returned.
+   *
    * @param futures futures that be joined on
    */
-  private void joinOnFutures(final CompletableFuture<?>[] futures) {
+  private void joinOnFutures(final List<? extends Future<?>> futures) {
+    final var deadline =
+        System.nanoTime() + Duration.ofSeconds(INDEX_CREATION_TIMEOUT_SECONDS).toNanos();
     try {
-      CompletableFuture.allOf(futures).get(INDEX_CREATION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+      for (final var future : futures) {
+        final var remaining = deadline - System.nanoTime();
+        future.get(Math.max(0, remaining), TimeUnit.NANOSECONDS);
+      }
     } catch (final Exception e) {
+      futures.forEach(future -> future.cancel(true));
       LangUtil.rethrowUnchecked(e);
     }
   }
