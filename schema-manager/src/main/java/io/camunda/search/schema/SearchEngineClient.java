@@ -46,6 +46,9 @@ public interface SearchEngineClient extends CloseableSilently {
    */
   Map<String, Set<String>> getAliases(Collection<String> indexNames);
 
+  /** Attach the descriptor's expected alias to its concrete full-qualified index. */
+  void putIndexAlias(final IndexDescriptor indexDescriptor);
+
   void putSettings(
       final IndexDescriptor indexDescriptor, final Map<String, String> toAppendSettings);
 

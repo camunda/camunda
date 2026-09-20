@@ -39,6 +39,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.Level;
 import org.junit.jupiter.api.AfterEach;
@@ -79,6 +80,8 @@ class SchemaManagerTest {
 
     // Mock search engine client operations
     when(searchEngineClient.indexExists(metadataIndex.getFullQualifiedName())).thenReturn(true);
+    when(searchEngineClient.getMappings(anyString(), any())).thenReturn(Map.of());
+    when(searchEngineClient.getAliases(any())).thenReturn(Map.of());
   }
 
   @AfterEach
@@ -407,6 +410,8 @@ class SchemaManagerTest {
               client, indices, templates, cfg, mock(IndexSchemaValidator.class), "8.9.0", null);
       when(client.getDocument(metaIndex.getFullQualifiedName(), SCHEMA_VERSION_METADATA_ID))
           .thenReturn(null);
+      when(client.getMappings(anyString(), any())).thenReturn(Map.of());
+      when(client.getAliases(any())).thenReturn(Map.of());
       return mgr;
     }
 
@@ -612,6 +617,51 @@ class SchemaManagerTest {
         assertThat(logs.messagesAt(Level.WARN))
             .noneSatisfy(message -> assertThat(message).contains("is pinned to"));
       }
+    }
+  }
+
+  @Nested
+  class EnsureIndexAliasesTest {
+
+    @Test
+    void shouldAttachMissingAliasToExistingIndexOnStartup() {
+      // given
+      schemaManager = createSpySchemaManager("8.8.0");
+      mockSchemaVersionInMetadata("8.8.0");
+
+      final var indexName = testIndexDescriptor.getFullQualifiedName();
+      final var dummyMapping =
+          new IndexMapping.Builder().indexName(indexName).dynamic("strict").build();
+      when(searchEngineClient.getMappings(anyString(), any()))
+          .thenReturn(Map.of(indexName, dummyMapping));
+      when(searchEngineClient.getAliases(any())).thenReturn(Map.of(indexName, Set.of()));
+
+      // when
+      schemaManager.startup();
+
+      // then
+      verify(searchEngineClient).putIndexAlias(testIndexDescriptor);
+    }
+
+    @Test
+    void shouldNotPutAliasWhenAlreadyPresent() {
+      // given
+      schemaManager = createSpySchemaManager("8.8.0");
+      mockSchemaVersionInMetadata("8.8.0");
+
+      final var indexName = testIndexDescriptor.getFullQualifiedName();
+      final var dummyMapping =
+          new IndexMapping.Builder().indexName(indexName).dynamic("strict").build();
+      when(searchEngineClient.getMappings(anyString(), any()))
+          .thenReturn(Map.of(indexName, dummyMapping));
+      when(searchEngineClient.getAliases(any()))
+          .thenReturn(Map.of(indexName, Set.of(testIndexDescriptor.getAlias())));
+
+      // when
+      schemaManager.startup();
+
+      // then
+      verify(searchEngineClient, never()).putIndexAlias(any());
     }
   }
 
