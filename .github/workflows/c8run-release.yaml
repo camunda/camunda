@@ -226,7 +226,7 @@ jobs:
 
       - name: Camunda Download Center - Upload artifact in own release
         if: inputs.publishToCamundaDownloadCenter
-        uses: camunda/infra-global-github-actions/download-center-upload@67d00e9260887361a31f6446252fffbecae4a02e # download-center-upload-1.0.1
+        uses: camunda/infra-global-github-actions/download-center-upload@7fe5cca167f7826bedbc078ae36ff2e974cc8cb5 # download-center-upload-1.0.2
         with:
           gcp_credentials: ${{ steps.secrets.outputs.GCP_CREDENTIALS_NAME }}
           version: ${{ inputs.camundaVersion }}
@@ -235,7 +235,7 @@ jobs:
 
       - name: Camunda Download Center - Upload artifact in Camunda apps version
         if: inputs.publishToCamundaDownloadCenter
-        uses: camunda/infra-global-github-actions/download-center-upload@67d00e9260887361a31f6446252fffbecae4a02e # download-center-upload-1.0.1
+        uses: camunda/infra-global-github-actions/download-center-upload@7fe5cca167f7826bedbc078ae36ff2e974cc8cb5 # download-center-upload-1.0.2
         with:
           gcp_credentials: ${{ steps.secrets.outputs.GCP_CREDENTIALS_NAME }}
           version: ${{ inputs.camundaAppsRelease }}
