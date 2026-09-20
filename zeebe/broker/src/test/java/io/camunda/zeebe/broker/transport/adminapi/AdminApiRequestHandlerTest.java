@@ -318,7 +318,7 @@ final class AdminApiRequestHandlerTest {
       when(adminAccess.forPartition(partitionId)).thenReturn(Optional.of(adminAccess));
       handler =
           new AdminApiRequestHandler(
-              null,
+              new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
               transport,
               adminAccess,
               raftPartition,
