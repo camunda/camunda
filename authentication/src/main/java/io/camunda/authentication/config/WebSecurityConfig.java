@@ -983,8 +983,6 @@ public class WebSecurityConfig {
     public OidcUserService oidcUserService(
         final ObjectProvider<ObservationRegistry> observationRegistry) {
       final var oauthUserService = new DefaultOAuth2UserService();
-      final var oidcUserService = new OidcUserService();
-      oidcUserService.setOauth2UserService(oauthUserService);
 
       // see DefaultOAuth2UserService#setRestOperations for the minimum handlers/converters required
       final var restTemplate = new RestTemplate();
@@ -999,7 +997,7 @@ public class WebSecurityConfig {
           observationRegistry.getIfAvailable(() -> ObservationRegistry.NOOP));
 
       oauthUserService.setRestOperations(restTemplate);
-      return oidcUserService;
+      return new FailSoftOidcUserService(oauthUserService);
     }
 
     @Bean
