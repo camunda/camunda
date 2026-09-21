@@ -9,7 +9,7 @@ package io.camunda.db.rdbms.read.replication;
 
 /**
  * Per-replica replication state reported by a {@link ReplicationLsnProvider}: log-sequence number,
- * replica id, replication lag in milliseconds, and {@code replicatedUntilMs}
+ * replica id, optional replication lag estimate in milliseconds, and {@code replicatedUntilMs}
  */
 public record ReplicationLsnStatus(
     Long logStatus, String replicaId, Long replicationLagMs, Long replicatedUntilMs)

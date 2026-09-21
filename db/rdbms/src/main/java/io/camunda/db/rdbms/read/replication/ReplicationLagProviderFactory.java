@@ -12,17 +12,25 @@ import io.camunda.db.rdbms.sql.ReplicationStatusMapper;
 
 public final class ReplicationLagProviderFactory {
 
+  private final VendorDatabaseProperties vendorDatabaseProperties;
   private final ReplicationLsnProviderFactory replicationLsnProviderFactory;
 
   public ReplicationLagProviderFactory(
       final VendorDatabaseProperties vendorDatabaseProperties,
       final ReplicationStatusMapper replicationStatusMapper) {
+    this.vendorDatabaseProperties = vendorDatabaseProperties;
     replicationLsnProviderFactory =
         new ReplicationLsnProviderFactory(vendorDatabaseProperties, replicationStatusMapper);
   }
 
   /** Creates a {@link ReplicationLagProvider}. */
   public ReplicationLagProvider create() {
+    if (ReplicationLsnProviderFactory.ORACLE_DATABASE_ID.equals(
+        vendorDatabaseProperties.databaseId())) {
+      throw new IllegalStateException(
+          "Time-lag based replication monitoring is not supported for Oracle; use SCN-based "
+              + "replication monitoring instead.");
+    }
     return new LsnBackedReplicationLagProvider(replicationLsnProviderFactory.create());
   }
 }

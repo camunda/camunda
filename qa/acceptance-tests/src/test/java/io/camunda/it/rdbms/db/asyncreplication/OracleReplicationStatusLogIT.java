@@ -20,10 +20,10 @@ import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 /**
- * Oracle Free (gvenzl/oracle-free:slim) does not include Data Guard redo transport (V$OPTION:
- * Oracle Data Guard = FALSE), so V$ARCHIVE_DEST_STATUS has no active STANDBY rows and
- * getReplicationStatuses() always returns an empty list. We only verify the SQL executes without
- * error. For Postgres, we verify at least one active replica row is returned.
+ * Oracle Free (gvenzl/oracle-free:23.26.2-slim-faststart) does not include Data Guard redo
+ * transport (V$OPTION: Oracle Data Guard = FALSE), so V$ARCHIVE_DEST_STATUS has no active STANDBY
+ * rows and getReplicationStatuses() always returns an empty list. We only verify the SQL executes
+ * without error. For Postgres, we verify at least one active replica row is returned.
  */
 @Tag("async-repl")
 public class OracleReplicationStatusLogIT {
@@ -35,7 +35,7 @@ public class OracleReplicationStatusLogIT {
   @TestTemplate
   public void shouldQueryReplicationStatus(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final var replicationStatusProvider = rdbmsService.getReplicationLsnProvider();
+    final var replicationStatusProvider = rdbmsService.getReplicationLsnProviderFactory().create();
 
     Awaitility.await()
         .timeout(Duration.ofMinutes(2))

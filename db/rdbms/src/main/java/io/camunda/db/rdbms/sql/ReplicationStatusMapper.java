@@ -17,6 +17,12 @@ public interface ReplicationStatusMapper {
   List<ReplicationLsnStatus> getReplicationStatus();
 
   /**
+   * Returns Oracle's approximate time-based replication metrics for the exact applied SCNs. {@code
+   * SCN_TO_TIMESTAMP} may fail when its finite SCN-to-time mapping has expired.
+   */
+  List<ReplicationLsnStatus> getOracleReplicationStatusWithTiming();
+
+  /**
    * Returns the primary's own clock, read directly from the database as an absolute
    * epoch-millisecond value.
    */
