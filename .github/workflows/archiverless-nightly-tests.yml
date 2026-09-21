@@ -80,6 +80,8 @@ jobs:
     secrets: inherit
     with:
       maven-profiles: "archiverless"
+      test-type: "archiverless-tests"
+      test-type-label: "Archiverless"
       database-type: "${{ matrix.database-type }}"
       database-image-version: "${{ matrix.database-image-version }}"
       database-name: "${{ matrix.database-name }}"
@@ -109,6 +111,8 @@ jobs:
     secrets: inherit
     with:
       maven-profiles: "archiverless-identity"
+      test-type: "archiverless-identity-tests"
+      test-type-label: "Archiverless Identity"
       database-type: "${{ matrix.database-type }}"
       database-image-version: "${{ matrix.database-image-version }}"
       database-name: "${{ matrix.database-name }}"
