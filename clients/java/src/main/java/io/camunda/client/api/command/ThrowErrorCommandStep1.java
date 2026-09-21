@@ -69,6 +69,29 @@ public interface ThrowErrorCommandStep1
     ThrowErrorCommandStep2 withJobLeaseToken(String jobLeaseToken);
 
     /**
+     * Sets the reservation token of the process instance the job belongs to, proving this command
+     * comes from the caller that reserved the instance's jobs (alpha).
+     *
+     * <p>A job of an instance created with {@link
+     * io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3#reserveJobs(String)
+     * reserveJobs} is served to no job worker, and every command on it must carry the same token
+     * the instance was created with; a command with no token, or with a different one, is rejected.
+     * A job of an unreserved instance requires no token.
+     *
+     * <p>This is a separate value from the lease token: the lease token is minted by the engine per
+     * activation, while the reservation token is chosen by the caller and lives for the instance. A
+     * reserved job is never activated, so it never has both.
+     *
+     * <p>This method is only supported over REST. This is an alpha feature and may be subject to
+     * change in future releases.
+     *
+     * @param jobReservationToken the token the instance's jobs were reserved with
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    ThrowErrorCommandStep2 withJobReservationToken(String jobReservationToken);
+
+    /**
      * Set the variables of this job.
      *
      * @param variables the variables (JSON) as String

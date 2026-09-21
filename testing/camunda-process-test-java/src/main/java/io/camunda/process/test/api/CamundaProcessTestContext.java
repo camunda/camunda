@@ -303,6 +303,47 @@ public interface CamundaProcessTestContext {
       final Map<String, Object> variables);
 
   /**
+   * Returns the reservation token of this test, minting one on first access (alpha).
+   *
+   * <p>Pass it to {@link
+   * io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3#reserveJobs(String)
+   * reserveJobs} to hold a process instance's jobs back from the cluster's job workers. Every job
+   * command this context then issues carries the token, so the test drives those jobs itself.
+   *
+   * <p>One token is used for every instance this test reserves. Two tests on one cluster never
+   * share a token.
+   *
+   * <p>A reserved job is hidden from every worker, including a {@link #mockJobWorker(String) mock
+   * job worker} this test opens, so do not mock and reserve the same job.
+   *
+   * @return the reservation token of this test
+   */
+  String getJobReservationToken();
+
+  /**
+   * Releases a reserved job that matches the specified selector, so that the job worker it was
+   * hidden from runs it after all (alpha).
+   *
+   * <p>Releasing is one-way: the job is no longer reserved afterwards, and the test cannot take it
+   * back.
+   *
+   * @param jobSelector the selector to identify the job to release
+   */
+  void releaseJob(final JobSelector jobSelector);
+
+  /**
+   * Starts the process that a stubbed call activity calls, instead of standing in for it (alpha).
+   *
+   * <p>The selected job is the one a call activity of an instance created with {@link
+   * io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3#stubCallActivities(boolean)
+   * stubCallActivities} waits on. Completing that job by any other means stands in for the called
+   * process; this starts it for real.
+   *
+   * @param jobSelector the selector to identify the job that stands in for the called process
+   */
+  void runCalledProcess(final JobSelector jobSelector);
+
+  /**
    * Completes a user task with the given BPMN element ID.
    *
    * @param elementId the BPMN element ID of the user task to complete

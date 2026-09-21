@@ -82,6 +82,66 @@ public class CreateProcessInstanceInstructionTest {
   }
 
   @Test
+  void shouldReserveJobsAndStubCallActivities() {
+    // given
+    final String token = "cpt-1234";
+    org.mockito.Mockito.when(processTestContext.getJobReservationToken()).thenReturn(token);
+
+    final CreateProcessInstanceInstruction instruction =
+        ImmutableCreateProcessInstanceInstruction.builder()
+            .processDefinitionSelector(
+                ImmutableProcessDefinitionSelector.builder()
+                    .processDefinitionId(PROCESS_DEFINITION_ID)
+                    .build())
+            .reserveJobs(true)
+            .stubCallActivities(true)
+            .build();
+
+    // when
+    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+    // then
+    final CreateProcessInstanceCommandStep3 mockCommand =
+        camundaClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_DEFINITION_ID)
+            .latestVersion()
+            .variables(Collections.emptyMap());
+
+    verify(mockCommand).reserveJobs(token);
+    verify(mockCommand).stubCallActivities(true);
+    verify(mockCommand).send();
+  }
+
+  @Test
+  void shouldNotReserveJobsByDefault() {
+    // given
+    final CreateProcessInstanceInstruction instruction =
+        ImmutableCreateProcessInstanceInstruction.builder()
+            .processDefinitionSelector(
+                ImmutableProcessDefinitionSelector.builder()
+                    .processDefinitionId(PROCESS_DEFINITION_ID)
+                    .build())
+            .build();
+
+    // when
+    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+    // then
+    final CreateProcessInstanceCommandStep3 mockCommand =
+        camundaClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_DEFINITION_ID)
+            .latestVersion()
+            .variables(Collections.emptyMap());
+
+    verify(mockCommand, org.mockito.Mockito.never())
+        .reserveJobs(org.mockito.ArgumentMatchers.any());
+    verify(mockCommand, org.mockito.Mockito.never())
+        .stubCallActivities(org.mockito.ArgumentMatchers.anyBoolean());
+  }
+
+  @Test
   void shouldSetVariables() {
     // given
     final Map<String, Object> variables = new HashMap<>();

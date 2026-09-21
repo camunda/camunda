@@ -109,6 +109,15 @@ public class UpdateJobCommandImpl implements UpdateJobCommandStep1, UpdateJobCom
   }
 
   @Override
+  public UpdateJobCommandStep2 withJobReservationToken(final String jobReservationToken) {
+    if (jobReservationToken == null) {
+      return this;
+    }
+    httpRequestObject.setJobReservationToken(jobReservationToken);
+    return this;
+  }
+
+  @Override
   public UpdateJobCommandStep2 withJobLeaseToken(final String jobLeaseToken) {
     if (jobLeaseToken == null) {
       return this;

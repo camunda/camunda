@@ -129,6 +129,18 @@
           "$ref": "#/definitions/ThrowBpmnErrorFromJobInstruction"
         },
         {
+          "$ref": "#/definitions/ReleaseJobInstruction"
+        },
+        {
+          "$ref": "#/definitions/RunCalledProcessInstruction"
+        },
+        {
+          "$ref": "#/definitions/StubCallActivityCompleteInstruction"
+        },
+        {
+          "$ref": "#/definitions/StubCallActivityThrowErrorInstruction"
+        },
+        {
           "$ref": "#/definitions/UpdateVariablesInstruction"
         }
       ]
@@ -195,6 +207,14 @@
               }
             ]
           }
+        },
+        "reserveJobs": {
+          "description": "Whether to reserve every job the process instance creates for the test, so that no job worker is served them. Optional, defaults to false.",
+          "type": "boolean"
+        },
+        "stubCallActivities": {
+          "description": "Whether the process instance's call activities start no called process, waiting on a job that stands in for it instead. Optional, defaults to false.",
+          "type": "boolean"
         }
       },
       "required": [
@@ -1152,7 +1172,7 @@
           "type": "string"
         },
         "threshold": {
-          "description": "The minimum similarity score (0.0–1.0) for the assertion to pass. Optional — when absent the configured default threshold is used.",
+          "description": "The minimum similarity score (0.0\u20131.0) for the assertion to pass. Optional \u2014 when absent the configured default threshold is used.",
           "type": "number",
           "minimum": 0.0,
           "maximum": 1.0
@@ -1315,6 +1335,26 @@
       ],
       "additionalProperties": false
     },
+    "ReleaseJobInstruction": {
+      "description": "An instruction to release a reserved job, so that the job worker it was hidden from runs it after all.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "RELEASE_JOB"
+        },
+        "jobSelector": {
+          "description": "The selector to identify the job to release.",
+          "$ref": "#/definitions/JobSelector"
+        }
+      },
+      "required": [
+        "type",
+        "jobSelector"
+      ],
+      "additionalProperties": false
+    },
     "UpdateVariablesInstruction": {
       "description": "An instruction to create or update process instance variables.",
       "type": "object",
@@ -1430,6 +1470,85 @@
         "type",
         "conditions",
         "actions"
+      ],
+      "additionalProperties": false
+    },
+    "RunCalledProcessInstruction": {
+      "description": "An instruction to run the process a call activity calls, instead of standing in for it.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "RUN_CALLED_PROCESS"
+        },
+        "elementSelector": {
+          "description": "The selector to identify the call activity. A stub job is keyed by its element id, so the call activity must be selected by elementId.",
+          "$ref": "#/definitions/ElementSelector"
+        }
+      },
+      "required": [
+        "type",
+        "elementSelector"
+      ],
+      "additionalProperties": false
+    },
+    "StubCallActivityCompleteInstruction": {
+      "description": "An instruction to stand in for the process a call activity calls, completing it with the given variables.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "STUB_CALL_ACTIVITY_COMPLETE"
+        },
+        "elementSelector": {
+          "description": "The selector to identify the call activity. A stub job is keyed by its element id, so the call activity must be selected by elementId.",
+          "$ref": "#/definitions/ElementSelector"
+        },
+        "variables": {
+          "description": "The variables to complete the call activity with. Optional.",
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "type",
+        "elementSelector"
+      ],
+      "additionalProperties": false
+    },
+    "StubCallActivityThrowErrorInstruction": {
+      "description": "An instruction to stand in for the process a call activity calls, making it raise a BPMN error.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "STUB_CALL_ACTIVITY_THROW_ERROR"
+        },
+        "elementSelector": {
+          "description": "The selector to identify the call activity. A stub job is keyed by its element id, so the call activity must be selected by elementId.",
+          "$ref": "#/definitions/ElementSelector"
+        },
+        "errorCode": {
+          "description": "The error code to throw.",
+          "type": "string"
+        },
+        "errorMessage": {
+          "description": "The error message to throw. Optional.",
+          "type": "string"
+        },
+        "variables": {
+          "description": "The variables to set when throwing the error. Optional.",
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "type",
+        "elementSelector",
+        "errorCode"
       ],
       "additionalProperties": false
     }

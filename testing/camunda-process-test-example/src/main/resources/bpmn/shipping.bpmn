@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_Shipping" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.27.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.11.0">
+  <bpmn:process id="shipping" name="Shipping" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ShippingRequested" name="Shipping requested">
+      <bpmn:outgoing>Flow_ToDispatchParcel</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToDispatchParcel" sourceRef="StartEvent_ShippingRequested" targetRef="ServiceTask_DispatchParcel" />
+    <bpmn:serviceTask id="ServiceTask_DispatchParcel" name="Dispatch parcel">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="dispatch-parcel" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToDispatchParcel</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToNotifyCustomer</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToNotifyCustomer" sourceRef="ServiceTask_DispatchParcel" targetRef="CallActivity_NotifyCustomer" />
+    <bpmn:callActivity id="CallActivity_NotifyCustomer" name="Notify customer">
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="notification" propagateAllChildVariables="false" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToNotifyCustomer</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToParcelDispatched</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:sequenceFlow id="Flow_ToParcelDispatched" sourceRef="CallActivity_NotifyCustomer" targetRef="EndEvent_ParcelDispatched" />
+    <bpmn:endEvent id="EndEvent_ParcelDispatched" name="Parcel dispatched">
+      <bpmn:incoming>Flow_ToParcelDispatched</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_Shipping">
+    <bpmndi:BPMNPlane id="BPMNPlane_Shipping" bpmnElement="shipping">
+      <bpmndi:BPMNShape id="StartEvent_ShippingRequested_di" bpmnElement="StartEvent_ShippingRequested">
+        <dc:Bounds x="172" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="149" y="145" width="83" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_DispatchParcel_di" bpmnElement="ServiceTask_DispatchParcel">
+        <dc:Bounds x="260" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CallActivity_NotifyCustomer_di" bpmnElement="CallActivity_NotifyCustomer">
+        <dc:Bounds x="420" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_ParcelDispatched_di" bpmnElement="EndEvent_ParcelDispatched">
+        <dc:Bounds x="582" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="559" y="145" width="83" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToDispatchParcel_di" bpmnElement="Flow_ToDispatchParcel">
+        <di:waypoint x="208" y="120" />
+        <di:waypoint x="260" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToNotifyCustomer_di" bpmnElement="Flow_ToNotifyCustomer">
+        <di:waypoint x="360" y="120" />
+        <di:waypoint x="420" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToParcelDispatched_di" bpmnElement="Flow_ToParcelDispatched">
+        <di:waypoint x="520" y="120" />
+        <di:waypoint x="582" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
