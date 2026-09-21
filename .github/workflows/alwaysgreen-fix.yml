@@ -322,6 +322,7 @@ jobs:
           EVIDENCE_RUN_URL: ${{ steps.ctx.outputs.evidence_run_url }}
           EVIDENCE_REPO: ${{ steps.ctx.outputs.evidence_repo }}
           FAILING_RUN_URL: ${{ inputs.failing_run_url }}
+          VERSION: ${{ steps.target.outputs.version }}
         run: |
           set -euo pipefail
           mkdir -p /tmp/alwaysgreen-artifacts
@@ -331,13 +332,29 @@ jobs:
               && echo "  got $3 from $1#$2" \
               || echo "  (absent) $3 from $1#$2"
           }
+          # preview-env-smoke-test.yml runs every version's leg in one run and
+          # uploads playwright-results-json/-report per version, so the unscoped
+          # glob would hand the agent every version's evidence, not just the one
+          # it was dispatched to fix. Download the version-scoped name only; other
+          # pipelines run one version per run and have no such name, so fall back
+          # to the unscoped glob when the scoped one found nothing.
+          dl_versioned() { # repo, run_id, pattern-prefix
+            local dest_found=""
+            if [ -n "${VERSION}" ]; then
+              dl "$1" "$2" "$3-${VERSION}-*"
+              dest_found="/tmp/alwaysgreen-artifacts/$3-${VERSION}-*"
+            fi
+            if [ -z "${dest_found}" ] || [ -z "$(find "${dest_found}" -type f 2>/dev/null)" ]; then
+              dl "$1" "$2" "$3*"
+            fi
+          }
           if [ -n "${EVIDENCE_RUN_URL}" ] && [ -n "${EVIDENCE_REPO}" ]; then
             eid="${EVIDENCE_RUN_URL##*/}"
-            dl "${EVIDENCE_REPO}" "$eid" 'playwright-results-json*'
+            dl_versioned "${EVIDENCE_REPO}" "$eid" 'playwright-results-json'
             dl "${EVIDENCE_REPO}" "$eid" 'playwright-traces*'
             # preview-env-smoke-test.yml ships traces and screenshots inside its
             # per-version html report instead of a separate traces artifact.
-            dl "${EVIDENCE_REPO}" "$eid" 'playwright-report-*'
+            dl_versioned "${EVIDENCE_REPO}" "$eid" 'playwright-report'
             dl "${EVIDENCE_REPO}" "$eid" 'json-report*'
             dl "${EVIDENCE_REPO}" "$eid" 'Playwright Report*'
           fi
