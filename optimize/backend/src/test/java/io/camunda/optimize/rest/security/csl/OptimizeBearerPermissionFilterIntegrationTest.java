@@ -53,7 +53,15 @@ import org.springframework.web.context.request.ServletRequestAttributes;
  * /api/public/**} and {@code /api/ingestion/variable}, which is what makes this an integration test
  * rather than a second copy of {@link OptimizeBearerPermissionFilterTest}. Covers camunda/camunda
  * #63372's manual QA matrix cases 11 and 12 (a role-less user's bearer token against an internal
- * API path and a public API path) plus the ingestion carve-out and the M2M-must-not-regress case.
+ * API path and a public API path) plus the ingestion carve-out.
+ *
+ * <p>The chain here ends at a {@link MockFilterChain}, not a real controller, so it never reaches
+ * {@code SessionService} or {@code CCSMTokenService#getCurrentUserIdFromAuthToken} — the request-
+ * user resolution an M2M client's request needs once past this filter. Its M2M test therefore only
+ * covers this filter's own leniency (an M2M-classified token is never even handed to the token
+ * service); the request-user resolution for a client principal is covered at the unit level by
+ * {@code SessionServiceTest#shouldResolveTheClientIdForAnM2mBearerRequestThroughCsl} and {@code
+ * CCSMTokenServiceTest#shouldResolveCurrentUserIdFromTheClientIdForAnM2mBearerRequest}.
  */
 @Execution(ExecutionMode.SAME_THREAD)
 class OptimizeBearerPermissionFilterIntegrationTest {
@@ -224,8 +232,9 @@ class OptimizeBearerPermissionFilterIntegrationTest {
 
   @Test
   void shouldNotRegressAnM2mClientWithoutTheOptimizePermission() throws Exception {
-    // given: matrix row "M2M client without the Optimize permission, GET /api/entities" — must
-    // stay 200, and the token service must never even be consulted for it.
+    // given: matrix row "M2M client without the Optimize permission, GET /api/entities" — the
+    // filter itself must let it through without consulting the token service. This chain ends at
+    // a stub, so it does not reach SessionService; see the class javadoc for what covers that half.
     final String token = m2mToken("optimize-api-client");
     ccsmRunner()
         .run(

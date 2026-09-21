@@ -447,6 +447,23 @@ public class CCSMTokenServiceTest {
   }
 
   @Test
+  void shouldResolveCurrentUserIdFromTheClientIdForAnM2mBearerRequest() {
+    // given — CSL classifies a client-credentials bearer token as a client, not a user, so
+    // authenticatedUsername is null and there is no sub-claim decoding to fall back to either
+    SecurityContextHolder.getContext().setAuthentication(jwtAuthentication("bearer-token"));
+    when(camundaAuthenticationProviderProvider.getIfAvailable())
+        .thenReturn(camundaAuthenticationProvider);
+    when(camundaAuthenticationProvider.getCamundaAuthentication())
+        .thenReturn(CamundaAuthentication.of(b -> b.clientId("optimize-api-client")));
+
+    // when
+    final Optional<String> result = ccsmTokenService.getCurrentUserIdFromAuthToken();
+
+    // then
+    assertThat(result).contains("optimize-api-client");
+  }
+
+  @Test
   void shouldFallBackToSubClaimForCurrentUserIdWhenNotUnderCsl() {
     // given — legacy CCSM: no CSL principal provider, id derived from the token's sub claim
     setCurrentRequestWithAuthCookie(ACCESS_TOKEN_VALUE);
