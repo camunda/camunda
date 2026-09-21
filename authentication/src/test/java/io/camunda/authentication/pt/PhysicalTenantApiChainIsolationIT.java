@@ -550,7 +550,6 @@ class PhysicalTenantApiChainIsolationIT {
     return env;
   }
 
-  /** A port nothing listens on, so every call to this issuer is refused at once. */
   private static MockHttpServletResponse callWithToken(
       final FilterChainProxy proxy, final String path, final String token) throws Exception {
     final var request = new MockHttpServletRequest("GET", path);
