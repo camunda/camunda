@@ -32,11 +32,14 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Tag("async-repl")
 @TestInstance(Lifecycle.PER_CLASS)
 abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer> {
 
+  private static final Logger LOG = LoggerFactory.getLogger(AbstractAsyncReplicationIT.class);
   protected static final Duration DEFAULT_MAX_LAG = Duration.ofSeconds(3);
 
   /** The replication cluster; created by {@link #createCluster()} in {@link #beforeAll()}. */
@@ -54,6 +57,10 @@ abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer>
 
   protected Duration getMaxLag() {
     return DEFAULT_MAX_LAG;
+  }
+
+  protected Duration getExporterAcknowledgementTimeout() {
+    return Duration.ofMinutes(1);
   }
 
   /**
@@ -196,14 +203,23 @@ abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer>
   }
 
   protected void exporterAcknowledgedAll() {
+    LOG.info("Waiting for exporter acknowledgement");
     Awaitility.await()
+        .pollInterval(Duration.ofSeconds(5))
         .ignoreExceptions()
-        .atMost(Duration.ofMinutes(1))
+        .atMost(getExporterAcknowledgementTimeout())
         .untilAsserted(
-            () ->
-                assertThat(getCurrentExporterPosition())
-                    // not all records are processed by the exporter, so we need a closeTo here
-                    .isCloseTo(getCurrentAcknowledgedExporterPosition(), Offset.offset(5L)));
+            () -> {
+              final long exporterPosition = getCurrentExporterPosition();
+              final long acknowledgedPosition = getCurrentAcknowledgedExporterPosition();
+              LOG.info(
+                  "Exporter acknowledgement progress: exported position {}, acknowledged position {}",
+                  exporterPosition,
+                  acknowledgedPosition);
+              assertThat(exporterPosition)
+                  // not all records are processed by the exporter, so we need a closeTo here
+                  .isCloseTo(acknowledgedPosition, Offset.offset(5L));
+            });
   }
 
   protected long getCurrentExporterPosition() {
