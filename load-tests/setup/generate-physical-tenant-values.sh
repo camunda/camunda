@@ -167,8 +167,13 @@ for ((i = 1; i <= physical_tenant_count; i++)); do
   )
 done
 
-PT_LINES="$(printf '%s\n' "${lines[@]}")"
-export PT_LINES
+# Passed to yq via a file (load_str), not an env var (strenv): at physical_tenant_count=79 with
+# the continuous-backup block, PT_LINES is large enough that exec()ing yq with it in the
+# environment hits the kernel's argv+envp size limit ("Argument list too long").
+pt_lines_file="$(mktemp)"
+export PT_LINES_FILE="$pt_lines_file"
+trap 'rm -f "$pt_lines_file"' EXIT
+printf '%s\n' "${lines[@]}" > "$pt_lines_file"
 
 {
   echo "########################################################################################"
@@ -180,7 +185,7 @@ export PT_LINES
   echo "# \`make install\`/\`make template\`, not meant to be hand-edited."
   # .content already ends in exactly one trailing newline (YAML clip-mode "|" block
   # scalar), so no extra separator is needed here — one would insert a blank line.
-  yq eval '{"orchestration": {"extraConfiguration": [{"file": .orchestration.extraConfiguration[0].file, "content": (.orchestration.extraConfiguration[0].content + strenv(PT_LINES))}, .orchestration.extraConfiguration[1]]}}' "$base_file"
+  yq eval '{"orchestration": {"extraConfiguration": [{"file": .orchestration.extraConfiguration[0].file, "content": (.orchestration.extraConfiguration[0].content + load_str(strenv(PT_LINES_FILE)))}, .orchestration.extraConfiguration[1]]}}' "$base_file"
 } > "$output_file"
 
 echo "Generated ${output_file} (physical_tenant_count=${physical_tenant_count}, secondary_storage=${secondary_storage})."
