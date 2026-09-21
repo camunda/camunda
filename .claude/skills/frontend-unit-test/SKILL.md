@@ -1,367 +1,416 @@
 ---
-
 name: frontend-unit-test
 description: Use when writing, modifying, or debugging unit tests (*.test.tsx) in the orchestration cluster webapp (webapp/client/apps/orchestration-cluster-webapp/src/). Covers Vitest browser mode, MSW mocking, and vitest-browser-react rendering.
-
 ---
 
 # Frontend Unit Testing
 
-Unit tests in `@camunda/orchestration-cluster-webapp` run in a **real Chromium browser** via Vitest Browser Mode — not jsdom or happy-dom. This matters because components render in an actual DOM with real layout, events, and browser APIs. MSW intercepts all HTTP at the service worker level.
+Unit tests in `@camunda/orchestration-cluster-webapp` run in real Chromium with Vitest Browser Mode.
+They do not run in jsdom or happy-dom.
 
-This is fundamentally different from the `@testing-library/react` + `vi.mock()` approach used in the legacy Operate and Tasklist frontends. If you're familiar with those patterns, read the key rules carefully — several habits from the legacy apps will produce broken or flaky tests here.
+Use the browser DOM, browser events, and browser APIs. Use MSW to intercept HTTP requests through a
+service worker.
 
-## Key rules
+## Required setup
 
-- Import `it` from `#/vitest-modules/test-extend`, not from `vitest`. The custom fixture auto-starts an MSW service worker before each test and resets/stops it after. Importing from `vitest` directly means no MSW interception — HTTP calls will fail or hit real endpoints.
-- Use `render()` from `vitest-browser-react`, not from `@testing-library/react`. The vitest-browser-react renderer is designed for browser-mode Vitest and handles the real DOM lifecycle correctly. Do NOT import `screen` from `@testing-library/react` — it does not exist in this setup.
-- For components that need routing context (pages, components using `<Link>`, `useNavigate`, route hooks), use `renderWithRouter(Component, {path, initialEntry?})` from `#/vitest-modules/render-with-router` instead of bare `render()`. It mounts the component in a minimal isolated route tree backed by an in-memory history — no full `routeTree.gen` is loaded, no `beforeLoad` runs.
-- Both `render()` and `renderWithRouter()` return the `screen` object — you MUST capture the return value: `const screen = await renderWithRouter(MyPage, {path: '/my-path'})`. There is no global `screen` import.
-- Use `expect.element()` for DOM assertions — it retries automatically until the assertion passes or times out. This replaces the `waitFor` / `findBy*` / `screen.findByRole` patterns you may know from Testing Library. There is no `waitFor` here.
-- Perform all UI interactions (clicks, typing, filling, selecting, tabbing, hovering) with `userEvent` imported from `vitest/browser` — e.g. `await userEvent.click(screen.getByRole('button', {name: /save/i}))`, `await userEvent.fill(screen.getByLabelText('Name'), 'value')`. It dispatches a realistic full browser event sequence (pointer, mouse, focus, input). Keep using `screen.getBy*` for queries and `expect.element()` for assertions — `userEvent` is only for interactions. Do NOT use locator `.click()` or `.fill()` methods directly.
-- Mock HTTP through the `worker` fixture using endpoint mocks from `#/shared-test-modules/mock-handlers`. Each mock is an individually named export (e.g., `mockCurrentUserEndpoint`, `mockLoginEndpoint`) created with `createEndpointMock` from `#/shared-test-modules/mock-endpoint`. Both unit and Playwright tests use the same definitions. All endpoint mocks must be defined in `apps/orchestration-cluster-webapp/shared-test-modules/mock-handlers.ts` — never create `createEndpointMock` calls inline in test files. Never use `vi.mock()` for API calls; it couples tests to implementation details and breaks on refactors.
-- Prefer user-facing selectors in this order: `getByRole`, `getByLabelText`, `getByText`, and
-  `getByTitle`. Use `getByTestId` only when no meaningful user-facing selector is available.
-- String locators in this application use exact matching. Match the complete, case-sensitive text,
-  accessible name, label, or title. Regular expressions control their own matching behavior.
-- `screen.getBy*()` returns a lazy, retryable `Locator`, not a DOM element. Keep locators unresolved
-  and compose queries from them instead of using raw DOM traversal.
-- Prefer `getByRole` for interactive elements and elements with meaningful roles. The `name` option
-  matches the accessible name, which may include nested controls, icons, tooltips, badges, or hidden
-  accessible text. Use `getByText` for independently rendered static text and `getByTitle` when an
-  existing `title` attribute is the stable identifier.
-- Do not add or change production ARIA roles, `aria-label`, `title`, hidden text, wrapper elements,
-  or test IDs solely to make a test selector possible. ARIA must describe genuine user-facing
-  semantics. Improve the selector first; change production markup only when the existing markup has
-  a real semantic or accessibility problem.
-- Co-locate test files with source: a test for `src/shared/foo/bar.tsx` sits at `src/shared/foo/bar.test.tsx`; a test for `src/operate/components/Foo.tsx` sits next to it at `src/operate/components/Foo.test.tsx`. Pod areas follow their own conventions for test placement.
-- Prefix test names with `should` (e.g., `it('should display an error on invalid credentials')`).
-- Do not mock the router. Use `renderWithRouter(Component, {path})` from `#/vitest-modules/render-with-router` when the component needs routing context. It mounts the component in a fresh, isolated TanStack Router backed by an in-memory history — the component receives real route params, search params, and navigation. No full application route tree or global providers are loaded, which keeps tests fast and self-contained. Typed file-route hooks (`Route.useParams()`) will not resolve under the isolated router; use `useParams({from: '/your-path'})` instead.
-- Avoid `vi.mock()` in general. Prefer MSW and real implementations. Vitest mocks couple tests to internals and break on refactors. Reach for them only when there is no practical alternative, such as faking time with `vi.useFakeTimers`.
-- Do not use `// given / when / then` comments — that is a Java backend convention. Structure tests by visual grouping (blank lines between setup, action, and assertion).
+- Import `it` from `#/vitest-modules/test-extend`.
+- Import other test APIs, such as `describe`, `expect`, and `vi`, from `vitest`.
+- Import `userEvent` from `vitest/browser`.
+- Import `render` from `vitest-browser-react`.
+- Do not import `screen` from `@testing-library/react`.
+- Do not use `@testing-library/react`.
+- Do not use `vi.mock()` for HTTP requests.
 
-## Locator composition
+The custom `it` fixture starts MSW before each test. It also resets and stops MSW after each test.
+Import this `it` even when the test does not use the `worker` argument.
 
-Keep locators unresolved so interactions and assertions retain strict matching, retry behavior, and
-useful diagnostics.
+## Rendering
 
-Chain selectors from a parent locator to scope a descendant:
+Use `render()` for components that do not need a router.
 
 ```tsx
-const betaProcessLink = screen.getByTitle('Beta Process – 3 Instances in 1 Version');
-const alphaProcessLink = screen.getByTitle('Alpha Process – 6 Instances in 1 Version');
+const screen = await render(<Component />);
+```
+
+Use `renderWithRouter()` for pages and components that use links, navigation, route parameters, or
+route search parameters.
+
+```tsx
+const screen = await renderWithRouter(Page, {
+  path: "/users/$id",
+  initialEntry: "/users/42",
+});
+```
+
+Import it from:
+
+```tsx
+import { renderWithRouter } from "#/vitest-modules/render-with-router";
+```
+
+`renderWithRouter()` creates an isolated TanStack Router with memory history and a fresh
+`QueryClient`. It does not load the full route tree or run route `beforeLoad` functions.
+
+Do not mock the router.
+
+Typed file-route hooks, such as `Route.useParams()`, do not resolve in this isolated router. Use:
+
+```tsx
+useParams({ from: "/users/$id" });
+```
+
+Both render functions return `screen`. Always capture it.
+
+## Locators
+
+`screen.getBy*()` returns a lazy, retryable `Locator`. It does not return a DOM element.
+
+Use selectors in this order:
+
+| Need                                    | Selector         |
+| --------------------------------------- | ---------------- |
+| Interactive element or semantic element | `getByRole`      |
+| Form control                            | `getByLabelText` |
+| Independent static text                 | `getByText`      |
+| Existing `title` attribute              | `getByTitle`     |
+| No suitable user-facing selector        | `getByTestId`    |
+
+String locators use exact matching in this application. Match the complete, case-sensitive text,
+accessible name, label, or title.
+
+A regular expression controls its own matching behavior.
+
+The `name` option of `getByRole` matches the accessible name. The accessible name can include nested
+controls, icons, tooltips, badges, or hidden accessible text.
+
+Do not change production semantics only to make a test pass. Do not add an ARIA role, `aria-label`,
+`title`, hidden text, wrapper, or test ID only for test discovery. Add ARIA only when it accurately
+describes the interface.
+
+### Compose locators
+
+Keep locators unresolved. This preserves strict matching, retries, and useful diagnostics.
+
+Chain a selector from its parent:
+
+```tsx
+const betaProcessLink = screen.getByTitle(
+  "Beta Process – 3 Instances in 1 Version",
+);
+const alphaProcessLink = screen.getByTitle(
+  "Alpha Process – 6 Instances in 1 Version",
+);
 
 await expect.element(betaProcessLink).toBeVisible();
 await expect.element(alphaProcessLink).toBeVisible();
 
-await expect.element(betaProcessLink.getByTestId('draining-indicator')).toBeVisible();
-await expect.element(alphaProcessLink.getByTestId('draining-indicator')).not.toBeInTheDocument();
+await expect
+  .element(betaProcessLink.getByTestId("draining-indicator"))
+  .toBeVisible();
+await expect
+  .element(alphaProcessLink.getByTestId("draining-indicator"))
+  .not.toBeInTheDocument();
 ```
 
-Assert that a parent exists before making a negative assertion about one of its descendants.
-Otherwise, the negative assertion could pass because the entire parent failed to render.
+Assert that a parent is visible before you assert that a child is absent. This prevents a false pass
+when the parent does not render.
 
 Use `.filter()` to narrow a collection:
 
 ```tsx
 const invoiceRow = screen
-  .getByRole('row')
-  .filter({has: screen.getByRole('link', {name: 'Invoice Process'})});
+  .getByRole("row")
+  .filter({ has: screen.getByRole("link", { name: "Invoice Process" }) });
 
-await expect.element(invoiceRow.getByRole('button', {name: 'Delete'})).toBeEnabled();
+await expect
+  .element(invoiceRow.getByRole("button", { name: "Delete" }))
+  .toBeEnabled();
 ```
 
-Available filters include `has`, `hasNot`, `hasText`, and `hasNotText`. Prefer semantic filtering
-before using `.first()`, `.last()`, or `.nth()`.
+Available filters are:
 
-Do not unwrap locators for ordinary assertions:
+- `has`
+- `hasNot`
+- `hasText`
+- `hasNotText`
+
+Use semantic filters before you use `.first()`, `.last()`, or `.nth()`.
+
+Do not unwrap locators for normal assertions:
 
 ```tsx
-// Wrong: resolves eagerly, loses locator retries, and requires unsafe casts.
-const row = screen.getByText('Invoice Process').element().closest('a') as HTMLElement;
-const indicator = row.querySelector('[data-testid="draining-indicator"]') as HTMLElement;
+// Wrong
+const row = screen
+  .getByText("Invoice Process")
+  .element()
+  .closest("a") as HTMLElement;
+const indicator = row.querySelector(
+  '[data-testid="draining-indicator"]',
+) as HTMLElement;
 
-// Correct: remains scoped, strict, and retryable.
-const processLink = screen.getByTitle('Invoice Process – 3 Instances in 1 Version');
+// Correct
+const processLink = screen.getByTitle(
+  "Invoice Process – 3 Instances in 1 Version",
+);
 
-await expect.element(processLink.getByTestId('draining-indicator')).toBeVisible();
+await expect
+  .element(processLink.getByTestId("draining-indicator"))
+  .toBeVisible();
 ```
 
-`element()`, `query()`, `elements()`, and `findElement()` are escape hatches. Use them only when an
-external library or browser API requires a raw DOM element. Never use `parentElement`, `closest`,
-`querySelector`, or an element cast merely to work around a locator.
+Use `element()`, `query()`, `elements()`, or `findElement()` only when an external library or browser
+API requires a raw DOM element.
 
-## MSW mocking
+Do not use `parentElement`, `closest`, `querySelector`, or a type cast to replace Locator composition.
 
-Endpoint mocks live in `#/shared-test-modules/endpoints` as a shared dictionary. Each entry is created with `createEndpointMock` from `#/shared-test-modules/mock-endpoint`, which builds a typed MSW handler factory for a given endpoint + HTTP method.
+## Assertions
 
-Two shapes:
-
-- **With Zod schema validation**: pass `schema`, `successResponse`, and `failureResponse`. The handler validates the request body against the schema and returns the failure response if it doesn't match.
-- **Without validation**: pass only `successResponse`. The handler always returns the success response.
-
-The `worker` fixture is injected by the custom `it` and auto-resets between tests — no manual `worker.resetHandlers()` needed.
-
-## Test structure
-
-### Testing a standalone component (no routing context)
-
-```tsx
-import {render} from 'vitest-browser-react';
-import {it} from '#/vitest-modules/test-extend';
-import {mockUsersEndpoint} from '#/shared-test-modules/mock-handlers';
-import {describe, expect} from 'vitest';
-import {HttpResponse} from 'msw';
-import {UserList} from './UserList';
-
-describe('<UserList />', () => {
-  it('should render users from the API', async ({worker}) => {
-    worker.use(
-      mockUsersEndpoint({
-        successResponse: HttpResponse.json([
-          {name: 'Alice'},
-          {name: 'Bob'},
-        ]),
-      }),
-    );
-
-    const screen = await render(<UserList />);
-
-    await expect.element(screen.getByRole('cell', {name: 'Alice'})).toBeVisible();
-    await expect.element(screen.getByRole('cell', {name: 'Bob'})).toBeVisible();
-  });
-});
-```
-
-### Testing a page or component that needs routing context
-
-Use `renderWithRouter(Component, {path, initialEntry?})` — it mounts the component in a minimal isolated route tree with a fresh `QueryClient` and memory history. No `beforeLoad`, no global providers, no full route tree. Pass `initialEntry` when the path contains params (e.g. `path: '/users/$id'`, `initialEntry: '/users/42'`).
-
-```tsx
-import {it} from '#/vitest-modules/test-extend';
-import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {describe, expect} from 'vitest';
-import {userEvent} from 'vitest/browser';
-import {LoginPage} from './LoginPage';
-
-describe('<Login />', () => {
-  it('should not allow the form to be submitted with empty fields', async () => {
-    const screen = await renderWithRouter(LoginPage, {path: '/login'});
-
-    await userEvent.click(screen.getByRole('button', {name: /login/i}));
-
-    await expect.element(screen.getByLabelText(/username/i)).toBeInvalid();
-    await expect.element(screen.getByLabelText(/^password$/i)).toBeInvalid();
-  });
-});
-```
-
-## Assertion patterns
-
-Use `expect.element()` for DOM assertions. It resolves the locator and retries the assertion until it
+Use `expect.element()` for DOM assertions. It resolves the Locator and retries until the assertion
 passes or times out.
 
 ```tsx
-// Visibility
-await expect.element(screen.getByRole('button', {name: 'Submit'})).toBeVisible();
-
-// Complete normalized text content
-await expect.element(screen.getByRole('heading')).toHaveTextContent('Dashboard');
-
-// Partial text content
+// Visible
 await expect
-  .element(screen.getByRole('dialog'))
-  .toMatchTextContent('This operation is part of a batch.');
+  .element(screen.getByRole("button", { name: "Submit" }))
+  .toBeVisible();
 
-// Regular-expression text content
-await expect.element(screen.getByRole('tooltip')).toMatchTextContent(/created on/i);
-
-// Attributes
+// Complete normalized text
 await expect
-  .element(screen.getByRole('link', {name: 'Documentation'}))
-  .toHaveAttribute('href', '/docs');
+  .element(screen.getByRole("heading"))
+  .toHaveTextContent("Dashboard");
 
-// Element should not exist
-await expect.element(screen.getByText('Loading...')).not.toBeInTheDocument();
+// Partial text
+await expect
+  .element(screen.getByRole("dialog"))
+  .toMatchTextContent("This operation is part of a batch.");
 
-// Element remains mounted but should be hidden
-await expect.element(screen.getByRole('dialog')).not.toBeVisible();
+// Regular-expression text
+await expect
+  .element(screen.getByRole("tooltip"))
+  .toMatchTextContent(/created on/i);
+
+// Attribute
+await expect
+  .element(screen.getByRole("link", { name: "Documentation" }))
+  .toHaveAttribute("href", "/docs");
+
+// Not present
+await expect.element(screen.getByText("Loading...")).not.toBeInTheDocument();
+
+// Present but hidden
+await expect.element(screen.getByRole("dialog")).not.toBeVisible();
 ```
 
-Use `toHaveTextContent` when the element's complete normalized text is the intended contract. Use
-`toMatchTextContent` for a substring or regular-expression match.
+Use `toHaveTextContent` when the complete normalized text is the contract.
 
-Use `not.toBeInTheDocument()` when an element should not exist. Use `not.toBeVisible()` only when the
-element should remain mounted but hidden.
+Use `toMatchTextContent` for a substring or regular-expression match.
 
-Do not wrap `expect.element()` in `waitFor`, and do not use `findBy*` queries.
+Use `not.toBeInTheDocument()` when an element must not exist.
+
+Use `not.toBeVisible()` when an element must remain mounted but hidden.
+
+Do not use `waitFor`, `findBy*`, `queryByText`, or `queryByRole`.
+
+## User interactions
+
+Use `userEvent` for all user interactions.
+
+```tsx
+import { userEvent } from "vitest/browser";
+
+await userEvent.click(screen.getByRole("button", { name: "Submit" }));
+await userEvent.fill(screen.getByLabelText("Name"), "Alice");
+await userEvent.type(screen.getByLabelText("Name"), " Bob");
+await userEvent.clear(screen.getByLabelText("Name"));
+await userEvent.selectOptions(screen.getByRole("combobox"), ["option-value"]);
+await userEvent.keyboard("{Enter}");
+await userEvent.tab();
+await userEvent.hover(screen.getByText("Tooltip trigger"));
+await userEvent.unhover(screen.getByText("Tooltip trigger"));
+```
+
+`userEvent` accepts Locators. Do not resolve a Locator before an interaction.
+
+```tsx
+// Correct
+await userEvent.click(screen.getByRole("button", { name: "Save" }));
+
+// Wrong
+await userEvent.click(screen.getByRole("button", { name: "Save" }).element());
+```
+
+Do not use Locator `.click()` or `.fill()` methods. Use `userEvent`.
+
+Await every interaction.
 
 ## Parameterized tests
 
-Use `it.for` instead of a `for`, `for...of`, or `forEach` loop whose body declares `it()` calls.
-Ordinary loops inside a test body remain valid.
+Use `it.for` when a loop would declare multiple tests.
 
-The extended `it` passes case data as the first callback argument and fixture context as the second.
+Do not declare `it()` inside `for`, `for...of`, or `forEach`.
 
-Use `%s` for scalar cases:
+Ordinary loops inside one test remain valid.
+
+The extended `it` passes case data as the first callback argument. It passes fixture context as the
+second callback argument.
+
+### Scalar cases
+
+Use `%s` in the title.
 
 ```tsx
-it.for(['include', 'exclude'] as const)(
-  'should submit in %s mode',
-  async (mode, {worker}) => {
+it.for(["include", "exclude"] as const)(
+  "should submit in %s mode",
+  async (mode, { worker }) => {
     // ...
   },
 );
 ```
 
-Use named objects and `$property` placeholders when a case has multiple values:
+### Object cases
+
+Use `$property` in the title.
 
 ```tsx
 it.for([
-  {filter: 'businessId', label: 'Business ID'},
-  {filter: 'errorMessage', label: 'Error Message'},
-] as const)(
-  'should display $label',
-  async ({filter, label}, {worker}) => {
-    // ...
-  },
-);
+  { filter: "businessId", label: "Business ID" },
+  { filter: "errorMessage", label: "Error Message" },
+] as const)("should display $label", async ({ filter, label }, { worker }) => {
+  // ...
+});
 ```
 
-Tuple cases are passed as one value. Destructure the tuple in the first callback argument:
+### Tuple cases
+
+`it.for` passes a tuple as one value. Destructure the tuple in the first callback argument.
 
 ```tsx
 it.for([
-  ['Delete', mockDeleteEndpoint],
-  ['Cancel', mockCancelEndpoint],
-] as const)(
-  'should submit %s',
-  async ([action, endpointMock], {worker}) => {
-    // ...
-  },
-);
+  ["Delete", mockDeleteEndpoint],
+  ["Cancel", mockCancelEndpoint],
+] as const)("should submit %s", async ([action, endpointMock], { worker }) => {
+  // ...
+});
 ```
 
-Do not declare tests inside nested loops. Build a case table first:
+### Cartesian products
+
+Build the case table before you call `it.for`.
 
 ```tsx
-const languages = ['en', 'de'] as const;
-const actions = ['delete', 'cancel'] as const;
+const languages = ["en", "de"] as const;
+const actions = ["delete", "cancel"] as const;
 const counts = [1, 3] as const;
 
 const cases = languages.flatMap((language) =>
   actions.flatMap((action) =>
-    counts.map((count) => ({language, action, count})),
+    counts.map((count) => ({ language, action, count })),
   ),
 );
 
 it.for(cases)(
-  'should render the $language $action confirmation for $count instances',
-  async ({language, action, count}) => {
+  "should render the $language $action confirmation for $count instances",
+  async ({ language, action, count }) => {
     // ...
   },
 );
 ```
 
-Keep case tables and source arrays `as const` when their values need to retain literal types.
+## HTTP mocking
 
-## User interactions
+Mock HTTP through the `worker` fixture.
 
-All interactions use `userEvent` from `vitest/browser`. It accepts both `Element` and `Locator` (the return type of `screen.getBy*`).
+```tsx
+it("should display the current user", async ({ worker }) => {
+  worker.use(
+    mockCurrentUserEndpoint({
+      successResponse: HttpResponse.json(createCurrentUser()),
+    }),
+  );
 
-`userEvent` accepts locators directly. Do not resolve a locator with `.element()` before passing it
-to `userEvent`.
+  const screen = await render(<UserDetails />);
+
+  await expect.element(screen.getByText("Demo User")).toBeVisible();
+});
+```
+
+Import endpoint mocks from:
+
+```tsx
+import { mockCurrentUserEndpoint } from "#/shared-test-modules/mock-handlers";
+```
+
+Define all endpoint mocks in:
+
+```text
+shared-test-modules/mock-handlers.ts
+```
+
+Do not create `createEndpointMock` calls in test files.
+
+Call every endpoint mock with a configuration object.
 
 ```tsx
 // Correct
-await userEvent.click(screen.getByRole('button', {name: 'Save'}));
-await userEvent.fill(screen.getByLabelText('Name'), 'Alice');
+mockCurrentUserEndpoint({
+  successResponse: HttpResponse.json(createCurrentUser()),
+});
 
 // Wrong
-await userEvent.click(screen.getByRole('button', {name: 'Save'}).element());
+mockCurrentUserEndpoint;
 ```
 
-```ts
-import {userEvent} from 'vitest/browser';
+Use these endpoint mock forms:
 
-// Click
-await userEvent.click(screen.getByRole('button', {name: /submit/i}));
+- With request validation: provide `schema`, `successResponse`, and `failureResponse`.
+- Without request validation: provide `successResponse`.
 
-// Fill an input (clears existing value first)
-await userEvent.fill(screen.getByLabelText('Name'), 'Alice');
+Use `msw/browser`, not `msw/node`.
 
-// Type without clearing (appends to existing value)
-await userEvent.type(screen.getByLabelText('Name'), ' Bob');
+Do not call `worker.start()`, `worker.stop()`, or `worker.resetHandlers()` in a test. The custom
+fixture owns the worker lifecycle.
 
-// Clear an input
-await userEvent.clear(screen.getByLabelText('Name'));
+Do not use `vi.mock()` for HTTP. For other dependencies, prefer real implementations. Mock only an
+external or browser boundary that cannot be used directly.
 
-// Select options in a <select>
-await userEvent.selectOptions(screen.getByRole('combobox'), ['option-value']);
+## Test structure
 
-// Keyboard
-await userEvent.keyboard('{Enter}');
+Co-locate each test with its source file.
 
-// Tab
-await userEvent.tab();
+Name tests with the `should` prefix.
 
-// Hover / unhover
-await userEvent.hover(screen.getByText('Tooltip trigger'));
-await userEvent.unhover(screen.getByText('Tooltip trigger'));
+```tsx
+it("should display an error for invalid credentials", async () => {
+  // ...
+});
 ```
 
-## Common gotchas
-
-- **No `waitFor` or `findBy*`**: `expect.element()` handles async natively. Writing `await waitFor(() => ...)` will error — it doesn't exist in this setup.
-- **No `queryByText` / `queryByRole`**: these don't exist. Use `getByText` / `getByRole` with `expect.element(...).not.toBeInTheDocument()` for absence checks.
-- **`userEvent` is not a fixture — import it directly**: `import {userEvent} from 'vitest/browser';`. Use `userEvent.click()`, `userEvent.fill()`, `userEvent.type()`, etc. for all interactions. Do not use locator `.click()` or `.fill()` methods — they bypass the realistic event sequence that `userEvent` provides.
-- **Endpoint mocks are functions**: always call them with a config object — `mockCurrentUserEndpoint({successResponse: HttpResponse.json({})})`, not `mockCurrentUserEndpoint` bare.
-- **Locators are not DOM elements**: keep `screen.getBy*()` results as locators. Chain queries and
-  assertions from them instead of using `element()`, `parentElement`, `closest`, or `querySelector`.
-- **Negative child assertions need a rendered parent**: assert that the parent is visible before
-  asserting that one of its descendants is absent.
-- **Exact selectors include accessible content**: a role's accessible name may contain nested
-  tooltip text, icons, badges, and controls. Inspect the ARIA tree and use the complete accessible
-  name, an existing title, or a scoped child locator.
-- **Do not change ARIA for test discovery**: adding an ARIA role or label changes what assistive
-  technology announces. Only add semantics that accurately describe the interface.
-- **Do not declare tests in loops**: use `it.for` for parameterized cases. Loops that perform repeated
-  actions or assertions inside one test are still valid.
-- **Tuple rows are not spread by `it.for`**: receive a tuple as the first callback argument and
-  destructure it there.
-- **`userEvent` accepts locators**: do not call `.element()` before `userEvent.click`,
-  `userEvent.fill`, or other interactions.
-- **`msw/browser`, not `msw/node`**: the MSW worker runs in the browser via `setupWorker`. If you see imports from `msw/node`, that's wrong.
-- **No `vi.mock()` for HTTP**: it silently breaks in browser mode and is the wrong abstraction anyway. Use MSW.
-- **`render()` returns `screen`**: unlike Testing Library where `screen` is a global import, here `render()` returns the screen object. Use `const screen = await render(<Comp />)`. Same for `renderWithRouter()` — `const screen = await renderWithRouter(MyPage, {path: '/my-path'})`.
+Do not use `// given`, `// when`, or `// then` comments. Use blank lines to separate setup, action,
+and assertion code.
 
 ## Commands
 
-Run focused and full validation from
-`webapp/client/apps/orchestration-cluster-webapp/`:
+Run these commands from `webapp/client/apps/orchestration-cluster-webapp/`:
 
 ```bash
+# Focused test
 npm run test:unit -- --run src/path/to/example.test.tsx
+
+# Type check
 npm run typecheck
+
+# Full unit-test suite
 npm run test:unit -- --run
+
+# Interactive debugging
+npm run test:unit:ui
 ```
 
-Run formatting and linting from `webapp/client/`:
+Run these commands from `webapp/client/`:
 
 ```bash
 npm run prettier:format
 npm run lint
 ```
 
-Use `npm run test:unit:ui` for interactive debugging. Never invoke Prettier or `tsc` directly.
-
-## Template references
-
-- `src/shared/pages/LoginPage.test.tsx` — page-level test using `renderWithRouter`.
-- `src/shared/mock-test.test.tsx` — component test with MSW mocking.
-- `src/vitest-modules/test-extend.ts` — custom `it` fixture source.
-- `src/vitest-modules/render-with-router.tsx` — `renderWithRouter` utility source.
-- `shared-test-modules/mock-endpoint.ts` — `createEndpointMock` factory source.
-- `shared-test-modules/mock-handlers.ts` — shared endpoint mock definitions.
-- `docs/monorepo-docs/frontend/testing.md` — full testing guide.
-
+Do not invoke Prettier or `tsc` directly.
