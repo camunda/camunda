@@ -205,6 +205,7 @@ class OpensearchConnectorTest {
     // then
     Mockito.verify(builder).setResponseTimeout(Timeout.of(125456L, TimeUnit.MILLISECONDS));
     Mockito.verify(builder).setConnectTimeout(Timeout.of(654321L, TimeUnit.MILLISECONDS));
+    Mockito.verify(builder).setConnectionRequestTimeout(Timeout.of(654321L, TimeUnit.MILLISECONDS));
   }
 
   @Test
@@ -221,6 +222,7 @@ class OpensearchConnectorTest {
     // then
     Mockito.verify(builder).setResponseTimeout(Timeout.of(30_000L, TimeUnit.MILLISECONDS));
     Mockito.verify(builder).setConnectTimeout(Timeout.of(1_000L, TimeUnit.MILLISECONDS));
+    Mockito.verify(builder).setConnectionRequestTimeout(Timeout.of(1_000L, TimeUnit.MILLISECONDS));
   }
 
   private static CloseableHttpAsyncClient getOpensearchApacheClient(
