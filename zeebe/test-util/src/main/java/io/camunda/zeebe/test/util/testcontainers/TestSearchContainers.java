@@ -59,7 +59,8 @@ public final class TestSearchContainers {
     return new OpenSearchContainer<>(OPENSEARCH_IMAGE)
         .withEnv("OPENSEARCH_JAVA_OPTS", "-Xms1024m -Xmx1024m -XX:MaxDirectMemorySize=536870912")
         .withEnv("action.destructive_requires_name", "false")
-        .withEnv("action.auto_create_index", "true");
+        .withEnv("action.auto_create_index", "true")
+        .withStartupAttempts(2);
   }
 
   /**
