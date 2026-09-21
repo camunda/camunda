@@ -14,9 +14,29 @@ import io.camunda.cluster.migration.MigrationState;
 import io.camunda.cluster.migration.MigrationStatusProvider;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
 final class MigrationStatusAggregatorTest {
+
+  @Test
+  void shouldPollEveryProviderConcurrentlyRatherThanOneAtATime() {
+    // given - two slow providers, each blocking until the other has started
+    final var firstStarted = new CountDownLatch(1);
+    final var secondStarted = new CountDownLatch(1);
+    final var aggregator =
+        new MigrationStatusAggregator(
+            List.of(
+                blockingProvider("a", firstStarted, secondStarted),
+                blockingProvider("b", secondStarted, firstStarted)));
+
+    // when
+    final var response = aggregator.aggregate();
+
+    // then - both providers reported their status, so neither call was left waiting forever
+    assertThat(response.physicalTenants().get("default")).hasSize(2);
+  }
 
   @Test
   void shouldReportNotUpgradeableWhenNoProviderIsRegistered() {
@@ -124,25 +144,26 @@ final class MigrationStatusAggregatorTest {
   }
 
   @Test
-  void shouldNeverRegressAConfirmedMigratedConditionWhenAProviderThrowsOnALaterPoll() {
+  void shouldReportUnknownOnANewPollWhenAPreviouslyMigratedProviderStartsThrowing() {
     // given - a provider that reports MIGRATED once, then throws entirely afterwards (e.g. a
     // later distributed fan-out breaking)
     final var flakyProvider = new FlakyProvider("a", migrated("done"));
     final var aggregator = new MigrationStatusAggregator(List.of(flakyProvider));
 
-    // when - first poll confirms MIGRATED, second poll would otherwise lose the entry entirely
+    // when - first poll confirms MIGRATED, second poll's provider call fails entirely
     final var firstResponse = aggregator.aggregate();
     final var secondResponse = aggregator.aggregate();
 
-    // then - monotonicity is preserved via the backfill, even under total provider failure
+    // then - each poll reflects only what it itself observed; a failure is reported as UNKNOWN
+    // rather than silently reusing the earlier MIGRATED result, since that could go stale
     assertThat(firstResponse.physicalTenants().get("default").get("a").state())
         .isEqualTo(MigrationState.MIGRATED);
     assertThat(secondResponse.physicalTenants().get("default").get("a").state())
-        .isEqualTo(MigrationState.MIGRATED);
+        .isEqualTo(MigrationState.UNKNOWN);
   }
 
   @Test
-  void shouldNotCacheANonMigratedStatus() {
+  void shouldReportUnknownOnANewPollWhenAProviderStopsRespondingAfterANonMigratedStatus() {
     // given - a provider that never reaches MIGRATED, then throws
     final var flakyProvider = new FlakyProvider("a", inProgress("not yet"));
     final var aggregator = new MigrationStatusAggregator(List.of(flakyProvider));
@@ -151,7 +172,7 @@ final class MigrationStatusAggregatorTest {
     aggregator.aggregate();
     final var secondResponse = aggregator.aggregate();
 
-    // then - nothing was ever confirmed MIGRATED, so the backfill falls back to UNKNOWN
+    // then - nothing from the first poll carries over; the backfill defaults to UNKNOWN
     assertThat(secondResponse.physicalTenants().get("default").get("a").state())
         .isEqualTo(MigrationState.UNKNOWN);
   }
@@ -162,6 +183,37 @@ final class MigrationStatusAggregatorTest {
 
   private static MigrationConditionStatus inProgress(final String detail) {
     return new MigrationConditionStatus(MigrationState.MIGRATION_IN_PROGRESS, detail);
+  }
+
+  /**
+   * A provider whose {@code getMigrationStatus()} signals {@code ownStart}, then blocks until
+   * {@code otherStart} is also signalled -- used in pairs to prove two providers' calls actually
+   * overlap, rather than the second one only starting once the first has already returned.
+   */
+  private static MigrationStatusProvider blockingProvider(
+      final String name, final CountDownLatch ownStart, final CountDownLatch otherStart) {
+    return new MigrationStatusProvider() {
+      @Override
+      public String conditionName() {
+        return name;
+      }
+
+      @Override
+      public Map<String, MigrationConditionStatus> getMigrationStatus() {
+        ownStart.countDown();
+        try {
+          if (!otherStart.await(5, TimeUnit.SECONDS)) {
+            throw new AssertionError(
+                "the other provider never started -- aggregate() is not polling providers"
+                    + " concurrently");
+          }
+        } catch (final InterruptedException e) {
+          Thread.currentThread().interrupt();
+          throw new RuntimeException(e);
+        }
+        return Map.of("default", migrated(name + " done"));
+      }
+    };
   }
 
   private static MigrationStatusProvider provider(

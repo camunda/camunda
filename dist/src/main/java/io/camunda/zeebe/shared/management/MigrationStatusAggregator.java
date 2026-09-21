@@ -14,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,16 +22,12 @@ import org.slf4j.LoggerFactory;
 /**
  * Collects every registered {@link MigrationStatusProvider} and combines their per-physical-tenant
  * statuses into an {@link UpgradeReadinessResponse}.
- *
- * <p>Keeps the last confirmed {@code MIGRATED} status per (physical tenant, condition) pair.
  */
 public class MigrationStatusAggregator {
 
   private static final Logger LOG = LoggerFactory.getLogger(MigrationStatusAggregator.class);
 
   private final List<MigrationStatusProvider> providers;
-  private final Map<TenantCondition, MigrationConditionStatus> lastConfirmedMigrated =
-      new ConcurrentHashMap<>();
   private final Set<String> knownPhysicalTenantIds = ConcurrentHashMap.newKeySet();
 
   public MigrationStatusAggregator(final List<MigrationStatusProvider> providers) {
@@ -42,17 +39,23 @@ public class MigrationStatusAggregator {
         providers.stream().map(MigrationStatusProvider::conditionName).toList();
     final var physicalTenants = new LinkedHashMap<String, Map<String, MigrationConditionStatus>>();
 
-    for (final var provider : providers) {
-      final var conditionName = provider.conditionName();
-      final var freshStatuses = safeGetMigrationStatus(provider);
+    // Poll every provider concurrently rather than one at a time, so a slow provider doesn't add
+    // its own timeout on top of every other provider's.
+    final var pendingStatusesByProvider =
+        providers.stream()
+            .map(provider -> CompletableFuture.supplyAsync(() -> safeGetMigrationStatus(provider)))
+            .toList();
+    CompletableFuture.allOf(pendingStatusesByProvider.toArray(CompletableFuture<?>[]::new)).join();
+
+    for (int i = 0; i < providers.size(); i++) {
+      final var conditionName = providers.get(i).conditionName();
+      final var freshStatuses = pendingStatusesByProvider.get(i).join();
       knownPhysicalTenantIds.addAll(freshStatuses.keySet());
       freshStatuses.forEach(
-          (physicalTenantId, status) -> {
-            final var resolved = resolveWithCache(physicalTenantId, conditionName, status);
-            physicalTenants
-                .computeIfAbsent(physicalTenantId, ignored -> new LinkedHashMap<>())
-                .put(conditionName, resolved);
-          });
+          (physicalTenantId, status) ->
+              physicalTenants
+                  .computeIfAbsent(physicalTenantId, ignored -> new LinkedHashMap<>())
+                  .put(conditionName, status));
     }
 
     backfillMissingPairs(physicalTenants, conditionNames);
@@ -81,25 +84,10 @@ public class MigrationStatusAggregator {
     }
   }
 
-  private MigrationConditionStatus resolveWithCache(
-      final String physicalTenantId,
-      final String conditionName,
-      final MigrationConditionStatus fresh) {
-    final var key = new TenantCondition(physicalTenantId, conditionName);
-    if (fresh.state() == MigrationState.MIGRATED) {
-      lastConfirmedMigrated.put(key, fresh);
-      return fresh;
-    }
-    final var cached = lastConfirmedMigrated.get(key);
-    return cached != null ? cached : fresh;
-  }
-
   /**
    * Fills in every (known physical tenant, registered condition) pair this poll did not freshly
    * report — whether because a whole provider call failed, or because that provider simply did not
-   * report that tenant this cycle. A pair once confirmed {@code MIGRATED} is restored from the
-   * cache rather than defaulting to {@code UNKNOWN}, preserving the same monotonicity guarantee as
-   * a fresh, successful lookup would.
+   * report that tenant this cycle — with {@code UNKNOWN}.
    */
   private void backfillMissingPairs(
       final Map<String, Map<String, MigrationConditionStatus>> physicalTenants,
@@ -110,17 +98,10 @@ public class MigrationStatusAggregator {
       for (final var conditionName : conditionNames) {
         conditions.computeIfAbsent(
             conditionName,
-            ignored -> {
-              final var cached =
-                  lastConfirmedMigrated.get(new TenantCondition(physicalTenantId, conditionName));
-              return cached != null
-                  ? cached
-                  : new MigrationConditionStatus(
-                      MigrationState.UNKNOWN, "no status reported for this poll");
-            });
+            ignored ->
+                new MigrationConditionStatus(
+                    MigrationState.UNKNOWN, "no status reported for this poll"));
       }
     }
   }
-
-  private record TenantCondition(String physicalTenantId, String conditionName) {}
 }
