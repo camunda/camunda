@@ -45,6 +45,17 @@ const RESPONSE_WITH_OPERATIONS = HttpResponse.json(
 	}),
 );
 
+// Legacy Operate batches and documents written before the exporter fix carry no type
+const RESPONSE_WITH_UNTYPED_OPERATION = HttpResponse.json(
+	createQueryBatchOperationsResponse({
+		items: [
+			createBatchOperation({batchOperationKey: 'op-1', batchOperationType: null}),
+			createBatchOperation({batchOperationKey: 'op-2', batchOperationType: 'RESOLVE_INCIDENT'}),
+		],
+		page: {totalItems: 2, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+	}),
+);
+
 const RESPONSE_EXCEEDING_PAGE_SIZE = HttpResponse.json(
 	createQueryBatchOperationsResponse({
 		items: [createBatchOperation({batchOperationKey: 'op-1', batchOperationType: 'RESOLVE_INCIDENT'})],
@@ -87,6 +98,15 @@ describe('<BatchOperations />', () => {
 		// Use regex to avoid case-insensitive collision with "completed" from item count labels
 		await expect.element(screen.getByText(/^Completed$/)).toBeVisible();
 		await expect.element(screen.getByText(/^Active$/)).toBeVisible();
+	});
+
+	it('should render a placeholder for a batch operation without a type', async ({worker}) => {
+		worker.use(mockQueryBatchOperationsEndpoint({successResponse: RESPONSE_WITH_UNTYPED_OPERATION}));
+
+		const screen = await renderPage();
+
+		await expect.element(screen.getByText('--')).toBeVisible();
+		await expect.element(screen.getByText('Resolve Incident')).toBeVisible();
 	});
 
 	it('should render operation type links to the detail page', async ({worker}) => {
