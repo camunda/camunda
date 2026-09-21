@@ -152,23 +152,6 @@ tasks.withType<Test>().configureEach {
 // async-repl) and must not run in the root acceptance suite. Mutating the existing
 // JUnitPlatformOptions (rather than calling useJUnitPlatform again) preserves the
 // performance/strace exclusions set by server-conventions.
-tasks.register<Test>("itAsyncReplication") {
-  description = "Runs the Maven async-repl acceptance-test profile."
-  dependsOn("testClasses")
-  testClassesDirs = sourceSets["test"].output.classesDirs
-  classpath = sourceSets["test"].runtimeClasspath
-  include("**/IT*.class", "**/*IT.class", "**/*ITCase.class")
-  val junitOptions = options as JUnitPlatformOptions
-  junitOptions.includeTags("async-repl")
-  junitOptions.excludeTags(
-    "rdbms-aurora",
-    "rdbms-aurora-mysql",
-    "multi-db-test",
-    "compatibility-test",
-    "history",
-  )
-}
-
 tasks.named<Test>("it") {
   // Match the Maven QA parent's Failsafe include patterns exactly.
   setIncludes(
@@ -281,6 +264,24 @@ tasks.register<Test>("itRdbms") {
         "compatibility-test",
         "history",
       ),
+    preferredExtension = null,
+  )
+}
+
+tasks.register<Test>("itAsyncReplication") {
+  description = "Runs the Maven async-repl acceptance-test profile."
+  configureAcceptanceProfile(
+    includePatterns = allItPatterns,
+    includeTags = arrayOf("async-repl"),
+    excludeTags =
+      arrayOf(
+        "rdbms-aurora",
+        "rdbms-aurora-mysql",
+        "multi-db-test",
+        "compatibility-test",
+        "history",
+      ),
+    exclusions = arrayOf("**/*$*.class"),
     preferredExtension = null,
   )
 }
