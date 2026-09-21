@@ -163,7 +163,7 @@ describe('Processes bulk toolbar', () => {
 		});
 	});
 
-	for (const [action, mock, keys, message, batchOperationType, operationLabel] of [
+	it.for([
 		[
 			'Delete',
 			mockCreateDeletionBatchOperationEndpoint,
@@ -196,8 +196,9 @@ describe('Processes bulk toolbar', () => {
 			'SUSPEND_PROCESS_INSTANCE',
 			'Suspend Process Instance',
 		],
-	] as const) {
-		it(`should confirm and submit ${action} with eligible keys and tenant/definition filters`, async ({worker}) => {
+	] as const)(
+		'should confirm and submit %s with eligible keys and tenant/definition filters',
+		async ([action, mock, keys, message, batchOperationType, operationLabel], {worker}) => {
 			const received = vi.fn(() => true);
 			worker.use(
 				list(),
@@ -227,8 +228,8 @@ describe('Processes bulk toolbar', () => {
 			});
 			await expect.element(screen.getByRole('button', {name: 'Go to operation details'})).toBeVisible();
 			await expect.element(screen.getByRole('checkbox', {name: 'Select instance 1', exact: true})).not.toBeChecked();
-		});
-	}
+		},
+	);
 
 	it('should confirm and submit Resume for the checked suspended instance only', async ({worker}) => {
 		const received = vi.fn(() => true);
@@ -308,14 +309,15 @@ describe('Processes bulk toolbar', () => {
 		await expect.element(screen.getByRole('button', {name: 'Delete', exact: true})).not.toBeInTheDocument();
 	});
 
-	for (const [action, mock, batchOperationType] of [
+	it.for([
 		['Delete', mockCreateDeletionBatchOperationEndpoint, 'DELETE_PROCESS_INSTANCE'],
 		['Cancel', mockCreateCancellationBatchOperationEndpoint, 'CANCEL_PROCESS_INSTANCE'],
 		['Retry', mockCreateIncidentResolutionBatchOperationEndpoint, 'RESOLVE_INCIDENT'],
 		['Suspend', mockCreateSuspensionBatchOperationEndpoint, 'SUSPEND_PROCESS_INSTANCE'],
 		['Resume', mockCreateResumptionBatchOperationEndpoint, 'RESUME_PROCESS_INSTANCE'],
-	] as const) {
-		it(`should never widen an instance-key filter when excluding rows for ${action}`, async ({worker}) => {
+	] as const)(
+		'should never widen an instance-key filter when excluding rows for %s',
+		async ([action, mock, batchOperationType], {worker}) => {
 			const received = vi.fn(() => true);
 			const search = {...SEARCH, processInstanceKey: '1,2,3,4,5'};
 			worker.use(
@@ -341,8 +343,8 @@ describe('Processes bulk toolbar', () => {
 					processInstanceKey: {$in: ['1', '2', '3', '4', '5'], $notIn: ['1']},
 				},
 			});
-		});
-	}
+		},
+	);
 
 	it('should retain eligibility and included keys when selected rows leave the loaded page', async ({worker}) => {
 		const received = vi.fn(() => true);
@@ -411,26 +413,28 @@ describe('Processes bulk toolbar', () => {
 		await expect.element(screen.getByRole('button', {name: 'Discard'})).not.toBeInTheDocument();
 	});
 
-	for (const [response, title] of [
-		[new HttpResponse(null, {status: 403}), "You don't have permission to perform this operation"],
-		[new HttpResponse(null, {status: 500}), "Couldn't create operation"],
-		[HttpResponse.error(), "Couldn't create operation"],
-	] as const) {
-		it(`should recover from ${response.status} without dropping selection`, async ({worker}) => {
-			worker.use(list(), mockCreateCancellationBatchOperationEndpoint({successResponse: response}));
-			const screen = await renderTable();
-			await select(screen, '1');
-			await userEvent.click(screen.getByRole('button', {name: 'Cancel', exact: true}));
-			await userEvent.click(screen.getByRole('dialog').getByRole('button', {name: 'Apply'}));
-			await expect.element(screen.getByText(title)).toBeVisible();
-			await expect.element(screen.getByRole('checkbox', {name: 'Select instance 1', exact: true})).toBeChecked();
-			worker.use(completed(), mockCreateCancellationBatchOperationEndpoint({successResponse: accepted()}));
-			await expect.element(screen.getByRole('dialog')).not.toBeInTheDocument();
-			await userEvent.click(screen.getByRole('button', {name: 'Cancel', exact: true}));
-			await userEvent.click(screen.getByRole('dialog').getByRole('button', {name: 'Apply'}));
-			await expect.element(screen.getByRole('button', {name: 'Go to operation details'})).toBeVisible();
-		});
-	}
+	it.for([
+		{
+			responseStatus: 403,
+			response: new HttpResponse(null, {status: 403}),
+			title: "You don't have permission to perform this operation",
+		},
+		{responseStatus: 500, response: new HttpResponse(null, {status: 500}), title: "Couldn't create operation"},
+		{responseStatus: 0, response: HttpResponse.error(), title: "Couldn't create operation"},
+	] as const)('should recover from $responseStatus without dropping selection', async ({response, title}, {worker}) => {
+		worker.use(list(), mockCreateCancellationBatchOperationEndpoint({successResponse: response}));
+		const screen = await renderTable();
+		await select(screen, '1');
+		await userEvent.click(screen.getByRole('button', {name: 'Cancel', exact: true}));
+		await userEvent.click(screen.getByRole('dialog').getByRole('button', {name: 'Apply'}));
+		await expect.element(screen.getByText(title)).toBeVisible();
+		await expect.element(screen.getByRole('checkbox', {name: 'Select instance 1', exact: true})).toBeChecked();
+		worker.use(completed(), mockCreateCancellationBatchOperationEndpoint({successResponse: accepted()}));
+		await expect.element(screen.getByRole('dialog')).not.toBeInTheDocument();
+		await userEvent.click(screen.getByRole('button', {name: 'Cancel', exact: true}));
+		await userEvent.click(screen.getByRole('dialog').getByRole('button', {name: 'Apply'}));
+		await expect.element(screen.getByRole('button', {name: 'Go to operation details'})).toBeVisible();
+	});
 
 	it('should disable submission while a request is pending and during downstream action mode', async ({worker}) => {
 		worker.use(list(), mockCreateCancellationBatchOperationEndpoint({successResponse: accepted(), delay: 'infinite'}));
@@ -447,8 +451,9 @@ describe('Processes bulk toolbar', () => {
 		}
 	});
 
-	for (const mode of ['include', 'exclude'] as const) {
-		it(`should expose a ${mode} request without an undefined equality criterion`, async () => {
+	it.for(['include', 'exclude'] as const)(
+		'should expose a %s request without an undefined equality criterion',
+		async (mode) => {
 			const received = vi.fn();
 			function Harness() {
 				const selection = useProcessInstancesSelection(SEARCH, ITEMS, 10, false);
@@ -469,8 +474,8 @@ describe('Processes bulk toolbar', () => {
 			expect(received.mock.calls[0]?.[0].filter.processInstanceKey).toStrictEqual(
 				mode === 'include' ? {$in: ['1']} : {$notIn: ['1']},
 			);
-		});
-	}
+		},
+	);
 
 	it('should keep an absent filter identity stable and clear selection across filter transitions', async () => {
 		const emptySearch = {
@@ -530,41 +535,45 @@ describe('Processes bulk toolbar', () => {
 		});
 	});
 
-	for (const language of ['en', 'de', 'fr', 'es']) {
-		for (const action of ['delete', 'cancel', 'retry'] as const) {
-			for (const count of [1, 3]) {
-				it(`should preserve the translated ${language} ${action} label in a ${count}-instance confirmation`, async () => {
-					const translations = createInstance();
-					await translations.init({
-						lng: language,
-						resources: translationResources,
-						interpolation: {escapeValue: false},
-					});
-					function Harness() {
-						const selection = useProcessInstancesSelection(SEARCH, ITEMS, 10, false);
-						const keys = count === 3 ? ['1', '2', '3'] : [action === 'delete' ? '3' : '2'];
-						return (
-							<>
-								<Button onClick={() => keys.forEach(selection.toggle)}>Select instances</Button>
-								<ProcessesToolbar selection={selection} isSubmitting={false} onSubmit={vi.fn()} />
-							</>
-						);
-					}
-					const screen = await render(
-						<I18nextProvider i18n={translations}>
-							<Harness />
-						</I18nextProvider>,
-					);
-					const label = translations.t(`operate.processes.toolbar.${action}`);
-					await userEvent.click(screen.getByRole('button', {name: 'Select instances'}));
-					await userEvent.click(screen.getByRole('button', {name: label, exact: true}));
-					await expect
-						.element(screen.getByRole('dialog'))
-						.toHaveTextContent(
-							translations.t('operate.processes.toolbar.confirm', {count, total: `${count}`, action: label}),
-						);
-				});
+	const languages = ['en', 'de', 'fr', 'es'] as const;
+	const actions = ['delete', 'cancel', 'retry'] as const;
+	const counts = [1, 3] as const;
+	const translatedConfirmationCases = languages.flatMap((language) =>
+		actions.flatMap((action) => counts.map((count) => ({language, action, count}))),
+	);
+
+	it.for(translatedConfirmationCases)(
+		'should preserve the translated $language $action label in a $count-instance confirmation',
+		async ({language, action, count}) => {
+			const translations = createInstance();
+			await translations.init({
+				lng: language,
+				resources: translationResources,
+				interpolation: {escapeValue: false},
+			});
+			function Harness() {
+				const selection = useProcessInstancesSelection(SEARCH, ITEMS, 10, false);
+				const keys = count === 3 ? ['1', '2', '3'] : [action === 'delete' ? '3' : '2'];
+				return (
+					<>
+						<Button onClick={() => keys.forEach(selection.toggle)}>Select instances</Button>
+						<ProcessesToolbar selection={selection} isSubmitting={false} onSubmit={vi.fn()} />
+					</>
+				);
 			}
-		}
-	}
+			const screen = await render(
+				<I18nextProvider i18n={translations}>
+					<Harness />
+				</I18nextProvider>,
+			);
+			const label = translations.t(`operate.processes.toolbar.${action}`);
+			await userEvent.click(screen.getByRole('button', {name: 'Select instances'}));
+			await userEvent.click(screen.getByRole('button', {name: label, exact: true}));
+			await expect
+				.element(screen.getByRole('dialog'))
+				.toMatchTextContent(
+					translations.t('operate.processes.toolbar.confirm', {count, total: `${count}`, action: label}),
+				);
+		},
+	);
 });

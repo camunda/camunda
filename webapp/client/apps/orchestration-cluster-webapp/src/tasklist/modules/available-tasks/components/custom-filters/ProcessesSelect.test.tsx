@@ -75,7 +75,7 @@ describe('<ProcessesSelect />', () => {
 		await userEvent.click(combobox);
 		await expect.element(screen.getByRole('listbox')).toBeVisible();
 		await userEvent.click(screen.getByRole('option', {name: 'my-process:1:0 - v1'}), {force: true});
-		await expect.element(combobox).toHaveTextContent(/my-process:1:0 - v1/i);
+		await expect.element(combobox).toMatchTextContent(/my-process:1:0 - v1/i);
 	});
 
 	it('should render an error notification when the query fails', async ({worker}) => {

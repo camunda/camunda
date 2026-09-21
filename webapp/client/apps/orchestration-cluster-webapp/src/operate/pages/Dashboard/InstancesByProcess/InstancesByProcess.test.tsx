@@ -40,6 +40,9 @@ const REQUEST_SCHEMA = z.object({
 const FAILURE_RESPONSE = new HttpResponse(null, {status: 400});
 const ERROR_RESPONSE = new HttpResponse(null, {status: 500});
 const NO_DRAINING_RESPONSE = HttpResponse.json(createQueryProcessDefinitionsResponse());
+const ALPHA_PROCESS_LINK_NAME = '1 Alpha Process – 6 Instances in 1 Version 5';
+const BETA_PROCESS_LINK_NAME = '0 Beta Process – 3 Instances in 1 Version 3';
+const GAMMA_PROCESS_LINK_NAME = '1 Gamma Process – 3 Instances in 1 Version 2';
 
 const PAGE_1_RESPONSE = HttpResponse.json(
 	createPaginatedResponse({
@@ -92,9 +95,9 @@ describe('<InstancesByProcess />', () => {
 
 		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate'});
 
-		await expect.element(screen.getByText('Alpha Process')).toBeVisible();
-		await expect.element(screen.getByText('Beta Process')).toBeVisible();
-		await expect.element(screen.getByText('Gamma Process')).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: ALPHA_PROCESS_LINK_NAME})).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: BETA_PROCESS_LINK_NAME})).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: GAMMA_PROCESS_LINK_NAME})).toBeVisible();
 	});
 
 	it('should fetch the next page when scrolled to the bottom', async ({worker}) => {
@@ -116,7 +119,7 @@ describe('<InstancesByProcess />', () => {
 			{path: '/operate'},
 		);
 
-		await expect.element(screen.getByText('Alpha Process')).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: ALPHA_PROCESS_LINK_NAME})).toBeVisible();
 
 		worker.use(
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({
@@ -128,7 +131,9 @@ describe('<InstancesByProcess />', () => {
 
 		await userEvent.wheel(screen.getByTestId('instances-by-process-list'), {delta: {y: 10000}});
 
-		await expect.element(screen.getByText('Page Two Process')).toBeVisible();
+		await expect
+			.element(screen.getByRole('link', {name: '0 Page Two Process – 1 Instance in 1 Version 1'}))
+			.toBeVisible();
 	});
 
 	it('should link each row to the processes page filtered by process', async ({worker}) => {
@@ -161,15 +166,18 @@ describe('<InstancesByProcess />', () => {
 
 		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate'});
 
-		await expect.element(screen.getByText('Alpha Process')).toBeVisible();
+		const alphaProcessLink = screen.getByRole('link', {name: ALPHA_PROCESS_LINK_NAME});
+		const betaProcessLink = screen.getByRole('link', {name: '0 Beta Process – 0 Instances in 1 Version 0'});
+
+		await expect.element(alphaProcessLink).toBeVisible();
 		await expect
-			.element(screen.getByText('Alpha Process').element().closest('a')!)
+			.element(alphaProcessLink)
 			.toHaveAttribute(
 				'href',
 				'/operate/processes?process=p1&active=true&incidents=true&completed=false&canceled=false&suspended=false',
 			);
 		await expect
-			.element(screen.getByText('Beta Process').element().closest('a')!)
+			.element(betaProcessLink)
 			.toHaveAttribute(
 				'href',
 				'/operate/processes?process=p2&active=true&incidents=true&completed=true&canceled=true&suspended=false',
@@ -207,15 +215,13 @@ describe('<InstancesByProcess />', () => {
 
 		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate'});
 
-		await expect.element(screen.getByText('Beta Process')).toBeVisible();
+		const betaProcessLink = screen.getByTitle('Beta Process – 3 Instances in 1 Version');
+		const alphaProcessLink = screen.getByTitle('Alpha Process – 6 Instances in 1 Version');
 
-		const betaRow = screen.getByText('Beta Process').element().closest('a') as HTMLElement;
-		await expect.element(betaRow.querySelector('[data-testid="draining-indicator"]') as HTMLElement).toBeVisible();
-
-		const alphaRow = screen.getByText('Alpha Process').element().closest('a') as HTMLElement;
-		await expect
-			.element(alphaRow.querySelector('[data-testid="draining-indicator"]') as HTMLElement | null)
-			.not.toBeInTheDocument();
+		await expect.element(betaProcessLink).toBeVisible();
+		await expect.element(alphaProcessLink).toBeVisible();
+		await expect.element(betaProcessLink.getByTestId('draining-indicator')).toBeVisible();
+		await expect.element(alphaProcessLink.getByTestId('draining-indicator')).not.toBeInTheDocument();
 	});
 
 	it('should show a draining indicator for a specific draining version when expanded', async ({worker}) => {
@@ -271,23 +277,15 @@ describe('<InstancesByProcess />', () => {
 
 		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate'});
 
-		await expect.element(screen.getByText(/Alpha Process/)).toBeVisible();
+		await expect.element(screen.getByTitle('Alpha Process – 4 Instances in 2+ Versions')).toBeVisible();
 		await userEvent.click(screen.getByRole('button', {name: 'Expand current row'}));
 
-		await expect.element(screen.getByText(/Version 2/)).toBeVisible();
+		const version2Link = screen.getByTitle('My Process – 3 Instances in Version 2');
+		const version1Link = screen.getByTitle('My Process – 1 Instance in Version 1');
 
-		const version2Row = screen
-			.getByText(/Version 2/)
-			.element()
-			.closest('a') as HTMLElement;
-		await expect.element(version2Row.querySelector('[data-testid="draining-indicator"]') as HTMLElement).toBeVisible();
-
-		const version1Row = screen
-			.getByText(/Version 1/)
-			.element()
-			.closest('a') as HTMLElement;
-		await expect
-			.element(version1Row.querySelector('[data-testid="draining-indicator"]') as HTMLElement | null)
-			.not.toBeInTheDocument();
+		await expect.element(version2Link).toBeVisible();
+		await expect.element(version1Link).toBeVisible();
+		await expect.element(version2Link.getByTestId('draining-indicator')).toBeVisible();
+		await expect.element(version1Link.getByTestId('draining-indicator')).not.toBeInTheDocument();
 	});
 });
