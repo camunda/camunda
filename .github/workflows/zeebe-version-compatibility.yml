@@ -37,9 +37,11 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .cache/camunda
+          # Exact-match only: this is meant to share one run's freshly-verified release data
+          # across its shards, not to persist across runs/days. A restore-keys prefix fallback
+          # would resurrect a stale cache, silently skipping release verification for tags it
+          # already contains.
           key: zeebe-versions-${{ steps.cache-key.outputs.hour }}
-          restore-keys: |
-            zeebe-versions-
       - name: Find previous report
         id: get-last-run-id
         run: |
@@ -121,9 +123,9 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .cache/camunda
+          # Exact-match only: see the "Released Versions" job's cache step for why a
+          # restore-keys fallback isn't used here.
           key: zeebe-versions-${{ steps.cache-key.outputs.hour }}
-          restore-keys: |
-            zeebe-versions-
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
