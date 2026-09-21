@@ -217,15 +217,6 @@ mwnw*                       @camunda/engineering-operations
 # Analytics exporter skill
 /.claude/skills/analytics-exporter/ @camunda/core-features
 
-# Frontend skills
-/.claude/skills/frontend-feature/          @camunda/core-features
-/.claude/skills/frontend-integration-test/ @camunda/core-features
-/.claude/skills/frontend-operate-migrator/ @camunda/core-features
-/.claude/skills/frontend-unit-test/        @camunda/core-features
-/.claude/skills/operate-engineering-loop/  @camunda/core-features
-/.claude/skills/operate-frontend/          @camunda/core-features
-/.claude/skills/tasklist-frontend/         @camunda/core-features
-
 # optimize / BI team
 /zeebe/exporter-filter/        @camunda/core-features
 
@@ -415,6 +406,20 @@ optimize.Dockerfile         @camunda/core-features
 /.github/workflows/c8-orchestration-cluster-request-validation-nightly.yml @camunda/core-features
 /.github/workflows/ci-database-integration-tests-reusable.yml @camunda/data-layer
 /.github/workflows/frontend-sbom-snyk-nightly.yml @camunda/orchestration-cluster-webapps
+
+# Experience FE frontend skills
+/.claude/skills/frontend-feature/          @camunda/orchestration-cluster-webapps
+/.claude/skills/frontend-integration-test/ @camunda/orchestration-cluster-webapps
+/.claude/skills/frontend-operate-migrator/ @camunda/orchestration-cluster-webapps
+/.claude/skills/frontend-unit-test/        @camunda/orchestration-cluster-webapps
+
+# Operate frontend skills
+/.claude/skills/operate-engineering-loop/ @camunda/operate-admin-pod
+/.claude/skills/operate-frontend/         @camunda/operate-admin-pod
+
+# Tasklist frontend skills
+/.claude/skills/tasklist-frontend/ @camunda/employee-engagement-tasklist
+
 /.github/workflows/zeebe-release-stable-dry-run.yml @camunda/engineering-operations
 /.github/workflows/c8-orchestration-cluster-e2e-nightly-close-stale-fix-prs.yml    @camunda/test-automation-team
 /.github/workflows/c8-orchestration-cluster-nightly-8.7-api-es.yml                 @camunda/test-automation-team

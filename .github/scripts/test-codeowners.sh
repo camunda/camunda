@@ -333,6 +333,41 @@ assert_owner \
   "@camunda/core-features"
 
 assert_owner \
+  ".claude/skills/frontend-feature/ → orchestration-cluster-webapps" \
+  ".claude/skills/frontend-feature/SKILL.md" \
+  "@camunda/orchestration-cluster-webapps"
+
+assert_owner \
+  ".claude/skills/frontend-integration-test/ → orchestration-cluster-webapps" \
+  ".claude/skills/frontend-integration-test/SKILL.md" \
+  "@camunda/orchestration-cluster-webapps"
+
+assert_owner \
+  ".claude/skills/frontend-operate-migrator/ → orchestration-cluster-webapps" \
+  ".claude/skills/frontend-operate-migrator/SKILL.md" \
+  "@camunda/orchestration-cluster-webapps"
+
+assert_owner \
+  ".claude/skills/frontend-unit-test/ → orchestration-cluster-webapps" \
+  ".claude/skills/frontend-unit-test/SKILL.md" \
+  "@camunda/orchestration-cluster-webapps"
+
+assert_owner \
+  ".claude/skills/operate-engineering-loop/ → operate-admin-pod" \
+  ".claude/skills/operate-engineering-loop/SKILL.md" \
+  "@camunda/operate-admin-pod"
+
+assert_owner \
+  ".claude/skills/operate-frontend/ → operate-admin-pod" \
+  ".claude/skills/operate-frontend/SKILL.md" \
+  "@camunda/operate-admin-pod"
+
+assert_owner \
+  ".claude/skills/tasklist-frontend/ → employee-engagement-tasklist" \
+  ".claude/skills/tasklist-frontend/SKILL.md" \
+  "@camunda/employee-engagement-tasklist"
+
+assert_owner \
   ".claude/skills/load-test-ops/ → reliability-testing (overrides orchestration-cluster)" \
   ".claude/skills/load-test-ops/SKILL.md" \
   "@camunda/reliability-testing"
