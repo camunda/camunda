@@ -965,7 +965,8 @@ final class JsonSerializableToJsonTest {
                           }
                         ],
                         "completionConditionFulfilled": true,
-                        "cancelRemainingInstances": true
+                        "cancelRemainingInstances": true,
+                        "runCalledProcess": false
                       },
                       "secretReferences": []
                     }
@@ -1167,7 +1168,8 @@ final class JsonSerializableToJsonTest {
                       }
                     ],
                     "completionConditionFulfilled": true,
-                    "cancelRemainingInstances": true
+                    "cancelRemainingInstances": true,
+                    "runCalledProcess": false
                   },
                   "secretReferences": [
                     {
@@ -1235,7 +1237,8 @@ final class JsonSerializableToJsonTest {
                     },
                     "activateElements": [],
                     "completionConditionFulfilled": false,
-                    "cancelRemainingInstances": false
+                    "cancelRemainingInstances": false,
+                    "runCalledProcess": false
                   },
                   "secretReferences": []
                 }
@@ -1302,7 +1305,8 @@ final class JsonSerializableToJsonTest {
                     },
                     "activateElements": [],
                     "completionConditionFulfilled": false,
-                    "cancelRemainingInstances": false
+                    "cancelRemainingInstances": false,
+                    "runCalledProcess": false
                   },
                   "secretReferences": []
                 }
@@ -1927,6 +1931,7 @@ final class JsonSerializableToJsonTest {
                   "rootProcessInstanceKey": 3,
                   "storageOrdinal": 6,
                   "businessId": "business-id-456",
+                  "stubCallActivities": false,
                   "elementInstanceKey": -1
                 }
                 """
@@ -1954,6 +1959,7 @@ final class JsonSerializableToJsonTest {
                   "rootProcessInstanceKey": -1,
                   "storageOrdinal": 0,
                   "businessId": "",
+                  "stubCallActivities": false,
                   "elementInstanceKey": -1
                 }
                 """
@@ -2142,6 +2148,7 @@ final class JsonSerializableToJsonTest {
                   "businessId": "business-id-123",
                   "resumeFromJobKey": -1,
                   "jobReservationToken": "",
+                  "stubCallActivities": false,
                   "elementInstanceKey": -1
                 }
                 """
@@ -2177,6 +2184,7 @@ final class JsonSerializableToJsonTest {
                   "businessId": "",
                   "resumeFromJobKey": -1,
                   "jobReservationToken": "",
+                  "stubCallActivities": false,
                   "elementInstanceKey": -1
                 }
                 """
@@ -3017,6 +3025,7 @@ final class JsonSerializableToJsonTest {
                     "businessId": "",
                     "resumeFromJobKey": -1,
                   "jobReservationToken": "",
+                  "stubCallActivities": false,
                     "elementInstanceKey": -1
                   }
                 }

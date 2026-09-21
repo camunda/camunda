@@ -81,6 +81,19 @@ public interface ProcessInstanceCreationRecordValue
    */
   String getBusinessId();
 
+  /**
+   * Returns whether the call activities of this process instance are stubbed. A stubbed call
+   * activity starts no child process instance: it activates and waits on a job that a caller
+   * completes, either supplying the result variables the called process would have produced, or
+   * asking the engine to start the real child process after all.
+   *
+   * @return {@code true} if the call activities of this process instance are stubbed
+   * @since 8.11
+   */
+  default boolean isStubCallActivities() {
+    return false;
+  }
+
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableProcessInstanceCreationStartInstructionValue.Builder.class)
   interface ProcessInstanceCreationStartInstructionValue {

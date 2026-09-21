@@ -392,6 +392,16 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return !getJobReservationToken().isEmpty();
   }
 
+  /**
+   * Returns whether this job stands in for the process a stubbed call activity calls. Such a job is
+   * served to no job worker: it is completed by whoever created the process instance.
+   */
+  @JsonIgnore
+  public boolean isCallActivityStub() {
+    return getJobKind() == JobKind.BPMN_ELEMENT
+        && getElementType() == BpmnElementType.CALL_ACTIVITY;
+  }
+
   @Override
   public String getBpmnProcessId() {
     return bufferAsString(bpmnProcessIdProp.getValue());

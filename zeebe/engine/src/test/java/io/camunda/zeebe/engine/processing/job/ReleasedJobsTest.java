@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordingJobStreamer;
 import io.camunda.zeebe.engine.util.RecordingJobStreamer.RecordingJobStream;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
@@ -199,6 +200,52 @@ public final class ReleasedJobsTest {
     assertThat(rejection.getRejectionReason())
         .describedAs("the rejection names the missing reservation, not a lease or a job state")
         .contains("it is not reserved");
+  }
+
+  @Test
+  public void shouldRejectReleaseOfCallActivityStubJob() {
+    // given an instance whose call activity is stubbed by a job no worker can run
+    final String parentProcessId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "parent.bpmn",
+            Bpmn.createExecutableProcess(parentProcessId)
+                .startEvent()
+                .callActivity("call", c -> c.zeebeProcessId(Strings.newRandomValidBpmnId()))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(parentProcessId)
+            .withJobReservationToken(RESERVATION_TOKEN)
+            .withStubbedCallActivities()
+            .create();
+    final long jobKey =
+        jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE)
+            .getFirst()
+            .getKey();
+
+    // when
+    final Record<JobRecordValue> rejection =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .withJobReservationToken(RESERVATION_TOKEN)
+            .expectRejection()
+            .release();
+
+    // then
+    Assertions.assertThat(rejection)
+        .describedAs("a stub job stands in for a called process, so no worker can run it")
+        .hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .describedAs("the rejection names the stub, not a lease or a job state")
+        .contains("stubbed call activity");
   }
 
   @Test

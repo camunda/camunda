@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
@@ -417,6 +418,32 @@ public final class BpmnJobBehavior {
         JobListenerEventType.UNSPECIFIED,
         element.getJobWorkerProperties().getTaskHeaders(),
         mergedSecretReferences(context, element),
+        element);
+  }
+
+  /**
+   * Creates the job a stubbed call activity waits on instead of starting the process it calls. The
+   * job carries what the recorder needs to stand in for that process: the process id the call
+   * activity resolved, and how it would have been looked up.
+   */
+  public void createStubCallActivityJob(
+      final BpmnElementContext context,
+      final ExecutableCallActivity element,
+      final String calledProcessId) {
+    final var headers = new HashMap<String, String>();
+    headers.put(Protocol.CALLED_PROCESS_ID_HEADER_NAME, calledProcessId);
+    headers.put(Protocol.CALLED_PROCESS_BINDING_TYPE_HEADER_NAME, element.getBindingType().name());
+    if (element.getVersionTag() != null) {
+      headers.put(Protocol.CALLED_PROCESS_VERSION_TAG_HEADER_NAME, element.getVersionTag());
+    }
+
+    writeJobCreatedEvent(
+        context,
+        new JobProperties().type(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE).retries(1L).priority(0),
+        JobKind.BPMN_ELEMENT,
+        JobListenerEventType.UNSPECIFIED,
+        headers,
+        Map.of(),
         element);
   }
 

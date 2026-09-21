@@ -1245,6 +1245,23 @@ components:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
         businessId:
           $ref: 'identifiers.yaml#/components/schemas/BusinessId'
+        stubCallActivities:
+          description: |
+            Starts no child process instance for the call activities of this process instance
+            (alpha).
+
+            A stubbed call activity activates and then waits on a job instead of starting the
+            process it calls, which does not even have to be deployed. Completing that job with
+            variables completes the call activity as if the called process had returned them;
+            completing it with a `runCalledProcess` result starts the real called process after
+            all. This lets a caller stand in for the processes an instance calls while other
+            instances on the cluster keep calling them for real, which is intended for test and
+            debugging tools rather than production traffic.
+
+            This parameter is an alpha feature and may be subject to change in future releases.
+          type: boolean
+          default: false
+          example: true
       x-properties-added-in-version:
         - propertyName: runtimeInstructions
           addedInVersion: "8.8"
@@ -1252,6 +1269,8 @@ components:
           addedInVersion: "8.8"
         - propertyName: businessId
           addedInVersion: "8.9"
+        - propertyName: stubCallActivities
+          addedInVersion: "8.11"
 
     ProcessInstanceCreationInstructionByKey:
       type: object
@@ -1333,6 +1352,23 @@ components:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
         businessId:
           $ref: 'identifiers.yaml#/components/schemas/BusinessId'
+        stubCallActivities:
+          description: |
+            Starts no child process instance for the call activities of this process instance
+            (alpha).
+
+            A stubbed call activity activates and then waits on a job instead of starting the
+            process it calls, which does not even have to be deployed. Completing that job with
+            variables completes the call activity as if the called process had returned them;
+            completing it with a `runCalledProcess` result starts the real called process after
+            all. This lets a caller stand in for the processes an instance calls while other
+            instances on the cluster keep calling them for real, which is intended for test and
+            debugging tools rather than production traffic.
+
+            This parameter is an alpha feature and may be subject to change in future releases.
+          type: boolean
+          default: false
+          example: true
       x-properties-added-in-version:
         - propertyName: runtimeInstructions
           addedInVersion: "8.8"
@@ -1340,6 +1376,8 @@ components:
           addedInVersion: "8.8"
         - propertyName: businessId
           addedInVersion: "8.9"
+        - propertyName: stubCallActivities
+          addedInVersion: "8.11"
 
     ProcessInstanceCreationStartInstruction:
       type: object

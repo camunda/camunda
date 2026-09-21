@@ -50,6 +50,9 @@ public final class JobReleaseProcessor
 
   private static final String NOT_RESERVED_MESSAGE =
       "Expected to release job with key '%d', but it is not reserved";
+  private static final String CALL_ACTIVITY_STUB_MESSAGE =
+      "Expected to release job with key '%d', but it stands in for the process a stubbed call "
+          + "activity calls, which no job worker can run";
 
   private final JobCommandPreconditionValidator preconditionValidator;
   private final CslAuthorizationCheck cslCheck;
@@ -97,7 +100,16 @@ public final class JobReleaseProcessor
             });
   }
 
+  /**
+   * Asks for the two reasons of {@link JobWorkerDispatch#withheldFromWorkersReason} separately
+   * rather than through it: a reserved job is released back to the workers, which is the point of
+   * this command, while a stub job has no worker to release it to.
+   */
   private Either<Rejection, JobRecord> checkReleasable(final long jobKey, final JobRecord job) {
+    if (job.isCallActivityStub()) {
+      return Either.left(
+          new Rejection(RejectionType.INVALID_STATE, CALL_ACTIVITY_STUB_MESSAGE.formatted(jobKey)));
+    }
     if (!job.hasJobReservationToken()) {
       return Either.left(
           new Rejection(RejectionType.INVALID_STATE, NOT_RESERVED_MESSAGE.formatted(jobKey)));

@@ -117,6 +117,58 @@ class ProcessInstanceMapperTest {
   }
 
   @Test
+  void shouldMapStubCallActivitiesOnCreateByProcessDefinitionId() {
+    // given
+    final var instruction =
+        ProcessInstanceCreationInstructionById.Builder.create()
+            .processDefinitionId("process")
+            .stubCallActivities(true)
+            .build();
+
+    // when
+    final var result = mapper.toCreateProcessInstance(instruction, false);
+
+    // then
+    assertThat(result.isRight()).isTrue();
+    assertThat(result.get().stubCallActivities()).isTrue();
+  }
+
+  @Test
+  void shouldMapStubCallActivitiesOnCreateByProcessDefinitionKey() {
+    // given
+    final var instruction =
+        ProcessInstanceCreationInstructionByKey.Builder.create()
+            .processDefinitionKey("123")
+            .stubCallActivities(true)
+            .build();
+
+    // when
+    final var result = mapper.toCreateProcessInstance(instruction, false);
+
+    // then
+    assertThat(result.isRight()).isTrue();
+    assertThat(result.get().stubCallActivities()).isTrue();
+  }
+
+  @Test
+  void shouldNotStubCallActivitiesWhenNotProvided() {
+    // given
+    final var instruction =
+        ProcessInstanceCreationInstructionById.Builder.create()
+            .processDefinitionId("process")
+            .build();
+
+    // when
+    final var result = mapper.toCreateProcessInstance(instruction, false);
+
+    // then
+    assertThat(result.isRight()).isTrue();
+    assertThat(result.get().stubCallActivities())
+        .describedAs("the schema's default applies, so call activities run for real")
+        .isFalse();
+  }
+
+  @Test
   void shouldReserveNoJobsWhenNoInstructionProvided() {
     // given
     final var instruction =

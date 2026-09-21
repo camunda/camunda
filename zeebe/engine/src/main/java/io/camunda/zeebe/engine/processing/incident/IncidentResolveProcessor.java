@@ -296,6 +296,12 @@ public final class IncidentResolveProcessor
       case ELEMENT_ACTIVATING -> Either.right(ProcessInstanceIntent.ACTIVATE_ELEMENT);
       case ELEMENT_COMPLETING -> Either.right(ProcessInstanceIntent.COMPLETE_ELEMENT);
       case ELEMENT_TERMINATING -> Either.right(ProcessInstanceIntent.TERMINATE_ELEMENT);
+      // an activated call activity raises an incident only when it was asked to start the process
+      // it stubbed and that lookup failed, e.g. because the process is not deployed
+      case ELEMENT_ACTIVATED ->
+          elementInstance.getValue().getBpmnElementType() == BpmnElementType.CALL_ACTIVITY
+              ? Either.right(ProcessInstanceIntent.START_CALLED_PROCESS)
+              : Either.left(String.format(ELEMENT_NOT_IN_SUPPORTED_STATE_MSG, instanceState));
       default -> Either.left(String.format(ELEMENT_NOT_IN_SUPPORTED_STATE_MSG, instanceState));
     };
   }

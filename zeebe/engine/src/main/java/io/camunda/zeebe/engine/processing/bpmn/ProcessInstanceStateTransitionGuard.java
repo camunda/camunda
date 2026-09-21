@@ -81,6 +81,10 @@ public final class ProcessInstanceStateTransitionGuard {
               ProcessInstanceIntent.ELEMENT_ACTIVATED,
               ProcessInstanceIntent.ELEMENT_COMPLETING,
               ProcessInstanceIntent.ELEMENT_TERMINATING);
+      case START_CALLED_PROCESS ->
+          hasElementInstanceWithState(context, ProcessInstanceIntent.ELEMENT_ACTIVATED)
+              .flatMap(ok -> hasActiveProcessInstance(context))
+              .flatMap(ok -> hasActiveFlowScopeInstance(context));
       case CONTINUE_TERMINATING_ELEMENT ->
           hasElementInstanceWithState(context, ProcessInstanceIntent.ELEMENT_TERMINATING);
       case COMPLETE_EXECUTION_LISTENER ->

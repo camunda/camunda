@@ -783,7 +783,8 @@ public final class ProcessInstanceServiceTest {
             List.of(), // runtimeInstructions
             List.of(), // fetchVariables
             null, // tags
-            null // businessId
+            null, // businessId
+            null // stubCallActivities
             );
 
     final var mockResponse =
@@ -821,7 +822,8 @@ public final class ProcessInstanceServiceTest {
             List.of(), // runtimeInstructions
             List.of(), // fetchVariables
             null, // tags
-            null // businessId
+            null, // businessId
+            null // stubCallActivities
             );
 
     final var mockResponse =
@@ -860,7 +862,8 @@ public final class ProcessInstanceServiceTest {
             List.of(), // runtimeInstructions
             List.of(), // fetchVariables
             null, // tags
-            null // businessId
+            null, // businessId
+            null // stubCallActivities
             );
 
     final var mockResponse =
@@ -1117,7 +1120,8 @@ public final class ProcessInstanceServiceTest {
           List.of(), // runtimeInstructions
           List.of(), // fetchVariables
           null, // tags
-          businessId // businessId
+          businessId, // businessId
+          null // stubCallActivities
           );
     }
 
@@ -1136,7 +1140,8 @@ public final class ProcessInstanceServiceTest {
           List.of(), // runtimeInstructions
           List.of(), // fetchVariables
           null, // tags
-          businessId // businessId
+          businessId, // businessId
+          null // stubCallActivities
           );
     }
   }

@@ -4,6 +4,9 @@ Status: local spike, implemented and tested on branch `feat/exclusive-job-dispat
 Not pushed, not reviewed. Changes a public API contract, so it needs sign-off and most likely an
 ADR before it becomes a PR.
 
+The call-activity half of the same recording problem is a separate, independent switch, planned in
+`STUBBED-CALL-ACTIVITIES-PLAN.md`.
+
 ## Problem
 
 Test Studio records a test case that is compatible with Camunda Process Test (CPT) by driving a real
@@ -118,6 +121,10 @@ runtime behavior of the process instance", and it already carries the alpha
 `TERMINATE_PROCESS_INSTANCE` variant. Putting the token there instead of in a top-level field of
 its own keeps every recording switch in one place, and it costs nothing today: both fields are
 unreleased, so there is no migration.
+
+`stubCallActivities` deliberately stays a top-level boolean. An instruction object with no
+properties of its own would be a boolean in a costume, and an instruction type carries a payload by
+construction — the reserve-jobs token is one, a stub-everything switch is not.
 
 Plumbed through `ProcessInstanceMapper.toRuntimeInstruction` → `ProcessInstanceCreateRequest`
 → `BrokerCreateProcessInstanceRequest` (and the with-result variant), with
