@@ -398,7 +398,7 @@ class PhysicalTenantApiChainIsolationIT {
    * confines an outage to the tenant that configured it.
    */
   @Test
-  void unreachableTenantIssuerShouldLeaveTheOtherTenantServing() throws Exception {
+  void shouldKeepTheOtherTenantServingWhileOneTenantIssuerIsUnreachable() throws Exception {
     final var env = oneUnreachableIssuerEnv();
     buildRunner(twoDistinctIssuersProperties())
         .run(
