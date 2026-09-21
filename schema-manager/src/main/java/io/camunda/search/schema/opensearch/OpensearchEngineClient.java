@@ -304,7 +304,17 @@ public class OpensearchEngineClient implements SearchEngineClient {
 
   @Override
   public void putIndexLifeCyclePolicy(final String policyName, final String deletionMinAge) {
-    final var request = createIndexStateManagementPolicy(policyName, deletionMinAge);
+    final var currentPolicyState = getCurrentISMPolicyState(policyName);
+    if (currentPolicyState.exists() && deletionMinAge.equals(currentPolicyState.minIndexAge())) {
+      LOG.debug(
+          "Index state management policy [{}] already has min_index_age [{}]; skipping PUT",
+          policyName,
+          deletionMinAge);
+      return;
+    }
+
+    final var request =
+        createIndexStateManagementPolicy(policyName, deletionMinAge, currentPolicyState);
 
     try (final var response = client.generic().execute(request)) {
       if (response.getStatus() / 100 != 2) {
@@ -513,7 +523,9 @@ public class OpensearchEngineClient implements SearchEngineClient {
   }
 
   private Request createIndexStateManagementPolicy(
-      final String policyName, final String deletionMinAge) {
+      final String policyName,
+      final String deletionMinAge,
+      final ISMPolicyState currentPolicyState) {
     try (final var policyJson = getClass().getResourceAsStream(OPERATE_DELETE_ARCHIVED_POLICY)) {
       final var jsonMap = objectReader.readTree(policyJson);
       final var conditions =
@@ -535,7 +547,6 @@ public class OpensearchEngineClient implements SearchEngineClient {
               .endpoint(getPolicyEndpoint(policyName))
               .body(Body.from(policy, "application/json"));
 
-      final var currentPolicyState = getCurrentISMPolicyState(policyName);
       if (currentPolicyState.exists()) {
         builder.query(
             Map.of(
@@ -589,7 +600,9 @@ public class OpensearchEngineClient implements SearchEngineClient {
   private ISMPolicyState fromPolicyJson(final JsonNode policyJsonNode) {
     final var primaryTerm = policyJsonNode.path("_primary_term").asInt();
     final var seqNo = policyJsonNode.path("_seq_no").asInt();
-    return new ISMPolicyState(seqNo, primaryTerm);
+    final var minIndexAge =
+        policyJsonNode.at("/policy/states/0/transitions/0/conditions/min_index_age").asText(null);
+    return new ISMPolicyState(seqNo, primaryTerm, minIndexAge);
   }
 
   private PutIndicesSettingsRequest putIndexSettingsRequest(
@@ -860,14 +873,14 @@ public class OpensearchEngineClient implements SearchEngineClient {
     }
   }
 
-  record ISMPolicyState(boolean exists, int seqNo, int primaryTerm) {
+  record ISMPolicyState(boolean exists, int seqNo, int primaryTerm, String minIndexAge) {
 
-    public ISMPolicyState(final int seqNo, final int primaryTerm) {
-      this(true, seqNo, primaryTerm);
+    public ISMPolicyState(final int seqNo, final int primaryTerm, final String minIndexAge) {
+      this(true, seqNo, primaryTerm, minIndexAge);
     }
 
     static ISMPolicyState empty() {
-      return new ISMPolicyState(false, 0, 0);
+      return new ISMPolicyState(false, 0, 0, null);
     }
   }
 }
