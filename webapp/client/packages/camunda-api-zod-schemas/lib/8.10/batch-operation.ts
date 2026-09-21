@@ -59,7 +59,8 @@ type BatchOperationError = z.infer<typeof batchOperationErrorSchema>;
 const batchOperationSchema = z.object({
 	batchOperationKey: z.string(),
 	state: batchOperationStateSchema,
-	batchOperationType: batchOperationTypeSchema,
+	// Null for legacy Operate batches and documents whose type was never recorded.
+	batchOperationType: batchOperationTypeSchema.nullable(),
 	startDate: z.string(),
 	endDate: z.string().nullable(),
 	actorType: z.string().nullable(),

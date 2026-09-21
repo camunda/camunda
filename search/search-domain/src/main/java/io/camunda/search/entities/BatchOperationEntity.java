@@ -22,12 +22,8 @@ public record BatchOperationEntity(
     // Engine BatchOperation Key is a Long
     String batchOperationKey,
     BatchOperationState state,
-    /*
-     * Null when the type was never recorded in secondary storage: legacy Operate batch operations
-     * may carry no type, and documents written before the exporter fix in #49765 are not repaired
-     * retroactively. The value is unknowable after the fact, so it is surfaced as null rather than
-     * failing the whole search response.
-     */
+    // Null for legacy Operate batches and for documents written before #49765, which are never
+    // repaired. Unknowable after the fact, so surfaced as null rather than failing the read.
     @Nullable BatchOperationType operationType,
     @Nullable OffsetDateTime startDate,
     @Nullable OffsetDateTime endDate,
