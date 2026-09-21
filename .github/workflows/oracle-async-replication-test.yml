@@ -275,18 +275,14 @@ jobs:
           TEST_ORACLE_JDBC_URL: jdbc:oracle:thin:@//localhost:${{ env.LOCAL_DB_PORT }}/CAMUNDA
           TEST_ORACLE_USERNAME: camunda
           TEST_ORACLE_PASSWORD: ${{ env.TF_VAR_master_password }}
+          # RDS read replicas cannot be stopped or started directly. Rebooting the replica
+          # provides the outage while preserving the Data Guard relationship for recovery.
           TEST_ORACLE_STOP_REPLICA_CMD: >-
-            aws rds stop-db-instance
-            --region ${{ env.TF_VAR_secondary_region }}
-            --db-instance-identifier ${{ env.TF_VAR_name_prefix }}-oracle-replica
-            && aws rds wait db-instance-stopped
+            aws rds reboot-db-instance
             --region ${{ env.TF_VAR_secondary_region }}
             --db-instance-identifier ${{ env.TF_VAR_name_prefix }}-oracle-replica
           TEST_ORACLE_START_REPLICA_CMD: >-
-            aws rds start-db-instance
-            --region ${{ env.TF_VAR_secondary_region }}
-            --db-instance-identifier ${{ env.TF_VAR_name_prefix }}-oracle-replica
-            && aws rds wait db-instance-available
+            aws rds wait db-instance-available
             --region ${{ env.TF_VAR_secondary_region }}
             --db-instance-identifier ${{ env.TF_VAR_name_prefix }}-oracle-replica
         uses: ./.github/actions/run-maven
