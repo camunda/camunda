@@ -9,6 +9,7 @@ package io.camunda.authentication;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
@@ -36,6 +37,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
+import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
 /**
  * An unreachable identity provider must not keep the application from starting. Discovery ran while
@@ -101,21 +103,26 @@ public class OidcUnreachableIssuerStartupTest {
     assertThat(result).hasStatusOk();
   }
 
+  /**
+   * The outage and the recovery share one test: the application context keeps the registration it
+   * resolved, so a separate recovery test would depend on the order the two ran in.
+   */
   @Test
-  public void shouldRejectApiRequestsWhileTheIssuerIsUnreachable() {
+  public void shouldFailApiRequestsWhileTheIssuerIsUnreachableAndRecoverWithoutRestart() {
     // when a bearer token is presented while the provider cannot be reached
-    final var result =
-        mockMvcTester
-            .get()
-            .uri(DUMMY_V2_API_ENDPOINT)
-            .header("Authorization", "Bearer " + UNVERIFIABLE_TOKEN)
-            .accept(MediaType.APPLICATION_JSON)
-            .exchange();
+    final var result = callApiWithToken();
 
-    // then only that request fails, and it fails as an outage rather than as a rejected
-    // credential: the decoder cannot be built without the provider, and that failure escapes the
-    // chain instead of reaching the bearer entry point, which a servlet container renders as a 500
+    // then that request fails as an outage rather than as a rejected credential: the decoder
+    // cannot be built without the provider, and that failure escapes the chain instead of reaching
+    // the bearer entry point, which a servlet container renders as a 500
     assertThat(result).hasFailed().failure().isInstanceOf(JwtDecoderInitializationException.class);
+
+    // when the provider answers again
+    stubFor(get(urlEqualTo(DISCOVERY_ENDPOINT)).willReturn(okJson(discoveryDocument())));
+
+    // then the very next request builds the decoder — no restart needed — and the same token is
+    // now a rejected credential, because nothing serves the keys to verify it with
+    assertThat(callApiWithToken()).hasStatus(HttpStatus.UNAUTHORIZED);
   }
 
   @Test
@@ -145,7 +152,32 @@ public class OidcUnreachableIssuerStartupTest {
         .containsExactly(issuerUri());
   }
 
+  private MvcTestResult callApiWithToken() {
+    return mockMvcTester
+        .get()
+        .uri(DUMMY_V2_API_ENDPOINT)
+        .header("Authorization", "Bearer " + UNVERIFIABLE_TOKEN)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange();
+  }
+
   private static String issuerUri() {
     return "http://localhost:" + wireMock.getPort() + "/realms/" + REALM;
+  }
+
+  private static String discoveryDocument() {
+    return """
+        {
+            "issuer": "ISSUER",
+            "authorization_endpoint": "ISSUER/oauth/authorize",
+            "token_endpoint": "ISSUER/oauth/token",
+            "userinfo_endpoint": "ISSUER/userinfo",
+            "jwks_uri": "ISSUER/.well-known/jwks.json",
+            "response_types_supported": ["code"],
+            "subject_types_supported": ["public"],
+            "id_token_signing_alg_values_supported": ["RS256"]
+        }
+        """
+        .replace("ISSUER", issuerUri());
   }
 }
