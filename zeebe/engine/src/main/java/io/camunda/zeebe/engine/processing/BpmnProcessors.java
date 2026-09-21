@@ -290,7 +290,8 @@ public final class BpmnProcessors {
                 processingState,
                 bpmnBehaviors,
                 writers,
-                transientProcessMessageSubscriptionState))
+                transientProcessMessageSubscriptionState,
+                clock))
         .onCommand(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
             ProcessMessageSubscriptionIntent.DELETE,
