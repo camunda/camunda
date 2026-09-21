@@ -387,7 +387,13 @@ components:
         state:
           $ref: '#/components/schemas/BatchOperationStateEnum'
         batchOperationType:
-          $ref: '#/components/schemas/BatchOperationTypeEnum'
+          description: |
+            The type of the batch operation.
+            This is `null` for batch operations whose type was never recorded in
+            secondary storage, such as legacy Operate batch operations.
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/BatchOperationTypeEnum'
         startDate:
           type: string
           description: |

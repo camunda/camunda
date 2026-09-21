@@ -22,7 +22,13 @@ public record BatchOperationEntity(
     // Engine BatchOperation Key is a Long
     String batchOperationKey,
     BatchOperationState state,
-    BatchOperationType operationType,
+    /*
+     * Null when the type was never recorded in secondary storage: legacy Operate batch operations
+     * may carry no type, and documents written before the exporter fix in #49765 are not repaired
+     * retroactively. The value is unknowable after the fact, so it is surfaced as null rather than
+     * failing the whole search response.
+     */
+    @Nullable BatchOperationType operationType,
     @Nullable OffsetDateTime startDate,
     @Nullable OffsetDateTime endDate,
     /*
@@ -45,7 +51,6 @@ public record BatchOperationEntity(
   public BatchOperationEntity {
     Objects.requireNonNull(batchOperationKey, "batchOperationKey");
     Objects.requireNonNull(state, "state");
-    Objects.requireNonNull(operationType, "operationType");
     Objects.requireNonNull(operationsTotalCount, "operationsTotalCount");
     Objects.requireNonNull(operationsFailedCount, "operationsFailedCount");
     Objects.requireNonNull(operationsCompletedCount, "operationsCompletedCount");
