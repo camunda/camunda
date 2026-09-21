@@ -56,6 +56,13 @@ class ProcessStartFormNotFoundError extends Error {
 	}
 }
 
+class ProcessStartFormNotDeployedError extends Error {
+	constructor() {
+		super('Process start form was not deployed');
+		this.name = 'ProcessStartFormNotDeployedError';
+	}
+}
+
 class ProcessStartFormImportError extends Error {
 	constructor(cause: unknown) {
 		super('Process start form schema could not be imported', {cause});
@@ -70,6 +77,7 @@ export {
 	EmptyProcessXmlError,
 	ForbiddenError,
 	ProcessStartFormImportError,
+	ProcessStartFormNotDeployedError,
 	ProcessStartFormNotFoundError,
 	TruncatedVariableError,
 };
