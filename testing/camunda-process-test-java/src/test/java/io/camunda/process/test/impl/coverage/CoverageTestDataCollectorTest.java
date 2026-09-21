@@ -136,4 +136,46 @@ class CoverageTestDataCollectorTest {
     verify(dataSource).getDecisionInstance("di-1");
     verify(dataSource).getDecisionInstance("di-2");
   }
+
+  /**
+   * A mocked process runs like any other process, so the engine reports instances and a definition
+   * for it. They describe the stub that was deployed in place of the real process, and the coverage
+   * report has nothing to say about it.
+   */
+  @Test
+  void shouldExcludeMockedProcessesFromCollectedData() {
+    // given: an instance of the process under test
+    when(processInstanceA.getProcessInstanceKey()).thenReturn(100L);
+    when(processInstanceA.getProcessDefinitionId()).thenReturn("process-1");
+    when(processInstanceA.getProcessDefinitionName()).thenReturn("Process One");
+
+    // and: an instance of a process that the mocking API deployed
+    when(processInstanceB.getProcessDefinitionName()).thenReturn("cpt-mock");
+
+    when(dataSource.findProcessInstances())
+        .thenReturn(Arrays.asList(processInstanceA, processInstanceB));
+    when(dataSource.findElementInstancesByProcessInstanceKey(100L))
+        .thenReturn(java.util.Collections.singletonList(elementInstanceA));
+    when(dataSource.findSequenceFlowsByProcessInstanceKey(100L))
+        .thenReturn(java.util.Collections.singletonList(sequenceFlowA));
+
+    when(dataSource.findProcessDefinitionByProcessDefinitionId(any()))
+        .thenReturn(processDefinition);
+    when(processDefinition.getProcessDefinitionKey()).thenReturn(11L);
+    when(dataSource.getProcessDefinitionXmlByProcessDefinitionKey(11L))
+        .thenReturn("<bpmn>process-1</bpmn>");
+
+    when(dataSource.findDecisionInstances(any())).thenReturn(java.util.Collections.emptyList());
+
+    // when
+    final CoverageTestData data = CoverageTestDataCollector.collectData(dataSource);
+
+    // then: the mock contributes neither an instance nor a definition
+    assertThat(data.getProcessInstanceData())
+        .extracting(entry -> entry.getProcessInstance())
+        .containsExactly(processInstanceA);
+    assertThat(data.getProcessDefinitionData())
+        .extracting(entry -> entry.getProcessDefinition())
+        .containsExactly(processDefinition);
+  }
 }
