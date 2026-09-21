@@ -318,6 +318,7 @@ class AgentInstanceExportHandlerTest {
             .from(buildRecordValue(agentKey))
             .withProcessDefinitionVersionTag("") // process has no version tag
             .withTools(List.of(tool))
+            .withChangedAttributes(List.of("tools")) // tools changed, so it's included on UPDATED
             .build();
     final Record<AgentInstanceRecordValue> record =
         factory.generateRecord(
