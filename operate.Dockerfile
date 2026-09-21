@@ -5,8 +5,8 @@ ARG BASE_DIGEST="sha256:bad47e86d816f41cd6d7766ef7a8e9ee173e14295e9a4a3a30663f51
 # If you don't have access to Minimus hardened base images, you can use public
 # base images like this instead on your own risk.
 # Simply pass `--build-arg BASE=public` in order to build with Alpine.
-ARG BASE_IMAGE_PUBLIC="alpine:3.23.5"
-ARG BASE_DIGEST_PUBLIC="sha256:fd791d74b68913cbb027c6546007b3f0d3bc45125f797758156952bc2d6daf40"
+ARG BASE_IMAGE_PUBLIC="alpine:3.23.6"
+ARG BASE_DIGEST_PUBLIC="sha256:85fe1e81d6758c208f3e1eed4338a1997e19d4be002d4dd32d3100c9a8c010a0"
 ARG BASE="hardened"
 
 ### Base Application Image ###
