@@ -348,16 +348,19 @@ public class SchemaManager implements CloseableSilently {
   }
 
   private void updateSchemaSettings() {
-    // fetched once, not once per descriptor
-    final var currentReplicaCounts = fetchCurrentReplicaCounts();
+    // fetched once, not once per descriptor, and submitted to the executor so a stalled request
+    // is bounded by joinOnFutures()'s timeout instead of blocking startupOnce() forever
+    final var currentReplicaCountsFuture =
+        CompletableFuture.supplyAsync(this::fetchCurrentReplicaCounts, virtualThreadExecutor);
 
     final var futures =
         allIndexDescriptors.stream()
             .map(
                 descriptor ->
                     // run creation of indices async as virtual thread
-                    CompletableFuture.runAsync(
-                        () -> updateIndexSettings(descriptor, currentReplicaCounts),
+                    currentReplicaCountsFuture.thenAcceptAsync(
+                        currentReplicaCounts ->
+                            updateIndexSettings(descriptor, currentReplicaCounts),
                         virtualThreadExecutor))
             .toArray(CompletableFuture[]::new);
 
