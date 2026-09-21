@@ -1091,6 +1091,53 @@ final class BrokerTopologyManagerTest {
     assertThat(topologyManager.isRecovering("tenant1")).isTrue();
   }
 
+  @Test
+  void shouldNotReportUnknownTenantAsPendingWhenNoBrokerCanAnswer() {
+    // given -- a node that can see no broker for this tenant because it started before the tenant's
+    // brokers, or because the tenant has no brokers
+
+    // when / then -- nothing is known to be about to gossip a mode, so the caller is told to get
+    // on with it rather than hold off on an answer that may never come. Bounding that ambiguity is
+    // the caller's business, not this method's.
+    assertThat(topologyManager.isRecoveringOrUnknown("unknowntenant")).isFalse();
+  }
+
+  @Test
+  void shouldReportUnknownTenantAsPendingWhileItsBrokersAreVisibleInTheMembership() {
+    // given -- a node that has discovered a broker of the tenant but has not been gossiped a
+    // cluster configuration yet
+    notifyEvent(createMemberAddedEvent(createBrokerWithGroup(BrokerMemberId.from(0), "tenant1")));
+
+    // when / then -- that broker will gossip the mode, so the caller holds off until it does
+    assertThat(topologyManager.isRecoveringOrUnknown("tenant1")).isTrue();
+  }
+
+  @Test
+  void shouldNotReportProcessingTenantAsPending() {
+    // given -- a known mode, which settles the question
+    final var configuration = configureTenantWithMode(Map.of(MemberId.from("1"), Mode.PROCESSING));
+
+    // when
+    topologyManager.onClusterConfigurationUpdated(configuration);
+    actorSchedulerRule.workUntilDone();
+
+    // then
+    assertThat(topologyManager.isRecoveringOrUnknown("tenant1")).isFalse();
+  }
+
+  @Test
+  void shouldReportRecoveringTenantAsPending() {
+    // given
+    final var configuration = configureTenantWithMode(Map.of(MemberId.from("1"), Mode.RECOVERING));
+
+    // when
+    topologyManager.onClusterConfigurationUpdated(configuration);
+    actorSchedulerRule.workUntilDone();
+
+    // then -- a known recovering mode needs no membership to corroborate it
+    assertThat(topologyManager.isRecoveringOrUnknown("tenant1")).isTrue();
+  }
+
   private void addTopologyListener(final BrokerTopologyListener listener) {
     topologyManager.addTopologyListener(listener);
     actorSchedulerRule.workUntilDone();
