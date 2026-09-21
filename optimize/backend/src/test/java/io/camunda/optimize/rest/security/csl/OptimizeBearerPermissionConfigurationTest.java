@@ -14,13 +14,23 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.optimize.service.security.CCSMTokenService;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.spring.security.SecurityHeadersCustomizer;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 class OptimizeBearerPermissionConfigurationTest {
+
+  private final ApplicationContextRunner runner =
+      new ApplicationContextRunner()
+          .withConfiguration(AutoConfigurations.of(OptimizeBearerPermissionConfiguration.class))
+          .withBean(
+              CamundaAuthenticationProvider.class, () -> mock(CamundaAuthenticationProvider.class))
+          .withBean(CCSMTokenService.class, () -> mock(CCSMTokenService.class));
 
   @Test
   void shouldRegisterTheBearerPermissionFilterAfterAuthorizationFilter() throws Exception {
@@ -39,5 +49,29 @@ class OptimizeBearerPermissionConfigurationTest {
     final var filterCaptor = ArgumentCaptor.forClass(OncePerRequestFilter.class);
     verify(httpSecurity).addFilterAfter(filterCaptor.capture(), eq(AuthorizationFilter.class));
     assertThat(filterCaptor.getValue()).isInstanceOf(OptimizeBearerPermissionFilter.class);
+  }
+
+  @Test
+  void shouldRegisterOnCcsmWithCslEnabled() {
+    // given: no profile set defaults to CCSM (see ConfigurationService#getOptimizeProfile), and
+    // the csl.enabled flag defaults to true (matchIfMissing)
+    runner.run(context -> assertThat(context).hasSingleBean(SecurityHeadersCustomizer.class));
+  }
+
+  @Test
+  void shouldBackOffOnTheCloudProfile() {
+    // given: an annotation regression here would install the bearer permission filter on CCSaaS
+    // chains too, which never had this Identity check and does not go through CCSMTokenService
+    runner
+        .withPropertyValues("spring.profiles.active=cloud")
+        .run(context -> assertThat(context).doesNotHaveBean(SecurityHeadersCustomizer.class));
+  }
+
+  @Test
+  void shouldBackOffWhenCslIsDisabled() {
+    // given: the legacy (pre-CSL) CCSM stack is active instead; it has no notion of this filter
+    runner
+        .withPropertyValues("optimize.security.csl.enabled=false")
+        .run(context -> assertThat(context).doesNotHaveBean(SecurityHeadersCustomizer.class));
   }
 }
