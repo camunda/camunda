@@ -58,6 +58,15 @@ public interface SearchEngineClient extends CloseableSilently {
    */
   Map<String, Integer> getNumberOfShards(Collection<String> indexNames);
 
+  /**
+   * Reads the replica count of already-created indices, so a caller can tell whether the configured
+   * value is already in effect before writing it.
+   *
+   * @param indexNames the index names, aliases, or wildcard expressions to look up
+   * @return index name to replica count; names that do not exist are absent from the result
+   */
+  Map<String, Integer> getNumberOfReplicas(Collection<String> indexNames);
+
   void putIndexLifeCyclePolicy(final String policyName, final String deletionMinAge);
 
   void putIndexMeta(final String indexName, Map<String, Object> meta);

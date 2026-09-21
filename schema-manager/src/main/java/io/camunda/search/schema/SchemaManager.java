@@ -292,17 +292,37 @@ public class SchemaManager implements CloseableSilently {
     joinOnFutures(futures);
   }
 
+  /**
+   * Writes replica settings only where they have actually drifted from configuration. A settings
+   * PUT is a cluster-state operation that the search engine's master serializes, so writing every
+   * descriptor unconditionally on every attempt turns a large tenant fleet's schema-init retries
+   * into thousands of redundant master tasks, most of them re-applying a value that is already in
+   * effect.
+   */
   private void updateIndexSettings(final IndexDescriptor indexDescriptor) {
     final var indexSettingsFromConfig = getIndexSettingsFromConfig(indexDescriptor);
     if (indexDescriptor instanceof final IndexTemplateDescriptor indexTemplateDescriptor) {
+      // already no-ops internally when unchanged, so it stays unconditional
       searchEngineClient.updateIndexTemplateSettings(
           indexTemplateDescriptor, indexSettingsFromConfig);
     }
-    searchEngineClient.putSettings(
-        indexDescriptor,
-        Map.of(
-            "index.number_of_replicas",
-            String.valueOf(indexSettingsFromConfig.getNumberOfReplicas())));
+
+    final var targetReplicas = indexSettingsFromConfig.getNumberOfReplicas();
+    if (replicaCountDrifted(indexDescriptor, targetReplicas)) {
+      searchEngineClient.putSettings(
+          indexDescriptor, Map.of("index.number_of_replicas", String.valueOf(targetReplicas)));
+    }
+  }
+
+  private boolean replicaCountDrifted(final IndexDescriptor descriptor, final int target) {
+    // the alias is what putSettings() below writes to, so reading it back here is what tells us
+    // whether that write is actually needed; served from local cluster state, not the master, so
+    // this read is cheap
+    final var currentReplicaCounts =
+        searchEngineClient.getNumberOfReplicas(List.of(descriptor.getAlias()));
+    // values are never null here: getNumberOfReplicas() drops an index rather than reporting a
+    // null replica count for it, so this unboxing comparison is safe
+    return currentReplicaCounts.values().stream().anyMatch(replicas -> replicas != target);
   }
 
   @VisibleForTesting

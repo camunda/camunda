@@ -273,6 +273,33 @@ public class OpensearchEngineClient implements SearchEngineClient {
   }
 
   @Override
+  public Map<String, Integer> getNumberOfReplicas(final Collection<String> indexNames) {
+    if (indexNames.isEmpty()) {
+      return Map.of();
+    }
+
+    try {
+      return client
+          .indices()
+          .getSettings(req -> req.index(List.copyOf(indexNames)).ignoreUnavailable(true))
+          .result()
+          .entrySet()
+          .stream()
+          .flatMap(
+              entry ->
+                  Optional.ofNullable(entry.getValue().settings())
+                      .map(IndexSettings::index)
+                      .map(IndexSettings::numberOfReplicas)
+                      .map(replicas -> Map.entry(entry.getKey(), replicas))
+                      .stream())
+          .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+    } catch (final IOException | OpenSearchException e) {
+      throw new SearchEngineException(
+          String.format("Failed to retrieve replica counts for indices '%s'", indexNames), e);
+    }
+  }
+
+  @Override
   public void putIndexLifeCyclePolicy(final String policyName, final String deletionMinAge) {
     final var request = createIndexStateManagementPolicy(policyName, deletionMinAge);
 
