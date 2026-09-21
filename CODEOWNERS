@@ -164,14 +164,18 @@
 # Engine-expert skill
 /.claude/skills/engine-expert/  @korthout @camunda/core-features
 
-# Frontend skills
-/.claude/skills/frontend-feature/          @camunda/core-features
-/.claude/skills/frontend-integration-test/ @camunda/core-features
-/.claude/skills/frontend-operate-migrator/ @camunda/core-features
-/.claude/skills/frontend-unit-test/        @camunda/core-features
-/.claude/skills/operate-engineering-loop/  @camunda/core-features
-/.claude/skills/operate-frontend/          @camunda/core-features
-/.claude/skills/tasklist-frontend/         @camunda/core-features
+# Experience FE frontend skills
+/.claude/skills/frontend-feature/          @camunda/orchestration-cluster-webapps
+/.claude/skills/frontend-integration-test/ @camunda/orchestration-cluster-webapps
+/.claude/skills/frontend-operate-migrator/ @camunda/orchestration-cluster-webapps
+/.claude/skills/frontend-unit-test/        @camunda/orchestration-cluster-webapps
+
+# Operate frontend skills
+/.claude/skills/operate-engineering-loop/ @camunda/operate-admin-pod
+/.claude/skills/operate-frontend/         @camunda/operate-admin-pod
+
+# Tasklist frontend skills
+/.claude/skills/tasklist-frontend/ @camunda/employee-engagement-tasklist
 
 #################
 ## Camunda Ex  ##
