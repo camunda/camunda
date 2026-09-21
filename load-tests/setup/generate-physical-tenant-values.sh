@@ -16,18 +16,28 @@
 # common.mk's "Add secondary storage values" section) and appends the per-tenant properties
 # after it.
 #
-# Usage: generate-physical-tenant-values.sh <secondary_storage> <physical_tenant_count> <rdbms_storages>
+# Usage: generate-physical-tenant-values.sh <secondary_storage> <physical_tenant_count> <rdbms_storages> <namespace>
 #   secondary_storage      One of newLoadTest.sh's allowed_storage values.
 #   physical_tenant_count  Non-negative integer. 0 removes any previously generated file.
 #   rdbms_storages         Space-separated rdbms-backed secondary_storage values (common.mk's rdbms_storages).
+#   namespace              The load-test namespace (common.mk's namespace), used below as the GCS
+#                          backup base-path prefix.
 #
 # Writes ./camunda-platform-physical-tenants.yaml, relative to CWD (the namespace folder).
+#
+# NOTE: the continuous-backup block below (BACKUP_BUCKET/emitting camunda.data.primary-storage.backup.*
+# per tenant) is a one-off addition for the dd-pt79-continuous-backup-gcs experiment, not a general
+# feature — it's unconditional and hardcodes the bucket/schedule/retention. Do not build on top of this
+# without first making it a proper opt-in (env var/Makefile flag) reviewed like the rest of this file.
 
 set -euo pipefail
 
 secondary_storage="$1"
 physical_tenant_count="$2"
 rdbms_storages="$3"
+namespace="$4"
+
+backup_bucket="camunda-benchmark-zeebe-backups-prod"
 
 output_file="camunda-platform-physical-tenants.yaml"
 
@@ -91,6 +101,19 @@ if [[ -n "$storage_prefix_key" ]]; then
   lines+=("camunda.data.secondary-storage.${storage_prefix_key}: ${default_prefix}")
 fi
 
+# One-off continuous-backup experiment (see NOTE above): default tenant's own backup key space.
+lines+=(
+  "# default tenant: continuous GCS backup, isolated from pt1..pt${physical_tenant_count} by base-path"
+  "camunda.data.primary-storage.backup.store: GCS"
+  "camunda.data.primary-storage.backup.continuous: true"
+  "camunda.data.primary-storage.backup.schedule: PT5M"
+  "camunda.data.primary-storage.backup.required: false"
+  "camunda.data.primary-storage.backup.gcs.bucket-name: ${backup_bucket}"
+  "camunda.data.primary-storage.backup.gcs.base-path: ${namespace}/default"
+  "camunda.data.primary-storage.backup.retention.window: PT1H"
+  "camunda.data.primary-storage.backup.retention.cleanup-schedule: PT1H"
+)
+
 for ((i = 1; i <= physical_tenant_count; i++)); do
   tenant="pt${i}"
 
@@ -132,6 +155,15 @@ for ((i = 1; i <= physical_tenant_count; i++)); do
     "camunda.physical-tenants.${tenant}.security.initialization.authorizations[2].permissions[0]: CREATE"
     "# ${tenant}: assign the default OIDC provider (Keycloak) so this tenant can authenticate"
     "camunda.physical-tenants.${tenant}.security.authentication.providers.assigned[0]: oidc"
+    "# ${tenant}: continuous GCS backup, isolated from the default tenant and every other pt<i> by base-path"
+    "camunda.physical-tenants.${tenant}.data.primary-storage.backup.store: GCS"
+    "camunda.physical-tenants.${tenant}.data.primary-storage.backup.continuous: true"
+    "camunda.physical-tenants.${tenant}.data.primary-storage.backup.schedule: PT5M"
+    "camunda.physical-tenants.${tenant}.data.primary-storage.backup.required: false"
+    "camunda.physical-tenants.${tenant}.data.primary-storage.backup.gcs.bucket-name: ${backup_bucket}"
+    "camunda.physical-tenants.${tenant}.data.primary-storage.backup.gcs.base-path: ${namespace}/${tenant}"
+    "camunda.physical-tenants.${tenant}.data.primary-storage.backup.retention.window: PT1H"
+    "camunda.physical-tenants.${tenant}.data.primary-storage.backup.retention.cleanup-schedule: PT1H"
   )
 done
 

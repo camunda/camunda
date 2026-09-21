@@ -283,7 +283,7 @@ ifeq ($(physical_tenants_supported),true)
 # this can be an unconditional prerequisite of install-platform(-stable)/template(-stable).
 .PHONY: generate-physical-tenant-values
 generate-physical-tenant-values:
-	../generate-physical-tenant-values.sh "$(secondary_storage)" "$(physical_tenant_count)" "$(rdbms_storages)"
+	../generate-physical-tenant-values.sh "$(secondary_storage)" "$(physical_tenant_count)" "$(rdbms_storages)" "$(namespace)"
 
 # Deploy pt1..ptN's own load testers, sharing the default tenant's secondary storage. The
 # camunda-load-tests subchart hardcodes the starter/worker resource names, so a second Helm
