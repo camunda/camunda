@@ -156,7 +156,7 @@ describe('<Decisions />', () => {
 
 		await expect.element(screen.getByRole('heading', {name: 'Later Decision'})).toBeVisible();
 		await expect.element(screen.getByRole('combobox', {name: 'Name'})).toHaveValue('Later Decision');
-		await expect.element(screen.getByRole('combobox', {name: 'Version'})).toHaveTextContent('2');
+		await expect.element(screen.getByRole('combobox', {name: 'Version'})).toMatchTextContent('2');
 		await userEvent.click(screen.getByRole('combobox', {name: 'Version'}));
 		await expect.element(screen.getByRole('option', {name: '1'})).toBeVisible();
 		expect((screen.router.state.location.search as Record<string, unknown>).decisionDefinitionId).toBe(

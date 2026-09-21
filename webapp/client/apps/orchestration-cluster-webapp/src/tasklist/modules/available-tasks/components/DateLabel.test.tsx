@@ -77,8 +77,8 @@ describe('<DateLabel />', () => {
 
 		await userEvent.hover(screen.getByTitle('Created on 6th of January'));
 
-		await expect.element(screen.getByRole('tooltip')).toHaveTextContent('Created on');
-		await expect.element(screen.getByRole('tooltip')).toHaveTextContent('6 Jan 2024');
+		await expect.element(screen.getByRole('tooltip')).toMatchTextContent('Created on');
+		await expect.element(screen.getByRole('tooltip')).toMatchTextContent('6 Jan 2024');
 
 		await userEvent.unhover(screen.getByTitle('Created on 6th of January'));
 		await userEvent.hover(document.body);

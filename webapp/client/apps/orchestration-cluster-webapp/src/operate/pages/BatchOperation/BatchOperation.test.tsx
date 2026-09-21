@@ -75,7 +75,7 @@ describe('<BatchOperation />', () => {
 
 		const screen = await renderPage();
 
-		await expect.element(screen.getByText(/^Completed$/)).toBeVisible();
+		await expect.element(screen.getByRole('status', {name: 'Batch operation status: Completed'})).toBeVisible();
 		await expect.element(screen.getByText('demo')).toBeVisible();
 	});
 

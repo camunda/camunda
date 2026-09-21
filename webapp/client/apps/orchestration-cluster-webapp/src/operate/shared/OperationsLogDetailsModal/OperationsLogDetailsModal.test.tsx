@@ -47,7 +47,7 @@ describe('<OperationsLogDetailsModal />', () => {
 
 		const screen = await renderModal(auditLog);
 
-		await expect.element(screen.getByText('This operation is part of a batch.')).toBeVisible();
+		await expect.element(screen.getByRole('dialog')).toMatchTextContent('This operation is part of a batch.');
 		await expect
 			.element(screen.getByRole('link', {name: 'View batch operation details.'}))
 			.toHaveAttribute('href', '/operate/batch-operations/batch-123');

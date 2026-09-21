@@ -242,7 +242,7 @@ describe('Optional Filters', () => {
 		await expect.element(screen.getByLabelText('Process Instance Key(s)', {exact: true})).toBeVisible();
 		await expect.element(screen.getByLabelText('Business ID', {exact: true})).toHaveValue('order-12345');
 
-		await screen.getByRole('button', {name: 'Reset Filters'}).click();
+		await screen.getByRole('button', {name: 'Reset filters'}).click();
 
 		await expect.poll(() => getSearch()).toEqual({});
 
