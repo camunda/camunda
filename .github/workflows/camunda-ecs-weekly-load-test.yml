@@ -66,7 +66,8 @@ jobs:
     name: Resolve images and compute benchmark names
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions: { }
+    permissions:
+      id-token: write  # Vault OIDC/JWT auth
     outputs:
       current_benchmark_name: ${{ steps.names.outputs.current }}
       previous_benchmark_name: ${{ steps.names.outputs.previous }}
@@ -85,9 +86,10 @@ jobs:
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           exportEnv: false
           secrets: |
             secret/data/products/zeebe/ci/common AWS_CORE_FOUNDATION_ACCESS_KEY | AWS_ACCESS_KEY_ID;
@@ -209,7 +211,8 @@ jobs:
     if: ${{ inputs.skip_destroy_previous != true && needs.prepare.outputs.previous_benchmark_name != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    permissions: { }
+    permissions:
+      id-token: write  # Vault OIDC/JWT auth
     env:
       CI: true
     steps:
@@ -231,9 +234,10 @@ jobs:
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           exportEnv: false
           secrets: |
             secret/data/products/zeebe/ci/common AWS_CORE_FOUNDATION_ACCESS_KEY | AWS_ACCESS_KEY_ID;
@@ -277,7 +281,8 @@ jobs:
     if: ${{ always() && needs.prepare.result == 'success' && (needs.destroy-previous.result == 'success' || needs.destroy-previous.result == 'skipped') }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    permissions: { }
+    permissions:
+      id-token: write  # Vault OIDC/JWT auth
     env:
       CI: true
     steps:
@@ -299,9 +304,10 @@ jobs:
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           exportEnv: false
           secrets: |
             secret/data/products/zeebe/ci/common AWS_CORE_FOUNDATION_ACCESS_KEY | AWS_ACCESS_KEY_ID;
