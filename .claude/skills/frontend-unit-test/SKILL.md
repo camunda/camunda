@@ -20,13 +20,77 @@ This is fundamentally different from the `@testing-library/react` + `vi.mock()` 
 - Use `expect.element()` for DOM assertions — it retries automatically until the assertion passes or times out. This replaces the `waitFor` / `findBy*` / `screen.findByRole` patterns you may know from Testing Library. There is no `waitFor` here.
 - Perform all UI interactions (clicks, typing, filling, selecting, tabbing, hovering) with `userEvent` imported from `vitest/browser` — e.g. `await userEvent.click(screen.getByRole('button', {name: /save/i}))`, `await userEvent.fill(screen.getByLabelText('Name'), 'value')`. It dispatches a realistic full browser event sequence (pointer, mouse, focus, input). Keep using `screen.getBy*` for queries and `expect.element()` for assertions — `userEvent` is only for interactions. Do NOT use locator `.click()` or `.fill()` methods directly.
 - Mock HTTP through the `worker` fixture using endpoint mocks from `#/shared-test-modules/mock-handlers`. Each mock is an individually named export (e.g., `mockCurrentUserEndpoint`, `mockLoginEndpoint`) created with `createEndpointMock` from `#/shared-test-modules/mock-endpoint`. Both unit and Playwright tests use the same definitions. All endpoint mocks must be defined in `apps/orchestration-cluster-webapp/shared-test-modules/mock-handlers.ts` — never create `createEndpointMock` calls inline in test files. Never use `vi.mock()` for API calls; it couples tests to implementation details and breaks on refactors.
-- Prefer testing library selectors: `getByRole`, `getByLabelText`, `getByText`. They enforce accessible markup and survive structural refactors. Avoid `querySelector` and `getByTestId` — they test DOM structure, not behavior.
+- Prefer user-facing selectors in this order: `getByRole`, `getByLabelText`, `getByText`, and
+  `getByTitle`. Use `getByTestId` only when no meaningful user-facing selector is available.
+- String locators in this application use exact matching. Match the complete, case-sensitive text,
+  accessible name, label, or title. Regular expressions control their own matching behavior.
+- `screen.getBy*()` returns a lazy, retryable `Locator`, not a DOM element. Keep locators unresolved
+  and compose queries from them instead of using raw DOM traversal.
+- Prefer `getByRole` for interactive elements and elements with meaningful roles. The `name` option
+  matches the accessible name, which may include nested controls, icons, tooltips, badges, or hidden
+  accessible text. Use `getByText` for independently rendered static text and `getByTitle` when an
+  existing `title` attribute is the stable identifier.
+- Do not add or change production ARIA roles, `aria-label`, `title`, hidden text, wrapper elements,
+  or test IDs solely to make a test selector possible. ARIA must describe genuine user-facing
+  semantics. Improve the selector first; change production markup only when the existing markup has
+  a real semantic or accessibility problem.
 - Co-locate test files with source: a test for `src/shared/foo/bar.tsx` sits at `src/shared/foo/bar.test.tsx`; a test for `src/operate/components/Foo.tsx` sits next to it at `src/operate/components/Foo.test.tsx`. Pod areas follow their own conventions for test placement.
 - Prefix test names with `should` (e.g., `it('should display an error on invalid credentials')`).
 - Do not mock the router. Use `renderWithRouter(Component, {path})` from `#/vitest-modules/render-with-router` when the component needs routing context. It mounts the component in a fresh, isolated TanStack Router backed by an in-memory history — the component receives real route params, search params, and navigation. No full application route tree or global providers are loaded, which keeps tests fast and self-contained. Typed file-route hooks (`Route.useParams()`) will not resolve under the isolated router; use `useParams({from: '/your-path'})` instead.
 - Never use `vi.mock()` for HTTP. For non-HTTP dependencies, prefer real implementations and mock
   only an unavoidable external or browser boundary.
 - Do not use `// given / when / then` comments — that is a Java backend convention. Structure tests by visual grouping (blank lines between setup, action, and assertion).
+
+## Locator composition
+
+Keep locators unresolved so interactions and assertions retain strict matching, retry behavior, and
+useful diagnostics.
+
+Chain selectors from a parent locator to scope a descendant:
+
+```tsx
+const betaProcessLink = screen.getByTitle('Beta Process – 3 Instances in 1 Version');
+const alphaProcessLink = screen.getByTitle('Alpha Process – 6 Instances in 1 Version');
+
+await expect.element(betaProcessLink).toBeVisible();
+await expect.element(alphaProcessLink).toBeVisible();
+
+await expect.element(betaProcessLink.getByTestId('draining-indicator')).toBeVisible();
+await expect.element(alphaProcessLink.getByTestId('draining-indicator')).not.toBeInTheDocument();
+```
+
+Assert that a parent exists before making a negative assertion about one of its descendants.
+Otherwise, the negative assertion could pass because the entire parent failed to render.
+
+Use `.filter()` to narrow a collection:
+
+```tsx
+const invoiceRow = screen
+  .getByRole('row')
+  .filter({has: screen.getByRole('link', {name: 'Invoice Process'})});
+
+await expect.element(invoiceRow.getByRole('button', {name: 'Delete'})).toBeEnabled();
+```
+
+Available filters include `has`, `hasNot`, `hasText`, and `hasNotText`. Prefer semantic filtering
+before using `.first()`, `.last()`, or `.nth()`.
+
+Do not unwrap locators for ordinary assertions:
+
+```tsx
+// Wrong: resolves eagerly, loses locator retries, and requires unsafe casts.
+const row = screen.getByText('Invoice Process').element().closest('a') as HTMLElement;
+const indicator = row.querySelector('[data-testid="draining-indicator"]') as HTMLElement;
+
+// Correct: remains scoped, strict, and retryable.
+const processLink = screen.getByTitle('Invoice Process – 3 Instances in 1 Version');
+
+await expect.element(processLink.getByTestId('draining-indicator')).toBeVisible();
+```
+
+`element()`, `query()`, `elements()`, and `findElement()` are escape hatches. Use them only when an
+external library or browser API requires a raw DOM element. Never use `parentElement`, `closest`,
+`querySelector`, or an element cast merely to work around a locator.
 
 ## MSW mocking
 
@@ -74,25 +138,128 @@ describe('<Login />', () => {
 
 ## Assertion patterns
 
-```ts
-// Visibility
-await expect.element(screen.getByRole('button', {name: /submit/i})).toBeVisible();
+Use `expect.element()` for DOM assertions. It resolves the locator and retries the assertion until it
+passes or times out.
 
-// Text content
+```tsx
+// Visibility
+await expect.element(screen.getByRole('button', {name: 'Submit'})).toBeVisible();
+
+// Complete normalized text content
 await expect.element(screen.getByRole('heading')).toHaveTextContent('Dashboard');
 
-// Attributes
-await expect.element(screen.getByRole('link', {name: 'Docs'})).toHaveAttribute('href', '/docs');
+// Partial text content
+await expect
+  .element(screen.getByRole('dialog'))
+  .toMatchTextContent('This operation is part of a batch.');
 
-// Absence — element should not be in the document
-await expect.element(screen.getByText('Loading...')).not.toBeVisible();
+// Regular-expression text content
+await expect.element(screen.getByRole('tooltip')).toMatchTextContent(/created on/i);
+
+// Attributes
+await expect
+  .element(screen.getByRole('link', {name: 'Documentation'}))
+  .toHaveAttribute('href', '/docs');
+
+// Element should not exist
+await expect.element(screen.getByText('Loading...')).not.toBeInTheDocument();
+
+// Element remains mounted but should be hidden
+await expect.element(screen.getByRole('dialog')).not.toBeVisible();
 ```
 
-`expect.element()` is always async and retries — no need to wrap in `waitFor` or use `findBy*`.
+Use `toHaveTextContent` when the element's complete normalized text is the intended contract. Use
+`toMatchTextContent` for a substring or regular-expression match.
+
+Use `not.toBeInTheDocument()` when an element should not exist. Use `not.toBeVisible()` only when the
+element should remain mounted but hidden.
+
+Do not wrap `expect.element()` in `waitFor`, and do not use `findBy*` queries.
+
+## Parameterized tests
+
+Use `it.for` instead of a `for`, `for...of`, or `forEach` loop whose body declares `it()` calls.
+Ordinary loops inside a test body remain valid.
+
+The extended `it` passes case data as the first callback argument and fixture context as the second.
+
+Use `%s` for scalar cases:
+
+```tsx
+it.for(['include', 'exclude'] as const)(
+  'should submit in %s mode',
+  async (mode, {worker}) => {
+    // ...
+  },
+);
+```
+
+Use named objects and `$property` placeholders when a case has multiple values:
+
+```tsx
+it.for([
+  {filter: 'businessId', label: 'Business ID'},
+  {filter: 'errorMessage', label: 'Error Message'},
+] as const)(
+  'should display $label',
+  async ({filter, label}, {worker}) => {
+    // ...
+  },
+);
+```
+
+Tuple cases are passed as one value. Destructure the tuple in the first callback argument:
+
+```tsx
+it.for([
+  ['Delete', mockDeleteEndpoint],
+  ['Cancel', mockCancelEndpoint],
+] as const)(
+  'should submit %s',
+  async ([action, endpointMock], {worker}) => {
+    // ...
+  },
+);
+```
+
+Do not declare tests inside nested loops. Build a case table first:
+
+```tsx
+const languages = ['en', 'de'] as const;
+const actions = ['delete', 'cancel'] as const;
+const counts = [1, 3] as const;
+
+const cases = languages.flatMap((language) =>
+  actions.flatMap((action) =>
+    counts.map((count) => ({language, action, count})),
+  ),
+);
+
+it.for(cases)(
+  'should render the $language $action confirmation for $count instances',
+  async ({language, action, count}) => {
+    // ...
+  },
+);
+```
+
+Keep case tables and source arrays `as const` when their values need to retain literal types.
 
 ## User interactions
 
 All interactions use `userEvent` from `vitest/browser`. It accepts both `Element` and `Locator` (the return type of `screen.getBy*`).
+
+`userEvent` accepts locators directly. Do not resolve a locator with `.element()` before passing it
+to `userEvent`.
+
+```tsx
+// Correct
+await userEvent.click(screen.getByRole('button', {name: 'Save'}));
+await userEvent.fill(screen.getByLabelText('Name'), 'Alice');
+
+// Wrong
+await userEvent.click(screen.getByRole('button', {name: 'Save'}).element());
+```
 
 ```ts
 import {userEvent} from 'vitest/browser';
@@ -126,24 +293,47 @@ await userEvent.unhover(screen.getByText('Tooltip trigger'));
 ## Common gotchas
 
 - **No `waitFor` or `findBy*`**: `expect.element()` handles async natively. Writing `await waitFor(() => ...)` will error — it doesn't exist in this setup.
-- **No `queryByText` / `queryByRole`**: these don't exist. Use `getByText` / `getByRole` with `expect.element(...).not.toBeVisible()` for absence checks.
+- **No `queryByText` / `queryByRole`**: these don't exist. Use `getByText` / `getByRole` with `expect.element(...).not.toBeInTheDocument()` for absence checks.
 - **`userEvent` is not a fixture — import it directly**: `import {userEvent} from 'vitest/browser';`. Use `userEvent.click()`, `userEvent.fill()`, `userEvent.type()`, etc. for all interactions. Do not use locator `.click()` or `.fill()` methods — they bypass the realistic event sequence that `userEvent` provides.
 - **Endpoint mocks are functions**: always call them with a config object — `mockCurrentUserEndpoint({successResponse: HttpResponse.json({})})`, not `mockCurrentUserEndpoint` bare.
-- **No jsdom APIs**: tests run in a real browser, so `document.querySelector` technically works but defeats the purpose. Use `screen.getBy*` queries.
+- **Locators are not DOM elements**: keep `screen.getBy*()` results as locators. Chain queries and
+  assertions from them instead of using `element()`, `parentElement`, `closest`, or `querySelector`.
+- **Negative child assertions need a rendered parent**: assert that the parent is visible before
+  asserting that one of its descendants is absent.
+- **Exact selectors include accessible content**: a role's accessible name may contain nested
+  tooltip text, icons, badges, and controls. Inspect the ARIA tree and use the complete accessible
+  name, an existing title, or a scoped child locator.
+- **Do not change ARIA for test discovery**: adding an ARIA role or label changes what assistive
+  technology announces. Only add semantics that accurately describe the interface.
+- **Do not declare tests in loops**: use `it.for` for parameterized cases. Loops that perform repeated
+  actions or assertions inside one test are still valid.
+- **Tuple rows are not spread by `it.for`**: receive a tuple as the first callback argument and
+  destructure it there.
+- **`userEvent` accepts locators**: do not call `.element()` before `userEvent.click`,
+  `userEvent.fill`, or other interactions.
 - **`msw/browser`, not `msw/node`**: the MSW worker runs in the browser via `setupWorker`. If you see imports from `msw/node`, that's wrong.
 - **No `vi.mock()` for HTTP**: it silently breaks in browser mode and is the wrong abstraction anyway. Use MSW.
 - **`render()` returns `screen`**: unlike Testing Library where `screen` is a global import, here `render()` returns the screen object. Use `const screen = await render(<Comp />)`. Same for `renderWithRouter()` — `const screen = await renderWithRouter(MyPage, {path: '/my-path'})`.
 
 ## Commands
 
-Run from `webapp/client/apps/orchestration-cluster-webapp/`:
+Run focused and full validation from
+`webapp/client/apps/orchestration-cluster-webapp/`:
 
 ```bash
-npm run test:unit       # Headless Chromium — CI and local
-npm run test:unit:ui    # Visible browser — useful for debugging
+npm run test:unit -- --run src/path/to/example.test.tsx
+npm run typecheck
+npm run test:unit -- --run
 ```
 
-Format changed files via `npm run prettier:format` from `webapp/client/` and typecheck via `npm run typecheck` from the app directory — never invoke Prettier or `tsc` directly.
+Run formatting and linting from `webapp/client/`:
+
+```bash
+npm run prettier:format
+npm run lint
+```
+
+Use `npm run test:unit:ui` for interactive debugging. Never invoke Prettier or `tsc` directly.
 
 ## Template references
 
