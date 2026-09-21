@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {DataTable, Skeleton, type DataTableColumn} from '@camunda/design-system';
 import {ChevronDown, ChevronRight} from '@camunda/design-system/icons';
@@ -69,9 +69,12 @@ type Props = {
 	header: string;
 	rows: Row[];
 	expandedContents: Record<string, React.ReactElement<{tabIndex: number}>>;
+	hasNextPage: boolean;
+	hasPreviousPage: boolean;
 	isFetchingNextPage: boolean;
 	isFetchingPreviousPage: boolean;
-	onScroll: (event: React.UIEvent<HTMLDivElement>) => void;
+	onLoadNextPage: () => void;
+	onLoadPreviousPage: () => void;
 };
 
 const ExpandableList: React.FC<Props> = ({
@@ -83,11 +86,53 @@ const ExpandableList: React.FC<Props> = ({
 	header,
 	rows,
 	expandedContents,
+	hasNextPage,
+	hasPreviousPage,
 	isFetchingNextPage,
 	isFetchingPreviousPage,
-	onScroll,
+	onLoadNextPage,
+	onLoadPreviousPage,
 }) => {
 	const {t} = useTranslation();
+	const topSentinelRef = useRef<HTMLDivElement | null>(null);
+	const bottomSentinelRef = useRef<HTMLDivElement | null>(null);
+
+	// DS DataTable owns its own scroll region (its `Table` wrapper), so wrapping it in
+	// another scrollable container to drive pagination via onScroll produces nested/double
+	// scrollbars (confirmed against DS docs). Sentinels below/above the table are observed
+	// against the page's own natural scroll (`root: null`) instead.
+	useEffect(() => {
+		const topEl = topSentinelRef.current;
+		const bottomEl = bottomSentinelRef.current;
+
+		if (!topEl && !bottomEl) {
+			return;
+		}
+
+		const observer = new IntersectionObserver((entries) => {
+			for (const entry of entries) {
+				if (!entry.isIntersecting) {
+					continue;
+				}
+
+				if (entry.target === topEl && !isFetchingPreviousPage) {
+					onLoadPreviousPage();
+				} else if (entry.target === bottomEl && !isFetchingNextPage) {
+					onLoadNextPage();
+				}
+			}
+		});
+
+		if (topEl) {
+			observer.observe(topEl);
+		}
+
+		if (bottomEl) {
+			observer.observe(bottomEl);
+		}
+
+		return () => observer.disconnect();
+	}, [hasNextPage, hasPreviousPage, isFetchingNextPage, isFetchingPreviousPage, onLoadNextPage, onLoadPreviousPage]);
 
 	if (isPending) {
 		return (
@@ -122,7 +167,8 @@ const ExpandableList: React.FC<Props> = ({
 	];
 
 	return (
-		<div className="flex flex-1 flex-col overflow-y-auto" onScroll={onScroll} data-testid={listTestId}>
+		<div className="flex flex-1 flex-col" data-testid={listTestId}>
+			{hasPreviousPage && <div ref={topSentinelRef} data-testid={`${listTestId}-top-sentinel`} />}
 			{isFetchingPreviousPage && (
 				<div className="flex justify-center py-2" data-testid={`${listTestId}-loading-previous`}>
 					<Skeleton className="h-4 w-24" />
@@ -136,6 +182,7 @@ const ExpandableList: React.FC<Props> = ({
 					<Skeleton className="h-4 w-24" />
 				</div>
 			)}
+			{hasNextPage && <div ref={bottomSentinelRef} data-testid={`${listTestId}-bottom-sentinel`} />}
 		</div>
 	);
 };
