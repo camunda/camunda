@@ -47,6 +47,18 @@ Tunables (env vars, with defaults):
 The decision must be deployed first. The k6 pods authenticate with the same
 `load-test-credentials` secret as `test.default.js`.
 
+### Deploying the decision
+
+k6 does not deploy resources. Deploy the fully-synthetic, anonymized 2-rule table
+in `k6/resources/small_decision.dmn` (decision id `small_decision`) once, before
+the run — e.g. against the REST API:
+
+```bash
+curl -sf -X POST "$CAMUNDA_BASE_URL/v2/deployments" \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "resources=@k6/resources/small_decision.dmn"
+```
+
 ## Mixed sizes (`test.dmn-evaluation-mixed.js`)
 
 Same request/thresholds, but each call picks a decision from a **weighted mix** of
