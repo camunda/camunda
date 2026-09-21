@@ -42,6 +42,48 @@ including pull requests, merge groups, protected-branch pushes, schedules, and m
    runs distribution parity separately.
 6. Preserve already-fixed conventions; avoid regressions.
 
+### Rebase onto main before Gradle parity work
+
+A rebase is not complete for this skill when only the Git history has been rewritten. Rebasing a
+Gradle branch onto `main` may bring Maven source and POM changes underneath the branch, so those
+changes must be audited before investigating or declaring Gradle parity work complete.
+
+When the user asks to rebase onto `main`:
+
+1. Check the worktree before changing history:
+   - run `git status --short --branch`;
+   - stop and ask how to handle uncommitted changes; do not stash, commit, or discard them silently;
+   - record `HEAD`, the upstream branch, `main`, and `origin/main` when available.
+2. Establish the target ref explicitly. Use the requested local `main` unless the user specifies
+   another ref. Do not fetch, force-update a ref, or rewrite the branch unless the user has asked
+   for that operation. If `main` and `origin/main` differ, report the difference instead of
+   silently choosing one.
+3. Record the pre-rebase graph and old merge-base, then run the rebase. If conflicts occur, stop
+   at the conflict and report the files and next resolution step; never resolve conflicts by
+   dropping or regenerating commits without review.
+4. Verify the result:
+   - `git status --short --branch` is clean;
+   - `git merge-base --is-ancestor main HEAD` succeeds;
+   - the merge-base equals the intended target ref;
+   - `git log main..HEAD` contains the expected local Gradle commits;
+   - compare the rewritten branch with its upstream using explicit counts. A status such as
+     `ahead 444, behind 70` is expected after rebasing and does not mean 444 new Gradle changes.
+5. Audit the Maven changes replayed underneath the branch. Follow
+   [references/rebase-pom-audit.md](references/rebase-pom-audit.md): use the old merge-base and
+   the target main ref, enumerate every changed `pom.xml`, reduce the history to the final net
+   POM diff, and exclude only changes that are demonstrably version-only. Do not mechanically
+   port every historical commit, and do not re-port Gradle commits already present above `main`.
+6. For each final non-version Maven behavior change, compare the current Gradle build first. Mark
+   it as missing, already present and needing verification, or intentionally Maven-only. Then
+   follow [references/pom-change-porting.md](references/pom-change-porting.md) to port it with a
+   minimal module-scoped change.
+7. Before concluding any rebase-related Gradle parity work, always run the root
+   `./gradlew testClasses` and require it to succeed, even when the audit finds no Gradle file
+   changes. If the audit identifies Gradle changes, also complete the normal validation: affected
+   module `compileTestJava`, Gradle distribution packaging, and `compare-dist.py` against the Maven
+   archive. Report any validation that was not run; a successful rebase alone does not establish
+   build parity.
+
 Maven source changes need two related but separate workflows:
 
 - When a rebase brings many Maven commits onto the Gradle branch, follow
