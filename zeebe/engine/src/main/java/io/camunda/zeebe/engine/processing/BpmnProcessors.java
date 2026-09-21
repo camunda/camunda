@@ -101,7 +101,7 @@ public final class BpmnProcessors {
         clock,
         transientProcessMessageSubscriptionState);
     addTimerStreamProcessors(
-        typedRecordProcessors, timerChecker, processingState, bpmnBehaviors, writers);
+        typedRecordProcessors, timerChecker, processingState, bpmnBehaviors, writers, clock);
     addVariableDocumentStreamProcessors(
         typedRecordProcessors,
         bpmnBehaviors,
@@ -208,12 +208,13 @@ public final class BpmnProcessors {
       final DueDateTimerCheckScheduler timerChecker,
       final MutableProcessingState processingState,
       final BpmnBehaviors bpmnBehaviors,
-      final Writers writers) {
+      final Writers writers,
+      final InstantSource clock) {
     typedRecordProcessors
         .onCommand(
             ValueType.TIMER,
             TimerIntent.TRIGGER,
-            new TimerTriggerProcessor(processingState, bpmnBehaviors, writers))
+            new TimerTriggerProcessor(processingState, bpmnBehaviors, writers, clock))
         .onCommand(
             ValueType.TIMER,
             TimerIntent.CANCEL,
