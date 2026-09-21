@@ -29,8 +29,8 @@ describe('<DiagramHeader />', () => {
 			/>,
 		);
 
-		await expect.element(screen.getByText('Order Process')).toBeVisible();
-		await expect.element(screen.getByText('my-process:1:0')).toBeVisible();
+		await expect.element(screen.getByRole('heading', {name: 'Order Process'})).toBeVisible();
+		await expect.element(screen.getByTitle('my-process:1:0')).toBeVisible();
 	});
 
 	it('shows the version tag when present', async () => {
@@ -56,7 +56,7 @@ describe('<DiagramHeader />', () => {
 			/>,
 		);
 
-		await expect.element(screen.getByText('Order Process')).toBeVisible();
-		await expect.element(screen.getByText('order-process')).toBeVisible();
+		await expect.element(screen.getByRole('heading', {name: 'Order Process'})).toBeVisible();
+		await expect.element(screen.getByTitle('order-process')).toBeVisible();
 	});
 });

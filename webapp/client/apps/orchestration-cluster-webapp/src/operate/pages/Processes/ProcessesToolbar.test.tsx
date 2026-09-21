@@ -560,7 +560,7 @@ describe('Processes bulk toolbar', () => {
 					await userEvent.click(screen.getByRole('button', {name: label, exact: true}));
 					await expect
 						.element(screen.getByRole('dialog'))
-						.toHaveTextContent(
+						.toMatchTextContent(
 							translations.t('operate.processes.toolbar.confirm', {count, total: `${count}`, action: label}),
 						);
 				});

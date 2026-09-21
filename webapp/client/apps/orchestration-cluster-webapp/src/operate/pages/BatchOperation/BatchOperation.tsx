@@ -115,7 +115,7 @@ const BatchOperation: React.FC<Props> = ({batchOperationKey}) => {
 			},
 			{
 				label: t('operate.batchOperation.tiles.actor'),
-				content: data?.actorId ?? '--',
+				content: <span>{data?.actorId ?? '--'}</span>,
 			},
 		],
 		[data, t],

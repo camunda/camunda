@@ -84,7 +84,7 @@ describe('Multi tenancy', () => {
 
 		const screen = await renderDecisionsPage({tenantId: '<tenant-A>'});
 
-		await expect.element(screen.getByRole('combobox', {name: 'Select a tenant'})).toHaveTextContent('Tenant A');
+		await expect.element(screen.getByRole('combobox', {name: 'Select a tenant'})).toMatchTextContent('Tenant A');
 	});
 
 	it('should set the tenant to the URL on change', async ({worker}) => {
