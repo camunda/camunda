@@ -62,4 +62,7 @@ public final class ErrorMessages {
       "The provided metadata exceeds the maximum serialized size of %d bytes";
   public static final String ERROR_MESSAGE_HISTORY_MISSING_CONFIGURATION_ATTRIBUTE =
       "No CONFIGURATION history item sets '%s'; add a CONFIGURATION history item that sets it";
+  public static final String ERROR_MESSAGE_INVALID_SECRET_RESOURCE_ID =
+      "The provided resourceId '%s' cannot match any secret reference. It must be '*' or the full "
+          + "reference in the form 'camunda.secrets.<name>', where <name> matches the pattern '%s'";
 }

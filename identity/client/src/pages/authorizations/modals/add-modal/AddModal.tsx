@@ -8,7 +8,7 @@
 
 import { FC, useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Checkbox, CheckboxGroup, Dropdown } from "@carbon/react";
+import { Checkbox, CheckboxGroup, Dropdown, TextInput } from "@carbon/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { authorizationMutations } from "src/utility/api/authorizations/mutations";
 import useTranslate from "src/utility/localization";
@@ -25,13 +25,22 @@ import { useNotifications } from "src/components/notifications";
 import TextField from "src/components/form/TextField";
 import Divider from "src/components/form/Divider";
 import { DocumentationLink } from "src/components/documentation";
-import { Caption, Row, TextFieldContainer } from "../components";
+import {
+  Caption,
+  PrefixedFieldRow,
+  Row,
+  TextFieldContainer,
+} from "../components";
 import OwnerSelection from "../owner-selection";
 import { useDropdownAutoFocus } from "./useDropdownAutoFocus";
 import {
   isValidId,
   isValidResourceId,
+  isValidSecretResourceId,
   getIdPattern,
+  SECRET_NAME_PATTERN_TEXT,
+  AUTHORIZATION_WILDCARD,
+  SECRET_REFERENCE_PREFIX,
 } from "src/utility/validate";
 import type {
   OwnerType,
@@ -218,6 +227,63 @@ export const AddModal: FC<
                     invalid={!!fieldState.error}
                     invalidText={fieldState.error?.message}
                   />
+                );
+              }}
+            />
+          ) : watchedResourceType === "SECRET" ? (
+            <Controller
+              name="resourceId"
+              control={control}
+              rules={{
+                required: t("resourceIdRequired"),
+                validate: (value) =>
+                  isValidSecretResourceId(value ?? "") ||
+                  t("pleaseEnterValidSecretResourceId", {
+                    pattern: SECRET_NAME_PATTERN_TEXT,
+                  }),
+              }}
+              render={({ field, fieldState }) => {
+                const currentValue = field.value ?? "";
+                const isWildcard = currentValue === AUTHORIZATION_WILDCARD;
+                const displayValue = isWildcard
+                  ? AUTHORIZATION_WILDCARD
+                  : currentValue.startsWith(SECRET_REFERENCE_PREFIX)
+                    ? currentValue.slice(SECRET_REFERENCE_PREFIX.length)
+                    : currentValue;
+
+                return (
+                  <div className="cds--form-item">
+                    <span className="cds--label">{t("resourceId")}</span>
+                    <PrefixedFieldRow>
+                      {!isWildcard && (
+                        <Caption>{SECRET_REFERENCE_PREFIX}</Caption>
+                      )}
+                      <TextInput
+                        id="secret-resource-id"
+                        labelText={t("resourceId")}
+                        hideLabel
+                        value={displayValue}
+                        placeholder={t("enterSecretName")}
+                        helperText={t("secretResourceIdHelperText")}
+                        invalid={!!fieldState.error}
+                        invalidText={fieldState.error?.message}
+                        onChange={(e) => {
+                          // Resolve the wildcard on every keystroke rather
+                          // than on blur: the form validates on change, and
+                          // the modal submits on Enter without blurring, so
+                          // deferring left a lone "*" both flagged invalid
+                          // and unsubmittable from the keyboard.
+                          const input = e.currentTarget.value;
+                          field.onChange(
+                            input === AUTHORIZATION_WILDCARD
+                              ? AUTHORIZATION_WILDCARD
+                              : SECRET_REFERENCE_PREFIX + input,
+                          );
+                        }}
+                        onBlur={field.onBlur}
+                      />
+                    </PrefixedFieldRow>
+                  </div>
                 );
               }}
             />
