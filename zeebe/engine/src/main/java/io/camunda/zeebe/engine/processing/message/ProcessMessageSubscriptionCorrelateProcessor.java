@@ -229,7 +229,6 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
     final long pdKey = storedRecord.getProcessDefinitionKey();
     final String messageName = storedRecord.getMessageName();
     final String tenantId = storedRecord.getTenantId();
-    final int ordinal = storedRecord.getStorageOrdinal();
 
     final var eventRecord = new ProcessMessageSubscriptionRecord();
     eventRecord.wrap(storedRecord);
@@ -251,8 +250,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
                 pdKey,
                 BufferUtil.wrapString(messageName),
                 tenantId,
-                confirmedSubscriptionKey,
-                ordinal));
+                confirmedSubscriptionKey));
   }
 
   private boolean hasAlreadyBeenCorrelated(
