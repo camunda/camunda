@@ -44,7 +44,7 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
  * the security chains were built, so a provider that was down failed the application context.
  * Discovery now happens on first use.
  *
- * <p>No test serves the JWK set, so a bearer token stays unverifiable in any test order.
+ * <p>The bearer token is not a JWT, so it stays unverifiable whether or not a decoder was built.
  */
 @SuppressWarnings({"SpringBootApplicationProperties", "WrongPropertyKeyValueDelimiter"})
 @AutoConfigureMockMvc
@@ -121,7 +121,7 @@ public class OidcUnreachableIssuerStartupTest {
     stubFor(get(urlEqualTo(DISCOVERY_ENDPOINT)).willReturn(okJson(discoveryDocument())));
 
     // then the very next request builds the decoder — no restart needed — and the same token is
-    // now a rejected credential, because nothing serves the keys to verify it with
+    // now a rejected credential: a decoder exists to turn it down as malformed
     assertThat(callApiWithToken()).hasStatus(HttpStatus.UNAUTHORIZED);
   }
 
