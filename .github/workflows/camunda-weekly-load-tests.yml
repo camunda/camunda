@@ -263,6 +263,8 @@ jobs:
       needs.test-data.result == 'success' &&
       (needs.build-camunda-image.result == 'success' || needs.build-camunda-image.result == 'skipped') &&
       (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped')
+    permissions:
+      id-token: write  # Vault OIDC/JWT auth, needed by the called workflow's jobs
     uses: ./.github/workflows/camunda-ecs-weekly-load-test.yml
     secrets: inherit
     with:
