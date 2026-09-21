@@ -6,11 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const formatOperationType = (type: string) => {
+const formatOperationType = (type: string | null | undefined) => {
   return type
-    .split('_')
-    .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
-    .join(' ');
+    ? type
+        .split('_')
+        .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
+        .join(' ')
+    : '--';
 };
 
 export {formatOperationType};
