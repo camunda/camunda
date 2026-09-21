@@ -41,18 +41,21 @@ spec:
         app.kubernetes.io/component: dmn-k6
     spec:
       restartPolicy: Never
-      # (1) No broker-nodepool toleration -> cannot land on a broker node.
-      # (2) Never co-schedule with a broker pod.
+      # Prefer (not require) a node with no broker pod so the generator does not
+      # steal broker CPU, while still guaranteeing the pod can always schedule --
+      # a hard requirement would leave it Pending if every free node runs a broker.
       affinity:
         podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchExpressions:
-                  - key: app.kubernetes.io/component
-                    operator: In
-                    values:
-                      - zeebe-broker
-              topologyKey: kubernetes.io/hostname
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/component
+                      operator: In
+                      values:
+                        - zeebe-broker
+                topologyKey: kubernetes.io/hostname
       {{- if .Values.topologyZone }}
       nodeSelector:
         topology.kubernetes.io/zone: "{{ .Values.topologyZone }}"
