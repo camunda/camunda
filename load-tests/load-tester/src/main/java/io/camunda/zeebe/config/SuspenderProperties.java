@@ -1,0 +1,294 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.config;
+
+import java.time.Duration;
+
+/**
+ * Configuration for the {@code suspender} load-test role, which periodically suspends and later
+ * resumes running process instances to stress the suspend/resume feature on a real cluster.
+ *
+ * <p>The master switch is {@link #enabled}: leaving it {@code false} is the A/B baseline arm (no
+ * suspend/resume traffic), setting it {@code true} is the suspend/resume arm.
+ */
+public class SuspenderProperties {
+
+  /** Suspend/resume driver: per-instance commands, or process-instance batch operations. */
+  public enum Mode {
+    SINGLE,
+    BATCH,
+    /**
+     * Repeating cycle over the ordinary (starter-created) instances: each cycle suspends {@link
+     * #count} instances, picking one currently-active instance just before each suspend and spacing
+     * consecutive suspends by {@link #suspendInterval}, holds each for {@link #holdDuration} after
+     * its own suspend, then resumes them spaced by {@link #resumeInterval}. Instances are not
+     * cancelled — resume returns them to normal execution. Distinct from {@link #SINGLE}, which
+     * suspends at a fixed rate with no per-cycle count cap, and from target mode, which drives a
+     * dedicated heavy definition.
+     */
+    SPACED
+  }
+
+  private boolean enabled = false;
+  private Mode mode = Mode.SINGLE;
+  private String processId = "benchmark";
+
+  // single mode: suspend attempts per rate-duration
+  private double rate = 10;
+  private Duration rateDuration = Duration.ofSeconds(1);
+  private int sampleSize = 100;
+
+  // batch mode; also the idle gap between cycles in SPACED and target mode
+  private Duration batchInterval = Duration.ofSeconds(10);
+  private int batchPageSize = 1000;
+
+  // SPACED mode: how many ordinary instances to suspend/resume per cycle, and the gap left between
+  // consecutive suspend commands and consecutive resume commands. Set both intervals to 0 to
+  // suspend (and later resume) all `count` instances back to back as one simultaneous batch.
+  // Resume of an instance still waits until its holdDuration has elapsed since its own suspend, so
+  // resumeInterval only spaces resumes that would otherwise be due together. In SPACED mode
+  // `warmup` doubles as the one-off initial delay before the first cycle (so a pool of instances
+  // exists to suspend), and `batchInterval` is the idle gap between cycles.
+  private int count = 100;
+  private Duration suspendInterval = Duration.ofSeconds(1);
+  private Duration resumeInterval = Duration.ofSeconds(1);
+
+  /** How long an instance stays suspended before it is resumed. */
+  private Duration holdDuration = Duration.ofSeconds(30);
+
+  // Target mode: instead of suspending the instances the starter creates, deploy a dedicated
+  // heavy process definition, create a few instances of it, and suspend/resume only those while
+  // the starter's normal workload runs untouched (blast-radius / interference test).
+  private boolean targetEnabled = false;
+  // Baseline switch: when false, target instances are created and cancelled each cycle but never
+  // suspended/resumed — isolates the effect of the fan-out / timer triggers alone.
+  private boolean suspendEnabled = true;
+  private String targetBpmnPath = "bpmn/suspend_target.bpmn";
+  private String targetProcessId = "suspendTarget";
+  private int targetInstances = 1;
+  private int jobCount = 500;
+  private int subscriptionCount = 500;
+
+  // Buffered-command backlog: each target instance carries this many short timers. While the
+  // instance is suspended each timer comes due exactly once and its trigger is buffered (an
+  // internal command targeting a suspended instance), so the backlog drained on resume equals
+  // timerCount. Timers are not written into the SUSPEND record, so this is not bounded by the
+  // 4 MB batch limit (unlike jobs/subscriptions).
+  private int timerCount = 2000;
+
+  // Timers must come due within the hold window: after warmup (when the instance is suspended) and
+  // before resume. So require warmup < timerDuration < warmup + holdDuration, and warmup long
+  // enough for the fan-out to materialise. The target is recreated every cycle (create -> warmup
+  // -> suspend -> hold -> resume -> settle -> cancel), so it is idle between cycles and the A/B
+  // interference signal stays clean.
+  private Duration timerDuration = Duration.ofSeconds(30);
+  private Duration warmup = Duration.ofSeconds(20);
+  private Duration settle = Duration.ofSeconds(15);
+
+  // Optional second stressor: while the target is suspended, publish one message per subscription
+  // with a TTL that outlasts the hold. The subscriptions are closed while suspended, so the
+  // messages sit in the message buffer and correlate when resume reopens the subscriptions — a
+  // burst of correlation work at resume time, distinct from the timer buffered-command drain.
+  private boolean generateResumeCorrelations = false;
+
+  public boolean isEnabled() {
+    return enabled;
+  }
+
+  public void setEnabled(final boolean enabled) {
+    this.enabled = enabled;
+  }
+
+  public Mode getMode() {
+    return mode;
+  }
+
+  public void setMode(final Mode mode) {
+    this.mode = mode;
+  }
+
+  public String getProcessId() {
+    return processId;
+  }
+
+  public void setProcessId(final String processId) {
+    this.processId = processId;
+  }
+
+  public double getRate() {
+    return rate;
+  }
+
+  public void setRate(final double rate) {
+    this.rate = rate;
+  }
+
+  public Duration getRateDuration() {
+    return rateDuration;
+  }
+
+  public void setRateDuration(final Duration rateDuration) {
+    this.rateDuration = rateDuration;
+  }
+
+  public double getRatePerSecond() {
+    return rate / (rateDuration.toNanos() / 1_000_000_000.0);
+  }
+
+  public int getSampleSize() {
+    return sampleSize;
+  }
+
+  public void setSampleSize(final int sampleSize) {
+    this.sampleSize = sampleSize;
+  }
+
+  public Duration getBatchInterval() {
+    return batchInterval;
+  }
+
+  public void setBatchInterval(final Duration batchInterval) {
+    this.batchInterval = batchInterval;
+  }
+
+  public int getBatchPageSize() {
+    return batchPageSize;
+  }
+
+  public void setBatchPageSize(final int batchPageSize) {
+    this.batchPageSize = batchPageSize;
+  }
+
+  public int getCount() {
+    return count;
+  }
+
+  public void setCount(final int count) {
+    this.count = count;
+  }
+
+  public Duration getSuspendInterval() {
+    return suspendInterval;
+  }
+
+  public void setSuspendInterval(final Duration suspendInterval) {
+    this.suspendInterval = suspendInterval;
+  }
+
+  public Duration getResumeInterval() {
+    return resumeInterval;
+  }
+
+  public void setResumeInterval(final Duration resumeInterval) {
+    this.resumeInterval = resumeInterval;
+  }
+
+  public Duration getHoldDuration() {
+    return holdDuration;
+  }
+
+  public void setHoldDuration(final Duration holdDuration) {
+    this.holdDuration = holdDuration;
+  }
+
+  public boolean isTargetEnabled() {
+    return targetEnabled;
+  }
+
+  public void setTargetEnabled(final boolean targetEnabled) {
+    this.targetEnabled = targetEnabled;
+  }
+
+  public boolean isSuspendEnabled() {
+    return suspendEnabled;
+  }
+
+  public void setSuspendEnabled(final boolean suspendEnabled) {
+    this.suspendEnabled = suspendEnabled;
+  }
+
+  public String getTargetBpmnPath() {
+    return targetBpmnPath;
+  }
+
+  public void setTargetBpmnPath(final String targetBpmnPath) {
+    this.targetBpmnPath = targetBpmnPath;
+  }
+
+  public String getTargetProcessId() {
+    return targetProcessId;
+  }
+
+  public void setTargetProcessId(final String targetProcessId) {
+    this.targetProcessId = targetProcessId;
+  }
+
+  public int getTargetInstances() {
+    return targetInstances;
+  }
+
+  public void setTargetInstances(final int targetInstances) {
+    this.targetInstances = targetInstances;
+  }
+
+  public int getJobCount() {
+    return jobCount;
+  }
+
+  public void setJobCount(final int jobCount) {
+    this.jobCount = jobCount;
+  }
+
+  public int getSubscriptionCount() {
+    return subscriptionCount;
+  }
+
+  public void setSubscriptionCount(final int subscriptionCount) {
+    this.subscriptionCount = subscriptionCount;
+  }
+
+  public int getTimerCount() {
+    return timerCount;
+  }
+
+  public void setTimerCount(final int timerCount) {
+    this.timerCount = timerCount;
+  }
+
+  public Duration getTimerDuration() {
+    return timerDuration;
+  }
+
+  public void setTimerDuration(final Duration timerDuration) {
+    this.timerDuration = timerDuration;
+  }
+
+  public Duration getWarmup() {
+    return warmup;
+  }
+
+  public void setWarmup(final Duration warmup) {
+    this.warmup = warmup;
+  }
+
+  public Duration getSettle() {
+    return settle;
+  }
+
+  public void setSettle(final Duration settle) {
+    this.settle = settle;
+  }
+
+  public boolean isGenerateResumeCorrelations() {
+    return generateResumeCorrelations;
+  }
+
+  public void setGenerateResumeCorrelations(final boolean generateResumeCorrelations) {
+    this.generateResumeCorrelations = generateResumeCorrelations;
+  }
+}
