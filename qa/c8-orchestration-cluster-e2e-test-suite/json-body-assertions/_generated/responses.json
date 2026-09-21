@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "sourceRepo": "camunda/camunda",
-    "commit": "local",
-    "generatedAt": "2026-09-18T03:59:21.146Z",
+    "sourceRepo": "https://github.com/camunda/camunda",
+    "commit": "d02e4f55e7164e3d8d0aa31334bba83c5fc514ff",
+    "generatedAt": "2026-09-21T12:12:38.601Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "0a46076251c7a6131cb65213e3982a75b08ba773d6635a46371324b1d3ec3a2d"
+    "specSha256": "6ee815d0a827c7015c4172c2da531855bfde74fe820c92cfb111522e36546e75"
   },
   "responses": [
     {
@@ -11246,6 +11246,25 @@
               "HEALTHY",
               "DEGRADED",
               "DOWN"
+            ]
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/status/upgrade",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "status",
+            "type": "string",
+            "enumValues": [
+              "MIGRATED",
+              "MIGRATION_IN_PROGRESS",
+              "UNKNOWN"
             ]
           }
         ],
