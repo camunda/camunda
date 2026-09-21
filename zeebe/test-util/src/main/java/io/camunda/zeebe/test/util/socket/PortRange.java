@@ -12,6 +12,10 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.util.Iterator;
 
+/**
+ * Allocates ports from the bounded per-fork range laid out by {@link SocketUtil}. Returns
+ * unoccupied ports within {@code [min, max)}.
+ */
 class PortRange implements Iterator<InetSocketAddress> {
   private final String host;
   private final int basePort;
@@ -21,19 +25,11 @@ class PortRange implements Iterator<InetSocketAddress> {
   private int currentOffset;
 
   PortRange(final String host, final int forkNumber, final int min, final int max) {
+    assert max > min : "Port range must be non-empty, got min=" + min + " max=" + max;
     assert max <= 65535 : "Port range exceeds maximal available port 65535, got max port " + max;
     this.host = host;
     basePort = min;
     maxOffset = max - min;
-    this.forkNumber = forkNumber;
-
-    currentOffset = 0;
-  }
-
-  PortRange(final String host, final int forkNumber) {
-    this.host = host;
-    basePort = 0;
-    maxOffset = 0;
     this.forkNumber = forkNumber;
 
     currentOffset = 0;
@@ -53,25 +49,13 @@ class PortRange implements Iterator<InetSocketAddress> {
 
   private int nextPort() {
     int next;
-    if (maxOffset == 0) {
-      next = ephemeralPort();
-    } else {
-      do {
-        next = basePort + (currentOffset++ % maxOffset);
-      } while (!portAvailable(next));
-    }
+    do {
+      next = basePort + (currentOffset++ % maxOffset);
+    } while (!portAvailable(next));
 
     SocketUtil.LOG.info(
         "Choosing next port {} for test fork {} with range {}", next, forkNumber, this);
     return next;
-  }
-
-  private int ephemeralPort() {
-    try (final ServerSocket socket = new ServerSocket(0)) {
-      return socket.getLocalPort();
-    } catch (final IOException e) {
-      throw new IllegalStateException("Unable to allocate an ephemeral test port", e);
-    }
   }
 
   private boolean portAvailable(final int port) {
