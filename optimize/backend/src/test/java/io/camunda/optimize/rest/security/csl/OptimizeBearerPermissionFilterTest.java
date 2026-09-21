@@ -16,6 +16,8 @@ import static org.mockito.Mockito.when;
 import io.camunda.identity.sdk.authentication.exception.TokenVerificationException;
 import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.service.security.CCSMTokenService;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.CamundaAuthentication;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -29,11 +31,11 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 
 class OptimizeBearerPermissionFilterTest {
 
-  private final OidcBearerPrincipalClassifier classifier =
-      mock(OidcBearerPrincipalClassifier.class);
+  private final CamundaAuthenticationProvider authenticationProvider =
+      mock(CamundaAuthenticationProvider.class);
   private final CCSMTokenService tokenService = mock(CCSMTokenService.class);
   private final OptimizeBearerPermissionFilter filter =
-      new OptimizeBearerPermissionFilter(classifier, tokenService);
+      new OptimizeBearerPermissionFilter(authenticationProvider, tokenService);
   private final HttpServletRequest request = mock(HttpServletRequest.class);
   private final HttpServletResponse response = mock(HttpServletResponse.class);
   private final FilterChain chain = mock(FilterChain.class);
@@ -65,7 +67,7 @@ class OptimizeBearerPermissionFilterTest {
 
     // then
     verify(chain).doFilter(request, response);
-    verifyNoInteractions(classifier, tokenService);
+    verifyNoInteractions(authenticationProvider, tokenService);
   }
 
   @Test
@@ -73,7 +75,8 @@ class OptimizeBearerPermissionFilterTest {
     // given
     final Jwt jwt = jwtWithClaims(Map.of("client_id", "optimize-api-client"));
     authenticateWith(jwt);
-    when(classifier.requiresOptimizePermissionCheck(jwt.getClaims())).thenReturn(false);
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(CamundaAuthentication.of(b -> b.clientId("optimize-api-client")));
 
     // when
     filter.doFilter(request, response, chain);
@@ -88,7 +91,8 @@ class OptimizeBearerPermissionFilterTest {
     // given
     final Jwt jwt = jwtWithClaims(Map.of("preferred_username", "demo"));
     authenticateWith(jwt);
-    when(classifier.requiresOptimizePermissionCheck(jwt.getClaims())).thenReturn(true);
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(CamundaAuthentication.of(b -> b.user("demo")));
 
     // when
     filter.doFilter(request, response, chain);
@@ -103,7 +107,8 @@ class OptimizeBearerPermissionFilterTest {
     // given
     final Jwt jwt = jwtWithClaims(Map.of("preferred_username", "noopt"));
     authenticateWith(jwt);
-    when(classifier.requiresOptimizePermissionCheck(jwt.getClaims())).thenReturn(true);
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(CamundaAuthentication.of(b -> b.user("noopt")));
     doThrow(new NotAuthorizedException("User is not authorized to access Optimize"))
         .when(tokenService)
         .verifyAccessToken("raw-token-value");
@@ -121,7 +126,8 @@ class OptimizeBearerPermissionFilterTest {
     // given
     final Jwt jwt = jwtWithClaims(Map.of("preferred_username", "noopt"));
     authenticateWith(jwt);
-    when(classifier.requiresOptimizePermissionCheck(jwt.getClaims())).thenReturn(true);
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(CamundaAuthentication.of(b -> b.user("noopt")));
     doThrow(new TokenVerificationException("token expired"))
         .when(tokenService)
         .verifyAccessToken("raw-token-value");
@@ -130,6 +136,24 @@ class OptimizeBearerPermissionFilterTest {
     filter.doFilter(request, response, chain);
 
     // then
+    verify(chain).doFilter(request, response);
+  }
+
+  @Test
+  void shouldRequireTheCheckWhenThePrincipalCannotBeClassified() throws Exception {
+    // given: CSL's own converter throws (e.g. neither username nor client-id claim resolves) —
+    // fail closed, exactly as an unclassifiable claims set did before this reused CSL's own
+    // classification instead of re-deriving it
+    final Jwt jwt = jwtWithClaims(Map.of("sub", "no-mapped-claims"));
+    authenticateWith(jwt);
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenThrow(new IllegalArgumentException("Neither username nor clientId claim resolved"));
+
+    // when
+    filter.doFilter(request, response, chain);
+
+    // then
+    verify(tokenService).verifyAccessToken("raw-token-value");
     verify(chain).doFilter(request, response);
   }
 }

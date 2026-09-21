@@ -42,6 +42,8 @@ import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.web.context.AbstractSecurityWebApplicationInitializer;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
  * Chain-level test of {@link OptimizeBearerPermissionFilter}, mirroring {@link
@@ -77,6 +79,11 @@ class OptimizeBearerPermissionFilterIntegrationTest {
             "spring.profiles.active=ccsm",
             "camunda.security.authentication.catch-all-unhandled-paths-enabled=false",
             "camunda.security.authentication.method=oidc",
+            // Normally bridged by OptimizeSecurityConfigCompatibilityPostProcessor, which
+            // WebApplicationContextRunner never invokes (it bypasses SpringApplication.run); set
+            // explicitly so the classification this filter reads from CamundaAuthenticationProvider
+            // matches production behavior for a default (Keycloak) CCSM deployment.
+            "camunda.security.authentication.oidc.client-id-claim=client_id",
             "camunda.security.authentication.oidc.client-id=test-client",
             "camunda.security.authentication.oidc.client-secret=test-secret",
             "camunda.security.authentication.oidc.issuer-uri=" + server.issuerUri(),
@@ -137,7 +144,18 @@ class OptimizeBearerPermissionFilterIntegrationTest {
     final var request = new MockHttpServletRequest("GET", path);
     request.addHeader("Authorization", "Bearer " + token);
     final var response = new MockHttpServletResponse();
-    resolveSecurityFilter(ctx).doFilter(request, response, new MockFilterChain());
+    // A real deployment always dispatches through DispatcherServlet, which binds the request via
+    // RequestContextListener/RequestContextFilter. This test drives the security filter chain
+    // directly (see resolveSecurityFilter), bypassing that, so CSL's session-based
+    // CamundaAuthenticationHolder — consulted for every CamundaAuthenticationProvider lookup,
+    // including OptimizeBearerPermissionFilter's — would otherwise fail with "No thread-bound
+    // request found".
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request, response));
+    try {
+      resolveSecurityFilter(ctx).doFilter(request, response, new MockFilterChain());
+    } finally {
+      RequestContextHolder.resetRequestAttributes();
+    }
     return response;
   }
 
