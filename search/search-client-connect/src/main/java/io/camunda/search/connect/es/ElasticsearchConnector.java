@@ -22,6 +22,7 @@ import io.camunda.search.connect.util.SecurityUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Optional;
 import org.apache.http.Header;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequestInterceptor;
@@ -33,13 +34,16 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.message.BasicHeader;
 import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class ElasticsearchConnector {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchConnector.class);
+
+  private static final int DEFAULT_CONNECT_REQUEST_TIMEOUT_MILLIS = 180_000;
+  private static final int DEFAULT_CONNECT_TIMEOUT_MILLIS = 1_000;
+  private static final int DEFAULT_SOCKET_TIMEOUT_MILLIS = 30_000;
 
   private final ConnectConfiguration configuration;
   private final ObjectMapper objectMapper;
@@ -174,15 +178,20 @@ public final class ElasticsearchConnector {
 
   @VisibleForTesting
   Builder setTimeouts(final Builder builder, final ConnectConfiguration elsConfig) {
-    if (elsConfig.getSocketTimeout() != null) {
-      builder.setSocketTimeout(elsConfig.getSocketTimeout());
-    }
-    if (elsConfig.getConnectTimeout() != null) {
-      builder.setConnectTimeout(elsConfig.getConnectTimeout());
-      builder.setConnectionRequestTimeout(elsConfig.getConnectTimeout());
-    } else {
-      builder.setConnectionRequestTimeout(RestClientBuilder.DEFAULT_CONNECT_TIMEOUT_MILLIS);
-    }
+    // ES does set some defaults via RestClientBuilder, but we will set them explictly here
+    // so it's clearer what they are
+    final var socketTimeoutMillis =
+        Optional.ofNullable(elsConfig.getSocketTimeout()).orElse(DEFAULT_SOCKET_TIMEOUT_MILLIS);
+    builder.setSocketTimeout(socketTimeoutMillis);
+
+    final var connectTimeoutMillis =
+        Optional.ofNullable(elsConfig.getConnectTimeout()).orElse(DEFAULT_CONNECT_TIMEOUT_MILLIS);
+    builder.setConnectTimeout(connectTimeoutMillis);
+
+    // by default RestClientBuilder does not set this, so we aligning this with the OS client
+    // default of 3 minutes
+    builder.setConnectionRequestTimeout(DEFAULT_CONNECT_REQUEST_TIMEOUT_MILLIS);
+
     return builder;
   }
 
