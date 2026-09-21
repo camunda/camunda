@@ -531,6 +531,38 @@ class SchemaManagerTest {
     verify(client, times(1)).putSettings(eq(indexA), eq(Map.of("index.number_of_replicas", "1")));
   }
 
+  /**
+   * Regression test for #63543, see {@link #shouldSkipReplicaSettingsWriteWhenAlreadyUpToDate}. A
+   * prior schema version's physical index is unreachable by {@code putSettings()} (its alias has
+   * moved on to the current version), so a mismatched replica count on it must not be treated as
+   * drift the write could ever fix — that would trigger a redundant PUT on every attempt forever.
+   */
+  @RegressionTest("https://github.com/camunda/zeebe/issues/63543")
+  void shouldNotTriggerWriteForDriftOnAPriorSchemaVersion() {
+    // given - a prior-version physical index has drifted, but the current version has not
+    final var client = mock(SearchEngineClient.class);
+    final var indexA = new TestIndexDescriptor("index-a", "mappings.json");
+    final var priorVersionIndexName = indexA.getIndexNameWithoutVersion() + "-0.9.0_2025.01.01";
+    when(client.getNumberOfReplicas(ALL_TEST_INDICES_WILDCARD))
+        .thenReturn(Map.of(indexA.getFullQualifiedName(), 1, priorVersionIndexName, 0));
+    final var manager =
+        new SchemaManager(
+            client,
+            List.of(indexA),
+            List.of(),
+            config,
+            mock(IndexSchemaValidator.class),
+            "8.8.0",
+            null);
+
+    // when
+    manager.startupOnce();
+    manager.close();
+
+    // then - the prior version's drift is not attributed to indexA, so no write is issued
+    verify(client, never()).putSettings(any(), any());
+  }
+
   private SchemaManager createSpySchemaManager(final String currentVersion) {
     return spy(
         new SchemaManager(
