@@ -34,6 +34,7 @@ final class EngineMetricsDocTest {
             // panel 13 of monitor/grafana/zeebe.json highlights that row orange to warn operators
             // about unleased workers colliding with leased jobs
             Map.entry(JobAction.SKIPPED_LEASED, "skipped"),
+            Map.entry(JobAction.SKIPPED_RESERVED, "skipped reserved"),
             Map.entry(JobAction.SKIPPED_UNCACHED_SECRET, "skipped uncached secret"),
             Map.entry(JobAction.TIMED_OUT, "timed out"),
             Map.entry(JobAction.COMPLETED, "completed"),

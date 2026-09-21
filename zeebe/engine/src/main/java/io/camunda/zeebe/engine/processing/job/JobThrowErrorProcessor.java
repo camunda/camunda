@@ -118,7 +118,9 @@ public class JobThrowErrorProcessor
             state.getBannedInstanceState(),
             "throw an error for",
             List.of(State.ACTIVATABLE, State.ACTIVATED),
-            List.of(JobLeaseFencingCheck.forLifecycleCommand()),
+            List.of(
+                JobReservationFencingCheck.forCommand(),
+                JobLeaseFencingCheck.forLifecycleCommand()),
             tenantCheck);
 
     stateAnalyzer = new CatchEventAnalyzer(state.getProcessState(), elementInstanceState);

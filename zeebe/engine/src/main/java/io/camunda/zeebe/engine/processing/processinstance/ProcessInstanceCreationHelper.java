@@ -38,6 +38,7 @@ import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.TagUtil;
@@ -64,6 +65,7 @@ public class ProcessInstanceCreationHelper {
       "Expected to create process instance by either process definition key or version tag, but both were provided: key '%d', version tag '%s'";
   private static final String ERROR_MESSAGE_NOT_FOUND_BY_KEY =
       "Expected to find process definition with key '%d', but none found";
+  private static final DirectBuffer EMPTY_TOKEN = wrapString("");
   private static final String ERROR_MESSAGE_NO_NONE_START_EVENT =
       "Expected to create instance of process with none start event, but there is no such event";
   private static final String ERROR_MESSAGE_BUSINESS_ID_ALREADY_EXISTS =
@@ -186,7 +188,8 @@ public class ProcessInstanceCreationHelper {
       final DeployedProcess process,
       final long processInstanceKey,
       final Set<String> tags,
-      final DirectBuffer businessId) {
+      final DirectBuffer businessId,
+      final DirectBuffer jobReservationToken) {
     return new ProcessInstanceRecord()
         .setBpmnProcessId(process.getBpmnProcessId())
         .setVersion(process.getVersion())
@@ -199,7 +202,20 @@ public class ProcessInstanceCreationHelper {
         .setFlowScopeKey(-1)
         .setTenantId(process.getTenantId())
         .setTags(tags)
-        .setBusinessId(businessId);
+        .setBusinessId(businessId)
+        .setJobReservationToken(jobReservationToken);
+  }
+
+  /**
+   * Returns the token of the record's reserve-jobs instruction, or an empty buffer when it carries
+   * none.
+   */
+  public static DirectBuffer jobReservationTokenOf(final ProcessInstanceCreationRecord record) {
+    return record.runtimeInstructions().stream()
+        .filter(instruction -> instruction.getType() == RuntimeInstructionType.RESERVE_JOBS)
+        .findFirst()
+        .map(ProcessInstanceCreationRuntimeInstruction::getJobReservationTokenBuffer)
+        .orElse(EMPTY_TOKEN);
   }
 
   private Either<Rejection, DeployedProcess> getProcess(
@@ -477,6 +493,9 @@ public class ProcessInstanceCreationHelper {
 
     final var unknownIds =
         runtimeInstructions.stream()
+            .filter(
+                instruction ->
+                    instruction.getType() == RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
             .map(ProcessInstanceCreationRuntimeInstruction::getAfterElementId)
             .filter(elementId -> !isElementOfProcess(process, elementId))
             .distinct()

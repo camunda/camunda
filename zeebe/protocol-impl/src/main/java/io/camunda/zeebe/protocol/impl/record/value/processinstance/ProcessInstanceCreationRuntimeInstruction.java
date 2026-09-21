@@ -28,11 +28,14 @@ public class ProcessInstanceCreationRuntimeInstruction extends ObjectValue
   private final EnumProperty<RuntimeInstructionType> typeProp =
       new EnumProperty<>("type", RuntimeInstructionType.class);
   private final StringProperty afterElementIdProp = new StringProperty("afterElementId", "");
+  private final StringProperty jobReservationTokenProp =
+      new StringProperty("jobReservationToken", "");
 
   public ProcessInstanceCreationRuntimeInstruction() {
-    super(2);
+    super(3);
     declareProperty(typeProp);
     declareProperty(afterElementIdProp);
+    declareProperty(jobReservationTokenProp);
   }
 
   /**
@@ -65,6 +68,22 @@ public class ProcessInstanceCreationRuntimeInstruction extends ObjectValue
     return afterElementIdProp.getValue();
   }
 
+  @Override
+  public String getJobReservationToken() {
+    return BufferUtil.bufferAsString(jobReservationTokenProp.getValue());
+  }
+
+  public ProcessInstanceCreationRuntimeInstruction setJobReservationToken(
+      final String jobReservationToken) {
+    jobReservationTokenProp.setValue(jobReservationToken);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getJobReservationTokenBuffer() {
+    return jobReservationTokenProp.getValue();
+  }
+
   public static ProcessInstanceCreationRuntimeInstruction createInstruction() {
     return new ProcessInstanceCreationRuntimeInstruction();
   }
@@ -72,5 +91,6 @@ public class ProcessInstanceCreationRuntimeInstruction extends ObjectValue
   public void copy(final ProcessInstanceCreationRuntimeInstructionValue instruction) {
     setType(instruction.getType());
     setAfterElementId(instruction.getAfterElementId());
+    setJobReservationToken(instruction.getJobReservationToken());
   }
 }

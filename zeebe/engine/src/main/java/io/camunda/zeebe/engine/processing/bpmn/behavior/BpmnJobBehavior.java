@@ -670,7 +670,8 @@ public final class BpmnJobBehavior {
         .setPriority(props.getPriority())
         .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
         .setStorageOrdinal(context.getStorageOrdinal())
-        .setBusinessId(getBusinessIdFromProcessInstance(context));
+        .setBusinessId(getBusinessIdFromProcessInstance(context))
+        .setJobReservationToken(getJobReservationTokenFromProcessInstance(context));
     setJobSecretReferences(secretReferences);
 
     final var jobKey = keyGenerator.nextKey();
@@ -710,6 +711,17 @@ public final class BpmnJobBehavior {
       return "";
     }
     return elementInstance.getValue().getBusinessId();
+  }
+
+  private String getJobReservationTokenFromProcessInstance(final BpmnElementContext context) {
+    // the root instance, not this one: a reservation covers the jobs of the child instances a call
+    // activity starts too, and only the root's record was given the token at creation
+    final var elementInstance =
+        stateBehavior.getElementInstance(context.getRootProcessInstanceKey());
+    if (elementInstance == null) {
+      return "";
+    }
+    return elementInstance.getValue().getJobReservationToken();
   }
 
   private DirectBuffer encodeHeaders(

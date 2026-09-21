@@ -16,6 +16,7 @@ import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByVersionTag;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationStartInstruction;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
+import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.function.Consumer;
@@ -96,23 +97,35 @@ public class SimpleRequestMapper {
         .toList();
   }
 
-  private static List<io.camunda.gateway.protocol.model.ProcessInstanceCreationTerminateInstruction>
+  private static List<io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction>
       mapCreateProcessInstanceRuntimeInstructions(
           final List<
                   io.camunda.gateway.protocol.model.simple
-                      .ProcessInstanceCreationTerminateInstruction>
+                      .ProcessInstanceCreationRuntimeInstruction>
               instructions) {
     if (instructions == null) {
       return List.of();
     }
     return instructions.stream()
-        .map(
-            instruction ->
-                io.camunda.gateway.protocol.model.ProcessInstanceCreationTerminateInstruction
-                    .Builder.create()
-                    .afterElementId(instruction.getAfterElementId())
-                    .type(instruction.getType())
-                    .build())
+        .map(SimpleRequestMapper::mapCreateProcessInstanceRuntimeInstruction)
         .toList();
+  }
+
+  private static io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction
+      mapCreateProcessInstanceRuntimeInstruction(
+          final io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationRuntimeInstruction
+              instruction) {
+    if (RuntimeInstructionType.RESERVE_JOBS.name().equals(instruction.getType())) {
+      return io.camunda.gateway.protocol.model.ProcessInstanceCreationReserveJobsInstruction.Builder
+          .create()
+          .type(instruction.getType())
+          .jobReservationToken(instruction.getJobReservationToken())
+          .build();
+    }
+    return io.camunda.gateway.protocol.model.ProcessInstanceCreationTerminateInstruction.Builder
+        .create()
+        .afterElementId(instruction.getAfterElementId())
+        .type(instruction.getType())
+        .build();
   }
 }

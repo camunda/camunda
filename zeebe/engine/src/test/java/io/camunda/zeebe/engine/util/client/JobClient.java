@@ -138,6 +138,11 @@ public final class JobClient {
     return this;
   }
 
+  public JobClient withJobReservationToken(final String jobReservationToken) {
+    jobRecord.setJobReservationToken(jobReservationToken);
+    return this;
+  }
+
   public JobClient withBusinessId(final String businessId) {
     jobRecord.setBusinessId(businessId);
     return this;
@@ -236,6 +241,10 @@ public final class JobClient {
 
   public Record<JobRecordValue> update() {
     return expectation.apply(writeJobCommand(JobIntent.UPDATE));
+  }
+
+  public Record<JobRecordValue> release() {
+    return expectation.apply(writeJobCommand(JobIntent.RELEASE));
   }
 
   public Record<JobRecordValue> throwError() {

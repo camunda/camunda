@@ -12,10 +12,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByVersionTag;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationReserveJobsInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationPlan;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.search.filter.Operation;
+import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -41,6 +44,125 @@ class ProcessInstanceRequestValidatorTest {
         ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
 
     assertThat(result).isEmpty();
+  }
+
+  @Test
+  @DisplayName("Should accept a single reserve-jobs instruction")
+  void shouldAcceptSingleReserveJobsInstruction() {
+    // given
+    final var request =
+        ProcessInstanceCreationInstructionByKey.Builder.create()
+            .processDefinitionKey("123456789")
+            .runtimeInstructions(List.of(reserveJobs("recorder-session-1")))
+            .build();
+
+    // when
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+
+    // then
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  @DisplayName("Should reject more than one reserve-jobs instruction")
+  void shouldRejectMoreThanOneReserveJobsInstruction() {
+    // given
+    final var request =
+        ProcessInstanceCreationInstructionByKey.Builder.create()
+            .processDefinitionKey("123456789")
+            .runtimeInstructions(
+                List.of(reserveJobs("recorder-session-1"), reserveJobs("recorder-session-2")))
+            .build();
+
+    // when
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+
+    // then
+    assertThat(result)
+        .isPresent()
+        .get()
+        .extracting(ProblemDetail::getDetail)
+        .asString()
+        .contains("2 instructions of type RESERVE_JOBS");
+  }
+
+  @Test
+  @DisplayName("Should reject a blank job reservation token when creating by version tag")
+  void shouldRejectBlankJobReservationTokenWhenCreatingByVersionTag() {
+    // given
+    final var request =
+        ProcessInstanceCreationInstructionByVersionTag.Builder.create()
+            .processDefinitionId("process-id")
+            .processDefinitionVersionTag("release-1")
+            .runtimeInstructions(List.of(reserveJobs(" ")))
+            .build();
+
+    // when
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+
+    // then
+    assertThat(result)
+        .isPresent()
+        .get()
+        .extracting(ProblemDetail::getDetail)
+        .asString()
+        .contains("No jobReservationToken provided");
+  }
+
+  @Test
+  @DisplayName("Should reject a blank job reservation token")
+  void shouldRejectBlankJobReservationToken() {
+    // given
+    final var request =
+        ProcessInstanceCreationInstructionByKey.Builder.create()
+            .processDefinitionKey("123456789")
+            .runtimeInstructions(List.of(reserveJobs(" ")))
+            .build();
+
+    // when
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+
+    // then
+    assertThat(result)
+        .isPresent()
+        .get()
+        .extracting(ProblemDetail::getDetail)
+        .asString()
+        .contains("No jobReservationToken provided");
+  }
+
+  @Test
+  @DisplayName("Should reject an over-long job reservation token")
+  void shouldRejectOverLongJobReservationToken() {
+    // given
+    final var request =
+        ProcessInstanceCreationInstructionByKey.Builder.create()
+            .processDefinitionKey("123456789")
+            .runtimeInstructions(List.of(reserveJobs("t".repeat(129))))
+            .build();
+
+    // when
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+
+    // then
+    assertThat(result)
+        .isPresent()
+        .get()
+        .extracting(ProblemDetail::getDetail)
+        .asString()
+        .contains("exceeds the limit of 128 characters");
+  }
+
+  private static ProcessInstanceCreationReserveJobsInstruction reserveJobs(final String token) {
+    return ProcessInstanceCreationReserveJobsInstruction.Builder.create()
+        .type(RuntimeInstructionType.RESERVE_JOBS.name())
+        .jobReservationToken(token)
+        .build();
   }
 
   @Test

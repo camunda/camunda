@@ -223,4 +223,15 @@ public interface ProcessInstanceRecordValue
   default long getResumeFromJobKey() {
     return -1L;
   }
+
+  /**
+   * Returns the job lease token that pre-claims every job this process instance creates. Only the
+   * root element instance record of an instance created with a token carries it.
+   *
+   * @return the job lease token, or an empty string if not set
+   * @since 8.11
+   */
+  default String getJobReservationToken() {
+    return "";
+  }
 }

@@ -36,6 +36,7 @@ import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByVersionTag;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationReserveJobsInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationTerminateInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationInstruction;
@@ -199,14 +200,27 @@ public class ProcessInstanceMapper {
   }
 
   private static List<ProcessInstanceCreationRuntimeInstruction> toRuntimeInstructions(
-      final List<ProcessInstanceCreationTerminateInstruction> instructions) {
-    return instructions.stream()
-        .map(
-            instruction ->
-                new ProcessInstanceCreationRuntimeInstruction()
-                    .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
-                    .setAfterElementId(instruction.getAfterElementId()))
-        .toList();
+      final List<io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction>
+          instructions) {
+    return instructions.stream().map(ProcessInstanceMapper::toRuntimeInstruction).toList();
+  }
+
+  private static ProcessInstanceCreationRuntimeInstruction toRuntimeInstruction(
+      final io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction
+          instruction) {
+    return switch (instruction) {
+      case final ProcessInstanceCreationTerminateInstruction terminate ->
+          new ProcessInstanceCreationRuntimeInstruction()
+              .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
+              .setAfterElementId(terminate.getAfterElementId());
+      case final ProcessInstanceCreationReserveJobsInstruction reserveJobs ->
+          new ProcessInstanceCreationRuntimeInstruction()
+              .setType(RuntimeInstructionType.RESERVE_JOBS)
+              .setJobReservationToken(reserveJobs.getJobReservationToken());
+      default ->
+          throw new IllegalStateException(
+              "Unexpected runtime instruction type: " + instruction.getType());
+    };
   }
 
   public Either<ProblemDetail, ProcessInstanceSuspendRequest> toSuspendProcessInstance(
