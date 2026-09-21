@@ -34,16 +34,29 @@ public abstract class AsyncReplicationIT<R extends ReplicationClusterContainer>
   @Test
   void shouldAcknowledgeExportedRecordsWhenReplicated() {
     final var exporterPosition = getCurrentExporterPosition();
+    LOG.info(
+        "Starting replication acknowledgement test at exporter position {}, acknowledged position {}",
+        exporterPosition,
+        getCurrentAcknowledgedExporterPosition());
 
     // when - start some process instances to generate traffic
     final int numProcessInstances = 10;
     startProcessInstances(numProcessInstances);
     waitForProcessInstancesToStart(camundaClient, numProcessInstances);
+    LOG.info(
+        "Generated {} process instances; exporter position is now {}, acknowledged position is {}",
+        numProcessInstances,
+        getCurrentExporterPosition(),
+        getCurrentAcknowledgedExporterPosition());
 
     // then - exporter advances and fully catches up
     awaitExporterPositionAdvances(exporterPosition);
     awaitExporterPositionStable(Duration.ofSeconds(2), Duration.ofSeconds(30));
     exporterAcknowledgedAll();
+    LOG.info(
+        "Replication acknowledgement test completed at exporter position {}, acknowledged position {}",
+        getCurrentExporterPosition(),
+        getCurrentAcknowledgedExporterPosition());
   }
 
   @Test
@@ -61,24 +74,45 @@ public abstract class AsyncReplicationIT<R extends ReplicationClusterContainer>
     final var afterStopping = Instant.now();
     LOG.info("Disconnected replica at {}", afterStopping);
     startProcessInstances(10);
+    LOG.info(
+        "Generated traffic while replica is unavailable; exporter position is {}, acknowledged position is {}",
+        getCurrentExporterPosition(),
+        getCurrentAcknowledgedExporterPosition());
 
-    wait(getMaxLag().plusSeconds(3));
+    final var maxLagWait = getMaxLag().plusSeconds(3);
+    LOG.info("Waiting {} for the exporter to observe the unavailable replica", maxLagWait);
+    wait(maxLagWait);
     stopFuture.get(15, TimeUnit.MINUTES);
-    LOG.info("Stopped replica at {}", Instant.now());
+    LOG.info(
+        "Stopped replica at {}; exporter position is {}, acknowledged position is {}",
+        Instant.now(),
+        getCurrentExporterPosition(),
+        getCurrentAcknowledgedExporterPosition());
 
     // then - the exporter does not acknowledge them
     assertAcknowledgedPositionNotAdvancedBeyond(acknowledgedPositionBeforeRemoval);
+    LOG.info(
+        "Exporter correctly stopped acknowledging at position {}",
+        getCurrentAcknowledgedExporterPosition());
 
     // when - more traffic is generated
 
     final long exportedPositionAfterMaxLag = getCurrentExporterPosition();
     startProcessInstances(10);
+    LOG.info(
+        "Generated additional traffic after max lag; exporter position is {}, acknowledged position is {}",
+        getCurrentExporterPosition(),
+        getCurrentAcknowledgedExporterPosition());
 
     // then - the exporter should not export anything
     awaitExporterPositionStable(Duration.ofSeconds(5), Duration.ofMinutes(1));
 
     assertThat(getCurrentExporterPosition()).isEqualTo(exportedPositionAfterMaxLag);
     assertAcknowledgedPositionNotAdvancedBeyond(acknowledgedPositionBeforeRemoval);
+    LOG.info(
+        "Replica outage test completed with exporter position {}, acknowledged position {}",
+        getCurrentExporterPosition(),
+        getCurrentAcknowledgedExporterPosition());
   }
 
   @Test
@@ -90,12 +124,24 @@ public abstract class AsyncReplicationIT<R extends ReplicationClusterContainer>
     final long acknowledgedPositionBeforeRecovery = getCurrentAcknowledgedExporterPosition();
 
     // when - the replica is brought back, re-establishing the replication quorum
+    LOG.info(
+        "Starting replica recovery at exporter position {}, acknowledged position {}",
+        exportedPositionBeforeRecovery,
+        acknowledgedPositionBeforeRecovery);
     cluster.startReplica().get(5, TimeUnit.MILLISECONDS);
+    LOG.info(
+        "Replica recovery command completed; exporter position is {}, acknowledged position is {}",
+        getCurrentExporterPosition(),
+        getCurrentAcknowledgedExporterPosition());
 
     // then - the exporter resumes and fully catches up
     awaitExporterPositionAdvances(exportedPositionBeforeRecovery);
     awaitAcknowledgedPositionAdvances(acknowledgedPositionBeforeRecovery);
     exporterAcknowledgedAll();
+    LOG.info(
+        "Replica recovery test completed at exporter position {}, acknowledged position {}",
+        getCurrentExporterPosition(),
+        getCurrentAcknowledgedExporterPosition());
   }
 }
 

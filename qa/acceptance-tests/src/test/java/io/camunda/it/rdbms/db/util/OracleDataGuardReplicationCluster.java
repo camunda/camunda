@@ -41,7 +41,9 @@ public final class OracleDataGuardReplicationCluster implements ReplicationClust
   public static final String ENV_START_REPLICA_CMD = "TEST_ORACLE_START_REPLICA_CMD";
 
   private static final Duration REPLICA_COMMAND_TIMEOUT = Duration.ofMinutes(30);
-  private static final Duration REPLICATION_TIMEOUT = Duration.ofMinutes(45);
+  private static final Duration REPLICATION_TIMEOUT =
+      Duration.ofMinutes(Long.getLong("test.oracle.replication.timeout.minutes", 45L));
+  private static final Duration REPLICATION_READY_MAX_LAG = Duration.ofSeconds(30);
   private static final Duration REPLICATION_POLL_INTERVAL = Duration.ofSeconds(30);
   private static final Logger LOG =
       LoggerFactory.getLogger(OracleDataGuardReplicationCluster.class);
@@ -80,6 +82,7 @@ public final class OracleDataGuardReplicationCluster implements ReplicationClust
   public Future<Void> stopReplica() {
     LOG.info("Stopping the Oracle Data Guard replica");
     executeReplicaCommand(stopReplicaCommand);
+    LOG.info("Oracle Data Guard replica outage command completed");
     return CompletableFuture.completedFuture(Unit.unit());
   }
 
@@ -87,51 +90,142 @@ public final class OracleDataGuardReplicationCluster implements ReplicationClust
   public Future<Void> startReplica() {
     LOG.info("Starting the Oracle Data Guard replica");
     executeReplicaCommand(startReplicaCommand);
-    waitForReplication();
+    LOG.info("Oracle Data Guard replica recovery command completed; waiting for replication");
+    waitForReplicationCaughtUp();
+    LOG.info("Oracle Data Guard replica is reporting caught-up replication");
     return CompletableFuture.completedFuture(Unit.unit());
   }
 
   private void waitForReplication() {
+    LOG.info("Waiting up to {} for Oracle Data Guard replication", REPLICATION_TIMEOUT);
     await()
         .atMost(REPLICATION_TIMEOUT)
         .pollInterval(REPLICATION_POLL_INTERVAL)
         .ignoreExceptions()
-        .untilAsserted(
-            () -> {
-              try (final Connection connection = openConnection();
-                  final Statement statement = connection.createStatement();
-                  final ResultSet resultSet =
-                      statement.executeQuery(
-                          """
-                          SELECT ad.dest_id, ad.applied_scn
-                          FROM v$archive_dest ad
-                          JOIN v$archive_dest_status ads ON ads.dest_id = ad.dest_id
-                          WHERE ads.type IN ('PHYSICAL', 'LOGICAL')
-                            AND ads.status = 'VALID'
-                            AND ad.status = 'VALID'
-                            AND ad.target IN ('STANDBY', 'REMOTE')
-                            AND ad.applied_scn > 0
-                          """)) {
-                if (!hasAppliedScn(resultSet)) {
-                  throw new AssertionError("Oracle Data Guard has not reported an applied SCN");
-                }
-              }
-            });
+        .untilAsserted(this::assertReplicationProgress);
     LOG.info("Oracle Data Guard replica is reporting applied SCN progress");
   }
 
-  private boolean hasAppliedScn(final ResultSet resultSet) throws SQLException {
-    while (resultSet.next()) {
-      final long appliedScn = resultSet.getLong("applied_scn");
-      LOG.debug(
-          "Oracle Data Guard destination {} reports applied SCN {}",
-          resultSet.getString("dest_id"),
-          appliedScn);
-      if (!resultSet.wasNull() && appliedScn > 0) {
-        return true;
+  private void waitForReplicationCaughtUp() {
+    LOG.info(
+        "Waiting up to {} for Oracle Data Guard replication lag to reach {}",
+        REPLICATION_TIMEOUT,
+        REPLICATION_READY_MAX_LAG);
+    await()
+        .atMost(REPLICATION_TIMEOUT)
+        .pollInterval(REPLICATION_POLL_INTERVAL)
+        .ignoreExceptions()
+        .untilAsserted(this::assertReplicationCaughtUp);
+  }
+
+  private void assertReplicationProgress() throws SQLException {
+    try (final Connection connection = openConnection();
+        final Statement statement = connection.createStatement();
+        final ResultSet resultSet =
+            statement.executeQuery(
+                """
+                SELECT db.current_scn AS primary_scn,
+                       ad.dest_id,
+                       ad.applied_scn,
+                       ad.status AS destination_status,
+                       ads.status AS destination_runtime_status,
+                       ad.target
+                FROM v$database db
+                CROSS JOIN v$archive_dest ad
+                JOIN v$archive_dest_status ads ON ads.dest_id = ad.dest_id
+                WHERE ads.type IN ('PHYSICAL', 'LOGICAL')
+                  AND ads.status = 'VALID'
+                  AND ad.status = 'VALID'
+                  AND ad.target IN ('STANDBY', 'REMOTE')
+                """)) {
+      boolean foundDestination = false;
+      while (resultSet.next()) {
+        foundDestination = true;
+        final long appliedScn = resultSet.getLong("applied_scn");
+        LOG.info(
+            "Oracle Data Guard status: destination={}, target={}, primary SCN={}, applied SCN={}, "
+                + "destination status={}, runtime status={}",
+            resultSet.getString("dest_id"),
+            resultSet.getString("target"),
+            resultSet.getLong("primary_scn"),
+            appliedScn,
+            resultSet.getString("destination_status"),
+            resultSet.getString("destination_runtime_status"));
+        if (!resultSet.wasNull() && appliedScn > 0) {
+          return;
+        }
       }
+      if (!foundDestination) {
+        throw new AssertionError("Oracle Data Guard has no valid standby destination");
+      }
+      throw new AssertionError("Oracle Data Guard has not reported an applied SCN");
+    } catch (final SQLException e) {
+      LOG.warn("Unable to query Oracle Data Guard replication status; will retry", e);
+      throw e;
     }
-    return false;
+  }
+
+  private void assertReplicationCaughtUp() throws SQLException {
+    try (final Connection connection = openConnection();
+        final Statement statement = connection.createStatement();
+        final ResultSet resultSet =
+            statement.executeQuery(
+                """
+                SELECT db.current_scn AS primary_scn,
+                       ad.dest_id,
+                       ad.applied_scn,
+                       GREATEST(
+                           0,
+                           ROUND(
+                               (
+                                   CAST(SCN_TO_TIMESTAMP(db.current_scn) AS DATE)
+                                   - CAST(SCN_TO_TIMESTAMP(ad.applied_scn) AS DATE)
+                               ) * 86400000
+                           )
+                       ) AS replication_lag_ms,
+                       ad.status AS destination_status,
+                       ads.status AS destination_runtime_status,
+                       ad.target
+                FROM v$database db
+                CROSS JOIN v$archive_dest ad
+                JOIN v$archive_dest_status ads ON ads.dest_id = ad.dest_id
+                WHERE ads.type IN ('PHYSICAL', 'LOGICAL')
+                  AND ads.status = 'VALID'
+                  AND ad.status = 'VALID'
+                  AND ad.target IN ('STANDBY', 'REMOTE')
+                """)) {
+      boolean foundDestination = false;
+      while (resultSet.next()) {
+        foundDestination = true;
+        final long appliedScn = resultSet.getLong("applied_scn");
+        final boolean appliedScnWasNull = resultSet.wasNull();
+        final long replicationLagMs = resultSet.getLong("replication_lag_ms");
+        final boolean replicationLagWasNull = resultSet.wasNull();
+        LOG.info(
+            "Oracle Data Guard catch-up status: destination={}, target={}, primary SCN={}, "
+                + "applied SCN={}, lag={} ms, destination status={}, runtime status={}",
+            resultSet.getString("dest_id"),
+            resultSet.getString("target"),
+            resultSet.getLong("primary_scn"),
+            appliedScn,
+            replicationLagMs,
+            resultSet.getString("destination_status"),
+            resultSet.getString("destination_runtime_status"));
+        if (!appliedScnWasNull
+            && !replicationLagWasNull
+            && appliedScn > 0
+            && replicationLagMs <= REPLICATION_READY_MAX_LAG.toMillis()) {
+          return;
+        }
+      }
+      if (!foundDestination) {
+        throw new AssertionError("Oracle Data Guard has no valid standby destination");
+      }
+      throw new AssertionError("Oracle Data Guard replica has not caught up yet");
+    } catch (final SQLException e) {
+      LOG.warn("Unable to query Oracle Data Guard catch-up status; will retry", e);
+      throw e;
+    }
   }
 
   private Connection openConnection() throws SQLException {
