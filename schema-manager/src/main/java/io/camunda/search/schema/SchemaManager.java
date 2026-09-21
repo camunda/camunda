@@ -41,6 +41,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.agrona.LangUtil;
@@ -336,8 +337,7 @@ public class SchemaManager implements CloseableSilently {
       final IndexDescriptor descriptor,
       final int target,
       final Map<String, Integer> currentReplicaCounts) {
-    // same regex validateIndices() uses to attribute a bulk response back to its descriptor
-    final var namePattern = descriptor.getAllVersionsIndexNameRegexPattern();
+    final var namePattern = Pattern.quote(descriptor.getFullQualifiedName()) + ".*";
     // values are never null here: getNumberOfReplicas() drops an index rather than reporting a
     // null replica count for it, so this unboxing comparison is safe
     return currentReplicaCounts.entrySet().stream()
