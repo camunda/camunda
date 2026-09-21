@@ -173,6 +173,18 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
   }
 
   @Test
+  void shouldNotDefaultTheClientIdClaim() {
+    // given: a bare CCSM setup with no legacy identity keys at all. client-id-claim (and
+    // username-claim, where it needs to differ from CSL's own "sub" default) is deliberately left
+    // for the operator/Helm chart to set explicitly, matching their actual IdP — this bridge must
+    // not guess a Keycloak-specific claim name on their behalf.
+    final StandardEnvironment env = environmentWith(cslEnabledConfig());
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
+
+    assertThat(env.getProperty(OIDC + "client-id-claim")).isNull();
+  }
+
+  @Test
   void shouldBridgeHelmChartIdentityConfigAndLogDeprecation() {
     // The official camunda-platform Helm chart never sets CAMUNDA_OPTIMIZE_IDENTITY_*; it renders
     // camunda.identity.* as structured YAML (application-ccsm.yaml) plus

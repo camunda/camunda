@@ -79,10 +79,10 @@ class OptimizeBearerPermissionFilterIntegrationTest {
             "spring.profiles.active=ccsm",
             "camunda.security.authentication.catch-all-unhandled-paths-enabled=false",
             "camunda.security.authentication.method=oidc",
-            // Normally bridged by OptimizeSecurityConfigCompatibilityPostProcessor, which
-            // WebApplicationContextRunner never invokes (it bypasses SpringApplication.run); set
-            // explicitly so the classification this filter reads from CamundaAuthenticationProvider
-            // matches production behavior for a default (Keycloak) CCSM deployment.
+            // client-id-claim has no built-in default (deliberately: it is the operator's/Helm
+            // chart's job to set it for their actual IdP, not Optimize's to guess). Set explicitly
+            // here so this test exercises the classification an operator would actually configure
+            // for a Keycloak deployment, matching m2mToken()'s "client_id" claim below.
             "camunda.security.authentication.oidc.client-id-claim=client_id",
             "camunda.security.authentication.oidc.client-id=test-client",
             "camunda.security.authentication.oidc.client-secret=test-secret",
