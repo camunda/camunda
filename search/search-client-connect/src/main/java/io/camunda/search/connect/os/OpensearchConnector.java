@@ -52,7 +52,7 @@ public final class OpensearchConnector {
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchConnector.class);
 
   private static final int DEFAULT_CONNECT_REQUEST_TIMEOUT_MILLIS = 180_000;
-  private static final int DEFAULT_CONNECT_TIMEOUT_MILLIS = 1_000;
+  private static final int DEFAULT_CONNECT_TIMEOUT_MILLIS = 5_000;
   private static final int DEFAULT_SOCKET_TIMEOUT_MILLIS = 30_000;
 
   private final ConnectConfiguration configuration;
