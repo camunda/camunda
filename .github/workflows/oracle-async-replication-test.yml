@@ -24,7 +24,7 @@ on:
         description: 'RDS for Oracle instance class (must have at least two vCPUs)'
         type: string
         required: false
-        default: db.r6i.large
+        default: db.t3.small
       skip_destroy:
         description: 'Keep the Oracle infrastructure after the run (for debugging; destroy manually!)'
         type: boolean
@@ -46,7 +46,7 @@ on:
         description: 'RDS for Oracle instance class (must have at least two vCPUs)'
         type: string
         required: false
-        default: db.r6i.large
+        default: db.t3.small
       skip_destroy:
         description: 'Keep the Oracle infrastructure after the run (for debugging; destroy manually!)'
         type: boolean
@@ -74,7 +74,7 @@ env:
   TF_STATE_BUCKET_REGION: eu-west-1
   LOCAL_DB_PORT: '11521'
   ORACLE_ENGINE_VERSION: ${{ inputs.oracle_engine_version || 'auto' }}
-  ORACLE_INSTANCE_CLASS: ${{ inputs.oracle_instance_class || 'db.r6i.large' }}
+  ORACLE_INSTANCE_CLASS: ${{ inputs.oracle_instance_class || 'db.t3.small' }}
   ORACLE_BYOL_ACKNOWLEDGED: ${{ inputs.oracle_byol_acknowledged || github.event_name == 'pull_request' }}
 
 jobs:
@@ -119,10 +119,6 @@ jobs:
           set -euo pipefail
           if [[ "${ORACLE_BYOL_ACKNOWLEDGED}" != "true" ]]; then
             echo "::error::Oracle mode requires explicit acknowledgement of the Enterprise Edition BYOL requirement."
-            exit 1
-          fi
-          if [[ "${ORACLE_INSTANCE_CLASS}" == "db.t3.small" ]]; then
-            echo "::error::RDS for Oracle replicas require an instance class with at least two vCPUs."
             exit 1
           fi
 

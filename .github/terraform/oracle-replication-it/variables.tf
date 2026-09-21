@@ -35,7 +35,7 @@ variable "engine_version" {
 
 variable "instance_class" {
   type    = string
-  default = "db.r6i.large"
+  default = "db.t3.small"
 }
 
 variable "allocated_storage" {
