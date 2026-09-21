@@ -22,7 +22,15 @@ import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
 import co.elastic.clients.elasticsearch.core.GetResponse;
 import co.elastic.clients.elasticsearch.core.IndexRequest;
+<<<<<<< HEAD
+=======
+import co.elastic.clients.elasticsearch.ilm.DeleteAction;
+import co.elastic.clients.elasticsearch.ilm.IlmPolicy;
+import co.elastic.clients.elasticsearch.ilm.Phase;
+import co.elastic.clients.elasticsearch.ilm.Phases;
+>>>>>>> 57b56bd5 (fix: skip redundant ILM/ISM policy writes during schema-init)
 import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
+import co.elastic.clients.elasticsearch.ilm.get_lifecycle.Lifecycle;
 import co.elastic.clients.elasticsearch.indices.Alias;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
@@ -288,9 +296,17 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
   @Override
   public void putIndexLifeCyclePolicy(final String policyName, final String deletionMinAge) {
+<<<<<<< HEAD
     if (lifecyclePolicyMatches(policyName, deletionMinAge)) {
       LOG.debug(
           "Index lifecycle policy [{}] already matches configuration; skipping PUT", policyName);
+=======
+    if (lifecyclePolicyMinAgeMatches(policyName, deletionMinAge)) {
+      LOG.debug(
+          "Index lifecycle policy [{}] already has min_age [{}]; skipping PUT",
+          policyName,
+          deletionMinAge);
+>>>>>>> 57b56bd5 (fix: skip redundant ILM/ISM policy writes during schema-init)
       return;
     }
 
@@ -305,6 +321,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     }
   }
 
+<<<<<<< HEAD
   /**
    * Compares the full policy body the PUT would send, not just {@code min_age}, so that a changed
    * or removed delete action/phase is repaired rather than silently skipped. The fetched and
@@ -322,6 +339,21 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       }
       final var desiredPolicy = putLifecycleRequest(policyName, deletionMinAge).policy();
       return serializeAsMap(lifecycle.policy()).equals(serializeAsMap(desiredPolicy));
+=======
+  private boolean lifecyclePolicyMinAgeMatches(
+      final String policyName, final String deletionMinAge) {
+    try {
+      final var lifecycle =
+          client.ilm().getLifecycle(req -> req.name(policyName)).result().get(policyName);
+      return Optional.ofNullable(lifecycle)
+          .map(Lifecycle::policy)
+          .map(IlmPolicy::phases)
+          .map(Phases::delete)
+          .map(Phase::minAge)
+          .filter(Time::isTime)
+          .map(minAge -> deletionMinAge.equals(minAge.time()))
+          .orElse(false);
+>>>>>>> 57b56bd5 (fix: skip redundant ILM/ISM policy writes during schema-init)
     } catch (final ElasticsearchException e) {
       if (e.status() == 404) {
         // policy does not exist yet, so there is nothing to compare against

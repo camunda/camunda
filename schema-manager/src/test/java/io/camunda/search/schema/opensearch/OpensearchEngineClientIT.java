@@ -419,6 +419,7 @@ public class OpensearchEngineClientIT {
         opensearchEngineClient.getCurrentISMPolicyState("changed_ism_policy_name");
     assertThat(policyStateAfterUpdate.seqNo()).isGreaterThan(policyStateAfterCreation.seqNo());
     assertThat(getPolicyMinAge("changed_ism_policy_name")).isEqualTo("30d");
+<<<<<<< HEAD
   }
 
   /**
@@ -485,6 +486,8 @@ public class OpensearchEngineClientIT {
     final var policyStateAfterSchemaInit =
         opensearchEngineClient.getCurrentISMPolicyState(policyName);
     assertThat(policyStateAfterSchemaInit).isEqualTo(policyStateAfterCreation);
+=======
+>>>>>>> 57b56bd5 (fix: skip redundant ILM/ISM policy writes during schema-init)
   }
 
   @Test

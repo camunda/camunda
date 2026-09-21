@@ -380,6 +380,7 @@ public class ElasticsearchEngineClientIT {
         .isEqualTo("30d");
   }
 
+<<<<<<< HEAD
   /**
    * Regression test asserting that stating {@code delete_searchable_snapshot} explicitly in the PUT
    * (see the fix in {@link ElasticsearchEngineClient#putLifecycleRequest}) does not force a
@@ -421,6 +422,8 @@ public class ElasticsearchEngineClientIT {
     verify(ilmSpy, never()).putLifecycle(any(PutLifecycleRequest.class));
   }
 
+=======
+>>>>>>> 57b56bd5 (fix: skip redundant ILM/ISM policy writes during schema-init)
   @Test
   void shouldAccountForAllPropertyFieldsWhenGetMappings() {
     final var index = createTestIndexDescriptor("index_name", "/mappings-complex-property.json");

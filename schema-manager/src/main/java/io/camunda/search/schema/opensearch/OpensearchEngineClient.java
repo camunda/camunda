@@ -306,11 +306,19 @@ public class OpensearchEngineClient implements SearchEngineClient {
   @Override
   public void putIndexLifeCyclePolicy(final String policyName, final String deletionMinAge) {
     final var currentPolicyState = getCurrentISMPolicyState(policyName);
+<<<<<<< HEAD
     if (currentPolicyState.exists()
         && policyDefinitionMatches(currentPolicyState, deletionMinAge)) {
       LOG.debug(
           "Index state management policy [{}] already matches configuration; skipping PUT",
           policyName);
+=======
+    if (currentPolicyState.exists() && deletionMinAge.equals(currentPolicyState.minIndexAge())) {
+      LOG.debug(
+          "Index state management policy [{}] already has min_index_age [{}]; skipping PUT",
+          policyName,
+          deletionMinAge);
+>>>>>>> 57b56bd5 (fix: skip redundant ILM/ISM policy writes during schema-init)
       return;
     }
 
@@ -527,8 +535,24 @@ public class OpensearchEngineClient implements SearchEngineClient {
       final String policyName,
       final String deletionMinAge,
       final ISMPolicyState currentPolicyState) {
+<<<<<<< HEAD
     final var jsonMap = desiredPolicyDocument(deletionMinAge);
     try {
+=======
+    try (final var policyJson = getClass().getResourceAsStream(OPERATE_DELETE_ARCHIVED_POLICY)) {
+      final var jsonMap = objectReader.readTree(policyJson);
+      final var conditions =
+          (ObjectNode)
+              jsonMap
+                  .path("policy")
+                  .path("states")
+                  .path(0)
+                  .path("transitions")
+                  .path(0)
+                  .path("conditions");
+      conditions.put("min_index_age", deletionMinAge);
+
+>>>>>>> 57b56bd5 (fix: skip redundant ILM/ISM policy writes during schema-init)
       final var policy = objectWriter.writeValueAsBytes(jsonMap);
 
       final var builder =
@@ -640,8 +664,14 @@ public class OpensearchEngineClient implements SearchEngineClient {
   private ISMPolicyState fromPolicyJson(final JsonNode policyJsonNode) {
     final var primaryTerm = policyJsonNode.path("_primary_term").asInt();
     final var seqNo = policyJsonNode.path("_seq_no").asInt();
+<<<<<<< HEAD
     final var policyDefinition = normalizedPolicyDefinition(policyJsonNode.path("policy"));
     return new ISMPolicyState(seqNo, primaryTerm, policyDefinition);
+=======
+    final var minIndexAge =
+        policyJsonNode.at("/policy/states/0/transitions/0/conditions/min_index_age").asText(null);
+    return new ISMPolicyState(seqNo, primaryTerm, minIndexAge);
+>>>>>>> 57b56bd5 (fix: skip redundant ILM/ISM policy writes during schema-init)
   }
 
   private PutIndicesSettingsRequest putIndexSettingsRequest(
@@ -912,10 +942,17 @@ public class OpensearchEngineClient implements SearchEngineClient {
     }
   }
 
+<<<<<<< HEAD
   record ISMPolicyState(boolean exists, int seqNo, int primaryTerm, JsonNode policyDefinition) {
 
     public ISMPolicyState(final int seqNo, final int primaryTerm, final JsonNode policyDefinition) {
       this(true, seqNo, primaryTerm, policyDefinition);
+=======
+  record ISMPolicyState(boolean exists, int seqNo, int primaryTerm, String minIndexAge) {
+
+    public ISMPolicyState(final int seqNo, final int primaryTerm, final String minIndexAge) {
+      this(true, seqNo, primaryTerm, minIndexAge);
+>>>>>>> 57b56bd5 (fix: skip redundant ILM/ISM policy writes during schema-init)
     }
 
     static ISMPolicyState empty() {
