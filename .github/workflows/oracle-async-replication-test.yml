@@ -294,7 +294,7 @@ jobs:
           threads: '1'
           parameters: >-
             verify -pl qa/acceptance-tests
-            -Pasync-repl
+            -Prdbms-oracle
             -Dit.test=OracleAsyncReplicationIT
             -DskipUTs -DskipChecks -DskipTests=false
 
