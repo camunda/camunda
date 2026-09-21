@@ -155,6 +155,23 @@ public interface JobRecordValue
   String getJobLeaseToken();
 
   /**
+   * Returns the reservation token the job inherited from its process instance. A job is reserved
+   * when its process instance was created with a job reservation token: the engine never hands such
+   * a job to a job worker, and its complete, fail, and throw-error commands are only accepted when
+   * the caller supplies the matching token as the command's lease token.
+   *
+   * <p>Unlike the lease token, the reservation token is chosen by the creator of the process
+   * instance and never changes for the life of the job. It exists for tools that drive an
+   * instance's jobs themselves, such as test recorders and debuggers.
+   *
+   * @return the reservation token, or an empty string when the job is not reserved
+   * @since 8.11
+   */
+  default String getJobReservationToken() {
+    return "";
+  }
+
+  /**
    * @return the bpmn process id of the corresponding process definition
    */
   @Override

@@ -10,8 +10,8 @@ package io.camunda.gateway.mapping.http;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction;
+import io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationStartInstruction;
-import io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationTerminateInstruction;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
@@ -114,7 +114,7 @@ class SimpleRequestMapperTest {
                   List.of(new ProcessInstanceCreationStartInstruction().elementId("start-element")))
               .runtimeInstructions(
                   List.of(
-                      new ProcessInstanceCreationTerminateInstruction()
+                      new ProcessInstanceCreationRuntimeInstruction()
                           .afterElementId("after-element")
                           .type("TERMINATE_PROCESS_INSTANCE")));
 
@@ -141,7 +141,7 @@ class SimpleRequestMapperTest {
                   List.of(new ProcessInstanceCreationStartInstruction().elementId("start-element")))
               .runtimeInstructions(
                   List.of(
-                      new ProcessInstanceCreationTerminateInstruction()
+                      new ProcessInstanceCreationRuntimeInstruction()
                           .afterElementId("after-element")
                           .type("TERMINATE_PROCESS_INSTANCE")));
 
@@ -188,7 +188,7 @@ class SimpleRequestMapperTest {
                   List.of(new ProcessInstanceCreationStartInstruction().elementId("start-element")))
               .runtimeInstructions(
                   List.of(
-                      new ProcessInstanceCreationTerminateInstruction()
+                      new ProcessInstanceCreationRuntimeInstruction()
                           .afterElementId("after-element")
                           .type("TERMINATE_PROCESS_INSTANCE")));
 

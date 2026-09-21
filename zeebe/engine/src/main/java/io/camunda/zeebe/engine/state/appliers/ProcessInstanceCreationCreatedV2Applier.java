@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
@@ -58,9 +59,17 @@ final class ProcessInstanceCreationCreatedV2Applier
                 incrementNumberOfTakenSequenceFlows(element, flowScope);
               });
     }
-    if (!value.getRuntimeInstructions().isEmpty()) {
+    // only the instructions an element transition can trigger belong in this state; a reserve-jobs
+    // instruction is a creation-time mode, and its token is a secret that must not be stored twice
+    final var triggeredInstructions =
+        value.getRuntimeInstructions().stream()
+            .filter(
+                instruction ->
+                    instruction.getType() == RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
+            .toList();
+    if (!triggeredInstructions.isEmpty()) {
       elementInstanceState.addRuntimeInstructions(
-          value.getProcessInstanceKey(), value.getRuntimeInstructions());
+          value.getProcessInstanceKey(), triggeredInstructions);
     }
 
     incrementUsageMetric(value);

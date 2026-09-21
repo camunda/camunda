@@ -788,7 +788,7 @@ Omit the discriminator when:
 |                  Wrapper schema                   |            File             |                                    Variants                                    |
 |---------------------------------------------------|-----------------------------|--------------------------------------------------------------------------------|
 | `ProcessInstanceCreationInstruction`              | `process-instances.yaml`    | `...ByKey`, `...ById`                                                          |
-| `ProcessInstanceCreationRuntimeInstruction`       | `process-instances.yaml`    | `...TerminateInstruction`                                                      |
+| `ProcessInstanceCreationRuntimeInstruction`       | `process-instances.yaml`    | `...TerminateInstruction`, `...ReserveJobsInstruction`                         |
 | `ProcessInstanceMigrationInstruction`             | `process-instances.yaml`    | `...ByProcessDefinitionKey`, `...ByProcessDefinitionId`                        |
 | `ProcessInstanceModificationTerminateInstruction` | `process-instances.yaml`    | `...ByIdInstruction`, `...ByKeyInstruction`                                    |
 | `SourceElementInstruction`                        | `process-instances.yaml`    | `...IdInstruction`, `...InstanceKeyInstruction`                                |

@@ -115,6 +115,13 @@ final class JobBatchCollector {
             return true;
           }
 
+          if (jobRecord.hasJobReservationToken()) {
+            // the instance's creator reserved its jobs: no activation hands them out
+            jobMetrics.countJobEvent(
+                JobAction.SKIPPED_RESERVED, jobRecord.getJobKind(), value.getType());
+            return true;
+          }
+
           if (!value.isWithLease() && !jobRecord.getJobLeaseToken().isEmpty()) {
             // Skip leased jobs so an unleased activation cannot break the lease's exclusivity
             jobMetrics.countJobEvent(

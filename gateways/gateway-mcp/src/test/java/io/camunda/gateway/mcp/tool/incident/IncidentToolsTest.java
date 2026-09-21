@@ -439,7 +439,8 @@ class IncidentToolsTest extends OperationalToolsTest {
               CompletableFuture.completedFuture(new IncidentRecord()));
       when(incidentEntity.jobKey()).thenReturn(4L);
       when(incidentServices.getByKey(anyLong(), any())).thenReturn(incidentEntity);
-      when(jobServices.updateJob(anyLong(), any(), any(UpdateJobChangeset.class), any(), any()))
+      when(jobServices.updateJob(
+              anyLong(), any(), any(UpdateJobChangeset.class), any(), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
       // when
@@ -462,7 +463,13 @@ class IncidentToolsTest extends OperationalToolsTest {
       verify(incidentServices, times(2)).resolveIncident(eq(5L), isNull(), any());
       verify(incidentServices).getByKey(eq(5L), any());
       verify(jobServices)
-          .updateJob(eq(4L), isNull(), eq(new UpdateJobChangeset(1, null, null)), isNull(), any());
+          .updateJob(
+              eq(4L),
+              isNull(),
+              eq(new UpdateJobChangeset(1, null, null)),
+              isNull(),
+              isNull(),
+              any());
     }
 
     @Test
@@ -477,7 +484,8 @@ class IncidentToolsTest extends OperationalToolsTest {
               CompletableFuture.completedFuture(new IncidentRecord()));
       when(incidentEntity.jobKey()).thenReturn(4L);
       when(incidentServices.getByKey(anyLong(), any())).thenReturn(incidentEntity);
-      when(jobServices.updateJob(anyLong(), any(), any(UpdateJobChangeset.class), any(), any()))
+      when(jobServices.updateJob(
+              anyLong(), any(), any(UpdateJobChangeset.class), any(), any(), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   new ServiceException("Expected failure", Status.NOT_FOUND)));
@@ -502,7 +510,13 @@ class IncidentToolsTest extends OperationalToolsTest {
       verify(incidentServices).resolveIncident(eq(5L), isNull(), any());
       verify(incidentServices).getByKey(eq(5L), any());
       verify(jobServices)
-          .updateJob(eq(4L), isNull(), eq(new UpdateJobChangeset(1, null, null)), isNull(), any());
+          .updateJob(
+              eq(4L),
+              isNull(),
+              eq(new UpdateJobChangeset(1, null, null)),
+              isNull(),
+              isNull(),
+              any());
 
       assertTextContentFallback(result);
     }

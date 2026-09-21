@@ -94,5 +94,18 @@ public interface ProcessInstanceCreationRecordValue
     RuntimeInstructionType getType();
 
     String getAfterElementId();
+
+    /**
+     * Returns the token that reserves this process instance's jobs for the caller. Set on a {@link
+     * RuntimeInstructionType#RESERVE_JOBS} instruction only. Reserved jobs are not handed to job
+     * workers that activate normally, and their complete, fail and throw-error commands are
+     * rejected unless the same token is supplied.
+     *
+     * @return the job reservation token, or an empty string if not set
+     * @since 8.11
+     */
+    default String getJobReservationToken() {
+      return "";
+    }
   }
 }

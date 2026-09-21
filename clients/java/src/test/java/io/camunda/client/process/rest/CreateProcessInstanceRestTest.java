@@ -25,6 +25,7 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationStartInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationTerminateInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceResult;
@@ -298,11 +299,11 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
     final ProcessInstanceCreationInstruction request =
         gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
 
-    final List<ProcessInstanceCreationTerminateInstruction> runtimeInstructionList =
+    final List<ProcessInstanceCreationRuntimeInstruction> runtimeInstructionList =
         request.getRuntimeInstructions();
     assertThat(runtimeInstructionList).hasSize(1);
     final ProcessInstanceCreationTerminateInstruction runtimeInstruction =
-        runtimeInstructionList.get(0);
+        (ProcessInstanceCreationTerminateInstruction) runtimeInstructionList.get(0);
     assertThat(runtimeInstruction.getAfterElementId()).isEqualTo(ELEMENT_ID_A);
     assertThat(runtimeInstruction.getType()).isEqualTo("TERMINATE_PROCESS_INSTANCE");
   }
@@ -325,15 +326,15 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
     final ProcessInstanceCreationInstruction request =
         gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
 
-    final List<ProcessInstanceCreationTerminateInstruction> runtimeInstructionList =
+    final List<ProcessInstanceCreationRuntimeInstruction> runtimeInstructionList =
         request.getRuntimeInstructions();
     assertThat(runtimeInstructionList).hasSize(2);
     final ProcessInstanceCreationTerminateInstruction runtimeInstructionA =
-        runtimeInstructionList.get(0);
+        (ProcessInstanceCreationTerminateInstruction) runtimeInstructionList.get(0);
     assertThat(runtimeInstructionA.getAfterElementId()).isEqualTo(ELEMENT_ID_A);
     assertThat(runtimeInstructionA.getType()).isEqualTo("TERMINATE_PROCESS_INSTANCE");
     final ProcessInstanceCreationTerminateInstruction runtimeInstructionB =
-        runtimeInstructionList.get(1);
+        (ProcessInstanceCreationTerminateInstruction) runtimeInstructionList.get(1);
     assertThat(runtimeInstructionB.getAfterElementId()).isEqualTo(ELEMENT_ID_B);
     assertThat(runtimeInstructionB.getType()).isEqualTo("TERMINATE_PROCESS_INSTANCE");
   }
@@ -361,11 +362,11 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
     assertThat(startInstructionList).hasSize(1);
     assertThat(startInstructionList.get(0).getElementId()).isEqualTo(ELEMENT_ID_A);
 
-    final List<ProcessInstanceCreationTerminateInstruction> runtimeInstructionList =
+    final List<ProcessInstanceCreationRuntimeInstruction> runtimeInstructionList =
         request.getRuntimeInstructions();
     assertThat(runtimeInstructionList).hasSize(1);
     final ProcessInstanceCreationTerminateInstruction runtimeInstruction =
-        runtimeInstructionList.get(0);
+        (ProcessInstanceCreationTerminateInstruction) runtimeInstructionList.get(0);
     assertThat(runtimeInstruction.getAfterElementId()).isEqualTo(ELEMENT_ID_A);
     assertThat(runtimeInstruction.getType()).isEqualTo("TERMINATE_PROCESS_INSTANCE");
   }

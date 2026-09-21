@@ -45,6 +45,11 @@ public class BrokerUpdateJobRequest extends BrokerExecuteCommand<JobRecord> {
     return this;
   }
 
+  public BrokerUpdateJobRequest setJobReservationToken(final String jobReservationToken) {
+    requestDto.setJobReservationToken(jobReservationToken);
+    return this;
+  }
+
   @Override
   public BufferWriter getRequestWriter() {
     return requestDto;

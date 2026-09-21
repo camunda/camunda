@@ -61,6 +61,8 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   public static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
   public static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
   public static final StringValue RESUME_FROM_JOB_KEY_KEY = new StringValue("resumeFromJobKey");
+  public static final StringValue JOB_RESERVATION_TOKEN_KEY =
+      new StringValue("jobReservationToken");
 
   private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final IntegerProperty versionProp = new IntegerProperty(VERSION_KEY, -1);
@@ -105,8 +107,11 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   private final LongProperty resumeFromJobKeyProp = new LongProperty(RESUME_FROM_JOB_KEY_KEY, -1L);
 
+  private final StringProperty jobReservationTokenProp =
+      new StringProperty(JOB_RESERVATION_TOKEN_KEY, "");
+
   public ProcessInstanceRecord() {
-    super(19);
+    super(20);
     declareProperty(bpmnElementTypeProp)
         .declareProperty(elementIdProp)
         .declareProperty(bpmnProcessIdProp)
@@ -125,7 +130,8 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
         .declareProperty(rootProcessInstanceKeyProp)
         .declareProperty(storageOrdinalProp)
         .declareProperty(businessIdProp)
-        .declareProperty(resumeFromJobKeyProp);
+        .declareProperty(resumeFromJobKeyProp)
+        .declareProperty(jobReservationTokenProp);
   }
 
   public void wrap(final ProcessInstanceRecord record) {
@@ -315,6 +321,26 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   @Override
   public long getResumeFromJobKey() {
     return resumeFromJobKeyProp.getValue();
+  }
+
+  @Override
+  public String getJobReservationToken() {
+    return bufferAsString(jobReservationTokenProp.getValue());
+  }
+
+  @JsonIgnore
+  public DirectBuffer getJobReservationTokenBuffer() {
+    return jobReservationTokenProp.getValue();
+  }
+
+  public ProcessInstanceRecord setJobReservationToken(final String jobReservationToken) {
+    jobReservationTokenProp.setValue(jobReservationToken);
+    return this;
+  }
+
+  public ProcessInstanceRecord setJobReservationToken(final DirectBuffer jobReservationToken) {
+    jobReservationTokenProp.setValue(jobReservationToken);
+    return this;
   }
 
   public ProcessInstanceRecord setResumeFromJobKey(final long resumeFromJobKey) {

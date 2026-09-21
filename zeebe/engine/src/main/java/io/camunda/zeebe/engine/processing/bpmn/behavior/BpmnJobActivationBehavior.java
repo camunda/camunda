@@ -160,6 +160,15 @@ public class BpmnJobActivationBehavior {
 
     final String jobType = wrappedJobRecord.getType();
     final JobKind jobKind = wrappedJobRecord.getJobKind();
+
+    if (wrappedJobRecord.hasJobReservationToken()) {
+      // the job belongs to an instance whose creator reserved its jobs: it is served to no worker,
+      // so neither push it nor wake the pollers for its type
+      sideEffectWriter.appendSideEffect(
+          () -> jobMetrics.countJobEvent(JobAction.SKIPPED_RESERVED, jobKind, jobType));
+      return true;
+    }
+
     final var leaseAwarePredicate = new LeaseAwarePredicate(wrappedJobRecord);
     final Optional<JobStream> optionalJobStream =
         jobStreamer.streamFor(

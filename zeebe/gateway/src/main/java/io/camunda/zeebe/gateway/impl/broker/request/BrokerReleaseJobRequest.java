@@ -7,42 +7,20 @@
  */
 package io.camunda.zeebe.gateway.impl.broker.request;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
-
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import org.agrona.DirectBuffer;
 
-public final class BrokerThrowErrorRequest extends BrokerExecuteCommand<JobRecord> {
+public final class BrokerReleaseJobRequest extends BrokerExecuteCommand<JobRecord> {
 
   private final JobRecord requestDto = new JobRecord();
 
-  public BrokerThrowErrorRequest(final long key, final String errorCode) {
-    super(ValueType.JOB, JobIntent.THROW_ERROR);
+  public BrokerReleaseJobRequest(final long key, final String jobReservationToken) {
+    super(ValueType.JOB, JobIntent.RELEASE);
     request.setKey(key);
-    requestDto.setErrorCode(wrapString(errorCode));
-  }
-
-  public BrokerThrowErrorRequest setErrorMessage(final String errorMessage) {
-    requestDto.setErrorMessage(errorMessage);
-    return this;
-  }
-
-  public BrokerThrowErrorRequest setVariables(final DirectBuffer variables) {
-    requestDto.setVariables(variables);
-    return this;
-  }
-
-  public BrokerThrowErrorRequest setJobLeaseToken(final String jobLeaseToken) {
-    requestDto.setJobLeaseToken(jobLeaseToken);
-    return this;
-  }
-
-  public BrokerThrowErrorRequest setJobReservationToken(final String jobReservationToken) {
     requestDto.setJobReservationToken(jobReservationToken);
-    return this;
   }
 
   @Override

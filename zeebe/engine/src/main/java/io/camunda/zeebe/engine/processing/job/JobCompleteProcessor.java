@@ -178,6 +178,7 @@ public final class JobCompleteProcessor
             "complete",
             List.of(State.ACTIVATABLE, State.ACTIVATED),
             List.of(
+                JobReservationFencingCheck.forCommand(),
                 JobLeaseFencingCheck.forLifecycleCommand(),
                 this::checkAdHocSubprocessActivationTargetsAreValid,
                 this::checkAdHocSubprocessInstanceIsActive,
