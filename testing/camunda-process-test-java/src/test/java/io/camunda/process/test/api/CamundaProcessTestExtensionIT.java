@@ -31,6 +31,16 @@ import io.camunda.client.api.search.response.UserTask;
 import io.camunda.process.test.api.assertions.DecisionSelectors;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder.JobWorkerMock;
+<<<<<<< HEAD
+=======
+import io.camunda.process.test.api.testCases.TestCase;
+import io.camunda.process.test.api.testCases.TestCaseRunner;
+import io.camunda.process.test.api.testCases.TestCaseSource;
+import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.process.test.impl.coverage.CoverageCollector;
+import io.camunda.process.test.impl.coverage.CoverageTestDataCollector;
+import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
+>>>>>>> e6bf1085 (test: reproduce a mocked process distorting the coverage report)
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
@@ -248,6 +258,307 @@ public class CamundaProcessTestExtensionIT {
   }
 
   @Nested
+<<<<<<< HEAD
+=======
+  class CoverageTests {
+
+    @Test
+    void shouldCoverProcess(final TestInfo testInfo) {
+      // given
+      final CoverageCollector coverageCollector = CoverageCollector.newBuilder().build();
+      final BpmnModelInstance simpleGatewayProcess = simpleGatewayProcess();
+
+      // when: run 1 - takes default flow (no gatewayAnswer variable)
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(simpleGatewayProcess, "test-with-simple-gateway.bpmn")
+          .send()
+          .join();
+      final ProcessInstanceEvent processInstance1 =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId("test-with-simple-gateway")
+              .latestVersion()
+              .send()
+              .join();
+      CamundaAssert.assertThat(processInstance1).isCompleted();
+
+      // when: run 2 - takes yes flow
+      final ProcessInstanceEvent processInstance2 =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId("test-with-simple-gateway")
+              .latestVersion()
+              .variable("gatewayAnswer", "yes")
+              .send()
+              .join();
+      CamundaAssert.assertThat(processInstance2).isCompleted();
+
+      final String testName = testInfo.getDisplayName();
+      final CoverageRunReport coverageRunReport =
+          collectCoverageRunReport(coverageCollector, testName);
+
+      // then
+      assertThat(coverageRunReport.getProcessCoverages()).hasSize(2);
+      assertThat(coverageRunReport.getProcessCoverages())
+          .extracting(ProcessCoverage::getCompletedElements)
+          .containsExactly(
+              Arrays.asList("StartEvent", "GatewayEvent", "NoEvent", "EndEvent"),
+              Arrays.asList("StartEvent", "GatewayEvent", "YesEvent", "EndEvent"));
+      assertThat(coverageRunReport.getProcessCoverages())
+          .extracting(ProcessCoverage::getTakenSequenceFlows)
+          .containsExactly(
+              Arrays.asList("FlowGateway", "FlowGatewayDefault", "FlowNoEnd"),
+              Arrays.asList("FlowGateway", "FlowGatewayYes", "FlowYesEnd"));
+      assertThat(coverageRunReport.getProcessCoverages())
+          .extracting(ProcessCoverage::getCoverage)
+          .containsExactly(0.7, 0.7);
+      assertThat(coverageRunReport.getProcessCoverages())
+          .extracting(ProcessCoverage::getProcessDefinitionId)
+          .containsExactly("test-with-simple-gateway", "test-with-simple-gateway");
+    }
+
+    @Test
+    void shouldCoverDecision(final TestInfo testInfo) {
+      // given
+      final CoverageCollector coverageCollector = CoverageCollector.newBuilder().build();
+
+      // when
+      client
+          .newDeployResourceCommand()
+          .addResourceFromClasspath("dmn/simple-decision-table.dmn")
+          .send()
+          .join();
+
+      final EvaluateDecisionResponse decisionResponse =
+          client
+              .newEvaluateDecisionCommand()
+              .decisionId("simple_decision")
+              .variable("yes_or_no", "yes")
+              .send()
+              .join();
+
+      assertThatDecision(decisionResponse).isEvaluated();
+
+      final String testName = testInfo.getDisplayName();
+      final CoverageRunReport coverageRunReport =
+          collectCoverageRunReport(coverageCollector, testName);
+
+      // then
+      assertThat(coverageRunReport.getDecisionCoverages()).hasSize(1);
+      assertThat(coverageRunReport.getDecisionCoverages())
+          .first()
+          .satisfies(
+              dc -> {
+                assertThat(dc.getDecisionDefinitionId()).isEqualTo("simple_decision");
+                assertThat(dc.getMatchedRuleIds()).containsExactly("DecisionRule_0ikukos");
+                assertThat(dc.getMatchedRuleIndices()).containsExactly(1);
+                assertThat(dc.getCoverage()).isEqualTo(0.5);
+              });
+    }
+
+    /**
+     * A mocked child process is a stub that the test framework deploys in place of the real child
+     * process. It is not part of what the test covers, so it has no place in the report - the
+     * coverage it reports is the coverage of the stub, not of the process it stands in for.
+     */
+    @Test
+    void shouldNotCoverMockedChildProcess(final TestInfo testInfo) {
+      // given: a process that calls a child process, and a mock standing in for that child
+      final CoverageCollector coverageCollector = CoverageCollector.newBuilder().build();
+      final BpmnModelInstance parentProcess =
+          Bpmn.createExecutableProcess("test-with-mocked-child")
+              .startEvent("StartEvent")
+              .sequenceFlowId("FlowToChild")
+              .callActivity("CallChild", c -> c.zeebeProcessId("mocked-child-process"))
+              .sequenceFlowId("FlowToEnd")
+              .endEvent("EndEvent")
+              .done();
+
+      processTestContext.mockChildProcess("mocked-child-process");
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(parentProcess, "test-with-mocked-child.bpmn")
+          .send()
+          .join();
+
+      // when
+      final ProcessInstanceEvent processInstance =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId("test-with-mocked-child")
+              .latestVersion()
+              .send()
+              .join();
+      CamundaAssert.assertThat(processInstance).isCompleted();
+
+      final CoverageRunReport coverageRunReport =
+          collectCoverageRunReport(coverageCollector, testInfo.getDisplayName());
+
+      // then: only the process under test is covered
+      assertThat(coverageRunReport.getProcessCoverages())
+          .extracting(ProcessCoverage::getProcessDefinitionId)
+          .containsExactly("test-with-mocked-child");
+    }
+
+    /**
+     * The reported scenario: one suite covers a process end to end, a second suite mocks that same
+     * process id as a child. Each suite collects only what it ran - as it would with its own
+     * runtime - so the mock has to leave no trace in the aggregated report. Otherwise that report
+     * holds two models for the one process id, renders the stub in place of the real diagram, and
+     * counts the stub's elements on top of the ones the test actually covered.
+     */
+    @Test
+    void shouldNotExceed100PercentWhenProcessIsAlsoMockedElsewhere() {
+      // given: a suite that covers the process end to end
+      final CoverageCollector coverageCollector = CoverageCollector.newBuilder().build();
+      final Instant processUnderTestSuiteStart = processTestContext.getCurrentTime();
+      final BpmnModelInstance processUnderTest =
+          Bpmn.createExecutableProcess("tested-and-mocked-process")
+              .startEvent("StartEvent")
+              .sequenceFlowId("FlowToTask")
+              .task("Task")
+              .sequenceFlowId("FlowToEnd")
+              .endEvent("EndEvent")
+              .done();
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(processUnderTest, "tested-and-mocked-process.bpmn")
+          .send()
+          .join();
+      final ProcessInstanceEvent testedInstance =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId("tested-and-mocked-process")
+              .latestVersion()
+              .send()
+              .join();
+      CamundaAssert.assertThat(testedInstance).isCompleted();
+      final CoverageReport processUnderTestReport =
+          collectSuiteCoverage(
+              coverageCollector, ProcessUnderTestSuite.class, processUnderTestSuiteStart);
+
+      // when: a second suite mocks that very process as a child
+      final Instant mockingSuiteStart = processTestContext.getCurrentTime();
+      final BpmnModelInstance callerProcess =
+          Bpmn.createExecutableProcess("test-calling-the-mocked-process")
+              .startEvent("StartEvent")
+              .callActivity("CallChild", c -> c.zeebeProcessId("tested-and-mocked-process"))
+              .endEvent("EndEvent")
+              .done();
+      processTestContext.mockChildProcess("tested-and-mocked-process");
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(callerProcess, "test-calling-the-mocked-process.bpmn")
+          .send()
+          .join();
+      final ProcessInstanceEvent callerInstance =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId("test-calling-the-mocked-process")
+              .latestVersion()
+              .send()
+              .join();
+      CamundaAssert.assertThat(callerInstance).isCompleted();
+      final CoverageReport mockingReport =
+          collectSuiteCoverage(coverageCollector, MockingSuite.class, mockingSuiteStart);
+
+      // then: the suite under test describes the process by the model it covered, in full
+      assertThat(processUnderTestReport.getProcessModels())
+          .filteredOn(model -> "tested-and-mocked-process".equals(model.getProcessDefinitionId()))
+          .singleElement()
+          .satisfies(model -> assertThat(model.getXml()).contains("Task"));
+      assertThat(processUnderTestReport.getProcessCoverages())
+          .filteredOn(
+              coverage -> "tested-and-mocked-process".equals(coverage.getProcessDefinitionId()))
+          .singleElement()
+          .satisfies(coverage -> assertThat(coverage.getCoverage()).isEqualTo(1.0));
+
+      // and: the mocking suite contributes neither a stub model nor coverage for it, so
+      // aggregating the two can neither swap the diagram nor push coverage past 100%
+      assertThat(mockingReport.getProcessModels())
+          .noneMatch(model -> "tested-and-mocked-process".equals(model.getProcessDefinitionId()));
+      assertThat(mockingReport.getProcessCoverages())
+          .noneMatch(
+              coverage -> "tested-and-mocked-process".equals(coverage.getProcessDefinitionId()));
+    }
+
+    private CoverageReport collectSuiteCoverage(
+        final CoverageCollector coverageCollector,
+        final Class<?> suite,
+        final Instant suiteStartTime) {
+      return coverageCollector.collectTestRunCoverage(
+          suite,
+          "run",
+          null,
+          CoverageTestDataCollector.collectData(
+              new CamundaDataSource(
+                  client, suiteStartTime, CamundaProcessTestRuntimeDefaults.QUERY_PAGE_LIMIT)));
+    }
+
+    private BpmnModelInstance simpleGatewayProcess() {
+      return Bpmn.createExecutableProcess("test-with-simple-gateway")
+          .startEvent("StartEvent")
+          .sequenceFlowId("FlowGateway")
+          .exclusiveGateway("GatewayEvent")
+          .sequenceFlowId("FlowGatewayYes")
+          .conditionExpression("= gatewayAnswer = \"yes\"")
+          .task("YesEvent")
+          .sequenceFlowId("FlowYesEnd")
+          .endEvent("EndEvent")
+          .moveToLastExclusiveGateway()
+          .defaultFlow()
+          .sequenceFlowId("FlowGatewayDefault")
+          .task("NoEvent")
+          .sequenceFlowId("FlowNoEnd")
+          .connectTo("EndEvent")
+          .done();
+    }
+
+    private CoverageRunReport collectCoverageRunReport(
+        final CoverageCollector coverageCollector, final String testName) {
+      final CoverageReport coverageReport =
+          coverageCollector.collectTestRunCoverage(
+              CamundaProcessTestExtensionIT.class,
+              testName,
+              null,
+              CoverageTestDataCollector.collectData(new CamundaDataSource(client)));
+      return coverageReport.getSuites().stream()
+          .flatMap(report -> report.getRuns().stream())
+          .filter(run -> run.getName().equals(testName))
+          .findFirst()
+          .orElseThrow(() -> new AssertionError("No run report found for " + testName));
+    }
+  }
+
+  @Nested
+  class JsonTests {
+
+    @ParameterizedTest
+    @TestCaseSource
+    void shouldPass(final TestCase testCase, final String filename) {
+      // given
+      final BpmnModelInstance process =
+          Bpmn.createExecutableProcess("process")
+              .startEvent("start")
+              .name("Start")
+              .endEvent("end")
+              .name("End")
+              .done();
+
+      client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+
+      // when
+      testCaseRunner.run(testCase);
+
+      // then
+      CamundaAssert.assertThatProcessInstance(ProcessInstanceSelectors.byProcessId("process"))
+          .isCreated();
+    }
+  }
+
+  @Nested
+>>>>>>> e6bf1085 (test: reproduce a mocked process distorting the coverage report)
   class TimerEventTests {
 
     private final Duration timerDuration = Duration.ofHours(1);
@@ -728,3 +1039,9 @@ public class CamundaProcessTestExtensionIT {
     }
   }
 }
+
+/** Stands in for a test suite that covers the process itself. */
+final class ProcessUnderTestSuite {}
+
+/** Stands in for a separate test suite that mocks that same process as a child. */
+final class MockingSuite {}
