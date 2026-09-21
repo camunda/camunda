@@ -87,6 +87,7 @@ jobs:
       database-name: "${{ matrix.database-name }}"
       it-database-type: "${{ matrix.it-database-type }}"
       use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
+      notify-slack-on-failure: false
 
   identity-tests:
     needs: [ generate-db-versions, build-distball ]
@@ -118,3 +119,4 @@ jobs:
       database-name: "${{ matrix.database-name }}"
       it-database-type: "${{ matrix.it-database-type }}"
       use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
+      notify-slack-on-failure: false
