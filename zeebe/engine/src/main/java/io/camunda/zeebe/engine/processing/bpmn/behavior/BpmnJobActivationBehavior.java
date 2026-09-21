@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.job.JobSecretLookup;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup.Secret;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup.SecretCheckResult;
 import io.camunda.zeebe.engine.processing.job.JobVariablesCollector;
+import io.camunda.zeebe.engine.processing.job.JobWorkerDispatch;
 import io.camunda.zeebe.engine.processing.job.LeaseTokens;
 import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionScheduler;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
@@ -161,11 +162,11 @@ public class BpmnJobActivationBehavior {
     final String jobType = wrappedJobRecord.getType();
     final JobKind jobKind = wrappedJobRecord.getJobKind();
 
-    if (wrappedJobRecord.hasJobReservationToken()) {
-      // the job belongs to an instance whose creator reserved its jobs: it is served to no worker,
-      // so neither push it nor wake the pollers for its type
+    final var withheldReason = JobWorkerDispatch.withheldFromWorkersReason(wrappedJobRecord);
+    if (withheldReason != null) {
+      // neither push the job nor wake the pollers for its type
       sideEffectWriter.appendSideEffect(
-          () -> jobMetrics.countJobEvent(JobAction.SKIPPED_RESERVED, jobKind, jobType));
+          () -> jobMetrics.countJobEvent(withheldReason, jobKind, jobType));
       return true;
     }
 

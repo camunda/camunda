@@ -35,6 +35,7 @@ final class EngineMetricsDocTest {
             // about unleased workers colliding with leased jobs
             Map.entry(JobAction.SKIPPED_LEASED, "skipped"),
             Map.entry(JobAction.SKIPPED_RESERVED, "skipped reserved"),
+            Map.entry(JobAction.SKIPPED_CALL_ACTIVITY_STUB, "skipped call activity stub"),
             Map.entry(JobAction.SKIPPED_UNCACHED_SECRET, "skipped uncached secret"),
             Map.entry(JobAction.TIMED_OUT, "timed out"),
             Map.entry(JobAction.COMPLETED, "completed"),

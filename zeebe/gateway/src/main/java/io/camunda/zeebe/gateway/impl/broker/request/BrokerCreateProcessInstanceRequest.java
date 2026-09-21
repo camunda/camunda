@@ -113,6 +113,12 @@ public class BrokerCreateProcessInstanceRequest
     return this;
   }
 
+  public BrokerCreateProcessInstanceRequest setStubCallActivities(
+      final boolean stubCallActivities) {
+    requestDto.setStubCallActivities(stubCallActivities);
+    return this;
+  }
+
   public BrokerCreateProcessInstanceRequest setBusinessId(final String businessId) {
     this.businessId = businessId;
     requestDto.setBusinessId(businessId != null ? businessId : "");

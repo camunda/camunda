@@ -66,4 +66,16 @@ final class ProcessInstanceIntentTest {
     assertThat(ProcessInstanceIntent.from((short) 23)).isEqualTo(ProcessInstanceIntent.RESUME_JOBS);
     assertThat(ProcessInstanceIntent.from((short) 24)).isEqualTo(ProcessInstanceIntent.SUSPENDING);
   }
+
+  @Test
+  void shouldClassifyStartCalledProcessAsBpmnElementCommand() {
+    // given / when / then
+    assertThat(
+            ProcessInstanceIntent.isBpmnElementCommand(ProcessInstanceIntent.START_CALLED_PROCESS))
+        .describedAs("the command is routed to the BPMN element processors")
+        .isTrue();
+    assertThat(ProcessInstanceIntent.START_CALLED_PROCESS.isEvent()).isFalse();
+    assertThat(ProcessInstanceIntent.from((short) 25))
+        .isEqualTo(ProcessInstanceIntent.START_CALLED_PROCESS);
+  }
 }

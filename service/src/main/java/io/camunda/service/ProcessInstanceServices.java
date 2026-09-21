@@ -336,6 +336,10 @@ public final class ProcessInstanceServices
       brokerRequest.setBusinessId(request.businessId());
     }
 
+    if (request.stubCallActivities() != null) {
+      brokerRequest.setStubCallActivities(request.stubCallActivities());
+    }
+
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
     }
@@ -362,6 +366,10 @@ public final class ProcessInstanceServices
 
     if (request.businessId() != null) {
       brokerRequest.setBusinessId(request.businessId());
+    }
+
+    if (request.stubCallActivities() != null) {
+      brokerRequest.setStubCallActivities(request.stubCallActivities());
     }
 
     if (request.operationReference() != null) {
@@ -704,7 +712,8 @@ public final class ProcessInstanceServices
       List<ProcessInstanceCreationRuntimeInstruction> runtimeInstructions,
       List<String> fetchVariables,
       Set<String> tags,
-      String businessId) {
+      String businessId,
+      Boolean stubCallActivities) {
 
     ProcessDefinitionIdentifier processDefinitionIdentifier() {
       if (processDefinitionKey > 0L) {

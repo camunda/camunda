@@ -157,6 +157,21 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
   default void finalizeTermination(final T element, final BpmnElementContext context) {}
 
   /**
+   * Starts the process a stubbed call activity calls after all, from an element instance that is
+   * already activated. Only a call activity can be stubbed, so no other element ever receives this
+   * command.
+   *
+   * @param element the instance of the BPMN element that is executed
+   * @param context process instance-related data of the element that is executed
+   * @return Either<Failure, ?> indicating the outcome of the attempt to start the called process
+   */
+  default Either<Failure, ?> onStartCalledProcess(
+      final T element, final BpmnElementContext context) {
+    throw new BpmnProcessingException(
+        context, "Expected to start a called process, but the element is not a call activity");
+  }
+
+  /**
    * Represents the outcome of a BPMN element transition method, indicating whether the next step
    * (e.g. finalize method) should be invoked immediately or await an external trigger.
    */

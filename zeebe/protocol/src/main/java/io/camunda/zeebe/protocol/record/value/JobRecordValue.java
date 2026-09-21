@@ -276,6 +276,17 @@ public interface JobRecordValue
      * @return whether the remaining instances of the ad-hoc sub-process should be canceled.
      */
     boolean isCancelRemainingInstances();
+
+    /**
+     * Returns whether the process a stubbed call activity calls should be started after all,
+     * instead of the completion standing in for it.
+     *
+     * @return {@code true} if the called process should be started
+     * @since 8.11
+     */
+    default boolean isRunCalledProcess() {
+      return false;
+    }
   }
 
   /**

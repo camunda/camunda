@@ -234,4 +234,15 @@ public interface ProcessInstanceRecordValue
   default String getJobReservationToken() {
     return "";
   }
+
+  /**
+   * Returns whether the call activities of this process instance are stubbed. Only the root element
+   * instance record of an instance created with the flag carries it.
+   *
+   * @return {@code true} if the call activities of this process instance are stubbed
+   * @since 8.11
+   */
+  default boolean isStubCallActivities() {
+    return false;
+  }
 }

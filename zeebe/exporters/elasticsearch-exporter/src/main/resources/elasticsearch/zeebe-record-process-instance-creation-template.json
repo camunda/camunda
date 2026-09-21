@@ -74,6 +74,9 @@
             "versionTag": {
               "type": "keyword"
             },
+            "stubCallActivities": {
+              "type": "boolean"
+            },
             "elementInstanceKey": {
               "enabled": false
             }

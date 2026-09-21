@@ -399,7 +399,11 @@ public final class ActivateJobsTest {
     final long maxRecordSize =
         maxMessageSize - headerSize - EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER;
 
-    final int variablesSize = (int) maxRecordSize / expectedJobsInBatch;
+    // a job's own fields have to fit beside its variables, so leave room for them rather than
+    // dividing the record size exactly - otherwise adding any field to JobRecord drops the batch
+    // to a single job and the test fails for a reason that has nothing to do with batch limiting
+    final int perJobOverhead = (int) ByteValue.ofKilobytes(1);
+    final int variablesSize = (int) maxRecordSize / expectedJobsInBatch - perJobOverhead;
     final String variables = "{'key': '" + "x".repeat(variablesSize) + "'}";
 
     // when

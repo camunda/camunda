@@ -115,10 +115,9 @@ final class JobBatchCollector {
             return true;
           }
 
-          if (jobRecord.hasJobReservationToken()) {
-            // the instance's creator reserved its jobs: no activation hands them out
-            jobMetrics.countJobEvent(
-                JobAction.SKIPPED_RESERVED, jobRecord.getJobKind(), value.getType());
+          final var withheldReason = JobWorkerDispatch.withheldFromWorkersReason(jobRecord);
+          if (withheldReason != null) {
+            jobMetrics.countJobEvent(withheldReason, jobRecord.getJobKind(), value.getType());
             return true;
           }
 

@@ -35,6 +35,7 @@ import static io.camunda.gateway.mapping.http.validator.UserTaskRequestValidator
 import static io.camunda.gateway.mapping.http.validator.UserTaskRequestValidator.validateUpdateRequest;
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 import static io.camunda.zeebe.protocol.record.value.JobResultType.AD_HOC_SUB_PROCESS;
+import static io.camunda.zeebe.protocol.record.value.JobResultType.CALL_ACTIVITY;
 import static io.camunda.zeebe.protocol.record.value.JobResultType.USER_TASK;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -60,6 +61,7 @@ import io.camunda.gateway.protocol.model.JobErrorRequest;
 import io.camunda.gateway.protocol.model.JobFailRequest;
 import io.camunda.gateway.protocol.model.JobReleaseRequest;
 import io.camunda.gateway.protocol.model.JobResultAdHocSubProcess;
+import io.camunda.gateway.protocol.model.JobResultCallActivity;
 import io.camunda.gateway.protocol.model.JobResultUserTask;
 import io.camunda.gateway.protocol.model.JobUpdateRequest;
 import io.camunda.gateway.protocol.model.MessageCorrelationRequest;
@@ -846,6 +848,9 @@ public class RequestMapper {
     if (AD_HOC_SUB_PROCESS.getType().equals(type)) {
       return getJobResult((JobResultAdHocSubProcess) request.getResult());
     }
+    if (CALL_ACTIVITY.getType().equals(type)) {
+      return getJobResult((JobResultCallActivity) request.getResult());
+    }
     throw new IllegalStateException("Unexpected value: " + type);
   }
 
@@ -913,6 +918,13 @@ public class RequestMapper {
             })
         .forEach(jobResult::addActivateElement);
     return jobResult;
+  }
+
+  private static JobResult getJobResult(final JobResultCallActivity result) {
+    return new JobResult()
+        .setType(JobResultType.from(result.getType()))
+        .setRunCalledProcess(
+            getBooleanOrDefault(result, JobResultCallActivity::getRunCalledProcess, false));
   }
 
   private static <R> boolean getBooleanOrDefault(

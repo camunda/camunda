@@ -971,7 +971,8 @@ final class JsonSerializableToJsonTest {
                           }
                         ],
                         "completionConditionFulfilled": true,
-                        "cancelRemainingInstances": true
+                        "cancelRemainingInstances": true,
+                        "runCalledProcess": false
                       },
                       "secretReferences": []
                     }
@@ -1173,7 +1174,8 @@ final class JsonSerializableToJsonTest {
                       }
                     ],
                     "completionConditionFulfilled": true,
-                    "cancelRemainingInstances": true
+                    "cancelRemainingInstances": true,
+                    "runCalledProcess": false
                   },
                   "secretReferences": [
                     {
@@ -1241,7 +1243,8 @@ final class JsonSerializableToJsonTest {
                     },
                     "activateElements": [],
                     "completionConditionFulfilled": false,
-                    "cancelRemainingInstances": false
+                    "cancelRemainingInstances": false,
+                    "runCalledProcess": false
                   },
                   "secretReferences": []
                 }
@@ -1308,7 +1311,8 @@ final class JsonSerializableToJsonTest {
                     },
                     "activateElements": [],
                     "completionConditionFulfilled": false,
-                    "cancelRemainingInstances": false
+                    "cancelRemainingInstances": false,
+                    "runCalledProcess": false
                   },
                   "secretReferences": []
                 }
@@ -1963,6 +1967,7 @@ final class JsonSerializableToJsonTest {
                   "storageOrdinal": 6,
                   "businessId": "business-id-456",
                   "versionTag": "v1.0",
+                  "stubCallActivities": false,
                   "variablesMetadata": {
                     "foo": {
                       "protectionModes": ["REDACT"]
@@ -1996,6 +2001,7 @@ final class JsonSerializableToJsonTest {
                   "storageOrdinal": 0,
                   "businessId": "",
                   "versionTag": "",
+                  "stubCallActivities": false,
                   "variablesMetadata": {},
                   "elementInstanceKey": -1
                 }
@@ -2185,6 +2191,7 @@ final class JsonSerializableToJsonTest {
                   "businessId": "business-id-123",
                   "resumeFromJobKey": -1,
                   "jobReservationToken": "",
+                  "stubCallActivities": false,
                   "elementInstanceKey": -1
                 }
                 """
@@ -2220,6 +2227,7 @@ final class JsonSerializableToJsonTest {
                   "businessId": "",
                   "resumeFromJobKey": -1,
                   "jobReservationToken": "",
+                  "stubCallActivities": false,
                   "elementInstanceKey": -1
                 }
                 """
@@ -3063,6 +3071,7 @@ final class JsonSerializableToJsonTest {
                     "businessId": "",
                     "resumeFromJobKey": -1,
                   "jobReservationToken": "",
+                  "stubCallActivities": false,
                     "elementInstanceKey": -1
                   }
                 }

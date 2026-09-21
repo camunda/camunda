@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -63,6 +64,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   public static final StringValue RESUME_FROM_JOB_KEY_KEY = new StringValue("resumeFromJobKey");
   public static final StringValue JOB_RESERVATION_TOKEN_KEY =
       new StringValue("jobReservationToken");
+  public static final StringValue STUB_CALL_ACTIVITIES_KEY = new StringValue("stubCallActivities");
 
   private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final IntegerProperty versionProp = new IntegerProperty(VERSION_KEY, -1);
@@ -109,9 +111,11 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   private final StringProperty jobReservationTokenProp =
       new StringProperty(JOB_RESERVATION_TOKEN_KEY, "");
+  private final BooleanProperty stubCallActivitiesProp =
+      new BooleanProperty(STUB_CALL_ACTIVITIES_KEY, false);
 
   public ProcessInstanceRecord() {
-    super(20);
+    super(21);
     declareProperty(bpmnElementTypeProp)
         .declareProperty(elementIdProp)
         .declareProperty(bpmnProcessIdProp)
@@ -131,7 +135,8 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
         .declareProperty(storageOrdinalProp)
         .declareProperty(businessIdProp)
         .declareProperty(resumeFromJobKeyProp)
-        .declareProperty(jobReservationTokenProp);
+        .declareProperty(jobReservationTokenProp)
+        .declareProperty(stubCallActivitiesProp);
   }
 
   public void wrap(final ProcessInstanceRecord record) {
@@ -340,6 +345,16 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   public ProcessInstanceRecord setJobReservationToken(final DirectBuffer jobReservationToken) {
     jobReservationTokenProp.setValue(jobReservationToken);
+    return this;
+  }
+
+  @Override
+  public boolean isStubCallActivities() {
+    return stubCallActivitiesProp.getValue();
+  }
+
+  public ProcessInstanceRecord setStubCallActivities(final boolean stubCallActivities) {
+    stubCallActivitiesProp.setValue(stubCallActivities);
     return this;
   }
 

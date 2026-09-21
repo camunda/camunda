@@ -26,7 +26,9 @@ public enum JobResultType {
   /** Represents a user task job result type. */
   USER_TASK("userTask"),
   /** Represents an ad-hoc subprocess job result type. */
-  AD_HOC_SUB_PROCESS("adHocSubProcess");
+  AD_HOC_SUB_PROCESS("adHocSubProcess"),
+  /** Represents the result of a job that stands in for the process a call activity calls. */
+  CALL_ACTIVITY("callActivity");
 
   final String type;
 
