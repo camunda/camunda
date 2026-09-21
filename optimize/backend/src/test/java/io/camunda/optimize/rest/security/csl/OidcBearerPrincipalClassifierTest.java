@@ -145,7 +145,7 @@ class OidcBearerPrincipalClassifierTest {
     // "azp"), with no client-id-claim override configured. This is the deliberate, documented
     // trade-off of failing closed: such a client is now subjected to the permission check rather
     // than silently exempted, and must either be granted the Optimize permission or have the
-    // operator configure the correct claim-id-claim for their IdP.
+    // operator configure the correct client-id-claim for their IdP.
     final var classifier = new OidcBearerPrincipalClassifier(new OidcConfiguration());
     final Map<String, Object> claims = Map.of("azp", "some-m2m-client-id");
 
