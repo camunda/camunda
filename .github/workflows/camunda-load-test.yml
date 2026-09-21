@@ -38,6 +38,7 @@ on:
           - typical
           - max
           - archiver
+          - dmn
         default: max
       secondary-storage-type:
         description: 'Secondary database backend for Camunda Platform'
