@@ -52,6 +52,8 @@ on:
         type: boolean
         required: false
         default: false
+  pull_request:
+    types: [labeled, synchronize]
 
 concurrency:
   group: oracle-async-replication-test
@@ -71,6 +73,9 @@ env:
   TF_VAR_secondary_region: eu-west-2
   TF_STATE_BUCKET_REGION: eu-west-1
   LOCAL_DB_PORT: '11521'
+  ORACLE_ENGINE_VERSION: ${{ inputs.oracle_engine_version || 'auto' }}
+  ORACLE_INSTANCE_CLASS: ${{ inputs.oracle_instance_class || 'db.r6i.large' }}
+  ORACLE_BYOL_ACKNOWLEDGED: ${{ inputs.oracle_byol_acknowledged || github.event_name == 'pull_request' }}
 
 jobs:
   oracle-it:
@@ -78,6 +83,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 240
     permissions: {}
+    if: |
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       (github.event.action == 'labeled' && github.event.label.name == 'run-oracle-tests' ||
+        github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'run-oracle-tests')))
 
     steps:
       - name: Checkout
@@ -106,11 +117,11 @@ jobs:
       - name: Validate Oracle prerequisites
         run: |
           set -euo pipefail
-          if [[ "${{ inputs.oracle_byol_acknowledged }}" != "true" ]]; then
+          if [[ "${ORACLE_BYOL_ACKNOWLEDGED}" != "true" ]]; then
             echo "::error::Oracle mode requires explicit acknowledgement of the Enterprise Edition BYOL requirement."
             exit 1
           fi
-          if [[ "${{ inputs.oracle_instance_class }}" == "db.t3.small" ]]; then
+          if [[ "${ORACLE_INSTANCE_CLASS}" == "db.t3.small" ]]; then
             echo "::error::RDS for Oracle replicas require an instance class with at least two vCPUs."
             exit 1
           fi
@@ -165,7 +176,7 @@ jobs:
           {
             echo "TF_VAR_name_prefix=${name_prefix}"
             echo "TF_VAR_master_password=${oracle_password}"
-            echo "TF_VAR_instance_class=${{ inputs.oracle_instance_class }}"
+            echo "TF_VAR_instance_class=${ORACLE_INSTANCE_CLASS}"
           } >> "$GITHUB_ENV"
           echo "name_prefix=${name_prefix}" >> "$GITHUB_OUTPUT"
 
@@ -176,12 +187,12 @@ jobs:
             aws rds describe-orderable-db-instance-options \
               --region "$1" \
               --engine oracle-ee \
-              --db-instance-class "${{ inputs.oracle_instance_class }}" \
+              --db-instance-class "${ORACLE_INSTANCE_CLASS}" \
               --license-model bring-your-own-license \
               --query 'OrderableDBInstanceOptions[].EngineVersion' \
               --output text | tr '\t' '\n' | sort -uV
           }
-          requested="${{ inputs.oracle_engine_version }}"
+          requested="${ORACLE_ENGINE_VERSION}"
           if [[ "$requested" == "auto" ]]; then
             resolved="$(comm -12 <(list_versions "$TF_VAR_primary_region") <(list_versions "$TF_VAR_secondary_region") \
               | awk '/^19[.]/{version=$0} END{print version}')"
