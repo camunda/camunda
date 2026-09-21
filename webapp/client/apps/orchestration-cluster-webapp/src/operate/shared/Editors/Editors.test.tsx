@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
+import {afterAll, afterEach, beforeAll, beforeEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup, render} from 'vitest-browser-react';
 import {useState} from 'react';
@@ -14,18 +14,31 @@ import {it} from '#/vitest-modules/test-extend';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {themeStore} from '#/shared/theme/theme';
 import {InlineJsonEditor} from './InlineJsonEditor';
-import {RichTextEditor} from './RichTextEditor';
+import {RichTextEditor, type EditorHandle} from './RichTextEditor';
 import {RichTextEditorModal} from './RichTextEditorModal';
 
-beforeEach(() => {
+beforeAll(() => {
 	vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout', 'Date'], shouldAdvanceTime: true});
+});
+afterAll(() => vi.useRealTimers());
+beforeEach(() => {
 	vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
 	notificationsStore.reset();
 });
 afterEach(async () => {
 	await vi.advanceTimersByTimeAsync(100);
+	const monaco = await import('monaco-editor');
+	const models = monaco.editor.getModels().filter((model) => model.getLanguageId() === 'json');
+	if (models.length > 0) {
+		const getWorker = await monaco.languages.json.getWorker();
+		await Promise.all(
+			models.map(async (model) => {
+				const worker = await getWorker(model.uri);
+				await worker.parseJSONDocument(model.uri.toString());
+			}),
+		);
+	}
 	await cleanup();
-	vi.useRealTimers();
 	vi.restoreAllMocks();
 	notificationsStore.reset();
 	themeStore.reset();
@@ -69,6 +82,7 @@ describe('InlineJsonEditor', () => {
 		await userEvent.tab();
 		await userEvent.keyboard('{Enter}');
 		await expect.element(copy).toHaveAttribute('aria-disabled', 'true');
+		await expect.element(screen.getByTestId('copy-loading-indicator')).toHaveStyle({position: 'absolute'});
 		await userEvent.keyboard(' ');
 		expect(onCopy).toHaveBeenCalledOnce();
 		expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
@@ -121,7 +135,9 @@ describe('InlineJsonEditor', () => {
 		expect(getComputedStyle(content).overflowWrap).toBe('anywhere');
 		await userEvent.click(button);
 		expect(showAll).toHaveBeenCalledOnce();
-		await expect.element(screen.getByRole('alert')).toHaveTextContent('Invalid value');
+		await expect
+			.element(screen.getByRole('alert').filter({hasText: 'Invalid value'}))
+			.toHaveTextContent('Invalid value');
 	});
 
 	it('should edit, validate and blur on Escape without losing changes', async () => {
@@ -154,6 +170,18 @@ describe('InlineJsonEditor', () => {
 		expect(onBlur).toHaveBeenCalledOnce();
 		expect(onFocus).toHaveBeenCalledOnce();
 		await expect.element(screen.getByText('truex', {exact: true})).toBeVisible();
+	});
+
+	it('should expose and clear field errors on the editable input', async () => {
+		const onChange = vi.fn();
+		const screen = await render(
+			<InlineJsonEditor id="variable-value" value="false" onChange={onChange} fieldError="Invalid value" />,
+		);
+		const editor = screen.getByRole('textbox', {name: 'Value', exact: true});
+		await expect.element(editor).toHaveAttribute('id', 'variable-value-editor');
+		await expect.element(editor).toHaveAttribute('aria-invalid', 'true');
+		await screen.rerender(<InlineJsonEditor id="variable-value" value="false" onChange={onChange} />);
+		await expect.element(editor).toHaveAttribute('aria-invalid', 'false');
 	});
 
 	it('should preserve the editor during external updates and allow Tab to leave it', async () => {
@@ -223,11 +251,13 @@ describe('RichTextEditorModal', () => {
 	it('should reset when reopened and preserve markdown without JSON parsing', async () => {
 		const onApply = vi.fn();
 		const onClose = vi.fn();
-		const props = {value: '# Notes', language: 'markdown', onApply, onClose} as const;
+		const props = {value: '# Notes', language: 'markdown', variableName: 'message', onApply, onClose} as const;
 		const screen = await render(<RichTextEditorModal {...props} isVisible />);
 		const editor = screen.getByRole('textbox', {name: 'Value', exact: true});
 		await expect.element(editor).toHaveFocus();
 		await userEvent.keyboard('{ArrowRight>7/}!');
+		await userEvent.click(screen.getByRole('button', {name: 'Copy', exact: true}));
+		expect(navigator.clipboard.writeText).toHaveBeenCalledWith('# Notes!');
 		await userEvent.click(screen.getByRole('button', {name: 'Apply'}));
 		expect(onApply).toHaveBeenCalledWith('# Notes!');
 		await userEvent.click(screen.getByRole('button', {name: 'Cancel'}));
@@ -242,6 +272,29 @@ describe('RichTextEditorModal', () => {
 });
 
 describe('RichTextEditor', () => {
+	it('should show and hide validation markers through its public handle', async () => {
+		let onValidate!: (isValid: boolean) => void;
+		let handle!: EditorHandle;
+		const invalid = new Promise<boolean>((resolve) => {
+			onValidate = resolve;
+		});
+		const screen = await render(
+			<RichTextEditor
+				value="!"
+				onValidate={onValidate}
+				onMount={(editor) => {
+					handle = editor;
+				}}
+			/>,
+		);
+		expect(await invalid).toBe(false);
+		handle.showMarkers();
+		const close = screen.getByRole('button', {name: /Close/});
+		await expect.element(close).toBeVisible();
+		handle.hideMarkers();
+		await expect.element(close).not.toBeInTheDocument();
+	});
+
 	it('should update theme without replacing content', async () => {
 		themeStore.changeTheme('light');
 		const screen = await render(<RichTextEditor value='"hello"' readOnly />);

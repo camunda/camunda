@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useRef, useState} from 'react';
+import {useCallback, useMemo, useRef, useState} from 'react';
 import {Button, Modal} from '@carbon/react';
 import {Edit, View} from '@carbon/react/icons';
 import {useTranslation} from 'react-i18next';
@@ -41,16 +41,19 @@ const ModalContent = ({
 	variableName,
 }: Props) => {
 	const {t} = useTranslation();
-	const initialValue = language === 'json' ? beautifyJSON(value) : value;
+	const initialValue = useMemo(() => (language === 'json' ? beautifyJSON(value) : value), [language, value]);
 	const [editedValue, setEditedValue] = useState(initialValue);
 	const [isInEditMode, setIsInEditMode] = useState(!readOnly);
 	const [hasValidationError, setHasValidationError] = useState(false);
 	const editorRef = useRef<EditorHandle | null>(null);
 	const isReadOnly = readOnly && !isInEditMode;
-	const copyValue =
-		variableName !== undefined && isValidJSON(editedValue)
-			? JSON.stringify({[variableName]: JSON.parse(editedValue)})
-			: editedValue;
+	const transformCopyValue = useCallback(
+		(valueToCopy: string) =>
+			language === 'json' && variableName !== undefined && isValidJSON(valueToCopy)
+				? JSON.stringify({[variableName]: JSON.parse(valueToCopy)})
+				: valueToCopy,
+		[language, variableName],
+	);
 
 	return (
 		<Modal
@@ -90,7 +93,7 @@ const ModalContent = ({
 						{isInEditMode ? t('operate.shared.editors.view') : t('operate.shared.editors.edit')}
 					</Button>
 				)}
-				<CopyButton value={copyValue} />
+				<CopyButton value={editedValue} transformValue={transformCopyValue} />
 			</Toolbar>
 			<RichTextEditor
 				value={editedValue}

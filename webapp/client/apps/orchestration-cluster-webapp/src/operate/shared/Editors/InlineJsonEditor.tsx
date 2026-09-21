@@ -93,7 +93,9 @@ const InlineJsonEditor = ({
 			) : (
 				<WriteModeEditor $invalid={!!fieldError}>
 					<RichTextEditor
+						id={id}
 						value={displayValue}
+						isInvalid={!!fieldError}
 						autoFocus={autoFocus}
 						height={`${height}px`}
 						onChange={(nextValue) => {

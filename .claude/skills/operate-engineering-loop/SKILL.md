@@ -97,9 +97,6 @@ after meaningful edits and the component tier when a component is complete.
 Do not suppress failures, weaken assertions without rationale, or update snapshots without
 inspecting the result. Do not call a failure pre-existing without evidence.
 
-For worker-backed editors, await the validation callback before asserting its result. A mounted
-textbox does not mean schema validation has completed; keep test timeouts unchanged.
-
 ## Phase 3: Independent Review
 
 Once the component tier is green, run at least two independent review agents with different

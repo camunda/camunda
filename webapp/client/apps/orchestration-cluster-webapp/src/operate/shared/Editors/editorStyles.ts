@@ -7,6 +7,7 @@
  */
 
 import styled, {createGlobalStyle} from 'styled-components';
+import {InlineLoading} from '@carbon/react';
 
 const EditorStyles = createGlobalStyle`
 	.monaco-editor textarea:focus { box-shadow: none !important; }
@@ -61,6 +62,15 @@ const ReadOnlyContent = styled.pre<{$height: number}>`
 		outline-offset: -2px;
 	}
 `;
+const CopyLoadingIndicator = styled(InlineLoading)`
+	position: absolute;
+	display: block;
+	top: var(--cds-spacing-02);
+	right: 0;
+	min-block-size: auto;
+	inline-size: auto;
+	pointer-events: none;
+`;
 const WriteModeEditor = styled.div<{$invalid: boolean}>`
 	position: relative;
 	border-block-end: 1px solid var(--cds-border-strong);
@@ -80,4 +90,4 @@ const Toolbar = styled.div`
 	padding-bottom: var(--cds-spacing-03);
 `;
 
-export {EditorStyles, EditorWrapper, ReadOnlyWrapper, ReadOnlyContent, WriteModeEditor, Toolbar};
+export {EditorStyles, EditorWrapper, ReadOnlyWrapper, ReadOnlyContent, CopyLoadingIndicator, WriteModeEditor, Toolbar};

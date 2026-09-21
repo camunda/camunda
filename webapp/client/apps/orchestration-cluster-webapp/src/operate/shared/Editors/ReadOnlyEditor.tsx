@@ -7,11 +7,10 @@
  */
 
 import {useRef, useState, type ReactNode} from 'react';
-import {InlineLoading} from '@carbon/react';
 import {Copy} from '@carbon/react/icons';
 import {useTranslation} from 'react-i18next';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
-import {ReadOnlyWrapper, ReadOnlyContent} from './editorStyles';
+import {ReadOnlyWrapper, ReadOnlyContent, CopyLoadingIndicator} from './editorStyles';
 
 type Props = {
 	value: string;
@@ -77,7 +76,11 @@ const ReadOnlyEditor = ({value, placeholder, label, height, isInvalid, renderBut
 				{value || placeholder}
 			</ReadOnlyContent>
 			{renderButton?.()}
-			{isCopying ? <InlineLoading description={t('operate.shared.editors.copying')} /> : <Copy size={16} aria-hidden />}
+			{isCopying ? (
+				<CopyLoadingIndicator data-testid="copy-loading-indicator" description={t('operate.shared.editors.copying')} />
+			) : (
+				<Copy size={16} aria-hidden />
+			)}
 		</ReadOnlyWrapper>
 	);
 };

@@ -7,26 +7,25 @@
  */
 
 import {untruncateJson} from './untruncateJson';
-import {isValidJSON} from '#/shared/json/isValidJSON';
-import {beautifyJSON} from '#/shared/json/beautifyJSON';
 
 function beautifyTruncatedJSON(value: string) {
-	const {completed, collectionDepth} = untruncateJson(value);
-	if (!isValidJSON(completed)) {
-		return value;
-	}
-	const pretty = beautifyJSON(completed);
-	let end = pretty.length;
-	for (let depth = 0; depth < collectionDepth; depth++) {
-		while (end > 0 && /\s/.test(pretty[end - 1] ?? '')) {
+	try {
+		const {completed, collectionDepth} = untruncateJson(value);
+		const pretty = JSON.stringify(JSON.parse(completed), null, '\t');
+		let end = pretty.length;
+		for (let depth = 0; depth < collectionDepth; depth++) {
+			while (end > 0 && /\s/.test(pretty[end - 1] ?? '')) {
+				end--;
+			}
+			if (pretty[end - 1] !== ']' && pretty[end - 1] !== '}') {
+				break;
+			}
 			end--;
 		}
-		if (pretty[end - 1] !== ']' && pretty[end - 1] !== '}') {
-			break;
-		}
-		end--;
+		return pretty.slice(0, end);
+	} catch {
+		return value;
 	}
-	return pretty.slice(0, end);
 }
 
 export {beautifyTruncatedJSON};

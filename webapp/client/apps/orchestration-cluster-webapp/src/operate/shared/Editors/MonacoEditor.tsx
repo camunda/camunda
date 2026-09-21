@@ -16,9 +16,11 @@ import {EditorStyles} from './editorStyles';
 
 type EditorHandle = {showMarkers: () => void; hideMarkers: () => void};
 type Props = {
+	id?: string;
 	language?: 'json' | 'markdown';
 	value: string;
 	readOnly?: boolean;
+	isInvalid?: boolean;
 	autoFocus?: boolean;
 	onChange?: (value: string) => void;
 	onValidate?: (isValid: boolean) => void;
@@ -32,9 +34,11 @@ type Props = {
 
 const MonacoEditor = observer(
 	({
+		id,
 		language = 'json',
 		value,
 		readOnly = false,
+		isInvalid = false,
 		autoFocus = true,
 		onChange,
 		onValidate,
@@ -46,13 +50,23 @@ const MonacoEditor = observer(
 		jsonSchema,
 	}: Props) => {
 		const {t} = useTranslation();
-		const id = useId();
-		const modelPath = `inmemory://operate-editor/${id}`;
+		const modelId = useId();
+		const modelPath = `inmemory://operate-editor/${modelId}`;
 		const schemaUri = `${modelPath}.schema.json`;
 		const [monaco, setMonaco] = useState<Monaco | null>(null);
+		const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
 		const keyListener = useRef<{dispose: () => void} | null>(null);
 
 		useEffect(() => () => keyListener.current?.dispose(), []);
+		useEffect(() => {
+			const textbox = editorRef.current?.getDomNode()?.querySelector('[role="textbox"]');
+			if (id === undefined) {
+				textbox?.removeAttribute('id');
+			} else {
+				textbox?.setAttribute('id', `${id}-editor`);
+			}
+			textbox?.setAttribute('aria-invalid', String(isInvalid));
+		}, [id, monaco, isInvalid]);
 		useEffect(() => {
 			if (!monaco || !jsonSchema || language !== 'json') {
 				return;
@@ -100,6 +114,7 @@ const MonacoEditor = observer(
 					onChange={(value) => onChange?.(value ?? '')}
 					onValidate={(markers) => onValidate?.(markers.length === 0)}
 					onMount={(editor: editor.IStandaloneCodeEditor, monaco) => {
+						editorRef.current = editor;
 						setMonaco(monaco);
 						if (autoFocus) {
 							editor.focus();
