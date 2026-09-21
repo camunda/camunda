@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.camunda.search.schema.IndexMapping;
 import io.camunda.search.schema.IndexMappingProperty;
@@ -255,11 +256,11 @@ public class OpensearchEngineClient implements SearchEngineClient {
   @Override
   public void putIndexLifeCyclePolicy(final String policyName, final String deletionMinAge) {
     final var currentPolicyState = getCurrentISMPolicyState(policyName);
-    if (currentPolicyState.exists() && deletionMinAge.equals(currentPolicyState.minIndexAge())) {
+    if (currentPolicyState.exists()
+        && policyDefinitionMatches(currentPolicyState, deletionMinAge)) {
       LOG.debug(
-          "Index state management policy [{}] already has min_index_age [{}]; skipping PUT",
-          policyName,
-          deletionMinAge);
+          "Index state management policy [{}] already matches configuration; skipping PUT",
+          policyName);
       return;
     }
 
@@ -471,19 +472,8 @@ public class OpensearchEngineClient implements SearchEngineClient {
       final String policyName,
       final String deletionMinAge,
       final ISMPolicyState currentPolicyState) {
-    try (final var policyJson = getClass().getResourceAsStream(OPERATE_DELETE_ARCHIVED_POLICY)) {
-      final var jsonMap = objectReader.readTree(policyJson);
-      final var conditions =
-          (ObjectNode)
-              jsonMap
-                  .path("policy")
-                  .path("states")
-                  .path(0)
-                  .path("transitions")
-                  .path(0)
-                  .path("conditions");
-      conditions.put("min_index_age", deletionMinAge);
-
+    final var jsonMap = desiredPolicyDocument(deletionMinAge);
+    try {
       final var policy = objectWriter.writeValueAsBytes(jsonMap);
 
       final var builder =
@@ -504,8 +494,58 @@ public class OpensearchEngineClient implements SearchEngineClient {
       return builder.build();
     } catch (final IOException e) {
       throw new SearchEngineException(
+          "Failed to serialize policy for [%s]".formatted(policyName), e);
+    }
+  }
+
+  /**
+   * Loads the static ISM policy template and patches in the only field that ever varies at runtime,
+   * so both the PUT body and the drift check in {@link #policyDefinitionMatches} build from the
+   * exact same definition.
+   */
+  private JsonNode desiredPolicyDocument(final String deletionMinAge) {
+    try (final var policyJson = getClass().getResourceAsStream(OPERATE_DELETE_ARCHIVED_POLICY)) {
+      final var jsonMap = objectReader.readTree(policyJson);
+      final var conditions =
+          (ObjectNode)
+              jsonMap
+                  .path("policy")
+                  .path("states")
+                  .path(0)
+                  .path("transitions")
+                  .path(0)
+                  .path("conditions");
+      conditions.put("min_index_age", deletionMinAge);
+      return jsonMap;
+    } catch (final IOException e) {
+      throw new SearchEngineException(
           "Failed to deserialize policy file " + OPERATE_DELETE_ARCHIVED_POLICY, e);
     }
+  }
+
+  /**
+   * Compares the full managed policy definition (not just {@code min_index_age}) so that a changed
+   * or removed delete action/state/transition is repaired rather than silently skipped.
+   */
+  private boolean policyDefinitionMatches(
+      final ISMPolicyState currentPolicyState, final String deletionMinAge) {
+    final var desired =
+        normalizedPolicyDefinition(desiredPolicyDocument(deletionMinAge).path("policy"));
+    return desired.equals(currentPolicyState.policyDefinition());
+  }
+
+  /**
+   * OpenSearch injects fields such as {@code policy_id}, {@code schema_version} and {@code
+   * last_updated_time} into every policy it returns, none of which our PUT ever specifies, so a
+   * whole-document comparison against the static template would never match. Comparing only the
+   * fields the PUT actually sends keeps the drift check meaningful.
+   */
+  private static JsonNode normalizedPolicyDefinition(final JsonNode policyNode) {
+    final var normalized = JsonNodeFactory.instance.objectNode();
+    normalized.set("description", policyNode.path("description"));
+    normalized.set("default_state", policyNode.path("default_state"));
+    normalized.set("states", policyNode.path("states"));
+    return normalized;
   }
 
   private String getPolicyEndpoint(final String policyName) {
@@ -545,9 +585,8 @@ public class OpensearchEngineClient implements SearchEngineClient {
   private ISMPolicyState fromPolicyJson(final JsonNode policyJsonNode) {
     final var primaryTerm = policyJsonNode.path("_primary_term").asInt();
     final var seqNo = policyJsonNode.path("_seq_no").asInt();
-    final var minIndexAge =
-        policyJsonNode.at("/policy/states/0/transitions/0/conditions/min_index_age").asText(null);
-    return new ISMPolicyState(seqNo, primaryTerm, minIndexAge);
+    final var policyDefinition = normalizedPolicyDefinition(policyJsonNode.path("policy"));
+    return new ISMPolicyState(seqNo, primaryTerm, policyDefinition);
   }
 
   private PutIndicesSettingsRequest putIndexSettingsRequest(
@@ -812,10 +851,10 @@ public class OpensearchEngineClient implements SearchEngineClient {
     }
   }
 
-  record ISMPolicyState(boolean exists, int seqNo, int primaryTerm, String minIndexAge) {
+  record ISMPolicyState(boolean exists, int seqNo, int primaryTerm, JsonNode policyDefinition) {
 
-    public ISMPolicyState(final int seqNo, final int primaryTerm, final String minIndexAge) {
-      this(true, seqNo, primaryTerm, minIndexAge);
+    public ISMPolicyState(final int seqNo, final int primaryTerm, final JsonNode policyDefinition) {
+      this(true, seqNo, primaryTerm, policyDefinition);
     }
 
     static ISMPolicyState empty() {
