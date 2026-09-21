@@ -26,6 +26,8 @@ extensions.configure<SpotlessExtension> {
 
   flexmark {
     target("**/*.md")
+    // Keep in sync with the <markdown><excludes> list in the root pom.xml, which is the Maven
+    // source of truth. Formatting a file here that Maven excludes makes the two formatters fight.
     targetExclude(
       "**/target/**/*.md",
       "**/node_modules/**/*.md",
@@ -33,9 +35,11 @@ extensions.configure<SpotlessExtension> {
       "optimize/client/**/*.md",
       "webapp/client/**/*",
       ".github/instructions/**/*.md",
-      ".github/skills/**/*.md",
+      ".claude/agents/**/*.md",
       ".claude/skills/**/*.md",
       ".github/agents/**/*.md",
+      ".github/workflows/**/*.md",
+      "load-tests/skills/**/*.md",
       "docs/monorepo-docs/**/*.md",
     )
     flexmark()
