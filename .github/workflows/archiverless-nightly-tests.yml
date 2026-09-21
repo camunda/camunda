@@ -37,7 +37,7 @@ jobs:
       elasticsearch-8: ${{ steps.db-versions.outputs.elasticsearch-8 }}
       opensearch-3: ${{ steps.db-versions.outputs.opensearch-3 }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 3
         with:
           persist-credentials: false
