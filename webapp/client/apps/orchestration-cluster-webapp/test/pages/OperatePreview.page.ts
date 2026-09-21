@@ -37,6 +37,18 @@ class OperatePreviewPage extends BasePage {
 	get listTileSkeletonRows() {
 		return this.page.locator('[data-slot="data-table-skeleton-row"]');
 	}
+
+	get noInstancesEmptyState() {
+		return this.page.getByRole('heading', {name: 'No running process instances'});
+	}
+
+	get noInstancesLearnMoreLink() {
+		return this.page.getByRole('link', {name: 'Learn more about Operate'});
+	}
+
+	get noInstancesModelerButton() {
+		return this.page.getByRole('link', {name: 'Go to Modeler'});
+	}
 }
 
 export {OperatePreviewPage};
