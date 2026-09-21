@@ -220,7 +220,7 @@
     <version.okio-jvm>3.18.2</version.okio-jvm>
     <version.jwks-rsa>0.24.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
-    <version.nimbus-jose-jwt>10.9.1</version.nimbus-jose-jwt>
+    <version.nimbus-jose-jwt>10.10</version.nimbus-jose-jwt>
     <version.nimbus-sdk>11.38.2</version.nimbus-sdk>
     <version.keycloak>26.7.4</version.keycloak>
     <!-- renovate: datasource=docker depName=docker.io/camunda/keycloak versioning=regex:^quay-(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)$ -->
