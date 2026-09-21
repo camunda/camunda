@@ -9,6 +9,7 @@ package io.camunda.zeebe.test.util.socket;
 
 import io.camunda.zeebe.test.util.TestEnvironment;
 import java.net.InetSocketAddress;
+import java.util.Iterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,16 +31,17 @@ public final class SocketUtil {
   private static final int PORT_RANGE_PER_TEST_FORK = 1000;
   private static final int TOTAL_PORT_RANGE = PORT_RANGE_PER_TEST_FORK * MAX_TEST_FORKS;
 
-  private static final String GRADLE_WORKER_ID_PROPERTY_NAME = "test.gradleWorkerIdProperty";
   private static final int TEST_FORK_NUMBER;
-  private static final PortRange PORT_RANGE;
+  private static final Iterator<InetSocketAddress> PORT_RANGE;
 
   static {
     final int testForkNumber = TestEnvironment.getTestForkNumber();
 
     LOG.info("Starting socket assignment with testForkNumber {}", testForkNumber);
 
-    final boolean useEphemeralPorts = System.getProperty(GRADLE_WORKER_ID_PROPERTY_NAME) != null;
+    // Gradle worker IDs are global across tasks and cannot safely be used as slots in the bounded
+    // per-fork layout, so Gradle workers get OS-assigned ephemeral ports instead.
+    final boolean useEphemeralPorts = TestEnvironment.isGradleWorker();
     if (!useEphemeralPorts) {
       // ensure limits to stay in available port range
       assert testForkNumber < MAX_TEST_FORKS
@@ -57,7 +59,7 @@ public final class SocketUtil {
 
     TEST_FORK_NUMBER = testForkNumber;
     if (useEphemeralPorts) {
-      PORT_RANGE = new PortRange(DEFAULT_HOST, TEST_FORK_NUMBER);
+      PORT_RANGE = new EphemeralPortRange(DEFAULT_HOST, TEST_FORK_NUMBER);
     } else {
       final int testOffset = testForkNumber * PORT_RANGE_PER_TEST_FORK;
       final int min = BASE_PORT + testOffset;
