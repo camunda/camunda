@@ -117,7 +117,7 @@ implementation into individual modules:
 
 ```kotlin
 plugins {
-  id("buildlogic.client-conventions") // or server-conventions
+  id("buildlogic.client-conventions") // or server-conventions for server modules
   id("buildlogic.spring-boot-3-conventions")
 }
 ```

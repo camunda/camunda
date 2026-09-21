@@ -9,7 +9,7 @@ import org.apache.tools.ant.filters.ReplaceTokens
  */
 
 plugins {
-  id("buildlogic.server-conventions")
+  id("buildlogic.client-conventions")
   id("buildlogic.netty-tcnative-runtime-conventions")
   id("buildlogic.openapi-conventions")
 }
