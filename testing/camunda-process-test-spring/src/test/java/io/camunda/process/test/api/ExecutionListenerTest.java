@@ -29,6 +29,10 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.search.filter.DecisionInstanceFilter;
+import io.camunda.client.api.search.filter.ProcessInstanceFilter;
+import io.camunda.client.api.search.page.AnyPage;
+import io.camunda.client.api.search.sort.ProcessInstanceSort;
 import io.camunda.client.spring.event.CamundaClientClosingSpringEvent;
 import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
 import io.camunda.client.spring.properties.CamundaClientProperties;
@@ -52,6 +56,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -62,6 +67,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -466,6 +472,26 @@ public class ExecutionListenerTest {
     when(processCoverageBuilder.build()).thenReturn(processCoverage);
     when(testContext.getTestMethod()).thenReturn(testMethod);
     when(testMethod.getName()).thenReturn("test");
+
+    // coverage collection searches the client for instances, so let those searches return
+    // real (empty) results rather than deep stubs
+    when(camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(ArgumentMatchers.<Consumer<ProcessInstanceFilter>>any())
+            .sort(ArgumentMatchers.<Consumer<ProcessInstanceSort>>any())
+            .page(ArgumentMatchers.<Consumer<AnyPage>>any())
+            .send()
+            .join()
+            .items())
+        .thenReturn(Collections.emptyList());
+    when(camundaClient
+            .newDecisionInstanceSearchRequest()
+            .filter(ArgumentMatchers.<Consumer<DecisionInstanceFilter>>any())
+            .page(ArgumentMatchers.<Consumer<AnyPage>>any())
+            .send()
+            .join()
+            .items())
+        .thenReturn(Collections.emptyList());
 
     // when
     listener.beforeTestClass(testContext);
