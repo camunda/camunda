@@ -33,6 +33,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Instant;
+import java.time.InstantSource;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -57,11 +58,14 @@ public final class TimerTriggerProcessor implements TypedRecordProcessor<TimerRe
   private final TypedRejectionWriter rejectionWriter;
 
   private final EventHandle eventHandle;
+  private final InstantSource clock;
 
   public TimerTriggerProcessor(
       final MutableProcessingState processingState,
       final BpmnBehaviors bpmnBehaviors,
-      final Writers writers) {
+      final Writers writers,
+      final InstantSource clock) {
+    this.clock = clock;
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
     expressionProcessor = bpmnBehaviors.expressionProcessor();
     stateWriter = writers.state();
