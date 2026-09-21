@@ -161,7 +161,7 @@ class ElasticsearchConnectorTest {
 
     // then
     Mockito.verify(builder).setSocketTimeout(30_000);
-    Mockito.verify(builder).setConnectTimeout(1_000);
+    Mockito.verify(builder).setConnectTimeout(5_000);
     Mockito.verify(builder).setConnectionRequestTimeout(180_000);
   }
 

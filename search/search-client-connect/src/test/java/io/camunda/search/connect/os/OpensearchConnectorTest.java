@@ -222,7 +222,7 @@ class OpensearchConnectorTest {
 
     // then
     Mockito.verify(builder).setResponseTimeout(Timeout.of(30_000L, TimeUnit.MILLISECONDS));
-    Mockito.verify(builder).setConnectTimeout(Timeout.of(1_000L, TimeUnit.MILLISECONDS));
+    Mockito.verify(builder).setConnectTimeout(Timeout.of(5_000L, TimeUnit.MILLISECONDS));
     Mockito.verify(builder)
         .setConnectionRequestTimeout(Timeout.of(180_000L, TimeUnit.MILLISECONDS));
   }
