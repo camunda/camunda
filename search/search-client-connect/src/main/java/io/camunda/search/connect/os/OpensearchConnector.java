@@ -221,6 +221,7 @@ public final class OpensearchConnector {
     final var connectTimeoutMillis =
         Optional.ofNullable(os.getConnectTimeout()).orElse(DEFAULT_CONNECT_TIMEOUT_MILLIS);
     builder.setConnectTimeout(Timeout.ofMilliseconds(connectTimeoutMillis));
+    builder.setConnectionRequestTimeout(Timeout.ofMilliseconds(connectTimeoutMillis));
 
     return builder;
   }
