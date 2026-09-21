@@ -113,3 +113,8 @@ load-tests/setup/c8-*
 # Gradle
 build/
 build-cache/
+
+# configuration/src/build is a Maven source root wired via build-helper-maven-plugin,
+# not a Gradle output directory; keep it trackable despite the build/ rule above.
+!/configuration/src/build/
+!/configuration/src/build/**
