@@ -122,7 +122,7 @@ jobs:
           -pl qa/acceptance-tests \
           -D groups="dl-nightly" \
           -D failsafe.excludedGroups="" \
-          -P dl-nightly,parallel-tests \
+          -P dl-nightly,extract-flaky-tests,parallel-tests \
           verify
 
       - name: Sanitize branch name for artifact names
