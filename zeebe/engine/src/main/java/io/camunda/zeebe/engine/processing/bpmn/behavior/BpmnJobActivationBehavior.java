@@ -284,8 +284,7 @@ public class BpmnJobActivationBehavior {
       // mark the parked job on the JOB record stream so the wait-state exporter distinguishes a
       // secret-parked job from a plain unclaimed one, mirroring the poll path in
       // JobBatchActivateProcessor. Best-effort: if the batch is already full the mark is skipped
-      // and
-      // the job keeps the generic wait-state label until its next resolution cycle re-parks it.
+      // and the job keeps the generic wait-state label until its next resolution cycle re-parks it.
       if (batchHadRoom) {
         SecretResolutionJobEvents.appendIfBatchHasRoom(
             stateWriter, jobKey, JobIntent.SECRET_RESOLUTION_PARKED, jobRecord);
