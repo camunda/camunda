@@ -47,7 +47,7 @@ abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer>
 
   /**
    * Creates the database replication cluster for this test. Called once before any test runs.
-   * Subclasses return a concrete cluster implementation (Postgres or MSSQL).
+   * Subclasses return a concrete cluster implementation for the database under test.
    */
   protected abstract R createCluster();
 
