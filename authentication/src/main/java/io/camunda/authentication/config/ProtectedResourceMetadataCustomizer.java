@@ -7,6 +7,8 @@
  */
 package io.camunda.authentication.config;
 
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
+import io.camunda.security.spring.oidc.LazyClientRegistrationRepository;
 import io.camunda.security.spring.security.OidcResourceServerCustomizer;
 import java.util.List;
 import java.util.Objects;
@@ -19,9 +21,10 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 /**
  * Wires RFC 9728 protected-resource metadata into the OIDC resource-server DSL of both OIDC chains.
  *
- * <p>The issuer URIs come from the repository while a metadata request is served, because a read
- * resolves the client registrations and thus performs OIDC discovery. A read while the chain is
- * configured makes an unreachable provider abort the application context.
+ * <p>The issuer URIs come from the configured providers rather than from resolved client
+ * registrations: reading a registration performs OIDC discovery, which would abort the application
+ * context while the chain is built, and would run on every anonymous call to the metadata endpoint
+ * once deferred to request time.
  */
 public class ProtectedResourceMetadataCustomizer implements OidcResourceServerCustomizer {
 
@@ -34,22 +37,21 @@ public class ProtectedResourceMetadataCustomizer implements OidcResourceServerCu
 
   @Override
   public void customize(final OAuth2ResourceServerConfigurer<HttpSecurity> oauth2) {
+    final List<String> issuerUris = issuerUris(clientRegistrationRepository);
     oauth2.protectedResourceMetadata(
         prmConfigurer ->
             prmConfigurer.protectedResourceMetadataCustomizer(
-                prmBuilder -> issuerUris().forEach(prmBuilder::authorizationServer)));
+                prmBuilder -> issuerUris.forEach(prmBuilder::authorizationServer)));
   }
 
-  private List<String> issuerUris() {
-    return extractClientRegistrations(clientRegistrationRepository).stream()
-        .map(cr -> cr.getProviderDetails().getIssuerUri())
-        .filter(Objects::nonNull)
-        .distinct()
-        .toList();
-  }
-
-  private static List<ClientRegistration> extractClientRegistrations(
-      final ClientRegistrationRepository repository) {
+  private static List<String> issuerUris(final ClientRegistrationRepository repository) {
+    if (repository instanceof final LazyClientRegistrationRepository lazy) {
+      return lazy.providers().values().stream()
+          .map(OidcConfiguration::getIssuerUri)
+          .filter(Objects::nonNull)
+          .distinct()
+          .toList();
+    }
     if (!(repository instanceof final Iterable<?> iterable)) {
       throw new IllegalStateException(
           "Unable to extract OAuth 2.0 client registrations as clientRegistrationRepository %s is not iterable"
@@ -58,6 +60,9 @@ public class ProtectedResourceMetadataCustomizer implements OidcResourceServerCu
     return StreamSupport.stream(iterable.spliterator(), false)
         .filter(ClientRegistration.class::isInstance)
         .map(ClientRegistration.class::cast)
+        .map(cr -> cr.getProviderDetails().getIssuerUri())
+        .filter(Objects::nonNull)
+        .distinct()
         .toList();
   }
 }
