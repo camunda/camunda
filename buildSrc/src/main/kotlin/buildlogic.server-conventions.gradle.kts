@@ -50,63 +50,32 @@ val includeStraceTests = providers.gradleProperty("includeStraceTests").isPresen
 dependencies {
   // Mirror the parent POM's imported BOMs. Platforms add version constraints only; they do not
   // add the managed libraries to a module's runtime classpath.
-  add("implementation", platform(versionCatalog.findLibrary("com-azure-azure-sdk-bom").get()))
-  add(
-    "implementation",
-    platform(versionCatalog.findLibrary("com-fasterxml-jackson-jackson-bom").get()),
-  )
-  add(
-    "implementation",
-    platform(versionCatalog.findLibrary("com-google-cloud-libraries-bom").get()),
-  )
-  add(
-    "implementation",
-    platform(versionCatalog.findLibrary("com-google-protobuf-protobuf-bom").get()),
-  )
-  add("implementation", platform(versionCatalog.findLibrary("io-github-openfeign-feign-bom").get()))
-  add("implementation", platform(versionCatalog.findLibrary("io-grpc-grpc-bom").get()))
-  add("implementation", platform(versionCatalog.findLibrary("io-micrometer-micrometer-bom").get()))
-  add(
-    "implementation",
-    platform(versionCatalog.findLibrary("io-modelcontextprotocol-sdk-mcp-bom").get()),
-  )
-  add("implementation", platform(versionCatalog.findLibrary("io-netty-netty-bom").get()))
-  add(
-    "implementation",
-    platform(versionCatalog.findLibrary("io-opentelemetry-opentelemetry-bom").get()),
-  )
-  add(
-    "implementation",
-    platform(versionCatalog.findLibrary("io-rest-assured-rest-assured-bom").get()),
-  )
-  add("implementation", platform(versionCatalog.findLibrary("org-junit-junit-bom").get()))
-  add("implementation", platform(versionCatalog.findLibrary("org-mockito-mockito-bom").get()))
-  add(
-    "implementation",
-    platform(versionCatalog.findLibrary("org-springframework-ai-spring-ai-bom").get()),
-  )
-  add(
-    "implementation",
-    platform(versionCatalog.findLibrary("org-springframework-boot-spring-boot-dependencies").get()),
-  )
-  add(
-    "implementation",
-    platform(versionCatalog.findLibrary("org-springframework-spring-framework-bom").get()),
-  )
-  add(
-    "implementation",
-    platform(versionCatalog.findLibrary("org-springframework-security-spring-security-bom").get()),
-  )
-  add(
-    "implementation",
-    platform(versionCatalog.findLibrary("org-testcontainers-testcontainers-bom").get()),
-  )
-  add("implementation", platform(versionCatalog.findLibrary("software-amazon-awssdk-bom").get()))
-  add("implementation", platform(versionCatalog.findLibrary("tools-jackson-jackson-bom").get()))
-  add(
-    "implementation",
-    platform(versionCatalog.findLibrary("org-apache-logging-log4j-log4j-bom").get()),
-  )
+  val importedBoms =
+    listOf(
+      "com-azure-azure-sdk-bom",
+      "com-fasterxml-jackson-jackson-bom",
+      "com-google-cloud-libraries-bom",
+      "com-google-protobuf-protobuf-bom",
+      "io-github-openfeign-feign-bom",
+      "io-grpc-grpc-bom",
+      "io-micrometer-micrometer-bom",
+      "io-modelcontextprotocol-sdk-mcp-bom",
+      "io-netty-netty-bom",
+      "io-opentelemetry-opentelemetry-bom",
+      "io-rest-assured-rest-assured-bom",
+      "org-junit-junit-bom",
+      "org-mockito-mockito-bom",
+      "org-springframework-ai-spring-ai-bom",
+      "org-springframework-boot-spring-boot-dependencies",
+      "org-springframework-spring-framework-bom",
+      "org-springframework-security-spring-security-bom",
+      "org-testcontainers-testcontainers-bom",
+      "software-amazon-awssdk-bom",
+      "tools-jackson-jackson-bom",
+      "org-apache-logging-log4j-log4j-bom",
+    )
+  importedBoms.forEach { add("implementation", platform(versionCatalog.findLibrary(it).get())) }
+  // log4j-bom also manages the annotation processor path.
   add(
     "annotationProcessor",
     platform(versionCatalog.findLibrary("org-apache-logging-log4j-log4j-bom").get()),
