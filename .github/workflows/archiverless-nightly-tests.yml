@@ -84,7 +84,7 @@ jobs:
       database-image-version: "${{ matrix.database-image-version }}"
       database-name: "${{ matrix.database-name }}"
       it-database-type: "${{ matrix.it-database-type }}"
-      use-shared-distball: true
+      use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
 
   identity-tests:
     needs: [ generate-db-versions, build-distball ]
@@ -113,4 +113,4 @@ jobs:
       database-image-version: "${{ matrix.database-image-version }}"
       database-name: "${{ matrix.database-name }}"
       it-database-type: "${{ matrix.it-database-type }}"
-      use-shared-distball: true
+      use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
