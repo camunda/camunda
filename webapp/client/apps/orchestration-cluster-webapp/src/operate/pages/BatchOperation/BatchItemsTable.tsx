@@ -21,7 +21,7 @@ import {TableContainer} from './styled';
 
 type Props = {
 	batchOperationKey: string;
-	batchOperationType: BatchOperationType | undefined;
+	batchOperationType: BatchOperationType | null | undefined;
 };
 
 const BatchItemsTable: React.FC<Props> = ({batchOperationKey, batchOperationType}) => {
