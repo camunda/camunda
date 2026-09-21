@@ -55,6 +55,10 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
  * One silent identity provider must not cost the tokens of the other providers. The decoder
  * resolved every provider at the first token it read, so one outage failed every API request. The
  * library now resolves only the provider of the issuer that a token names.
+ *
+ * <p>Every token here is a well-formed JWT: with several providers configured, the {@code iss}
+ * claim selects the provider, so the token is read before any provider is resolved. Under a single
+ * provider there is nothing to select and resolution comes first.
  */
 @SuppressWarnings({"SpringBootApplicationProperties", "WrongPropertyKeyValueDelimiter"})
 @AutoConfigureMockMvc
