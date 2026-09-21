@@ -10,6 +10,7 @@ package io.camunda.optimize.rest.security.csl;
 import io.camunda.identity.sdk.authentication.exception.TokenVerificationException;
 import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.service.security.CCSMTokenService;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,27 +25,32 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * Enforces the Optimize Identity permission on a CCSM bearer request, but only for a token that
- * {@link OidcBearerPrincipalClassifier} classifies as a user. An M2M client token is left exactly
- * as the audience check on the surrounding chain already authorized it — legacy CCSM behavior this
- * filter must not change.
+ * Enforces the Optimize Identity permission on a CCSM bearer request, but only for a token whose
+ * {@link CamundaAuthenticationProvider#getCamundaAuthentication()} classifies it as a user rather
+ * than an M2M client. An M2M client token is left exactly as the audience check on the surrounding
+ * chain already authorized it — legacy CCSM behavior this filter must not change.
+ *
+ * <p>Classification is read from CSL's own {@code CamundaAuthentication} rather than re-derived
+ * here, so this filter always agrees with every other CSL consumer (login-session {@code /me},
+ * membership resolution) on whether a given bearer token belongs to a user or a client — both are
+ * backed by the same {@code LazyTokenClaimsConverter} and configured claim names.
  *
  * <p>Runs on every CSL chain (see {@link OptimizeBearerPermissionConfiguration}), so it covers the
  * whole {@code /api/**} surface including {@code /api/public/**} and {@code
- * /api/ingestion/variable}, which previously had no Identity check of any kind. See
- * camunda/camunda#63372.
+ * /api/ingestion/variable}, which previously had no Identity check of any kind.
  */
 public final class OptimizeBearerPermissionFilter extends OncePerRequestFilter {
 
   private static final Logger LOG = LoggerFactory.getLogger(OptimizeBearerPermissionFilter.class);
 
-  private final OidcBearerPrincipalClassifier classifier;
+  private final CamundaAuthenticationProvider authenticationProvider;
   private final CCSMTokenService tokenService;
   private final AtomicBoolean warnedAboutFailOpen = new AtomicBoolean(false);
 
   public OptimizeBearerPermissionFilter(
-      final OidcBearerPrincipalClassifier classifier, final CCSMTokenService tokenService) {
-    this.classifier = classifier;
+      final CamundaAuthenticationProvider authenticationProvider,
+      final CCSMTokenService tokenService) {
+    this.authenticationProvider = authenticationProvider;
     this.tokenService = tokenService;
   }
 
@@ -62,14 +68,13 @@ public final class OptimizeBearerPermissionFilter extends OncePerRequestFilter {
       return;
     }
 
-    final var jwt = jwtAuthentication.getToken();
-    if (!classifier.requiresOptimizePermissionCheck(jwt.getClaims())) {
+    if (isM2mClient()) {
       filterChain.doFilter(request, response);
       return;
     }
 
     try {
-      tokenService.verifyAccessToken(jwt.getTokenValue());
+      tokenService.verifyAccessToken(jwtAuthentication.getToken().getTokenValue());
     } catch (final NotAuthorizedException e) {
       LOG.debug("Denying bearer request at {}: {}", request.getRequestURI(), e.getMessage());
       response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
@@ -93,5 +98,18 @@ public final class OptimizeBearerPermissionFilter extends OncePerRequestFilter {
     }
 
     filterChain.doFilter(request, response);
+  }
+
+  // false only when CSL's own classification clearly resolves the bearer token to an M2M client;
+  // true for a user, and true (fail closed) when the token can't be classified at all — the same
+  // conversion failure that would otherwise surface as an unauthenticated request elsewhere.
+  private boolean isM2mClient() {
+    try {
+      final var camundaAuthentication = authenticationProvider.getCamundaAuthentication();
+      return camundaAuthentication != null && camundaAuthentication.authenticatedClientId() != null;
+    } catch (final RuntimeException e) {
+      LOG.debug("Could not classify the bearer token's subject, assuming a user", e);
+      return false;
+    }
   }
 }
