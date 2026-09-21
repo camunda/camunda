@@ -423,9 +423,12 @@ class TaskDetailsPage {
     variableName: string,
     variableValue: string,
   ): Promise<void> {
-    await expect(this.page.getByTitle(variableName + ' Value')).toHaveValue(
-      variableValue,
-    );
+    // The variable value field is now a design-system input exposing its label
+    // as the accessible name ("<name> Value") rather than a `title` attribute,
+    // so getByTitle no longer resolves it. Match on the textbox role + name.
+    await expect(
+      this.page.getByRole('textbox', {name: variableName + ' Value'}),
+    ).toHaveValue(variableValue);
   }
 
   async fillDynamicList(label: string, value: string) {
