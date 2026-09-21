@@ -770,7 +770,11 @@ public final class SearchQueryResponseMapper {
     return new BatchOperationResponse()
         .batchOperationKey(entity.batchOperationKey())
         .state(BatchOperationStateEnum.fromValue(entity.state().name()))
-        .batchOperationType(BatchOperationTypeEnum.fromValue(entity.operationType().name()))
+        .batchOperationType(
+            ofNullable(entity.operationType())
+                .map(Enum::name)
+                .map(BatchOperationTypeEnum::fromValue)
+                .orElse(null))
         .startDate(formatDate(entity.startDate()))
         .endDate(formatDate(entity.endDate()))
         .actorType(
