@@ -1,4 +1,5 @@
 import buildlogic.DistributionDependencyReportExtension
+import buildlogic.OpenApiDefaults
 import buildlogic.requiredVersion
 import io.camunda.gradle.pom.PomResolver
 import org.apache.tools.ant.filters.ReplaceTokens
@@ -30,15 +31,12 @@ val openApiUpgradeReadinessOutputDir =
 val mergedOpenApiJavaDir =
   "${project.layout.buildDirectory.get()}/generated/openapi-merged/src/main/java"
 
-val additionalModelTypeAnnotations =
-  "@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)"
-
 private val commonOpenApiConfigOptions =
   mapOf(
-    "additionalModelTypeAnnotations" to additionalModelTypeAnnotations,
-    "hideGenerationTimestamp" to "true",
+    "additionalModelTypeAnnotations" to OpenApiDefaults.NON_NULL_MODEL_TYPE_ANNOTATIONS,
+    "hideGenerationTimestamp" to OpenApiDefaults.HIDE_GENERATION_TIMESTAMP,
     "useSpringBoot3" to "true",
-    "sourceFolder" to "src/main/java",
+    "sourceFolder" to OpenApiDefaults.SOURCE_FOLDER,
   )
 
 private fun GenerateTask.configureCommonOpenApiGeneration(
@@ -50,7 +48,7 @@ private fun GenerateTask.configureCommonOpenApiGeneration(
     .files(inputFiles)
     .withPropertyName(inputPropertyName)
     .withPathSensitivity(PathSensitivity.RELATIVE)
-  globalProperties.set(mapOf("models" to "", "apis" to "false", "supportingFiles" to "false"))
+  globalProperties.set(OpenApiDefaults.MODEL_ONLY_GLOBAL_PROPERTIES)
   skipValidateSpec.set(false)
   configOptions.set(commonOpenApiConfigOptions)
 }

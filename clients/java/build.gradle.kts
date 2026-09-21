@@ -1,3 +1,4 @@
+import buildlogic.OpenApiDefaults
 import buildlogic.OptionalDependenciesPomAction
 import buildlogic.clientJavaResourceTokens
 import buildlogic.mavenResourceFilterArgs
@@ -89,7 +90,7 @@ openApiGenerate {
   generateApiTests.set(false)
   generateApiDocumentation.set(false)
 
-  globalProperties.set(mapOf("models" to "", "apis" to "false", "supportingFiles" to "false"))
+  globalProperties.set(OpenApiDefaults.MODEL_ONLY_GLOBAL_PROPERTIES)
 
   typeMappings.set(
     mapOf(
@@ -142,17 +143,16 @@ openApiGenerate {
 
   configOptions.set(
     mapOf(
-      "additionalModelTypeAnnotations" to
-        "@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)",
+      "additionalModelTypeAnnotations" to OpenApiDefaults.NON_NULL_MODEL_TYPE_ANNOTATIONS,
       "documentationProvider" to "none",
       "enumUnknownDefaultCase" to "true",
-      "hideGenerationTimestamp" to "true",
+      "hideGenerationTimestamp" to OpenApiDefaults.HIDE_GENERATION_TIMESTAMP,
       "library" to "google-api-client",
       "java8" to "true",
       "openApiNullable" to "false",
       "serializationLibrary" to "jackson",
       "useReflectionEqualsHashCode" to "false",
-      "sourceFolder" to "src/main/java",
+      "sourceFolder" to OpenApiDefaults.SOURCE_FOLDER,
     )
   )
 }
