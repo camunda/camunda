@@ -1,12 +1,9 @@
+import buildlogic.requiredVersion
 import com.diffplug.gradle.spotless.SpotlessExtension
+import io.camunda.gradle.flags.asEnabledFlag
 import net.ltgt.gradle.errorprone.errorprone
 import org.gradle.api.artifacts.VersionCatalogsExtension
-import org.gradle.api.provider.Provider
 import org.gradle.jvm.tasks.Jar
-
-fun Provider<String>.asEnabledFlag(): Provider<Boolean> = map { value ->
-  value.isEmpty() || value.toBoolean()
-}
 
 plugins {
   `java-library`
@@ -26,7 +23,7 @@ java {
 
 val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
 val googleJavaFormatVersion =
-  versionCatalog.findVersion("com-google-googlejavaformat-google-java-format").get().requiredVersion
+  versionCatalog.requiredVersion("com-google-googlejavaformat-google-java-format")
 val isCi =
   providers.environmentVariable("CI").map { it.equals("true", ignoreCase = true) }.getOrElse(false)
 val quickly = providers.gradleProperty("quickly").asEnabledFlag().orElse(false)
