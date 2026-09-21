@@ -28,7 +28,7 @@ components:
           type: integer
           format: int32
           default: 100
-          minimum: 1
+          minimum: 0
           maximum: 10000
 
     OffsetPagination:
@@ -45,7 +45,7 @@ components:
           type: integer
           format: int32
           default: 100
-          minimum: 1
+          minimum: 0
 
     CursorForwardPagination:
       type: object
@@ -62,7 +62,7 @@ components:
           type: integer
           format: int32
           default: 100
-          minimum: 1
+          minimum: 0
           maximum: 10000
 
     CursorBackwardPagination:
@@ -80,7 +80,7 @@ components:
           type: integer
           format: int32
           default: 100
-          minimum: 1
+          minimum: 0
           maximum: 10000
 
     SearchQueryResponse:
