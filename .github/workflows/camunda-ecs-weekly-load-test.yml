@@ -60,6 +60,7 @@ env:
   ENV: ${{ inputs.environment || 'prod' }}
   IMAGE_REPOSITORY: registry.camunda.cloud/team-zeebe
   IMAGE_TAG: ${{ inputs.image_tag }}
+  TEST_OWNER: '@camunda/zeebe-distributed-platform'
 
 jobs:
   prepare:
