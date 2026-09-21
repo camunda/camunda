@@ -30,9 +30,8 @@ import {
 } from '@camunda/design-system/icons';
 import {camundaAppIcons, type NavIcon, type SidebarNode} from '@camunda/design-system';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
+import {getAdminSectionConfig, isAdminSectionAvailable, type AdminSectionKey} from '#/admin/adminSections';
 import {hasComponentAccess} from '#/shared/componentAccess';
-import {getBootConfig} from '#/shared/config/getBootConfig';
-import {getClientConfig} from '#/shared/config/getClientConfig';
 import {useActiveComponentHomeRoute} from '#/shared/useActiveComponentHomeRoute';
 
 type FileRouteTypes = RegisteredRouter['routeTree']['types']['fileRouteTypes'];
@@ -70,18 +69,11 @@ type SidebarNavigation = {
 	};
 };
 
-type AdminNavConfig = {
-	isOidc: boolean;
-	isSaas: boolean;
-	isMultiTenancyEnabled: boolean;
-};
-
 type AdminNavItem = {
-	key: string;
+	key: AdminSectionKey;
 	to: FileRouteTypes['to'];
 	labelKey: string;
 	icon: NavIcon;
-	isAvailable?: (config: AdminNavConfig) => boolean;
 };
 
 const ADMIN_NAV_ITEMS: AdminNavItem[] = [
@@ -90,14 +82,12 @@ const ADMIN_NAV_ITEMS: AdminNavItem[] = [
 		to: tabRoutes['adminUsers'],
 		labelKey: 'admin.headerNavItemUsers',
 		icon: User,
-		isAvailable: ({isOidc}) => !isOidc,
 	},
 	{
 		key: 'mapping-rules',
 		to: tabRoutes['adminMappingRules'],
 		labelKey: 'admin.headerNavItemMappingRules',
 		icon: Waypoints,
-		isAvailable: ({isOidc, isSaas}) => isOidc && !isSaas,
 	},
 	{
 		key: 'groups',
@@ -116,7 +106,6 @@ const ADMIN_NAV_ITEMS: AdminNavItem[] = [
 		to: tabRoutes['adminTenants'],
 		labelKey: 'admin.headerNavItemTenants',
 		icon: Package,
-		isAvailable: ({isMultiTenancyEnabled}) => isMultiTenancyEnabled,
 	},
 	{
 		key: 'authorizations',
@@ -284,13 +273,7 @@ function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 
 	if (isAdminRoute) {
 		const hasAdminAccess = hasComponentAccess('admin', authorizedComponents);
-		const {organizationId, clusterId} = getBootConfig();
-		const {authentication, deployment} = getClientConfig();
-		const navConfig: AdminNavConfig = {
-			isOidc: authentication.isLoginDelegated,
-			isSaas: organizationId !== null && clusterId !== null,
-			isMultiTenancyEnabled: deployment.isMultiTenancyEnabled,
-		};
+		const sectionConfig = getAdminSectionConfig();
 
 		return {
 			ariaLabel: t('admin.adminPanelNavAria'),
@@ -300,7 +283,7 @@ function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 				label: 'Admin',
 			},
 			items: hasAdminAccess
-				? ADMIN_NAV_ITEMS.filter(({isAvailable}) => isAvailable?.(navConfig) ?? true).map(
+				? ADMIN_NAV_ITEMS.filter(({key}) => isAdminSectionAvailable(key, sectionConfig)).map(
 						({key, to, labelKey, icon}): SidebarNode => ({
 							type: 'item',
 							key,
