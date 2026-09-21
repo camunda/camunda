@@ -121,7 +121,6 @@ public class AgentInstanceHandler
         .setStatus(mapStatus(value.getStatus()))
         .setModel(value.getDefinition().getModel())
         .setProvider(value.getDefinition().getProvider())
-        .setSystemPrompt(AgentContentMapper.mapContent(value.getDefinition().getSystemPrompt()))
         .setMaxTokens(value.getLimits().getMaxTokens())
         .setMaxModelCalls(value.getLimits().getMaxModelCalls())
         .setMaxToolCalls(value.getLimits().getMaxToolCalls())
@@ -132,9 +131,22 @@ public class AgentInstanceHandler
         .setCacheReadTokenCount(value.getMetrics().getCacheReadTokenCount())
         .setModelCalls(value.getMetrics().getModelCalls())
         .setToolCalls(value.getMetrics().getToolCalls())
-        .setTools(mapTools(value.getTools()))
         .setElementInstanceKeys(value.getElementInstanceKeys())
         .setLastUpdatedDate(timestamp);
+
+    // `systemPrompt`/`tools` can carry large payloads; on UPDATED, the engine only includes them
+    // in the event when they actually changed (see AgentHistoryBatchBehavior). Only overwrite the
+    // cached entity's value when this record actually carries it, so an unrelated UPDATED (e.g.
+    // metrics-only) doesn't null out a value set by an earlier record in the same batch cycle.
+    if (intent != AgentInstanceIntent.UPDATED
+        || value.getChangedAttributes().contains(AgentInstanceRecordValue.ATTR_SYSTEM_PROMPT)) {
+      entity.setSystemPrompt(
+          AgentContentMapper.mapContent(value.getDefinition().getSystemPrompt()));
+    }
+    if (intent != AgentInstanceIntent.UPDATED
+        || value.getChangedAttributes().contains(AgentInstanceRecordValue.ATTR_TOOLS)) {
+      entity.setTools(mapTools(value.getTools()));
+    }
 
     if (intent == AgentInstanceIntent.CREATED) {
       entity.setCreationDate(timestamp);
@@ -165,7 +177,12 @@ public class AgentInstanceHandler
     updateFields.put(STATUS, entity.getStatus());
     updateFields.put(MODEL, entity.getModel());
     updateFields.put(PROVIDER, entity.getProvider());
-    updateFields.put(SYSTEM_PROMPT, entity.getSystemPrompt());
+    // `systemPrompt`/`tools`: null on the entity means "not touched by any record in this batch
+    // cycle" (see updateEntity()) — omitted here, mirroring the creationDate exclusion above, to
+    // avoid overwriting the existing index value with null.
+    if (entity.getSystemPrompt() != null) {
+      updateFields.put(SYSTEM_PROMPT, entity.getSystemPrompt());
+    }
     updateFields.put(MAX_TOKENS, entity.getMaxTokens());
     updateFields.put(MAX_MODEL_CALLS, entity.getMaxModelCalls());
     updateFields.put(MAX_TOOL_CALLS, entity.getMaxToolCalls());
@@ -176,7 +193,9 @@ public class AgentInstanceHandler
     updateFields.put(CACHE_READ_TOKEN_COUNT, entity.getCacheReadTokenCount());
     updateFields.put(MODEL_CALLS, entity.getModelCalls());
     updateFields.put(TOOL_CALLS, entity.getToolCalls());
-    updateFields.put(TOOLS, entity.getTools());
+    if (entity.getTools() != null) {
+      updateFields.put(TOOLS, entity.getTools());
+    }
     updateFields.put(ELEMENT_INSTANCE_KEYS, entity.getElementInstanceKeys());
     updateFields.put(LAST_UPDATED_DATE, entity.getLastUpdatedDate());
     updateFields.put(COMPLETION_DATE, entity.getCompletionDate());
