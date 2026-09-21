@@ -45,8 +45,20 @@ runs:
         # Pin to bash so a forward-slash `directory` works consistently on
         # Linux, container images, and Windows runners (git-bash).
         shell: bash
+        # Without these, a single stalled registry request rides along until
+        # the outer timeout above kills the whole process with no error
+        # logged (see #62796). These bound npm's own retry of that request so
+        # it fails fast and lets `nick-fields/retry` try again cleanly.
+        #
+        # The budget must stay under the smallest `timeout_minutes` any caller
+        # passes (currently 6), or the outer timer SIGTERMs npm mid-retry and
+        # we are back to the silent kill this is meant to remove. Worst case
+        # for one stalled request: 4 request windows of 60s, plus backoff of
+        # 5s + 15s + 15s at npm's default `fetch-retry-factor` of 10, so
+        # 4m35s against a 6m cap. Re-check this if a caller lowers its
+        # timeout or these numbers grow.
         command: |
-          cd "${{ inputs.directory }}" && npm ci
+          cd "${{ inputs.directory }}" && npm ci --fetch-timeout=60000 --fetch-retries=3 --fetch-retry-mintimeout=5000 --fetch-retry-maxtimeout=15000
         # A killed attempt (timeout) can leave node_modules half-extracted,
         # which makes the next attempt fail deterministically (e.g. ENOTEMPTY)
         # instead of getting a clean retry.
