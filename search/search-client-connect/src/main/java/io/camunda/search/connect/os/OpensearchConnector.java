@@ -48,8 +48,9 @@ public final class OpensearchConnector {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchConnector.class);
 
-  private static final int DEFAULT_CONNECT_TIMEOUT_MILLIS = 1000;
-  private static final int DEFAULT_SOCKET_TIMEOUT_MILLIS = 30000;
+  private static final int DEFAULT_CONNECT_REQUEST_TIMEOUT_MILLIS = 180_000;
+  private static final int DEFAULT_CONNECT_TIMEOUT_MILLIS = 1_000;
+  private static final int DEFAULT_SOCKET_TIMEOUT_MILLIS = 30_000;
 
   private final ConnectConfiguration configuration;
   private final ObjectMapper objectMapper;
@@ -193,7 +194,11 @@ public final class OpensearchConnector {
     final var connectTimeoutMillis =
         Optional.ofNullable(os.getConnectTimeout()).orElse(DEFAULT_CONNECT_TIMEOUT_MILLIS);
     builder.setConnectTimeout(Timeout.ofMilliseconds(connectTimeoutMillis));
-    builder.setConnectionRequestTimeout(Timeout.ofMilliseconds(connectTimeoutMillis));
+
+    // this already gets set, but making it more explicit, so it's more visible and we can easily
+    // tune it later
+    builder.setConnectionRequestTimeout(
+        Timeout.ofMilliseconds(DEFAULT_CONNECT_REQUEST_TIMEOUT_MILLIS));
 
     return builder;
   }

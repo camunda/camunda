@@ -145,7 +145,7 @@ class ElasticsearchConnectorTest {
     // then
     Mockito.verify(builder).setSocketTimeout(125456);
     Mockito.verify(builder).setConnectTimeout(654321);
-    Mockito.verify(builder).setConnectionRequestTimeout(654321);
+    Mockito.verify(builder).setConnectionRequestTimeout(180_000);
   }
 
   @Test
@@ -160,9 +160,9 @@ class ElasticsearchConnectorTest {
     connector.setTimeouts(builder, configuration);
 
     // then
-    Mockito.verify(builder, never()).setSocketTimeout(anyInt());
-    Mockito.verify(builder, never()).setConnectTimeout(anyInt());
-    Mockito.verify(builder).setConnectionRequestTimeout(1_000);
+    Mockito.verify(builder).setSocketTimeout(30_000);
+    Mockito.verify(builder).setConnectTimeout(1_000);
+    Mockito.verify(builder).setConnectionRequestTimeout(180_000);
   }
 
   private static final class NoopCallback implements FutureCallback<HttpResponse> {
