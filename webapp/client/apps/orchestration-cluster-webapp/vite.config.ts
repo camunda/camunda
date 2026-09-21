@@ -103,7 +103,7 @@ const config = defineConfig(({mode}) => ({
 			? ['default', 'github-actions', ['html', {outputDir: 'test-artifacts/html'}], 'junit']
 			: ['default'],
 		outputFile: process.env['CI'] ? {junit: 'TEST-unit.xml'} : undefined,
-		attachmentsDir: 'test-artifacts',
+		attachmentsDir: 'test-artifacts/html/attachments',
 		retry: process.env['CI'] ? 3 : 0,
 		browser: {
 			enabled: true,
