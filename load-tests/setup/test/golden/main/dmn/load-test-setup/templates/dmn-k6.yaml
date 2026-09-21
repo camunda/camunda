@@ -251,32 +251,33 @@ spec:
             - /bin/sh
             - -ceu
             - |-
-              AUTH=""
-              if [ -n "${CAMUNDA_CLIENT_ID:-}" ]; then
-                echo "Fetching OAuth2 token from ${CAMUNDA_OAUTH_URL}"
-                TOKEN="$(curl -s --fail "${CAMUNDA_OAUTH_URL}" \
-                  -d grant_type=client_credentials \
-                  -d audience="${CAMUNDA_TOKEN_AUDIENCE}" \
-                  -d client_id="${CAMUNDA_CLIENT_ID}" \
-                  -d client_secret="${CAMUNDA_CLIENT_SECRET}" \
-                  | sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p')"
-                if [ -z "$TOKEN" ]; then echo "ERROR: empty token"; exit 1; fi
-                AUTH="Authorization: Bearer $TOKEN"
-              fi
-              for f in /resources/*.dmn; do
-                echo "Deploying $f"
-                curl -s --fail -X POST "${CAMUNDA_BASE_URL}/v2/deployments" \
-                  ${AUTH:+-H "$AUTH"} -F "resources=@$f"
-                echo
-              done
-              echo "Waiting for decision '${DMN_DECISION_ID}' to be evaluable ..."
-              for i in $(seq 1 30); do
+              # A fresh cluster (image pull + broker/Keycloak boot) can take a few
+              # minutes to accept requests. Retry token -> deploy -> evaluate as one
+              # idempotent loop for up to ~10 minutes; succeed as soon as an
+              # evaluation returns 200 so k6 never races an unready cluster.
+              for i in $(seq 1 120); do
+                AUTH=""
+                if [ -n "${CAMUNDA_CLIENT_ID:-}" ]; then
+                  TOKEN="$(curl -s "${CAMUNDA_OAUTH_URL}" \
+                    -d grant_type=client_credentials \
+                    -d audience="${CAMUNDA_TOKEN_AUDIENCE}" \
+                    -d client_id="${CAMUNDA_CLIENT_ID}" \
+                    -d client_secret="${CAMUNDA_CLIENT_SECRET}" \
+                    | sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p')"
+                  if [ -z "$TOKEN" ]; then echo "attempt $i: token not ready"; sleep 5; continue; fi
+                  AUTH="Authorization: Bearer $TOKEN"
+                fi
+                # (Re)deploy the decision(s); redeploying the same file is cheap and idempotent.
+                for f in /resources/*.dmn; do
+                  curl -s -o /dev/null -X POST "${CAMUNDA_BASE_URL}/v2/deployments" \
+                    ${AUTH:+-H "$AUTH"} -F "resources=@$f" || true
+                done
                 code="$(curl -s -o /dev/null -w '%{http_code}' \
                   -X POST "${CAMUNDA_BASE_URL}/v2/decision-definitions/evaluation" \
                   ${AUTH:+-H "$AUTH"} -H 'Content-Type: application/json' \
                   -d "{\"decisionDefinitionId\":\"${DMN_DECISION_ID}\",\"variables\":{}}")"
-                if [ "$code" = "200" ]; then echo "Decision is evaluable."; exit 0; fi
-                echo "  attempt $i: HTTP $code, retrying ..."; sleep 2
+                if [ "$code" = "200" ]; then echo "Decision '${DMN_DECISION_ID}' is evaluable."; exit 0; fi
+                echo "attempt $i: evaluation HTTP $code, retrying ..."; sleep 5
               done
               echo "ERROR: decision '${DMN_DECISION_ID}' never became evaluable"; exit 1
           volumeMounts:
