@@ -1,0 +1,322 @@
+---
+# description: Provisions an ephemeral cross-region RDS for Oracle Data Guard pair and runs the
+# OracleAsyncReplicationIT acceptance test through an SSM port-forwarding tunnel.
+# The infrastructure is destroyed at the end of the run.
+# test location: qa/acceptance-tests/src/test/java/io/camunda/it/rdbms/db/asyncreplication
+# type: CI
+# owner: @camunda/data-layer
+
+name: Oracle Async Replication Test
+
+on:
+  workflow_call:
+    inputs:
+      oracle_byol_acknowledged:
+        description: 'Acknowledge the Oracle Enterprise Edition BYOL requirement'
+        type: boolean
+        required: true
+      oracle_engine_version:
+        description: 'RDS for Oracle 19c engine version, or auto for the newest common version'
+        type: string
+        required: false
+        default: auto
+      oracle_instance_class:
+        description: 'RDS for Oracle instance class (must have at least two vCPUs)'
+        type: string
+        required: false
+        default: db.r6i.large
+      skip_destroy:
+        description: 'Keep the Oracle infrastructure after the run (for debugging; destroy manually!)'
+        type: boolean
+        required: false
+        default: false
+  workflow_dispatch:
+    inputs:
+      oracle_byol_acknowledged:
+        description: 'Acknowledge the Oracle Enterprise Edition BYOL requirement'
+        type: boolean
+        required: true
+        default: false
+      oracle_engine_version:
+        description: 'RDS for Oracle 19c engine version, or auto for the newest common version'
+        type: string
+        required: false
+        default: auto
+      oracle_instance_class:
+        description: 'RDS for Oracle instance class (must have at least two vCPUs)'
+        type: string
+        required: false
+        default: db.r6i.large
+      skip_destroy:
+        description: 'Keep the Oracle infrastructure after the run (for debugging; destroy manually!)'
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: oracle-async-replication-test
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  TEST_OWNER: '@camunda/data-layer'
+  AWS_REGION: eu-west-1
+  TF_DIR: .github/terraform/oracle-replication-it
+  TF_IN_AUTOMATION: 'true'
+  TF_INPUT: 'false'
+  TF_VAR_primary_region: eu-west-1
+  TF_VAR_secondary_region: eu-west-2
+  TF_STATE_BUCKET_REGION: eu-west-1
+  LOCAL_DB_PORT: '11521'
+
+jobs:
+  oracle-it:
+    name: Provision Oracle Data Guard and run async replication IT
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    permissions: {}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+        with:
+          test_owner: '@camunda/data-layer'
+          test_product: zeebe
+          test_type: integration
+
+      - name: Import secrets from Vault
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/zeebe/ci/common AWS_CORE_FOUNDATION_ACCESS_KEY | AWS_ACCESS_KEY_ID;
+            secret/data/products/zeebe/ci/common AWS_CORE_FOUNDATION_SECRET_KEY | AWS_SECRET_ACCESS_KEY;
+
+      - name: Validate Oracle prerequisites
+        run: |
+          set -euo pipefail
+          if [[ "${{ inputs.oracle_byol_acknowledged }}" != "true" ]]; then
+            echo "::error::Oracle mode requires explicit acknowledgement of the Enterprise Edition BYOL requirement."
+            exit 1
+          fi
+          if [[ "${{ inputs.oracle_instance_class }}" == "db.t3.small" ]]; then
+            echo "::error::RDS for Oracle replicas require an instance class with at least two vCPUs."
+            exit 1
+          fi
+
+      - name: Configure AWS CLI
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          aws-access-key-id: ${{ steps.secrets.outputs.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ steps.secrets.outputs.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Ensure Terraform state bucket exists
+        run: |
+          set -euo pipefail
+          account_id="$(aws sts get-caller-identity --query Account --output text)"
+          bucket="oracle-async-it-tf-state-${account_id}"
+          if ! aws s3api head-bucket --bucket "${bucket}" --region "${TF_STATE_BUCKET_REGION}" 2>/dev/null; then
+            aws s3api create-bucket \
+              --bucket "${bucket}" \
+              --region "${TF_STATE_BUCKET_REGION}" \
+              --create-bucket-configuration "LocationConstraint=${TF_STATE_BUCKET_REGION}"
+            aws s3api put-bucket-versioning \
+              --bucket "${bucket}" \
+              --versioning-configuration Status=Enabled
+            aws s3api put-bucket-encryption \
+              --bucket "${bucket}" \
+              --server-side-encryption-configuration \
+                '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
+          fi
+          echo "TF_STATE_BUCKET=${bucket}" >> "$GITHUB_ENV"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_wrapper: false
+
+      - name: Install AWS Session Manager plugin
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" \
+            -o /tmp/session-manager-plugin.deb
+          sudo dpkg -i /tmp/session-manager-plugin.deb
+          session-manager-plugin --version
+
+      - name: Generate Terraform variables
+        id: tfvars
+        run: |
+          set -euo pipefail
+          name_prefix="oracle-it-${{ github.run_id }}"
+          oracle_password="$(openssl rand -hex 15)"
+          echo "::add-mask::${oracle_password}"
+          {
+            echo "TF_VAR_name_prefix=${name_prefix}"
+            echo "TF_VAR_master_password=${oracle_password}"
+            echo "TF_VAR_instance_class=${{ inputs.oracle_instance_class }}"
+          } >> "$GITHUB_ENV"
+          echo "name_prefix=${name_prefix}" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve Oracle engine version
+        run: |
+          set -euo pipefail
+          list_versions() {
+            aws rds describe-orderable-db-instance-options \
+              --region "$1" \
+              --engine oracle-ee \
+              --db-instance-class "${{ inputs.oracle_instance_class }}" \
+              --license-model bring-your-own-license \
+              --query 'OrderableDBInstanceOptions[].EngineVersion' \
+              --output text | tr '\t' '\n' | sort -uV
+          }
+          requested="${{ inputs.oracle_engine_version }}"
+          if [[ "$requested" == "auto" ]]; then
+            resolved="$(comm -12 <(list_versions "$TF_VAR_primary_region") <(list_versions "$TF_VAR_secondary_region") \
+              | awk '/^19[.]/{version=$0} END{print version}')"
+            [[ -n "$resolved" ]] || {
+              echo "::error::No common RDS for Oracle EE 19c engine version is available in both regions."
+              exit 1
+            }
+          else
+            [[ "$requested" =~ ^19([.][0-9A-Za-z._-]+)+$ ]] || {
+              echo "::error::Oracle engine version must be auto or an exact 19c version."
+              exit 1
+            }
+            resolved="$requested"
+          fi
+          echo "TF_VAR_engine_version=${resolved}" >> "$GITHUB_ENV"
+          echo "Using RDS for Oracle engine version ${resolved}"
+
+      - name: Provision Oracle Data Guard
+        id: provision
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          set -euo pipefail
+          terraform init \
+            -backend-config="bucket=${TF_STATE_BUCKET}" \
+            -backend-config="key=oracle-async-replication-it/tfstate-${TF_VAR_name_prefix}/${TF_VAR_name_prefix}.tfstate" \
+            -backend-config="region=${TF_STATE_BUCKET_REGION}" \
+            -backend-config="encrypt=true"
+          terraform apply -auto-approve
+
+      - name: Start SSM port-forwarding tunnel to Oracle primary
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          set -euo pipefail
+          endpoint="$(terraform output -raw primary_endpoint)"
+          bastion_id="$(terraform output -raw bastion_instance_id)"
+          echo "${endpoint}" > /tmp/oracle-endpoint
+          echo "${bastion_id}" > /tmp/oracle-bastion-id
+
+          nohup bash -c '
+            stamp() { while IFS= read -r line; do printf "%s %s\n" "$(date -u +%FT%TZ)" "$line"; done; }
+            while true; do
+              echo "starting SSM port-forward session" | stamp
+              aws ssm start-session \
+                --region "${AWS_REGION}" \
+                --target "$(cat /tmp/oracle-bastion-id)" \
+                --document-name AWS-StartPortForwardingSessionToRemoteHost \
+                --parameters "host=$(cat /tmp/oracle-endpoint),portNumber=1521,localPortNumber=${LOCAL_DB_PORT}" \
+                2>&1 | stamp
+              echo "SSM session ended — restarting in 2s" | stamp
+              sleep 2
+            done
+          ' >> /tmp/oracle-ssm-tunnel.log 2>&1 &
+          disown
+
+          for _ in $(seq 1 60); do
+            if (exec 3<>"/dev/tcp/127.0.0.1/${LOCAL_DB_PORT}") 2>/dev/null; then
+              exec 3>&-
+              echo "Tunnel established on localhost:${LOCAL_DB_PORT}"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::SSM tunnel did not come up"
+          cat /tmp/oracle-ssm-tunnel.log
+          exit 1
+
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Build dependencies
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: install -pl qa/acceptance-tests -am -Dquickly
+
+      - name: Run Oracle async replication IT
+        env:
+          TEST_ORACLE_JDBC_URL: jdbc:oracle:thin:@//localhost:${{ env.LOCAL_DB_PORT }}/CAMUNDA
+          TEST_ORACLE_USERNAME: camunda
+          TEST_ORACLE_PASSWORD: ${{ env.TF_VAR_master_password }}
+          TEST_ORACLE_STOP_REPLICA_CMD: >-
+            aws rds stop-db-instance
+            --region ${{ env.TF_VAR_secondary_region }}
+            --db-instance-identifier ${{ env.TF_VAR_name_prefix }}-oracle-replica
+            && aws rds wait db-instance-stopped
+            --region ${{ env.TF_VAR_secondary_region }}
+            --db-instance-identifier ${{ env.TF_VAR_name_prefix }}-oracle-replica
+          TEST_ORACLE_START_REPLICA_CMD: >-
+            aws rds start-db-instance
+            --region ${{ env.TF_VAR_secondary_region }}
+            --db-instance-identifier ${{ env.TF_VAR_name_prefix }}-oracle-replica
+            && aws rds wait db-instance-available
+            --region ${{ env.TF_VAR_secondary_region }}
+            --db-instance-identifier ${{ env.TF_VAR_name_prefix }}-oracle-replica
+        uses: ./.github/actions/run-maven
+        with:
+          threads: '1'
+          parameters: >-
+            verify -pl qa/acceptance-tests
+            -Pasync-repl
+            -Dit.test=OracleAsyncReplicationIT
+            -DskipUTs -DskipChecks -DskipTests=false
+
+      - name: Upload test reports and SSM logs
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: oracle-async-replication-it-reports
+          path: |
+            qa/acceptance-tests/target/failsafe-reports/
+            /tmp/oracle-ssm-tunnel.log
+          retention-days: 7
+
+      - name: Destroy Oracle Data Guard
+        id: destroy
+        if: always() && inputs.skip_destroy != true
+        working-directory: ${{ env.TF_DIR }}
+        run: terraform destroy -auto-approve
+
+      - name: Delete Terraform state from S3
+        if: always() && steps.destroy.outcome == 'success'
+        run: |
+          set -euo pipefail
+          state_key="oracle-async-replication-it/tfstate-${TF_VAR_name_prefix}/${TF_VAR_name_prefix}.tfstate"
+          aws s3 rm "s3://${TF_STATE_BUCKET}/${state_key}" --recursive || true
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
