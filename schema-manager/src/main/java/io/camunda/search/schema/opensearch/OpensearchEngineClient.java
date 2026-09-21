@@ -64,6 +64,8 @@ import org.opensearch.client.opensearch.generic.Request;
 import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
+import org.opensearch.client.opensearch.indices.IndexSettings;
+import org.opensearch.client.opensearch.indices.IndexTemplate;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 import org.opensearch.client.opensearch.indices.PutIndicesSettingsRequest;
 import org.opensearch.client.opensearch.indices.PutMappingRequest;
@@ -221,6 +223,33 @@ public class OpensearchEngineClient implements SearchEngineClient {
               utils.listIndicesByAlias(indexDescriptors));
       LOG.error(errMsg, e);
       throw new SearchEngineException(errMsg, e);
+    }
+  }
+
+  @Override
+  public Map<String, Integer> getNumberOfReplicas(final Collection<String> indexNames) {
+    if (indexNames.isEmpty()) {
+      return Map.of();
+    }
+
+    try {
+      return client
+          .indices()
+          .getSettings(req -> req.index(List.copyOf(indexNames)).ignoreUnavailable(true))
+          .result()
+          .entrySet()
+          .stream()
+          .flatMap(
+              entry ->
+                  Optional.ofNullable(entry.getValue().settings())
+                      .map(IndexSettings::index)
+                      .map(IndexSettings::numberOfReplicas)
+                      .map(replicas -> Map.entry(entry.getKey(), replicas))
+                      .stream())
+          .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+    } catch (final IOException | OpenSearchException e) {
+      throw new SearchEngineException(
+          String.format("Failed to retrieve replica counts for indices '%s'", indexNames), e);
     }
   }
 
@@ -512,12 +541,9 @@ public class OpensearchEngineClient implements SearchEngineClient {
   private PutIndicesSettingsRequest putIndexSettingsRequest(
       final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {
 
-    final org.opensearch.client.opensearch.indices.IndexSettings settings =
+    final IndexSettings settings =
         utils.mapToSettings(
-            toAppendSettings,
-            (inp) ->
-                deserializeJson(
-                    org.opensearch.client.opensearch.indices.IndexSettings._DESERIALIZER, inp));
+            toAppendSettings, (inp) -> deserializeJson(IndexSettings._DESERIALIZER, inp));
     return new PutIndicesSettingsRequest.Builder()
         .index(utils.listIndicesByAlias(indexDescriptors))
         .settings(settings)
