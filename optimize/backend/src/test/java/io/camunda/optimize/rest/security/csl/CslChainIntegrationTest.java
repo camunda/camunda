@@ -30,8 +30,6 @@ import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.Either;
 import jakarta.servlet.Filter;
 import jakarta.servlet.http.Cookie;
-import java.io.IOException;
-import java.net.ServerSocket;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Date;
@@ -270,7 +268,7 @@ class CslChainIntegrationTest {
   @Test
   void shouldBuildTheChainsWhileTheIssuerIsUnreachable() throws Exception {
     // given a context configured against a provider that answers nothing
-    ccsmRunner(runnerWithIssuerOnly(unreachableIssuerUri()))
+    ccsmRunner(runnerWithIssuerOnly(server.unreachableIssuerUri()))
         .run(
             ctx -> {
               assertThat(ctx).hasNotFailed();
@@ -895,15 +893,6 @@ class CslChainIntegrationTest {
             "camunda.security.authentication.oidc.client-id=test-client",
             "camunda.security.authentication.oidc.client-secret=test-secret")
         .withPropertyValues(oidcProperties);
-  }
-
-  /** A port nothing listens on, so every call to this issuer is refused at once. */
-  private static String unreachableIssuerUri() {
-    try (final ServerSocket socket = new ServerSocket(0)) {
-      return "http://localhost:" + socket.getLocalPort() + "/unreachable";
-    } catch (final IOException e) {
-      throw new IllegalStateException("Failed to reserve a closed port", e);
-    }
   }
 
   private WebApplicationContextRunner ccsmRunner() {
