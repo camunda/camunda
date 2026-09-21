@@ -9,10 +9,12 @@
  * Convention plugin for modules that generate code from SBE (Simple Binary Encoding) definitions
  */
 
+import buildlogic.requiredVersion
+
 plugins { id("buildlogic.server-conventions") }
 
 val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
-val sbeToolVersion = versionCatalog.findVersion("uk-co-real-logic-sbe-tool").get().requiredVersion
+val sbeToolVersion = versionCatalog.requiredVersion("uk-co-real-logic-sbe-tool")
 
 // Extension to configure SBE input files
 interface SbeExtension {

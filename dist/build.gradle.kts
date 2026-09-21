@@ -1,4 +1,5 @@
 import buildlogic.DistributionDependencyReportExtension
+import buildlogic.requiredVersion
 import io.camunda.gradle.pom.PomResolver
 import org.apache.tools.ant.filters.ReplaceTokens
 import org.gradle.api.artifacts.VersionCatalogsExtension
@@ -146,8 +147,7 @@ tasks.named<ProcessResources>("processResources") {
 }
 
 val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
-val elasticsearchVersion =
-  versionCatalog.findVersion("co-elastic-clients-elasticsearch-java").get().requiredVersion
+val elasticsearchVersion = versionCatalog.requiredVersion("co-elastic-clients-elasticsearch-java")
 val distName = "camunda-zeebe"
 val distVersion = project.version.toString()
 val distDirectory = layout.buildDirectory.dir(distName)

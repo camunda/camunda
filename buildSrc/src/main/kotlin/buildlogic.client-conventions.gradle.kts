@@ -1,10 +1,11 @@
+import buildlogic.requiredVersion
 import org.gradle.api.artifacts.VersionCatalogsExtension
 
 plugins { id("buildlogic.java-conventions") }
 
 val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
-val commonsLoggingVersion = versionCatalog.findVersion("commons-logging").get().requiredVersion
-val snakeyamlVersion = versionCatalog.findVersion("org-yaml-snakeyaml").get().requiredVersion
+val commonsLoggingVersion = versionCatalog.requiredVersion("commons-logging")
+val snakeyamlVersion = versionCatalog.requiredVersion("org-yaml-snakeyaml")
 
 dependencies {
   add(

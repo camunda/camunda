@@ -9,14 +9,16 @@
  * Convention plugin for modules that generate code from protobuf definitions
  */
 
+import buildlogic.requiredVersion
+
 plugins {
   id("buildlogic.server-conventions")
   id("com.google.protobuf")
 }
 
 val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
-val protobufVersion = versionCatalog.findVersion("protobuf").get().requiredVersion
-val grpcVersion = versionCatalog.findVersion("grpc").get().requiredVersion
+val protobufVersion = versionCatalog.requiredVersion("protobuf")
+val grpcVersion = versionCatalog.requiredVersion("grpc")
 
 protobuf {
   protoc { artifact = "com.google.protobuf:protoc:$protobufVersion" }
