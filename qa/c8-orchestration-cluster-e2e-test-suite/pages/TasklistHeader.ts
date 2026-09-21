@@ -18,10 +18,10 @@ class TasklistHeader {
 
   constructor(page: Page) {
     this.page = page;
-    this.openSettingsButton = page.getByRole('button', {name: 'Open Settings'});
+    this.openSettingsButton = page.getByRole('button', {name: 'Settings'});
     this.languageSelector = page.getByRole('combobox', {name: 'Language'});
     this.processesTab = page.getByRole('link', {name: 'Processes'});
-    this.logoutButton = page.getByRole('button', {name: 'Log out'});
+    this.logoutButton = page.getByRole('menuitem', {name: 'Log out'});
     this.tasksTab = page
       .getByRole('navigation')
       .getByRole('link', {name: 'Tasks', exact: true});
