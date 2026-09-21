@@ -11,11 +11,11 @@ import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
+import io.camunda.zeebe.engine.state.message.MessageSubscription;
 import io.camunda.zeebe.engine.state.message.StoredMessage;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageCorrelationState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
@@ -32,10 +32,6 @@ public final class MessageSubscriptionRejectProcessor
 
   private static final String SUBSCRIPTION_NOT_FOUND =
       "Expected to find subscription for message with name '%s' and correlation key '%s', but none was found.";
-  private static final String STALE_REJECT_MESSAGE =
-      "Expected to reject message subscription for element with key '%d' and message name '%s' with "
-          + "subscription key '%d', but the current subscription has key '%d'; the reject command is "
-          + "stale and is ignored";
 
   private final MessageState messageState;
   private final MessageSubscriptionState subscriptionState;
@@ -43,7 +39,6 @@ public final class MessageSubscriptionRejectProcessor
   private final SubscriptionCommandSender commandSender;
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
-  private final TypedRejectionWriter rejectionWriter;
 
   public MessageSubscriptionRejectProcessor(
       final MessageState messageState,
@@ -57,7 +52,6 @@ public final class MessageSubscriptionRejectProcessor
     this.commandSender = commandSender;
     stateWriter = writers.state();
     responseWriter = writers.response();
-    rejectionWriter = writers.rejection();
   }
 
   @Override
@@ -65,30 +59,10 @@ public final class MessageSubscriptionRejectProcessor
 
     final MessageSubscriptionRecord subscriptionRecord = record.getValue();
 
-    final var stored =
-        subscriptionState.get(
-            subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer());
-    final long requestedKey = subscriptionRecord.getSubscriptionKey();
-    if (stored != null && requestedKey != -1L && stored.getKey() != requestedKey) {
-      // Stale reject: the stored row is a newer generation. REJECTED removes by element/message
-      // name, which would delete the live replacement, so reject instead; its own
-      // correlateNextMessage picks up any buffered message.
-      final var reason =
-          String.format(
-              STALE_REJECT_MESSAGE,
-              subscriptionRecord.getElementInstanceKey(),
-              subscriptionRecord.getMessageName(),
-              requestedKey,
-              stored.getKey());
-      rejectionWriter.appendRejection(record, RejectionType.INVALID_STATE, reason);
-      return;
-    }
-
     stateWriter.appendFollowUpEvent(
         record.getKey(), MessageSubscriptionIntent.REJECTED, subscriptionRecord);
 
-    final var foundSubscription = findSubscriptionToCorrelate(subscriptionRecord);
-    if (!foundSubscription) {
+    if (!findSubscriptionToCorrelate(subscriptionRecord)) {
       writeNotCorrelatedResponse(record);
     }
   }
@@ -115,7 +89,8 @@ public final class MessageSubscriptionRejectProcessor
               correlatingSubscription
                       .getBpmnProcessIdBuffer()
                       .equals(subscriptionRecord.getBpmnProcessIdBuffer())
-                  && !subscription.isCorrelating();
+                  && !subscription.isCorrelating()
+                  && !hasAlreadyBeenCorrelated(subscriptionRecord, subscription);
 
           if (canBeCorrelated) {
             correlatingSubscription
@@ -133,6 +108,16 @@ public final class MessageSubscriptionRejectProcessor
         });
 
     return foundSubscription.get();
+  }
+
+  private boolean hasAlreadyBeenCorrelated(
+      final MessageSubscriptionRecord subscriptionRecord, final MessageSubscription subscription) {
+    // Exact match only, not key ordering: a candidate may belong to a generation that skipped this
+    // message while it was locked and correlated a later one instead, so a numerically-ahead
+    // last-correlated key doesn't mean it was ever claimed.
+    final var messageKey = subscriptionRecord.getMessageKey();
+    final var lastCorrelatedMessageKey = subscription.getRecord().getMessageKey();
+    return messageKey == lastCorrelatedMessageKey;
   }
 
   private void sendCorrelateCommand(final MessageSubscriptionRecord subscription) {
