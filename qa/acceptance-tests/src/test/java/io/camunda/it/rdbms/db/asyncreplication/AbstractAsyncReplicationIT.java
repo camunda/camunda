@@ -24,6 +24,7 @@ import io.micrometer.core.instrument.Measurement;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.Objects;
+import org.agrona.CloseHelper;
 import org.assertj.core.data.Offset;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
@@ -160,9 +161,7 @@ abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer>
   @AfterAll
   void afterAll() {
     // preserve order, first shutdown Camunda, then the database
-    camundaClient.close();
-    testInstance.close();
-    cluster.close();
+    CloseHelper.closeAll(camundaClient, testInstance, cluster);
   }
 
   protected void startProcessInstances(final int count) {
