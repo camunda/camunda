@@ -193,9 +193,20 @@ public final class TimerTriggerProcessor implements TypedRecordProcessor<TimerRe
       repetitions--;
     }
 
+    final Interval interval = timer.getInterval();
     // Use the timer's last due date instead of the current time to avoid a time shift.
     final Interval refreshedInterval =
-        timer.getInterval().withStart(Instant.ofEpochMilli(record.getDueDate()));
-    return new RepeatingInterval(repetitions, refreshedInterval);
+        interval.withStart(Instant.ofEpochMilli(record.getDueDate()));
+    final long naturalNextDueDate =
+        refreshedInterval.getStart().orElseThrow().toInstant().toEpochMilli();
+    final long now = clock.millis();
+    // A natural next due date that already lies in the past must not be kept as-is: it would
+    // collapse onto "now" once resolved (see Interval#toEpochMilli's clamp), firing the timer
+    // again immediately. Anchor on now instead, so it advances a full interval past now.
+    final Interval anchoredInterval =
+        naturalNextDueDate > now
+            ? refreshedInterval
+            : interval.withStart(Instant.ofEpochMilli(now));
+    return new RepeatingInterval(repetitions, anchoredInterval);
   }
 }
