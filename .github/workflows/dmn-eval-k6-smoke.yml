@@ -12,7 +12,7 @@ on:
       image-tag:
         description: 'camunda/camunda image tag'
         type: string
-        default: '8.9.19'
+        default: 'SNAPSHOT'
       rate:
         description: 'Evaluations per second'
         type: string
@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      IMAGE_TAG: ${{ github.event.inputs.image-tag || '8.9.19' }}
+      IMAGE_TAG: ${{ github.event.inputs.image-tag || 'SNAPSHOT' }}
       DMN_RATE: ${{ github.event.inputs.rate || '100' }}
       DMN_DURATION: ${{ github.event.inputs.duration || '60s' }}
       DMN_DIR: load-tests/setup/dmn-k6
@@ -61,7 +61,7 @@ jobs:
         run: |
           set -euo pipefail
           echo "Waiting for /actuator/health to report UP ..."
-          for i in $(seq 1 60); do
+          for i in $(seq 1 100); do
             status="$(curl -s http://localhost:9600/actuator/health | grep -o '"status":"UP"' | head -1 || true)"
             if [[ -n "$status" ]]; then
               echo "Broker is UP after ${i} attempts."

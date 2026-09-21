@@ -1,7 +1,7 @@
-# Single-node, RF1, no-secondary-storage Camunda config for the CI DMN floor probe.
+# Single-node, RF1 Camunda config for the CI DMN floor probe.
 # Mirrors camunda-platform-values-dmn-minimal.yaml, expressed as a broker
 # application.yaml so it can be mounted straight into the camunda/camunda image
-# in a GitHub Actions runner (no GKE, no external DB).
+# in a GitHub Actions runner (no GKE, no external DB — H2 runs in-process).
 #
 # The API is left unprotected + authorizations disabled so the k6 probe and the
 # curl deployment need no OAuth round-trip — keeps the CI run self-contained.
@@ -29,10 +29,19 @@ camunda:
           email: "demo@example.com"
       defaultRoles.admin.users:
         - "demo"
-  # No secondary storage -> no exporter on the hot path; evaluation is engine-only.
+  # In-process H2 secondary storage (same pattern as c8run) -> no extra
+  # container, and the exporter/search path is async so it stays off the
+  # decision-evaluation hot path. Basic auth requires a secondary storage to
+  # hold user data, so "none" is not usable together with method: basic.
   data:
     secondary-storage:
-      type: none
+      type: rdbms
+      rdbms:
+        url: jdbc:h2:file:/tmp/camunda-h2db
+        username: sa
+        password:
+        flushInterval: PT0.5S
+        queueSize: 1000
   backup:
     webapps:
       enabled: false
