@@ -1,0 +1,75 @@
+# Minimal, single-broker, no-exporter Camunda config for DMN decision-evaluation
+# LATENCY probing.
+#
+# Purpose: measure the lowest possible per-evaluation latency by removing every
+# source of avoidable overhead from the write path:
+#   * replicationFactor 1  -> commit is local; no Raft quorum round-trip (this is
+#                             the single biggest lever on the ~14ms eval floor)
+#   * clusterSize 1        -> one broker, one leader, no inter-node hops
+#   * partitionCount 1     -> a single processing pipeline
+#   * no secondary storage -> no ES/RDBMS exporter on the hot path
+#   * consistency checks off, execution-metrics exporter off, history off
+#
+# This is a MINIMUM-LATENCY reference, NOT a production or throughput topology.
+# For throughput/HA use the standard defaults (clusterSize/RF 3).
+#
+# Usage (layer on top of the defaults):
+#   helm install ... \
+#     -f main/values/camunda-platform-values-defaults.yaml \
+#     -f main/values/camunda-platform-values-dmn-minimal.yaml
+
+########################################################################################
+################################################### Global cluster configuration
+########################################################################################
+global:
+  # No ES/OpenSearch/RDBMS backend — nothing to export to.
+  noSecondaryStorage: true
+
+# Trim everything not needed to evaluate a decision.
+optimize:
+  enabled: false
+
+connectors:
+  enabled: false
+
+webModeler:
+  enabled: false
+
+########################################################################################
+################################################### Orchestration cluster configuration
+########################################################################################
+orchestration:
+  ## Single broker, single partition, no replication -> minimum write-path latency.
+  clusterSize: "1"
+  partitionCount: "1"
+  replicationFactor: "1"
+
+  # Disable the record exporter — decision evaluation only needs the result.
+  exporters:
+    camunda:
+      enabled: false
+  data:
+    secondaryStorage:
+      type: none
+
+  history:
+    retention:
+      enabled: false
+
+  extraConfiguration:
+    - file: application.yml
+      content: |
+        # Define when the broker should start to reject requests when the disk is almost full.
+        zeebe.broker.data.disk.freeSpace.processing: "3GB"
+        zeebe.broker.data.disk.freeSpace.replication: "2GB"
+    # Loaded after application.yml (higher priority). Strip the per-record overhead
+    # that the standard load-test config keeps on for soak tests but that only inflates
+    # latency for a pure evaluation probe.
+    - file: application-override.yml
+      content: |
+        # Consistency checks add per-record work; off for a minimum-latency probe.
+        zeebe.broker.experimental.consistencyChecks.enablePreconditions: "false"
+        zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "false"
+        # No execution-metrics exporter / JFR on the hot path.
+        zeebe.broker.executionMetricsExporterEnabled: "false"
+        camunda.flags.jfr.metrics: "false"
