@@ -212,10 +212,9 @@ test('user permissions', async (t) => {
 
   // change permissions
   await t.hover(Common.listItemWithText(managerName));
-  await t
-    .expect(Common.listItemTrigger(Common.listItemWithText(managerName), 'Edit').exists)
-    .notOk();
-  await t.expect(Common.listItemTrigger(Common.listItemWithText('demo'), 'Edit').visible).ok();
+  // The last manager has no row actions, so its overflow menu trigger is absent.
+  await t.expect(Common.contextMenu(Common.listItemWithText(managerName)).exists).notOk();
+  await t.expect(Common.contextMenu(Common.listItemWithText('demo')).visible).ok();
 
   const {username} = getUser(t, 'user2');
 
@@ -225,16 +224,17 @@ test('user permissions', async (t) => {
   await t.click(e.carbonRoleOption('Manager'));
   await t.click(Common.modalConfirmButton);
 
-  await t.expect(Common.listItemTrigger(Common.listItemWithText(managerName), 'Edit').visible).ok();
+  await t.expect(Common.contextMenu(Common.listItemWithText(managerName)).visible).ok();
 
-  await t.click(Common.listItemTrigger(Common.listItemWithText(managerName), 'Edit'));
+  await t.click(Common.contextMenu(Common.listItemWithText(managerName)));
+  await t.click(Common.edit);
   await t.click(e.carbonRoleOption('Viewer'));
   await t.click(Common.modalConfirmButton);
 
   await t.expect(e.addButton.exists).notOk();
 
   await t.click(e.entityTab);
-  await t.click(Common.listItemLink('dashboard', true));
+  await t.click(Common.listItemLink('dashboard'));
 
   await t.expect(Common.editButton.exists).notOk();
 
