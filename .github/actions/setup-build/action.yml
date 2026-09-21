@@ -254,9 +254,14 @@ runs:
       # so a mirror outage cannot fail an otherwise-ready runner. Check that exact
       # file, not just /usr/share/zoneinfo -- a partial zoneinfo would leave
       # /etc/localtime dangling, which `ln -s` reports as success.
+      #
+      # `apt-get update` exits 100 if *any* configured repository fails, so don't gate on
+      # it (INC-7943) -- a partial refresh still lands and `apt-get install` is the gate.
       command: |
         [ -e "/usr/share/zoneinfo/${TZ_IDENTIFIER}" ] && exit 0
-        sudo timeout 115 bash -c "apt-get update && apt-get install -y tzdata"
+        sudo timeout 115 bash -c "apt-get update \
+          || echo '::warning::apt-get update could not refresh every repository, continuing with the index as-is'; \
+          apt-get install -y tzdata"
   - name: Set Time Zone
     if: inputs.time-zone != '' && runner.os == 'Linux'
     env:

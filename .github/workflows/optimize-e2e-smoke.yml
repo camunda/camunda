@@ -96,7 +96,11 @@ jobs:
               echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" \
                 | sudo tee /etc/apt/sources.list.d/google-chrome.list >/dev/null
 
-              sudo timeout 180 bash -c "apt-get update && apt-get install -y --no-install-recommends google-chrome-stable"
+              # `apt-get update` exits 100 if *any* configured repository fails, so don't gate
+              # on it (INC-7943) -- a partial refresh still lands and the install is the gate.
+              sudo timeout 180 bash -c "apt-get update \
+                || echo '::warning::apt-get update could not refresh every repository, continuing with the index as-is'; \
+                apt-get install -y --no-install-recommends google-chrome-stable"
             fi
 
             google-chrome --version
