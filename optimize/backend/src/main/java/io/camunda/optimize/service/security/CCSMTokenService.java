@@ -32,7 +32,6 @@ import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.security.api.model.CamundaAuthentication;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
@@ -310,10 +309,11 @@ public class CCSMTokenService {
   }
 
   public Optional<String> getCurrentUserIdFromAuthToken() {
-    // Under CSL the principal is resolved from the configured username-claim, which may not be the
-    // sub claim. Prefer it over re-decoding the access token (whose subject is always sub), so the
-    // resolved user id matches the CSL SecurityContext principal.
-    final Optional<String> cslUserId = cslAuthenticatedUsername();
+    // Under CSL the principal is resolved from the configured username-claim (or, for a bearer
+    // token CSL classifies as an M2M client, the client-id claim — a client-credentials token has
+    // no username claim to fall back to). Prefer it over re-decoding the access token (whose
+    // subject is always sub), so the resolved user id matches the CSL SecurityContext principal.
+    final Optional<String> cslUserId = cslAuthenticatedPrincipalId();
     if (cslUserId.isPresent()) {
       return cslUserId;
     }
@@ -325,7 +325,7 @@ public class CCSMTokenService {
     }
   }
 
-  private Optional<String> cslAuthenticatedUsername() {
+  private Optional<String> cslAuthenticatedPrincipalId() {
     final CamundaAuthenticationProvider provider =
         camundaAuthenticationProviderProvider == null
             ? null
@@ -337,7 +337,14 @@ public class CCSMTokenService {
       return Optional.empty();
     }
     return Optional.ofNullable(provider.getCamundaAuthentication())
-        .map(CamundaAuthentication::authenticatedUsername);
+        .flatMap(
+            authentication ->
+                nonBlank(authentication.authenticatedUsername())
+                    .or(() -> nonBlank(authentication.authenticatedClientId())));
+  }
+
+  private static Optional<String> nonBlank(final String value) {
+    return Optional.ofNullable(value).filter(v -> !v.isBlank());
   }
 
   public Optional<String> getCurrentUserAuthToken() {
