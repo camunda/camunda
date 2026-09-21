@@ -101,7 +101,7 @@ class ReplicationLagProviderFactoryTest {
   }
 
   @Test
-  void shouldDeriveLagProviderFromLsnProviderForOracle() {
+  void shouldRejectTimeLagProviderForOracle() {
     // given
     final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
     when(vendorDatabaseProperties.databaseId()).thenReturn("oracle");
@@ -109,11 +109,10 @@ class ReplicationLagProviderFactoryTest {
         new ReplicationLagProviderFactory(
             vendorDatabaseProperties, mock(ReplicationStatusMapper.class));
 
-    // when
-    final var provider = factory.create();
-
-    // then
-    assertThat(provider).isInstanceOf(LsnBackedReplicationLagProvider.class);
+    // when / then
+    assertThatThrownBy(factory::create)
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Time-lag based replication monitoring is not supported for Oracle");
   }
 
   @Test

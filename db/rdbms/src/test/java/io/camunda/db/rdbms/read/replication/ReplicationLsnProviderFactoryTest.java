@@ -160,7 +160,7 @@ class ReplicationLsnProviderFactoryTest {
     final var provider = factory.create();
 
     // then
-    assertThat(provider).isInstanceOf(DefaultReplicationLsnProvider.class);
+    assertThat(provider).isInstanceOf(OracleReplicationLsnProvider.class);
   }
 
   @Test

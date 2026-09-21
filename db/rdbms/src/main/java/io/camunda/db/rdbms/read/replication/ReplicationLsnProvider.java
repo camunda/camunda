@@ -11,7 +11,7 @@ import java.util.List;
 
 /**
  * Provides LSN-based replication status: the primary's current log-sequence position, and each
- * replica's applied position, stable identifier, and reported replication lag.
+ * replica's applied position, stable identifier, and optional replication lag estimate.
  */
 public interface ReplicationLsnProvider {
 
@@ -22,8 +22,8 @@ public interface ReplicationLsnProvider {
   long getCurrentDbTime();
 
   /**
-   * Returns per-replica state: last replayed position/timestamp, a stable unique identifier, and
-   * the DB-reported replication lag in milliseconds.
+   * Returns per-replica state: last applied position/timestamp, a stable unique identifier, and an
+   * optional replication lag estimate in milliseconds.
    */
   List<ReplicationLsnStatus> getReplicationStatuses();
 }
