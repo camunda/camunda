@@ -87,7 +87,7 @@ const BatchOperation: React.FC<Props> = ({batchOperationKey}) => {
 		}
 	}, [isNotFound, batchOperationKey, navigate, t]);
 
-	const operationType = formatOperationType(data?.batchOperationType ?? '');
+	const operationType = formatOperationType(data?.batchOperationType);
 
 	const tileData = useMemo(
 		() => [

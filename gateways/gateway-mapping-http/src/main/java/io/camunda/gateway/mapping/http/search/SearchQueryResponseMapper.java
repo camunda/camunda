@@ -1005,7 +1005,11 @@ public final class SearchQueryResponseMapper {
   public static BatchOperationResponse toBatchOperation(final BatchOperationEntity entity) {
     return BatchOperationResponse.Builder.create()
         .batchOperationKey(entity.batchOperationKey())
-        .batchOperationType(BatchOperationTypeEnum.fromValue(entity.operationType().name()))
+        .batchOperationType(
+            ofNullable(entity.operationType())
+                .map(Enum::name)
+                .map(BatchOperationTypeEnum::fromValue)
+                .orElse(null))
         .state(BatchOperationStateEnum.fromValue(entity.state().name()))
         .operationsCompletedCount(entity.operationsCompletedCount())
         .operationsFailedCount(entity.operationsFailedCount())
