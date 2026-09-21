@@ -233,7 +233,6 @@ resource "aws_db_instance" "replica" {
 
   identifier          = local.replica_identifier
   replicate_source_db = aws_db_instance.primary.arn
-  source_region       = var.primary_region
   replica_mode        = "mounted"
   instance_class      = var.instance_class
 
