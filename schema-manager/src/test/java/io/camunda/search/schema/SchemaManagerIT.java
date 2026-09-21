@@ -641,6 +641,61 @@ public class SchemaManagerIT {
     assertThat(updatedIndex.at(shardsSettingPath).asInt()).isEqualTo(1);
   }
 
+  /**
+   * Regression test for #63543/#63672: schema-init runs on every broker/webapp restart, so a
+   * fleet-wide rollout re-runs it once per physical tenant even when nothing has changed. This
+   * asserts that end-to-end path — driven through the real {@code startupOnce()} entry point
+   * against a real search engine, not a mocked unit test — issues no redundant {@code putSettings}
+   * call on a second, unchanged run following one that actually wrote a change.
+   */
+  @TestTemplate
+  void shouldNotReissuePutSettingsWhenNothingChangedAcrossTwoRuns(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws IOException {
+    // given - the index is created with the descriptor's default replica count
+    final SearchEngineClient searchEngineClient = spy(getSearchEngineClient(config));
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClient, Set.of(index, metadataIndex), Set.of(), config, objectMapper);
+
+    startupWithRetry(schemaManager, config);
+
+    final var replicaSettingPath = "/settings/index/number_of_replicas";
+    assertThat(
+            searchClientAdapter
+                .getIndexAsNode(index.getFullQualifiedName())
+                .at(replicaSettingPath)
+                .asInt())
+        .isEqualTo(1);
+
+    // when - the configured replica count changes, so this run must write it
+    reset(searchEngineClient);
+    config.index().setNumberOfReplicas(3);
+    startupWithRetry(schemaManager, config);
+
+    // then - the write actually happened
+    assertThat(
+            searchClientAdapter
+                .getIndexAsNode(index.getFullQualifiedName())
+                .at(replicaSettingPath)
+                .asInt())
+        .isEqualTo(3);
+    verify(searchEngineClient, times(1)).putSettings(eq(index), any());
+
+    // when - schema-init runs again with nothing changed, the way it would on every restart
+    reset(searchEngineClient);
+    startupWithRetry(schemaManager, config);
+
+    // then - the setting is still correct, but no write was issued to reach it this time
+    assertThat(
+            searchClientAdapter
+                .getIndexAsNode(index.getFullQualifiedName())
+                .at(replicaSettingPath)
+                .asInt())
+        .isEqualTo(3);
+    verify(searchEngineClient, never()).putSettings(any(), any());
+  }
+
   @TestTemplate
   void shouldUpdateLifeCyclePoliciesWithNewValuesOnRestartIfEnabled(
       final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
