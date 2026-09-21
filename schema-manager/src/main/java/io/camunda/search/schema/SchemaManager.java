@@ -168,6 +168,7 @@ public class SchemaManager implements CloseableSilently {
     final boolean upgradeSchema;
     final var previousSchemaVersion = schemaMetadataStore.getSchemaVersion();
     final var checkResult = checkVersionCompatibility(previousSchemaVersion, currentVersion);
+    final boolean sameVersion = checkResult instanceof Compatible.SameVersion;
     switch (checkResult) {
       case final Compatible.SameVersion ignored:
         upgradeSchema = "SNAPSHOT".equals(SemanticVersion.parse(currentVersion).get().preRelease());
@@ -194,11 +195,16 @@ public class SchemaManager implements CloseableSilently {
         LOG.info("Update index schema. '{}' indices need to be updated", newIndexProperties.size());
         updateSchemaMappings(newIndexProperties);
       }
-      // Store the current version as schema version after successful initialization
+    }
+    updateSchemaSettings(sameVersion);
+    createLifecyclePolicies();
+    // Store the current version as schema version only once everything for it has been applied.
+    // Storing it earlier (e.g. right after the upgrade branch above) would let a node that fails
+    // or times out below this point be seen as SameVersion on its next attempt, taking the cheap
+    // settings-comparison path and silently never applying the rest of the upgrade.
+    if (upgradeSchema) {
       schemaMetadataStore.storeSchemaVersion(currentVersion);
     }
-    updateSchemaSettings();
-    createLifecyclePolicies();
     LOG.info("Schema management completed.");
   }
 
@@ -281,7 +287,7 @@ public class SchemaManager implements CloseableSilently {
     CompletableFuture.runAsync(schemaCleanup::performCleanup, virtualThreadExecutor);
   }
 
-  private void updateSchemaSettings() {
+  private void updateSchemaSettings(final boolean sameVersion) {
     // fetched once, not once per descriptor, and submitted to the executor so a stalled request
     // is bounded by joinOnFutures()'s timeout instead of blocking startupOnce() forever
     final var currentReplicaCountsFuture =
@@ -294,7 +300,7 @@ public class SchemaManager implements CloseableSilently {
                     // run creation of indices async as virtual thread
                     currentReplicaCountsFuture.thenAcceptAsync(
                         currentReplicaCounts ->
-                            updateIndexSettings(descriptor, currentReplicaCounts),
+                            updateIndexSettings(descriptor, currentReplicaCounts, sameVersion),
                         virtualThreadExecutor))
             .toArray(CompletableFuture[]::new);
 
@@ -321,12 +327,13 @@ public class SchemaManager implements CloseableSilently {
    * effect.
    */
   private void updateIndexSettings(
-      final IndexDescriptor indexDescriptor, final Map<String, Integer> currentReplicaCounts) {
+      final IndexDescriptor indexDescriptor,
+      final Map<String, Integer> currentReplicaCounts,
+      final boolean sameVersion) {
     final var indexSettingsFromConfig = getIndexSettingsFromConfig(indexDescriptor);
     if (indexDescriptor instanceof final IndexTemplateDescriptor indexTemplateDescriptor) {
-      // already no-ops internally when unchanged, so it stays unconditional
       searchEngineClient.updateIndexTemplateSettings(
-          indexTemplateDescriptor, indexSettingsFromConfig);
+          indexTemplateDescriptor, indexSettingsFromConfig, sameVersion);
     }
 
     final var targetReplicas = indexSettingsFromConfig.getNumberOfReplicas();
