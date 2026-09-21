@@ -17,15 +17,27 @@ package io.camunda.process.test.impl.testCases.instructions;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3;
+import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.testCases.instructions.CreateProcessInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.CreateProcessInstanceRuntimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.CreateProcessInstanceTerminateRuntimeInstruction;
 import io.camunda.process.test.impl.testCases.AssertionFacade;
 import io.camunda.process.test.impl.testCases.TestCaseInstructionHandler;
+import java.util.function.LongConsumer;
 
 public class CreateProcessInstanceInstructionHandler
     implements TestCaseInstructionHandler<CreateProcessInstanceInstruction> {
+
+  private final LongConsumer isolatedInstanceListener;
+
+  public CreateProcessInstanceInstructionHandler() {
+    this(processInstanceKey -> {});
+  }
+
+  public CreateProcessInstanceInstructionHandler(final LongConsumer isolatedInstanceListener) {
+    this.isolatedInstanceListener = isolatedInstanceListener;
+  }
 
   @Override
   public void execute(
@@ -57,7 +69,21 @@ public class CreateProcessInstanceInstructionHandler
         .getRuntimeInstructions()
         .forEach(runtimeInstruction -> applyRuntimeInstruction(runtimeInstruction, command));
 
-    command.send().join();
+    final boolean isolated = instruction.getReserveJobs() || instruction.getStubCallActivities();
+
+    if (instruction.getReserveJobs()) {
+      command.reserveJobs(context.getJobReservationToken());
+    }
+    if (instruction.getStubCallActivities()) {
+      command.stubCallActivities(true);
+    }
+
+    final ProcessInstanceEvent processInstance = command.send().join();
+
+    if (isolated) {
+      // an isolated instance waits on jobs no worker takes, so it parks until the test ends it
+      isolatedInstanceListener.accept(processInstance.getProcessInstanceKey());
+    }
   }
 
   @Override

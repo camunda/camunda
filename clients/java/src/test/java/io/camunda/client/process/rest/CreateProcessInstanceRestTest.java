@@ -25,6 +25,7 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceCreationReserveJobsInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationStartInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationTerminateInstruction;
@@ -306,6 +307,74 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
         (ProcessInstanceCreationTerminateInstruction) runtimeInstructionList.get(0);
     assertThat(runtimeInstruction.getAfterElementId()).isEqualTo(ELEMENT_ID_A);
     assertThat(runtimeInstruction.getType()).isEqualTo("TERMINATE_PROCESS_INSTANCE");
+  }
+
+  @Test
+  public void shouldReserveJobs() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+
+    // when
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .reserveJobs("ts-8f2c")
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceCreationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
+
+    final List<ProcessInstanceCreationRuntimeInstruction> runtimeInstructions =
+        request.getRuntimeInstructions();
+    assertThat(runtimeInstructions).hasSize(1);
+    final ProcessInstanceCreationReserveJobsInstruction runtimeInstruction =
+        (ProcessInstanceCreationReserveJobsInstruction) runtimeInstructions.get(0);
+    assertThat(runtimeInstruction.getJobReservationToken()).isEqualTo("ts-8f2c");
+    assertThat(runtimeInstruction.getType()).isEqualTo("RESERVE_JOBS");
+  }
+
+  @Test
+  public void shouldRejectBlankJobReservationToken() {
+    // when / then
+    assertThatThrownBy(
+            () -> client.newCreateInstanceCommand().processDefinitionKey(123).reserveJobs(""))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  public void shouldStubCallActivities() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+
+    // when
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .stubCallActivities(true)
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceCreationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
+    assertThat(request.getStubCallActivities()).isTrue();
+  }
+
+  @Test
+  public void shouldRejectReserveJobsOverGrpc() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newCreateInstanceCommand()
+                    .useGrpc()
+                    .processDefinitionKey(123)
+                    .reserveJobs("ts-8f2c")
+                    .send())
+        .isInstanceOf(UnsupportedOperationException.class)
+        .hasMessageContaining("reserveJobs");
   }
 
   @Test

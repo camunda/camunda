@@ -19,6 +19,7 @@ import io.camunda.client.CredentialsProvider.StatusCode;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1;
+import io.camunda.client.api.command.CompleteCallActivityJobResultStep1;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandJobResultStep;
 import io.camunda.client.api.command.CompleteJobResult;
@@ -57,6 +58,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   private final RequestConfig.Builder httpRequestConfig;
   private final JobCompletionRequest httpRequestObject;
   private boolean useRest;
+  private String restOnlyProperty;
   private final long jobKey;
   private final JsonMapper jsonMapper;
 
@@ -91,6 +93,9 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
 
   @Override
   public CamundaFuture<CompleteJobResponse> send() {
+    if (restOnlyProperty != null) {
+      ArgumentUtil.ensureRestTransport(restOnlyProperty, useRest);
+    }
     if (useRest) {
       return sendRestRequest();
     } else {
@@ -106,6 +111,8 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
       setJobResult((CompleteUserTaskJobResultImpl) result);
     } else if (result instanceof CompleteAdHocSubProcessResultStep1) {
       setJobResult(((CompleteAdHocSubProcessJobResultImpl) result));
+    } else if (result instanceof CompleteCallActivityJobResultStep1) {
+      setJobResult((CompleteCallActivityJobResultImpl) result);
     } else {
       throw new IllegalArgumentException(
           "Unsupported job result type: " + result.getClass().getName());
@@ -120,6 +127,16 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
     }
     grpcRequestObjectBuilder.setJobLeaseToken(jobLeaseToken);
     httpRequestObject.setJobLeaseToken(jobLeaseToken);
+    return this;
+  }
+
+  @Override
+  public CompleteJobCommandStep1 withJobReservationToken(final String jobReservationToken) {
+    if (jobReservationToken == null) {
+      return this;
+    }
+    restOnlyProperty = "withJobReservationToken";
+    httpRequestObject.setJobReservationToken(jobReservationToken);
     return this;
   }
 
@@ -144,6 +161,27 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   @Override
   public CompleteAdHocSubProcessResultStep1 forAdHocSubProcess() {
     return new CompleteAdHocSubProcessJobResultImpl(objectMapper);
+  }
+
+  @Override
+  public CompleteCallActivityJobResultStep1 forCallActivity() {
+    return new CompleteCallActivityJobResultImpl();
+  }
+
+  private void setJobResult(final CompleteCallActivityJobResultImpl jobResult) {
+    restOnlyProperty = "forCallActivity";
+    final JobResult resultRest = new JobResult();
+    resultRest
+        .type(jobResult.getType().getProtocolValue())
+        .runCalledProcess(jobResult.isRunCalledProcess())
+        // null values as they are not applicable for a call activity stub completion
+        .denied(null)
+        .deniedReason(null)
+        .corrections(null)
+        .activateElements(null)
+        .isCompletionConditionFulfilled(null)
+        .isCancelRemainingInstances(null);
+    httpRequestObject.setResult(resultRest);
   }
 
   private void setJobResult(final CompleteUserTaskJobResultImpl jobResult) {
@@ -172,7 +210,8 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
         // null values as they are not applicable for user task completion
         .isCompletionConditionFulfilled(null)
         .isCancelRemainingInstances(null)
-        .activateElements(null);
+        .activateElements(null)
+        .runCalledProcess(null);
     httpRequestObject.setResult(resultRest);
   }
 
@@ -238,7 +277,8 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
         // null values as they are not applicable for ad-hoc sub process completion
         .denied(null)
         .corrections(null)
-        .deniedReason(null);
+        .deniedReason(null)
+        .runCalledProcess(null);
     httpRequestObject.setResult(resultRest);
   }
 

@@ -13,9 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.command.enums;
+package io.camunda.workers;
 
-public enum ProcessInstanceCreationInstruction {
-  TERMINATE_PROCESS_INSTANCE,
-  RESERVE_JOBS
+import io.camunda.client.annotation.JobWorker;
+import io.camunda.client.annotation.Variable;
+import java.util.Map;
+import org.springframework.stereotype.Component;
+
+/**
+ * The worker the isolated-order example hands the invoice job back to with a {@code RELEASE_JOB}
+ * instruction. Every other job of a reserved instance is hidden from it.
+ */
+@Component
+public class SendInvoiceWorker {
+
+  @JobWorker(type = "send-invoice")
+  public Map<String, Object> handleJob(@Variable("orderId") final String orderId) {
+    return Map.of("invoiceNumber", "INV-" + orderId);
+  }
 }

@@ -170,6 +170,55 @@ public interface CreateProcessInstanceCommandStep1
     CreateProcessInstanceCommandStep3 terminateAfterElement(final String elementId);
 
     /**
+     * Reserves every job this process instance creates for the caller, so that no job worker is
+     * served them (alpha).
+     *
+     * <p>A reserved job is created as usual but is offered to no worker, by poll or by stream. The
+     * caller drives it by key instead, proving it holds the reservation by passing the same token
+     * to every command on the job ({@link CompleteJobCommandStep1#withJobReservationToken(String)}
+     * and its counterparts on fail, throw-error, update and release). A command without the token,
+     * or with a different one, is rejected.
+     *
+     * <p>The reservation is inherited by the instances this one calls, so a called process's jobs
+     * are reserved with the same token.
+     *
+     * <p>The token is chosen by the caller and is never returned by any API, so it must be kept for
+     * the life of the instance: without it the instance can only be cancelled. Use a fresh,
+     * unguessable value per instance so that two callers on one cluster cannot collide.
+     *
+     * <p>This method is only supported over REST. This is an alpha feature and may be subject to
+     * change in future releases.
+     *
+     * @param jobReservationToken the caller-chosen token to stamp on the instance's jobs
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker
+     */
+    CreateProcessInstanceCommandStep3 reserveJobs(final String jobReservationToken);
+
+    /**
+     * Activates the process instance's call activities without starting the processes they call
+     * (alpha).
+     *
+     * <p>A stubbed call activity activates and waits on a job of type {@code
+     * io.camunda.zeebe:callActivityStub} instead of starting a child process instance, so the
+     * called process need not even be deployed. Like a reserved job, the stub job is offered to no
+     * worker; the caller completes it to stand in for the called process, or completes it with
+     * {@link CompleteJobCommandStep1.CompleteJobCommandJobResultStep#forCallActivity()} to start
+     * the real called process after all.
+     *
+     * <p>Stubbing is inherited by the instances this one calls, so a call activity nested at any
+     * depth is stubbed too.
+     *
+     * <p>This method is only supported over REST. This is an alpha feature and may be subject to
+     * change in future releases.
+     *
+     * @param stubCallActivities whether the instance's call activities start no called process
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker
+     */
+    CreateProcessInstanceCommandStep3 stubCallActivities(final boolean stubCallActivities);
+
+    /**
      * When this method is called, the response to the command will be received after the process is
      * completed. The response consists of a set of variables.
      *

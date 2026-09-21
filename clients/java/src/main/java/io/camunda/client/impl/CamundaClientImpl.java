@@ -82,6 +82,7 @@ import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.client.api.command.PinClockCommandStep1;
 import io.camunda.client.api.command.PublishMessageCommandStep1;
+import io.camunda.client.api.command.ReleaseJobCommandStep1;
 import io.camunda.client.api.command.ResetClockCommandStep1;
 import io.camunda.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.client.api.command.ResolveProcessInstanceIncidentsCommandStep1;
@@ -281,6 +282,7 @@ import io.camunda.client.impl.command.MigrateProcessInstanceCommandImpl;
 import io.camunda.client.impl.command.ModifyProcessInstanceCommandImpl;
 import io.camunda.client.impl.command.PinClockCommandImpl;
 import io.camunda.client.impl.command.PublishMessageCommandImpl;
+import io.camunda.client.impl.command.ReleaseJobCommandImpl;
 import io.camunda.client.impl.command.ResetClockCommandImpl;
 import io.camunda.client.impl.command.ResolveIncidentCommandImpl;
 import io.camunda.client.impl.command.ResolveProcessInstanceIncidentsCommandImpl;
@@ -980,6 +982,11 @@ public final class CamundaClientImpl implements CamundaClient {
     final UpdateJobCommandImpl command = (UpdateJobCommandImpl) newUpdateJobCommand(job.getKey());
     command.withJobLeaseToken(job.getJobLeaseToken());
     return command;
+  }
+
+  @Override
+  public ReleaseJobCommandStep1 newReleaseJobCommand(final long jobKey) {
+    return new ReleaseJobCommandImpl(jobKey, httpClient, jsonMapper);
   }
 
   @Override

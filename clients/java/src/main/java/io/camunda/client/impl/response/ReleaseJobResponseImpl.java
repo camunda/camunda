@@ -13,9 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.command.enums;
+package io.camunda.client.impl.response;
 
-public enum ProcessInstanceCreationInstruction {
-  TERMINATE_PROCESS_INSTANCE,
-  RESERVE_JOBS
+import io.camunda.client.api.response.ReleaseJobResponse;
+
+public class ReleaseJobResponseImpl implements ReleaseJobResponse {
+
+  public ReleaseJobResponseImpl(final Void nothing) {}
 }
