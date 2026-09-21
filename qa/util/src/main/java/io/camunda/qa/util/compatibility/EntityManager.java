@@ -439,6 +439,11 @@ public final class EntityManager {
     final var search = searchSupplier.get();
     Awaitility.await(alias)
         .timeout(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
+        // Retry on exceptions. Do not propagate them. A new index whose shards are not
+        // allocated yet answers with a 503, which the gateway reports as a 500. This wait
+        // exists for that state. A propagated exception ends the wait on the first poll and
+        // discards the remaining timeout.
+        .ignoreExceptions()
         .untilAsserted(
             () -> {
               final var results = search.search(expected.size() + 100);
