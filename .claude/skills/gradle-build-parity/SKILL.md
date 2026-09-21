@@ -313,6 +313,7 @@ confirm a parity fix, or to diagnose a suspected dependency gap.
 python .claude/skills/gradle-build-parity/compare-module-deps.py <gradle-project> [--scope runtime|compile|test] [--versions]
 python .claude/skills/gradle-build-parity/compare-module-deps.py --dir clients/java      # resolve project from its dir
 python .claude/skills/gradle-build-parity/compare-module-deps.py --list                  # gradle-project -> dir map
+python .claude/skills/gradle-build-parity/compare-module-deps.py --all [--json]          # every active module (slow; see below)
 ```
 
 It reports, per module:
@@ -346,11 +347,10 @@ Verify with `./mvnw dependency:list -pl <dir>` (inspect the per-artifact scope c
 `./mvnw dependency:tree -pl <dir> -Dincludes=<group>:<artifact>`, and check the Gradle
 `testRuntimeClasspath` before changing the build.
 
-Single-module only by design: it launches one Maven + one Gradle invocation per run.
-A repo-wide `--all` was tried and dropped — 146 modules × 2 tools is too slow for CI,
-and bulk single-JVM resolution hit Gradle 9 walls (config-phase resolution locks,
-config-cache `Task.project` restrictions, per-project resolution locks). Not worth the
-complexity for the parity payoff; run it per module on the module you're fixing.
+Single-module by default: it launches one Maven + one Gradle invocation per run. The
+repo-wide `--all` mode is implemented and correct (it resolves one report per build tool
+and diffs every active module), but it is slow — 146 modules × 2 tools — so it is not used
+routinely. Prefer running it per module on the module you're fixing.
 
 ### `compare-dist.py` — packaged distribution parity
 
