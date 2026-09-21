@@ -53,7 +53,8 @@ class SecurityPathAdapterTest {
             "/health",
             "/startup",
             "/favicon.ico",
-            "/cluster/v2/status");
+            "/cluster/v2/status",
+            "/cluster/v2/status/upgrade");
   }
 
   @Test

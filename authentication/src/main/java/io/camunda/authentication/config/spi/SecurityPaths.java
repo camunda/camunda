@@ -41,7 +41,8 @@ public final class SecurityPaths {
   // cluster-admin chain recognises only cluster-admin credentials — so a client migrating here from
   // /v2/status, which sends its ordinary API credentials on every request, would be answered 401 by
   // a health endpoint. Here the Authorization header is never inspected. The exact path is listed,
-  // so the rest of /cluster/v2/** stays with the cluster-admin chains.
+  // so the rest of /cluster/v2/** stays with the cluster-admin chains. /cluster/v2/status/upgrade
+  // is listed for the identical reason (camunda/camunda#61619).
   public static final Set<String> UNPROTECTED_PATHS =
       Set.of(
           "/error",
@@ -50,7 +51,8 @@ public final class SecurityPaths {
           "/health",
           "/startup",
           "/favicon.ico",
-          "/cluster/v2/status");
+          "/cluster/v2/status",
+          "/cluster/v2/status/upgrade");
 
   private SecurityPaths() {}
 }
