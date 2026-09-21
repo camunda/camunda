@@ -254,8 +254,11 @@ describe('RichTextEditor', () => {
 		expect(editor.element()).toBe(original);
 	});
 
-	it('should isolate schemas and release schema diagnostics when unmounted', async () => {
-		const onValidate = vi.fn();
+	it('should validate against its schema and clear diagnostics when the schema is removed', async () => {
+		let onValidate!: (isValid: boolean) => void;
+		const invalid = new Promise<boolean>((resolve) => {
+			onValidate = resolve;
+		});
 		const screen = await render(
 			<RichTextEditor
 				value='{"count":"invalid"}'
@@ -263,13 +266,43 @@ describe('RichTextEditor', () => {
 				onValidate={onValidate}
 			/>,
 		);
-		await expect.element(screen.getByRole('textbox', {name: 'Value', exact: true})).toBeVisible();
-		await expect.poll(() => onValidate.mock.calls.at(-1)?.[0]).toBe(false);
-		await vi.advanceTimersByTimeAsync(100);
-		await screen.unmount();
-		const nextValidate = vi.fn();
-		const next = await render(<RichTextEditor value='{"count":"valid here"}' onValidate={nextValidate} />);
-		await expect.element(next.getByRole('textbox', {name: 'Value', exact: true})).toBeVisible();
-		expect(nextValidate).not.toHaveBeenCalledWith(false);
+		expect(await invalid).toBe(false);
+		const valid = new Promise<boolean>((resolve) => {
+			onValidate = resolve;
+		});
+		await screen.rerender(<RichTextEditor value='{"count":"invalid"}' onValidate={onValidate} />);
+		expect(await valid).toBe(true);
+	});
+
+	it('should keep schemas isolated between editor models', async () => {
+		let validateNumber!: (isValid: boolean) => void;
+		let validateString!: (isValid: boolean) => void;
+		const invalidNumber = new Promise<boolean>((resolve) => {
+			validateNumber = resolve;
+		});
+		const invalidString = new Promise<boolean>((resolve) => {
+			validateString = resolve;
+		});
+		const numberSchema = {type: 'number'};
+		const stringSchema = {type: 'string'};
+		const onValidateNumber = vi.fn(validateNumber);
+		const screen = await render(
+			<>
+				<RichTextEditor value='"text"' jsonSchema={numberSchema} onValidate={onValidateNumber} />
+				<RichTextEditor value="42" jsonSchema={stringSchema} onValidate={validateString} />
+			</>,
+		);
+		expect(await Promise.all([invalidNumber, invalidString])).toEqual([false, false]);
+		const validString = new Promise<boolean>((resolve) => {
+			validateString = resolve;
+		});
+		await screen.rerender(
+			<>
+				<RichTextEditor value='"text"' jsonSchema={numberSchema} onValidate={onValidateNumber} />
+				<RichTextEditor value='"text"' jsonSchema={stringSchema} onValidate={validateString} />
+			</>,
+		);
+		expect(await validString).toBe(true);
+		expect(onValidateNumber).toHaveBeenLastCalledWith(false);
 	});
 });
