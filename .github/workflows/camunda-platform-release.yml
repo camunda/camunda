@@ -793,6 +793,10 @@ jobs:
             # PATCH: the previous existing release tag on the same minor branch. Resolved from git
             # tags (not patch minus one) so a skipped patch version does not break the range.
             ZCL_FROM_REV="${{ steps.prev_version.outputs.previous_version }}"
+            if [[ -z "$ZCL_FROM_REV" ]]; then
+              echo "::error::Could not resolve a previous release tag for ${{ inputs.releaseVersion }}; aborting before add-labels to avoid an invalid git range." >&2
+              exit 1
+            fi
             ZCL_TARGET_REV="${{ inputs.releaseVersion }}"
 
             # The following command will add labels to the issues on GitHub.
