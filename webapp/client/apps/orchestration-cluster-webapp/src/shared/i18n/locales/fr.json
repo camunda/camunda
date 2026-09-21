@@ -952,6 +952,22 @@
 					"incidentsCount_one": "{{count}} incident",
 					"incidentsCount_other": "{{count}} incidents"
 				},
+				"editors": {
+					"value": "Valeur",
+					"valueLabel": "valeur",
+					"loading": "Chargement de l’éditeur",
+					"copyValue": "Copier {{label}}",
+					"copying": "Copie de la valeur",
+					"copied": "{{label}} copié dans le presse-papiers",
+					"copyFailed": "Impossible de copier {{label}} dans le presse-papiers",
+					"fetchFailed": "Impossible de charger la valeur complète de {{label}}",
+					"apply": "Appliquer",
+					"cancel": "Annuler",
+					"close": "Fermer",
+					"edit": "Modifier",
+					"view": "Afficher",
+					"invalidJSON": "Saisissez une valeur JSON valide."
+				},
 				"copyButton": {
 					"copy": "Copier",
 					"copied": "Copié",
