@@ -338,6 +338,11 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
     }
 
     @Override
+    public String getComponentName() {
+      return "bar";
+    }
+
+    @Override
     public String getMappingsClasspathFilename() {
       return "";
     }

@@ -16,6 +16,7 @@ import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.search.schema.exceptions.IncompatibleVersionException;
 import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.search.schema.metrics.SchemaManagerMetrics;
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
@@ -40,6 +41,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.agrona.LangUtil;
@@ -280,16 +282,35 @@ public class SchemaManager implements CloseableSilently {
   }
 
   private void updateSchemaSettings() {
+    // fetched once, not once per descriptor, and submitted to the executor so a stalled request
+    // is bounded by joinOnFutures()'s timeout instead of blocking startupOnce() forever
+    final var currentReplicaCountsFuture =
+        CompletableFuture.supplyAsync(this::fetchCurrentReplicaCounts, virtualThreadExecutor);
+
     final var futures =
         allIndexDescriptors.stream()
             .map(
                 descriptor ->
                     // run creation of indices async as virtual thread
-                    CompletableFuture.runAsync(
-                        () -> updateIndexSettings(descriptor), virtualThreadExecutor))
+                    currentReplicaCountsFuture.thenAcceptAsync(
+                        currentReplicaCounts ->
+                            updateIndexSettings(descriptor, currentReplicaCounts),
+                        virtualThreadExecutor))
             .toArray(CompletableFuture[]::new);
 
     joinOnFutures(futures);
+  }
+
+  private Map<String, Integer> fetchCurrentReplicaCounts() {
+    final var prefix = AbstractIndexDescriptor.formatIndexPrefix(config.connect().getIndexPrefix());
+    final var componentPatterns =
+        allIndexDescriptors.stream()
+            .map(IndexDescriptor::getComponentName)
+            .distinct()
+            .sorted()
+            .map(component -> "%s%s-*".formatted(prefix, component))
+            .toList();
+    return searchEngineClient.getNumberOfReplicas(componentPatterns);
   }
 
   /**
@@ -299,7 +320,8 @@ public class SchemaManager implements CloseableSilently {
    * into thousands of redundant master tasks, most of them re-applying a value that is already in
    * effect.
    */
-  private void updateIndexSettings(final IndexDescriptor indexDescriptor) {
+  private void updateIndexSettings(
+      final IndexDescriptor indexDescriptor, final Map<String, Integer> currentReplicaCounts) {
     final var indexSettingsFromConfig = getIndexSettingsFromConfig(indexDescriptor);
     if (indexDescriptor instanceof final IndexTemplateDescriptor indexTemplateDescriptor) {
       // already no-ops internally when unchanged, so it stays unconditional
@@ -308,21 +330,22 @@ public class SchemaManager implements CloseableSilently {
     }
 
     final var targetReplicas = indexSettingsFromConfig.getNumberOfReplicas();
-    if (replicaCountDrifted(indexDescriptor, targetReplicas)) {
+    if (replicaCountDrifted(indexDescriptor, targetReplicas, currentReplicaCounts)) {
       searchEngineClient.putSettings(
           indexDescriptor, Map.of("index.number_of_replicas", String.valueOf(targetReplicas)));
     }
   }
 
-  private boolean replicaCountDrifted(final IndexDescriptor descriptor, final int target) {
-    // the alias is what putSettings() below writes to, so reading it back here is what tells us
-    // whether that write is actually needed; served from local cluster state, not the master, so
-    // this read is cheap
-    final var currentReplicaCounts =
-        searchEngineClient.getNumberOfReplicas(List.of(descriptor.getAlias()));
+  private boolean replicaCountDrifted(
+      final IndexDescriptor descriptor,
+      final int target,
+      final Map<String, Integer> currentReplicaCounts) {
+    final var namePattern = Pattern.quote(descriptor.getFullQualifiedName()) + ".*";
     // values are never null here: getNumberOfReplicas() drops an index rather than reporting a
     // null replica count for it, so this unboxing comparison is safe
-    return currentReplicaCounts.values().stream().anyMatch(replicas -> replicas != target);
+    return currentReplicaCounts.entrySet().stream()
+        .filter(entry -> entry.getKey().matches(namePattern))
+        .anyMatch(entry -> entry.getValue() != target);
   }
 
   @VisibleForTesting
