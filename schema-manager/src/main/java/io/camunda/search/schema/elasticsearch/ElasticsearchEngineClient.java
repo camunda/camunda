@@ -23,7 +23,11 @@ import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
 import co.elastic.clients.elasticsearch.core.GetResponse;
 import co.elastic.clients.elasticsearch.core.IndexRequest;
 import co.elastic.clients.elasticsearch.ilm.DeleteAction;
+import co.elastic.clients.elasticsearch.ilm.IlmPolicy;
+import co.elastic.clients.elasticsearch.ilm.Phase;
+import co.elastic.clients.elasticsearch.ilm.Phases;
 import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
+import co.elastic.clients.elasticsearch.ilm.get_lifecycle.Lifecycle;
 import co.elastic.clients.elasticsearch.indices.Alias;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
@@ -286,6 +290,14 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
   @Override
   public void putIndexLifeCyclePolicy(final String policyName, final String deletionMinAge) {
+    if (lifecyclePolicyMinAgeMatches(policyName, deletionMinAge)) {
+      LOG.debug(
+          "Index lifecycle policy [{}] already has min_age [{}]; skipping PUT",
+          policyName,
+          deletionMinAge);
+      return;
+    }
+
     final PutLifecycleRequest request = putLifecycleRequest(policyName, deletionMinAge);
 
     try {
@@ -293,6 +305,36 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     } catch (final IOException e) {
       final var errMsg = String.format("Index lifecycle policy [%s] failed to PUT", policyName);
       LOG.error(errMsg, e);
+      throw new SearchEngineException(errMsg, e);
+    }
+  }
+
+  private boolean lifecyclePolicyMinAgeMatches(
+      final String policyName, final String deletionMinAge) {
+    try {
+      final var lifecycle =
+          client.ilm().getLifecycle(req -> req.name(policyName)).result().get(policyName);
+      return Optional.ofNullable(lifecycle)
+          .map(Lifecycle::policy)
+          .map(IlmPolicy::phases)
+          .map(Phases::delete)
+          .map(Phase::minAge)
+          .filter(Time::isTime)
+          .map(minAge -> deletionMinAge.equals(minAge.time()))
+          .orElse(false);
+    } catch (final ElasticsearchException e) {
+      if (e.status() == 404) {
+        // policy does not exist yet, so there is nothing to compare against
+        return false;
+      }
+      final var errMsg =
+          String.format("Failed to retrieve index lifecycle policy [%s]", policyName);
+      LOG.warn(errMsg, e);
+      throw new SearchEngineException(errMsg, e);
+    } catch (final IOException e) {
+      final var errMsg =
+          String.format("Failed to retrieve index lifecycle policy [%s]", policyName);
+      LOG.warn(errMsg, e);
       throw new SearchEngineException(errMsg, e);
     }
   }
