@@ -367,6 +367,12 @@ jobs:
           # AlwaysGreen triage reads this file out of the artifact below to name
           # the failing specs.
           PLAYWRIGHT_JSON_OUTPUT_NAME: playwright-results.json
+          # --reporter on the CLI overrides the config's reporter list wholesale,
+          # including the html reporter's outputFolder option, so without this the
+          # html reporter falls back to its own default "playwright-report" while
+          # the upload step below still collects "html-report/" -- the HTML report
+          # would be silently missing from the uploaded artifact.
+          PLAYWRIGHT_HTML_REPORT: html-report
         run: |
           npx playwright test "tests/${MINOR_VERSION}/smoke-tests.spec.ts" \
             --project=chromium \
