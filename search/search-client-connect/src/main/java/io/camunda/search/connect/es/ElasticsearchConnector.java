@@ -18,6 +18,7 @@ import io.camunda.search.connect.configuration.SecurityConfiguration;
 import io.camunda.search.connect.jackson.JacksonConfiguration;
 import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.search.connect.util.SecurityUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.auth.AuthScope;
@@ -27,6 +28,7 @@ import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -152,12 +154,16 @@ public final class ElasticsearchConnector {
     }
   }
 
-  private Builder setTimeouts(final Builder builder, final ConnectConfiguration elsConfig) {
+  @VisibleForTesting
+  Builder setTimeouts(final Builder builder, final ConnectConfiguration elsConfig) {
     if (elsConfig.getSocketTimeout() != null) {
       builder.setSocketTimeout(elsConfig.getSocketTimeout());
     }
     if (elsConfig.getConnectTimeout() != null) {
       builder.setConnectTimeout(elsConfig.getConnectTimeout());
+      builder.setConnectionRequestTimeout(elsConfig.getConnectTimeout());
+    } else {
+      builder.setConnectionRequestTimeout(RestClientBuilder.DEFAULT_CONNECT_TIMEOUT_MILLIS);
     }
     return builder;
   }
