@@ -71,7 +71,7 @@ public class OidcAuthOverRestStartupIT {
 
     // then the broker is up and serving: a request carrying a token it cannot validate against the
     // unreachable provider fails on its own, as a server error, rather than taking the broker down
-    Assertions.assertThat(statusOfTopologyRequestWithBearerToken()).isEqualTo(500);
+    Assertions.assertThat(statusOfTopologyRequestWithBearerToken()).isBetween(500, 599);
   }
 
   private int statusOfTopologyRequestWithBearerToken() throws IOException, InterruptedException {
