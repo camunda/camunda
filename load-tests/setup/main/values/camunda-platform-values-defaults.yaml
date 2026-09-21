@@ -149,6 +149,14 @@ orchestration:
             - UPDATE_PROCESS_INSTANCE
             - READ_PROCESS_INSTANCE
             - READ_PROCESS_DEFINITION
+            - SUSPEND_PROCESS_INSTANCE
+            - CANCEL_PROCESS_INSTANCE
+        - ownerType: CLIENT
+          ownerId: orchestration
+          resourceType: BATCH
+          resourceId: "*"
+          permissions:
+            - CREATE_BATCH_OPERATION_SUSPEND_PROCESS_INSTANCE
         # Grant the orchestration client permission to publish messages
         # (required by realistic benchmark workers: customer_notification,
         # dispute_process_request_proof_from_vendor)
