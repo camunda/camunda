@@ -18,7 +18,6 @@ import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.search.schema.metrics.SchemaManagerMetrics;
 import io.camunda.search.schema.utils.TasklistLegacyTaskTemplate;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
-import io.camunda.webapps.schema.descriptors.ComponentNames;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
@@ -33,7 +32,6 @@ import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Com
 import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Incompatible;
 import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Indeterminate;
 import io.camunda.zeebe.util.retry.RetryDecorator;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -281,7 +279,10 @@ public class SchemaManager implements CloseableSilently {
   private Map<String, Integer> fetchCurrentReplicaCounts() {
     final var prefix = AbstractIndexDescriptor.formatIndexPrefix(config.connect().getIndexPrefix());
     final var componentPatterns =
-        Arrays.stream(ComponentNames.values())
+        allIndexDescriptors.stream()
+            .map(IndexDescriptor::getComponentName)
+            .distinct()
+            .sorted()
             .map(component -> "%s%s-*".formatted(prefix, component))
             .toList();
     return searchEngineClient.getNumberOfReplicas(componentPatterns);
