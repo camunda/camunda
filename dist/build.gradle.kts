@@ -273,12 +273,9 @@ val assembleDist =
     from("src/main/config") { into("config") }
     from(copyOpenApiYaml) { into("config/openapi/v2") }
     from(tasks.named<Jar>("jar")) { into("lib") }
-    from({
-      configurations.runtimeClasspath.get().filter { file ->
-        file.isFile && distExcludedFilePrefixes.none { file.name.startsWith(it) }
-      }
-    }) {
+    from(configurations.runtimeClasspath.map { it.asFileTree }) {
       into("lib")
+      exclude(distExcludedFilePrefixes.map { "$it*" })
     }
     from(layout.settingsDirectory.dir("licenses"))
     from(layout.settingsDirectory.file("NOTICE.txt"))
