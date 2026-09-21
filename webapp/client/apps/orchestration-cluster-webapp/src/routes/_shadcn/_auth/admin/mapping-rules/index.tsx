@@ -7,8 +7,12 @@
  */
 
 import {createFileRoute} from '@tanstack/react-router';
+import {assertAdminSectionAvailable} from '#/admin/adminSections';
 import {AdminMappingRulesPage} from '#/admin/pages/AdminMappingRulesPage';
 
 export const Route = createFileRoute('/_shadcn/_auth/admin/mapping-rules/')({
+	beforeLoad: () => {
+		assertAdminSectionAvailable('mapping-rules');
+	},
 	component: AdminMappingRulesPage,
 });
