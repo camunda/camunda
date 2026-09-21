@@ -8,23 +8,18 @@ val commonsLoggingVersion = versionCatalog.requiredVersion("commons-logging")
 val snakeyamlVersion = versionCatalog.requiredVersion("org-yaml-snakeyaml")
 
 dependencies {
-  add(
-    "implementation",
-    platform(versionCatalog.findLibrary("com-fasterxml-jackson-jackson-bom").get()),
-  )
-  add(
-    "implementation",
-    platform(versionCatalog.findLibrary("com-google-protobuf-protobuf-bom").get()),
-  )
-  add("implementation", platform(versionCatalog.findLibrary("io-grpc-grpc-bom").get()))
-  add("implementation", platform(versionCatalog.findLibrary("io-micrometer-micrometer-bom").get()))
-  add("implementation", platform(versionCatalog.findLibrary("io-netty-netty-bom").get()))
-  add("implementation", platform(versionCatalog.findLibrary("org-mockito-mockito-bom").get()))
-  add(
-    "implementation",
-    platform(versionCatalog.findLibrary("org-apache-logging-log4j-log4j-bom").get()),
-  )
-  add("implementation", platform(versionCatalog.findLibrary("tools-jackson-jackson-bom").get()))
+  val importedBoms =
+    listOf(
+      "com-fasterxml-jackson-jackson-bom",
+      "com-google-protobuf-protobuf-bom",
+      "io-grpc-grpc-bom",
+      "io-micrometer-micrometer-bom",
+      "io-netty-netty-bom",
+      "org-mockito-mockito-bom",
+      "org-apache-logging-log4j-log4j-bom",
+      "tools-jackson-jackson-bom",
+    )
+  importedBoms.forEach { add("implementation", platform(versionCatalog.findLibrary(it).get())) }
   add("testRuntimeOnly", versionCatalog.findLibrary("org-apache-logging-log4j-log4j-core").get())
   add(
     "testRuntimeOnly",
