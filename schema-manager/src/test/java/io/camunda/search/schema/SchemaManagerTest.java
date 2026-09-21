@@ -395,9 +395,7 @@ class SchemaManagerTest {
     }
   }
 
-  // matches fetchCurrentReplicaCounts()'s exact call against this class's "test" index prefix
-  private static final List<String> ALL_ORCHESTRATION_CLUSTER_INDICES_WILDCARDS =
-      List.of("test-tasklist-*", "test-operate-*", "test-camunda-*");
+  private static final List<String> ALL_TEST_INDICES_WILDCARD = List.of("test-test-*");
 
   /**
    * Regression test for #63543. {@code updateSchemaSettings()} used to blind-write settings for
@@ -412,7 +410,7 @@ class SchemaManagerTest {
     final var client = mock(SearchEngineClient.class);
     final var indexA = new TestIndexDescriptor("index-a", "mappings.json");
     final var indexB = new TestIndexDescriptor("index-b", "mappings.json");
-    when(client.getNumberOfReplicas(ALL_ORCHESTRATION_CLUSTER_INDICES_WILDCARDS))
+    when(client.getNumberOfReplicas(ALL_TEST_INDICES_WILDCARD))
         .thenReturn(Map.of(indexA.getFullQualifiedName(), 1, indexB.getFullQualifiedName(), 1));
     try (final var manager =
         new SchemaManager(
@@ -438,7 +436,7 @@ class SchemaManagerTest {
     final var client = mock(SearchEngineClient.class);
     final var indexA = new TestIndexDescriptor("index-a", "mappings.json");
     final var indexB = new TestIndexDescriptor("index-b", "mappings.json");
-    when(client.getNumberOfReplicas(ALL_ORCHESTRATION_CLUSTER_INDICES_WILDCARDS))
+    when(client.getNumberOfReplicas(ALL_TEST_INDICES_WILDCARD))
         .thenReturn(Map.of(indexA.getFullQualifiedName(), 0, indexB.getFullQualifiedName(), 1));
     try (final var manager =
         new SchemaManager(
@@ -470,7 +468,7 @@ class SchemaManagerTest {
     // given - two physical indices share indexA's alias; only one of them has drifted
     final var client = mock(SearchEngineClient.class);
     final var indexA = new TestIndexDescriptor("index-a", "mappings.json");
-    when(client.getNumberOfReplicas(ALL_ORCHESTRATION_CLUSTER_INDICES_WILDCARDS))
+    when(client.getNumberOfReplicas(ALL_TEST_INDICES_WILDCARD))
         .thenReturn(
             Map.of(
                 indexA.getFullQualifiedName() + "-2026.01.01", 1,
