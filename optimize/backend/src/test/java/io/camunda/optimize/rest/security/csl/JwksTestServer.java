@@ -86,6 +86,12 @@ final class JwksTestServer {
             exchange.getResponseBody().write(body);
           }
         });
+    httpServer.createContext(
+        "/unreachable/.well-known/openid-configuration",
+        exchange -> {
+          exchange.sendResponseHeaders(500, -1);
+          exchange.close();
+        });
     httpServer.start();
     return new JwksTestServer(httpServer, kid, new RSASSASigner(jwk));
   }
@@ -96,6 +102,14 @@ final class JwksTestServer {
 
   JWSSigner signer() {
     return signer;
+  }
+
+  /**
+   * An issuer this server declines to describe: its discovery endpoint always answers 500. Stands
+   * in for a provider that is down, without depending on a port nothing listens on.
+   */
+  String unreachableIssuerUri() {
+    return issuerUri() + "/unreachable";
   }
 
   String issuerUri() {

@@ -33,6 +33,8 @@ import java.util.List;
  *   <li>{@code /jwks} — the public JWK set (for token verification)
  *   <li>{@code /.well-known/openid-configuration} — a discovery document pointing back to this
  *       server
+ *   <li>{@code /unreachable/.well-known/openid-configuration} — a failing discovery endpoint, see
+ *       {@link #unreachableIssuerUri()}
  * </ul>
  *
  * <p>Mirrors the {@code JwksTestServer} pattern from CSL's {@code ScopedJwtDecoderFactoryTest}.
@@ -99,6 +101,12 @@ final class JwksTestServer {
             exchange.getResponseBody().write(body);
           }
         });
+    httpServer.createContext(
+        "/unreachable/.well-known/openid-configuration",
+        exchange -> {
+          exchange.sendResponseHeaders(500, -1);
+          exchange.close();
+        });
     httpServer.start();
     return new JwksTestServer(httpServer, kid, new RSASSASigner(jwk));
   }
@@ -113,6 +121,14 @@ final class JwksTestServer {
 
   String issuerUri() {
     return "http://127.0.0.1:" + server.getAddress().getPort();
+  }
+
+  /**
+   * An issuer this server declines to describe: its discovery endpoint always answers 500. Stands
+   * in for a provider that is down, without depending on a port that nothing listens on.
+   */
+  String unreachableIssuerUri() {
+    return issuerUri() + "/unreachable";
   }
 
   void stop() {

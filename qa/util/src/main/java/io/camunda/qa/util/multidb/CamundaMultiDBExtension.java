@@ -963,7 +963,7 @@ public class CamundaMultiDBExtension
           .withSecurityConfig(
               c -> {
                 c.getAuthentication().getOidc().setClientId("example");
-                c.getAuthentication().getOidc().setRedirectUri("https://example.com");
+                c.getAuthentication().getOidc().setRedirectUri("https://example.com/sso-callback");
                 c.getAuthentication().getOidc().setIssuerUri(issuerUri);
               });
     }
