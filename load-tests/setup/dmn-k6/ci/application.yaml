@@ -1,0 +1,45 @@
+# Single-node, RF1, no-secondary-storage Camunda config for the CI DMN floor probe.
+# Mirrors camunda-platform-values-dmn-minimal.yaml, expressed as a broker
+# application.yaml so it can be mounted straight into the camunda/camunda image
+# in a GitHub Actions runner (no GKE, no external DB).
+#
+# The API is left unprotected + authorizations disabled so the k6 probe and the
+# curl deployment need no OAuth round-trip — keeps the CI run self-contained.
+camunda:
+  cluster:
+    size: 1
+    partition-count: 1
+    replication-factor: 1
+    network:
+      max-message-size: 50MB
+  system:
+    cpu-thread-count: 2
+    io-thread-count: 2
+  security:
+    authentication:
+      method: "basic"
+      unprotectedApi: true
+    authorizations:
+      enabled: false
+    initialization:
+      users:
+        - username: "demo"
+          password: "demo"
+          name: "Demo User"
+          email: "demo@example.com"
+      defaultRoles.admin.users:
+        - "demo"
+  # No secondary storage -> no exporter on the hot path; evaluation is engine-only.
+  data:
+    secondary-storage:
+      type: none
+  backup:
+    webapps:
+      enabled: false
+  mcp:
+    enabled: false
+spring:
+  servlet:
+    multipart:
+      max-file-size: 60MB
+      max-request-size: 60MB

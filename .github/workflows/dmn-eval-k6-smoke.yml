@@ -1,0 +1,131 @@
+# description: Runs the DMN decision-evaluation k6 probe against a single-node,
+#              RF1, no-secondary-storage Camunda started in the runner via Docker.
+#              This is a self-contained FLOOR probe (no GKE, no secrets): it shows
+#              the per-evaluation latency without replication, as evidence for the
+#              ~14ms C8 floor breakdown. It is NOT a throughput/sizing benchmark —
+#              a 2-vCPU shared runner is not representative hardware.
+# owner: @camunda/reliability-testing
+name: DMN Evaluation k6 Floor Probe
+on:
+  workflow_dispatch:
+    inputs:
+      image-tag:
+        description: 'camunda/camunda image tag'
+        type: string
+        default: '8.9.19'
+      rate:
+        description: 'Evaluations per second'
+        type: string
+        default: '100'
+      duration:
+        description: 'How long to sustain the rate'
+        type: string
+        default: '60s'
+  pull_request:
+    paths:
+      - 'load-tests/setup/dmn-k6/**'
+      - '.github/workflows/dmn-eval-k6-smoke.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dmn-eval-k6-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  floor-probe:
+    name: DMN evaluation floor probe
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      IMAGE_TAG: ${{ github.event.inputs.image-tag || '8.9.19' }}
+      DMN_RATE: ${{ github.event.inputs.rate || '100' }}
+      DMN_DURATION: ${{ github.event.inputs.duration || '60s' }}
+      DMN_DIR: load-tests/setup/dmn-k6
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Start single-node RF1 Camunda
+        run: |
+          set -euo pipefail
+          mkdir -p k6out && chmod 777 k6out
+          docker run -d --name camunda --network host \
+            -e JAVA_TOOL_OPTIONS="-Xmx2g" \
+            -v "$PWD/$DMN_DIR/ci/application.yaml:/usr/local/camunda/config/application.yaml:ro" \
+            "camunda/camunda:${IMAGE_TAG}"
+
+      - name: Wait for the broker to be ready
+        run: |
+          set -euo pipefail
+          echo "Waiting for /actuator/health to report UP ..."
+          for i in $(seq 1 60); do
+            status="$(curl -s http://localhost:9600/actuator/health | grep -o '"status":"UP"' | head -1 || true)"
+            if [[ -n "$status" ]]; then
+              echo "Broker is UP after ${i} attempts."
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "::error::Broker did not become ready in time"
+          docker logs camunda | tail -n 200
+          exit 1
+
+      - name: Deploy the anonymized 2-rule decision
+        run: |
+          set -euo pipefail
+          curl -sf -u demo:demo \
+            -F "resources=@$DMN_DIR/resources/small_decision.dmn" \
+            http://localhost:8080/v2/deployments | tee deploy.json
+          echo
+
+      - name: Sanity-check a single evaluation
+        run: |
+          set -euo pipefail
+          curl -sf -u demo:demo -H 'Content-Type: application/json' \
+            -d '{"decisionDefinitionId":"small_decision","variables":{"category":"a"}}' \
+            http://localhost:8080/v2/decision-definitions/evaluation | tee eval.json
+          echo
+          grep -q '"output"' eval.json || { echo "::error::evaluation did not return a result"; exit 1; }
+
+      - name: Run k6 floor probe
+        run: |
+          set -euo pipefail
+          docker run --rm --network host \
+            -e CAMUNDA_BASE_URL="http://localhost:8080" \
+            -e CAMUNDA_BASIC_AUTH="demo:demo" \
+            -e DMN_RATE="$DMN_RATE" \
+            -e DMN_DURATION="$DMN_DURATION" \
+            -e DMN_MAX_VUS="200" \
+            -e DMN_DECISION_ID="small_decision" \
+            -v "$PWD/$DMN_DIR:/scripts:ro" \
+            -v "$PWD/k6out:/out" \
+            grafana/k6:latest run /scripts/dmn-evaluation.js \
+            --summary-export=/out/summary.json \
+            || echo "::warning::k6 exited non-zero (thresholds may not hold on a shared CI runner; see summary)"
+
+      - name: Print summary
+        if: always()
+        run: |
+          echo "### DMN evaluation floor probe (single-node RF1)" >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          cat k6out/summary.json 2>/dev/null | python3 -m json.tool >> "$GITHUB_STEP_SUMMARY" || echo "no summary produced" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload k6 summary
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dmn-eval-k6-summary
+          path: k6out/summary.json
+          if-no-files-found: warn
+
+      - name: Broker logs on failure
+        if: failure()
+        run: docker logs camunda | tail -n 200
+
+      - name: Tear down
+        if: always()
+        run: docker rm -f camunda || true
