@@ -28,19 +28,19 @@
 /.github/actions/release-notes/**                        @camunda/engineering-operations
 /.github/workflows/release-notes*                        @camunda/engineering-operations
 
-# Gradle build (parallel path to Maven) by Monorepo DevOps team
-/build.gradle.kts                                        @camunda/engineering-operations
-/settings.gradle.kts                                     @camunda/engineering-operations
-/gradle.properties                                       @camunda/engineering-operations
-/gradlew                                                 @camunda/engineering-operations
-/gradlew.bat                                             @camunda/engineering-operations
-/gradle/                                                 @camunda/engineering-operations
-/buildSrc/                                               @camunda/engineering-operations
+# Gradle build (parallel path to Maven)
+/build.gradle.kts                                        @camunda/orchestration-cluster
+/settings.gradle.kts                                     @camunda/orchestration-cluster
+/gradle.properties                                       @camunda/orchestration-cluster
+/gradlew                                                 @camunda/orchestration-cluster
+/gradlew.bat                                             @camunda/orchestration-cluster
+/gradle/                                                 @camunda/orchestration-cluster
+/buildSrc/                                               @camunda/orchestration-cluster
 # Convention-plugin exceptions (owned by the domain team, last match wins)
 /buildSrc/src/main/kotlin/buildlogic.sbe-conventions.gradle.kts              @camunda/zeebe-distributed-platform
 /buildSrc/src/main/kotlin/buildlogic.netty-tcnative-runtime-conventions.gradle.kts @camunda/zeebe-distributed-platform
 /buildSrc/src/main/kotlin/buildlogic.frontend-webjar-conventions.gradle.kts  @camunda/core-features
-/buildSrc/src/main/kotlin/buildlogic.client-conventions.gradle.kts           @camunda/c8-java-sdk
+/buildSrc/src/main/kotlin/buildlogic.client-conventions.gradle.kts           @camunda/core-features
 
 ###################
 ## Core Features ##
