@@ -8,6 +8,7 @@
 package io.camunda.authentication.pt;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.security.api.model.config.ScopedSecurityDescriptor;
@@ -36,6 +37,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.FilterChainProxy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.client.HttpServerErrorException;
 
 /**
  * Integration test for per-physical-tenant API security-chain isolation.
@@ -383,6 +385,50 @@ class PhysicalTenantApiChainIsolationIT {
             });
   }
 
+  // -------------------------------------------------------------------------
+  // Scenario 7: one tenant's identity provider is down
+  // -------------------------------------------------------------------------
+
+  /**
+   * An identity provider that one tenant uses must not cost the other tenants their API. Discovery
+   * ran while the chains were built, so one provider that was down failed the whole application
+   * context. The library now resolves a provider at the first token that names its issuer, which
+   * confines an outage to the tenant that configured it.
+   */
+  @Test
+  void shouldKeepTheOtherTenantServingWhileOneTenantProviderIsDown() throws Exception {
+    final var env = providerDownForOneTenantEnv();
+    buildRunner(twoDistinctIssuersProperties())
+        .run(
+            ctx -> {
+              // given chains for both tenants, built while PT-B's provider fails discovery
+              final var proxy = new FilterChainProxy(buildChainsFromProvider(ctx, env));
+
+              // when PT-A presents a token of its own reachable issuer
+              final var okResponse =
+                  callWithToken(
+                      proxy,
+                      PATH_PT_A,
+                      JwksTestServer.signForIssuer(serverA, serverA.issuerUri(), List.of()));
+
+              // then PT-A serves it, so the outage of PT-B did not reach this tenant
+              assertThat(okResponse.getStatus())
+                  .as("PT-A token on PT-A path while PT-B's provider is down")
+                  .isEqualTo(200);
+
+              // when PT-B presents a token of its own unreachable issuer
+              final var ptbToken =
+                  JwksTestServer.signForIssuer(serverB, serverB.unreachableIssuerUri(), List.of());
+
+              // then only that tenant fails, and it fails as an outage rather than as a rejected
+              // credential: the chain lets the failure through instead of calling the entry point,
+              // which a servlet container renders as a 500
+              assertThatThrownBy(() -> callWithToken(proxy, PATH_PT_B, ptbToken))
+                  .rootCause()
+                  .isInstanceOf(HttpServerErrorException.InternalServerError.class);
+            });
+  }
+
   // =========================================================================
   // Chain assembly helpers
   // =========================================================================
@@ -481,6 +527,36 @@ class PhysicalTenantApiChainIsolationIT {
     chains.add(
         ctx.getBean("protectedUnhandledPathsSecurityFilterChain", SecurityFilterChain.class));
     return chains;
+  }
+
+  /**
+   * PT-A keeps its answering issuer. PT-B names an issuer whose discovery fails, and names no other
+   * endpoint, so every call of that tenant has to reach the provider.
+   */
+  private MockEnvironment providerDownForOneTenantEnv() {
+    final var env = new MockEnvironment();
+    env.setProperty("camunda.security.authentication.method", "oidc");
+
+    addOidcProvider(
+        env,
+        "camunda.physical-tenants.pta.security.authentication.providers.oidc.pta",
+        "client-pta",
+        serverA);
+
+    final var ptb = "camunda.physical-tenants.ptb.security.authentication.providers.oidc.ptb";
+    env.setProperty(ptb + ".client-id", "client-ptb");
+    env.setProperty(ptb + ".issuer-uri", serverB.unreachableIssuerUri());
+    env.setProperty(ptb + ".redirect-uri", "{baseUrl}/sso-callback");
+    return env;
+  }
+
+  private static MockHttpServletResponse callWithToken(
+      final FilterChainProxy proxy, final String path, final String token) throws Exception {
+    final var request = new MockHttpServletRequest("GET", path);
+    request.addHeader("Authorization", "Bearer " + token);
+    final var response = new MockHttpServletResponse();
+    proxy.doFilter(request, response, new MockFilterChain());
+    return response;
   }
 
   // =========================================================================

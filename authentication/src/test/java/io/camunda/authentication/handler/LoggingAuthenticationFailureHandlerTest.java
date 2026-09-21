@@ -20,7 +20,6 @@ import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.OidcFlowTestContext;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -88,18 +87,16 @@ class LoggingAuthenticationFailureHandlerTest {
         () -> "http://localhost:" + wireMock.getPort() + "/realms/" + REALM);
   }
 
-  @BeforeAll
-  static void stubIdpEndpoints() {
+  @BeforeEach
+  void stubIdpEndpoints() {
+    // discovery succeeds so the decoder resolves; fetching the JWK set is what fails here. Both
+    // stubs are per test because the extension resets them and discovery happens on first use
     stubFor(
         get(urlEqualTo(ENDPOINT_WELL_KNOWN_OIDC))
             .willReturn(
                 aResponse()
                     .withHeader("Content-Type", "application/json")
                     .withBody(wellKnownResponse())));
-  }
-
-  @BeforeEach
-  void stubWellKnownForStartup() {
     stubFor(
         get(urlEqualTo(ENDPOINT_WELL_KNOWN_JWKS))
             .willReturn(aResponse().withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())));

@@ -285,7 +285,7 @@ public class CompatibilityTestExtension
           keycloakContainer.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM);
       camundaContainer.withEnv("CAMUNDA_SECURITY_AUTHENTICATION_OIDC_CLIENT_ID", "example");
       camundaContainer.withEnv(
-          "CAMUNDA_SECURITY_AUTHENTICATION_OIDC_REDIRECT_URI", "https://example.com");
+          "CAMUNDA_SECURITY_AUTHENTICATION_OIDC_REDIRECT_URI", "https://example.com/sso-callback");
     }
 
     camundaContainer.start();

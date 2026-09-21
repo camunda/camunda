@@ -61,7 +61,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
       "camunda.security.authentication.unprotected-api=false",
       "camunda.security.authentication.method=oidc",
       "camunda.security.authentication.oidc.client-id=example",
-      "camunda.security.authentication.oidc.redirect-uri=https://redirect.example.com",
+      "camunda.security.authentication.oidc.redirect-uri=https://redirect.example.com/sso-callback",
       "camunda.security.authentication.oidc.authorization-uri=https://authorization.example.com",
       "camunda.security.authentication.oidc.token-uri=https://token.example.com",
       "camunda.security.authentication.oidc.groups-claim=groups",
@@ -82,6 +82,9 @@ public class OidcBearerUserInfoClaimGapIT extends AbstractWebSecurityConfigTest 
     // Reset the shared WireMock request journal between tests. Cross-test cache
     // collisions are not a concern because each test uses distinct token values.
     wireMock.resetRequests();
+    // Issuer discovery happens on first use rather than at startup, so the document has to be
+    // served per test — the extension drops stub mappings between tests.
+    stubDiscovery();
   }
 
   @DynamicPropertySource
@@ -91,7 +94,10 @@ public class OidcBearerUserInfoClaimGapIT extends AbstractWebSecurityConfigTest 
     registry.add(
         "camunda.security.authentication.oidc.jwk-set-uri",
         () -> "http://localhost:" + wireMock.getPort() + "/issuer/jwks");
+  }
 
+  private static void stubDiscovery() {
+    final var issuerUri = "http://localhost:" + wireMock.getPort() + "/issuer";
     final var openidConfig =
         "{\"issuer\":\""
             + issuerUri
