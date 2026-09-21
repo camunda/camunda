@@ -194,6 +194,7 @@
 			"processesFetchErrorMissingTenant": "Primero debe seleccionar un Arrendatario para iniciar un proceso.",
 			"processesStartProcessWithModalSubmissionFailed": "No se pudo enviar el formulario. Por favor, inténtelo de nuevo más tarde.",
 			"processesStartProcessWithModalFormLoadFailed": "No pudimos cargar el formulario. Por favor, inténtelo de nuevo o contacte a su administrador de Tasklist.",
+			"processesStartProcessWithModalFormNotDeployed": "No se pudo cargar el formulario de inicio de este proceso. Asegúrese de que el formulario se haya implementado.",
 			"processesStartProcessWithModalFormRenderingFailed": "No pudimos renderizar el formulario. Por favor, contacte con su administrador de procesos para corregir el esquema del formulario.",
 			"processesStartProcessPendingStatusText": "Iniciando proceso...",
 			"processesStartProcessWaitForTasksText": "Esperando tareas...",

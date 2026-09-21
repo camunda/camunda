@@ -194,6 +194,7 @@
 			"processesFetchErrorMissingTenant": "Vous devez d'abord sélectionner un client pour démarrer un processus.",
 			"processesStartProcessWithModalSubmissionFailed": "Le formulaire n'a pas pu être soumis. Veuillez réessayer plus tard.",
 			"processesStartProcessWithModalFormLoadFailed": "Le formulaire n'a pas pu être chargé. Veuillez réessayer ou contacter votre administrateur de Tasklist.",
+			"processesStartProcessWithModalFormNotDeployed": "Le formulaire de démarrage de ce processus n'a pas pu être chargé. Vérifiez que le formulaire a bien été déployé.",
 			"processesStartProcessWithModalFormRenderingFailed": "Nous n'avons pas pu rendre le formulaire. Veuillez contacter votre administrateur de processus pour corriger le schéma du formulaire.",
 			"processesStartProcessPendingStatusText": "Démarrage du processus...",
 			"processesStartProcessWaitForTasksText": "En attente des tâches...",

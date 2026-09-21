@@ -194,6 +194,7 @@
 			"processesFetchErrorMissingTenant": "You must first select a tenant to start a process.",
 			"processesStartProcessWithModalSubmissionFailed": "Couldn't submit the form. Try again later.",
 			"processesStartProcessWithModalFormLoadFailed": "We couldn't load the form. Try again or contact your Tasklist administrator.",
+			"processesStartProcessWithModalFormNotDeployed": "The start form for this process could not be loaded. Make sure the form has been deployed.",
 			"processesStartProcessWithModalFormRenderingFailed": "We couldn't render the form. Contact your process administrator to fix the form schema.",
 			"processesStartProcessPendingStatusText": "Starting process...",
 			"processesStartProcessWaitForTasksText": "Waiting for tasks...",
