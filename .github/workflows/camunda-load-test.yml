@@ -53,9 +53,14 @@ on:
         - none
         default: elasticsearch
       reuse-tag:
-        description: 'Pre-built image tag from the internal registry (registry.camunda.cloud). Skips the build step. ⚠ Cannot be used with orchestration-tag.'
+        description: 'Pre-built image tag from the internal registry. Skips the build step. If orchestration-tag is also supplied, reuse-tag takes precedence.'
         type: string
         default: ""
+        required: false
+      reuse-image-repository:
+        description: 'Internal registry repository namespace for reuse-tag (default: team-zeebe).'
+        type: string
+        default: "team-zeebe"
         required: false
       load-test-load:
         description: '── Configuration ─────────────────── Helm args for workload components (e.g. --set starter.rate=100).'
@@ -152,9 +157,14 @@ on:
         default: 1
         required: false
       reuse-tag:
-        description: 'Reuse Tag: Pre-built image tag from the internal registry (registry.camunda.cloud). Skips the docker image build step. Cannot be used together with orchestration-tag.'
+        description: 'Reuse Tag: Pre-built image tag from the internal registry. Skips the docker image build step. If orchestration-tag is also supplied, reuse-tag takes precedence.'
         type: string
         default: ""
+        required: false
+      reuse-image-repository:
+        description: 'Internal registry repository namespace for reuse-tag (default: team-zeebe).'
+        type: string
+        default: "team-zeebe"
         required: false
       scenario:
         description: 'Workload scenario to run. Options: latency, realistic, typical, max, archiver.'
@@ -263,7 +273,7 @@ env:
   ENABLE_OPTIMIZE_METRICS: ${{ inputs.enable-optimize-report-metrics }}
   HELM_CHART: camunda-platform-8.10
   IDENTITY_TAG: ${{ inputs.identity-tag }}
-  IMAGE_REPOSITORY: registry.camunda.cloud/team-zeebe
+  IMAGE_REPOSITORY: registry.camunda.cloud/${{ inputs.reuse-image-repository || 'team-zeebe' }}
   LOAD_TEST_LOAD: ${{ inputs.load-test-load }}
   LOAD_TEST_SETUP_HELM_VALUES: ${{ inputs.load-test-setup-helm-values }}
   NAME: ${{ inputs.name }}
@@ -307,6 +317,7 @@ jobs:
           | Scenario | \`${SCENARIO}\` |
           | Secondary storage | \`${SECONDARY_STORAGE_TYPE}\` |
           | Reuse tag | \`${REUSE_TAG:-—}\` |
+          | Reuse image repository | \`${{ inputs.reuse-image-repository || 'team-zeebe' }}\` |
           | Orchestration tag | \`${ORCHESTRATION_TAG:-—}\` |
           | Load test load | \`${LOAD_TEST_LOAD:-—}\` |
           | Platform Helm values | \`${PLATFORM_HELM_VALUES:-—}\` |
@@ -330,13 +341,9 @@ jobs:
     timeout-minutes: 5
     permissions: { }
     outputs:
-      image-tag: ${{ inputs.orchestration-tag != '' && inputs.orchestration-tag || (inputs.reuse-tag != '' && inputs.reuse-tag || steps.image-tag.outputs.image-tag) }}
+      # A pre-built reuse tag takes precedence when both image inputs are supplied.
+      image-tag: ${{ inputs.reuse-tag != '' && inputs.reuse-tag || (inputs.orchestration-tag != '' && inputs.orchestration-tag || steps.image-tag.outputs.image-tag) }}
     steps:
-      - name: Validate mutually exclusive inputs
-        if: ${{ inputs.orchestration-tag != '' && inputs.reuse-tag != '' }}
-        run: |
-          echo "::error::Invalid input combination: 'orchestration-tag' and 'reuse-tag' cannot both be provided. Use 'orchestration-tag' for official Docker Hub images or 'reuse-tag' for reusing pre-built images from the internal registry."
-          exit 1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.ref }}
@@ -351,7 +358,7 @@ jobs:
           echo "**Built image tag:** \`${image_tag}\`" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Validate Docker image tags exist
-        if: ${{ inputs.orchestration-tag != '' || inputs.optimize-tag != '' || inputs.identity-tag != '' || inputs.connectors-tag != '' }}
+        if: ${{ (inputs.reuse-tag == '' && inputs.orchestration-tag != '') || inputs.optimize-tag != '' || inputs.identity-tag != '' || inputs.connectors-tag != '' }}
         # Add -x to trace the call to the script and make it easier to reproduce it locally.
         shell: bash --noprofile --norc -exo pipefail {0}
         run: |
@@ -611,8 +618,8 @@ jobs:
           INSTALL_TARGET: ${{ inputs.stable-vms && 'install-stable' || 'install' }}
           CALCULATED_IMAGE_TAG: ${{ needs.calculate-image-tag.outputs.image-tag }}
           RESOLVED_IMAGE_REGISTRY: ${{ inputs.orchestration-tag != '' && 'docker.io' || 'registry.camunda.cloud' }}
-          CAMUNDA_REPO: ${{ inputs.orchestration-tag != '' && 'camunda/camunda' || 'team-zeebe/camunda' }}
-          OPTIMIZE_REPO: ${{ inputs.orchestration-tag != '' && 'camunda/optimize' || 'team-zeebe/optimize' }}
+          CAMUNDA_REPO: ${{ inputs.orchestration-tag != '' && 'camunda/camunda' || format('{0}/camunda', inputs.reuse-image-repository || 'team-zeebe') }}
+          OPTIMIZE_REPO: ${{ inputs.orchestration-tag != '' && 'camunda/optimize' || format('{0}/optimize', inputs.reuse-image-repository || 'team-zeebe') }}
           METRICS_EXPORTER_BUILT: ${{ needs.build-metrics-exporter-image.result == 'success' }}
         run: |-
           .github/scripts/load-test-install-camunda-platform.sh \

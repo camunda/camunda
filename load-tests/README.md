@@ -454,6 +454,7 @@ In practice, most ad-hoc runs only need a test `name`, a Git `ref`, a built-in `
 * Specification of a workload scenario (`max`, `realistic`, `typical`, `latency`, or `archiver`) — making it easy to start from a known workload profile before applying targeted overrides.
 * Specification of the time to live (TTL) for the load test — making sure that the load test is automatically cleaned up after the specified time.
 * Specification of an existing Docker image to use — making it possible to reuse existing images.
+* Specification of the internal image repository namespace for a reused image via `reuse-image-repository` (defaults to `team-zeebe`).
 * Specification of platform chart overrides via `platform-helm-values` — for example orchestration sizing, env vars, and image-related settings.
 * Specification of load test chart overrides via `load-test-load` — for example starter rate, worker replicas, and BPMN/payload paths.
 * Specification of load-test-setup chart overrides via `load-test-setup-helm-values` — for example secondary storage disk size.
@@ -594,4 +595,3 @@ When a new feature lands, work through these questions:
   - **Foundational**: the feature changes what we need to run against, not just what we run through it. Examples: new secondary-storage support, different low-level storage mechanics. This likely means changing the [Helm setup](setup/README.md) and adding a new variant, covered by both an endurance and a stress run.
   - **Functional**: the feature is exercised through the existing engine/API surface. Check whether it's already covered by extending the load tester's process models or payloads; if not, add a new workload to the [load tester](load-tester/README.md), still using the existing variant infrastructure. Only do this when it is worth a dedicated test: a new feature not yet covered, and something customers or users commonly rely on. Reliability testing is non-functional testing, see the [reliability testing documentation](../docs/testing/reliability-testing.md), so we do not add a dedicated test for every connector or task type. For example, adding a new task type or connector to the realistic workload's process model is a functional extension, not a new variant.
 - **Is it automated?** Wire the new coverage into the existing release/weekly/daily schedule rather than validating it manually once; a one-off run catches today's bug but not next release's regression.
-
