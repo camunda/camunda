@@ -34,7 +34,7 @@ const Dashboard: React.FC = () => {
 	const hasNoInstances = count.total === 0;
 
 	return (
-		<div className="flex h-full flex-col gap-4 overflow-hidden p-4">
+		<div id="main-content" tabIndex={-1} className="flex h-full flex-col gap-4 overflow-hidden p-4">
 			<h1 className="sr-only">{t('operate.dashboard.title')}</h1>
 			<div data-testid="metric-panel">
 				<Heading as="h2" variant="heading-lg">

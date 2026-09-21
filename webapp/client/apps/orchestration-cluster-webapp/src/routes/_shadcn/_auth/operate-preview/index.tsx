@@ -8,17 +8,11 @@
 
 import {createFileRoute} from '@tanstack/react-router';
 import {runningInstancesCountQuery} from '#/operate/pages/Dashboard/useRunningInstancesCount';
-import {instancesByProcessInfiniteQuery} from '#/operate/pages/Dashboard/InstancesByProcess/instancesByProcess.queries';
-import {incidentsByErrorInfiniteQuery} from '#/operate/pages/Dashboard/IncidentsByError/incidentsByError.queries';
 import {Dashboard} from '#/operate/pages/Dashboard/shadcn.components/Dashboard';
 
 export const Route = createFileRoute('/_shadcn/_auth/operate-preview/')({
 	loader: async ({context: {queryClient}}) => {
-		await Promise.all([
-			queryClient.ensureQueryData(runningInstancesCountQuery()),
-			queryClient.ensureInfiniteQueryData(instancesByProcessInfiniteQuery()),
-			queryClient.ensureInfiniteQueryData(incidentsByErrorInfiniteQuery()),
-		]);
+		await queryClient.ensureQueryData(runningInstancesCountQuery());
 	},
 	component: Dashboard,
 });
