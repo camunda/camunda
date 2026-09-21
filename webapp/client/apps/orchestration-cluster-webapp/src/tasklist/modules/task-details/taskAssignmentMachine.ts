@@ -22,7 +22,7 @@ type AssignmentFailure = {reason: 'timeout'} | {reason: 'failed'; subtitle?: str
 type MachineInput = {
 	queryClient: QueryClient;
 	userTaskKey: string;
-	currentUser: string;
+	currentUser: string | null;
 	initialTaskState: UserTask['state'];
 	initialAssignee: string | null;
 };
@@ -30,7 +30,7 @@ type MachineInput = {
 type MachineContext = {
 	queryClient: QueryClient;
 	userTaskKey: string;
-	currentUser: string;
+	currentUser: string | null;
 	initialTaskState: UserTask['state'] | null;
 	initialAssignee: string | null;
 	pollRetryCount: number;
@@ -141,7 +141,7 @@ const taskAssignmentMachine = setup({
 		isInitiallyUnassigning: ({context}) => context.initialTaskState === 'ASSIGNING' && context.initialAssignee !== null,
 		isTaskAssigned: (_, params: {taskState: UserTask['state']; assignee: string | null}) =>
 			typeof params.assignee === 'string' && params.taskState !== 'ASSIGNING',
-		hasCurrentUser: ({context}) => context.currentUser.length > 0,
+		hasCurrentUser: ({context}) => Boolean(context.currentUser && context.currentUser.trim().length > 0),
 	},
 	actions: {
 		setOptimisticAssigning: ({context}) => {
@@ -323,9 +323,10 @@ const taskAssignmentMachine = setup({
 			tags: 'status:assigning',
 			invoke: {
 				src: 'assignTask',
+				// Only reachable via the `hasCurrentUser` guard, which already proved this non-null.
 				input: ({context}) => ({
 					userTaskKey: context.userTaskKey,
-					assignee: context.currentUser,
+					assignee: context.currentUser!,
 				}),
 				onDone: {target: 'PollingAssignment'},
 				onError: [

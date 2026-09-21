@@ -29,7 +29,7 @@ type Props = {
 	userTaskKey: string;
 	assignee: string | null;
 	taskState: UserTask['state'];
-	currentUser: string;
+	currentUser: string | null;
 };
 
 const AssignButton: React.FC<Props> = ({userTaskKey, assignee, taskState, currentUser}) => {
