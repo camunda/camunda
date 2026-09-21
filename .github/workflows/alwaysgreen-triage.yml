@@ -373,10 +373,6 @@ jobs:
           set -euo pipefail
           # workflow_dispatch caps at 10 inputs, so blame/slack/evidence travel as
           # single JSON objects. The fix workflow unpacks them in its first step.
-          blame_json=$(jq -c '{reviewer: (.blame.reviewer // ""),
-                               author:   (.blame.author // ""),
-                               pr:       (.blame.pr_number // "" | tostring)}' \
-                        /tmp/alwaysgreen-plan.json)
           slack_json=$(jq -nc --arg ts "${SLACK_TS:-}" --arg channel "${SLACK_CHANNEL:-}" \
                         '{ts: $ts, channel: $channel}')
           failing_run_url=$(jq -r '.run_url' /tmp/alwaysgreen-plan.json)
@@ -389,6 +385,13 @@ jobs:
           jq -c '.dispatches[]' /tmp/alwaysgreen-plan.json | while read -r d; do
             key=$(jq -r '.dispatch_key' <<<"$d")
             echo "Dispatching ${key}"
+            # Each dispatch's own blame, not the run's: preview-env-smoke-test.yml
+            # dispatches against four different branches from one run, so the
+            # run's own blame only matches whichever dispatch shares its ref.
+            blame_json=$(jq -c '{reviewer: (.blame.reviewer // ""),
+                                 author:   (.blame.author // ""),
+                                 pr:       (.blame.pr_number // "" | tostring)}' \
+                          <<<"$d")
             gh workflow run "${FIX_WORKFLOW}" \
               --repo "${GITHUB_REPOSITORY}" \
               --ref "${FIX_AGENT_REF}" \

@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 from datetime import datetime, timedelta, timezone
 
+import classify
 import discover
 import plan as planning
 
@@ -280,3 +281,64 @@ def test_helm_chart_sm_job_keeps_the_shared_artifact_pattern(monkeypatch, tmp_pa
 
     assert seen[0][0] == "playwright-results-json*"
     assert [s.test_name for s in cand.specs] == ["boom"]
+
+
+def test_serialise_resolves_blame_per_dispatch_base_ref():
+    # preview-env-smoke-test.yml dispatches against several branches from one
+    # run, so a single run-wide blame would name a main-branch PR as the cause
+    # of a stable/8.9 failure. Each dispatch must get blame for its own ref.
+    main_blame = classify.Blame(
+        reviewer="main-author", author="main-author", pr_number=1, via="pr-author"
+    )
+    stable_blame = classify.Blame(
+        reviewer="stable-author", author="stable-author", pr_number=2, via="pr-author"
+    )
+    resolved = {"main": main_blame, "stable/8.9": stable_blame}
+
+    result = planning.Plan(
+        dispatches=[
+            planning.Candidate(
+                base_ref="main",
+                surface=classify.SURFACE_SM_E2E,
+                job_name="Run 8.11 Smoke Tests",
+            ),
+            planning.Candidate(
+                base_ref="stable/8.9",
+                surface=classify.SURFACE_SM_E2E,
+                job_name="Run 8.9 Smoke Tests",
+            ),
+        ]
+    )
+
+    payload = discover.serialise(
+        result, main_blame, "1", blame_for_ref=lambda ref: resolved[ref]
+    )
+
+    dispatches_by_ref = {d["base_ref"]: d for d in payload["dispatches"]}
+    assert dispatches_by_ref["main"]["blame"]["author"] == "main-author"
+    assert dispatches_by_ref["stable/8.9"]["blame"]["author"] == "stable-author"
+
+
+def test_resolve_blame_for_ref_uses_the_refs_own_tip_commit(monkeypatch):
+    # branch_tip_sha resolves "stable/8.9" to its own tip, not the calling run's
+    # head_sha, so resolve_blame_for_ref attributes the failure to whichever PR
+    # actually landed on that branch.
+    calls = []
+
+    def fake_gh_json(args, default):
+        calls.append(args)
+        if args[:2] == ["api", f"repos/{discover.REPO}/commits/stable/8.9"]:
+            return {"sha": "stable-tip-sha"}
+        if args[:2] == [
+            "api",
+            f"repos/{discover.REPO}/commits/stable-tip-sha/pulls",
+        ]:
+            return [{"merge_commit_sha": "stable-tip-sha", "number": 9, "user": {"login": "stable-author"}}]
+        return default
+
+    monkeypatch.setattr(discover, "gh_json", fake_gh_json)
+
+    blame = discover.resolve_blame_for_ref("stable/8.9")
+
+    assert blame.author == "stable-author"
+    assert blame.pr_number == 9

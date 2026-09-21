@@ -27,6 +27,7 @@ import tempfile
 from datetime import datetime, timedelta, timezone
 from dataclasses import asdict
 from pathlib import Path
+from typing import Callable
 
 import classify
 import plan as planning
@@ -648,7 +649,21 @@ def product_bug_fingerprints() -> set[str]:
 # ---------------------------------------------------------------------------
 
 
+def branch_tip_sha(ref: str) -> str:
+    """Tip commit of `ref`, e.g. a branch name like "stable/8.8"."""
+    commit = gh_json(["api", f"repos/{REPO}/commits/{ref}"], {})
+    return (commit or {}).get("sha") or ""
+
+
 def resolve_blame(head_sha: str) -> classify.Blame:
+    """Resolve blame for the PR that produced `head_sha`.
+
+    `head_sha` must be the tip of the branch the failing candidate actually ran
+    against, not the AlwaysGreen run's own head_sha: preview-env-smoke-test.yml
+    runs one workflow against four branches (main, stable/8.7..8.10), so the
+    run's head_sha (always main's) would name a main-branch PR as the cause of a
+    stable-branch failure.
+    """
     prs = gh_json(["api", f"repos/{REPO}/commits/{head_sha}/pulls"], [])
     if not isinstance(prs, list):
         prs = []
@@ -659,6 +674,11 @@ def resolve_blame(head_sha: str) -> classify.Blame:
         )
 
     return classify.resolve_blame(head_sha=head_sha, prs=prs, lookup_pr=lookup)
+
+
+def resolve_blame_for_ref(ref: str) -> classify.Blame:
+    """Resolve blame for whichever PR most recently landed on `ref`."""
+    return resolve_blame(branch_tip_sha(ref))
 
 
 # ---------------------------------------------------------------------------
@@ -742,7 +762,21 @@ def build_candidates(run_id: str, base_ref: str, workdir: Path):
     return candidates, noise
 
 
-def serialise(result: planning.Plan, blame: classify.Blame, run_id: str) -> dict:
+def serialise(
+    result: planning.Plan,
+    blame: classify.Blame,
+    run_id: str,
+    blame_for_ref: Callable[[str], classify.Blame] | None = None,
+) -> dict:
+    """`blame` is the run's own ref, kept at top level for the job summary.
+
+    Each dispatch gets its own `blame`, resolved from its own base_ref via
+    `blame_for_ref`: preview-env-smoke-test.yml dispatches candidates against
+    four different branches from one run, so the run's own blame is only
+    correct for the candidate that happens to share its ref. Falls back to the
+    top-level blame when no resolver is given, e.g. in tests.
+    """
+    dispatch_blame = blame_for_ref or (lambda _ref: blame)
     return {
         "run_url": f"https://github.com/{REPO}/actions/runs/{run_id}",
         "blame": asdict(blame),
@@ -759,6 +793,7 @@ def serialise(result: planning.Plan, blame: classify.Blame, run_id: str) -> dict
                 "evidence_repo": c.evidence_repo,
                 "job_level": c.job_level,
                 "fingerprints": c.fingerprints,
+                "blame": asdict(dispatch_blame(c.base_ref)),
                 "test_specs": [
                     {
                         "file": s.file,
@@ -838,7 +873,17 @@ def main() -> int:
 
         blame = resolve_blame(run.get("head_sha") or "")
 
-        payload = serialise(result, blame, args.run_id)
+        # Cached per ref: several dispatches commonly share a base_ref (e.g. two
+        # sm-smoke-e2e legs both against stable/8.9), and each cache hit saves two
+        # `gh api` calls.
+        blame_cache: dict[str, classify.Blame] = {base_ref: blame}
+
+        def blame_for_ref(ref: str) -> classify.Blame:
+            if ref not in blame_cache:
+                blame_cache[ref] = resolve_blame_for_ref(ref)
+            return blame_cache[ref]
+
+        payload = serialise(result, blame, args.run_id, blame_for_ref=blame_for_ref)
 
     text = json.dumps(payload, indent=2)
     if args.out == "-":
