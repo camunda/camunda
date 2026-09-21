@@ -25,10 +25,9 @@ describe('process bulk operation lifecycle', () => {
 		notificationsStore.reset();
 	});
 
-	for (const initial of ['ACTIVE', 'not-indexed', 'unavailable'] as const) {
-		it(`should track acceptance separately from ${initial} and never resubmit to recover progress`, async ({
-			worker,
-		}) => {
+	it.for(['ACTIVE', 'not-indexed', 'unavailable'] as const)(
+		'should track acceptance separately from %s and never resubmit to recover progress',
+		async (initial, {worker}) => {
 			vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 			const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: Infinity}}});
 			const actor = createActor(processBulkOperationMachine, {input: {queryClient}}).start();
@@ -90,6 +89,6 @@ describe('process bulk operation lifecycle', () => {
 				queryClient.clear();
 				worker.events.removeAllListeners('request:start');
 			}
-		});
-	}
+		},
+	);
 });

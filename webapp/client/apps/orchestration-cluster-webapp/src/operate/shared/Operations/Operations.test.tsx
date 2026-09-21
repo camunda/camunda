@@ -221,7 +221,7 @@ describe('<Operations />', () => {
 
 		await expect
 			.element(screen.getByRole('alert'))
-			.toHaveTextContent("Couldn't check cancellation availability. Close this dialog and try again.");
+			.toMatchTextContent("Couldn't check cancellation availability. Close this dialog and try again.");
 		await expect.element(screen.getByRole('button', {name: 'Apply', exact: true})).toBeDisabled();
 		expect(onExecute).not.toHaveBeenCalled();
 	});

@@ -11,6 +11,7 @@ import type {KnipConfig} from 'knip';
 const config: KnipConfig = {
 	entry: ['src/vitest-modules/vitest-carbon.setup.ts', 'src/vitest-modules/vitest-shadcn.setup.ts'],
 	ignore: [
+		'public/mockServiceWorker.js',
 		'src/shared/feature-flags.ts',
 		'shared-test-modules/mock-handlers.ts',
 		'src/shared/browser-storage/session-storage.ts',

@@ -158,8 +158,8 @@ describe('<InstancesTable />', () => {
 			await screen.getByRole('button', {name: 'Delete'}).last().click();
 
 			await expect
-				.element(screen.getByText('The batch operation "Delete decision instance" has been started'))
-				.toBeVisible();
+				.poll(() => notificationsStore.notifications.at(0)?.title)
+				.toBe('The batch operation "Delete Decision Instance" has been started');
 			await expect.element(screen.getByRole('button', {name: 'Delete'})).not.toBeInTheDocument();
 		});
 

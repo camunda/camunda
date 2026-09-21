@@ -41,7 +41,7 @@ describe('<AdvancedStringFilter />', () => {
 			{wrapper: getWrapper()},
 		);
 
-		await expect.element(screen.getByRole('combobox', {name: 'Business ID filter type'})).toHaveTextContent('equals');
+		await expect.element(screen.getByRole('combobox', {name: 'Business ID filter type'})).toMatchTextContent('equals');
 		await expect.element(screen.getByLabelText('Business ID', {exact: true})).toBeVisible();
 	});
 
@@ -51,7 +51,7 @@ describe('<AdvancedStringFilter />', () => {
 			{wrapper: getWrapper({initialValues: {businessId: 'like_order-123'}})},
 		);
 
-		await expect.element(screen.getByRole('combobox')).toHaveTextContent('contains');
+		await expect.element(screen.getByRole('combobox')).toMatchTextContent('contains');
 		await expect.element(screen.getByLabelText('Business ID', {exact: true})).toHaveValue('order-123');
 	});
 
@@ -123,7 +123,7 @@ describe('<AdvancedStringFilter />', () => {
 
 		await userEvent.clear(screen.getByLabelText('Business ID', {exact: true}).element());
 
-		await expect.element(screen.getByRole('combobox')).toHaveTextContent('contains');
+		await expect.element(screen.getByRole('combobox')).toMatchTextContent('contains');
 	});
 
 	it('preserves the dropdown selection across operator-only changes with an empty value', async () => {
@@ -135,7 +135,7 @@ describe('<AdvancedStringFilter />', () => {
 		await screen.getByRole('combobox').click();
 		await screen.getByRole('option', {name: 'is one of'}).click({force: true});
 
-		await expect.element(screen.getByRole('combobox')).toHaveTextContent('is one of');
+		await expect.element(screen.getByRole('combobox')).toMatchTextContent('is one of');
 	});
 
 	it('treats a malformed value as an empty input', async () => {
@@ -149,6 +149,6 @@ describe('<AdvancedStringFilter />', () => {
 		);
 
 		await expect.element(screen.getByLabelText('Business ID', {exact: true})).toHaveValue('');
-		await expect.element(screen.getByRole('combobox')).toHaveTextContent('equals');
+		await expect.element(screen.getByRole('combobox')).toMatchTextContent('equals');
 	});
 });

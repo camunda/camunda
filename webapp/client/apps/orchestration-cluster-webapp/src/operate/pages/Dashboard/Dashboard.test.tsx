@@ -142,8 +142,12 @@ describe('<Dashboard />', () => {
 		const screen = await renderWithRouter(Dashboard, {path: '/operate'});
 
 		await expect.element(screen.getByTestId('instances-by-process-list')).toBeVisible();
-		await expect.element(screen.getByText('Process One')).toBeVisible();
-		await expect.element(screen.getByText('Process Two')).toBeVisible();
+		await expect
+			.element(screen.getByRole('link', {name: '3 Process One – 13 Instances in 1 Version 10'}))
+			.toBeVisible();
+		await expect
+			.element(screen.getByRole('link', {name: '2 Process Two – 7 Instances in 2+ Versions 5'}))
+			.toBeVisible();
 	});
 
 	it('should render incidents by error list', async ({worker}) => {

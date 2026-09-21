@@ -99,18 +99,15 @@ const config = defineConfig(({mode}) => ({
 	},
 	test: {
 		include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
-		reporters: process.env['CI'] ? ['default', 'github-actions', 'html', 'junit'] : ['default'],
-		outputFile: process.env['CI']
-			? {
-					html: 'test-artifacts/html/index.html',
-					junit: 'TEST-unit.xml',
-				}
-			: undefined,
+		reporters: process.env['CI']
+			? ['default', 'github-actions', ['html', {outputDir: 'test-artifacts/html'}], 'junit']
+			: ['default'],
+		outputFile: process.env['CI'] ? {junit: 'TEST-unit.xml'} : undefined,
+		attachmentsDir: 'test-artifacts/html/attachments',
 		retry: process.env['CI'] ? 3 : 0,
 		browser: {
 			enabled: true,
 			screenshotFailures: Boolean(process.env['CI']),
-			screenshotDirectory: 'test-artifacts/screenshots',
 			headless: true,
 			viewport: {
 				width: 1280,
