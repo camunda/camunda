@@ -2,15 +2,11 @@
 //  1. Uses Yarn, not npm (convention uses NpmTask)
 //  2. No webjar packaging — processResources is not wired to copy build output into a JAR
 
-import io.camunda.gradle.pom.PomResolver
-import io.camunda.gradle.pom.resolvePomProperty
 import com.github.gradle.node.NodeExtension
 import com.github.gradle.node.yarn.task.YarnTask
-import org.gradle.api.provider.Provider
-
-fun Provider<String>.asEnabledFlag(): Provider<Boolean> = map { value ->
-  value.isEmpty() || value.toBoolean()
-}
+import io.camunda.gradle.flags.asEnabledFlag
+import io.camunda.gradle.pom.PomResolver
+import io.camunda.gradle.pom.resolvePomProperty
 
 plugins {
   id("buildlogic.server-conventions")
