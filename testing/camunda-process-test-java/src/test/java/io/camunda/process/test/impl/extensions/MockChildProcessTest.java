@@ -186,4 +186,192 @@ public class MockChildProcessTest {
     verify(camundaClient.newWorker().jobType("variableSupplier_" + CHILD_PROCESS_ID).handler(any()))
         .open();
   }
+<<<<<<< HEAD
+=======
+
+  @Test
+  void shouldMockChildProcessWithVariableSupplierViaBuilder() {
+    // given
+    final Function<Map<String, Object>, Map<String, Object>> variableSupplier =
+        inputVars -> Collections.singletonMap("result", inputVars.getOrDefault("input", "default"));
+
+    // when
+    processTestContext
+        .mockChildProcess()
+        .withProcessId(CHILD_PROCESS_ID)
+        .thenComplete(variableSupplier);
+
+    // then: a process with a service task for the variable supplier is deployed
+    verify(camundaClient.newDeployResourceCommand())
+        .addProcessModel(processModelCaptor.capture(), eq(CHILD_PROCESS_ID + ".bpmn"));
+
+    final BpmnModelInstance deployedModel = processModelCaptor.getValue();
+
+    // the process has a service task used to supply variables
+    assertThat(deployedModel.getModelElementsByType(ServiceTask.class))
+        .hasSize(1)
+        .first()
+        .satisfies(
+            serviceTask ->
+                assertThat(
+                        serviceTask.getSingleExtensionElement(ZeebeTaskDefinition.class).getType())
+                    .isEqualTo("variableSupplier_" + CHILD_PROCESS_ID));
+
+    // and the worker for the variable supplier is opened
+    verify(camundaClient.newWorker().jobType("variableSupplier_" + CHILD_PROCESS_ID).handler(any()))
+        .open();
+  }
+
+  @Test
+  void shouldMockChildProcessWithVersionTag() {
+    // when
+    processTestContext
+        .mockChildProcess()
+        .withProcessId(CHILD_PROCESS_ID)
+        .withVersionTag("1.7.1")
+        .thenComplete();
+
+    // then: a process with the version tag is deployed
+    verify(camundaClient.newDeployResourceCommand())
+        .addProcessModel(processModelCaptor.capture(), eq(CHILD_PROCESS_ID + ".bpmn"));
+
+    final BpmnModelInstance deployedModel = processModelCaptor.getValue();
+
+    // the process has the correct ID
+    assertThat(deployedModel.getModelElementsByType(Process.class))
+        .hasSize(1)
+        .first()
+        .satisfies(process -> assertThat(process.getId()).isEqualTo(CHILD_PROCESS_ID));
+
+    // the process has the version tag extension element
+    final Process process = deployedModel.getModelElementsByType(Process.class).iterator().next();
+    final ExtensionElements extensionElements =
+        (ExtensionElements) process.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebeVersionTag.class))
+        .hasSize(1)
+        .first()
+        .satisfies(vt -> assertThat(vt.getValue()).isEqualTo("1.7.1"));
+  }
+
+  @Test
+  void shouldMockChildProcessWithVersionTagAndVariables() {
+    // given
+    final Map<String, Object> variables = Collections.singletonMap("result", "ok");
+    when(camundaClient.getConfiguration().getJsonMapper().toJson("ok")).thenReturn("\"ok\"");
+
+    // when
+    processTestContext
+        .mockChildProcess()
+        .withProcessId(CHILD_PROCESS_ID)
+        .withVersionTag("2.0.0")
+        .thenComplete(variables);
+
+    // then: a start → end process with output variables and version tag is deployed
+    verify(camundaClient.newDeployResourceCommand())
+        .addProcessModel(processModelCaptor.capture(), eq(CHILD_PROCESS_ID + ".bpmn"));
+
+    final BpmnModelInstance deployedModel = processModelCaptor.getValue();
+
+    // the process has the version tag
+    final Process process = deployedModel.getModelElementsByType(Process.class).iterator().next();
+    final ExtensionElements extensionElements =
+        (ExtensionElements) process.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebeVersionTag.class))
+        .hasSize(1)
+        .first()
+        .satisfies(vt -> assertThat(vt.getValue()).isEqualTo("2.0.0"));
+
+    // the end event has output mappings for each variable
+    final EndEvent endEvent = deployedModel.getModelElementById("child-end");
+    assertThat(endEvent).isNotNull();
+    final ZeebeIoMapping ioMapping = endEvent.getSingleExtensionElement(ZeebeIoMapping.class);
+    assertThat(ioMapping).isNotNull();
+    final Collection<ZeebeOutput> outputs = ioMapping.getOutputs();
+    assertThat(outputs)
+        .hasSize(1)
+        .first()
+        .satisfies(
+            output -> {
+              assertThat(output.getSource()).isEqualTo("=\"ok\"");
+              assertThat(output.getTarget()).isEqualTo("result");
+            });
+  }
+
+  @Test
+  void shouldMockChildProcessWithVersionTagAndVariableSupplier() {
+    // given
+    final Function<Map<String, Object>, Map<String, Object>> variableSupplier =
+        inputVars -> Collections.singletonMap("result", inputVars.getOrDefault("input", "default"));
+
+    // when
+    processTestContext
+        .mockChildProcess()
+        .withProcessId(CHILD_PROCESS_ID)
+        .withVersionTag("3.1.4")
+        .thenComplete(variableSupplier);
+
+    // then: a process with a service task for the variable supplier and version tag is deployed
+    verify(camundaClient.newDeployResourceCommand())
+        .addProcessModel(processModelCaptor.capture(), eq(CHILD_PROCESS_ID + ".bpmn"));
+
+    final BpmnModelInstance deployedModel = processModelCaptor.getValue();
+
+    final Process process = deployedModel.getModelElementsByType(Process.class).iterator().next();
+    final ExtensionElements extensionElements =
+        (ExtensionElements) process.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebeVersionTag.class))
+        .hasSize(1)
+        .first()
+        .satisfies(vt -> assertThat(vt.getValue()).isEqualTo("3.1.4"));
+
+    assertThat(deployedModel.getModelElementsByType(ServiceTask.class))
+        .hasSize(1)
+        .first()
+        .satisfies(
+            serviceTask ->
+                assertThat(
+                        serviceTask.getSingleExtensionElement(ZeebeTaskDefinition.class).getType())
+                    .isEqualTo("variableSupplier_" + CHILD_PROCESS_ID));
+
+    verify(camundaClient.newWorker().jobType("variableSupplier_" + CHILD_PROCESS_ID).handler(any()))
+        .open();
+  }
+
+  /**
+   * A mocked child process is deployed under the process ID of the process it stands in for, so the
+   * name is the only thing that tells the two apart once they reach the engine. The coverage report
+   * relies on it to leave mocks out.
+   */
+  @Test
+  void shouldNameTheMockedChildProcessAsAMock() {
+    // when
+    processTestContext.mockChildProcess(CHILD_PROCESS_ID);
+
+    // then
+    verify(camundaClient.newDeployResourceCommand())
+        .addProcessModel(processModelCaptor.capture(), eq(CHILD_PROCESS_ID + ".bpmn"));
+
+    assertThat(processModelCaptor.getValue().getModelElementsByType(Process.class))
+        .singleElement()
+        .satisfies(process -> assertThat(process.getName()).isEqualTo("cpt-mock"));
+  }
+
+  @Test
+  void shouldNameTheMockedChildProcessWithVariableSupplierAsAMock() {
+    // given
+    final Function<Map<String, Object>, Map<String, Object>> variableSupplier =
+        inputVars -> Collections.singletonMap("result", inputVars.getOrDefault("input", "default"));
+
+    // when
+    processTestContext.mockChildProcess(CHILD_PROCESS_ID, variableSupplier);
+
+    // then
+    verify(camundaClient.newDeployResourceCommand())
+        .addProcessModel(processModelCaptor.capture(), eq(CHILD_PROCESS_ID + ".bpmn"));
+
+    assertThat(processModelCaptor.getValue().getModelElementsByType(Process.class))
+        .singleElement()
+        .satisfies(process -> assertThat(process.getName()).isEqualTo("cpt-mock"));
+  }
+>>>>>>> e6bf1085 (test: reproduce a mocked process distorting the coverage report)
 }
