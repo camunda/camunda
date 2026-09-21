@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Architecture Decision Records | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-63133/adr/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="Architecture Decision Records | Camunda Platform"><meta data-rh="true" name="description" content="This directory contains ADRs for decisions that affect multiple modules across the monorepo."><meta data-rh="true" property="og:description" content="This directory contains ADRs for decisions that affect multiple modules across the monorepo."><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-63133/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-63133/adr/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-63133/adr/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-63133/adr/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-63133/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-63133/assets/js/runtime~main.1e233cca.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-63133/assets/js/main.a485f5de.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-63133/assets/js/runtime~main.0d8078c8.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-63133/assets/js/main.2df13405.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -60,6 +60,12 @@ internal numeric <code>key</code> filter fields from <code>UserFilter</code>, <c
 <code>TenantFilter</code>, and <code>MappingRuleFilter</code>; Identity entities are filtered by their
 business string IDs only, with <code>AuthorizationFilter.authorizationKey</code> and sort
 fields explicitly out of scope (camunda/camunda#41657).</li>
+<li class=""><code>storage/002-per-index-shard-configuration.md</code> — the global <code>number-of-shards</code>
+knob no longer applies to <code>index/</code> indices; the descriptor hierarchy is the
+single source of per-index shard defaults (the single-shard-by-design
+taxonomy), explicit config always wins, and <code>number-of-shards-per-index</code>
+becomes a typed POJO so it binds from environment variables
+(camunda/camunda#56246, camunda/camunda#56245, camunda/camunda#56117).</li>
 <li class=""><code>security/002-tenant-access-provider-ownership-and-seam.md</code> — CSL <code>core</code> owns
 the concrete tenant-access provider and the <code>TenantOwnedEntity</code> contract; a
 uniform <code>TenantAccessProvider</code> seam across the read (search) and write
