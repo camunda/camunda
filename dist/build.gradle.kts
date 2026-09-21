@@ -251,8 +251,11 @@ val copyOpenApiYaml =
     into(layout.buildDirectory.dir("generated/dist/openapi/v2"))
   }
 
+// JDBC drivers that are provided at runtime and must not be packaged into the distribution.
+val distExcludedFilePrefixes = listOf("ojdbc", "mysql-connector-j")
+
 extensions.configure<DistributionDependencyReportExtension> {
-  excludedFilePrefixes.addAll("ojdbc", "mysql-connector-j")
+  excludedFilePrefixes.addAll(distExcludedFilePrefixes)
 }
 
 val assembleDist =
@@ -271,8 +274,8 @@ val assembleDist =
     from(copyOpenApiYaml) { into("config/openapi/v2") }
     from(tasks.named<Jar>("jar")) { into("lib") }
     from({
-      configurations.runtimeClasspath.get().filter {
-        it.isFile && !it.name.startsWith("ojdbc") && !it.name.startsWith("mysql-connector-j")
+      configurations.runtimeClasspath.get().filter { file ->
+        file.isFile && distExcludedFilePrefixes.none { file.name.startsWith(it) }
       }
     }) {
       into("lib")
