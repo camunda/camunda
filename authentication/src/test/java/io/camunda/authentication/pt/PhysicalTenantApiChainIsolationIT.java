@@ -8,6 +8,7 @@
 package io.camunda.authentication.pt;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.security.api.model.config.ScopedSecurityDescriptor;
@@ -21,6 +22,8 @@ import io.camunda.security.spring.oidc.TokenValidatorFactory;
 import io.camunda.security.spring.scope.ScopedApiSecurityChainBuilder;
 import io.camunda.security.spring.scope.ScopedApiSecurityChainBuilderConfiguration;
 import io.camunda.security.spring.security.BaseSecurityConfiguration;
+import java.io.IOException;
+import java.net.ServerSocket;
 import java.util.List;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -79,6 +82,7 @@ class PhysicalTenantApiChainIsolationIT {
   private static JwksTestServer serverA; // PT-A's own issuer
   private static JwksTestServer serverB; // PT-B's different issuer
   private static JwksTestServer serverShared; // shared issuer used in scenario 3
+  private static String unreachableIssuerUri; // issuer of the tenant whose provider is down
 
   @BeforeAll
   static void startServers() throws Exception {
@@ -383,6 +387,50 @@ class PhysicalTenantApiChainIsolationIT {
             });
   }
 
+  // -------------------------------------------------------------------------
+  // Scenario 7: one tenant's identity provider is unreachable
+  // -------------------------------------------------------------------------
+
+  /**
+   * An identity provider that one tenant uses must not cost the other tenants their API. Discovery
+   * ran while the chains were built, so one provider that was down failed the whole application
+   * context. The library now resolves a provider at the first token that names its issuer, which
+   * confines an outage to the tenant that configured it.
+   */
+  @Test
+  void unreachableTenantIssuerShouldLeaveTheOtherTenantServing() throws Exception {
+    final var env = oneUnreachableIssuerEnv();
+    buildRunner(twoDistinctIssuersProperties())
+        .run(
+            ctx -> {
+              // given chains for both tenants, built while PT-B's provider answers nothing
+              final var proxy = new FilterChainProxy(buildChainsFromProvider(ctx, env));
+
+              // when PT-A presents a token of its own reachable issuer
+              final var okResponse =
+                  callWithToken(
+                      proxy,
+                      PATH_PT_A,
+                      JwksTestServer.signForIssuer(serverA, serverA.issuerUri(), List.of()));
+
+              // then PT-A serves it, so the outage of PT-B did not reach this tenant
+              assertThat(okResponse.getStatus())
+                  .as("PT-A token on PT-A path while PT-B's provider is down")
+                  .isEqualTo(200);
+
+              // when PT-B presents a token of its own unreachable issuer
+              final var ptbToken =
+                  JwksTestServer.signForIssuer(serverB, unreachableIssuerUri(), List.of());
+
+              // then only that tenant fails, and it fails as an outage rather than as a rejected
+              // credential: the chain lets the failure through instead of calling the entry point,
+              // which a servlet container renders as a 500
+              assertThatThrownBy(() -> callWithToken(proxy, PATH_PT_B, ptbToken))
+                  .rootCause()
+                  .hasMessageContaining("Connection refused");
+            });
+  }
+
   // =========================================================================
   // Chain assembly helpers
   // =========================================================================
@@ -481,6 +529,48 @@ class PhysicalTenantApiChainIsolationIT {
     chains.add(
         ctx.getBean("protectedUnhandledPathsSecurityFilterChain", SecurityFilterChain.class));
     return chains;
+  }
+
+  /**
+   * PT-A keeps its reachable issuer. PT-B names an issuer nothing listens on, and names no other
+   * endpoint, so every call of that tenant has to reach the provider.
+   */
+  private MockEnvironment oneUnreachableIssuerEnv() {
+    final var env = new MockEnvironment();
+    env.setProperty("camunda.security.authentication.method", "oidc");
+
+    addOidcProvider(
+        env,
+        "camunda.physical-tenants.pta.security.authentication.providers.oidc.pta",
+        "client-pta",
+        serverA);
+
+    final var ptb = "camunda.physical-tenants.ptb.security.authentication.providers.oidc.ptb";
+    env.setProperty(ptb + ".client-id", "client-ptb");
+    env.setProperty(ptb + ".issuer-uri", unreachableIssuerUri());
+    env.setProperty(ptb + ".redirect-uri", "{baseUrl}/sso-callback");
+    return env;
+  }
+
+  /** A port nothing listens on, so every call to this issuer is refused at once. */
+  private static String unreachableIssuerUri() {
+    if (unreachableIssuerUri == null) {
+      try (final ServerSocket socket = new ServerSocket(0)) {
+        unreachableIssuerUri = "http://localhost:" + socket.getLocalPort() + "/unreachable";
+      } catch (final IOException e) {
+        throw new IllegalStateException("Failed to reserve a closed port", e);
+      }
+    }
+    return unreachableIssuerUri;
+  }
+
+  private static MockHttpServletResponse callWithToken(
+      final FilterChainProxy proxy, final String path, final String token) throws Exception {
+    final var request = new MockHttpServletRequest("GET", path);
+    request.addHeader("Authorization", "Bearer " + token);
+    final var response = new MockHttpServletResponse();
+    proxy.doFilter(request, response, new MockFilterChain());
+    return response;
   }
 
   // =========================================================================
