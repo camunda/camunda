@@ -17,6 +17,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.OidcFlowTestContext;
+import io.camunda.security.api.context.CamundaAuthenticationConverter;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.zeebe.test.testcontainers.DefaultTestContainers;
 import java.io.IOException;
 import java.net.URI;
@@ -30,8 +32,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureWebMvc;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -59,6 +65,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
           + MultipleOidcProviderFlowIT.REALM_FOO_CLIENT_SECRET,
       "camunda.security.authentication.providers.oidc.foo.redirect-uri=http://localhost/sso-callback",
       "camunda.security.authentication.providers.oidc.foo.audiences=camunda-foo",
+      // distinct from the default claim config every other provider falls back to, so
+      // TokenClaimsConverterWiring below can tell whether a bearer token was actually converted
+      // using realm foo's own provider config
+      "camunda.security.authentication.providers.oidc.foo.username-claim=azp",
+      "camunda.security.authentication.providers.oidc.foo.user-info-enabled=false",
 
       // OIDC provider/realm: camunda-bar
       "camunda.security.authentication.providers.oidc.bar.client-id="
@@ -320,6 +331,46 @@ class MultipleOidcProviderFlowIT {
           .containsExactlyInAnyOrder(
               keycloak.getAuthServerUrl() + "/realms/camunda-bar",
               keycloak.getAuthServerUrl() + "/realms/camunda-foo");
+    }
+  }
+
+  /**
+   * Verifies the real, Spring-wired {@code oidcTokenAuthenticationConverter} bean (issue #61920) in
+   * this multi-IdP application context — not a hand-built converter in isolation. Drives the bean
+   * directly rather than through an HTTP request: this test slice's {@code
+   * CamundaAuthenticationProvider} (see {@code OidcFlowTestContext}) is a fixed stub that never
+   * calls the converter chain, so no request-level assertion here could observe it either way.
+   */
+  @Nested
+  class TokenClaimsConverterWiring {
+
+    @Autowired private ApplicationContext applicationContext;
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void shouldResolvePrincipalUsingRealmFoosOwnClaimConfig() {
+      // given the real converter bean, and a token from realm foo — whose provider config maps
+      // the username to "azp" (its client-credentials token's own client id), unlike the
+      // default/flat claim config (username-claim=sub) every other provider still falls back to
+      final CamundaAuthenticationConverter<Authentication> converter =
+          applicationContext.getBean(
+              "oidcTokenAuthenticationConverter", CamundaAuthenticationConverter.class);
+      final var jwt =
+          Jwt.withTokenValue("test-token")
+              .header("alg", "RS256")
+              .claim("iss", keycloak.getAuthServerUrl() + "/realms/" + REALM_FOO)
+              .claim("sub", "some-default-subject")
+              .claim("azp", REALM_FOO_CLIENT_ID)
+              .build();
+
+      // when converting a token from that provider
+      final CamundaAuthentication result = converter.convert(new JwtAuthenticationToken(jwt));
+
+      // then the username is resolved via realm foo's own claim config ("azp"), not the default
+      // "sub" claim every other (unconfigured) provider would fall back to — before the fix,
+      // every bearer token was converted with that same, single default converter regardless of
+      // its own provider's configuration, so this would have resolved to "some-default-subject"
+      assertThat(result.authenticatedUsername()).isEqualTo(REALM_FOO_CLIENT_ID);
     }
   }
 }

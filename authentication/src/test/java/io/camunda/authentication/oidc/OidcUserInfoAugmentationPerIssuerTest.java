@@ -15,7 +15,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.verify;
 
 import com.github.tomakehurst.wiremock.common.Slf4jNotifier;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
@@ -24,23 +23,18 @@ import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import io.camunda.authentication.config.controllers.WebSecurityOidcTestContext;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.spring.converter.OidcTokenAuthenticationConverter;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
  * One silent identity provider must not cost the augmented claims of the other providers, and with
@@ -79,8 +73,6 @@ public class OidcUserInfoAugmentationPerIssuerTest extends AbstractWebSecurityCo
 
   @Autowired private OidcTokenAuthenticationConverter converter;
 
-  @MockitoBean private LazyTokenClaimsConverter tokenClaimsConverter;
-
   @DynamicPropertySource
   static void registerIssuerUris(final DynamicPropertyRegistry registry) {
     registry.add(
@@ -104,18 +96,17 @@ public class OidcUserInfoAugmentationPerIssuerTest extends AbstractWebSecurityCo
     stubFor(
         get(urlEqualTo(discoveryEndpoint(SILENT_ISSUER_PATH)))
             .willReturn(aResponse().withStatus(500)));
-    Mockito.when(tokenClaimsConverter.convert(Mockito.any()))
-        .thenReturn(CamundaAuthentication.of(b -> b.user("alice")));
   }
 
   @Test
   void shouldAugmentTheTokenOfTheProviderThatAnswers() {
     // when a token of the answering provider is converted while the other provider is silent
-    converter.convert(
-        new JwtAuthenticationToken(tokenOf(ANSWERING_ISSUER_PATH, "token-answering")));
+    final CamundaAuthentication result =
+        converter.convert(
+            new JwtAuthenticationToken(tokenOf(ANSWERING_ISSUER_PATH, "token-answering")));
 
     // then its groups come from the UserInfo endpoint of its own issuer
-    assertThat(claimsOfLastConversion())
+    assertThat(result.claims())
         .containsEntry("sub", "alice")
         .containsEntry("groups", List.of("engineering"));
   }
@@ -135,8 +126,10 @@ public class OidcUserInfoAugmentationPerIssuerTest extends AbstractWebSecurityCo
         .hasMessageContaining(issuerUri(SILENT_ISSUER_PATH));
 
     // and the answering provider keeps augmenting its own tokens
-    converter.convert(new JwtAuthenticationToken(tokenOf(ANSWERING_ISSUER_PATH, "token-mixed")));
-    assertThat(claimsOfLastConversion()).containsEntry("groups", List.of("engineering"));
+    final CamundaAuthentication mixed =
+        converter.convert(
+            new JwtAuthenticationToken(tokenOf(ANSWERING_ISSUER_PATH, "token-mixed")));
+    assertThat(mixed.claims()).containsEntry("groups", List.of("engineering"));
 
     // when the silent provider answers again
     stubFor(
@@ -147,25 +140,20 @@ public class OidcUserInfoAugmentationPerIssuerTest extends AbstractWebSecurityCo
             .willReturn(okJson("{\"sub\":\"alice\",\"groups\":[\"analysts\"]}")));
 
     // then the very next lookup of that issuer is augmented — no restart needed
-    converter.convert(new JwtAuthenticationToken(tokenOf(SILENT_ISSUER_PATH, "token-after")));
-    assertThat(claimsOfLastConversion()).containsEntry("groups", List.of("analysts"));
+    final CamundaAuthentication after =
+        converter.convert(new JwtAuthenticationToken(tokenOf(SILENT_ISSUER_PATH, "token-after")));
+    assertThat(after.claims()).containsEntry("groups", List.of("analysts"));
   }
 
   @Test
   void shouldPassATokenOfAnIssuerNoProviderDeclaresUnaugmented() {
     // when a token carries an issuer that no provider declares
-    converter.convert(new JwtAuthenticationToken(tokenOf("/unknown", "token-unknown")));
+    final CamundaAuthentication result =
+        converter.convert(new JwtAuthenticationToken(tokenOf("/unknown", "token-unknown")));
 
     // then it reaches the claims converter unaugmented: augmentation has no endpoint to call, and
     // refusing such a token is the decoder's decision, not this one's
-    assertThat(claimsOfLastConversion()).doesNotContainKey("groups");
-  }
-
-  private Map<String, Object> claimsOfLastConversion() {
-    @SuppressWarnings("unchecked")
-    final ArgumentCaptor<Map<String, Object>> claims = ArgumentCaptor.forClass(Map.class);
-    verify(tokenClaimsConverter, Mockito.atLeastOnce()).convert(claims.capture());
-    return claims.getValue();
+    assertThat(result.claims()).doesNotContainKey("groups");
   }
 
   private static Jwt tokenOf(final String issuerPath, final String tokenValue) {

@@ -22,6 +22,7 @@ import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
 import io.camunda.security.spring.converter.OidcTokenAuthenticationConverter;
+import io.camunda.security.spring.converter.TokenClaimsConvertersByIssuer;
 import io.camunda.security.spring.handler.OAuth2AuthenticationExceptionHandler;
 import io.camunda.security.spring.oidc.AssertionJwkProvider;
 import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
@@ -122,11 +123,31 @@ public class OidcOverrideBeansConfiguration {
         membershipResolutionContextPropagator);
   }
 
+  /**
+   * {@code tokenClaimsConvertersByIssuer} is CSL's per-issuer map of {@link
+   * LazyTokenClaimsConverter}s (see {@code OidcBeansConfiguration}), built from every configured
+   * provider's own {@code usernameClaim}/{@code clientIdClaim}/{@code preferUsernameClaim} —
+   * without it, a bearer token from any non-default provider (e.g. a BYOIDP additional IdP) is
+   * misclassified using the primary provider's claim config instead of its own (issue #61920).
+   */
   @Bean
   public CamundaAuthenticationConverter<Authentication> oidcTokenAuthenticationConverter(
       final LazyTokenClaimsConverter tokenClaimsConverter,
-      final OidcClaimsProvider oidcClaimsProvider) {
-    return new OidcTokenAuthenticationConverter(tokenClaimsConverter, oidcClaimsProvider);
+      final OidcClaimsProvider oidcClaimsProvider,
+      final ObjectProvider<TokenClaimsConvertersByIssuer> tokenClaimsConvertersByIssuer) {
+    final var perIssuerConverters = tokenClaimsConvertersByIssuer.getIfAvailable();
+    if (perIssuerConverters == null || perIssuerConverters.byIssuer().isEmpty()) {
+      LOG.info(
+          "No per-issuer OIDC token claims converters configured; every bearer token is"
+              + " classified using the default provider's claim config");
+    } else {
+      LOG.info(
+          "Per-issuer OIDC token claims converters configured for issuers {}; bearer tokens from"
+              + " any other issuer fall back to the default provider's claim config",
+          perIssuerConverters.byIssuer().keySet());
+    }
+    return new OidcTokenAuthenticationConverter(
+        tokenClaimsConverter, oidcClaimsProvider, perIssuerConverters);
   }
 
   /**
