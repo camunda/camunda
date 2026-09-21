@@ -171,8 +171,14 @@ def test_preview_env_legs_resolve_their_own_base_ref():
     # One run deploys four branches, so the caller's ref describes none of them.
     assert classify.base_ref_for_job("Run 8.8 Smoke Tests", "main") == "stable/8.8"
     assert classify.base_ref_for_job("Run 8.10 Smoke Tests", "main") == "stable/8.10"
-    # 8.11 is tracked on main, and it has no stable branch to target.
-    assert classify.base_ref_for_job("Run 8.11 Smoke Tests", "main") == "main"
+    # 8.11 is tracked on main, but must not alias to plain "main": that is also
+    # the real main-branch pipeline's own ref, and sharing it would collide both
+    # onto the same dispatch key.
+    assert (
+        classify.base_ref_for_job("Run 8.11 Smoke Tests", "main")
+        == classify.PREVIEW_ENV_MAIN_REF
+    )
+    assert classify.PREVIEW_ENV_MAIN_REF != "main"
 
 
 def test_non_preview_env_job_keeps_the_runs_base_ref():
@@ -181,9 +187,16 @@ def test_non_preview_env_job_keeps_the_runs_base_ref():
         "Playwright e2e after install - install on gke - agrn (1 of 1)"
     )
     assert classify.base_ref_for_job(name, "stable/8.9") == "stable/8.9"
-    # An unknown minor falls back too rather than guessing a branch that the fix
-    # agent would reject.
-    assert classify.base_ref_for_job("Run 9.1 Smoke Tests", "main") == "main"
+
+
+def test_unknown_preview_env_minor_does_not_collide_with_main():
+    # A minor added to the matrix before PREVIEW_ENV_BASE_REFS is updated must
+    # not fall back to the caller's ref: on the schedule that is "main", the same
+    # collision PREVIEW_ENV_MAIN_REF exists to avoid for 8.11.
+    assert (
+        classify.base_ref_for_job("Run 9.1 Smoke Tests", "main")
+        == classify.PREVIEW_ENV_MAIN_REF
+    )
 
 
 def test_dispatchable_surfaces():

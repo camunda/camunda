@@ -180,15 +180,26 @@ def surface_for_job(job_name: str) -> str | None:
 _PREVIEW_ENV_JOB_RE = re.compile(r"^Run (?P<version>\d+\.\d+) Smoke Tests$")
 
 #: Branch each preview-env matrix leg actually tests. The workflow deploys four
-#: refs in one run, so the caller's own ref describes none of them: 8.11 is
-#: tracked on main and every released minor has its own stable branch. The `ref-8-x`
-#: dispatch overrides are deliberately not honoured — they point at unmerged PR
-#: branches, which the fix agent does not accept as a target.
+#: refs in one run, so the caller's own ref describes none of them: every released
+#: minor has its own stable branch. The `ref-8-x` dispatch overrides are deliberately
+#: not honoured — they point at unmerged PR branches, which the fix agent does not
+#: accept as a target.
+#:
+#: 8.11 has no stable branch yet and is tracked on main, but "main" is also the real
+#: ref for the actual main-branch pipeline's own dispatch key. Aliasing the 8.11 leg
+#: to plain "main" would collide the two: both would hash to the same
+#: `<base_ref>:<surface>` dispatch key and merge_by_key would fold them into one
+#: candidate, silently dropping whichever leg lost the merge. `PREVIEW_ENV_MAIN_REF`
+#: keeps 8.11 out of that collision: it is intentionally absent from
+#: plan.SUPPORTED_BASE_REFS, so a leg mapped to it is cleanly suppressed as
+#: base-ref-not-supported-by-fix-agent instead of being mis-dispatched.
+PREVIEW_ENV_MAIN_REF = "main:preview-8.11"
+
 PREVIEW_ENV_BASE_REFS = {
     "8.8": "stable/8.8",
     "8.9": "stable/8.9",
     "8.10": "stable/8.10",
-    "8.11": "main",
+    "8.11": PREVIEW_ENV_MAIN_REF,
 }
 
 
@@ -206,11 +217,17 @@ def base_ref_for_job(job_name: str, default: str) -> str:
     single run, and the ref decides the fix agent's target branch and is part of
     every fingerprint — sharing one ref across the legs would target the wrong
     branch and collapse four independent failures onto one dispatch key.
+
+    A minor absent from PREVIEW_ENV_BASE_REFS (a new version added to the matrix
+    before this map is updated) must not fall back to `default` either: `default`
+    is "main" on the schedule that runs this workflow, and that is the same
+    collision PREVIEW_ENV_MAIN_REF exists to avoid. Falling back to it here would
+    silently recreate the bug for the next unmapped minor.
     """
     version = preview_env_version(job_name)
     if version is None:
         return default
-    return PREVIEW_ENV_BASE_REFS.get(version, default)
+    return PREVIEW_ENV_BASE_REFS.get(version, PREVIEW_ENV_MAIN_REF)
 
 
 # ---------------------------------------------------------------------------
