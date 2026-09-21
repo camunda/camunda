@@ -34,6 +34,7 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +52,7 @@ import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.UpdateRequest;
+import org.opensearch.client.opensearch.generic.Body;
 import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 
@@ -433,6 +435,72 @@ public class OpensearchEngineClientIT {
         opensearchEngineClient.getCurrentISMPolicyState("changed_ism_policy_name");
     assertThat(policyStateAfterUpdate.seqNo()).isGreaterThan(policyStateAfterCreation.seqNo());
     assertThat(getPolicyMinAge("changed_ism_policy_name")).isEqualTo("30d");
+  }
+
+  /**
+   * Regression test asserting that upgrading to a schema-manager version whose policy template
+   * newly states {@code retry} explicitly does not force a one-time PUT for every pre-existing
+   * fleet policy. A policy created by an older template (without an explicit {@code retry} block)
+   * already has OpenSearch's own default {@code retry} block persisted into it at creation time, so
+   * the fetched and desired definitions match without ever needing a write.
+   */
+  @Test
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Excluding from AWS OS IT CI - policies not allowed for shared DBs")
+  void shouldNotUpdatePolicyCreatedByOlderTemplateWithoutExplicitRetry() throws IOException {
+    // given - a policy created the way an older template (predating the explicit retry block)
+    // would have, i.e. without ever specifying retry on the delete action
+    final var policyName = "legacy_ism_policy_name";
+    final var legacyPolicyBody =
+        """
+        {
+          "policy": {
+            "description": "Archived index policy",
+            "default_state": "archived",
+            "states": [
+              {
+                "name": "archived",
+                "actions": [],
+                "transitions": [
+                  {
+                    "state_name": "deleted",
+                    "conditions": { "min_index_age": "20d" }
+                  }
+                ]
+              },
+              {
+                "name": "deleted",
+                "actions": [ { "delete": {} } ],
+                "transitions": []
+              }
+            ]
+          }
+        }
+        """;
+    final var createRequest =
+        Requests.builder()
+            .method("PUT")
+            .endpoint(
+                String.format("%s/%s", OpensearchEngineClient.ISM_POLICIES_ENDPOINT, policyName))
+            .body(Body.from(legacyPolicyBody.getBytes(StandardCharsets.UTF_8), "application/json"))
+            .build();
+    try (final var response = openSearchClient.generic().execute(createRequest)) {
+      assertThat(response.getStatus()).isEqualTo(201);
+    }
+    final var policyStateAfterCreation =
+        opensearchEngineClient.getCurrentISMPolicyState(policyName);
+    assertThat(policyStateAfterCreation.exists()).isTrue();
+
+    // when - schema-init runs putIndexLifeCyclePolicy() with today's template, which states retry
+    // explicitly
+    opensearchEngineClient.putIndexLifeCyclePolicy(policyName, "20d");
+
+    // then - nothing was written, so seq_no/primary_term stay exactly where they were
+    final var policyStateAfterSchemaInit =
+        opensearchEngineClient.getCurrentISMPolicyState(policyName);
+    assertThat(policyStateAfterSchemaInit).isEqualTo(policyStateAfterCreation);
   }
 
   @Test
