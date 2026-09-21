@@ -10,11 +10,7 @@
  */
 
 import com.diffplug.gradle.spotless.SpotlessExtension
-import org.gradle.api.provider.Provider
-
-fun Provider<String>.asEnabledFlag(): Provider<Boolean> = map { value ->
-  value.isEmpty() || value.toBoolean()
-}
+import io.camunda.gradle.flags.asEnabledFlag
 
 plugins {
   base

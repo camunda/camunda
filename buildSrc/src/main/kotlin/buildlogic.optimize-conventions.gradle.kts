@@ -1,3 +1,4 @@
+import buildlogic.requiredVersion
 import io.camunda.gradle.pom.PomResolver
 import io.camunda.gradle.pom.resolvePomProperty
 import org.gradle.api.artifacts.VersionCatalogsExtension
@@ -11,10 +12,10 @@ val optimizePom = PomResolver(rootDir.resolve("optimize/pom.xml").readText()).pr
 fun optVersion(key: String) = resolvePomProperty(key, optimizePom)
 
 val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
-val jodaTimeVersion = versionCatalog.findVersion("joda-time").get().requiredVersion
-val mybatisVersion = versionCatalog.findVersion("mybatis").get().requiredVersion
+val jodaTimeVersion = versionCatalog.requiredVersion("joda-time")
+val mybatisVersion = versionCatalog.requiredVersion("mybatis")
 val optimizeElasticsearchRestClientVersion =
-  versionCatalog.findVersion("optimize-elasticsearch-client").get().requiredVersion
+  versionCatalog.requiredVersion("optimize-elasticsearch-client")
 
 configurations.all {
   resolutionStrategy.force(
