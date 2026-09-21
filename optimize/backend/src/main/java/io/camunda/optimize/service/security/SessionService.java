@@ -97,7 +97,7 @@ public class SessionService implements ConfigurationReloadable {
    * was authenticated via an Identity session cookie or a bearer JWT token.
    *
    * <p>A CSL-authenticated request is resolved on its own: when CSL is active and the request
-   * carries one, the user is whatever CSL authenticated (see {@link #cslAuthenticatedUsername(
+   * carries one, the user is whatever CSL authenticated (see {@link #cslAuthenticatedPrincipalId(
    * CamundaAuthenticationProvider)}) or nothing at all. It never falls back to the branches below,
    * because the cookie branch reads its subject from an unverified token: under CSL no filter
    * validates the Optimize auth cookie, so a stale or injected one could otherwise attribute the
@@ -119,7 +119,7 @@ public class SessionService implements ConfigurationReloadable {
   public String getRequestUserOrFailNotAuthorized(final HttpServletRequest request) {
     final CamundaAuthenticationProvider cslProvider = cslAuthenticationProvider();
     if (cslProvider != null && CslAuthentication.isCslAuthenticatedRequest()) {
-      return cslAuthenticatedUsername(cslProvider)
+      return cslAuthenticatedPrincipalId(cslProvider)
           .orElseThrow(
               () ->
                   new NotAuthorizedException(
@@ -141,15 +141,27 @@ public class SessionService implements ConfigurationReloadable {
   }
 
   /**
-   * Resolves the user id CSL authenticated the session as, which is the id Optimize stores entity
-   * ownership under (CSL's configured {@code username-claim}). Mirrors {@code
+   * Resolves the id CSL authenticated the request as, which is the id Optimize stores entity
+   * ownership under: {@code authenticatedUsername} (CSL's configured {@code username-claim}) for a
+   * user principal, or {@code authenticatedClientId} for a bearer request CSL classified as an M2M
+   * client — a client-credentials token never has a username claim to fall back to, and this must
+   * still resolve an id for it, the same as it always has for a user. Mirrors {@code
    * CCSMTokenService#getCurrentUserIdFromAuthToken}, which reads the same source.
    */
-  private static Optional<String> cslAuthenticatedUsername(
+  private static Optional<String> cslAuthenticatedPrincipalId(
       final CamundaAuthenticationProvider provider) {
     return Optional.ofNullable(provider.getCamundaAuthentication())
-        .map(CamundaAuthentication::authenticatedUsername)
-        .filter(username -> !username.isBlank());
+        .flatMap(SessionService::authenticatedPrincipalId);
+  }
+
+  private static Optional<String> authenticatedPrincipalId(
+      final CamundaAuthentication authentication) {
+    return nonBlank(authentication.authenticatedUsername())
+        .or(() -> nonBlank(authentication.authenticatedClientId()));
+  }
+
+  private static Optional<String> nonBlank(final String value) {
+    return Optional.ofNullable(value).filter(v -> !v.isBlank());
   }
 
   /**
