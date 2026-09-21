@@ -30,27 +30,23 @@ export const submenuOption = (text) =>
 export const selectedOption = (text) =>
   Selector('.cds--list-box__menu-item--active').withText(text);
 export const entityList = Selector('.EntityList');
-export const edit = Selector('.ListItemSingleAction').withText('Edit');
-export const copy = Selector('.ListItemSingleAction').withText('Copy');
-export const del = Selector('.ListItemSingleAction').withText('Delete');
-export const contextMenu = (entity) => entity.find('button.cds--overflow-menu');
+// The design-system EntityList surfaces per-row actions in an overflow menu that portals to <body>.
+export const edit = Selector('[data-slot="dropdown-menu-item"]').withText('Edit');
+export const copy = Selector('[data-slot="dropdown-menu-item"]').withText('Copy');
+export const del = Selector('[data-slot="dropdown-menu-item"]').withText('Delete');
+export const contextMenu = (entity) => entity.find('[data-slot="data-table-actions-trigger"]');
+// A single row action renders inline as a labelled button rather than inside the overflow menu.
 export const listItemTrigger = (entity, trigger) =>
-  entity
-    .find('td .cds--tooltip-content')
-    .withText(trigger)
-    .parent('.cds--popover-container')
-    .find('button.ListItemAction');
-export const selectAllCheckbox = Selector('thead .cds--checkbox--inline');
-export const bulkDelete = Selector('.cds--action-list button').withText('Delete');
-export const listItem = (type, viewerMode = false) =>
-  Selector(`.EntityList tbody tr td:nth-child(${viewerMode ? 1 : 2}) span`)
-    .withText(new RegExp(type, 'i'))
-    .parent('tr');
+  entity.find('[data-slot="button"]').withText(trigger);
+export const selectAllCheckbox = Selector('.EntityList thead [aria-label="Select all rows"]');
+export const bulkDelete = Selector('.entityToolbarAction button').withText('Delete');
+// The type label under the name identifies the row's entity kind regardless of column layout.
+export const listItem = (type) =>
+  Selector('.EntityList tbody tr .entityType').withText(new RegExp(type, 'i')).parent('tr');
 export const listItemWithText = (text) =>
-  Selector('.EntityList tbody tr td:nth-child(2)').withText(text).parent('tr');
-export const listItemLink = (type, viewerMode = false) =>
-  listItem(type, viewerMode).find(`td:nth-child(${viewerMode ? 1 : 2}) a`);
-export const listItemCheckbox = (item) => item.find('.cds--checkbox-label');
+  Selector('.EntityList tbody tr .entityCell').withText(text).parent('tr');
+export const listItemLink = (type) => listItem(type).find('a.entityName');
+export const listItemCheckbox = (item) => item.find('[aria-label="Select row"]');
 export const newReportOption = Selector('.cds--menu--shown .cds--menu-item[aria-haspopup=true]');
 export const templateModalProcessField = Selector('.Modal .DefinitionSelection input');
 export const firstOption = Selector('.TemplateModal .cds--list-box__menu-item');
@@ -82,10 +78,7 @@ export const checkbox = (text) => Selector('.cds--checkbox-label').withText(text
 export const kpiFilterButton = Selector('.filterTile .actions > button');
 export const kpiTemplateSelection = Selector('input#KpiSelectionComboBox');
 export const emptyStateAdd = Selector('.EmptyState .cds--btn--primary');
-export const processItem = listItemLink('process', true);
+export const processItem = listItemLink('process');
 export const templateOption = (text) => Selector('.Modal .templateContainer button').withText(text);
-// Matches either navigation: under IS_NAV_V2_ENABLED the link moves from the header
-// tabs into the design-system sidebar. Only one of the two renders at a time.
-export const collectionsPage = Selector(
-  'header > nav a[href="#/collections"], [data-slot="app-sidebar-item"][href="#/collections"]'
-);
+// The design system renders the collections link as a sidebar item.
+export const collectionsPage = Selector('[data-slot="app-sidebar-item"][href="#/collections"]');
