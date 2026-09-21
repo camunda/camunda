@@ -54,6 +54,8 @@ import org.mockito.ArgumentCaptor;
 
 class SchemaManagerTest {
 
+  private static final List<String> ALL_TEST_INDICES_WILDCARD = List.of("test-test-*");
+
   private SearchEngineClient searchEngineClient;
   private SearchEngineConfiguration config;
   private Collection<IndexDescriptor> indexDescriptors;
@@ -394,8 +396,6 @@ class SchemaManagerTest {
       initialization.join(Duration.ofSeconds(10).toMillis());
     }
   }
-
-  private static final List<String> ALL_TEST_INDICES_WILDCARD = List.of("test-test-*");
 
   /**
    * Regression test for #63543. {@code updateSchemaSettings()} used to blind-write settings for

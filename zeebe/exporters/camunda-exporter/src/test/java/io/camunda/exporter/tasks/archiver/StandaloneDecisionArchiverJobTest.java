@@ -184,6 +184,11 @@ final class StandaloneDecisionArchiverJobTest extends ArchiverJobRecordingMetric
     }
 
     @Override
+    public String getComponentName() {
+      return "bar";
+    }
+
+    @Override
     public String getMappingsClasspathFilename() {
       return "";
     }
