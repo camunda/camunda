@@ -33,5 +33,4 @@ dependencies {
   )
   implementation("com.gradleup.shadow:shadow-gradle-plugin:9.4.2")
   implementation("org.gradle:test-retry-gradle-plugin:1.6.6")
-  implementation("uk.co.real-logic:sbe-tool:${pomVersion("version.sbe")}")
 }
