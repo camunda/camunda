@@ -227,6 +227,9 @@ jobs:
           echo "${endpoint}" > /tmp/oracle-endpoint
           echo "${bastion_id}" > /tmp/oracle-bastion-id
 
+          # The script is single-quoted intentionally so the inner shell evaluates these values
+          # after each SSM session restart rather than the outer shell evaluating them once.
+          # shellcheck disable=SC2016
           nohup bash -c '
             stamp() { while IFS= read -r line; do printf "%s %s\n" "$(date -u +%FT%TZ)" "$line"; done; }
             while true; do
