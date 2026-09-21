@@ -91,6 +91,13 @@ _scenario_platform_flags = --set-file '$(scenario_max_override_key)./camunda-pla
 else ifeq ($(scenario),archiver)
 _scenario_load_test_flags = --set load-tester.starter.rate=1 --set load-tester.starter.rateDuration=10m --set load-tester.starter.processId=multiInstanceElements --set load-tester.starter.bpmnXmlPath=bpmn/multiInstanceElements.bpmn --set load-tester.starter.payloadPath=bpmn/multiInstanceElementsPayload.json --set load-tester.workers.worker.replicas=0
 _scenario_platform_flags =
+else ifeq ($(scenario),dmn)
+# DMN decision-evaluation floor probe: replace the BPMN starter/worker load
+# generators with the in-cluster k6 DMN Job (see charts/load-test-setup/templates/dmn-k6.yaml).
+# Pair with a minimal platform (RF1, no exporter) via the workflow's
+# platform-helm-values input, e.g. `-f camunda-platform-values-dmn-minimal.yaml`.
+_scenario_load_test_flags = --set load-tester.enabled=false --set dmnK6.enabled=true
+_scenario_platform_flags =
 else
 _scenario_load_test_flags =
 _scenario_platform_flags =
@@ -398,7 +405,7 @@ install-stable-chaos:
 
 # Workload scenario shortcuts — each runs 'make install' with the corresponding scenario profile.
 # For stable VMs, use: make install-stable scenario=<name>
-.PHONY: latency realistic typical max archiver
+.PHONY: latency realistic typical max archiver dmn
 latency:
 	$(MAKE) install scenario=latency
 realistic:
@@ -409,6 +416,8 @@ max:
 	$(MAKE) install scenario=max
 archiver:
 	$(MAKE) install scenario=archiver
+dmn:
+	$(MAKE) install scenario=dmn
 
 .PHONY: clean
 clean:

@@ -100,6 +100,11 @@ var defaultScenarios = []scenario{
 	{Name: "rdbms-stable", Storage: "postgresql", Optimize: false, Stable: true},
 	{Name: "max", Storage: "elasticsearch", Optimize: true, Stable: false, Workload: "max"},
 	{Name: "realistic", Storage: "elasticsearch", Optimize: true, Stable: false, Workload: "realistic"},
+	// The DMN k6 floor-probe workload replaces the BPMN load generators with the
+	// in-cluster k6 Job (load-tester disabled, dmnK6 enabled). It lives in the
+	// shared load-test-setup chart and uses `none` storage to keep the render
+	// minimal. Golden-covered once (main only, see generateScenarios).
+	{Name: "dmn", Storage: "none", Optimize: false, Stable: false, Workload: "dmn"},
 	// SetupTarget scenarios render only the load-test-setup chart via a named
 	// Makefile target, verifying opt-in chart features without duplicating the
 	// full storage matrix.
@@ -163,6 +168,12 @@ func generateScenarios(versions []string, scenarios []scenario) []versionedScena
 			// physical_tenant_count > 0 requires product-side physical-tenant config
 			// support, present on main and stable-810 only.
 			if s.PhysicalTenantCount > 0 && v != "main" && v != "stable-810" {
+				continue
+			}
+
+			// The DMN k6 workload lives in the shared load-test-setup chart, so
+			// its render is version-independent; golden-cover it once, on main.
+			if s.Name == "dmn" && v != "main" {
 				continue
 			}
 

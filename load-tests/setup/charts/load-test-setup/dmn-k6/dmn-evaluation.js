@@ -8,8 +8,9 @@ import encoding from 'k6/encoding';
 // (requests/second) so the target throughput is held independent of latency:
 // latency degradation shows up as a growing VU count, not a slowing rate.
 //
-// No external imports and no dependency on any chart/operator — it runs as-is
-// with `k6 run`, or inside the k6 Job in job.yaml.
+// No external imports and no dependency on any operator — it runs as-is with
+// `k6 run`, or inside the k6 Job rendered by the load-test-setup chart
+// (templates/dmn-k6.yaml, gated by dmnK6.enabled).
 //
 // Auth (pick whichever your cluster uses; checked in this order):
 //   CAMUNDA_BASIC_AUTH = "user:pass"          -> Basic auth
