@@ -18,6 +18,7 @@ import static org.mockito.Mockito.*;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.UpdateRequest;
+import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
@@ -337,6 +338,52 @@ public class ElasticsearchEngineClientIT {
     assertThat(policy.result().get("policy_name").policy().phases().delete().minAge().time())
         .isEqualTo("20d");
     assertThat(policy.result().get("policy_name").policy().phases().delete().actions()).isNotNull();
+  }
+
+  /**
+   * Regression test for #63543/#63569's underlying failure mode ({@code
+   * process_cluster_event_timeout_exception} from concurrent, redundant cluster-state writes)
+   * recurring for ILM policies: {@code putIndexLifeCyclePolicy} used to PUT unconditionally on
+   * every schema-init attempt, even when the policy already matched configuration.
+   */
+  @Test
+  void shouldNotIssuePutIndexLifeCyclePolicyWhenMinAgeUnchanged() throws IOException {
+    // given
+    elsEngineClient.putIndexLifeCyclePolicy("policy_no_change", "20d");
+
+    final var ilmSpy = spy(elsClient.ilm());
+    final var clientSpy = spy(elsClient);
+    doReturn(ilmSpy).when(clientSpy).ilm();
+    final var engineClient =
+        new ElasticsearchEngineClient(clientSpy, TestObjectMapper.objectMapper());
+
+    // when
+    engineClient.putIndexLifeCyclePolicy("policy_no_change", "20d");
+
+    // then
+    verify(ilmSpy, never()).putLifecycle(any(PutLifecycleRequest.class));
+  }
+
+  /** See {@link #shouldNotIssuePutIndexLifeCyclePolicyWhenMinAgeUnchanged}. */
+  @Test
+  void shouldIssuePutIndexLifeCyclePolicyWhenMinAgeChanged() throws IOException {
+    // given
+    elsEngineClient.putIndexLifeCyclePolicy("policy_change", "20d");
+
+    final var ilmSpy = spy(elsClient.ilm());
+    final var clientSpy = spy(elsClient);
+    doReturn(ilmSpy).when(clientSpy).ilm();
+    final var engineClient =
+        new ElasticsearchEngineClient(clientSpy, TestObjectMapper.objectMapper());
+
+    // when
+    engineClient.putIndexLifeCyclePolicy("policy_change", "30d");
+
+    // then
+    verify(ilmSpy, times(1)).putLifecycle(any(PutLifecycleRequest.class));
+    final var policy = elsClient.ilm().getLifecycle(req -> req.name("policy_change"));
+    assertThat(policy.result().get("policy_change").policy().phases().delete().minAge().time())
+        .isEqualTo("30d");
   }
 
   @Test
