@@ -9,7 +9,6 @@ package io.camunda.authentication;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
@@ -22,8 +21,6 @@ import com.github.tomakehurst.wiremock.common.Slf4jNotifier;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.OidcFlowTestContext;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,6 +31,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureWebMvc;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.jwt.JwtDecoderInitializationException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -77,6 +75,9 @@ public class OidcUnreachableIssuerStartupTest {
   private static final String PROTECTED_RESOURCE_METADATA_ENDPOINT =
       "/.well-known/oauth-protected-resource";
 
+  // the token never gets parsed: building the decoder against the unreachable provider fails first
+  private static final String UNVERIFIABLE_TOKEN = "not-a-real-token";
+
   @Autowired MockMvcTester mockMvcTester;
 
   @DynamicPropertySource
@@ -107,14 +108,14 @@ public class OidcUnreachableIssuerStartupTest {
         mockMvcTester
             .get()
             .uri(DUMMY_V2_API_ENDPOINT)
-            .header("Authorization", "Bearer " + unverifiableJwt())
+            .header("Authorization", "Bearer " + UNVERIFIABLE_TOKEN)
             .accept(MediaType.APPLICATION_JSON)
             .exchange();
 
-    // then only that request fails: Spring Security reports a provider it cannot reach as a server
-    // error rather than as a rejected credential, which is what an outage after startup produces
-    // too
-    assertThat(result).hasStatus5xxServerError();
+    // then only that request fails, and it fails as an outage rather than as a rejected
+    // credential: the decoder cannot be built without the provider, and that failure escapes the
+    // chain instead of reaching the bearer entry point, which a servlet container renders as a 500
+    assertThat(result).hasFailed().failure().isInstanceOf(JwtDecoderInitializationException.class);
   }
 
   @Test
@@ -129,21 +130,8 @@ public class OidcUnreachableIssuerStartupTest {
   }
 
   @Test
-  public void shouldServeProtectedResourceMetadataOnceTheIssuerAnswers() {
-    // given the RFC 9728 metadata cannot be built while discovery fails: its authorization-server
-    // list comes from the resolved client registrations
-    assertThat(
-            mockMvcTester
-                .get()
-                .uri(PROTECTED_RESOURCE_METADATA_ENDPOINT)
-                .accept(MediaType.APPLICATION_JSON)
-                .exchange())
-        .hasFailed();
-
-    // when the provider answers again
-    stubFor(get(urlEqualTo(DISCOVERY_ENDPOINT)).willReturn(okJson(discoveryDocument())));
-
-    // then the very next request is served — no restart needed
+  public void shouldServeProtectedResourceMetadataWhileTheIssuerIsUnreachable() {
+    // given the RFC 9728 metadata lists the configured issuers, which needs no discovery
     assertThat(
             mockMvcTester
                 .get()
@@ -157,33 +145,7 @@ public class OidcUnreachableIssuerStartupTest {
         .containsExactly(issuerUri());
   }
 
-  private static String unverifiableJwt() {
-    // base64url of {"alg":"RS256"} and {"sub":"test"} with a bogus signature: shaped like a JWT so
-    // the decoder gets as far as needing the provider, but not a credential anywhere
-    final var encoder = Base64.getUrlEncoder().withoutPadding();
-    return encoder.encodeToString("{\"alg\":\"RS256\"}".getBytes(StandardCharsets.UTF_8))
-        + "."
-        + encoder.encodeToString("{\"sub\":\"test\"}".getBytes(StandardCharsets.UTF_8))
-        + ".not-a-signature";
-  }
-
   private static String issuerUri() {
     return "http://localhost:" + wireMock.getPort() + "/realms/" + REALM;
-  }
-
-  private static String discoveryDocument() {
-    return """
-        {
-            "issuer": "ISSUER",
-            "authorization_endpoint": "ISSUER/oauth/authorize",
-            "token_endpoint": "ISSUER/oauth/token",
-            "userinfo_endpoint": "ISSUER/userinfo",
-            "jwks_uri": "ISSUER/.well-known/jwks.json",
-            "response_types_supported": ["code"],
-            "subject_types_supported": ["public"],
-            "id_token_signing_alg_values_supported": ["RS256"]
-        }
-        """
-        .replace("ISSUER", issuerUri());
   }
 }
