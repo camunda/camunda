@@ -51,7 +51,7 @@ test.describe('Admin navigation', () => {
 		await adminIndexPage.navItem('Roles').click();
 
 		await expect(page).toHaveURL('/admin/roles');
-		await expect(page.getByRole('heading', {name: 'Roles'})).toBeVisible();
+		await expect(adminIndexPage.sectionHeading('Roles')).toBeVisible();
 		await expect(adminIndexPage.navItem('Roles')).toHaveAttribute('aria-current', 'page');
 		await expect(adminIndexPage.navItem('Groups')).not.toHaveAttribute('aria-current', 'page');
 	});

@@ -13,6 +13,10 @@ class AdminIndexPage extends BasePage {
 		return this.page.goto('/admin');
 	}
 
+	async gotoSection(section: string) {
+		return this.page.goto(`/admin/${section}`);
+	}
+
 	get branding() {
 		return this.page.getByRole('link', {name: 'Camunda logo'});
 	}
@@ -23,6 +27,10 @@ class AdminIndexPage extends BasePage {
 
 	navItem(name: string) {
 		return this.page.getByRole('link', {name, exact: true});
+	}
+
+	sectionHeading(name: string) {
+		return this.page.getByRole('heading', {name, exact: true});
 	}
 }
 
