@@ -45,8 +45,20 @@ jobs:
         id: db-versions
         uses: ./.github/actions/read-db-versions
 
-  database-integration-tests:
+  # Builds the distball once and shares it with the test jobs below via GCS
+  build-distball:
     needs: [ generate-db-versions ]
+    name: "Build zeebe"
+    permissions:
+      contents: read
+      id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
+    uses: ./.github/workflows/ci-build-distball-reusable.yml
+    secrets: inherit
+    with:
+      skip-artifact-upload: true  # no docker-checks-style GH-artifact consumer in this workflow
+
+  database-integration-tests:
+    needs: [ generate-db-versions, build-distball ]
     name: "Database Integration Tests"
     permissions:
       contents: read
@@ -72,9 +84,10 @@ jobs:
       database-image-version: "${{ matrix.database-image-version }}"
       database-name: "${{ matrix.database-name }}"
       it-database-type: "${{ matrix.it-database-type }}"
+      use-shared-distball: true
 
   identity-tests:
-    needs: [ generate-db-versions ]
+    needs: [ generate-db-versions, build-distball ]
     name: "Identity Integration Tests"
     permissions:
       contents: read
@@ -100,3 +113,4 @@ jobs:
       database-image-version: "${{ matrix.database-image-version }}"
       database-name: "${{ matrix.database-name }}"
       it-database-type: "${{ matrix.it-database-type }}"
+      use-shared-distball: true
