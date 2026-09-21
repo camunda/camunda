@@ -36,6 +36,12 @@ import org.slf4j.LoggerFactory;
  * equivalent setting. Optimize's own configuration surface has no such default today, and without
  * one an unconfigured deployment would classify every bearer token as a user, checking the Optimize
  * permission against M2M clients that never needed it and were never granted it.
+ *
+ * <p><b>Note for operators:</b> {@code username-claim}, {@code client-id-claim} and {@code
+ * prefer-username-claim} are shared CSL settings already consumed by {@code zeebe/gateway-grpc}'s
+ * {@code AuthenticationHandler} for gRPC caller classification. This class reuses the same settings
+ * for this new bearer-classification decision in Optimize. A value tuned only with the gRPC gateway
+ * in mind now also drives this check — review it against both consumers before changing it.
  */
 public final class OidcBearerPrincipalClassifier {
 
