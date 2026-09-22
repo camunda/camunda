@@ -34,6 +34,7 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +52,7 @@ import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.UpdateRequest;
+import org.opensearch.client.opensearch.generic.Body;
 import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 
@@ -374,40 +376,131 @@ public class OpensearchEngineClientIT {
     assertThat(ismPolicyState.exists()).isFalse();
   }
 
+  /**
+   * Regression test for #63543/#63569's underlying failure mode (a cluster-state master overloaded
+   * by concurrent, redundant writes) recurring for ISM policies: {@code putIndexLifeCyclePolicy}
+   * used to PUT unconditionally on every schema-init attempt, even when the policy already matched
+   * configuration.
+   */
   @Test
   @DisabledIfSystemProperty(
       named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
       matches = "^(?=\\s*\\S).*$",
       disabledReason = "Excluding from AWS OS IT CI - policies not allowed for shared DBs")
-  void shouldAlwaysUpdateIndexLifeCyclePolicyEvenIfExistingHasSameValue() throws IOException {
+  void shouldNotUpdateIndexLifeCyclePolicyWhenExistingHasSameValue() throws IOException {
     // given
-    opensearchEngineClient.putIndexLifeCyclePolicy("always_update_ism_policy_name", "20d");
+    opensearchEngineClient.putIndexLifeCyclePolicy("no_change_ism_policy_name", "20d");
 
     // then: policy state after first creation
     final ISMPolicyState policyStateAfterCreation =
-        opensearchEngineClient.getCurrentISMPolicyState("always_update_ism_policy_name");
+        opensearchEngineClient.getCurrentISMPolicyState("no_change_ism_policy_name");
 
     // then: verify state after creation
     assertThat(policyStateAfterCreation.exists()).isTrue();
-    assertThat(getPolicyMinAge("always_update_ism_policy_name")).isEqualTo("20d");
+    assertThat(getPolicyMinAge("no_change_ism_policy_name")).isEqualTo("20d");
 
-    // when: update ISM with same parameters
+    // when: PUT again with the same min_index_age
     assertThatNoException()
         .isThrownBy(
             () ->
-                opensearchEngineClient.putIndexLifeCyclePolicy(
-                    "always_update_ism_policy_name", "20d"));
+                opensearchEngineClient.putIndexLifeCyclePolicy("no_change_ism_policy_name", "20d"));
 
-    // then: policy state after first creation
+    // then: policy state after the redundant PUT
     final ISMPolicyState policyStateAfterUpdate =
-        opensearchEngineClient.getCurrentISMPolicyState("always_update_ism_policy_name");
+        opensearchEngineClient.getCurrentISMPolicyState("no_change_ism_policy_name");
 
-    // then: state seq no should increment, but others should remain the same
-    assertThat(policyStateAfterUpdate.exists()).isTrue();
-    assertThat(policyStateAfterUpdate.primaryTerm())
-        .isEqualTo(policyStateAfterCreation.primaryTerm());
+    // then: nothing was written, so seq_no/primary_term stay exactly where they were
+    assertThat(policyStateAfterUpdate).isEqualTo(policyStateAfterCreation);
+    assertThat(getPolicyMinAge("no_change_ism_policy_name")).isEqualTo("20d");
+  }
+
+  /** See {@link #shouldNotUpdateIndexLifeCyclePolicyWhenExistingHasSameValue}. */
+  @Test
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Excluding from AWS OS IT CI - policies not allowed for shared DBs")
+  void shouldUpdateIndexLifeCyclePolicyWhenMinAgeChanged() throws IOException {
+    // given
+    opensearchEngineClient.putIndexLifeCyclePolicy("changed_ism_policy_name", "20d");
+    final ISMPolicyState policyStateAfterCreation =
+        opensearchEngineClient.getCurrentISMPolicyState("changed_ism_policy_name");
+    assertThat(policyStateAfterCreation.exists()).isTrue();
+
+    // when: PUT again with a different min_index_age
+    opensearchEngineClient.putIndexLifeCyclePolicy("changed_ism_policy_name", "30d");
+
+    // then: the write actually happened, so seq_no moved on and the new value is in effect
+    final ISMPolicyState policyStateAfterUpdate =
+        opensearchEngineClient.getCurrentISMPolicyState("changed_ism_policy_name");
     assertThat(policyStateAfterUpdate.seqNo()).isGreaterThan(policyStateAfterCreation.seqNo());
-    assertThat(getPolicyMinAge("always_update_ism_policy_name")).isEqualTo("20d");
+    assertThat(getPolicyMinAge("changed_ism_policy_name")).isEqualTo("30d");
+  }
+
+  /**
+   * Regression test asserting that upgrading to a schema-manager version whose policy template
+   * newly states {@code retry} explicitly does not force a one-time PUT for every pre-existing
+   * fleet policy. A policy created by an older template (without an explicit {@code retry} block)
+   * already has OpenSearch's own default {@code retry} block persisted into it at creation time, so
+   * the fetched and desired definitions match without ever needing a write.
+   */
+  @Test
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Excluding from AWS OS IT CI - policies not allowed for shared DBs")
+  void shouldNotUpdatePolicyCreatedByOlderTemplateWithoutExplicitRetry() throws IOException {
+    // given - a policy created the way an older template (predating the explicit retry block)
+    // would have, i.e. without ever specifying retry on the delete action
+    final var policyName = "legacy_ism_policy_name";
+    final var legacyPolicyBody =
+        """
+        {
+          "policy": {
+            "description": "Archived index policy",
+            "default_state": "archived",
+            "states": [
+              {
+                "name": "archived",
+                "actions": [],
+                "transitions": [
+                  {
+                    "state_name": "deleted",
+                    "conditions": { "min_index_age": "20d" }
+                  }
+                ]
+              },
+              {
+                "name": "deleted",
+                "actions": [ { "delete": {} } ],
+                "transitions": []
+              }
+            ]
+          }
+        }
+        """;
+    final var createRequest =
+        Requests.builder()
+            .method("PUT")
+            .endpoint(
+                String.format("%s/%s", OpensearchEngineClient.ISM_POLICIES_ENDPOINT, policyName))
+            .body(Body.from(legacyPolicyBody.getBytes(StandardCharsets.UTF_8), "application/json"))
+            .build();
+    try (final var response = openSearchClient.generic().execute(createRequest)) {
+      assertThat(response.getStatus()).isEqualTo(201);
+    }
+    final var policyStateAfterCreation =
+        opensearchEngineClient.getCurrentISMPolicyState(policyName);
+    assertThat(policyStateAfterCreation.exists()).isTrue();
+
+    // when - schema-init runs putIndexLifeCyclePolicy() with today's template, which states retry
+    // explicitly
+    opensearchEngineClient.putIndexLifeCyclePolicy(policyName, "20d");
+
+    // then - nothing was written, so seq_no/primary_term stay exactly where they were
+    final var policyStateAfterSchemaInit =
+        opensearchEngineClient.getCurrentISMPolicyState(policyName);
+    assertThat(policyStateAfterSchemaInit).isEqualTo(policyStateAfterCreation);
   }
 
   @Test

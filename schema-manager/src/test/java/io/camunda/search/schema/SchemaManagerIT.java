@@ -109,31 +109,32 @@ public class SchemaManagerIT {
       final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
       throws Exception {
     // given
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
             getSearchEngineClient(config),
             Set.of(index, metadataIndex),
             Set.of(),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    initialiseResources(schemaManager);
+      initialiseResources(schemaManager);
 
-    // when
-    final var newProperties = new HashSet<IndexMappingProperty>();
-    newProperties.add(new IndexMappingProperty("foo", Map.of("type", "text")));
-    newProperties.add(new IndexMappingProperty("bar", Map.of("type", "keyword")));
+      // when
+      final var newProperties = new HashSet<IndexMappingProperty>();
+      newProperties.add(new IndexMappingProperty("foo", Map.of("type", "text")));
+      newProperties.add(new IndexMappingProperty("bar", Map.of("type", "keyword")));
 
-    final Map<IndexDescriptor, Collection<IndexMappingProperty>> schemasToChange =
-        Map.of(index, newProperties);
+      final Map<IndexDescriptor, Collection<IndexMappingProperty>> schemasToChange =
+          Map.of(index, newProperties);
 
-    schemaManager.updateSchemaMappings(schemasToChange);
+      schemaManager.updateSchemaMappings(schemasToChange);
 
-    // then
-    final var updatedIndex = searchClientAdapter.getIndexAsNode(index.getFullQualifiedName());
+      // then
+      final var updatedIndex = searchClientAdapter.getIndexAsNode(index.getFullQualifiedName());
 
-    assertThat(updatedIndex.at("/mappings/properties/foo/type").asText()).isEqualTo("text");
-    assertThat(updatedIndex.at("/mappings/properties/bar/type").asText()).isEqualTo("keyword");
+      assertThat(updatedIndex.at("/mappings/properties/foo/type").asText()).isEqualTo("text");
+      assertThat(updatedIndex.at("/mappings/properties/bar/type").asText()).isEqualTo("keyword");
+    }
   }
 
   @TestTemplate
@@ -144,34 +145,35 @@ public class SchemaManagerIT {
     config.index().setNumberOfReplicas(10);
     config.index().setNumberOfShards(10);
 
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
             getSearchEngineClient(config),
             Set.of(index, metadataIndex),
             Set.of(indexTemplate),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    // when
-    initialiseResources(schemaManager);
+      // when
+      initialiseResources(schemaManager);
 
-    // then
-    final var retrievedIndex = searchClientAdapter.getIndexAsNode(index.getFullQualifiedName());
-    assertThat(retrievedIndex.at("/settings/index/number_of_replicas").asInt()).isEqualTo(10);
-    assertThat(retrievedIndex.at("/settings/index/number_of_shards").asInt()).isEqualTo(10);
+      // then
+      final var retrievedIndex = searchClientAdapter.getIndexAsNode(index.getFullQualifiedName());
+      assertThat(retrievedIndex.at("/settings/index/number_of_replicas").asInt()).isEqualTo(10);
+      assertThat(retrievedIndex.at("/settings/index/number_of_shards").asInt()).isEqualTo(10);
 
-    final var retrievedTemplate =
-        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
-    assertThat(
-            retrievedTemplate
-                .at("/index_template/template/settings/index/number_of_replicas")
-                .asInt())
-        .isEqualTo(10);
-    assertThat(
-            retrievedTemplate
-                .at("/index_template/template/settings/index/number_of_shards")
-                .asInt())
-        .isEqualTo(10);
+      final var retrievedTemplate =
+          searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+      assertThat(
+              retrievedTemplate
+                  .at("/index_template/template/settings/index/number_of_replicas")
+                  .asInt())
+          .isEqualTo(10);
+      assertThat(
+              retrievedTemplate
+                  .at("/index_template/template/settings/index/number_of_shards")
+                  .asInt())
+          .isEqualTo(10);
+    }
   }
 
   @TestTemplate
@@ -184,22 +186,23 @@ public class SchemaManagerIT {
     config.index().setReplicasByIndexName(Map.of("index_name", 5));
     config.index().setShardsByIndexName(Map.of("index_name", 5));
 
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
             getSearchEngineClient(config),
             Set.of(index, metadataIndex),
             Set.of(indexTemplate),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    // when
-    initialiseResources(schemaManager);
+      // when
+      initialiseResources(schemaManager);
 
-    // then
-    final var retrievedIndex = searchClientAdapter.getIndexAsNode(index.getFullQualifiedName());
+      // then
+      final var retrievedIndex = searchClientAdapter.getIndexAsNode(index.getFullQualifiedName());
 
-    assertThat(retrievedIndex.at("/settings/index/number_of_replicas").asInt()).isEqualTo(5);
-    assertThat(retrievedIndex.at("/settings/index/number_of_shards").asInt()).isEqualTo(5);
+      assertThat(retrievedIndex.at("/settings/index/number_of_replicas").asInt()).isEqualTo(5);
+      assertThat(retrievedIndex.at("/settings/index/number_of_shards").asInt()).isEqualTo(5);
+    }
   }
 
   @TestTemplate
@@ -207,31 +210,33 @@ public class SchemaManagerIT {
       final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
       throws Exception {
     // given
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
             getSearchEngineClient(config),
             Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    initialiseResources(schemaManager);
+      initialiseResources(schemaManager);
 
-    // when
-    indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
+      // when
+      indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
 
-    final Map<IndexDescriptor, Collection<IndexMappingProperty>> schemasToChange =
-        Map.of(indexTemplate, Set.of());
-    schemaManager.updateSchemaMappings(schemasToChange);
+      final Map<IndexDescriptor, Collection<IndexMappingProperty>> schemasToChange =
+          Map.of(indexTemplate, Set.of());
+      schemaManager.updateSchemaMappings(schemasToChange);
 
-    // then
-    final var template =
-        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+      // then
+      final var template =
+          searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
 
-    assertThat(
-            mappingsMatch(
-                template.at("/index_template/template/mappings"), "/mappings-added-property.json"))
-        .isTrue();
+      assertThat(
+              mappingsMatch(
+                  template.at("/index_template/template/mappings"),
+                  "/mappings-added-property.json"))
+          .isTrue();
+    }
   }
 
   @TestTemplate
@@ -239,27 +244,28 @@ public class SchemaManagerIT {
       final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
       throws Exception {
     // given
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
             getSearchEngineClient(config),
             Set.of(index, metadataIndex),
             Set.of(indexTemplate),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    // when
-    schemaManager.startup();
+      // when
+      schemaManager.startup();
 
-    // then
-    final var retrievedIndex = searchClientAdapter.getIndexAsNode(index.getFullQualifiedName());
-    final var retrievedIndexTemplate =
-        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+      // then
+      final var retrievedIndex = searchClientAdapter.getIndexAsNode(index.getFullQualifiedName());
+      final var retrievedIndexTemplate =
+          searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
 
-    assertThat(mappingsMatch(retrievedIndex.get("mappings"), "/mappings.json")).isTrue();
-    assertThat(
-            mappingsMatch(
-                retrievedIndexTemplate.at("/index_template/template/mappings"), "/mappings.json"))
-        .isTrue();
+      assertThat(mappingsMatch(retrievedIndex.get("mappings"), "/mappings.json")).isTrue();
+      assertThat(
+              mappingsMatch(
+                  retrievedIndexTemplate.at("/index_template/template/mappings"), "/mappings.json"))
+          .isTrue();
+    }
   }
 
   @TestTemplate
@@ -268,34 +274,35 @@ public class SchemaManagerIT {
       throws Exception {
     // given
     config.schemaManager().setCreateSchema(true);
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
             getSearchEngineClient(config),
             Set.of(index, metadataIndex),
             Set.of(indexTemplate),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    // when
-    index.setMappingsClasspathFilename("/mappings-added-property.json");
-    indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
+      // when
+      index.setMappingsClasspathFilename("/mappings-added-property.json");
+      indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    // then
-    final var retrievedIndex = searchClientAdapter.getIndexAsNode(index.getFullQualifiedName());
-    final var retrievedIndexTemplate =
-        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+      // then
+      final var retrievedIndex = searchClientAdapter.getIndexAsNode(index.getFullQualifiedName());
+      final var retrievedIndexTemplate =
+          searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
 
-    assertThat(mappingsMatch(retrievedIndex.get("mappings"), "/mappings-added-property.json"))
-        .isTrue();
-    assertThat(
-            mappingsMatch(
-                retrievedIndexTemplate.at("/index_template/template/mappings"),
-                "/mappings-added-property.json"))
-        .isTrue();
+      assertThat(mappingsMatch(retrievedIndex.get("mappings"), "/mappings-added-property.json"))
+          .isTrue();
+      assertThat(
+              mappingsMatch(
+                  retrievedIndexTemplate.at("/index_template/template/mappings"),
+                  "/mappings-added-property.json"))
+          .isTrue();
+    }
   }
 
   @RegressionTestTemplate("https://github.com/camunda/camunda/issues/57256")
@@ -305,34 +312,35 @@ public class SchemaManagerIT {
     // given
     config.schemaManager().setCreateSchema(true);
     final var searchEngineClient = getSearchEngineClient(config);
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
             searchEngineClient,
             Set.of(index, metadataIndex),
             Set.of(indexTemplate),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    // when - the runtime index backing the template is dropped, e.g. by an operator, leaving only
-    // the template behind, and the descriptor's mapping is then upgraded
-    searchEngineClient.deleteIndex(indexTemplate.getFullQualifiedName());
-    searchClientAdapter.refresh();
-    indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
+      // when - the runtime index backing the template is dropped, e.g. by an operator, leaving only
+      // the template behind, and the descriptor's mapping is then upgraded
+      searchEngineClient.deleteIndex(indexTemplate.getFullQualifiedName());
+      searchClientAdapter.refresh();
+      indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    // then - the template itself must reflect the new mapping, otherwise future indices created
-    // off it (e.g. after a rollover) would mismatch the freshly re-created runtime index
-    final var retrievedIndexTemplate =
-        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+      // then - the template itself must reflect the new mapping, otherwise future indices created
+      // off it (e.g. after a rollover) would mismatch the freshly re-created runtime index
+      final var retrievedIndexTemplate =
+          searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
 
-    assertThat(
-            mappingsMatch(
-                retrievedIndexTemplate.at("/index_template/template/mappings"),
-                "/mappings-added-property.json"))
-        .isTrue();
+      assertThat(
+              mappingsMatch(
+                  retrievedIndexTemplate.at("/index_template/template/mappings"),
+                  "/mappings-added-property.json"))
+          .isTrue();
+    }
   }
 
   @TestTemplate
@@ -348,11 +356,11 @@ public class SchemaManagerIT {
     indices.add(index);
     indexTemplates.add(indexTemplate);
 
-    var schemaManager =
+    try (var schemaManager =
         new SchemaManager(
-            getSearchEngineClient(config), indices, indexTemplates, config, objectMapper);
-
-    schemaManager.startup();
+            getSearchEngineClient(config), indices, indexTemplates, config, objectMapper)) {
+      schemaManager.startup();
+    }
 
     // when
     final var newIndex = createTestIndexDescriptor("new_index", "/mappings-added-property.json");
@@ -361,24 +369,25 @@ public class SchemaManagerIT {
     indices.add(newIndex);
     indexTemplates.add(newIndexTemplate);
 
-    schemaManager =
+    try (var schemaManager =
         new SchemaManager(
-            getSearchEngineClient(config), indices, indexTemplates, config, objectMapper);
-    schemaManager.startup();
+            getSearchEngineClient(config), indices, indexTemplates, config, objectMapper)) {
+      schemaManager.startup();
 
-    // then
-    final var retrievedNewIndex =
-        searchClientAdapter.getIndexAsNode(newIndex.getFullQualifiedName());
-    final var retrievedNewTemplate =
-        searchClientAdapter.getIndexTemplateAsNode(newIndexTemplate.getTemplateName());
+      // then
+      final var retrievedNewIndex =
+          searchClientAdapter.getIndexAsNode(newIndex.getFullQualifiedName());
+      final var retrievedNewTemplate =
+          searchClientAdapter.getIndexTemplateAsNode(newIndexTemplate.getTemplateName());
 
-    assertThat(mappingsMatch(retrievedNewIndex.get("mappings"), "/mappings-added-property.json"))
-        .isTrue();
-    assertThat(
-            mappingsMatch(
-                retrievedNewTemplate.at("/index_template/template/mappings"),
-                "/mappings-added-property.json"))
-        .isTrue();
+      assertThat(mappingsMatch(retrievedNewIndex.get("mappings"), "/mappings-added-property.json"))
+          .isTrue();
+      assertThat(
+              mappingsMatch(
+                  retrievedNewTemplate.at("/index_template/template/mappings"),
+                  "/mappings-added-property.json"))
+          .isTrue();
+    }
   }
 
   @TestTemplate
@@ -387,24 +396,25 @@ public class SchemaManagerIT {
     // given
     config.schemaManager().setCreateSchema(false);
 
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
             getSearchEngineClient(config),
             Set.of(index, metadataIndex),
             Set.of(indexTemplate),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    // then
-    assertThatThrownBy(() -> searchClientAdapter.getIndexAsNode(index.getFullQualifiedName()))
-        .isInstanceOfAny(ElasticsearchException.class, OpenSearchException.class)
-        .hasMessageContaining("no such index");
-    assertThatThrownBy(
-            () -> searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName()))
-        .isInstanceOfAny(ElasticsearchException.class, OpenSearchException.class)
-        .hasMessageContaining(String.format("[%s] not found", indexTemplate.getTemplateName()));
+      // then
+      assertThatThrownBy(() -> searchClientAdapter.getIndexAsNode(index.getFullQualifiedName()))
+          .isInstanceOfAny(ElasticsearchException.class, OpenSearchException.class)
+          .hasMessageContaining("no such index");
+      assertThatThrownBy(
+              () -> searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName()))
+          .isInstanceOfAny(ElasticsearchException.class, OpenSearchException.class)
+          .hasMessageContaining(String.format("[%s] not found", indexTemplate.getTemplateName()));
+    }
   }
 
   @TestTemplate
@@ -415,22 +425,24 @@ public class SchemaManagerIT {
     config.schemaManager().setCreateSchema(true);
     config.retention().setEnabled(true);
 
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
-            getSearchEngineClient(config), Set.of(metadataIndex), Set.of(), config, objectMapper);
-    // when
-    schemaManager.startup();
+            getSearchEngineClient(config), Set.of(metadataIndex), Set.of(), config, objectMapper)) {
+      // when
+      schemaManager.startup();
 
-    // then: verify that all configured retention policies were created with default values
-    assertThat(searchClientAdapter.getPolicyAsNode("camunda-retention-policy"))
-        .asInstanceOf(type(JsonNode.class)) // switch from IterableAssert -> ObjectAssert<JsonNode>
-        .extracting(this::retentionMinAge)
-        .isEqualTo("30d");
+      // then: verify that all configured retention policies were created with default values
+      assertThat(searchClientAdapter.getPolicyAsNode("camunda-retention-policy"))
+          .asInstanceOf(
+              type(JsonNode.class)) // switch from IterableAssert -> ObjectAssert<JsonNode>
+          .extracting(this::retentionMinAge)
+          .isEqualTo("30d");
 
-    assertThat(searchClientAdapter.getPolicyAsNode("camunda-usage-metrics-retention-policy"))
-        .asInstanceOf(type(JsonNode.class))
-        .extracting(this::retentionMinAge)
-        .isEqualTo("730d");
+      assertThat(searchClientAdapter.getPolicyAsNode("camunda-usage-metrics-retention-policy"))
+          .asInstanceOf(type(JsonNode.class))
+          .extracting(this::retentionMinAge)
+          .isEqualTo("730d");
+    }
   }
 
   @TestTemplate
@@ -446,22 +458,24 @@ public class SchemaManagerIT {
     retention.setUsageMetricsPolicyName("custom-metrics-retention-policy");
     retention.setUsageMetricsMinimumAge("100d");
 
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
-            getSearchEngineClient(config), Set.of(metadataIndex), Set.of(), config, objectMapper);
-    // when
-    schemaManager.startup();
+            getSearchEngineClient(config), Set.of(metadataIndex), Set.of(), config, objectMapper)) {
+      // when
+      schemaManager.startup();
 
-    // then: verify that all configured retention policies were created with custom values
-    assertThat(searchClientAdapter.getPolicyAsNode("custom-retention-policy"))
-        .asInstanceOf(type(JsonNode.class)) // switch from IterableAssert -> ObjectAssert<JsonNode>
-        .extracting(this::retentionMinAge)
-        .isEqualTo("88d");
+      // then: verify that all configured retention policies were created with custom values
+      assertThat(searchClientAdapter.getPolicyAsNode("custom-retention-policy"))
+          .asInstanceOf(
+              type(JsonNode.class)) // switch from IterableAssert -> ObjectAssert<JsonNode>
+          .extracting(this::retentionMinAge)
+          .isEqualTo("88d");
 
-    assertThat(searchClientAdapter.getPolicyAsNode("custom-metrics-retention-policy"))
-        .asInstanceOf(type(JsonNode.class))
-        .extracting(this::retentionMinAge)
-        .isEqualTo("100d");
+      assertThat(searchClientAdapter.getPolicyAsNode("custom-metrics-retention-policy"))
+          .asInstanceOf(type(JsonNode.class))
+          .extracting(this::retentionMinAge)
+          .isEqualTo("100d");
+    }
   }
 
   @TestTemplate
@@ -470,21 +484,22 @@ public class SchemaManagerIT {
       throws Exception {
     config.schemaManager().setCreateSchema(true);
 
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
             getSearchEngineClient(config),
             Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    final var retrievedIndex =
-        searchClientAdapter.getIndexAsNode(indexTemplate.getFullQualifiedName());
+      final var retrievedIndex =
+          searchClientAdapter.getIndexAsNode(indexTemplate.getFullQualifiedName());
 
-    assertThat(retrievedIndex.at("/settings/index/provided_name").asText())
-        .isEqualTo(indexTemplate.getFullQualifiedName());
+      assertThat(retrievedIndex.at("/settings/index/provided_name").asText())
+          .isEqualTo(indexTemplate.getFullQualifiedName());
+    }
   }
 
   @TestTemplate
@@ -497,31 +512,32 @@ public class SchemaManagerIT {
     final var currentMappingsFile = index.getMappingsClasspathFilename();
     final var newMappingsFile = "/mappings-added-property.json";
 
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
             getSearchEngineClient(config),
             Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    final var retrievedIndex =
-        searchClientAdapter.getIndexAsNode(indexTemplate.getFullQualifiedName());
+      final var retrievedIndex =
+          searchClientAdapter.getIndexAsNode(indexTemplate.getFullQualifiedName());
 
-    assertThat(mappingsMatch(retrievedIndex.get("mappings"), currentMappingsFile)).isTrue();
+      assertThat(mappingsMatch(retrievedIndex.get("mappings"), currentMappingsFile)).isTrue();
 
-    // when
-    indexTemplate.setMappingsClasspathFilename(newMappingsFile);
+      // when
+      indexTemplate.setMappingsClasspathFilename(newMappingsFile);
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    // then
-    final var updatedIndex =
-        searchClientAdapter.getIndexAsNode(indexTemplate.getFullQualifiedName());
+      // then
+      final var updatedIndex =
+          searchClientAdapter.getIndexAsNode(indexTemplate.getFullQualifiedName());
 
-    assertThat(mappingsMatch(updatedIndex.get("mappings"), newMappingsFile)).isTrue();
+      assertThat(mappingsMatch(updatedIndex.get("mappings"), newMappingsFile)).isTrue();
+    }
   }
 
   @TestTemplate
@@ -529,42 +545,43 @@ public class SchemaManagerIT {
       final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
       throws IOException {
     // given
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
             getSearchEngineClient(config),
             Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    final var indexTemplateSettingsToBeAppended =
-        "/index_template/template/settings/index/refresh_interval";
-    final var indexSettingsToBeAppended = "/settings/index/refresh_interval";
+      final var indexTemplateSettingsToBeAppended =
+          "/index_template/template/settings/index/refresh_interval";
+      final var indexSettingsToBeAppended = "/settings/index/refresh_interval";
 
-    final var initialTemplate =
-        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
-    final var initialMatchingIndex =
-        searchClientAdapter.getIndexAsNode(indexTemplate.getFullQualifiedName());
+      final var initialTemplate =
+          searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+      final var initialMatchingIndex =
+          searchClientAdapter.getIndexAsNode(indexTemplate.getFullQualifiedName());
 
-    assertThat(initialTemplate.at(indexTemplateSettingsToBeAppended).asText()).isEqualTo("");
-    assertThat(initialMatchingIndex.at(indexSettingsToBeAppended).asText()).isEqualTo("");
+      assertThat(initialTemplate.at(indexTemplateSettingsToBeAppended).asText()).isEqualTo("");
+      assertThat(initialMatchingIndex.at(indexSettingsToBeAppended).asText()).isEqualTo("");
 
-    // when
-    indexTemplate.setMappingsClasspathFilename("/mappings-and-updated-settings.json");
+      // when
+      indexTemplate.setMappingsClasspathFilename("/mappings-and-updated-settings.json");
 
-    // change index template schema to have new updated settings and trigger update
-    schemaManager.startup();
+      // change index template schema to have new updated settings and trigger update
+      schemaManager.startup();
 
-    // then
-    final var updatedTemplate =
-        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
-    final var updatedMatchingIndex =
-        searchClientAdapter.getIndexAsNode(indexTemplate.getFullQualifiedName());
+      // then
+      final var updatedTemplate =
+          searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+      final var updatedMatchingIndex =
+          searchClientAdapter.getIndexAsNode(indexTemplate.getFullQualifiedName());
 
-    assertThat(updatedTemplate.at(indexTemplateSettingsToBeAppended).asText()).isEqualTo("5s");
-    assertThat(updatedMatchingIndex.at(indexSettingsToBeAppended).asText()).isEqualTo("");
+      assertThat(updatedTemplate.at(indexTemplateSettingsToBeAppended).asText()).isEqualTo("5s");
+      assertThat(updatedMatchingIndex.at(indexSettingsToBeAppended).asText()).isEqualTo("");
+    }
   }
 
   @TestTemplate
@@ -572,37 +589,38 @@ public class SchemaManagerIT {
       final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
       throws IOException {
     // given
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
             getSearchEngineClient(config),
             Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    final var replicaSettingPath = "/index_template/template/settings/index/number_of_replicas";
-    final var shardsSettingPath = "/index_template/template/settings/index/number_of_shards";
+      final var replicaSettingPath = "/index_template/template/settings/index/number_of_replicas";
+      final var shardsSettingPath = "/index_template/template/settings/index/number_of_shards";
 
-    final var initialTemplate =
-        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+      final var initialTemplate =
+          searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
 
-    assertThat(initialTemplate.at(replicaSettingPath).asInt()).isEqualTo(1);
-    assertThat(initialTemplate.at(shardsSettingPath).asInt()).isEqualTo(1);
+      assertThat(initialTemplate.at(replicaSettingPath).asInt()).isEqualTo(1);
+      assertThat(initialTemplate.at(shardsSettingPath).asInt()).isEqualTo(1);
 
-    // when
-    config.index().setNumberOfReplicas(5);
-    config.index().setNumberOfShards(5);
+      // when
+      config.index().setNumberOfReplicas(5);
+      config.index().setNumberOfShards(5);
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    // then
-    final var updatedTemplate =
-        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+      // then
+      final var updatedTemplate =
+          searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
 
-    assertThat(updatedTemplate.at(replicaSettingPath).asInt()).isEqualTo(5);
-    assertThat(updatedTemplate.at(shardsSettingPath).asInt()).isEqualTo(5);
+      assertThat(updatedTemplate.at(replicaSettingPath).asInt()).isEqualTo(5);
+      assertThat(updatedTemplate.at(shardsSettingPath).asInt()).isEqualTo(5);
+    }
   }
 
   @TestTemplate
@@ -610,35 +628,92 @@ public class SchemaManagerIT {
       final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
       throws IOException {
     // given
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
             getSearchEngineClient(config),
             Set.of(index, metadataIndex),
             Set.of(),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    final var replicaSettingPath = "/settings/index/number_of_replicas";
-    final var shardsSettingPath = "/settings/index/number_of_shards";
+      final var replicaSettingPath = "/settings/index/number_of_replicas";
+      final var shardsSettingPath = "/settings/index/number_of_shards";
 
-    final var initialIndex = searchClientAdapter.getIndexAsNode(index.getFullQualifiedName());
+      final var initialIndex = searchClientAdapter.getIndexAsNode(index.getFullQualifiedName());
 
-    assertThat(initialIndex.at(replicaSettingPath).asInt()).isEqualTo(1);
-    assertThat(initialIndex.at(shardsSettingPath).asInt()).isEqualTo(1);
+      assertThat(initialIndex.at(replicaSettingPath).asInt()).isEqualTo(1);
+      assertThat(initialIndex.at(shardsSettingPath).asInt()).isEqualTo(1);
 
-    // when
-    config.index().setNumberOfReplicas(5);
-    config.index().setNumberOfShards(5);
+      // when
+      config.index().setNumberOfReplicas(5);
+      config.index().setNumberOfShards(5);
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    // then
-    final var updatedIndex = searchClientAdapter.getIndexAsNode(index.getFullQualifiedName());
+      // then
+      final var updatedIndex = searchClientAdapter.getIndexAsNode(index.getFullQualifiedName());
 
-    assertThat(updatedIndex.at(replicaSettingPath).asInt()).isEqualTo(5);
-    assertThat(updatedIndex.at(shardsSettingPath).asInt()).isEqualTo(1);
+      assertThat(updatedIndex.at(replicaSettingPath).asInt()).isEqualTo(5);
+      assertThat(updatedIndex.at(shardsSettingPath).asInt()).isEqualTo(1);
+    }
+  }
+
+  /**
+   * Regression test for #63543/#63672: schema-init runs on every broker/webapp restart, so a
+   * fleet-wide rollout re-runs it once per physical tenant even when nothing has changed. This
+   * asserts that end-to-end path — driven through the real {@code startupOnce()} entry point
+   * against a real search engine, not a mocked unit test — issues no redundant {@code putSettings}
+   * call on a second, unchanged run following one that actually wrote a change.
+   */
+  @TestTemplate
+  void shouldNotReissuePutSettingsWhenNothingChangedAcrossTwoRuns(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws IOException {
+    // given - the index is created with the descriptor's default replica count
+    final SearchEngineClient searchEngineClient = spy(getSearchEngineClient(config));
+    try (final var schemaManager =
+        new SchemaManager(
+            searchEngineClient, Set.of(index, metadataIndex), Set.of(), config, objectMapper)) {
+
+      schemaManager.startup();
+
+      final var replicaSettingPath = "/settings/index/number_of_replicas";
+      assertThat(
+              searchClientAdapter
+                  .getIndexAsNode(index.getFullQualifiedName())
+                  .at(replicaSettingPath)
+                  .asInt())
+          .isEqualTo(1);
+
+      // when - the configured replica count changes, so this run must write it
+      reset(searchEngineClient);
+      config.index().setNumberOfReplicas(3);
+      schemaManager.startup();
+
+      // then - the write actually happened
+      assertThat(
+              searchClientAdapter
+                  .getIndexAsNode(index.getFullQualifiedName())
+                  .at(replicaSettingPath)
+                  .asInt())
+          .isEqualTo(3);
+      verify(searchEngineClient, times(1)).putSettings(eq(List.of(index)), any());
+
+      // when - schema-init runs again with nothing changed, the way it would on every restart
+      reset(searchEngineClient);
+      schemaManager.startup();
+
+      // then - the setting is still correct, but no write was issued to reach it this time
+      assertThat(
+              searchClientAdapter
+                  .getIndexAsNode(index.getFullQualifiedName())
+                  .at(replicaSettingPath)
+                  .asInt())
+          .isEqualTo(3);
+      verify(searchEngineClient, never()).putSettings(any(), any());
+    }
   }
 
   @TestTemplate
@@ -654,55 +729,59 @@ public class SchemaManagerIT {
     retention.setUsageMetricsPolicyName("custom-metrics-retention-policy");
     retention.setUsageMetricsMinimumAge("100d");
 
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
-            getSearchEngineClient(config), Set.of(metadataIndex), Set.of(), config, objectMapper);
-    // when
-    schemaManager.startup();
+            getSearchEngineClient(config), Set.of(metadataIndex), Set.of(), config, objectMapper)) {
+      // when
+      schemaManager.startup();
 
-    // then: verify that all configured retention policies were created with custom value
-    assertThat(searchClientAdapter.getPolicyAsNode("custom-retention-policy"))
-        .asInstanceOf(type(JsonNode.class)) // switch from IterableAssert -> ObjectAssert<JsonNode>
-        .extracting(this::retentionMinAge)
-        .isEqualTo("88d");
+      // then: verify that all configured retention policies were created with custom value
+      assertThat(searchClientAdapter.getPolicyAsNode("custom-retention-policy"))
+          .asInstanceOf(
+              type(JsonNode.class)) // switch from IterableAssert -> ObjectAssert<JsonNode>
+          .extracting(this::retentionMinAge)
+          .isEqualTo("88d");
 
-    assertThat(searchClientAdapter.getPolicyAsNode("custom-metrics-retention-policy"))
-        .asInstanceOf(type(JsonNode.class))
-        .extracting(this::retentionMinAge)
-        .isEqualTo("100d");
+      assertThat(searchClientAdapter.getPolicyAsNode("custom-metrics-retention-policy"))
+          .asInstanceOf(type(JsonNode.class))
+          .extracting(this::retentionMinAge)
+          .isEqualTo("100d");
 
-    // when: update the retention configuration with new values and restart the schema manager
-    retention.setMinimumAge("44d");
-    retention.setUsageMetricsMinimumAge("50d");
-    schemaManager.startup();
+      // when: update the retention configuration with new values and restart the schema manager
+      retention.setMinimumAge("44d");
+      retention.setUsageMetricsMinimumAge("50d");
+      schemaManager.startup();
 
-    // then: verify that all configured retention policies were updated with new custom values
-    assertThat(searchClientAdapter.getPolicyAsNode("custom-retention-policy"))
-        .asInstanceOf(type(JsonNode.class)) // switch from IterableAssert -> ObjectAssert<JsonNode>
-        .extracting(this::retentionMinAge)
-        .isEqualTo("44d");
-    assertThat(searchClientAdapter.getPolicyAsNode("custom-metrics-retention-policy"))
-        .asInstanceOf(type(JsonNode.class))
-        .extracting(this::retentionMinAge)
-        .isEqualTo("50d");
+      // then: verify that all configured retention policies were updated with new custom values
+      assertThat(searchClientAdapter.getPolicyAsNode("custom-retention-policy"))
+          .asInstanceOf(
+              type(JsonNode.class)) // switch from IterableAssert -> ObjectAssert<JsonNode>
+          .extracting(this::retentionMinAge)
+          .isEqualTo("44d");
+      assertThat(searchClientAdapter.getPolicyAsNode("custom-metrics-retention-policy"))
+          .asInstanceOf(type(JsonNode.class))
+          .extracting(this::retentionMinAge)
+          .isEqualTo("50d");
+    }
   }
 
   @TestTemplate
   void shouldIsSchemaReadyForUseReturnTrueWhenAllIndicesAndTemplatesAreCreated(
       final SearchEngineConfiguration config, final SearchClientAdapter ignored) {
     // given
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
             getSearchEngineClient(config),
             Set.of(index, metadataIndex),
             Set.of(indexTemplate),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    // when, then
-    assertThat(schemaManager.isSchemaReadyForUse()).isTrue();
+      // when, then
+      assertThat(schemaManager.isSchemaReadyForUse()).isTrue();
+    }
   }
 
   @TestTemplate
@@ -710,21 +789,22 @@ public class SchemaManagerIT {
       final SearchEngineConfiguration config, final SearchClientAdapter ignored) {
     // given
     final SearchEngineClient searchEngineClient = getSearchEngineClient(config);
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
             searchEngineClient,
             Set.of(index, metadataIndex),
             Set.of(indexTemplate),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    // delete the templated runtime index
-    searchEngineClient.deleteIndex(indexTemplate.getFullQualifiedName());
+      // delete the templated runtime index
+      searchEngineClient.deleteIndex(indexTemplate.getFullQualifiedName());
 
-    // when, then
-    assertThat(schemaManager.isSchemaReadyForUse()).isFalse();
+      // when, then
+      assertThat(schemaManager.isSchemaReadyForUse()).isFalse();
+    }
   }
 
   @TestTemplate
@@ -732,54 +812,60 @@ public class SchemaManagerIT {
       final SearchEngineConfiguration config, final SearchClientAdapter ignored) {
     // given
     final SearchEngineClient searchEngineClient = getSearchEngineClient(config);
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
-            searchEngineClient, Set.of(metadataIndex), Set.of(indexTemplate), config, objectMapper);
+            searchEngineClient,
+            Set.of(metadataIndex),
+            Set.of(indexTemplate),
+            config,
+            objectMapper)) {
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    // update the index template with a different mapping
-    indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
+      // update the index template with a different mapping
+      indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
 
-    // when, then
-    assertThat(schemaManager.isSchemaReadyForUse()).isFalse();
+      // when, then
+      assertThat(schemaManager.isSchemaReadyForUse()).isFalse();
+    }
   }
 
   @TestTemplate
   void shouldUseReplicaAndShardFromConfigIfConflictingWithValuesInJsonSchema(
       final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
       throws IOException {
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
             getSearchEngineClient(config),
             Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    final var replicaSettingPath = "/index_template/template/settings/index/number_of_replicas";
-    final var shardsSettingPath = "/index_template/template/settings/index/number_of_shards";
+      final var replicaSettingPath = "/index_template/template/settings/index/number_of_replicas";
+      final var shardsSettingPath = "/index_template/template/settings/index/number_of_shards";
 
-    final var initialTemplate =
-        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+      final var initialTemplate =
+          searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
 
-    assertThat(initialTemplate.at(replicaSettingPath).asInt()).isEqualTo(1);
-    assertThat(initialTemplate.at(shardsSettingPath).asInt()).isEqualTo(1);
+      assertThat(initialTemplate.at(replicaSettingPath).asInt()).isEqualTo(1);
+      assertThat(initialTemplate.at(shardsSettingPath).asInt()).isEqualTo(1);
 
-    indexTemplate.setMappingsClasspathFilename("/mappings-settings-replica-and-shards.json");
+      indexTemplate.setMappingsClasspathFilename("/mappings-settings-replica-and-shards.json");
 
-    config.index().setNumberOfReplicas(5);
-    config.index().setNumberOfShards(5);
+      config.index().setNumberOfReplicas(5);
+      config.index().setNumberOfShards(5);
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    final var updatedTemplate =
-        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+      final var updatedTemplate =
+          searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
 
-    assertThat(updatedTemplate.at(replicaSettingPath).asInt()).isEqualTo(5);
-    assertThat(updatedTemplate.at(shardsSettingPath).asInt()).isEqualTo(5);
+      assertThat(updatedTemplate.at(replicaSettingPath).asInt()).isEqualTo(5);
+      assertThat(updatedTemplate.at(shardsSettingPath).asInt()).isEqualTo(5);
+    }
   }
 
   @TestTemplate
@@ -794,25 +880,26 @@ public class SchemaManagerIT {
     searchClientAdapter.refresh();
 
     // when
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
             getSearchEngineClient(config),
             Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    // then
-    Awaitility.await()
-        .untilAsserted(
-            () ->
-                assertThatNoException()
-                    .isThrownBy(
-                        () ->
-                            searchClientAdapter.getIndexAsNode(
-                                indexTemplate.getFullQualifiedName())));
+      // then
+      Awaitility.await()
+          .untilAsserted(
+              () ->
+                  assertThatNoException()
+                      .isThrownBy(
+                          () ->
+                              searchClientAdapter.getIndexAsNode(
+                                  indexTemplate.getFullQualifiedName())));
+    }
   }
 
   @RegressionTestTemplate("https://github.com/camunda/camunda/issues/26056")
@@ -824,16 +911,17 @@ public class SchemaManagerIT {
         new IndexDescriptors(
             config.connect().getIndexPrefix(), config.connect().getTypeEnum().isElasticSearch());
 
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
             getSearchEngineClient(config),
             indexDescriptors.indices(),
             indexDescriptors.templates(),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    schemaManager.startup();
-    assertThatNoException().isThrownBy(schemaManager::startup);
+      schemaManager.startup();
+      assertThatNoException().isThrownBy(schemaManager::startup);
+    }
   }
 
   @TestTemplate
@@ -844,34 +932,34 @@ public class SchemaManagerIT {
     retention.setEnabled(true);
     retention.setPolicyName("shouldOpenDifferentPartitionsWithRetention");
 
-    final var schemaManager1 =
-        new SchemaManager(
-            getSearchEngineClient(config),
-            Set.of(metadataIndex),
-            Set.of(indexTemplate),
-            config,
-            objectMapper);
+    try (final var schemaManager1 =
+            new SchemaManager(
+                getSearchEngineClient(config),
+                Set.of(metadataIndex),
+                Set.of(indexTemplate),
+                config,
+                objectMapper);
+        final var schemaManager2 =
+            new SchemaManager(
+                getSearchEngineClient(config),
+                Set.of(metadataIndex),
+                Set.of(indexTemplate),
+                config,
+                objectMapper)) {
 
-    final var schemaManager2 =
-        new SchemaManager(
-            getSearchEngineClient(config),
-            Set.of(metadataIndex),
-            Set.of(indexTemplate),
-            config,
-            objectMapper);
+      // when
+      final var future = CompletableFuture.runAsync(() -> schemaManager1.startup());
 
-    // when
-    final var future = CompletableFuture.runAsync(() -> schemaManager1.startup());
-
-    // then
-    assertThatNoException().isThrownBy(() -> schemaManager2.startup());
-    Awaitility.await("Schema manager one has been run successfully")
-        .atMost(Duration.ofSeconds(30))
-        .untilAsserted(
-            () -> {
-              assertThat(future).isNotCompletedExceptionally();
-              assertThat(future).isCompleted();
-            });
+      // then
+      assertThatNoException().isThrownBy(() -> schemaManager2.startup());
+      Awaitility.await("Schema manager one has been run successfully")
+          .atMost(Duration.ofSeconds(30))
+          .untilAsserted(
+              () -> {
+                assertThat(future).isNotCompletedExceptionally();
+                assertThat(future).isCompleted();
+              });
+    }
   }
 
   @TestTemplate
@@ -883,38 +971,39 @@ public class SchemaManagerIT {
       final SearchEngineConfiguration config, final SearchClientAdapter clientAdapter)
       throws Exception {
     // given
-    final var schemaManager1 =
-        createSchemaManager(
-            getSearchEngineClient(config),
-            Set.of(index, metadataIndex),
-            Set.of(indexTemplate),
-            config);
-    final var schemaManager2 =
-        createSchemaManager(
-            getSearchEngineClient(config),
-            Set.of(index, metadataIndex),
-            Set.of(indexTemplate),
-            config);
+    try (final var schemaManager1 =
+            createSchemaManager(
+                getSearchEngineClient(config),
+                Set.of(index, metadataIndex),
+                Set.of(indexTemplate),
+                config);
+        final var schemaManager2 =
+            createSchemaManager(
+                getSearchEngineClient(config),
+                Set.of(index, metadataIndex),
+                Set.of(indexTemplate),
+                config)) {
 
-    index.setMappingsClasspathFilename("/mappings-added-property.json");
-    indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
+      index.setMappingsClasspathFilename("/mappings-added-property.json");
+      indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
 
-    // when
-    schemaManager1.startup();
-    schemaManager2.startup();
+      // when
+      schemaManager1.startup();
+      schemaManager2.startup();
 
-    // then
-    final var retrievedIndex = clientAdapter.getIndexAsNode(index.getFullQualifiedName());
-    final var retrievedIndexTemplate =
-        clientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+      // then
+      final var retrievedIndex = clientAdapter.getIndexAsNode(index.getFullQualifiedName());
+      final var retrievedIndexTemplate =
+          clientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
 
-    assertThat(mappingsMatch(retrievedIndex.get("mappings"), "/mappings-added-property.json"))
-        .isTrue();
-    assertThat(
-            mappingsMatch(
-                retrievedIndexTemplate.at("/index_template/template/mappings"),
-                "/mappings-added-property.json"))
-        .isTrue();
+      assertThat(mappingsMatch(retrievedIndex.get("mappings"), "/mappings-added-property.json"))
+          .isTrue();
+      assertThat(
+              mappingsMatch(
+                  retrievedIndexTemplate.at("/index_template/template/mappings"),
+                  "/mappings-added-property.json"))
+          .isTrue();
+    }
   }
 
   @TestTemplate
@@ -926,38 +1015,39 @@ public class SchemaManagerIT {
       final SearchEngineConfiguration config, final SearchClientAdapter clientAdapter)
       throws Exception {
     // given
-    final var schemaManager1 =
-        createSchemaManager(
-            getSearchEngineClient(config),
-            Set.of(index, metadataIndex),
-            Set.of(indexTemplate),
-            config);
-    final var schemaManager2 =
-        createSchemaManager(
-            getSearchEngineClient(config),
-            Set.of(index, metadataIndex),
-            Set.of(indexTemplate),
-            config);
+    try (final var schemaManager1 =
+            createSchemaManager(
+                getSearchEngineClient(config),
+                Set.of(index, metadataIndex),
+                Set.of(indexTemplate),
+                config);
+        final var schemaManager2 =
+            createSchemaManager(
+                getSearchEngineClient(config),
+                Set.of(index, metadataIndex),
+                Set.of(indexTemplate),
+                config)) {
 
-    index.setMappingsClasspathFilename("/mappings-added-property.json");
-    indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
+      index.setMappingsClasspathFilename("/mappings-added-property.json");
+      indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
 
-    // when
-    schemaManager1.startup();
-    schemaManager2.startup();
+      // when
+      schemaManager1.startup();
+      schemaManager2.startup();
 
-    // then
-    final var retrievedIndex = clientAdapter.getIndexAsNode(index.getFullQualifiedName());
-    final var retrievedIndexTemplate =
-        clientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+      // then
+      final var retrievedIndex = clientAdapter.getIndexAsNode(index.getFullQualifiedName());
+      final var retrievedIndexTemplate =
+          clientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
 
-    assertThat(mappingsMatch(retrievedIndex.get("mappings"), "/mappings-added-property.json"))
-        .isTrue();
-    assertThat(
-            mappingsMatch(
-                retrievedIndexTemplate.at("/index_template/template/mappings"),
-                "/mappings-added-property.json"))
-        .isTrue();
+      assertThat(mappingsMatch(retrievedIndex.get("mappings"), "/mappings-added-property.json"))
+          .isTrue();
+      assertThat(
+              mappingsMatch(
+                  retrievedIndexTemplate.at("/index_template/template/mappings"),
+                  "/mappings-added-property.json"))
+          .isTrue();
+    }
   }
 
   @TestTemplate
@@ -965,37 +1055,40 @@ public class SchemaManagerIT {
       final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
       throws IOException {
     // given
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
             getSearchEngineClient(config),
             Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    final String runtimeIndexName = indexTemplate.getFullQualifiedName();
-    final var initialRuntimeIndex = searchClientAdapter.getIndexAsNode(runtimeIndexName);
-    assertThat(mappingsMatch(initialRuntimeIndex.get("mappings"), "/mappings.json")).isTrue();
+      final String runtimeIndexName = indexTemplate.getFullQualifiedName();
+      final var initialRuntimeIndex = searchClientAdapter.getIndexAsNode(runtimeIndexName);
+      assertThat(mappingsMatch(initialRuntimeIndex.get("mappings"), "/mappings.json")).isTrue();
 
-    final String archiveIndexName = indexTemplate.getIndexPattern().replace("*", "-archived");
-    searchClientAdapter.index("123", archiveIndexName, Map.of("hello", "foo", "world", "bar"));
-    final var initialArchiveIndex = searchClientAdapter.getIndexAsNode(archiveIndexName);
-    assertThat(mappingsMatch(initialArchiveIndex.get("mappings"), "/mappings.json")).isTrue();
+      final String archiveIndexName = indexTemplate.getIndexPattern().replace("*", "-archived");
+      searchClientAdapter.index("123", archiveIndexName, Map.of("hello", "foo", "world", "bar"));
+      final var initialArchiveIndex = searchClientAdapter.getIndexAsNode(archiveIndexName);
+      assertThat(mappingsMatch(initialArchiveIndex.get("mappings"), "/mappings.json")).isTrue();
 
-    // when
-    indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
-    schemaManager.startup();
+      // when
+      indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
+      schemaManager.startup();
 
-    // then
-    final var updatedRuntimeIndex = searchClientAdapter.getIndexAsNode(runtimeIndexName);
-    assertThat(mappingsMatch(updatedRuntimeIndex.get("mappings"), "/mappings-added-property.json"))
-        .isTrue();
+      // then
+      final var updatedRuntimeIndex = searchClientAdapter.getIndexAsNode(runtimeIndexName);
+      assertThat(
+              mappingsMatch(updatedRuntimeIndex.get("mappings"), "/mappings-added-property.json"))
+          .isTrue();
 
-    final var updatedArchiveIndex = searchClientAdapter.getIndexAsNode(archiveIndexName);
-    assertThat(mappingsMatch(updatedArchiveIndex.get("mappings"), "/mappings-added-property.json"))
-        .isTrue();
+      final var updatedArchiveIndex = searchClientAdapter.getIndexAsNode(archiveIndexName);
+      assertThat(
+              mappingsMatch(updatedArchiveIndex.get("mappings"), "/mappings-added-property.json"))
+          .isTrue();
+    }
   }
 
   @TestTemplate
@@ -1003,48 +1096,49 @@ public class SchemaManagerIT {
       final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
       throws IOException {
     // given
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
             getSearchEngineClient(config),
             Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    final var replicaSettingPath = "/settings/index/number_of_replicas";
-    final var shardsSettingPath = "/settings/index/number_of_shards";
+      final var replicaSettingPath = "/settings/index/number_of_replicas";
+      final var shardsSettingPath = "/settings/index/number_of_shards";
 
-    final String runtimeIndexName = indexTemplate.getFullQualifiedName();
-    final var initialRuntimeIndex = searchClientAdapter.getIndexAsNode(runtimeIndexName);
+      final String runtimeIndexName = indexTemplate.getFullQualifiedName();
+      final var initialRuntimeIndex = searchClientAdapter.getIndexAsNode(runtimeIndexName);
 
-    assertThat(initialRuntimeIndex.at(replicaSettingPath).asInt()).isEqualTo(1);
-    assertThat(initialRuntimeIndex.at(shardsSettingPath).asInt()).isEqualTo(1);
+      assertThat(initialRuntimeIndex.at(replicaSettingPath).asInt()).isEqualTo(1);
+      assertThat(initialRuntimeIndex.at(shardsSettingPath).asInt()).isEqualTo(1);
 
-    final String archiveIndexName = indexTemplate.getIndexPattern().replace("*", "-archived");
-    searchClientAdapter.index("123", archiveIndexName, Map.of("hello", "foo", "world", "bar"));
+      final String archiveIndexName = indexTemplate.getIndexPattern().replace("*", "-archived");
+      searchClientAdapter.index("123", archiveIndexName, Map.of("hello", "foo", "world", "bar"));
 
-    final var initialArchiveIndex = searchClientAdapter.getIndexAsNode(archiveIndexName);
-    assertThat(initialArchiveIndex.at(replicaSettingPath).asInt()).isEqualTo(1);
-    assertThat(initialArchiveIndex.at(shardsSettingPath).asInt()).isEqualTo(1);
+      final var initialArchiveIndex = searchClientAdapter.getIndexAsNode(archiveIndexName);
+      assertThat(initialArchiveIndex.at(replicaSettingPath).asInt()).isEqualTo(1);
+      assertThat(initialArchiveIndex.at(shardsSettingPath).asInt()).isEqualTo(1);
 
-    // when
-    config.index().setNumberOfReplicas(5);
-    config.index().setNumberOfShards(5);
+      // when
+      config.index().setNumberOfReplicas(5);
+      config.index().setNumberOfShards(5);
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    // then
-    final var updatedRuntimeIndex = searchClientAdapter.getIndexAsNode(runtimeIndexName);
+      // then
+      final var updatedRuntimeIndex = searchClientAdapter.getIndexAsNode(runtimeIndexName);
 
-    assertThat(updatedRuntimeIndex.at(replicaSettingPath).asInt()).isEqualTo(5);
-    assertThat(updatedRuntimeIndex.at(shardsSettingPath).asInt()).isEqualTo(1);
+      assertThat(updatedRuntimeIndex.at(replicaSettingPath).asInt()).isEqualTo(5);
+      assertThat(updatedRuntimeIndex.at(shardsSettingPath).asInt()).isEqualTo(1);
 
-    final var updatedArchiveIndex = searchClientAdapter.getIndexAsNode(archiveIndexName);
+      final var updatedArchiveIndex = searchClientAdapter.getIndexAsNode(archiveIndexName);
 
-    assertThat(updatedArchiveIndex.at(replicaSettingPath).asInt()).isEqualTo(5);
-    assertThat(updatedArchiveIndex.at(shardsSettingPath).asInt()).isEqualTo(1);
+      assertThat(updatedArchiveIndex.at(replicaSettingPath).asInt()).isEqualTo(5);
+      assertThat(updatedArchiveIndex.at(shardsSettingPath).asInt()).isEqualTo(1);
+    }
   }
 
   @TestTemplate
@@ -1057,59 +1151,60 @@ public class SchemaManagerIT {
     config.connect().setIndexPrefix(newPrefix);
     final var indexDescriptors =
         new IndexDescriptors(newPrefix, config.connect().getTypeEnum().isElasticSearch());
-    final SchemaManager schemaManager =
+    try (final SchemaManager schemaManager =
         createSchemaManager(
             getSearchEngineClient(config),
             indexDescriptors.indices(),
             indexDescriptors.templates(),
-            config);
+            config)) {
 
-    final var mappingsBeforeStart = adapter.getAllIndicesAsNode(newPrefix);
-    assertThat(mappingsBeforeStart).isEmpty();
+      final var mappingsBeforeStart = adapter.getAllIndicesAsNode(newPrefix);
+      assertThat(mappingsBeforeStart).isEmpty();
 
-    // when
-    schemaManager.startup();
+      // when
+      schemaManager.startup();
 
-    // then
-    final var mappingsAfterOpen = adapter.getAllIndicesAsNode(newPrefix);
-    assertThat(mappingsAfterOpen.keySet())
-        // we verify the names hard coded on purpose
-        // to make sure no index will be accidentally dropped, names are changed or added
-        .containsExactlyInAnyOrder(
-            newPrefix + "-camunda-authorization-8.8.0_",
-            newPrefix + "-camunda-correlated-message-subscription-8.8.0_",
-            newPrefix + "-camunda-group-8.8.0_",
-            newPrefix + "-camunda-mapping-rule-8.8.0_",
-            newPrefix + "-camunda-role-8.8.0_",
-            newPrefix + "-camunda-tenant-8.8.0_",
-            newPrefix + "-camunda-usage-metric-8.8.0_",
-            newPrefix + "-camunda-usage-metric-tu-8.8.0_",
-            newPrefix + "-camunda-user-8.8.0_",
-            newPrefix + "-camunda-web-session-8.8.0_",
-            newPrefix + "-operate-batch-operation-1.0.0_",
-            newPrefix + "-operate-decision-8.3.0_",
-            newPrefix + "-operate-decision-instance-8.3.0_",
-            newPrefix + "-operate-decision-requirements-8.3.0_",
-            newPrefix + "-operate-event-8.3.0_",
-            newPrefix + "-operate-flownode-instance-8.3.1_",
-            newPrefix + "-operate-import-position-8.3.0_",
-            newPrefix + "-operate-incident-8.3.1_",
-            newPrefix + "-operate-list-view-8.3.0_",
-            newPrefix + "-operate-metadata-8.8.0_",
-            newPrefix + "-operate-metric-8.3.0_",
-            newPrefix + "-operate-message-8.5.0_",
-            newPrefix + "-operate-operation-8.4.1_",
-            newPrefix + "-operate-post-importer-queue-8.3.0_",
-            newPrefix + "-operate-process-8.3.0_",
-            newPrefix + "-operate-sequence-flow-8.3.0_",
-            newPrefix + "-operate-variable-8.3.0_",
-            newPrefix + "-operate-job-8.6.0_",
-            newPrefix + "-tasklist-draft-task-variable-8.3.0_",
-            newPrefix + "-tasklist-form-8.4.0_",
-            newPrefix + "-tasklist-metric-8.3.0_",
-            newPrefix + "-tasklist-task-8.8.0_",
-            newPrefix + "-tasklist-task-variable-8.3.0_",
-            newPrefix + "-tasklist-import-position-8.2.0_");
+      // then
+      final var mappingsAfterOpen = adapter.getAllIndicesAsNode(newPrefix);
+      assertThat(mappingsAfterOpen.keySet())
+          // we verify the names hard coded on purpose
+          // to make sure no index will be accidentally dropped, names are changed or added
+          .containsExactlyInAnyOrder(
+              newPrefix + "-camunda-authorization-8.8.0_",
+              newPrefix + "-camunda-correlated-message-subscription-8.8.0_",
+              newPrefix + "-camunda-group-8.8.0_",
+              newPrefix + "-camunda-mapping-rule-8.8.0_",
+              newPrefix + "-camunda-role-8.8.0_",
+              newPrefix + "-camunda-tenant-8.8.0_",
+              newPrefix + "-camunda-usage-metric-8.8.0_",
+              newPrefix + "-camunda-usage-metric-tu-8.8.0_",
+              newPrefix + "-camunda-user-8.8.0_",
+              newPrefix + "-camunda-web-session-8.8.0_",
+              newPrefix + "-operate-batch-operation-1.0.0_",
+              newPrefix + "-operate-decision-8.3.0_",
+              newPrefix + "-operate-decision-instance-8.3.0_",
+              newPrefix + "-operate-decision-requirements-8.3.0_",
+              newPrefix + "-operate-event-8.3.0_",
+              newPrefix + "-operate-flownode-instance-8.3.1_",
+              newPrefix + "-operate-import-position-8.3.0_",
+              newPrefix + "-operate-incident-8.3.1_",
+              newPrefix + "-operate-list-view-8.3.0_",
+              newPrefix + "-operate-metadata-8.8.0_",
+              newPrefix + "-operate-metric-8.3.0_",
+              newPrefix + "-operate-message-8.5.0_",
+              newPrefix + "-operate-operation-8.4.1_",
+              newPrefix + "-operate-post-importer-queue-8.3.0_",
+              newPrefix + "-operate-process-8.3.0_",
+              newPrefix + "-operate-sequence-flow-8.3.0_",
+              newPrefix + "-operate-variable-8.3.0_",
+              newPrefix + "-operate-job-8.6.0_",
+              newPrefix + "-tasklist-draft-task-variable-8.3.0_",
+              newPrefix + "-tasklist-form-8.4.0_",
+              newPrefix + "-tasklist-metric-8.3.0_",
+              newPrefix + "-tasklist-task-8.8.0_",
+              newPrefix + "-tasklist-task-variable-8.3.0_",
+              newPrefix + "-tasklist-import-position-8.2.0_");
+    }
   }
 
   @TestTemplate
@@ -1117,22 +1212,23 @@ public class SchemaManagerIT {
       final SearchEngineConfiguration config, final SearchClientAdapter ignored) {
     // given
     final var registry = new SimpleMeterRegistry();
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
                 getSearchEngineClient(config),
                 Set.of(index, metadataIndex),
                 Set.of(),
                 config,
                 objectMapper)
-            .withMetrics(new SchemaManagerMetrics(registry));
+            .withMetrics(new SchemaManagerMetrics(registry))) {
 
-    // when
-    schemaManager.startup();
+      // when
+      schemaManager.startup();
 
-    // then
-    final var measuredTime = registry.find("camunda.schema.init.time").timer();
-    assertThat(measuredTime.count()).isEqualTo(1);
-    assertThat(measuredTime.totalTime(TimeUnit.MILLISECONDS)).isGreaterThan(0);
+      // then
+      final var measuredTime = registry.find("camunda.schema.init.time").timer();
+      assertThat(measuredTime.count()).isEqualTo(1);
+      assertThat(measuredTime.totalTime(TimeUnit.MILLISECONDS)).isGreaterThan(0);
+    }
   }
 
   @TestTemplate
@@ -1143,23 +1239,24 @@ public class SchemaManagerIT {
     // alter configuration to trigger failure
     config.connect().setUrl("http://bad-url");
     config.schemaManager().getRetry().setMaxRetries(1);
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
                 getSearchEngineClient(config),
                 Set.of(index, metadataIndex),
                 Set.of(),
                 config,
                 objectMapper)
-            .withMetrics(new SchemaManagerMetrics(registry));
+            .withMetrics(new SchemaManagerMetrics(registry))) {
 
-    // when
-    assertThatExceptionOfType(SearchEngineException.class)
-        .isThrownBy(() -> schemaManager.startup());
+      // when
+      assertThatExceptionOfType(SearchEngineException.class)
+          .isThrownBy(() -> schemaManager.startup());
 
-    // then
-    final var measuredTime = registry.find("camunda.schema.init.time").timer();
-    assertThat(measuredTime.count()).isEqualTo(0);
-    assertThat(measuredTime.totalTime(TimeUnit.MILLISECONDS)).isEqualTo(0);
+      // then
+      final var measuredTime = registry.find("camunda.schema.init.time").timer();
+      assertThat(measuredTime.count()).isEqualTo(0);
+      assertThat(measuredTime.totalTime(TimeUnit.MILLISECONDS)).isEqualTo(0);
+    }
   }
 
   @TestTemplate
@@ -1174,67 +1271,70 @@ public class SchemaManagerIT {
         createTestTemplateDescriptor(
             "template_name", mappingsFileNamePrefix + "/mappings-dynamic-property.json");
 
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
             getSearchEngineClient(config),
             Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    final var runtimeIndexName = indexTemplate.getFullQualifiedName();
-    final var archiveIndexName1 = indexTemplate.getIndexPattern().replace("*", "-archived_1");
-    final var archiveIndexName2 = indexTemplate.getIndexPattern().replace("*", "-archived_2");
+      final var runtimeIndexName = indexTemplate.getFullQualifiedName();
+      final var archiveIndexName1 = indexTemplate.getIndexPattern().replace("*", "-archived_1");
+      final var archiveIndexName2 = indexTemplate.getIndexPattern().replace("*", "-archived_2");
 
-    // index some data to the runtime and archive indices. "world" is a dynamic property
-    searchClientAdapter.index(
-        "123", runtimeIndexName, Map.of("hello", "a", "world", Map.of("header1", 1, "header2", 2)));
-    searchClientAdapter.index(
-        "123", archiveIndexName1, Map.of("hello", "a", "world", Map.of("header3", true)));
-    searchClientAdapter.index("123", archiveIndexName2, Map.of("hello", "a"));
+      // index some data to the runtime and archive indices. "world" is a dynamic property
+      searchClientAdapter.index(
+          "123",
+          runtimeIndexName,
+          Map.of("hello", "a", "world", Map.of("header1", 1, "header2", 2)));
+      searchClientAdapter.index(
+          "123", archiveIndexName1, Map.of("hello", "a", "world", Map.of("header3", true)));
+      searchClientAdapter.index("123", archiveIndexName2, Map.of("hello", "a"));
 
-    var retrievedRuntimeIndex = searchClientAdapter.getIndexAsNode(runtimeIndexName);
-    assertThat(retrievedRuntimeIndex.at("/mappings/properties/world/properties").toString())
-        .isEqualTo("{\"header2\":{\"type\":\"long\"},\"header1\":{\"type\":\"long\"}}");
-    var retrievedArchiveIndex1 = searchClientAdapter.getIndexAsNode(archiveIndexName1);
-    assertThat(retrievedArchiveIndex1.at("/mappings/properties/world/properties").toString())
-        .isEqualTo("{\"header3\":{\"type\":\"boolean\"}}");
+      var retrievedRuntimeIndex = searchClientAdapter.getIndexAsNode(runtimeIndexName);
+      assertThat(retrievedRuntimeIndex.at("/mappings/properties/world/properties").toString())
+          .isEqualTo("{\"header2\":{\"type\":\"long\"},\"header1\":{\"type\":\"long\"}}");
+      var retrievedArchiveIndex1 = searchClientAdapter.getIndexAsNode(archiveIndexName1);
+      assertThat(retrievedArchiveIndex1.at("/mappings/properties/world/properties").toString())
+          .isEqualTo("{\"header3\":{\"type\":\"boolean\"}}");
 
-    // when
-    schemaManager.startup();
+      // when
+      schemaManager.startup();
 
-    // then
-    // no exception should be thrown
-    retrievedRuntimeIndex = searchClientAdapter.getIndexAsNode(runtimeIndexName);
-    assertThat(retrievedRuntimeIndex.at("/mappings/properties/world/properties").toString())
-        .isEqualTo("{\"header2\":{\"type\":\"long\"},\"header1\":{\"type\":\"long\"}}");
-    retrievedArchiveIndex1 = searchClientAdapter.getIndexAsNode(archiveIndexName1);
-    assertThat(retrievedArchiveIndex1.at("/mappings/properties/world/properties").toString())
-        .isEqualTo("{\"header3\":{\"type\":\"boolean\"}}");
+      // then
+      // no exception should be thrown
+      retrievedRuntimeIndex = searchClientAdapter.getIndexAsNode(runtimeIndexName);
+      assertThat(retrievedRuntimeIndex.at("/mappings/properties/world/properties").toString())
+          .isEqualTo("{\"header2\":{\"type\":\"long\"},\"header1\":{\"type\":\"long\"}}");
+      retrievedArchiveIndex1 = searchClientAdapter.getIndexAsNode(archiveIndexName1);
+      assertThat(retrievedArchiveIndex1.at("/mappings/properties/world/properties").toString())
+          .isEqualTo("{\"header3\":{\"type\":\"boolean\"}}");
 
-    // when
-    // update mappings
-    indexTemplate.setMappingsClasspathFilename(
-        mappingsFileNamePrefix + "/mappings-dynamic-property-added.json");
-    schemaManager.startup();
+      // when
+      // update mappings
+      indexTemplate.setMappingsClasspathFilename(
+          mappingsFileNamePrefix + "/mappings-dynamic-property-added.json");
+      schemaManager.startup();
 
-    // then
-    // assert all indices have the updated mapping
-    retrievedRuntimeIndex = searchClientAdapter.getIndexAsNode(runtimeIndexName);
-    assertThat(retrievedRuntimeIndex.at("/mappings/properties/foo/type").asText())
-        .isEqualTo("keyword");
-    assertThat(retrievedRuntimeIndex.at("/mappings/properties/world/properties").toString())
-        .isEqualTo("{\"header2\":{\"type\":\"long\"},\"header1\":{\"type\":\"long\"}}");
-    retrievedArchiveIndex1 = searchClientAdapter.getIndexAsNode(archiveIndexName1);
-    assertThat(retrievedArchiveIndex1.at("/mappings/properties/foo/type").asText())
-        .isEqualTo("keyword");
-    assertThat(retrievedArchiveIndex1.at("/mappings/properties/world/properties").toString())
-        .isEqualTo("{\"header3\":{\"type\":\"boolean\"}}");
-    final var retrievedArchiveIndex2 = searchClientAdapter.getIndexAsNode(archiveIndexName2);
-    assertThat(retrievedArchiveIndex2.at("/mappings/properties/foo/type").asText())
-        .isEqualTo("keyword");
+      // then
+      // assert all indices have the updated mapping
+      retrievedRuntimeIndex = searchClientAdapter.getIndexAsNode(runtimeIndexName);
+      assertThat(retrievedRuntimeIndex.at("/mappings/properties/foo/type").asText())
+          .isEqualTo("keyword");
+      assertThat(retrievedRuntimeIndex.at("/mappings/properties/world/properties").toString())
+          .isEqualTo("{\"header2\":{\"type\":\"long\"},\"header1\":{\"type\":\"long\"}}");
+      retrievedArchiveIndex1 = searchClientAdapter.getIndexAsNode(archiveIndexName1);
+      assertThat(retrievedArchiveIndex1.at("/mappings/properties/foo/type").asText())
+          .isEqualTo("keyword");
+      assertThat(retrievedArchiveIndex1.at("/mappings/properties/world/properties").toString())
+          .isEqualTo("{\"header3\":{\"type\":\"boolean\"}}");
+      final var retrievedArchiveIndex2 = searchClientAdapter.getIndexAsNode(archiveIndexName2);
+      assertThat(retrievedArchiveIndex2.at("/mappings/properties/foo/type").asText())
+          .isEqualTo("keyword");
+    }
   }
 
   @TestTemplate
@@ -1250,20 +1350,21 @@ public class SchemaManagerIT {
     // definitions
     searchClientAdapter.index("123", runtimeIndexName, Map.of("hello", "a", "world", "b"));
 
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
             getSearchEngineClient(config),
             Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    // when
-    // then
-    assertThatThrownBy(schemaManager::startup)
-        .isInstanceOf(IndexSchemaValidationException.class)
-        .hasMessageContaining(
-            "Index names: [custom-prefix-test-template_name-1.0.0_]. Unsupported index changes have been introduced. Data migration is required.");
+      // when
+      // then
+      assertThatThrownBy(schemaManager::startup)
+          .isInstanceOf(IndexSchemaValidationException.class)
+          .hasMessageContaining(
+              "Index names: [custom-prefix-test-template_name-1.0.0_]. Unsupported index changes have been introduced. Data migration is required.");
+    }
   }
 
   @TestTemplate
@@ -1273,22 +1374,23 @@ public class SchemaManagerIT {
     // given
     config.index().setTemplatePriority(100);
 
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
             getSearchEngineClient(config),
             Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    // when
-    schemaManager.startup();
+      // when
+      schemaManager.startup();
 
-    // then
-    final var retrievedTemplate =
-        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+      // then
+      final var retrievedTemplate =
+          searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
 
-    assertThat(retrievedTemplate.at("/index_template/priority").asInt()).isEqualTo(100);
+      assertThat(retrievedTemplate.at("/index_template/priority").asInt()).isEqualTo(100);
+    }
   }
 
   @TestTemplate
@@ -1299,24 +1401,25 @@ public class SchemaManagerIT {
     // templatePriority is not set, should be null
     assertThat(config.index().getTemplatePriority()).isNull();
 
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
             getSearchEngineClient(config),
             Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    // when
-    schemaManager.startup();
+      // when
+      schemaManager.startup();
 
-    // then
-    final var retrievedTemplate =
-        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+      // then
+      final var retrievedTemplate =
+          searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
 
-    // When priority is not set, it should either be missing or null/0 depending on search engine
-    final var priorityNode = retrievedTemplate.at("/index_template/priority");
-    assertThat(priorityNode.isMissingNode()).isTrue();
+      // When priority is not set, it should either be missing or null/0 depending on search engine
+      final var priorityNode = retrievedTemplate.at("/index_template/priority");
+      assertThat(priorityNode.isMissingNode()).isTrue();
+    }
   }
 
   @TestTemplate
@@ -1326,45 +1429,49 @@ public class SchemaManagerIT {
     // given - create template with initial priority
     config.index().setTemplatePriority(50);
 
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
             getSearchEngineClient(config),
             Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    // verify initial priority is set
-    var retrievedTemplate =
-        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
-    assertThat(retrievedTemplate.at("/index_template/priority").asInt()).isEqualTo(50);
-    // capture initial replica/shard
-    final int initialReplicas =
-        retrievedTemplate.at("/index_template/template/settings/index/number_of_replicas").asInt();
-    final int initialShards =
-        retrievedTemplate.at("/index_template/template/settings/index/number_of_shards").asInt();
+      // verify initial priority is set
+      var retrievedTemplate =
+          searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+      assertThat(retrievedTemplate.at("/index_template/priority").asInt()).isEqualTo(50);
+      // capture initial replica/shard
+      final int initialReplicas =
+          retrievedTemplate
+              .at("/index_template/template/settings/index/number_of_replicas")
+              .asInt();
+      final int initialShards =
+          retrievedTemplate.at("/index_template/template/settings/index/number_of_shards").asInt();
 
-    // when - update template settings with new priority via startup
-    config.index().setTemplatePriority(200);
+      // when - update template settings with new priority via startup
+      config.index().setTemplatePriority(200);
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    // then - verify priority was updated
-    retrievedTemplate = searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
-    assertThat(retrievedTemplate.at("/index_template/priority").asInt()).isEqualTo(200);
-    // and shards/replicas untouched
-    assertThat(
-            retrievedTemplate
-                .at("/index_template/template/settings/index/number_of_replicas")
-                .asInt())
-        .isEqualTo(initialReplicas);
-    assertThat(
-            retrievedTemplate
-                .at("/index_template/template/settings/index/number_of_shards")
-                .asInt())
-        .isEqualTo(initialShards);
+      // then - verify priority was updated
+      retrievedTemplate =
+          searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+      assertThat(retrievedTemplate.at("/index_template/priority").asInt()).isEqualTo(200);
+      // and shards/replicas untouched
+      assertThat(
+              retrievedTemplate
+                  .at("/index_template/template/settings/index/number_of_replicas")
+                  .asInt())
+          .isEqualTo(initialReplicas);
+      assertThat(
+              retrievedTemplate
+                  .at("/index_template/template/settings/index/number_of_shards")
+                  .asInt())
+          .isEqualTo(initialShards);
+    }
   }
 
   @TestTemplate
@@ -1376,31 +1483,32 @@ public class SchemaManagerIT {
     config.index().setNumberOfShards(2);
     config.index().setNumberOfReplicas(1);
 
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
             getSearchEngineClient(config),
             Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    final var templateName = indexTemplate.getTemplateName();
-    final var initialTemplate = searchClientAdapter.getIndexTemplateAsNode(templateName);
-    final var initialSettingsJson =
-        initialTemplate.at("/index_template/template/settings").toString();
-    final var initialPriorityNode = initialTemplate.at("/index_template/priority");
+      final var templateName = indexTemplate.getTemplateName();
+      final var initialTemplate = searchClientAdapter.getIndexTemplateAsNode(templateName);
+      final var initialSettingsJson =
+          initialTemplate.at("/index_template/template/settings").toString();
+      final var initialPriorityNode = initialTemplate.at("/index_template/priority");
 
-    // when - run startup again without any config or mapping changes
-    schemaManager.startup();
+      // when - run startup again without any config or mapping changes
+      schemaManager.startup();
 
-    // then - settings & priority stay identical
-    final var secondTemplate = searchClientAdapter.getIndexTemplateAsNode(templateName);
-    assertThat(secondTemplate.at("/index_template/template/settings").toString())
-        .isEqualTo(initialSettingsJson);
-    final var secondPriorityNode = secondTemplate.at("/index_template/priority");
-    assertThat(secondPriorityNode.asInt()).isEqualTo(initialPriorityNode.asInt());
+      // then - settings & priority stay identical
+      final var secondTemplate = searchClientAdapter.getIndexTemplateAsNode(templateName);
+      assertThat(secondTemplate.at("/index_template/template/settings").toString())
+          .isEqualTo(initialSettingsJson);
+      final var secondPriorityNode = secondTemplate.at("/index_template/priority");
+      assertThat(secondPriorityNode.asInt()).isEqualTo(initialPriorityNode.asInt());
+    }
   }
 
   @TestTemplate
@@ -1410,43 +1518,47 @@ public class SchemaManagerIT {
     // given - create template with initial priority
     config.index().setTemplatePriority(50);
 
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
             getSearchEngineClient(config),
             Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    // verify initial priority is set
-    var retrievedTemplate =
-        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
-    assertThat(retrievedTemplate.at("/index_template/priority").asInt()).isEqualTo(50);
-    final int initialReplicas =
-        retrievedTemplate.at("/index_template/template/settings/index/number_of_replicas").asInt();
-    final int initialShards =
-        retrievedTemplate.at("/index_template/template/settings/index/number_of_shards").asInt();
+      // verify initial priority is set
+      var retrievedTemplate =
+          searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+      assertThat(retrievedTemplate.at("/index_template/priority").asInt()).isEqualTo(50);
+      final int initialReplicas =
+          retrievedTemplate
+              .at("/index_template/template/settings/index/number_of_replicas")
+              .asInt();
+      final int initialShards =
+          retrievedTemplate.at("/index_template/template/settings/index/number_of_shards").asInt();
 
-    // when - unset template priority setting
-    config.index().setTemplatePriority(null);
+      // when - unset template priority setting
+      config.index().setTemplatePriority(null);
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    // then - verify priority is removed & other settings untouched
-    retrievedTemplate = searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
-    assertThat(retrievedTemplate.at("/index_template/priority").isMissingNode()).isTrue();
-    assertThat(
-            retrievedTemplate
-                .at("/index_template/template/settings/index/number_of_replicas")
-                .asInt())
-        .isEqualTo(initialReplicas);
-    assertThat(
-            retrievedTemplate
-                .at("/index_template/template/settings/index/number_of_shards")
-                .asInt())
-        .isEqualTo(initialShards);
+      // then - verify priority is removed & other settings untouched
+      retrievedTemplate =
+          searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+      assertThat(retrievedTemplate.at("/index_template/priority").isMissingNode()).isTrue();
+      assertThat(
+              retrievedTemplate
+                  .at("/index_template/template/settings/index/number_of_replicas")
+                  .asInt())
+          .isEqualTo(initialReplicas);
+      assertThat(
+              retrievedTemplate
+                  .at("/index_template/template/settings/index/number_of_shards")
+                  .asInt())
+          .isEqualTo(initialShards);
+    }
   }
 
   @TestTemplate
@@ -1456,35 +1568,37 @@ public class SchemaManagerIT {
     // given - create template with priority
     config.index().setTemplatePriority(150);
 
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
             getSearchEngineClient(config),
             Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    // verify initial priority is set
-    var retrievedTemplate =
-        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
-    assertThat(retrievedTemplate.at("/index_template/priority").asInt()).isEqualTo(150);
+      // verify initial priority is set
+      var retrievedTemplate =
+          searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+      assertThat(retrievedTemplate.at("/index_template/priority").asInt()).isEqualTo(150);
 
-    // when - update template mappings
-    indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
-    schemaManager.startup();
+      // when - update template mappings
+      indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
+      schemaManager.startup();
 
-    // then - priority should be preserved
-    retrievedTemplate = searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
-    assertThat(retrievedTemplate.at("/index_template/priority").asInt()).isEqualTo(150);
+      // then - priority should be preserved
+      retrievedTemplate =
+          searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+      assertThat(retrievedTemplate.at("/index_template/priority").asInt()).isEqualTo(150);
 
-    // and mapping should be updated
-    assertThat(
-            mappingsMatch(
-                retrievedTemplate.at("/index_template/template/mappings"),
-                "/mappings-added-property.json"))
-        .isTrue();
+      // and mapping should be updated
+      assertThat(
+              mappingsMatch(
+                  retrievedTemplate.at("/index_template/template/mappings"),
+                  "/mappings-added-property.json"))
+          .isTrue();
+    }
   }
 
   @TestTemplate
@@ -1492,48 +1606,55 @@ public class SchemaManagerIT {
       final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter) {
     // given - create first schema manager with one template and verify it's created
     final SearchEngineClient searchEngineClient = spy(getSearchEngineClient(config));
-    final var firstSchemaManager =
+    try (final var firstSchemaManager =
         new SchemaManager(
-            searchEngineClient, Set.of(metadataIndex), Set.of(indexTemplate), config, objectMapper);
+            searchEngineClient,
+            Set.of(metadataIndex),
+            Set.of(indexTemplate),
+            config,
+            objectMapper)) {
 
-    initialiseResources(firstSchemaManager);
+      initialiseResources(firstSchemaManager);
 
-    // verify the first template was created
-    verify(searchEngineClient, times(1)).createIndexTemplate(eq(indexTemplate), any(), eq(true));
+      // verify the first template was created
+      verify(searchEngineClient, times(1)).createIndexTemplate(eq(indexTemplate), any(), eq(true));
 
-    // verify template exists in the search engine
-    assertThatNoException()
-        .isThrownBy(
-            () -> searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName()));
+      // verify template exists in the search engine
+      assertThatNoException()
+          .isThrownBy(
+              () -> searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName()));
+    }
 
     // when - reset mock and create second schema manager with existing template plus a new one
     reset(searchEngineClient);
 
     final var secondIndexTemplate =
         createTestTemplateDescriptor("template_name_2", "/mappings.json");
-    final var secondSchemaManager =
+    try (final var secondSchemaManager =
         new SchemaManager(
             searchEngineClient,
             Set.of(metadataIndex),
             Set.of(indexTemplate, secondIndexTemplate),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    initialiseResources(secondSchemaManager);
+      initialiseResources(secondSchemaManager);
 
-    // then - verify existing template was not recreated but new template was created
-    verify(searchEngineClient, never()).createIndexTemplate(eq(indexTemplate), any(), eq(true));
-    verify(searchEngineClient, times(1))
-        .createIndexTemplate(eq(secondIndexTemplate), any(), eq(true));
+      // then - verify existing template was not recreated but new template was created
+      verify(searchEngineClient, never()).createIndexTemplate(eq(indexTemplate), any(), eq(true));
+      verify(searchEngineClient, times(1))
+          .createIndexTemplate(eq(secondIndexTemplate), any(), eq(true));
 
-    // verify both templates exist in the search engine
-    assertThatNoException()
-        .isThrownBy(
-            () -> searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName()));
-    assertThatNoException()
-        .isThrownBy(
-            () ->
-                searchClientAdapter.getIndexTemplateAsNode(secondIndexTemplate.getTemplateName()));
+      // verify both templates exist in the search engine
+      assertThatNoException()
+          .isThrownBy(
+              () -> searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName()));
+      assertThatNoException()
+          .isThrownBy(
+              () ->
+                  searchClientAdapter.getIndexTemplateAsNode(
+                      secondIndexTemplate.getTemplateName()));
+    }
   }
 
   @TestTemplate
@@ -1541,28 +1662,31 @@ public class SchemaManagerIT {
       final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
       throws IOException {
     // given - create schema first (which creates both template and index)
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
             getSearchEngineClient(config),
             Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    // verify both template and index exist
-    final String existingIndexName = indexTemplate.getFullQualifiedName();
-    assertThatNoException().isThrownBy(() -> searchClientAdapter.getIndexAsNode(existingIndexName));
-    assertThatNoException()
-        .isThrownBy(
-            () -> searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName()));
+      // verify both template and index exist
+      final String existingIndexName = indexTemplate.getFullQualifiedName();
+      assertThatNoException()
+          .isThrownBy(() -> searchClientAdapter.getIndexAsNode(existingIndexName));
+      assertThatNoException()
+          .isThrownBy(
+              () -> searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName()));
+    }
 
     // when - delete the index but keep the template
-    searchClientAdapter.deleteIndex(existingIndexName);
+    searchClientAdapter.deleteIndex(indexTemplate.getFullQualifiedName());
 
     // verify index is deleted but template still exists
-    assertThatThrownBy(() -> searchClientAdapter.getIndexAsNode(existingIndexName))
+    assertThatThrownBy(
+            () -> searchClientAdapter.getIndexAsNode(indexTemplate.getFullQualifiedName()))
         .isInstanceOfAny(ElasticsearchException.class, OpenSearchException.class)
         .hasMessageContaining("no such index");
     assertThatNoException()
@@ -1571,30 +1695,37 @@ public class SchemaManagerIT {
 
     // recreate schema using startup
     final SearchEngineClient searchEngineClient = spy(getSearchEngineClient(config));
-    final var newSchemaManager =
+    try (final var newSchemaManager =
         new SchemaManager(
-            searchEngineClient, Set.of(metadataIndex), Set.of(indexTemplate), config, objectMapper);
+            searchEngineClient,
+            Set.of(metadataIndex),
+            Set.of(indexTemplate),
+            config,
+            objectMapper)) {
 
-    newSchemaManager.startup();
+      newSchemaManager.startup();
 
-    // then - verify both the index and template exist again
-    assertThatNoException().isThrownBy(() -> searchClientAdapter.getIndexAsNode(existingIndexName));
+      // then - verify both the index and template exist again
+      assertThatNoException()
+          .isThrownBy(
+              () -> searchClientAdapter.getIndexAsNode(indexTemplate.getFullQualifiedName()));
 
-    final var retrievedTemplate =
-        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+      final var retrievedTemplate =
+          searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
 
-    // verify that schema manager created the index (since template existed but index was missing)
-    verify(searchEngineClient, times(1)).createIndex(any(), any());
+      // verify that schema manager created the index (since template existed but index was missing)
+      verify(searchEngineClient, times(1)).createIndex(any(), any());
 
-    // verify template has correct mappings
-    assertThat(
-            mappingsMatch(
-                retrievedTemplate.at("/index_template/template/mappings"), "/mappings.json"))
-        .isTrue();
+      // verify template has correct mappings
+      assertThat(
+              mappingsMatch(
+                  retrievedTemplate.at("/index_template/template/mappings"), "/mappings.json"))
+          .isTrue();
 
-    // verify template pattern matches the recreated index
-    assertThat(retrievedTemplate.at("/index_template/index_patterns").toString())
-        .contains(indexTemplate.getIndexPattern());
+      // verify template pattern matches the recreated index
+      assertThat(retrievedTemplate.at("/index_template/index_patterns").toString())
+          .contains(indexTemplate.getIndexPattern());
+    }
   }
 
   @TestTemplate
@@ -1617,41 +1748,42 @@ public class SchemaManagerIT {
 
     // when - start schema manager with spy to track index creation
     final SearchEngineClient spySearchEngineClient = spy(getSearchEngineClient(config));
-    final var schemaManager =
+    try (final var schemaManager =
         new SchemaManager(
             spySearchEngineClient,
             Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
-            objectMapper);
+            objectMapper)) {
 
-    schemaManager.startup();
+      schemaManager.startup();
 
-    // then - verify the index was created but template was not recreated
-    assertThatNoException().isThrownBy(() -> searchClientAdapter.getIndexAsNode(indexName));
+      // then - verify the index was created but template was not recreated
+      assertThatNoException().isThrownBy(() -> searchClientAdapter.getIndexAsNode(indexName));
 
-    final var retrievedTemplate =
-        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+      final var retrievedTemplate =
+          searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
 
-    // verify that schema manager did NOT recreate the template (since it already existed)
-    verify(spySearchEngineClient, never()).createIndexTemplate(any(), any(), eq(true));
+      // verify that schema manager did NOT recreate the template (since it already existed)
+      verify(spySearchEngineClient, never()).createIndexTemplate(any(), any(), eq(true));
 
-    // verify that schema manager DID create the index (since template existed but index was
-    // missing)
-    final var captor = ArgumentCaptor.forClass(IndexDescriptor.class);
-    verify(spySearchEngineClient, times(2)).createIndex(captor.capture(), any());
-    assertThat(captor.getAllValues().stream().map(IndexDescriptor::getIndexName))
-        .containsExactlyInAnyOrder(indexTemplate.getIndexName(), metadataIndex.getIndexName());
+      // verify that schema manager DID create the index (since template existed but index was
+      // missing)
+      final var captor = ArgumentCaptor.forClass(IndexDescriptor.class);
+      verify(spySearchEngineClient, times(2)).createIndex(captor.capture(), any());
+      assertThat(captor.getAllValues().stream().map(IndexDescriptor::getIndexName))
+          .containsExactlyInAnyOrder(indexTemplate.getIndexName(), metadataIndex.getIndexName());
 
-    // verify template has correct mappings
-    assertThat(
-            mappingsMatch(
-                retrievedTemplate.at("/index_template/template/mappings"), "/mappings.json"))
-        .isTrue();
+      // verify template has correct mappings
+      assertThat(
+              mappingsMatch(
+                  retrievedTemplate.at("/index_template/template/mappings"), "/mappings.json"))
+          .isTrue();
 
-    // verify template pattern matches the created index
-    assertThat(retrievedTemplate.at("/index_template/index_patterns").toString())
-        .contains(indexTemplate.getIndexPattern());
+      // verify template pattern matches the created index
+      assertThat(retrievedTemplate.at("/index_template/index_patterns").toString())
+          .contains(indexTemplate.getIndexPattern());
+    }
   }
 
   @TestTemplate
