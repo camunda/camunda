@@ -955,7 +955,17 @@ jobs:
                 return 0
               fi
 
-              if echo "$out" | grep -Eq 'HTTP 500|HTTP 502|HTTP 503|HTTP 504|TLS handshake timeout|timeout|temporarily unavailable|connection reset by peer|EOF|stream error|GOAWAY|broken pipe|no such host|connection refused'; then
+              # Rate limiting is matched by message, not by status code. GitHub
+              # serves the primary limit as 403 and the secondary limit as 403
+              # or 429, and a plain 403 is the permanent case this function
+              # exists to separate out (a bad token, a repo the App cannot
+              # see). Matching `HTTP 403` wholesale would poll a dead token to
+              # the deadline instead of failing fast, so only the rate-limit
+              # wording -- and 429, which is never anything else -- is treated
+              # as transient. `abuse detection` is the same family: GitHub's
+              # older wording for the secondary limit, served as 403 and
+              # self-clearing, so it retries for the same reason.
+              if echo "$out" | grep -Eqi 'HTTP 429|rate limit|abuse detection|HTTP 500|HTTP 502|HTTP 503|HTTP 504|TLS handshake timeout|timeout|temporarily unavailable|connection reset by peer|EOF|stream error|GOAWAY|broken pipe|no such host|connection refused'; then
                 if (( attempt >= max_attempts )); then
                   echo "gh api failed after ${attempt}/${max_attempts} attempts for $endpoint" >&2
                   echo "$out" >&2
@@ -1022,6 +1032,21 @@ jobs:
 
               echo "Locked onto downstream run id: $RUN_ID"
               echo "downstream_run_url=https://github.com/$TARGET_REPO/actions/runs/$RUN_ID" >> "$GITHUB_OUTPUT"
+
+              # Re-check before falling through to the status request below.
+              # Every other iteration reaches it with the loop's own deadline
+              # check immediately behind it, but this one has an unbounded
+              # `gh api` in between: the run-list call can start inside the
+              # budget and return outside it. Starting a fresh unbounded call
+              # on a spent budget is what hands the kill back to the runner --
+              # a hang there only has the 10min of job-timeout headroom to
+              # land in, and past that the job dies as `cancelled` with no
+              # timeout report. The run url is already written above, so the
+              # report still carries the link.
+              if (( $(date +%s) >= WAIT_DEADLINE )); then
+                echo "Deadline reached while locking onto run $RUN_ID; reporting the timeout instead of starting another poll." >&2
+                break
+              fi
             fi
 
             RUN_JSON="" RC=0
@@ -1074,7 +1099,12 @@ jobs:
           fi
 
       - name: Add debugging guidance on failure
-        if: steps.wait-downstream.outcome == 'failure'
+        # `always() &&` is load-bearing: an `if` with no status-check function
+        # gets an implicit `success()`, and the waiter having failed is exactly
+        # when that is false -- so without it this step is skipped on the only
+        # path it exists for, and the timeout the loop reports lands with no
+        # guidance attached.
+        if: always() && steps.wait-downstream.outcome == 'failure'
         run: |
           DOWNSTREAM_URL="${{ steps.wait-downstream.outputs.downstream_run_url }}"
           COOKBOOK_URL="https://github.com/camunda/c8-cross-component-e2e-tests/blob/main/docs/ci-debugging-cookbook.md"
