@@ -13,13 +13,6 @@ name: Aurora Async Replication Test
 on:
   workflow_call:
     inputs:
-      deployment_references_ref:
-        description: 'Ref of camunda/camunda-deployment-references to use'
-        type: string
-        required: false
-        # TODO: revert to 'main' once the aurora-mysql-engine-option branch
-        # (engine/port parameterization for Aurora MySQL) is merged there.
-        default: 'aurora-mysql-engine-option'
       db_engine:
         description: 'Aurora engine to provision (postgresql or mysql)'
         type: string
@@ -31,13 +24,6 @@ on:
         default: false
   workflow_dispatch:
     inputs:
-      deployment_references_ref:
-        description: 'Ref of camunda/camunda-deployment-references to use'
-        type: string
-        required: false
-        # TODO: revert to 'main' once the aurora-mysql-engine-option branch
-        # (engine/port parameterization for Aurora MySQL) is merged there.
-        default: 'aurora-mysql-engine-option'
       db_engine:
         description: 'Aurora engine to provision'
         type: choice
@@ -99,13 +85,6 @@ jobs:
           test_owner: '@camunda/zeebe-distributed-platform'
           test_product: zeebe
           test_type: integration
-
-      - name: Checkout camunda-deployment-references
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: camunda/camunda-deployment-references
-          ref: ${{ inputs.deployment_references_ref || 'main' }}
-          path: camunda-deployment-references
 
       - name: Import secrets from Vault
         id: secrets

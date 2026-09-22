@@ -1,7 +1,8 @@
 # Ephemeral Aurora Global Database used by the AuroraAsyncReplicationIT acceptance test.
 #
-# Wraps the aurora-global module from camunda/camunda-deployment-references, which the
-# workflow checks out next to this repository (path: camunda-deployment-references).
+# Wraps the aurora-global module from camunda/camunda-deployment-references.
+# The Git module source follows the main branch so Terraform does not depend on another
+# repository being checked out at a relative filesystem path.
 # Uses the default VPC of each region and adds a small SSM-managed bastion instance so
 # the GitHub runner can reach the (non-public) Aurora endpoint through an SSM port
 # forwarding session.
@@ -119,7 +120,7 @@ data "aws_subnets" "secondary" {
 }
 
 module "aurora" {
-  source = "../../../camunda-deployment-references/aws/modules/aurora-global"
+  source = "git::https://github.com/camunda/camunda-deployment-references.git//aws/modules/aurora-global?ref=main"
 
   providers = {
     aws.primary   = aws.primary
