@@ -23,9 +23,10 @@ function createSystemConfiguration(
 		components: {active: []},
 		deployment: {
 			isMultiTenancyEnabled: false,
+			isTenantsApiEnabled: false,
 			maxRequestSize: 0,
 		},
-		authentication: {canLogout: true, isLoginDelegated: false},
+		authentication: {canLogout: true, isLoginDelegated: false, isCamundaGroupsEnabled: true},
 		cloud: {
 			stage: null,
 		},

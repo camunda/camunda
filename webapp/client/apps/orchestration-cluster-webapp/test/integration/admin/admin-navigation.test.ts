@@ -56,7 +56,7 @@ test.describe('Admin navigation', () => {
 		await expect(adminIndexPage.navItem('Groups')).not.toHaveAttribute('aria-current', 'page');
 	});
 
-	test('should hide tenants until multi-tenancy is enabled', async ({adminIndexPage, network}) => {
+	test('should hide tenants until the tenants API is enabled', async ({adminIndexPage, network}) => {
 		await adminIndexPage.goto();
 
 		await expect(adminIndexPage.navItem('Tenants')).toBeHidden();
@@ -66,7 +66,7 @@ test.describe('Admin navigation', () => {
 				successResponse: HttpResponse.json(
 					createSystemConfiguration({
 						components: {active: ['admin']},
-						deployment: {isMultiTenancyEnabled: true, maxRequestSize: 0},
+						deployment: {isMultiTenancyEnabled: false, isTenantsApiEnabled: true, maxRequestSize: 0},
 					}),
 				),
 			}),
@@ -76,13 +76,33 @@ test.describe('Admin navigation', () => {
 		await expect(adminIndexPage.navItem('Tenants')).toBeVisible();
 	});
 
+	test('should hide groups once the identity provider owns group membership', async ({adminIndexPage, network}) => {
+		await adminIndexPage.goto();
+
+		await expect(adminIndexPage.navItem('Groups')).toBeVisible();
+
+		network.use(
+			mockSystemConfigurationEndpoint({
+				successResponse: HttpResponse.json(
+					createSystemConfiguration({
+						components: {active: ['admin']},
+						authentication: {canLogout: true, isLoginDelegated: true, isCamundaGroupsEnabled: false},
+					}),
+				),
+			}),
+		);
+		await adminIndexPage.goto();
+
+		await expect(adminIndexPage.navItem('Groups')).toBeHidden();
+	});
+
 	test('should offer mapping rules instead of users when login is delegated', async ({adminIndexPage, network}) => {
 		network.use(
 			mockSystemConfigurationEndpoint({
 				successResponse: HttpResponse.json(
 					createSystemConfiguration({
 						components: {active: ['admin']},
-						authentication: {canLogout: true, isLoginDelegated: true},
+						authentication: {canLogout: true, isLoginDelegated: true, isCamundaGroupsEnabled: true},
 					}),
 				),
 			}),

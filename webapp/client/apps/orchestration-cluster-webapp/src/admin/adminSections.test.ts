@@ -12,7 +12,8 @@ import {isAdminSectionAvailable, type AdminSectionConfig} from './adminSections'
 const SELF_MANAGED: AdminSectionConfig = {
 	isOidc: false,
 	isSaas: false,
-	isMultiTenancyEnabled: false,
+	isTenantsApiEnabled: false,
+	isCamundaGroupsEnabled: false,
 };
 
 describe('admin section availability', () => {
@@ -27,13 +28,23 @@ describe('admin section availability', () => {
 		expect(isAdminSectionAvailable('mapping-rules', {...SELF_MANAGED, isOidc: true, isSaas: true})).toBe(false);
 	});
 
-	it('should offer tenants only with multi-tenancy enabled', () => {
+	it('should offer groups only while Camunda manages group membership', () => {
+		expect(isAdminSectionAvailable('groups', SELF_MANAGED)).toBe(false);
+		expect(isAdminSectionAvailable('groups', {...SELF_MANAGED, isCamundaGroupsEnabled: true})).toBe(true);
+	});
+
+	it('should offer tenants only with the tenants API enabled', () => {
 		expect(isAdminSectionAvailable('tenants', SELF_MANAGED)).toBe(false);
-		expect(isAdminSectionAvailable('tenants', {...SELF_MANAGED, isMultiTenancyEnabled: true})).toBe(true);
+		expect(isAdminSectionAvailable('tenants', {...SELF_MANAGED, isTenantsApiEnabled: true})).toBe(true);
 	});
 
 	it('should offer the unconditional sections in any configuration', () => {
-		const saasWithOidc: AdminSectionConfig = {isOidc: true, isSaas: true, isMultiTenancyEnabled: true};
+		const saasWithOidc: AdminSectionConfig = {
+			isOidc: true,
+			isSaas: true,
+			isTenantsApiEnabled: true,
+			isCamundaGroupsEnabled: true,
+		};
 
 		expect(isAdminSectionAvailable('roles', SELF_MANAGED)).toBe(true);
 		expect(isAdminSectionAvailable('roles', saasWithOidc)).toBe(true);

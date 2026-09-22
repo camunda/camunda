@@ -26,6 +26,7 @@ type ComponentsConfiguration = z.infer<typeof componentsConfigurationSchema>;
 
 const deploymentConfigurationSchema = z.object({
 	isMultiTenancyEnabled: z.boolean(),
+	isTenantsApiEnabled: z.boolean(),
 	maxRequestSize: z.number(),
 });
 type DeploymentConfiguration = z.infer<typeof deploymentConfigurationSchema>;
@@ -33,6 +34,7 @@ type DeploymentConfiguration = z.infer<typeof deploymentConfigurationSchema>;
 const authenticationConfigurationSchema = z.object({
 	canLogout: z.boolean(),
 	isLoginDelegated: z.boolean(),
+	isCamundaGroupsEnabled: z.boolean(),
 });
 type AuthenticationConfiguration = z.infer<typeof authenticationConfigurationSchema>;
 

@@ -7,8 +7,12 @@
  */
 
 import {createFileRoute} from '@tanstack/react-router';
+import {assertAdminSectionAvailable} from '#/admin/adminSections';
 import {AdminGroupsPage} from '#/admin/pages/AdminGroupsPage';
 
 export const Route = createFileRoute('/_shadcn/_auth/admin/groups/')({
+	beforeLoad: () => {
+		assertAdminSectionAvailable('groups');
+	},
 	component: AdminGroupsPage,
 });

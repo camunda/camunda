@@ -32,7 +32,7 @@ test.beforeEach(({network}) => {
 });
 
 test.describe('Admin section access', () => {
-	test('should not serve tenants until multi-tenancy is enabled', async ({adminIndexPage, notFoundPage, network}) => {
+	test('should not serve tenants until the tenants API is enabled', async ({adminIndexPage, notFoundPage, network}) => {
 		await adminIndexPage.gotoSection('tenants');
 
 		await expect(notFoundPage.heading).toBeVisible();
@@ -42,7 +42,7 @@ test.describe('Admin section access', () => {
 				successResponse: HttpResponse.json(
 					createSystemConfiguration({
 						components: {active: ['admin']},
-						deployment: {isMultiTenancyEnabled: true, maxRequestSize: 0},
+						deployment: {isMultiTenancyEnabled: false, isTenantsApiEnabled: true, maxRequestSize: 0},
 					}),
 				),
 			}),
@@ -50,6 +50,30 @@ test.describe('Admin section access', () => {
 		await adminIndexPage.gotoSection('tenants');
 
 		await expect(adminIndexPage.sectionHeading('Tenants')).toBeVisible();
+	});
+
+	test('should not serve groups once the identity provider owns group membership', async ({
+		adminIndexPage,
+		notFoundPage,
+		network,
+	}) => {
+		await adminIndexPage.gotoSection('groups');
+
+		await expect(adminIndexPage.sectionHeading('Groups')).toBeVisible();
+
+		network.use(
+			mockSystemConfigurationEndpoint({
+				successResponse: HttpResponse.json(
+					createSystemConfiguration({
+						components: {active: ['admin']},
+						authentication: {canLogout: true, isLoginDelegated: true, isCamundaGroupsEnabled: false},
+					}),
+				),
+			}),
+		);
+		await adminIndexPage.gotoSection('groups');
+
+		await expect(notFoundPage.heading).toBeVisible();
 	});
 
 	test('should not serve mapping rules while Camunda owns the users', async ({adminIndexPage, notFoundPage}) => {
@@ -68,7 +92,7 @@ test.describe('Admin section access', () => {
 				successResponse: HttpResponse.json(
 					createSystemConfiguration({
 						components: {active: ['admin']},
-						authentication: {canLogout: true, isLoginDelegated: true},
+						authentication: {canLogout: true, isLoginDelegated: true, isCamundaGroupsEnabled: true},
 					}),
 				),
 			}),

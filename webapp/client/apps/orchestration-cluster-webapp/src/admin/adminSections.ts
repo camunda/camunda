@@ -27,13 +27,15 @@ type AdminSectionKey =
 type AdminSectionConfig = {
 	isOidc: boolean;
 	isSaas: boolean;
-	isMultiTenancyEnabled: boolean;
+	isTenantsApiEnabled: boolean;
+	isCamundaGroupsEnabled: boolean;
 };
 
 const SECTION_AVAILABILITY: Partial<Record<AdminSectionKey, (config: AdminSectionConfig) => boolean>> = {
 	users: ({isOidc}) => !isOidc,
 	'mapping-rules': ({isOidc, isSaas}) => isOidc && !isSaas,
-	tenants: ({isMultiTenancyEnabled}) => isMultiTenancyEnabled,
+	groups: ({isCamundaGroupsEnabled}) => isCamundaGroupsEnabled,
+	tenants: ({isTenantsApiEnabled}) => isTenantsApiEnabled,
 };
 
 function getAdminSectionConfig(): AdminSectionConfig {
@@ -43,7 +45,8 @@ function getAdminSectionConfig(): AdminSectionConfig {
 	return {
 		isOidc: authentication.isLoginDelegated,
 		isSaas: organizationId !== null && clusterId !== null,
-		isMultiTenancyEnabled: deployment.isMultiTenancyEnabled,
+		isTenantsApiEnabled: deployment.isTenantsApiEnabled,
+		isCamundaGroupsEnabled: authentication.isCamundaGroupsEnabled,
 	};
 }
 

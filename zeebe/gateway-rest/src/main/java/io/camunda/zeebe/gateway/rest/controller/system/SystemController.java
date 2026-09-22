@@ -118,9 +118,14 @@ public class SystemController {
         cslProperties != null
             && cslProperties.getMultiTenancy() != null
             && cslProperties.getMultiTenancy().isChecksEnabled();
+    final boolean isTenantsApiEnabled =
+        cslProperties != null
+            && cslProperties.getMultiTenancy() != null
+            && cslProperties.getMultiTenancy().isApiEnabled();
 
     return DeploymentConfigurationResponse.Builder.create()
         .isMultiTenancyEnabled(isMultiTenancyEnabled)
+        .isTenantsApiEnabled(isTenantsApiEnabled)
         .maxRequestSize(maxRequestSizeBytes)
         .build();
   }
@@ -128,10 +133,15 @@ public class SystemController {
   private AuthenticationConfigurationResponse buildAuthenticationConfiguration() {
     final boolean canLogout =
         !SaasConfigurationHelper.isSaas(cslProperties != null ? cslProperties.getSaas() : null);
+    final boolean isCamundaGroupsEnabled =
+        cslProperties != null
+            && cslProperties.getAuthentication() != null
+            && cslProperties.getAuthentication().isCamundaGroupsEnabled();
 
     return AuthenticationConfigurationResponse.Builder.create()
         .canLogout(canLogout)
         .isLoginDelegated(webappConfiguration.isLoginDelegated())
+        .isCamundaGroupsEnabled(isCamundaGroupsEnabled)
         .build();
   }
 
