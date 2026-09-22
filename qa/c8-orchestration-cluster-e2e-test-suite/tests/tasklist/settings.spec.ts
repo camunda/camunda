@@ -10,7 +10,6 @@ import {expect} from '@playwright/test';
 import {publicTest as test} from 'fixtures';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {captureFailureVideo, captureScreenshot} from '@setup';
-import {extendedAssertionOptions} from 'utils/constants';
 
 test.describe('settings', () => {
   test.beforeEach(async ({page, loginPage}) => {
@@ -26,20 +25,23 @@ test.describe('settings', () => {
 
   test('change language', async ({page, tasklistHeader}) => {
     await tasklistHeader.changeLanguage('Français');
-    // Switching the language re-renders every translated string across the
-    // whole app tree, which can outlast the default 10s timeout on a loaded
-    // CI runner (confirmed by a failure screenshot showing the page fully in
-    // French moments after this assertion had already timed out) -- use the
-    // suite's extended budget for that case, same as other load-dependent
-    // assertions.
-    await expect(
-      page.getByRole('heading', {name: 'Bienvenue dans Tasklist'}),
-    ).toBeVisible({timeout: extendedAssertionOptions.timeout});
-    await expect(
-      page.getByRole('heading', {name: 'Tâches ouvertes'}),
-    ).toBeVisible();
+    // Check the Settings menu's own translated content while it's still
+    // open, then close it. Radix's DropdownMenu is modal by default: while
+    // open, it marks everything outside itself aria-hidden (confirmed by an
+    // error-context.md ARIA snapshot at the moment of a real failure, which
+    // contained only the menu's own subtree) -- so the page-content checks
+    // below would never find their targets, no matter how long they waited,
+    // until the menu closes.
     await expect(
       page.getByRole('menuitem', {name: 'Déconnexion'}),
+    ).toBeVisible();
+    await page.keyboard.press('Escape');
+
+    await expect(
+      page.getByRole('heading', {name: 'Bienvenue dans Tasklist'}),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('heading', {name: 'Tâches ouvertes'}),
     ).toBeVisible();
   });
 });
