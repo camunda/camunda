@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
@@ -34,14 +35,25 @@ public class AgentInstanceUpdatedApplierTest {
   private MutableAgentInstanceState agentInstanceState;
   private MutableElementInstanceState elementInstanceState;
   private AgentInstanceCreatedApplier createdApplier;
-  private AgentInstanceUpdatedApplier updatedApplier;
+  private EventAppliers eventAppliers;
 
   @BeforeEach
   public void setup() {
     agentInstanceState = processingState.getAgentInstanceState();
     elementInstanceState = processingState.getElementInstanceState();
     createdApplier = new AgentInstanceCreatedApplier(agentInstanceState, elementInstanceState);
-    updatedApplier = new AgentInstanceUpdatedApplier(agentInstanceState, elementInstanceState);
+    eventAppliers = new EventAppliers();
+    eventAppliers.registerEventAppliers(processingState);
+  }
+
+  // Dispatches through EventAppliers#applyState with the latest registered version, so this test
+  // always exercises whichever applier is currently latest instead of pinning to V2.
+  private void applyUpdated(final long key, final AgentInstanceRecord value) {
+    eventAppliers.applyState(
+        key,
+        AgentInstanceIntent.UPDATED,
+        value,
+        eventAppliers.getLatestVersion(AgentInstanceIntent.UPDATED));
   }
 
   @Test
@@ -61,7 +73,7 @@ public class AgentInstanceUpdatedApplierTest {
             .setAgentInstanceKey(agentInstanceKey)
             .setStatus(AgentInstanceStatus.THINKING);
     updated.getMetrics().setInputTokens(10L).setOutputTokens(5L);
-    updatedApplier.applyState(agentInstanceKey, updated);
+    applyUpdated(agentInstanceKey, updated);
 
     // then — the stored record reflects the updated values.
     final var stored = agentInstanceState.getRecord(agentInstanceKey);
@@ -89,7 +101,7 @@ public class AgentInstanceUpdatedApplierTest {
         new AgentHistoryRecord().setHistoryItemId("item-1").setRole(AgentHistoryRole.USER));
 
     // when
-    updatedApplier.applyState(agentInstanceKey, updated);
+    applyUpdated(agentInstanceKey, updated);
 
     // then — history is a transient per-command payload, not real AgentInstance state: every item
     // it carries is already persisted independently as its own AGENT_HISTORY record.
@@ -117,7 +129,7 @@ public class AgentInstanceUpdatedApplierTest {
             .setJobLeaseToken("lease-1");
 
     // when
-    updatedApplier.applyState(agentInstanceKey, updated);
+    applyUpdated(agentInstanceKey, updated);
 
     // then — jobKey/jobLeaseToken are per-command payload, not real AgentInstance state: they're
     // redundant with what's already captured on the separate AGENT_HISTORY entities.
@@ -153,12 +165,12 @@ public class AgentInstanceUpdatedApplierTest {
             .setStatus(AgentInstanceStatus.THINKING);
     updated.getMetrics().setInputTokens(42L);
 
-    updatedApplier.applyState(agentInstanceKey, updated);
+    applyUpdated(agentInstanceKey, updated);
     final var afterFirst = agentInstanceState.getRecord(agentInstanceKey);
     final var ei2AfterFirst = elementInstanceState.getInstance(ei2Key);
 
     // when — replay the same UPDATED event.
-    updatedApplier.applyState(agentInstanceKey, updated);
+    applyUpdated(agentInstanceKey, updated);
 
     // then — the stored state is identical after the replay.
     final var afterReplay = agentInstanceState.getRecord(agentInstanceKey);
@@ -206,7 +218,7 @@ public class AgentInstanceUpdatedApplierTest {
             .setElementInstanceKey(ei2Key)
             .setElementInstanceKeys(List.of(ei1Key, ei2Key))
             .setStatus(AgentInstanceStatus.THINKING);
-    updatedApplier.applyState(agentInstanceKey, updated);
+    applyUpdated(agentInstanceKey, updated);
 
     // then — EI₂ now has the back-link set.
     final var ei2 = elementInstanceState.getInstance(ei2Key);
@@ -238,7 +250,7 @@ public class AgentInstanceUpdatedApplierTest {
             .setElementInstanceKey(ei2Key)
             .setElementInstanceKeys(List.of(ei1Key, ei2Key))
             .setStatus(AgentInstanceStatus.THINKING);
-    updatedApplier.applyState(agentInstanceKey, updated);
+    applyUpdated(agentInstanceKey, updated);
 
     // then — the persisted record carries [EI₁, EI₂] in the plural list.
     final var stored = agentInstanceState.getRecord(agentInstanceKey);

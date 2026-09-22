@@ -14,13 +14,13 @@ import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRe
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import java.util.List;
 
-public final class AgentInstanceUpdatedV1Applier
+public final class AgentInstanceUpdatedV2Applier
     implements TypedEventApplier<AgentInstanceIntent, AgentInstanceRecord> {
 
   private final MutableAgentInstanceState agentInstanceState;
   private final MutableElementInstanceState elementInstanceState;
 
-  public AgentInstanceUpdatedV1Applier(
+  public AgentInstanceUpdatedV2Applier(
       final MutableAgentInstanceState agentInstanceState,
       final MutableElementInstanceState elementInstanceState) {
     this.agentInstanceState = agentInstanceState;
