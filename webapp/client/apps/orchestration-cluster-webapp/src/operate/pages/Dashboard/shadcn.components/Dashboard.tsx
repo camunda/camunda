@@ -18,17 +18,6 @@ import {NoInstancesEmptyState} from './NoInstancesEmptyState';
 // InstancesByProcess/IncidentsByError land.
 const PLACEHOLDER_COLUMNS: DataTableColumn<never>[] = [{id: 'placeholder', header: ''}];
 
-// Layout-only shell: content tiles are placeholders here and get wired in as their own
-// PRs land (MetricPanel, InstancesByProcess, IncidentsByError). Mirrors the Carbon
-// Dashboard's grid: the metric panel spans the full width on top, the two lists sit side
-// by side below it (or the single list fills the width when there are no instances).
-// Neither the metric panel nor the two lists use a Card: the metric panel's eventual
-// title is a DS `Heading` (top-level heading style, matching Carbon's productiveHeading04)
-// with its other children left as generic divs for MetricPanel to style once it lands;
-// the two lists use DS DataTable directly (its own `title` prop replaces the
-// Card/CardHeader wrapper) and its `emptyState` prop renders the DS empty state once
-// there are no running instances — see docs/migration/operate-dashboard-tiering.md for
-// the component mapping.
 const Dashboard: React.FC = () => {
 	const {t} = useTranslation();
 	const {data: count} = useRunningInstancesCount();
