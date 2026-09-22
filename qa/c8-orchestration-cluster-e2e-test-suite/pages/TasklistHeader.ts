@@ -37,13 +37,11 @@ class TasklistHeader {
     const languageOption = this.page.getByRole('radio', {name: option});
     await expect(languageOption).toBeVisible();
     await languageOption.click();
-    // The click itself takes effect immediately (confirmed by a screenshot
-    // of a real failure: the radio was already checked and the rest of the
-    // page had already re-rendered in the new language). The slow part is
-    // the app-wide re-render into the new language under CI load, which
-    // callers assert on with their own (extended) timeouts -- see
-    // settings.spec.ts.
     await expect(languageOption).toBeChecked();
+    // Leaves the Settings menu open -- callers that need to assert on the
+    // rest of the page must close it first (see settings.spec.ts): Radix's
+    // DropdownMenu is modal by default, so everything outside it is
+    // aria-hidden while it's open.
   }
 
   async clickTasksTab() {
