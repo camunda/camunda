@@ -1,5 +1,5 @@
 import buildlogic.mavenResourceFilterArgs
-import buildlogic.schemaManagerTestResourceTokens
+import buildlogic.projectVersionToken
 import org.apache.tools.ant.filters.ReplaceTokens
 
 /*
@@ -9,7 +9,7 @@ import org.apache.tools.ant.filters.ReplaceTokens
 plugins { id("buildlogic.server-conventions") }
 
 tasks.named<ProcessResources>("processTestResources") {
-  val resourceTokens = project.schemaManagerTestResourceTokens()
+  val resourceTokens = project.projectVersionToken()
 
   filesMatching("zeebe-util.properties") {
     filter(mavenResourceFilterArgs(resourceTokens), ReplaceTokens::class.java)
