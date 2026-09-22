@@ -31,6 +31,8 @@ import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import io.camunda.search.entities.AgentInstanceEntity;
 import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceStatus;
+import io.camunda.search.entities.ContentItem;
+import io.camunda.search.entities.ContentItem.ContentType;
 import java.sql.Connection;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -408,7 +410,7 @@ class AgentInstanceWriterTest {
             .modelCalls(0)
             .toolCalls(0)
             .lastUpdatedDate(OffsetDateTime.now())
-            .systemPrompt("be helpful")
+            .systemPromptItems(List.of(new ContentItem(ContentType.TEXT, "be helpful", null, null)))
             .toolValues(List.of(new AgentInstanceToolDbValue("search", "Search the web", "el-1")))
             .elementInstanceKeys(List.of(700L))
             .build();
