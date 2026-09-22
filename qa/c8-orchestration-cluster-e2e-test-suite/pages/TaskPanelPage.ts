@@ -48,6 +48,11 @@ class TaskPanelPage {
    * task outside the currently rendered window doesn't exist in the DOM at
    * all — no amount of waiting brings it in. Scroll the list container down
    * incrementally until the task mounts, or give up after `timeout`.
+   *
+   * The list container itself can be briefly absent right after navigation
+   * (the query hasn't resolved yet, so the "no tasks" empty state renders in
+   * its place) -- that's not the same as "there are no tasks to scroll
+   * through", so keep polling rather than giving up the moment it's missing.
    */
   private async scrollUntilTaskRendered(
     task: Locator,
@@ -60,12 +65,11 @@ class TaskPanelPage {
       if ((await task.count()) > 0) {
         return;
       }
-      if ((await scrollableList.count()) === 0) {
-        return;
+      if ((await scrollableList.count()) > 0) {
+        await scrollableList.evaluate((element) =>
+          element.scrollBy(0, element.clientHeight),
+        );
       }
-      await scrollableList.evaluate((element) =>
-        element.scrollBy(0, element.clientHeight),
-      );
       await sleep(200);
     }
   }
