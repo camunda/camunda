@@ -104,7 +104,7 @@ test('should have no accessibility violations in the filtered empty state with t
 			successResponse: HttpResponse.json(
 				createSystemConfiguration({
 					components: {active: ['tasklist']},
-					deployment: {isMultiTenancyEnabled: true, maxRequestSize: 0},
+					deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: true, maxRequestSize: 0},
 				}),
 			),
 		}),

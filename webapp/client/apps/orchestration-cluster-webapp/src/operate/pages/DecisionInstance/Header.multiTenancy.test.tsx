@@ -42,7 +42,11 @@ describe('<Header /> - multi tenancy', () => {
 	it('should render multi tenancy column and include tenant in version link', async ({worker}) => {
 		sessionStorage.setItem(
 			'clientConfig',
-			JSON.stringify(createSystemConfiguration({deployment: {isMultiTenancyEnabled: true, maxRequestSize: 0}})),
+			JSON.stringify(
+				createSystemConfiguration({
+					deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: true, maxRequestSize: 0},
+				}),
+			),
 		);
 		worker.use(
 			mockCurrentUserEndpoint({successResponse: CURRENT_USER_WITH_TENANTS}),

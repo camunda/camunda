@@ -291,9 +291,6 @@ components:
           type: integer
           format: int64
           example: 4194304
-      x-properties-added-in-version:
-        - propertyName: isTenantsApiEnabled
-          addedInVersion: "8.11"
 
     AuthenticationConfigurationResponse:
       description: Configuration for authentication and session management.
@@ -315,9 +312,6 @@ components:
           description: Whether Camunda manages group membership locally, as opposed to delegating it to the identity provider via a groups claim.
           type: boolean
           example: true
-      x-properties-added-in-version:
-        - propertyName: isCamundaGroupsEnabled
-          addedInVersion: "8.11"
 
     CloudConfigurationResponse:
       description: Configuration for SaaS/cloud-specific settings.

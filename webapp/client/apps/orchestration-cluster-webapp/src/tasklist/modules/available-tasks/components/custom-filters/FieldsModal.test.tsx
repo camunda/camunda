@@ -252,7 +252,7 @@ describe('<FieldsModal />', () => {
 			'clientConfig',
 			JSON.stringify(
 				createSystemConfiguration({
-					deployment: {isMultiTenancyEnabled: true, maxRequestSize: 0},
+					deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: true, maxRequestSize: 0},
 				}),
 			),
 		);
@@ -301,7 +301,11 @@ describe('<FieldsModal />', () => {
 	it('should load processes from the only accessible tenant', async ({worker}) => {
 		sessionStorage.setItem(
 			'clientConfig',
-			JSON.stringify(createSystemConfiguration({deployment: {isMultiTenancyEnabled: true, maxRequestSize: 0}})),
+			JSON.stringify(
+				createSystemConfiguration({
+					deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: true, maxRequestSize: 0},
+				}),
+			),
 		);
 		worker.use(
 			mockCurrentUserEndpoint({
@@ -339,7 +343,11 @@ describe('<FieldsModal />', () => {
 	it('should load processes from all accessible tenants', async ({worker}) => {
 		sessionStorage.setItem(
 			'clientConfig',
-			JSON.stringify(createSystemConfiguration({deployment: {isMultiTenancyEnabled: true, maxRequestSize: 0}})),
+			JSON.stringify(
+				createSystemConfiguration({
+					deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: true, maxRequestSize: 0},
+				}),
+			),
 		);
 		worker.use(
 			mockCurrentUserEndpoint({
@@ -380,7 +388,11 @@ describe('<FieldsModal />', () => {
 	it('should load processes from the explicitly selected tenant', async ({worker}) => {
 		sessionStorage.setItem(
 			'clientConfig',
-			JSON.stringify(createSystemConfiguration({deployment: {isMultiTenancyEnabled: true, maxRequestSize: 0}})),
+			JSON.stringify(
+				createSystemConfiguration({
+					deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: true, maxRequestSize: 0},
+				}),
+			),
 		);
 		worker.use(
 			mockCurrentUserEndpoint({
