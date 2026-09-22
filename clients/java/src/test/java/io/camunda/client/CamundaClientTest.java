@@ -448,7 +448,7 @@ public final class CamundaClientTest {
           .hasPort(443)
           .hasScheme("https");
       assertThat(clientConfiguration.getRestAddress())
-          .hasHost(String.format("%s.zeebe.%s", region, domain))
+          .hasHost(String.format("%s.api.%s", region, domain))
           .hasPort(443)
           .hasPath("/" + clusterId)
           .hasScheme("https");
@@ -475,7 +475,7 @@ public final class CamundaClientTest {
           .hasPort(443)
           .hasScheme("https");
       assertThat(clientConfiguration.getRestAddress())
-          .hasHost("bru-2.zeebe.camunda.io")
+          .hasHost("bru-2.api.camunda.io")
           .hasPort(443)
           .hasPath("/" + clusterId)
           .hasScheme("https");
@@ -529,7 +529,7 @@ public final class CamundaClientTest {
           .hasPort(443)
           .hasScheme("https");
       assertThat(clientConfiguration.getRestAddress())
-          .hasHost(String.format("%s.zeebe.camunda.io", region))
+          .hasHost(String.format("%s.api.camunda.io", region))
           .hasPort(443)
           .hasPath("/clusterId")
           .hasScheme("https");
@@ -556,7 +556,7 @@ public final class CamundaClientTest {
           .hasPort(443)
           .hasScheme("https");
       assertThat(clientConfiguration.getRestAddress())
-          .hasHost(String.format("%s.zeebe.camunda.io", defaultRegion))
+          .hasHost(String.format("%s.api.camunda.io", defaultRegion))
           .hasPort(443)
           .hasPath("/clusterId")
           .hasScheme("https");
