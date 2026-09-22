@@ -19,6 +19,7 @@ import { Route as CarbonAuthAdminRouteRouteImport } from './routes/_carbon/_auth
 import { Route as CarbonAuthOperateRouteRouteImport } from './routes/_carbon/_auth/operate/route'
 import { Route as ShadcnAuthIndexRouteImport } from './routes/_shadcn/_auth/index'
 import { Route as ShadcnAuthTasklistRouteRouteImport } from './routes/_shadcn/_auth/tasklist/route'
+import { Route as ShadcnAdminLoginRouteImport } from './routes/_shadcn/admin.login'
 import { Route as ShadcnTasklistLoginRouteImport } from './routes/_shadcn/tasklist.login'
 import { Route as CarbonAuthAdminIndexRouteImport } from './routes/_carbon/_auth/admin/index'
 import { Route as CarbonAuthAdminSplatRouteImport } from './routes/_carbon/_auth/admin/$'
@@ -88,6 +89,11 @@ const ShadcnAuthTasklistRouteRoute = ShadcnAuthTasklistRouteRouteImport.update({
   id: '/tasklist',
   path: '/tasklist',
   getParentRoute: () => ShadcnAuthRouteRoute,
+} as any)
+const ShadcnAdminLoginRoute = ShadcnAdminLoginRouteImport.update({
+  id: '/admin/login',
+  path: '/admin/login',
+  getParentRoute: () => ShadcnRouteRoute,
 } as any)
 const ShadcnTasklistLoginRoute = ShadcnTasklistLoginRouteImport.update({
   id: '/tasklist/login',
@@ -228,6 +234,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof CarbonAuthAdminRouteRouteWithChildren
   '/operate': typeof CarbonAuthOperateRouteRouteWithChildren
   '/tasklist': typeof ShadcnAuthTasklistRouteRouteWithChildren
+  '/admin/login': typeof ShadcnAdminLoginRoute
   '/tasklist/login': typeof ShadcnTasklistLoginRoute
   '/tasklist/processes': typeof ShadcnAuthTasklistProcessesRouteRouteWithChildren
   '/admin/$': typeof CarbonAuthAdminSplatRoute
@@ -256,6 +263,7 @@ export interface FileRoutesByTo {
   '/login': typeof CarbonLoginRoute
   '/$': typeof ShadcnSplatRoute
   '/tasklist': typeof ShadcnAuthTasklistTasksIndexRoute
+  '/admin/login': typeof ShadcnAdminLoginRoute
   '/tasklist/login': typeof ShadcnTasklistLoginRoute
   '/tasklist/processes': typeof ShadcnAuthTasklistProcessesRouteRouteWithChildren
   '/admin/$': typeof CarbonAuthAdminSplatRoute
@@ -286,6 +294,7 @@ export interface FileRoutesById {
   '/_carbon/_auth/admin': typeof CarbonAuthAdminRouteRouteWithChildren
   '/_carbon/_auth/operate': typeof CarbonAuthOperateRouteRouteWithChildren
   '/_shadcn/_auth/tasklist': typeof ShadcnAuthTasklistRouteRouteWithChildren
+  '/_shadcn/admin/login': typeof ShadcnAdminLoginRoute
   '/_shadcn/tasklist/login': typeof ShadcnTasklistLoginRoute
   '/_shadcn/_auth/': typeof ShadcnAuthIndexRoute
   '/_shadcn/_auth/tasklist/_tasks': typeof ShadcnAuthTasklistTasksRouteRouteWithChildren
@@ -320,6 +329,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/operate'
     | '/tasklist'
+    | '/admin/login'
     | '/tasklist/login'
     | '/tasklist/processes'
     | '/admin/$'
@@ -348,6 +358,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/$'
     | '/tasklist'
+    | '/admin/login'
     | '/tasklist/login'
     | '/tasklist/processes'
     | '/admin/$'
@@ -377,6 +388,7 @@ export interface FileRouteTypes {
     | '/_carbon/_auth/admin'
     | '/_carbon/_auth/operate'
     | '/_shadcn/_auth/tasklist'
+    | '/_shadcn/admin/login'
     | '/_shadcn/tasklist/login'
     | '/_shadcn/_auth/'
     | '/_shadcn/_auth/tasklist/_tasks'
@@ -479,6 +491,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/tasklist'
       preLoaderRoute: typeof ShadcnAuthTasklistRouteRouteImport
       parentRoute: typeof ShadcnAuthRouteRoute
+    }
+    '/_shadcn/admin/login': {
+      id: '/_shadcn/admin/login'
+      path: '/admin/login'
+      fullPath: '/admin/login'
+      preLoaderRoute: typeof ShadcnAdminLoginRouteImport
+      parentRoute: typeof ShadcnRouteRoute
     }
     '/_shadcn/tasklist/login': {
       id: '/_shadcn/tasklist/login'
@@ -851,12 +870,14 @@ const ShadcnAuthRouteRouteWithChildren = ShadcnAuthRouteRoute._addFileChildren(
 interface ShadcnRouteRouteChildren {
   ShadcnAuthRouteRoute: typeof ShadcnAuthRouteRouteWithChildren
   ShadcnSplatRoute: typeof ShadcnSplatRoute
+  ShadcnAdminLoginRoute: typeof ShadcnAdminLoginRoute
   ShadcnTasklistLoginRoute: typeof ShadcnTasklistLoginRoute
 }
 
 const ShadcnRouteRouteChildren: ShadcnRouteRouteChildren = {
   ShadcnAuthRouteRoute: ShadcnAuthRouteRouteWithChildren,
   ShadcnSplatRoute: ShadcnSplatRoute,
+  ShadcnAdminLoginRoute: ShadcnAdminLoginRoute,
   ShadcnTasklistLoginRoute: ShadcnTasklistLoginRoute,
 }
 
