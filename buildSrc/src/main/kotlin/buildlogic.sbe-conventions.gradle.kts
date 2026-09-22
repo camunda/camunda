@@ -10,6 +10,7 @@
  */
 
 import buildlogic.requiredVersion
+import org.gradle.api.provider.ListProperty
 
 plugins { id("buildlogic.server-conventions") }
 
@@ -19,6 +20,15 @@ val sbeToolVersion = versionCatalog.requiredVersion("uk-co-real-logic-sbe-tool")
 // Extension to configure SBE input files
 interface SbeExtension {
   val inputFiles: ConfigurableFileCollection
+
+  /**
+   * Generated files, relative to the SBE output directory, to remove after generation. SBE emits a
+   * `package-info.java` for every schema package; when the module also has a hand-written
+   * `package-info.java` in that package, the duplicate breaks compilation. Maven removes the
+   * generated file with antrun; here the generator removes it itself so its declared output stays
+   * stable and the task can be up-to-date/cached.
+   */
+  val generatedFilesToDelete: ListProperty<String>
 }
 
 val sbeExtension = extensions.create<SbeExtension>("sbe")
@@ -65,9 +75,18 @@ val generateSbe =
     // Arguments will be configured per module (the XML schema files)
     // args will be set in individual build.gradle.kts files
 
+    val filesToDelete = sbeExtension.generatedFilesToDelete
+
     doFirst {
       outputDir.get().asFile.mkdirs()
       workingDir.get().asFile.mkdirs()
+    }
+
+    // Remove colliding generated files as part of the generation itself, so the declared output
+    // directory only ever contains what this task produces.
+    doLast {
+      val outDir = outputDir.get().asFile
+      filesToDelete.get().forEach { relativePath -> outDir.resolve(relativePath).delete() }
     }
   }
 
