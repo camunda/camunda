@@ -26,8 +26,6 @@ public class OracleAsyncReplicationIT
 
   @Override
   protected Duration getMaxLag() {
-    // RDS read replicas cannot be stopped, so the local/CI outage command reboots the replica.
-    // Use a window shorter than the managed reboot so the test observes the outage before recovery.
     return Duration.ofSeconds(30);
   }
 
