@@ -51,7 +51,7 @@ data:
       identity:
         clientId: "optimize"
         audience: "optimize-api"
-        issuer: "http://c8-golden-main-elasticsearch-physical-tenants.keycloak-operator.svc:18080/auth/realms/camunda-platform"
+        issuer: "http://localhost:18080/auth/realms/camunda-platform"
         issuerBackendUrl: "http://c8-golden-main-elasticsearch-physical-tenants.keycloak-operator.svc:18080/auth/realms/camunda-platform"
       security:
         authentication:
@@ -63,7 +63,7 @@ data:
               - "optimize"
               - "optimize-api"
               - "web-modeler-api"
-            authorization-uri: "http://c8-golden-main-elasticsearch-physical-tenants.keycloak-operator.svc:18080/auth/realms/camunda-platform/protocol/openid-connect/auth"
+            authorization-uri: "http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/auth"
             jwk-set-uri: "http://c8-golden-main-elasticsearch-physical-tenants.keycloak-operator.svc:18080/auth/realms/camunda-platform/protocol/openid-connect/certs"
             token-uri: "http://c8-golden-main-elasticsearch-physical-tenants.keycloak-operator.svc:18080/auth/realms/camunda-platform/protocol/openid-connect/token"
             redirect-uri: "http://localhost:8083/api/authentication/callback"

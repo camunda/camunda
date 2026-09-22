@@ -42,8 +42,11 @@ global:
       # fallback isn't yet in the pinned chart version. Without an explicit
       # issuer, `authorization-uri` renders as a bare relative path and
       # Spring's OIDC ClientRegistration fails at startup. Set it explicitly
-      # until the chart bump lands.
-      publicIssuerUrl: http://__NAMESPACE__.keycloak-operator.svc:18080/auth/realms/camunda-platform
+      # until the chart bump lands. Keycloak's hostname is `localhost` (see
+      # charts/load-test-setup/templates/keycloak/keycloak.yaml) since browser
+      # SSO redirects go through the documented `localhost:18080`
+      # port-forward, not the in-cluster service address used below.
+      publicIssuerUrl: http://localhost:18080/auth/realms/camunda-platform
 
     keycloak:
       auth:

@@ -136,7 +136,7 @@ data:
               - "orchestration"
               - "orchestration-api"
               - "web-modeler-api"
-            authorization-uri: "http://c8-golden-stable-810-opensearch-stable.keycloak-operator.svc:18080/auth/realms/camunda-platform/protocol/openid-connect/auth"
+            authorization-uri: "http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/auth"
             jwk-set-uri: "http://c8-golden-stable-810-opensearch-stable.keycloak-operator.svc:18080/auth/realms/camunda-platform/protocol/openid-connect/certs"
             token-uri: "http://c8-golden-stable-810-opensearch-stable.keycloak-operator.svc:18080/auth/realms/camunda-platform/protocol/openid-connect/token"
             redirect-uri: "http://localhost:8080/sso-callback"
