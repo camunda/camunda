@@ -24,7 +24,6 @@ on:
         description: 'RDS for Oracle instance class (must have at least two vCPUs)'
         type: string
         required: false
-        default: db.t3.small
       skip_destroy:
         description: 'Keep the Oracle infrastructure after the run (for debugging; destroy manually!)'
         type: boolean
@@ -46,7 +45,6 @@ on:
         description: 'RDS for Oracle instance class (must have at least two vCPUs)'
         type: string
         required: false
-        default: db.t3.small
       skip_destroy:
         description: 'Keep the Oracle infrastructure after the run (for debugging; destroy manually!)'
         type: boolean
@@ -74,7 +72,7 @@ env:
   TF_STATE_BUCKET_REGION: eu-west-1
   LOCAL_DB_PORT: '11521'
   ORACLE_ENGINE_VERSION: ${{ inputs.oracle_engine_version || 'auto' }}
-  ORACLE_INSTANCE_CLASS: ${{ inputs.oracle_instance_class || 'db.t3.small' }}
+  ORACLE_INSTANCE_CLASS: ${{ inputs.oracle_instance_class || 'db.t3.medium' }}
   ORACLE_BYOL_ACKNOWLEDGED: ${{ inputs.oracle_byol_acknowledged || github.event_name == 'pull_request' }}
 
 jobs:
