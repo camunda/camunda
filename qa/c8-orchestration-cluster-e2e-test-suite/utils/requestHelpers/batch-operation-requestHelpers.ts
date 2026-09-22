@@ -119,6 +119,18 @@ export async function createCompletedBatchOperation(
   return key;
 }
 
+export async function getBatchOperationState(
+  request: APIRequestContext,
+  batchOperationKey: string,
+): Promise<string> {
+  const res = await request.get(
+    buildUrl('/batch-operations/{batchOperationKey}', {batchOperationKey}),
+    {headers: jsonHeaders()},
+  );
+  await assertStatusCode(res, 200);
+  return (await res.json()).state;
+}
+
 export async function expectBatchState(
   request: APIRequestContext,
   batchOperationKey: string,
