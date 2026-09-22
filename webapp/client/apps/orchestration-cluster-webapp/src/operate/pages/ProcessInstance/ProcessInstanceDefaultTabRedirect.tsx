@@ -8,6 +8,7 @@
 
 import {useEffect} from 'react';
 import {useNavigate} from '@tanstack/react-router';
+import {GenericErrorPage} from '#/shared/pages/GenericErrorPage';
 import {hasProcessLevelWaitState} from '#/operate/shared/utils/waitStates';
 import {isInstanceRunning} from '#/operate/shared/utils/processInstance';
 import {useProcessInstanceWaitStateStatistics} from './processInstance.queries';
@@ -17,7 +18,7 @@ import {getDefaultProcessInstanceTab, getProcessInstanceTabPath} from './process
 const ProcessInstanceDefaultTabRedirect: React.FC = () => {
 	const navigate = useNavigate();
 	const {processInstanceId, processInstance, selection} = useProcessInstancePage();
-	const {data, isPending, isFetching, isError} = useProcessInstanceWaitStateStatistics(processInstance);
+	const {data, isPending, isFetching, isError, refetch} = useProcessInstanceWaitStateStatistics(processInstance);
 	const isEnabled = isInstanceRunning(processInstance);
 
 	useEffect(() => {
@@ -36,6 +37,10 @@ const ProcessInstanceDefaultTabRedirect: React.FC = () => {
 			replace: true,
 		});
 	}, [navigate, processInstance, processInstanceId, selection, data, isPending, isFetching, isError, isEnabled]);
+
+	if (isEnabled && isError) {
+		return <GenericErrorPage reset={() => void refetch()} />;
+	}
 
 	return null;
 };
