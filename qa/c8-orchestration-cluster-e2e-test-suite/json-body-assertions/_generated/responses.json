@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "fadc47e92fc9cd8ebed3560e3f7a1bcdc42b209e",
-    "generatedAt": "2026-08-27T15:41:38.517Z",
+    "commit": "6e85eeddbb703cd436c7215d0caf08256962971e",
+    "generatedAt": "2026-09-22T12:12:27.217Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "133a5e182e3b842bff181964117280234544bd7b656cb9009762836047511ba7"
+    "specSha256": "83b641e778451c9121a07163764a84aefd413d32627a9d5daacec587d71f48bd"
   },
   "responses": [
     {
@@ -850,21 +850,7 @@
                 {
                   "name": "batchOperationType",
                   "type": "string",
-                  "enumValues": [
-                    "ADD_VARIABLE",
-                    "CANCEL_PROCESS_INSTANCE",
-                    "DELETE_DECISION_DEFINITION",
-                    "DELETE_DECISION_INSTANCE",
-                    "DELETE_PROCESS_DEFINITION",
-                    "DELETE_PROCESS_INSTANCE",
-                    "MIGRATE_PROCESS_INSTANCE",
-                    "MODIFY_PROCESS_INSTANCE",
-                    "RESOLVE_INCIDENT",
-                    "UPDATE_VARIABLE"
-                  ],
-                  "underlyingPrimitive": "string",
-                  "rawRefName": "batchOperationType",
-                  "wrapper": true
+                  "nullable": true
                 },
                 {
                   "name": "endDate",
@@ -984,21 +970,7 @@
           {
             "name": "batchOperationType",
             "type": "string",
-            "enumValues": [
-              "ADD_VARIABLE",
-              "CANCEL_PROCESS_INSTANCE",
-              "DELETE_DECISION_DEFINITION",
-              "DELETE_DECISION_INSTANCE",
-              "DELETE_PROCESS_DEFINITION",
-              "DELETE_PROCESS_INSTANCE",
-              "MIGRATE_PROCESS_INSTANCE",
-              "MODIFY_PROCESS_INSTANCE",
-              "RESOLVE_INCIDENT",
-              "UPDATE_VARIABLE"
-            ],
-            "underlyingPrimitive": "string",
-            "rawRefName": "batchOperationType",
-            "wrapper": true
+            "nullable": true
           },
           {
             "name": "endDate",
