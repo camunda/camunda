@@ -256,11 +256,33 @@ jobs:
             }}
       # Build the distribution in the same Gradle invocation as testClasses so the archive
       # reuses the compilation output instead of compiling the repository again.
-      - name: Compile and package Gradle distribution
+      - name: Compile, package, and verify Gradle cache reuse
         run: |
-          ./gradlew --no-daemon --console=plain --parallel -Pskip.fe.build \
+          ./gradlew --console=plain --parallel -Pskip.fe.build \
             testClasses :camunda-zeebe:distZip
-          ./gradlew --no-daemon --no-configuration-cache --console=plain -Pskip.fe.build \
+
+          verification_log="$(mktemp)"
+          trap 'rm -f "$verification_log"' EXIT
+          ./gradlew --console=plain --parallel -Pskip.fe.build \
+            testClasses 2>&1 | tee "$verification_log"
+
+          summary="$(grep -E '^[0-9]+ actionable tasks:' "$verification_log" | tail -1)"
+          grep -q '^BUILD SUCCESSFUL' "$verification_log"
+
+          if [[ -z "$summary" ]]; then
+            echo "Cache verification failed: Gradle task summary was not found"
+            exit 1
+          fi
+
+          if [[ "$summary" =~ [[:space:]][1-9][0-9]*[[:space:]]executed ]]; then
+            echo "Cache verification failed: tasks were executed"
+            echo "$summary"
+            exit 1
+          fi
+
+          echo "Cache verification passed: $summary"
+
+          ./gradlew --no-configuration-cache --console=plain -Pskip.fe.build \
             :camunda-zeebe:writeDistDependencyReport
       - name: Upload Gradle distribution
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
