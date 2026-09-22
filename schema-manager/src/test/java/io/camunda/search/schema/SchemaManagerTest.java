@@ -506,7 +506,7 @@ class SchemaManagerTest {
     final var priorVersionIndexName = indexA.getIndexNameWithoutVersion() + "-0.9.0_2025.01.01";
     when(client.getNumberOfReplicas(ALL_TEST_INDICES_WILDCARD))
         .thenReturn(Map.of(indexA.getFullQualifiedName(), 1, priorVersionIndexName, 0));
-    final var manager =
+    try (final var manager =
         new SchemaManager(
             client,
             List.of(indexA),
@@ -514,14 +514,14 @@ class SchemaManagerTest {
             config,
             mock(IndexSchemaValidator.class),
             "8.8.0",
-            null);
+            null)) {
 
-    // when
-    manager.startupOnce();
-    manager.close();
+      // when
+      manager.startup();
 
-    // then - the prior version's drift is not attributed to indexA, so no write is issued
-    verify(client, never()).putSettings(any(), any());
+      // then - the prior version's drift is not attributed to indexA, so no write is issued
+      verify(client, never()).putSettings(any(), any());
+    }
   }
 
   private SchemaManager createSpySchemaManager(final String currentVersion) {
