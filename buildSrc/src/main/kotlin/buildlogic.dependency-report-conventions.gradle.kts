@@ -1,7 +1,7 @@
+import buildlogic.ClassifiedComponent
+import buildlogic.ResolutionSummary
+import buildlogic.classify
 import groovy.json.JsonOutput
-import org.gradle.api.artifacts.component.ModuleComponentIdentifier
-import org.gradle.api.artifacts.component.ProjectComponentIdentifier
-import org.gradle.api.artifacts.result.ResolvedDependencyResult
 
 val dependencyReportProject = project
 
@@ -27,35 +27,27 @@ tasks.register("printGradleDependencyReportEntry") {
     val internal = sortedSetOf<String>()
     val configuration = dependencyReportProject.configurations.findByName(configurationName)
     if (configuration != null && configuration.isCanBeResolved) {
-      val resolution = configuration.incoming.resolutionResult
-      val directComponents =
-        resolution.root.dependencies
-          .filterIsInstance<ResolvedDependencyResult>()
-          .map { it.selected.id }
-          .toSet()
+      val summary = ResolutionSummary.of(configuration)
 
-      resolution.allComponents.forEach { component ->
-        when (val identifier = component.id) {
-          is ModuleComponentIdentifier -> {
-            if (
-              identifier.module != "bom" &&
-                !identifier.module.endsWith("-bom") &&
-                !identifier.module.endsWith("-dependencies")
-            ) {
-              val coordinate = "${identifier.group}:${identifier.module}"
-              thirdParty[coordinate] = identifier.version
-              if (identifier in directComponents) {
-                directThirdParty.add(coordinate)
+      summary.components
+        .mapNotNull { it.classify() }
+        .forEach { component ->
+          when (component) {
+            is ClassifiedComponent.Module -> {
+              if (!component.isBom) {
+                thirdParty[component.coordinate] = component.version
+                if (summary.isDirect(component.identifier)) {
+                  directThirdParty.add(component.coordinate)
+                }
+              }
+            }
+            is ClassifiedComponent.Project -> {
+              if (component.projectPath != dependencyReportProject.path) {
+                internal.add(component.projectPath.removePrefix(":"))
               }
             }
           }
-          is ProjectComponentIdentifier -> {
-            if (identifier.projectPath != dependencyReportProject.path) {
-              internal.add(identifier.projectPath.removePrefix(":"))
-            }
-          }
         }
-      }
     }
     println(
       JsonOutput.toJson(
