@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.model.bpmn.util.time;
 
+import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.Objects;
 
@@ -43,6 +44,35 @@ public class RepeatingInterval implements Timer {
   @Override
   public long getDueDate(final long fromEpochMillis) {
     return getInterval().toEpochMilli(fromEpochMillis);
+  }
+
+  /**
+   * Returns a new {@link RepeatingInterval}, with the given {@code repetitions}, rescheduled after
+   * {@code lastDueDate}.
+   *
+   * <p>The natural next occurrence (i.e. {@code lastDueDate} plus one interval) can already lie at
+   * or before {@code now} if several cycles were missed (e.g. a suspended process instance resuming
+   * late, or broker downtime spanning multiple intervals). Resolving such an occurrence as-is would
+   * let {@link Interval#toEpochMilli}'s clamp collapse it onto {@code now}, firing the timer again
+   * immediately. To avoid that, an overdue natural occurrence is re-anchored onto {@code now}
+   * instead, so the returned interval always resolves a full interval into the future.
+   *
+   * @param lastDueDate the due date this repeating interval last fired at
+   * @param now the current time, used to detect and re-anchor an overdue natural next occurrence
+   * @param repetitions the repetitions count to carry over to the returned interval
+   * @return a new {@link RepeatingInterval} whose next occurrence never lies at or before {@code
+   *     now}
+   */
+  public RepeatingInterval nextOccurrenceAfter(
+      final long lastDueDate, final long now, final int repetitions) {
+    final Interval refreshedInterval = interval.withStart(Instant.ofEpochMilli(lastDueDate));
+    // withStart() always returns an interval with a start present.
+    final long naturalNextDueDate = refreshedInterval.getStart().get().toInstant().toEpochMilli();
+    final Interval anchoredInterval =
+        naturalNextDueDate > now
+            ? refreshedInterval
+            : interval.withStart(Instant.ofEpochMilli(now));
+    return new RepeatingInterval(repetitions, anchoredInterval);
   }
 
   @Override
