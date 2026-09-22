@@ -30,6 +30,9 @@ import io.camunda.search.schema.opensearch.OpensearchEngineClient.ISMPolicyState
 import io.camunda.search.schema.utils.SchemaTestUtil;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
@@ -515,10 +518,82 @@ public class OpensearchEngineClientIT {
     reset(indicesSpy); // ignore create
 
     // when
-    engineClient.updateIndexTemplateSettings(template, initialSettings);
+    engineClient.updateIndexTemplateSettingsIfManagedSettingsChanged(template, initialSettings);
 
     // then
     verify(indicesSpy, never()).putIndexTemplate(any(PutIndexTemplateRequest.class));
+  }
+
+  /**
+   * Regression test for #63764: the settings comparison used to diff the whole settings block
+   * against the search engine's normalized rendering, which can never match for a template that
+   * owns a custom settings block (list-view's/incident's {@code analysis} block: OpenSearch injects
+   * {@code "type": "custom"} into the analyzer/tokenizer definitions), so schema-init kept
+   * re-issuing this PUT on every attempt. Exercises the actual production descriptors rather than a
+   * synthetic fixture without a settings block, which would pass vacuously without ever touching
+   * the broken comparison.
+   */
+  @ParameterizedTest
+  @MethodSource("templatesWithCustomSettings")
+  void shouldNotIssuePutIndexTemplateWhenSettingsUnchangedForTemplateWithCustomSettings(
+      final IndexTemplateDescriptor template) throws IOException {
+    // given
+    assertThat(template.hasCustomSettings()).isTrue();
+    final var initialSettings = new IndexConfiguration();
+    initialSettings.setNumberOfReplicas(0);
+    initialSettings.setNumberOfShards(1);
+
+    final var indicesSpy = spy(openSearchClient.indices());
+    final var clientSpy = spy(openSearchClient);
+    doReturn(indicesSpy).when(clientSpy).indices();
+    final var engineClient = new OpensearchEngineClient(clientSpy, TestObjectMapper.objectMapper());
+
+    engineClient.createIndexTemplate(template, initialSettings, true);
+    reset(indicesSpy); // ignore create
+
+    // when - two consecutive settings-update attempts with nothing changed, the way schema-init
+    // runs on every restart
+    engineClient.updateIndexTemplateSettingsIfManagedSettingsChanged(template, initialSettings);
+    engineClient.updateIndexTemplateSettingsIfManagedSettingsChanged(template, initialSettings);
+
+    // then
+    verify(indicesSpy, never()).putIndexTemplate(any(PutIndexTemplateRequest.class));
+  }
+
+  /**
+   * The settings comparison treats "no priority configured" and "no priority stored" as equal,
+   * which only holds as long as the search engine does not substitute a default of its own when a
+   * template is written without one. If it did, every restart would see a mismatch on a key nothing
+   * can change and rewrite every template - the same permanent-rewrite failure #63764 was about, on
+   * a different key.
+   */
+  @Test
+  void shouldNotStoreAPriorityOfItsOwnWhenNoneIsConfigured() throws IOException {
+    // given
+    final var template =
+        createTestTemplateDescriptor(
+            "template_without_priority-" + ENGINE_CLIENT_TEST_MARKERS, "/mappings.json");
+    final var settings = new IndexConfiguration();
+    assertThat(settings.getTemplatePriority()).isNull();
+
+    // when
+    opensearchEngineClient.createIndexTemplate(template, settings, true);
+
+    // then
+    final var stored =
+        openSearchClient
+            .indices()
+            .getIndexTemplate(r -> r.name(template.getTemplateName()))
+            .indexTemplates()
+            .getFirst()
+            .indexTemplate();
+    assertThat(stored.priority()).isNull();
+  }
+
+  private static List<IndexTemplateDescriptor> templatesWithCustomSettings() {
+    return List.of(
+        new ListViewTemplate(ENGINE_CLIENT_TEST_MARKERS, false),
+        new IncidentTemplate(ENGINE_CLIENT_TEST_MARKERS, false));
   }
 
   @ParameterizedTest
@@ -538,7 +613,7 @@ public class OpensearchEngineClientIT {
     reset(indicesSpy); // ignore create
 
     // when
-    engineClient.updateIndexTemplateSettings(template, updated);
+    engineClient.updateIndexTemplateSettingsIfManagedSettingsChanged(template, updated);
 
     // then
     verify(indicesSpy, times(1)).putIndexTemplate(any(PutIndexTemplateRequest.class));
@@ -580,7 +655,7 @@ public class OpensearchEngineClientIT {
     updated.setTemplatePriority(100); // change
 
     // when
-    engineClient.updateIndexTemplateSettings(template, updated);
+    engineClient.updateIndexTemplateSettingsIfManagedSettingsChanged(template, updated);
 
     // then
     verify(indicesSpy, times(1)).putIndexTemplate(any(PutIndexTemplateRequest.class));

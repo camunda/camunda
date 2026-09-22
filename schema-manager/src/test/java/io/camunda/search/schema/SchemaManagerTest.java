@@ -68,6 +68,7 @@ class SchemaManagerTest {
   private MetadataIndex metadataIndex;
   private TestIndexDescriptor testIndexDescriptor;
   private TestTemplateDescriptor testTemplateDescriptor;
+  private TestTemplateDescriptor customSettingsTemplateDescriptor;
   private SchemaManager schemaManager;
 
   @BeforeEach
@@ -83,6 +84,9 @@ class SchemaManagerTest {
     metadataIndex = new MetadataIndex(indexPrefix, true);
     testIndexDescriptor = new TestIndexDescriptor(indexPrefix, "mappings.json");
     testTemplateDescriptor = new TestTemplateDescriptor(indexPrefix, "mappings.json");
+    customSettingsTemplateDescriptor =
+        new TestTemplateDescriptor(
+            indexPrefix, true, "custom_settings_template", "mappings.json", true);
     indexDescriptors = List.of(metadataIndex, testIndexDescriptor);
     templateDescriptors = List.of(testTemplateDescriptor);
 
@@ -231,7 +235,9 @@ class SchemaManagerTest {
     verify(searchEngineClient).createIndexTemplate(testTemplateDescriptor, config.index(), true);
     // Index template settings are always checked - the search engine no-ops internally when they
     // are already up to date, so the check itself stays unconditional.
-    verify(searchEngineClient).updateIndexTemplateSettings(testTemplateDescriptor, config.index());
+    verify(searchEngineClient)
+        .updateIndexTemplateSettingsIfManagedSettingsChanged(
+            testTemplateDescriptor, config.index());
     // Replica settings are only written when they have drifted from configuration. The mocked
     // client reports no current replica counts by default, so nothing here counts as drifted.
     verify(searchEngineClient, never()).putSettings(any(), any());
@@ -849,6 +855,116 @@ class SchemaManagerTest {
       // then
       verify(searchEngineClient, never()).deleteIndex(liveIndexName);
       verify(searchEngineClient).deleteIndex(archivedIndexName);
+    }
+  }
+
+  /**
+   * Regression coverage for #63764: a template's custom settings block (e.g. an {@code analysis}
+   * block) is never compared reliably against the search engine's normalized rendering, so {@code
+   * updateSchemaSettings()} only ever diffs the config-owned keys for it. A real change to that
+   * JSON-owned part of the settings block therefore only gets applied through this forced,
+   * unconditional rewrite on a genuine schema-version change — never on a same-version restart,
+   * even one that is forced through {@code upgradeSchema} by the SNAPSHOT quirk.
+   */
+  @Nested
+  class CustomSettingsTemplateForcedRewriteTest {
+
+    private SchemaManager customSchemaManager;
+
+    @AfterEach
+    void tearDown() {
+      if (customSchemaManager != null) {
+        customSchemaManager.close();
+      }
+    }
+
+    private SchemaManager createSchemaManager(final String currentVersion) {
+      return new SchemaManager(
+          searchEngineClient,
+          List.of(metadataIndex),
+          List.of(customSettingsTemplateDescriptor),
+          config,
+          mock(IndexSchemaValidator.class),
+          currentVersion,
+          null);
+    }
+
+    /** Makes the template look like it is already stored, so it is not created from scratch. */
+    private void mockTemplateAlreadyExists() {
+      final var templateName = customSettingsTemplateDescriptor.getTemplateName();
+      when(searchEngineClient.getMappings(anyString(), eq(MappingSource.INDEX_TEMPLATE)))
+          .thenReturn(
+              Map.of(
+                  templateName,
+                  new IndexMapping.Builder().indexName(templateName).dynamic("strict").build()));
+    }
+
+    @Test
+    void shouldRewriteUnconditionallyOnAGenuineVersionChange() {
+      // given
+      customSchemaManager = createSchemaManager("8.8.1");
+      mockSchemaVersionInMetadata("8.8.0");
+      mockTemplateAlreadyExists();
+
+      // when
+      startupWithRetry(customSchemaManager, config);
+
+      // then - rewritten even though nothing about its mapping properties changed
+      verify(searchEngineClient)
+          .createIndexTemplate(customSettingsTemplateDescriptor, config.index(), false);
+      verify(searchEngineClient, never()).putMapping(eq(customSettingsTemplateDescriptor), any());
+    }
+
+    /**
+     * A template that did not exist yet was just written from its schema file in full, so the
+     * search engine already stores exactly what a forced rewrite would send. Re-sending it is a
+     * redundant cluster-state write per tenant per node, which is what makes a cold start of a
+     * large deployment expensive - the very cost this whole change exists to cut.
+     */
+    @Test
+    void shouldNotRewriteATemplateItJustCreatedOnAVersionChange() {
+      // given - no stored templates, so this one is created from scratch
+      customSchemaManager = createSchemaManager("8.8.1");
+      mockSchemaVersionInMetadata("8.8.0");
+
+      // when
+      startupWithRetry(customSchemaManager, config);
+
+      // then - created once, and not rewritten on top of that
+      verify(searchEngineClient)
+          .createIndexTemplate(customSettingsTemplateDescriptor, config.index(), true);
+      verify(searchEngineClient, never())
+          .createIndexTemplate(customSettingsTemplateDescriptor, config.index(), false);
+    }
+
+    @Test
+    void shouldNotForceRewriteWhenSameVersionEvenOnASnapshotBuild() {
+      // given - SNAPSHOT forces upgradeSchema=true, but the version has not actually changed
+      customSchemaManager = createSchemaManager("8.8.0-SNAPSHOT");
+      mockSchemaVersionInMetadata("8.8.0-SNAPSHOT");
+      mockTemplateAlreadyExists();
+
+      // when
+      startupWithRetry(customSchemaManager, config);
+
+      // then
+      verify(searchEngineClient, never())
+          .createIndexTemplate(customSettingsTemplateDescriptor, config.index(), false);
+    }
+
+    @Test
+    void shouldNotForceRewriteWhenSameVersionWithoutAnUpgrade() {
+      // given
+      customSchemaManager = createSchemaManager("8.8.0");
+      mockSchemaVersionInMetadata("8.8.0");
+      mockTemplateAlreadyExists();
+
+      // when
+      startupWithRetry(customSchemaManager, config);
+
+      // then
+      verify(searchEngineClient, never())
+          .createIndexTemplate(customSettingsTemplateDescriptor, config.index(), false);
     }
   }
 }

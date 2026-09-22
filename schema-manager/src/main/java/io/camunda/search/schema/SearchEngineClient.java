@@ -71,7 +71,14 @@ public interface SearchEngineClient extends CloseableSilently {
 
   void putIndexMeta(final String indexName, Map<String, Object> meta);
 
-  void updateIndexTemplateSettings(
+  /**
+   * Writes an index template's settings, but only when the settings runtime configuration owns
+   * (shards, replicas, refresh interval, template priority) differ from what the search engine
+   * already stores. The rest of the template's settings block is not compared: the engine
+   * normalizes it on storage, so a diff against its rendering can never be trusted. A change there
+   * is applied by a full rewrite on a schema-version change instead.
+   */
+  void updateIndexTemplateSettingsIfManagedSettingsChanged(
       final IndexTemplateDescriptor indexTemplateDescriptor,
       final IndexConfiguration indexConfiguration);
 

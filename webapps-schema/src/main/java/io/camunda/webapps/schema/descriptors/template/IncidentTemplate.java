@@ -60,4 +60,10 @@ public class IncidentTemplate extends AbstractTemplateDescriptor
   public String getComponentName() {
     return OPERATE.toString();
   }
+
+  @Override
+  public boolean hasCustomSettings() {
+    // a path_hierarchy tokenizer/analyzer for the treePath field
+    return true;
+  }
 }
