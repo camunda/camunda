@@ -1,8 +1,8 @@
+import buildlogic.ClassifiedComponent
 import buildlogic.DistributionDependencyReportExtension
+import buildlogic.ResolutionSummary
+import buildlogic.classify
 import groovy.json.JsonOutput
-import org.gradle.api.artifacts.component.ModuleComponentIdentifier
-import org.gradle.api.artifacts.component.ProjectComponentIdentifier
-import org.gradle.api.artifacts.result.ResolvedDependencyResult
 import org.gradle.jvm.tasks.Jar
 
 val distributionDependencyReport =
@@ -26,12 +26,7 @@ tasks.register("writeDistDependencyReport") {
 
   doLast {
     val runtimeClasspath = runtimeClasspathConfiguration
-    val resolution = runtimeClasspath.incoming.resolutionResult
-    val directComponents =
-      resolution.root.dependencies
-        .filterIsInstance<ResolvedDependencyResult>()
-        .map { it.selected.id }
-        .toSet()
+    val summary = ResolutionSummary.of(runtimeClasspath)
     val excludedFilePrefixes = distributionDependencyReport.excludedFilePrefixes.get()
     val fileNameReplacements = distributionDependencyReport.fileNameReplacements.get()
 
@@ -43,18 +38,19 @@ tasks.register("writeDistDependencyReport") {
         }
         .map { artifact ->
           val component = artifact.id.componentIdentifier
+          val classified = component.classify()
           val coordinate =
-            when (component) {
-              is ModuleComponentIdentifier ->
-                "${component.group}:${component.module}:${component.version}"
-              is ProjectComponentIdentifier -> "project:${component.projectPath}"
-              else -> component.displayName
+            when (classified) {
+              is ClassifiedComponent.Module ->
+                "${classified.group}:${classified.module}:${classified.version}"
+              is ClassifiedComponent.Project -> classified.coordinate
+              null -> component.displayName
             }
           mapOf<String, Any?>(
             "file" to (fileNameReplacements[artifact.file.name] ?: artifact.file.name),
             "coordinate" to coordinate,
-            "direct" to (component in directComponents),
-            "internal" to (component is ProjectComponentIdentifier),
+            "direct" to summary.isDirect(component),
+            "internal" to (classified is ClassifiedComponent.Project),
           )
         }
         .sortedBy { it["file"].toString() }
