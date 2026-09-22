@@ -866,6 +866,31 @@ final class JobWorkerImplTest {
   }
 
   @Test
+  void shouldKeepPollingAfterAPollThrowsAnError() {
+    // given a poller that throws an Error, as a protobuf gencode conflict does
+    final ErrorThrowingJobPoller poller = new ErrorThrowingJobPoller();
+    final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
+    try (final JobWorkerImpl ignored =
+        workerWith(
+            scheduler,
+            poller,
+            new RecordingJobRunnableFactory(),
+            WITHIN_ACTIVATION,
+            Mockito.mock(JobClient.class))) {
+
+      // when the worker runs on
+
+      // then the worker polls again, because a lost Error stops it permanently
+      Awaitility.await("a poll after the failed one")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(() -> assertThat(poller.getPollCount()).isGreaterThan(1));
+    } finally {
+      scheduler.shutdownNow();
+    }
+  }
+
+  @Test
   void shouldRunAJobThatIsStillWithinItsActivation() {
     // given a worker whose handler threads are free, so that a job starts as soon as it arrives
     final RecordingJobPoller poller = new RecordingJobPoller();
@@ -1271,6 +1296,27 @@ final class JobWorkerImplTest {
 
     private void push(final long jobKey) {
       consumer.get().accept(new ActivatedJobImpl(jsonMapper, TestData.job(jobKey)));
+    }
+  }
+
+  /** Throws an {@link Error} on the first poll, and counts the polls. */
+  private static final class ErrorThrowingJobPoller implements JobPoller {
+    private final AtomicInteger pollCount = new AtomicInteger();
+
+    @Override
+    public void poll(
+        final int maxJobsToActivate,
+        final Consumer<io.camunda.client.api.response.ActivatedJob> jobConsumer,
+        final IntConsumer doneCallback,
+        final Consumer<Throwable> errorCallback,
+        final BooleanSupplier openSupplier) {
+      if (pollCount.incrementAndGet() == 1) {
+        throw new NoSuchMethodError("simulated protobuf gencode/runtime version skew");
+      }
+    }
+
+    private int getPollCount() {
+      return pollCount.get();
     }
   }
 
