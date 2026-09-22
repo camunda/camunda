@@ -7,6 +7,7 @@
  */
 
 import {Page, Locator, expect} from '@playwright/test';
+import {waitForAssertion} from 'utils/waitForAssertion';
 
 class TasklistHeader {
   private page: Page;
@@ -37,6 +38,18 @@ class TasklistHeader {
     const languageOption = this.page.getByRole('radio', {name: option});
     await expect(languageOption).toBeVisible();
     await languageOption.click();
+    // The first click can land before the just-opened menu is fully
+    // interactive and get swallowed, so verify the selection actually took
+    // and re-click if it didn't -- same retry-on-verified-failure shape as
+    // TaskPanelPage.filterBy for the same class of menu-interaction race.
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(languageOption).toBeChecked();
+      },
+      onFailure: async () => {
+        await languageOption.click();
+      },
+    });
   }
 
   async clickTasksTab() {

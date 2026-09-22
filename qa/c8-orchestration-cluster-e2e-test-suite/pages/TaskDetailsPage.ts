@@ -139,7 +139,11 @@ class TaskDetailsPage {
     this.historyTableDetailsHeader = this.historyTable.getByRole(
       'columnheader',
       {
+        // Without `exact`, this also matches the "Open details" action
+        // column header (substring match), so the locator resolves to two
+        // elements and toBeVisible() throws a strict-mode violation.
         name: 'Details',
+        exact: true,
       },
     );
     this.historyTableActorHeader = this.historyTable.getByRole('columnheader', {
@@ -179,8 +183,12 @@ class TaskDetailsPage {
 
   async replaceExistingVariableValue(values: {name: string; value: string}) {
     const {name, value} = values;
-    await this.page.getByTitle(name).clear();
-    await this.page.getByTitle(name).fill(value);
+    // Same title-attribute-to-accessible-name migration as
+    // setVariableValue below: the field exposes its label as the textbox's
+    // accessible name now, not a title attribute.
+    const field = this.page.getByRole('textbox', {name});
+    await field.clear();
+    await field.fill(value);
   }
 
   getNthVariableNameInput(nth: number) {
