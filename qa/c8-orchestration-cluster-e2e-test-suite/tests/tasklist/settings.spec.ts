@@ -31,6 +31,8 @@ test.describe('settings', () => {
     await expect(
       page.getByRole('heading', {name: 'Tâches ouvertes'}),
     ).toBeVisible();
-    await expect(page.getByRole('button', {name: 'Déconnexion'})).toBeVisible();
+    await expect(
+      page.getByRole('menuitem', {name: 'Déconnexion'}),
+    ).toBeVisible();
   });
 });
