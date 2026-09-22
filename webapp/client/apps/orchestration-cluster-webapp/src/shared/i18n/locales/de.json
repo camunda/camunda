@@ -194,6 +194,7 @@
 			"processesFetchErrorMissingTenant": "Sie müssen zuerst einen Mandanten auswählen, um einen Prozess zu starten.",
 			"processesStartProcessWithModalSubmissionFailed": "Formular konnte nicht übermittelt werden. Bitte versuchen Sie es später erneut.",
 			"processesStartProcessWithModalFormLoadFailed": "Das Formular konnte nicht geladen werden. Bitte versuchen Sie es erneut oder wenden Sie sich an Ihren Tasklist-Administrator.",
+			"processesStartProcessWithModalFormNotDeployed": "Das Startformular für diesen Prozess konnte nicht geladen werden. Stellen Sie sicher, dass das Formular bereitgestellt wurde.",
 			"processesStartProcessWithModalFormRenderingFailed": "Wir konnten das Formular nicht rendern. Bitte kontaktieren Sie Ihren Prozessadministrator, um das Formularschema zu beheben.",
 			"processesStartProcessPendingStatusText": "Prozess wird gestartet...",
 			"processesStartProcessWaitForTasksText": "Warten auf Aufgaben...",

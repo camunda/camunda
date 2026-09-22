@@ -711,6 +711,50 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  public void shouldReturn204WhenProcessHasNoStartForm() {
+    when(processDefinitionServices.getProcessDefinitionStartForm(eq(1L), any()))
+        .thenReturn(Optional.empty());
+
+    webClient
+        .get()
+        .uri(PROCESS_DEFINITION_URL + "1/form")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+  }
+
+  @Test
+  public void shouldReturn404WhenLinkedStartFormIsMissing() {
+    when(processDefinitionServices.getProcessDefinitionStartForm(eq(1L), any()))
+        .thenThrow(
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(
+                    "Start form 'invoice-start-form' not found for process definition key '1'",
+                    CamundaSearchException.Reason.NOT_FOUND)));
+
+    webClient
+        .get()
+        .uri(PROCESS_DEFINITION_URL + "1/form")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "title": "NOT_FOUND",
+              "status": 404,
+              "detail": "Start form 'invoice-start-form' not found for process definition key '1'",
+              "instance": "/v2/process-definitions/1/form"
+            }
+            """,
+            JsonCompareMode.STRICT);
+  }
+
+  @Test
   public void shouldReturn404ForFormInvaliProcessKey() {
     when(processDefinitionServices.getProcessDefinitionStartForm(eq(999L), any()))
         .thenThrow(
