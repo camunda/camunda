@@ -7,9 +7,7 @@
  */
 package io.camunda.zeebe.broker.partitioning.topology;
 
-import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
-import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.partitions.impl.LegacyExportingStateReader;
@@ -281,26 +279,6 @@ public class DynamicClusterConfigurationService
           "Inconsistent cluster topology detected - topology was changed while broker was"
               + " unreachable or broker encountered data loss");
     };
-  }
-
-  private void shutdownOnInconsistentTopology(
-      final MemberId memberId,
-      final SpringBrokerBridge springBrokerBridge,
-      final ClusterConfiguration newTopology,
-      final ClusterConfiguration oldTopology) {
-    LOGGER.warn(
-        """
-          Received a newer topology which has a different state for this broker.
-          State of this broker in new topology :'{}'
-          State of this broker in old topology: '{}'
-          This usually happens when the topology was changed forcefully when this broker was unreachable or this broker encountered a data loss. Shutting down the broker. Please restart the broker to use the new topology.
-        """,
-        newTopology.getMember(memberId),
-        oldTopology.getMember(memberId));
-    springBrokerBridge.initiateShutdown(
-        ERROR_CODE_ON_INCONSISTENT_TOPOLOGY,
-        "Inconsistent cluster topology detected - topology was changed while broker was"
-            + " unreachable or broker encountered data loss");
   }
 
   private static ActorFuture<Void> startClusterTopologyManager(

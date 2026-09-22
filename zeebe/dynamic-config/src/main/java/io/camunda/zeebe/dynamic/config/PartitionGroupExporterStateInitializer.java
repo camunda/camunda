@@ -10,23 +10,31 @@ package io.camunda.zeebe.dynamic.config;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.ExporterState;
+import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
+import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * New-model counterpart of {@link ExporterStateInitializer}, applying the same exporter-state
- * reconciliation to partitions in <em>every</em> partition group, instead of once for the single
- * default group. The per-partition reconciliation logic is shared with {@link
- * ExporterStateInitializer} via its package-visible static helpers.
+ * Applies exporter-state reconciliation to partitions in every partition group. If a broker
+ * restarts with a change of exporters in the static configuration, this modifier updates the
+ * dynamic config to reflect that. If new exporters are added to the static configuration, they are
+ * added to the dynamic config with state ENABLED. If existing exporters are removed, they are
+ * marked as CONFIG_NOT_FOUND. Note that the exporters are not removed from the dynamic config.
  *
- * <p>Mirrors {@link ExporterStateInitializer}'s post-restore handling: if the configuration is
- * {@link CurrentClusterConfiguration#isAfterRestore()}, only the coordinator updates the exporter
- * state, and it does so for every member of every group (not just the local member).
- * Non-coordinators skip initialization entirely in that case.
+ * <p>If the configuration is {@link CurrentClusterConfiguration#isAfterRestore()}, only the
+ * coordinator updates the exporter state, and it does so for every member of every group (not just
+ * the local member). Non-coordinators skip initialization entirely in that case.
  *
  * <p>What this avoids is a broker shutdown. Only the coordinator has a configuration file after a
  * restore ({@code RestoreManager} writes it on node 0 alone), so every other broker initializes
@@ -47,6 +55,9 @@ import java.util.stream.Collectors;
  */
 public class PartitionGroupExporterStateInitializer
     implements ClusterConfigurationModifier<CurrentClusterConfiguration> {
+
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(PartitionGroupExporterStateInitializer.class);
 
   private final Map<String, Set<String>> configuredExporters;
   private final MemberId localMemberId;
@@ -138,8 +149,7 @@ public class PartitionGroupExporterStateInitializer
     for (final var p : brokerPartitionState.partitions().keySet()) {
       final PartitionState currentPartitionState = brokerPartitionState.partitions().get(p);
       final var updatedPartitionState =
-          ExporterStateInitializer.updateExporterStateInPartition(
-              currentPartitionState, configuredExportersForGroup);
+          updateExporterStateInPartition(currentPartitionState, configuredExportersForGroup);
       // Do not update the partition state if it is unchanged, otherwise the version would be
       // bumped during every restart and could interfere with other concurrent configuration
       // changes.
@@ -148,5 +158,65 @@ public class PartitionGroupExporterStateInitializer
       }
     }
     return updated;
+  }
+
+  /**
+   * Reconciles a single partition's exporter state against {@code configuredExporters}. Pure
+   * function of the partition state and the configured exporters.
+   */
+  static PartitionState updateExporterStateInPartition(
+      final PartitionState partitionState, final Set<String> configuredExporters) {
+    final var initializedPartitionState =
+        partitionState.config().isInitialized()
+            ? partitionState
+            : new PartitionState(
+                partitionState.state(), partitionState.priority(), DynamicPartitionConfig.init());
+    final var exportersInConfig = initializedPartitionState.config().exporting().exporters();
+
+    final var newlyAddedExporters =
+        configuredExporters.stream().filter(id -> !exportersInConfig.containsKey(id)).toList();
+    final var configRemovedExporters =
+        exportersInConfig.entrySet().stream()
+            // Only mark exporters as CONFIG_NOT_FOUND if they are currently enabled.
+            .filter(entry -> State.ENABLED.equals(entry.getValue().state()))
+            .filter(entry -> !configuredExporters.contains(entry.getKey()))
+            .map(Entry::getKey)
+            .toList();
+
+    if (!configRemovedExporters.isEmpty()) {
+      LOGGER.warn(
+          "Previously configured exporters [{}] are not found in the application properties. "
+              + "They will be paused. Please add the configuration back or remove the exporter using the management api.",
+          configRemovedExporters);
+    }
+    // Re-enable exporters whose configuration is added back to the application properties.
+    final var configReaddedExporters =
+        exportersInConfig.entrySet().stream()
+            .filter(entry -> configuredExporters.contains(entry.getKey()))
+            .filter(entry -> entry.getValue().state().equals(State.CONFIG_NOT_FOUND))
+            .toList();
+
+    return initializedPartitionState
+        .updateConfig(c -> c.updateExporting(e -> e.withConfigNotFoundFor(configRemovedExporters)))
+        .updateConfig(c -> c.updateExporting(e -> reEnableExporters(e, configReaddedExporters)))
+        .updateConfig(c -> c.updateExporting(e -> e.addExporters(newlyAddedExporters)));
+  }
+
+  private static ExportingConfig reEnableExporters(
+      final ExportingConfig exportingConfig,
+      final List<Entry<String, ExporterState>> configReaddedExporters) {
+
+    ExportingConfig updating = exportingConfig;
+    for (final var entry : configReaddedExporters) {
+      final var exporterName = entry.getKey();
+      final var exporterState = entry.getValue();
+      // reuse the metadata version and initializedFrom from the existing exporter state
+      updating =
+          updating.enableExporter(
+              exporterName,
+              exporterState.initializedFrom().orElse(null),
+              exporterState.metadataVersion());
+    }
+    return updating;
   }
 }

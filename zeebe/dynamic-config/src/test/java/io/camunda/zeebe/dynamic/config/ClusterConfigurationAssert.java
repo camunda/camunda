@@ -30,16 +30,6 @@ public final class ClusterConfigurationAssert
     return new ClusterConfigurationAssert(actual, ClusterConfigurationAssert.class);
   }
 
-  ClusterConfigurationAssert isUninitialized() {
-    assertThat(actual.isUninitialized()).isTrue();
-    return this;
-  }
-
-  ClusterConfigurationAssert isInitialized() {
-    assertThat(actual.isUninitialized()).isFalse();
-    return this;
-  }
-
   public ClusterConfigurationAssert hasMemberWithPartitions(
       final int member, final Collection<Integer> partitionIds) {
     final var memberId = MemberId.from(Integer.toString(member));
@@ -93,21 +83,6 @@ public final class ClusterConfigurationAssert
   public ClusterConfigurationAssert hasVersion(final long version) {
     assertThat(actual.version()).isEqualTo(version);
     return this;
-  }
-
-  public ClusterConfigurationAssert hasRoutingState() {
-    assertThat(actual.routingState()).isPresent();
-    return this;
-  }
-
-  public ClusterConfigurationAssert hasNoRoutingState() {
-    assertThat(actual.routingState()).isEmpty();
-    return this;
-  }
-
-  public RoutingStateAssert routingState() {
-    assertThat(actual.routingState()).isPresent();
-    return RoutingStateAssert.assertThat(actual.routingState().orElseThrow());
   }
 
   /**
