@@ -148,7 +148,7 @@ class ReplicationLsnProviderFactoryTest {
   }
 
   @Test
-  void shouldCreateOracleReplicationLsnProvider() {
+  void shouldCreateDefaultReplicationLsnProviderForOracle() {
     // given
     final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
     when(vendorDatabaseProperties.databaseId()).thenReturn("oracle");
@@ -160,7 +160,7 @@ class ReplicationLsnProviderFactoryTest {
     final var provider = factory.create();
 
     // then
-    assertThat(provider).isInstanceOf(OracleReplicationLsnProvider.class);
+    assertThat(provider).isInstanceOf(DefaultReplicationLsnProvider.class);
   }
 
   @Test
