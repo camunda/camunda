@@ -66,6 +66,7 @@ nightly, both before you start. Never try to reach a cluster or run `kubectl`.
 |--------------------------------------|------------------|-----------------------------------------------------------|
 | `playwright-results-json*`           | `sm-smoke-e2e`   | the report, incl. `config.rootDir` and retry history      |
 | `playwright-traces*`                 | `sm-smoke-e2e`   | `trace.zip`, `test-failed-1.png`, screenshots per attempt |
+| `playwright-report-<version>-*`      | `sm-smoke-e2e`   | preview-env leg's HTML report and `test-results/` traces  |
 | `json-report*`, `Playwright Report*` | `saas-smoke-e2e` | downstream report and HTML report                         |
 | `diagnostics-e2e*`                   | `sm-smoke-e2e`   | **namespace dump: describe + logs for every pod**         |
 

@@ -27,6 +27,7 @@ import tempfile
 from datetime import datetime, timedelta, timezone
 from dataclasses import asdict
 from pathlib import Path
+from typing import Callable
 
 import classify
 import plan as planning
@@ -205,7 +206,14 @@ def failing_jobs(run_id: str) -> list[dict]:
 
 
 def sm_candidates(run_id: str, base_ref: str, job_name: str, workdir: Path) -> planning.Candidate:
-    """Build the SM candidate from playwright-results-json on the AlwaysGreen run."""
+    """Build the SM candidate from playwright-results-json on the AlwaysGreen run.
+
+    The artifact pattern and the download directory are both keyed on the job when
+    it is a preview-env matrix leg: that workflow produces one JSON report per
+    version in the same run, so a single shared `playwright-results-json*` download
+    would hand every leg the same pile of reports and attribute 8.8's failures to
+    8.10 as well.
+    """
     cand = planning.Candidate(
         base_ref=base_ref,
         surface=classify.SURFACE_SM_E2E,
@@ -213,9 +221,11 @@ def sm_candidates(run_id: str, base_ref: str, job_name: str, workdir: Path) -> p
         evidence_run_url=f"https://github.com/{REPO}/actions/runs/{run_id}",
         evidence_repo=REPO,
     )
-    dest = workdir / "sm"
-    if not download_artifacts(run_id, REPO, "playwright-results-json*", dest):
-        log("::warning::no playwright-results-json artifact for the SM e2e failure")
+    version = classify.preview_env_version(job_name)
+    pattern = f"playwright-results-json-{version}-*" if version else "playwright-results-json*"
+    dest = workdir / (f"sm-{version}" if version else "sm")
+    if not download_artifacts(run_id, REPO, pattern, dest):
+        log(f"::warning::no {pattern} artifact for the SM e2e failure")
         return cand
 
     for report in read_json_files(dest, "playwright-results.json"):
@@ -639,7 +649,21 @@ def product_bug_fingerprints() -> set[str]:
 # ---------------------------------------------------------------------------
 
 
+def branch_tip_sha(ref: str) -> str:
+    """Tip commit of `ref`, e.g. a branch name like "stable/8.8"."""
+    commit = gh_json(["api", f"repos/{REPO}/commits/{ref}"], {})
+    return (commit or {}).get("sha") or ""
+
+
 def resolve_blame(head_sha: str) -> classify.Blame:
+    """Resolve blame for the PR that produced `head_sha`.
+
+    `head_sha` must be the tip of the branch the failing candidate actually ran
+    against, not the AlwaysGreen run's own head_sha: preview-env-smoke-test.yml
+    runs one workflow against four branches (main, stable/8.7..8.10), so the
+    run's head_sha (always main's) would name a main-branch PR as the cause of a
+    stable-branch failure.
+    """
     prs = gh_json(["api", f"repos/{REPO}/commits/{head_sha}/pulls"], [])
     if not isinstance(prs, list):
         prs = []
@@ -650,6 +674,11 @@ def resolve_blame(head_sha: str) -> classify.Blame:
         )
 
     return classify.resolve_blame(head_sha=head_sha, prs=prs, lookup_pr=lookup)
+
+
+def resolve_blame_for_ref(ref: str) -> classify.Blame:
+    """Resolve blame for whichever PR most recently landed on `ref`."""
+    return resolve_blame(branch_tip_sha(ref))
 
 
 # ---------------------------------------------------------------------------
@@ -683,6 +712,12 @@ def build_candidates(run_id: str, base_ref: str, workdir: Path):
         if surface is None:
             continue
 
+        # Not necessarily the run's ref: preview-env-smoke-test.yml tests four
+        # branches in one run.
+        job_base_ref = classify.base_ref_for_job(name, base_ref)
+        if job_base_ref != base_ref:
+            log(f"base_ref for '{classify.job_leaf_name(name)}': {job_base_ref}")
+
         verdict = classify.noise_verdict(
             conclusion="failure",
             step_count=len(job.get("steps") or []),
@@ -694,9 +729,9 @@ def build_candidates(run_id: str, base_ref: str, workdir: Path):
             continue
 
         if surface == classify.SURFACE_SM_E2E:
-            candidates.append(sm_candidates(run_id, base_ref, name, workdir))
+            candidates.append(sm_candidates(run_id, job_base_ref, name, workdir))
         elif surface == classify.SURFACE_SAAS_E2E:
-            candidates.append(saas_candidate(run_id, base_ref, name, workdir))
+            candidates.append(saas_candidate(run_id, job_base_ref, name, workdir))
         elif surface == classify.SURFACE_HELM_INSTALL:
             text = job_log(str(job.get("id") or ""))
             if text is None:
@@ -710,7 +745,7 @@ def build_candidates(run_id: str, base_ref: str, workdir: Path):
                 continue
             candidates.append(
                 planning.Candidate(
-                    base_ref=base_ref, surface=surface, job_name=name, job_level=True,
+                    base_ref=job_base_ref, surface=surface, job_name=name, job_level=True,
                     evidence_run_url=f"https://github.com/{REPO}/actions/runs/{run_id}",
                     evidence_repo=REPO,
                 )
@@ -718,7 +753,7 @@ def build_candidates(run_id: str, base_ref: str, workdir: Path):
         else:
             candidates.append(
                 planning.Candidate(
-                    base_ref=base_ref, surface=surface, job_name=name, job_level=True,
+                    base_ref=job_base_ref, surface=surface, job_name=name, job_level=True,
                     evidence_run_url=f"https://github.com/{REPO}/actions/runs/{run_id}",
                     evidence_repo=REPO,
                 )
@@ -727,7 +762,21 @@ def build_candidates(run_id: str, base_ref: str, workdir: Path):
     return candidates, noise
 
 
-def serialise(result: planning.Plan, blame: classify.Blame, run_id: str) -> dict:
+def serialise(
+    result: planning.Plan,
+    blame: classify.Blame,
+    run_id: str,
+    blame_for_ref: Callable[[str], classify.Blame] | None = None,
+) -> dict:
+    """`blame` is the run's own ref, kept at top level for the job summary.
+
+    Each dispatch gets its own `blame`, resolved from its own base_ref via
+    `blame_for_ref`: preview-env-smoke-test.yml dispatches candidates against
+    four different branches from one run, so the run's own blame is only
+    correct for the candidate that happens to share its ref. Falls back to the
+    top-level blame when no resolver is given, e.g. in tests.
+    """
+    dispatch_blame = blame_for_ref or (lambda _ref: blame)
     return {
         "run_url": f"https://github.com/{REPO}/actions/runs/{run_id}",
         "blame": asdict(blame),
@@ -744,6 +793,7 @@ def serialise(result: planning.Plan, blame: classify.Blame, run_id: str) -> dict
                 "evidence_repo": c.evidence_repo,
                 "job_level": c.job_level,
                 "fingerprints": c.fingerprints,
+                "blame": asdict(dispatch_blame(c.base_ref)),
                 "test_specs": [
                     {
                         "file": s.file,
@@ -823,7 +873,17 @@ def main() -> int:
 
         blame = resolve_blame(run.get("head_sha") or "")
 
-        payload = serialise(result, blame, args.run_id)
+        # Cached per ref: several dispatches commonly share a base_ref (e.g. two
+        # sm-smoke-e2e legs both against stable/8.9), and each cache hit saves two
+        # `gh api` calls.
+        blame_cache: dict[str, classify.Blame] = {base_ref: blame}
+
+        def blame_for_ref(ref: str) -> classify.Blame:
+            if ref not in blame_cache:
+                blame_cache[ref] = resolve_blame_for_ref(ref)
+            return blame_cache[ref]
+
+        payload = serialise(result, blame, args.run_id, blame_for_ref=blame_for_ref)
 
     text = json.dumps(payload, indent=2)
     if args.out == "-":

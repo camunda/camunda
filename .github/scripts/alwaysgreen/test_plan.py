@@ -199,6 +199,27 @@ def test_unsupported_base_ref_is_not_dispatched():
     assert result.suppressed[0].detail == "ci/alwaysgreen-helm-live-check"
 
 
+def test_preview_env_8_11_leg_does_not_collide_with_the_real_main_candidate():
+    # The 8.11 preview-env leg maps to classify.PREVIEW_ENV_MAIN_REF, not to plain
+    # "main". If it aliased to "main" it would share dispatch_key("main",
+    # sm-smoke-e2e) with a real main-branch sm-smoke-e2e candidate, and
+    # merge_by_key would fold the two into one, dropping whichever leg lost the
+    # merge.
+    main_leg = _cand(base_ref="main", specs=[_spec("main broke")])
+    preview_8_11_leg = _cand(
+        base_ref=classify.PREVIEW_ENV_MAIN_REF, specs=[_spec("8.11 broke")]
+    )
+
+    result = _plan([main_leg, preview_8_11_leg])
+
+    assert len(result.dispatches) == 1
+    assert result.dispatches[0].base_ref == "main"
+    assert [s.test_name for s in result.dispatches[0].specs] == ["main broke"]
+    assert len(result.suppressed) == 1
+    assert result.suppressed[0].reason == plan.SUPPRESSED_UNSUPPORTED_REF
+    assert result.suppressed[0].candidate.base_ref == classify.PREVIEW_ENV_MAIN_REF
+
+
 def test_every_supported_base_ref_is_dispatchable():
     for ref in plan.SUPPORTED_BASE_REFS:
         result = _plan([_cand(base_ref=ref)])

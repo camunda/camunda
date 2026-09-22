@@ -1,4 +1,4 @@
-"""Unit tests for the dedupe snapshot discover hands to the planner.
+"""Unit tests for the evidence and dedupe snapshot discover hands to the planner.
 
 `test_plan.py` passes `open_pr_keys_with_coverage` in ready-made, so it asserts what
 `plan` does with the answer, never how it is computed. The derivation is where the
@@ -9,8 +9,10 @@ the TTL skip, and the intersection over holders — so it is tested here against
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timedelta, timezone
 
+import classify
 import discover
 import plan as planning
 
@@ -186,3 +188,157 @@ def test_an_unknown_mergeable_state_still_counts_as_covered(monkeypatch):
     )
     covered, _keys, _per_spec, _ok = discover.dedupe_inputs()
     assert covered == {"aaaaaaaa"}
+
+
+# ---------------------------------------------------------------------------
+# Per-matrix-leg evidence
+# ---------------------------------------------------------------------------
+
+
+def _playwright_report(spec_file, title):
+    return {
+        "config": {"rootDir": "/home/runner/work/e2e-tests/tests/SM-8.10"},
+        "suites": [
+            {
+                "specs": [],
+                "suites": [
+                    {
+                        "specs": [
+                            {
+                                "file": spec_file,
+                                "title": title,
+                                "ok": False,
+                                "tests": [
+                                    {"results": [{"status": "failed"}]},
+                                ],
+                            }
+                        ]
+                    }
+                ],
+            }
+        ],
+    }
+
+
+def _stub_downloads(monkeypatch, reports_by_pattern):
+    """Serve one Playwright report per artifact pattern, into the caller's dir."""
+    seen = []
+
+    def fake(run_id, repo, pattern, dest):
+        seen.append((pattern, dest))
+        report = reports_by_pattern.get(pattern)
+        if report is None:
+            return False
+        dest.mkdir(parents=True, exist_ok=True)
+        (dest / "playwright-results.json").write_text(json.dumps(report))
+        return True
+
+    monkeypatch.setattr(discover, "download_artifacts", fake)
+    return seen
+
+
+def test_preview_env_legs_read_their_own_artifact(monkeypatch, tmp_path):
+    # preview-env-smoke-test.yml uploads one JSON report per version in a single
+    # run. Downloading a shared `playwright-results-json*` blob would give every
+    # failing leg every version's failures.
+    seen = _stub_downloads(
+        monkeypatch,
+        {
+            "playwright-results-json-8.9-*": _playwright_report(
+                "smoke-tests.spec.js", "8.9 broke"
+            ),
+            "playwright-results-json-8.10-*": _playwright_report(
+                "smoke-tests.spec.js", "8.10 broke"
+            ),
+        },
+    )
+
+    first = discover.sm_candidates("1", "stable/8.9", "Run 8.9 Smoke Tests", tmp_path)
+    second = discover.sm_candidates("1", "stable/8.10", "Run 8.10 Smoke Tests", tmp_path)
+
+    assert [s.test_name for s in first.specs] == ["8.9 broke"]
+    assert [s.test_name for s in second.specs] == ["8.10 broke"]
+    # Distinct download directories, or the second leg would re-read the first's
+    # report alongside its own.
+    assert seen[0][1] != seen[1][1]
+    # Distinct dispatch keys, so neither leg's fix displaces the other's.
+    assert first.key != second.key
+
+
+def test_helm_chart_sm_job_keeps_the_shared_artifact_pattern(monkeypatch, tmp_path):
+    seen = _stub_downloads(
+        monkeypatch,
+        {"playwright-results-json*": _playwright_report("smoke-tests.spec.js", "boom")},
+    )
+
+    cand = discover.sm_candidates(
+        "1",
+        "main",
+        "Helm chart Integration Tests / agrn - install - gke / "
+        "Playwright e2e after install - install on gke - agrn (1 of 1)",
+        tmp_path,
+    )
+
+    assert seen[0][0] == "playwright-results-json*"
+    assert [s.test_name for s in cand.specs] == ["boom"]
+
+
+def test_serialise_resolves_blame_per_dispatch_base_ref():
+    # preview-env-smoke-test.yml dispatches against several branches from one
+    # run, so a single run-wide blame would name a main-branch PR as the cause
+    # of a stable/8.9 failure. Each dispatch must get blame for its own ref.
+    main_blame = classify.Blame(
+        reviewer="main-author", author="main-author", pr_number=1, via="pr-author"
+    )
+    stable_blame = classify.Blame(
+        reviewer="stable-author", author="stable-author", pr_number=2, via="pr-author"
+    )
+    resolved = {"main": main_blame, "stable/8.9": stable_blame}
+
+    result = planning.Plan(
+        dispatches=[
+            planning.Candidate(
+                base_ref="main",
+                surface=classify.SURFACE_SM_E2E,
+                job_name="Run 8.11 Smoke Tests",
+            ),
+            planning.Candidate(
+                base_ref="stable/8.9",
+                surface=classify.SURFACE_SM_E2E,
+                job_name="Run 8.9 Smoke Tests",
+            ),
+        ]
+    )
+
+    payload = discover.serialise(
+        result, main_blame, "1", blame_for_ref=lambda ref: resolved[ref]
+    )
+
+    dispatches_by_ref = {d["base_ref"]: d for d in payload["dispatches"]}
+    assert dispatches_by_ref["main"]["blame"]["author"] == "main-author"
+    assert dispatches_by_ref["stable/8.9"]["blame"]["author"] == "stable-author"
+
+
+def test_resolve_blame_for_ref_uses_the_refs_own_tip_commit(monkeypatch):
+    # branch_tip_sha resolves "stable/8.9" to its own tip, not the calling run's
+    # head_sha, so resolve_blame_for_ref attributes the failure to whichever PR
+    # actually landed on that branch.
+    calls = []
+
+    def fake_gh_json(args, default):
+        calls.append(args)
+        if args[:2] == ["api", f"repos/{discover.REPO}/commits/stable/8.9"]:
+            return {"sha": "stable-tip-sha"}
+        if args[:2] == [
+            "api",
+            f"repos/{discover.REPO}/commits/stable-tip-sha/pulls",
+        ]:
+            return [{"merge_commit_sha": "stable-tip-sha", "number": 9, "user": {"login": "stable-author"}}]
+        return default
+
+    monkeypatch.setattr(discover, "gh_json", fake_gh_json)
+
+    blame = discover.resolve_blame_for_ref("stable/8.9")
+
+    assert blame.author == "stable-author"
+    assert blame.pr_number == 9

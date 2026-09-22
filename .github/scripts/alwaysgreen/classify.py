@@ -125,6 +125,8 @@ IGNORED_JOB_PREFIXES = ("Observe Helm chart Integration Tests status",)
 #: name (camunda-platform-helm#6841) — a plain prefix can't skip over that.
 _SURFACE_PREFIXES: tuple[tuple[str | re.Pattern[str], str], ...] = (
     (re.compile(r"^Playwright e2e .*after install\b"), SURFACE_SM_E2E),
+    # preview-env-smoke-test.yml's rendered `Run <version> Smoke Tests`; see README.md.
+    (re.compile(r"^Run \d+\.\d+ Smoke Tests$"), SURFACE_SM_E2E),
     ("Trigger SaaS E2E tests", SURFACE_SAAS_E2E),
     ("install for install on", SURFACE_HELM_INSTALL),
     ("Cleanup - install on", SURFACE_HELM_CLEANUP),
@@ -166,6 +168,39 @@ def surface_for_job(job_name: str) -> str | None:
         return SURFACE_BUILD
 
     return None
+
+
+# ---------------------------------------------------------------------------
+# preview-env-smoke-test.yml: one run, four branches
+# ---------------------------------------------------------------------------
+
+_PREVIEW_ENV_JOB_RE = re.compile(r"^Run (?P<version>\d+\.\d+) Smoke Tests$")
+
+#: Sentinel base ref for the 8.11 preview-env leg, kept out of
+#: plan.SUPPORTED_BASE_REFS to avoid colliding with the main pipeline's own
+#: dispatch key; see README.md.
+PREVIEW_ENV_MAIN_REF = "main:preview-8.11"
+
+PREVIEW_ENV_BASE_REFS = {
+    "8.8": "stable/8.8",
+    "8.9": "stable/8.9",
+    "8.10": "stable/8.10",
+    "8.11": PREVIEW_ENV_MAIN_REF,
+}
+
+
+def preview_env_version(job_name: str) -> str | None:
+    """Return the minor version a preview-env smoke-test job ran, if it is one."""
+    match = _PREVIEW_ENV_JOB_RE.match(job_leaf_name(job_name))
+    return match.group("version") if match else None
+
+
+def base_ref_for_job(job_name: str, default: str) -> str:
+    """Base ref a failing job belongs to, which is not always the run's own ref; see README.md."""
+    version = preview_env_version(job_name)
+    if version is None:
+        return default
+    return PREVIEW_ENV_BASE_REFS.get(version, PREVIEW_ENV_MAIN_REF)
 
 
 # ---------------------------------------------------------------------------

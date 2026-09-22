@@ -138,6 +138,67 @@ def test_helm_install_and_cleanup_are_distinct_surfaces():
     )
 
 
+def test_preview_env_smoke_job_maps_to_sm_surface():
+    # preview-env-smoke-test.yml runs the same tests/SM-8.x specs as the helm
+    # chart's SM e2e job, so it shares that surface rather than inventing one.
+    assert classify.surface_for_job("Run 8.10 Smoke Tests") == classify.SURFACE_SM_E2E
+    assert classify.surface_for_job("Run 8.8 Smoke Tests") == classify.SURFACE_SM_E2E
+
+
+def test_unrendered_preview_env_smoke_job_is_not_classified():
+    # A skipped matrix leg keeps the raw expression. Unlike the helm-chart job
+    # there is no stable literal prefix before it that identifies the surface on
+    # its own, so an unrendered name must not be read as a failure.
+    assert (
+        classify.surface_for_job("Run ${{ matrix.deployment.version }} Smoke Tests")
+        is None
+    )
+
+
+def test_preview_env_deploy_job_is_not_classified():
+    # `Deploy 8.10 Preview Environment` is a reusable-workflow call, so the
+    # failing job GitHub reports is the inner job. Deploy failures are infra and
+    # stay with the eng-ops medic rather than the fix agent.
+    assert (
+        classify.surface_for_job(
+            "Deploy 8.10 Preview Environment / Deploy Preview Environment C8SM"
+        )
+        is None
+    )
+
+
+def test_preview_env_legs_resolve_their_own_base_ref():
+    # One run deploys four branches, so the caller's ref describes none of them.
+    assert classify.base_ref_for_job("Run 8.8 Smoke Tests", "main") == "stable/8.8"
+    assert classify.base_ref_for_job("Run 8.10 Smoke Tests", "main") == "stable/8.10"
+    # 8.11 is tracked on main, but must not alias to plain "main": that is also
+    # the real main-branch pipeline's own ref, and sharing it would collide both
+    # onto the same dispatch key.
+    assert (
+        classify.base_ref_for_job("Run 8.11 Smoke Tests", "main")
+        == classify.PREVIEW_ENV_MAIN_REF
+    )
+    assert classify.PREVIEW_ENV_MAIN_REF != "main"
+
+
+def test_non_preview_env_job_keeps_the_runs_base_ref():
+    name = (
+        "Helm chart Integration Tests / agrn - install - gke / "
+        "Playwright e2e after install - install on gke - agrn (1 of 1)"
+    )
+    assert classify.base_ref_for_job(name, "stable/8.9") == "stable/8.9"
+
+
+def test_unknown_preview_env_minor_does_not_collide_with_main():
+    # A minor added to the matrix before PREVIEW_ENV_BASE_REFS is updated must
+    # not fall back to the caller's ref: on the schedule that is "main", the same
+    # collision PREVIEW_ENV_MAIN_REF exists to avoid for 8.11.
+    assert (
+        classify.base_ref_for_job("Run 9.1 Smoke Tests", "main")
+        == classify.PREVIEW_ENV_MAIN_REF
+    )
+
+
 def test_dispatchable_surfaces():
     assert classify.SURFACE_SM_E2E in classify.DISPATCHABLE_SURFACES
     assert classify.SURFACE_SAAS_E2E in classify.DISPATCHABLE_SURFACES
