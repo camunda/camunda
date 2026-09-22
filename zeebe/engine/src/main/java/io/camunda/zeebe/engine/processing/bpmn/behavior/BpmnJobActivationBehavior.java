@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.processing.job.JobSecretLookup.Secret;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup.SecretCheckResult;
 import io.camunda.zeebe.engine.processing.job.JobVariablesCollector;
 import io.camunda.zeebe.engine.processing.job.LeaseTokens;
+import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionJobEvents;
 import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionScheduler;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer.JobStream;
@@ -36,6 +37,7 @@ import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferen
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJobImpl;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -189,7 +191,8 @@ public class BpmnJobActivationBehavior {
     // one in the pushed job itself, which carries it to the worker
     final SecretCheckResult secrets = secretLookup.check(wrappedJobRecord);
     if (!secrets.nonCachedSecrets().isEmpty()) {
-      return requestResolutionAndPark(jobKey, jobType, jobKind, secrets, notifiedJobTypes);
+      return requestResolutionAndPark(
+          jobKey, wrappedJobRecord, jobType, jobKind, secrets, notifiedJobTypes);
     }
 
     final JobStream jobStream = optionalJobStream.get();
@@ -248,6 +251,7 @@ public class BpmnJobActivationBehavior {
    */
   private boolean requestResolutionAndPark(
       final long jobKey,
+      final JobRecord jobRecord,
       final String jobType,
       final JobKind jobKind,
       final SecretCheckResult secrets,
@@ -277,6 +281,14 @@ public class BpmnJobActivationBehavior {
       parked = true;
     }
     if (parked) {
+      // mark the parked job on the JOB record stream so the wait-state exporter distinguishes a
+      // secret-parked job from a plain unclaimed one, mirroring the poll path in
+      // JobBatchActivateProcessor. Best-effort: if the batch is already full the mark is skipped
+      // and the job keeps the generic wait-state label until its next resolution cycle re-parks it.
+      if (batchHadRoom) {
+        SecretResolutionJobEvents.appendIfBatchHasRoom(
+            stateWriter, jobKey, JobIntent.SECRET_RESOLUTION_PARKED, jobRecord);
+      }
       // once per activation rather than per reference: the flag it sets is consumed by whichever
       // cycle runs next, so setting it more than once per activation adds nothing
       secretResolutionScheduler.stayAwake();
