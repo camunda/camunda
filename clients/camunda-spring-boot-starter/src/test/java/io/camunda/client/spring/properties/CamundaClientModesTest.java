@@ -51,7 +51,7 @@ public class CamundaClientModesTest {
       assertThat(properties.getGrpcAddress().toString())
           .isEqualTo("https://my-cluster-id.bru-2.zeebe.camunda.io:443");
       assertThat(properties.getRestAddress().toString())
-          .isEqualTo("https://bru-2.zeebe.camunda.io:443/my-cluster-id");
+          .isEqualTo("https://bru-2.api.camunda.io:443/my-cluster-id");
     }
 
     @Test

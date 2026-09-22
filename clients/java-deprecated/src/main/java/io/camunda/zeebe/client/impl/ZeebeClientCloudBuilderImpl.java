@@ -61,6 +61,7 @@ public class ZeebeClientCloudBuilderImpl
   private static final String DEFAULT_DOMAIN = "camunda.io";
   private static final String DEFAULT_REGION = "bru-2";
   private static final String ZEEBE_DOMAIN_COMPONENT = "zeebe";
+  private static final String API_DOMAIN_COMPONENT = "api";
 
   private final ZeebeClientBuilderImpl innerBuilder = new ZeebeClientBuilderImpl();
 
@@ -315,9 +316,11 @@ public class ZeebeClientCloudBuilderImpl
   private URI determineRestAddress() {
     if (isNeedToSetCloudRestAddress()) {
       ensureNotNull("cluster id", clusterId);
+      // Since 8.8 SaaS exposes the REST API under the 'api' subdomain. The legacy 'zeebe'
+      // subdomain is removed with 8.10 (see the SaaS orchestration architecture migration guide),
+      // so the default REST address must target 'api' to stay compatible with 8.10+ clusters.
       final String cloudRestAddress =
-          String.format(
-              "https://%s.%s.%s:443/%s", region, ZEEBE_DOMAIN_COMPONENT, domain, clusterId);
+          String.format("https://%s.%s.%s:443/%s", region, API_DOMAIN_COMPONENT, domain, clusterId);
       return getURIFromString(cloudRestAddress);
     } else {
       Loggers.LOGGER.debug(
