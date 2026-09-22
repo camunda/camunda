@@ -14,10 +14,8 @@ fun mavenResourceFilterArgs(tokens: Map<String, String>): Map<String, Any> =
         "endToken" to "}",
     )
 
-fun Project.clientJavaResourceTokens(): Map<String, String> =
-    mapOf("project.version" to version.toString())
-
-fun Project.schemaManagerTestResourceTokens(): Map<String, String> =
+/** The Maven `${project.version}` token, shared by every module that templates its version. */
+fun Project.projectVersionToken(): Map<String, String> =
     mapOf("project.version" to version.toString())
 
 fun Project.optimizeBackendTestResourceTokens(): Map<String, String> =
@@ -27,7 +25,5 @@ fun Project.optimizeBackendTestResourceTokens(): Map<String, String> =
     )
 
 fun Project.zeebeUtilResourceTokens(): Map<String, String> =
-    mapOf(
-        "project.version" to version.toString(),
-        "backwards.compat.version" to catalogVersion("zeebe-compat"),
-    )
+    projectVersionToken() +
+        mapOf("backwards.compat.version" to catalogVersion("zeebe-compat"))
