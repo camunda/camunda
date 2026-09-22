@@ -22,7 +22,6 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
-import io.camunda.zeebe.model.bpmn.util.time.Interval;
 import io.camunda.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
@@ -32,7 +31,6 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.time.Instant;
 import java.time.InstantSource;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -193,20 +191,9 @@ public final class TimerTriggerProcessor implements TypedRecordProcessor<TimerRe
       repetitions--;
     }
 
-    final Interval interval = timer.getInterval();
-    // Use the timer's last due date instead of the current time to avoid a time shift.
-    final Interval refreshedInterval =
-        interval.withStart(Instant.ofEpochMilli(record.getDueDate()));
-    final long naturalNextDueDate =
-        refreshedInterval.getStart().orElseThrow().toInstant().toEpochMilli();
-    final long now = clock.millis();
-    // A natural next due date that already lies in the past must not be kept as-is: it would
-    // collapse onto "now" once resolved (see Interval#toEpochMilli's clamp), firing the timer
-    // again immediately. Anchor on now instead, so it advances a full interval past now.
-    final Interval anchoredInterval =
-        naturalNextDueDate > now
-            ? refreshedInterval
-            : interval.withStart(Instant.ofEpochMilli(now));
-    return new RepeatingInterval(repetitions, anchoredInterval);
+    // Use the timer's last due date instead of the current time to avoid a time shift; see
+    // RepeatingInterval#nextOccurrenceAfter for how an overdue reschedule is handled.
+    return ((RepeatingInterval) timer)
+        .nextOccurrenceAfter(record.getDueDate(), clock.millis(), repetitions);
   }
 }
