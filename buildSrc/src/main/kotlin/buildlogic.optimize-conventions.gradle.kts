@@ -7,7 +7,11 @@ import org.gradle.api.tasks.testing.Test
 
 // Scoped version overrides for Optimize modules — mirrors Maven parent POM dependency management
 // scoped to optimize/* only, preventing leakage into non-optimize modules.
-val optimizePom = PomResolver(rootDir.resolve("optimize/pom.xml").readText()).properties()
+val optimizePom =
+  PomResolver(
+      providers.fileContents(layout.settingsDirectory.file("optimize/pom.xml")).asText.get()
+    )
+    .properties()
 
 fun optVersion(key: String) = resolvePomProperty(key, optimizePom)
 

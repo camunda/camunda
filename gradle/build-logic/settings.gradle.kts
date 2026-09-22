@@ -1,6 +1,7 @@
 rootProject.name = "build-logic"
 
-val parentPom = file("../../parent/pom.xml").readText()
+val parentPom =
+  providers.fileContents(layout.settingsDirectory.file("../../parent/pom.xml")).asText.get()
 val junitVersion =
   Regex("<version\\.junit>([^<]+)</version\\.junit>")
     .find(parentPom)
