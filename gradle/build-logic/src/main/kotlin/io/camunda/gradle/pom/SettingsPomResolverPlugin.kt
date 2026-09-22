@@ -11,18 +11,14 @@ class SettingsPomResolverPlugin : Plugin<Settings> {
 
 open class SettingsPomResolver(private val settings: Settings) {
   private fun readPom(relativePath: String): String =
-    settings.providers
-      .fileContents(settings.layout.rootDirectory.file(relativePath))
-      .asText
-      .get()
+    settings.providers.fileContents(settings.layout.rootDirectory.file(relativePath)).asText.get()
 
   fun pom(relativePath: String): PomResolver = PomResolver(readPom(relativePath))
 
   fun propertiesForPom(relativePath: String): Map<String, String> = pom(relativePath).properties()
 
   fun projectVersionForPom(relativePath: String): String =
-    pom(relativePath).projectVersion()
-      ?: error("Missing Maven project version from $relativePath")
+    pom(relativePath).projectVersion() ?: error("Missing Maven project version from $relativePath")
 
   fun resolveProperty(propertyName: String, vararg propertyMaps: Map<String, String>): String =
     resolvePomProperty(propertyName, *propertyMaps)

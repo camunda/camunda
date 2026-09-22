@@ -70,8 +70,7 @@ internal fun VersionCatalogBuilder.catalogTestingLibraries() {
     .versionRef("assertj-assertions-generator")
   library("org-awaitility-awaitility", "org.awaitility", "awaitility").versionRef("awaitility")
   library("org-hamcrest-hamcrest", "org.hamcrest", "hamcrest").versionRef("hamcrest")
-  library("org-instancio-instancio-core", "org.instancio", "instancio-core")
-    .versionRef("instancio")
+  library("org-instancio-instancio-core", "org.instancio", "instancio-core").versionRef("instancio")
   library("org-javassist-javassist", "org.javassist", "javassist").versionRef("javassist")
   library("org-jeasy-easy-random-core", "org.jeasy", "easy-random-core")
     .versionRef("org-jeasy-easy-random-core")
@@ -125,8 +124,7 @@ internal fun VersionCatalogBuilder.catalogTestingLibraries() {
   library("org-mock-server-mockserver-client-java", "org.mock-server", "mockserver-client-java")
     .withoutVersion()
   // version managed by buildlogic.optimize-conventions
-  library("org-mock-server-mockserver-core", "org.mock-server", "mockserver-core")
-    .withoutVersion()
+  library("org-mock-server-mockserver-core", "org.mock-server", "mockserver-core").withoutVersion()
   // version managed by buildlogic.optimize-conventions
   library("org-mock-server-mockserver-netty", "org.mock-server", "mockserver-netty")
     .withoutVersion()

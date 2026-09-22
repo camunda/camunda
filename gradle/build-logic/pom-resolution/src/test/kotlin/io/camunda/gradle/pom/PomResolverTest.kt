@@ -16,7 +16,8 @@ class PomResolverTest {
           <version>1.2.3</version>
         </properties>
       </project>
-      """.trimIndent()
+      """
+        .trimIndent()
 
     // when
     val resolver = PomResolver(pomXml)
@@ -39,7 +40,8 @@ class PomResolverTest {
           <finalVersion>${'$'}{releaseVersion}</finalVersion>
         </properties>
       </project>
-      """.trimIndent()
+      """
+        .trimIndent()
 
     // when
     val resolver = PomResolver(pomXml)
@@ -60,7 +62,8 @@ class PomResolverTest {
           <second>${'$'}{first}</second>
         </properties>
       </project>
-      """.trimIndent()
+      """
+        .trimIndent()
 
     // when
     val resolver = PomResolver(pomXml)
@@ -83,7 +86,8 @@ class PomResolverTest {
           <present>value</present>
         </properties>
       </project>
-      """.trimIndent()
+      """
+        .trimIndent()
 
     // when
     val resolver = PomResolver(pomXml)
@@ -106,11 +110,13 @@ class PomResolverTest {
           <version>1.0.0</version>
         </properties>
       </project>
-      """.trimIndent()
+      """
+        .trimIndent()
 
     // when
     val resolver = PomResolver(pomXml)
-    val resolved = resolver.resolveProperty("version", resolver.properties(), mapOf("version" to "2.0.0"))
+    val resolved =
+      resolver.resolveProperty("version", resolver.properties(), mapOf("version" to "2.0.0"))
 
     // then
     assertEquals("2.0.0", resolved)
@@ -128,7 +134,8 @@ class PomResolverTest {
         <artifactId>demo-app</artifactId>
         <version>2.0.0</version>
       </project>
-      """.trimIndent()
+      """
+        .trimIndent()
 
     // when
     val resolver = PomResolver(pomXml)

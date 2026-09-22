@@ -120,8 +120,7 @@ internal fun VersionCatalogBuilder.catalogCoreLibraries() {
       "jakarta.validation-api",
     )
     .versionRef("jakarta-validation-jakarta-validation-api")
-  library("jakarta-ws-rs-jakarta-ws-rs-api", "jakarta.ws.rs", "jakarta.ws.rs-api")
-    .withoutVersion()
+  library("jakarta-ws-rs-jakarta-ws-rs-api", "jakarta.ws.rs", "jakarta.ws.rs-api").withoutVersion()
   library("jakarta-xml-bind-jakarta-xml-bind-api", "jakarta.xml.bind", "jakarta.xml.bind-api")
     .versionRef("jakarta-xml-bind-jakarta-xml-bind-api")
   library("javax-annotation-javax-annotation-api", "javax.annotation", "javax.annotation-api")
@@ -172,8 +171,7 @@ internal fun VersionCatalogBuilder.catalogCoreLibraries() {
       "tomcat-embed-core",
     )
     .versionRef("tomcat")
-  library("org-aspectj-aspectjweaver", "org.aspectj", "aspectjweaver")
-    .versionRef("aspectjweaver")
+  library("org-aspectj-aspectjweaver", "org.aspectj", "aspectjweaver").versionRef("aspectjweaver")
   library("org-camunda-bpm-camunda-engine", "org.camunda.bpm", "camunda-engine")
     .versionRef("camunda")
   library("org-camunda-bpm-camunda-license-check", "org.camunda.bpm", "camunda-license-check")
@@ -214,8 +212,7 @@ internal fun VersionCatalogBuilder.catalogCoreLibraries() {
     .versionRef("animal-sniffer")
   library("org-codehaus-janino-janino", "org.codehaus.janino", "janino").withoutVersion()
   // version managed by buildlogic.optimize-conventions
-  library("org-eclipse-angus-jakarta-mail", "org.eclipse.angus", "jakarta.mail")
-    .withoutVersion()
+  library("org-eclipse-angus-jakarta-mail", "org.eclipse.angus", "jakarta.mail").withoutVersion()
   library("org-eclipse-parsson-parsson", "org.eclipse.parsson", "parsson").versionRef("parsson")
   library("org-freemarker-freemarker", "org.freemarker", "freemarker").withoutVersion()
   library("org-glassfish-jakarta-json", "org.glassfish", "jakarta.json")
@@ -260,11 +257,9 @@ internal fun VersionCatalogBuilder.catalogCoreLibraries() {
     .versionRef("org-openapitools-jackson-databind-nullable")
   // version managed by buildlogic.optimize-conventions
   library("org-quartz-scheduler-quartz", "org.quartz-scheduler", "quartz").withoutVersion()
-  library("org-reflections-reflections", "org.reflections", "reflections")
-    .versionRef("reflections")
+  library("org-reflections-reflections", "org.reflections", "reflections").versionRef("reflections")
   library("org-thymeleaf-thymeleaf", "org.thymeleaf", "thymeleaf").versionRef("thymeleaf")
-  library("tools-jackson-core-jackson-core", "tools.jackson.core", "jackson-core")
-    .withoutVersion()
+  library("tools-jackson-core-jackson-core", "tools.jackson.core", "jackson-core").withoutVersion()
   library("tools-jackson-core-jackson-databind", "tools.jackson.core", "jackson-databind")
     .withoutVersion()
   library("tools-jackson-jackson-bom", "tools.jackson", "jackson-bom").versionRef("jackson3")

@@ -17,8 +17,7 @@ internal fun VersionCatalogBuilder.catalogPlatformLibraries() {
   library("com-github-luben-zstd-jni", "com.github.luben", "zstd-jni")
     .versionRef("com-github-luben-zstd-jni")
   // version managed by buildlogic.optimize-conventions
-  library("com-github-sisyphsu-dateparser", "com.github.sisyphsu", "dateparser")
-    .withoutVersion()
+  library("com-github-sisyphsu-dateparser", "com.github.sisyphsu", "dateparser").withoutVersion()
   library("com-google-protobuf-protobuf-java", "com.google.protobuf", "protobuf-java")
     .withoutVersion()
   library("com-google-protobuf-protobuf-java-util", "com.google.protobuf", "protobuf-java-util")
@@ -31,14 +30,12 @@ internal fun VersionCatalogBuilder.catalogPlatformLibraries() {
       "concurrency-limits-core",
     )
     .versionRef("netflix-concurrency")
-  library("io-github-openfeign-feign-core", "io.github.openfeign", "feign-core")
-    .withoutVersion()
+  library("io-github-openfeign-feign-core", "io.github.openfeign", "feign-core").withoutVersion()
   library("io-github-openfeign-feign-httpclient", "io.github.openfeign", "feign-httpclient")
     .withoutVersion()
   library("io-github-openfeign-feign-jackson", "io.github.openfeign", "feign-jackson")
     .withoutVersion()
-  library("io-github-openfeign-feign-bom", "io.github.openfeign", "feign-bom")
-    .versionRef("feign")
+  library("io-github-openfeign-feign-bom", "io.github.openfeign", "feign-bom").versionRef("feign")
   library(
       "io-github-resilience4j-resilience4j-core",
       "io.github.resilience4j",
@@ -108,8 +105,7 @@ internal fun VersionCatalogBuilder.catalogPlatformLibraries() {
   library("io-netty-netty-transport-native-epoll", "io.netty", "netty-transport-native-epoll")
     .withoutVersion()
   library("io-netty-netty-bom", "io.netty", "netty-bom").versionRef("netty")
-  library("io-projectreactor-reactor-core", "io.projectreactor", "reactor-core")
-    .withoutVersion()
+  library("io-projectreactor-reactor-core", "io.projectreactor", "reactor-core").withoutVersion()
   library("io-opentelemetry-opentelemetry-bom", "io.opentelemetry", "opentelemetry-bom")
     .versionRef("opentelemetry")
   library("io-opentelemetry-opentelemetry-api", "io.opentelemetry", "opentelemetry-api")
