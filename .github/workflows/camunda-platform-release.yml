@@ -231,6 +231,18 @@ jobs:
           # Assign the amount of seconds that the plugin will wait for a deployment
           # state. Can not be less than Constants.WAIT_MAX_TIME_DEFAULT_VALUE.
           CENTRAL_WAIT_MAX_TIME: "10800"
+          # maven-scm discards the stderr of every git command it runs: on a non-zero
+          # exit GitRemoteInfoCommand builds its ScmException from the URL alone and
+          # never reads the stderr consumer it collected. When release:perform's
+          # `git ls-remote` fails we therefore get "unbale to execute ls-remote" and
+          # nothing else -- not the HTTP status, not a connect error, nothing that says
+          # whether the remote rejected us or our own egress broke.
+          # Pointing GIT_TRACE at a file routes git's diagnostics past maven entirely.
+          GIT_TRACE: ${{ runner.temp }}/git-trace.log
+          GIT_TRACE_CURL: ${{ runner.temp }}/git-trace-curl.log
+          # Headers only. Without this the trace carries request and response bodies,
+          # which for a clone of this repo means hundreds of MB of packfile.
+          GIT_TRACE_CURL_NO_DATA: "1"
         run: |
           # Perform a maven release
           # https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html
@@ -270,6 +282,103 @@ jobs:
           echo "Release tag ${RELEASE_TAG} points to commit ${TAG_COMMIT_SHA}"
           echo "tagCommitSha=${TAG_COMMIT_SHA}" >> "$GITHUB_OUTPUT"
           popd
+
+      # release:perform re-clones the release tag from the remote and then runs
+      # `git ls-remote` from java.io.tmpdir. That ls-remote has failed intermittently
+      # (8.10.0-alpha5-rc2, 8.9.19, 8.8.39, 8.10.0-rc1), always within half a second
+      # and always after the clone and every push in the same job had already
+      # succeeded against the same URL. A half-second failure is an answer, not a
+      # timeout, but which answer is unknown: maven swallowed it every time.
+      # The three steps below run only on failure, while the condition still holds,
+      # and record whether the remote rejected the request (HTTP status) or the runner
+      # could not reach it at all (DNS/connect). All are best-effort -- a release is
+      # never failed or held up by its own diagnostics.
+      - name: Probe git remote access
+        id: probe-git-remote
+        if: failure() && steps.maven-perform-release.outcome == 'failure'
+        continue-on-error: true
+        env:
+          APP_TOKEN: ${{ steps.github-token.outputs.token }}
+          PROBE_LOG: ${{ runner.temp }}/git-remote-probe.log
+          REF_ADVERTISEMENT: https://github.com/camunda/camunda.git/info/refs?service=git-upload-pack
+        run: |
+          # Never let a probe decide the fate of a release.
+          set +e
+
+          # git and curl both echo URLs back on error, userinfo included.
+          redact() { sed -E -e 's#//[^@/]*@#//***@#g' -e 's#(authorization|AUTHORIZATION): .*#\1: ***#gI'; }
+
+          {
+            echo "=== egress IP (correlate with Cloud NAT) ==="
+            curl -sS --max-time 10 https://api.ipify.org; echo
+            echo "=== DNS ==="
+            getent hosts github.com || echo "getent exit=$?"
+
+            # release:perform resolves the remote from the pom's <developerConnection>,
+            # which interpolates ${env.GITHUB_TOKEN_USR}/${env.GITHUB_TOKEN_PSW}. Neither
+            # is set anywhere in this workflow, so if the placeholders survive verbatim
+            # the URL carries no usable credentials, and any authenticated call made from
+            # outside the work tree -- where actions/checkout's extraheader does not
+            # apply -- is unauthorised. Report only whether they survived, never the
+            # value: that would either leak a credential or be scrubbed by redact().
+            echo "=== resolved SCM developerConnection ==="
+            conn=$(./mvnw -q -N help:evaluate -Dexpression=project.scm.developerConnection -DforceStdout 2>/dev/null)
+            # SC2016: the unexpanded '${env.' literal is exactly what we are matching on.
+            # shellcheck disable=SC2016
+            case "$conn" in
+              '') echo "could not evaluate" ;;
+              *'${env.'*) echo "UNRESOLVED placeholders: the SCM URL carries no usable credentials" ;;
+              *) echo "placeholders resolved (value withheld)" ;;
+            esac
+
+            echo "=== ls-remote from \$TMPDIR, no credentials (anonymous read) ==="
+            ( cd "${TMPDIR:-/tmp}" && git ls-remote https://github.com/camunda/camunda.git >/dev/null 2>&1; echo "exit=$?" )
+            echo "=== ls-remote from \$TMPDIR, App token (the identity the rest of the job uses) ==="
+            ( cd "${TMPDIR:-/tmp}" && git ls-remote "https://x-access-token:${APP_TOKEN}@github.com/camunda/camunda.git" >/dev/null 2>&1; echo "exit=$?" )
+            echo "=== ls-remote from the work tree, to isolate the working directory ==="
+            git ls-remote https://github.com/camunda/camunda.git >/dev/null 2>&1; echo "exit=$?"
+
+            echo "=== HTTP status of the ref advertisement ls-remote requests ==="
+            for auth in anonymous token; do
+              if [ "$auth" = anonymous ]; then set -- ; else set -- -u "x-access-token:${APP_TOKEN}"; fi
+              printf '%s: ' "$auth"
+              curl -sS -o /dev/null --max-time 20 "$@" \
+                -w 'http=%{http_code} dns=%{time_namelookup}s connect=%{time_connect}s total=%{time_total}s\n' \
+                "${REF_ADVERTISEMENT}" || echo "curl exit=$?"
+            done
+          } 2>&1 | redact | tee "${PROBE_LOG}"
+
+          exit 0
+
+      # GIT_TRACE_CURL records request headers, which include the Authorization header
+      # git sent. Scrub before the traces leave the runner.
+      - name: Redact git traces
+        if: failure() && steps.maven-perform-release.outcome == 'failure'
+        continue-on-error: true
+        run: |
+          set +e
+          for f in "${{ runner.temp }}"/git-trace.log "${{ runner.temp }}"/git-trace-curl.log; do
+            [ -f "$f" ] || continue
+            sed -E -i \
+              -e 's#//[^@/[:space:]]*@#//***@#g' \
+              -e 's#(authorization|AUTHORIZATION): .*#\1: ***#gI' \
+              -e 's#(x-access-token|ghs_|github_pat_)[A-Za-z0-9_]*#\1***#g' \
+              "$f"
+          done
+          exit 0
+
+      - name: Upload git remote diagnostics
+        if: failure() && steps.maven-perform-release.outcome == 'failure'
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: git-remote-diagnostics-${{ env.RELEASE_VERSION }}
+          path: |
+            ${{ runner.temp }}/git-trace.log
+            ${{ runner.temp }}/git-trace-curl.log
+            ${{ runner.temp }}/git-remote-probe.log
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Validate flattened POM metadata
         if: ${{ inputs.dryRun }}
