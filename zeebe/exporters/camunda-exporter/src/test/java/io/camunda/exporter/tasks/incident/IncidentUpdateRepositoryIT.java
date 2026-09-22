@@ -999,6 +999,11 @@ abstract class IncidentUpdateRepositoryIT {
         }
 
         @Override
+        public String getComponentName() {
+          return source.getComponentName();
+        }
+
+        @Override
         public String getMappingsClasspathFilename() {
           return source.getMappingsClasspathFilename();
         }

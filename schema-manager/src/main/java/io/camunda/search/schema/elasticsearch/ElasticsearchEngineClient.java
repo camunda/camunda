@@ -22,7 +22,6 @@ import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
 import co.elastic.clients.elasticsearch.core.GetResponse;
 import co.elastic.clients.elasticsearch.core.IndexRequest;
-import co.elastic.clients.elasticsearch.ilm.DeleteAction;
 import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
 import co.elastic.clients.elasticsearch.indices.Alias;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
@@ -289,6 +288,12 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
   @Override
   public void putIndexLifeCyclePolicy(final String policyName, final String deletionMinAge) {
+    if (lifecyclePolicyMatches(policyName, deletionMinAge)) {
+      LOG.debug(
+          "Index lifecycle policy [{}] already matches configuration; skipping PUT", policyName);
+      return;
+    }
+
     final PutLifecycleRequest request = putLifecycleRequest(policyName, deletionMinAge);
 
     try {
@@ -296,6 +301,40 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     } catch (final IOException e) {
       final var errMsg = String.format("Index lifecycle policy [%s] failed to PUT", policyName);
       LOG.error(errMsg, e);
+      throw new SearchEngineException(errMsg, e);
+    }
+  }
+
+  /**
+   * Compares the full policy body the PUT would send, not just {@code min_age}, so that a changed
+   * or removed delete action/phase is repaired rather than silently skipped. The fetched and
+   * desired {@code IlmPolicy} instances are never {@code equals()} to one another (the client's
+   * generated types don't implement it), so both are serialized to their JSON representation first
+   * and compared as maps.
+   */
+  private boolean lifecyclePolicyMatches(final String policyName, final String deletionMinAge) {
+    try {
+      final var lifecycle =
+          client.ilm().getLifecycle(req -> req.name(policyName)).result().get(policyName);
+      if (lifecycle == null) {
+        // policy does not exist yet, so there is nothing to compare against
+        return false;
+      }
+      final var desiredPolicy = putLifecycleRequest(policyName, deletionMinAge).policy();
+      return serializeAsMap(lifecycle.policy()).equals(serializeAsMap(desiredPolicy));
+    } catch (final ElasticsearchException e) {
+      if (e.status() == 404) {
+        // policy does not exist yet, so there is nothing to compare against
+        return false;
+      }
+      final var errMsg =
+          String.format("Failed to retrieve index lifecycle policy [%s]", policyName);
+      LOG.warn(errMsg, e);
+      throw new SearchEngineException(errMsg, e);
+    } catch (final IOException e) {
+      final var errMsg =
+          String.format("Failed to retrieve index lifecycle policy [%s]", policyName);
+      LOG.warn(errMsg, e);
       throw new SearchEngineException(errMsg, e);
     }
   }
@@ -510,7 +549,13 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
                         phase.delete(
                             del ->
                                 del.minAge(m -> m.time(deletionMinAge))
-                                    .actions(a -> a.delete(DeleteAction.of(d -> d))))))
+                                    .actions(
+                                        a ->
+                                            a.delete(
+                                                // matches the default Elasticsearch itself fills
+                                                // in, so the fetched and desired policies compare
+                                                // equal without ever having been PUT explicitly
+                                                d -> d.deleteSearchableSnapshot(true))))))
         .build();
   }
 
