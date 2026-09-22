@@ -30,8 +30,14 @@ shared/corrupt state). See `Generate Terraform variables` in the workflow.
 
 ## Runbook: "Aurora infrastructure cleanup failed — manual action required"
 
-The nightly posts this Slack alert (to `@zeebe-medic`) when its `Destroy` step
-fails, leaving orphaned AWS resources that keep billing until removed.
+The workflow makes one automatic cleanup attempt in its `Destroy` step. When
+that succeeds, the workflow then attempts to remove the Terraform state and no
+manual resource cleanup is needed. If `Destroy` fails (or the run was started
+with `skip_destroy`), the workflow
+does **not** invoke `cleanup.sh` automatically: it leaves the resources and
+state in place and posts this Slack alert (to `@zeebe-medic`). The alert means
+that manual cleanup is required; the resources may continue to incur AWS
+charges until they are removed.
 
 ### 1. Identify the run
 
@@ -41,7 +47,26 @@ From the prefix you have both the `run_id` and the `db_engine`.
 ### 2. Run the cleanup
 
 You need AWS credentials for the IT account (the same ones the workflow gets
-from Vault) and `terraform` + `aws` + `jq` on PATH. From this directory:
+from Vault) and `terraform` + `aws` + `jq` on PATH. Before running the script,
+authenticate through Okta to the **Core Foundation Playground** using the
+AWS IAM Identity Center profile for the IT account/role. If the profile is not
+configured yet, create it once and then sign in:
+
+```bash
+aws configure sso --profile <profile>
+aws sso login --profile <profile>
+export AWS_PROFILE=<profile>
+```
+
+If the profile is already configured, only `aws sso login --profile <profile>`
+and the `AWS_PROFILE` export are needed. Verify that the selected identity is
+the intended account before deleting anything:
+
+```bash
+aws sts get-caller-identity
+```
+
+From this directory:
 
 ```bash
 # See what is still alive first (read-only, both regions):
@@ -60,7 +85,8 @@ split), pass the full prefix explicitly:
 ./cleanup.sh --prefix aurora-it-30418390623
 ```
 
-`cleanup.sh` has two teardown paths and picks automatically:
+`cleanup.sh` is a manually invoked recovery tool. After you confirm the
+prefix, it selects between two teardown paths automatically:
 
 - **Terraform path** — if the run's remote state still exists, it re-inits
   against that state key and runs `terraform destroy`, which removes resources
@@ -71,11 +97,11 @@ split), pass the full prefix explicitly:
   global cluster → subnet groups → security groups → IAM). This is safe to run
   unattended only because `<prefix>` contains the `run_id`, so the filters
   cannot match another run's resources.
-  The aws fallback is more prone to drift from the terraform script, so it must
-  be used with close attention. Prepare to see some resources not being destroyed.
-  In that case the script must be updated to account for them. If the script fails
-  you should still try to delete everything manually from aws console, using the
-  arn provided by the script (with `--list`) to find all resources.
+
+The fallback is best effort and more prone to drift from the Terraform
+configuration. Watch its output: the command exits non-zero if tagged resources
+remain. If anything is left, use the ARNs from `--list` to remove the remaining
+resources manually in the AWS console (or update the script before retrying).
 
 It then deletes the S3 state object and re-lists tags to confirm nothing
 remains (non-zero exit if anything is left).
