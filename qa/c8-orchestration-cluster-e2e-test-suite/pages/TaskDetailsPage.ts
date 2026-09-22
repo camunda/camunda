@@ -113,14 +113,17 @@ class TaskDetailsPage {
     this.detailsInfo = page.getByTestId('details-info');
     this.taskCompletedBanner = this.page.getByText('Task completed');
     this.addDynamicListRowButton = page.getByRole('button', {name: 'add new'});
-    this.processTab = page.getByRole('link', {
+    // The task-details tabs (Task/Process/History) migrated from links to a
+    // design-system Tabs component, so they render as role="tab" now while
+    // keeping the same accessible name via aria-label.
+    this.processTab = page.getByRole('tab', {
       name: 'show associated bpmn process',
     });
     this.bpmnDiagram = page.getByTestId('diagram');
     this.assignedToMeText = page
       .getByTestId('assignee')
       .getByText('Assigned to me');
-    this.historyTabButton = page.getByRole('link', {
+    this.historyTabButton = page.getByRole('tab', {
       name: 'Show task history',
     });
     this.historyTable = page
