@@ -203,6 +203,21 @@ public class OpensearchEngineClientIT {
   }
 
   @Test
+  void shouldReadReplicaCountsForExistingIndices() throws IOException {
+    final var index =
+        createTestIndexDescriptor(
+            "index_name_replicas-" + ENGINE_CLIENT_TEST_MARKERS, "/mappings.json");
+    final var settings = new IndexConfiguration();
+    settings.setNumberOfReplicas(2);
+    opensearchEngineClient.createIndex(index, settings);
+
+    final var replicaCounts =
+        opensearchEngineClient.getNumberOfReplicas(List.of(index.getFullQualifiedName() + "*"));
+
+    assertThat(replicaCounts).containsEntry(index.getFullQualifiedName(), 2);
+  }
+
+  @Test
   void shouldRetrieveAllIndexMappingsWithImplementationAgnosticReturnType() {
     // given
     final var index1 =

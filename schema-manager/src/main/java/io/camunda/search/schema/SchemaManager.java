@@ -51,10 +51,7 @@ import org.slf4j.LoggerFactory;
 public class SchemaManager implements CloseableSilently {
   public static final int INDEX_CREATION_TIMEOUT_SECONDS = 60;
   public static final String PI_ARCHIVING_BLOCKED_META_KEY = "processInstanceArchivingBlocked";
-
-  /** Maximum length of a comma-delimited index-pattern string passed in a URL request. */
-  static final int MAX_INDEX_PATTERN_REQUEST_LENGTH = 4096;
-
+  @VisibleForTesting static final int CLOSE_GRACE_PERIOD_SECONDS = 5;
   private static final Logger LOG = LoggerFactory.getLogger(SchemaManager.class);
   private final SearchEngineClient searchEngineClient;
   private final Collection<IndexDescriptor> allIndexDescriptors;
@@ -274,17 +271,38 @@ public class SchemaManager implements CloseableSilently {
     joinOnFutures(futures);
   }
 
+  /**
+   * Writes replica settings only where they have actually drifted from configuration. A settings
+   * PUT is a cluster-state operation that the search engine's master serializes, so writing every
+   * descriptor unconditionally on every attempt turns a large tenant fleet's schema-init retries
+   * into thousands of redundant master tasks, most of them re-applying a value that is already in
+   * effect.
+   */
   private void updateIndexSettings(final IndexDescriptor indexDescriptor) {
     final var indexSettingsFromConfig = getIndexSettingsFromConfig(indexDescriptor);
     if (indexDescriptor instanceof final IndexTemplateDescriptor indexTemplateDescriptor) {
+      // already no-ops internally when unchanged, so it stays unconditional
       searchEngineClient.updateIndexTemplateSettings(
           indexTemplateDescriptor, indexSettingsFromConfig);
     }
-    searchEngineClient.putSettings(
-        List.of(indexDescriptor),
-        Map.of(
-            "index.number_of_replicas",
-            String.valueOf(indexSettingsFromConfig.getNumberOfReplicas())));
+
+    final var targetReplicas = indexSettingsFromConfig.getNumberOfReplicas();
+    if (replicaCountDrifted(indexDescriptor, targetReplicas)) {
+      searchEngineClient.putSettings(
+          List.of(indexDescriptor),
+          Map.of("index.number_of_replicas", String.valueOf(targetReplicas)));
+    }
+  }
+
+  private boolean replicaCountDrifted(final IndexDescriptor descriptor, final int target) {
+    // the alias is what putSettings() below writes to, so reading it back here is what tells us
+    // whether that write is actually needed; served from local cluster state, not the master, so
+    // this read is cheap
+    final var currentReplicaCounts =
+        searchEngineClient.getNumberOfReplicas(List.of(descriptor.getAlias()));
+    // values are never null here: getNumberOfReplicas() drops an index rather than reporting a
+    // null replica count for it, so this unboxing comparison is safe
+    return currentReplicaCounts.values().stream().anyMatch(replicas -> replicas != target);
   }
 
   @VisibleForTesting
@@ -614,8 +632,35 @@ public class SchemaManager implements CloseableSilently {
     return getMissingIndices(allIndexDescriptors).isEmpty();
   }
 
+  /**
+   * Shuts the executor down within a bounded amount of time, whatever its tasks are doing.
+   *
+   * <p>{@code ExecutorService.close()} shuts down and then loops {@code awaitTermination(1, DAYS)}
+   * until every task finishes on its own. A schema mutation that the search engine accepted but has
+   * not acknowledged keeps its task running long after {@link #joinOnFutures} gave up on it, and
+   * cancelling that future does not stop it — the JDK never interrupts a task to cancel a {@link
+   * CompletableFuture}. So a caller that times out and retries, building a fresh {@link
+   * SchemaManager} per attempt and closing the previous one first, ends up parked here for as long
+   * as the abandoned request runs. That is the hang this bounds.
+   *
+   * <p>Shutdown stays graceful first, giving already-running schema tasks a short grace period to
+   * finish. Only once that short grace is exhausted does this escalate to {@code shutdownNow()}.
+   * Either way the method returns; a task that somehow survives the interrupt keeps running in the
+   * background without holding up the caller.
+   */
   @Override
   public void close() {
-    virtualThreadExecutor.close();
+    virtualThreadExecutor.shutdown();
+    try {
+      if (!virtualThreadExecutor.awaitTermination(CLOSE_GRACE_PERIOD_SECONDS, TimeUnit.SECONDS)) {
+        LOG.warn(
+            "Schema manager tasks did not finish within {}s of shutdown; interrupting them and giving up the wait.",
+            CLOSE_GRACE_PERIOD_SECONDS);
+        virtualThreadExecutor.shutdownNow();
+      }
+    } catch (final InterruptedException e) {
+      virtualThreadExecutor.shutdownNow();
+      Thread.currentThread().interrupt();
+    }
   }
 }
