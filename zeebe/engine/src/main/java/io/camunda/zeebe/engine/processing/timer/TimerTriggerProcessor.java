@@ -173,18 +173,21 @@ public final class TimerTriggerProcessor implements TypedRecordProcessor<TimerRe
   }
 
   private Timer refreshTimer(final Timer timer, final TimerRecord record) {
-    if (timer instanceof CronTimer) {
-      return timer;
-    }
-
-    int repetitions = record.getRepetitions();
-    if (repetitions != RepeatingInterval.INFINITE) {
-      repetitions--;
-    }
-
-    // Use the timer's last due date instead of the current time to avoid a time shift; see
-    // RepeatingInterval#nextOccurrenceAfter for how an overdue reschedule is handled.
-    return ((RepeatingInterval) timer)
-        .nextOccurrenceAfter(record.getDueDate(), clock.millis(), repetitions);
+    return switch (timer) {
+      case CronTimer cronTimer -> cronTimer;
+      case RepeatingInterval repeatingInterval -> {
+        int repetitions = record.getRepetitions();
+        if (repetitions != RepeatingInterval.INFINITE) {
+          repetitions--;
+        }
+        yield repeatingInterval.nextOccurrenceAfter(
+            record.getDueDate(), clock.millis(), repetitions);
+      }
+      default ->
+          // Defensive gate; not expected to ever execute.
+          throw new IllegalStateException(
+              "Expected timer to reschedule as a CronTimer or RepeatingInterval, but was '%s'"
+                  .formatted(timer.getClass()));
+    };
   }
 }
