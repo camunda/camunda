@@ -88,7 +88,9 @@ test.describe('variables page', () => {
     await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
     await expect(taskDetailsPage.assignee).toHaveText('Assigned to me');
     await expect(
-      taskDetailsPage.variablesTable.getByTitle('testData value'),
+      taskDetailsPage.variablesTable.getByRole('textbox', {
+        name: 'testData value',
+      }),
     ).toHaveValue('"something"');
     await taskDetailsPage.replaceExistingVariableValue({
       name: 'testData value',
@@ -127,10 +129,14 @@ test.describe('variables page', () => {
     await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
     await expect(taskDetailsPage.assignee).toHaveText('Assigned to me');
     await expect(
-      taskDetailsPage.variablesTable.getByTitle('testData value'),
+      taskDetailsPage.variablesTable.getByRole('textbox', {
+        name: 'testData value',
+      }),
     ).toBeVisible();
     await expect(
-      taskDetailsPage.variablesTable.getByTitle('testData value'),
+      taskDetailsPage.variablesTable.getByRole('textbox', {
+        name: 'testData value',
+      }),
     ).toHaveValue('"something"');
 
     await taskDetailsPage.replaceExistingVariableValue({
@@ -139,10 +145,14 @@ test.describe('variables page', () => {
     });
     await page.reload();
     await expect(
-      taskDetailsPage.variablesTable.getByTitle('testData value'),
+      taskDetailsPage.variablesTable.getByRole('textbox', {
+        name: 'testData value',
+      }),
     ).toHaveValue('"something"');
     await expect(
-      taskDetailsPage.variablesTable.getByTitle('testData value'),
+      taskDetailsPage.variablesTable.getByRole('textbox', {
+        name: 'testData value',
+      }),
     ).not.toHaveValue('"updatedValue"');
   });
 
