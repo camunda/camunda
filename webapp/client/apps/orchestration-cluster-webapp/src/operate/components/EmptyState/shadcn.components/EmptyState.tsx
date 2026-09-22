@@ -25,11 +25,6 @@ type Props = {
 	className?: string;
 };
 
-// Carbon's EmptyState (button/link props) mapped onto the DS EmptyState's
-// action/secondaryAction slots — see docs/migration/operate-dashboard-tiering.md.
-// `EmptyState` here is native DS, not the carbon-compat shim (there isn't one: DS
-// EmptyState's API already diverges enough from Carbon's ad hoc wrapper that this is a
-// REMAP, same tier as camunda-composite-components' `C3EmptyState`).
 const EmptyState: React.FC<Props> = ({heading, description, icon, button, link, className}) => {
 	return (
 		<DSEmptyState
