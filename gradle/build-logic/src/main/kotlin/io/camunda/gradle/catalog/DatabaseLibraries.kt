@@ -25,8 +25,7 @@ internal fun VersionCatalogBuilder.catalogDatabaseLibraries() {
   library("com-microsoft-sqlserver-mssql-jdbc", "com.microsoft.sqlserver", "mssql-jdbc")
     .withoutVersion()
   library("com-mysql-mysql-connector-j", "com.mysql", "mysql-connector-j").withoutVersion()
-  library("com-oracle-database-jdbc-ojdbc8", "com.oracle.database.jdbc", "ojdbc8")
-    .withoutVersion()
+  library("com-oracle-database-jdbc-ojdbc8", "com.oracle.database.jdbc", "ojdbc8").withoutVersion()
   library("com-zaxxer-hikaricp", "com.zaxxer", "HikariCP").versionRef("com-zaxxer-hikaricp")
   library("org-apache-lucene-lucene-core", "org.apache.lucene", "lucene-core").withoutVersion()
   library(
@@ -42,10 +41,8 @@ internal fun VersionCatalogBuilder.catalogDatabaseLibraries() {
     )
     .versionRef("optimize-elasticsearch-client")
   // version managed by buildlogic.optimize-conventions
-  library("org-elasticsearch-elasticsearch", "org.elasticsearch", "elasticsearch")
-    .withoutVersion()
-  library("org-liquibase-liquibase-core", "org.liquibase", "liquibase-core")
-    .versionRef("liquibase")
+  library("org-elasticsearch-elasticsearch", "org.elasticsearch", "elasticsearch").withoutVersion()
+  library("org-liquibase-liquibase-core", "org.liquibase", "liquibase-core").versionRef("liquibase")
   library("org-mariadb-jdbc-mariadb-java-client", "org.mariadb.jdbc", "mariadb-java-client")
     .versionRef("org-mariadb-jdbc-mariadb-java-client")
   library("org-mybatis-mybatis", "org.mybatis", "mybatis").versionRef("mybatis")

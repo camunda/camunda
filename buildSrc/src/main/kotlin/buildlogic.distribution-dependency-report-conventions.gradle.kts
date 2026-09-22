@@ -7,8 +7,7 @@ import org.gradle.jvm.tasks.Jar
 
 val distributionDependencyReport =
   extensions.create<DistributionDependencyReportExtension>("distributionDependencyReport")
-val distributionDependencyReportFile =
-  layout.buildDirectory.file("reports/dist-dependencies.json")
+val distributionDependencyReportFile = layout.buildDirectory.file("reports/dist-dependencies.json")
 val distributionReportProject = project
 val runtimeClasspathConfiguration =
   distributionReportProject.configurations.getByName("runtimeClasspath")
@@ -17,9 +16,7 @@ val distributionJar = distributionReportProject.tasks.named<Jar>("jar")
 tasks.register("writeDistDependencyReport") {
   group = "help"
   description = "Writes resolved runtime dependencies for the packaged distribution."
-  notCompatibleWithConfigurationCache(
-    "The report resolves runtimeClasspath during task execution"
-  )
+  notCompatibleWithConfigurationCache("The report resolves runtimeClasspath during task execution")
   dependsOn(distributionJar)
   dependsOn(runtimeClasspathConfiguration.buildDependencies)
   outputs.file(distributionDependencyReportFile)
@@ -33,8 +30,7 @@ tasks.register("writeDistDependencyReport") {
     val artifacts =
       runtimeClasspath.incoming.artifacts.artifacts
         .filter { artifact ->
-          artifact.file.isFile &&
-            excludedFilePrefixes.none { artifact.file.name.startsWith(it) }
+          artifact.file.isFile && excludedFilePrefixes.none { artifact.file.name.startsWith(it) }
         }
         .map { artifact ->
           val component = artifact.id.componentIdentifier

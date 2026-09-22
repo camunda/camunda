@@ -13,8 +13,14 @@ class PomResolver(private val pomXml: String) {
   fun properties(): Map<String, String> = rawProperties.toMap()
 
   fun projectVersion(): String? {
-    return documentElement.findDirectChild("version")?.textContent?.trim()?.takeIf { it.isNotBlank() }
-      ?: documentElement.findDirectChild("parent")?.findDirectChild("version")?.textContent?.trim()
+    return documentElement.findDirectChild("version")?.textContent?.trim()?.takeIf {
+      it.isNotBlank()
+    }
+      ?: documentElement
+        .findDirectChild("parent")
+        ?.findDirectChild("version")
+        ?.textContent
+        ?.trim()
         ?.takeIf { it.isNotBlank() }
   }
 
@@ -23,7 +29,8 @@ class PomResolver(private val pomXml: String) {
     return element.textContent.trim().takeIf { it.isNotBlank() }
   }
 
-  fun resolveProperty(propertyName: String): String = resolvePomProperty(propertyName, rawProperties)
+  fun resolveProperty(propertyName: String): String =
+    resolvePomProperty(propertyName, rawProperties)
 
   fun resolveProperty(propertyName: String, vararg propertyMaps: Map<String, String>): String =
     resolvePomProperty(propertyName, *propertyMaps)
