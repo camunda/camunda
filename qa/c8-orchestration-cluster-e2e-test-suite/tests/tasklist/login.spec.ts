@@ -27,11 +27,7 @@ test.describe.parallel('Login Tests', () => {
   });
 
   test('have no a11y violations', async ({loginPage, makeAxeBuilder}) => {
-    // Wait for the login page to finish rendering before running axe. Without
-    // this the analyzer can run against the still-loading document (before the
-    // <main> landmark and level-one heading mount), yielding spurious
-    // landmark-one-main / page-has-heading-one violations.
-    await expect(loginPage.loginButton).toBeVisible();
+    await expect(loginPage.tasklistHeading).toBeVisible();
 
     const results = await makeAxeBuilder().analyze();
 

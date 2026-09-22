@@ -60,9 +60,6 @@ class TasklistProcessesPage {
   }
 
   requiresFormInputTagFor(name: string): Locator {
-    // The "Requires form input" indicator is now a design-system tag rendered
-    // as plain text; Carbon's `.cds--tag__label` class no longer exists. Anchor
-    // on the tag text within the tile instead of the framework-specific class.
     return this.processTileByName(name).getByText('Requires form input', {
       exact: true,
     });

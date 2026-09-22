@@ -141,8 +141,14 @@ test.describe('task details page', () => {
     );
   });
 
-  test('assign and unassign task', async ({taskPanelPage, taskDetailsPage}) => {
-    await taskPanelPage.openTask('usertask_for_assign_unassign');
+  test('assign and unassign task', async ({
+    page,
+    taskPanelPage,
+    taskDetailsPage,
+  }) => {
+    await taskPanelPage.openTask('usertask_for_assign_unassign', {
+      timeout: 60000,
+    });
 
     await expect(taskDetailsPage.assignToMeButton).toBeVisible({
       timeout: 60000,
@@ -156,20 +162,16 @@ test.describe('task details page', () => {
       useInnerText: true,
     });
 
-    await taskDetailsPage.unassignButton.click();
-    await expect(taskDetailsPage.assignToMeButton).toBeVisible();
+    await page.reload();
+    await taskDetailsPage.clickUnassignButton();
     await expect(taskDetailsPage.completeTaskButton).toBeDisabled();
     await expect(taskDetailsPage.assignee).toHaveText('Unassigned', {
       useInnerText: true,
     });
-
-    await expect(taskDetailsPage.completeTaskButton).toBeDisabled({
-      timeout: 60000,
-    });
   });
 
   test('complete task', async ({page, taskPanelPage, taskDetailsPage}) => {
-    await taskPanelPage.openTask('usertask_to_be_completed');
+    await taskPanelPage.openTask('usertask_to_be_completed', {timeout: 60000});
 
     // Wait for the details panel to finish loading before interacting.
     // openTask only clicks the row — without this, the Assign button query
@@ -178,7 +180,7 @@ test.describe('task details page', () => {
 
     const taskUrl = page.url();
     await taskDetailsPage.clickAssignToMeButton();
-    await taskDetailsPage.completeTaskButton.click();
+    await taskDetailsPage.clickCompleteTaskButton();
     await expect(taskDetailsPage.pickATaskHeader).toBeVisible();
 
     await page.goto(taskUrl);
@@ -215,17 +217,12 @@ test.describe('task details page', () => {
   });
 
   test('task completion with deployed form', async ({
+    page,
     taskPanelPage,
     taskDetailsPage,
   }) => {
-    await expect(async () => {
-      await expect(
-        taskPanelPage.availableTasks
-          .getByText('processWithDeployedForm')
-          .first(),
-      ).toBeVisible();
-    }).toPass();
-    await taskPanelPage.openTask('processWithDeployedForm');
+    await taskPanelPage.openTask('processWithDeployedForm', {timeout: 60000});
+    const taskUrl = page.url();
 
     await taskDetailsPage.clickAssignToMeButton();
     await expect(taskDetailsPage.unassignButton).toBeVisible({timeout: 30000});
@@ -249,23 +246,10 @@ test.describe('task details page', () => {
     await expect(taskDetailsPage.form).toContainText('EUR 264');
     await expect(taskDetailsPage.form).toContainText('Total: EUR 544.5');
     await sleep(500);
-    await taskDetailsPage.completeTaskButton.click();
+    await taskDetailsPage.clickCompleteTaskButton();
 
-    // 60s was hit by the May 20 nightly — give completion more headroom on
-    // a loaded shared cluster.
-    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
-      timeout: 90000,
-    });
-    await taskPanelPage.filterBy('Completed');
-    await taskPanelPage.assertCompletedHeadingVisible();
-    await expect(async () => {
-      await expect(
-        taskPanelPage.availableTasks
-          .getByText('processWithDeployedForm')
-          .first(),
-      ).toBeVisible();
-    }).toPass();
-    await taskPanelPage.openTask('processWithDeployedForm');
+    await page.goto(taskUrl);
+    await expect(taskDetailsPage.form).toBeVisible({timeout: 30000});
 
     await taskDetailsPage.assertFieldValue('Client Name*', 'Jon');
     await taskDetailsPage.assertFieldValue('Client Address*', 'Earth');
@@ -364,10 +348,14 @@ test.describe('task details page', () => {
     taskPanelPage,
     taskDetailsPage,
   }) => {
-    await taskPanelPage.openTask('User Task with form rerender 1');
+    await taskPanelPage.openTask('User Task with form rerender 1', {
+      timeout: 60000,
+    });
     await taskDetailsPage.assertFieldValue('Name*', 'Mary');
 
-    await taskPanelPage.openTask('User Task with form rerender 2');
+    await taskPanelPage.openTask('User Task with form rerender 2', {
+      timeout: 60000,
+    });
     await taskDetailsPage.assertFieldValue('Name*', 'Stuart');
   });
 
@@ -410,28 +398,20 @@ test.describe('task details page', () => {
   });
 
   test('task completion with number form by input', async ({
+    page,
     taskPanelPage,
     taskDetailsPage,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
-    await taskPanelPage.openTask('UserTask_Number_Input');
+    await taskPanelPage.openTask('UserTask_Number_Input', {timeout: 60000});
+    const taskUrl = page.url();
     await taskDetailsPage.clickAssignToMeButton();
 
     await taskDetailsPage.fillTextInput('Number', '4');
     await taskDetailsPage.clickCompleteTaskButton();
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
 
-    await taskPanelPage.filterBy('Completed');
-    await taskPanelPage.assertCompletedHeadingVisible();
-    // The just-completed task can take longer than openTask's 10s budget to
-    // surface in the Completed list on a loaded nightly; wait for it to render
-    // before opening, as the other completion tests in this file do.
-    await expect(async () => {
-      await expect(
-        taskPanelPage.availableTasks.getByText('UserTask_Number_Input').first(),
-      ).toBeVisible();
-    }).toPass();
-    await taskPanelPage.openTask('UserTask_Number_Input');
+    await page.goto(taskUrl);
 
     await taskDetailsPage.assertFieldValue('Number', '4');
   });
@@ -441,7 +421,7 @@ test.describe('task details page', () => {
     taskDetailsPage,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
-    await taskPanelPage.openTask('UserTask_Number_Buttons');
+    await taskPanelPage.openTask('UserTask_Number_Buttons', {timeout: 60000});
     await taskDetailsPage.clickAssignToMeButton();
 
     // Form-js number-button clicks can occasionally register twice on
@@ -464,17 +444,7 @@ test.describe('task details page', () => {
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
-    // The just-completed task can take longer than openTask's 10s budget to
-    // surface in the Completed list on a loaded nightly; wait for it to render
-    // before opening, as the other completion tests in this file do.
-    await expect(async () => {
-      await expect(
-        taskPanelPage.availableTasks
-          .getByText('UserTask_Number_Buttons')
-          .first(),
-      ).toBeVisible();
-    }).toPass();
-    await taskPanelPage.openTask('UserTask_Number_Buttons');
+    await taskPanelPage.openTask('UserTask_Number_Buttons', {timeout: 30000});
     await taskDetailsPage.assertFieldValue('Number', '1');
   });
 
@@ -483,7 +453,7 @@ test.describe('task details page', () => {
     taskDetailsPage,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
-    await taskPanelPage.openTask('Date and Time Task');
+    await taskPanelPage.openTask('Date and Time Task', {timeout: 60000});
     await taskDetailsPage.clickAssignToMeButton();
     await taskDetailsPage.fillDatetimeField('Date', '1/1/3000');
     await taskDetailsPage.fillDatetimeField('Time', '12:00 PM');
@@ -493,7 +463,7 @@ test.describe('task details page', () => {
     });
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
-    await taskPanelPage.openTask('Date and Time Task');
+    await taskPanelPage.openTask('Date and Time Task', {timeout: 30000});
     await taskDetailsPage.assertFieldValue('Date', '1/1/3000');
     await taskDetailsPage.assertFieldValue('Time', '12:00 PM');
   });

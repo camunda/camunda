@@ -14,10 +14,12 @@ class TasklistHeader {
   readonly processesTab: Locator;
   readonly logoutButton: Locator;
   readonly tasksTab: Locator;
+  readonly languageSelector: Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.openSettingsButton = page.getByRole('button', {name: 'Settings'});
+    this.languageSelector = page.getByRole('radiogroup', {name: 'Language'});
     this.processesTab = page.getByRole('link', {name: 'Processes'});
     this.logoutButton = page.getByRole('menuitem', {name: 'Log out'});
     this.tasksTab = page
@@ -34,7 +36,11 @@ class TasklistHeader {
     // The language picker is no longer a combobox: it's a design-system
     // radio group inside the Settings menu, with one radio per language.
     await this.openSettingsButton.click();
-    const languageOption = this.page.getByRole('radio', {name: option});
+    await expect(this.languageSelector).toBeVisible();
+    const languageOption = this.page.getByRole('radio', {
+      name: option,
+      exact: true,
+    });
     await expect(languageOption).toBeVisible();
     await languageOption.click();
     await expect(languageOption).toBeChecked();

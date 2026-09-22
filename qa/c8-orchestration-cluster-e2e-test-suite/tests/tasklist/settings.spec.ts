@@ -45,7 +45,9 @@ test.describe('settings', () => {
     // inside the "Filtres" dropdown trigger button, so it has to be a text
     // lookup rather than a heading/accessible-name lookup.
     await expect(
-      page.getByText('Tâches ouvertes', {exact: true}),
+      page.locator('#filter-select').getByText('Tâches ouvertes', {
+        exact: true,
+      }),
     ).toBeVisible();
   });
 });
