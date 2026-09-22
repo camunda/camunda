@@ -53,11 +53,16 @@ public final class OracleDataGuardReplicationCluster implements ReplicationClust
   private final String stopReplicaCommand = requireEnv(ENV_STOP_REPLICA_CMD);
   private final String startReplicaCommand = requireEnv(ENV_START_REPLICA_CMD);
 
+  /**
+   * The Data Guard cluster is provisioned externally; starting this fixture verifies that the
+   * standby has caught up with the primary before the test uses it.
+   */
   @Override
   public void start() {
-    waitForReplication(1L);
+    waitForReplication(getCurrentScn());
   }
 
+  /** The CI workflow owns the managed cluster lifecycle and cleans it up after the test. */
   @Override
   public void stop() {}
 
@@ -81,6 +86,8 @@ public final class OracleDataGuardReplicationCluster implements ReplicationClust
     LOG.info("Stopping the Oracle Data Guard replica");
     executeReplicaCommand(stopReplicaCommand);
     LOG.info("Oracle Data Guard replica outage command completed");
+    waitForReplicaUnavailable();
+    LOG.info("Oracle Data Guard replica is unavailable");
     return CompletableFuture.completedFuture(Unit.unit());
   }
 
@@ -107,6 +114,51 @@ public final class OracleDataGuardReplicationCluster implements ReplicationClust
         .pollInterval(REPLICATION_POLL_INTERVAL)
         .ignoreExceptions()
         .untilAsserted(() -> assertReplicationReached(targetScn));
+  }
+
+  private void waitForReplicaUnavailable() {
+    LOG.info(
+        "Waiting up to {} for the Oracle Data Guard replica to become unavailable",
+        REPLICATION_TIMEOUT);
+    await()
+        .atMost(REPLICATION_TIMEOUT)
+        .pollInterval(REPLICATION_POLL_INTERVAL)
+        .ignoreExceptions()
+        .untilAsserted(this::assertReplicaUnavailable);
+  }
+
+  private void assertReplicaUnavailable() throws SQLException {
+    try (final Connection connection = openConnection();
+        final Statement statement = connection.createStatement();
+        final ResultSet resultSet =
+            statement.executeQuery(
+                """
+                SELECT ad.dest_id,
+                       ad.status AS destination_status,
+                       ads.status AS destination_runtime_status,
+                       ad.target
+                FROM v$archive_dest ad
+                JOIN v$archive_dest_status ads ON ads.dest_id = ad.dest_id
+                WHERE ads.type IN ('PHYSICAL', 'LOGICAL')
+                  AND ads.status = 'VALID'
+                  AND ad.status = 'VALID'
+                  AND ad.target IN ('STANDBY', 'REMOTE')
+                """)) {
+      if (resultSet.next()) {
+        throw new AssertionError(
+            "Oracle Data Guard replica is still available: destination="
+                + resultSet.getString("dest_id")
+                + ", target="
+                + resultSet.getString("target")
+                + ", destination status="
+                + resultSet.getString("destination_status")
+                + ", runtime status="
+                + resultSet.getString("destination_runtime_status"));
+      }
+    } catch (final SQLException e) {
+      LOG.warn("Unable to query Oracle Data Guard availability; will retry", e);
+      throw e;
+    }
   }
 
   private void assertReplicationReached(final long targetScn) throws SQLException {
@@ -174,9 +226,9 @@ public final class OracleDataGuardReplicationCluster implements ReplicationClust
 
   private void executeReplicaCommand(final String command) {
     LOG.info("Executing Oracle Data Guard replica command: {}", command);
+    Process process = null;
     try {
-      final Process process =
-          new ProcessBuilder("sh", "-c", command).redirectErrorStream(true).start();
+      process = new ProcessBuilder("sh", "-c", command).redirectErrorStream(true).start();
       final boolean finished =
           process.waitFor(REPLICA_COMMAND_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
       if (!finished) {
@@ -197,6 +249,9 @@ public final class OracleDataGuardReplicationCluster implements ReplicationClust
     } catch (final IOException e) {
       throw new IllegalStateException("Failed to run Oracle Data Guard replica command", e);
     } catch (final InterruptedException e) {
+      if (process != null) {
+        process.destroyForcibly();
+      }
       Thread.currentThread().interrupt();
       throw new IllegalStateException(
           "Interrupted while running Oracle Data Guard replica command", e);
