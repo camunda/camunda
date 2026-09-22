@@ -72,7 +72,7 @@ const LoginPage: React.FC<Props> = ({title}) => {
 					}}
 				>
 					{({handleSubmit, submitError, submitting}) => (
-						<form className="w-full max-w-[26rem]" onSubmit={handleSubmit}>
+						<form className="w-full max-w-104" onSubmit={handleSubmit}>
 							<Card>
 								<CardContent className="flex flex-col gap-4">
 									<div className="flex justify-center pt-2">

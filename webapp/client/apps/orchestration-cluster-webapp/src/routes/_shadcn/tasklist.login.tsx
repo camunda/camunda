@@ -7,24 +7,16 @@
  */
 
 import {createFileRoute, isRedirect, redirect} from '@tanstack/react-router';
-import {z} from 'zod';
+import {appLoginSearchSchema, TASKLIST_LOGIN} from '#/shared/auth/resolveLoginRedirect';
 import {queries} from '#/shared/http/queries';
 import {TasklistLoginPage} from '#/tasklist/pages/TasklistLoginPage';
 
 const Route = createFileRoute('/_shadcn/tasklist/login')({
-	validateSearch: z.object({
-		redirect: z
-			.string()
-			.refine(
-				(value) => /^\/tasklist(?:[/?#]|$)/.test(value) && !/^\/tasklist\/login(?:[/?#]|$)/.test(value),
-				'Redirect must be a Tasklist path',
-			)
-			.optional(),
-	}),
+	validateSearch: appLoginSearchSchema(TASKLIST_LOGIN),
 	beforeLoad: async ({search, context: {queryClient}}) => {
 		try {
 			await queryClient.ensureQueryData(queries.getCurrentUser());
-			throw redirect({href: search.redirect ?? '/tasklist', replace: true});
+			throw redirect({href: search.redirect ?? TASKLIST_LOGIN.home, replace: true});
 		} catch (error) {
 			if (isRedirect(error)) {
 				throw error;

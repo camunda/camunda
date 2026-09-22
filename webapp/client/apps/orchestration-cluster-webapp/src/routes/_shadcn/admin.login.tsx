@@ -7,24 +7,16 @@
  */
 
 import {createFileRoute, isRedirect, redirect} from '@tanstack/react-router';
-import {z} from 'zod';
 import {AdminLoginPage} from '#/admin/pages/AdminLoginPage';
+import {ADMIN_LOGIN, appLoginSearchSchema} from '#/shared/auth/resolveLoginRedirect';
 import {queries} from '#/shared/http/queries';
 
 const Route = createFileRoute('/_shadcn/admin/login')({
-	validateSearch: z.object({
-		redirect: z
-			.string()
-			.refine(
-				(value) => /^\/admin(?:[/?#]|$)/.test(value) && !/^\/admin\/login(?:[/?#]|$)/.test(value),
-				'Redirect must be an Admin path',
-			)
-			.optional(),
-	}),
+	validateSearch: appLoginSearchSchema(ADMIN_LOGIN),
 	beforeLoad: async ({search, context: {queryClient}}) => {
 		try {
 			await queryClient.ensureQueryData(queries.getCurrentUser());
-			throw redirect({href: search.redirect ?? '/admin', replace: true});
+			throw redirect({href: search.redirect ?? ADMIN_LOGIN.home, replace: true});
 		} catch (error) {
 			if (isRedirect(error)) {
 				throw error;
