@@ -262,6 +262,19 @@ public class ElasticsearchEngineClientIT {
   }
 
   @Test
+  void shouldReadReplicaCountsForExistingIndices() throws IOException {
+    final var index = createTestIndexDescriptor("index_name", "/mappings.json");
+    final var settings = new IndexConfiguration();
+    settings.setNumberOfReplicas(2);
+    elsEngineClient.createIndex(index, settings);
+
+    final var replicaCounts =
+        elsEngineClient.getNumberOfReplicas(List.of(index.getFullQualifiedName() + "*"));
+
+    assertThat(replicaCounts).containsEntry(index.getFullQualifiedName(), 2);
+  }
+
+  @Test
   void shouldSetReplicasAndShardsFromConfigurationDuringIndexCreation() throws IOException {
     final var index = createTestIndexDescriptor("index_name", "/mappings.json");
 

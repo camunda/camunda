@@ -27,6 +27,7 @@ import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
 import co.elastic.clients.elasticsearch.indices.Alias;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
+import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import co.elastic.clients.elasticsearch.indices.IndexTemplate;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
@@ -211,6 +212,33 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   }
 
   @Override
+  public Map<String, Integer> getNumberOfReplicas(final Collection<String> indexNames) {
+    if (indexNames.isEmpty()) {
+      return Map.of();
+    }
+
+    try {
+      return client
+          .indices()
+          .getSettings(req -> req.index(List.copyOf(indexNames)).ignoreUnavailable(true))
+          .result()
+          .entrySet()
+          .stream()
+          .flatMap(
+              entry ->
+                  Optional.ofNullable(entry.getValue().settings())
+                      .map(IndexSettings::index)
+                      .map(IndexSettings::numberOfReplicas)
+                      .map(replicas -> Map.entry(entry.getKey(), Integer.parseInt(replicas)))
+                      .stream())
+          .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+    } catch (final IOException | ElasticsearchException e) {
+      throw new SearchEngineException(
+          String.format("Failed to retrieve replica counts for indices '%s'", indexNames), e);
+    }
+  }
+
+  @Override
   public void putIndexLifeCyclePolicy(final String policyName, final String deletionMinAge) {
     final PutLifecycleRequest request = putLifecycleRequest(policyName, deletionMinAge);
 
@@ -362,12 +390,9 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
   private PutIndicesSettingsRequest putIndexSettingsRequest(
       final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {
-    final co.elastic.clients.elasticsearch.indices.IndexSettings settings =
+    final IndexSettings settings =
         utils.mapToSettings(
-            toAppendSettings,
-            (inp) ->
-                deserializeJson(
-                    co.elastic.clients.elasticsearch.indices.IndexSettings._DESERIALIZER, inp));
+            toAppendSettings, (inp) -> deserializeJson(IndexSettings._DESERIALIZER, inp));
     return new PutIndicesSettingsRequest.Builder()
         .index(utils.listIndicesByAlias(indexDescriptors))
         .settings(settings)
