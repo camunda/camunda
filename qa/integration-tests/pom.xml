@@ -420,6 +420,12 @@
     </dependency>
 
     <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-backup-store-gcs</artifactId>
       <scope>test</scope>
