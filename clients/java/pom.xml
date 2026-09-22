@@ -348,8 +348,11 @@
             <typeMapping>OffsetDateTime=String</typeMapping>
             <!-- map complex String schemas to String -->
             <typeMapping>ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String</typeMapping>
-            <!-- map metadata value (oneOf string/number) to Object so it can carry its value -->
+            <!-- map metadata values (oneOf string/number) to Object so they can carry their value -->
             <typeMapping>ClusterVariableResultBaseMetadataValue=Object</typeMapping>
+            <!-- generates named models for inline oneOf properties -->
+            <typeMapping>AdvancedMetadataValueFilterEq=Object</typeMapping>
+            <typeMapping>AdvancedMetadataValueFilterNeq=Object</typeMapping>
             <typeMapping>ResourceKey=String</typeMapping>
             <typeMapping>ScopeKey=String</typeMapping>
             <!-- map specific filter properties to basic filter types -->
