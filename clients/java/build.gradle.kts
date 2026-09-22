@@ -1,7 +1,7 @@
 import buildlogic.OpenApiDefaults
 import buildlogic.OptionalDependenciesPomAction
-import buildlogic.clientJavaResourceTokens
 import buildlogic.mavenResourceFilterArgs
+import buildlogic.projectVersionToken
 import org.apache.tools.ant.filters.ReplaceTokens
 
 /*
@@ -181,7 +181,7 @@ val stripJsonFormatFromGeneratedOpenApiSources =
   }
 
 tasks.named<ProcessResources>("processResources") {
-  val resourceTokens = project.clientJavaResourceTokens()
+  val resourceTokens = project.projectVersionToken()
 
   filesMatching("client-java.properties") {
     filter(mavenResourceFilterArgs(resourceTokens), ReplaceTokens::class.java)
