@@ -638,23 +638,9 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   # Classifies the failing smoke-test legs and (once enabled) dispatches the fix
-  # agent, the same way docker-build-helm-integration.yml does. Only the `test`
-  # job is classifiable: a `Deploy 8.x Preview Environment` failure is an ArgoCD
-  # or chart-deploy problem reported under the inner reusable workflow's own job
-  # names, which map to no surface, and notify-failure already routes those to
-  # the eng-ops medic.
-  #
-  # One job covers every version: each leg's base ref is resolved from its job
-  # name (classify.PREVIEW_ENV_BASE_REFS), so 8.8..8.11 failing in the same run
-  # stay four separate dispatch keys against four branches. `base_ref` here is
-  # only the fallback for a failing job that is not a recognised leg.
-  #
-  # Scheduled runs only, mirroring notify-failure: a manual run may point the
-  # ref-8-x inputs at unmerged branches, which the version-to-branch mapping does
-  # not — and the fix agent cannot — follow.
-  #
-  # dry_run stays true until the classification has been confirmed against real
-  # failing scheduled runs; dropping it lets the Vault flag decide.
+  # agent, the same way docker-build-helm-integration.yml does; see
+  # .github/scripts/alwaysgreen/README.md. `base_ref: main` here is only the
+  # fallback for a failing job that is not a recognised per-version leg.
   alwaysgreen-triage:
     name: AlwaysGreen triage and fix dispatch
     if: ${{ always() && github.event_name == 'schedule' && needs.test.result == 'failure' }}

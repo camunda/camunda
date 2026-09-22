@@ -332,12 +332,8 @@ jobs:
               && echo "  got $3 from $1#$2" \
               || echo "  (absent) $3 from $1#$2"
           }
-          # preview-env-smoke-test.yml runs every version's leg in one run and
-          # uploads playwright-results-json/-report per version, so the unscoped
-          # glob would hand the agent every version's evidence, not just the one
-          # it was dispatched to fix. Download the version-scoped name only; other
-          # pipelines run one version per run and have no such name, so fall back
-          # to the unscoped glob when the scoped one found nothing.
+          # Version-scoped artifact name, falling back to the unscoped glob; see
+          # .github/scripts/alwaysgreen/README.md.
           dl_versioned() { # repo, run_id, pattern-prefix
             local dest_found=""
             if [ -n "${VERSION}" ]; then
