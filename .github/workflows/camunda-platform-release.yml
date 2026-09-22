@@ -231,17 +231,12 @@ jobs:
           # Assign the amount of seconds that the plugin will wait for a deployment
           # state. Can not be less than Constants.WAIT_MAX_TIME_DEFAULT_VALUE.
           CENTRAL_WAIT_MAX_TIME: "10800"
-          # maven-scm discards the stderr of every git command it runs: on a non-zero
-          # exit GitRemoteInfoCommand builds its ScmException from the URL alone and
-          # never reads the stderr consumer it collected. When release:perform's
-          # `git ls-remote` fails we therefore get "unbale to execute ls-remote" and
-          # nothing else -- not the HTTP status, not a connect error, nothing that says
-          # whether the remote rejected us or our own egress broke.
-          # Pointing GIT_TRACE at a file routes git's diagnostics past maven entirely.
+          # maven-scm discards git's stderr (GitRemoteInfoCommand builds its
+          # ScmException from the URL alone), so a failed ls-remote reports nothing
+          # but "unbale to execute ls-remote". A file path routes git's own
+          # diagnostics past maven; NO_DATA keeps packfile bodies out of the trace.
           GIT_TRACE: ${{ runner.temp }}/git-trace.log
           GIT_TRACE_CURL: ${{ runner.temp }}/git-trace-curl.log
-          # Headers only. Without this the trace carries request and response bodies,
-          # which for a clone of this repo means hundreds of MB of packfile.
           GIT_TRACE_CURL_NO_DATA: "1"
         run: |
           # Perform a maven release
@@ -283,16 +278,13 @@ jobs:
           echo "tagCommitSha=${TAG_COMMIT_SHA}" >> "$GITHUB_OUTPUT"
           popd
 
-      # release:perform re-clones the release tag from the remote and then runs
-      # `git ls-remote` from java.io.tmpdir. That ls-remote has failed intermittently
-      # (8.10.0-alpha5-rc2, 8.9.19, 8.8.39, 8.10.0-rc1), always within half a second
-      # and always after the clone and every push in the same job had already
-      # succeeded against the same URL. A half-second failure is an answer, not a
-      # timeout, but which answer is unknown: maven swallowed it every time.
-      # The three steps below run only on failure, while the condition still holds,
-      # and record whether the remote rejected the request (HTTP status) or the runner
-      # could not reach it at all (DNS/connect). All are best-effort -- a release is
-      # never failed or held up by its own diagnostics.
+      # release:perform's `git ls-remote` (run from java.io.tmpdir) has failed
+      # intermittently on 8.10.0-alpha5-rc2, 8.9.19, 8.8.39 and 8.10.0-rc1 -- always
+      # in under a second, always after the clone and every push in the same job had
+      # succeeded against the same URL. That is an answer, not a timeout, but maven
+      # swallowed it every time. These failure-only steps record whether the remote
+      # rejected us (HTTP status) or the runner never reached it (DNS/connect). All
+      # are best-effort: a release is never failed by its own diagnostics.
       - name: Probe git remote access
         id: probe-git-remote
         if: failure() && steps.maven-perform-release.outcome == 'failure'
@@ -314,13 +306,12 @@ jobs:
             echo "=== DNS ==="
             getent hosts github.com || echo "getent exit=$?"
 
-            # release:perform resolves the remote from the pom's <developerConnection>,
-            # which interpolates ${env.GITHUB_TOKEN_USR}/${env.GITHUB_TOKEN_PSW}. Neither
-            # is set anywhere in this workflow, so if the placeholders survive verbatim
-            # the URL carries no usable credentials, and any authenticated call made from
-            # outside the work tree -- where actions/checkout's extraheader does not
-            # apply -- is unauthorised. Report only whether they survived, never the
-            # value: that would either leak a credential or be scrubbed by redact().
+            # The pom's <developerConnection> interpolates
+            # ${env.GITHUB_TOKEN_USR}/${env.GITHUB_TOKEN_PSW}, neither of which this
+            # workflow sets. If they survive verbatim the SCM URL carries no usable
+            # credentials -- which only bites outside the work tree, where
+            # actions/checkout's repo-scoped extraheader does not apply. Report the
+            # verdict, never the value: redact() would scrub it anyway.
             echo "=== resolved SCM developerConnection ==="
             conn=$(./mvnw -q -N help:evaluate -Dexpression=project.scm.developerConnection -DforceStdout 2>/dev/null)
             # SC2016: the unexpanded '${env.' literal is exactly what we are matching on.
@@ -350,8 +341,8 @@ jobs:
 
           exit 0
 
-      # GIT_TRACE_CURL records request headers, which include the Authorization header
-      # git sent. Scrub before the traces leave the runner.
+      # GIT_TRACE_CURL records request headers, Authorization included. Scrub before
+      # the traces leave the runner.
       - name: Redact git traces
         if: failure() && steps.maven-perform-release.outcome == 'failure'
         continue-on-error: true
