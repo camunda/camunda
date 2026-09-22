@@ -65,7 +65,6 @@ import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
 import org.opensearch.client.opensearch.indices.IndexSettings;
-import org.opensearch.client.opensearch.indices.IndexTemplate;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 import org.opensearch.client.opensearch.indices.PutIndicesSettingsRequest;
 import org.opensearch.client.opensearch.indices.PutMappingRequest;
@@ -244,7 +243,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
                   Optional.ofNullable(entry.getValue().settings())
                       .map(IndexSettings::index)
                       .map(IndexSettings::numberOfReplicas)
-                      .map(replicas -> Map.entry(entry.getKey(), replicas))
+                      .map(replicas -> Map.entry(entry.getKey(), Integer.valueOf(replicas)))
                       .stream())
           .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
     } catch (final IOException | OpenSearchException e) {
