@@ -48,8 +48,10 @@ const ProcessInstanceHeader: React.FC<Props> = ({operations}) => {
 	} = instance;
 	const processDefinitionName = getProcessDefinitionName(instance);
 	const isReducedLayout = useMatchMedia(isWidthBelowBreakpoint('xlg'));
-	const {data: waitStateStatistics} = useProcessInstanceWaitStateStatistics(instance);
-	const waitingCount = waitStateStatistics?.find(({elementId}) => elementId === processDefinitionId)?.waitingCount ?? 0;
+	const {data: waitStateStatistics, isError: isWaitStateError} = useProcessInstanceWaitStateStatistics(instance);
+	const waitingCount = isWaitStateError
+		? 0
+		: waitStateStatistics?.find(({elementId}) => elementId === processDefinitionId)?.waitingCount ?? 0;
 	const isMultiTenancyEnabled = getClientConfig().deployment.isMultiTenancyEnabled;
 	const {data: currentUser} = useQuery(queries.getCurrentUser());
 	const {data: draining} = useQuery(drainingProcessDefinitionsQuery());
