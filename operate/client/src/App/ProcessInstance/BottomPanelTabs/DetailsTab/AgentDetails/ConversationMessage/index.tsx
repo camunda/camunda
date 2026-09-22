@@ -84,11 +84,12 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
             return null;
           }
           case 'OBJECT': {
-            const reasoningText =
-              actor === 'ASSISTANT' ? getReasoningText(entry.object) : null;
+            if (actor === 'ASSISTANT' && isReasoning(entry.object)) {
+              const reasoningText = getReasoningText(entry.object);
 
-            if (reasoningText !== null) {
-              return <ReasoningNote key={index} reasoning={reasoningText} />;
+              return reasoningText === null ? null : (
+                <ReasoningNote key={index} reasoning={reasoningText} />
+              );
             }
 
             const value = JSON.stringify(entry.object, null, 2);
@@ -138,12 +139,15 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
   );
 };
 
-function getReasoningText(value: unknown): string | null {
-  if (
-    !isPlainObject(value) ||
-    value['camunda.agenticai.content.type'] !== 'reasoning' ||
-    typeof value['text'] !== 'string'
-  ) {
+function isReasoning(value: unknown): value is Record<string, unknown> {
+  return (
+    isPlainObject(value) &&
+    value['camunda.agenticai.content.type'] === 'reasoning'
+  );
+}
+
+function getReasoningText(value: Record<string, unknown>): string | null {
+  if (typeof value['text'] !== 'string') {
     return null;
   }
 
