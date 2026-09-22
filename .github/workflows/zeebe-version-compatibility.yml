@@ -28,16 +28,16 @@ jobs:
         shards: [ 1, 2, 3] # Values are not used, we just need an array of the right length
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-      - name: Generate cache key with current hour
-        id: cache-key
-        run: echo "hour=$(date -u +%Y%m%d%H)" >> "$GITHUB_OUTPUT"
-      - name: Cache Zeebe versions (hourly refresh)
+      - name: Cache Zeebe versions (scoped to this run)
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: .cache/camunda
-          key: zeebe-versions-${{ steps.cache-key.outputs.hour }}
-          restore-keys: |
-            zeebe-versions-
+          # Scoped to this run+attempt, with no restore-keys fallback: this only shares one
+          # run's freshly-verified release data across its shards. A key/fallback that could
+          # match another run (an hour, a day, ...) would let a cache created before this
+          # file's per-tag release check went in keep bypassing that check indefinitely, since
+          # discoverVersions() only fetches and re-verifies when the local cache file is absent.
+          key: zeebe-versions-${{ github.run_id }}-${{ github.run_attempt }}
       - name: Find previous report
         id: get-last-run-id
         run: |
@@ -90,16 +90,13 @@ jobs:
     if: always()
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-      - name: Generate cache key with current hour
-        id: cache-key
-        run: echo "hour=$(date -u +%Y%m%d%H)" >> "$GITHUB_OUTPUT"
-      - name: Cache Zeebe versions (hourly refresh)
+      - name: Cache Zeebe versions (scoped to this run)
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: .cache/camunda
-          key: zeebe-versions-${{ steps.cache-key.outputs.hour }}
-          restore-keys: |
-            zeebe-versions-
+          # See the "Released Versions" job's cache step for why this is scoped to this
+          # run+attempt with no restore-keys fallback.
+          key: zeebe-versions-${{ github.run_id }}-${{ github.run_attempt }}
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
