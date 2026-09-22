@@ -167,6 +167,58 @@ it('should stop polling process instance metadata after it reaches a terminal st
 	}
 });
 
+it.for(['COMPLETED', 'TERMINATED'] as const)(
+	'should poll a %s instance until its incident flag clears',
+	async (state, {worker}) => {
+		vi.useFakeTimers({toFake: ['setInterval', 'clearInterval']});
+		const requests = vi.fn();
+		const onRequest = ({request}: {request: Request}) => {
+			if (request.method === 'GET' && request.url.endsWith(`/process-instances/${PROCESS_INSTANCE_KEY}`)) {
+				requests();
+			}
+		};
+		worker.events.on('request:start', onRequest);
+
+		try {
+			const instance = createProcessInstance({
+				processInstanceKey: PROCESS_INSTANCE_KEY,
+				state,
+				hasIncident: true,
+			});
+			const {queryKey} = processInstanceQuery(PROCESS_INSTANCE_KEY);
+			worker.use(mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json(instance)}));
+			const screen = await render(
+				<QueryClientProvider client={queryClient}>
+					<ProcessInstanceStatus />
+				</QueryClientProvider>,
+			);
+
+			await expect.element(screen.getByText(state)).toBeVisible();
+			expect(requests).toHaveBeenCalledTimes(1);
+
+			await vi.advanceTimersByTimeAsync(5000);
+			await expect.poll(() => requests.mock.calls.length).toBe(2);
+			await expect.poll(() => queryClient.isFetching({queryKey})).toBe(0);
+
+			worker.use(
+				mockGetProcessInstanceEndpoint({
+					successResponse: HttpResponse.json({...instance, hasIncident: false}),
+				}),
+			);
+			await vi.advanceTimersByTimeAsync(5000);
+
+			await expect.poll(() => queryClient.getQueryData(queryKey)).toMatchObject({state, hasIncident: false});
+			expect(requests).toHaveBeenCalledTimes(3);
+
+			await vi.advanceTimersByTimeAsync(10000);
+			expect(requests).toHaveBeenCalledTimes(3);
+		} finally {
+			worker.events.removeListener('request:start', onRequest);
+			vi.useRealTimers();
+		}
+	},
+);
+
 it('should count only active incidents without fetching incident rows', async ({worker}) => {
 	const response = createPaginatedResponse();
 	response.page.totalItems = 3;

@@ -7,6 +7,7 @@
  */
 
 import {describe, expect} from 'vitest';
+import {defaultParseSearch} from '@tanstack/react-router';
 import {it} from '#/vitest-modules/test-extend';
 import {
 	getDefaultProcessInstanceTab,
@@ -19,6 +20,42 @@ import {
 } from './processInstanceSearch';
 
 describe('hasProcessInstanceSelection', () => {
+	it.for(
+		(['elementId', 'elementInstanceKey', 'anchorElementId'] as const).flatMap((parameter) =>
+			[undefined, '', 'null', 'false', '123', 'task'].map((value) => ({parameter, value})),
+		),
+	)('should preserve legacy URL selection for $parameter=$value', ({parameter, value}) => {
+		const searchParams = new URLSearchParams();
+		if (value !== undefined) {
+			searchParams.set(parameter, value);
+		}
+		const legacyValue = searchParams.get(parameter);
+		const hasSelection = parameter !== 'anchorElementId' && Boolean(legacyValue);
+
+		const parsed = validateProcessInstanceRouteSearch(defaultParseSearch(`?${searchParams}`));
+
+		expect(parsed[parameter]).toBe(legacyValue ?? undefined);
+		expect(hasProcessInstanceSelection(parsed)).toBe(hasSelection);
+		expect(getDefaultProcessInstanceTab({hasIncident: false}, parsed)).toBe(hasSelection ? 'details' : 'variables');
+		expect(getDefaultProcessInstanceTab({hasIncident: true}, parsed)).toBe('incidents');
+	});
+
+	it('should clear selection by removing URL parameters while preserving other search context', () => {
+		const searchParams = new URLSearchParams({
+			elementId: 'task',
+			elementInstanceKey: '123',
+			customHint: 'focus',
+		});
+		searchParams.delete('elementId');
+		searchParams.delete('elementInstanceKey');
+
+		const parsed = validateProcessInstanceRouteSearch(defaultParseSearch(`?${searchParams}`));
+
+		expect(parsed).toEqual({customHint: 'focus'});
+		expect(hasProcessInstanceSelection(parsed)).toBe(false);
+		expect(getDefaultProcessInstanceTab({hasIncident: false}, parsed)).toBe('variables');
+	});
+
 	it('should validate selection values while preserving other query context', () => {
 		const search = {
 			elementId: 'task',
