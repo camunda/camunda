@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from '@playwright/test';
+import {APIRequestContext, test} from '@playwright/test';
 import {deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
@@ -28,6 +28,41 @@ import {
   resumeBatchOperation,
   suspendBatchOperation,
 } from '@requestHelpers';
+
+// Bounded suspend attempt used only by the fresh-batch retry below: unlike
+// suspendBatchOperation() (which retries a 404 for up to 240s on the
+// assumption it is just not visible yet), a 404 here can also mean the
+// batch already reached a terminal state before suspend could land -- in
+// which case waiting out the full 240s budget only delays the fresh-batch
+// retry that would actually recover. Disambiguate via the batch's own
+// state instead of guessing from elapsed time.
+async function attemptSuspendBeforeCompletion(
+  request: APIRequestContext,
+  batchOperationKey: string,
+): Promise<'accepted' | 'lost'> {
+  const deadline = Date.now() + 30_000;
+  while (Date.now() < deadline) {
+    const res = await request.post(
+      buildUrl('/batch-operations/{batchOperationKey}/suspension', {
+        batchOperationKey,
+      }),
+      {headers: jsonHeaders()},
+    );
+    if (res.status() === 204) {
+      return 'accepted';
+    }
+    if (res.status() === 404) {
+      const state = await getBatchOperationState(request, batchOperationKey);
+      if (state !== 'ACTIVE') {
+        return 'lost';
+      }
+      await sleep(2_000);
+      continue;
+    }
+    await assertStatusCode(res, 204);
+  }
+  return 'lost';
+}
 
 /* eslint-disable playwright/expect-expect */
 test.describe('Suspend & Resume Batch Operation Tests', () => {
@@ -201,8 +236,17 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
             1000,
             'batch_suspension_process',
           );
-          const res = await suspendBatchOperation(request, candidateKey);
-          await assertStatusCode(res, 204);
+
+          const suspendResult = await attemptSuspendBeforeCompletion(
+            request,
+            candidateKey,
+          );
+          if (suspendResult === 'lost') {
+            console.log(
+              `Attempt ${attempt}: batch ${candidateKey} was already terminal before suspend could land; retrying with a fresh batch.`,
+            );
+            continue;
+          }
 
           let state = await getBatchOperationState(request, candidateKey);
           const pollDeadline = Date.now() + 15_000;

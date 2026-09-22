@@ -123,12 +123,22 @@ export async function getBatchOperationState(
   request: APIRequestContext,
   batchOperationKey: string,
 ): Promise<string> {
-  const res = await request.get(
-    buildUrl('/batch-operations/{batchOperationKey}', {batchOperationKey}),
-    {headers: jsonHeaders()},
-  );
-  await assertStatusCode(res, 200);
-  return (await res.json()).state;
+  const result: {state?: string} = {};
+  await expect(async () => {
+    const res = await request.get(
+      buildUrl('/batch-operations/{batchOperationKey}', {batchOperationKey}),
+      {headers: jsonHeaders()},
+    );
+    // A freshly created batch operation can briefly 404 before the read
+    // model catches up with the write it was created from; retry through
+    // that instead of failing the caller on a transient gap.
+    await assertStatusCode(res, 200);
+    result.state = (await res.json()).state;
+  }).toPass({
+    intervals: [1_000, 2_000, 3_000, 5_000],
+    timeout: 15_000,
+  });
+  return result.state as string;
 }
 
 export async function expectBatchState(
