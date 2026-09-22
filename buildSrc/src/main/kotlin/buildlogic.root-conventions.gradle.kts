@@ -47,6 +47,7 @@ extensions.configure<SpotlessExtension> {
 
   kotlin {
     target("**/*.gradle.kts")
+    target("**/*.kt")
     targetExclude(
       "**/build/**",
       "**/target/**",
