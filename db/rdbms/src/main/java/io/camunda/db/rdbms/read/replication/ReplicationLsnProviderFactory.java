@@ -34,7 +34,7 @@ public final class ReplicationLsnProviderFactory {
       case POSTGRESQL_DATABASE_ID -> createPostgresOrAuroraProvider();
       case MYSQL_DATABASE_ID -> createMysqlAuroraProvider();
       case MSSQL_DATABASE_ID -> createMssqlProvider();
-      case ORACLE_DATABASE_ID -> new OracleReplicationLsnProvider(replicationStatusMapper);
+      case ORACLE_DATABASE_ID -> new DefaultReplicationLsnProvider(replicationStatusMapper);
       case null ->
           throw new IllegalArgumentException(
               "Cannot create ReplicationLsnProvider for null database id");

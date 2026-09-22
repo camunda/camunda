@@ -98,13 +98,6 @@
     SELECT current_scn FROM v$database
   </select>
 
-  <!-- Oracle has no equivalent of a replica-comparable "last commit time" column here, so the
-       primary's own SYSDATE is used, at the same server-local-time / second granularity the
-       MSSQL query above relies on. -->
-  <select id="getCurrentDbTime" resultType="java.lang.Long" databaseId="oracle">
-    SELECT ROUND((SYSDATE - DATE '1970-01-01') * 86400000) FROM dual
-  </select>
-
   <!--
     APPLIED_SCN is the SCN of the last redo applied by the physical or logical standby. It is an
     exact acknowledgement watermark, unlike the exclusive NEXT_CHANGE# boundary of an archived
@@ -112,9 +105,8 @@
     destinations (REMOTE); TYPE excludes local, snapshot, and far-sync destinations.
 
     Destinations without applied progress are excluded instead of being reported as caught up.
-    Timing is queried separately below because SCN_TO_TIMESTAMP is approximate and can fail when
-    the SCN-to-time mapping has expired. This query must remain sufficient for acknowledgement on
-    its own.
+    Oracle time-lag monitoring is unsupported, so this query intentionally reports only the exact
+    acknowledgement watermark.
   -->
   <select id="getReplicationStatus" resultMap="replicationLsnStatusResultMap" databaseId="oracle">
     SELECT ad.applied_scn       AS logStatus,
@@ -122,41 +114,6 @@
            CAST(NULL AS NUMBER) AS replicationLagMs,
            CAST(NULL AS NUMBER) AS replicatedUntilMs
     FROM v$archive_dest ad
-    JOIN v$archive_dest_status ads ON ads.dest_id = ad.dest_id
-    WHERE ads.type IN ('PHYSICAL', 'LOGICAL')
-      AND ads.status = 'VALID'
-      AND ad.status = 'VALID'
-      AND ad.target IN ('STANDBY', 'REMOTE')
-      AND ad.applied_scn > 0
-  </select>
-
-  <!--
-    Oracle's SCN-to-timestamp conversion is approximate and only available while the database
-    retains the mapping. These values are observability estimates, not acknowledgement watermarks.
-    OracleReplicationLsnProvider invokes this query only after the exact SCN query succeeds and
-    ignores ORA-08181 so an expired mapping cannot stop acknowledgement polling.
-  -->
-  <select id="getOracleReplicationStatusWithTiming"
-    resultMap="replicationLsnStatusResultMap" databaseId="oracle">
-    SELECT ad.applied_scn       AS logStatus,
-           TO_CHAR(ad.dest_id)  AS replicaId,
-           GREATEST(
-             0,
-             ROUND(
-               (
-                 CAST(SCN_TO_TIMESTAMP(db.current_scn) AS DATE)
-                 - CAST(SCN_TO_TIMESTAMP(ad.applied_scn) AS DATE)
-               ) * 86400000
-             )
-           )                    AS replicationLagMs,
-           ROUND(
-             (
-               CAST(SCN_TO_TIMESTAMP(ad.applied_scn) AS DATE)
-               - DATE '1970-01-01'
-             ) * 86400000
-           )                    AS replicatedUntilMs
-    FROM v$database db
-    CROSS JOIN v$archive_dest ad
     JOIN v$archive_dest_status ads ON ads.dest_id = ad.dest_id
     WHERE ads.type IN ('PHYSICAL', 'LOGICAL')
       AND ads.status = 'VALID'
