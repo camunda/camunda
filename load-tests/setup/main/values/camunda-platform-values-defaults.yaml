@@ -37,6 +37,13 @@ global:
   identity:
     auth:
       enabled: true
+      # Camunda 8.10's chart derives the public issuer URL from
+      # `keycloak.url` only when `keycloak.internal` is unset, but that
+      # fallback isn't yet in the pinned chart version. Without an explicit
+      # issuer, `authorization-uri` renders as a bare relative path and
+      # Spring's OIDC ClientRegistration fails at startup. Set it explicitly
+      # until the chart bump lands.
+      publicIssuerUrl: http://__NAMESPACE__.keycloak-operator.svc:18080/auth/realms/camunda-platform
 
     keycloak:
       auth:
