@@ -14,6 +14,8 @@ sbe {
     layout.projectDirectory.file("src/main/resources/cluster-management-protocol.xml"),
     layout.projectDirectory.file("src/main/resources/common-types.xml"),
   )
+  // SBE also emits a package-info.java for this package, which already has a hand-written one.
+  generatedFilesToDelete.add("io/camunda/zeebe/protocol/record/package-info.java")
 }
 
 // Configure SBE generation with the XML schema files directly from source resources
@@ -27,19 +29,6 @@ tasks.named<JavaExec>("generateSbe") {
       .absolutePath,
   )
 }
-
-val generatedSbePackageInfo =
-  layout.buildDirectory.file(
-    "generated-sources/sbe/io/camunda/zeebe/protocol/record/package-info.java"
-  )
-
-val deleteGeneratedSbePackageInfo =
-  tasks.register<Delete>("deleteGeneratedSbePackageInfo") {
-    dependsOn("generateSbe")
-    delete(generatedSbePackageInfo)
-  }
-
-tasks.named("compileJava") { dependsOn(deleteGeneratedSbePackageInfo) }
 
 dependencies {
   implementation(libs.org.jspecify.jspecify)
