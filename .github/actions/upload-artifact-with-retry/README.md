@@ -31,13 +31,14 @@ Retries in a workflow are normally shell-command-only
 
 ### Inputs
 
-|        Input         |                         Description                          | Required | Default |
-|----------------------|--------------------------------------------------------------|----------|---------|
-| name                 | Artifact name                                                | true     |         |
-| path                 | File, directory or wildcard pattern to upload                | true     |         |
-| retention-days       | Days to keep the artifact; empty uses the repository default | false    | `""`    |
-| include-hidden-files | Whether to include hidden files under `path`                 | false    | `false` |
-| if-no-files-found    | `warn`, `error` or `ignore`                                  | false    | `warn`  |
+|        Input         |                             Description                             | Required | Default |
+|----------------------|---------------------------------------------------------------------|----------|---------|
+| name                 | Artifact name                                                       | true     |         |
+| path                 | File, directory or wildcard pattern to upload                       | true     |         |
+| retention-days       | Days to keep the artifact; empty uses the repository default        | false    | `""`    |
+| include-hidden-files | Whether to include hidden files under `path`                        | false    | `false` |
+| if-no-files-found    | `warn`, `error` or `ignore`                                         | false    | `warn`  |
+| compression-level    | Zlib level 0-9; `0` skips compression, for already-compressed input | false    | `6`     |
 
 ### Outputs
 
