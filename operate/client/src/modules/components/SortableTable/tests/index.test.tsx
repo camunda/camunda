@@ -65,4 +65,37 @@ describe('SortableTable', () => {
       secondRow!.id,
     );
   });
+
+  it('should not render expanded content while a row is collapsed', async () => {
+    const [firstRow] = mockProps.rows;
+
+    const {user} = render(
+      <SortableTable
+        {...mockProps}
+        state="content"
+        isExpandable
+        expandedContent={{
+          [firstRow!.id]: <button>expanded action</button>,
+        }}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    // then a collapsed row keeps its expanded content out of the accessibility
+    // tree, because Carbon only collapses that row to zero height, which would
+    // otherwise leave the content invisible but still focusable
+    expect(
+      screen.queryByRole('button', {name: 'expanded action'}),
+    ).not.toBeInTheDocument();
+
+    // when the row is expanded
+    await user.click(
+      screen.getAllByRole('button', {name: /expand current row/i})[0]!,
+    );
+
+    // then its content becomes available
+    expect(
+      screen.getByRole('button', {name: 'expanded action'}),
+    ).toBeInTheDocument();
+  });
 });
