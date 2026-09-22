@@ -9,7 +9,6 @@ metadata:
     camunda.io/purpose: load-test
 spec:
   version: 8.18.0
-
   nodeSets:
   - config:
       # Disable mmap for compatibility with containers that lack the required vm.max_map_count sysctl
@@ -33,7 +32,7 @@ spec:
     podTemplate:
       metadata:
         labels:
-          app.kubernetes.io/component: master
+          app.kubernetes.io/component: masters
           app.kubernetes.io/name: elasticsearch
           camunda.io/created-by: "golden-test"
           camunda.io/purpose: load-test

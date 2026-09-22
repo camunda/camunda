@@ -267,6 +267,9 @@ data:
     # Enable execution metrics exporter to be able to see the execution metrics, like process instance and job completion times
     zeebe.broker.executionMetricsExporterEnabled: "true"
     camunda.flags.jfr.metrics: "true"
+    # The Keycloak operator runs in a separate namespace. Use an absolute URI
+    # so physical-tenant scoped security chains can initialize the client registration.
+    camunda.security.authentication.oidc.authorization-uri: "http://c8-golden-main-elasticsearch.keycloak-operator.svc:18080/auth/realms/camunda-platform/protocol/openid-connect/auth"
     # Define when the broker should start to reject requests when the disk is almost full, for both processing and replication.
     zeebe.broker.data.disk.freeSpace.processing: "3GB"
     zeebe.broker.data.disk.freeSpace.replication: "2GB"

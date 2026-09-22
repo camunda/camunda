@@ -127,6 +127,11 @@ elasticsearch:
   # -- Number of Elasticsearch nodes in the cluster.
   count: 3
 
+  # -- Optional dedicated master/data topology. When both values are greater than zero,
+  # -- `count` is ignored and two node sets are rendered.
+  masterCount: 0
+  dataCount: 0
+
   # -- Environment variables injected into the Elasticsearch container.
   # Use ES_JAVA_OPTS to tune JVM heap size relative to the container memory limit.
   # See https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s/manage-compute-resources#k8s-elasticsearch-memory

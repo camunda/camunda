@@ -19,7 +19,15 @@ metadata:
 spec:
   version: {{ .Values.elasticsearch.version }}
 
+  {{- $nodeSets := list (dict "name" "masters" "count" .Values.elasticsearch.count) }}
+  {{- $root := . }}
+  {{- if and (gt (int .Values.elasticsearch.masterCount) 0) (gt (int .Values.elasticsearch.dataCount) 0) }}
+  {{- $nodeSets = list
+        (dict "name" "masters" "count" .Values.elasticsearch.masterCount "roles" (list "master"))
+        (dict "name" "data" "count" .Values.elasticsearch.dataCount "roles" (list "data" "ingest" "remote_cluster_client")) }}
+  {{- end }}
   nodeSets:
+  {{- range $nodeSet := $nodeSets }}
   - config:
       # Disable mmap for compatibility with containers that lack the required vm.max_map_count sysctl
       node.store.allow_mmap: "false"
@@ -36,35 +44,39 @@ spec:
           username: anonymous
           roles: superuser
 
-    count: {{ .Values.elasticsearch.count }}
-    name: masters
+      {{- with $nodeSet.roles }}
+      node.roles: {{ toJson . }}
+      {{- end }}
+
+    count: {{ $nodeSet.count }}
+    name: {{ $nodeSet.name }}
 
     podTemplate:
       metadata:
         labels:
-          app.kubernetes.io/component: master
+          app.kubernetes.io/component: {{ $nodeSet.name }}
           app.kubernetes.io/name: elasticsearch
-          camunda.io/created-by: "{{ .Values.author }}"
+          camunda.io/created-by: "{{ $root.Values.author }}"
           camunda.io/purpose: load-test
 
       spec:
         containers:
         - name: elasticsearch
-          {{- if .Values.elasticsearch.env }}
+          {{- if $root.Values.elasticsearch.env }}
           env:
-          {{- toYaml .Values.elasticsearch.env | nindent 12 }}
+          {{- toYaml $root.Values.elasticsearch.env | nindent 12 }}
           {{- end }}
 
-          {{- if .Values.elasticsearch.resources }}
+          {{- if $root.Values.elasticsearch.resources }}
           resources:
-          {{- toYaml .Values.elasticsearch.resources | nindent 12 }}
+          {{- toYaml $root.Values.elasticsearch.resources | nindent 12 }}
           {{- end }}
 
         nodeSelector:
-          topology.kubernetes.io/zone: "{{ .Values.topologyZone }}"
-          {{- toYaml .Values.elasticsearch.nodeSelector | nindent 10 }}
+          topology.kubernetes.io/zone: "{{ $root.Values.topologyZone }}"
+          {{- toYaml $root.Values.elasticsearch.nodeSelector | nindent 10 }}
 
-        {{- with .Values.elasticsearch.tolerations }}
+        {{- with $root.Values.elasticsearch.tolerations }}
         tolerations:
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -73,11 +85,12 @@ spec:
     - metadata:
         name: elasticsearch-data
       spec:
-        storageClassName: {{ .Values.elasticsearch.storage.storageClassName }}
+        storageClassName: {{ $root.Values.elasticsearch.storage.storageClassName }}
         accessModes: [ReadWriteOnce]
         resources:
           requests:
-            storage: {{ .Values.elasticsearch.storage.requests }}
+            storage: {{ $root.Values.elasticsearch.storage.requests }}
+  {{- end }}
 
   http:
     tls:

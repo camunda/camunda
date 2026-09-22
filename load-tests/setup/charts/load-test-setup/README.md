@@ -52,6 +52,18 @@ prometheus-elasticsearch-exporter:
 
 If you deploy Elasticsearch or OpenSearch, you most likely want to enable the exporter so Prometheus can scrape metrics from it.
 
+### Dedicated Elasticsearch master and data nodes
+
+Set both `elasticsearch.masterCount` and `elasticsearch.dataCount` to values greater than zero
+to render a master-only node set and a data/ingest/remote-client node set. In this mode,
+`elasticsearch.count` is ignored:
+
+```sh
+make install additional_load_test_setup_configuration="\
+  --set elasticsearch.masterCount=3 \
+  --set elasticsearch.dataCount=12"
+```
+
 ## Keycloak
 
 ### Keycloak instance
@@ -198,4 +210,3 @@ routes through it.
 ### Connection monitoring
 
 `PodMonitor`s are wired automatically for the Cluster's and (when enabled) the Pooler's own connection metrics — no separate toggle.
-
