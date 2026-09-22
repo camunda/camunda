@@ -16,19 +16,30 @@ public class TestTemplateDescriptor extends AbstractTemplateDescriptor {
   private String mappingsClasspathFilename;
 
   private final String indexName;
+  private final boolean hasCustomSettings;
+
+  public TestTemplateDescriptor(
+      final String indexPrefix,
+      final boolean isElasticsearch,
+      final String indexName,
+      final String mappingsClasspathFilename,
+      final boolean hasCustomSettings) {
+    super(indexPrefix, isElasticsearch);
+    this.indexName = indexName;
+    this.mappingsClasspathFilename = mappingsClasspathFilename;
+    this.hasCustomSettings = hasCustomSettings;
+  }
 
   public TestTemplateDescriptor(
       final String indexPrefix,
       final boolean isElasticsearch,
       final String indexName,
       final String mappingsClasspathFilename) {
-    super(indexPrefix, isElasticsearch);
-    this.indexName = indexName;
-    this.mappingsClasspathFilename = mappingsClasspathFilename;
+    this(indexPrefix, isElasticsearch, indexName, mappingsClasspathFilename, false);
   }
 
   public TestTemplateDescriptor(final String indexName, final String mappingsClasspathFilename) {
-    this(CONFIG_PREFIX, true, indexName, mappingsClasspathFilename);
+    this(CONFIG_PREFIX, true, indexName, mappingsClasspathFilename, false);
   }
 
   @Override
@@ -48,5 +59,10 @@ public class TestTemplateDescriptor extends AbstractTemplateDescriptor {
 
   public void setMappingsClasspathFilename(final String mappingsClasspathFilename) {
     this.mappingsClasspathFilename = mappingsClasspathFilename;
+  }
+
+  @Override
+  public boolean hasCustomSettings() {
+    return hasCustomSettings;
   }
 }
