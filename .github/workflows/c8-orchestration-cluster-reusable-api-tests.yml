@@ -288,42 +288,46 @@ jobs:
           safe_branch="${branch//\//-}"
           echo "safe_branch=$safe_branch" >> "$GITHUB_OUTPUT"
 
+      # actions/upload-artifact's FinalizeArtifact call can be rejected with a
+      # non-retryable 403 from GitHub's own artifact-storage intermediary
+      # (INC-7913); that leaves an otherwise-green nightly run marked failed.
+      # upload-artifact-with-retry absorbs that blip instead of failing the job.
       - name: Upload json report to GitHub Actions Artifacts
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: json-report-nightly-api-${{ steps.sanitize.outputs.safe_branch }}-${{ inputs.camunda_mode }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
-          retention-days: 60
+          retention-days: "60"
 
       # test-results/ holds the per-test Playwright trace.zip (retain-on-failure).
       # The trace captures the request/response body, which json-report omits;
       # nightly triage needs it to tell a request-shape/test bug from a product bug.
       - name: Upload HTML report to GitHub Actions Artifacts
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: html-report-nightly-api-${{ steps.sanitize.outputs.safe_branch }}-${{ inputs.camunda_mode }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/html-report/**
-          retention-days: 60
+          retention-days: "60"
 
       - name: Upload Playwright traces to GitHub Actions Artifacts
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: test-results-nightly-api-${{ steps.sanitize.outputs.safe_branch }}-${{ inputs.camunda_mode }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/test-results/**
           if-no-files-found: ignore
-          retention-days: 5
+          retention-days: "5"
 
       - name: Upload container logs to GitHub Actions Artifacts
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: container-logs-nightly-api-${{ steps.sanitize.outputs.safe_branch }}-${{ inputs.camunda_mode }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/config/container-logs/**
           if-no-files-found: warn
-          retention-days: 5
+          retention-days: "5"
 
       - name: Observe build status
         if: always()
