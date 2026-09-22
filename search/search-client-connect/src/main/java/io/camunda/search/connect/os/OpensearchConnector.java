@@ -16,10 +16,12 @@ import io.camunda.search.connect.jackson.JacksonConfiguration;
 import io.camunda.search.connect.os.json.SearchRequestJacksonJsonpMapperWrapper;
 import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.search.connect.util.SecurityUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Optional;
 import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -48,6 +50,10 @@ import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 public final class OpensearchConnector {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchConnector.class);
+
+  private static final int DEFAULT_CONNECT_REQUEST_TIMEOUT_MILLIS = 180_000;
+  private static final int DEFAULT_CONNECT_TIMEOUT_MILLIS = 5_000;
+  private static final int DEFAULT_SOCKET_TIMEOUT_MILLIS = 30_000;
 
   private final ConnectConfiguration configuration;
   private final ObjectMapper objectMapper;
@@ -182,6 +188,7 @@ public final class OpensearchConnector {
     return new HttpHost[] {getHttpHost(osConfig)};
   }
 
+  @VisibleForTesting
   protected HttpAsyncClientBuilder configureHttpClient(
       final HttpAsyncClientBuilder httpAsyncClientBuilder,
       final ConnectConfiguration osConfig,
@@ -204,15 +211,23 @@ public final class OpensearchConnector {
     return httpAsyncClientBuilder;
   }
 
-  private RequestConfig.Builder setTimeouts(
+  @VisibleForTesting
+  protected RequestConfig.Builder setTimeouts(
       final RequestConfig.Builder builder, final ConnectConfiguration os) {
-    if (os.getSocketTimeout() != null) {
-      // builder.setSocketTimeout(os.getSocketTimeout());
-      builder.setResponseTimeout(Timeout.ofMilliseconds(os.getSocketTimeout()));
-    }
-    if (os.getConnectTimeout() != null) {
-      builder.setConnectTimeout(Timeout.ofMilliseconds(os.getConnectTimeout()));
-    }
+    // ensure we have default timeouts - as otherwise timeouts are infinite
+    final var socketTimeoutMillis =
+        Optional.ofNullable(os.getSocketTimeout()).orElse(DEFAULT_SOCKET_TIMEOUT_MILLIS);
+    builder.setResponseTimeout(Timeout.ofMilliseconds(socketTimeoutMillis));
+
+    final var connectTimeoutMillis =
+        Optional.ofNullable(os.getConnectTimeout()).orElse(DEFAULT_CONNECT_TIMEOUT_MILLIS);
+    builder.setConnectTimeout(Timeout.ofMilliseconds(connectTimeoutMillis));
+
+    // this already gets set, but making it more explicit, so it's more visible and we can easily
+    // tune it later
+    builder.setConnectionRequestTimeout(
+        Timeout.ofMilliseconds(DEFAULT_CONNECT_REQUEST_TIMEOUT_MILLIS));
+
     return builder;
   }
 
