@@ -8,6 +8,7 @@
 
 import {Page, Locator, expect} from '@playwright/test';
 import {waitForAssertion} from 'utils/waitForAssertion';
+import {sleep} from 'utils/sleep';
 
 export type TaskCard = {
   readonly name: string;
@@ -37,10 +38,36 @@ class TaskPanelPage {
 
   async openTask(name: string, options: {timeout?: number} = {}) {
     const timeout = options.timeout ?? 10000;
-    await this.availableTasks
-      .getByText(name, {exact: true})
-      .nth(0)
-      .click({timeout});
+    const task = this.availableTasks.getByText(name, {exact: true}).nth(0);
+    await this.scrollUntilTaskRendered(task, timeout);
+    await task.click({timeout});
+  }
+
+  /**
+   * The available-tasks list is virtualized (@tanstack/react-virtual), so a
+   * task outside the currently rendered window doesn't exist in the DOM at
+   * all — no amount of waiting brings it in. Scroll the list container down
+   * incrementally until the task mounts, or give up after `timeout`.
+   */
+  private async scrollUntilTaskRendered(
+    task: Locator,
+    timeout: number,
+  ): Promise<void> {
+    const scrollableList = this.page.getByTestId('scrollable-list');
+    const deadline = Date.now() + timeout;
+
+    while (Date.now() < deadline) {
+      if ((await task.count()) > 0) {
+        return;
+      }
+      if ((await scrollableList.count()) === 0) {
+        return;
+      }
+      await scrollableList.evaluate((element) =>
+        element.scrollBy(0, element.clientHeight),
+      );
+      await sleep(200);
+    }
   }
 
   async filterBy(
