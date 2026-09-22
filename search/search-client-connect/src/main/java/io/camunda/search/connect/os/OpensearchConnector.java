@@ -131,6 +131,7 @@ public final class OpensearchConnector {
 
   protected HttpAsyncClientBuilder configureHttpClient(
       final HttpAsyncClientBuilder httpAsyncClientBuilder, final ConnectConfiguration osConfig) {
+    httpAsyncClientBuilder.disableContentCompression();
     setupAuthentication(httpAsyncClientBuilder, osConfig);
     if (osConfig.getSecurity() != null && osConfig.getSecurity().isEnabled()) {
       setupSSLContext(httpAsyncClientBuilder, osConfig.getSecurity());
