@@ -24,9 +24,13 @@ import {PageLayout} from '@camunda/design-system';
 
 type FileRouteTypes = RegisteredRouter['routeTree']['types']['fileRouteTypes'];
 
+// 'operate' points at /operate-preview while the Dashboard's DS port is in progress —
+// no /_shadcn/_auth/operate route exists yet, so this repoints nav highlighting to the
+// migration-time leaf. Revert to '/operate' at cutover, once that leaf is renamed.
+// See docs/migration/operate-dashboard-tiering.md.
 const APP_ROUTES = [
 	{app: 'tasklist', to: '/tasklist'},
-	{app: 'operate', to: '/operate'},
+	{app: 'operate', to: '/operate-preview'},
 	{app: 'admin', to: '/admin'},
 ] as const satisfies ReadonlyArray<{app: CurrentApp; to: FileRouteTypes['to']}>;
 

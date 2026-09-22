@@ -148,4 +148,64 @@ describe('<Header /> (V2)', () => {
 		await expect.element(screen.getByRole('link', {name: 'Processes'})).toHaveAttribute('aria-current', 'page');
 		await expect.element(screen.getByRole('link', {name: 'Tasks'})).not.toHaveAttribute('aria-current');
 	});
+
+	it('should render Operate sidebar items with the Dashboard link pointing at the preview route', async ({worker}) => {
+		worker.use(
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
+			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
+		);
+
+		const screen = await renderWithRouter(
+			() => (
+				<Header currentApp="operate" initialSaasToken={null}>
+					Page content
+				</Header>
+			),
+			{path: '/operate-preview'},
+		);
+
+		await expect.element(screen.getByRole('link', {name: 'Dashboard'})).toHaveAttribute('href', '/operate-preview');
+		await expect.element(screen.getByRole('link', {name: 'Processes'})).toHaveAttribute('href', '/operate/processes');
+		await expect.element(screen.getByRole('link', {name: 'Decisions'})).toHaveAttribute('href', '/operate/decisions');
+	});
+
+	it('should hide the Operate sidebar items if the application is unauthorized', async ({worker}) => {
+		worker.use(
+			mockCurrentUserEndpoint({
+				successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: []})),
+			}),
+			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
+		);
+
+		const screen = await renderWithRouter(
+			() => (
+				<Header currentApp="operate" initialSaasToken={null}>
+					Page content
+				</Header>
+			),
+			{path: '/operate-preview'},
+		);
+
+		await expect.element(screen.getByRole('link', {name: 'Dashboard'})).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('link', {name: 'Processes'})).not.toBeInTheDocument();
+	});
+
+	it('should mark Dashboard as active on the preview route', async ({worker}) => {
+		worker.use(
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
+			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
+		);
+
+		const screen = await renderWithRouter(
+			() => (
+				<Header currentApp="operate" initialSaasToken={null}>
+					Page content
+				</Header>
+			),
+			{path: '/operate-preview'},
+		);
+
+		await expect.element(screen.getByRole('link', {name: 'Dashboard'})).toHaveAttribute('aria-current', 'page');
+		await expect.element(screen.getByRole('link', {name: 'Processes'})).not.toHaveAttribute('aria-current');
+	});
 });
