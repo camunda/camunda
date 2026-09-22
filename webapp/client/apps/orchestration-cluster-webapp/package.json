@@ -77,7 +77,7 @@
 		"@tanstack/devtools-vite": "0.8.5",
 		"@tanstack/react-devtools": "0.10.12",
 		"@types/lodash": "4.17.25",
-		"@types/node": "26.6.1",
+		"@types/node": "26.6.2",
 		"@types/react": "19.3.0",
 		"@types/react-dom": "19.3.0",
 		"@types/react-transition-group": "4.4.12",
