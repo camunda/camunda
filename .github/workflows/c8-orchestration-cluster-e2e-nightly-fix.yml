@@ -61,12 +61,24 @@ jobs:
   fix:
     name: Fix nightly failures (${{ github.event.inputs.version }})
     runs-on: ubuntu-latest
-    # 90 (not 60): the Live Docker Verify loop (AGENTS.md) can build a full
+    # 100 (not 60): the Live Docker Verify loop (AGENTS.md) can build a full
     # Camunda distribution from source for RDBMS-flagged failures, mirroring
     # c8-orchestration-cluster-e2e-tests-on-demand.yml's own H2/RDBMS job.
-    timeout-minutes: 90
+    # Raised from 90 after run 35684370785 (2026-09-22) hit that ceiling with
+    # real, uncommitted progress still in flight.
+    timeout-minutes: 100
 
     steps:
+      - name: Record job start time
+        # Deliberately the very first step: timeout-minutes above counts from
+        # job start, not from when the "Run Claude Code fix agent" step
+        # happens to begin. Anchoring the agent's self-imposed deadline to
+        # this epoch (rather than a fresh $(date) taken inside that later
+        # step) keeps its safety margin accurate even if checkout/Vault/
+        # token/Go/npm/workspace setup ends up taking longer than usual.
+        id: job_start
+        run: echo "epoch=$(date -u +%s)" >> "$GITHUB_OUTPUT"
+
       - name: Resolve target branch
         id: target
         env:
@@ -199,7 +211,7 @@ jobs:
           name="fix-oc-${VERSION}-$(date -u +%Y%m%d-%H%M)-${GITHUB_RUN_ID}"
           echo "name=${name}" >> "$GITHUB_OUTPUT"
 
-      - name: Stage workspace manifest
+      - name: Stage workspace manifest and agent manual from main
         run: |
           set -euo pipefail
           mkdir -p "$HOME/.workspace-templates"
@@ -208,6 +220,14 @@ jobs:
             > "$HOME/.workspace-templates/camunda-orchestration-cluster-nightly.yaml"
           git show origin/main:qa/c8-orchestration-cluster-e2e-test-suite/workspace-templates/camunda-orchestration-cluster-nightly.guidance.md \
             > "$HOME/.workspace-templates/camunda-orchestration-cluster-nightly.guidance.md"
+          # The agent manual (Time Budget rules, diagnosis steps, constraints) is
+          # kept up to date on main only. ws_dir gets checked out to the target
+          # stable/<version> branch below, which can carry an older or missing
+          # AGENTS.md, so stage main's copy separately rather than reading it out
+          # of ws_dir -- same pattern c8-orchestration-cluster-unskip-verify.yml
+          # uses for the same reason.
+          git show origin/main:qa/c8-orchestration-cluster-e2e-test-suite/AGENTS.md \
+            > /tmp/nightly-fix-agent-manual.md
 
       - name: Create workspace
         run: |
@@ -259,12 +279,35 @@ jobs:
           HAS_API_RDBMS:       ${{ steps.scope.outputs.has_api_rdbms }}
           REPO:                ${{ github.repository }}
           WORKSPACE_NAME:      ${{ steps.ws.outputs.name }}
+          JOB_START_EPOCH:     ${{ steps.job_start.outputs.epoch }}
+          # Minutes from JOB start (not from this step's own start) at which the
+          # agent should self-stop, comfortably under the job's 100-minute
+          # timeout-minutes above -- keep these two numbers' 15-minute gap in
+          # sync if either changes. Anchoring to job start (captured by the
+          # "Record job start time" step) rather than a fresh $(date) taken
+          # here matters: checkout/Vault/token/Go/npm/workspace setup above
+          # this step is usually ~2 minutes but isn't guaranteed to be, and a
+          # deadline measured from *this* step's start would silently lose
+          # its safety margin -- or go negative -- if setup ever ran long.
+          AGENT_DEADLINE_MINUTES_FROM_JOB_START: 85
         run: |
           set -euo pipefail
           ws_dir="$HOME/workspaces/${WORKSPACE_NAME}/camunda"
 
           # Pre-create artifact dirs so Claude does not need to mkdir
           mkdir -p /tmp/nightly-artifacts
+
+          # Seed /tmp/fix-meta.json deterministically before Claude ever runs. The
+          # agent's own first action (AGENTS.md's mandatory initial checkpoint)
+          # writes this same shape and immediately supersedes it -- this seed is
+          # the floor for the case that mandatory-first-action rule can't cover:
+          # the CLI process crashing, failing to authenticate, or being killed
+          # before it completes its first tool call. Without this, that case
+          # leaves no fix-meta.json at all and post-processing loses every
+          # dispatched entry instead of just reporting them unaddressed.
+          jq -n --slurpfile specs /tmp/test_specs.json '{"prs": [], "unaddressed": $specs[0]}' \
+            > /tmp/fix-meta.json.tmp
+          mv /tmp/fix-meta.json.tmp /tmp/fix-meta.json
 
           # The prompt is deliberately terse: all diagnosis steps, artifact-download
           # patterns, PR rules, and constraints live in AGENTS.md (which Claude must
@@ -280,15 +323,29 @@ jobs:
             agents_section="## Nightly Fix Agent"
           fi
 
+          deadline_epoch=$((JOB_START_EPOCH + AGENT_DEADLINE_MINUTES_FROM_JOB_START * 60))
+
           prompt=$(cat <<EOF
           You are the Camunda orchestration-cluster nightly fix agent.
           Workspace: ${ws_dir} (already on branch ${TARGET_REF}).
 
-          STEP 0 — read ${ws_dir}/qa/c8-orchestration-cluster-e2e-test-suite/AGENTS.md,
-          the "${agents_section}" section. That file is your full operating manual:
-          diagnosis steps, artifact-download patterns, constraints (no test.skip()/test.fixme()
-          EXCEPT the gated product-bug skip described below and in Product-Bug Escalation),
-          PR conventions, and the /tmp/fix-meta.json schema.
+          STEP 0 — read /tmp/nightly-fix-agent-manual.md, the "${agents_section}" section.
+          That file is your full operating manual: diagnosis steps, artifact-download patterns,
+          constraints (no test.skip()/test.fixme() EXCEPT the gated product-bug skip described
+          below and in Product-Bug Escalation), PR conventions, and the /tmp/fix-meta.json
+          schema. It is main's copy of the suite AGENTS.md — authoritative even when
+          ${TARGET_REF} carries an older or missing AGENTS.md.
+
+          TIME BUDGET: your deadline is unix epoch ${deadline_epoch} -- this is YOUR voluntary
+          stop point, not the job's actual hard cutoff (which lands later; the gap between the
+          two is intentional safety margin, already baked into this number, so don't add more).
+          Treat your deadline as if it were the real wall anyway: once the job's actual timeout
+          hits, this step is hard-cancelled with no signal you can catch and no chance to write
+          anything, so stopping yourself at your own deadline first is the only way any
+          checkpoint survives. Follow the "## Time Budget and Incremental Checkpointing" section
+          in AGENTS.md (applies regardless of which agent section above you're following):
+          checkpoint /tmp/fix-meta.json as you go rather than only once at the very end, and
+          stop starting new root-cause groups once your deadline is close.
 
           /tmp/test_specs.json contains the failures to address ($(jq 'length' /tmp/test_specs.json) entries).
           $(if [ "$test_spec_count" -gt 0 ]; then
@@ -552,6 +609,20 @@ jobs:
                   else "- \(.)" end' \
                   /tmp/fix-meta.json || true
               fi
+
+              # Entries the agent never got to triaging at all -- shown regardless
+              # of whether any PR was also opened, so a partial run's gaps are
+              # visible instead of silently waiting a day for the next triage
+              # cycle to rediscover them. Worded neutrally: unaddressed just means
+              # "not yet triaged", not specifically "ran out of time budget" --
+              # the agent could also have stopped early for an unrelated reason.
+              unaddressed_count=$(jq '.unaddressed // [] | length' /tmp/fix-meta.json 2>/dev/null || echo 0)
+              if [ "$unaddressed_count" -gt 0 ]; then
+                echo ""
+                echo "### :hourglass_flowing_sand: Not triaged: ${unaddressed_count}"
+                echo ""
+                jq -r '.unaddressed[] | "- `\(.file // "")` — \(.test_name // "")"' /tmp/fix-meta.json || true
+              fi
             fi
 
             if [ -n "${TRIAGE_RUN_URL:-}" ]; then
@@ -597,6 +668,7 @@ jobs:
           fi
           pr_count=$(echo "$prs_json" | jq 'length')
           pb_count=$(echo "$pbugs_json" | jq 'length')
+          unaddressed_count=$( [ -f /tmp/fix-meta.json ] && jq '.unaddressed // [] | length' /tmp/fix-meta.json 2>/dev/null || echo 0)
 
           # One bullet per outcome, each carrying its findings (issue link, repo,
           # root cause, suspected commit/PR).
@@ -652,6 +724,15 @@ jobs:
             icon=":question:"; summary="Could not determine a fix — manual investigation required"
           else
             icon=":warning:"; summary="No fix applied — manual investigation required"
+          fi
+
+          # Surfaced regardless of which branch above set the summary -- a run
+          # that opened PRs can still have left other dispatched entries
+          # completely untriaged. Worded neutrally: this could be a spent time
+          # budget, but could equally be an unrelated early stop -- the field
+          # itself doesn't record which, so don't assert a specific cause.
+          if [ "$unaddressed_count" -gt 0 ]; then
+            summary="${summary}"$'\n'"• :hourglass_flowing_sand: ${unaddressed_count} test(s) not triaged — see job summary"
           fi
 
           text="${icon} *${VERSION}* fix agent — ${summary}"$'\n'"<${RUN_URL}|Agent run ↗>"
