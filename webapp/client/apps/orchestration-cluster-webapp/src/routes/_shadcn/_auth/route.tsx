@@ -10,6 +10,7 @@ import {createFileRoute, Outlet, redirect, useMatchRoute, type RegisteredRouter}
 import {useSessionHeartbeat} from '@camunda/session-heartbeat/react';
 import {SessionWatcher} from '#/shared/auth/shadcn.components/SessionWatcher';
 import {authenticationStore} from '#/shared/auth/authentication.store';
+import {resolveLoginRedirect} from '#/shared/auth/resolveLoginRedirect';
 import {endpoints} from '#/shared/http/endpoints';
 import {getCsrfTokenFromStorage} from '#/shared/http/request';
 import {queries} from '#/shared/http/queries';
@@ -47,12 +48,8 @@ export const Route = createFileRoute('/_shadcn/_auth')({
 		} catch {
 			queryClient.cancelQueries();
 			queryClient.clear();
-			const isTasklistIndex = location.href === '/tasklist';
 
-			throw redirect({
-				to: '/tasklist/login',
-				search: isTasklistIndex ? {} : {redirect: location.href},
-			});
+			throw redirect(resolveLoginRedirect(location));
 		}
 	},
 	loader: async () => {
