@@ -7,11 +7,10 @@
  */
 package io.camunda.configuration.beanoverrides;
 
-import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.exporter.api.ExporterConfigMerger;
 import io.camunda.zeebe.exporter.api.ExporterConfigMerger.ExporterIsolationClaim;
@@ -24,7 +23,7 @@ import org.junit.jupiter.api.Test;
 final class ExporterIsolationValidationTest {
 
   @Test
-  void shouldNotFailWhenExportersClaimDistinctResources() {
+  void shouldFindNoCollisionWhenExportersClaimDistinctResources() {
     // given
     final Map<String, ExporterCfg> exporters = new LinkedHashMap<>();
     exporters.put("elasticsearch", exporterCfg("io.camunda.zeebe.exporter.ElasticsearchExporter"));
@@ -39,13 +38,16 @@ final class ExporterIsolationValidationTest {
                 "io.camunda.exporter.CamundaExporter",
                 claim("index-write-target", Map.of("prefix", "operate-record"))));
 
-    // when - then
-    assertThatCode(() -> ExporterIsolationValidation.validate(exporters, new Camunda(), mergers))
-        .doesNotThrowAnyException();
+    // when
+    final List<String> collisions =
+        ExporterIsolationValidation.collisions(exporters, new Camunda(), mergers);
+
+    // then
+    assertThat(collisions).isEmpty();
   }
 
   @Test
-  void shouldFailWhenTwoExportersClaimTheSameResource() {
+  void shouldFindCollisionWhenTwoExportersClaimTheSameResource() {
     // given
     final Map<String, ExporterCfg> exporters = new LinkedHashMap<>();
     exporters.put("elasticsearch", exporterCfg("io.camunda.zeebe.exporter.ElasticsearchExporter"));
@@ -60,11 +62,14 @@ final class ExporterIsolationValidationTest {
                 "io.camunda.exporter.CamundaExporter",
                 claim("index-write-target", Map.of("prefix", "zeebe-record"))));
 
-    // when - then
-    assertThatCode(() -> ExporterIsolationValidation.validate(exporters, new Camunda(), mergers))
-        .isInstanceOf(UnifiedConfigurationException.class)
-        .hasMessageContaining("elasticsearch")
-        .hasMessageContaining("camundaexporter");
+    // when
+    final List<String> collisions =
+        ExporterIsolationValidation.collisions(exporters, new Camunda(), mergers);
+
+    // then
+    assertThat(collisions)
+        .singleElement()
+        .satisfies(c -> assertThat(c).contains("elasticsearch").contains("camundaexporter"));
   }
 
   @Test
@@ -80,13 +85,16 @@ final class ExporterIsolationValidationTest {
                 "io.camunda.exporter.CamundaExporter",
                 claim("index-write-target", Map.of("prefix", "operate-record"))));
 
-    // when - then
-    assertThatCode(() -> ExporterIsolationValidation.validate(exporters, new Camunda(), mergers))
-        .doesNotThrowAnyException();
+    // when
+    final List<String> collisions =
+        ExporterIsolationValidation.collisions(exporters, new Camunda(), mergers);
+
+    // then
+    assertThat(collisions).isEmpty();
   }
 
   @Test
-  void shouldFailWhenGenericExporterSharesLifecyclePolicyWithSecondaryStorage() {
+  void shouldFindCollisionWhenGenericExporterSharesLifecyclePolicyWithSecondaryStorage() {
     // given
     final Camunda camunda = new Camunda();
     camunda.getData().getSecondaryStorage().setType(SecondaryStorageType.elasticsearch);
@@ -111,15 +119,19 @@ final class ExporterIsolationValidationTest {
                         "policyName",
                         policyName))));
 
-    // when - then
-    assertThatCode(() -> ExporterIsolationValidation.validate(exporters, camunda, mergers))
-        .isInstanceOf(UnifiedConfigurationException.class)
-        .hasMessageContaining("elasticsearch")
-        .hasMessageContaining("secondary-storage");
+    // when
+    final List<String> collisions =
+        ExporterIsolationValidation.collisions(exporters, camunda, mergers);
+
+    // then
+    assertThat(collisions)
+        .singleElement()
+        .satisfies(c -> assertThat(c).contains("elasticsearch").contains("secondary-storage"));
   }
 
   @Test
-  void shouldFailWhenGenericExporterSharesUsageMetricsLifecyclePolicyWithSecondaryStorage() {
+  void
+      shouldFindCollisionWhenGenericExporterSharesUsageMetricsLifecyclePolicyWithSecondaryStorage() {
     // given
     final Camunda camunda = new Camunda();
     camunda.getData().getSecondaryStorage().setType(SecondaryStorageType.elasticsearch);
@@ -149,15 +161,18 @@ final class ExporterIsolationValidationTest {
                         "policyName",
                         usageMetricsPolicyName))));
 
-    // when - then
-    assertThatCode(() -> ExporterIsolationValidation.validate(exporters, camunda, mergers))
-        .isInstanceOf(UnifiedConfigurationException.class)
-        .hasMessageContaining("elasticsearch")
-        .hasMessageContaining("secondary-storage");
+    // when
+    final List<String> collisions =
+        ExporterIsolationValidation.collisions(exporters, camunda, mergers);
+
+    // then
+    assertThat(collisions)
+        .singleElement()
+        .satisfies(c -> assertThat(c).contains("elasticsearch").contains("secondary-storage"));
   }
 
   @Test
-  void shouldFailWhenExporterNamedSecondaryStorageSharesItsLifecyclePolicy() {
+  void shouldFindCollisionWhenExporterNamedSecondaryStorageSharesItsLifecyclePolicy() {
     // given - an exporter id that collides, string-for-string, with the synthetic secondary
     // storage owner: this must not be mistaken for the same owner and skip the check
     final Camunda camunda = new Camunda();
@@ -184,13 +199,16 @@ final class ExporterIsolationValidationTest {
                         "policyName",
                         policyName))));
 
-    // when - then
-    assertThatCode(() -> ExporterIsolationValidation.validate(exporters, camunda, mergers))
-        .isInstanceOf(UnifiedConfigurationException.class);
+    // when
+    final List<String> collisions =
+        ExporterIsolationValidation.collisions(exporters, camunda, mergers);
+
+    // then
+    assertThat(collisions).singleElement();
   }
 
   @Test
-  void shouldNotFailWhenSecondaryStorageRetentionIsDisabled() {
+  void shouldFindNoCollisionWhenSecondaryStorageRetentionIsDisabled() {
     // given
     final Camunda camunda = new Camunda();
     camunda.getData().getSecondaryStorage().setType(SecondaryStorageType.elasticsearch);
@@ -213,9 +231,12 @@ final class ExporterIsolationValidationTest {
                         "policyName",
                         "camunda-retention-policy"))));
 
-    // when - then
-    assertThatCode(() -> ExporterIsolationValidation.validate(exporters, camunda, mergers))
-        .doesNotThrowAnyException();
+    // when
+    final List<String> collisions =
+        ExporterIsolationValidation.collisions(exporters, camunda, mergers);
+
+    // then
+    assertThat(collisions).isEmpty();
   }
 
   private static ExporterCfg exporterCfg(final String className) {

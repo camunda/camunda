@@ -12,7 +12,6 @@ import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
 import io.camunda.configuration.ExporterArgsMergers;
 import io.camunda.configuration.ExporterCollisionTracker;
 import io.camunda.configuration.SecondaryStorage;
-import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.exporter.api.ExporterConfigMerger;
 import io.camunda.zeebe.exporter.api.ExporterConfigMerger.ExporterIsolationClaim;
@@ -23,13 +22,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.NullMarked;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Rejects two exporters in one resolved {@code BrokerBasedProperties.getExporters()} map —
- * including the autoconfigured {@code camundaexporter}/{@code rdbms} — that would write into the
- * same index-write-target or share a lifecycle policy, and rejects a generic exporter sharing a
- * lifecycle policy with the secondary storage's own (schema-manager-owned) retention or
- * usage-metrics policy.
+ * Warns when two exporters in one resolved {@code BrokerBasedProperties.getExporters()} map —
+ * including the autoconfigured {@code camundaexporter}/{@code rdbms} — would write into the same
+ * index-write-target or share a lifecycle policy, or when a generic exporter shares a lifecycle
+ * policy with the secondary storage's own (schema-manager-owned) retention or usage-metrics policy.
  *
  * <p>Independent of the physical-tenants cross-tenant rules ({@code
  * GenericExporterIsolationValidation}/{@code RetentionPolicyIsolationValidation}): those compare
@@ -38,6 +38,7 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public final class ExporterIsolationValidation {
 
+  private static final Logger LOG = LoggerFactory.getLogger(ExporterIsolationValidation.class);
   private static final String SECONDARY_STORAGE_OWNER_ID = "secondary-storage";
 
   private ExporterIsolationValidation() {}
@@ -51,6 +52,22 @@ public final class ExporterIsolationValidation {
       final Map<String, ExporterCfg> exporters,
       final Camunda camunda,
       final List<ExporterConfigMerger> mergers) {
+    final List<String> collisions = collisions(exporters, camunda, mergers);
+    if (!collisions.isEmpty()) {
+      LOG.warn(
+          "Exporters share an index-write-target or lifecycle-policy resource, and could "
+              + "silently collide — two exporters writing into the same indices, or one "
+              + "exporter's retention policy deleting another's indices. Give each exporter that "
+              + "shares a cluster a distinct index prefix and lifecycle-policy name. Conflicts: {}",
+          String.join("; ", collisions));
+    }
+  }
+
+  @VisibleForTesting
+  static List<String> collisions(
+      final Map<String, ExporterCfg> exporters,
+      final Camunda camunda,
+      final List<ExporterConfigMerger> mergers) {
     final ExporterCollisionTracker tracker = new ExporterCollisionTracker();
     exporters.forEach(
         (exporterId, exporter) -> {
@@ -60,16 +77,7 @@ public final class ExporterIsolationValidation {
         });
     secondaryStorageLifecyclePolicyClaims(camunda)
         .forEach(claim -> tracker.addClaim(SECONDARY_STORAGE_OWNER_ID, claim));
-
-    final List<String> collisions = tracker.collisions();
-    if (!collisions.isEmpty()) {
-      throw new UnifiedConfigurationException(
-          "Exporters must not share an index-write-target or lifecycle-policy resource, or they "
-              + "would silently collide — two exporters writing into the same indices, or one "
-              + "exporter's retention policy deleting another's indices. Give each exporter that "
-              + "shares a cluster a distinct index prefix and lifecycle-policy name. Conflicts: "
-              + String.join("; ", collisions));
-    }
+    return tracker.collisions();
   }
 
   // namespace the exporterId so a user-defined exporter named "secondary-storage"

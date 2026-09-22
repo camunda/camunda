@@ -10,9 +10,16 @@ package io.camunda.application.commons.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
+import io.camunda.configuration.beanoverrides.ExporterIsolationValidation;
+import java.util.List;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.apache.logging.log4j.core.test.appender.ListAppender;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -46,55 +53,75 @@ class ExporterIsolationValidationTest {
               UnifiedConfigurationHelper.class,
               BrokerBasedPropertiesOverride.class);
 
+  private static List<LogEvent> runAndCaptureLogs(final ApplicationContextRunner runner) {
+    final var loggerName = ExporterIsolationValidation.class.getName();
+    final var appender = new ListAppender("exporter-isolation-validation-appender");
+    appender.start();
+    final var context = (LoggerContext) LogManager.getContext(false);
+    final var loggerConfig = new LoggerConfig(loggerName, Level.ALL, true);
+    loggerConfig.addAppender(appender, null, null);
+    context.getConfiguration().addLogger(loggerName, loggerConfig);
+    context.updateLoggers();
+
+    try {
+      runner.run(ctx -> assertThat(ctx).hasNotFailed());
+      return appender.getEvents();
+    } finally {
+      context.getConfiguration().removeLogger(loggerName);
+      context.updateLoggers();
+      appender.stop();
+    }
+  }
+
+  private static void assertLoggedWarningContains(
+      final List<LogEvent> logEvents, final String... substrings) {
+    assertThat(logEvents)
+        .extracting(event -> event.getMessage().getFormattedMessage())
+        .anySatisfy(
+            message -> {
+              for (final var substring : substrings) {
+                assertThat(message).contains(substring);
+              }
+            });
+  }
+
   @Nested
   class Legacy {
 
     @Test
-    void shouldFailStartupWhenElasticsearchExporterSharesPrefixWithSecondaryStorage() {
+    void shouldWarnWhenElasticsearchExporterSharesPrefixWithSecondaryStorage() {
       // given
-      RUNNER
-          .withPropertyValues(
-              "zeebe.broker.exporters.elasticsearch.class-name="
-                  + "io.camunda.zeebe.exporter.ElasticsearchExporter",
-              "zeebe.broker.exporters.elasticsearch.args.url=http://localhost:9200",
-              "zeebe.broker.exporters.elasticsearch.args.index.prefix=zeebe-record",
-              SECONDARY_STORAGE_TYPE_ES,
-              SECONDARY_STORAGE_URL_ES,
-              SECONDARY_STORAGE_PREFIX_ES)
-          .run(
-              context -> {
-                // then
-                assertThat(context).hasFailed();
-                assertThat(context.getStartupFailure())
-                    .rootCause()
-                    .isInstanceOf(UnifiedConfigurationException.class)
-                    .hasMessageContaining("elasticsearch")
-                    .hasMessageContaining("camundaexporter");
-              });
+      final var logEvents =
+          runAndCaptureLogs(
+              RUNNER.withPropertyValues(
+                  "zeebe.broker.exporters.elasticsearch.class-name="
+                      + "io.camunda.zeebe.exporter.ElasticsearchExporter",
+                  "zeebe.broker.exporters.elasticsearch.args.url=http://localhost:9200",
+                  "zeebe.broker.exporters.elasticsearch.args.index.prefix=zeebe-record",
+                  SECONDARY_STORAGE_TYPE_ES,
+                  SECONDARY_STORAGE_URL_ES,
+                  SECONDARY_STORAGE_PREFIX_ES));
+
+      // then
+      assertLoggedWarningContains(logEvents, "elasticsearch", "camundaexporter");
     }
 
     @Test
-    void shouldFailStartupWhenOpensearchExporterSharesPrefixWithSecondaryStorage() {
+    void shouldWarnWhenOpensearchExporterSharesPrefixWithSecondaryStorage() {
       // given the same repro, with the legacy OpenSearch exporter instead of Elasticsearch
-      RUNNER
-          .withPropertyValues(
-              "zeebe.broker.exporters.opensearch.class-name="
-                  + "io.camunda.zeebe.exporter.opensearch.OpensearchExporter",
-              "zeebe.broker.exporters.opensearch.args.url=http://localhost:9200",
-              "zeebe.broker.exporters.opensearch.args.index.prefix=zeebe-record",
-              SECONDARY_STORAGE_TYPE_OS,
-              SECONDARY_STORAGE_URL_OS,
-              SECONDARY_STORAGE_PREFIX_OS)
-          .run(
-              context -> {
-                // then
-                assertThat(context).hasFailed();
-                assertThat(context.getStartupFailure())
-                    .rootCause()
-                    .isInstanceOf(UnifiedConfigurationException.class)
-                    .hasMessageContaining("opensearch")
-                    .hasMessageContaining("camundaexporter");
-              });
+      final var logEvents =
+          runAndCaptureLogs(
+              RUNNER.withPropertyValues(
+                  "zeebe.broker.exporters.opensearch.class-name="
+                      + "io.camunda.zeebe.exporter.opensearch.OpensearchExporter",
+                  "zeebe.broker.exporters.opensearch.args.url=http://localhost:9200",
+                  "zeebe.broker.exporters.opensearch.args.index.prefix=zeebe-record",
+                  SECONDARY_STORAGE_TYPE_OS,
+                  SECONDARY_STORAGE_URL_OS,
+                  SECONDARY_STORAGE_PREFIX_OS));
+
+      // then
+      assertLoggedWarningContains(logEvents, "opensearch", "camundaexporter");
     }
 
     @Test
@@ -129,32 +156,26 @@ class ExporterIsolationValidationTest {
     }
 
     @Test
-    void shouldFailStartupWhenElasticsearchExporterSharesLifecyclePolicyWithSecondaryStorage() {
+    void shouldWarnWhenElasticsearchExporterSharesLifecyclePolicyWithSecondaryStorage() {
       // given distinct index prefixes, but the legacy exporter's retention policy is
       // (mis)configured to reuse the secondary storage's own default policy name
-      RUNNER
-          .withPropertyValues(
-              "zeebe.broker.exporters.elasticsearch.class-name="
-                  + "io.camunda.zeebe.exporter.ElasticsearchExporter",
-              "zeebe.broker.exporters.elasticsearch.args.url=http://localhost:9200",
-              "zeebe.broker.exporters.elasticsearch.args.index.prefix=zeebe-record",
-              "zeebe.broker.exporters.elasticsearch.args.retention.enabled=true",
-              "zeebe.broker.exporters.elasticsearch.args.retention.policy-name="
-                  + "camunda-retention-policy",
-              SECONDARY_STORAGE_TYPE_ES,
-              SECONDARY_STORAGE_URL_ES,
-              "camunda.data.secondary-storage.elasticsearch.index-prefix=operate-record",
-              "camunda.data.secondary-storage.retention.enabled=true")
-          .run(
-              context -> {
-                // then
-                assertThat(context).hasFailed();
-                assertThat(context.getStartupFailure())
-                    .rootCause()
-                    .isInstanceOf(UnifiedConfigurationException.class)
-                    .hasMessageContaining("elasticsearch")
-                    .hasMessageContaining("secondary-storage");
-              });
+      final var logEvents =
+          runAndCaptureLogs(
+              RUNNER.withPropertyValues(
+                  "zeebe.broker.exporters.elasticsearch.class-name="
+                      + "io.camunda.zeebe.exporter.ElasticsearchExporter",
+                  "zeebe.broker.exporters.elasticsearch.args.url=http://localhost:9200",
+                  "zeebe.broker.exporters.elasticsearch.args.index.prefix=zeebe-record",
+                  "zeebe.broker.exporters.elasticsearch.args.retention.enabled=true",
+                  "zeebe.broker.exporters.elasticsearch.args.retention.policy-name="
+                      + "camunda-retention-policy",
+                  SECONDARY_STORAGE_TYPE_ES,
+                  SECONDARY_STORAGE_URL_ES,
+                  "camunda.data.secondary-storage.elasticsearch.index-prefix=operate-record",
+                  "camunda.data.secondary-storage.retention.enabled=true"));
+
+      // then
+      assertLoggedWarningContains(logEvents, "elasticsearch", "secondary-storage");
     }
   }
 
@@ -162,51 +183,39 @@ class ExporterIsolationValidationTest {
   class UnifiedConfig {
 
     @Test
-    void shouldFailStartupWhenElasticsearchExporterSharesPrefixWithSecondaryStorage() {
+    void shouldWarnWhenElasticsearchExporterSharesPrefixWithSecondaryStorage() {
       // given
-      RUNNER
-          .withPropertyValues(
-              "camunda.data.exporters.elasticsearch.class-name="
-                  + "io.camunda.zeebe.exporter.ElasticsearchExporter",
-              "camunda.data.exporters.elasticsearch.args.url=http://localhost:9200",
-              "camunda.data.exporters.elasticsearch.args.index.prefix=zeebe-record",
-              SECONDARY_STORAGE_TYPE_ES,
-              SECONDARY_STORAGE_URL_ES,
-              SECONDARY_STORAGE_PREFIX_ES)
-          .run(
-              context -> {
-                // then
-                assertThat(context).hasFailed();
-                assertThat(context.getStartupFailure())
-                    .rootCause()
-                    .isInstanceOf(UnifiedConfigurationException.class)
-                    .hasMessageContaining("elasticsearch")
-                    .hasMessageContaining("camundaexporter");
-              });
+      final var logEvents =
+          runAndCaptureLogs(
+              RUNNER.withPropertyValues(
+                  "camunda.data.exporters.elasticsearch.class-name="
+                      + "io.camunda.zeebe.exporter.ElasticsearchExporter",
+                  "camunda.data.exporters.elasticsearch.args.url=http://localhost:9200",
+                  "camunda.data.exporters.elasticsearch.args.index.prefix=zeebe-record",
+                  SECONDARY_STORAGE_TYPE_ES,
+                  SECONDARY_STORAGE_URL_ES,
+                  SECONDARY_STORAGE_PREFIX_ES));
+
+      // then
+      assertLoggedWarningContains(logEvents, "elasticsearch", "camundaexporter");
     }
 
     @Test
-    void shouldFailStartupWhenOpensearchExporterSharesPrefixWithSecondaryStorage() {
+    void shouldWarnWhenOpensearchExporterSharesPrefixWithSecondaryStorage() {
       // given
-      RUNNER
-          .withPropertyValues(
-              "camunda.data.exporters.opensearch.class-name="
-                  + "io.camunda.zeebe.exporter.opensearch.OpensearchExporter",
-              "camunda.data.exporters.opensearch.args.url=http://localhost:9200",
-              "camunda.data.exporters.opensearch.args.index.prefix=zeebe-record",
-              SECONDARY_STORAGE_TYPE_OS,
-              SECONDARY_STORAGE_URL_OS,
-              SECONDARY_STORAGE_PREFIX_OS)
-          .run(
-              context -> {
-                // then
-                assertThat(context).hasFailed();
-                assertThat(context.getStartupFailure())
-                    .rootCause()
-                    .isInstanceOf(UnifiedConfigurationException.class)
-                    .hasMessageContaining("opensearch")
-                    .hasMessageContaining("camundaexporter");
-              });
+      final var logEvents =
+          runAndCaptureLogs(
+              RUNNER.withPropertyValues(
+                  "camunda.data.exporters.opensearch.class-name="
+                      + "io.camunda.zeebe.exporter.opensearch.OpensearchExporter",
+                  "camunda.data.exporters.opensearch.args.url=http://localhost:9200",
+                  "camunda.data.exporters.opensearch.args.index.prefix=zeebe-record",
+                  SECONDARY_STORAGE_TYPE_OS,
+                  SECONDARY_STORAGE_URL_OS,
+                  SECONDARY_STORAGE_PREFIX_OS));
+
+      // then
+      assertLoggedWarningContains(logEvents, "opensearch", "camundaexporter");
     }
 
     @Test
@@ -225,32 +234,26 @@ class ExporterIsolationValidationTest {
     }
 
     @Test
-    void shouldFailStartupWhenElasticsearchExporterSharesLifecyclePolicyWithSecondaryStorage() {
+    void shouldWarnWhenElasticsearchExporterSharesLifecyclePolicyWithSecondaryStorage() {
       // given distinct index prefixes, but the generic exporter's retention policy is
       // (mis)configured to reuse the secondary storage's own default policy name
-      RUNNER
-          .withPropertyValues(
-              "camunda.data.exporters.elasticsearch.class-name="
-                  + "io.camunda.zeebe.exporter.ElasticsearchExporter",
-              "camunda.data.exporters.elasticsearch.args.url=http://localhost:9200",
-              "camunda.data.exporters.elasticsearch.args.index.prefix=zeebe-record",
-              "camunda.data.exporters.elasticsearch.args.retention.enabled=true",
-              "camunda.data.exporters.elasticsearch.args.retention.policy-name="
-                  + "camunda-retention-policy",
-              SECONDARY_STORAGE_TYPE_ES,
-              SECONDARY_STORAGE_URL_ES,
-              "camunda.data.secondary-storage.elasticsearch.index-prefix=operate-record",
-              "camunda.data.secondary-storage.retention.enabled=true")
-          .run(
-              context -> {
-                // then
-                assertThat(context).hasFailed();
-                assertThat(context.getStartupFailure())
-                    .rootCause()
-                    .isInstanceOf(UnifiedConfigurationException.class)
-                    .hasMessageContaining("elasticsearch")
-                    .hasMessageContaining("secondary-storage");
-              });
+      final var logEvents =
+          runAndCaptureLogs(
+              RUNNER.withPropertyValues(
+                  "camunda.data.exporters.elasticsearch.class-name="
+                      + "io.camunda.zeebe.exporter.ElasticsearchExporter",
+                  "camunda.data.exporters.elasticsearch.args.url=http://localhost:9200",
+                  "camunda.data.exporters.elasticsearch.args.index.prefix=zeebe-record",
+                  "camunda.data.exporters.elasticsearch.args.retention.enabled=true",
+                  "camunda.data.exporters.elasticsearch.args.retention.policy-name="
+                      + "camunda-retention-policy",
+                  SECONDARY_STORAGE_TYPE_ES,
+                  SECONDARY_STORAGE_URL_ES,
+                  "camunda.data.secondary-storage.elasticsearch.index-prefix=operate-record",
+                  "camunda.data.secondary-storage.retention.enabled=true"));
+
+      // then
+      assertLoggedWarningContains(logEvents, "elasticsearch", "secondary-storage");
     }
   }
 }
