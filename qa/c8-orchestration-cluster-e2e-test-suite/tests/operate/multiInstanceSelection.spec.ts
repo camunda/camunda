@@ -12,6 +12,7 @@ import {deploy, createSingleInstance, createWorker} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {waitForIncidents} from 'utils/incidentsHelper';
+import {extendedAssertionOptions} from 'utils/constants';
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -70,11 +71,18 @@ test.describe('Multi Instance Flow Node Selection', () => {
     operateProcessInstancePage,
   }) => {
     await test.step('Verify that the process instance is selected by default', async () => {
+      // The instance-history tree waits on data that has to propagate
+      // through the secondary-storage indexer on a loaded shared cluster
+      // (this test also waits on 25 incidents in beforeAll), so this can
+      // outlast the default 10s timeout under load -- use the suite's own
+      // extended budget for that case, same as decisionInstancesBusinessId.spec.ts.
       await expect(
         operateProcessInstancePage.getSelectedTreeItemsInHistory(
           /multiInstanceProcess/,
         ),
-      ).toHaveAttribute('aria-label', 'multiInstanceProcess');
+      ).toHaveAttribute('aria-label', 'multiInstanceProcess', {
+        timeout: extendedAssertionOptions.timeout,
+      });
     });
 
     await test.step('Unfold 2x Task B (Multi Instance)', async () => {
