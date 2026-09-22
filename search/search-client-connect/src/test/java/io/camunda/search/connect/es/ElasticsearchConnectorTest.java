@@ -10,6 +10,8 @@ package io.camunda.search.connect.es;
 import static io.camunda.search.connect.plugin.util.TestDatabaseCustomHeaderSupplierImpl.KEY_CUSTOM_HEADER;
 import static io.camunda.search.connect.plugin.util.TestDatabaseCustomHeaderSupplierImpl.VALUE_CUSTOM_HEADER;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.never;
 
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,6 +25,7 @@ import java.util.List;
 import net.bytebuddy.ByteBuddy;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.config.RequestConfig.Builder;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpRequestWrapper;
 import org.apache.http.concurrent.FutureCallback;
@@ -121,8 +124,45 @@ class ElasticsearchConnectorTest {
     connector.configureHttpClient(builder, configuration);
 
     // then
-    Mockito.verify(builder, Mockito.never()).setMaxConnTotal(Mockito.anyInt());
-    Mockito.verify(builder, Mockito.never()).setMaxConnPerRoute(Mockito.anyInt());
+    Mockito.verify(builder, never()).setMaxConnTotal(anyInt());
+    Mockito.verify(builder, never()).setMaxConnPerRoute(anyInt());
+  }
+
+  @Test
+  void shouldConfigureTimeoutsWhenSet() {
+    // given
+    final var configuration = new ConnectConfiguration();
+    configuration.setSocketTimeout(125456);
+    configuration.setConnectTimeout(654321);
+
+    final var connector =
+        new ElasticsearchConnector(configuration, new ObjectMapper(), new PluginRepository());
+    final var builder = Mockito.mock(Builder.class);
+
+    // when
+    connector.setTimeouts(builder, configuration);
+
+    // then
+    Mockito.verify(builder).setSocketTimeout(125456);
+    Mockito.verify(builder).setConnectTimeout(654321);
+    Mockito.verify(builder).setConnectionRequestTimeout(180_000);
+  }
+
+  @Test
+  void shouldConfigureDefaultTimeouts() {
+    // given
+    final var configuration = new ConnectConfiguration();
+    final var connector =
+        new ElasticsearchConnector(configuration, new ObjectMapper(), new PluginRepository());
+    final var builder = Mockito.mock(Builder.class);
+
+    // when
+    connector.setTimeouts(builder, configuration);
+
+    // then
+    Mockito.verify(builder).setSocketTimeout(30_000);
+    Mockito.verify(builder).setConnectTimeout(5_000);
+    Mockito.verify(builder).setConnectionRequestTimeout(180_000);
   }
 
   private static final class NoopCallback implements FutureCallback<HttpResponse> {
