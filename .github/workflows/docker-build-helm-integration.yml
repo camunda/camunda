@@ -885,14 +885,14 @@ jobs:
     # gets an empty zeebeVersion. success() keeps the implicit needs-succeeded
     # gate that a custom `if` would otherwise drop.
     if: success() && needs.build-and-push-images.outputs.image-tag != ''
-    # Must stay above `wait-downstream`'s own 50min deadline. When this fires
+    # Must stay above `wait-downstream`'s own 65min deadline. When this fires
     # first the runner kills the step mid-poll, the job lands as `cancelled`,
     # and the loop's timeout path -- which writes
     # `downstream_conclusion=timeout` and the AlwaysGreen failure context --
     # never runs. Keep the loop as the timeout mechanism and this as the
     # backstop for what a deadline cannot bound: a single `gh api` call that
     # hangs indefinitely rather than returning an error to retry.
-    timeout-minutes: 60
+    timeout-minutes: 75
     permissions: { }
     concurrency:
       group: ${{ needs.should-run.outputs.concurrency-group }}-trigger-saas-e2e
@@ -1003,24 +1003,32 @@ jobs:
           # Bound the wait by wall clock rather than by a tick count. A tick
           # is not a fixed cost: a poll whose `gh_api_with_retry` exhausts its
           # backoff burns up to 62s on top of the 30s tick, so counting ticks
-          # says nothing about how long this step runs (100 ticks is ~50min at
-          # best and ~153min at worst). Only an absolute deadline keeps the
-          # loop -- not the runner -- the thing that ends the wait, which is
-          # what lets the timeout path below emit its diagnostics.
+          # says nothing about how long this step runs: 100 ticks is ~50min at
+          # best and ~153min at worst. (Those two figures are the arithmetic of
+          # the tick loop that used to be here, not the budget set below.)
+          # Only an absolute deadline keeps the loop -- not the runner -- the
+          # thing that ends the wait, which is what lets the timeout path
+          # below emit its diagnostics.
           #
-          # 50min is sized off the downstream run's observed distribution
-          # (median ~35min, p90 ~44min, p95 ~50min over the last 100 runs): a
-          # budget below the median kills roughly half of all waits while the
-          # downstream run is still green and in progress. Raise it if the
-          # downstream suite grows, and keep the job-level `timeout-minutes`
-          # above it.
+          # 65min is sized off the *green* downstream runs only -- median
+          # 29min, p90 41min, p95 44min, p99 60min, max 73min across the 381
+          # successful runs of playwright_saas_pr_trigger_monorepo.yml between
+          # 2026-09-07 and 2026-09-22. Sizing off all 500 runs instead
+          # understates the budget, because a failing run ends early and drags
+          # every percentile down while describing a wait that could never
+          # have hit a deadline. Only runs that would have gone green can be
+          # killed mid-flight, and those are what the budget has to cover: at
+          # 50min, 9 of the 381 (2.4%) were still running and still green when
+          # the deadline fired, and the gate reported each as a failure. At
+          # 65min that is 2 (0.5%). Raise it if the downstream suite grows,
+          # and keep the job-level `timeout-minutes` 10min above it.
           #
           # Anchored to the job's start, not this step's, so the 10min of
           # headroom below the job timeout cannot be eaten by a slow checkout
           # or a hanging Vault call. The preamble normally costs seconds; if
           # it ever costs more, the wait shortens instead of the runner
           # killing the loop before it can report a timeout.
-          WAIT_DEADLINE=$(( ${JOB_STARTED_AT:-$(date +%s)} + 50 * 60 ))
+          WAIT_DEADLINE=$(( ${JOB_STARTED_AT:-$(date +%s)} + 65 * 60 ))
 
           # Never sleep past the deadline: both the loop condition and the
           # retry backoff are only re-checked between sleeps, so an unguarded
@@ -1050,7 +1058,17 @@ jobs:
                 return 0
               fi
 
-              if echo "$out" | grep -Eq 'HTTP 500|HTTP 502|HTTP 503|HTTP 504|TLS handshake timeout|timeout|temporarily unavailable|connection reset by peer|EOF|stream error|GOAWAY|broken pipe|no such host|connection refused'; then
+              # Rate limiting is matched by message, not by status code. GitHub
+              # serves the primary limit as 403 and the secondary limit as 403
+              # or 429, and a plain 403 is the permanent case this function
+              # exists to separate out (a bad token, a repo the App cannot
+              # see). Matching `HTTP 403` wholesale would poll a dead token to
+              # the deadline instead of failing fast, so only the rate-limit
+              # wording -- and 429, which is never anything else -- is treated
+              # as transient. `abuse detection` is the same family: GitHub's
+              # older wording for the secondary limit, served as 403 and
+              # self-clearing, so it retries for the same reason.
+              if echo "$out" | grep -Eqi 'HTTP 429|rate limit|abuse detection|HTTP 500|HTTP 502|HTTP 503|HTTP 504|TLS handshake timeout|timeout|temporarily unavailable|connection reset by peer|EOF|stream error|GOAWAY|broken pipe|no such host|connection refused'; then
                 if (( attempt >= max_attempts )); then
                   echo "gh api failed after ${attempt}/${max_attempts} attempts for $endpoint" >&2
                   echo "$out" >&2
@@ -1117,6 +1135,21 @@ jobs:
 
               echo "Locked onto downstream run id: $RUN_ID"
               echo "downstream_run_url=https://github.com/$TARGET_REPO/actions/runs/$RUN_ID" >> "$GITHUB_OUTPUT"
+
+              # Re-check before falling through to the status request below.
+              # Every other iteration reaches it with the loop's own deadline
+              # check immediately behind it, but this one has an unbounded
+              # `gh api` in between: the run-list call can start inside the
+              # budget and return outside it. Starting a fresh unbounded call
+              # on a spent budget is what hands the kill back to the runner --
+              # a hang there only has the 10min of job-timeout headroom to
+              # land in, and past that the job dies as `cancelled` with no
+              # timeout report. The run url is already written above, so the
+              # report still carries the link.
+              if (( $(date +%s) >= WAIT_DEADLINE )); then
+                echo "Deadline reached while locking onto run $RUN_ID; reporting the timeout instead of starting another poll." >&2
+                break
+              fi
             fi
 
             RUN_JSON="" RC=0
@@ -1169,7 +1202,12 @@ jobs:
           fi
 
       - name: Add debugging guidance on failure
-        if: steps.wait-downstream.outcome == 'failure'
+        # `always() &&` is load-bearing: an `if` with no status-check function
+        # gets an implicit `success()`, and the waiter having failed is exactly
+        # when that is false -- so without it this step is skipped on the only
+        # path it exists for, and the timeout the loop reports lands with no
+        # guidance attached.
+        if: always() && steps.wait-downstream.outcome == 'failure'
         run: |
           DOWNSTREAM_URL="${{ steps.wait-downstream.outputs.downstream_run_url }}"
           COOKBOOK_URL="https://github.com/camunda/c8-cross-component-e2e-tests/blob/main/docs/ci-debugging-cookbook.md"
