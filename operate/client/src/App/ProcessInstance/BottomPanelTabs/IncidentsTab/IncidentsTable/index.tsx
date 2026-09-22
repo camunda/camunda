@@ -14,6 +14,7 @@ import {
   ExpandedField,
   FieldLabel,
   ErrorMessageCell,
+  TruncatedText,
   FlexContainer,
   ChildIncidentContainer,
 } from './styled';
@@ -21,7 +22,7 @@ import {Link} from 'modules/components/Link';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {Paths} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
-import {Button, Stack} from '@carbon/react';
+import {Button, Stack, Tooltip} from '@carbon/react';
 import {SortableTable} from 'modules/components/SortableTable';
 import {useState, useMemo} from 'react';
 import {RichTextEditorModal} from 'modules/components/RichTextEditorModal';
@@ -37,11 +38,17 @@ type DecisionInstanceLookup = Record<
   {decisionInstanceKey: string; decisionDefinitionName: string}
 >;
 
+type ElementNameCell = {
+  label: string;
+  content: React.ReactNode;
+  isInteractive: boolean;
+};
+
 const getElementName = (
   incident: EnhancedIncident,
   processInstanceKey: string,
   decisionInstancesByElementKey?: DecisionInstanceLookup,
-): React.ReactNode => {
+): ElementNameCell => {
   const decisionInstance =
     decisionInstancesByElementKey &&
     (incident.errorType === 'DECISION_EVALUATION_ERROR' ||
@@ -49,34 +56,80 @@ const getElementName = (
     decisionInstancesByElementKey[incident.elementInstanceKey];
 
   if (decisionInstance) {
-    return (
-      <Link
-        to={Paths.decisionInstance(decisionInstance.decisionInstanceKey)}
-        title={`View root cause decision ${decisionInstance.decisionDefinitionName} - ${decisionInstance.decisionInstanceKey}`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {`${decisionInstance.decisionDefinitionName} - ${decisionInstance.decisionInstanceKey}`}
-      </Link>
-    );
+    const label = `${decisionInstance.decisionDefinitionName} - ${decisionInstance.decisionInstanceKey}`;
+    return {
+      label,
+      isInteractive: true,
+      content: (
+        <Link
+          to={Paths.decisionInstance(decisionInstance.decisionInstanceKey)}
+          title={`View root cause decision ${label}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {label}
+        </Link>
+      ),
+    };
   }
 
   if (processInstanceKey !== incident.processInstanceKey) {
-    return (
-      <Link
-        to={{
-          pathname: Paths.processInstance(incident.processInstanceKey),
-          search: `?elementId=${incident.elementId}`,
-        }}
-        title={`View root cause instance ${incident.processDefinitionName} - ${incident.processInstanceKey}`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {`${incident.elementId} - ${incident.processDefinitionName} - ${incident.processInstanceKey}`}
-      </Link>
-    );
+    const label = `${incident.elementId} - ${incident.processDefinitionName} - ${incident.processInstanceKey}`;
+    return {
+      label,
+      isInteractive: true,
+      content: (
+        <Link
+          to={{
+            pathname: Paths.processInstance(incident.processInstanceKey),
+            search: `?elementId=${incident.elementId}`,
+          }}
+          title={`View root cause instance ${incident.processDefinitionName} - ${incident.processInstanceKey}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {label}
+        </Link>
+      ),
+    };
   }
 
-  return incident.elementName;
+  return {
+    label: incident.elementName,
+    content: incident.elementName,
+    isInteractive: false,
+  };
 };
+
+function renderElementName(
+  incident: EnhancedIncident,
+  processInstanceKey: string,
+  decisionInstancesByElementKey?: DecisionInstanceLookup,
+): React.ReactNode {
+  const {label, content, isInteractive} = getElementName(
+    incident,
+    processInstanceKey,
+    decisionInstancesByElementKey,
+  );
+
+  return (
+    <Tooltip align="bottom-start" autoAlign description={label}>
+      <TruncatedText tabIndex={isInteractive ? undefined : 0}>
+        {content}
+      </TruncatedText>
+    </Tooltip>
+  );
+}
+
+// The expanded row wraps the full message, so the modal is reserved for
+// stack traces and unusually large single-line messages where its dedicated
+// viewer adds value over the inline content.
+const MODAL_WORTHY_ERROR_MESSAGE_LENGTH = 200;
+
+function shouldOfferErrorMessageModal(errorMessage: string): boolean {
+  return (
+    errorMessage.includes('\n') ||
+    errorMessage.length >= MODAL_WORTHY_ERROR_MESSAGE_LENGTH
+  );
+}
 
 type ChildInstanceWithIncident = {
   type: 'process' | 'decision';
@@ -146,7 +199,7 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
                 <FieldLabel>Error message</FieldLabel>
                 <FlexContainer>
                   <ErrorMessageCell>{incident.errorMessage}</ErrorMessageCell>
-                  {incident.errorMessage.length >= 58 && (
+                  {shouldOfferErrorMessageModal(incident.errorMessage) && (
                     <Button
                       size="sm"
                       kind="ghost"
@@ -245,6 +298,11 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
           onVerticalScrollEndReach={onVerticalScrollEndReach}
           headerColumns={[
             {
+              header: 'Error message',
+              key: 'errorMessage',
+              isDisabled: true,
+            },
+            {
               header: 'Type',
               key: 'errorType',
             },
@@ -270,8 +328,19 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
 
             return {
               id: incident.incidentKey,
+              errorMessage: (
+                <Tooltip
+                  align="bottom-start"
+                  autoAlign
+                  description={incident.errorMessage}
+                >
+                  <TruncatedText tabIndex={0}>
+                    {incident.errorMessage}
+                  </TruncatedText>
+                </Tooltip>
+              ),
               errorType: getIncidentErrorName(incident.errorType),
-              elementName: getElementName(
+              elementName: renderElementName(
                 incident,
                 processInstanceKey,
                 decisionInstancesByElementKey,

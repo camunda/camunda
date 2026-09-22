@@ -98,4 +98,29 @@ describe('SortableTable', () => {
       screen.getByRole('button', {name: 'expanded action'}),
     ).toBeInTheDocument();
   });
+
+  it('should not announce a non sortable column as a sort control', () => {
+    render(
+      <SortableTable
+        {...mockProps}
+        state="content"
+        headerColumns={[
+          {header: 'Sortable Column', key: 'columnHeader1'},
+          {header: 'Fixed Column', key: 'columnHeader2', isDisabled: true},
+        ]}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    expect(
+      screen.getByRole('button', {name: 'Sort by Sortable Column'}),
+    ).toBeInTheDocument();
+
+    // then the disabled column is named by its own label rather than offering a
+    // sort it cannot perform
+    expect(
+      screen.getByRole('columnheader', {name: 'Fixed Column'}),
+    ).toBeInTheDocument();
+    expect(screen.queryByTitle('Sort by Fixed Column')).not.toBeInTheDocument();
+  });
 });
