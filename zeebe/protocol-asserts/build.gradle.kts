@@ -20,12 +20,9 @@ import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.file.FileSystemOperations
-import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Classpath
-import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputDirectory
-import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.compile.JavaCompile
@@ -116,27 +113,9 @@ abstract class GenerateAssertjAssertionsTask : DefaultTask() {
     }
 }
 
-abstract class PatchRecordAssertTask : DefaultTask() {
-    @get:InputFiles
-    abstract val sourceDir: DirectoryProperty
-
-    @get:OutputFile
-    abstract val recordAssertFile: RegularFileProperty
-
-    @TaskAction
-    fun patch() {
-        val file = recordAssertFile.get().asFile
-        if (!file.exists()) {
-            return
-        }
-        val updated = file.readText()
-            .replace("T value", "RecordValue value")
-            .replace("T actualValue", "RecordValue actualValue")
-        file.writeText(updated)
-    }
-}
-
 val assertjGeneratedDir = layout.buildDirectory.dir("generated-sources/assertj-assertions")
+val patchedAssertjGeneratedDir =
+    layout.buildDirectory.dir("generated-sources/assertj-assertions-patched")
 val generatedAssertjClassesDir = layout.buildDirectory.dir("generated-classes/assertj")
 
 // Use stable output locations for the producer projects instead of reading their mutable model.
@@ -158,17 +137,23 @@ val generateAssertjAssertions =
     outputDir.set(assertjGeneratedDir)
 }
 
-val patchRecordAssert = tasks.register<PatchRecordAssertTask>("patchRecordAssert") {
+// Copy the generated assertions into a separate directory, patching the invalid Record<T>
+// generics on the way. The generator therefore keeps exclusive ownership of its own output, which
+// keeps it cacheable and up-to-date. `Sync` empties the destination before copying.
+val patchRecordAssert = tasks.register<Sync>("patchRecordAssert") {
     group = "code generation"
-    description = "Patch generated RecordAssert generic types"
+    description = "Copy generated AssertJ assertions, patching RecordAssert generic types"
     dependsOn(generateAssertjAssertions)
 
-    sourceDir.set(assertjGeneratedDir)
-    recordAssertFile.set(
-        layout.buildDirectory.file(
-            "generated-sources/assertj-assertions/io/camunda/zeebe/protocol/record/RecordAssert.java",
-        ),
-    )
+    from(assertjGeneratedDir)
+    into(patchedAssertjGeneratedDir)
+    filesMatching("**/RecordAssert.java") {
+        filter { line: String ->
+            line
+                .replace("T value", "RecordValue value")
+                .replace("T actualValue", "RecordValue actualValue")
+        }
+    }
 }
 
 dependencies {
@@ -181,7 +166,7 @@ dependencies {
 val compileGeneratedAssertjJava =
   tasks.register<JavaCompile>("compileGeneratedAssertjJava") {
     dependsOn(patchRecordAssert)
-    source(assertjGeneratedDir)
+    source(patchedAssertjGeneratedDir)
     classpath = files(sourceSets["main"].compileClasspath, protocolOutput, securityProtocolOutput)
     destinationDirectory.set(generatedAssertjClassesDir)
     options.encoding = "utf-8"
