@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-qa</artifactId>
-    <version>8.4.21</version>
+    <version>8.4.21-SNAPSHOT</version>
   </parent>
 
   <artifactId>zeebe-qa-integration-tests</artifactId>
@@ -416,6 +416,12 @@
     <dependency>
       <groupId>io.github.openfeign</groupId>
       <artifactId>feign-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient</artifactId>
       <scope>test</scope>
     </dependency>
 
