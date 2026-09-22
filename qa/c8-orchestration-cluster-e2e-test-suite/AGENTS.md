@@ -475,6 +475,88 @@ Orchestration-suite failures almost always trace to a module inside this same re
 
 ---
 
+## Time Budget and Incremental Checkpointing
+
+This applies to every agent invoked from `c8-orchestration-cluster-e2e-nightly-fix.yml` —
+both the Nightly Fix Agent and the Workflow-Level Failure Fix Agent below. The calling
+workflow passes your deadline as a single absolute unix epoch in the prompt (computed from
+the job's own start time plus a safety margin under its `timeout-minutes`, so it already
+accounts for however long this run's setup steps took — you don't need to add anything to
+it or otherwise adjust it).
+
+The job's `timeout-minutes` is a hard GitHub Actions cutoff: past it, the step is killed
+mid-process with no signal your code can catch and no chance to write anything. A run that
+has fixed 2 of 5 dispatched failures but only writes `/tmp/fix-meta.json` once, at the very
+end, reports **zero** fixes if it is killed while working on the 3rd — even though real,
+committable work already exists. Your deadline is set below that hard cutoff specifically
+so you have room to stop yourself first.
+
+**Rules:**
+
+- **Track elapsed time.** Compare `$(date -u +%s)` against the deadline epoch you were
+  given; the budget is exhausted once current time passes it.
+- **Order work cheapest-first.** When a dispatch has multiple independent root causes,
+  handle the ones needing only the docker-compose (ES) environment before any needing the
+  Live Docker Verify RDBMS path — a from-source Maven build is by far the most expensive
+  single step available to you, and starting one you can't finish wastes the remaining
+  budget on nothing.
+- **Checkpoint `/tmp/fix-meta.json` at every milestone as a running snapshot of "done so
+  far" plus "still pending"** — not only once at the very end, and not only once per
+  root-cause group. The Live Docker Verify loop (below) is itself the most likely place to
+  be cut off, since it is the most expensive part of the work, so both sides of that
+  snapshot must already be on disk *before* that loop runs, not only after it concludes or
+  after every entry has been looked at:
+  1. **Before triaging anything, or doing any other setup** (downloading artifacts,
+     starting Live Docker Verify, etc.) — this is a required first action, not an optional
+     one: every dispatched entry is pending, so write
+     `{"prs": [], "unaddressed": [...every entry from /tmp/test_specs.json...]}` before
+     you do anything else. Skipping this because you expect to finish quickly is exactly
+     how this section's whole premise fails: it recreates the original all-or-nothing gap
+     if you are killed before reaching your next checkpoint. (The calling workflow already
+     seeds `/tmp/fix-meta.json` with this exact shape before invoking you, as a floor for
+     the case where you are killed or fail before your first tool call — your own write
+     here immediately supersedes that seed with a live one and is still required, not a
+     nice-to-have, since it is what keeps the manifest current from then on.)
+  2. **The moment a PR is opened** for a root-cause group — rewrite the manifest: add the
+     PR (omitting `verify`, which defaults to `"skipped"` and correctly leaves the PR in
+     draft) *and* remove every test it covers from `unaddressed`. If you are killed
+     anywhere inside the Live Docker Verify loop that follows, this PR is still reported,
+     and every other still-untouched entry is still listed as pending — not silently
+     merged into "must have been fine" by omission.
+  3. **The moment the Live Docker Verify loop concludes** for that PR — rewrite the same
+     PR entry with the real outcome (`verified` / `unverified` / `not-reproduced`);
+     `unaddressed` doesn't change here, those tests already left it in step 2.
+  4. Same rule for a product-bug skip PR and for an entry marked `not-reproduced` at the
+     reproduce gate — resolve it and remove it from `unaddressed` the moment its fate is
+     decided, not batched up for later.
+
+  Every write replaces the whole file with the full current truth — every PR opened so far
+  plus everything still pending — rather than appending or only tracking whichever one you
+  happened to touch most recently. This way a hard cancellation at *any* point still
+  reports both what actually got finished and what didn't, instead of only whichever of
+  the two your last write happened to cover.
+
+  **Write each checkpoint atomically.** Truncating `/tmp/fix-meta.json` in place (e.g. a
+  plain `>` redirect) leaves a window where a hard cancellation catches it empty or
+  half-written — corrupt JSON that breaks every downstream `jq` call and throws away the
+  very progress this checkpoint exists to preserve. Write the new content to a temp file
+  (e.g. `/tmp/fix-meta.json.tmp`) and `mv` it over `/tmp/fix-meta.json` instead — the
+  rename is atomic, so the file is always either the last complete checkpoint or the new
+  one, never a torn mix of both.
+
+- **Stop starting new root-cause groups once fewer than ~10 minutes of budget remain.**
+  Because `unaddressed` has been kept current all along (see above), there is nothing
+  extra to compute at this point — the untouched entries are already sitting there from
+  your last checkpoint. Leaving them dispatched-but-untriaged is fine; the next nightly
+  triage cycle re-dispatches whatever is still failing. Going silent about *which* entries
+  those were is not.
+
+- **Never let the file go unwritten.** If you are cut off before finishing anything at all,
+  the very first checkpoint from step 1 above already covers you — that's the whole reason
+  it exists as its own step rather than being deferred to "whenever you get around to it."
+
+---
+
 ## Nightly Fix Agent
 
 This section is read automatically by the Claude Code agent dispatched from
@@ -760,7 +842,7 @@ Agent (no single spec to reproduce against).
 
 ### Constraints
 
-- **Allowed tools, outside the Live Docker Verify loop:** `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`, `npx prettier`, `npx eslint`, `npm run responses:regenerate`. Everything else — `make`, `mvn`, `./mvnw`, `docker`, `kubectl`, `helm`, `npm install`, `npm run build`, `npm run test`, `npx playwright test` — is forbidden here: the fix agent does **not** execute tests from artifact evidence alone.
+- **Allowed tools, outside the Live Docker Verify loop:** `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`, `date` (needed for the Time Budget checkpoint comparisons above), `mv` (needed for atomic checkpoint writes above), `npx prettier`, `npx eslint`, `npm run responses:regenerate`. Everything else — `make`, `mvn`, `./mvnw`, `docker`, `kubectl`, `helm`, `npm install`, `npm run build`, `npm run test`, `npx playwright test` — is forbidden here: the fix agent does **not** execute tests from artifact evidence alone.
 - **Allowed tools, inside the Live Docker Verify loop only:** additionally `nvm`, `npm ci`, `npx playwright install`, `docker`/`docker compose` (via `scripts/start-verify-env.sh`/`stop-verify-env.sh` only), `./mvnw` (via the same scripts, RDBMS path only), and `npx playwright test` scoped to the dispatched spec(s) — never the full suite. `kubectl` and `helm` remain forbidden everywhere; there is no cluster to reach. The on-demand workflow triggered after the PR opens remains the full-matrix regression safety net regardless of the live-verify outcome — the loop above does not replace it.
 - **Skipping is forbidden EXCEPT for a confirmed product bug:** the ONLY sanctioned use of `test.skip()` is a product regression that passes all three gates in `## Product-Bug Escalation` and has a filed/linked ticket — there you skip with the mandatory `// Skipped due to bug #<number>: <url>` annotation and open one skip PR. For flakiness, can't-determine, or any other reason, `test.skip()` / `test.fixme()` / `test.only` remain **absolutely forbidden**. A bare `{"prs":[]}` is sanctioned ONLY for the Gate B manual-intervention case (an unpinnable green→red flip on a test that is already hardened) and must carry a `manual_intervention` note; never leave `{"prs":[]}` with no note and no issue filed for any other reason.
 - **Never edit `json-body-assertions/_generated/responses.json` by hand.** This file is auto-generated. If an API response changes, regenerate it with `npm run responses:regenerate` and commit the result. Manual edits will be overwritten and produce misleading diffs.
@@ -828,6 +910,18 @@ on-demand verification run is triggered: `c8-orchestration-cluster-e2e-tests-on-
 no verification run is triggered and the fix is never validated automatically.**
 
 Use `{"prs": []}` if no PR was opened (regardless of reason).
+
+**`unaddressed`** — optional array of dispatched entries not yet resolved, each
+`{"file": ..., "test_name": ..., "test_type": ...}` copied straight from
+`/tmp/test_specs.json`. Maintain it live across every checkpoint (see "Time Budget and
+Incremental Checkpointing" above), not only at the very end: start with every entry in it,
+and remove an entry the moment a PR is opened covering it (or it's marked `not-reproduced`,
+or covered by a product-bug skip) — regardless of whether Live Docker Verify has run yet
+for that PR. This is distinct from `not-reproduced` (you *did* run it against a live
+environment and it no longer fails) and from a product-bug skip (you diagnosed it and it's
+tracked by an issue) — an entry stays in `unaddressed` for as long as you haven't started
+or finished triaging it at all. Omit the
+field entirely if every dispatched entry was addressed one way or another.
 
 A confirmed product bug always lands as a skip PR, so `prs` carries that PR (set `has_e2e`/`has_api`
 from the skipped test types so the skip is verified) and `product_bugs` lists one object per
@@ -1154,6 +1248,6 @@ Realistically that is limited to: the runner host itself died (out of memory or 
 - **No skipping** — same absolute no-skip / no-fixme rule as the Nightly Fix Agent.
 - **`.github/workflows/` is always in scope** — the repo "Ask first" constraint applies to application libraries (`webapps-common/`, `webapp/client/`, `security/`), not to CI workflow files.
 - **Minimal diff** — fix only what is broken; no refactoring, no dependency bumps, no unrelated edits.
-- **Allowed tools**: `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`
+- **Allowed tools**: `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`, `date` (needed for the Time Budget checkpoint comparisons above), `mv` (needed for atomic checkpoint writes above)
 - **Forbidden**: `make`, `helm`, `kubectl`, `npm run build`, `go test`, any deploy command
 
