@@ -94,8 +94,8 @@ _scenario_platform_flags =
 else ifeq ($(scenario),dmn)
 # DMN decision-evaluation floor probe: replace the BPMN starter/worker load
 # generators with the in-cluster k6 DMN Job (see charts/load-test-setup/templates/dmn-k6.yaml).
-# Pair with a minimal platform (RF1, no exporter) via the workflow's
-# platform-helm-values input, e.g. `-f camunda-platform-values-dmn-minimal.yaml`.
+# Pair with the RF1 + in-memory platform overlay (keeps Operate visibility) via the
+# workflow's platform-helm-values input, e.g. `-f camunda-platform-values-dmn-minimal.yaml`.
 _scenario_load_test_flags = --set load-tester.enabled=false --set dmnK6.enabled=true
 _scenario_platform_flags =
 else

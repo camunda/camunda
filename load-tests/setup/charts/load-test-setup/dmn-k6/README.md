@@ -24,21 +24,26 @@ generator reuses the exact same OIDC client and audience as the load-tester.
 
 ## CPU isolation
 
-The generator must not steal CPU from the brokers, or the latency numbers are
-meaningless. The Job is kept **off** the broker nodes because it (1) does *not*
-tolerate the `nodepool=n2-standard-4:NoSchedule` taint the benchmark broker
-nodes carry, and (2) has a `podAntiAffinity` against `zeebe-broker` pods. If the
-Job stays `Pending`, the cluster has no spare (non-broker) node — add one; do
-not relax the isolation.
+The generator should not steal CPU from the brokers, or the latency numbers are
+skewed. The Job **prefers** a broker-free node via a `preferredDuringScheduling`
+`podAntiAffinity` against `zeebe-broker` pods (weight 100). It is a preference,
+not a hard requirement, so the Job always schedules even on a cluster where every
+free node already runs a broker — it just co-locates in that case. Give the
+cluster a spare non-broker node to keep the generator fully isolated.
 
 ## Running it
 
-Pair with a minimal platform (RF1, no exporter) for the lowest-latency floor:
+Pair with the RF1 + in-memory platform overlay
+(`camunda-platform-values-dmn-minimal.yaml`) for the lowest-latency floor while
+**keeping Operate visibility** (Elasticsearch and the `camunda` exporter stay on;
+`replicationFactor 1` drops the Raft quorum round-trip and `persistenceType:
+memory` puts the Zeebe data dir on a tmpfs so the per-commit fsync never hits
+disk):
 
 ```bash
 # via the load-test workflow (recommended)
 #   scenario: dmn
-#   secondary-storage-type: none
+#   secondary-storage-type: elasticsearch      # keep Operate visibility
 #   platform-helm-values: -f camunda-platform-values-dmn-minimal.yaml
 #   load-test-setup-helm-values: --set dmnK6.rate=3334 --set dmnK6.duration=5m --set dmnK6.maxVUs=1000
 

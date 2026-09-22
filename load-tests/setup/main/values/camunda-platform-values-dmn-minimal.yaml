@@ -1,75 +1,45 @@
-# Minimal, single-broker, no-exporter Camunda config for DMN decision-evaluation
-# LATENCY probing.
+# Low-latency, single-broker Camunda overlay for DMN decision-evaluation probing,
+# while KEEPING Operate visibility.
 #
-# Purpose: measure the lowest possible per-evaluation latency by removing every
-# source of avoidable overhead from the write path:
-#   * replicationFactor 1  -> commit is local; no Raft quorum round-trip (this is
-#                             the single biggest lever on the ~14ms eval floor)
-#   * clusterSize 1        -> one broker, one leader, no inter-node hops
-#   * partitionCount 1     -> a single processing pipeline
-#   * no secondary storage -> no ES/RDBMS exporter on the hot path
-#   * consistency checks off, execution-metrics exporter off, history off
+# Layered on top of camunda-platform-values-defaults.yaml (+ the elasticsearch
+# secondary-storage file). It only overrides scalars, so the base OIDC/identity
+# config injected via `orchestration.extraConfiguration` stays intact. Do NOT add
+# an `orchestration.extraConfiguration` block here: Helm REPLACES lists rather than
+# merging them, so a partial list would wipe the base OIDC issuer config and the
+# broker would crashloop on a relative `authorization-uri`.
 #
-# This is a MINIMUM-LATENCY reference, NOT a production or throughput topology.
+# Two levers remove the dominant avoidable parts of the ~14ms C8 evaluation floor:
+#   * replicationFactor 1     -> commit is local; no Raft quorum round-trip
+#   * persistenceType memory  -> the data dir is a tmpfs (RAM), so the per-commit
+#                                fsync leaves the disk (and EFS) entirely off the
+#                                hot path. This is the biggest single lever once
+#                                replication is gone.
+# Elasticsearch + the `camunda` exporter stay ON, so decisions remain visible in
+# Operate. The exporter is asynchronous and off the request hot path, so it costs
+# CPU/throughput but little per-evaluation latency.
+#
+# This is a MINIMUM-LATENCY reference with Operate, NOT a production/HA topology.
 # For throughput/HA use the standard defaults (clusterSize/RF 3).
 #
-# Usage (layer on top of the defaults):
-#   helm install ... \
-#     -f main/values/camunda-platform-values-defaults.yaml \
-#     -f main/values/camunda-platform-values-dmn-minimal.yaml
-
-########################################################################################
-################################################### Global cluster configuration
-########################################################################################
-global:
-  # No ES/OpenSearch/RDBMS backend — nothing to export to.
-  noSecondaryStorage: true
-
-# Trim everything not needed to evaluate a decision.
-optimize:
-  enabled: false
-
-connectors:
-  enabled: false
-
-webModeler:
-  enabled: false
+# Usage (deploy with the elasticsearch secondary storage so Operate works):
+#   scenario=dmn, secondary-storage-type=elasticsearch,
+#   platform-helm-values: -f camunda-platform-values-dmn-minimal.yaml
 
 ########################################################################################
 ################################################### Orchestration cluster configuration
 ########################################################################################
 orchestration:
-  ## Single broker, single partition, no replication -> minimum write-path latency.
+  # Single broker, single partition, no replication -> minimum write-path latency.
   clusterSize: "1"
   partitionCount: "1"
   replicationFactor: "1"
 
-  # Disable the record exporter — decision evaluation only needs the result.
-  exporters:
-    camunda:
-      enabled: false
-  data:
-    secondaryStorage:
-      type: none
-
-  history:
-    retention:
-      enabled: false
-
-  extraConfiguration:
-    - file: application.yml
-      content: |
-        # Define when the broker should start to reject requests when the disk is almost full.
-        zeebe.broker.data.disk.freeSpace.processing: "3GB"
-        zeebe.broker.data.disk.freeSpace.replication: "2GB"
-    # Loaded after application.yml (higher priority). Strip the per-record overhead
-    # that the standard load-test config keeps on for soak tests but that only inflates
-    # latency for a pure evaluation probe.
-    - file: application-override.yml
-      content: |
-        # Consistency checks add per-record work; off for a minimum-latency probe.
-        zeebe.broker.experimental.consistencyChecks.enablePreconditions: "false"
-        zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "false"
-        # No execution-metrics exporter / JFR on the hot path.
-        zeebe.broker.executionMetricsExporterEnabled: "false"
-        camunda.flags.jfr.metrics: "false"
+  # Back the Zeebe data dir with a tmpfs (RAM) instead of a PVC, so the per-commit
+  # fsync never touches disk. tmpfs usage counts against the pod memory limit, so
+  # the limit below is raised to leave room for the JVM heap plus the in-memory log.
+  persistenceType: memory
+  resources:
+    requests:
+      memory: 6Gi
+    limits:
+      memory: 6Gi
