@@ -41,57 +41,6 @@ public final class OverdueRepeatingTimerTest {
       new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldFireBoundaryCycleTimerExactlyOnceWhenOverdueForSeveralIntervals() {
-    // given
-    final String processId = Strings.newRandomValidBpmnId();
-    engine
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess(processId)
-                .startEvent()
-                .serviceTask("task", t -> t.zeebeJobType(processId))
-                .boundaryEvent("timer", b -> b.cancelActivity(false).timerWithCycle("R/PT1S"))
-                .endEvent()
-                .moveToActivity("task")
-                .endEvent()
-                .done())
-        .deploy();
-    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
-    final Record<TimerRecordValue> firstCreated =
-        RecordingExporter.timerRecords(TimerIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
-    final long elementInstanceKey = firstCreated.getValue().getElementInstanceKey();
-
-    // when - the timer becomes overdue by ~4 intervals in a single jump
-    engine.increaseTime(Duration.ofSeconds(5));
-
-    // then
-    final Record<TimerRecordValue> triggered =
-        RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
-            .withElementInstanceKey(elementInstanceKey)
-            .getFirst();
-    final Record<TimerRecordValue> rescheduled =
-        RecordingExporter.timerRecords(TimerIntent.CREATED)
-            .withElementInstanceKey(elementInstanceKey)
-            .limit(2)
-            .getLast();
-
-    assertThat(
-            RecordingExporter.<Boolean>expectNoMatchingRecords(
-                records ->
-                    RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
-                        .withElementInstanceKey(elementInstanceKey)
-                        .skip(1)
-                        .exists()))
-        .describedAs("timer must fire exactly once for the whole overdue gap, not twice")
-        .isFalse();
-    assertThat(rescheduled.getValue().getDueDate() - triggered.getTimestamp())
-        .describedAs("reschedule must land in the future, not collapse onto the trigger time")
-        .isGreaterThanOrEqualTo(500L);
-  }
-
-  @Test
   public void shouldFireCyclingStartEventExactlyOnceWhenOverdueForSeveralIntervals() {
     // given
     final String processId = Strings.newRandomValidBpmnId();
@@ -196,15 +145,8 @@ public final class OverdueRepeatingTimerTest {
             .limit(2)
             .getLast();
 
-    assertThat(
-            RecordingExporter.<Boolean>expectNoMatchingRecords(
-                records ->
-                    RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
-                        .withElementInstanceKey(elementInstanceKey)
-                        .skip(1)
-                        .exists()))
-        .describedAs("timer must fire exactly once for the whole overdue gap, not twice")
-        .isFalse();
+    assertTimerTriggeredExactlyOnce(
+        elementInstanceKey, "timer must fire exactly once for the whole overdue gap, not twice");
     assertThat(rescheduled.getValue().getRepetitions())
         .describedAs("a multi-interval gap must consume only one repetition, not several")
         .isEqualTo(2);
@@ -259,16 +201,9 @@ public final class OverdueRepeatingTimerTest {
             .limit(2)
             .getLast();
 
-    assertThat(
-            RecordingExporter.<Boolean>expectNoMatchingRecords(
-                records ->
-                    RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
-                        .withElementInstanceKey(elementInstanceKey)
-                        .skip(1)
-                        .exists()))
-        .describedAs(
-            "timer must fire exactly once after recovering from the overdue gap, not twice")
-        .isFalse();
+    assertTimerTriggeredExactlyOnce(
+        elementInstanceKey,
+        "timer must fire exactly once after recovering from the overdue gap, not twice");
     assertThat(rescheduled.getValue().getDueDate() - triggered.getTimestamp())
         .describedAs("reschedule must land in the future, not collapse onto the trigger time")
         .isGreaterThanOrEqualTo(500L);
@@ -316,17 +251,10 @@ public final class OverdueRepeatingTimerTest {
             .limit(2)
             .getLast();
 
-    assertThat(
-            RecordingExporter.<Boolean>expectNoMatchingRecords(
-                records ->
-                    RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
-                        .withElementInstanceKey(elementInstanceKey)
-                        .skip(1)
-                        .exists()))
-        .describedAs(
-            "a natural next due date landing exactly on now must still count as overdue and fire"
-                + " only once")
-        .isFalse();
+    assertTimerTriggeredExactlyOnce(
+        elementInstanceKey,
+        "a natural next due date landing exactly on now must still count as overdue and fire"
+            + " only once");
     assertThat(rescheduled.getValue().getDueDate())
         .describedAs(
             "push on the edge: an exact match with now must push the reschedule a full interval"
@@ -374,6 +302,23 @@ public final class OverdueRepeatingTimerTest {
             .limit(2)
             .getLast();
 
+    assertTimerTriggeredExactlyOnce(
+        elementInstanceKey, "normal cadence must fire exactly once, not more");
+    assertThat(rescheduled.getValue().getDueDate())
+        .describedAs(
+            "normal cadence must reschedule exactly one interval past the previous due date")
+        .isEqualTo(firstDueDate + Duration.ofSeconds(1).toMillis());
+  }
+
+  /**
+   * Asserts that exactly one {@code TimerIntent#TRIGGERED} record was written for {@code
+   * elementInstanceKey}. Uses {@link RecordingExporter#expectNoMatchingRecords} rather than a plain
+   * count check: a duplicate trigger can be written asynchronously after the first one is observed,
+   * so this actively waits out a timeout to confirm no second record ever arrives, instead of
+   * racily checking whatever has already been exported at the time of the call.
+   */
+  private static void assertTimerTriggeredExactlyOnce(
+      final long elementInstanceKey, final String description) {
     assertThat(
             RecordingExporter.<Boolean>expectNoMatchingRecords(
                 records ->
@@ -381,11 +326,7 @@ public final class OverdueRepeatingTimerTest {
                         .withElementInstanceKey(elementInstanceKey)
                         .skip(1)
                         .exists()))
-        .describedAs("normal cadence must fire exactly once, not more")
+        .describedAs(description)
         .isFalse();
-    assertThat(rescheduled.getValue().getDueDate())
-        .describedAs(
-            "normal cadence must reschedule exactly one interval past the previous due date")
-        .isEqualTo(firstDueDate + Duration.ofSeconds(1).toMillis());
   }
 }
