@@ -40,8 +40,12 @@ test.describe('settings', () => {
     await expect(
       page.getByRole('heading', {name: 'Bienvenue dans Tasklist'}),
     ).toBeVisible();
+    // "Tâches ouvertes" ("All open tasks") is not a page heading post-redesign
+    // -- it's the currently-selected filter's label, rendered as plain text
+    // inside the "Filtres" dropdown trigger button, so it has to be a text
+    // lookup rather than a heading/accessible-name lookup.
     await expect(
-      page.getByRole('heading', {name: 'Tâches ouvertes'}),
+      page.getByText('Tâches ouvertes', {exact: true}),
     ).toBeVisible();
   });
 });
