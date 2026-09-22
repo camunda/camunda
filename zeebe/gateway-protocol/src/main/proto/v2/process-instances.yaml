@@ -1245,6 +1245,23 @@ components:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
         businessId:
           $ref: 'identifiers.yaml#/components/schemas/BusinessId'
+        stubCallActivities:
+          description: |
+            Starts no child process instance for the call activities of this process instance
+            (alpha).
+
+            A stubbed call activity activates and then waits on a job instead of starting the
+            process it calls, which does not even have to be deployed. Completing that job with
+            variables completes the call activity as if the called process had returned them;
+            completing it with a `runCalledProcess` result starts the real called process after
+            all. This lets a caller stand in for the processes an instance calls while other
+            instances on the cluster keep calling them for real, which is intended for test and
+            debugging tools rather than production traffic.
+
+            This parameter is an alpha feature and may be subject to change in future releases.
+          type: boolean
+          default: false
+          example: true
       x-properties-added-in-version:
         - propertyName: runtimeInstructions
           addedInVersion: "8.8"
@@ -1252,6 +1269,8 @@ components:
           addedInVersion: "8.8"
         - propertyName: businessId
           addedInVersion: "8.9"
+        - propertyName: stubCallActivities
+          addedInVersion: "8.11"
 
     ProcessInstanceCreationInstructionByKey:
       type: object
@@ -1333,6 +1352,23 @@ components:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
         businessId:
           $ref: 'identifiers.yaml#/components/schemas/BusinessId'
+        stubCallActivities:
+          description: |
+            Starts no child process instance for the call activities of this process instance
+            (alpha).
+
+            A stubbed call activity activates and then waits on a job instead of starting the
+            process it calls, which does not even have to be deployed. Completing that job with
+            variables completes the call activity as if the called process had returned them;
+            completing it with a `runCalledProcess` result starts the real called process after
+            all. This lets a caller stand in for the processes an instance calls while other
+            instances on the cluster keep calling them for real, which is intended for test and
+            debugging tools rather than production traffic.
+
+            This parameter is an alpha feature and may be subject to change in future releases.
+          type: boolean
+          default: false
+          example: true
       x-properties-added-in-version:
         - propertyName: runtimeInstructions
           addedInVersion: "8.8"
@@ -1340,6 +1376,8 @@ components:
           addedInVersion: "8.8"
         - propertyName: businessId
           addedInVersion: "8.9"
+        - propertyName: stubCallActivities
+          addedInVersion: "8.11"
 
     ProcessInstanceCreationStartInstruction:
       type: object
@@ -1362,8 +1400,10 @@ components:
         propertyName: type
         mapping:
           TERMINATE_PROCESS_INSTANCE: '#/components/schemas/ProcessInstanceCreationTerminateInstruction'
+          RESERVE_JOBS: '#/components/schemas/ProcessInstanceCreationReserveJobsInstruction'
       oneOf:
         - $ref: '#/components/schemas/ProcessInstanceCreationTerminateInstruction'
+        - $ref: '#/components/schemas/ProcessInstanceCreationReserveJobsInstruction'
 
     ProcessInstanceCreationTerminateInstruction:
       type: object
@@ -1385,6 +1425,41 @@ components:
       x-properties-added-in-version:
         - propertyName: type
           addedInVersion: "8.9"
+
+    ProcessInstanceCreationReserveJobsInstruction:
+      type: object
+      description: |
+        Reserves every job this process instance creates for the caller that supplies this
+        token (alpha).
+
+        Reserved jobs are not handed to job workers that activate normally, and cannot be
+        completed, failed, or error-thrown without the same token. This lets a tool drive one
+        instance's jobs while the cluster's workers keep serving every other instance, which
+        is intended for test and debugging tools rather than production traffic. Release a
+        single job back to the workers with the release endpoint.
+
+        At most one reserve-jobs instruction may be given per process instance.
+
+        This instruction is an alpha feature and may be subject to change in future releases.
+      required:
+        - type
+        - jobReservationToken
+      properties:
+        type:
+          description: The type of the runtime instruction
+          type: string
+          example: RESERVE_JOBS
+        jobReservationToken:
+          description: |
+            The token that reserves this process instance's jobs. Pass it back on every
+            command against one of those jobs.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/JobReservationToken'
+      x-properties-added-in-version:
+        - propertyName: type
+          addedInVersion: "8.11"
+        - propertyName: jobReservationToken
+          addedInVersion: "8.11"
 
     CreateProcessInstanceResult:
       x-semantic-provider:

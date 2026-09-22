@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.AgentDefinitionBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
@@ -63,6 +64,10 @@ import java.util.stream.Collectors;
 public final class JobCompleteProcessor
     implements TypedRecordProcessor<JobRecord>, SuspensionAware<JobRecord> {
 
+  private static final String RUN_CALLED_PROCESS_NOT_SUPPORTED_MESSAGE =
+      """
+          Expected to complete job with key '%d' and ask for the called process to be started, \
+          but the job does not stand in for a called process""";
   private static final String TL_JOB_COMPLETION_WITH_VARS_NOT_SUPPORTED_MESSAGE =
       """
           Task Listener job completion with variables payload provided is not yet supported \
@@ -178,6 +183,7 @@ public final class JobCompleteProcessor
             "complete",
             List.of(State.ACTIVATABLE, State.ACTIVATED),
             List.of(
+                JobReservationFencingCheck.forCommand(),
                 JobLeaseFencingCheck.forLifecycleCommand(),
                 this::checkAdHocSubprocessActivationTargetsAreValid,
                 this::checkAdHocSubprocessInstanceIsActive,
@@ -187,7 +193,8 @@ public final class JobCompleteProcessor
                 this::checkTaskListenerJobForDenyingWithCorrections,
                 this::checkCreatingListenerJobForAssigneeCorrection,
                 this::checkTaskListenerJobForUnknownPropertyCorrections,
-                this::checkBusinessIdAssignment),
+                this::checkBusinessIdAssignment,
+                this::checkRunCalledProcessOnlyForCallActivityStub),
             tenantCheck);
     this.cslCheck = cslCheck;
     this.jobMetrics = jobMetrics;
@@ -351,6 +358,10 @@ public final class JobCompleteProcessor
       }
       case AD_HOC_SUB_PROCESS -> handleAdHocSubProcessJob(commandWriter, value, elementInstance);
       default -> {
+        if (value.isCallActivityStub()) {
+          completeStubbedCallActivity(value, elementInstance);
+          return;
+        }
         final long scopeKey = elementInstance.getValue().getFlowScopeKey();
         final ElementInstance scopeInstance = elementInstanceState.getInstance(scopeKey);
 
@@ -363,6 +374,46 @@ public final class JobCompleteProcessor
         }
       }
     }
+  }
+
+  /**
+   * Completes the call activity the job stood in for, as if the process it calls had completed and
+   * returned the job's variables.
+   *
+   * <p>The event trigger is written under {@link
+   * ExecutableCallActivity#propagatesCalledProcessVariables()}, the same condition the engine
+   * applies when a real called process completes, so that a call activity which propagates nothing
+   * does not start propagating just because its child was stood in for.
+   */
+  private void completeStubbedCallActivity(
+      final JobRecord value, final ElementInstance elementInstance) {
+    if (value.getResult().isRunCalledProcess()) {
+      // the completer wants the real process after all: the call activity is already activated, so
+      // the child instance is created from a follow-up command instead of during activation
+      commandWriter.appendFollowUpCommand(
+          elementInstance.getKey(),
+          ProcessInstanceIntent.START_CALLED_PROCESS,
+          elementInstance.getValue());
+      return;
+    }
+
+    final var callActivity =
+        processState
+            .getProcessState()
+            .getFlowElement(
+                elementInstance.getValue().getProcessDefinitionKey(),
+                elementInstance.getValue().getTenantId(),
+                elementInstance.getValue().getElementIdBuffer(),
+                ExecutableCallActivity.class);
+
+    if (callActivity.propagatesCalledProcessVariables()) {
+      eventHandle.triggeringProcessEvent(value);
+    }
+
+    commandWriter.appendFollowUpCommand(
+        elementInstance.getKey(),
+        ProcessInstanceIntent.COMPLETE_ELEMENT,
+        elementInstance.getValue());
   }
 
   private void handleAdHocSubProcessJob(
@@ -486,6 +537,21 @@ public final class JobCompleteProcessor
       }
     }
 
+    return Either.right(job);
+  }
+
+  /**
+   * Only a job that stands in for a called process can be told to start that process instead of
+   * standing in for it.
+   */
+  private Either<Rejection, JobRecord> checkRunCalledProcessOnlyForCallActivityStub(
+      final TypedRecord<JobRecord> command, final JobRecord job) {
+    if (command.getValue().getResult().isRunCalledProcess() && !job.isCallActivityStub()) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              RUN_CALLED_PROCESS_NOT_SUPPORTED_MESSAGE.formatted(command.getKey())));
+    }
     return Either.right(job);
   }
 

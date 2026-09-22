@@ -21,6 +21,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1;
+import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.CompleteUserTaskJobResultStep1;
 import io.camunda.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.client.api.search.enums.ElementInstanceState;
@@ -70,6 +71,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -125,6 +127,8 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   private final ConditionalBehaviorEngine conditionalBehaviorEngine;
 
   private final Supplier<CamundaDataSource> dataSourceSupplier;
+
+  private String jobReservationToken;
 
   public CamundaProcessTestContextImpl(
       final CamundaProcessTestRuntime camundaRuntime,
@@ -280,15 +284,11 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
                     job.getElementId());
 
             LOGGER.debug("{} with example data {}", logPrefix, exampleDataVariables);
-            client
-                .newCompleteCommand(job.getJobKey())
-                .variables(exampleDataVariables)
-                .send()
-                .join();
+            completeCommand(client, job.getJobKey()).variables(exampleDataVariables).send().join();
           } catch (final BpmnExampleDataReaderException e) {
 
             LOGGER.warn("{} without example data due to errors. {}", logPrefix, e.getMessage());
-            client.newCompleteCommand(job.getJobKey()).send().join();
+            completeCommand(client, job.getJobKey()).send().join();
           }
         });
   }
@@ -372,11 +372,60 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
                   .errorCode(errorCode)
                   .variables(variables);
 
+          if (jobReservationToken != null) {
+            command.withJobReservationToken(jobReservationToken);
+          }
+
           if (errorMessage != null) {
             command.errorMessage(errorMessage);
           }
 
           command.send().join();
+        });
+  }
+
+  @Override
+  public String getJobReservationToken() {
+    if (jobReservationToken == null) {
+      jobReservationToken = "cpt-" + UUID.randomUUID();
+    }
+    return jobReservationToken;
+  }
+
+  @Override
+  public void releaseJob(final JobSelector jobSelector) {
+    final CamundaClient client = createClient();
+
+    awaitJob(
+        jobSelector,
+        job -> {
+          LOGGER.debug(
+              "Mock: Release job [{}, jobKey: '{}']", jobSelector.describe(), job.getJobKey());
+
+          client
+              .newReleaseJobCommand(job.getJobKey())
+              .withJobReservationToken(getJobReservationToken())
+              .send()
+              .join();
+        });
+  }
+
+  @Override
+  public void runCalledProcess(final JobSelector jobSelector) {
+    final CamundaClient client = createClient();
+
+    awaitJob(
+        jobSelector,
+        job -> {
+          LOGGER.debug(
+              "Mock: Run the process called by [{}, jobKey: '{}']",
+              jobSelector.describe(),
+              job.getJobKey());
+
+          completeCommand(client, job.getJobKey())
+              .withResult(result -> result.forCallActivity().runCalledProcess())
+              .send()
+              .join();
         });
   }
 
@@ -553,8 +602,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
               job.getJobKey(),
               variables);
 
-          client
-              .newCompleteCommand(job.getJobKey())
+          completeCommand(client, job.getJobKey())
               .variables(variables)
               .withResult(
                   result -> {
@@ -651,8 +699,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
               jobSelector.describe(),
               job.getJobKey());
 
-          client
-              .newCompleteCommand(job.getJobKey())
+          completeCommand(client, job.getJobKey())
               .withResult(
                   result -> {
                     final CompleteUserTaskJobResultStep1 userTaskResult = result.forUserTask();
@@ -669,6 +716,15 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     return conditionalBehaviorEngine.when(condition);
   }
 
+  /** Builds a completion that carries this test's reservation token, if it has one. */
+  private CompleteJobCommandStep1 completeCommand(final CamundaClient client, final long jobKey) {
+    final CompleteJobCommandStep1 command = client.newCompleteCommand(jobKey);
+    if (jobReservationToken != null) {
+      command.withJobReservationToken(jobReservationToken);
+    }
+    return command;
+  }
+
   // completing the job inside the await block to handle the eventual consistency of the API
   private void doCompleteJob(
       final CamundaClient client,
@@ -683,7 +739,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
               jobSelector.describe(),
               job.getJobKey(),
               outputVariables);
-          client.newCompleteCommand(job.getJobKey()).variables(outputVariables).send().join();
+          completeCommand(client, job.getJobKey()).variables(outputVariables).send().join();
         });
   }
 

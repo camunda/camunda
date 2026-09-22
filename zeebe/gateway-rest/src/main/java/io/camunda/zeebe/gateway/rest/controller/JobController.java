@@ -13,6 +13,7 @@ import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.RequestMapper.CompleteJobRequest;
 import io.camunda.gateway.mapping.http.RequestMapper.ErrorJobRequest;
 import io.camunda.gateway.mapping.http.RequestMapper.FailJobRequest;
+import io.camunda.gateway.mapping.http.RequestMapper.ReleaseJobRequest;
 import io.camunda.gateway.mapping.http.RequestMapper.UpdateJobRequest;
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
@@ -27,6 +28,7 @@ import io.camunda.gateway.protocol.model.JobErrorRequest;
 import io.camunda.gateway.protocol.model.JobErrorStatisticsQuery;
 import io.camunda.gateway.protocol.model.JobErrorStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.JobFailRequest;
+import io.camunda.gateway.protocol.model.JobReleaseRequest;
 import io.camunda.gateway.protocol.model.JobSearchQuery;
 import io.camunda.gateway.protocol.model.JobSearchQueryResult;
 import io.camunda.gateway.protocol.model.JobTimeSeriesStatisticsQuery;
@@ -102,7 +104,8 @@ public class JobController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable final long jobKey,
       @RequestBody(required = false) final JobFailRequest failureRequest) {
-    return failJob(physicalTenantId, RequestMapper.toJobFailRequest(failureRequest, jobKey));
+    return RequestMapper.toJobFailRequest(failureRequest, jobKey)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, r -> failJob(physicalTenantId, r));
   }
 
   @CamundaPostMapping(path = "/{jobKey}/error")
@@ -122,6 +125,15 @@ public class JobController {
     return RequestMapper.toJobCompletionRequest(completionRequest, jobKey)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse, r -> completeJob(physicalTenantId, r));
+  }
+
+  @CamundaPostMapping(path = "/{jobKey}/release")
+  public CompletableFuture<ResponseEntity<Object>> releaseJob(
+      @PhysicalTenantId final String physicalTenantId,
+      @PathVariable final long jobKey,
+      @RequestBody final JobReleaseRequest releaseRequest) {
+    return RequestMapper.toJobReleaseRequest(releaseRequest, jobKey)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, r -> releaseJob(physicalTenantId, r));
   }
 
   @CamundaPatchMapping(path = "/{jobKey}")
@@ -240,6 +252,7 @@ public class JobController {
                 failJobRequest.retryBackoff(),
                 failJobRequest.variables(),
                 failJobRequest.jobLeaseToken(),
+                failJobRequest.jobReservationToken(),
                 authenticationProvider.getCamundaAuthentication()));
   }
 
@@ -254,6 +267,7 @@ public class JobController {
                 errorJobRequest.errorMessage(),
                 errorJobRequest.variables(),
                 errorJobRequest.jobLeaseToken(),
+                errorJobRequest.jobReservationToken(),
                 authenticationProvider.getCamundaAuthentication()));
   }
 
@@ -267,7 +281,19 @@ public class JobController {
                 completeJobRequest.variables(),
                 completeJobRequest.result(),
                 completeJobRequest.jobLeaseToken(),
+                completeJobRequest.jobReservationToken(),
                 completeJobRequest.businessId(),
+                authenticationProvider.getCamundaAuthentication()));
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> releaseJob(
+      final String physicalTenantId, final ReleaseJobRequest releaseJobRequest) {
+    final var jobServices = serviceRegistry.jobServices(physicalTenantId);
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
+        () ->
+            jobServices.releaseJob(
+                releaseJobRequest.jobKey(),
+                releaseJobRequest.jobReservationToken(),
                 authenticationProvider.getCamundaAuthentication()));
   }
 
@@ -281,6 +307,7 @@ public class JobController {
                 updateJobRequest.operationReference(),
                 updateJobRequest.changeset(),
                 updateJobRequest.jobLeaseToken(),
+                updateJobRequest.jobReservationToken(),
                 authenticationProvider.getCamundaAuthentication()));
   }
 

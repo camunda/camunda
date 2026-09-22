@@ -19,6 +19,8 @@ import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.vali
 import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobBatchUpdateRequest;
 import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobCompletionRequest;
 import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobErrorRequest;
+import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobFailRequest;
+import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobReleaseRequest;
 import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobUpdateRequest;
 import static io.camunda.gateway.mapping.http.validator.MessageRequestValidator.validateMessageCorrelationRequest;
 import static io.camunda.gateway.mapping.http.validator.MessageRequestValidator.validateMessagePublicationRequest;
@@ -32,6 +34,7 @@ import static io.camunda.gateway.mapping.http.validator.UserTaskRequestValidator
 import static io.camunda.gateway.mapping.http.validator.UserTaskRequestValidator.validateUpdateRequest;
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 import static io.camunda.zeebe.protocol.record.value.JobResultType.AD_HOC_SUB_PROCESS;
+import static io.camunda.zeebe.protocol.record.value.JobResultType.CALL_ACTIVITY;
 import static io.camunda.zeebe.protocol.record.value.JobResultType.USER_TASK;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -54,7 +57,9 @@ import io.camunda.gateway.protocol.model.JobBatchUpdateRequest;
 import io.camunda.gateway.protocol.model.JobCompletionRequest;
 import io.camunda.gateway.protocol.model.JobErrorRequest;
 import io.camunda.gateway.protocol.model.JobFailRequest;
+import io.camunda.gateway.protocol.model.JobReleaseRequest;
 import io.camunda.gateway.protocol.model.JobResultAdHocSubProcess;
+import io.camunda.gateway.protocol.model.JobResultCallActivity;
 import io.camunda.gateway.protocol.model.JobResultUserTask;
 import io.camunda.gateway.protocol.model.JobUpdateRequest;
 import io.camunda.gateway.protocol.model.MessageCorrelationRequest;
@@ -222,16 +227,19 @@ public class RequestMapper {
         buildActivateJobsRequest(activationRequest, tenantIdsResult.get(), tenantFilter));
   }
 
-  public static FailJobRequest toJobFailRequest(
+  public static Either<ProblemDetail, FailJobRequest> toJobFailRequest(
       final JobFailRequest failRequest, final long jobKey) {
-
-    return new FailJobRequest(
-        jobKey,
-        getIntOrZero(failRequest, JobFailRequest::getRetries),
-        getStringOrEmpty(failRequest, JobFailRequest::getErrorMessage),
-        getLongOrZero(failRequest, JobFailRequest::getRetryBackOff),
-        getMapOrEmpty(failRequest, JobFailRequest::getVariables),
-        failRequest == null ? null : failRequest.getJobLeaseToken());
+    return getResult(
+        validateJobFailRequest(failRequest),
+        () ->
+            new FailJobRequest(
+                jobKey,
+                getIntOrZero(failRequest, JobFailRequest::getRetries),
+                getStringOrEmpty(failRequest, JobFailRequest::getErrorMessage),
+                getLongOrZero(failRequest, JobFailRequest::getRetryBackOff),
+                getMapOrEmpty(failRequest, JobFailRequest::getVariables),
+                failRequest == null ? null : failRequest.getJobLeaseToken(),
+                failRequest == null ? null : failRequest.getJobReservationToken()));
   }
 
   public static Either<ProblemDetail, ErrorJobRequest> toJobErrorRequest(
@@ -246,7 +254,8 @@ public class RequestMapper {
                 errorRequest.getErrorCode(),
                 getStringOrEmpty(errorRequest, JobErrorRequest::getErrorMessage),
                 getMapOrEmpty(errorRequest, JobErrorRequest::getVariables),
-                errorRequest.getJobLeaseToken()));
+                errorRequest.getJobLeaseToken(),
+                errorRequest.getJobReservationToken()));
   }
 
   public static Either<ProblemDetail, CorrelateMessageRequest> toMessageCorrelationRequest(
@@ -281,7 +290,15 @@ public class RequestMapper {
                 getMapOrEmpty(completionRequest, JobCompletionRequest::getVariables),
                 getJobResultOrDefault(completionRequest),
                 completionRequest == null ? null : completionRequest.getJobLeaseToken(),
+                completionRequest == null ? null : completionRequest.getJobReservationToken(),
                 completionRequest == null ? null : completionRequest.getBusinessId()));
+  }
+
+  public static Either<ProblemDetail, ReleaseJobRequest> toJobReleaseRequest(
+      final JobReleaseRequest releaseRequest, final long jobKey) {
+    return getResult(
+        validateJobReleaseRequest(releaseRequest),
+        () -> new ReleaseJobRequest(jobKey, releaseRequest.getJobReservationToken()));
   }
 
   public static Either<ProblemDetail, UpdateJobRequest> toJobUpdateRequest(
@@ -297,7 +314,8 @@ public class RequestMapper {
                     updateRequest.getChangeset().getRetries(),
                     updateRequest.getChangeset().getTimeout(),
                     updateRequest.getChangeset().getPriority()),
-                updateRequest.getJobLeaseToken()));
+                updateRequest.getJobLeaseToken(),
+                updateRequest.getJobReservationToken()));
   }
 
   public static Either<ProblemDetail, BatchUpdateJobRequest> toJobBatchUpdateRequest(
@@ -822,6 +840,9 @@ public class RequestMapper {
     if (AD_HOC_SUB_PROCESS.getType().equals(type)) {
       return getJobResult((JobResultAdHocSubProcess) request.getResult());
     }
+    if (CALL_ACTIVITY.getType().equals(type)) {
+      return getJobResult((JobResultCallActivity) request.getResult());
+    }
     throw new IllegalStateException("Unexpected value: " + type);
   }
 
@@ -891,6 +912,13 @@ public class RequestMapper {
     return jobResult;
   }
 
+  private static JobResult getJobResult(final JobResultCallActivity result) {
+    return new JobResult()
+        .setType(JobResultType.from(result.getType()))
+        .setRunCalledProcess(
+            getBooleanOrDefault(result, JobResultCallActivity::getRunCalledProcess, false));
+  }
+
   private static <R> boolean getBooleanOrDefault(
       final @Nullable R request,
       final NullableExtractor<R, Boolean> valueExtractor,
@@ -956,27 +984,33 @@ public class RequestMapper {
       String errorMessage,
       Long retryBackoff,
       Map<String, Object> variables,
-      @Nullable String jobLeaseToken) {}
+      @Nullable String jobLeaseToken,
+      @Nullable String jobReservationToken) {}
 
   public record ErrorJobRequest(
       long jobKey,
       String errorCode,
       String errorMessage,
       Map<String, Object> variables,
-      @Nullable String jobLeaseToken) {}
+      @Nullable String jobLeaseToken,
+      @Nullable String jobReservationToken) {}
 
   public record CompleteJobRequest(
       long jobKey,
       Map<String, Object> variables,
       JobResult result,
       @Nullable String jobLeaseToken,
+      @Nullable String jobReservationToken,
       @Nullable String businessId) {}
+
+  public record ReleaseJobRequest(long jobKey, String jobReservationToken) {}
 
   public record UpdateJobRequest(
       long jobKey,
       @Nullable Long operationReference,
       UpdateJobChangeset changeset,
-      @Nullable String jobLeaseToken) {}
+      @Nullable String jobLeaseToken,
+      @Nullable String jobReservationToken) {}
 
   public record BroadcastSignalRequest(
       String signalName, Map<String, Object> variables, String tenantId) {}

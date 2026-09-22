@@ -104,6 +104,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
   private static final StringValue PRIORITY_KEY = new StringValue(PRIORITY);
   private static final StringValue JOB_LEASE_TOKEN_KEY = new StringValue("jobLeaseToken");
+  private static final StringValue JOB_RESERVATION_TOKEN_KEY =
+      new StringValue("jobReservationToken");
   private static final StringValue SECRET_REFERENCES_KEY = new StringValue("secretReferences");
   private final StringProperty typeProp = new StringProperty(TYPE_KEY, EMPTY_STRING);
   private final StringProperty workerProp = new StringProperty(WORKER_KEY, EMPTY_STRING);
@@ -155,11 +157,13 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private final IntegerProperty priorityProp = new IntegerProperty(PRIORITY_KEY, 0);
   private final StringProperty jobLeaseTokenProp =
       new StringProperty(JOB_LEASE_TOKEN_KEY, EMPTY_STRING);
+  private final StringProperty jobReservationTokenProp =
+      new StringProperty(JOB_RESERVATION_TOKEN_KEY, EMPTY_STRING);
   private final ArrayProperty<JobSecretReference> secretReferencesProp =
       new ArrayProperty<>(SECRET_REFERENCES_KEY, JobSecretReference::new);
 
   public JobRecord() {
-    super(31);
+    super(32);
     declareProperty(deadlineProp)
         .declareProperty(timeoutProp)
         .declareProperty(workerProp)
@@ -190,6 +194,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(priorityProp)
         .declareProperty(businessIdProp)
         .declareProperty(jobLeaseTokenProp)
+        .declareProperty(jobReservationTokenProp)
         .declareProperty(secretReferencesProp);
   }
 
@@ -225,6 +230,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     priorityProp.setValue(record.getPriority());
     businessIdProp.setValue(record.getBusinessIdBuffer());
     jobLeaseTokenProp.setValue(record.getJobLeaseTokenBuffer());
+    jobReservationTokenProp.setValue(record.getJobReservationTokenBuffer());
     copySecretReferencesFrom(record);
   }
 
@@ -359,6 +365,41 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   @Override
   public String getJobLeaseToken() {
     return bufferAsString(jobLeaseTokenProp.getValue());
+  }
+
+  @Override
+  public String getJobReservationToken() {
+    return bufferAsString(jobReservationTokenProp.getValue());
+  }
+
+  @JsonIgnore
+  public DirectBuffer getJobReservationTokenBuffer() {
+    return jobReservationTokenProp.getValue();
+  }
+
+  public JobRecord setJobReservationToken(final String jobReservationToken) {
+    jobReservationTokenProp.setValue(jobReservationToken);
+    return this;
+  }
+
+  public JobRecord setJobReservationToken(final DirectBuffer jobReservationToken) {
+    jobReservationTokenProp.setValue(jobReservationToken);
+    return this;
+  }
+
+  @JsonIgnore
+  public boolean hasJobReservationToken() {
+    return !getJobReservationToken().isEmpty();
+  }
+
+  /**
+   * Returns whether this job stands in for the process a stubbed call activity calls. Such a job is
+   * served to no job worker: it is completed by whoever created the process instance.
+   */
+  @JsonIgnore
+  public boolean isCallActivityStub() {
+    return getJobKind() == JobKind.BPMN_ELEMENT
+        && getElementType() == BpmnElementType.CALL_ACTIVITY;
   }
 
   @Override

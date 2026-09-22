@@ -31,6 +31,9 @@ import io.camunda.process.test.api.assertions.UserTaskSelectors;
 /** Factory for creating selector instances from DSL selectors. */
 final class InstructionSelectorFactory {
 
+  /** Mirrors {@code Protocol.CALL_ACTIVITY_STUB_JOB_TYPE}, which is not on this module's path. */
+  private static final String CALL_ACTIVITY_STUB_JOB_TYPE = "io.camunda.zeebe:callActivityStub";
+
   private InstructionSelectorFactory() {
     // Utility class
   }
@@ -119,6 +122,24 @@ final class InstructionSelectorFactory {
     }
 
     return selector;
+  }
+
+  /**
+   * Builds a job selector that identifies the job a stubbed call activity waits on, from a DSL
+   * element selector.
+   *
+   * @param dslSelector the DSL element selector identifying the call activity
+   * @return the job selector
+   * @throws IllegalArgumentException if the call activity is not selected by elementId
+   */
+  static JobSelector buildCallActivityStubJobSelector(
+      final io.camunda.process.test.api.testCases.ElementSelector dslSelector) {
+    if (dslSelector.getElementId().isPresent()) {
+      return JobSelectors.byJobType(CALL_ACTIVITY_STUB_JOB_TYPE)
+          .and(JobSelectors.byElementId(dslSelector.getElementId().get()));
+    }
+    throw new IllegalArgumentException(
+        "The call activity must be selected by elementId; a stub job is keyed by its element id.");
   }
 
   /**

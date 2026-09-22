@@ -10,6 +10,7 @@ package io.camunda.gateway.mapping.http.validator;
 import static io.camunda.gateway.mapping.http.util.KeyUtil.tryParseLong;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_DATE_PARSING;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_DURATION_PARSING;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_ILLEGAL_CHARACTER;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_DECISION_EVALUATION_INSTANCE_KEY_FORMAT;
@@ -47,6 +48,8 @@ public final class RequestValidator {
 
   /** Maximum allowed length for a business ID, matching the engine-side constraint. */
   public static final int MAX_BUSINESS_ID_LENGTH = 256;
+
+  public static final int MAX_JOB_RESERVATION_TOKEN_LENGTH = 128;
 
   public static Optional<ProblemDetail> createProblemDetail(final List<String> violations) {
     String problems = String.join(". ", violations);
@@ -216,6 +219,20 @@ public final class RequestValidator {
     if (businessId != null && businessId.length() > MAX_BUSINESS_ID_LENGTH) {
       violations.add(
           ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted("businessId", MAX_BUSINESS_ID_LENGTH));
+    }
+  }
+
+  public static void validateJobReservationToken(
+      final @Nullable String jobReservationToken, final List<String> violations) {
+    if (jobReservationToken == null) {
+      return;
+    }
+    if (jobReservationToken.isBlank()) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobReservationToken"));
+    } else if (jobReservationToken.length() > MAX_JOB_RESERVATION_TOKEN_LENGTH) {
+      violations.add(
+          ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(
+              "jobReservationToken", MAX_JOB_RESERVATION_TOKEN_LENGTH));
     }
   }
 }

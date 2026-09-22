@@ -120,6 +120,19 @@ public final class ProcessInstanceClient {
       return this;
     }
 
+    public ProcessInstanceCreationClient withJobReservationToken(final String jobReservationToken) {
+      processInstanceCreationRecord.addRuntimeInstruction(
+          new ProcessInstanceCreationRuntimeInstruction()
+              .setType(RuntimeInstructionType.RESERVE_JOBS)
+              .setJobReservationToken(jobReservationToken));
+      return this;
+    }
+
+    public ProcessInstanceCreationClient withStubbedCallActivities() {
+      processInstanceCreationRecord.setStubCallActivities(true);
+      return this;
+    }
+
     public ProcessInstanceCreationClient withVariables(final Map<String, Object> variables) {
       processInstanceCreationRecord.setVariables(MsgPackUtil.asMsgPack(variables));
       return this;

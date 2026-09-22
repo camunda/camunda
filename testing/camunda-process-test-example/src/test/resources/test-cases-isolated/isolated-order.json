@@ -1,0 +1,266 @@
+{
+  "$schema": "https://camunda.com/json-schema/cpt-test-cases/8.11/schema.json",
+  "testCases": [
+    {
+      "name": "Stand in for the shipping process",
+      "description": "The instance holds its jobs back from every worker, and the call activity completes without the shipping process ever running.",
+      "instructions": [
+        {
+          "type": "CREATE_PROCESS_INSTANCE",
+          "processDefinitionSelector": {
+            "processDefinitionId": "isolated-order"
+          },
+          "variables": {
+            "orderId": "A-1001"
+          },
+          "reserveJobs": true,
+          "stubCallActivities": true
+        },
+        {
+          "type": "COMPLETE_JOB",
+          "jobSelector": {
+            "elementId": "ServiceTask_ChargeCard"
+          },
+          "variables": {
+            "paymentStatus": "APPROVED"
+          }
+        },
+        {
+          "type": "STUB_CALL_ACTIVITY_COMPLETE",
+          "elementSelector": {
+            "elementId": "CallActivity_ShipOrder"
+          },
+          "variables": {
+            "trackingCode": "TRK-1001"
+          }
+        },
+        {
+          "type": "ASSERT_VARIABLES",
+          "processInstanceSelector": {
+            "processDefinitionId": "isolated-order"
+          },
+          "variables": {
+            "trackingCode": "TRK-1001"
+          }
+        },
+        {
+          "type": "COMPLETE_JOB",
+          "jobSelector": {
+            "elementId": "ServiceTask_SendInvoice"
+          }
+        },
+        {
+          "type": "ASSERT_PROCESS_INSTANCE",
+          "processInstanceSelector": {
+            "processDefinitionId": "isolated-order"
+          },
+          "state": "IS_COMPLETED"
+        }
+      ]
+    },
+    {
+      "name": "Run the real shipping process, stub the notification it calls",
+      "description": "The shipping process runs for real, and the call activity nested inside it is stubbed too - the switch is inherited, so no extra configuration is needed.",
+      "instructions": [
+        {
+          "type": "CREATE_PROCESS_INSTANCE",
+          "processDefinitionSelector": {
+            "processDefinitionId": "isolated-order"
+          },
+          "variables": {
+            "orderId": "A-1002"
+          },
+          "reserveJobs": true,
+          "stubCallActivities": true
+        },
+        {
+          "type": "COMPLETE_JOB",
+          "jobSelector": {
+            "elementId": "ServiceTask_ChargeCard"
+          }
+        },
+        {
+          "type": "RUN_CALLED_PROCESS",
+          "elementSelector": {
+            "elementId": "CallActivity_ShipOrder"
+          }
+        },
+        {
+          "type": "COMPLETE_JOB",
+          "jobSelector": {
+            "elementId": "ServiceTask_DispatchParcel"
+          },
+          "variables": {
+            "trackingCode": "TRK-1002"
+          }
+        },
+        {
+          "type": "STUB_CALL_ACTIVITY_COMPLETE",
+          "elementSelector": {
+            "elementId": "CallActivity_NotifyCustomer"
+          }
+        },
+        {
+          "type": "COMPLETE_JOB",
+          "jobSelector": {
+            "elementId": "ServiceTask_SendInvoice"
+          }
+        },
+        {
+          "type": "ASSERT_VARIABLES",
+          "processInstanceSelector": {
+            "processDefinitionId": "isolated-order"
+          },
+          "variables": {
+            "trackingCode": "TRK-1002"
+          }
+        },
+        {
+          "type": "ASSERT_PROCESS_INSTANCE",
+          "processInstanceSelector": {
+            "processDefinitionId": "isolated-order"
+          },
+          "state": "IS_COMPLETED"
+        }
+      ]
+    },
+    {
+      "name": "The shipping process declines the order",
+      "description": "A job that stands in for a called process takes a BPMN error like any other, so the error boundary event on the call activity is covered without a shipping process that fails.",
+      "instructions": [
+        {
+          "type": "CREATE_PROCESS_INSTANCE",
+          "processDefinitionSelector": {
+            "processDefinitionId": "isolated-order"
+          },
+          "variables": {
+            "orderId": "A-1003"
+          },
+          "reserveJobs": true,
+          "stubCallActivities": true
+        },
+        {
+          "type": "COMPLETE_JOB",
+          "jobSelector": {
+            "elementId": "ServiceTask_ChargeCard"
+          }
+        },
+        {
+          "type": "STUB_CALL_ACTIVITY_THROW_ERROR",
+          "elementSelector": {
+            "elementId": "CallActivity_ShipOrder"
+          },
+          "errorCode": "SHIPPING_DECLINED",
+          "errorMessage": "The carrier refused the parcel."
+        },
+        {
+          "type": "ASSERT_ELEMENT_INSTANCE",
+          "processInstanceSelector": {
+            "processDefinitionId": "isolated-order"
+          },
+          "elementSelector": {
+            "elementId": "EndEvent_OrderDeclined"
+          },
+          "state": "IS_COMPLETED"
+        },
+        {
+          "type": "ASSERT_PROCESS_INSTANCE",
+          "processInstanceSelector": {
+            "processDefinitionId": "isolated-order"
+          },
+          "state": "IS_COMPLETED"
+        }
+      ]
+    },
+    {
+      "name": "Hand the invoice job to the real worker",
+      "description": "Releasing a reserved job unreserves it, so SendInvoiceWorker gets it and runs for real. Requires that worker to be running.",
+      "instructions": [
+        {
+          "type": "CREATE_PROCESS_INSTANCE",
+          "processDefinitionSelector": {
+            "processDefinitionId": "isolated-order"
+          },
+          "variables": {
+            "orderId": "A-1004"
+          },
+          "reserveJobs": true,
+          "stubCallActivities": true
+        },
+        {
+          "type": "COMPLETE_JOB",
+          "jobSelector": {
+            "elementId": "ServiceTask_ChargeCard"
+          }
+        },
+        {
+          "type": "STUB_CALL_ACTIVITY_COMPLETE",
+          "elementSelector": {
+            "elementId": "CallActivity_ShipOrder"
+          },
+          "variables": {
+            "trackingCode": "TRK-1004"
+          }
+        },
+        {
+          "type": "RELEASE_JOB",
+          "jobSelector": {
+            "elementId": "ServiceTask_SendInvoice"
+          }
+        },
+        {
+          "type": "ASSERT_VARIABLES",
+          "processInstanceSelector": {
+            "processDefinitionId": "isolated-order"
+          },
+          "variables": {
+            "invoiceNumber": "INV-A-1004"
+          }
+        },
+        {
+          "type": "ASSERT_PROCESS_INSTANCE",
+          "processInstanceSelector": {
+            "processDefinitionId": "isolated-order"
+          },
+          "state": "IS_COMPLETED"
+        }
+      ]
+    },
+    {
+      "name": "Stub the call activities without reserving the jobs",
+      "description": "The two switches are independent: this instance's service-task jobs are served to the real workers, while its call activity still starts no child.",
+      "instructions": [
+        {
+          "type": "MOCK_JOB_WORKER_COMPLETE_JOB",
+          "jobType": "charge-card"
+        },
+        {
+          "type": "CREATE_PROCESS_INSTANCE",
+          "processDefinitionSelector": {
+            "processDefinitionId": "isolated-order"
+          },
+          "variables": {
+            "orderId": "A-1006"
+          },
+          "stubCallActivities": true
+        },
+        {
+          "type": "STUB_CALL_ACTIVITY_COMPLETE",
+          "elementSelector": {
+            "elementId": "CallActivity_ShipOrder"
+          },
+          "variables": {
+            "trackingCode": "TRK-1006"
+          }
+        },
+        {
+          "type": "ASSERT_PROCESS_INSTANCE",
+          "processInstanceSelector": {
+            "processDefinitionId": "isolated-order"
+          },
+          "state": "IS_COMPLETED"
+        }
+      ]
+    }
+  ]
+}

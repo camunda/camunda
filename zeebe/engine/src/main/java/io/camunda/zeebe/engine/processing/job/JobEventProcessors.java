@@ -128,6 +128,15 @@ public final class JobEventProcessors {
             new JobUpdateProcessor(bpmnBehaviors.jobUpdateBehaviour(), writers))
         .onCommand(
             ValueType.JOB,
+            JobIntent.RELEASE,
+            new JobReleaseProcessor(
+                processingState,
+                writers,
+                bpmnBehaviors.jobActivationBehavior(),
+                cslCheck,
+                tenantCheck))
+        .onCommand(
+            ValueType.JOB,
             JobIntent.CANCEL,
             new JobCancelProcessor(
                 processingState, bpmnBehaviors.agentDefinitionBehavior(), jobMetrics, writers))

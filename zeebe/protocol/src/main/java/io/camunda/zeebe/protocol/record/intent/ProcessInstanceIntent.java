@@ -93,7 +93,15 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
    * again until none are left, then handing off to {@link #COMPLETE_RESUMING}. The drain processor
    * writes the first cycle when the buffered-command drain is complete.
    */
-  RESUME_JOBS((short) 23, false);
+  RESUME_JOBS((short) 23, false),
+
+  /**
+   * Represents the internal command that starts the process a stubbed call activity calls after
+   * all, instead of standing in for it. The stub job's completion writes it when the completer asks
+   * for the real called process; a stubbed call activity is waiting in {@link #ELEMENT_ACTIVATED},
+   * so the child instance is created from this command rather than during activation.
+   */
+  START_CALLED_PROCESS((short) 24, false);
 
   private static final Set<ProcessInstanceIntent> PROCESS_INSTANCE_COMMANDS =
       EnumSet.of(CANCEL, SUSPEND, RESUME, COMPLETE_RESUMING, RESUME_JOBS);
@@ -103,7 +111,8 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
           COMPLETE_ELEMENT,
           TERMINATE_ELEMENT,
           COMPLETE_EXECUTION_LISTENER,
-          CONTINUE_TERMINATING_ELEMENT);
+          CONTINUE_TERMINATING_ELEMENT,
+          START_CALLED_PROCESS);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -171,6 +180,8 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
         return COMPLETE_RESUMING;
       case 23:
         return RESUME_JOBS;
+      case 24:
+        return START_CALLED_PROCESS;
       default:
         return Intent.UNKNOWN;
     }

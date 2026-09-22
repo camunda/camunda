@@ -45,6 +45,7 @@ public class JobResult extends UnpackedObject implements JobResultValue {
       new StringValue("isCompletionConditionFulfilled");
   private static final StringValue CANCEL_REMAINING_INSTANCES_KEY =
       new StringValue("isCancelRemainingInstances");
+  private static final StringValue RUN_CALLED_PROCESS_KEY = new StringValue("runCalledProcess");
 
   private final EnumProperty<JobResultType> typeProp =
       new EnumProperty<>(TYPE_KEY, JobResultType.class, JobResultType.USER_TASK);
@@ -66,8 +67,12 @@ public class JobResult extends UnpackedObject implements JobResultValue {
   private final BooleanProperty isCancelRemainingInstancesProp =
       new BooleanProperty(CANCEL_REMAINING_INSTANCES_KEY, false);
 
+  // Call activity properties
+  private final BooleanProperty runCalledProcessProp =
+      new BooleanProperty(RUN_CALLED_PROCESS_KEY, false);
+
   public JobResult() {
-    super(8);
+    super(9);
     declareProperty(typeProp)
         .declareProperty(deniedProp)
         .declareProperty(correctionsProp)
@@ -75,7 +80,8 @@ public class JobResult extends UnpackedObject implements JobResultValue {
         .declareProperty(deniedReasonProp)
         .declareProperty(activateElementsProp)
         .declareProperty(isCompletionConditionFulfilledProp)
-        .declareProperty(isCancelRemainingInstancesProp);
+        .declareProperty(isCancelRemainingInstancesProp)
+        .declareProperty(runCalledProcessProp);
   }
 
   /** Sets all properties to current instance from provided user task job data */
@@ -88,6 +94,7 @@ public class JobResult extends UnpackedObject implements JobResultValue {
     setActivateElements(result.getActivateElements());
     setCompletionConditionFulfilled(result.isCompletionConditionFulfilled());
     setCancelRemainingInstances(result.isCancelRemainingInstances());
+    setRunCalledProcess(result.isRunCalledProcess());
   }
 
   @Override
@@ -97,6 +104,16 @@ public class JobResult extends UnpackedObject implements JobResultValue {
 
   public JobResult setType(final JobResultType type) {
     typeProp.setValue(type);
+    return this;
+  }
+
+  @Override
+  public boolean isRunCalledProcess() {
+    return runCalledProcessProp.getValue();
+  }
+
+  public JobResult setRunCalledProcess(final boolean runCalledProcess) {
+    runCalledProcessProp.setValue(runCalledProcess);
     return this;
   }
 

@@ -1,0 +1,3613 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test Studio Mock Architecture</title>
+    <style>
+      :root {
+        --bg: #0f1117;
+        --surface: #1a1d27;
+        --surface2: #22263a;
+        --border: #2e3350;
+        --text: #e8eaf6;
+        --text-muted: #8b90b8;
+        --blue: #4c8bf5;
+        --blue-light: #7ab3ff;
+        --green: #4caf82;
+        --orange: #f5a623;
+        --red: #f56c6c;
+        --purple: #9c6cf5;
+        --yellow: #f5d04c;
+        --teal: #4ccfcf;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Segoe UI", system-ui, sans-serif;
+        font-size: 13px;
+        line-height: 1.5;
+        padding: 24px;
+      }
+
+      h1 {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 4px;
+      }
+
+      .subtitle {
+        color: var(--text-muted);
+        font-size: 13px;
+        margin-bottom: 28px;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 24px;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 0;
+      }
+
+      .tab {
+        padding: 8px 18px;
+        border-radius: 6px 6px 0 0;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-muted);
+        border: 1px solid transparent;
+        border-bottom: none;
+        transition: all 0.15s;
+        background: transparent;
+        position: relative;
+        bottom: -1px;
+      }
+
+      .tab:hover {
+        color: var(--text);
+        background: var(--surface);
+      }
+
+      .tab.active {
+        color: var(--blue-light);
+        background: var(--surface);
+        border-color: var(--border);
+        border-bottom-color: var(--surface);
+      }
+
+      .panel {
+        display: none;
+      }
+      .panel.active {
+        display: block;
+      }
+
+      /* TL;DR */
+      .tldr {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--blue);
+        border-radius: 8px;
+        padding: 18px 20px;
+        margin-bottom: 24px;
+      }
+
+      .tldr h2 {
+        font-size: 14px;
+        margin: 0 0 12px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--blue-light);
+      }
+
+      .tldr ul {
+        margin: 0;
+        padding-left: 18px;
+        font-size: 13px;
+        line-height: 1.75;
+      }
+
+      .tldr li {
+        margin-bottom: 6px;
+      }
+      .tldr li:last-child {
+        margin-bottom: 0;
+      }
+      .tldr strong {
+        color: var(--text);
+      }
+
+      .jump {
+        color: var(--blue-light);
+        text-decoration: none;
+        border-bottom: 1px dotted var(--blue);
+        cursor: pointer;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+
+      .jump:hover {
+        color: var(--text);
+        border-bottom-color: var(--text);
+      }
+
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 20px;
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 18px;
+      }
+
+      .card-title {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .badge {
+        font-size: 10px;
+        padding: 2px 7px;
+        border-radius: 20px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .badge-red {
+        background: rgba(245, 108, 108, 0.15);
+        color: var(--red);
+      }
+      .badge-green {
+        background: rgba(76, 175, 130, 0.15);
+        color: var(--green);
+      }
+      .badge-blue {
+        background: rgba(76, 139, 245, 0.15);
+        color: var(--blue-light);
+      }
+      .badge-orange {
+        background: rgba(245, 166, 35, 0.15);
+        color: var(--orange);
+      }
+
+      /* Flow diagram */
+      .flow {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+
+      .flow-row {
+        display: flex;
+        align-items: center;
+        gap: 0;
+      }
+
+      .flow-box {
+        border-radius: 7px;
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 500;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      .flow-box.zeebe {
+        background: rgba(76, 139, 245, 0.12);
+        border: 1px solid rgba(76, 139, 245, 0.3);
+        color: var(--blue-light);
+      }
+      .flow-box.worker {
+        background: rgba(76, 175, 130, 0.12);
+        border: 1px solid rgba(76, 175, 130, 0.3);
+        color: var(--green);
+      }
+      .flow-box.connector {
+        background: rgba(156, 108, 245, 0.12);
+        border: 1px solid rgba(156, 108, 245, 0.3);
+        color: var(--purple);
+      }
+      .flow-box.teststudio {
+        background: rgba(245, 166, 35, 0.12);
+        border: 1px solid rgba(245, 166, 35, 0.3);
+        color: var(--orange);
+      }
+      .flow-box.engine {
+        background: rgba(76, 207, 207, 0.12);
+        border: 1px solid rgba(76, 207, 207, 0.3);
+        color: var(--teal);
+      }
+      .flow-box.problem {
+        background: rgba(245, 108, 108, 0.12);
+        border: 1px solid rgba(245, 108, 108, 0.3);
+        color: var(--red);
+      }
+      .flow-box.neutral {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+      }
+
+      .arrow {
+        color: var(--text-muted);
+        font-size: 14px;
+        padding: 0 6px;
+        flex-shrink: 0;
+      }
+
+      .arrow-down {
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 14px;
+        padding: 3px 0;
+        margin-left: 20px;
+      }
+
+      .flow-label {
+        font-size: 10px;
+        color: var(--text-muted);
+        padding: 0 6px;
+        font-style: italic;
+      }
+
+      /* Comparison table */
+      .compare-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+
+      .compare-table th {
+        background: var(--surface2);
+        padding: 10px 14px;
+        text-align: left;
+        font-weight: 600;
+        color: var(--text-muted);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .compare-table td {
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+      }
+
+      .compare-table tr:last-child td {
+        border-bottom: none;
+      }
+      .compare-table tr:hover td {
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .check {
+        color: var(--green);
+        font-weight: 700;
+      }
+      .cross {
+        color: var(--red);
+        font-weight: 700;
+      }
+      .warn {
+        color: var(--orange);
+        font-weight: 700;
+      }
+
+      /* Architecture diagram */
+      .arch {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 16px;
+      }
+
+      .arch-title {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-muted);
+        margin-bottom: 14px;
+      }
+
+      .layer {
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        padding: 10px 14px;
+        margin-bottom: 8px;
+        position: relative;
+      }
+
+      .layer-label {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: var(--text-muted);
+        margin-bottom: 6px;
+      }
+
+      .layer-content {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .chip {
+        font-size: 11px;
+        padding: 3px 9px;
+        border-radius: 5px;
+        font-weight: 500;
+      }
+
+      .chip-blue {
+        background: rgba(76, 139, 245, 0.15);
+        color: var(--blue-light);
+        border: 1px solid rgba(76, 139, 245, 0.25);
+      }
+      .chip-green {
+        background: rgba(76, 175, 130, 0.15);
+        color: var(--green);
+        border: 1px solid rgba(76, 175, 130, 0.25);
+      }
+      .chip-purple {
+        background: rgba(156, 108, 245, 0.15);
+        color: var(--purple);
+        border: 1px solid rgba(156, 108, 245, 0.25);
+      }
+      .chip-orange {
+        background: rgba(245, 166, 35, 0.15);
+        color: var(--orange);
+        border: 1px solid rgba(245, 166, 35, 0.25);
+      }
+      .chip-teal {
+        background: rgba(76, 207, 207, 0.15);
+        color: var(--teal);
+        border: 1px solid rgba(76, 207, 207, 0.25);
+      }
+      .chip-red {
+        background: rgba(245, 108, 108, 0.15);
+        color: var(--red);
+        border: 1px solid rgba(245, 108, 108, 0.25);
+      }
+      .chip-gray {
+        background: var(--surface2);
+        color: var(--text-muted);
+        border: 1px solid var(--border);
+      }
+
+      .connector-arrow {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        font-size: 18px;
+        margin: 2px 0;
+      }
+
+      .highlight-box {
+        background: rgba(76, 139, 245, 0.07);
+        border: 1px solid rgba(76, 139, 245, 0.2);
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-top: 12px;
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      .highlight-box strong {
+        color: var(--blue-light);
+      }
+
+      .problem-box {
+        background: rgba(245, 108, 108, 0.07);
+        border: 1px solid rgba(245, 108, 108, 0.2);
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-top: 12px;
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      .problem-box strong {
+        color: var(--red);
+      }
+
+      .solution-box {
+        background: rgba(76, 175, 130, 0.07);
+        border: 1px solid rgba(76, 175, 130, 0.2);
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-top: 12px;
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      .solution-box strong {
+        color: var(--green);
+      }
+
+      .divider {
+        border: none;
+        border-top: 1px solid var(--border);
+        margin: 20px 0;
+      }
+
+      .section-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .dot-blue {
+        background: var(--blue);
+      }
+      .dot-green {
+        background: var(--green);
+      }
+      .dot-orange {
+        background: var(--orange);
+      }
+      .dot-red {
+        background: var(--red);
+      }
+      .dot-purple {
+        background: var(--purple);
+      }
+      .dot-teal {
+        background: var(--teal);
+      }
+
+      /* Sequence diagram */
+      .seq {
+        display: grid;
+        gap: 0;
+      }
+
+      .seq-row {
+        display: grid;
+        grid-template-columns: 110px 1fr 110px;
+        gap: 8px;
+        align-items: center;
+        min-height: 32px;
+      }
+
+      .seq-actor {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 4px 8px;
+        border-radius: 5px;
+        text-align: center;
+      }
+
+      .seq-msg {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        color: var(--text-muted);
+        position: relative;
+      }
+
+      .seq-line {
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+        position: relative;
+      }
+
+      .seq-line::after {
+        content: "▶";
+        position: absolute;
+        right: -6px;
+        top: -7px;
+        font-size: 10px;
+        color: var(--text-muted);
+      }
+
+      .seq-line-left::after {
+        content: "◀";
+        left: -6px;
+        right: auto;
+      }
+
+      .seq-label {
+        font-size: 10px;
+        color: var(--text-muted);
+        white-space: nowrap;
+        padding: 0 4px;
+      }
+
+      .seq-note {
+        grid-column: 1 / -1;
+        font-size: 11px;
+        color: var(--text-muted);
+        padding: 4px 8px;
+        font-style: italic;
+        text-align: center;
+      }
+
+      .seq-spacer {
+        height: 8px;
+      }
+
+      /* State machine */
+      .states {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        flex-wrap: wrap;
+      }
+
+      .state {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        border: 1px solid;
+      }
+
+      .state-arrow {
+        font-size: 12px;
+        color: var(--text-muted);
+        padding: 0 4px;
+      }
+
+      .state-note {
+        font-size: 10px;
+        color: var(--text-muted);
+        padding: 0 2px;
+      }
+
+      /* JSON payload blocks */
+      .payload {
+        background: #0c0e15;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px 14px;
+        margin: 10px 0 0;
+        font-family:
+          "SF Mono", "JetBrains Mono", ui-monospace, Menlo, monospace;
+        font-size: 11.5px;
+        line-height: 1.7;
+        color: #b7bcdd;
+        overflow-x: auto;
+        white-space: pre;
+        tab-size: 2;
+      }
+
+      .payload .k {
+        color: #7ab3ff;
+      }
+      .payload .s {
+        color: #7fd6a0;
+      }
+      .payload .n {
+        color: #f5a623;
+      }
+      .payload .c {
+        color: var(--text-muted);
+        font-style: italic;
+      }
+
+      /* a NEW field highlighted inside a payload */
+      .payload .add {
+        background: rgba(76, 175, 130, 0.16);
+        border-radius: 4px;
+        padding: 1px 4px;
+        font-weight: 700;
+        color: #b9f2d1;
+        box-shadow: inset 0 0 0 1px rgba(76, 175, 130, 0.4);
+      }
+      .payload .add .k {
+        color: #9cf0c2;
+      }
+
+      .payload-cap {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-muted);
+        margin-top: 4px;
+      }
+
+      .method {
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 5px;
+        letter-spacing: 0.04em;
+      }
+      .method-post {
+        background: rgba(76, 175, 130, 0.16);
+        color: var(--green);
+      }
+      .method-patch {
+        background: rgba(245, 166, 35, 0.16);
+        color: var(--orange);
+      }
+      .method-get {
+        background: rgba(76, 139, 245, 0.16);
+        color: var(--blue-light);
+      }
+
+      .legend {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+      }
+      .legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .swatch {
+        width: 22px;
+        height: 12px;
+        border-radius: 3px;
+        display: inline-block;
+      }
+      .swatch-add {
+        background: rgba(76, 175, 130, 0.16);
+        box-shadow: inset 0 0 0 1px rgba(76, 175, 130, 0.4);
+      }
+
+      /* horizontal token-lifecycle pipeline */
+      .pipe {
+        display: flex;
+        align-items: stretch;
+        gap: 0;
+        flex-wrap: wrap;
+        margin-top: 6px;
+      }
+      .pipe-step {
+        flex: 1 1 0;
+        min-width: 150px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        background: var(--surface2);
+        position: relative;
+      }
+      .pipe-step + .pipe-step {
+        margin-left: 20px;
+      }
+      .pipe-step + .pipe-step::before {
+        content: "›";
+        position: absolute;
+        left: -15px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 20px;
+        color: var(--text-muted);
+      }
+      .pipe-where {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--teal);
+        margin-bottom: 5px;
+      }
+      .pipe-what {
+        font-size: 11.5px;
+        color: var(--text);
+        line-height: 1.5;
+      }
+      .pipe-sub {
+        font-size: 10px;
+        color: var(--text-muted);
+        margin-top: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Test Studio Mock Architecture</h1>
+    <p class="subtitle">
+      Current state vs. engine-level isolation — Job Workers, Connectors & Call
+      Activities
+    </p>
+    <p class="subtitle" style="margin-top: -20px">
+      Reconciled with the spike on
+      <code>feat/exclusive-job-dispatch-lease</code>
+      (<code>RESERVED-JOBS-PLAN.md</code>,
+      <code>STUBBED-CALL-ACTIVITIES-PLAN.md</code>), 2026-09-21. Both switches
+      are alpha, REST v2 only, <code>x-added-in-version: 8.11</code>.
+    </p>
+
+    <div class="tldr">
+      <h2>TL;DR</h2>
+      <ul>
+        <li>
+          <strong>Problem:</strong> Recording a test against a real cluster
+          loses the steps the test is about: a job worker takes every job within
+          milliseconds, and a call activity starts the real child process. Today
+          the only isolation is switching the cluster's workers off, or
+          deploying a stub process definition — both cluster-wide, so two people
+          cannot record at the same time.
+        </li>
+        <li>
+          <strong
+            >Fix: two independent switches, both set when the instance is
+            created:</strong
+          >
+          <code>RESERVE_JOBS</code> stamps the caller's token on every job the
+          instance creates, so they are served to no worker (<a
+            class="jump"
+            onclick="showTab('jobs')"
+            >Job Workers &amp; Connectors →</a
+          >). <code>stubCallActivities</code> activates each call activity with
+          no child, waiting instead on a job that stands in for the called
+          process (<a class="jump" onclick="showTab('callactivity')"
+            >Call Activities →</a
+          >).
+        </li>
+        <li>
+          <strong>What Test Studio gets:</strong> Both produce ordinary jobs
+          visible in <code>/v2/jobs/search</code>, so a recording session has
+          <em>one</em> inbox of pending decisions. Per item: complete it with
+          variables (mock), or hand it to the real thing —
+          <code>release</code> for a reserved job,
+          <code>runCalledProcess</code> for a stubbed call activity.
+        </li>
+        <li>
+          <strong>Status:</strong> Implemented and tested on
+          <code>feat/exclusive-job-dispatch-lease</code>, not merged. Alpha,
+          REST v2 only, <code>x-added-in-version: 8.11</code>. Needs an ADR —
+          the call-activity switch changes BPMN execution semantics (<a
+            class="jump"
+            onclick="showTab('limits')"
+            >Limitations &amp; Verdict →</a
+          >). The Java client and CPT now carry both switches — fluent setters,
+          the reservation token on the job commands, a release command, and JSON
+          test-case instructions that replay in every runtime mode. What is
+          still open in CPT is the cluster purge and the round-trip breaks, not
+          the switches (<a class="jump" onclick="showTab('cpt')">CPT →</a>).
+        </li>
+        <li>
+          <strong>Rejected alternative:</strong> A
+          <em>static child process result</em> declared at instance creation is
+          easier to integrate, but it removes the wait state: nobody is there to
+          ask “mock this child, or run the real one?” (<a
+            class="jump"
+            onclick="showTab('callactivity')"
+            >card at the bottom of Call Activities →</a
+          >).
+        </li>
+        <li>
+          <strong>Where the rest is:</strong> Request and response shapes in
+          <a class="jump" onclick="showTab('api')"
+            >Orchestration Cluster API changes →</a
+          >; the two switches contrasted in
+          <a class="jump" onclick="showTab('compare')"
+            >Side-by-Side Comparison →</a
+          >; what the recorder itself still needs — and why the existing CPT
+          mocks are warned about rather than replaced — in
+          <a class="jump" onclick="showTab('studio')">Test Studio →</a>.
+        </li>
+      </ul>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="jobs" onclick="showTab('jobs')">
+        Job Workers &amp; Connectors
+      </div>
+      <div
+        class="tab"
+        data-tab="callactivity"
+        onclick="showTab('callactivity')"
+      >
+        Call Activities
+      </div>
+      <div class="tab" data-tab="compare" onclick="showTab('compare')">
+        Side-by-Side Comparison
+      </div>
+      <div class="tab" data-tab="limits" onclick="showTab('limits')">
+        Limitations &amp; Verdict
+      </div>
+      <div class="tab" data-tab="api" onclick="showTab('api')">
+        Orchestration Cluster API
+      </div>
+      <div class="tab" data-tab="cpt" onclick="showTab('cpt')">CPT</div>
+      <div class="tab" data-tab="studio" onclick="showTab('studio')">
+        Test Studio
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ TAB 1 -->
+    <div class="panel active" id="tab-jobs">
+      <div class="grid-2">
+        <!-- CURRENT STATE -->
+        <div class="card">
+          <div class="card-title">
+            <span>Current State</span>
+            <span class="badge badge-red">Problem</span>
+          </div>
+
+          <div class="section-title">
+            <div class="dot dot-red"></div>
+            How it works today
+          </div>
+
+          <div class="arch">
+            <div class="arch-title">Normal flow (no Test Studio)</div>
+            <div class="layer" style="border-color: rgba(76, 139, 245, 0.3)">
+              <div class="layer-label">Zeebe Engine</div>
+              <div class="layer-content">
+                <span class="chip chip-blue">Service Task</span>
+                <span style="color: var(--text-muted); font-size: 11px">→</span>
+                <span class="chip chip-blue">Job CREATED</span>
+                <span style="color: var(--text-muted); font-size: 11px">→</span>
+                <span class="chip chip-blue">ACTIVATABLE</span>
+              </div>
+            </div>
+            <div class="connector-arrow">↓</div>
+            <div class="layer" style="border-color: rgba(156, 108, 245, 0.3)">
+              <div class="layer-label">Connector Runtime (= job worker)</div>
+              <div class="layer-content">
+                <span class="chip chip-purple">activateJobs(type)</span>
+                <span style="color: var(--text-muted); font-size: 11px">→</span>
+                <span class="chip chip-purple">ConnectorJobHandler</span>
+                <span style="color: var(--text-muted); font-size: 11px">→</span>
+                <span class="chip chip-purple">execute()</span>
+                <span style="color: var(--text-muted); font-size: 11px">→</span>
+                <span class="chip chip-purple">completeJob</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="arch">
+            <div class="arch-title">Test Studio today — passive approach</div>
+            <div class="layer" style="border-color: rgba(76, 139, 245, 0.3)">
+              <div class="layer-label">Zeebe Engine</div>
+              <div class="layer-content">
+                <span class="chip chip-blue">Job ACTIVATABLE</span>
+              </div>
+            </div>
+            <div class="connector-arrow">
+              ↓
+              <span style="font-size: 10px; color: var(--text-muted)"
+                >real worker may grab it first</span
+              >
+            </div>
+            <div class="layer" style="border-color: rgba(245, 166, 35, 0.3)">
+              <div class="layer-label">Test Studio</div>
+              <div class="layer-content">
+                <span class="chip chip-orange">findActiveJob()</span>
+                <span style="color: var(--text-muted); font-size: 11px">→</span>
+                <span class="chip chip-orange">completeJob(mock vars)</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="problem-box">
+            <strong>⚠ Race condition:</strong> If a real worker or connector
+            runtime is running in the same cluster, it activates the job before
+            Test Studio can act. The job is already completed — Test Studio's
+            <code>completeJob</code> returns <code>NOT_FOUND</code>.
+          </div>
+        </div>
+
+        <!-- PROPOSED STATE -->
+        <div class="card">
+          <div class="card-title">
+            <span>Job Reservation</span>
+            <span class="badge badge-green"
+              >Implemented on branch — not merged</span
+            >
+          </div>
+
+          <div class="section-title">
+            <div class="dot dot-green"></div>
+            Engine-level isolation
+          </div>
+
+          <div class="arch">
+            <div class="arch-title">
+              createProcessInstance with a RESERVE_JOBS runtime instruction
+            </div>
+            <div class="layer" style="border-color: rgba(245, 166, 35, 0.3)">
+              <div class="layer-label">Test Studio</div>
+              <div class="layer-content">
+                <span class="chip chip-orange">POST /v2/process-instances</span>
+                <span style="color: var(--text-muted); font-size: 11px">+</span>
+                <span class="chip chip-orange"
+                  >runtimeInstructions: [{ type: "RESERVE_JOBS",
+                  jobReservationToken: "ts-123" }]</span
+                >
+              </div>
+            </div>
+            <div class="connector-arrow">↓</div>
+            <div class="layer" style="border-color: rgba(76, 207, 207, 0.3)">
+              <div class="layer-label">
+                Zeebe Engine — ProcessInstanceCreationHelper
+              </div>
+              <div class="layer-content">
+                <span class="chip chip-teal"
+                  >jobReservationTokenOf(runtimeInstructions)</span
+                >
+                <span class="chip chip-teal"
+                  >token stored on root instance record</span
+                >
+                <span class="chip chip-teal"
+                  >child instances read the root</span
+                >
+              </div>
+            </div>
+            <div class="connector-arrow">↓ when service task is reached</div>
+            <div class="layer" style="border-color: rgba(76, 207, 207, 0.3)">
+              <div class="layer-label">Zeebe Engine — BpmnJobBehavior</div>
+              <div class="layer-content">
+                <span class="chip chip-teal">token stamped onto JobRecord</span>
+                <span class="chip chip-teal"
+                  >job: ACTIVATABLE but INVISIBLE</span
+                >
+              </div>
+            </div>
+            <div class="connector-arrow">↓</div>
+            <div class="layer" style="border-color: rgba(76, 139, 245, 0.3)">
+              <div class="layer-label">JobBatchCollector</div>
+              <div class="layer-content">
+                <span class="chip chip-blue">hasReservationToken?</span>
+                <span style="color: var(--text-muted); font-size: 11px">→</span>
+                <span class="chip chip-red">SKIPPED_RESERVED</span>
+                <span style="color: var(--text-muted); font-size: 11px"
+                  >— no poller sees it</span
+                >
+              </div>
+            </div>
+            <div class="connector-arrow">↓ and on the push side</div>
+            <div class="layer" style="border-color: rgba(76, 139, 245, 0.3)">
+              <div class="layer-label">
+                BpmnJobActivationBehavior.publishWork
+              </div>
+              <div class="layer-content">
+                <span class="chip chip-red">early return</span>
+                <span style="color: var(--text-muted); font-size: 11px"
+                  >— job streams are not pushed to, pollers are not
+                  notified</span
+                >
+              </div>
+            </div>
+            <div class="connector-arrow">↓</div>
+            <div class="layer" style="border-color: rgba(245, 166, 35, 0.3)">
+              <div class="layer-label">Test Studio — acts by key</div>
+              <div class="layer-content">
+                <span class="chip chip-orange">GET /v2/jobs/search</span>
+                <span style="color: var(--text-muted); font-size: 11px">→</span>
+                <span class="chip chip-orange"
+                  >POST /v2/jobs/{jobKey}/completion</span
+                >
+                <span style="color: var(--text-muted); font-size: 11px">+</span>
+                <span class="chip chip-orange"
+                  >jobReservationToken: "ts-123"</span
+                >
+              </div>
+              <div class="layer-content" style="margin-top: 6px">
+                <span style="color: var(--text-muted); font-size: 11px"
+                  >or hand it to the real worker →</span
+                >
+                <span class="chip chip-green"
+                  >POST /v2/jobs/{jobKey}/release</span
+                >
+                <span style="color: var(--text-muted); font-size: 11px"
+                  >+ same token (one-way)</span
+                >
+              </div>
+            </div>
+          </div>
+
+          <div class="highlight-box" style="margin-top: 10px">
+            <strong>Two separate tokens:</strong>
+            <code>jobReservationToken</code> is caller-chosen and lives for the
+            instance; <code>jobLeaseToken</code> is engine-minted fresh per
+            activation. They are separate wire properties on the four job
+            commands, because sharing one field would make the
+            <code>JobLeaseToken</code> schema ("a client never creates one")
+            false. A reserved job is skipped before either lease-minting site,
+            so it is never leased and reserved at once.
+          </div>
+
+          <div class="solution-box">
+            <strong>✓ Engine guarantee:</strong> No worker — including Connector
+            Runtime — ever receives the job, by poll or by stream. Test Studio
+            drives it directly by key. No heartbeat loop needed. No TTL to
+            manage. Connector runtime can be running; it simply never sees the
+            job. Every command on the job (<code>completion</code>,
+            <code>failure</code>, <code>error</code>, <code>PATCH</code>,
+            <code>release</code>) is fenced by
+            <code>JobReservationFencingCheck</code>, chained ahead of the lease
+            check — a wrong or missing token is <code>409 INVALID_STATE</code>.
+          </div>
+        </div>
+      </div>
+
+      <!-- Connector detail -->
+      <div class="card">
+        <div class="card-title">
+          <span>Why this works for Connectors too</span>
+          <span class="badge badge-blue">Detail</span>
+        </div>
+
+        <div class="grid-2" style="margin-bottom: 0">
+          <div>
+            <div class="section-title" style="font-size: 12px">
+              <div class="dot dot-purple"></div>
+              Connector = Connector Runtime + Connector Function
+            </div>
+            <div class="arch" style="margin-bottom: 8px">
+              <div class="arch-title">Connector anatomy</div>
+              <div
+                class="layer"
+                style="
+                  border-color: rgba(156, 108, 245, 0.3);
+                  margin-bottom: 6px;
+                "
+              >
+                <div class="layer-label">
+                  Connector Runtime (job worker wrapper)
+                </div>
+                <div class="layer-content">
+                  <span class="chip chip-purple">activateJobs</span>
+                  <span class="chip chip-purple">secret resolution</span>
+                  <span class="chip chip-purple">result expression</span>
+                  <span class="chip chip-purple">error expression</span>
+                </div>
+              </div>
+              <div class="connector-arrow">wraps ↓</div>
+              <div class="layer" style="border-color: rgba(156, 108, 245, 0.2)">
+                <div class="layer-label">Connector Function (pure logic)</div>
+                <div class="layer-content">
+                  <span class="chip chip-gray">execute()</span>
+                  <span class="chip chip-gray">HTTP call / API call</span>
+                  <span class="chip chip-gray">returns result</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="section-title" style="font-size: 12px">
+              <div class="dot dot-green"></div>
+              What runs with reservation mock
+            </div>
+            <div style="margin-top: 8px">
+              <table class="compare-table">
+                <thead>
+                  <tr>
+                    <th>Component</th>
+                    <th>Runs?</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Connector Function (HTTP call)</td>
+                    <td>
+                      <span class="cross">✗ No</span> — job never activated
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Result expression / resultVariable</td>
+                    <td>
+                      <span class="cross">✗ No</span> — applied by the connector
+                      runtime, which never runs
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Error expression</td>
+                    <td>
+                      <span class="cross">✗ No</span> — same; BPMN errors must
+                      be thrown by the caller
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Secret resolution</td>
+                    <td>
+                      <span class="cross">✗ No</span> — runtime concern, never
+                      reached
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      Output variable mapping (<code>zeebe:ioMapping</code>)
+                    </td>
+                    <td>
+                      <span class="check">✓ Yes</span> — engine-side, normal
+                      Zeebe behavior
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Process routing / gateways</td>
+                    <td>
+                      <span class="check">✓ Yes</span> — process continues
+                      normally
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="highlight-box" style="margin-top: 10px">
+              <strong>Key insight:</strong> The connector runtime doesn't need
+              to be disabled. The engine hides the job before the runtime's
+              <code>activateJobs</code> poll even reaches it.
+            </div>
+            <div class="problem-box" style="margin-top: 10px">
+              <strong>⚠ What the user must author:</strong> because the result
+              expression does not run, the mock variables are the
+              <em>post-mapping payload the downstream elements should see</em> —
+              not the connector's raw HTTP response. A mock-connector UI that
+              asks for a raw response body would produce a wrong recording.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ TAB 2 -->
+    <div class="panel" id="tab-callactivity">
+      <div class="grid-2">
+        <!-- CURRENT STATE -->
+        <div class="card">
+          <div class="card-title">
+            <span>Current State</span>
+            <span class="badge badge-red">Problem</span>
+          </div>
+
+          <div class="section-title">
+            <div class="dot dot-red"></div>
+            MOCK_CHILD_PROCESS today
+          </div>
+
+          <div class="arch">
+            <div class="arch-title">Normal call activity flow</div>
+            <div class="layer" style="border-color: rgba(76, 139, 245, 0.3)">
+              <div class="layer-label">
+                Zeebe Engine — CallActivityProcessor
+              </div>
+              <div class="layer-content">
+                <span class="chip chip-blue">Call Activity reached</span>
+                <span style="color: var(--text-muted); font-size: 11px">→</span>
+                <span class="chip chip-blue">resolveCalledProcess()</span>
+                <span style="color: var(--text-muted); font-size: 11px">→</span>
+                <span class="chip chip-blue">startChildProcessInstance()</span>
+              </div>
+            </div>
+            <div class="connector-arrow">↓ child runs to completion</div>
+            <div class="layer" style="border-color: rgba(76, 139, 245, 0.3)">
+              <div class="layer-label">Parent resumes</div>
+              <div class="layer-content">
+                <span class="chip chip-blue">child completes</span>
+                <span style="color: var(--text-muted); font-size: 11px">→</span>
+                <span class="chip chip-blue">parent continues</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="arch">
+            <div class="arch-title">Current mock approach — what CPT does</div>
+            <div class="layer" style="border-color: rgba(245, 108, 108, 0.3)">
+              <div class="layer-label">
+                CPT
+                <code
+                  >mockChildProcess().withProcessId(id).thenComplete(vars)</code
+                >
+              </div>
+              <div class="layer-content">
+                <span class="chip chip-red"
+                  >deploys a stub definition for that process id</span
+                >
+                <span class="chip chip-red">cluster-wide</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="problem-box">
+            <strong>⚠ Global pollution:</strong> Deploying a stub process
+            affects the entire cluster. Any other process instance calling the
+            same child process ID will also hit the stub — not just the test
+            instance. Shared environments are unsafe.
+          </div>
+        </div>
+
+        <!-- PROPOSED STATE -->
+        <div class="card">
+          <div class="card-title">
+            <span>Call Activity Stub</span>
+            <span class="badge badge-green"
+              >Implemented on branch — not merged</span
+            >
+          </div>
+
+          <div class="section-title">
+            <div class="dot dot-green"></div>
+            Instance-scoped stub via engine
+          </div>
+
+          <div class="arch">
+            <div class="arch-title">
+              createProcessInstance with stubCallActivities: true
+            </div>
+            <div class="layer" style="border-color: rgba(245, 166, 35, 0.3)">
+              <div class="layer-label">Test Studio</div>
+              <div class="layer-content">
+                <span class="chip chip-orange">createProcessInstance</span>
+                <span style="color: var(--text-muted); font-size: 11px">+</span>
+                <span class="chip chip-orange">stubCallActivities: true</span>
+              </div>
+            </div>
+            <div class="connector-arrow">
+              ↓ flag stored on root instance record
+            </div>
+            <div class="layer" style="border-color: rgba(76, 207, 207, 0.3)">
+              <div class="layer-label">
+                Zeebe Engine — CallActivityProcessor.finalizeActivation
+              </div>
+              <div class="layer-content">
+                <span class="chip chip-teal">isStubbed(context)?</span>
+                <span style="color: var(--text-muted); font-size: 11px"
+                  >→ yes →</span
+                >
+                <span class="chip chip-teal">finalizeStubbedActivation()</span>
+              </div>
+            </div>
+            <div class="connector-arrow">↓ instead of starting child</div>
+            <div class="layer" style="border-color: rgba(76, 207, 207, 0.3)">
+              <div class="layer-label">Engine creates stub job</div>
+              <div class="layer-content">
+                <span class="chip chip-teal">element: ELEMENT_ACTIVATED</span>
+                <span class="chip chip-teal"
+                  >job type: io.camunda.zeebe:callActivityStub</span
+                >
+                <span class="chip chip-teal"
+                  >jobKind: BPMN_ELEMENT (no new JobKind)</span
+                >
+                <span class="chip chip-teal"
+                  >headers: process id, binding type, version tag</span
+                >
+                <span class="chip chip-teal">state: ACTIVATABLE</span>
+              </div>
+            </div>
+            <div class="connector-arrow">
+              ↓ hidden from workers, like a reserved job
+            </div>
+            <div class="layer" style="border-color: rgba(76, 139, 245, 0.3)">
+              <div class="layer-label">JobBatchCollector + publishWork</div>
+              <div class="layer-content">
+                <span class="chip chip-blue"
+                  >jobKind == BPMN_ELEMENT &amp;&amp; elementType ==
+                  CALL_ACTIVITY</span
+                >
+                <span style="color: var(--text-muted); font-size: 11px">→</span>
+                <span class="chip chip-red">SKIPPED_CALL_ACTIVITY_STUB</span>
+              </div>
+              <div class="layer-content" style="margin-top: 6px">
+                <span style="color: var(--text-muted); font-size: 11px"
+                  >structural, via <code>JobRecord.isCallActivityStub()</code> —
+                  and independent of the reservation token, so the two switches
+                  compose</span
+                >
+              </div>
+            </div>
+            <div class="connector-arrow">
+              ↓ Test Studio polls /v2/jobs/search
+            </div>
+            <div class="layer" style="border-color: rgba(245, 166, 35, 0.3)">
+              <div class="layer-label">Test Studio — user decides</div>
+              <div class="layer-content">
+                <span class="chip chip-orange"
+                  >Mock: <code>POST /v2/jobs/{jobKey}/completion</code> — {
+                  "variables": { … } }</span
+                >
+                <span class="chip chip-orange"
+                  >Real: <code>POST /v2/jobs/{jobKey}/completion</code> — {
+                  "result": { "type": "callActivity", "runCalledProcess": true }
+                  }</span
+                >
+              </div>
+            </div>
+          </div>
+
+          <div class="highlight-box" style="margin-top: 10px">
+            <strong>Propagate gate:</strong> a real child writes the parent's
+            event trigger only when the call activity has output mappings or
+            propagates all child variables. The stub path replicates that
+            condition before completing, so stubbing does not start propagating
+            variables the model says to drop — this is what keeps a recorded
+            stub equivalent to CPT's <code>mockChildProcess</code>.
+          </div>
+          <div class="problem-box" style="margin-top: 10px">
+            <strong>⚠ Not releasable:</strong>
+            <code>POST /v2/jobs/{jobKey}/release</code> is rejected for a stub
+            job — no job worker could ever run it, so handing it back would park
+            the call activity forever. The stub's escape hatch is
+            <code>runCalledProcess</code>, not release.
+          </div>
+        </div>
+      </div>
+
+      <!-- runCalledProcess detail -->
+      <div class="card">
+        <div class="card-title">
+          <span>runCalledProcess: true — what happens</span>
+          <span class="badge badge-blue">Detail</span>
+        </div>
+
+        <div class="grid-2" style="margin-bottom: 0">
+          <div>
+            <div class="arch">
+              <div class="arch-title">START_CALLED_PROCESS intent flow</div>
+              <div
+                class="layer"
+                style="
+                  border-color: rgba(245, 166, 35, 0.3);
+                  margin-bottom: 6px;
+                "
+              >
+                <div class="layer-label">Test Studio</div>
+                <div class="layer-content">
+                  <span class="chip chip-orange"
+                    >POST /v2/jobs/{jobKey}/completion</span
+                  >
+                  <span class="chip chip-orange"
+                    >result: { type: "callActivity", runCalledProcess: true
+                    }</span
+                  >
+                </div>
+              </div>
+              <div class="connector-arrow">↓</div>
+              <div
+                class="layer"
+                style="
+                  border-color: rgba(76, 207, 207, 0.3);
+                  margin-bottom: 6px;
+                "
+              >
+                <div class="layer-label">JobCompleteProcessor</div>
+                <div class="layer-content">
+                  <span class="chip chip-teal"
+                    >writes ProcessInstanceIntent.START_CALLED_PROCESS</span
+                  >
+                  <span style="color: var(--text-muted); font-size: 11px"
+                    >(not COMPLETE_ELEMENT)</span
+                  >
+                </div>
+              </div>
+              <div class="connector-arrow">↓</div>
+              <div
+                class="layer"
+                style="
+                  border-color: rgba(76, 207, 207, 0.3);
+                  margin-bottom: 6px;
+                "
+              >
+                <div class="layer-label">
+                  CallActivityProcessor.onStartCalledProcess
+                </div>
+                <div class="layer-content">
+                  <span class="chip chip-teal">resolveCalledProcess()</span>
+                  <span style="color: var(--text-muted); font-size: 11px"
+                    >← first lookup here</span
+                  >
+                  <span class="chip chip-teal"
+                    >startChildProcessInstance()</span
+                  >
+                </div>
+              </div>
+              <div class="connector-arrow">↓ if process not deployed</div>
+              <div class="layer" style="border-color: rgba(245, 108, 108, 0.3)">
+                <div class="layer-label">Incident created (recoverable)</div>
+                <div class="layer-content">
+                  <span class="chip chip-red">deploy process</span>
+                  <span style="color: var(--text-muted); font-size: 11px"
+                    >→</span
+                  >
+                  <span class="chip chip-red">resolve incident</span>
+                  <span style="color: var(--text-muted); font-size: 11px"
+                    >→</span
+                  >
+                  <span class="chip chip-teal"
+                    >retries START_CALLED_PROCESS</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="section-title" style="font-size: 12px">
+              <div class="dot dot-teal"></div>
+              Recursive propagation
+            </div>
+            <div class="arch">
+              <div class="arch-title">
+                stubCallActivities flag propagates automatically
+              </div>
+              <div
+                style="
+                  font-size: 12px;
+                  color: var(--text-muted);
+                  line-height: 1.8;
+                "
+              >
+                <div
+                  style="padding: 6px 0; border-bottom: 1px solid var(--border)"
+                >
+                  <span class="chip chip-orange" style="margin-right: 6px"
+                    >Root Instance</span
+                  >
+                  <span>stubCallActivities: true</span>
+                </div>
+                <div
+                  style="
+                    padding: 6px 0 6px 16px;
+                    border-bottom: 1px solid var(--border);
+                  "
+                >
+                  └
+                  <span class="chip chip-teal" style="margin: 0 6px"
+                    >Call Activity A</span
+                  >
+                  <span>→ stub job created</span>
+                </div>
+                <div
+                  style="
+                    padding: 6px 0 6px 16px;
+                    border-bottom: 1px solid var(--border);
+                  "
+                >
+                  &nbsp;&nbsp;&nbsp;└
+                  <span style="color: var(--text-muted)"
+                    >runCalledProcess: true</span
+                  >
+                  <span> → Child Process starts</span>
+                </div>
+                <div
+                  style="
+                    padding: 6px 0 6px 32px;
+                    border-bottom: 1px solid var(--border);
+                  "
+                >
+                  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└
+                  <span class="chip chip-teal" style="margin: 0 6px"
+                    >Call Activity B</span
+                  >
+                  <span>→ also stubbed ✓</span>
+                </div>
+                <div style="padding: 6px 0 6px 48px">
+                  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└
+                  <span style="color: var(--text-muted)"
+                    >isStubbed() checks root</span
+                  >
+                </div>
+              </div>
+            </div>
+            <div class="highlight-box">
+              <strong>Free recursion:</strong>
+              <code>isStubbed(context)</code> always reads from the root
+              instance. Any nested call activity — at any depth — is
+              automatically stubbed without extra configuration.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alternative considered -->
+      <div class="card">
+        <div class="card-title">
+          <span>Alternative considered: static child process result</span>
+          <span class="badge badge-orange"
+            >Rejected — review feedback, 2026-09-21</span
+          >
+        </div>
+
+        <p style="font-size: 13px; color: var(--text-muted); margin-top: 0">
+          Raised in review of the stub-job design. The concern was that the stub
+          job sits outside how the engine works today: it needs extra logic in
+          both the call activity and the job processors to handle a job that no
+          worker ever runs. This alternative trades some flexibility for a fit
+          that is easier to integrate into the engine.
+        </p>
+
+        <div class="grid-2" style="margin-bottom: 0">
+          <div>
+            <div class="section-title" style="font-size: 12px">
+              <div class="dot dot-orange"></div>
+              How it would work
+            </div>
+            <div class="arch">
+              <div class="arch-title">Result declared at instance creation</div>
+              <div
+                class="layer"
+                style="
+                  border-color: rgba(245, 166, 35, 0.3);
+                  margin-bottom: 6px;
+                "
+              >
+                <div class="layer-label">
+                  Test Studio — before the run starts
+                </div>
+                <div class="layer-content">
+                  <span class="chip chip-orange">createProcessInstance</span>
+                  <span style="color: var(--text-muted); font-size: 11px"
+                    >+</span
+                  >
+                  <span class="chip chip-orange"
+                    >childProcessResults: { "child-a": { … } }</span
+                  >
+                </div>
+              </div>
+              <div class="connector-arrow">
+                ↓ map stored on root instance record
+              </div>
+              <div
+                class="layer"
+                style="
+                  border-color: rgba(76, 207, 207, 0.3);
+                  margin-bottom: 6px;
+                "
+              >
+                <div class="layer-label">
+                  CallActivityProcessor.finalizeActivation
+                </div>
+                <div class="layer-content">
+                  <span class="chip chip-teal">evaluateProcessId()</span>
+                  <span style="color: var(--text-muted); font-size: 11px"
+                    >→ hit in map →</span
+                  >
+                  <span class="chip chip-teal">no child instance</span>
+                </div>
+              </div>
+              <div class="connector-arrow">
+                ↓ same two steps a real child's completion causes
+              </div>
+              <div class="layer" style="border-color: rgba(76, 207, 207, 0.3)">
+                <div class="layer-label">Element completes immediately</div>
+                <div class="layer-content">
+                  <span class="chip chip-teal"
+                    >event trigger (under the propagate gate)</span
+                  >
+                  <span class="chip chip-teal">COMPLETE_ELEMENT</span>
+                </div>
+              </div>
+            </div>
+            <div class="highlight-box">
+              <strong>What it would buy:</strong> nothing in the job subsystem
+              is touched — no job type, no worker hiding, no release rejection,
+              no <code>JobResultType.CALL_ACTIVITY</code>, no
+              <code>START_CALLED_PROCESS</code> intent and no incident retry for
+              it, and no job-record protocol churn. A process id absent from the
+              map runs the real child, so recording <em>through</em> a called
+              process still works — per definition rather than per instance.
+            </div>
+          </div>
+
+          <div>
+            <div class="section-title" style="font-size: 12px">
+              <div class="dot dot-red"></div>
+              Why we did not go with it
+            </div>
+            <div class="problem-box">
+              <strong
+                >⚠ It removes the wait state, which is the feature.</strong
+              >
+              Test Studio is meant to stop at each call activity and ask the
+              user: mock this child, or run the real child process? A result
+              declared before the instance starts has nobody to ask. Static
+              result cannot host that prompt — it can only replay a decision
+              made before the run began, which is not recording.
+            </div>
+            <div class="problem-box" style="margin-top: 10px">
+              <strong>⚠ One inbox becomes two.</strong> Reserved jobs are meant
+              to give Test Studio a single list of “things waiting for your
+              decision”, polled with <code>/v2/jobs/search</code> and answered
+              with one completion call. A stubbed call activity would appear in
+              that same list. A static result — or any element-level wait that
+              is not a job — would mean a second mechanism and a second list.
+            </div>
+            <div class="problem-box" style="margin-top: 10px">
+              <strong>⚠ Less expressive where it matters.</strong> No
+              per-call-activity-instance mock (a loop, or two call activities
+              calling the same child), no value chosen from what the run has
+              produced so far, no per-instance <code>runCalledProcess</code>,
+              and no way to make the called process <em>fail</em> so the
+              recorded test covers the error boundary event.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ TAB 3 -->
+    <div class="panel" id="tab-compare">
+      <div class="card" style="margin-bottom: 20px">
+        <div class="card-title">
+          <span>Full Comparison</span>
+          <span class="badge badge-blue">Summary</span>
+        </div>
+
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th>Concern</th>
+              <th>Current State</th>
+              <th>Job Reservation</th>
+              <th>Call Activity Stub</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Isolation scope</strong></td>
+              <td><span class="cross">✗</span> None — race condition</td>
+              <td><span class="check">✓</span> Per process instance</td>
+              <td><span class="check">✓</span> Per process instance</td>
+            </tr>
+            <tr>
+              <td><strong>Real worker in cluster</strong></td>
+              <td><span class="cross">✗</span> Grabs job first</td>
+              <td>
+                <span class="check">✓</span> Never sees the job (poll and
+                stream)
+              </td>
+              <td>
+                <span class="check">✓</span> Never sees the job — the stub job
+                has its own skip
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Connector runtime</strong></td>
+              <td><span class="cross">✗</span> Grabs job first</td>
+              <td><span class="check">✓</span> Never sees the job</td>
+              <td>
+                <span class="check">✓</span> N/A — a call activity creates no
+                connector job
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Heartbeat / TTL needed</strong></td>
+              <td>N/A</td>
+              <td><span class="check">✓</span> No — no activation</td>
+              <td><span class="check">✓</span> No — no activation</td>
+            </tr>
+            <tr>
+              <td><strong>Child process must be deployed</strong></td>
+              <td><span class="warn">~</span> Stub must be deployed</td>
+              <td>N/A</td>
+              <td><span class="check">✓</span> Not required for stub</td>
+            </tr>
+            <tr>
+              <td><strong>Global cluster pollution</strong></td>
+              <td><span class="cross">✗</span> Stub affects all instances</td>
+              <td><span class="check">✓</span> Instance-scoped</td>
+              <td><span class="check">✓</span> Instance-scoped</td>
+            </tr>
+            <tr>
+              <td><strong>New Zeebe state added</strong></td>
+              <td>No</td>
+              <td>
+                <span class="check">✓</span> No state — reuses ACTIVATABLE (but
+                new <code>JobIntent.RELEASE</code>/<code>RELEASED</code>)
+              </td>
+              <td>
+                <span class="check">✓</span> No state — reuses ELEMENT_ACTIVATED
+                (but new internal <code>START_CALLED_PROCESS</code>)
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Connector result/error expressions</strong></td>
+              <td><span class="check">✓</span> Yes — the runtime runs</td>
+              <td>
+                <span class="cross">✗</span> No — the runtime never runs; author
+                post-mapping variables
+              </td>
+              <td>N/A — no connector involved</td>
+            </tr>
+            <tr>
+              <td><strong>"Use real worker" option</strong></td>
+              <td><span class="cross">✗</span> Not possible safely</td>
+              <td>
+                <span class="check">✓</span>
+                <code>POST /v2/jobs/{jobKey}/release</code> — one-way
+              </td>
+              <td>
+                <span class="check">✓</span>
+                <code>runCalledProcess: true</code> (release is rejected)
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Nested call activities</strong></td>
+              <td>
+                <span class="cross">✗</span> Each must be stubbed manually
+              </td>
+              <td>N/A</td>
+              <td>
+                <span class="check">✓</span> Auto-propagated via root flag
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Engine-side output mapping</strong></td>
+              <td><span class="check">✓</span> Yes</td>
+              <td><span class="check">✓</span> Yes</td>
+              <td>
+                <span class="check">✓</span> Yes, gated by the propagate
+                condition
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <strong>Instance not created by the caller</strong><br /><span
+                  style="font-size: 11px"
+                  >message / signal start event, inbound connector</span
+                >
+              </td>
+              <td><span class="cross">✗</span> Race condition</td>
+              <td>
+                <span class="cross">✗</span> Out of reach — no create command to
+                carry the token
+              </td>
+              <td><span class="cross">✗</span> Out of reach — same</td>
+            </tr>
+            <tr>
+              <td><strong>gRPC / Java client</strong></td>
+              <td>N/A</td>
+              <td><span class="cross">✗</span> REST v2 only</td>
+              <td><span class="cross">✗</span> REST v2 only</td>
+            </tr>
+            <tr>
+              <td><strong>Session cleanup on crash</strong></td>
+              <td>N/A</td>
+              <td><span class="warn">~</span> Needs session-based cleanup</td>
+              <td><span class="warn">~</span> Needs session-based cleanup</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title"><span>Shared Design Principle</span></div>
+          <div
+            style="font-size: 12px; color: var(--text-muted); line-height: 1.8"
+          >
+            <p style="margin-bottom: 10px">
+              Both solutions follow the same pattern:
+            </p>
+            <div
+              class="layer"
+              style="border-color: rgba(245, 166, 35, 0.3); margin-bottom: 8px"
+            >
+              <div class="layer-content">
+                <span class="chip chip-orange"
+                  >flag / token on root instance record</span
+                >
+              </div>
+            </div>
+            <div class="connector-arrow">↓ inherited by all children</div>
+            <div
+              class="layer"
+              style="border-color: rgba(76, 207, 207, 0.3); margin-bottom: 8px"
+            >
+              <div class="layer-content">
+                <span class="chip chip-teal"
+                  >engine intercepts at creation time</span
+                >
+              </div>
+            </div>
+            <div class="connector-arrow">↓ no new state machine states</div>
+            <div class="layer" style="border-color: rgba(76, 175, 130, 0.3)">
+              <div class="layer-content">
+                <span class="chip chip-green"
+                  >Test Studio drives by job key + token</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" id="session-cleanup-card">
+          <div class="card-title">
+            <span>Session cleanup</span
+            ><span class="badge badge-orange">UI-owned</span>
+          </div>
+          <div
+            style="font-size: 12px; color: var(--text-muted); line-height: 1.8"
+          >
+            <p style="margin-bottom: 10px">
+              <strong style="color: var(--orange)">What happens</strong> — if
+              the user closes the tab or the browser crashes mid-recording:
+            </p>
+            <ul style="padding-left: 16px; margin-top: 6px">
+              <li style="margin-bottom: 6px">
+                Reserved jobs stay <code>ACTIVATABLE</code> forever (no TTL)
+              </li>
+              <li style="margin-bottom: 6px">
+                Stubbed call activities stay
+                <code>ELEMENT_ACTIVATED</code> forever
+              </li>
+              <li style="margin-bottom: 6px">
+                The instance is parked, but <em>recoverable</em>: cancelling it
+                terminates the element and cancels the stub job unconditionally
+              </li>
+              <li style="margin-bottom: 6px">
+                A reserved job can also be handed back with
+                <code>POST /v2/jobs/{jobKey}/release</code> — but only by
+                whoever still holds the token
+              </li>
+            </ul>
+            <div class="solution-box" style="margin-top: 10px">
+              <strong
+                >✓ Resolution — token recovery is a Test Studio
+                responsibility.</strong
+              >
+              Because <code>jobReservationToken</code> is client-chosen and
+              lives for the instance, Test Studio persists it server-side (keyed
+              by the recording session) rather than only in tab memory. On the
+              next session it reloads the token and reattaches to the parked
+              instance by key — no token is ever lost to a closed tab or a
+              browser crash.
+            </div>
+            <div class="problem-box" style="margin-top: 10px">
+              <strong>Remaining edge — the abandoned recording.</strong> The
+              real gap is not a lost token but a user who never finishes the
+              recording and never comes back: the instance then stays parked
+              forever. Mitigate with a soft TTL sweeper (e.g. 24h) and/or a
+              user-facing "abandon test" action that cancels the instance —
+              terminating the element and cancelling the stub job
+              unconditionally.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ TAB 4 -->
+    <div class="panel" id="tab-limits">
+      <div class="card" style="margin-bottom: 20px">
+        <div class="card-title">
+          <span>Are the limitations acceptable?</span>
+          <span class="badge badge-orange">Verdict</span>
+        </div>
+        <p
+          style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px"
+        >
+          One row per known limitation of the spike, judged for the recorder
+          that motivated it and for shipping the API to everyone (GA).
+          <strong>Accept</strong> = ship as is, alpha. <strong>Docs</strong> =
+          ship, but state the behavior. <strong>Decide</strong> = needs a call
+          before GA. <strong>Blocker</strong> = does not work.
+          <strong>Gap</strong> = outside what this design can reach.
+        </p>
+        <div class="highlight-box" style="margin-bottom: 14px; font-size: 12px">
+          <strong>CPT now supports both switches.</strong> Test Studio will soon
+          run recorded tests through CPT against a live cluster (<code
+            >REMOTE</code
+          >
+          mode), so CPT had to support job reservation and call-activity
+          stubbing; the client, the REST bundle, the JSON instructions, the
+          replay handlers and the cancel-on-teardown are in. What is still open
+          there is the cluster purge and the round-trip breaks — eager N-shot
+          mock rules, engine-evaluated DMN and script tasks, listener jobs, and
+          the missing occurrence index on <code>JobSelector</code> — none of
+          which this design closes. The ordered steps and what remains live in
+          <a class="jump" onclick="showTab('cpt')">CPT →</a>. They are left out
+          of this table to keep the verdict per-limitation.
+        </div>
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th>Limitation</th>
+              <th>Test Studio</th>
+              <th>General / GA</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <strong>Reserving an instance hides all of its jobs</strong> —
+                not just the one you want to mock, but every job on that
+                instance (connector, service task, execution and task listener)
+              </td>
+              <td>
+                <span class="check">Accept</span> — the recorder defines a mock
+                action for each job anyway
+              </td>
+              <td>
+                <span class="warn">Docs</span> — there is no "reserve only
+                connector jobs" option, and filtering by job-type prefix would
+                miss custom connectors
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <strong
+                  >Instances the recorder did not start get neither
+                  switch</strong
+                >
+                — both are set on the create command, so an instance started by
+                an inbound connector, a message start event or a signal start
+                event is never isolated
+              </td>
+              <td>
+                <span class="check">Accept</span> — mocking job workers,
+                connectors and call activities is still a big improvement. Test
+                Studio's segment testing can exclude the start event and begin
+                the test past the real trigger. This limits end-to-end tests for
+                these start types, but the trade-off is accepted for now (see
+                <a
+                  class="jump"
+                  onclick="
+                    document
+                      .getElementById('gap-card')
+                      .scrollIntoView({ behavior: 'smooth', block: 'start' })
+                  "
+                  >the card below →</a
+                >)
+              </td>
+              <td>
+                <span class="cross">Gap</span> — the only way to isolate them is
+                turning off the connector runtime, which affects the whole
+                cluster
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <strong
+                  >You cannot update a reserved job's retries or timeout</strong
+                >
+                — update-retries, update-timeout and batch job operations do not
+                send the token, so the engine rejects them
+              </td>
+              <td>
+                <span class="check">Accept</span> — the recorder updates its own
+                jobs through <code>PATCH /v2/jobs/{jobKey}</code>, which does
+                send the token
+              </td>
+              <td>
+                <span class="warn">Decide</span> — an operator cannot bump
+                retries on a reserved job
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <strong
+                  >Releasing a job back to real workers cannot be undone</strong
+                >
+                — release clears the token, so the job stays open to workers
+                even after a timeout; you cannot re-reserve it
+              </td>
+              <td>
+                <span class="check">Accept</span> — "let the real worker run
+                this step" is a one-time decision
+              </td>
+              <td>
+                <span class="check">Accept</span> — making release reversible is
+                a much larger design
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <strong>Release reuses the complete permission</strong> —
+                releasing a job requires <code>UPDATE_PROCESS_INSTANCE</code>,
+                the same permission as completing one
+              </td>
+              <td><span class="check">Accept</span></td>
+              <td>
+                <span class="warn">Decide</span> — release exposes the job to
+                every worker, which complete never does, so it may need its own
+                permission
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <strong
+                  >The reservation token is written into exported
+                  records</strong
+                >
+                — it travels on <code>ProcessInstanceRecord</code>
+                and lands in the Operate (webapps) schema
+              </td>
+              <td>
+                <span class="check">Accept</span> — it is an isolation label,
+                not a secret
+              </td>
+              <td>
+                <span class="warn">Decide</span> — storing it in engine-only
+                state keyed by <code>processInstanceKey</code> would keep it out
+                of exports
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <strong>Stub jobs show up in search and in Operate</strong> —
+                they appear in <code>/v2/jobs/search</code> and as a waiting job
+                in Operate
+              </td>
+              <td>
+                <span class="check">Accept</span> — the recorder relies on that
+                to find them
+              </td>
+              <td>
+                <span class="warn">Docs</span> — a job that no worker is allowed
+                to take looks confusing in Operate
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <strong
+                  >A stub job can be failed or error-thrown, not just
+                  completed</strong
+                >
+                — <code>FAIL</code> and <code>THROW_ERROR</code> both work on it
+              </td>
+              <td>
+                <span class="check">Accept</span> — recording "the called
+                process failed" is useful
+              </td>
+              <td>
+                <span class="warn">Decide</span> — it works today as a side
+                effect; it should be an explicit decision
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <strong>The client picks the reservation token</strong> — rather
+                than the engine generating one
+              </td>
+              <td>
+                <span class="check">Accept</span> — the recorder generates a
+                UUID per instance
+              </td>
+              <td>
+                <span class="warn">Decide</span> — engine-minted is cleaner, but
+                then the create response has to return the token
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <strong>Reserved instances never expire on their own</strong> —
+                there is no TTL or session cleanup
+              </td>
+              <td>
+                <span class="warn">Decide</span> — if the recorder tab crashes,
+                the instance stays parked until someone cancels it (<a
+                  class="jump"
+                  onclick="
+                    showTab('compare');
+                    document
+                      .getElementById('session-cleanup-card')
+                      .scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  "
+                  >Session cleanup →</a
+                >)
+              </td>
+              <td>
+                <span class="warn">Decide</span> — same (<a
+                  class="jump"
+                  onclick="
+                    showTab('compare');
+                    document
+                      .getElementById('session-cleanup-card')
+                      .scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  "
+                  >Session cleanup →</a
+                >)
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <strong
+                  >The design adds public API and changes how BPMN runs</strong
+                >
+                — both switches extend the public API, and the stub changes
+                call-activity execution semantics
+              </td>
+              <td><span class="check">Accept</span> — fine for alpha</td>
+              <td>
+                <span class="cross">Blocker for GA</span> — needs an ADR, docs,
+                and a decision at alpha exit
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <strong>CPT's existing mocks stay non-isolated</strong>
+                — <code>MOCK_CHILD_PROCESS</code> deploys a stub definition and
+                <code>MOCK_JOB_WORKER_*</code> opens a real worker, both
+                cluster-wide. The isolated instructions are added alongside them
+                rather than replacing them, because re-pointing a published
+                instruction is a breaking change
+              </td>
+              <td>
+                <span class="warn">Docs / warn</span> — Test Studio flags the
+                instruction as not isolated, reusing the mechanism that already
+                marks <code>MOCK_*</code> unsupported (<a
+                  class="jump"
+                  onclick="showTab('studio')"
+                  >Test Studio →</a
+                >)
+              </td>
+              <td>
+                <span class="warn">Decide</span> — a warning with no enforcement
+                and no per-environment gating. Whether the old instructions are
+                eventually deprecated is a separate call
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card" id="gap-card" style="margin-top: 20px">
+        <div class="card-title">
+          <span>The gap: instances the recorder does not create</span>
+          <span class="badge badge-orange">Accepted limitation</span>
+        </div>
+        <p
+          style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px"
+        >
+          Both switches are carried <em>on the create command</em> and stored on
+          the root instance record. Anything that makes an instance without that
+          command gets neither — the instance runs with its jobs exposed to
+          every worker and its call activities starting real children. This is
+          one gap with three faces:
+        </p>
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th>Trigger</th>
+              <th>What creates the instance</th>
+              <th>Consequence for recording</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <strong>Inbound connector</strong> (webhook, polling
+                subscription, intermediate inbound)
+              </td>
+              <td>
+                The connector runtime, from outside the engine — it publishes a
+                message or creates the instance itself
+              </td>
+              <td>
+                No job is ever activated for the inbound half, and for an
+                inbound <em>start</em> connector there is no instance to scope
+                anything to
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Message start event</strong></td>
+              <td>
+                The engine, on message correlation —
+                <code>POST /v2/messages/publication</code> or a correlating
+                client
+              </td>
+              <td>
+                The instance is born unreserved and unstubbed; the recorder can
+                find its jobs but a real worker will have taken them first
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Signal start event</strong></td>
+              <td>
+                The engine, on signal broadcast — and one broadcast may start
+                <em>several</em> instances across definitions
+              </td>
+              <td>
+                Same, plus there is no single instance the caller could even
+                claim: a per-instance token has nothing to attach to
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="grid-2" style="margin-top: 16px; margin-bottom: 0">
+          <div>
+            <div class="section-title" style="font-size: 12px">
+              <div class="dot dot-orange"></div>
+              What works today
+            </div>
+            <div
+              style="
+                font-size: 12px;
+                color: var(--text-muted);
+                line-height: 1.7;
+              "
+            >
+              <p style="margin-bottom: 8px">
+                <strong>Start past the trigger.</strong>
+                <code>startInstructions</code> already lets the recorder create
+                the instance itself and begin at an element <em>after</em> the
+                start event, so the rest of the process records normally with
+                both switches on. Test Studio already sends this field.
+              </p>
+              <p style="margin-bottom: 8px">What that costs:</p>
+              <ul style="padding-left: 16px">
+                <li style="margin-bottom: 6px">
+                  The trigger itself is never exercised — no correlation key
+                  evaluation, no subscription, no inbound payload mapping
+                </li>
+                <li style="margin-bottom: 6px">
+                  The variables the message or webhook would have supplied must
+                  be authored by hand, and a wrong guess there is invisible in
+                  the recording
+                </li>
+                <li>
+                  The recorded test starts where the real process does not, so
+                  the CPT test covers a shorter path than the model
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div>
+            <div class="section-title" style="font-size: 12px">
+              <div class="dot dot-red"></div>
+              Why the engine cannot close it per instance
+            </div>
+            <div
+              style="
+                font-size: 12px;
+                color: var(--text-muted);
+                line-height: 1.7;
+              "
+            >
+              <p style="margin-bottom: 8px">
+                Any fix has to attach the switch to something that exists
+                <em>before</em> the instance does. Every candidate is a scope
+                wider than one instance — which is the cluster-pollution
+                objection that motivated this design in the first place:
+              </p>
+              <ul style="padding-left: 16px">
+                <li style="margin-bottom: 6px">
+                  <strong>Per message subscription</strong> — the publisher
+                  would carry the token, so the recorder must own the message
+                  publication. That covers a message start event but not a
+                  webhook, whose payload the connector runtime publishes
+                </li>
+                <li style="margin-bottom: 6px">
+                  <strong>Per process definition</strong> — "reserve every
+                  instance of this definition" hits every caller of it, exactly
+                  like today's globally deployed stub
+                </li>
+                <li style="margin-bottom: 6px">
+                  <strong>Per tenant</strong> — a dedicated recording tenant
+                  that no worker or connector runtime subscribes to. This is the
+                  only clean isolation for the start-event path, and it needs no
+                  engine change — but it also means the inbound connector never
+                  fires, so the trigger still is not recorded
+                </li>
+              </ul>
+              <p>
+                <strong>Decision:</strong> Test Studio accepts this for now — do
+                not widen the switch. Mocking job workers, connectors and call
+                activities is still a big improvement, and Test Studio's segment
+                testing can exclude these start events by beginning the test
+                past the real trigger via <code>startInstructions</code>. This
+                limits end-to-end process tests for the start-event path, but
+                that is treated as a separate problem needing tenant-level or
+                runtime-level isolation.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ TAB 5 -->
+    <div class="panel" id="tab-cpt">
+      <div class="card" style="margin-bottom: 20px">
+        <div class="card-title">
+          <span>Why CPT needs these switches</span>
+          <span class="badge badge-blue">Motivation &amp; problems</span>
+        </div>
+        <p style="font-size: 13px; color: var(--text-muted); margin: 0 0 14px">
+          A recorded test replays against whatever cluster CPT points at. In
+          <code>MANAGED</code> and <code>SHARED</code> modes CPT spins up its
+          own throwaway cluster, so a cluster-wide mock harms no one. In
+          <code>REMOTE</code> mode — the mode Test Studio runs recorded tests
+          through — CPT replays against a live, shared cluster, where a
+          cluster-wide mock hijacks everyone else's instances.
+          <code>stubCallActivities</code> and <code>reserveJobs</code> keep the
+          stand-in inside <em>your own</em> instance, and CPT must be able to
+          set them.
+        </p>
+        <div class="arch" style="margin-bottom: 0">
+          <div class="arch-title">
+            What breaks in REMOTE mode today — four independent problems. This
+            proposal addresses the first three; the cluster purge is a separate,
+            larger question, called out below.
+          </div>
+          <div class="layer" style="border-color: rgba(245, 108, 108, 0.3)">
+            <div class="layer-label" style="color: var(--red)">
+              1 · <code>mockChildProcess</code> deploys a cluster-wide stub
+            </div>
+            <div
+              style="
+                font-size: 12px;
+                color: var(--text-muted);
+                line-height: 1.6;
+              "
+            >
+              It replaces the called process for the whole cluster, breaking
+              every other instance that calls it — the problem
+              <code>stubCallActivities</code> removes.
+              <strong>Proposal:</strong> leave <code>mockChildProcess</code> as
+              it is (re-pointing published API would be a breaking change) and
+              add the isolated stub-job instruction alongside it, so isolation
+              becomes a property of which instruction the author chose.
+            </div>
+          </div>
+          <div class="layer" style="border-color: rgba(245, 108, 108, 0.3)">
+            <div class="layer-label" style="color: var(--red)">
+              2 · Completing a reserved job sends no token
+            </div>
+            <div
+              style="
+                font-size: 12px;
+                color: var(--text-muted);
+                line-height: 1.6;
+              "
+            >
+              CPT finds a job and completes it by key — the right shape — but
+              sends no <code>jobReservationToken</code>, so every call on a
+              reserved job is rejected. <strong>Proposal:</strong> the context
+              mints one token per test run and attaches it to every job command;
+              an unreserved test sets none and is unaffected.
+            </div>
+          </div>
+          <div class="layer" style="border-color: rgba(245, 108, 108, 0.3)">
+            <div class="layer-label" style="color: var(--red)">
+              3 · A half-finished isolated instance is never cleaned up
+            </div>
+            <div
+              style="
+                font-size: 12px;
+                color: var(--text-muted);
+                line-height: 1.6;
+              "
+            >
+              A reserved job or stubbed call activity stays parked until its
+              instance is cancelled, so a test that fails midway leaks it onto
+              the cluster. <strong>Proposal:</strong> the runner records every
+              instance it creates with either switch and cancels them when the
+              case ends.
+            </div>
+          </div>
+          <div
+            class="layer"
+            style="border-color: rgba(245, 108, 108, 0.3); margin-bottom: 0"
+          >
+            <div class="layer-label" style="color: var(--red)">
+              4 · CPT purges the whole cluster after every test
+              <span
+                style="
+                  font-weight: 500;
+                  text-transform: none;
+                  letter-spacing: 0;
+                "
+                >— out of scope, should be tracked separately</span
+              >
+            </div>
+            <div
+              style="
+                font-size: 12px;
+                color: var(--text-muted);
+                line-height: 1.6;
+              "
+            >
+              CPT calls <code>POST /actuator/cluster/purge</code> by default and
+              does not check for <code>MANAGED</code> mode, so pointing it at a
+              live cluster wipes it. Tests are kept apart only by timing. This
+              predates the switches and is not part of this proposal.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 20px">
+        <div class="card-title">
+          <span>Two ways to mock in CPT — one isolates, one does not</span>
+          <span class="badge badge-blue">Solution proposal</span>
+        </div>
+        <p style="font-size: 13px; color: var(--text-muted); margin: 0 0 14px">
+          This proposal gives CPT a
+          <strong style="color: var(--text)">second toolkit</strong> for
+          standing in for a job, a called process or a worker, alongside the
+          existing mocks. They look similar, but differ in the one thing that
+          decides which to use:
+          <strong style="color: var(--text)"
+            >do they touch only your instance, or the whole cluster?</strong
+          >
+        </p>
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Isolated switches <span class="check">new</span></th>
+              <th>Existing mocks</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Isolates your run?</strong></td>
+              <td><span class="check">✓ Yes</span> — only your instance</td>
+              <td>
+                <span class="cross">✗ No</span> — affects the whole cluster
+              </td>
+            </tr>
+            <tr>
+              <td><strong>How</strong></td>
+              <td>
+                <code>stubCallActivities</code> / <code>reserveJobs</code> hold
+                the job or child inside <em>your</em> instance
+              </td>
+              <td>
+                <code>mockChildProcess</code> deploys a cluster-wide stub;
+                <code>mockJobWorker</code> opens a real worker by job type
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Who else it hits</strong></td>
+              <td>No one — nothing leaks past your instance</td>
+              <td>
+                Every instance calling that child / matching that job type,
+                across all tests and users on the cluster
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Fires</strong></td>
+              <td>Once, on the job you name (per occurrence)</td>
+              <td>A standing rule — every matching job, unbounded</td>
+            </tr>
+            <tr>
+              <td><strong>Safe on a shared / remote cluster?</strong></td>
+              <td><span class="check">✓ Yes</span></td>
+              <td>
+                <span class="cross">✗ No</span> — hijacks other people's
+                instances
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Safe on a throwaway MANAGED cluster?</strong></td>
+              <td><span class="check">✓ Yes</span></td>
+              <td>
+                <span class="check">✓ Yes</span> — you own the whole cluster, so
+                global reach harms no one
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Reach</strong></td>
+              <td>Jobs and call activities</td>
+              <td>Jobs, call activities, and DMN decisions</td>
+            </tr>
+            <tr>
+              <td><strong>Use it for</strong></td>
+              <td>
+                Real clusters (SHARED / REMOTE), Test Studio recordings, and any
+                test where you decide per occurrence
+              </td>
+              <td>
+                Hand-written MANAGED-mode tests, or a simple "always mock this
+                child / worker" rule on a throwaway cluster
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="problem-box" style="margin: 14px 0 0">
+          <strong>⚠ Don't point both at the same job.</strong> An isolated
+          switch <em>hides</em> the job from CPT's own mock worker. So if one
+          test both reserves/stubs a job <em>and</em> registers
+          <code>mockJobWorker</code> / <code>mockChildProcess</code> for it, the
+          mock never sees it and the run hangs until the await timeout. The
+          runner warns you before the first step and names it in the failure —
+          it does not reject the case, because reserving one instance while a
+          mock serves another is legitimate. Pick one mechanism per job.
+        </div>
+        <div class="solution-box" style="margin: 12px 0 0">
+          <strong>Both stay supported.</strong> The existing mocks are unchanged
+          and are the simplest choice on a disposable MANAGED cluster. Reach for
+          the isolated switches the moment a real, shared cluster is involved —
+          that is the exact hijack they were built to remove.
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 20px">
+        <div class="card-title">
+          <span>Proposed API surface</span>
+          <span class="badge badge-blue">Java client · REST v2 · schema</span>
+        </div>
+        <div class="solution-box" style="margin-bottom: 16px">
+          <strong>Client API.</strong> CPT drives everything through
+          <code>CamundaClient</code>, so the fluent client gains
+          <code>reserveJobs(token)</code> and
+          <code>stubCallActivities(flag)</code> on the create command,
+          <code>withJobReservationToken</code> on complete, fail, throw-error
+          and <code>PATCH</code>,
+          <code>forCallActivity().runCalledProcess()</code> as a third job
+          result, and <code>newReleaseJobCommand(jobKey)</code>.
+        </div>
+        <div class="problem-box" style="margin-bottom: 16px">
+          <strong>REST-only, by design.</strong> <code>gateway.proto</code> has
+          no counterpart for these fields. The new setters write the REST
+          request only, and <code>send()</code> throws
+          <code>UnsupportedOperationException</code> naming the field if the
+          command is sent over gRPC — silently dropping the switch would hand
+          the job to a real worker. <code>newReleaseJobCommand</code> has no
+          gRPC form at all, and there is deliberately no
+          <code>newReleaseJobCommand(ActivatedJob)</code> overload, since a
+          reserved job is never activated.
+        </div>
+        <div class="legend">
+          <span
+            ><span class="swatch swatch-add"></span> new fluent method /
+            endpoint / schema variant CPT would need</span
+          >
+        </div>
+        <div class="highlight-box" style="margin: 10px 0 16px">
+          <strong>Read this as two things.</strong> Snippets 1–5 are the
+          <em>replay-time</em> <code>CamundaClient</code> calls CPT would make
+          against a live cluster — they carry the token. Snippet 6 is the
+          <em>stored recording</em> that drives them — it captures the user's
+          intent by <code>elementId</code> and holds no token. See the two-layer
+          recording at the bottom of this card for how one maps to the other.
+        </div>
+        <div class="grid-2" style="margin-bottom: 0">
+          <div>
+            <div class="payload-cap">1 · open the isolated instance</div>
+            <pre
+              class="payload"
+            ><span class="c">// both switches, set at creation</span>
+client.<span class="k">newCreateInstanceCommand</span>()
+  .bpmnProcessId(<span class="s">"order-fulfillment"</span>)
+  .latestVersion()
+  <span class="add">.stubCallActivities(<span class="k">true</span>)</span>
+  <span class="add">.reserveJobs(token)</span>
+  .send().join();</pre>
+          </div>
+          <div>
+            <div class="payload-cap">2 · release the reserved job</div>
+            <pre
+              class="payload"
+            ><span class="c">// unreserve → hand the job to the real worker</span>
+<span class="add">client.newReleaseJobCommand(jobKey)</span>
+  <span class="add">.withJobReservationToken(token)</span>
+  .send().join();</pre>
+            <div class="pipe-sub" style="margin-top: 6px">
+              New <code>POST /v2/jobs/{jobKey}/release</code> — it exists in
+              <code>jobs.yaml</code> with a hand-written mapping but is not in
+              the <code>rest-api.yaml</code> bundle the generator reads, so it
+              must be added there for a request model to be generated.
+            </div>
+          </div>
+        </div>
+        <div class="grid-2" style="margin: 16px 0 0">
+          <div>
+            <div class="payload-cap">3 · complete a stub job — stand in</div>
+            <pre
+              class="payload"
+            ><span class="c">// mockChildProcess equivalent: child never runs</span>
+client.<span class="k">newCompleteCommand</span>(jobKey)
+  .variables(childOutputs)
+  <span class="add">.withJobReservationToken(token)</span>
+  .send().join();</pre>
+          </div>
+          <div>
+            <div class="payload-cap">
+              4 · complete a stub job — run real child
+            </div>
+            <pre
+              class="payload"
+            ><span class="c">// hand control to the actual called process</span>
+client.<span class="k">newCompleteCommand</span>(jobKey)
+  <span class="add">.forCallActivity().runCalledProcess()</span>
+  <span class="add">.withJobReservationToken(token)</span>
+  .send().join();</pre>
+            <div class="pipe-sub" style="margin-top: 6px">
+              Rejected for any job that does not stand in for a call activity.
+            </div>
+          </div>
+        </div>
+        <div class="grid-2" style="margin: 16px 0 0">
+          <div>
+            <div class="payload-cap">5 · fail or throw on a stub job</div>
+            <pre
+              class="payload"
+            ><span class="c">// same commands, now carrying the token</span>
+client.<span class="k">newFailCommand</span>(jobKey)
+  .retries(<span class="n">0</span>).errorMessage(<span class="s">"declined"</span>)
+  <span class="add">.withJobReservationToken(token)</span>
+  .send().join();
+
+client.<span class="k">newThrowErrorCommand</span>(jobKey)
+  .errorCode(<span class="s">"PAYMENT_DECLINED"</span>)
+  <span class="add">.withJobReservationToken(token)</span>
+  .send().join();</pre>
+          </div>
+          <div>
+            <div class="payload-cap">6 · new JSON test-case instructions</div>
+            <pre
+              class="payload"
+            ><span class="c">// the four mock instructions, unchanged</span>
+[ <span class="k">"MOCK_CHILD_PROCESS"</span>, <span class="k">"MOCK_DMN_DECISION"</span>,
+  <span class="k">"MOCK_JOB_WORKER_COMPLETE_JOB"</span>,
+  <span class="k">"MOCK_JOB_WORKER_THROW_BPMN_ERROR"</span> ]
+
+<span class="c">// added alongside them, to stay replayable</span>
+[ <span class="add"><span class="k">"RELEASE_JOB"</span></span>, <span class="add"><span class="k">"RUN_CALLED_PROCESS"</span></span>,
+  <span class="add"><span class="k">"STUB_CALL_ACTIVITY_COMPLETE"</span></span>, <span class="add"><span class="k">"STUB_CALL_ACTIVITY_THROW_ERROR"</span></span> ]
+
+<span class="c">// two booleans on CREATE_PROCESS_INSTANCE</span>
+[ <span class="add"><span class="k">"reserveJobs"</span></span>, <span class="add"><span class="k">"stubCallActivities"</span></span> ]</pre>
+            <div class="pipe-sub" style="margin-top: 6px">
+              Four types. <code>RELEASE_JOB</code> is the only new endpoint; the
+              three call-activity actions —
+              <code>STUB_CALL_ACTIVITY_COMPLETE</code>,
+              <code>STUB_CALL_ACTIVITY_THROW_ERROR</code> and
+              <code>RUN_CALLED_PROCESS</code> — each take an
+              <code>elementSelector</code> and read as what they do to the call
+              activity. They resolve the element to the stub job internally, so
+              no <code>callActivityStub</code> selector flag is needed and
+              <code>COMPLETE_JOB</code> / <code>THROW_BPMN_ERROR_FROM_JOB</code>
+              stay job-only. The format still has no fail instruction; that is a
+              separate gap, not this one.
+            </div>
+          </div>
+        </div>
+        <div class="section-title" style="font-size: 12px; margin-top: 16px">
+          <div class="dot dot-teal"></div>
+          How one recording is stored — two layers
+        </div>
+        <div class="grid-2" style="margin-bottom: 0">
+          <div>
+            <div class="payload-cap">
+              layer 1 · the create block — decided once, up front
+            </div>
+            <pre
+              class="payload"
+            ><span class="c">// the user's session choices live here, not per step</span>
+{
+  <span class="k">"create"</span>: {
+    <span class="k">"processDefinitionId"</span>: <span class="s">"order-fulfillment"</span>,
+    <span class="k">"variables"</span>: { <span class="k">"orderId"</span>: <span class="s">"A-1001"</span> },
+    <span class="add"><span class="k">"stubCallActivities"</span>: <span class="k">true</span></span>,   <span class="c">// don't start real children</span>
+    <span class="add"><span class="k">"reserveJobs"</span>: <span class="k">true</span></span>          <span class="c">// hold jobs from real workers / connectors</span>
+  },
+  ...
+}</pre>
+            <div class="pipe-sub" style="margin-top: 6px">
+              Both are session-wide switches, so they sit on the instance, not
+              on a step — as two booleans on the
+              <code>CREATE_PROCESS_INSTANCE</code> instruction. No token here:
+              it is a runtime value, minted at replay.
+            </div>
+          </div>
+          <div>
+            <div class="payload-cap">
+              layer 2 · the steps — the <code>type</code> is the decision
+            </div>
+            <pre
+              class="payload"
+            ><span class="c">// mock vs real is never a flag — it's a different type</span>
+  <span class="k">"steps"</span>: [
+    { <span class="k">"type"</span>: <span class="k">"MOCK_JOB_WORKER_COMPLETE_JOB"</span>, <span class="k">"elementId"</span>: <span class="s">"charge-card"</span>,
+      <span class="k">"variables"</span>: { <span class="k">"paymentStatus"</span>: <span class="s">"APPROVED"</span> } },
+    <span class="add">{ <span class="k">"type"</span>: <span class="k">"STUB_CALL_ACTIVITY_COMPLETE"</span>,
+      <span class="k">"elementSelector"</span>: { <span class="k">"elementId"</span>: <span class="s">"review-order"</span> },
+      <span class="k">"variables"</span>: { <span class="k">"approved"</span>: <span class="k">true</span> } }</span>,      <span class="c">// stand in (mock the child)</span>
+    <span class="add">{ <span class="k">"type"</span>: <span class="k">"RUN_CALLED_PROCESS"</span>,
+      <span class="k">"elementSelector"</span>: { <span class="k">"elementId"</span>: <span class="s">"ship-order"</span> } }</span>,    <span class="c">// run the REAL child</span>
+    <span class="add">{ <span class="k">"type"</span>: <span class="k">"STUB_CALL_ACTIVITY_THROW_ERROR"</span>,
+      <span class="k">"elementSelector"</span>: { <span class="k">"elementId"</span>: <span class="s">"review-order"</span> },
+      <span class="k">"errorCode"</span>: <span class="s">"PAYMENT_DECLINED"</span> }</span>,
+    <span class="add">{ <span class="k">"type"</span>: <span class="k">"RELEASE_JOB"</span>,        <span class="k">"jobSelector"</span>: { <span class="k">"elementId"</span>: <span class="s">"send-invoice"</span> } }</span>
+  ]</pre>
+            <div class="pipe-sub" style="margin-top: 6px">
+              Every step is keyed by <code>elementId</code> — no
+              <code>jobKey</code>, no token. Both are runtime values only known
+              at replay.
+            </div>
+          </div>
+        </div>
+        <div class="highlight-box" style="margin-top: 12px">
+          <strong>Recording → replay.</strong> The recording captures
+          <em>intent</em>; the token is <em>runtime</em>. At replay CPT reads
+          the <code>create</code> block, mints one fresh token for the run (only
+          if <code>reserveJobs</code> was <code>true</code>) and reuses it for
+          every instance that run reserves — two runs on one cluster still never
+          collide, and CPT finds jobs by selector rather than by instance. It
+          calls <code>newCreateInstanceCommand</code> with the switches + token,
+          then for each step finds the job by <code>elementId</code> and turns
+          it into the matching client command (snippets 1–5) — attaching the
+          token <strong>only when that instance was reserved</strong>. That is
+          why the Java snippets show the token everywhere (they depict the
+          reserved recording flow) but the stored JSON shows none.
+        </div>
+        <div class="pipe-sub" style="margin-top: 10px">
+          The three call-activity steps select the element, not the job. Element
+          ids are unique per definition, but a call activity can carry execution
+          listeners, whose jobs share that element id and are hidden by
+          reservation too — so naming the job would be ambiguous. Instead the
+          step names the call activity and CPT resolves it to the job the stub
+          waits on, keeping the engine's internal job type
+          (<code>io.camunda.zeebe:callActivityStub</code>) out of the stored
+          recording. A reserved service-task job is still driven by
+          <code>jobSelector</code>.
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 20px">
+        <div class="card-title">
+          <span>Where this leaves non-remote CPT</span>
+          <span class="badge badge-orange">MANAGED / SHARED</span>
+        </div>
+        <div
+          style="font-size: 12px; color: var(--text-muted); line-height: 1.7"
+        >
+          <p style="margin-bottom: 10px">
+            These modes start their own throwaway containers — no foreign
+            worker, no other instance to hijack. All four problems above are
+            moot, so the switches are never needed here.
+          </p>
+          <div class="section-title" style="font-size: 12px">
+            <div class="dot dot-orange"></div>
+            But the recorded instructions still run
+          </div>
+          <ul style="padding-left: 16px; margin: 0">
+            <li style="margin-bottom: 8px">
+              A recording that uses the switches replays here too —
+              <code>RUN_CALLED_PROCESS</code>, <code>RELEASE_JOB</code>, a stub
+              throw and the <code>create</code>-block switches are parsed and
+              executed the same way in every mode.
+            </li>
+            <li>
+              Run-real-child and release have no
+              <code>mockChildProcess</code> / <code>mockJobWorker</code>
+              fallback, so the client and schema support they need ships for
+              <em>every</em> mode, not just remote.
+            </li>
+          </ul>
+        </div>
+      </div>
+      <!-- THE OTHER DIRECTION -->
+      <div class="card" style="margin-top: 20px">
+        <div class="card-title">
+          <span>The other direction — a CPT test opened in Test Studio</span>
+          <span class="badge badge-orange">Lossy round-trip</span>
+        </div>
+        <p class="subtitle" style="margin-bottom: 12px">
+          The goal is two-way: a hand-written CPT test should also open in Test
+          Studio. Both sides share one format, but CPT's always-on mocks (a
+          standing rule that fires N times) and a recording (one action on one
+          job) are different shapes, so the conversion loses information.
+        </p>
+
+        <div class="grid-2">
+          <div>
+            <div class="section-title">
+              <div class="dot dot-green"></div>
+              Studio → CPT works
+            </div>
+            <p class="subtitle" style="margin-bottom: 10px">
+              <code>COMPLETE_JOB</code> and
+              <code>THROW_BPMN_ERROR_FROM_JOB</code> already match how CPT runs.
+              The format just needs four additions — <code>RELEASE_JOB</code>, a
+              fail-job instruction, <code>runCalledProcess</code>, and the two
+              switches on the create instruction — plus the token fix (problem 2
+              above).
+            </p>
+            <div class="highlight-box">
+              <strong>Connectors round-trip cleanly.</strong> A connector is
+              stubbed as a plain job, so nothing is lost across the trip.
+            </div>
+          </div>
+
+          <div>
+            <div class="section-title">
+              <div class="dot dot-red"></div>
+              CPT → Studio is lossy
+            </div>
+            <ul style="padding-left: 16px; margin-bottom: 12px">
+              <li style="margin-bottom: 8px">
+                An always-on <code>mockJobWorker</code> fires an unbounded
+                number of times, so it can't be flattened into a fixed step list
+                — every CPT test runs, but not every one can be recorded.
+              </li>
+              <li>
+                <code>JobSelector</code> has no occurrence index, so when two
+                jobs share an element id (multi-instance, parallel branch,
+                retry) replay is non-deterministic — a break that hurts
+                <em>both</em> directions.
+              </li>
+            </ul>
+            <div class="problem-box">
+              <strong>⚠ Three things neither switch reaches.</strong> DMN and
+              script tasks are evaluated in-engine, so mocking them still means
+              a cluster-wide stub — the hijack
+              <code>stubCallActivities</code> removes, with no counterpart here.
+              And reservation hides listener jobs, so a test that sets
+              <code>reserveJobs</code> then calls
+              <code>COMPLETE_USER_TASK</code> parks on listener jobs nobody
+              authored.
+            </div>
+          </div>
+        </div>
+
+        <div class="solution-box" style="margin-top: 14px">
+          <strong>Verdict.</strong> Clean for the common case — linear tests,
+          one occurrence per element, jobs and call activities — but lossy for
+          always-on rules, DMN/script tasks and listener jobs. None of this
+          needs the existing mocks changed; it needs the new instructions,
+          conflict detection, and a UI that is honest about what each
+          instruction isolates.
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ TAB 6 -->
+    <div class="panel" id="tab-studio">
+      <div class="card" style="margin-bottom: 20px">
+        <div class="card-title">
+          <span>The two switches, in plain terms</span
+          ><span class="badge badge-blue">Test Studio</span>
+        </div>
+        <p class="subtitle" style="margin-bottom: 14px">
+          Test Studio lets you <strong>record</strong> a test of a process and
+          <strong>replay</strong> it later. Two new switches let you fake parts
+          of the process, so you can test it on its own without the real things
+          it depends on:
+        </p>
+        <p class="subtitle" style="margin-bottom: 14px">
+          <strong>“Stub call activities”</strong> — pretend a sub-process ran,
+          instead of actually running it.<br />
+          <strong>“Mock connectors and job workers”</strong> — pretend an
+          outside system replied, instead of really calling it.
+        </p>
+        <p class="subtitle" style="margin-bottom: 0">
+          On screen this is a handful of pieces: the two checkboxes shown before
+          a run; the switch settings remembered for that run and passed to the
+          engine when it starts; the “fake this step” buttons on the diagram;
+          and buttons to run the real sub-process or hand a step back to the
+          real system.
+        </p>
+      </div>
+
+      <div class="grid-2">
+        <!-- WHAT WORKS -->
+        <div class="card">
+          <div class="card-title">
+            <span>What the recording captures</span>
+            <span class="badge badge-green">Recording</span>
+          </div>
+
+          <div class="section-title">
+            <div class="dot dot-green"></div>
+            What the saved test stores
+          </div>
+
+          <div class="arch">
+            <div class="arch-title">
+              Record once; the saved test drives replay
+            </div>
+            <div class="flow">
+              <div class="flow-row">
+                <div class="flow-box teststudio">
+                  record with the switches on
+                </div>
+                <span class="arrow">→</span>
+                <div class="flow-box neutral">
+                  saved test stores the switches + faking steps
+                </div>
+              </div>
+              <div class="arrow-down">↓</div>
+              <div class="flow-row">
+                <div class="flow-box teststudio">replay the saved test</div>
+                <span class="arrow">→</span>
+                <div class="flow-box zeebe">
+                  same switches sent to the cluster
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p class="subtitle" style="margin-bottom: 12px">
+            A saved test is just a list of instructions. The create step stores
+            the two switches (<code>stubCallActivities</code>,
+            <code>reserveJobs</code>), and each faking button —
+            <em>Mock child process</em>, <em>Run real child</em>,
+            <em>Mock connector</em>, <em>Release job</em> — stores its own step.
+            Replay reproduces the same faking; nothing has to be remembered
+            beyond the instructions themselves.
+          </p>
+
+          <p class="subtitle" style="margin-bottom: 12px">
+            <strong>What changes is who executes those instructions.</strong>
+            Today Test Studio replays them itself, calling the orchestration
+            cluster API with the switch parameters. The target is to replay
+            recorded tests through CPT instead — which this proposal teaches to
+            drive both switches (<a class="jump" onclick="showTab('cpt')"
+              >CPT →</a
+            >). Either way the saved test is unchanged; only the executor
+            differs.
+          </p>
+
+          <div class="section-title">
+            <div class="dot dot-blue"></div>
+            What a recorded test can contain today
+          </div>
+          <p class="subtitle" style="margin-bottom: 12px">
+            Starting an instance, sending messages and signals, completing jobs
+            and user tasks, throwing errors, resolving incidents, updating
+            variables and assertions — plus the new faking steps: stub a call
+            activity, mock a job or connector, run the real sub-process, and
+            release a step back to the real system.
+          </p>
+
+          <div class="highlight-box">
+            <strong>These faking steps are isolated.</strong> They only touch
+            your own test run, so replaying a saved test does not affect anyone
+            else. (The one exception — hand-written mocks that are not isolated
+            — is covered in the last card.)
+          </div>
+        </div>
+
+        <!-- REMAINING WORK -->
+        <div class="card">
+          <div class="card-title">
+            <span>Remaining UI work</span>
+            <span class="badge badge-blue">Two items</span>
+          </div>
+
+          <p class="subtitle" style="margin-bottom: 12px">
+            With the switches and faking steps recorded (left), what remains is
+            small:
+          </p>
+
+          <div class="section-title">
+            <div class="dot dot-blue"></div>
+            1 · Let people enter example data
+          </div>
+          <p class="subtitle" style="margin-bottom: 12px">
+            Today the faking buttons send empty data and show no form. They
+            should open a small form to type in example data — the same pattern
+            the normal “Complete job” button already uses. For a connector, the
+            form should ask for the reply the process expects, not a raw
+            technical response (<a class="jump" onclick="showTab('jobs')"
+              >Job Workers &amp; Connectors →</a
+            >).
+          </p>
+
+          <div class="section-title">
+            <div class="dot dot-green"></div>
+            2 · Remove the outdated warning
+          </div>
+          <p class="subtitle" style="margin-bottom: 12px">
+            A message still says
+            <em
+              >“Call activities are not supported in saved test cases and will
+              fail on replay.”</em
+            >
+            Once stubbing and recording are in place this is no longer true, so
+            it should be removed. This is the one clearly user-visible win.
+          </p>
+        </div>
+      </div>
+
+      <!-- THE WARNING -->
+      <div class="card" style="margin-top: 20px">
+        <div class="card-title">
+          <span>The “this can affect others” warning</span>
+          <span class="badge badge-green">Warning UX</span>
+        </div>
+        <p class="subtitle" style="margin-bottom: 14px">
+          There is a second, older kind of mock you can write by hand. Unlike
+          the buttons above, these set up a fake across the
+          <strong>whole cluster</strong> — for example by deploying a stand-in
+          or opening a real worker — so they can affect other people’s runs.
+          Rather than change how they behave, Test Studio keeps them but
+          <strong>warns</strong> you that they are not isolated.
+        </p>
+
+        <div class="grid-2">
+          <div>
+            <div class="section-title">
+              <div class="dot dot-green"></div>
+              The mechanism already exists
+            </div>
+            <p class="subtitle" style="margin-bottom: 10px">
+              Test Studio already recognises these hand-written mock steps. It
+              keeps them in the saved test but does not run them, and it already
+              shows a small warning popover:
+              <em
+                >“This test case contains instructions that aren’t supported in
+                Test mode and will be skipped during execution.”</em
+              >
+            </p>
+            <div class="highlight-box">
+              <strong>Only the wording is missing.</strong> Distinguish
+              <em>“not supported in Test mode”</em> from
+              <strong
+                >“not isolated — sets up a fake for the whole cluster and can
+                affect other runs.”</strong
+              >
+            </div>
+          </div>
+
+          <div>
+            <div class="section-title">
+              <div class="dot dot-teal"></div>
+              Where the warning fits
+            </div>
+            <p class="subtitle" style="margin-bottom: 10px">
+              Three existing patterns to reuse rather than invent:
+            </p>
+            <ul
+              style="
+                padding-left: 16px;
+                margin: 0;
+                font-size: 13px;
+                color: var(--text-muted);
+                line-height: 1.7;
+              "
+            >
+              <li style="margin-bottom: 8px">
+                The existing warning-message path — a badge on the element plus
+                a problems-table row, whose “actionable solution” slot is the
+                natural home for
+                <em>“use the isolated instruction instead.”</em>
+              </li>
+              <li style="margin-bottom: 8px">
+                The stronger form that <em>replaces</em> the action button with
+                a popover and a docs link — the template if we ever block rather
+                than warn.
+              </li>
+              <li>
+                The disabled-with-a-reason pattern — where to reject the
+                <code>RESERVE_JOBS</code> + <code>MOCK_JOB_WORKER_*</code>
+                combination that starves and hangs rather than failing.
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="problem-box" style="margin-top: 14px">
+          <strong>⚠ The limitation this accepts.</strong> Test Studio does not
+          really know whether a cluster is production. The only hint is the
+          colour of the cluster’s tag (dev is green, test blue, stage purple,
+          prod red). So “this step is not isolated” is only a warning the user
+          is trusted to act on — nothing blocks it. That is the price of not
+          breaking the older hand-written mocks, and it is listed under
+          <a class="jump" onclick="showTab('limits')"
+            >Limitations &amp; Verdict →</a
+          >: <em>warn now, decide before general release</em>.
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ TAB 7 -->
+    <div class="panel" id="tab-api">
+      <div class="card" style="margin-bottom: 20px">
+        <div class="card-title">
+          <span>API changes</span
+          ><span class="badge badge-blue">REST v2, alpha, 8.11</span>
+        </div>
+        <div class="problem-box" style="margin-bottom: 16px">
+          <strong>⚠ This is the spike's shape, not a settled contract.</strong>
+          Two rows in <em>Limitations &amp; Verdict</em> would change it. If the
+          token becomes <strong>engine-minted</strong>,
+          <code>RESERVE_JOBS</code> stops carrying one — it becomes a switch —
+          and <code>CreateProcessInstanceResult</code> has to return the token,
+          which no payload below shows. If <strong>release</strong> gets a
+          permission of its own, the last card is wrong too.
+        </div>
+
+        <div class="legend">
+          <span
+            ><span class="swatch swatch-add"></span> new field / new endpoint
+            added by this spike</span
+          >
+        </div>
+
+        <div class="grid-2" style="margin-bottom: 0">
+          <div>
+            <div class="payload-cap">
+              <span class="method method-post">POST</span>
+              /v2/process-instances
+            </div>
+            <pre
+              class="payload"
+            ><span class="c">// open an isolated recording session</span>
+{
+  <span class="k">"processDefinitionId"</span>: <span class="s">"order-fulfillment"</span>,
+  <span class="k">"variables"</span>: { <span class="k">"orderId"</span>: <span class="s">"A-1001"</span> },
+  <span class="add"><span class="k">"stubCallActivities"</span>: true</span>,
+  <span class="k">"runtimeInstructions"</span>: [
+    <span class="add">{ <span class="k">"type"</span>: <span class="s">"RESERVE_JOBS"</span>, <span class="k">"jobReservationToken"</span>: <span class="s">"ts-8f2c…"</span> }</span>
+  ]
+}</pre>
+            <div class="pipe-sub" style="margin-top: 6px">
+              At most one <code>RESERVE_JOBS</code> per instance · token
+              <code>minLength 1</code>, <code>maxLength 128</code> ·
+              <code>stubCallActivities</code> is a top-level boolean (a switch,
+              not an instruction), default <code>false</code>.
+            </div>
+          </div>
+
+          <div>
+            <div class="payload-cap">
+              <span class="method method-post">POST</span>
+              /v2/jobs/{jobKey}/completion
+            </div>
+            <pre
+              class="payload"
+            ><span class="c">// drive the reserved job by key</span>
+{
+  <span class="k">"variables"</span>: { <span class="k">"paymentStatus"</span>: <span class="s">"APPROVED"</span> },
+  <span class="add"><span class="k">"jobReservationToken"</span>: <span class="s">"ts-8f2c…"</span></span>
+}</pre>
+            <div class="payload-cap" style="margin-top: 12px">
+              <span class="method method-post">POST</span>
+              /v2/jobs/{jobKey}/release
+              <span class="badge badge-green">new endpoint</span>
+            </div>
+            <pre
+              class="payload"
+            ><span class="c">// hand the job back to the real worker → 204</span>
+{
+  <span class="add"><span class="k">"jobReservationToken"</span>: <span class="s">"ts-8f2c…"</span></span>
+}</pre>
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin: 16px 0 0">
+          <div>
+            <div class="payload-cap">
+              <span class="method method-post">POST</span>
+              /v2/jobs/{jobKey}/completion
+              <span class="badge badge-blue">stub call activity</span>
+            </div>
+            <pre
+              class="payload"
+            ><span class="c">// run the REAL child instead of standing in</span>
+{
+  <span class="k">"variables"</span>: {},
+  <span class="add"><span class="k">"result"</span>: { <span class="k">"type"</span>: <span class="s">"callActivity"</span>, <span class="k">"runCalledProcess"</span>: true }</span>,
+  <span class="k">"jobReservationToken"</span>: <span class="s">"ts-8f2c…"</span>
+}</pre>
+            <div class="pipe-sub" style="margin-top: 6px">
+              Third variant of the <code>JobResult</code> oneOf. Rejected for
+              any job that does not stand in for a called process.
+            </div>
+          </div>
+
+          <div>
+            <div class="section-title" style="font-size: 12px; margin-top: 4px">
+              <div class="dot dot-teal"></div>
+              Where each field lives
+            </div>
+            <table class="compare-table">
+              <tbody>
+                <tr>
+                  <td><code>jobReservationToken</code></td>
+                  <td>
+                    New shared schema in <code>identifiers.yaml</code>;
+                    caller-chosen, per instance. Distinct from
+                    <code>JobLeaseToken</code> (engine-minted per activation)
+                  </td>
+                </tr>
+                <tr>
+                  <td>on job commands</td>
+                  <td>
+                    completion, failure, error and
+                    <code>PATCH /v2/jobs/{jobKey}</code> — nullable, required
+                    only when the instance was reserved
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>release</code> errors</td>
+                  <td>
+                    <code>404</code> unknown job; <code>409</code> not reserved,
+                    wrong token, wrong state, or a stub job. Permission
+                    <code>UPDATE_PROCESS_INSTANCE</code> on
+                    <code>PROCESS_DEFINITION</code>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="problem-box" style="margin-top: 16px">
+          <strong
+            >⚠ If a reviewer asks to move <code>stubCallActivities</code> into
+            <code>runtimeInstructions</code>:</strong
+          >
+          that is another <code>x-polymorphic-schema</code> variant, and the
+          three generated flavors disagree on the union's shape (<code
+            >protocol.model</code
+          >
+          → interface, <code>protocol.model.simple</code> → fat class,
+          <code>client.protocol.rest</code> → interface).
+          <code>-Dquickly</code> without <code>clean</code> leaves stale
+          generated sources, so the breaks hide behind a green build — verify
+          with <code>./mvnw clean install -Dquickly</code>.
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 20px">
+        <div class="card-title">
+          <span>Key behavior changes</span
+          ><span class="badge badge-blue">Engine</span>
+        </div>
+
+        <div class="section-title" style="font-size: 12px">
+          <div class="dot dot-teal"></div>
+          The token's journey through the engine
+        </div>
+        <div class="pipe">
+          <div class="pipe-step">
+            <div class="pipe-where">1 · Creation</div>
+            <div class="pipe-what">
+              Token read off the command, stored on the <em>root</em> instance
+            </div>
+            <div class="pipe-sub">
+              <code>ProcessInstanceCreationHelper</code> — children read the
+              root, so a call activity's child inherits it
+            </div>
+          </div>
+          <div class="pipe-step">
+            <div class="pipe-where">2 · Every job</div>
+            <div class="pipe-what">
+              Token stamped on each job the instance creates
+            </div>
+            <div class="pipe-sub">
+              <code>BpmnJobBehavior</code>, copied in
+              <code>wrapWithoutVariables</code> — survives timeout, retry
+              backoff, incident resolution
+            </div>
+          </div>
+          <div class="pipe-step">
+            <div class="pipe-where">3 · Activation</div>
+            <div class="pipe-what">
+              Reserved &amp; stub jobs skipped; streams/pollers not notified
+            </div>
+            <div class="pipe-sub">
+              <code>JobBatchCollector</code>
+              (<code>SKIPPED_RESERVED</code>) +
+              <code>publishWork</code> early return
+            </div>
+          </div>
+          <div class="pipe-step">
+            <div class="pipe-where">4 · Every command</div>
+            <div class="pipe-what">
+              Fenced by token, ahead of the lease check
+            </div>
+            <div class="pipe-sub">
+              <code>JobReservationFencingCheck</code> on complete, fail,
+              throw-error, release, update
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title" style="font-size: 12px; margin-top: 18px">
+          <div class="dot dot-purple"></div>
+          The rest, by where it lives
+        </div>
+        <table class="compare-table">
+          <tbody>
+            <tr>
+              <td>
+                A stubbed call activity activates, starts no child, and waits on
+                a job
+              </td>
+              <td>
+                <code>CallActivityProcessor.finalizeActivation</code>; the
+                definition is never looked up, so the called process need not be
+                deployed
+              </td>
+            </tr>
+            <tr>
+              <td>
+                A stub job is identified structurally, not by a new
+                <code>JobKind</code>
+              </td>
+              <td>
+                <code>JobRecord.isCallActivityStub()</code> —
+                <code>BPMN_ELEMENT</code> on a <code>CALL_ACTIVITY</code>, job
+                type <code>io.camunda.zeebe:callActivityStub</code>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                Completing a stub job replicates the variable propagate gate
+                before completing the element
+              </td>
+              <td><code>JobCompleteProcessor.postCompleteActions</code></td>
+            </tr>
+            <tr>
+              <td>
+                <code>runCalledProcess</code> defers to the real child instead
+                of completing
+              </td>
+              <td>
+                New internal
+                <code>ProcessInstanceIntent.START_CALLED_PROCESS</code> →
+                <code>CallActivityProcessor.onStartCalledProcess</code>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                An unresolved called process raises a
+                <em>resolvable</em> incident rather than banning the instance
+              </td>
+              <td>
+                <code>IncidentResolveProcessor</code> retries
+                <code>START_CALLED_PROCESS</code>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                Terminating a stubbed call activity cancels its job
+                unconditionally
+              </td>
+              <td>
+                <code>CallActivityProcessor.onTerminate</code> — cancellation
+                and interrupting boundary events both work
+              </td>
+            </tr>
+            <tr>
+              <td>
+                Release clears the token as a state event, then re-publishes the
+                work
+              </td>
+              <td>
+                <code>JobReleasedApplier</code> (so replay does not restore the
+                reservation) + <code>publishWork</code>, as a resumed instance's
+                jobs do
+              </td>
+            </tr>
+            <tr>
+              <td>The new intents are inert in the exporters</td>
+              <td>
+                Nothing resolves a <code>JobIntent</code> by name: allowlists
+                before <code>valueOf</code>, and
+                <code>ListenerState</code> falls through to <code>UNKNOWN</code>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span>API interaction patterns</span
+          ><span class="badge badge-blue">Sequences</span>
+        </div>
+        <div class="grid-2" style="margin-bottom: 0">
+          <div>
+            <div class="section-title" style="font-size: 12px">
+              <div class="dot dot-orange"></div>
+              Recording session
+            </div>
+            <div class="arch">
+              <div
+                class="layer"
+                style="
+                  border-color: rgba(245, 166, 35, 0.3);
+                  margin-bottom: 6px;
+                "
+              >
+                <div class="layer-label">1 — open the session</div>
+                <div class="layer-content">
+                  <span class="chip chip-orange"
+                    >POST /v2/process-instances</span
+                  >
+                  <span class="chip chip-orange"
+                    >runtimeInstructions: [RESERVE_JOBS, token]</span
+                  >
+                  <span class="chip chip-orange">stubCallActivities: true</span>
+                </div>
+                <div class="layer-content" style="margin-top: 6px">
+                  <span style="color: var(--text-muted); font-size: 11px"
+                    >the recorder mints the token (one fresh UUID per instance)
+                    and keeps it — the search API never returns it</span
+                  >
+                </div>
+              </div>
+              <div class="connector-arrow">↓ loop until the instance ends</div>
+              <div
+                class="layer"
+                style="
+                  border-color: rgba(76, 139, 245, 0.3);
+                  margin-bottom: 6px;
+                "
+              >
+                <div class="layer-label">2 — find the waiting job</div>
+                <div class="layer-content">
+                  <span class="chip chip-blue">POST /v2/jobs/search</span>
+                  <span style="color: var(--text-muted); font-size: 11px"
+                    >by process instance key + element id; reserved and stub
+                    jobs are both ordinary <code>ACTIVATABLE</code> jobs
+                    here</span
+                  >
+                </div>
+              </div>
+              <div class="connector-arrow">↓ per job, the user picks one</div>
+              <div
+                class="layer"
+                style="
+                  border-color: rgba(76, 175, 130, 0.3);
+                  margin-bottom: 6px;
+                "
+              >
+                <div class="layer-label">3 — act, always with the token</div>
+                <div class="layer-content">
+                  <span class="chip chip-green"
+                    >POST /v2/jobs/{jobKey}/completion</span
+                  >
+                  <span class="chip chip-green"
+                    >POST /v2/jobs/{jobKey}/failure</span
+                  >
+                  <span class="chip chip-green"
+                    >POST /v2/jobs/{jobKey}/error</span
+                  >
+                  <span class="chip chip-green"
+                    >POST /v2/jobs/{jobKey}/release</span
+                  >
+                </div>
+                <div class="layer-content" style="margin-top: 6px">
+                  <span style="color: var(--text-muted); font-size: 11px"
+                    >for a stub job: <code>{ variables }</code> to stand in, or
+                    <code
+                      >{ result: { type: "callActivity", runCalledProcess: true
+                      } }</code
+                    >
+                    to run the real child. Release is rejected here</span
+                  >
+                </div>
+              </div>
+              <div class="connector-arrow">↓ end of session</div>
+              <div class="layer" style="border-color: rgba(245, 108, 108, 0.3)">
+                <div class="layer-label">4 — close it</div>
+                <div class="layer-content">
+                  <span class="chip chip-red">let it complete</span>
+                  <span style="color: var(--text-muted); font-size: 11px"
+                    >or</span
+                  >
+                  <span class="chip chip-red"
+                    >POST
+                    /v2/process-instances/{processInstanceKey}/cancellation</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="section-title" style="font-size: 12px">
+              <div class="dot dot-teal"></div>
+              Rules the caller must hold to
+            </div>
+            <table class="compare-table">
+              <thead>
+                <tr>
+                  <th>Rule</th>
+                  <th>Why</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Keep the token for the life of the instance</td>
+                  <td>
+                    No API returns it; losing it leaves cancellation as the only
+                    way out
+                  </td>
+                </tr>
+                <tr>
+                  <td>One fresh, unguessable token per instance</td>
+                  <td>
+                    Two recorders on one cluster must not collide; it is an
+                    isolation label, not a secret
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    Send the token on <em>every</em> command, including
+                    <code>PATCH</code>
+                  </td>
+                  <td>
+                    Missing → <code>409</code>; wrong → <code>409</code>. A
+                    stray <code>jobLeaseToken</code> alongside it is harmless
+                  </td>
+                </tr>
+                <tr>
+                  <td>Do not expect connector post-processing</td>
+                  <td>
+                    The runtime never runs: author the variables the downstream
+                    elements should see
+                  </td>
+                </tr>
+                <tr>
+                  <td>Treat release as final</td>
+                  <td>
+                    The job is unreserved for good, including after a timeout or
+                    retry backoff
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    Expect an incident, not a failure, from
+                    <code>runCalledProcess</code> on an undeployed process
+                  </td>
+                  <td>Deploy, then resolve the incident: the lookup retries</td>
+                </tr>
+                <tr>
+                  <td>Both switches are independent</td>
+                  <td>
+                    Stubbing is not keyed on the token, so an unreserved
+                    instance can still stub, and a reserved one need not
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function showTab(name) {
+        document
+          .querySelectorAll(".tab")
+          .forEach((t) => t.classList.remove("active"));
+        document
+          .querySelectorAll(".panel")
+          .forEach((p) => p.classList.remove("active"));
+        document.getElementById("tab-" + name).classList.add("active");
+        const tab = document.querySelector('.tab[data-tab="' + name + '"]');
+        tab.classList.add("active");
+        tab.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    </script>
+  </body>
+</html>

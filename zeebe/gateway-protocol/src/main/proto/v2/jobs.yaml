@@ -241,6 +241,71 @@ paths:
       x-added-in-version: "8.6"
       x-scope: physical-tenant
 
+  /jobs/{jobKey}/release:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Job
+      operationId: releaseJob
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: UPDATE_PROCESS_INSTANCE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Release job
+      description: |
+        Release a reserved job to the job workers (alpha).
+
+        A job of a process instance created with a `jobReservationToken` is served to no job
+        worker, so the caller that holds the token drives it: either by completing it itself,
+        standing in for work that never happens, or by releasing it here, which hands it to the
+        worker that would have served it all along so the work happens for real.
+
+        Releasing is not a completion: the job stays activatable and the worker completes it as
+        usual. It is also one-way — the job is no longer reserved afterwards, so a job that times
+        out or fails with a retry backoff stays visible to the workers.
+
+        This endpoint is an alpha feature and may be subject to change in future releases.
+      parameters:
+        - name: jobKey
+          in: path
+          required: true
+          description: The key of the job to release.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/JobKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobReleaseRequest'
+      responses:
+        "204":
+          description: The job was released successfully.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "404":
+          description: The job with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: >
+            The job with the given key is in the wrong state currently, is not reserved, or the
+            supplied reservation token does not match.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.11"
+      x-scope: physical-tenant
+
   /jobs/{jobKey}:
     patch:
       x-eventually-consistent: false
@@ -1065,9 +1130,24 @@ components:
           nullable: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
+        jobReservationToken:
+          description: >
+            The reservation token the job's process instance was created with (alpha).
+
+            A job of a reserved process instance is served to no job worker and only the caller
+            that holds the token may command it, so the matching token must be supplied here; a
+            command with no token, or with a different one, is rejected. A job whose instance was
+            not reserved requires no token.
+
+            This property is an alpha feature and may be subject to change in future releases.
+          nullable: true
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/JobReservationToken'
       x-properties-added-in-version:
         - propertyName: jobLeaseToken
           addedInVersion: "8.10"
+        - propertyName: jobReservationToken
+          addedInVersion: "8.11"
 
     JobErrorRequest:
       type: object
@@ -1103,11 +1183,42 @@ components:
           nullable: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
+        jobReservationToken:
+          description: >
+            The reservation token the job's process instance was created with (alpha).
+
+            A job of a reserved process instance is served to no job worker and only the caller
+            that holds the token may command it, so the matching token must be supplied here; a
+            command with no token, or with a different one, is rejected. A job whose instance was
+            not reserved requires no token.
+
+            This property is an alpha feature and may be subject to change in future releases.
+          nullable: true
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/JobReservationToken'
       required:
         - errorCode
       x-properties-added-in-version:
         - propertyName: jobLeaseToken
           addedInVersion: "8.10"
+        - propertyName: jobReservationToken
+          addedInVersion: "8.11"
+
+    JobReleaseRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - jobReservationToken
+      properties:
+        jobReservationToken:
+          description: >
+            The reservation token the job's process instance was created with, proving the request
+            comes from the caller that reserved it.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/JobReservationToken'
+      x-properties-added-in-version:
+        - propertyName: jobReservationToken
+          addedInVersion: "8.11"
 
     JobCompletionRequest:
       type: object
@@ -1135,6 +1246,19 @@ components:
           nullable: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
+        jobReservationToken:
+          description: >
+            The reservation token the job's process instance was created with (alpha).
+
+            A job of a reserved process instance is served to no job worker and only the caller
+            that holds the token may command it, so the matching token must be supplied here; a
+            command with no token, or with a different one, is rejected. A job whose instance was
+            not reserved requires no token.
+
+            This property is an alpha feature and may be subject to change in future releases.
+          nullable: true
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/JobReservationToken'
         businessId:
           nullable: true
           description: >
@@ -1157,6 +1281,8 @@ components:
           addedInVersion: "8.10"
         - propertyName: businessId
           addedInVersion: "8.10"
+        - propertyName: jobReservationToken
+          addedInVersion: "8.11"
 
     JobResult:
       description: >
@@ -1166,9 +1292,11 @@ components:
         mapping:
           userTask: '#/components/schemas/JobResultUserTask'
           adHocSubProcess: '#/components/schemas/JobResultAdHocSubProcess'
+          callActivity: '#/components/schemas/JobResultCallActivity'
       oneOf:
         - $ref: '#/components/schemas/JobResultUserTask'
         - $ref: '#/components/schemas/JobResultAdHocSubProcess'
+        - $ref: '#/components/schemas/JobResultCallActivity'
 
     JobResultUserTask:
       description: >
@@ -1276,6 +1404,34 @@ components:
           type: string
           example: adHocSubProcess
 
+    JobResultCallActivity:
+      description: >
+        Job result details for a job that stands in for the process a stubbed call activity calls
+        (alpha).
+      type: object
+      nullable: true
+      properties:
+        runCalledProcess:
+          type: boolean
+          description: |
+            Starts the process the call activity calls after all, instead of this completion
+            standing in for it (alpha).
+
+            The call activity then behaves as it would have without stubbing: it waits for the
+            called process and completes when that process completes. If the called process cannot
+            be resolved, for example because it is not deployed, an incident is raised on the call
+            activity, and resolving that incident retries the lookup.
+
+            Rejected for any job that does not stand in for a called process.
+
+            This parameter is an alpha feature and may be subject to change in future releases.
+          default: false
+          nullable: false
+        type:
+          description: Used to distinguish between different types of job results.
+          type: string
+          example: callActivity
+
     JobResultActivateElement:
       description: Instruction to activate a single BPMN element within an ad‑hoc sub‑process, optionally providing variables scoped to that element.
       type: object
@@ -1310,12 +1466,26 @@ components:
 
             An update without a token always applies to support operator and bulk updates of
             leased jobs. Note that this is different from lifecycle requests like complete, fail, and
-            throw-error that always require a token for leased jobs.
+            throw-error that always require a token for leased jobs, and from `jobReservationToken`,
+            which a reserved job's update requires like every other command on it.
 
             A job that was activated without a lease requires no token.
           nullable: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
+        jobReservationToken:
+          description: >
+            The reservation token the job's process instance was created with (alpha).
+
+            A job of a reserved process instance is served to no job worker and only the caller
+            that holds the token may command it, so the matching token must be supplied here; a
+            command with no token, or with a different one, is rejected. A job whose instance was
+            not reserved requires no token.
+
+            This property is an alpha feature and may be subject to change in future releases.
+          nullable: true
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/JobReservationToken'
       required:
         - changeset
       x-properties-added-in-version:
@@ -1323,6 +1493,8 @@ components:
           addedInVersion: "8.8"
         - propertyName: jobLeaseToken
           addedInVersion: "8.10"
+        - propertyName: jobReservationToken
+          addedInVersion: "8.11"
 
     JobChangeset:
       description: JSON object with changed job attribute values. The job cannot be completed or failed with this endpoint, use the complete job or fail job endpoints instead.

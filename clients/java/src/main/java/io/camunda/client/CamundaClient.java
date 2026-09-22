@@ -73,6 +73,7 @@ import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.client.api.command.PinClockCommandStep1;
 import io.camunda.client.api.command.PublishMessageCommandStep1;
+import io.camunda.client.api.command.ReleaseJobCommandStep1;
 import io.camunda.client.api.command.ResetClockCommandStep1;
 import io.camunda.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.client.api.command.ResolveProcessInstanceIncidentsCommandStep1;
@@ -924,6 +925,37 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   UpdateJobCommandStep1 newUpdateJobCommand(ActivatedJob job);
+
+  /**
+   * Command to release a reserved job to the job workers (alpha).
+   *
+   * <pre>
+   * camundaClient
+   *  .newReleaseJobCommand(jobKey)
+   *  .withJobReservationToken(token)
+   *  .send();
+   * </pre>
+   *
+   * <p>A job of a process instance created with {@link
+   * CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3#reserveJobs(String)
+   * reserveJobs} is served to no job worker, so the caller that holds the token drives it: either
+   * by completing it itself, standing in for work that never happens, or by releasing it here,
+   * which hands it to the worker that would have served it all along.
+   *
+   * <p>Releasing is not a completion: the job stays activatable and the worker completes it as
+   * usual. It is also one-way — the job is no longer reserved afterwards. A job that stands in for
+   * a called process cannot be released, as no worker could ever run it.
+   *
+   * <p>There is deliberately no overload taking an {@link ActivatedJob}: a reserved job is never
+   * activated, so no caller can hold one.
+   *
+   * <p>This command is only supported over REST. This is an alpha feature and may be subject to
+   * change in future releases.
+   *
+   * @param jobKey the key of the job to release
+   * @return a builder for the command
+   */
+  ReleaseJobCommandStep1 newReleaseJobCommand(long jobKey);
 
   /**
    * Command to pin the Zeebe engine's internal clock to a specific time.

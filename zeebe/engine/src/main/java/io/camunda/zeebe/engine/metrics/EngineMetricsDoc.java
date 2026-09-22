@@ -559,6 +559,16 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
      * action="skipped"}. Renaming the label means changing that dashboard in the same PR.
      */
     SKIPPED_LEASED("skipped"),
+    /**
+     * A job skipped by an activation because its process instance was created with a job
+     * reservation token, so the job is never handed to a job worker.
+     */
+    SKIPPED_RESERVED("skipped reserved"),
+    /**
+     * A job skipped by an activation because it stands in for the process a stubbed call activity
+     * calls, so the job is never handed to a job worker.
+     */
+    SKIPPED_CALL_ACTIVITY_STUB("skipped call activity stub"),
     /** A job skipped because one of its secret references is not cached yet. */
     SKIPPED_UNCACHED_SECRET("skipped uncached secret"),
     TIMED_OUT("timed out"),

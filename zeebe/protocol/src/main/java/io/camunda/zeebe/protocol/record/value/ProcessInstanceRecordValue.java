@@ -223,4 +223,26 @@ public interface ProcessInstanceRecordValue
   default long getResumeFromJobKey() {
     return -1L;
   }
+
+  /**
+   * Returns the job lease token that pre-claims every job this process instance creates. Only the
+   * root element instance record of an instance created with a token carries it.
+   *
+   * @return the job lease token, or an empty string if not set
+   * @since 8.11
+   */
+  default String getJobReservationToken() {
+    return "";
+  }
+
+  /**
+   * Returns whether the call activities of this process instance are stubbed. Only the root element
+   * instance record of an instance created with the flag carries it.
+   *
+   * @return {@code true} if the call activities of this process instance are stubbed
+   * @since 8.11
+   */
+  default boolean isStubCallActivities() {
+    return false;
+  }
 }

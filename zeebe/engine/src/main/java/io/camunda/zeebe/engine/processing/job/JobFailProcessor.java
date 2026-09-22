@@ -96,7 +96,9 @@ public final class JobFailProcessor
             state.getBannedInstanceState(),
             "fail",
             List.of(State.ACTIVATABLE, State.ACTIVATED),
-            List.of(JobLeaseFencingCheck.forLifecycleCommand()),
+            List.of(
+                JobReservationFencingCheck.forCommand(),
+                JobLeaseFencingCheck.forLifecycleCommand()),
             tenantCheck);
     this.keyGenerator = keyGenerator;
     this.jobBackoffChecker = jobBackoffChecker;

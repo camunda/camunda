@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
@@ -420,6 +421,32 @@ public final class BpmnJobBehavior {
         element);
   }
 
+  /**
+   * Creates the job a stubbed call activity waits on instead of starting the process it calls. The
+   * job carries what the recorder needs to stand in for that process: the process id the call
+   * activity resolved, and how it would have been looked up.
+   */
+  public void createStubCallActivityJob(
+      final BpmnElementContext context,
+      final ExecutableCallActivity element,
+      final String calledProcessId) {
+    final var headers = new HashMap<String, String>();
+    headers.put(Protocol.CALLED_PROCESS_ID_HEADER_NAME, calledProcessId);
+    headers.put(Protocol.CALLED_PROCESS_BINDING_TYPE_HEADER_NAME, element.getBindingType().name());
+    if (element.getVersionTag() != null) {
+      headers.put(Protocol.CALLED_PROCESS_VERSION_TAG_HEADER_NAME, element.getVersionTag());
+    }
+
+    writeJobCreatedEvent(
+        context,
+        new JobProperties().type(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE).retries(1L).priority(0),
+        JobKind.BPMN_ELEMENT,
+        JobListenerEventType.UNSPECIFIED,
+        headers,
+        Map.of(),
+        element);
+  }
+
   public void createNewExecutionListenerJob(
       final BpmnElementContext context,
       final JobProperties jobProperties,
@@ -670,7 +697,8 @@ public final class BpmnJobBehavior {
         .setPriority(props.getPriority())
         .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
         .setStorageOrdinal(context.getStorageOrdinal())
-        .setBusinessId(getBusinessIdFromProcessInstance(context));
+        .setBusinessId(getBusinessIdFromProcessInstance(context))
+        .setJobReservationToken(getJobReservationTokenFromProcessInstance(context));
     setJobSecretReferences(secretReferences);
 
     final var jobKey = keyGenerator.nextKey();
@@ -710,6 +738,17 @@ public final class BpmnJobBehavior {
       return "";
     }
     return elementInstance.getValue().getBusinessId();
+  }
+
+  private String getJobReservationTokenFromProcessInstance(final BpmnElementContext context) {
+    // the root instance, not this one: a reservation covers the jobs of the child instances a call
+    // activity starts too, and only the root's record was given the token at creation
+    final var elementInstance =
+        stateBehavior.getElementInstance(context.getRootProcessInstanceKey());
+    if (elementInstance == null) {
+      return "";
+    }
+    return elementInstance.getValue().getJobReservationToken();
   }
 
   private DirectBuffer encodeHeaders(

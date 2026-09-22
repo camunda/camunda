@@ -198,6 +198,7 @@ final class ProcessInstanceRoundRobinDispatchTest {
         List.of(),
         null,
         null,
+        null,
         null);
   }
 }
