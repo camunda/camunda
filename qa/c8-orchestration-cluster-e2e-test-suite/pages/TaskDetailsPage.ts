@@ -113,14 +113,17 @@ class TaskDetailsPage {
     this.detailsInfo = page.getByTestId('details-info');
     this.taskCompletedBanner = this.page.getByText('Task completed');
     this.addDynamicListRowButton = page.getByRole('button', {name: 'add new'});
-    this.processTab = page.getByRole('link', {
+    // The task-details tabs (Task/Process/History) migrated from links to a
+    // design-system Tabs component, so they render as role="tab" now while
+    // keeping the same accessible name via aria-label.
+    this.processTab = page.getByRole('tab', {
       name: 'show associated bpmn process',
     });
     this.bpmnDiagram = page.getByTestId('diagram');
     this.assignedToMeText = page
       .getByTestId('assignee')
       .getByText('Assigned to me');
-    this.historyTabButton = page.getByRole('link', {
+    this.historyTabButton = page.getByRole('tab', {
       name: 'Show task history',
     });
     this.historyTable = page
@@ -136,7 +139,11 @@ class TaskDetailsPage {
     this.historyTableDetailsHeader = this.historyTable.getByRole(
       'columnheader',
       {
+        // Without `exact`, this also matches the "Open details" action
+        // column header (substring match), so the locator resolves to two
+        // elements and toBeVisible() throws a strict-mode violation.
         name: 'Details',
+        exact: true,
       },
     );
     this.historyTableActorHeader = this.historyTable.getByRole('columnheader', {
@@ -176,8 +183,12 @@ class TaskDetailsPage {
 
   async replaceExistingVariableValue(values: {name: string; value: string}) {
     const {name, value} = values;
-    await this.page.getByTitle(name).clear();
-    await this.page.getByTitle(name).fill(value);
+    // Same title-attribute-to-accessible-name migration as
+    // setVariableValue below: the field exposes its label as the textbox's
+    // accessible name now, not a title attribute.
+    const field = this.page.getByRole('textbox', {name});
+    await field.clear();
+    await field.fill(value);
   }
 
   getNthVariableNameInput(nth: number) {
@@ -423,9 +434,12 @@ class TaskDetailsPage {
     variableName: string,
     variableValue: string,
   ): Promise<void> {
-    await expect(this.page.getByTitle(variableName + ' Value')).toHaveValue(
-      variableValue,
-    );
+    // The variable value field is now a design-system input exposing its label
+    // as the accessible name ("<name> Value") rather than a `title` attribute,
+    // so getByTitle no longer resolves it. Match on the textbox role + name.
+    await expect(
+      this.page.getByRole('textbox', {name: variableName + ' Value'}),
+    ).toHaveValue(variableValue);
   }
 
   async fillDynamicList(label: string, value: string) {

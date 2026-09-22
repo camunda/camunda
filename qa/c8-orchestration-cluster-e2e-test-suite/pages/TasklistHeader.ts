@@ -11,17 +11,15 @@ import {Page, Locator, expect} from '@playwright/test';
 class TasklistHeader {
   private page: Page;
   readonly openSettingsButton: Locator;
-  readonly languageSelector: Locator;
   readonly processesTab: Locator;
   readonly logoutButton: Locator;
   readonly tasksTab: Locator;
 
   constructor(page: Page) {
     this.page = page;
-    this.openSettingsButton = page.getByRole('button', {name: 'Open Settings'});
-    this.languageSelector = page.getByRole('combobox', {name: 'Language'});
+    this.openSettingsButton = page.getByRole('button', {name: 'Settings'});
     this.processesTab = page.getByRole('link', {name: 'Processes'});
-    this.logoutButton = page.getByRole('button', {name: 'Log out'});
+    this.logoutButton = page.getByRole('menuitem', {name: 'Log out'});
     this.tasksTab = page
       .getByRole('navigation')
       .getByRole('link', {name: 'Tasks', exact: true});
@@ -33,10 +31,17 @@ class TasklistHeader {
   }
 
   async changeLanguage(option: 'Français' | 'English' | 'Deutsch' | 'Español') {
+    // The language picker is no longer a combobox: it's a design-system
+    // radio group inside the Settings menu, with one radio per language.
     await this.openSettingsButton.click();
-    await expect(this.languageSelector).toBeVisible();
-    await this.languageSelector.click();
-    await this.page.getByRole('option', {name: option, exact: true}).click();
+    const languageOption = this.page.getByRole('radio', {name: option});
+    await expect(languageOption).toBeVisible();
+    await languageOption.click();
+    await expect(languageOption).toBeChecked();
+    // Leaves the Settings menu open -- callers that need to assert on the
+    // rest of the page must close it first (see settings.spec.ts): Radix's
+    // DropdownMenu is modal by default, so everything outside it is
+    // aria-hidden while it's open.
   }
 
   async clickTasksTab() {

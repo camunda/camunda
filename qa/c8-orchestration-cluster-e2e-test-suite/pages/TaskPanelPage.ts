@@ -8,6 +8,7 @@
 
 import {Page, Locator, expect} from '@playwright/test';
 import {waitForAssertion} from 'utils/waitForAssertion';
+import {sleep} from 'utils/sleep';
 
 export type TaskCard = {
   readonly name: string;
@@ -17,40 +18,60 @@ export type TaskCard = {
 class TaskPanelPage {
   readonly availableTasks: Locator;
   readonly taskCards: Locator;
-  readonly collapseSidePanelButton: Locator;
-  readonly expandSidePanelButton: Locator;
   private page: Page;
   readonly taskListPageBanner: Locator;
   readonly collapseFilter: Locator;
-  readonly completedHeading: Locator;
+  readonly filtersButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.availableTasks = page.getByTitle('Available tasks');
     this.taskCards = this.availableTasks.locator('article');
-    this.collapseSidePanelButton = page.locator(
-      'button[aria-controls="task-nav-bar"][aria-expanded="true"]',
-    );
-    this.expandSidePanelButton = page
-      .locator('[aria-label="Filter controls"] li')
-      .filter({hasText: 'Expand to show filters'});
-    this.taskListPageBanner = page.getByRole('link', {
-      name: 'Camunda logo Tasklist',
-    });
+    this.taskListPageBanner = page
+      .getByRole('navigation', {name: 'Camunda context'})
+      .getByRole('link', {name: 'Tasklist', exact: true});
     this.collapseFilter = page.locator(
       'button[aria-controls="task-nav-bar"][aria-expanded="true"]',
     );
-    this.completedHeading = page.getByRole('heading', {
-      name: 'completed',
-    });
+    this.filtersButton = page.getByRole('button', {name: 'Filters'});
   }
 
   async openTask(name: string, options: {timeout?: number} = {}) {
     const timeout = options.timeout ?? 10000;
-    await this.availableTasks
-      .getByText(name, {exact: true})
-      .nth(0)
-      .click({timeout});
+    const task = this.availableTasks.getByText(name, {exact: true}).nth(0);
+    await this.scrollUntilTaskRendered(task, timeout);
+    await task.click({timeout});
+  }
+
+  /**
+   * The available-tasks list is virtualized (@tanstack/react-virtual), so a
+   * task outside the currently rendered window doesn't exist in the DOM at
+   * all — no amount of waiting brings it in. Scroll the list container down
+   * incrementally until the task mounts, or give up after `timeout`.
+   *
+   * The list container itself can be briefly absent right after navigation
+   * (the query hasn't resolved yet, so the "no tasks" empty state renders in
+   * its place) -- that's not the same as "there are no tasks to scroll
+   * through", so keep polling rather than giving up the moment it's missing.
+   */
+  private async scrollUntilTaskRendered(
+    task: Locator,
+    timeout: number,
+  ): Promise<void> {
+    const scrollableList = this.page.getByTestId('scrollable-list');
+    const deadline = Date.now() + timeout;
+
+    while (Date.now() < deadline) {
+      if ((await task.count()) > 0) {
+        return;
+      }
+      if ((await scrollableList.count()) > 0) {
+        await scrollableList.evaluate((element) =>
+          element.scrollBy(0, element.clientHeight),
+        );
+      }
+      await sleep(200);
+    }
   }
 
   async filterBy(
@@ -65,13 +86,17 @@ class TaskPanelPage {
     const maxRetries = 5;
     while (retryCount < maxRetries) {
       try {
-        const link = this.page.getByRole('link', {name: option, exact: true});
-        if (!(await link.isVisible())) {
-          await expect(this.expandSidePanelButton).toBeVisible();
-          await this.expandSidePanelButton.click();
-        }
-        await expect(link).toBeVisible({timeout: 10000});
-        await link.click();
+        // Filters moved from a collapsible side panel of links to a
+        // design-system dropdown: click the "Filters" button, then pick the
+        // option from the menu.
+        await expect(this.filtersButton).toBeVisible({timeout: 10000});
+        await this.filtersButton.click();
+        const menuOption = this.page.getByRole('menuitem', {
+          name: option,
+          exact: true,
+        });
+        await expect(menuOption).toBeVisible({timeout: 10000});
+        await menuOption.click();
 
         if (option === 'All open tasks') {
           // "All open tasks" is the default filter, so the router omits it
@@ -91,7 +116,6 @@ class TaskPanelPage {
           const filterRegex = new RegExp(`filter=${expectedSegment}(?:&|$)`);
           await expect(this.page).toHaveURL(filterRegex, {timeout: 15000});
         }
-        await this.collapseSidePanelButton.click();
         return;
       } catch (error) {
         retryCount++;
@@ -110,7 +134,9 @@ class TaskPanelPage {
   async assertCompletedHeadingVisible() {
     await waitForAssertion({
       assertion: async () => {
-        await expect(this.completedHeading).toBeVisible();
+        // The completed view no longer renders a "Completed" heading; the
+        // applied filter is reflected by the Filters dropdown trigger label.
+        await expect(this.filtersButton).toContainText('Completed');
       },
       onFailure: async () => {
         console.log('Filter not applied, retrying...');

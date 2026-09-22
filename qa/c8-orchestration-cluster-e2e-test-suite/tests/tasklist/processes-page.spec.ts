@@ -245,6 +245,18 @@ test.describe('process page', () => {
     await tasklistProcessesPage.clickStartProcessSubButton();
 
     await tasklistHeader.clickTasksTab();
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(
+          taskPanelPage.availableTasks
+            .getByText('processStartedByForm_user_task', {exact: true})
+            .first(),
+        ).toBeVisible();
+      },
+      onFailure: async () => {
+        void page.reload();
+      },
+    });
     await taskPanelPage.openTask('processStartedByForm_user_task');
     await expect(
       page.getByText('{"name":"jon","address":"earth"}'),

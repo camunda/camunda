@@ -25,12 +25,27 @@ test.describe('settings', () => {
 
   test('change language', async ({page, tasklistHeader}) => {
     await tasklistHeader.changeLanguage('Français');
+    // Check the Settings menu's own translated content while it's still
+    // open, then close it. Radix's DropdownMenu is modal by default: while
+    // open, it marks everything outside itself aria-hidden (confirmed by an
+    // error-context.md ARIA snapshot at the moment of a real failure, which
+    // contained only the menu's own subtree) -- so the page-content checks
+    // below would never find their targets, no matter how long they waited,
+    // until the menu closes.
+    await expect(
+      page.getByRole('menuitem', {name: 'Déconnexion'}),
+    ).toBeVisible();
+    await page.keyboard.press('Escape');
+
     await expect(
       page.getByRole('heading', {name: 'Bienvenue dans Tasklist'}),
     ).toBeVisible();
+    // "Tâches ouvertes" ("All open tasks") is not a page heading post-redesign
+    // -- it's the currently-selected filter's label, rendered as plain text
+    // inside the "Filtres" dropdown trigger button, so it has to be a text
+    // lookup rather than a heading/accessible-name lookup.
     await expect(
-      page.getByRole('heading', {name: 'Tâches ouvertes'}),
+      page.getByText('Tâches ouvertes', {exact: true}),
     ).toBeVisible();
-    await expect(page.getByRole('button', {name: 'Déconnexion'})).toBeVisible();
   });
 });

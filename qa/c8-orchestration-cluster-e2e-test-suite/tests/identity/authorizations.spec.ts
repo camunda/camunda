@@ -473,9 +473,17 @@ test.describe('secret authorizations', () => {
         'Secret',
       );
 
+      // The resource-id cell renders the fully-qualified value
+      // (`camunda.secrets.<reference>`) inside a button that truncates its
+      // visible text with an ellipsis when long, so toContainText -- which
+      // reads the truncated visible text -- no longer sees the full reference.
+      // The complete value is preserved as the cell's accessible name, so
+      // assert against that instead.
       await expect(
-        identityAuthorizationsPage.authorizationRowByOwnerId(testRole.id),
-      ).toContainText(secretReference);
+        identityAuthorizationsPage
+          .authorizationRowByOwnerId(testRole.id)
+          .getByRole('cell', {name: secretReference}),
+      ).toBeVisible();
     });
   });
 });
