@@ -558,11 +558,10 @@ public class SchemaManager implements CloseableSilently {
    * SchemaManager} per attempt and closing the previous one first, ends up parked here for as long
    * as the abandoned request runs. That is the hang this bounds.
    *
-   * <p>Shutdown stays graceful first, so {@link #startSchemaCleanup()}'s fire-and-forget cleanup —
-   * the one task legitimately still running at close on a successful startup — is left to finish.
-   * Only once that short grace is exhausted does this escalate to {@code shutdownNow()}. Either way
-   * the method returns; a task that somehow survives the interrupt keeps running in the background
-   * without holding up the caller.
+   * <p>Shutdown stays graceful first, giving already-running schema tasks a short grace period to
+   * finish. Only once that short grace is exhausted does this escalate to {@code shutdownNow()}.
+   * Either way the method returns; a task that somehow survives the interrupt keeps running in the
+   * background without holding up the caller.
    */
   @Override
   public void close() {
