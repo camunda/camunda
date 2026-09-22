@@ -502,8 +502,16 @@ Select the `scenario` input in the workflow dispatch form:
   # per-worker whitelist, and applying them to all 4 roles is harmless since the 3 tool roles
   # never read them. stream-enabled=false works around a job-streaming double-delivery race that
   # otherwise silently drops history items on the orchestrator role.
+  #
+  # extraEnvVars[4..6]: indices 4+ because scenarios/load-tester-values-defaults.yaml already
+  # sets indices 0-3 (Stackdriver logging + Optimize secret). Helm merges --set list indices
+  # positionally, so reusing one of those (e.g. index 2, which carries a valueFrom.fieldRef for
+  # the pod's namespace) silently merges onto the existing entry instead of replacing it - the
+  # namespace value then wins over the literal `value` we set, breaking the boolean bind and
+  # crash-looping every load-tester role. See common.mk's install-load-test-physical-tenants
+  # target for the same convention.
   gh workflow run camunda-load-test.yml -f ref=<branch> -f name=<initials>-agentviz-treatment -f scenario=agent-visibility \
-    -f load-test-load="--set global.extraEnvVars[0].name=LOAD_TESTER_WORKER_AGENT_INSTANCE_SIMULATION_ENABLED --set global.extraEnvVars[0].value=true --set global.extraEnvVars[1].name=CAMUNDA_CLIENT_WORKER_DEFAULTS_WITH_LEASE --set global.extraEnvVars[1].value=true --set global.extraEnvVars[2].name=CAMUNDA_CLIENT_WORKER_DEFAULTS_STREAM_ENABLED --set global.extraEnvVars[2].value=false"
+    -f load-test-load="--set global.extraEnvVars[4].name=LOAD_TESTER_WORKER_AGENT_INSTANCE_SIMULATION_ENABLED --set global.extraEnvVars[4].value=true --set global.extraEnvVars[5].name=CAMUNDA_CLIENT_WORKER_DEFAULTS_WITH_LEASE --set global.extraEnvVars[5].value=true --set global.extraEnvVars[6].name=CAMUNDA_CLIENT_WORKER_DEFAULTS_STREAM_ENABLED --set global.extraEnvVars[6].value=false"
   ```
 
   Compare the two namespaces' dashboards (PI/s, exporter backlog, broker CPU/heap, backpressure) — the delta is the measured cost of agent visibility on top of an already-realistic multi-tool-calling workload. See [`docs/metrics.md`](docs/metrics.md#slo-targets-by-test-variant) for the scenario's per-PI flow-node shape.
