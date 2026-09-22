@@ -8,7 +8,11 @@
 
 import {publicTest as test} from 'fixtures';
 import {expect} from '@playwright/test';
-import {deploy, createSingleInstance} from 'utils/zeebeClient';
+import {
+  cancelProcessInstance,
+  createSingleInstance,
+  deploy,
+} from 'utils/zeebeClient';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {findUserTask} from '@requestHelpers';
@@ -18,6 +22,8 @@ type ProcessInstance = {
 };
 
 test.describe('Task History Audit Log', () => {
+  let processInstanceKey: string | undefined;
+
   test.beforeAll(async () => {
     // Own process, not the shared usertask_to_be_completed: the tasks this file
     // creates stay assigned to demo (see beforeEach), and task-details.spec.ts
@@ -42,10 +48,12 @@ test.describe('Task History Audit Log', () => {
       // assignments settled in seconds. Nothing here asserts on unassigning --
       // task-details.spec.ts's 'assign and unassign task' covers that -- so
       // isolating the tests removes the step instead of waiting longer on it.
+      processInstanceKey = undefined;
       const processInstance: ProcessInstance = await createSingleInstance(
         'usertask_for_task_history',
         1,
       );
+      processInstanceKey = processInstance.processInstanceKey;
       const taskKey = await findUserTask(
         request,
         processInstance.processInstanceKey,
@@ -60,6 +68,9 @@ test.describe('Task History Audit Log', () => {
   );
 
   test.afterEach(async ({page}, testInfo) => {
+    if (processInstanceKey !== undefined) {
+      await cancelProcessInstance(processInstanceKey);
+    }
     await captureScreenshot(page, testInfo);
     await captureFailureVideo(page, testInfo);
   });

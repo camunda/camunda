@@ -44,7 +44,13 @@ class TasklistHeader {
     await expect(this.languageSelector).toBeVisible();
     // Selecting a language is a direct click on its radio item (no separate
     // listbox/option step like the old Carbon combobox required).
-    await this.page.getByRole('radio', {name: option, exact: true}).click();
+    const languageOption = this.page.getByRole('radio', {
+      name: option,
+      exact: true,
+    });
+    await expect(languageOption).toBeVisible();
+    await languageOption.click();
+    await expect(languageOption).toBeChecked();
     // Unlike a plain DropdownMenuItem, this radio lives in a bare Radix
     // RadioGroup embedded in the dropdown (see AccountMenu.tsx), so selecting
     // it does not auto-close the menu — intentional, so a user can flip
