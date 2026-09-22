@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.Mockito.*;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
@@ -331,6 +332,93 @@ public class ElasticsearchEngineClientIT {
     assertThat(policy.result().get("policy_name").policy().phases().delete().minAge().time())
         .isEqualTo("20d");
     assertThat(policy.result().get("policy_name").policy().phases().delete().actions()).isNotNull();
+  }
+
+  /**
+   * Regression test for #63543/#63569's underlying failure mode ({@code
+   * process_cluster_event_timeout_exception} from concurrent, redundant cluster-state writes)
+   * recurring for ILM policies: {@code putIndexLifeCyclePolicy} used to PUT unconditionally on
+   * every schema-init attempt, even when the policy already matched configuration.
+   */
+  @Test
+  void shouldNotIssuePutIndexLifeCyclePolicyWhenMinAgeUnchanged() throws IOException {
+    // given
+    elsEngineClient.putIndexLifeCyclePolicy("policy_no_change", "20d");
+
+    final var ilmSpy = spy(elsClient.ilm());
+    final var clientSpy = spy(elsClient);
+    doReturn(ilmSpy).when(clientSpy).ilm();
+    final var engineClient =
+        new ElasticsearchEngineClient(clientSpy, TestObjectMapper.objectMapper());
+
+    // when
+    engineClient.putIndexLifeCyclePolicy("policy_no_change", "20d");
+
+    // then
+    verify(ilmSpy, never()).putLifecycle(any(PutLifecycleRequest.class));
+  }
+
+  /** See {@link #shouldNotIssuePutIndexLifeCyclePolicyWhenMinAgeUnchanged}. */
+  @Test
+  void shouldIssuePutIndexLifeCyclePolicyWhenMinAgeChanged() throws IOException {
+    // given
+    elsEngineClient.putIndexLifeCyclePolicy("policy_change", "20d");
+
+    final var ilmSpy = spy(elsClient.ilm());
+    final var clientSpy = spy(elsClient);
+    doReturn(ilmSpy).when(clientSpy).ilm();
+    final var engineClient =
+        new ElasticsearchEngineClient(clientSpy, TestObjectMapper.objectMapper());
+
+    // when
+    engineClient.putIndexLifeCyclePolicy("policy_change", "30d");
+
+    // then
+    verify(ilmSpy, times(1)).putLifecycle(any(PutLifecycleRequest.class));
+    final var policy = elsClient.ilm().getLifecycle(req -> req.name("policy_change"));
+    assertThat(policy.result().get("policy_change").policy().phases().delete().minAge().time())
+        .isEqualTo("30d");
+  }
+
+  /**
+   * Regression test asserting that stating {@code delete_searchable_snapshot} explicitly in the PUT
+   * (see the fix in {@link ElasticsearchEngineClient#putLifecycleRequest}) does not force a
+   * one-time PUT for every pre-existing fleet policy on upgrade. A policy created by an older
+   * version of this client (without ever specifying {@code delete_searchable_snapshot}) already has
+   * Elasticsearch's own default persisted into it at creation time, so the fetched and desired
+   * policies still match without ever needing a write.
+   */
+  @Test
+  void shouldNotUpdatePolicyCreatedByOlderClientWithoutExplicitDeleteSearchableSnapshot()
+      throws IOException {
+    // given - a policy created the way an older client version (predating the explicit
+    // delete_searchable_snapshot) would have, i.e. without ever specifying that field
+    final var policyName = "legacy_ilm_policy_name";
+    final var legacyPolicyRequest =
+        new PutLifecycleRequest.Builder()
+            .name(policyName)
+            .policy(
+                policy ->
+                    policy.phases(
+                        phase ->
+                            phase.delete(
+                                del ->
+                                    del.minAge(m -> m.time("20d")).actions(a -> a.delete(d -> d)))))
+            .build();
+    elsClient.ilm().putLifecycle(legacyPolicyRequest);
+
+    final var ilmSpy = spy(elsClient.ilm());
+    final var clientSpy = spy(elsClient);
+    doReturn(ilmSpy).when(clientSpy).ilm();
+    final var engineClient =
+        new ElasticsearchEngineClient(clientSpy, TestObjectMapper.objectMapper());
+
+    // when - schema-init runs putIndexLifeCyclePolicy() with today's client, which states
+    // delete_searchable_snapshot explicitly
+    engineClient.putIndexLifeCyclePolicy(policyName, "20d");
+
+    // then - nothing was written
+    verify(ilmSpy, never()).putLifecycle(any(PutLifecycleRequest.class));
   }
 
   @Test

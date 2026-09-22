@@ -54,6 +54,8 @@ import org.mockito.ArgumentCaptor;
 
 class SchemaManagerTest {
 
+  private static final List<String> ALL_TEST_INDICES_WILDCARD = List.of("test-test-*");
+
   private SearchEngineClient searchEngineClient;
   private SearchEngineConfiguration config;
   private Collection<IndexDescriptor> indexDescriptors;
@@ -400,8 +402,7 @@ class SchemaManagerTest {
    * every descriptor on every attempt, regardless of whether anything had actually changed. Uses
    * its own descriptors, rather than the class fixture's, because {@code testIndexDescriptor} and
    * {@code testTemplateDescriptor} share the same component/index name and would otherwise resolve
-   * to the same index pattern. Replica counts are stubbed per exact alias, mirroring how production
-   * scopes the read to the same alias {@code putSettings()} would write to.
+   * to the same index pattern.
    */
   @RegressionTest("https://github.com/camunda/zeebe/issues/63543")
   void shouldSkipReplicaSettingsWriteWhenAlreadyUpToDate() {
@@ -409,10 +410,8 @@ class SchemaManagerTest {
     final var client = mock(SearchEngineClient.class);
     final var indexA = new TestIndexDescriptor("index-a", "mappings.json");
     final var indexB = new TestIndexDescriptor("index-b", "mappings.json");
-    when(client.getNumberOfReplicas(List.of(indexA.getAlias())))
-        .thenReturn(Map.of(indexA.getFullQualifiedName(), 1));
-    when(client.getNumberOfReplicas(List.of(indexB.getAlias())))
-        .thenReturn(Map.of(indexB.getFullQualifiedName(), 1));
+    when(client.getNumberOfReplicas(ALL_TEST_INDICES_WILDCARD))
+        .thenReturn(Map.of(indexA.getFullQualifiedName(), 1, indexB.getFullQualifiedName(), 1));
     try (final var manager =
         new SchemaManager(
             client,
@@ -437,10 +436,8 @@ class SchemaManagerTest {
     final var client = mock(SearchEngineClient.class);
     final var indexA = new TestIndexDescriptor("index-a", "mappings.json");
     final var indexB = new TestIndexDescriptor("index-b", "mappings.json");
-    when(client.getNumberOfReplicas(List.of(indexA.getAlias())))
-        .thenReturn(Map.of(indexA.getFullQualifiedName(), 0));
-    when(client.getNumberOfReplicas(List.of(indexB.getAlias())))
-        .thenReturn(Map.of(indexB.getFullQualifiedName(), 1));
+    when(client.getNumberOfReplicas(ALL_TEST_INDICES_WILDCARD))
+        .thenReturn(Map.of(indexA.getFullQualifiedName(), 0, indexB.getFullQualifiedName(), 1));
     try (final var manager =
         new SchemaManager(
             client,
@@ -462,16 +459,16 @@ class SchemaManagerTest {
 
   /**
    * Regression test for #63543, see {@link #shouldSkipReplicaSettingsWriteWhenAlreadyUpToDate}. An
-   * alias can point to more than one physical index (e.g. across a rollover), so the read for a
-   * single descriptor can come back with several entries; a write must fire if any of them has
-   * drifted, not only when all of them have.
+   * alias can point to more than one physical index (e.g. across a rollover), so the shared
+   * snapshot can come back with several entries for one descriptor; a write must fire if any of
+   * them has drifted, not only when all of them have.
    */
   @RegressionTest("https://github.com/camunda/zeebe/issues/63543")
   void shouldDetectDriftWhenOnlySomePhysicalIndicesBehindTheAliasHaveDrifted() {
     // given - two physical indices share indexA's alias; only one of them has drifted
     final var client = mock(SearchEngineClient.class);
     final var indexA = new TestIndexDescriptor("index-a", "mappings.json");
-    when(client.getNumberOfReplicas(List.of(indexA.getAlias())))
+    when(client.getNumberOfReplicas(ALL_TEST_INDICES_WILDCARD))
         .thenReturn(
             Map.of(
                 indexA.getFullQualifiedName() + "-2026.01.01", 1,
@@ -493,6 +490,38 @@ class SchemaManagerTest {
     // then - the one drifted physical index is enough to trigger the write
     verify(client, times(1))
         .putSettings(eq(List.of(indexA)), eq(Map.of("index.number_of_replicas", "1")));
+  }
+
+  /**
+   * Regression test for #63543, see {@link #shouldSkipReplicaSettingsWriteWhenAlreadyUpToDate}. A
+   * prior schema version's physical index is unreachable by {@code putSettings()} (its alias has
+   * moved on to the current version), so a mismatched replica count on it must not be treated as
+   * drift the write could ever fix — that would trigger a redundant PUT on every attempt forever.
+   */
+  @RegressionTest("https://github.com/camunda/zeebe/issues/63543")
+  void shouldNotTriggerWriteForDriftOnAPriorSchemaVersion() {
+    // given - a prior-version physical index has drifted, but the current version has not
+    final var client = mock(SearchEngineClient.class);
+    final var indexA = new TestIndexDescriptor("index-a", "mappings.json");
+    final var priorVersionIndexName = indexA.getIndexNameWithoutVersion() + "-0.9.0_2025.01.01";
+    when(client.getNumberOfReplicas(ALL_TEST_INDICES_WILDCARD))
+        .thenReturn(Map.of(indexA.getFullQualifiedName(), 1, priorVersionIndexName, 0));
+    try (final var manager =
+        new SchemaManager(
+            client,
+            List.of(indexA),
+            List.of(),
+            config,
+            mock(IndexSchemaValidator.class),
+            "8.8.0",
+            null)) {
+
+      // when
+      manager.startup();
+
+      // then - the prior version's drift is not attributed to indexA, so no write is issued
+      verify(client, never()).putSettings(any(), any());
+    }
   }
 
   private SchemaManager createSpySchemaManager(final String currentVersion) {
