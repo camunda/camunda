@@ -42,6 +42,14 @@ function getBusinessObjects(elementsById?: DiagramModel['elementsById']): Busine
 	}, {});
 }
 
+function hasCalledProcessInstances(businessObjects?: BusinessObjects) {
+	if (businessObjects === undefined) {
+		return false;
+	}
+
+	return Object.values(businessObjects).some((businessObject) => businessObject.$type === 'bpmn:CallActivity');
+}
+
 function getSubprocessOverlayFromIncidentElements(
 	flowNodes: (BusinessObject | undefined)[],
 	type: string,
@@ -73,5 +81,6 @@ export {
 	isProcessOrSubProcessEndEvent,
 	getFlowNodes,
 	getBusinessObjects,
+	hasCalledProcessInstances,
 	getSubprocessOverlayFromIncidentElements,
 };

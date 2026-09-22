@@ -680,6 +680,39 @@
 					"learnMoreLink": "Más información sobre los permisos"
 				}
 			},
+			"processInstance": {
+				"title": "Instancia de proceso de Operate",
+				"pageTitle": "Operate: Instancia de proceso {{processInstanceId}} de {{name}}",
+				"notFoundNotificationTitle": "No se pudo encontrar la instancia {{processInstanceId}}",
+				"breadcrumb": {
+					"view": "Ver proceso {{name}} - instancia {{key}}",
+					"current": "Proceso {{name}} - instancia {{key}}",
+					"more": "Más"
+				},
+				"header": {
+					"key": "Clave de instancia de proceso",
+					"waiting": "En espera",
+					"waitingCount": "{{count}} en espera",
+					"version": "Versión",
+					"versionTag": "Etiqueta de versión",
+					"versionTagDescription": "Etiqueta definida por el usuario para identificar una definición.",
+					"businessId": "ID de negocio",
+					"tenant": "Arrendatario",
+					"startDate": "Fecha de inicio",
+					"endDate": "Fecha de finalización",
+					"calledInstances": "Instancias llamadas",
+					"versionLinkTitle": "Ver instancias del proceso \"{{name}} versión {{version}}\"",
+					"versionLinkTitleWithTenant": "Ver instancias del proceso \"{{name}} versión {{version}}\" - {{tenant}}",
+					"viewCalledInstances": "Ver todo",
+					"viewCalledInstancesTitle": "Ver todas las instancias llamadas",
+					"none": "Ninguna"
+				},
+				"forbidden": {
+					"heading": "403 - No tiene permiso para ver esta información",
+					"description": "Póngase en contacto con su administrador para obtener acceso.",
+					"learnMoreLink": "Más información sobre los permisos"
+				}
+			},
 			"operations": {
 				"title": "Operaciones"
 			},

@@ -694,6 +694,39 @@
 					"learnMoreLink": "Learn more about permissions"
 				}
 			},
+			"processInstance": {
+				"title": "Operate Process Instance",
+				"pageTitle": "Operate: Process Instance {{processInstanceId}} of {{name}}",
+				"notFoundNotificationTitle": "Instance {{processInstanceId}} could not be found",
+				"breadcrumb": {
+					"view": "View Process {{name}} - Instance {{key}}",
+					"current": "Process {{name}} - Instance {{key}}",
+					"more": "More"
+				},
+				"header": {
+					"key": "Process Instance Key",
+					"waiting": "Waiting",
+					"waitingCount": "{{count}} waiting",
+					"version": "Version",
+					"versionTag": "Version Tag",
+					"versionTagDescription": "User-defined label identifying a definition.",
+					"businessId": "Business ID",
+					"tenant": "Tenant",
+					"startDate": "Start Date",
+					"endDate": "End Date",
+					"calledInstances": "Called Instances",
+					"versionLinkTitle": "View process \"{{name}} version {{version}}\" instances",
+					"versionLinkTitleWithTenant": "View process \"{{name}} version {{version}}\" instances - {{tenant}}",
+					"viewCalledInstances": "View All",
+					"viewCalledInstancesTitle": "View all called instances",
+					"none": "None"
+				},
+				"forbidden": {
+					"heading": "403 - You do not have permission to view this information",
+					"description": "Contact your administrator to get access.",
+					"learnMoreLink": "Learn more about permissions"
+				}
+			},
 			"operations": {
 				"title": "Operations"
 			},
