@@ -18,10 +18,10 @@ class TasklistHeader {
 
   constructor(page: Page) {
     this.page = page;
-    this.openSettingsButton = page.getByRole('button', {name: 'Open Settings'});
-    this.languageSelector = page.getByRole('combobox', {name: 'Language'});
+    this.openSettingsButton = page.getByRole('button', {name: 'Settings'});
+    this.languageSelector = page.getByRole('radiogroup', {name: 'Language'});
     this.processesTab = page.getByRole('link', {name: 'Processes'});
-    this.logoutButton = page.getByRole('button', {name: 'Log out'});
+    this.logoutButton = page.getByRole('menuitem', {name: 'Log out'});
     this.tasksTab = page
       .getByRole('navigation')
       .getByRole('link', {name: 'Tasks', exact: true});
@@ -35,8 +35,14 @@ class TasklistHeader {
   async changeLanguage(option: 'Français' | 'English' | 'Deutsch' | 'Español') {
     await this.openSettingsButton.click();
     await expect(this.languageSelector).toBeVisible();
-    await this.languageSelector.click();
-    await this.page.getByRole('option', {name: option, exact: true}).click();
+    await this.languageSelector
+      .getByRole('radio', {name: option, exact: true})
+      .click();
+    // Selecting a language no longer dismisses the settings menu (it used to be
+    // a combobox that auto-closed). Close the menu so the page behind it — which
+    // callers assert against — is no longer covered by the overlay.
+    await this.page.keyboard.press('Escape');
+    await expect(this.page.getByRole('menu')).toBeHidden();
   }
 
   async clickTasksTab() {

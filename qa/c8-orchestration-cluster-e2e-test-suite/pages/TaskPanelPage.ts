@@ -35,7 +35,7 @@ class TaskPanelPage {
       .locator('[aria-label="Filter controls"] li')
       .filter({hasText: 'Expand to show filters'});
     this.taskListPageBanner = page.getByRole('link', {
-      name: 'Camunda logo Tasklist',
+      name: 'Camunda logo',
     });
     this.collapseFilter = page.locator(
       'button[aria-controls="task-nav-bar"][aria-expanded="true"]',
@@ -47,10 +47,20 @@ class TaskPanelPage {
 
   async openTask(name: string, options: {timeout?: number} = {}) {
     const timeout = options.timeout ?? 10000;
-    await this.availableTasks
-      .getByText(name, {exact: true})
-      .nth(0)
-      .click({timeout});
+    const task = this.availableTasks.getByText(name, {exact: true}).first();
+
+    // In v2 Tasklist the task list loads incrementally with a smaller initial
+    // page than v1 (see bug #62704), so a task created earlier can sit below
+    // the loaded page and not be in the DOM yet. Scroll the last rendered card
+    // into view to load the next batch until the target task appears.
+    await expect(async () => {
+      if ((await task.count()) === 0) {
+        await this.taskCards.last().scrollIntoViewIfNeeded();
+        throw new Error(`Task "${name}" not loaded yet`);
+      }
+    }).toPass({timeout});
+
+    await task.click({timeout});
   }
 
   async filterBy(

@@ -113,8 +113,8 @@ class TaskDetailsPage {
     this.detailsInfo = page.getByTestId('details-info');
     this.taskCompletedBanner = this.page.getByText('Task completed');
     this.addDynamicListRowButton = page.getByRole('button', {name: 'add new'});
-    this.processTab = page.getByRole('link', {
-      name: 'show associated bpmn process',
+    this.processTab = page.getByRole('tab', {
+      name: 'Show associated BPMN process',
     });
     this.bpmnDiagram = page.getByTestId('diagram');
     this.assignedToMeText = page

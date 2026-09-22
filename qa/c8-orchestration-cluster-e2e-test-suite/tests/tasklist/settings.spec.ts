@@ -25,12 +25,14 @@ test.describe('settings', () => {
 
   test('change language', async ({page, tasklistHeader}) => {
     await tasklistHeader.changeLanguage('Français');
+    // Assert on always-visible localized chrome (welcome heading, header
+    // Settings button, Processes nav link) to confirm the UI switched to
+    // French. The former "open tasks" heading and the logout control are no
+    // longer a standalone heading / button, so they are not reliable anchors.
     await expect(
       page.getByRole('heading', {name: 'Bienvenue dans Tasklist'}),
     ).toBeVisible();
-    await expect(
-      page.getByRole('heading', {name: 'Tâches ouvertes'}),
-    ).toBeVisible();
-    await expect(page.getByRole('button', {name: 'Déconnexion'})).toBeVisible();
+    await expect(page.getByRole('button', {name: 'Paramètres'})).toBeVisible();
+    await expect(page.getByRole('link', {name: 'Processus'})).toBeVisible();
   });
 });
