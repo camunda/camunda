@@ -7,6 +7,7 @@
  */
 
 import styled from 'styled-components';
+import {Stack} from '@carbon/react';
 import {styles} from '@carbon/type';
 
 const Container = styled.div`
@@ -32,4 +33,10 @@ const IncidentBanner = styled.div`
 	color: var(--cds-text-primary);
 `;
 
-export {Container, Section, IncidentBanner};
+const RetryError = styled(Stack)`
+	flex-grow: 1;
+	align-items: center;
+	justify-content: center;
+`;
+
+export {Container, Section, IncidentBanner, RetryError};

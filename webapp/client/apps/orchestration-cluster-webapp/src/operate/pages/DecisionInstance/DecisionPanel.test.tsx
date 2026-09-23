@@ -10,6 +10,7 @@ import {describe, expect} from 'vitest';
 import {createInstance} from 'i18next';
 import {HttpResponse} from 'msw';
 import {I18nextProvider} from 'react-i18next';
+import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
@@ -259,7 +260,7 @@ describe('<DecisionPanel />', () => {
 		await expect
 			.element(
 				screen.getByText(
-					'Please contact your organization owner or admin to give you the necessary permissions to read this definition',
+					'Contact your organization owner or admin to give you the necessary permissions to read this definition',
 				),
 			)
 			.toBeVisible();
@@ -282,7 +283,36 @@ describe('<DecisionPanel />', () => {
 
 		const screen = await renderDecisionPanel();
 
-		await expect.element(screen.getByText('Data could not be fetched')).toBeVisible();
+		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
+	});
+
+	it('should recover from an xml fetch error when the user retries', async ({worker}) => {
+		worker.use(
+			mockGetDecisionInstanceEndpoint({
+				successResponse: HttpResponse.json(
+					createDecisionInstance({
+						decisionEvaluationInstanceKey: DECISION_INSTANCE_ID,
+						decisionDefinitionKey: DECISION_DEFINITION_KEY,
+					}),
+				),
+			}),
+			mockGetDecisionDefinitionXmlEndpoint({
+				successResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
+			}),
+		);
+
+		const screen = await renderDecisionPanel();
+
+		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
+		worker.use(
+			mockGetDecisionDefinitionXmlEndpoint({
+				successResponse: HttpResponse.text(DMN_XML_WITH_LITERAL_EXPRESSION_AND_HIGHLIGHTABLE_TABLE),
+			}),
+		);
+		await userEvent.click(screen.getByRole('button', {name: 'Try again'}));
+
+		await expect.element(screen.getByText('Invoice Amount')).toBeVisible();
+		await expect.element(screen.getByText("Couldn't fetch data")).not.toBeInTheDocument();
 	});
 
 	it('should show loading and then error for a failed xml refetch with warm cache', async ({worker}) => {
@@ -319,7 +349,7 @@ describe('<DecisionPanel />', () => {
 
 		await expect.element(screen.getByTestId('diagram-spinner')).toBeVisible();
 		await refetchPromise.catch(() => undefined);
-		await expect.element(screen.getByText('Data could not be fetched')).toBeVisible();
+		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
 		await expect.element(screen.getByText('Invoice Amount')).not.toBeInTheDocument();
 	});
 

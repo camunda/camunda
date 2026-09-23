@@ -85,10 +85,7 @@ test('should render panel-level forbidden state when xml access is denied', asyn
 	await expect(operateDecisionInstancePage.pageErrorHeading).not.toBeVisible();
 });
 
-test('should render panel-level generic error when xml loading fails', async ({
-	network,
-	operateDecisionInstancePage,
-}) => {
+test('should recover from a panel-level xml error when retrying', async ({network, operateDecisionInstancePage}) => {
 	network.use(
 		mockGetDecisionDefinitionXmlEndpoint({
 			successResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
@@ -99,6 +96,15 @@ test('should render panel-level generic error when xml loading fails', async ({
 
 	await expect(operateDecisionInstancePage.panelErrorMessage).toBeVisible();
 	await expect(operateDecisionInstancePage.pageErrorHeading).not.toBeVisible();
+
+	network.use(
+		mockGetDecisionDefinitionXmlEndpoint({
+			successResponse: HttpResponse.text(DMN_XML_WITH_LITERAL_EXPRESSION_AND_HIGHLIGHTABLE_TABLE),
+		}),
+	);
+	await operateDecisionInstancePage.panelRetryButton.click();
+
+	await expect(operateDecisionInstancePage.decisionTableLabel).toBeVisible();
 });
 
 test('should preserve page-level error and allow recovering by retrying the decision-instance query', async ({

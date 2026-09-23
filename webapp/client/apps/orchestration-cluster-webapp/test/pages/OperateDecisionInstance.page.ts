@@ -30,7 +30,11 @@ class OperateDecisionInstancePage extends BasePage {
 	}
 
 	get panelErrorMessage() {
-		return this.decisionPanel.getByText('Data could not be fetched');
+		return this.decisionPanel.getByText("Couldn't fetch data");
+	}
+
+	get panelRetryButton() {
+		return this.decisionPanel.getByRole('button', {name: 'Try again'});
 	}
 
 	get pageErrorHeading() {

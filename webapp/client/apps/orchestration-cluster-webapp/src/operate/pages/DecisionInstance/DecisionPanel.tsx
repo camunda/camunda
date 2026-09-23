@@ -8,13 +8,15 @@
 
 import {useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
+import {Button} from '@carbon/react';
 import {ForbiddenError} from '#/shared/errors';
 import {DiagramShell} from '#/operate/shared/DiagramShell/DiagramShell';
 import {DecisionViewer} from '#/operate/shared/DecisionViewer';
+import {ErrorMessage} from '#/operate/shared/ErrorMessage/ErrorMessage';
 import {useDecisionInstance} from './decisionInstance.queries';
 import {getHighlightableRules} from './getHighlightableRules';
 import {useDecisionDefinitionXml} from './useDecisionDefinitionXml';
-import {IncidentBanner, Section} from './styled';
+import {IncidentBanner, RetryError, Section} from './styled';
 
 type Props = {
 	decisionEvaluationInstanceKey: string;
@@ -33,6 +35,7 @@ const DecisionPanel: React.FC<Props> = ({decisionEvaluationInstanceKey}) => {
 		isFetching: isDecisionDefinitionXmlFetching,
 		isError: isDecisionDefinitionXmlError,
 		error: decisionDefinitionXmlError,
+		refetch: refetchDecisionDefinitionXml,
 	} = useDecisionDefinitionXml(decisionInstance?.decisionDefinitionKey);
 	const matchedRules = decisionInstance?.matchedRules;
 	const highlightableRules = useMemo(() => getHighlightableRules(matchedRules), [matchedRules]);
@@ -57,13 +60,24 @@ const DecisionPanel: React.FC<Props> = ({decisionEvaluationInstanceKey}) => {
 					{decisionInstance.evaluationFailure ?? t('operate.decisionInstance.panel.unknownEvaluationFailure')}
 				</IncidentBanner>
 			)}
-			<DiagramShell status={panelStatus}>
-				<DecisionViewer
-					xml={decisionDefinitionXml ?? null}
-					decisionViewId={decisionInstance?.decisionDefinitionId ?? null}
-					highlightableRules={highlightableRules}
-				/>
-			</DiagramShell>
+			{panelStatus === 'error' && isDecisionDefinitionXmlError ? (
+				<DiagramShell status="content">
+					<RetryError gap={5}>
+						<ErrorMessage />
+						<Button kind="tertiary" size="sm" onClick={() => void refetchDecisionDefinitionXml()}>
+							{t('errorGenericErrorPageButtonLabel')}
+						</Button>
+					</RetryError>
+				</DiagramShell>
+			) : (
+				<DiagramShell status={panelStatus}>
+					<DecisionViewer
+						xml={decisionDefinitionXml ?? null}
+						decisionViewId={decisionInstance?.decisionDefinitionId ?? null}
+						highlightableRules={highlightableRules}
+					/>
+				</DiagramShell>
+			)}
 		</Section>
 	);
 };
