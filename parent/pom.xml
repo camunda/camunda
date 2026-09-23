@@ -101,6 +101,17 @@
     <version.opensearch.testcontainers>4.1.0</version.opensearch.testcontainers>
     <version.prometheus>1.3.5</version.prometheus>
     <version.protobuf>4.36.2</version.protobuf>
+    <!-- the oldest Spring Boot line that manages protobuf-java. A user application inherits
+         spring-boot-starter-parent, thus this line gives our client the lowest runtime that a
+         user can have. Older supported lines manage no protobuf-java and take version.protobuf
+         from us. -->
+    <version.spring-boot-oldest-managing-protobuf>4.1.0</version.spring-boot-oldest-managing-protobuf>
+    <!-- protobuf-java that the line above manages. A test reads the Spring Boot BOM and fails if
+         the two disagree. -->
+    <version.protobuf-spring-boot-baseline>4.34.2</version.protobuf-spring-boot-baseline>
+    <!-- protoc makes the gencode. A runtime cannot load gencode that is newer than itself.
+         Thus this version must stay less than or equal to the baseline above. -->
+    <version.protoc>4.34.2</version.protoc>
     <version.protobuf-common>2.76.0</version.protobuf-common>
     <version.micrometer>1.17.1</version.micrometer>
     <version.rocksdbjni>10.10.1.1</version.rocksdbjni>
@@ -2735,7 +2746,7 @@
           <artifactId>protobuf-maven-plugin</artifactId>
           <version>${plugin.version.protobuf-maven-plugin}</version>
           <configuration>
-            <protoc>${version.protobuf}</protoc>
+            <protoc>${version.protoc}</protoc>
             <plugins>
               <plugin kind="binary-maven">
                 <groupId>io.grpc</groupId>
