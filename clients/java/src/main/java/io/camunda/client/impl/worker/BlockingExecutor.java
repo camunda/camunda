@@ -44,6 +44,7 @@ final class BlockingExecutor implements JobExecutor {
   private final Executor wrappedExecutor;
   private final Semaphore semaphore;
   private final long timeoutMillis;
+  private volatile Runnable capacityListener = () -> {};
 
   public BlockingExecutor(
       final Executor wrappedExecutor, final int maxActivate, final Duration jobActivationTimeout) {
@@ -69,6 +70,11 @@ final class BlockingExecutor implements JobExecutor {
   @Override
   public int freeCapacity() {
     return semaphore.availablePermits();
+  }
+
+  @Override
+  public void onCapacityAvailable(final Runnable listener) {
+    capacityListener = listener;
   }
 
   private void dispatch(final Runnable command) {
@@ -97,6 +103,8 @@ final class BlockingExecutor implements JobExecutor {
   private void releaseCapacity(final AtomicBoolean capacityHeld) {
     if (capacityHeld.compareAndSet(true, false)) {
       semaphore.release();
+      // Runs only after the permit is back, so a worker polling from here sees the freed slot.
+      capacityListener.run();
     }
   }
 
