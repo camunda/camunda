@@ -55,8 +55,10 @@ async function requestLoginCsrfToken(): Promise<string | null> {
     }
 
     return csrfToken;
-  } catch {
-    // The login request that follows reports the failure to the user.
+  } catch (e) {
+    // The login request that follows reports the failure to the user as a rejected login. Log the
+    // cause so a missing CSRF token is distinguishable from bad credentials.
+    console.error("fetching a CSRF token failed", e);
     return null;
   }
 }
