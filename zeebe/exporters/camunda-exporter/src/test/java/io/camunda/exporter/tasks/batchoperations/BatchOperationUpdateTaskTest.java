@@ -215,7 +215,7 @@ public class BatchOperationUpdateTaskTest {
   }
 
   @Test
-  void shouldNotReduceTheReadForFailuresThatWritingLessCannotHelp() {
+  void shouldNotHalveTheReadForFailuresThatWritingLessCannotHelp() {
     // given
     final var task = new BatchOperationUpdateTask(repository, 100, LOGGER, Runnable::run);
     repository.batchOperations.add(
