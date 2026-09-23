@@ -4090,6 +4090,167 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Count of physical tenants whose secondary storage is ready (ready on every currently-scraped node) versus the total known physical tenants. A gap between the two lines, or Total dropping, needs investigation via the per-tenant panel below.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "id": 706,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "count(min by (physicalTenant) (camunda_physical_tenant_secondary_storage_ready{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", physicalTenant=~\"$physicalTenant\"}) == 1)",
+              "legendFormat": "Ready PTs",
+              "range": true,
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "count(count by (physicalTenant) (camunda_physical_tenant_secondary_storage_ready{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", physicalTenant=~\"$physicalTenant\"}))",
+              "legendFormat": "Total PTs",
+              "range": true,
+              "refId": "B"
+            }
+          ],
+          "title": "Physical Tenant Readiness (Ready vs Total)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Per-physical-tenant secondary storage readiness: worst case (min) across currently-scraped nodes. A tenant not scraped within Prometheus' staleness window (5m) drops out of this panel entirely rather than showing red; check the panel above and node liveness in that case.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red"
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 8
+          },
+          "id": 707,
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "name",
+            "wideLayout": true
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "min by (physicalTenant) (camunda_physical_tenant_secondary_storage_ready{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", physicalTenant=~\"$physicalTenant\"})",
+              "instant": true,
+              "legendFormat": "{{physicalTenant}}",
+              "range": false,
+              "refId": "A"
+            }
+          ],
+          "title": "Physical Tenant Readiness (per tenant)",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "description": "Time taken to init secondary storage schema.",
           "fieldConfig": {
             "defaults": {
@@ -4153,7 +4314,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 15
+            "y": 16
           },
           "id": 664,
           "maxPerRow": 6,
