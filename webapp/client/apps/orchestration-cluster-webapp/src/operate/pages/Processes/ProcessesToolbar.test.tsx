@@ -80,9 +80,6 @@ const completed = (batchOperationType: BatchOperation['batchOperationType'] = 'C
 
 const exactKeys = ([first, ...rest]: readonly [string, ...string[]]) =>
 	z.tuple([z.literal(first), ...rest.map((key) => z.literal(key))]);
-// A batch operation request keeps the list's tenant/definition scope (from SEARCH) and carries
-// exactly the given instance-key criterion. The instance state criteria are covered by
-// processesFilter.test.ts.
 const batchOperationRequestSchema = (processInstanceKey: z.ZodType) =>
 	z.strictObject({
 		filter: z.looseObject({
