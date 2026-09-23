@@ -22,7 +22,7 @@ function renderInContainer(children: React.ReactElement, width: number) {
 }
 
 describe('<InstancesBar />', () => {
-	it('renders the incidents count and turns it error-colored when there are incidents', async () => {
+	it('should render the incidents count and turn it error-colored when there are incidents', async () => {
 		const screen = await renderWithTooltipProvider(<InstancesBar incidentsCount={3} size="medium" />);
 
 		const incidentsBadge = screen.getByTestId('incident-instances-badge');
@@ -30,7 +30,7 @@ describe('<InstancesBar />', () => {
 		await expect.element(incidentsBadge).toHaveClass('text-danger-foreground-strong');
 	});
 
-	it('does not color the incidents count when there are no incidents', async () => {
+	it('should not color the incidents count when there are no incidents', async () => {
 		const screen = await renderWithTooltipProvider(<InstancesBar incidentsCount={0} size="medium" />);
 
 		const incidentsBadge = screen.getByTestId('incident-instances-badge');
@@ -38,7 +38,7 @@ describe('<InstancesBar />', () => {
 		await expect.element(incidentsBadge).not.toHaveClass('text-danger-foreground-strong');
 	});
 
-	it('renders the active instances count when it is defined', async () => {
+	it('should render the active instances count when it is defined', async () => {
 		const screen = await renderWithTooltipProvider(
 			<InstancesBar incidentsCount={2} activeInstancesCount={5} size="medium" />,
 		);
@@ -46,13 +46,13 @@ describe('<InstancesBar />', () => {
 		await expect.element(screen.getByTestId('active-instances-badge')).toHaveTextContent('5');
 	});
 
-	it('hides the active instances count when it is undefined', async () => {
+	it('should hide the active instances count when it is undefined', async () => {
 		const screen = await renderWithTooltipProvider(<InstancesBar incidentsCount={2} size="medium" />);
 
 		expect(screen.getByTestId('active-instances-badge').elements()).toHaveLength(0);
 	});
 
-	it('hides the active instances count when it is negative', async () => {
+	it('should hide the active instances count when it is negative', async () => {
 		const screen = await renderWithTooltipProvider(
 			<InstancesBar incidentsCount={2} activeInstancesCount={-1} size="medium" />,
 		);
@@ -60,14 +60,14 @@ describe('<InstancesBar />', () => {
 		expect(screen.getByTestId('active-instances-badge').elements()).toHaveLength(0);
 	});
 
-	it('applies the given className to the root element', async () => {
+	it('should apply the given className to the root element', async () => {
 		const screen = await renderWithTooltipProvider(<InstancesBar incidentsCount={2} size="medium" className="foo" />);
 
 		const root = screen.getByTestId('incident-instances-badge').element().parentElement?.parentElement;
 		await expect.element(root as HTMLElement).toHaveClass('foo');
 	});
 
-	it('colors the label red only when the bar size is medium, regardless of the label size', async () => {
+	it('should color the label red only when the bar size is medium, regardless of the label size', async () => {
 		const screen = await renderWithTooltipProvider(
 			<InstancesBar
 				incidentsCount={0}
@@ -79,7 +79,7 @@ describe('<InstancesBar />', () => {
 		await expect.element(screen.getByText('order-process').first()).toHaveClass('text-danger-foreground-strong');
 	});
 
-	it('does not color an incident-type label red when the bar size is not medium', async () => {
+	it('should not color an incident-type label red when the bar size is not medium', async () => {
 		const screen = await renderWithTooltipProvider(
 			<InstancesBar
 				incidentsCount={0}
@@ -91,7 +91,7 @@ describe('<InstancesBar />', () => {
 		await expect.element(screen.getByText('order-process').first()).not.toHaveClass('text-danger-foreground-strong');
 	});
 
-	it('uses the small bar-height class for size="small"', async () => {
+	it('should use the small bar-height class for size="small"', async () => {
 		const screen = await renderWithTooltipProvider(
 			<InstancesBar incidentsCount={2} activeInstancesCount={8} size="small" />,
 		);
@@ -100,7 +100,7 @@ describe('<InstancesBar />', () => {
 		await expect.element(bar.children[0] as HTMLElement).toHaveClass('h-0.5');
 	});
 
-	it('uses the medium bar-height class for size="medium"', async () => {
+	it('should use the medium bar-height class for size="medium"', async () => {
 		const screen = await renderWithTooltipProvider(
 			<InstancesBar incidentsCount={2} activeInstancesCount={8} size="medium" />,
 		);
@@ -109,7 +109,7 @@ describe('<InstancesBar />', () => {
 		await expect.element(bar.children[0] as HTMLElement).toHaveClass('h-1');
 	});
 
-	it('uses the large bar-height class for size="large"', async () => {
+	it('should use the large bar-height class for size="large"', async () => {
 		const screen = await renderWithTooltipProvider(
 			<InstancesBar incidentsCount={2} activeInstancesCount={8} size="large" />,
 		);
@@ -118,7 +118,7 @@ describe('<InstancesBar />', () => {
 		await expect.element(bar.children[0] as HTMLElement).toHaveClass('h-2');
 	});
 
-	it('renders a defined zero active instances count without the active color', async () => {
+	it('should render a defined zero active instances count without the active color', async () => {
 		const screen = await renderWithTooltipProvider(
 			<InstancesBar incidentsCount={2} activeInstancesCount={0} size="medium" />,
 		);
@@ -128,7 +128,7 @@ describe('<InstancesBar />', () => {
 		await expect.element(activeBadge).not.toHaveClass('text-success-foreground-strong');
 	});
 
-	it('renders the draining indicator when draining and a description are provided', async () => {
+	it('should render the draining indicator when draining and a description are provided', async () => {
 		const screen = await renderWithTooltipProvider(
 			<InstancesBar incidentsCount={0} isDraining drainingDescription="This instance is draining" size="medium" />,
 		);
@@ -136,7 +136,7 @@ describe('<InstancesBar />', () => {
 		await expect.element(screen.getByTestId('draining-indicator')).toBeVisible();
 	});
 
-	it('reveals the draining description tooltip on hover', async () => {
+	it('should reveal the draining description tooltip on hover', async () => {
 		const screen = await renderWithTooltipProvider(
 			<InstancesBar incidentsCount={0} isDraining drainingDescription="Scheduled for deletion" size="medium" />,
 		);
@@ -146,7 +146,7 @@ describe('<InstancesBar />', () => {
 		await expect.element(screen.getByText('Scheduled for deletion')).toBeVisible();
 	});
 
-	it('keeps the draining indicator next to a short label even in a very wide row', async () => {
+	it('should keep the draining indicator next to a short label even in a very wide row', async () => {
 		const screen = await renderInContainer(
 			<InstancesBar
 				incidentsCount={0}
@@ -164,7 +164,7 @@ describe('<InstancesBar />', () => {
 		expect(drainingRect.left - labelRect.right).toBeLessThan(20);
 	});
 
-	it('ellipses the label instead of pushing the draining indicator or active count out of view', async () => {
+	it('should ellipsize the label instead of pushing the draining indicator or active count out of view', async () => {
 		const longText = 'a-very-long-process-definition-name-that-does-not-fit-in-a-narrow-row';
 		const screen = await renderInContainer(
 			<InstancesBar
@@ -184,7 +184,7 @@ describe('<InstancesBar />', () => {
 		await expect.element(screen.getByTestId('active-instances-badge')).toBeVisible();
 	});
 
-	it('reveals the full label text in a tooltip on hover', async () => {
+	it('should reveal the full label text in a tooltip on hover', async () => {
 		const screen = await renderWithTooltipProvider(
 			<InstancesBar
 				incidentsCount={0}
@@ -198,7 +198,7 @@ describe('<InstancesBar />', () => {
 		await expect.element(screen.getByText('order-process').nth(1)).toBeVisible();
 	});
 
-	it('does not render the draining indicator when isDraining is false', async () => {
+	it('should not render the draining indicator when isDraining is false', async () => {
 		const screen = await renderWithTooltipProvider(
 			<InstancesBar
 				incidentsCount={0}
@@ -211,13 +211,13 @@ describe('<InstancesBar />', () => {
 		expect(screen.getByTestId('draining-indicator').elements()).toHaveLength(0);
 	});
 
-	it('does not render the draining indicator when no description is provided', async () => {
+	it('should not render the draining indicator when no description is provided', async () => {
 		const screen = await renderWithTooltipProvider(<InstancesBar incidentsCount={0} isDraining size="medium" />);
 
 		expect(screen.getByTestId('draining-indicator').elements()).toHaveLength(0);
 	});
 
-	it('renders the two-segment bar when activeInstancesCount is defined', async () => {
+	it('should render the two-segment bar when activeInstancesCount is defined', async () => {
 		const screen = await renderWithTooltipProvider(
 			<InstancesBar incidentsCount={2} activeInstancesCount={8} size="medium" />,
 		);
@@ -225,13 +225,13 @@ describe('<InstancesBar />', () => {
 		await expect.element(screen.getByTestId('instances-bar')).toBeVisible();
 	});
 
-	it('does not render the bar when activeInstancesCount is undefined', async () => {
+	it('should not render the bar when activeInstancesCount is undefined', async () => {
 		const screen = await renderWithTooltipProvider(<InstancesBar incidentsCount={2} size="medium" />);
 
 		expect(screen.getByTestId('instances-bar').elements()).toHaveLength(0);
 	});
 
-	it('sizes the incidents segment to its share of the total', async () => {
+	it('should size the incidents segment to its share of the total', async () => {
 		const screen = await renderWithTooltipProvider(
 			<InstancesBar incidentsCount={2} activeInstancesCount={8} size="medium" />,
 		);
@@ -241,7 +241,7 @@ describe('<InstancesBar />', () => {
 		expect(incidentsSegment.style.width).toBe('20%');
 	});
 
-	it('does not divide by zero when both counts are zero', async () => {
+	it('should not divide by zero when both counts are zero', async () => {
 		const screen = await renderWithTooltipProvider(
 			<InstancesBar incidentsCount={0} activeInstancesCount={0} size="medium" />,
 		);
