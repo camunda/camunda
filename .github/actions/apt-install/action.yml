@@ -53,6 +53,10 @@ runs:
     #
     # `apt-get update` exits 100 if *any* configured repository fails, so don't gate on it
     # (INC-7943) -- a partial refresh still lands and `apt-get install` is the real gate.
+    #
+    # The inner script is single-quoted so the caller-supplied package/flag tokens are never
+    # reparsed by the root shell: they reach the inner bash as positional arguments and are
+    # installed via "$@", so a package value containing shell syntax can't inject commands.
     - name: Install packages
       if: steps.check.outputs.skip == 'false'
       uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
@@ -69,6 +73,7 @@ runs:
         timeout_seconds: ${{ steps.check.outputs.retry_timeout }}
         shell: bash
         command: |
-          sudo timeout "$APT_TIMEOUT" bash -c "apt-get update \
-            || echo '::warning::apt-get update could not refresh every repository, continuing with the index as-is'; \
-            apt-get install -y $APT_RECOMMENDS $APT_PACKAGES"
+          sudo timeout "$APT_TIMEOUT" bash -c '
+            apt-get update || echo "::warning::apt-get update could not refresh every repository, continuing with the index as-is"
+            apt-get install -y "$@"
+          ' bash $APT_RECOMMENDS $APT_PACKAGES
