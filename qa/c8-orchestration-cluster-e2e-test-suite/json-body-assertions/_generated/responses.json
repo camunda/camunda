@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "f7bba6328906b86329ec3dca3d9b0f72caa827e6",
-    "generatedAt": "2026-09-16T09:58:46.728Z",
+    "commit": "590e389a0556e0e59d73465287777e2d797ef8fa",
+    "generatedAt": "2026-09-23T12:13:17.320Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "3f9e869e0fe0d666b42eb313afbff6ee55fca92fc30b14effc32aa2b31287b44"
+    "specSha256": "b4ea9109b801233a80a6b588707e86407b76e3056b417e6f778384c03c669263"
   },
   "responses": [
     {
@@ -2359,24 +2359,7 @@
                 {
                   "name": "batchOperationType",
                   "type": "string",
-                  "enumValues": [
-                    "ADD_VARIABLE",
-                    "CANCEL_PROCESS_INSTANCE",
-                    "DELETE_DECISION_DEFINITION",
-                    "DELETE_DECISION_INSTANCE",
-                    "DELETE_PROCESS_DEFINITION",
-                    "DELETE_PROCESS_INSTANCE",
-                    "MIGRATE_PROCESS_INSTANCE",
-                    "MODIFY_PROCESS_INSTANCE",
-                    "RESOLVE_INCIDENT",
-                    "RESUME_PROCESS_INSTANCE",
-                    "SUSPEND_PROCESS_INSTANCE",
-                    "UPDATE_JOB",
-                    "UPDATE_VARIABLE"
-                  ],
-                  "underlyingPrimitive": "string",
-                  "rawRefName": "batchOperationType",
-                  "wrapper": true
+                  "nullable": true
                 },
                 {
                   "name": "endDate",
@@ -2496,24 +2479,7 @@
           {
             "name": "batchOperationType",
             "type": "string",
-            "enumValues": [
-              "ADD_VARIABLE",
-              "CANCEL_PROCESS_INSTANCE",
-              "DELETE_DECISION_DEFINITION",
-              "DELETE_DECISION_INSTANCE",
-              "DELETE_PROCESS_DEFINITION",
-              "DELETE_PROCESS_INSTANCE",
-              "MIGRATE_PROCESS_INSTANCE",
-              "MODIFY_PROCESS_INSTANCE",
-              "RESOLVE_INCIDENT",
-              "RESUME_PROCESS_INSTANCE",
-              "SUSPEND_PROCESS_INSTANCE",
-              "UPDATE_JOB",
-              "UPDATE_VARIABLE"
-            ],
-            "underlyingPrimitive": "string",
-            "rawRefName": "batchOperationType",
-            "wrapper": true
+            "nullable": true
           },
           {
             "name": "endDate",
