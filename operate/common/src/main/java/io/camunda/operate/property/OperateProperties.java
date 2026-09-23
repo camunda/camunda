@@ -159,11 +159,8 @@ public class OperateProperties {
     this.navV2Enabled = navV2Enabled;
   }
 
-  public boolean resolveNavV2Enabled(final boolean isSaas) {
-    if (navV2Enabled != null) {
-      return navV2Enabled;
-    }
-    return !isSaas;
+  public boolean resolveNavV2Enabled() {
+    return navV2Enabled == null || navV2Enabled;
   }
 
   public IdentityProperties getIdentity() {
