@@ -429,6 +429,7 @@ security.authentication.oidc.user-info-augmentation.cache-ttl
 security.authentication.oidc.user-info-augmentation.enabled
 security.authentication.oidc.user-info-augmentation.negative-cache-ttl
 security.authentication.oidc.user-info-enabled
+security.authentication.oidc.user-info-required
 security.authentication.oidc.user-info-uri
 security.authentication.oidc.username-claim
 security.authentication.providers.assigned
