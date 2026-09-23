@@ -298,9 +298,15 @@ exports.summary = new Summary();
  * Shared GitHub REST plumbing for the three fetch-based adapters (resolver,
  * comment, labels): one definition of auth/headers/retry, previously copied
  * into each. Stays octokit-free — a handful of endpoints, not a client.
+ *
+ * `retryableStatus`/`backoffMs`/`MAX_RETRIES` are also reused by resolve/index.ts
+ * for its GraphQL transport — same throttle shapes, different transport, so the
+ * classification logic is exported rather than duplicated there.
  */
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.GITHUB_API = void 0;
+exports.MAX_RETRIES = exports.GITHUB_API = void 0;
+exports.retryableStatus = retryableStatus;
+exports.backoffMs = backoffMs;
 exports.fetchWithRetry = fetchWithRetry;
 exports.fetchJsonWithRetry = fetchJsonWithRetry;
 exports.githubHeaders = githubHeaders;
@@ -308,11 +314,10 @@ exports.repoApiUrl = repoApiUrl;
 exports.GITHUB_API = 'https://api.github.com';
 const USER_AGENT = 'camunda-release-notes-gate';
 const GITHUB_API_VERSION = '2022-11-28';
-const MAX_RETRIES = 5;
+exports.MAX_RETRIES = 5;
 const MAX_RETRY_AFTER_MS = 60_000; // beyond this the job should fail rather than hold a runner
 /** 429, or 403 with a `retry-after` (a bare 403 is a real permission failure).
- *  5xx is transient. Mirrors resolve/index.ts's GraphQL-side check — same
- *  throttle shapes, REST transport. */
+ *  5xx is transient. */
 async function retryableStatus(res) {
     if (res.status === 429 || res.status >= 500)
         return true;
@@ -350,17 +355,17 @@ async function fetchWithRetry(url, init, sleepImpl = (ms) => new Promise((resolv
         catch (error) {
             // fetch REJECTS on a socket-level failure (reset, DNS blip) instead of
             // returning a Response, so this must be handled separately from status.
-            if (attempt >= MAX_RETRIES - 1) {
+            if (attempt >= exports.MAX_RETRIES - 1) {
                 const detail = error instanceof Error ? error.message : String(error);
-                throw new Error(`GitHub API request never completed past ${MAX_RETRIES} attempts (${url}): ${detail}`);
+                throw new Error(`GitHub API request never completed past ${exports.MAX_RETRIES} attempts (${url}): ${detail}`);
             }
             await sleepImpl(backoffMs(null, attempt));
             continue;
         }
         if (res.ok || !(await retryableStatus(res)))
             return res;
-        if (attempt >= MAX_RETRIES - 1) {
-            throw new Error(`GitHub API kept returning HTTP ${res.status} past ${MAX_RETRIES} attempts (${url}).`);
+        if (attempt >= exports.MAX_RETRIES - 1) {
+            throw new Error(`GitHub API kept returning HTTP ${res.status} past ${exports.MAX_RETRIES} attempts (${url}).`);
         }
         await sleepImpl(backoffMs(res, attempt));
     }
@@ -377,8 +382,8 @@ async function fetchJsonWithRetry(url, init, sleepImpl = (ms) => new Promise((re
             return { ok: true, status: res.status, data: (await res.json()) };
         }
         catch {
-            if (attempt >= MAX_RETRIES - 1) {
-                throw new Error(`GitHub API returned an unparseable body past ${MAX_RETRIES} attempts (${url}).`);
+            if (attempt >= exports.MAX_RETRIES - 1) {
+                throw new Error(`GitHub API returned an unparseable body past ${exports.MAX_RETRIES} attempts (${url}).`);
             }
             await sleepImpl(backoffMs(null, attempt));
         }

@@ -61,9 +61,19 @@ function decideAttribution(input) {
             reasons: [],
         };
     }
-    const legacyLive = eligible(input.legacyRefs).filter((ref) => ref.target === 'issue');
+    const legacyEligible = eligible(input.legacyRefs);
+    const legacyLive = legacyEligible.filter((ref) => ref.target === 'issue');
     if (legacyLive.length > 0) {
         return { source: 'legacyBodyScan', issueNumbers: uniqueNumbers(legacyLive), deliveryPath: 'direct', reasons: [] };
+    }
+    const legacyDead = legacyEligible.filter((ref) => ref.target === 'missing');
+    if (legacyDead.length > 0) {
+        return {
+            source: 'resolutionFailed',
+            issueNumbers: [],
+            deliveryPath: 'direct',
+            reasons: [`These legacy body refs do not resolve to a live issue in this repo: ${uniqueNumbers(legacyDead).map((n) => `#${n}`).join(', ')}.`],
+        };
     }
     return { source: 'unattributed', issueNumbers: [], deliveryPath: 'direct', reasons: [] };
 }
@@ -228,6 +238,13 @@ function closesIssueNumbers(input, closures) {
     return input.issueNumbers.filter((issueNumber) => {
         const closure = closures.get(issueNumber);
         if (abandoned(closure))
+            return false;
+        // A reopened issue still carries the ClosedEvent from before it reopened
+        // — trusting that closer (or a stale `closes` keyword) would report it
+        // released while it's actually open again. Only reachable when the
+        // closure was actually fetched; an unresolved number still falls through
+        // to declaredCloses below, same as always.
+        if (closure !== undefined && !closure.closed)
             return false;
         if (input.deliveryPath === 'backportHop')
             return true;
@@ -419,6 +436,7 @@ async function run() {
                 breaking: output.categorization.breaking,
                 issueNumbers: output.attribution.issueNumbers,
                 attributionSource: output.attribution.source,
+                deliveryPath: output.attribution.deliveryPath,
                 dependencies: output.dependencies,
             },
             delivery: {
@@ -616,9 +634,15 @@ exports.summary = new Summary();
  * Shared GitHub REST plumbing for the three fetch-based adapters (resolver,
  * comment, labels): one definition of auth/headers/retry, previously copied
  * into each. Stays octokit-free — a handful of endpoints, not a client.
+ *
+ * `retryableStatus`/`backoffMs`/`MAX_RETRIES` are also reused by resolve/index.ts
+ * for its GraphQL transport — same throttle shapes, different transport, so the
+ * classification logic is exported rather than duplicated there.
  */
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.GITHUB_API = void 0;
+exports.MAX_RETRIES = exports.GITHUB_API = void 0;
+exports.retryableStatus = retryableStatus;
+exports.backoffMs = backoffMs;
 exports.fetchWithRetry = fetchWithRetry;
 exports.fetchJsonWithRetry = fetchJsonWithRetry;
 exports.githubHeaders = githubHeaders;
@@ -626,11 +650,10 @@ exports.repoApiUrl = repoApiUrl;
 exports.GITHUB_API = 'https://api.github.com';
 const USER_AGENT = 'camunda-release-notes-gate';
 const GITHUB_API_VERSION = '2022-11-28';
-const MAX_RETRIES = 5;
+exports.MAX_RETRIES = 5;
 const MAX_RETRY_AFTER_MS = 60_000; // beyond this the job should fail rather than hold a runner
 /** 429, or 403 with a `retry-after` (a bare 403 is a real permission failure).
- *  5xx is transient. Mirrors resolve/index.ts's GraphQL-side check — same
- *  throttle shapes, REST transport. */
+ *  5xx is transient. */
 async function retryableStatus(res) {
     if (res.status === 429 || res.status >= 500)
         return true;
@@ -668,17 +691,17 @@ async function fetchWithRetry(url, init, sleepImpl = (ms) => new Promise((resolv
         catch (error) {
             // fetch REJECTS on a socket-level failure (reset, DNS blip) instead of
             // returning a Response, so this must be handled separately from status.
-            if (attempt >= MAX_RETRIES - 1) {
+            if (attempt >= exports.MAX_RETRIES - 1) {
                 const detail = error instanceof Error ? error.message : String(error);
-                throw new Error(`GitHub API request never completed past ${MAX_RETRIES} attempts (${url}): ${detail}`);
+                throw new Error(`GitHub API request never completed past ${exports.MAX_RETRIES} attempts (${url}): ${detail}`);
             }
             await sleepImpl(backoffMs(null, attempt));
             continue;
         }
         if (res.ok || !(await retryableStatus(res)))
             return res;
-        if (attempt >= MAX_RETRIES - 1) {
-            throw new Error(`GitHub API kept returning HTTP ${res.status} past ${MAX_RETRIES} attempts (${url}).`);
+        if (attempt >= exports.MAX_RETRIES - 1) {
+            throw new Error(`GitHub API kept returning HTTP ${res.status} past ${exports.MAX_RETRIES} attempts (${url}).`);
         }
         await sleepImpl(backoffMs(res, attempt));
     }
@@ -695,8 +718,8 @@ async function fetchJsonWithRetry(url, init, sleepImpl = (ms) => new Promise((re
             return { ok: true, status: res.status, data: (await res.json()) };
         }
         catch {
-            if (attempt >= MAX_RETRIES - 1) {
-                throw new Error(`GitHub API returned an unparseable body past ${MAX_RETRIES} attempts (${url}).`);
+            if (attempt >= exports.MAX_RETRIES - 1) {
+                throw new Error(`GitHub API returned an unparseable body past ${exports.MAX_RETRIES} attempts (${url}).`);
             }
             await sleepImpl(backoffMs(null, attempt));
         }
@@ -841,7 +864,10 @@ async function attributeDirectly(resolver, body, closingIssuesReferences) {
     const optOut = section ? (0, parser_1.isOptOutTicked)(section) : false;
     const sectionRefs = section ? await resolver.resolveRefs((0, parser_1.parseRefs)(section)) : [];
     const needsLegacyScan = !optOut && !(0, attribution_1.hasEligibleRefs)(sectionRefs) && closingIssuesReferences.length === 0;
-    const legacyRefs = needsLegacyScan ? await resolver.resolveRefs((0, parser_1.parseRefs)(body)) : [];
+    // Unlike a section ref (deliberately listed there), a bare "#N" anywhere in
+    // the body is as likely an incidental mention ("similar to #100") as a real
+    // attribution — only a ref carrying an explicit keyword counts here.
+    const legacyRefs = needsLegacyScan ? await resolver.resolveRefs((0, parser_1.parseRefs)(body).filter((ref) => ref.keyword !== null)) : [];
     return (0, attribution_1.decideAttribution)({ optOut, sectionRefs, closingIssuesReferences, legacyRefs });
 }
 /** The trigger for the bot-link exemption. Mirrors the gate's own
@@ -875,27 +901,34 @@ async function attributePr(resolver, pr, original) {
     return { decision, mergedAt };
 }
 /** Category-detection title and display title share one lookup — an
- *  inherit-original bot's own title is garbage for both. */
+ *  inherit-original bot's own title is garbage for both. Its author is too:
+ *  a Dependabot original relies on ITS OWN `deps` override (the automation
+ *  bot that carried it over has no such override), and its dependency table
+ *  lives in the original's body, not the backport's — so `canonicalTitle`/
+ *  `canonicalBody` (the original's, when inherited) are returned alongside
+ *  for every later step that needs the PR's actual content. */
 async function categorizePr(resolver, pr, original, override) {
-    const inherited = override === 'inherit-original' ? (await original())?.title : undefined;
-    const displayTitle = (0, categorize_1.stripBackportPrefix)(inherited ?? pr.title);
+    const inheritedOriginal = override === 'inherit-original' ? await original() : undefined;
+    const canonicalTitle = inheritedOriginal?.title ?? pr.title;
+    const canonicalBody = inheritedOriginal ? inheritedOriginal.body : pr.body;
+    const displayTitle = (0, categorize_1.stripBackportPrefix)(canonicalTitle);
     const componentLabels = pr.labels.filter((label) => label.startsWith('component/'));
     const categorization = (0, categorize_1.categorize)({
         title: displayTitle,
-        authorLogin: pr.authorLogin,
+        authorLogin: inheritedOriginal?.authorLogin ?? pr.authorLogin,
         componentLabels,
         breakingChangeLabel: pr.labels.includes('BREAKING CHANGE'),
     });
-    return { displayTitle, categorization };
+    return { displayTitle, canonicalTitle, canonicalBody, categorization };
 }
 /**
  * The customer-facing title, in priority order: a `deps:` PR's parsed
  * "name: old → new"; else the FIRST linked issue's own title (written for a
  * release-notes reader, unlike the PR title); else the PR's own title.
  */
-async function resolveDisplayTitle(resolver, pr, categorization, attribution, fallbackTitle) {
+async function resolveDisplayTitle(resolver, canonical, categorization, attribution, fallbackTitle) {
     if (categorization.section === 'Dependency updates') {
-        const updates = (0, categorize_1.parseDependencyUpdate)({ title: pr.title, body: pr.body });
+        const updates = (0, categorize_1.parseDependencyUpdate)(canonical);
         if (updates.length > 0)
             return (0, categorize_1.formatDependencyUpdates)(updates);
     }
@@ -913,14 +946,15 @@ async function processPr(resolver, pr, options) {
     let pending; // memoized: attribution + inherit-original both want the same original PR
     const original = () => (pending ??= backport ? resolver.fetchOriginalPull(backport.number, backport.repo) : Promise.resolve(null));
     const { decision: attribution, mergedAt } = await attributePr(resolver, pr, original);
-    const { displayTitle, categorization } = await categorizePr(resolver, pr, original, override);
-    const title = await resolveDisplayTitle(resolver, pr, categorization, attribution, displayTitle);
+    const { displayTitle, canonicalTitle, canonicalBody, categorization } = await categorizePr(resolver, pr, original, override);
+    const canonical = { title: canonicalTitle, body: canonicalBody };
+    const title = await resolveDisplayTitle(resolver, canonical, categorization, attribution, displayTitle);
     const anomaly = (0, attribution_1.evaluatePostGateAnomaly)({
         mergedAt,
         gateRequiredAt: options.gateRequiredAt,
         source: attribution.source,
     });
-    const dependencies = categorization.section === 'Dependency updates' ? (0, categorize_1.parseDependencyUpdate)({ title: pr.title, body: pr.body }) : [];
+    const dependencies = categorization.section === 'Dependency updates' ? (0, categorize_1.parseDependencyUpdate)(canonical) : [];
     return { number: pr.number, title, attribution, categorization, anomaly, dependencies };
 }
 
@@ -1060,10 +1094,13 @@ function resolveCommitsToPrs(commits, releaseBranch, rangeShas) {
             return rangeShas.has(pr.mergeCommitOid);
         });
         if (shipped.length === 0) {
-            // Credited only to a merge-back: either the merge-back commit itself, or
-            // a commit pushed straight onto the release branch that one swept in.
-            // Release plumbing either way — nothing delivered, nothing to report.
-            if (mergeBacks.length > 0 && candidates.length === 0)
+            // Skip only the merge-back's OWN commit — release plumbing, nothing
+            // delivered. A direct commit merely swept INTO that merge-back (pushed
+            // straight onto the release branch, so GitHub associates it only with
+            // whatever later merged that branch) is a different fact: a real
+            // PR-less commit that still needs its ruleset-bypass warning below.
+            const isMergeBackCommitItself = mergeBacks.some((pr) => pr.mergeCommitOid === commit.sha);
+            if (isMergeBackCommitItself && candidates.length === 0)
                 continue;
             const list = candidates.map((pr) => `#${pr.number}`).join(', ');
             reasons.push(candidates.length === 0
@@ -1238,11 +1275,13 @@ function isLower(candidate, current) {
     }
     return false;
 }
-/** The release's actual start/end version for one package — numeric compare
- *  where possible, walk-order positional fallback otherwise (a digest/sha,
- *  where walk order IS the chronology). See GENERATOR.md § 6. */
-function versionRange(updates) {
-    let from = updates[updates.length - 1].from;
+/** One pull request's own rows for a package collapsed to one — numeric
+ *  compare where possible (a body table can list the same package twice),
+ *  positional fallback otherwise. Never used ACROSS pull requests: which of
+ *  two different PRs' versions is "lower" says nothing about which merged
+ *  first. See GENERATOR.md § 6. */
+function reconcileDuplicateRows(updates) {
+    let from = updates[0].from;
     let to = updates[0].to;
     for (const update of updates) {
         if (isLower(update.from, from))
@@ -1250,17 +1289,32 @@ function versionRange(updates) {
         if (isLower(to, update.to))
             to = update.to;
     }
-    return { from, to };
+    return { name: updates[0].name, from, to };
+}
+/** The release's actual start/end version for one package: the OLDEST pull
+ *  request's `from` and the NEWEST pull request's `to` — positional, not a
+ *  numeric extreme across pull requests, which would invent a range no
+ *  commit in the release actually produced when a dependency is downgraded
+ *  or oscillates. `updates` carries one entry per pull request, walk-order
+ *  (newest first), so this is purely positional. See GENERATOR.md § 6. */
+function versionRange(updates) {
+    return { from: updates[updates.length - 1].from, to: updates[0].to };
 }
 function collapseDependencies(prs) {
     const byName = new Map();
     for (const pr of prs) {
+        const byNameInThisPr = new Map();
         for (const update of pr.dependencies ?? []) {
-            const existing = byName.get(update.name) ?? { prNumbers: [], updates: [], groupName: groupNameFor(pr) };
+            const rows = byNameInThisPr.get(update.name) ?? [];
+            rows.push(update);
+            byNameInThisPr.set(update.name, rows);
+        }
+        for (const [name, rows] of byNameInThisPr) {
+            const existing = byName.get(name) ?? { prNumbers: [], updates: [], groupName: groupNameFor(pr) };
             if (!existing.prNumbers.includes(pr.number))
                 existing.prNumbers.push(pr.number);
-            existing.updates.push(update);
-            byName.set(update.name, existing);
+            existing.updates.push(reconcileDuplicateRows(rows)); // one entry per PR, walk order preserved
+            byName.set(name, existing);
         }
     }
     return [...byName].map(([name, group]) => ({
@@ -1361,7 +1415,6 @@ const GRAPHQL_URL = 'https://api.github.com/graphql';
 const COMMIT_BATCH_SIZE = 25;
 /** A direct lookup — 100 aliases return in under a second. */
 const PR_METADATA_BATCH_SIZE = 100;
-const MAX_RETRIES = 5;
 exports.RATE_LIMITED_ERROR_TYPE = 'RATE_LIMITED';
 /** A field-level error, not a null field — the rest of the batch still comes back. */
 const NOT_FOUND_ERROR_TYPE = 'NOT_FOUND';
@@ -1371,40 +1424,6 @@ const NOT_FOUND_ERROR_TYPE = 'NOT_FOUND';
 class RetriesExhaustedError extends Error {
 }
 exports.RetriesExhaustedError = RetriesExhaustedError;
-const MAX_RETRY_AFTER_MS = 60_000; // beyond this the job should fail rather than hold a runner
-/**
- * GitHub reports a throttled GraphQL request three different ways: a
- * `RATE_LIMITED` error type inside a 200, HTTP 429, or HTTP 403 carrying a
- * `retry-after` (a 403 without one is a real permission failure and must not
- * be retried). 5xx is separate — a transient GraphQL backend failure, routine
- * on the multi-alias batch queries this client sends.
- */
-async function retryableStatus(res) {
-    if (res.status === 429 || res.status >= 500)
-        return true;
-    if (res.status !== 403)
-        return false;
-    if (res.headers.get('retry-after') !== null)
-        return true;
-    if (res.headers.get('x-ratelimit-remaining') === '0')
-        return true;
-    // The secondary rate limit fires on concurrency, answers 403, and names
-    // itself only in the body while the primary counter still reads full.
-    try {
-        return /rate limit/i.test(await res.clone().text());
-    }
-    catch {
-        return false;
-    }
-}
-/** The server's own wait, when it names one, else exponential backoff. */
-function backoffMs(res, attempt) {
-    const header = res?.headers.get('retry-after');
-    const seconds = header === null || header === undefined ? NaN : Number(header);
-    if (Number.isFinite(seconds) && seconds >= 0)
-        return Math.min(seconds * 1000, MAX_RETRY_AFTER_MS);
-    return 2 ** attempt * 1000;
-}
 /** The one `associatedPullRequests` selection both query shapes share.
  *  `headRefName`/`mergeCommit` feed range membership, decided before any PR
  *  metadata fetch, and are free on a connection already selected. */
@@ -1442,6 +1461,22 @@ class GithubGraphqlResolver {
         this.fetchImpl = fetchImpl;
         this.sleepImpl = sleepImpl;
     }
+    /** The one "batch N values into a multi-alias `repository()` query" shape
+     *  `mapCommitBatch`, `classifyRefs`, `fetchIssueFacts`, and `fetchMetadataBatch`
+     *  each built separately — only the variable type, alias prefix, and
+     *  per-item field selection actually differ between them. */
+    buildBatchQuery(items, opts) {
+        const varDecls = items.map((_, i) => `$v${i}: ${opts.varType}`).join(', ');
+        const body = items.map((_, i) => `${opts.aliasPrefix}${i}: ${opts.field(`$v${i}`)}`).join('\n');
+        const query = `query($owner: String!, $name: String!, ${varDecls}) {
+      repository(owner: $owner, name: $name) {
+        ${body}
+      }
+    }`;
+        const variables = { owner: this.owner, name: this.repo };
+        items.forEach((item, i) => (variables[`v${i}`] = item));
+        return { query, variables };
+    }
     async mapCommitsToPrs(shas) {
         const results = [];
         for (let i = 0; i < shas.length; i += COMMIT_BATCH_SIZE) {
@@ -1475,15 +1510,11 @@ class GithubGraphqlResolver {
         const out = new Map();
         for (let i = 0; i < numbers.length; i += PR_METADATA_BATCH_SIZE) {
             const batch = numbers.slice(i, i + PR_METADATA_BATCH_SIZE);
-            const query = `query($owner: String!, $name: String!, ${batch.map((_, j) => `$n${j}: Int!`).join(', ')}) {
-        repository(owner: $owner, name: $name) {
-          ${batch
-                .map((_, j) => `r${j}: issueOrPullRequest(number: $n${j}) { __typename ... on Issue { title } ... on PullRequest { title } }`)
-                .join('\n')}
-        }
-      }`;
-            const variables = { owner: this.owner, name: this.repo };
-            batch.forEach((number, j) => (variables[`n${j}`] = number));
+            const { query, variables } = this.buildBatchQuery(batch, {
+                varType: 'Int!',
+                aliasPrefix: 'r',
+                field: (ref) => `issueOrPullRequest(number: ${ref}) { __typename ... on Issue { title } ... on PullRequest { title } }`,
+            });
             const repository = await this.requestRepository(query, variables, true);
             batch.forEach((number, j) => {
                 const node = repository[`r${j}`];
@@ -1506,15 +1537,11 @@ class GithubGraphqlResolver {
         const out = new Map();
         for (let i = 0; i < numbers.length; i += PR_METADATA_BATCH_SIZE) {
             const batch = numbers.slice(i, i + PR_METADATA_BATCH_SIZE);
-            const query = `query($owner: String!, $name: String!, ${batch.map((_, j) => `$n${j}: Int!`).join(', ')}) {
-        repository(owner: $owner, name: $name) {
-          ${batch
-                .map((_, j) => `i${j}: issue(number: $n${j}) { closed stateReason labels(first: 20) { nodes { name } pageInfo { hasNextPage } } timelineItems(last: 1, itemTypes: CLOSED_EVENT) { nodes { ... on ClosedEvent { closer { __typename ... on PullRequest { number repository { nameWithOwner } } } } } } }`)
-                .join('\n')}
-        }
-      }`;
-            const variables = { owner: this.owner, name: this.repo };
-            batch.forEach((number, j) => (variables[`n${j}`] = number));
+            const { query, variables } = this.buildBatchQuery(batch, {
+                varType: 'Int!',
+                aliasPrefix: 'i',
+                field: (ref) => `issue(number: ${ref}) { closed stateReason labels(first: 20) { nodes { name } pageInfo { hasNextPage } } timelineItems(last: 1, itemTypes: CLOSED_EVENT) { nodes { ... on ClosedEvent { closer { __typename ... on PullRequest { number repository { nameWithOwner } } } } } } }`,
+            });
             const repository = await this.requestRepository(query, variables, true);
             batch.forEach((number, j) => {
                 const node = repository[`i${j}`];
@@ -1543,13 +1570,11 @@ class GithubGraphqlResolver {
         return results;
     }
     async mapCommitBatch(shas) {
-        const query = `query($owner: String!, $name: String!, ${shas.map((_, i) => `$sha${i}: GitObjectID!`).join(', ')}) {
-      repository(owner: $owner, name: $name) {
-        ${shas.map((_, i) => `c${i}: object(oid: $sha${i}) { ... on Commit { ${prConnection()} } }`).join('\n')}
-      }
-    }`;
-        const variables = { owner: this.owner, name: this.repo };
-        shas.forEach((sha, i) => (variables[`sha${i}`] = sha));
+        const { query, variables } = this.buildBatchQuery(shas, {
+            varType: 'GitObjectID!',
+            aliasPrefix: 'c',
+            field: (ref) => `object(oid: ${ref}) { ... on Commit { ${prConnection()} } }`,
+        });
         const repository = await this.requestRepository(query, variables);
         const mappings = [];
         for (const [i, sha] of shas.entries()) {
@@ -1590,21 +1615,21 @@ class GithubGraphqlResolver {
      *  a thrown error) is what sends the commit to the `associatedPullRequests`
      *  fallback instead of aborting the release. */
     async fetchMetadataBatch(numbers, speculative = false) {
-        const query = `query($owner: String!, $name: String!, ${numbers.map((_, i) => `$n${i}: Int!`).join(', ')}) {
-      repository(owner: $owner, name: $name) {
-        ${numbers
-            .map((_, i) => `pr${i}: pullRequest(number: $n${i}) { number title body mergedAt baseRefName headRefName mergeCommit { oid } author { login __typename } labels(first: 20) { nodes { name } pageInfo { hasNextPage } } closingIssuesReferences(first: 20) { nodes { number } pageInfo { hasNextPage } } }`)
-            .join('\n')}
-      }
-    }`;
-        const variables = { owner: this.owner, name: this.repo };
-        numbers.forEach((number, i) => (variables[`n${i}`] = number));
+        const { query, variables } = this.buildBatchQuery(numbers, {
+            varType: 'Int!',
+            aliasPrefix: 'pr',
+            field: (ref) => `pullRequest(number: ${ref}) { number title body mergedAt baseRefName headRefName mergeCommit { oid } author { login __typename } labels(first: 20) { nodes { name } pageInfo { hasNextPage } } closingIssuesReferences(first: 20) { nodes { number } pageInfo { hasNextPage } } }`,
+        });
         const repository = await this.requestRepository(query, variables, speculative);
         return numbers.flatMap((number, i) => {
             const node = repository[`pr${i}`];
             if (speculative && (node === null || node === undefined))
                 return [];
             const pr = assertField(node, `repository.pr${i} (PR #${number})`);
+            // An OPEN pull request is a non-null node but an unconfirmed guess all
+            // the same — as absent as NOT_FOUND above, not a reason to abort.
+            if (speculative && pr.mergedAt == null)
+                return [];
             const truncatedFields = [];
             if (pr.labels?.pageInfo?.hasNextPage)
                 truncatedFields.push('labels');
@@ -1649,7 +1674,7 @@ class GithubGraphqlResolver {
                 continue;
             }
             if (!res.ok) {
-                if (!(await retryableStatus(res)))
+                if (!(await (0, github_1.retryableStatus)(res)))
                     throw new Error(`GitHub GraphQL API returned HTTP ${res.status}`);
                 await this.waitForRetry(res, attempt, `HTTP ${res.status}`);
                 continue;
@@ -1683,10 +1708,10 @@ class GithubGraphqlResolver {
     /** Sleeps before the next attempt, or throws once the cap is reached — the
      *  one place that decides a retry loop is over. */
     async waitForRetry(res, attempt, cause) {
-        if (attempt >= MAX_RETRIES - 1) {
-            throw new RetriesExhaustedError(`GitHub GraphQL request kept failing (${cause}) past ${MAX_RETRIES} attempts.`);
+        if (attempt >= github_1.MAX_RETRIES - 1) {
+            throw new RetriesExhaustedError(`GitHub GraphQL request kept failing (${cause}) past ${github_1.MAX_RETRIES} attempts.`);
         }
-        await this.sleepImpl(backoffMs(res, attempt));
+        await this.sleepImpl((0, github_1.backoffMs)(res, attempt));
     }
 }
 exports.GithubGraphqlResolver = GithubGraphqlResolver;
