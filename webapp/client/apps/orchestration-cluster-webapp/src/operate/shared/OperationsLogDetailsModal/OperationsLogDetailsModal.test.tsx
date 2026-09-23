@@ -13,9 +13,13 @@ import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {createAuditLog} from '#/shared-test-modules/api-mocks/audit-logs';
 import {OperationsLogDetailsModal} from './OperationsLogDetailsModal';
 
-function renderModal(auditLog: ReturnType<typeof createAuditLog>) {
+const OPERATE_ROOT_PATH = '/operate';
+
+function renderModal(auditLog: ReturnType<typeof createAuditLog>, basepath = '') {
 	return renderWithRouter(() => <OperationsLogDetailsModal isOpen onClose={() => {}} auditLog={auditLog} />, {
-		path: '/operate',
+		path: OPERATE_ROOT_PATH,
+		basepath,
+		initialEntry: `${basepath}${OPERATE_ROOT_PATH}`,
 	});
 }
 
@@ -66,6 +70,48 @@ describe('<OperationsLogDetailsModal />', () => {
 		await expect.element(screen.getByText('Applied to:')).toBeVisible();
 		await expect.element(screen.getByText(/process instances/)).toBeVisible();
 	});
+
+	it.for([
+		{basepath: '', expectedPathPrefix: ''},
+		{basepath: '/camunda', expectedPathPrefix: '/camunda'},
+	])(
+		'should render a process instance entity link with the correct basepath "$basepath"',
+		async ({basepath, expectedPathPrefix}) => {
+			const auditLog = createAuditLog({
+				entityType: 'PROCESS_INSTANCE',
+				entityKey: '2251799813685250',
+				processInstanceKey: '2251799813685250',
+				processDefinitionId: 'order-process',
+			});
+
+			const screen = await renderModal(auditLog, basepath);
+
+			await expect
+				.element(screen.getByRole('link', {name: 'View process instance 2251799813685250'}))
+				.toHaveAttribute('href', `${expectedPathPrefix}/operate/processes/2251799813685250`);
+		},
+	);
+
+	it.for([
+		{basepath: '', expectedPathPrefix: ''},
+		{basepath: '/camunda', expectedPathPrefix: '/camunda'},
+	])(
+		'should render a parent process instance link with the correct basepath "$basepath"',
+		async ({basepath, expectedPathPrefix}) => {
+			const auditLog = createAuditLog({
+				entityType: 'VARIABLE',
+				entityKey: 'variable-1',
+				processInstanceKey: '2251799813685250',
+				processDefinitionId: 'order-process',
+			});
+
+			const screen = await renderModal(auditLog, basepath);
+
+			await expect
+				.element(screen.getByRole('link', {name: 'View process instance 2251799813685250'}))
+				.toHaveAttribute('href', `${expectedPathPrefix}/operate/processes/2251799813685250`);
+		},
+	);
 
 	it('should render the resource key detail row for RESOURCE entity types', async () => {
 		const auditLog = createAuditLog({
