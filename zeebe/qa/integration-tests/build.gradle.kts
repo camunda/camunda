@@ -58,7 +58,6 @@ dependencies {
   testImplementation(libs.io.grpc.grpc.core)
   testImplementation(project(":zeebe-test-util"))
   testImplementation(project(":zeebe-qa-util"))
-  testImplementation(project(":zeebe-broker"))
   testImplementation(libs.junit.junit)
   testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
   testImplementation(libs.org.testcontainers.testcontainers)

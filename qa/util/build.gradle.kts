@@ -49,7 +49,6 @@ dependencies {
   implementation(libs.org.junit.jupiter.junit.jupiter.api)
   implementation(libs.org.opensearch.client.opensearch.java)
   implementation(libs.org.apache.commons.commons.lang3)
-  implementation(libs.org.liquibase.liquibase.core)
   implementation(libs.org.jspecify.jspecify)
   implementation(libs.com.github.dasniko.testcontainers.keycloak)
   implementation(libs.org.keycloak.keycloak.admin.client)
