@@ -39,7 +39,7 @@ const processesSearchSchema = z.object({
 	sort: z.string().optional(),
 });
 
-export const Route = createFileRoute('/_carbon/_auth/operate/processes')({
+const Route = createFileRoute('/_carbon/_auth/operate/processes/')({
 	validateSearch: processesSearchSchema,
 	loader: ({context: {queryClient}}) =>
 		queryClient.ensureQueryData(queries.queryProcessDefinitions({page: {limit: 1000}})),
@@ -47,3 +47,5 @@ export const Route = createFileRoute('/_carbon/_auth/operate/processes')({
 		return <Processes {...Route.useSearch()} />;
 	},
 });
+
+export {Route};
