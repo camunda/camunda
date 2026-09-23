@@ -18,60 +18,127 @@ export type TaskCard = {
 class TaskPanelPage {
   readonly availableTasks: Locator;
   readonly taskCards: Locator;
+  readonly scrollableList: Locator;
+  readonly filterSelectButton: Locator;
   private page: Page;
   readonly taskListPageBanner: Locator;
-  readonly collapseFilter: Locator;
-  readonly filtersButton: Locator;
+  readonly completedHeading: Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.availableTasks = page.getByTitle('Available tasks');
     this.taskCards = this.availableTasks.locator('article');
+    this.scrollableList = this.availableTasks.getByTestId('scrollable-list');
+    this.filterSelectButton = page.getByRole('button', {
+      name: 'Filters',
+      exact: true,
+    });
     this.taskListPageBanner = page
       .getByRole('navigation', {name: 'Camunda context'})
       .getByRole('link', {name: 'Tasklist', exact: true});
-    this.collapseFilter = page.locator(
-      'button[aria-controls="task-nav-bar"][aria-expanded="true"]',
-    );
-    this.filtersButton = page.getByRole('button', {name: 'Filters'});
+    this.completedHeading = this.filterSelectButton.getByText('Completed', {
+      exact: true,
+    });
   }
 
   async openTask(name: string, options: {timeout?: number} = {}) {
     const timeout = options.timeout ?? 10000;
-    const task = this.availableTasks.getByText(name, {exact: true}).nth(0);
-    await this.scrollUntilTaskRendered(task, timeout);
-    await task.click({timeout});
+    const task = this.taskCardByText(name);
+
+    await waitForAssertion({
+      assertion: async () => {
+        await this.scrollListToTop();
+        await this.walkListFor(task, timeout);
+        await task.getByRole('link').click({timeout});
+        await expect(this.page).toHaveURL(/\/tasklist\/[^/?]+/);
+      },
+      onFailure: async () => {
+        await this.reloadPage();
+      },
+    });
   }
 
-  /**
-   * The available-tasks list is virtualized (@tanstack/react-virtual), so a
-   * task outside the currently rendered window doesn't exist in the DOM at
-   * all — no amount of waiting brings it in. Scroll the list container down
-   * incrementally until the task mounts, or give up after `timeout`.
-   *
-   * The list container itself can be briefly absent right after navigation
-   * (the query hasn't resolved yet, so the "no tasks" empty state renders in
-   * its place) -- that's not the same as "there are no tasks to scroll
-   * through", so keep polling rather than giving up the moment it's missing.
-   */
-  private async scrollUntilTaskRendered(
+  async assertTaskCardVisible(
+    name: string,
+    options: {timeout?: number} = {},
+  ): Promise<void> {
+    const card = this.taskCardByText(name);
+    await this.waitForTaskCard(card, name, options.timeout ?? 10000);
+  }
+
+  private taskCardByText(text: string): Locator {
+    return this.taskCards
+      .filter({has: this.page.getByText(text, {exact: true})})
+      .first();
+  }
+
+  private async waitForTaskCard(
     task: Locator,
+    name: string,
     timeout: number,
   ): Promise<void> {
-    const scrollableList = this.page.getByTestId('scrollable-list');
+    // Only the current task-list viewport exists in the DOM. Walk the actual
+    // scroll container so older pages load before falling back to a reload.
+    await waitForAssertion({
+      assertion: async () => {
+        await this.scrollListToTop();
+        await this.walkListFor(task, timeout);
+        await expect(task).toBeVisible({timeout: 5000});
+      },
+      onFailure: async () => {
+        console.log(
+          `Task "${name}" not visible yet, reloading and retrying...`,
+        );
+        await this.reloadPage();
+      },
+    });
+  }
+
+  private async walkListFor(task: Locator, timeout: number): Promise<void> {
     const deadline = Date.now() + timeout;
+    let idleRounds = 0;
 
     while (Date.now() < deadline) {
       if ((await task.count()) > 0) {
         return;
       }
-      if ((await scrollableList.count()) > 0) {
-        await scrollableList.evaluate((element) =>
-          element.scrollBy(0, element.clientHeight),
-        );
+      if ((await this.taskCards.count()) === 0) {
+        await sleep(500);
+        continue;
       }
-      await sleep(200);
+
+      const offsetBefore = await this.listScrollOffset();
+      await this.taskCards
+        .last()
+        .scrollIntoViewIfNeeded()
+        .catch(() => {});
+
+      if ((await this.listScrollOffset()) > offsetBefore) {
+        idleRounds = 0;
+        continue;
+      }
+
+      idleRounds++;
+      if (idleRounds > 3) {
+        await this.scrollListToTop();
+        idleRounds = 0;
+      }
+      await sleep(500);
     }
+  }
+
+  private async scrollListToTop(): Promise<void> {
+    await this.scrollableList
+      .evaluate((list) => {
+        list.scrollTop = 0;
+      })
+      .catch(() => {});
+  }
+
+  private async listScrollOffset(): Promise<number> {
+    return await this.scrollableList
+      .evaluate((list) => list.scrollTop)
+      .catch(() => 0);
   }
 
   async filterBy(
@@ -86,17 +153,16 @@ class TaskPanelPage {
     const maxRetries = 5;
     while (retryCount < maxRetries) {
       try {
-        // Filters moved from a collapsible side panel of links to a
-        // design-system dropdown: click the "Filters" button, then pick the
-        // option from the menu.
-        await expect(this.filtersButton).toBeVisible({timeout: 10000});
-        await this.filtersButton.click();
-        const menuOption = this.page.getByRole('menuitem', {
+        await expect(this.filterSelectButton).toBeVisible({timeout: 10000});
+        await this.filterSelectButton.click();
+
+        const menuItem = this.page.getByRole('menuitem', {
           name: option,
           exact: true,
         });
-        await expect(menuOption).toBeVisible({timeout: 10000});
-        await menuOption.click();
+        await expect(menuItem).toBeVisible({timeout: 10000});
+        await menuItem.click();
+        await expect(menuItem).toBeHidden({timeout: 10000});
 
         if (option === 'All open tasks') {
           // "All open tasks" is the default filter, so the router omits it
@@ -127,20 +193,16 @@ class TaskPanelPage {
     );
   }
 
-  async clickCollapseFilter(): Promise<void> {
-    await this.collapseFilter.click({timeout: 45000});
-  }
-
   async assertCompletedHeadingVisible() {
     await waitForAssertion({
       assertion: async () => {
-        // The completed view no longer renders a "Completed" heading; the
-        // applied filter is reflected by the Filters dropdown trigger label.
-        await expect(this.filtersButton).toContainText('Completed');
+        await expect(this.completedHeading).toBeVisible();
       },
       onFailure: async () => {
-        console.log('Filter not applied, retrying...');
-        await this.filterBy('Completed'); // Reapply the filter if necessary
+        console.log(
+          'Completed filter not reflected yet, reloading and retrying...',
+        );
+        await this.reloadPage();
       },
     });
   }

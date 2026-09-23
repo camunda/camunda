@@ -8,7 +8,6 @@
 
 import {Page, Locator, expect} from '@playwright/test';
 import {sleep} from 'utils/sleep';
-import {waitForAssertion} from 'utils/waitForAssertion';
 
 function cardinalToOrdinal(numberValue: number): string {
   const realOrderIndex = numberValue.toString();
@@ -113,11 +112,9 @@ class TaskDetailsPage {
     this.detailsInfo = page.getByTestId('details-info');
     this.taskCompletedBanner = this.page.getByText('Task completed');
     this.addDynamicListRowButton = page.getByRole('button', {name: 'add new'});
-    // The task-details tabs (Task/Process/History) migrated from links to a
-    // design-system Tabs component, so they render as role="tab" now while
-    // keeping the same accessible name via aria-label.
     this.processTab = page.getByRole('tab', {
-      name: 'show associated bpmn process',
+      name: 'Show associated BPMN process',
+      exact: true,
     });
     this.bpmnDiagram = page.getByTestId('diagram');
     this.assignedToMeText = page
@@ -125,6 +122,7 @@ class TaskDetailsPage {
       .getByText('Assigned to me');
     this.historyTabButton = page.getByRole('tab', {
       name: 'Show task history',
+      exact: true,
     });
     this.historyTable = page
       .getByTestId('history-tab-content')
@@ -158,23 +156,25 @@ class TaskDetailsPage {
   }
 
   async clickAssignToMeButton() {
-    if (!(await this.assignedToMeText.isVisible())) {
-      await expect(this.assignToMeButton).toBeVisible({timeout: 60000});
-      await this.assignToMeButton.click({timeout: 60000});
-      await expect(this.unassignButton).toBeVisible({timeout: 30000});
+    if (await this.assignedToMeText.isVisible()) {
+      return;
     }
+    await expect(this.assignToMeButton).toBeVisible({timeout: 60000});
+    await this.assignToMeButton.click();
+    await expect(this.unassignButton).toBeVisible({timeout: 60000});
   }
 
   async clickUnassignButton() {
     await expect(this.unassignButton).toBeVisible({timeout: 30000});
     await this.unassignButton.click();
-    // Unassigning is processed asynchronously; the Assign-to-me button can take
-    // a while to reappear under load, so match the assign path's 60s budget.
     await expect(this.assignToMeButton).toBeVisible({timeout: 60000});
   }
 
   async clickCompleteTaskButton() {
     await this.completeTaskButton.click({timeout: 60000});
+    await expect(this.page).toHaveURL(/\/tasklist(?:\?.*)?$/, {
+      timeout: 120000,
+    });
   }
 
   async clickAddVariableButton() {
@@ -183,12 +183,9 @@ class TaskDetailsPage {
 
   async replaceExistingVariableValue(values: {name: string; value: string}) {
     const {name, value} = values;
-    // Same title-attribute-to-accessible-name migration as
-    // setVariableValue below: the field exposes its label as the textbox's
-    // accessible name now, not a title attribute.
-    const field = this.page.getByRole('textbox', {name});
-    await field.clear();
-    await field.fill(value);
+    const valueField = this.page.getByLabel(name);
+    await valueField.clear();
+    await valueField.fill(value);
   }
 
   getNthVariableNameInput(nth: number) {
@@ -434,12 +431,9 @@ class TaskDetailsPage {
     variableName: string,
     variableValue: string,
   ): Promise<void> {
-    // The variable value field is now a design-system input exposing its label
-    // as the accessible name ("<name> Value") rather than a `title` attribute,
-    // so getByTitle no longer resolves it. Match on the textbox role + name.
-    await expect(
-      this.page.getByRole('textbox', {name: variableName + ' Value'}),
-    ).toHaveValue(variableValue);
+    await expect(this.page.getByLabel(variableName + ' Value')).toHaveValue(
+      variableValue,
+    );
   }
 
   async fillDynamicList(label: string, value: string) {
@@ -499,18 +493,7 @@ class TaskDetailsPage {
 
   async assertFieldValue(label: string, expectedValue: string): Promise<void> {
     const input = this.page.getByLabel(label, {exact: true});
-    await waitForAssertion({
-      assertion: async () => {
-        await expect(input).toHaveValue(expectedValue);
-      },
-      onFailure: async () => {
-        console.log(
-          `Assertion for field "${label}" failed, reloading page and retrying...`,
-        );
-        await this.page.reload();
-        await expect(this.form).toBeVisible({timeout: 30000});
-      },
-    });
+    await expect(input).toHaveValue(expectedValue, {timeout: 30000});
   }
 
   async assertItemChecked(

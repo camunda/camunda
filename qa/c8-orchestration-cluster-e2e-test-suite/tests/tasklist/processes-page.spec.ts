@@ -13,6 +13,7 @@ import {navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {waitForAssertion} from 'utils/waitForAssertion';
+import {buildUrl, jsonHeaders} from 'utils/http';
 
 test.beforeAll(async () => {
   await deploy([
@@ -114,19 +115,7 @@ test.describe('process page', () => {
 
     await tasklistProcessesPage.startProcessButton.click();
     await tasklistHeader.clickTasksTab();
-
-    await waitForAssertion({
-      assertion: async () => {
-        await expect(
-          taskPanelPage.availableTasks.getByText('User_Task').first(),
-        ).toBeVisible();
-      },
-      onFailure: async () => {
-        void page.reload();
-      },
-    });
-
-    await taskPanelPage.openTask('User_Task');
+    await taskPanelPage.openTask('User_Task', {timeout: 60000});
 
     await taskDetailsPage.clickAssignToMeButton();
     await taskDetailsPage.clickCompleteTaskButton();
@@ -245,19 +234,9 @@ test.describe('process page', () => {
     await tasklistProcessesPage.clickStartProcessSubButton();
 
     await tasklistHeader.clickTasksTab();
-    await waitForAssertion({
-      assertion: async () => {
-        await expect(
-          taskPanelPage.availableTasks
-            .getByText('processStartedByForm_user_task', {exact: true})
-            .first(),
-        ).toBeVisible();
-      },
-      onFailure: async () => {
-        void page.reload();
-      },
+    await taskPanelPage.openTask('processStartedByForm_user_task', {
+      timeout: 60000,
     });
-    await taskPanelPage.openTask('processStartedByForm_user_task');
     await expect(
       page.getByText('{"name":"jon","address":"earth"}'),
     ).toBeVisible({timeout: 60000});
@@ -280,6 +259,7 @@ test.describe('process page', () => {
   // Regression test for https://github.com/camunda/camunda/issues/40045
   test('show only the latest version of a process definition', async ({
     page,
+    request,
     tasklistHeader,
     tasklistProcessesPage,
     taskPanelPage,
@@ -320,20 +300,16 @@ test.describe('process page', () => {
     await expect(page.getByText('Process has started')).toBeVisible();
 
     await tasklistHeader.clickTasksTab();
-    await waitForAssertion({
-      assertion: async () => {
-        await expect(
-          taskPanelPage.availableTasks
-            .getByText('Latest Version Task V2')
-            .first(),
-        ).toBeVisible();
-      },
-      onFailure: async () => {
-        await page.reload();
-      },
+    await taskPanelPage.assertTaskCardVisible('Latest Version Task V2', {
+      timeout: 60000,
     });
-    await expect(
-      taskPanelPage.availableTasks.getByText('Latest Version Task V1'),
-    ).toBeHidden();
+    await expect(async () => {
+      const response = await request.post(buildUrl('/user-tasks/search'), {
+        headers: jsonHeaders(),
+        data: {filter: {name: 'Latest Version Task V1'}},
+      });
+      expect(response.status()).toBe(200);
+      expect((await response.json()).page.totalItems).toBe(0);
+    }).toPass({timeout: 60000});
   });
 });

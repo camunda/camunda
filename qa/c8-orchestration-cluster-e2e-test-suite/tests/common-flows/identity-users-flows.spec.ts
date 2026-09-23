@@ -270,6 +270,7 @@ test.describe('Identity User Flows', () => {
     identityHeader,
     loginPage,
     operateHomePage,
+    taskPanelPage,
     tasklistHeader,
   }) => {
     const testData = createTestData({
@@ -415,8 +416,8 @@ test.describe('Identity User Flows', () => {
     await test.step('Verify test user can view the userTask in Tasklist', async () => {
       await page.goto(`${process.env.CORE_APPLICATION_URL}/tasklist`);
       await expect(page).toHaveURL(new RegExp(`tasklist`));
-      await expect(page.getByText('identityProcess').first()).toBeVisible({
-        timeout: 60000,
+      await taskPanelPage.assertTaskCardVisible('identityProcess', {
+        timeout: 20000,
       });
     });
   });
