@@ -131,13 +131,14 @@ export async function getBatchOperationState(
     );
     // A freshly created batch operation can briefly 404 before the read
     // model catches up with the write it was created from; retry through
-    // that instead of failing the caller on a transient gap.
+    // that instead of failing the caller on a transient gap. Share the same
+    // generous budget as the other batch operation lifecycle actions in
+    // this file (cancel/suspend/resume) -- a 15s budget was too tight under
+    // nightly RDBMS contention and surfaced as a bare 404
+    // (camunda/camunda#63745).
     await assertStatusCode(res, 200);
     result.state = (await res.json()).state;
-  }).toPass({
-    intervals: [1_000, 2_000, 3_000, 5_000],
-    timeout: 15_000,
-  });
+  }).toPass(batchOperationLifecycleOptions);
   return result.state as string;
 }
 
