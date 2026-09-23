@@ -90,7 +90,21 @@
 			"headerNavItemGlobalTaskListeners": "Listeners globales de tareas de usuario",
 			"headerNavItemClusterVariables": "Variables del clúster",
 			"headerNavItemMcpProcesses": "Procesos MCP",
-			"headerNavItemOperationsLog": "Registro de operaciones"
+			"headerNavItemOperationsLog": "Registro de operaciones",
+			"mcpProcesses": {
+				"toolName": "Nombre de la herramienta",
+				"toolDescription": "Descripción de la herramienta",
+				"processName": "Nombre del proceso",
+				"version": "Versión",
+				"tenant": "Inquilino",
+				"searchByToolName": "Buscar por nombre de herramienta",
+				"noMcpProcesses": "No se encontraron procesos MCP.",
+				"informationMissing": "No se proporcionó información.",
+				"toolPurpose": "Propósito",
+				"toolResults": "Resultados",
+				"toolWhenToUse": "Cuándo usarla",
+				"toolWhenNotToUse": "Cuándo no usarla"
+			}
 		},
 		"tasklist": {
 			"tasksPanelLabel": "Panel lateral de tareas",

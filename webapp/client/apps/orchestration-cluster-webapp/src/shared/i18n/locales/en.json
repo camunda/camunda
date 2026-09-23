@@ -90,7 +90,21 @@
 			"headerNavItemGlobalTaskListeners": "Global user task listeners",
 			"headerNavItemClusterVariables": "Cluster variables",
 			"headerNavItemMcpProcesses": "MCP Processes",
-			"headerNavItemOperationsLog": "Operations Log"
+			"headerNavItemOperationsLog": "Operations Log",
+			"mcpProcesses": {
+				"toolName": "Tool name",
+				"toolDescription": "Tool description",
+				"processName": "Process name",
+				"version": "Version",
+				"tenant": "Tenant",
+				"searchByToolName": "Search by tool name",
+				"noMcpProcesses": "No MCP processes found.",
+				"informationMissing": "No information provided.",
+				"toolPurpose": "Purpose",
+				"toolResults": "Results",
+				"toolWhenToUse": "When to use",
+				"toolWhenNotToUse": "When not to use"
+			}
 		},
 		"tasklist": {
 			"tasksPanelLabel": "Tasks side panel",
