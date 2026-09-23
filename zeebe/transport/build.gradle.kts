@@ -66,21 +66,15 @@ val createProtocolSymlink =
     }
   }
 
-// Configure SBE input files for caching
-// Include both the stream-protocol.xml and the common-types.xml it references via XInclude
 sbe {
-  inputFiles.from(
-    "src/main/resources/stream-protocol.xml",
-    layout.settingsDirectory.file("zeebe/protocol/src/main/resources/common-types.xml"),
+  // Use the copied file where XInclude relative paths resolve to the build/protocol symlink.
+  schemaFiles.from(layout.buildDirectory.file("sbe/input/main/stream-protocol.xml"))
+  additionalInputFiles.from(
+    layout.settingsDirectory.file("zeebe/protocol/src/main/resources/common-types.xml")
   )
 }
 
-// Configure SBE generation
-tasks.named<JavaExec>("generateSbe") {
-  // Use the copied file where XInclude relative paths resolve to the build/protocol symlink
-  args(layout.buildDirectory.file("sbe/input/main/stream-protocol.xml").get().asFile.absolutePath)
-  dependsOn(copyStreamProtocol, createProtocolSymlink)
-}
+tasks.named<JavaExec>("generateSbe") { dependsOn(copyStreamProtocol, createProtocolSymlink) }
 
 dependencies {
   implementation(project(":camunda-cluster"))
