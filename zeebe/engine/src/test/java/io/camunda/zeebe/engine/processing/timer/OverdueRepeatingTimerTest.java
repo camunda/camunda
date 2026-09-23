@@ -50,7 +50,7 @@ public final class OverdueRepeatingTimerTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
                     .startEvent("start")
-                    .timerWithCycle("R/PT1S")
+                    .timerWithCycle("R/PT2S")
                     .endEvent()
                     .done())
             .deploy()
@@ -63,7 +63,7 @@ public final class OverdueRepeatingTimerTest {
         .getFirst();
 
     // when - the start event's timer becomes overdue by ~4 intervals in a single jump
-    engine.increaseTime(Duration.ofSeconds(5));
+    engine.increaseTime(Duration.ofSeconds(10));
 
     // then
     final Record<TimerRecordValue> triggered =
@@ -117,7 +117,7 @@ public final class OverdueRepeatingTimerTest {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .serviceTask("task", t -> t.zeebeJobType(processId))
-                .boundaryEvent("timer", b -> b.cancelActivity(false).timerWithCycle("R3/PT1S"))
+                .boundaryEvent("timer", b -> b.cancelActivity(false).timerWithCycle("R3/PT2S"))
                 .endEvent()
                 .moveToActivity("task")
                 .endEvent()
@@ -132,7 +132,7 @@ public final class OverdueRepeatingTimerTest {
     assertThat(firstCreated.getValue().getRepetitions()).isEqualTo(3);
 
     // when - the timer becomes overdue by ~4 intervals in a single jump
-    engine.increaseTime(Duration.ofSeconds(5));
+    engine.increaseTime(Duration.ofSeconds(10));
 
     // then
     final Record<TimerRecordValue> triggered =
@@ -165,7 +165,7 @@ public final class OverdueRepeatingTimerTest {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .serviceTask("task", t -> t.zeebeJobType(processId))
-                .boundaryEvent("timer", b -> b.cancelActivity(false).timerWithCycle("R/PT1S"))
+                .boundaryEvent("timer", b -> b.cancelActivity(false).timerWithCycle("R/PT2S"))
                 .endEvent()
                 .moveToActivity("task")
                 .endEvent()
@@ -183,7 +183,7 @@ public final class OverdueRepeatingTimerTest {
     // when - broker downtime spans ~4 intervals while the engine is stopped; increaseTime()
     // cannot be used here because it awaits the (now closed) stream processor, so the clock is
     // advanced directly instead
-    engine.getClock().addTime(Duration.ofSeconds(5));
+    engine.getClock().addTime(Duration.ofSeconds(10));
     RecordingExporter.reset();
     engine.start();
 
