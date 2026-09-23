@@ -66,8 +66,12 @@ public class TestWebappClient {
     } catch (final ConditionTimeoutException e) {
       final var response = lastResponse.get();
       throw new IllegalStateException(
-          "Login of user '%s' did not succeed within %s; last response status was %s"
-              .formatted(username, LOGIN_TIMEOUT, response == null ? "n/a" : response.statusCode()),
+          "Login of user '%s' did not succeed within %s; last response status was %s, CSRF token sent: %s"
+              .formatted(
+                  username,
+                  LOGIN_TIMEOUT,
+                  response == null ? "n/a" : response.statusCode(),
+                  loginCsrfToken != null),
           e);
     }
 
@@ -88,11 +92,17 @@ public class TestWebappClient {
    * this token back, because the login path always enforces CSRF. The server rejects a POST without
    * a token, even before a session exists.
    *
-   * <p>A failure of this request is thrown rather than swallowed. Logging in without a token fails
-   * for the rest of the timeout below and reports the rejected login, which hides that the token
-   * request was the part that broke.
+   * <p>A transport failure of this request is thrown rather than swallowed. Logging in without a
+   * token fails for the rest of the timeout below and reports the rejected login, which hides that
+   * the token request was the part that broke; the failure of that wait names whether a token was
+   * sent.
    *
-   * @return the token, or {@code null} if the deployment sends no token because CSRF is off
+   * <p>The status of the response is deliberately not checked: the server writes the token header
+   * before it handles the request, so an error response carries a usable token just as a successful
+   * one does, and rejecting it here would break every deployment that answers this endpoint with
+   * anything other than a success.
+   *
+   * @return the token, or {@code null} if the response carries none
    */
   private String requestLoginCsrfToken(final HttpClient httpClient) {
     final var tokenRequest = HttpRequest.newBuilder().uri(endpoint.resolve("login")).GET().build();
