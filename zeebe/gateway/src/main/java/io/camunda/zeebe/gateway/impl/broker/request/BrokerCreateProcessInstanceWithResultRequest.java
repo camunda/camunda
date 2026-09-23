@@ -72,6 +72,11 @@ public final class BrokerCreateProcessInstanceWithResultRequest
     return this;
   }
 
+  public BrokerCreateProcessInstanceWithResultRequest setHoldTimers(final boolean holdTimers) {
+    requestDto.setHoldTimers(holdTimers);
+    return this;
+  }
+
   public BrokerCreateProcessInstanceWithResultRequest setBusinessId(final String businessId) {
     this.businessId = businessId;
     requestDto.setBusinessId(businessId != null ? businessId : "");

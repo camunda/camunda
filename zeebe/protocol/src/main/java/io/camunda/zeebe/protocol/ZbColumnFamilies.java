@@ -397,7 +397,15 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // re-accumulate its metrics. Written when an item is first created (see
   // AgentHistoryCreatedApplier), survives commit/discard, and is deleted in one pass when the
   // instance completes (see AgentInstanceCompletedApplier).
-  AGENT_HISTORY_METRICS_ACCUMULATED_IDS(165, PARTITION_LOCAL);
+  AGENT_HISTORY_METRICS_ACCUMULATED_IDS(165, PARTITION_LOCAL),
+
+  // Indexes held timers by their process instance, so a public trigger-timer command that carries
+  // only (processInstanceKey, elementId) can enumerate the instance's held timers and match the
+  // element id against each stored timer. The key is (processInstanceKey, elementInstanceKey,
+  // timerKey) — all immutable for the life of a timer, unlike the element id, which migration
+  // changes. Only held timers are indexed; the entry is written in DbTimerInstanceState#store and
+  // removed in #remove.
+  HELD_TIMER_BY_PROCESS_INSTANCE(166, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

@@ -114,7 +114,8 @@ public final class ProcessInstanceCreationCreateProcessor
             record.getTags(),
             record.getBusinessIdBuffer(),
             ProcessInstanceCreationHelper.jobReservationTokenOf(record),
-            record.isStubCallActivities());
+            record.isStubCallActivities(),
+            record.isHoldTimers());
 
     helper.setVariablesFromDocument(processInstance, record.getVariablesBuffer());
 

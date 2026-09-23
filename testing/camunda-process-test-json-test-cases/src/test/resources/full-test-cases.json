@@ -151,6 +151,38 @@
           "state": "IS_COMPLETED"
         }
       ]
+    },
+    {
+      "name": "Recording of an order whose escalation timer is driven by hand",
+      "description": "The instance holds its timers, so the escalation deadline fires only when the test says so.",
+      "instructions": [
+        {
+          "type": "CREATE_PROCESS_INSTANCE",
+          "processDefinitionSelector": {
+            "processDefinitionId": "order-process"
+          },
+          "variables": {
+            "order_id": "order-2"
+          },
+          "holdTimers": true
+        },
+        {
+          "type": "TRIGGER_TIMER",
+          "processInstanceSelector": {
+            "processDefinitionId": "order-process"
+          },
+          "elementSelector": {
+            "elementId": "escalation"
+          }
+        },
+        {
+          "type": "ASSERT_PROCESS_INSTANCE",
+          "processInstanceSelector": {
+            "processDefinitionId": "order-process"
+          },
+          "state": "IS_COMPLETED"
+        }
+      ]
     }
   ]
 }

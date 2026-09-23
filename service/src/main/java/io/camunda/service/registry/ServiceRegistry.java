@@ -51,6 +51,7 @@ import io.camunda.service.RuntimeBackupServices;
 import io.camunda.service.SecretServices;
 import io.camunda.service.SignalServices;
 import io.camunda.service.TenantServices;
+import io.camunda.service.TimerServices;
 import io.camunda.service.TopologyServices;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.service.UserServices;
@@ -137,6 +138,8 @@ public interface ServiceRegistry {
   SignalServices signalServices(String physicalTenantId);
 
   TenantServices tenantServices(String physicalTenantId);
+
+  TimerServices timerServices(String physicalTenantId);
 
   TopologyServices topologyServices(String physicalTenantId);
 

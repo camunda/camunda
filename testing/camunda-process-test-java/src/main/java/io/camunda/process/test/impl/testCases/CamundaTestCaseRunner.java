@@ -31,7 +31,6 @@ import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.api.testCases.instructions.CreateProcessInstanceInstruction;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.slf4j.Logger;
@@ -46,10 +45,14 @@ public class CamundaTestCaseRunner implements TestCaseRunner {
           TestCaseInstructionType.MOCK_JOB_WORKER_COMPLETE_JOB,
           TestCaseInstructionType.MOCK_JOB_WORKER_THROW_BPMN_ERROR);
 
+  private static final List<String> CLOCK_INSTRUCTIONS =
+      Arrays.asList(TestCaseInstructionType.INCREASE_TIME, TestCaseInstructionType.SET_TIME);
+
   private final CamundaProcessTestContext context;
   private final AssertionFacade assertionFacade;
   private final TestCaseInstructionHandlerRegistry registry;
-  private final List<Long> isolatedProcessInstanceKeys = new ArrayList<>();
+  private final CreatedProcessInstanceRegistry createdProcessInstances =
+      new CreatedProcessInstanceRegistry();
 
   public CamundaTestCaseRunner(final CamundaProcessTestContext context) {
     this(context, new TestCaseAssertionFacade());
@@ -59,7 +62,7 @@ public class CamundaTestCaseRunner implements TestCaseRunner {
       final CamundaProcessTestContext context, final AssertionFacade assertionFacade) {
     this.context = context;
     this.assertionFacade = assertionFacade;
-    registry = new TestCaseInstructionHandlerRegistry(isolatedProcessInstanceKeys::add);
+    registry = new TestCaseInstructionHandlerRegistry(createdProcessInstances);
   }
 
   public CamundaTestCaseRunner(
@@ -76,7 +79,8 @@ public class CamundaTestCaseRunner implements TestCaseRunner {
     LOGGER.debug("Running test case: '{}'", testCase.getName());
     final Instant start = Instant.now();
     warnIfReservedJobsAreMocked(testCase);
-    isolatedProcessInstanceKeys.clear();
+    warnIfHeldTimersAreDrivenByTheClock(testCase);
+    createdProcessInstances.clear();
 
     try (final CamundaClient camundaClient = context.createClient()) {
 
@@ -127,21 +131,54 @@ public class CamundaTestCaseRunner implements TestCaseRunner {
   }
 
   /**
+   * A held timer is out of the engine's due-date scheduler, so advancing the clock does not fire
+   * it. A test case that expects it to waits for an element that never activates and fails on the
+   * await timeout instead of saying why.
+   */
+  private void warnIfHeldTimersAreDrivenByTheClock(final TestCase testCase) {
+    if (holdsTimersAndMovesTheClock(testCase)) {
+      LOGGER.warn(
+          "Test case '{}' holds a process instance's timers and moves the clock. A held timer is"
+              + " out of the due-date scheduler, so INCREASE_TIME and SET_TIME do not fire it. If"
+              + " the clock is meant to fire the held instance's timer, use TRIGGER_TIMER instead;"
+              + " otherwise the test case waits for a timer that never fires.",
+          testCase.getName());
+    }
+  }
+
+  static boolean holdsTimersAndMovesTheClock(final TestCase testCase) {
+    final boolean holdsTimers =
+        testCase.getInstructions().stream()
+            .filter(CreateProcessInstanceInstruction.class::isInstance)
+            .map(CreateProcessInstanceInstruction.class::cast)
+            .anyMatch(CreateProcessInstanceInstruction::getHoldTimers);
+
+    final boolean movesTheClock =
+        testCase.getInstructions().stream()
+            .map(TestCaseInstruction::getType)
+            .anyMatch(CLOCK_INSTRUCTIONS::contains);
+
+    return holdsTimers && movesTheClock;
+  }
+
+  /**
    * An isolated instance waits on jobs no worker takes, so it parks forever unless the test case
    * ended it. Cancelling is a no-op for an instance that already completed.
    */
   private void cancelIsolatedProcessInstances(final CamundaClient camundaClient) {
-    isolatedProcessInstanceKeys.forEach(
-        processInstanceKey -> {
-          try {
-            camundaClient.newCancelInstanceCommand(processInstanceKey).send().join();
-          } catch (final Exception e) {
-            LOGGER.debug(
-                "Could not cancel the isolated process instance '{}'. It may have ended already.",
-                processInstanceKey,
-                e);
-          }
-        });
+    createdProcessInstances
+        .isolatedProcessInstanceKeys()
+        .forEach(
+            processInstanceKey -> {
+              try {
+                camundaClient.newCancelInstanceCommand(processInstanceKey).send().join();
+              } catch (final Exception e) {
+                LOGGER.debug(
+                    "Could not cancel the isolated process instance '{}'. It may have ended already.",
+                    processInstanceKey,
+                    e);
+              }
+            });
   }
 
   private void executeInstruction(

@@ -17,7 +17,11 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
+import org.agrona.DirectBuffer;
 
 public final class DbTimerInstanceState implements MutableTimerInstanceState {
 
@@ -33,6 +37,19 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
   private final DbLong dueDate;
   private final DbCompositeKey<DbLong, DbCompositeKey<DbForeignKey<DbLong>, DbLong>>
       dueDateCompositeKey;
+
+  // (processInstanceKey, elementInstanceKey, timerKey) -> nil, populated for held timers only. The
+  // key holds only fields that are immutable for the life of a timer, so no update path can
+  // desync it; the BPMN element id, which migration does change, is read back off the stored timer
+  // instead of being part of the key.
+  private final ColumnFamily<DbCompositeKey<DbLong, DbCompositeKey<DbLong, DbLong>>, DbNil>
+      heldTimerByProcessInstanceColumnFamily;
+  private final DbLong heldProcessInstanceKey;
+  private final DbLong heldElementInstanceKey;
+  private final DbLong heldTimerKey;
+  private final DbCompositeKey<DbLong, DbLong> heldElementAndTimerKey;
+  private final DbCompositeKey<DbLong, DbCompositeKey<DbLong, DbLong>>
+      heldTimerByProcessInstanceKey;
 
   private long nextDueDate;
 
@@ -59,6 +76,19 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
             transactionContext,
             dueDateCompositeKey,
             DbNil.INSTANCE);
+
+    heldProcessInstanceKey = new DbLong();
+    heldElementInstanceKey = new DbLong();
+    heldTimerKey = new DbLong();
+    heldElementAndTimerKey = new DbCompositeKey<>(heldElementInstanceKey, heldTimerKey);
+    heldTimerByProcessInstanceKey =
+        new DbCompositeKey<>(heldProcessInstanceKey, heldElementAndTimerKey);
+    heldTimerByProcessInstanceColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.HELD_TIMER_BY_PROCESS_INSTANCE,
+            transactionContext,
+            heldTimerByProcessInstanceKey,
+            DbNil.INSTANCE);
   }
 
   @Override
@@ -67,6 +97,16 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
     elementInstanceKey.inner().wrapLong(timer.getElementInstanceKey());
 
     timerInstanceColumnFamily.insert(elementAndTimerKey, timer);
+
+    if (timer.isHeld()) {
+      // a held timer is kept out of the due-date index so the scheduler never fires it; it fires
+      // only when triggered explicitly. Instead it is indexed by its process instance so a public
+      // trigger command that addresses it by (processInstanceKey, elementId) can enumerate the
+      // instance's held timers and match the element id against the stored timer.
+      wrapHeldKey(timer);
+      heldTimerByProcessInstanceColumnFamily.insert(heldTimerByProcessInstanceKey, DbNil.INSTANCE);
+      return;
+    }
 
     dueDate.wrapLong(timer.getDueDate());
     dueDateColumnFamily.insert(dueDateCompositeKey, DbNil.INSTANCE);
@@ -80,6 +120,15 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
 
     dueDate.wrapLong(timer.getDueDate());
     dueDateColumnFamily.deleteIfExists(dueDateCompositeKey);
+
+    wrapHeldKey(timer);
+    heldTimerByProcessInstanceColumnFamily.deleteIfExists(heldTimerByProcessInstanceKey);
+  }
+
+  private void wrapHeldKey(final TimerInstance timer) {
+    heldProcessInstanceKey.wrapLong(timer.getProcessInstanceKey());
+    heldElementInstanceKey.wrapLong(timer.getElementInstanceKey());
+    heldTimerKey.wrapLong(timer.getKey());
   }
 
   @Override
@@ -97,7 +146,10 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
 
   @Override
   public void resume(final long elementInstanceKey, final long timerKey, final long dueDate) {
-    if (get(elementInstanceKey, timerKey) != null) {
+    final var timer = get(elementInstanceKey, timerKey);
+    // a held timer was never in the due-date index to begin with, so resuming must not add it —
+    // otherwise suspending and resuming an instance would hand its held timers to the scheduler.
+    if (timer != null && !timer.isHeld()) {
       wrapDueDateKey(elementInstanceKey, timerKey, dueDate);
       dueDateColumnFamily.upsert(dueDateCompositeKey, DbNil.INSTANCE);
     }
@@ -160,5 +212,37 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
     this.timerKey.wrapLong(timerKey);
 
     return timerInstanceColumnFamily.get(elementAndTimerKey);
+  }
+
+  @Override
+  public HeldTimerResolution resolveHeldByProcessElement(
+      final long processInstanceKey, final DirectBuffer elementId) {
+    heldProcessInstanceKey.wrapLong(processInstanceKey);
+
+    final List<long[]> heldKeys = new ArrayList<>();
+    heldTimerByProcessInstanceColumnFamily.whileEqualPrefix(
+        heldProcessInstanceKey,
+        (key, value) -> {
+          final var elementAndTimer = key.second();
+          heldKeys.add(
+              new long[] {elementAndTimer.first().getValue(), elementAndTimer.second().getValue()});
+        });
+
+    long[] match = null;
+    for (final long[] heldKey : heldKeys) {
+      final var timer = get(heldKey[0], heldKey[1]);
+      if (timer == null || !BufferUtil.equals(elementId, timer.getHandlerNodeId())) {
+        continue;
+      }
+      if (match != null) {
+        return HeldTimerResolution.ambiguous();
+      }
+      match = heldKey;
+    }
+
+    if (match == null) {
+      return HeldTimerResolution.notFound();
+    }
+    return HeldTimerResolution.found(get(match[0], match[1]));
   }
 }

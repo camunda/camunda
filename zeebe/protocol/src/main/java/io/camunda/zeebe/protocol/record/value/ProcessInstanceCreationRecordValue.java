@@ -94,6 +94,19 @@ public interface ProcessInstanceCreationRecordValue
     return false;
   }
 
+  /**
+   * Returns whether the timers of this process instance are held back from the scheduler. A held
+   * timer does not fire on its due date; it fires only when triggered explicitly via the trigger
+   * command. Holding a timer keeps it out of the due-date scheduler while leaving the instance
+   * otherwise drivable.
+   *
+   * @return {@code true} if the timers of this process instance are held
+   * @since 8.11
+   */
+  default boolean isHoldTimers() {
+    return false;
+  }
+
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableProcessInstanceCreationStartInstructionValue.Builder.class)
   interface ProcessInstanceCreationStartInstructionValue {

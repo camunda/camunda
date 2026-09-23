@@ -144,6 +144,13 @@ public final class CreateProcessInstanceCommandImpl
   }
 
   @Override
+  public CreateProcessInstanceCommandStep3 holdTimers(final boolean holdTimers) {
+    restOnlyProperty = "holdTimers";
+    httpRequestObject.setHoldTimers(holdTimers);
+    return this;
+  }
+
+  @Override
   public CreateProcessInstanceWithResultCommandStep1 withResult() {
     return new CreateProcessInstanceWithResultCommandImpl(
         jsonMapper,

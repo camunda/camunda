@@ -50,5 +50,6 @@ public class TestCaseInstructionType {
   public static final String STUB_CALL_ACTIVITY_COMPLETE = "STUB_CALL_ACTIVITY_COMPLETE";
   public static final String STUB_CALL_ACTIVITY_THROW_ERROR = "STUB_CALL_ACTIVITY_THROW_ERROR";
   public static final String THROW_BPMN_ERROR_FROM_JOB = "THROW_BPMN_ERROR_FROM_JOB";
+  public static final String TRIGGER_TIMER = "TRIGGER_TIMER";
   public static final String UPDATE_VARIABLES = "UPDATE_VARIABLES";
 }

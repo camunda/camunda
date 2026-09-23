@@ -133,6 +133,11 @@ public final class ProcessInstanceClient {
       return this;
     }
 
+    public ProcessInstanceCreationClient withHeldTimers() {
+      processInstanceCreationRecord.setHoldTimers(true);
+      return this;
+    }
+
     public ProcessInstanceCreationClient withVariables(final Map<String, Object> variables) {
       processInstanceCreationRecord.setVariables(MsgPackUtil.asMsgPack(variables));
       return this;

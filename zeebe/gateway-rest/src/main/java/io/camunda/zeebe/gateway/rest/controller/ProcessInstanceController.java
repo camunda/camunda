@@ -7,12 +7,14 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.mapper.ProcessInstanceMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.mapping.http.validator.RequestValidator;
 import io.camunda.gateway.protocol.model.CancelProcessInstanceRequest;
 import io.camunda.gateway.protocol.model.DeleteProcessInstanceRequest;
 import io.camunda.gateway.protocol.model.IncidentSearchQuery;
@@ -32,6 +34,7 @@ import io.camunda.gateway.protocol.model.ProcessInstanceSearchQueryResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceSuspensionBatchOperationRequest;
 import io.camunda.gateway.protocol.model.ResumeProcessInstanceRequest;
 import io.camunda.gateway.protocol.model.SuspendProcessInstanceRequest;
+import io.camunda.gateway.protocol.model.TimerTriggerRequest;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
@@ -160,6 +163,33 @@ public class ProcessInstanceController {
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             mapped -> modifyProcessInstance(physicalTenantId, mapped));
+  }
+
+  @CamundaPostMapping(path = "/{processInstanceKey}/timers/trigger")
+  public CompletableFuture<ResponseEntity<Object>> triggerTimer(
+      @PhysicalTenantId final String physicalTenantId,
+      @PathVariable final long processInstanceKey,
+      @RequestBody final TimerTriggerRequest request) {
+    return RequestValidator.validate(
+            violations -> {
+              if (request == null
+                  || request.getElementId() == null
+                  || request.getElementId().isBlank()) {
+                violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elementId"));
+              }
+            })
+        .<CompletableFuture<ResponseEntity<Object>>>map(
+            RestErrorMapper::mapProblemToCompletedResponse)
+        .orElseGet(
+            () ->
+                RequestExecutor.executeServiceMethodWithNoContentResult(
+                    () ->
+                        serviceRegistry
+                            .timerServices(physicalTenantId)
+                            .triggerTimer(
+                                processInstanceKey,
+                                request.getElementId(),
+                                authenticationProvider.getCamundaAuthentication())));
   }
 
   @RequiresSecondaryStorage

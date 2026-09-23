@@ -127,8 +127,8 @@ This blocks step 2: the release command has nothing to serialize until it exists
 
 ### New public API
 
-| Command                             | Addition                                                                      |
-| ----------------------------------- | ----------------------------------------------------------------------------- |
+|               Command               |                                   Addition                                    |
+|-------------------------------------|-------------------------------------------------------------------------------|
 | `CreateProcessInstanceCommandStep1` | `reserveJobs(String token)`, `stubCallActivities(boolean)`                    |
 | `CompleteJobCommandStep1`           | `withJobReservationToken(String)`                                             |
 | `FailJobCommandStep1`               | `withJobReservationToken(String)`                                             |
@@ -216,8 +216,8 @@ Two optional booleans on `CreateProcessInstanceInstruction`, both defaulting to
 
 ### New instruction types
 
-| Type                             | Payload           | Replays as                                                    |
-| -------------------------------- | ----------------- | ------------------------------------------------------------- |
+|               Type               |      Payload      |                          Replays as                           |
+|----------------------------------|-------------------|---------------------------------------------------------------|
 | `RELEASE_JOB`                    | `jobSelector`     | `newReleaseJobCommand(key).withJobReservationToken(t)`        |
 | `STUB_CALL_ACTIVITY_COMPLETE`    | `elementSelector` | `newCompleteCommand` on the stub job                          |
 | `STUB_CALL_ACTIVITY_THROW_ERROR` | `elementSelector` | `newThrowErrorCommand` on the stub job                        |
@@ -440,3 +440,4 @@ structural:
   follow-up. Narrow it to what is still open after this plan — the purge decision
   and the round-trip breaks (eager N-shot rules, DMN and script tasks, listener
   jobs, no occurrence index on `JobSelector`), none of which this work closes.
+

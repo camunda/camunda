@@ -219,6 +219,32 @@ public interface CreateProcessInstanceCommandStep1
     CreateProcessInstanceCommandStep3 stubCallActivities(final boolean stubCallActivities);
 
     /**
+     * Keeps every timer this process instance creates out of the engine's due-date scheduler, so
+     * that no timer of this instance fires on its own (alpha).
+     *
+     * <p>A held timer is created and stored as usual and is visible as a timer wait state, but
+     * reaching its due date does nothing. The caller fires it on demand with {@link
+     * io.camunda.client.CamundaClient#newTriggerTimerCommand(long) newTriggerTimerCommand}, naming
+     * the BPMN element id of its catch event. Every other process instance on the cluster keeps
+     * firing its timers as usual — unlike pinning the cluster clock, which stops all of them.
+     *
+     * <p>The hold is inherited by the instances this one calls, so a called process's timers are
+     * held too.
+     *
+     * <p>The hold cannot be revoked: a held timer can be fired explicitly, but not handed back to
+     * the scheduler to fire on its real due date. An instance whose timers are held therefore waits
+     * indefinitely unless the caller fires them or cancels the instance.
+     *
+     * <p>This method is only supported over REST. This is an alpha feature and may be subject to
+     * change in future releases.
+     *
+     * @param holdTimers whether the instance's timers are kept out of the due-date scheduler
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker
+     */
+    CreateProcessInstanceCommandStep3 holdTimers(final boolean holdTimers);
+
+    /**
      * When this method is called, the response to the command will be received after the process is
      * completed. The response consists of a set of variables.
      *

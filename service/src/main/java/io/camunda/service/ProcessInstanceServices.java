@@ -339,6 +339,10 @@ public final class ProcessInstanceServices
       brokerRequest.setStubCallActivities(request.stubCallActivities());
     }
 
+    if (request.holdTimers() != null) {
+      brokerRequest.setHoldTimers(request.holdTimers());
+    }
+
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
     }
@@ -368,6 +372,10 @@ public final class ProcessInstanceServices
 
     if (request.stubCallActivities() != null) {
       brokerRequest.setStubCallActivities(request.stubCallActivities());
+    }
+
+    if (request.holdTimers() != null) {
+      brokerRequest.setHoldTimers(request.holdTimers());
     }
 
     if (request.operationReference() != null) {
@@ -710,7 +718,8 @@ public final class ProcessInstanceServices
       List<String> fetchVariables,
       Set<String> tags,
       String businessId,
-      Boolean stubCallActivities) {
+      Boolean stubCallActivities,
+      Boolean holdTimers) {
 
     ProcessDefinitionIdentifier processDefinitionIdentifier() {
       if (processDefinitionKey > 0L) {

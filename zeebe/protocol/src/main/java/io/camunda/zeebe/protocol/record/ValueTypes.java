@@ -62,7 +62,8 @@ public final class ValueTypes {
           ValueType.CONDITIONAL_EVALUATION,
           ValueType.EXPRESSION,
           ValueType.GLOBAL_LISTENER,
-          ValueType.AGENT_INSTANCE);
+          ValueType.AGENT_INSTANCE,
+          ValueType.TIMER);
 
   private ValueTypes() {}
 

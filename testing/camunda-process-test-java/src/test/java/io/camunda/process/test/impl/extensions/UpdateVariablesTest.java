@@ -365,7 +365,7 @@ public class UpdateVariablesTest {
                       ProcessInstanceSelectors.byProcessId(PROCESS_DEFINITION_ID), variables))
           .isInstanceOf(AssertionError.class)
           .hasMessageContaining(
-              "Expected to update variables for process instance [process-id: '%s'] but no process instance is available.",
+              "Expected to act on process instance [process-id: '%s'] but no process instance is available.",
               PROCESS_DEFINITION_ID);
     }
 

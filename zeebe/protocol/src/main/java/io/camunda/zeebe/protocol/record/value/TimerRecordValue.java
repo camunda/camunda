@@ -98,4 +98,16 @@ public interface TimerRecordValue
   default String getElementId() {
     return getTargetElementId();
   }
+
+  /**
+   * Returns whether this timer is held back from the due-date scheduler. A held timer does not fire
+   * on its due date; it fires only when triggered explicitly. It is stamped from the {@code
+   * holdTimers} flag of its process instance.
+   *
+   * @return {@code true} if this timer is held
+   * @since 8.11
+   */
+  default boolean isHeld() {
+    return false;
+  }
 }

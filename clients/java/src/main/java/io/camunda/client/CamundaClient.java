@@ -88,6 +88,7 @@ import io.camunda.client.api.command.TenantScopedClusterVariableCreationCommandS
 import io.camunda.client.api.command.TenantScopedClusterVariableDeletionCommandStep1;
 import io.camunda.client.api.command.TenantScopedClusterVariableUpdateCommandStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
+import io.camunda.client.api.command.TriggerTimerCommandStep1;
 import io.camunda.client.api.command.UnassignClientFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignClientFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
@@ -956,6 +957,34 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   ReleaseJobCommandStep1 newReleaseJobCommand(long jobKey);
+
+  /**
+   * Command to fire a held timer of a process instance immediately (alpha).
+   *
+   * <pre>
+   * camundaClient
+   *  .newTriggerTimerCommand(processInstanceKey)
+   *  .elementId("escalation")
+   *  .send();
+   * </pre>
+   *
+   * <p>A timer of a process instance created with {@link
+   * CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3#holdTimers(boolean)
+   * holdTimers} never fires on its own, so the caller fires it here — naming the BPMN element id of
+   * its catch event, which for a boundary timer is the boundary event's own id. The timer fires
+   * without waiting for its due date, and no other process instance on the cluster is affected.
+   *
+   * <p>The command is rejected when no held timer of the instance matches the element, and when
+   * more than one does — an element id cannot tell apart two live held timers on the same element,
+   * as on a multi-instance element or a parallel branch.
+   *
+   * <p>This command is only supported over REST. This is an alpha feature and may be subject to
+   * change in future releases.
+   *
+   * @param processInstanceKey the key of the process instance that owns the held timer
+   * @return a builder for the command
+   */
+  TriggerTimerCommandStep1 newTriggerTimerCommand(long processInstanceKey);
 
   /**
    * Command to pin the Zeebe engine's internal clock to a specific time.

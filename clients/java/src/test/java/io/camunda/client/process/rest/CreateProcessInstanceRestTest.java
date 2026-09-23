@@ -363,6 +363,35 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
   }
 
   @Test
+  public void shouldHoldTimers() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+
+    // when
+    client.newCreateInstanceCommand().processDefinitionKey(123).holdTimers(true).send().join();
+
+    // then
+    final ProcessInstanceCreationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
+    assertThat(request.getHoldTimers()).isTrue();
+  }
+
+  @Test
+  public void shouldRejectHoldTimersOverGrpc() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newCreateInstanceCommand()
+                    .useGrpc()
+                    .processDefinitionKey(123)
+                    .holdTimers(true)
+                    .send())
+        .isInstanceOf(UnsupportedOperationException.class)
+        .hasMessageContaining("holdTimers");
+  }
+
+  @Test
   public void shouldRejectReserveJobsOverGrpc() {
     // when / then
     assertThatThrownBy(
