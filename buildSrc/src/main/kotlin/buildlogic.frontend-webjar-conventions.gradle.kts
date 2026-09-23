@@ -4,7 +4,6 @@ import io.camunda.gradle.flags.asEnabledFlag
 import io.camunda.gradle.pom.PomResolver
 import io.camunda.gradle.pom.resolvePomProperty
 import org.gradle.jvm.tasks.Jar
-import org.gradle.language.jvm.tasks.ProcessResources
 
 plugins {
   id("buildlogic.server-conventions")
@@ -96,8 +95,7 @@ val npmBuild =
     outputs.cacheIf { true }
   }
 
-tasks.named<ProcessResources>("processResources") {
+tasks.named<Jar>("jar") {
+  mustRunAfter(npmBuild)
   from(frontendPackagedDirectory.orElse(frontendBuildDirectory)) { into(resourceTargetPath) }
 }
-
-tasks.named<Jar>("jar") { mustRunAfter(npmBuild) }
