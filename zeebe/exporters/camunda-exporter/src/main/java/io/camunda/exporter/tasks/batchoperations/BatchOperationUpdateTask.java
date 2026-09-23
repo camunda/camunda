@@ -117,7 +117,9 @@ public class BatchOperationUpdateTask implements BackgroundTask {
         .thenApplyAsync(
             FunctionUtil.peek(
                 (updatesCount) -> {
-                  batchSize.reset();
+                  if (updatesCount > NO_UPDATES) {
+                    batchSize.reset();
+                  }
                   logger.trace(
                       "BatchOperationUpdateTask - Updated {} batch operations", updatesCount);
                 }));
