@@ -44,6 +44,8 @@ public class TestWebappClient {
 
     final var cookieManager = new CookieManager();
     final var httpClient = HttpClient.newBuilder().cookieHandler(cookieManager).build();
+    // Fetched once for the whole retry loop below: the server only rotates the token when a login
+    // succeeds, never on the rejections this loop retries through.
     final var loginCsrfToken = requestLoginCsrfToken(httpClient);
     final var loginRequest = buildLoginRequest(username, password, loginCsrfToken);
     final var lastResponse = new AtomicReference<HttpResponse<String>>();
@@ -86,18 +88,18 @@ public class TestWebappClient {
    * this token back, because the login path always enforces CSRF. The server rejects a POST without
    * a token, even before a session exists.
    *
+   * <p>A failure of this request is thrown rather than swallowed. Logging in without a token fails
+   * for the rest of the timeout below and reports the rejected login, which hides that the token
+   * request was the part that broke.
+   *
    * @return the token, or {@code null} if the deployment sends no token because CSRF is off
    */
   private String requestLoginCsrfToken(final HttpClient httpClient) {
     final var tokenRequest = HttpRequest.newBuilder().uri(endpoint.resolve("login")).GET().build();
-    return sendRequest(httpClient, tokenRequest)
-        .map(
-            response ->
-                response
-                    .headers()
-                    .firstValue(CamundaSecurityFilterChainConstants.X_CSRF_TOKEN)
-                    .orElse(null))
-        .getOrElse(null);
+    return sendRequestAndThrowExceptionOnFailure(httpClient, tokenRequest)
+        .headers()
+        .firstValue(CamundaSecurityFilterChainConstants.X_CSRF_TOKEN)
+        .orElse(null);
   }
 
   private HttpRequest buildLoginRequest(
