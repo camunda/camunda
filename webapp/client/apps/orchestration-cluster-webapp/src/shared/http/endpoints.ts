@@ -114,6 +114,15 @@ function getFullURL(url: string) {
 }
 
 const endpoints = {
+	// The login endpoint sends a CSRF token with the response to a GET, and the login POST must send
+	// that token back. Asks for HTML, because this GET returns the login page.
+	loginCsrfToken: () =>
+		new Request(getFullURL('/login'), {
+			...BASE_REQUEST_OPTIONS,
+			method: 'GET',
+			headers: {Accept: 'text/html'},
+		}),
+
 	login: (body: {username: string; password: string}) =>
 		new Request(getFullURL('/login'), {
 			...BASE_REQUEST_OPTIONS,

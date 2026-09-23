@@ -111,9 +111,9 @@ public class AbstractWebSecurityConfigTest {
   }
 
   /**
-   * Requests the login page and returns the CSRF token it issues. Since CSL ADR-0027 the login
-   * endpoint enforces CSRF unconditionally, so a token has to be fetched before a login POST can
-   * succeed — an anonymous GET on the login path is where the library issues it.
+   * Gets the login page and returns the CSRF token from the response. The login endpoint always
+   * enforces CSRF, and an anonymous GET of the login path is the only place that sends a token. A
+   * login POST must therefore get the token first.
    */
   protected MvcTestResult requestCsrfTokenForLogin(final String loginUrl) {
     final MvcTestResult result = mockMvcTester.get().uri(loginUrl).exchange();
@@ -123,7 +123,7 @@ public class AbstractWebSecurityConfigTest {
     return result;
   }
 
-  /** Logs in as demo, echoing back the CSRF token the login page issued. */
+  /** Logs in as demo and sends back the CSRF token from the login page. */
   protected MvcTestResult logInAsDemo(final String loginUrl) {
     final MvcTestResult csrfResult = requestCsrfTokenForLogin(loginUrl);
     return mockMvcTester
