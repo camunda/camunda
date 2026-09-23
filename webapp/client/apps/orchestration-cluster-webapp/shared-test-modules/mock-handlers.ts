@@ -154,6 +154,11 @@ const mockCurrentUserEndpoint = createEndpointMock({
 	method: endpoints.getCurrentUser.method,
 });
 
+const mockLoginCsrfTokenEndpoint = createEndpointMock({
+	endpoint: '/login',
+	method: 'GET',
+});
+
 const mockLoginEndpoint = createEndpointMock({
 	endpoint: '/login',
 	method: 'POST',
@@ -279,6 +284,7 @@ export {
 	mockCreateSuspensionBatchOperationEndpoint,
 	mockCreateResumptionBatchOperationEndpoint,
 	mockCurrentUserEndpoint,
+	mockLoginCsrfTokenEndpoint,
 	mockLoginEndpoint,
 	mockLogoutEndpoint,
 	mockSystemConfigurationEndpoint,
