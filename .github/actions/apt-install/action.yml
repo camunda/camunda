@@ -33,12 +33,15 @@ runs:
       shell: bash
       env:
         SKIP_IF_EXISTS: ${{ inputs.skip-if-exists }}
+        APT_TIMEOUT: ${{ inputs.timeout }}
       run: |
         if [ -n "$SKIP_IF_EXISTS" ] && [ -e "$SKIP_IF_EXISTS" ]; then
           echo "skip=true" >> "$GITHUB_OUTPUT"
         else
           echo "skip=false" >> "$GITHUB_OUTPUT"
         fi
+        # Expression syntax has no arithmetic, so derive the retry budget here.
+        echo "retry_timeout=$((APT_TIMEOUT + 5))" >> "$GITHUB_OUTPUT"
 
     - if: steps.check.outputs.skip == 'false'
       uses: ./.github/actions/apt-fast-mirror-failover
@@ -63,7 +66,7 @@ runs:
         # Keep the retry budget just above the inner apt timeout so a hung mirror
         # is killed by `timeout` and retried, rather than by nick-fields/retry
         # across the sudo boundary (see the issue linked above).
-        timeout_seconds: ${{ fromJSON(inputs.timeout) + 5 }}
+        timeout_seconds: ${{ steps.check.outputs.retry_timeout }}
         shell: bash
         command: |
           sudo timeout "$APT_TIMEOUT" bash -c "apt-get update \
