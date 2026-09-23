@@ -177,12 +177,7 @@ public class AgentInstanceHandler
     updateFields.put(STATUS, entity.getStatus());
     updateFields.put(MODEL, entity.getModel());
     updateFields.put(PROVIDER, entity.getProvider());
-    // `systemPrompt`/`tools`: null on the entity means "not touched by any record in this batch
-    // cycle" (see updateEntity()) — omitted here, mirroring the creationDate exclusion above, to
-    // avoid overwriting the existing index value with null.
-    if (entity.getSystemPrompt() != null) {
-      updateFields.put(SYSTEM_PROMPT, entity.getSystemPrompt());
-    }
+    putIfPresent(updateFields, SYSTEM_PROMPT, entity.getSystemPrompt());
     updateFields.put(MAX_TOKENS, entity.getMaxTokens());
     updateFields.put(MAX_MODEL_CALLS, entity.getMaxModelCalls());
     updateFields.put(MAX_TOOL_CALLS, entity.getMaxToolCalls());
@@ -193,13 +188,21 @@ public class AgentInstanceHandler
     updateFields.put(CACHE_READ_TOKEN_COUNT, entity.getCacheReadTokenCount());
     updateFields.put(MODEL_CALLS, entity.getModelCalls());
     updateFields.put(TOOL_CALLS, entity.getToolCalls());
-    if (entity.getTools() != null) {
-      updateFields.put(TOOLS, entity.getTools());
-    }
+    putIfPresent(updateFields, TOOLS, entity.getTools());
     updateFields.put(ELEMENT_INSTANCE_KEYS, entity.getElementInstanceKeys());
     updateFields.put(LAST_UPDATED_DATE, entity.getLastUpdatedDate());
     updateFields.put(COMPLETION_DATE, entity.getCompletionDate());
     batchRequest.upsert(index, entity.getId(), entity, updateFields);
+  }
+
+  // `systemPrompt`/`tools`: null on the entity means "not touched by any record in this batch
+  // cycle" (see updateEntity()) — omitted here, mirroring the creationDate exclusion above, to
+  // avoid overwriting the existing index value with null.
+  private static void putIfPresent(
+      final Map<String, Object> updateFields, final String field, final Object value) {
+    if (value != null) {
+      updateFields.put(field, value);
+    }
   }
 
   @Override
