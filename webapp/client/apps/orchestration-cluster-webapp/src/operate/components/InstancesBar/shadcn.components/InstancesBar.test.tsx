@@ -141,7 +141,7 @@ describe('<InstancesBar />', () => {
 			<InstancesBar incidentsCount={0} isDraining drainingDescription="Scheduled for deletion" size="medium" />,
 		);
 
-		await userEvent.hover(screen.getByTestId('draining-indicator').element());
+		await userEvent.hover(screen.getByTestId('draining-indicator'));
 
 		await expect.element(screen.getByText('Scheduled for deletion')).toBeVisible();
 	});
@@ -193,7 +193,7 @@ describe('<InstancesBar />', () => {
 			/>,
 		);
 
-		await userEvent.hover(screen.getByText('order-process').first().element());
+		await userEvent.hover(screen.getByText('order-process').first());
 
 		await expect.element(screen.getByText('order-process').nth(1)).toBeVisible();
 	});
