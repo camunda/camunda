@@ -1,0 +1,36 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.8.0",
+  "exporter": {
+    "name": "Camunda Web Modeler",
+    "version": "9c8db14"
+  },
+  "schemaVersion": 19,
+  "id": "review-item-1arzgj2",
+  "components": [
+    {
+      "label": "Agree with term and condition, add your name herre",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_0bcg8po",
+        "columns": null
+      },
+      "id": "Field_00onfid",
+      "key": "textfield_2747i6"
+    },
+    {
+      "label": "Require ",
+      "type": "checkbox",
+      "layout": {
+        "row": "Row_1577698",
+        "columns": null
+      },
+      "id": "Field_0a1d8g1",
+      "key": "checkbox_n1ub5k",
+      "validate": {
+        "required": true
+      }
+    }
+  ],
+  "type": "default"
+}
