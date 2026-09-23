@@ -31,6 +31,8 @@ import type {
 	QueryDecisionDefinitionsResponseBody,
 	GetProcessDefinitionResponseBody,
 	GetProcessStartFormResponseBody,
+	QueryMessageSubscriptionsRequestBody,
+	QueryMessageSubscriptionsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {request} from './request';
 import {endpoints} from './endpoints';
@@ -63,6 +65,8 @@ const queryKeys = {
 	processDefinition: (processDefinitionKey: string) => ['processDefinition', processDefinitionKey] as const,
 	processStartForm: (processDefinitionKey: string) => ['processStartForm', processDefinitionKey] as const,
 	queryDecisionDefinitions: (body: QueryDecisionDefinitionsRequestBody) => ['queryDecisionDefinitions', body] as const,
+	queryMessageSubscriptions: (body: QueryMessageSubscriptionsRequestBody) =>
+		['queryMessageSubscriptions', body] as const,
 	getProcessDefinitionInstanceStatistics: (body: GetProcessDefinitionInstanceStatisticsRequestBody) =>
 		['getProcessDefinitionInstanceStatistics', body] as const,
 	getIncidentProcessInstanceStatisticsByError: (body: GetIncidentProcessInstanceStatisticsByErrorRequestBody) =>
@@ -394,6 +398,18 @@ const queries = {
 			queryKey: queryKeys.getIncidentProcessInstanceStatisticsByError(body),
 			queryFn: async (): Promise<GetIncidentProcessInstanceStatisticsByErrorResponseBody> => {
 				const {response, error} = await request(endpoints.getIncidentProcessInstanceStatisticsByError(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryMessageSubscriptions: (body: QueryMessageSubscriptionsRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryMessageSubscriptions(body),
+			queryFn: async (): Promise<QueryMessageSubscriptionsResponseBody> => {
+				const {response, error} = await request(endpoints.queryMessageSubscriptions(body));
 				if (error !== null) {
 					throw mapQueryError(error);
 				}
