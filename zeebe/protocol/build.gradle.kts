@@ -7,6 +7,22 @@ plugins { id("buildlogic.sbe-conventions") }
 java { disableAutoTargetJvm() }
 tasks.withType<JavaCompile>().configureEach { options.release.set(8) }
 
+// :zeebe-protocol-asserts scans these class files when generating protocol assertions.
+val mainClasses =
+  configurations.create("mainClasses") {
+    isCanBeConsumed = true
+    isCanBeResolved = false
+  }
+
+artifacts {
+  add(
+    mainClasses.name,
+    tasks.named<JavaCompile>("compileJava").flatMap { it.destinationDirectory },
+  ) {
+    builtBy(tasks.named("classes"))
+  }
+}
+
 // Configure SBE input files for caching
 sbe {
   inputFiles.from(

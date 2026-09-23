@@ -118,11 +118,12 @@ val patchedAssertjGeneratedDir =
     layout.buildDirectory.dir("generated-sources/assertj-assertions-patched")
 val generatedAssertjClassesDir = layout.buildDirectory.dir("generated-classes/assertj")
 
-// Use stable output locations for the producer projects instead of reading their mutable model.
-// The project dependencies below still provide the compile classpath and task graph edges.
-val protocolOutput = layout.settingsDirectory.dir("zeebe/protocol/build/classes/java/main")
-val securityProtocolOutput =
-  layout.settingsDirectory.dir("security/security-protocol/build/classes/java/main")
+val protocolClassDirectories =
+  configurations.create("protocolClassDirectories") {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    isTransitive = false
+  }
 val protocolCompileClasspath = configurations.compileClasspath
 
 val generateAssertjAssertions =
@@ -130,9 +131,7 @@ val generateAssertjAssertions =
     group = "code generation"
     description = "Generate AssertJ assertions for Zeebe protocol record types"
 
-    dependsOn(":zeebe-protocol:classes", ":camunda-security-protocol:classes")
-
-    classDirs.from(protocolOutput, securityProtocolOutput)
+    classDirs.from(protocolClassDirectories)
     classpath.from(protocolCompileClasspath)
     outputDir.set(assertjGeneratedDir)
 }
@@ -157,6 +156,14 @@ val patchRecordAssert = tasks.register<Sync>("patchRecordAssert") {
 }
 
 dependencies {
+    add(
+        protocolClassDirectories.name,
+        project(":zeebe-protocol", configuration = "mainClasses"),
+    )
+    add(
+        protocolClassDirectories.name,
+        project(":camunda-security-protocol", configuration = "mainClasses"),
+    )
     implementation(project(":zeebe-protocol"))
     implementation(project(":camunda-security-protocol"))
     implementation(libs.org.assertj.assertj.core)
@@ -167,7 +174,7 @@ val compileGeneratedAssertjJava =
   tasks.register<JavaCompile>("compileGeneratedAssertjJava") {
     dependsOn(patchRecordAssert)
     source(patchedAssertjGeneratedDir)
-    classpath = files(sourceSets["main"].compileClasspath, protocolOutput, securityProtocolOutput)
+    classpath = files(sourceSets["main"].compileClasspath, protocolClassDirectories)
     destinationDirectory.set(generatedAssertjClassesDir)
     options.encoding = "utf-8"
 }

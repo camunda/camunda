@@ -2,6 +2,7 @@ import buildlogic.DistributionDependencyReportExtension
 import buildlogic.mavenResourceFilterArgs
 import io.camunda.gradle.pom.PomResolver
 import org.apache.tools.ant.filters.ReplaceTokens
+import org.gradle.api.artifacts.component.ProjectComponentIdentifier
 import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.tasks.bundling.Compression
 import org.gradle.api.tasks.bundling.Tar
@@ -61,16 +62,27 @@ val optimizeDistroResources =
     into(layout.buildDirectory.dir("generated/optimize-distro"))
   }
 
+val optimizeRuntimeClasspath = configurations.named("runtimeClasspath").get()
 val optimizeBackendJar =
-  layout.projectDirectory.file("../optimize/backend/build/libs/optimize-backend-$optimizeVersion.jar")
+  optimizeRuntimeClasspath.incoming.artifactView {
+    componentFilter { (it as? ProjectComponentIdentifier)?.projectPath == ":optimize-backend" }
+  }.files
 val upgradeOptimizeJar =
-  layout.projectDirectory.file("../optimize/upgrade/build/libs/upgrade-optimize-$optimizeVersion.jar")
+  optimizeRuntimeClasspath.incoming.artifactView {
+    componentFilter { (it as? ProjectComponentIdentifier)?.projectPath == ":upgrade-optimize" }
+  }.files
+val optimizeBackendResources =
+  configurations.create("optimizeBackendResources") {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    isTransitive = false
+  }
 
 val assembleDist =
   tasks.register<Sync>("assembleDist") {
     group = "build"
     description = "Assemble the Camunda Optimize distribution"
-    dependsOn(":optimize-backend:jar", ":upgrade-optimize:jar", optimizeDistroResources)
+    dependsOn(optimizeDistroResources)
 
     // Yarn builds only run when producing a dist artifact, not during tests or compilation.
     dependsOn(":optimize-client:yarnBuild")
@@ -81,20 +93,15 @@ val assembleDist =
     from(optimizeBackendJar)
     from(upgradeOptimizeJar) {
       into("upgrade")
-      rename(
-        "upgrade-optimize-$optimizeVersion.jar",
-        "upgrade-optimize-to-$optimizeVersion.jar",
-      )
+      rename { it.replaceFirst("upgrade-optimize-", "upgrade-optimize-to-") }
     }
     from({ configurations.runtimeClasspath.get() }) {
       into("lib")
       exclude("optimize-backend-*.jar", "upgrade-optimize-*.jar", "upgrade-optimize-to-*.jar")
     }
-    from(layout.projectDirectory.dir("../optimize/backend/src/main/resources/localization")) {
-      into("config/localization")
-    }
-    from(layout.projectDirectory.dir("../optimize/backend/src/main/resources/logo")) {
-      into("config/logo")
+    from(optimizeBackendResources) {
+      include("localization/**", "logo/**")
+      into("config")
     }
 
     doLast {
@@ -146,6 +153,10 @@ val distZip =
   }
 
 dependencies {
+  add(
+    optimizeBackendResources.name,
+    project(":optimize-backend", configuration = "distributionResources"),
+  )
   implementation(project(":optimize-backend"))
   implementation(project(":upgrade-optimize"))
   implementation(libs.org.apache.logging.log4j.log4j.slf4j2.impl)
