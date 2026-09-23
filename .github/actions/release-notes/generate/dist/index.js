@@ -25,25 +25,33 @@ function uniqueNumbers(refs) {
     return [...new Set(refs.map((ref) => ref.number))];
 }
 /**
- * The unconditional attribution chain (D20): section refs, then GitHub's native
- * field, then a legacy body-wide scan. Pure — decides from one PR's own
- * already-resolved facts; the backport hop is the caller's composition.
+ * The unconditional attribution chain: section refs, then GitHub's native
+ * closing field, then a legacy body-wide scan. Pure — decides from one PR's
+ * own already-resolved facts; the backport hop is the caller's composition.
+ *
+ * A dead section ref (`missing`) still fails the chain outright rather than
+ * falling through — a bogus number should be fixed in the section, not
+ * silently covered by a fallback source. A section ref that resolves to a
+ * pull request is different: GitHub's native closing field can still name
+ * the issue correctly, so that case falls through instead of failing —
+ * otherwise a `Related issues` line pointing at a PR would block attribution
+ * even though `closingIssuesReferences` already has the answer.
  */
 function decideAttribution(input) {
     if (input.optOut) {
         return { source: 'optOut', issueNumbers: [], deliveryPath: 'direct', reasons: [] };
     }
     const sectionEligible = eligible(input.sectionRefs);
-    if (sectionEligible.length > 0) {
-        const live = sectionEligible.filter((ref) => ref.target === 'issue');
-        const notLive = sectionEligible.filter((ref) => ref.target !== 'issue');
-        const reasons = notLive.length
-            ? [`These section refs do not resolve to a live issue in this repo: ${uniqueNumbers(notLive).map((n) => `#${n}`).join(', ')}.`]
-            : [];
-        if (live.length > 0) {
-            return { source: 'section', issueNumbers: uniqueNumbers(live), deliveryPath: 'direct', reasons };
-        }
-        return { source: 'resolutionFailed', issueNumbers: [], deliveryPath: 'direct', reasons };
+    const sectionLive = sectionEligible.filter((ref) => ref.target === 'issue');
+    const sectionDead = sectionEligible.filter((ref) => ref.target === 'missing');
+    const deadReasons = sectionDead.length
+        ? [`These section refs do not resolve to a live issue in this repo: ${uniqueNumbers(sectionDead).map((n) => `#${n}`).join(', ')}.`]
+        : [];
+    if (sectionLive.length > 0) {
+        return { source: 'section', issueNumbers: uniqueNumbers(sectionLive), deliveryPath: 'direct', reasons: deadReasons };
+    }
+    if (sectionDead.length > 0) {
+        return { source: 'resolutionFailed', issueNumbers: [], deliveryPath: 'direct', reasons: deadReasons };
     }
     if (input.closingIssuesReferences.length > 0) {
         return {
@@ -60,10 +68,11 @@ function decideAttribution(input) {
     return { source: 'unattributed', issueNumbers: [], deliveryPath: 'direct', reasons: [] };
 }
 /**
- * D20: a PR merged after its branch's gate watermark terminates at the section
+ * A PR merged after its branch's gate watermark terminates at the section
  * step by construction, so any fallback source past that point means the
- * section contract wasn't observed. `mergedAt` must be the PR the decision came
- * FROM — for a backport hop, the original's.
+ * section contract wasn't observed. `mergedAt` must be the PR the decision
+ * came FROM — for a backport hop, the original's. See GENERATOR.md for the
+ * full attribution-chain rationale.
  */
 function evaluatePostGateAnomaly(input) {
     if (input.gateRequiredAt === null)
@@ -82,11 +91,6 @@ function evaluatePostGateAnomaly(input) {
 /***/ ((__unused_webpack_module, exports) => {
 
 
-/**
- * Pure title-type -> release-notes-section categorization (D16-D19, table from
- * the signed design 53605-issue-proposals.html). No IO: the caller supplies the
- * already-resolved title and the labels already fetched from the API.
- */
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.BOT_CATEGORY_OVERRIDES = void 0;
 exports.internalIssueKind = internalIssueKind;
@@ -95,15 +99,22 @@ exports.stripBackportPrefix = stripBackportPrefix;
 exports.parseDependencyUpdate = parseDependencyUpdate;
 exports.formatDependencyUpdates = formatDependencyUpdates;
 exports.categorize = categorize;
-/** D16: bots whose own title can't be trusted as the category source. */
+/**
+ * Pure title-type -> release-notes-section categorization. No IO: the caller
+ * supplies the already-resolved title and the labels already fetched from
+ * the API. See GENERATOR.md for the full section table and rationale.
+ */
+/** Bots whose own title can't be trusted as the category source. */
 exports.BOT_CATEGORY_OVERRIDES = {
     'backport-action': 'inherit-original',
     'monorepo-devops-automation[bot]': 'inherit-original',
     'renovate[bot]': 'deps',
     'dependabot[bot]': 'deps',
 };
-/** null = excluded from both outputs (release-merge PRs, D25). An unknown or
- *  unparseable type falls back to Uncategorized — never dropped (C10). */
+/** null = excluded from both outputs (release-merge PRs). An unparseable
+ *  title falls back to Uncategorized — never dropped. Keyed on the full
+ *  `TITLE_TYPES` tuple so a new commitlint type is a compile error here
+ *  until it is routed to a section. */
 const SECTION_BY_TYPE = {
     feat: 'Features',
     fix: 'Bug Fixes',
@@ -120,45 +131,25 @@ const SECTION_BY_TYPE = {
 };
 /** The one section hidden from the customer-facing body — still in the full asset. */
 const INTERNAL_SECTION = 'Maintenance';
-/**
- * Issue kinds a customer must never be shown, whatever the delivering pull
- * request's title says.
- *
- * Section comes from the conventional-commit type, which describes the CHANGE,
- * not who it is for: a CI gate lands as `feat:`, a flaky-test repair as `fix:`,
- * a load-test folder marker as `docs:`. Each of those then reads to a customer
- * as a feature, a bug fix and a documentation change respectively. The issue's
- * `kind/*` label is the only place the audience is actually recorded — and it
- * lives on the issue alone; the delivering pull request carries no `kind/*` of
- * its own. Measured on 8.9.19: 3 of the 23 customer-facing lines were internal
- * work before this rule.
- */
+/** A customer must never see these, whatever the delivering PR's title says
+ *  — the conventional-commit type describes the CHANGE, not the audience. */
 const INTERNAL_ISSUE_KINDS = new Set(['kind/task', 'kind/epic']);
 /** The `kind/*` label that marks one issue internal, or null. Returns the
  *  label rather than a boolean so the audit line can name which one did it. */
 function internalIssueKind(issueLabels) {
     return issueLabels.find((label) => INTERNAL_ISSUE_KINDS.has(label)) ?? null;
 }
-/**
- * The kind that hides an ENTRY from the customer body, or null to show it.
- *
- * Hidden only when EVERY linked issue is internal. One pull request routinely
- * closes a customer bug and a QA task together — 8.9.19's #61857 closed both
- * `kind/bug` #61719 and `kind/task` #56995 — and hiding on any internal label
- * would have suppressed a real customer-facing fix along with the task. A pull
- * request linking no issue at all is not hidden: absence is not a signal.
- */
+/** Hidden only when EVERY linked issue is internal — one PR routinely closes
+ *  a customer bug and a QA task together, and hiding on any internal label
+ *  would suppress the real fix too. No issue at all is never hidden. */
 function hiddenFromCustomerBody(issueLabelSets) {
     if (issueLabelSets.length === 0)
         return null;
     const kinds = issueLabelSets.map(internalIssueKind);
     return kinds.every((kind) => kind !== null) ? kinds[0] : null;
 }
-// `type` + optional `(scope)` + optional `!` + `: ` + subject. The caller
-// (pipeline/index.ts) already runs stripBackportPrefix on the title before
-// this ever sees it, so no bracket tolerance is needed here — a leading
-// bracket this regex still had to tolerate would only ever be a title that
-// never should have passed the PR-gate's stricter lint in the first place.
+// type + optional (scope) + optional ! + ": " + subject. Caller already
+// strips a `[Backport ...]` prefix, so no bracket tolerance needed here.
 const HEADER = /^(?<type>[^\s():!]+)(?:\([^)]*\))?!?:\s*(?<subject>.+)$/;
 function parseType(title) {
     return HEADER.exec(title)?.groups?.type?.toLowerCase() ?? null;
@@ -171,21 +162,12 @@ function stripBackportPrefix(title) {
 }
 // dependabot's default title states both sides directly: "Bump X from A to B".
 const DEPENDABOT_BUMP = /Bump (\S+) from (\S+) to (\S+)/i;
-// A renovate body table row: "| [package](url) ... | `old` → `new` | ...".
-// Anchored on the leading `[name]` and the backtick-quoted arrow pair only —
-// the column count varies between renovate's table shapes.
+// A renovate body table row. Anchored on the leading `[name]` and the
+// backtick-quoted arrow pair only — the column count varies between shapes.
 const RENOVATE_TABLE_ROW = /^\|\s*\[([^\]]+)\].*?`([^`]+)`\s*→\s*`([^`]+)`.*\|\s*$/gm;
-/**
- * For a `deps:` PR, each dependency it moves and the versions it moved them
- * between — the customer wants "name: old → new", not the bot's verbose prose.
- * Renovate only puts the new version in its title, so its body table is read
- * instead, and one renovate PR can carry several rows. Empty when neither
- * shape matches; the caller then keeps the plain title.
- *
- * Structured rather than pre-formatted because the renderer collapses repeated
- * updates of one package across a release into a single first-to-last line,
- * which it cannot do from a string it would have to parse back.
- */
+/** Each dependency a `deps:` PR moves and its versions — "name: old → new",
+ *  not the bot's prose. Structured, not pre-formatted, so the renderer can
+ *  collapse repeated updates across a release into one line. */
 function parseDependencyUpdate(input) {
     const bump = DEPENDABOT_BUMP.exec(input.title);
     if (bump) {
@@ -210,7 +192,7 @@ function categorize(input) {
         const author = input.authorLogin ? ` (author ${input.authorLogin})` : '';
         reasons.push(`Title does not parse as a conventional commit${author}: "${input.title}".`);
     }
-    const mapped = type === null ? undefined : SECTION_BY_TYPE[type];
+    const mapped = type !== null && type in SECTION_BY_TYPE ? SECTION_BY_TYPE[type] : undefined;
     const section = mapped === undefined ? 'Uncategorized' : mapped;
     const visibility = section === INTERNAL_SECTION ? 'internal' : 'customer';
     let component;
@@ -236,38 +218,19 @@ function categorize(input) {
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.closesIssueNumbers = closesIssueNumbers;
-/** Closed without being delivered; no pull request may claim these. */
+/** Closed without being delivered; no pull request may claim these, backport hop included. */
 const ABANDONED_REASONS = new Set(['NOT_PLANNED', 'DUPLICATE']);
-/**
- * The subset of `issueNumbers` this pull request actually closed.
- *
- * Three rules, in order:
- *
- *  1. A backport hop is trusted wholesale. The backport bot never writes a
- *     closing keyword, and a merge into `stable/*` cannot fire one anyway
- *     (GitHub only auto-closes from the DEFAULT branch), so both signals below
- *     are structurally blank for every backport. Trusting the hop is what keeps
- *     a patch release from reporting its entire contents as partial.
- *  2. Where GitHub recorded a closer, it decides — and it decides both ways:
- *     naming another pull request is a positive statement that this one did not
- *     close the issue, even if this one says it did.
- *  3. Where it recorded none — the issue is open, a human closed it, or a bare
- *     commit did — fall back to the declaration. This is the same off-default-
- *     branch case as rule 1 seen from the other side: a fix merged straight to
- *     `stable/8.9` fires no close event, so its own keyword is the only signal
- *     that exists.
- *
- * An issue closed as `NOT_PLANNED`/`DUPLICATE` is excluded under every rule but
- * the backport hop: whatever a body claims, GitHub's own record says that issue
- * was abandoned, not shipped.
- */
+function abandoned(closure) {
+    return closure !== undefined && closure.stateReason !== null && ABANDONED_REASONS.has(closure.stateReason);
+}
+/** The subset of `issueNumbers` this pull request actually closed. */
 function closesIssueNumbers(input, closures) {
-    if (input.deliveryPath === 'backportHop')
-        return [...input.issueNumbers];
     return input.issueNumbers.filter((issueNumber) => {
         const closure = closures.get(issueNumber);
-        if (closure && closure.stateReason !== null && ABANDONED_REASONS.has(closure.stateReason))
+        if (abandoned(closure))
             return false;
+        if (input.deliveryPath === 'backportHop')
+            return true;
         if (closure?.closerPrNumber != null)
             return closure.closerPrNumber === input.prNumber;
         return input.declaredCloses.includes(issueNumber);
@@ -365,20 +328,10 @@ async function run() {
     const walked = (0, walk_1.walkFirstParent)(process.cwd(), baseline, input.targetVersion);
     core.info(`Range ${baseline}..${input.targetVersion}: ${walked.length} first-parent commits.`);
     const rangeShas = new Set(walked.map((commit) => commit.sha));
-    // GitHub writes the pull request number into the subject of the commit it
-    // squashes onto the branch, so for nearly every commit the mapping is already
-    // in hand: 3662 of 8.9.0's 3694, and 5486 of 8.8.0's 5514. Asking
-    // `associatedPullRequests` to rediscover it means walking branch history for
-    // every commit — 148 requests for one minor, the slowest phase of the run.
-    //
-    // Derived, never trusted: the candidate is confirmed against the pull
-    // request's own `mergeCommit`, which must BE this commit. That is a stronger
-    // signal than `associatedPullRequests`, which reports every pull request
-    // whose branch history contains the commit and is what once credited a
-    // release to its own merge-back. Anything unconfirmed — no number in the
-    // subject, unknown pull request, no merge commit, or a merge commit that is
-    // some other commit — falls back to the original query, so a wrong guess
-    // cannot become a wrong attribution.
+    // GitHub writes the PR number into the merge-commit subject, so most commits'
+    // mapping is already in hand without walking branch history — but a guessed
+    // number is only confirmed against the PR's own `mergeCommit`; anything
+    // unconfirmed falls back to the original `associatedPullRequests` query.
     const candidateBySha = new Map();
     for (const commit of walked) {
         const match = /\(#(\d+)\)\s*$/.exec(commit.message);
@@ -419,16 +372,12 @@ async function run() {
     const { prNumbers, reasons: rangeReasons } = (0, range_1.resolveCommitsToPrs)(commitsForDedupe, input.releaseBranch, rangeShas);
     for (const reason of rangeReasons)
         core.warning(reason);
-    // Only the pull requests the fallback discovered are still unfetched.
     for (const meta of await graphql.fetchPrMetadata(prNumbers.filter((number) => !metaByNumber.has(number)))) {
         metaByNumber.set(meta.number, meta);
     }
-    // Keyed off prNumbers, which is in walk order, so the output stays stable.
-    const metadata = prNumbers.map((number) => metaByNumber.get(number)).filter((meta) => meta !== undefined);
-    // Every reference the per-pull-request phase can ask about, learned in one
-    // pass. The pipeline resolves the "Related issues" section and, when that
-    // yields nothing, scans the whole body — so pre-warm the union of both,
-    // each capped by the same policy the resolver applies per call.
+    const metadata = prNumbers.map((number) => metaByNumber.get(number)).filter((meta) => meta !== undefined); // walk order, kept stable
+    // Pre-warm the union of section refs + full-body refs the pipeline might ask
+    // about, each capped by the same policy the resolver applies per call.
     const wanted = new Set();
     for (const pr of metadata) {
         const section = (0, parser_1.extractSection)(pr.body);
@@ -477,25 +426,20 @@ async function run() {
                 deliveryPath: output.attribution.deliveryPath,
                 declaredCloses: pr.closingIssuesReferences,
             },
-            // A `merge`-type PR (section: null) is excluded from every render() output
-            // regardless of attribution, so it must never trip the unattributed guard.
+            // A merge-type PR (section: null) is excluded from every output, so it must never trip the unattributed guard.
             bucketed: output.categorization.section !== null &&
                 (output.attribution.source === 'unattributed' || output.attribution.source === 'resolutionFailed'),
             warnings,
         };
     };
-    // Each pull request's work is independent and almost entirely waiting on the
-    // network, so a serial loop spends a minor release's runtime idle: 8.9.0 took
-    // ~35 minutes here. Results land in index-keyed slots, never pushed, because
-    // completion order is arbitrary while the release notes' order must not be.
+    // Each PR's work is almost entirely waiting on the network, so it's worker-
+    // pooled rather than serial. Results land in index-keyed slots (never
+    // pushed) since completion order is arbitrary but output order must not be.
     //
-    // ponytail: 3 workers, not more. `resolve()` already runs up to CONCURRENCY
-    // refs per pull request, so the two limits multiply. Six here — about 30
-    // requests in flight — tripped GitHub's SECONDARY rate limit on 8.9.0, which
-    // fires on concurrency rather than volume: the primary counter still read
-    // 5000/5000 when it hit. The ceiling is burst width, not quota, so the fix is
-    // fewer in flight rather than a bigger budget. Raising this wants one shared
-    // limit across both levels, not a bigger number here.
+    // ponytail: 3 workers, not more — `resolve()` already runs CONCURRENCY refs
+    // per PR, so the two multiply; 6 here tripped GitHub's secondary rate limit
+    // on burst width, not quota. Raising this wants one shared limit, not a
+    // bigger number here.
     const WORKERS = 3;
     const processed = new Array(metadata.length);
     let cursor = 0;
@@ -507,20 +451,15 @@ async function run() {
         }));
     }
     finally {
-        // Deferring warnings to keep them in walk order must not mean losing them
-        // when the run dies partway: a failed run's diagnostics are the ones most
-        // worth reading.
+        // Flushed even on a partial failure — those diagnostics are the most worth reading.
         for (const entry of processed) {
             if (entry)
                 for (const warning of entry.warnings)
                     core.warning(warning);
         }
     }
-    // One batched phase, after attribution because the issue set is what
-    // attribution produces. Every attributed issue is asked about, including the
-    // ones a backport hop already settled: the delivery rule does not need those,
-    // but the `kind/*` visibility rule needs all of them, and a backport is
-    // exactly where an internal issue tends to arrive.
+    // After attribution, since the issue set is what attribution produces —
+    // includes backport-settled issues too, since kind/* visibility needs all of them.
     const wantedIssues = new Set();
     for (const entry of processed) {
         if (!entry)
@@ -532,61 +471,53 @@ async function run() {
     core.info(`Read labels and the close event of ${issueFacts.size} of ${wantedIssues.size} referenced issue(s).`);
     const attributed = [];
     const unattributed = [];
+    const issueFactsWarnings = [];
     for (const entry of processed) {
         if (!entry)
             continue;
-        // A `kind/task` or `kind/epic` issue never reaches the customer body,
-        // whatever the delivering pull request's type made of it. Still in the
-        // full asset — hidden from customers, never dropped.
         const internalKind = (0, categorize_1.hiddenFromCustomerBody)(entry.renderPr.issueNumbers.map((issueNumber) => issueFacts.get(issueNumber)?.labels ?? []));
         if (internalKind) {
-            core.warning(`PR #${entry.renderPr.number}: linked issue is ${internalKind} — kept in the full asset, hidden from the customer body.`);
+            issueFactsWarnings.push(`PR #${entry.renderPr.number}: linked issue is ${internalKind} — kept in the full asset, hidden from the customer body.`);
+        }
+        for (const issueNumber of entry.renderPr.issueNumbers) {
+            if (issueFacts.get(issueNumber)?.labelsTruncated) {
+                issueFactsWarnings.push(`Issue #${issueNumber} has more than 20 labels — kind/* visibility could not be verified against the full label set.`);
+            }
         }
         const renderPr = {
             ...entry.renderPr,
             visibility: internalKind ? 'internal' : entry.renderPr.visibility,
             closesIssueNumbers: (0, delivery_1.closesIssueNumbers)({ ...entry.delivery, issueNumbers: entry.renderPr.issueNumbers }, issueFacts),
-            // Positively open only. An issue absent from the lookup — deleted, or a
-            // number that was really a pull request — is not evidence of anything.
+            // positively open only — an issue absent from the lookup is not evidence of anything
             openIssueNumbers: entry.renderPr.issueNumbers.filter((issueNumber) => issueFacts.get(issueNumber)?.closed === false),
         };
         (entry.bucketed ? unattributed : attributed).push(renderPr);
     }
-    // The same lines the job logs as warnings, carried into the artifact: a log
-    // is not something the cutover unit can read, diff between runs, or archive
-    // beyond the runner's retention.
-    const auditWarnings = [...rangeReasons, ...processed.flatMap((entry) => entry?.warnings ?? [])];
+    for (const warning of issueFactsWarnings)
+        core.warning(warning);
+    const auditWarnings = [...rangeReasons, ...processed.flatMap((entry) => entry?.warnings ?? []), ...issueFactsWarnings];
     const result = (0, render_1.render)(attributed, unattributed, {
         version: input.targetVersion,
         allowUnattributed: input.allowUnattributed,
         unattributedReason: input.unattributedReason,
         warnings: auditWarnings,
     });
-    // The workflow names a directory that does not exist yet, and `writeFileSync`
-    // does not create one — every shadow run died with ENOENT here, after doing
-    // all of the work. Recursive so a nested `output-dir` also works.
-    (0, node_fs_1.mkdirSync)(input.outputDir, { recursive: true });
+    (0, node_fs_1.mkdirSync)(input.outputDir, { recursive: true }); // writeFileSync doesn't create the dir; recursive for a nested output-dir too
     (0, node_fs_1.writeFileSync)(`${input.outputDir}/CHANGELOG-${input.targetVersion}.md`, result.fullAsset);
     (0, node_fs_1.writeFileSync)(`${input.outputDir}/changelog.json`, JSON.stringify(result.changelogJson, null, 2));
     (0, node_fs_1.writeFileSync)(`${input.outputDir}/labels.json`, JSON.stringify(result.labelsJson, null, 2));
     (0, node_fs_1.writeFileSync)(`${input.outputDir}/audit.json`, JSON.stringify(result.auditJson, null, 2));
     (0, node_fs_1.writeFileSync)(`${input.outputDir}/comments.json`, JSON.stringify(result.commentsJson, null, 2));
     core.setOutput('customer-body', result.customerBody);
-    // Both bodies, so a reviewer can see exactly what the customer gets vs. the
-    // full internal asset — same rendering guard as every other output: written
-    // even when the unattributed guard trips, never skipped on failure.
-    await core.summary
+    await core.summary // both bodies, written even when the unattributed guard trips, never skipped on failure
         .addHeading(`Release notes — ${input.targetVersion}`, 2)
         .addHeading('Customer-facing body', 3)
         .addRaw(result.customerBody)
         .addHeading('Full asset (includes internal-only sections)', 3)
         .addRaw(result.fullAsset)
         .write();
-    // Every output above is written even when the unattributed guard trips —
-    // audit.json's whole purpose is explaining which PRs and why — so the job
-    // fails only AFTER the diagnostic outputs exist on disk.
     if (result.failureReason)
-        throw new Error(result.failureReason);
+        throw new Error(result.failureReason); // fails only AFTER every diagnostic output exists on disk
     core.info(`Generated release notes for ${input.targetVersion}: ${attributed.length} attributed PR(s).`);
 }
 run().catch((err) => core.setFailed(err instanceof Error ? err.message : String(err)));
@@ -601,6 +532,7 @@ run().catch((err) => core.setFailed(err instanceof Error ? err.message : String(
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.summary = exports.setFailed = exports.warning = exports.info = exports.setOutput = exports.getBooleanInput = exports.getInput = void 0;
 const node_fs_1 = __nccwpck_require__(24);
+const node_crypto_1 = __nccwpck_require__(598);
 /**
  * ponytail: the ~7 GitHub Actions toolkit calls we actually use, inlined.
  * @actions/core drags in @actions/exec + http-client + io (~400kB) for OIDC and
@@ -625,8 +557,16 @@ const getInput = (name, opts = {}) => {
 exports.getInput = getInput;
 const getBooleanInput = (name) => (0, exports.getInput)(name).toLowerCase() === 'true';
 exports.getBooleanInput = getBooleanInput;
-// GITHUB_OUTPUT file protocol with a heredoc delimiter (safe for multiline values).
-const setOutput = (name, value) => appendEnvFile('GITHUB_OUTPUT', `${name}<<_GHA_EOF_\n${value}\n_GHA_EOF_\n`);
+// GITHUB_OUTPUT file protocol with a heredoc delimiter. Random per call, like
+// @actions/core, so a value that happens to contain the literal delimiter
+// line (a contributor-authored PR title, passed straight into an output)
+// can't truncate the value and inject arbitrary following output lines.
+const setOutput = (name, value) => {
+    const delimiter = `ghadelimiter_${(0, node_crypto_1.randomUUID)()}`;
+    if (value.includes(delimiter))
+        throw new Error(`Unexpected input: value matches delimiter "${delimiter}"`);
+    appendEnvFile('GITHUB_OUTPUT', `${name}<<${delimiter}\n${value}\n${delimiter}\n`);
+};
 exports.setOutput = setOutput;
 const info = (msg) => {
     process.stdout.write(`${msg}\n`);
@@ -674,10 +614,8 @@ exports.summary = new Summary();
 
 /**
  * Shared GitHub REST plumbing for the three fetch-based adapters (resolver,
- * comment, labels). One definition of the bot's auth / API-version / user-agent
- * headers and the per-repo base URL — previously copied verbatim into each
- * adapter. The adapters stay octokit-free (a handful of endpoints each); this is
- * just the common boilerplate, not a client.
+ * comment, labels): one definition of auth/headers/retry, previously copied
+ * into each. Stays octokit-free — a handful of endpoints, not a client.
  */
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.GITHUB_API = void 0;
@@ -688,15 +626,11 @@ exports.repoApiUrl = repoApiUrl;
 exports.GITHUB_API = 'https://api.github.com';
 const USER_AGENT = 'camunda-release-notes-gate';
 const GITHUB_API_VERSION = '2022-11-28';
-/** A real secondary rate limit clears within minutes; past this, something else is wrong and must surface. */
 const MAX_RETRIES = 5;
-/** Longest `retry-after` this honours; beyond it the job should fail rather
- *  than hold a runner. GitHub's own secondary-limit hints stay well under. */
-const MAX_RETRY_AFTER_MS = 60_000;
-/** GitHub reports a throttled REST request as HTTP 429, or HTTP 403 carrying a
- *  `retry-after` (a 403 without one is a real permission failure and must not
- *  be retried). 5xx is a transient backend failure. Mirrors resolve/index.ts's
- *  GraphQL-side retryableStatus — same throttle shapes, REST transport. */
+const MAX_RETRY_AFTER_MS = 60_000; // beyond this the job should fail rather than hold a runner
+/** 429, or 403 with a `retry-after` (a bare 403 is a real permission failure).
+ *  5xx is transient. Mirrors resolve/index.ts's GraphQL-side check — same
+ *  throttle shapes, REST transport. */
 async function retryableStatus(res) {
     if (res.status === 429 || res.status >= 500)
         return true;
@@ -706,11 +640,8 @@ async function retryableStatus(res) {
         return true;
     if (res.headers.get('x-ratelimit-remaining') === '0')
         return true;
-    // GitHub's SECONDARY rate limit — the one that fires on concurrency rather
-    // than on volume — answers 403 and often names itself only in the body, with
-    // the primary counter still reading full. Indistinguishable from a permission
-    // failure by status alone, so read the body of a 403 (from a clone, leaving
-    // the caller's stream intact) before deciding this job cannot proceed.
+    // The secondary rate limit fires on concurrency, answers 403, and names
+    // itself only in the body while the primary counter still reads full.
     try {
         return /rate limit/i.test(await res.clone().text());
     }
@@ -718,8 +649,7 @@ async function retryableStatus(res) {
         return false;
     }
 }
-/** The server's own wait, when it names one, else exponential backoff. `null`
- *  when the request never produced a response at all. */
+/** The server's own wait, when it names one, else exponential backoff. */
 function backoffMs(res, attempt) {
     const header = res?.headers.get('retry-after') ?? null;
     const seconds = header === null ? NaN : Number(header);
@@ -727,12 +657,8 @@ function backoffMs(res, attempt) {
         return Math.min(seconds * 1000, MAX_RETRY_AFTER_MS);
     return 2 ** attempt * 1000;
 }
-/**
- * `fetch`, retrying a throttled or transiently failed REST request with
- * backoff instead of aborting the whole generation job on one bad response.
- * Never retries a non-throttle failure (e.g. a bare 403, a 404) — the caller
- * sees those immediately.
- */
+/** `fetch` with backoff on a throttled or transient failure. Never retries a
+ *  non-throttle failure (bare 403, 404) — the caller sees those immediately. */
 async function fetchWithRetry(url, init, sleepImpl = (ms) => new Promise((resolve) => setTimeout(resolve, ms))) {
     for (let attempt = 0;; attempt++) {
         let res;
@@ -740,11 +666,8 @@ async function fetchWithRetry(url, init, sleepImpl = (ms) => new Promise((resolv
             res = await fetch(url, init);
         }
         catch (error) {
-            // `fetch` REJECTS on a socket-level failure — connection reset, socket
-            // hang-up, DNS blip — rather than returning a Response, so none of the
-            // status handling below ever sees it. Left unguarded this aborts the
-            // whole job on one blip, which over the thousands of calls a minor
-            // release makes is close to certain.
+            // fetch REJECTS on a socket-level failure (reset, DNS blip) instead of
+            // returning a Response, so this must be handled separately from status.
             if (attempt >= MAX_RETRIES - 1) {
                 const detail = error instanceof Error ? error.message : String(error);
                 throw new Error(`GitHub API request never completed past ${MAX_RETRIES} attempts (${url}): ${detail}`);
@@ -760,12 +683,9 @@ async function fetchWithRetry(url, init, sleepImpl = (ms) => new Promise((resolv
         await sleepImpl(backoffMs(res, attempt));
     }
 }
-/**
- * `fetchWithRetry` plus the body read, so a truncated or empty body is retried
- * like any other transient instead of throwing a SyntaxError past the retry
- * loop. GitHub answers that way under load exactly as readily as it answers
- * 502, and parsing outside the loop meant one such body killed the run.
- */
+/** `fetchWithRetry` plus the body read — a truncated/empty body is retried
+ *  like any other transient (GitHub answers that way under load too) instead
+ *  of throwing a SyntaxError past the retry loop. */
 async function fetchJsonWithRetry(url, init, sleepImpl = (ms) => new Promise((resolve) => setTimeout(resolve, ms))) {
     for (let attempt = 0;; attempt++) {
         const res = await fetchWithRetry(url, init, sleepImpl);
@@ -783,10 +703,8 @@ async function fetchJsonWithRetry(url, init, sleepImpl = (ms) => new Promise((re
     }
 }
 /** Auth + content-negotiation headers for the plain `GITHUB_TOKEN` every
- *  caller passes in. This action resolves from the PR head on `pull_request`
- *  (see the gate workflow's security-model header), so it must never be
- *  given a privileged token such as MONOREPO_RELEASE_APP. Pass `json: true`
- *  for write requests that send a JSON body. */
+ *  caller passes in — never a privileged token (this action resolves from
+ *  the PR head on `pull_request`). Pass `json: true` for a JSON body. */
 function githubHeaders(token, opts = {}) {
     const headers = {
         authorization: `Bearer ${token}`,
@@ -818,8 +736,8 @@ exports.parseRefs = parseRefs;
 exports.extractSection = extractSection;
 exports.isOptOutTicked = isOptOutTicked;
 /**
- * Pure, section-scoped reference parser. Shared verbatim with the generator
- * (#57713) — no IO, no repo awareness. Cross-repo detection and issue-vs-PR
+ * Pure, section-scoped reference parser, shared verbatim with the generator
+ * — no IO, no repo awareness. Cross-repo detection and issue-vs-PR
  * classification belong to the Resolver, not here.
  */
 /** The template's opt-out phrase. Kept as an exported constant so the PR template
@@ -847,20 +765,14 @@ function kindOf(keyword) {
         return 'closing';
     return 'contributor'; // bare "#N"
 }
-/**
- * Strip HTML comments before any parsing. The PR template's own instructional
- * `<!-- ... closes #1234 ... -->` block lives inside "## Related issues" and is
- * invisible in GitHub's rendered body, so a PR that leaves the boilerplate
- * untouched must NOT be attributed to whatever issue the comment names.
- */
+/** Strips before any parsing — the PR template's own instructional
+ *  `<!-- closes #1234 -->` block is invisible in the rendered body, and a
+ *  PR that leaves the boilerplate untouched must not be attributed to it. */
 function stripHtmlComments(text) {
     return text.replace(/<!--[\s\S]*?-->/g, '');
 }
-/**
- * Strip fenced and inline Markdown code before any parsing. A reviewer citing
- * an example — `` `closes #1234` `` in prose, or a fenced snippet quoting the
- * template — must not be mistaken for the author's own ref or opt-out tick.
- */
+/** A reviewer citing an example (`` `closes #1234` `` in prose, or a fenced
+ *  snippet) must not be mistaken for the author's own ref or opt-out tick. */
 function stripCode(text) {
     return text.replace(/```[\s\S]*?```/g, '').replace(/`[^`\n]*`/g, '');
 }
@@ -889,10 +801,7 @@ function parseRefs(text) {
         push(match, match[2] ?? null, match[3]);
     return refs.sort((first, second) => first.index - second.index);
 }
-/**
- * Slice out a markdown section body: everything after the matching heading up
- * to the next heading of any level (or EOF). Returns null if absent.
- */
+/** Everything after the matching heading up to the next heading (or EOF), or null if absent. */
 function extractSection(body, heading = exports.SECTION_HEADING) {
     const lines = stripHtmlComments(body).split(/\r?\n/);
     const headingRe = new RegExp(`^#{1,6}\\s+${escapeRe(heading)}\\s*$`, 'i');
@@ -925,13 +834,8 @@ const attribution_1 = __nccwpck_require__(233);
 const categorize_1 = __nccwpck_require__(493);
 const parser_1 = __nccwpck_require__(883);
 const title_1 = __nccwpck_require__(150);
-/**
- * The legacy body-wide scan is the chain's last step, so its refs are only
- * resolved when the earlier steps cannot terminate — an opt-out, an eligible
- * section ref, or a native reference all decide the outcome without it. Every
- * ref costs an API call, and the section refs would otherwise be resolved a
- * second time as part of the body they live in.
- */
+/** The legacy scan resolves only when earlier steps can't terminate — every
+ *  ref costs an API call, and section refs would otherwise resolve twice. */
 async function attributeDirectly(resolver, body, closingIssuesReferences) {
     const section = (0, parser_1.extractSection)(body);
     const optOut = section ? (0, parser_1.isOptOutTicked)(section) : false;
@@ -940,36 +844,17 @@ async function attributeDirectly(resolver, body, closingIssuesReferences) {
     const legacyRefs = needsLegacyScan ? await resolver.resolveRefs((0, parser_1.parseRefs)(body)) : [];
     return (0, attribution_1.decideAttribution)({ optOut, sectionRefs, closingIssuesReferences, legacyRefs });
 }
-/** Attribution outcomes that found nothing to attribute to — the trigger for
- *  the bot-link exemption. Mirrors the gate's own failing-link outcomes, not
- *  just "nothing found". */
+/** The trigger for the bot-link exemption. Mirrors the gate's own
+ *  failing-link outcomes, not just "nothing found". */
 const UNRESOLVED_SOURCES = new Set(['unattributed', 'resolutionFailed']);
-/**
- * Direct scan, then the backport hop (inheriting the original's decision,
- * C7/V2), then the bot link exemption LAST — an exempt bot that did link a real
- * issue keeps that attribution rather than being overridden by the exemption.
- *
- * The hop fires whenever a backport marker is present, NOT only when the
- * backport's own body yielded nothing: C7 makes the original canonical, and a
- * backport body is a bot's paraphrase of it. `backport-action` copies the
- * original's refs into `relates to ${issue_refs}` without stripping HTML
- * comments, so the PR template's own `<!-- closes #1234 -->` examples arrive
- * here as visible, author-looking refs — four of them, plus the real one. A
- * body-wide scan of that *succeeds*, which is exactly why gating the hop on
- * failure let a 2018 issue title describe a 2026 fix. Deciding from the
- * original makes the outcome independent of whatever the bot wrote.
- *
- * An explicit opt-out tick on the backport is the one thing that outranks the
- * original: unlike a copied ref, it is a deliberate statement about this PR.
- */
+/** Direct scan, then the backport hop, then bot link exemption last — an
+ *  exempt bot that did link a real issue keeps it. See GENERATOR.md § 3 for
+ *  why the hop always trusts the original over the backport's own body. */
 async function attributePr(resolver, pr, original) {
     let decision = await attributeDirectly(resolver, pr.body, pr.closingIssuesReferences);
     let mergedAt = pr.mergedAt;
     if (decision.source !== 'optOut') {
-        // Resolves to null when there is no backport marker, so this costs nothing
-        // for an ordinary PR — and for a backport bot the original is fetched for
-        // the inherited title anyway, memoized by the caller.
-        const originalPull = await original();
+        const originalPull = await original(); // null for an ordinary PR — costs nothing
         if (originalPull) {
             const originalDecision = await attributeDirectly(resolver, originalPull.body, []);
             decision = { ...originalDecision, deliveryPath: 'backportHop' };
@@ -989,11 +874,8 @@ async function attributePr(resolver, pr, original) {
     }
     return { decision, mergedAt };
 }
-/**
- * The category-detection title and the display title come from the same lookup:
- * an inherit-original bot's own title is garbage for both purposes. The
- * `[Backport ...]` marker is stripped either way — noise for the customer.
- */
+/** Category-detection title and display title share one lookup — an
+ *  inherit-original bot's own title is garbage for both. */
 async function categorizePr(resolver, pr, original, override) {
     const inherited = override === 'inherit-original' ? (await original())?.title : undefined;
     const displayTitle = (0, categorize_1.stripBackportPrefix)(inherited ?? pr.title);
@@ -1028,9 +910,7 @@ async function resolveDisplayTitle(resolver, pr, categorization, attribution, fa
 async function processPr(resolver, pr, options) {
     const backport = (0, parser_1.parseRefs)(pr.body).find((ref) => ref.kind === 'backport');
     const override = pr.authorLogin ? categorize_1.BOT_CATEGORY_OVERRIDES[pr.authorLogin] : undefined;
-    // Both the attribution hop and the inherit-original title want the same
-    // original PR — fetch it at most once per PR, and only if one of them asks.
-    let pending;
+    let pending; // memoized: attribution + inherit-original both want the same original PR
     const original = () => (pending ??= backport ? resolver.fetchOriginalPull(backport.number, backport.repo) : Promise.resolve(null));
     const { decision: attribution, mergedAt } = await attributePr(resolver, pr, original);
     const { displayTitle, categorization } = await categorizePr(resolver, pr, original, override);
@@ -1052,24 +932,17 @@ async function processPr(resolver, pr, options) {
 
 
 /**
- * The pure part of the range resolver (#50968): which previous point to diff
- * against, and how to turn git's answer into a deduped PR list. The git calls
- * themselves live in ./walk.
+ * The pure part of the range resolver: which previous point to diff against,
+ * and how to turn git's answer into a deduped PR list. The git calls
+ * themselves live in ./walk. See GENERATOR.md § 1 for the baseline table.
  */
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.resolveBaselineStrategy = resolveBaselineStrategy;
 exports.resolveCommitsToPrs = resolveCommitsToPrs;
-// Alphas are 1-based: an `-alpha0` would make the previous-alpha baseline
-// `-alpha-1`, a ref that cannot exist, so it is rejected as unrecognized.
-//
-// Dotted alphas (`8.8.0-alpha4.1`) are deliberately NOT accepted, though the
-// 8.8 line has a couple and zcl parses them. The release process no longer
-// cuts them, so this is a closed shape, not an oversight — do not widen the
-// regex on the strength of those tags alone.
+// Alphas and candidates are both 1-based (no `-alpha0`/`-rc0`). Dotted alphas
+// (`8.8.0-alpha4.1`) are deliberately unaccepted — a closed shape from a
+// retired process, not an oversight.
 const VERSION = /^(\d+)\.(\d+)\.(\d+)(?:-alpha([1-9]\d*))?$/;
-// Release candidates are 1-based too, and appear at every level: `8.9.0-rc1`,
-// `8.7.6-rc2`, `8.10.0-alpha1-rc3`. Only the suffix is matched here — what it
-// is attached to still has to satisfy VERSION.
 const RC_SUFFIX = /-rc([1-9]\d*)$/;
 function parseVersion(version, reportAs = version) {
     const match = VERSION.exec(version);
@@ -1095,33 +968,19 @@ function previousMinor(v, target) {
 /** The baseline to diff `target` against, from the version string alone — no
  *  tag list to consult, every case is arithmetic on the version number. */
 function resolveBaselineStrategy(target) {
-    // A candidate is resolved from the version it is a candidate *for*, so the
-    // shape of that version is validated first and names the errors below, even
-    // though `rcN` for N > 1 short-circuits to the previous candidate.
+    // Validated against the version a candidate is FOR, so `rcN > 1`'s
+    // short-circuit below still gets the right error on a bad shape.
     const rc = RC_SUFFIX.exec(target);
     const baseVersion = target.replace(RC_SUFFIX, '');
     const v = parseVersion(baseVersion, target);
-    // An alpha is a pre-release of a minor, so it only ever carries patch 0.
-    // Without this, `X.Y.1-alpha1` falls through to the previous-alpha branch and
-    // resolves to `X.Y.1` — the target's own base version, a tag never cut.
     if (v.alpha !== null && v.patch !== 0) {
         throw new Error(`Unsupported release version "${target}": an alpha is a pre-release of a minor, so it must carry patch 0.`);
     }
-    // Candidates chain: `rcN` is diffed against `rc(N-1)`, matching how the
-    // release actually publishes them. Each candidate is cut as its own GitHub
-    // release, and zcl labels issues per candidate tag (`version:8.9.0-rc2`), so
-    // a candidate's notes are the delta since the previous one; the final
-    // untagged version then resolves normally and carries the whole release.
-    // Reporting the full contents under every candidate instead would republish
-    // rc1's entire changelog under rc2, rc3 and rc4.
-    //
-    // `rc1` has no previous candidate, so it falls through to the version it
-    // stands for — which is also what makes the chain terminate somewhere real.
+    // rcN -> rc(N-1); rc1 has no previous candidate and falls through below.
     if (rc && Number(rc[1]) > 1) {
         return { kind: 'previousTag', ref: `${baseVersion}-rc${Number(rc[1]) - 1}` };
     }
-    // alpha1-of-cycle: no prior tag on this line exists yet, so always the fork
-    // point off the previous minor's stable branch, never a tag lookup (V5).
+    // alpha1-of-cycle: no prior tag on this line yet, so fork off stable/<prev minor>.
     if (v.alpha === 1 && v.patch === 0) {
         return { kind: 'forkPoint', otherRef: `origin/stable/${v.major}.${previousMinor(v, target)}` };
     }
@@ -1135,13 +994,8 @@ function resolveBaselineStrategy(target) {
     const previousMinorTag = format({ major: v.major, minor: previousMinor(v, target), patch: 0 });
     return { kind: 'forkPoint', otherRef: previousMinorTag };
 }
-/** The only legitimate PR-less commits (C12); anything else without a PR on a
- *  protected branch is a ruleset-bypass anomaly.
- *
- *  The `Revert "..."` form is the orphaned-tag repair: when a release job has to
- *  redo its own version bumps it reverts them first, so those reverts are as
- *  much release automation as the commits they undo. Without them here, every
- *  repaired release reports its reverts as ruleset bypasses. */
+/** The only legitimate PR-less commits — release-plugin version bumps, and
+ *  the reverts that repair an orphaned tag. See GENERATOR.md § 1. */
 const AUTOMATION_WHITELIST = /^(?:Revert ")?\[maven-release-plugin\]/;
 /** A release branch is `release-<version>` — `release-8.9.19`,
  *  `release-8.10.0-alpha5`. Anchored on the version so it cannot swallow a
@@ -1149,37 +1003,20 @@ const AUTOMATION_WHITELIST = /^(?:Revert ")?\[maven-release-plugin\]/;
 const RELEASE_BRANCH = /^release-(\d+)\.(\d+)\.\d+/;
 /**
  * The branches a delivered pull request in this release could have targeted.
- *
- * The release workflow's `RELEASE_BRANCH` is the TEMPORARY `release-X.Y.Z`
- * branch the tag is cut on, and nothing merges into that — delivered work
- * targets the line it was cut from. Passing the temporary branch straight into
- * the ambiguity rule below meant no candidate ever matched, so every commit
- * with more than one shipped pull request was skipped instead of resolved.
- *
- * Both line branches are accepted because either can be right: a patch and a
- * post-branch alpha ship from `stable/X.Y`, while an alpha cut before the
- * stable branch exists ships from `main`. Guessing between them would be
- * wrong half the time, and accepting both only ever narrows an ambiguity that
- * would otherwise be abandoned.
+ * `RELEASE_BRANCH` is the temporary `release-X.Y.Z` tag branch, which nothing
+ * merges into, so this maps it to the real line(s): `stable/X.Y` for a patch
+ * or post-branch alpha, `main` for a pre-branch alpha. Both are accepted —
+ * guessing between them would be wrong half the time.
  */
 function releaseLineBranches(releaseBranch) {
     const match = RELEASE_BRANCH.exec(releaseBranch);
     return match ? [`stable/${match[1]}.${match[2]}`, 'main'] : [releaseBranch];
 }
 /**
- * A release-branch merge-back delivers nothing of its own. It merges
- * `release-X.Y.Z` back into the line it was cut from, and everything it carries
- * was already published in that release's own notes. The branch shape is the
- * definition, not a heuristic: no other pull request goes from a release branch
- * into a stable line (or into `main`, for a pre-branch alpha).
- *
- * D25 asks for these to carry a `merge:` title at the source, which would also
- * exclude them via `categorize`. That fix lives in release automation outside
- * this repository and cannot reach pull requests that already merged, so the
- * topology is checked here as well. Relying on the title alone would put the
- * previous release's merge-back in every release's notes, and — because it
- * links no issue — in every release's unattributed bucket, failing the gate on
- * the same known-benign pull request every single time.
+ * A release-branch merge-back delivers nothing of its own — it merges
+ * `release-X.Y.Z` back into the line it was cut from, already published in
+ * that release's own notes. Checked by branch topology, not title, since
+ * that also catches ones merged before this rule existed. See GENERATOR.md § 1.
  */
 function isReleaseMergeBack(pr) {
     // Version-shaped, not a bare `release-` prefix: a feature branch called
@@ -1190,15 +1027,9 @@ function isReleaseMergeBack(pr) {
 /**
  * Dedupe a first-parent commit walk to one entry per PR. Ambiguity rule: prefer
  * the PR targeting the release LINE (see `releaseLineBranches`); still tied ->
- * audit, never guess.
- *
- * `rangeShas` is the walk's own commits. A pull request ships in this range only
- * if its merge landed among them: commits pushed straight onto a release branch
- * — the release plugin's version bumps, and the reverts that repair an orphaned
- * tag — have no pull request of their own, so GitHub credits them to whichever
- * one later swept that branch into stable. That is the *next* release's
- * merge-back, whose merge commit is not in this range at all. Without the
- * check, 8.9.19's notes listed #62049, merged three days after the tag was cut.
+ * audit, never guess. `rangeShas` restricts "shipped" to merges actually inside
+ * the walk — a commit's associated PR can otherwise be the *next* release's
+ * merge-back, merged after this tag was cut. See GENERATOR.md § 1.
  */
 function resolveCommitsToPrs(commits, releaseBranch, rangeShas) {
     const reasons = [];
@@ -1206,6 +1037,12 @@ function resolveCommitsToPrs(commits, releaseBranch, rangeShas) {
     // Insertion-ordered, so this both dedupes and preserves walk order.
     const prNumbers = new Set();
     for (const commit of commits) {
+        // Checked first, ahead of any associated-PR anomaly below: a release-plugin
+        // commit must never be attributed to a pull request, even one GitHub
+        // reports with a null mergeCommitOid (which the shipped-anomaly branch
+        // below otherwise keeps unconditionally).
+        if (AUTOMATION_WHITELIST.test(commit.message))
+            continue;
         // Three outcomes, kept apart because they are three different facts about a
         // commit and collapsing them produces a wrong audit line: a merge-back is
         // excluded even though it merged here, while an out-of-range PR is excluded
@@ -1227,8 +1064,6 @@ function resolveCommitsToPrs(commits, releaseBranch, rangeShas) {
             // a commit pushed straight onto the release branch that one swept in.
             // Release plumbing either way — nothing delivered, nothing to report.
             if (mergeBacks.length > 0 && candidates.length === 0)
-                continue;
-            if (AUTOMATION_WHITELIST.test(commit.message))
                 continue;
             const list = candidates.map((pr) => `#${pr.number}`).join(', ');
             reasons.push(candidates.length === 0
@@ -1294,17 +1129,11 @@ exports.SCHEMA_VERSION = void 0;
 exports.render = render;
 /**
  * Turns the attributed-and-categorized PR list into the outputs downstream
- * reads. Pure: which issues a PR actually closed is supplied by the caller,
- * never derived here from a `closes` keyword — an accidental keyword on a
- * non-final PR must not stamp a premature "Released".
+ * reads. Pure — see GENERATOR.md § 6. Which issues a PR closed is supplied
+ * by the caller, never derived here from a `closes` keyword.
  */
-/** V6: every JSON output carries this, so a format change has to bump it
- *  deliberately instead of consumers misreading a shape they weren't built for.
- *
- *  2.0.0: `comments.json` entries went from one row per (issue, pull request)
- *  to one row per issue carrying `prNumbers`. Breaking, so a major bump, even
- *  though the only consumer is the not-yet-built cutover unit (#57714) — the
- *  point of the field is that a shape change is never silent. */
+/** Bumped deliberately on any output-shape change, so a consumer never
+ *  silently misreads a shape it wasn't built for. */
 exports.SCHEMA_VERSION = '2.0.0';
 const SECTION_ORDER = [
     'Features',
@@ -1317,37 +1146,25 @@ const SECTION_ORDER = [
     'Maintenance', // asset-only, so last — never reached in the customer body
     'Uncategorized',
 ];
-/** D19: an opt-out PR is grouped under its own section, never its type's. */
+/** An opt-out PR is grouped under its own section, never its type's. */
 function groupNameFor(pr) {
     if (pr.attributionSource === 'optOut')
         return 'Changes without a tracked issue';
     return pr.section ?? 'Uncategorized';
 }
-/** C1: the issue is the grouping key. A PR with no issue — opt-out, bot-exempt,
- *  unattributed — has nothing to group under and stays a single-PR entry. */
 function entryKeyFor(pr) {
     return pr.issueNumbers.length > 0 ? `issue:${pr.issueNumbers[0]}` : `pr:${pr.number}`;
 }
-/** A section absent from SECTION_ORDER sorts after every known one, matching
- *  the output order below, which appends unknown names rather than dropping them. */
+/** Unknown section sorts after every known one — appended, never dropped. */
 function sectionRank(name) {
     const index = SECTION_ORDER.indexOf(name);
     return index === -1 ? SECTION_ORDER.length : index;
 }
-/**
- * Where a group's PRs disagree on section — a `feat`, a `fix` and two
- * `refactor`s delivering one issue — the most customer-visible section wins,
- * and the entry appears there once rather than repeating under each.
- *
- * Deliberately not "the section of the PR that closed the issue": that needs
- * `closesIssueNumbers`, which is a proxy pending a real per-issue closer
- * lookup, and has no answer at all when nothing in the range closed the issue.
- * Ranking by visibility needs neither, so a wrong closer can never misplace an
- * entry, and it errs toward showing — the direction this epic exists to fix.
- */
+/** Where a group's PRs disagree on section, the most customer-visible one
+ *  wins (ranked by SECTION_ORDER) rather than "whichever PR closed the
+ *  issue" — see GENERATOR.md § 6 for why. */
 function toEntries(prs) {
-    // A dependency bump is grouped by the package it moves, not by its own pull
-    // request; anything with a linked issue keeps the issue grouping below.
+    // Grouped by package, not by its own PR; anything with a linked issue keeps issue grouping below.
     const isDependencyBump = (pr) => (pr.dependencies?.length ?? 0) > 0 && pr.issueNumbers.length === 0;
     const grouped = new Map();
     for (const pr of prs) {
@@ -1359,10 +1176,8 @@ function toEntries(prs) {
         grouped.set(key, list);
     }
     const entries = [...grouped.values()].map((group) => {
-        // Non-empty by construction, and ties keep the first PR in range order.
         const lead = group.reduce((best, pr) => sectionRank(groupNameFor(pr)) < sectionRank(groupNameFor(best)) ? pr : best);
-        // Delivered is asked of the grouping key — the issue the entry is titled
-        // by — not of any issue the group happens to touch.
+        // Delivered is asked of the entry's own titling issue, not any issue the group touches.
         const [keyIssue] = lead.issueNumbers;
         const stillOpen = keyIssue !== undefined && group.some((pr) => pr.openIssueNumbers?.includes(keyIssue));
         return {
@@ -1402,28 +1217,12 @@ function renderLine(entry) {
     const prs = entry.prNumbers.map((n) => `#${n}`).join(', ');
     if (entry.issueNumbers.length === 0)
         return `- ${entry.title} (${prs})`;
-    // Grouping put one line under the issue's own title, which reads as the whole
-    // feature shipping. Say so when the issue is still OPEN: the work landed, the
-    // issue did not finish. Same vocabulary as the issue comment.
-    const partial = entry.delivered ? '' : ' (partially delivered)';
+    const partial = entry.delivered ? '' : ' (partially delivered)'; // issue still OPEN — work landed, issue didn't finish
     return `- ${entry.title} (${entry.issueNumbers.map((n) => `#${n}`).join(', ')}) — ${prs}${partial}`;
 }
-/**
- * One line per dependency, not per bump.
- *
- * A release that moves the same package five times published five lines a
- * reader has to reconcile by hand — and 8.9.19 shipped two byte-identical
- * `io.github.classgraph: 4.8.193 → 4.8.194` lines from #61527 and #61528. The
- * useful fact is where the package started the release and where it ended, so
- * the range is collapsed to the EARLIEST `from` and the LATEST `to`, citing
- * every pull request that moved it.
- *
- * The walk is newest-first, so the earliest update is the LAST element. The
- * same collapse fixes a single renovate pull request whose body table lists one
- * package twice.
- */
-/** Dotted-numeric versions compare numerically; anything else — a digest, a
- *  short sha, a date tag — has no order and returns null. */
+/** One line per dependency, not per bump — collapsed to the earliest `from`
+ *  and latest `to` across every PR that moved it. See GENERATOR.md § 6. */
+/** Dotted-numeric versions compare numerically; a digest/sha/date tag has no order and returns null. */
 function versionKey(value) {
     const trimmed = value.replace(/^v/, '');
     return /^\d+(\.\d+)*$/.test(trimmed) ? trimmed.split('.').map(Number) : null;
@@ -1439,17 +1238,9 @@ function isLower(candidate, current) {
     }
     return false;
 }
-/**
- * The release's actual start and end version for one package.
- *
- * Across pull requests the walk order settles it — newest first, so the
- * earliest update is last. Within ONE pull request it cannot: a grouped
- * renovate body lists rows per lockfile, not in time order, and taking the
- * last row gave `browserslist: 4.28.2` when the release really started at
- * `4.28.1`. So versions are compared numerically where they can be, and the
- * positional answer is the fallback for anything unorderable — a digest or a
- * short sha, where walk order IS the chronology.
- */
+/** The release's actual start/end version for one package — numeric compare
+ *  where possible, walk-order positional fallback otherwise (a digest/sha,
+ *  where walk order IS the chronology). See GENERATOR.md § 6. */
 function versionRange(updates) {
     let from = updates[updates.length - 1].from;
     let to = updates[0].to;
@@ -1481,32 +1272,17 @@ function collapseDependencies(prs) {
         delivered: true,
     }));
 }
-/**
- * One comment per issue, not per pull request that touched it.
- *
- * The marker is keyed on `<version>:issue-<N>`, which is what lets a re-run
- * update the comment it posted last time instead of adding a second one. Two
- * pull requests delivering one issue therefore produced two rows carrying the
- * SAME marker: publishing them would have overwritten one with the other and
- * left whichever happened to be applied last, silently dropping the other.
- *
- * Aggregating also makes the sentence true. An issue delivered by four pull
- * requests is released when ANY of them closed it, and one sentence should
- * name all four rather than four sentences each naming one.
- */
+/** One comment per issue, not per PR that touched it — the marker is keyed
+ *  on `<version>:issue-<N>`, so two PRs sharing an issue must aggregate into
+ *  one row or the marker collision drops one silently on publish. */
 function commentFor(prs, issueNumber, version) {
     const numbers = prs.map((pr) => `#${pr.number}`).join(', ');
     return prs.some((pr) => pr.closesIssueNumbers.includes(issueNumber))
         ? { relationKind: 'closing', text: `Released in ${version} (${numbers}).` }
         : { relationKind: 'contributor', text: `Partially delivered in ${version} by ${numbers}.` };
 }
-/**
- * The gate bucket holds two different failures — a PR that declared no issue at
- * all, and one whose every declared ref turned out to be dead. They need
- * opposite fixes (add a link vs. repair the target), so name them apart: a
- * release operator reading "unattributed" against a PR that visibly *has* a
- * `closes` line has no way to tell that the referenced issue is what is gone.
- */
+/** Two different failures need opposite fixes (add a link vs. repair the
+ *  target), so name them apart rather than one generic "unattributed". */
 function describeGuardFailure(bucket) {
     const list = (prs) => prs.map((pr) => `#${pr.number}`).join(', ');
     const noRefs = bucket.filter((pr) => pr.attributionSource === 'unattributed');
@@ -1525,15 +1301,13 @@ function describeGuardFailure(bucket) {
 function render(prs, unattributed, options) {
     const guardFailed = unattributed.length > 0 && (!options.allowUnattributed || !options.unattributedReason);
     const failureReason = guardFailed ? describeGuardFailure(unattributed) : undefined;
-    // A non-empty reason is proven whenever the guard passed with `unattributed` present.
     const unattributedReason = options.unattributedReason ?? '';
     const all = [...prs, ...unattributed];
     const customerPrs = prs.filter((pr) => pr.visibility === 'customer' && pr.section !== null);
     const assetPrs = all.filter((pr) => pr.section !== null);
     const customerBody = renderSectionedBody(customerPrs);
     const fullAsset = renderSectionedBody(assetPrs);
-    // Insertion-ordered, so issues come out in walk order like everything else.
-    const prsByIssue = new Map();
+    const prsByIssue = new Map(); // insertion-ordered: issues come out in walk order
     for (const pr of all) {
         for (const issueNumber of pr.issueNumbers) {
             prsByIssue.set(issueNumber, [...(prsByIssue.get(issueNumber) ?? []), pr]);
@@ -1545,10 +1319,8 @@ function render(prs, unattributed, options) {
         ...commentFor(prs, issueNumber, options.version),
         marker: `<!-- release-notes:${options.version}:issue-${issueNumber} -->`,
     }));
-    // Only an override that actually LET the guard pass is an override. Recorded
-    // unconditionally, a failed default run wrote the same rows with an empty
-    // reason, so an approved exception and a plain failure looked identical in
-    // the one file whose job is telling them apart.
+    // Only recorded when the override actually let the guard pass — else a plain
+    // failure would look identical to an approved exception in this file.
     const overrides = guardFailed ? [] : unattributed.map((pr) => ({ number: pr.number, reason: unattributedReason }));
     return {
         customerBody,
@@ -1582,39 +1354,24 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.GithubGraphqlResolver = exports.RetriesExhaustedError = exports.RATE_LIMITED_ERROR_TYPE = void 0;
 const github_1 = __nccwpck_require__(631);
 const GRAPHQL_URL = 'https://api.github.com/graphql';
-/**
- * The two batch queries differ by an order of magnitude in server-side cost, so
- * they cannot share one size. `associatedPullRequests` makes GitHub walk branch
- * history per commit; `pullRequest(number:)` is a direct node lookup.
- *
- * Measured against camunda/camunda: 100 commit aliases return HTTP 502 after
- * ~11s (a server-side timeout, not a throttle — it fails identically on retry),
- * 50 take 7.2s, 25 take 3.3s. 25 is also marginally faster per commit overall,
- * so the margin costs nothing. A shared size of 100 meant every range longer
- * than 100 commits — every alpha and every minor — died on its first request.
- */
+/** `associatedPullRequests` walks branch history per commit; `pullRequest(number:)`
+ *  is a direct lookup — an order of magnitude cheaper, so the two can't share
+ *  a batch size. 100 commit aliases 502s at ~11s server-side timeout; 25 is
+ *  the size that doesn't. */
 const COMMIT_BATCH_SIZE = 25;
-/** 100 aliases return in 0.9s: a direct lookup, not a history walk. */
+/** A direct lookup — 100 aliases return in under a second. */
 const PR_METADATA_BATCH_SIZE = 100;
-/** A real secondary rate limit clears within minutes; past this, something else is wrong and must surface. */
 const MAX_RETRIES = 5;
 exports.RATE_LIMITED_ERROR_TYPE = 'RATE_LIMITED';
-/** GitHub reports "no such node" as a field-level error, not a null field, and
- *  still returns the rest of the batch alongside it. */
+/** A field-level error, not a null field — the rest of the batch still comes back. */
 const NOT_FOUND_ERROR_TYPE = 'NOT_FOUND';
-/**
- * Thrown when a request failed every retry for a reason that a smaller request
- * might survive — a timeout, a 5xx, an unparseable body. Distinct from a
- * malformed-but-well-formed-HTTP response, which fails identically at any size:
- * bisecting one of those turns a single clear error into a storm of requests
- * and buries it.
- */
+/** Thrown when every retry failed for a reason a SMALLER request might
+ *  survive. A malformed response fails identically at any size — bisecting
+ *  that would replace one clear error with a storm of requests. */
 class RetriesExhaustedError extends Error {
 }
 exports.RetriesExhaustedError = RetriesExhaustedError;
-/** Longest `retry-after` this honours; beyond it the job should fail rather
- *  than hold a runner. GitHub's own secondary-limit hints stay well under. */
-const MAX_RETRY_AFTER_MS = 60_000;
+const MAX_RETRY_AFTER_MS = 60_000; // beyond this the job should fail rather than hold a runner
 /**
  * GitHub reports a throttled GraphQL request three different ways: a
  * `RATE_LIMITED` error type inside a 200, HTTP 429, or HTTP 403 carrying a
@@ -1649,10 +1406,8 @@ function backoffMs(res, attempt) {
     return 2 ** attempt * 1000;
 }
 /** The one `associatedPullRequests` selection both query shapes share.
- *
- *  `headRefName` and `mergeCommit` are read here rather than in the metadata
- *  phase because both feed range membership, which is decided before any PR
- *  metadata is fetched — and they are free on a connection already selected. */
+ *  `headRefName`/`mergeCommit` feed range membership, decided before any PR
+ *  metadata fetch, and are free on a connection already selected. */
 const prConnection = (afterArg = '') => `associatedPullRequests(first: 10${afterArg}) { nodes { number baseRefName headRefName state mergeCommit { oid } } pageInfo { hasNextPage endCursor } }`;
 function assertField(value, description) {
     if (value === null || value === undefined)
@@ -1667,12 +1422,8 @@ function readPrPage(commit, sha) {
         pageInfo: assertField(connection.pageInfo, `associatedPullRequests.pageInfo on commit ${sha}`),
     };
 }
-/**
- * GraphQL's `author.login` omits the `[bot]` suffix REST always includes for the
- * same actor (e.g. `monorepo-devops-automation`). Every bot-identity set in this
- * package is keyed on the REST convention, so normalize to it via the
- * `__typename: Bot` discriminator instead of leaving every map unmatched.
- */
+/** GraphQL's `author.login` omits the `[bot]` suffix REST always includes;
+ *  every bot-identity set in this package is keyed on the REST convention. */
 function normalizeAuthorLogin(author) {
     if (!author?.login)
         return undefined;
@@ -1698,23 +1449,15 @@ class GithubGraphqlResolver {
         }
         return results;
     }
-    /**
-     * ponytail: bisect on failure rather than tuning COMMIT_BATCH_SIZE harder.
-     * The 502 this guards against is GitHub timing out on query cost, which
-     * retrying an identical request can never clear — the request has to get
-     * smaller. The constant is calibrated against today's repository; history
-     * grows, and one commit tied to many pull requests costs more than its
-     * neighbours, so treat the constant as the fast path and this as the ceiling.
-     * Floors at a single commit, where a failure is real and must surface.
-     */
+    /** ponytail: bisect on failure rather than tuning COMMIT_BATCH_SIZE harder
+     *  — COMMIT_BATCH_SIZE is the fast path, this is the ceiling. Floors at one
+     *  commit, where a failure is real. */
     async mapCommitBatchBisecting(shas) {
         try {
             return await this.mapCommitBatch(shas);
         }
         catch (error) {
-            // Only a retry-exhausted failure can plausibly be fixed by asking for
-            // less. A malformed response fails the same at every size, so bisecting
-            // it would replace one clear error with a storm of requests.
+            // Only retry-exhausted can plausibly be fixed by asking for less.
             if (!(error instanceof RetriesExhaustedError) || shas.length <= 1)
                 throw error;
             const half = Math.ceil(shas.length / 2);
@@ -1724,17 +1467,10 @@ class GithubGraphqlResolver {
             ];
         }
     }
-    /**
-     * Classifies same-repo reference numbers in bulk. The REST classifier this
-     * replaces costs one round trip per reference — 1738 of them for one minor,
-     * a burst wide enough to trip GitHub's secondary rate limit, which fires on
-     * concurrency rather than volume. `issueOrPullRequest` answers the same
-     * question for 100 numbers in a single request.
-     *
-     * Cross-repo references are deliberately NOT handled here: the REST path
-     * classifies those without an API call at all, so leaving them to it costs
-     * nothing and avoids restating the same-repo rule in a second place.
-     */
+    /** Same-repo numbers in bulk via `issueOrPullRequest` — the REST classifier
+     *  this replaces costs one round trip per reference, enough to trip the
+     *  secondary rate limit on a large minor. Cross-repo refs stay with REST,
+     *  which classifies those without an API call at all. */
     async classifyRefs(numbers) {
         const out = new Map();
         for (let i = 0; i < numbers.length; i += PR_METADATA_BATCH_SIZE) {
@@ -1751,9 +1487,7 @@ class GithubGraphqlResolver {
             const repository = await this.requestRepository(query, variables, true);
             batch.forEach((number, j) => {
                 const node = repository[`r${j}`];
-                // A number that resolves to neither is missing — deleted, transferred,
-                // or never existed — exactly what a REST 404 means for the same number.
-                if (!node) {
+                if (!node) { // missing: deleted, transferred, or never existed — a REST 404 for the same number
                     out.set(number, { target: 'missing', title: null });
                     return;
                 }
@@ -1765,17 +1499,9 @@ class GithubGraphqlResolver {
         }
         return out;
     }
-    /**
-     * Reads what only the ISSUE knows: its labels, and its own close event —
-     * was it closed, why, and by which pull request's merge. Same batching as `classifyRefs` — a direct node lookup per
-     * alias, 100 to a request — and the same NOT_FOUND tolerance, because the
-     * number set comes from references that may point at something deleted.
-     *
-     * `timelineItems(last: 1)` is the LAST close, which is the one that matters
-     * for a reopened-then-reclosed issue; the timeline is append-only, so an
-     * earlier close never shadows it. A number that resolves to a pull request
-     * rather than an issue answers null and is treated as "nothing closed here".
-     */
+    /** What only the ISSUE knows: labels, and its own close event. Same
+     *  batching/NOT_FOUND tolerance as `classifyRefs`. `timelineItems(last: 1)`
+     *  is the LAST close — the one that matters for reopened-then-reclosed. */
     async fetchIssueFacts(numbers) {
         const out = new Map();
         for (let i = 0; i < numbers.length; i += PR_METADATA_BATCH_SIZE) {
@@ -1783,7 +1509,7 @@ class GithubGraphqlResolver {
             const query = `query($owner: String!, $name: String!, ${batch.map((_, j) => `$n${j}: Int!`).join(', ')}) {
         repository(owner: $owner, name: $name) {
           ${batch
-                .map((_, j) => `i${j}: issue(number: $n${j}) { closed stateReason labels(first: 20) { nodes { name } } timelineItems(last: 1, itemTypes: CLOSED_EVENT) { nodes { ... on ClosedEvent { closer { __typename ... on PullRequest { number repository { nameWithOwner } } } } } } }`)
+                .map((_, j) => `i${j}: issue(number: $n${j}) { closed stateReason labels(first: 20) { nodes { name } pageInfo { hasNextPage } } timelineItems(last: 1, itemTypes: CLOSED_EVENT) { nodes { ... on ClosedEvent { closer { __typename ... on PullRequest { number repository { nameWithOwner } } } } } } }`)
                 .join('\n')}
         }
       }`;
@@ -1795,17 +1521,15 @@ class GithubGraphqlResolver {
                 if (!node)
                     return;
                 const closer = node.timelineItems?.nodes?.[0]?.closer;
-                // A pull request in ANOTHER repository can close an issue here, and
-                // camunda/camunda-docs#4852 really does close camunda/camunda#26937.
-                // Its number means nothing in this repository's numbering, so reading
-                // it as one would credit whichever unrelated pull request happens to
-                // share the number.
+                // A PR in another repo can close an issue here (camunda/camunda-docs#4852
+                // closes camunda/camunda#26937) — its number means nothing in our numbering.
                 const sameRepo = closer?.repository?.nameWithOwner === `${this.owner}/${this.repo}`;
                 out.set(number, {
                     closed: node.closed ?? false,
                     stateReason: node.stateReason ?? null,
                     closerPrNumber: closer?.__typename === 'PullRequest' && sameRepo ? (closer.number ?? null) : null,
                     labels: (node.labels?.nodes ?? []).map((label) => label.name),
+                    labelsTruncated: node.labels?.pageInfo?.hasNextPage ?? false,
                 });
             });
         }
@@ -1834,15 +1558,10 @@ class GithubGraphqlResolver {
         }
         return mappings;
     }
-    /**
-     * Follows `pageInfo.hasNextPage` so a commit tied to many PRs is never
-     * silently truncated at the first page.
-     *
-     * Filters to MERGED: the field has no `states` argument and returns every PR
-     * whose branch history contains the commit — for a commit already on the base
-     * branch that is every PR opened against it afterward, which makes nearly
-     * every commit look ambiguous to the range resolver.
-     */
+    /** Follows `pageInfo.hasNextPage` so a many-PR commit is never truncated.
+     *  Filters to MERGED: the field has no `states` arg and otherwise returns
+     *  every PR whose branch history contains the commit — every PR opened
+     *  against the base branch afterward, for a commit already on it. */
     async drainAssociatedPrs(sha, firstPage) {
         let page = readPrPage(firstPage, sha);
         const all = [...page.nodes];
@@ -1866,15 +1585,10 @@ class GithubGraphqlResolver {
             mergeCommitOid: node.mergeCommit?.oid ?? null,
         }));
     }
-    /**
-     * `speculative` decides what an alias that resolves to nothing means. A
-     * number scraped out of a merge subject is a guess: `fix: thing (#1234)` can
-     * cite an issue, or a number typed by hand, and `pullRequest(number:)`
-     * answers NOT_FOUND for it. Strictly, one such commit aborts the whole
-     * release before the documented `associatedPullRequests` fallback ever runs.
-     * Absent here means "not confirmed", which is exactly what sends the commit
-     * down that fallback.
-     */
+    /** `speculative`: a number scraped from a merge subject is only a guess,
+     *  and `pullRequest(number:)` NOT_FOUNDs for it — absent here (rather than
+     *  a thrown error) is what sends the commit to the `associatedPullRequests`
+     *  fallback instead of aborting the release. */
     async fetchMetadataBatch(numbers, speculative = false) {
         const query = `query($owner: String!, $name: String!, ${numbers.map((_, i) => `$n${i}: Int!`).join(', ')}) {
       repository(owner: $owner, name: $name) {
@@ -1919,11 +1633,8 @@ class GithubGraphqlResolver {
      *  backoff. Never logs the token, headers, or the raw response. */
     async request(query, variables, tolerateNotFound = false) {
         for (let attempt = 0;; attempt++) {
-            // `fetch` rejects outright on a socket-level failure instead of
-            // returning a Response, so every status check below is bypassed. Treated
-            // as retry-exhausted rather than a plain Error so a batch that keeps
-            // failing can still be bisected — an oversized query is one of the ways
-            // a connection gets dropped.
+            // fetch rejects on a socket-level failure instead of returning a
+            // Response — routed through waitForRetry so it stays bisectable.
             let res;
             try {
                 res = await this.fetchImpl(GRAPHQL_URL, {
@@ -1943,11 +1654,8 @@ class GithubGraphqlResolver {
                 await this.waitForRetry(res, attempt, `HTTP ${res.status}`);
                 continue;
             }
-            // An overloaded GraphQL endpoint answers 200 with an empty or truncated
-            // body as readily as it answers 502. That arrives here as a SyntaxError
-            // from JSON.parse, which is exactly as transient as the status codes
-            // above — and, left unguarded, escaped the retry loop and killed a run
-            // three minutes in.
+            // A 200 with an empty/truncated body throws SyntaxError from JSON.parse
+            // — as transient as the status codes above, so retried the same way.
             let payload;
             try {
                 payload = (await res.json());
@@ -1960,12 +1668,9 @@ class GithubGraphqlResolver {
                 await this.waitForRetry(null, attempt, 'secondary rate limit');
                 continue;
             }
-            // A batch asking about many numbers will contain some that no longer
-            // exist, and GitHub answers that with a NOT_FOUND error per alias while
-            // still returning every alias that did resolve. Failing the whole batch
-            // on one dead reference would make a single deleted issue fatal to the
-            // release — 8.9.0's range carries 136 of them. Only the caller that
-            // expects absences opts in; a missing commit SHA stays fatal.
+            // A batch containing deleted numbers gets a NOT_FOUND per alias plus every
+            // alias that DID resolve — only the caller expecting absences opts in;
+            // a missing commit SHA stays fatal.
             const fatal = tolerateNotFound
                 ? (payload.errors ?? []).filter((error) => error.type !== NOT_FOUND_ERROR_TYPE)
                 : (payload.errors ?? []);
@@ -1996,33 +1701,19 @@ exports.GithubGraphqlResolver = GithubGraphqlResolver;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.buildPipelineResolver = buildPipelineResolver;
 const resolver_1 = __nccwpck_require__(306);
-/**
- * The per-pull-request phase's view of the API, served from classifications
- * learned in bulk beforehand so the phase itself makes almost no requests.
- * Anything not pre-warmed — a cross-repo ref, or one the bulk pass missed —
- * falls through to the REST resolver unchanged.
- */
 function buildPipelineResolver(rest, warmRefs) {
-    /** Only same-repo refs are pre-warmed: the REST path classifies a cross-repo
-     *  one without an API call, so there is nothing to save and nothing to
-     *  restate about what counts as same-repo. */
+    // Cross-repo refs are never pre-warmed — the REST path classifies those without an API call.
     const sameRepoNumber = (ref) => (ref.repo === null ? ref.number : null);
     return {
         async resolveRefs(refs) {
-            // The SAME cap and priority the REST resolver applies — imported, not
-            // restated, so the two can never disagree about which refs survive.
-            const capped = (0, resolver_1.prioritizeAndCap)(refs);
+            const capped = (0, resolver_1.prioritizeAndCap)(refs); // same cap/priority as the REST resolver — imported, not restated
             const cold = capped.filter((ref) => {
                 const number = sameRepoNumber(ref);
                 return number === null || !warmRefs.has(number);
             });
             const fresh = cold.length > 0 ? await rest.resolve(cold) : [];
-            // Keyed by the ref's own position, not by its number: a body may cite the
-            // same issue twice — #42118 cites #41769 at index 1 and again at 2680 —
-            // and keying by number collapses the two, leaving one occurrence carrying
-            // the other's index. Sorting by index then silently reorders the refs,
-            // which changes which issue is "first" and so which issue the entry is
-            // grouped and titled by.
+            // Keyed by position, not number: a body can cite the same issue twice,
+            // and keying by number would collapse the two occurrences into one.
             const freshByPosition = new Map(fresh.map((ref) => [ref.index, ref]));
             return capped
                 .map((ref) => {
@@ -2030,20 +1721,12 @@ function buildPipelineResolver(rest, warmRefs) {
                 const warm = number === null ? undefined : warmRefs.get(number);
                 if (warm)
                     return { ...ref, target: warm.target, crossRepo: false };
-                // Never invent an answer: anything not pre-warmed came back from the
-                // REST path above, and if even that has no verdict the ref is left to
-                // the same 'missing' the resolver itself would report.
                 return freshByPosition.get(ref.index) ?? { ...ref, target: 'missing', crossRepo: ref.repo !== null };
             })
                 .sort((first, second) => first.index - second.index);
         },
         fetchOriginalPull: (number, repo) => rest.fetchOriginalPull(number, repo),
-        fetchIssueTitle: async (number) => {
-            const warm = warmRefs.get(number);
-            // A pre-warmed classification already carries the title, so the separate
-            // per-issue fetch this phase used to make is redundant for those.
-            return warm ? warm.title : rest.fetchIssueTitle(number);
-        },
+        fetchIssueTitle: async (number) => warmRefs.get(number)?.title ?? rest.fetchIssueTitle(number),
     };
 }
 
@@ -2058,13 +1741,10 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.GithubResolver = void 0;
 exports.prioritizeAndCap = prioritizeAndCap;
 const github_1 = __nccwpck_require__(631);
-/** A PR body can carry at most this many refs to the API. A legitimate PR never
- *  needs more than a handful — this bounds the worst case (a body stuffed with
- *  hundreds of `#N` shorthands on `pull_request_target`) to a fixed cost. */
+/** Bounds the worst case — a body stuffed with hundreds of `#N` shorthands
+ *  on `pull_request_target` — to a fixed cost. */
 const MAX_REFS = 20;
-/** How many classify calls run concurrently. Caps the fan-out against GitHub's
- *  API even after dedup + the cap above, so a burst of distinct numbers cannot
- *  open dozens of sockets at once. */
+/** Caps fan-out even after dedup + the cap above. */
 const CONCURRENCY = 5;
 /** Lower sorts first. Closing/backport refs decide the gate's verdict, so they
  *  must survive the MAX_REFS cap ahead of merely-informational refs. */
@@ -2076,32 +1756,24 @@ function priorityOf(ref) {
     return 2;
 }
 /**
- * GitHub-API resolver: the only part of the pipeline that touches the network.
- * Classifies each ref as issue vs PR vs missing and flags cross-repo refs.
- *
- * GitHub's issues API returns PRs too (a PR is an issue with a `pull_request`
- * field), so one lookup per number classifies both. Cross-repo refs are not
- * queried — they never satisfy the gate, so their target stays "missing".
- *
- * ponytail: plain fetch (Node 24 global) over octokit — we hit exactly one
- * endpoint; octokit would inline the whole REST client into the bundle.
- * Throttled/transient responses are retried via fetchWithRetry (../github) —
- * the generator processes PRs serially, so one un-retried 5xx or secondary
- * rate limit anywhere in that chain would otherwise abort the whole job.
- */
-/**
- * The refs a caller will actually classify: closing/backport refs sorted ahead
- * of merely-informational ones so that when the cap has to drop something, it
- * drops the least consequential first.
- *
- * Exported so a caller that pre-resolves in bulk applies the SAME policy. A
- * copied `MAX_REFS` would let the gate cap at one number and the generator at
- * another the moment either changed — the gate/generator divergence C4 exists
- * to prevent. One function, two callers, no constant to copy.
+ * The refs a caller will actually classify, capped and priority-sorted so a
+ * dropped ref is always the least consequential one. Exported so the gate
+ * and the generator apply the SAME cap — a copied `MAX_REFS` would let them
+ * drift apart the moment either changed.
  */
 function prioritizeAndCap(refs) {
     return [...refs].sort((first, second) => priorityOf(first) - priorityOf(second)).slice(0, MAX_REFS);
 }
+/**
+ * GitHub-API resolver: the only part of the pipeline that touches the network.
+ * Classifies each ref as issue vs PR vs missing and flags cross-repo refs —
+ * GitHub's issues API returns PRs too (a PR is an issue with a `pull_request`
+ * field), so one lookup per number classifies both.
+ *
+ * ponytail: plain fetch (Node 24 global) over octokit for this one endpoint.
+ * Transient responses retry via `fetchWithRetry` (../github) since PRs are
+ * processed serially — one un-retried 5xx would abort the whole job.
+ */
 class GithubResolver {
     token;
     owner;
@@ -2109,10 +1781,8 @@ class GithubResolver {
     sleepImpl;
     repoUrl;
     headers;
-    /** Titles seen while classifying refs, keyed by same-repo number (issues and
-     *  PRs alike — `/issues/N` serves both). `classify` and `fetchIssueTitle` hit
-     *  that same endpoint, and the generator asks for the title of a ref it has
-     *  just classified, so the second call is served from here. */
+    /** `classify` and `fetchIssueTitle` hit the same `/issues/N` endpoint, so a
+     *  title seen while classifying serves the later fetchIssueTitle call. */
     titlesByNumber = new Map();
     constructor(token, owner, repo, sleepImpl = (ms) => new Promise((resolve) => setTimeout(resolve, ms))) {
         this.token = token;
@@ -2122,18 +1792,10 @@ class GithubResolver {
         this.repoUrl = (0, github_1.repoApiUrl)(owner, repo);
         this.headers = (0, github_1.githubHeaders)(token);
     }
-    /**
-     * Resolve every ref, deduped (repeats of the same "#N" cost one API call),
-     * capped at MAX_REFS (a legitimate PR never needs more), and bounded to
-     * CONCURRENCY in flight — defense against a body engineered to fan out
-     * unbounded concurrent requests through the gate's token.
-     */
+    /** Resolve every ref: deduped, capped at MAX_REFS, bounded to CONCURRENCY
+     *  in flight — defense against a body engineered to fan out unbounded
+     *  concurrent requests through the gate's token. */
     async resolve(refs) {
-        // Closing/backport refs decide the gate's verdict; bare/"relates to" refs
-        // are informational. A stable sort keeps refs of equal priority in their
-        // original order, so when the cap below has to drop something, it drops
-        // the least consequential refs first instead of whichever came last in
-        // the body.
         const capped = prioritizeAndCap(refs);
         const cache = new Map();
         const classifyCached = (ref) => {
@@ -2154,46 +1816,28 @@ class GithubResolver {
                 results.push({ ...ref, target, crossRepo });
             });
         }
-        // Restore body order for the policy's messages — the priority sort above
-        // only controls what survives the cap, not how resolved refs get reported.
-        return results.sort((first, second) => first.index - second.index);
+        return results.sort((first, second) => first.index - second.index); // body order for messages — priority sort only controlled the cap
     }
-    /**
-     * Fetch a same-repo pull request's body for backport-hop validation, or null
-     * if it does not exist. Used to follow `Backport of #N` to the original PR and
-     * validate that PR's attribution (the backport inherits it — C7).
-     *
-     * A cross-repo marker (`Backport of owner/other#N`) resolves to null: this
-     * resolver is hardcoded to its own owner/repo, so #N there would name an
-     * unrelated PR in THIS repo. We only inherit attribution from our own repo.
-     */
+    /** A same-repo pull request's body, for backport-hop validation, or null if
+     *  it doesn't exist. Cross-repo (`Backport of owner/other#N`) resolves to
+     *  null: #N there would name an unrelated PR in THIS repo. */
     async fetchPullBody(number, repo) {
         if (this.isCrossRepo(repo))
             return null;
         const pull = await this.fetchPull(number);
         return pull?.body ?? null;
     }
-    /**
-     * Fetch a same-repo pull request's full fields for the generator's backport
-     * hop (attribution + inherit-original title/mergedAt), or null if it does
-     * not exist. A cross-repo marker (`Backport of owner/other#N`) resolves to
-     * null for the same reason as {@link fetchPullBody}: #N there would name an
-     * unrelated PR in THIS repo.
-     */
+    /** Same as {@link fetchPullBody} but the full fields, for the generator's
+     *  backport hop (attribution + inherit-original title/mergedAt). */
     async fetchOriginalPull(number, repo) {
         if (this.isCrossRepo(repo))
             return null;
         return this.fetchPull(number);
     }
-    /**
-     * Fetch the fields the gate evaluates for one same-repo pull request, or null
-     * if it does not exist.
-     *
-     * This is how the entrypoint obtains the PR under `workflow_run`, where the
-     * event payload carries no `pull_request` object at all. Fetching also means
-     * the body is read at evaluation time, so a stale or superseded trigger run
-     * can never evaluate an out-of-date body.
-     */
+    /** The fields the gate evaluates for one same-repo pull request, or null if
+     *  it doesn't exist. Fetched fresh rather than trusted from the webhook
+     *  payload, since `workflow_run` carries no `pull_request` object at all
+     *  and a stale trigger run must not evaluate an out-of-date body. */
     async fetchPull(number) {
         const res = await (0, github_1.fetchJsonWithRetry)(`${this.repoUrl}/pulls/${number}`, { headers: this.headers }, this.sleepImpl);
         if (res.status === 404)
@@ -2208,11 +1852,8 @@ class GithubResolver {
             mergedAt: data.merged_at ?? undefined,
         };
     }
-    /**
-     * The live title of a same-repo issue, or null if it doesn't exist. Used by
-     * the generator (#57713) to show the issue's own customer-facing wording
-     * in release notes rather than the delivering PR's dev-facing title.
-     */
+    /** The live title of a same-repo issue, or null if it doesn't exist — the
+     *  generator shows this customer-facing wording, not the PR's dev title. */
     async fetchIssueTitle(number) {
         const cached = this.titlesByNumber.get(number);
         if (cached !== undefined)
@@ -2263,18 +1904,10 @@ exports.lintTitle = lintTitle;
 exports.isTitleExemptAuthor = isTitleExemptAuthor;
 exports.isLinkExemptAuthor = isLinkExemptAuthor;
 /**
- * PR-title lint — the active rules of `commitlint.config.cjs`, reimplemented as
- * a pure check so the action keeps zero runtime deps (pulling @commitlint +
- * config-conventional would vendor hundreds of kB into the committed bundle for
- * a handful of trivial rules). The config's other rules are disabled ([0,...]).
- *
- * DRIFT GUARD: TITLE_TYPES and HEADER_MAX are the single source of truth here,
- * and the action CI greps commitlint.config.cjs to assert they still match —
- * so a change to the repo's commit rules fails CI until this is updated.
- *
- * Active rules mirrored (see commitlint.config.cjs):
- *   type-empty:never · type-case:lower-case · type-enum · scope-empty:always ·
- *   header-max-length:120. Subject/body/footer rules are disabled there.
+ * PR-title lint — `commitlint.config.cjs`'s active rules (type-empty,
+ * type-case, type-enum, scope-empty, header-max-length), reimplemented pure
+ * to keep the action's runtime deps at zero. CI greps that config to assert
+ * TITLE_TYPES/HEADER_MAX still match, so drift fails CI, not a release.
  */
 /** commitlint.config.cjs `type-enum`. Keep in sync — CI enforces it. */
 exports.TITLE_TYPES = [
@@ -2296,13 +1929,8 @@ exports.HEADER_MAX = 120;
 // `type` + optional `(scope)` + optional `!` + `: ` + subject. Mirrors the
 // conventional-commit header shape config-conventional parses.
 const HEADER = /^(?<type>[^\s():!]+)(?<scope>\([^)]*\))?!?:[ ](?<subject>.+)$/;
-/**
- * Wrap user-controlled title fragments before interpolating them into the
- * sticky comment / job summary. The gate posts the comment with a write token,
- * so a raw `@mention` in a malicious title would notify (spam) via the bot.
- * Inline code neutralises mentions; stripping backticks stops the value
- * breaking out of the span.
- */
+/** Wraps a title fragment before it goes into the sticky comment — the gate
+ *  posts with a write token, so a raw `@mention` would notify via the bot. */
 function code(value) {
     return `\`${(value ?? '').replace(/`/g, '')}\``;
 }
@@ -2347,8 +1975,8 @@ function lintTitle(title) {
     return { outcome: 'pass', code: 'title-ok', reasons: [`Title type "${type}" is valid.`] };
 }
 /**
- * Bot authors whose titles are machine-generated and exempt from title lint
- * (D16). Their PR-issue link / backport marker is still validated — only the
+ * Bot authors whose titles are machine-generated and exempt from title lint.
+ * Their PR-issue link / backport marker is still validated — only the
  * title check is skipped.
  */
 exports.BOT_TITLE_EXEMPT = new Set([
@@ -2361,16 +1989,12 @@ function isTitleExemptAuthor(login) {
     return login !== undefined && exports.BOT_TITLE_EXEMPT.has(login);
 }
 /**
- * Bot authors exempt from the PR-issue-LINK check, because they open PRs from
- * their own template and will never tick the opt-out checkbox. Dependency bumps
- * are not release-notes material, so an exemption is the agreed answer rather
- * than teaching each bot to write the section.
+ * Bot authors exempt from the PR-issue-LINK check — they open PRs from their
+ * own template and never tick the opt-out box.
  *
- * DELIBERATELY SEPARATE from BOT_TITLE_EXEMPT, which must never be reused here:
- * that set contains `monorepo-devops-automation[bot]`, the author of every
- * backport PR. Exempting it from the link check would skip the backport hop, so
- * backports would stop inheriting the original PR's issue — silently dropping
- * them from the release notes, which is the failure this gate exists to prevent.
+ * MUST STAY SEPARATE from BOT_TITLE_EXEMPT: that set includes
+ * `monorepo-devops-automation[bot]`, the backport-PR author. Exempting it
+ * here would skip the backport hop, silently dropping backports from notes.
  */
 exports.BOT_LINK_EXEMPT = new Set(['renovate[bot]']);
 function isLinkExemptAuthor(login) {
@@ -2384,6 +2008,13 @@ function isLinkExemptAuthor(login) {
 /***/ ((module) => {
 
 module.exports = require("node:child_process");
+
+/***/ }),
+
+/***/ 598:
+/***/ ((module) => {
+
+module.exports = require("node:crypto");
 
 /***/ }),
 
