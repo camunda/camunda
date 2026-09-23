@@ -40,6 +40,7 @@ import {OperateOperationsDetailsPage} from '@pages/OperateOperationsDetailsPage'
 import {OperateOperationsLogPage} from '@pages/OperateOperationsLogPage';
 import {SwaggerPage} from '@pages/SwaggerPage';
 import {OperateBatchOperationsPage} from '@pages/OperateBatchOperationsPage';
+import {logInViaApi} from 'utils/logInViaApi';
 
 type PlaywrightFixtures = {
   makeAxeBuilder: () => AxeBuilder;
@@ -237,11 +238,9 @@ const test = publicTest.extend<NonNullable<unknown>, AuthWorkerFixtures>({
       // the login until the session cookie is actually established, and fail
       // loudly if it never is, instead of proceeding unauthenticated.
       await expect(async () => {
-        const response = await context.request.post(`${baseURL}/login`, {
-          form: loginUser,
-        });
-        expect(response.status()).toBe(204);
-        csrfToken = response.headers()['x-csrf-token'] ?? '';
+        const login = await logInViaApi(context.request, baseURL, loginUser);
+        expect(login.response.status()).toBe(204);
+        csrfToken = login.csrfToken;
         cookies = await context.cookies();
         expect(
           cookies.some((cookie) => cookie.name === 'camunda-session'),
