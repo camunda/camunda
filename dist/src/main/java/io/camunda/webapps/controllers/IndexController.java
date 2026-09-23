@@ -52,6 +52,11 @@ public class IndexController {
    * only one that hands a token to a caller that has no session yet. A redirect would hide the
    * token from those callers: a browser follows it transparently and exposes only the headers of
    * the final response, which no longer carries the token.
+   *
+   * <p>Telling the two apart needs the Fetch Metadata request headers, so a caller that sends none
+   * of them is served as the token request. A browser too old to send them (or one behind a proxy
+   * that strips them) therefore gets an empty response on an old bookmark instead of the login
+   * screen, which stays reachable at the login route of the app itself.
    */
   @GetMapping("/login")
   public ResponseEntity<Void> login(final HttpServletRequest request) {
