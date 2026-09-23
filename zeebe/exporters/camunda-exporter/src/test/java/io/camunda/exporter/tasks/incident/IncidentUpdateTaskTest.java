@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -30,6 +31,7 @@ import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocum
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.NonIncidentBulkUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.PendingIncidentUpdateBatch;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ProcessInstanceDocument;
+import io.camunda.exporter.tasks.util.BulkRequestTooLargeException;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
@@ -927,6 +929,179 @@ final class IncidentUpdateTaskTest {
       verify(incidentNotifier, times(0)).notifyAsync(any());
       verify(metrics).recordIncidentUpdatesProcessed(1);
       verify(metrics).recordIncidentUpdatesDocumentsUpdated(0);
+    }
+  }
+
+  @Nested
+  final class BatchSizeReductionTest {
+    private static final int CONFIGURED_BATCH_SIZE = 100;
+    private final IncidentEntity incidentEntity =
+        new IncidentEntity()
+            .setKey(5L)
+            .setId("5")
+            .setState(IncidentState.PENDING)
+            .setProcessInstanceKey(1L)
+            .setFlowNodeInstanceKey(2L)
+            .setTreePath(new TreePath().startTreePath(1).appendFlowNodeInstance(2).toString());
+    private final IncidentDocument incident =
+        new IncidentDocument("5", "incidents", incidentEntity);
+
+    @BeforeEach
+    void beforeEach() {
+      when(repository.getPendingIncidentsBatch(anyLong(), anyInt()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  new PendingIncidentUpdateBatch(
+                      10, Map.of(incident.incident().getKey(), IncidentState.ACTIVE))));
+      when(repository.getIncidentDocuments(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of(incident)));
+      when(repository.getProcessInstances(any()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  List.of(
+                      new ProcessInstanceDocument(
+                          "1", "list-view", 1, new TreePath().startTreePath(1).toString()))));
+      when(repository.deletedProcessInstances(any()))
+          .thenReturn(CompletableFuture.completedFuture(Set.of()));
+      when(repository.getFlowNodesInListView(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of(new Document("2", "list-view"))));
+      when(repository.getFlowNodeInstances(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of(new Document("2", "flow-nodes"))));
+      when(repository.analyzeTreePath(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of()));
+      when(repository.getActiveIncidentsByTreePaths(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of()));
+      when(repository.bulkUpdate(any(NonIncidentBulkUpdate.class)))
+          .thenReturn(CompletableFuture.completedFuture(List.of()));
+      when(repository.bulkUpdate(any(IncidentBulkUpdate.class)))
+          .thenReturn(CompletableFuture.completedFuture(List.of("5")));
+    }
+
+    @Test
+    void shouldHalveTheReadWhenTheStoreRefusesTheWriteAsTooLarge() {
+      // given - the write is refused for its size
+      final var task = createTask(CONFIGURED_BATCH_SIZE);
+      refuseNonIncidentWriteAsTooLarge();
+
+      // when
+      failCycle(task);
+      succeedNonIncidentWrite();
+      task.execute().toCompletableFuture().join();
+
+      // then
+      assertThat(readSizes()).containsExactly(CONFIGURED_BATCH_SIZE, CONFIGURED_BATCH_SIZE / 2);
+    }
+
+    @Test
+    void shouldNotRestoreTheReadWhenABatchIsSkippedForMissingData() {
+      // given - one refused cycle, so the read is reduced
+      final var task = createTask(CONFIGURED_BATCH_SIZE);
+      refuseNonIncidentWriteAsTooLarge();
+      failCycle(task);
+
+      // when - the next cycle finds data missing, so it skips the batch without writing or
+      // advancing the position
+      succeedNonIncidentWrite();
+      when(repository.getProcessInstances(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of()));
+      task.execute().toCompletableFuture().join();
+      task.execute().toCompletableFuture().join();
+
+      // then - the read stays reduced: restoring it here would rebuild the same oversized write
+      // against the same unadvanced position
+      assertThat(readSizes()).containsExactly(100, 50, 50);
+    }
+
+    @Test
+    void shouldResetTheReadAfterACycleGetsThrough() {
+      // given - one refused cycle, so the read is reduced
+      final var task = createTask(CONFIGURED_BATCH_SIZE);
+      refuseNonIncidentWriteAsTooLarge();
+      failCycle(task);
+
+      // when - the smaller cycle succeeds
+      succeedNonIncidentWrite();
+      task.execute().toCompletableFuture().join();
+      task.execute().toCompletableFuture().join();
+
+      // then - not sticky, since the fan-out depends on which incidents the batch holds
+      assertThat(readSizes()).containsExactly(100, 50, 100);
+    }
+
+    @Test
+    void shouldAlsoHalveWhenTheIncidentWriteIsTheOneRefused() {
+      // given - the second of the two flushes is the one refused
+      final var task = createTask(CONFIGURED_BATCH_SIZE);
+      when(repository.bulkUpdate(any(IncidentBulkUpdate.class)))
+          .thenReturn(
+              CompletableFuture.failedFuture(
+                  new BulkRequestTooLargeException("circuit_breaking_exception")));
+
+      // when
+      failCycle(task);
+      failCycle(task);
+
+      // then
+      assertThat(readSizes()).containsExactly(100, 50);
+    }
+
+    @Test
+    void shouldNotChangeTheReadOnAnUnrelatedFailure() {
+      // given - a failure that writing less would not help with
+      final var task = createTask(CONFIGURED_BATCH_SIZE);
+      when(repository.bulkUpdate(any(NonIncidentBulkUpdate.class)))
+          .thenReturn(CompletableFuture.failedFuture(new ExporterException("version conflict")));
+
+      // when
+      failCycle(task);
+      failCycle(task);
+
+      // then
+      assertThat(readSizes()).containsExactly(100, 100);
+    }
+
+    @Test
+    void shouldNotCommitThePositionWhenTheWriteIsRefused() {
+      // given
+      final var task = createTask(CONFIGURED_BATCH_SIZE);
+      refuseNonIncidentWriteAsTooLarge();
+
+      // when
+      final var result = task.execute();
+
+      // then - the same pending updates are read again on the next cycle, now in smaller pieces
+      assertThat(result)
+          .failsWithin(TIMEOUT)
+          .withThrowableThat()
+          .withRootCauseInstanceOf(BulkRequestTooLargeException.class);
+      assertThat(metadata.getLastIncidentUpdatePosition()).isEqualTo(-1);
+    }
+
+    private IncidentUpdateTask createTask(final int batchSize) {
+      return new IncidentUpdateTask(
+          metadata, repository, false, batchSize, EXECUTOR, incidentNotifier, metrics, LOGGER);
+    }
+
+    private void refuseNonIncidentWriteAsTooLarge() {
+      when(repository.bulkUpdate(any(NonIncidentBulkUpdate.class)))
+          .thenReturn(
+              CompletableFuture.failedFuture(
+                  new BulkRequestTooLargeException("circuit_breaking_exception")));
+    }
+
+    private void succeedNonIncidentWrite() {
+      when(repository.bulkUpdate(any(NonIncidentBulkUpdate.class)))
+          .thenReturn(CompletableFuture.completedFuture(List.of()));
+    }
+
+    private void failCycle(final IncidentUpdateTask task) {
+      assertThat(task.execute()).failsWithin(TIMEOUT);
+    }
+
+    private List<Integer> readSizes() {
+      final var sizes = ArgumentCaptor.forClass(Integer.class);
+      verify(repository, atLeastOnce()).getPendingIncidentsBatch(anyLong(), sizes.capture());
+      return sizes.getAllValues();
     }
   }
 }
