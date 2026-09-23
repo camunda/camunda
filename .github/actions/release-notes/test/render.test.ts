@@ -14,6 +14,7 @@ function pr(overrides: Partial<RenderPrInput> = {}): RenderPrInput {
     issueNumbers: [100],
     closesIssueNumbers: [],
     attributionSource: 'section',
+    deliveryPath: 'direct',
     ...overrides,
   };
 }
@@ -122,6 +123,22 @@ test('all four JSON outputs carry the literal schemaVersion', () => {
   for (const doc of [result.changelogJson, result.labelsJson, result.auditJson, result.commentsJson]) {
     assert.equal((doc as { schemaVersion: string }).schemaVersion, SCHEMA_VERSION);
   }
+});
+
+test('changelog.json records deliveryPath alongside attributionSource for every PR', () => {
+  // given — a downstream consumer must be able to tell a backport hop from
+  // direct delivery without re-deriving it from the PR body
+  const result = render([pr({ number: 1, deliveryPath: 'backportHop' }), pr({ number: 2, deliveryPath: 'direct' })], [], {
+    version: '8.8.30',
+    allowUnattributed: false,
+  });
+
+  // when
+  const prs = (result.changelogJson as { prs: { number: number; deliveryPath: string }[] }).prs;
+
+  // then
+  assert.equal(prs.find((p) => p.number === 1)?.deliveryPath, 'backportHop');
+  assert.equal(prs.find((p) => p.number === 2)?.deliveryPath, 'direct');
 });
 
 test('an issue this PR actually closes gets a "Released" comment', () => {
@@ -408,6 +425,20 @@ test('one pull request bumping several packages produces one line each', () => {
   // then — a reader scanning for one package finds it on its own line
   assert.match(result.customerBody, /- left: 1\.0 → 1\.1 \(#900\)$/m);
   assert.match(result.customerBody, /- right: 2\.0 → 2\.1 \(#900\)$/m);
+});
+
+test('a dependency that is downgraded then bumped back up shows the release\'s actual start and end, not the numeric extremes', () => {
+  // given — walk is newest-first: #2 (newest) moved it 1 → 1.5, #1 (oldest,
+  // chronologically first) moved it 2 → 1. The release actually moved it
+  // 2 → 1.5; numeric min/max across both PRs would wrongly say 1 → 1.5
+  const bump = (number: number, from: string, to: string) =>
+    pr({ number, section: 'Dependency updates', issueNumbers: [], title: 'x', dependencies: [{ name: 'pkg', from, to }] });
+
+  // when
+  const result = render([bump(2, '1', '1.5'), bump(1, '2', '1')], [], { version: '8.9.19', allowUnattributed: false });
+
+  // then
+  assert.match(result.customerBody, /- pkg: 2 → 1\.5 \(#2, #1\)$/m);
 });
 
 test('an unorderable version pair falls back to walk order rather than inventing a range', () => {

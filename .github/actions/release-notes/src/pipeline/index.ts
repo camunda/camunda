@@ -70,7 +70,10 @@ async function attributeDirectly(
   const sectionRefs = section ? await resolver.resolveRefs(parseRefs(section)) : [];
 
   const needsLegacyScan = !optOut && !hasEligibleRefs(sectionRefs) && closingIssuesReferences.length === 0;
-  const legacyRefs = needsLegacyScan ? await resolver.resolveRefs(parseRefs(body)) : [];
+  // Unlike a section ref (deliberately listed there), a bare "#N" anywhere in
+  // the body is as likely an incidental mention ("similar to #100") as a real
+  // attribution — only a ref carrying an explicit keyword counts here.
+  const legacyRefs = needsLegacyScan ? await resolver.resolveRefs(parseRefs(body).filter((ref) => ref.keyword !== null)) : [];
 
   return decideAttribution({ optOut, sectionRefs, closingIssuesReferences, legacyRefs });
 }
@@ -123,23 +126,30 @@ async function attributePr(
 }
 
 /** Category-detection title and display title share one lookup — an
- *  inherit-original bot's own title is garbage for both. */
+ *  inherit-original bot's own title is garbage for both. Its author is too:
+ *  a Dependabot original relies on ITS OWN `deps` override (the automation
+ *  bot that carried it over has no such override), and its dependency table
+ *  lives in the original's body, not the backport's — so `canonicalTitle`/
+ *  `canonicalBody` (the original's, when inherited) are returned alongside
+ *  for every later step that needs the PR's actual content. */
 async function categorizePr(
   resolver: PipelineResolver,
   pr: PipelinePrInput,
   original: () => Promise<OriginalPull | null>,
   override: 'inherit-original' | 'deps' | undefined,
-): Promise<{ displayTitle: string; categorization: CategorizeDecision }> {
-  const inherited = override === 'inherit-original' ? (await original())?.title : undefined;
-  const displayTitle = stripBackportPrefix(inherited ?? pr.title);
+): Promise<{ displayTitle: string; canonicalTitle: string; canonicalBody: string; categorization: CategorizeDecision }> {
+  const inheritedOriginal = override === 'inherit-original' ? await original() : undefined;
+  const canonicalTitle = inheritedOriginal?.title ?? pr.title;
+  const canonicalBody = inheritedOriginal ? inheritedOriginal.body : pr.body;
+  const displayTitle = stripBackportPrefix(canonicalTitle);
   const componentLabels = pr.labels.filter((label) => label.startsWith('component/'));
   const categorization = categorize({
     title: displayTitle,
-    authorLogin: pr.authorLogin,
+    authorLogin: inheritedOriginal?.authorLogin ?? pr.authorLogin,
     componentLabels,
     breakingChangeLabel: pr.labels.includes('BREAKING CHANGE'),
   });
-  return { displayTitle, categorization };
+  return { displayTitle, canonicalTitle, canonicalBody, categorization };
 }
 
 /**
@@ -149,13 +159,13 @@ async function categorizePr(
  */
 async function resolveDisplayTitle(
   resolver: PipelineResolver,
-  pr: PipelinePrInput,
+  canonical: { readonly title: string; readonly body: string },
   categorization: CategorizeDecision,
   attribution: AttributionDecision,
   fallbackTitle: string,
 ): Promise<string> {
   if (categorization.section === 'Dependency updates') {
-    const updates = parseDependencyUpdate({ title: pr.title, body: pr.body });
+    const updates = parseDependencyUpdate(canonical);
     if (updates.length > 0) return formatDependencyUpdates(updates);
   }
 
@@ -180,15 +190,15 @@ export async function processPr(
     (pending ??= backport ? resolver.fetchOriginalPull(backport.number, backport.repo) : Promise.resolve(null));
 
   const { decision: attribution, mergedAt } = await attributePr(resolver, pr, original);
-  const { displayTitle, categorization } = await categorizePr(resolver, pr, original, override);
-  const title = await resolveDisplayTitle(resolver, pr, categorization, attribution, displayTitle);
+  const { displayTitle, canonicalTitle, canonicalBody, categorization } = await categorizePr(resolver, pr, original, override);
+  const canonical = { title: canonicalTitle, body: canonicalBody };
+  const title = await resolveDisplayTitle(resolver, canonical, categorization, attribution, displayTitle);
   const anomaly = evaluatePostGateAnomaly({
     mergedAt,
     gateRequiredAt: options.gateRequiredAt,
     source: attribution.source,
   });
-  const dependencies =
-    categorization.section === 'Dependency updates' ? parseDependencyUpdate({ title: pr.title, body: pr.body }) : [];
+  const dependencies = categorization.section === 'Dependency updates' ? parseDependencyUpdate(canonical) : [];
 
   return { number: pr.number, title, attribution, categorization, anomaly, dependencies };
 }

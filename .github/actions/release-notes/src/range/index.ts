@@ -176,10 +176,13 @@ export function resolveCommitsToPrs(
     });
 
     if (shipped.length === 0) {
-      // Credited only to a merge-back: either the merge-back commit itself, or
-      // a commit pushed straight onto the release branch that one swept in.
-      // Release plumbing either way — nothing delivered, nothing to report.
-      if (mergeBacks.length > 0 && candidates.length === 0) continue;
+      // Skip only the merge-back's OWN commit — release plumbing, nothing
+      // delivered. A direct commit merely swept INTO that merge-back (pushed
+      // straight onto the release branch, so GitHub associates it only with
+      // whatever later merged that branch) is a different fact: a real
+      // PR-less commit that still needs its ruleset-bypass warning below.
+      const isMergeBackCommitItself = mergeBacks.some((pr) => pr.mergeCommitOid === commit.sha);
+      if (isMergeBackCommitItself && candidates.length === 0) continue;
       const list = candidates.map((pr) => `#${pr.number}`).join(', ');
       reasons.push(
         candidates.length === 0

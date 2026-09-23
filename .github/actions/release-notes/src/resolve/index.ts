@@ -368,6 +368,9 @@ export class GithubGraphqlResolver implements GraphqlResolver {
       const node = repository[`pr${i}`] as PrMetadataNode | null | undefined;
       if (speculative && (node === null || node === undefined)) return [];
       const pr = assertField(node, `repository.pr${i} (PR #${number})`);
+      // An OPEN pull request is a non-null node but an unconfirmed guess all
+      // the same — as absent as NOT_FOUND above, not a reason to abort.
+      if (speculative && pr.mergedAt == null) return [];
       const truncatedFields: ('labels' | 'closingIssuesReferences')[] = [];
       if (pr.labels?.pageInfo?.hasNextPage) truncatedFields.push('labels');
       if (pr.closingIssuesReferences?.pageInfo?.hasNextPage) truncatedFields.push('closingIssuesReferences');

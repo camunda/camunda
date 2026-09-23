@@ -1,4 +1,4 @@
-import type { AttributionSource } from '../attribution/types';
+import type { AttributionSource, DeliveryPath } from '../attribution/types';
 import type { DependencyUpdate } from '../categorize';
 
 /**
@@ -34,6 +34,9 @@ export interface RenderPrInput {
   readonly issueNumbers: readonly number[];
   readonly closesIssueNumbers: readonly number[];
   readonly attributionSource: AttributionSource;
+  /** The other provenance dimension changelog.json must record alongside
+   *  `attributionSource` — direct delivery vs. a backport hop. */
+  readonly deliveryPath: DeliveryPath;
   readonly dependencies?: readonly DependencyUpdate[];
   /** Of `issueNumbers`, the ones GitHub still reports OPEN — only these mark
    *  an entry partial. See GENERATOR.md § 6. */
@@ -173,27 +176,45 @@ function isLower(candidate: string, current: string): boolean {
   return false;
 }
 
-/** The release's actual start/end version for one package — numeric compare
- *  where possible, walk-order positional fallback otherwise (a digest/sha,
- *  where walk order IS the chronology). See GENERATOR.md § 6. */
-function versionRange(updates: readonly DependencyUpdate[]): { from: string; to: string } {
-  let from = updates[updates.length - 1]!.from;
+/** One pull request's own rows for a package collapsed to one — numeric
+ *  compare where possible (a body table can list the same package twice),
+ *  positional fallback otherwise. Never used ACROSS pull requests: which of
+ *  two different PRs' versions is "lower" says nothing about which merged
+ *  first. See GENERATOR.md § 6. */
+function reconcileDuplicateRows(updates: readonly DependencyUpdate[]): DependencyUpdate {
+  let from = updates[0]!.from;
   let to = updates[0]!.to;
   for (const update of updates) {
     if (isLower(update.from, from)) from = update.from;
     if (isLower(to, update.to)) to = update.to;
   }
-  return { from, to };
+  return { name: updates[0]!.name, from, to };
+}
+
+/** The release's actual start/end version for one package: the OLDEST pull
+ *  request's `from` and the NEWEST pull request's `to` — positional, not a
+ *  numeric extreme across pull requests, which would invent a range no
+ *  commit in the release actually produced when a dependency is downgraded
+ *  or oscillates. `updates` carries one entry per pull request, walk-order
+ *  (newest first), so this is purely positional. See GENERATOR.md § 6. */
+function versionRange(updates: readonly DependencyUpdate[]): { from: string; to: string } {
+  return { from: updates[updates.length - 1]!.from, to: updates[0]!.to };
 }
 
 function collapseDependencies(prs: readonly RenderPrInput[]): RenderEntry[] {
   const byName = new Map<string, { prNumbers: number[]; updates: DependencyUpdate[]; groupName: string }>();
   for (const pr of prs) {
+    const byNameInThisPr = new Map<string, DependencyUpdate[]>();
     for (const update of pr.dependencies ?? []) {
-      const existing = byName.get(update.name) ?? { prNumbers: [], updates: [], groupName: groupNameFor(pr) };
+      const rows = byNameInThisPr.get(update.name) ?? [];
+      rows.push(update);
+      byNameInThisPr.set(update.name, rows);
+    }
+    for (const [name, rows] of byNameInThisPr) {
+      const existing = byName.get(name) ?? { prNumbers: [], updates: [], groupName: groupNameFor(pr) };
       if (!existing.prNumbers.includes(pr.number)) existing.prNumbers.push(pr.number);
-      existing.updates.push(update);
-      byName.set(update.name, existing);
+      existing.updates.push(reconcileDuplicateRows(rows)); // one entry per PR, walk order preserved
+      byName.set(name, existing);
     }
   }
 

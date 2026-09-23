@@ -187,11 +187,12 @@ test('a PR-less commit NOT on the whitelist raises a loud ruleset-bypass anomaly
 
 test('a release-branch merge-back is excluded — it delivers nothing its own release did not already publish', () => {
   // given the previous release's merge-back, which really is inside this range
+  // — its own merge commit IS 'boundary', so mergeCommitOid must say so too
   const commits = [
     {
       sha: 'boundary',
       message: 'Merge release-8.9.18 back to stable/8.9 (#61513)',
-      associatedPrs: [assoc(61513, 'stable/8.9', { headRefName: 'release-8.9.18' })],
+      associatedPrs: [assoc(61513, 'stable/8.9', { headRefName: 'release-8.9.18', mergeCommitOid: 'boundary' })],
     },
   ];
 
@@ -208,12 +209,32 @@ test("a pre-branch alpha's merge-back into main is excluded too", () => {
     {
       sha: 'boundary',
       message: 'Merge release-8.10.0-alpha5 back to main',
-      associatedPrs: [assoc(70000, 'main', { headRefName: 'release-8.10.0-alpha5' })],
+      associatedPrs: [assoc(70000, 'main', { headRefName: 'release-8.10.0-alpha5', mergeCommitOid: 'boundary' })],
     },
   ];
   const r = resolveCommitsToPrs(commits, 'main', walked('boundary'));
   assert.deepEqual(r.prNumbers, []);
   assert.deepEqual(r.reasons, []);
+});
+
+test('a direct commit merely swept into a later merge-back still raises its ruleset-bypass anomaly', () => {
+  // given — a commit pushed straight onto the release branch, no PR of its
+  // own; GitHub associates it only with the merge-back that later swept the
+  // branch in, so its mergeCommitOid points at THAT commit, not this one
+  const commits = [
+    {
+      sha: 'direct-push',
+      message: 'unrelated direct push, no PR',
+      associatedPrs: [assoc(61513, 'stable/8.9', { headRefName: 'release-8.9.18', mergeCommitOid: 'boundary' })],
+    },
+  ];
+
+  // when
+  const r = resolveCommitsToPrs(commits, 'stable/8.9', walked('direct-push', 'boundary'));
+
+  // then — still a ruleset-bypass anomaly, not silently swallowed
+  assert.deepEqual(r.prNumbers, []);
+  assert.ok(r.reasons.some((line) => line.includes('direct-push') && line.toLowerCase().includes('bypass')));
 });
 
 test('a feature branch merely starting with "release-" is NOT mistaken for a merge-back', () => {

@@ -214,6 +214,30 @@ test('a PR with more than 20 labels or closing refs is flagged truncated, never 
   assert.deepEqual(pr!.truncatedFields, ['labels', 'closingIssuesReferences']);
 });
 
+test('a speculative number that resolves to a still-OPEN pull request is treated as unconfirmed, not thrown', async () => {
+  // given — a merge subject's "(#N)" guessed a real, currently-open PR
+  const fetchImpl = fakeFetch([metadataPage({ pr0: prNode({ mergedAt: null }) })]);
+
+  // when
+  const result = await resolver(fetchImpl).fetchPrMetadata([1], true);
+
+  // then — as absent as a NOT_FOUND, so the caller falls through to the
+  // associatedPullRequests fallback instead of aborting the release
+  assert.deepEqual(result, []);
+});
+
+test('a KNOWN-merged number with no mergedAt still throws — only the speculative path tolerates it', async () => {
+  const fetchImpl = fakeFetch([metadataPage({ pr0: prNode({ mergedAt: null }) })]);
+  await assert.rejects(() => resolver(fetchImpl).fetchPrMetadata([1], false), /mergedAt/);
+});
+
+test('a speculative number that resolves to an already-merged pull request is still returned', async () => {
+  const fetchImpl = fakeFetch([metadataPage({ pr0: prNode() })]);
+  const result = await resolver(fetchImpl).fetchPrMetadata([1], true);
+  assert.equal(result.length, 1);
+  assert.equal(result[0]!.number, 1);
+});
+
 test('a secondary rate limit is retried with backoff and eventually succeeds', async () => {
   const calls: Call[] = [];
   const fetchImpl = fakeFetch(

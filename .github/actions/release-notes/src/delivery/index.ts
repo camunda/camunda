@@ -32,6 +32,12 @@ export function closesIssueNumbers(input: DeliveryInput, closures: ReadonlyMap<n
   return input.issueNumbers.filter((issueNumber) => {
     const closure = closures.get(issueNumber);
     if (abandoned(closure)) return false;
+    // A reopened issue still carries the ClosedEvent from before it reopened
+    // — trusting that closer (or a stale `closes` keyword) would report it
+    // released while it's actually open again. Only reachable when the
+    // closure was actually fetched; an unresolved number still falls through
+    // to declaredCloses below, same as always.
+    if (closure !== undefined && !closure.closed) return false;
     if (input.deliveryPath === 'backportHop') return true;
     if (closure?.closerPrNumber != null) return closure.closerPrNumber === input.prNumber;
     return input.declaredCloses.includes(issueNumber);

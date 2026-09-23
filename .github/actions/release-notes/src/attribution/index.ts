@@ -59,9 +59,20 @@ export function decideAttribution(input: AttributionInput): AttributionDecision 
     };
   }
 
-  const legacyLive = eligible(input.legacyRefs).filter((ref) => ref.target === 'issue');
+  const legacyEligible = eligible(input.legacyRefs);
+  const legacyLive = legacyEligible.filter((ref) => ref.target === 'issue');
   if (legacyLive.length > 0) {
     return { source: 'legacyBodyScan', issueNumbers: uniqueNumbers(legacyLive), deliveryPath: 'direct', reasons: [] };
+  }
+
+  const legacyDead = legacyEligible.filter((ref) => ref.target === 'missing');
+  if (legacyDead.length > 0) {
+    return {
+      source: 'resolutionFailed',
+      issueNumbers: [],
+      deliveryPath: 'direct',
+      reasons: [`These legacy body refs do not resolve to a live issue in this repo: ${uniqueNumbers(legacyDead).map((n) => `#${n}`).join(', ')}.`],
+    };
   }
 
   return { source: 'unattributed', issueNumbers: [], deliveryPath: 'direct', reasons: [] };

@@ -126,6 +126,39 @@ test('each issue of a multi-issue pull request is decided on its own', () => {
   // when
   const closes = closesIssueNumbers(input({ issueNumbers: [500, 501, 502], declaredCloses: [502] }), closure);
 
+  // then — 502 is currently open, so the declared keyword does not deliver it either
+  assert.deepEqual(closes, [500]);
+});
+
+test('a reopened issue is never claimed via its stale closer, even though a ClosedEvent still exists', () => {
+  // given — #101 closed #500, then it got reopened; the ClosedEvent is unchanged
+  const closure = closures({ 500: { closed: false, closerPrNumber: 101 } });
+
+  // when
+  const closes = closesIssueNumbers(input(), closure);
+
   // then
-  assert.deepEqual(closes, [500, 502]);
+  assert.deepEqual(closes, []);
+});
+
+test('a reopened issue is never claimed via the declared closing keyword either', () => {
+  // given — merged into stable/8.9 (no close event), then the issue reopened
+  const closure = closures({ 500: { closed: false, closerPrNumber: null } });
+
+  // when
+  const closes = closesIssueNumbers(input({ declaredCloses: [500] }), closure);
+
+  // then
+  assert.deepEqual(closes, []);
+});
+
+test('a backport hop never claims a reopened issue either', () => {
+  // given — the original PR closed it, but it has since reopened
+  const closure = closures({ 500: { closed: false, closerPrNumber: 900 } });
+
+  // when
+  const closes = closesIssueNumbers(input({ deliveryPath: 'backportHop' }), closure);
+
+  // then
+  assert.deepEqual(closes, []);
 });

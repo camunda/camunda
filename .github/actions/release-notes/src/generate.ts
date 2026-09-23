@@ -188,6 +188,7 @@ async function run(): Promise<void> {
         breaking: output.categorization.breaking,
         issueNumbers: output.attribution.issueNumbers,
         attributionSource: output.attribution.source,
+        deliveryPath: output.attribution.deliveryPath,
         dependencies: output.dependencies,
       },
       delivery: {

@@ -101,6 +101,30 @@ test('an inherit-original bot backport displays the ORIGINAL title, not its own 
   assert.equal(out.title, 'fix: correct retry backoff');
 });
 
+test('a backported Renovate original categorizes as Dependency updates via its OWN author, not the automation bot\'s', async () => {
+  // given — the automation bot has no `deps` override; only renovate does
+  const body = [
+    '| Package | Change |',
+    '|---|---|',
+    '| [org.liquibase:liquibase-core](https://x) | `5.0.3` → `5.0.4` |',
+  ].join('\n');
+  const resolver = fakeResolver({
+    200: { body, title: 'deps: Update dependency org.liquibase:liquibase-core to v5.0.4 (stable/8.9)', authorLogin: 'renovate[bot]' },
+  });
+
+  // when
+  const out = await processPr(
+    resolver,
+    prInput({ number: 300, title: 'chore stuff', body: 'Backport of #200', authorLogin: 'monorepo-devops-automation[bot]' }),
+    { gateRequiredAt: null },
+  );
+
+  // then
+  assert.equal(out.categorization.section, 'Dependency updates');
+  assert.equal(out.title, 'org.liquibase:liquibase-core: 5.0.3 → 5.0.4');
+  assert.deepEqual(out.dependencies, [{ name: 'org.liquibase:liquibase-core', from: '5.0.3', to: '5.0.4' }]);
+});
+
 test('a PR with no linked issue and no backport marker stays unattributed and keeps its own title', async () => {
   const out = await processPr(fakeResolver(), prInput({ body: 'no refs here' }), { gateRequiredAt: null });
   assert.equal(out.attribution.source, 'unattributed');
@@ -326,6 +350,28 @@ test('a PR whose only ref is outside the section still reaches the legacy scan',
     prInput({ body: 'the prose says fixes #100' }),
     { gateRequiredAt: null },
   );
+  assert.equal(out.attribution.source, 'legacyBodyScan');
+  assert.deepEqual(out.attribution.issueNumbers, [100]);
+});
+
+test('a bare mention with no keyword is not attribution, even in the legacy scan', async () => {
+  // given — an incidental "similar to #100", not a real closing/relates link
+  const out = await processPr(fakeResolver(), prInput({ body: 'this looks similar to #100' }), { gateRequiredAt: null });
+
+  // then
+  assert.equal(out.attribution.source, 'unattributed');
+});
+
+test('the legacy scan still finds a keyworded ref alongside a bare mention', async () => {
+  // given
+  const out = await processPr(
+    fakeResolver(),
+    prInput({ body: 'fixes #100, also see #999 for related discussion' }),
+    { gateRequiredAt: null },
+  );
+
+  // then — #999 is a bare mention (filtered before resolving) and would also
+  // resolve to "missing" if it weren't, so this pins both guards at once
   assert.equal(out.attribution.source, 'legacyBodyScan');
   assert.deepEqual(out.attribution.issueNumbers, [100]);
 });
