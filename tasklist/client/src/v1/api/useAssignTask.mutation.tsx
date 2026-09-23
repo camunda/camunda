@@ -8,7 +8,7 @@
 
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {z} from 'zod';
-import {useTranslation} from 'react-i18next';
+import {t} from 'i18next';
 import {request} from 'common/api/request';
 import {notificationsStore} from 'common/notifications/notifications.store';
 import {isTaskTimeoutError} from 'common/utils/taskErrorHandling';
@@ -47,7 +47,6 @@ interface AssignmentError extends Error {
 
 function useAssignTask() {
   const client = useQueryClient();
-  const {t} = useTranslation();
 
   function refetchTask(taskId: string) {
     return client.fetchQuery({
