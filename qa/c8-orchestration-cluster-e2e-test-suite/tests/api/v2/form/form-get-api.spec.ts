@@ -22,7 +22,7 @@ import {
   uniqueResourceName,
 } from '@requestHelpers';
 import {
-  defaultAssertionOptions,
+  extendedAssertionOptions,
   generateUniqueId,
 } from '../../../../utils/constants';
 
@@ -52,7 +52,7 @@ test.describe.parallel('Form Get API', () => {
         tenantId: '<default>',
       });
       expect(JSON.parse(body.schema)).toEqual(JSON.parse(schema));
-    }).toPass(defaultAssertionOptions);
+    }).toPass(extendedAssertionOptions);
   });
 
   test('Get Form - Each Version Returns Its Own Schema', async ({request}) => {
@@ -81,7 +81,7 @@ test.describe.parallel('Form Get API', () => {
       const secondBody = await secondRes.json();
       expect(secondBody.version).toBe(2);
       expect(JSON.parse(secondBody.schema)).toEqual(JSON.parse(secondSchema));
-    }).toPass(defaultAssertionOptions);
+    }).toPass(extendedAssertionOptions);
   });
 
   // eslint-disable-next-line playwright/expect-expect

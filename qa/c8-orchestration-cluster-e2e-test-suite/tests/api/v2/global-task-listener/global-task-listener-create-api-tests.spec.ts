@@ -20,6 +20,7 @@ import {
 import {
   generateUniqueId,
   defaultAssertionOptions,
+  extendedAssertionOptions,
 } from '../../../../utils/constants';
 import {validateResponse} from '../../../../json-body-assertions';
 import {cleanupGlobalTaskListeners} from '../../../../utils/globalTaskListenerCleanup';
@@ -266,6 +267,11 @@ test.describe('Global Task Listener API - Create Permission Tests', () => {
       `${userWithoutPermission.username}:${userWithoutPermission.password}`,
     );
 
+    // A freshly created user can briefly authenticate as 401 (its
+    // credentials have not propagated to the user read model yet) before the
+    // authorization check that yields the expected 403 can run. On a loaded
+    // RDBMS nightly this propagation exceeds the default 30s budget, so poll
+    // on the extended window instead.
     await expect(async () => {
       const res = await request.post(buildUrl('/global-task-listeners'), {
         headers: jsonHeaders(token),
@@ -276,7 +282,7 @@ test.describe('Global Task Listener API - Create Permission Tests', () => {
         res,
         "Command 'CREATE' rejected with code 'FORBIDDEN': Insufficient permissions to perform operation 'CREATE_TASK_LISTENER' on resource 'GLOBAL_LISTENER'",
       );
-    }).toPass(defaultAssertionOptions);
+    }).toPass(extendedAssertionOptions);
   });
 
   test('Create Global Task Listener - 403 Forbidden - user with READ-only GLOBAL_LISTENER permission', async ({
