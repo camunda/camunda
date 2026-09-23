@@ -5,7 +5,7 @@ import type { PipelineResolver } from './pipeline';
 import { resolveBaselineStrategy, resolveCommitsToPrs } from './range';
 import { resolveBaselineRef, walkFirstParent } from './range/walk';
 import type { RenderPrInput } from './render';
-import { render } from './render';
+import { render, emptyCustomerBodyWarning } from './render';
 import { extractSection, parseRefs } from './parser';
 import { hiddenFromCustomerBody } from './categorize';
 import { closesIssueNumbers } from './delivery';
@@ -280,6 +280,11 @@ async function run(): Promise<void> {
     unattributedReason: input.unattributedReason,
     warnings: auditWarnings,
   });
+
+  // Same condition render() already folded into audit.json — surfaced here
+  // too so it isn't only visible to someone who goes looking at that file.
+  const emptyBodyWarning = emptyCustomerBodyWarning(attributed.length > 0, result.customerBody);
+  if (emptyBodyWarning) core.warning(emptyBodyWarning);
 
   mkdirSync(input.outputDir, { recursive: true }); // writeFileSync doesn't create the dir; recursive for a nested output-dir too
 

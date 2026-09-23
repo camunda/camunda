@@ -64,6 +64,17 @@ export interface RenderResult {
   readonly failureReason?: string;
 }
 
+/** An empty body reads as "this release ships nothing customer-facing" — true
+ *  for a maintenance-only patch, but indistinguishable from the outside if
+ *  attribution silently dropped everything into internal/opted-out buckets
+ *  instead. Warns either way rather than shipping an empty description that
+ *  looks identical to a correct one. See GENERATOR.md § 6. */
+export function emptyCustomerBodyWarning(hasAttributedWork: boolean, customerBody: string): string | undefined {
+  return hasAttributedWork && customerBody === ''
+    ? 'Customer-facing body is empty even though pull requests were attributed to this release — every one is internal-only, opted out, or otherwise excluded from the customer body. Verify this is genuinely a maintenance-only release before publishing.'
+    : undefined;
+}
+
 /** An opt-out PR is grouped under its own section, never its type's. */
 function groupNameFor(pr: RenderPrInput): string {
   if (pr.attributionSource === 'optOut') return 'Changes without a tracked issue';
@@ -295,6 +306,8 @@ export function render(
   // Only recorded when the override actually let the guard pass — else a plain
   // failure would look identical to an approved exception in this file.
   const overrides = guardFailed ? [] : unattributed.map((pr) => ({ number: pr.number, reason: unattributedReason }));
+  const emptyBodyWarning = emptyCustomerBodyWarning(prs.length > 0, customerBody);
+  const warnings = [...(options.warnings ?? []), ...(emptyBodyWarning ? [emptyBodyWarning] : [])];
 
   return {
     customerBody,
@@ -310,7 +323,7 @@ export function render(
       schemaVersion: SCHEMA_VERSION,
       version: options.version,
       overrides,
-      warnings: options.warnings ?? [],
+      warnings,
     },
     commentsJson: { schemaVersion: SCHEMA_VERSION, version: options.version, entries: commentEntries },
     failureReason,

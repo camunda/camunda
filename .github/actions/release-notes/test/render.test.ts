@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { render, SCHEMA_VERSION } from '../src/render';
+import { render, SCHEMA_VERSION, emptyCustomerBodyWarning } from '../src/render';
 import type { RenderPrInput } from '../src/render';
 
 function pr(overrides: Partial<RenderPrInput> = {}): RenderPrInput {
@@ -225,6 +225,42 @@ test('an internal-only section is present in the full asset but absent from the 
   });
   assert.doesNotMatch(result.customerBody, /#30/);
   assert.match(result.fullAsset, /#30/);
+});
+
+test('emptyCustomerBodyWarning: no warning when there was no attributed work at all', () => {
+  assert.equal(emptyCustomerBodyWarning(false, ''), undefined);
+});
+
+test('emptyCustomerBodyWarning: no warning when the body is non-empty', () => {
+  assert.equal(emptyCustomerBodyWarning(true, '## Features\n\n- x (#1)'), undefined);
+});
+
+test('emptyCustomerBodyWarning: warns when work was attributed but the body is empty', () => {
+  assert.ok(emptyCustomerBodyWarning(true, '')?.includes('Customer-facing body is empty'));
+});
+
+test('an empty customer body warns when pull requests WERE attributed — a maintenance-only release still deserves a look', () => {
+  const result = render([pr({ number: 30, section: 'Maintenance', visibility: 'internal', title: 'ci: bump runner' })], [], {
+    version: '8.8.30',
+    allowUnattributed: false,
+  });
+  assert.equal(result.customerBody, '');
+  assert.ok(
+    (result.auditJson as { warnings: string[] }).warnings.some((line) => line.includes('Customer-facing body is empty')),
+  );
+});
+
+test('an empty customer body from a genuinely empty release (nothing attributed) does not warn', () => {
+  // given — no attributed PRs at all, so there is nothing to be suspicious of
+  const result = render([], [], { version: '8.8.30', allowUnattributed: false });
+  assert.equal(result.customerBody, '');
+  assert.deepEqual((result.auditJson as { warnings: string[] }).warnings, []);
+});
+
+test('a non-empty customer body never triggers the empty-body warning', () => {
+  const result = render([pr()], [], { version: '8.8.30', allowUnattributed: false });
+  assert.notEqual(result.customerBody, '');
+  assert.deepEqual((result.auditJson as { warnings: string[] }).warnings, []);
 });
 
 test('a no-issue (opt-out) customer-visible PR renders under "Changes without a tracked issue", not its type section', () => {
