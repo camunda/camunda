@@ -1715,7 +1715,8 @@ final class JsonSerializableToJsonTest {
                   "bpmnProcessId": "",
                   "elementId": "node1",
                   "storageOrdinal": 4,
-                  "elementType": "UNSPECIFIED"
+                  "elementType": "UNSPECIFIED",
+                  "held": false
                 }
                 """
       },
@@ -1968,6 +1969,7 @@ final class JsonSerializableToJsonTest {
                   "businessId": "business-id-456",
                   "versionTag": "v1.0",
                   "stubCallActivities": false,
+                  "holdTimers": false,
                   "variablesMetadata": {
                     "foo": {
                       "protectionModes": ["REDACT"]
@@ -2002,6 +2004,7 @@ final class JsonSerializableToJsonTest {
                   "businessId": "",
                   "versionTag": "",
                   "stubCallActivities": false,
+                  "holdTimers": false,
                   "variablesMetadata": {},
                   "elementInstanceKey": -1
                 }
@@ -2192,6 +2195,7 @@ final class JsonSerializableToJsonTest {
                   "resumeFromJobKey": -1,
                   "jobReservationToken": "",
                   "stubCallActivities": false,
+                  "holdTimers": false,
                   "elementInstanceKey": -1
                 }
                 """
@@ -2228,6 +2232,7 @@ final class JsonSerializableToJsonTest {
                   "resumeFromJobKey": -1,
                   "jobReservationToken": "",
                   "stubCallActivities": false,
+                  "holdTimers": false,
                   "elementInstanceKey": -1
                 }
                 """
@@ -3072,6 +3077,7 @@ final class JsonSerializableToJsonTest {
                     "resumeFromJobKey": -1,
                   "jobReservationToken": "",
                   "stubCallActivities": false,
+                  "holdTimers": false,
                     "elementInstanceKey": -1
                   }
                 }

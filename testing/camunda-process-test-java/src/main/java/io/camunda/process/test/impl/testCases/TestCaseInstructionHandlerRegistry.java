@@ -49,12 +49,12 @@ import io.camunda.process.test.impl.testCases.instructions.SetTimeInstructionHan
 import io.camunda.process.test.impl.testCases.instructions.StubCallActivityCompleteInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.StubCallActivityThrowErrorInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.ThrowBpmnErrorFromJobInstructionHandler;
+import io.camunda.process.test.impl.testCases.instructions.TriggerTimerInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.UpdateVariablesInstructionHandler;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.LongConsumer;
 
 /**
  * Resolves {@link TestCaseInstructionHandler}s by their declared instruction interface and
@@ -66,14 +66,15 @@ public class TestCaseInstructionHandlerRegistry {
       new HashMap<>();
 
   public TestCaseInstructionHandlerRegistry() {
-    this(processInstanceKey -> {});
+    this(new CreatedProcessInstanceRegistry());
   }
 
   /**
-   * @param isolatedInstanceListener notified of every process instance created with job reservation
-   *     or call activity stubbing, which parks until someone ends it
+   * @param createdProcessInstances records the process instances the test case creates, so that an
+   *     instruction addressing one of them resolves it without querying the cluster
    */
-  public TestCaseInstructionHandlerRegistry(final LongConsumer isolatedInstanceListener) {
+  public TestCaseInstructionHandlerRegistry(
+      final CreatedProcessInstanceRegistry createdProcessInstances) {
     register(new AssertDecisionInstructionHandler());
     register(new AssertElementInstanceInstructionHandler());
     register(new AssertElementInstancesInstructionHandler());
@@ -88,7 +89,7 @@ public class TestCaseInstructionHandlerRegistry {
     register(new CompleteJobUserTaskListenerInstructionHandler());
     register(new CompleteUserTaskInstructionHandler());
     register(new ConditionalBehaviorInstructionHandler(this));
-    register(new CreateProcessInstanceInstructionHandler(isolatedInstanceListener));
+    register(new CreateProcessInstanceInstructionHandler(createdProcessInstances));
     register(new EvaluateConditionalStartEventInstructionHandler());
     register(new EvaluateDecisionInstructionHandler());
     register(new IncreaseTimeInstructionHandler());
@@ -105,6 +106,7 @@ public class TestCaseInstructionHandlerRegistry {
     register(new StubCallActivityCompleteInstructionHandler());
     register(new StubCallActivityThrowErrorInstructionHandler());
     register(new ThrowBpmnErrorFromJobInstructionHandler());
+    register(new TriggerTimerInstructionHandler(createdProcessInstances));
     register(new UpdateVariablesInstructionHandler());
   }
 

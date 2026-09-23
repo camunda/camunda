@@ -16,7 +16,7 @@ components:
       example: "2251799813690746"
       type: string
       allOf:
-        - $ref: '#/components/schemas/LongKey'
+        - $ref: "#/components/schemas/LongKey"
 
     ProcessDefinitionKey:
       description: System-generated key for a deployed process definition.
@@ -25,7 +25,7 @@ components:
       example: "2251799813686749"
       type: string
       allOf:
-        - $ref: '#/components/schemas/LongKey'
+        - $ref: "#/components/schemas/LongKey"
 
     ElementInstanceKey:
       description: System-generated key for a element instance.
@@ -34,7 +34,7 @@ components:
       example: "2251799813686789"
       type: string
       allOf:
-        - $ref: '#/components/schemas/LongKey'
+        - $ref: "#/components/schemas/LongKey"
 
     UserTaskKey:
       description: System-generated key for a user task.
@@ -42,7 +42,7 @@ components:
       type: string
       x-semantic-type: UserTaskKey
       allOf:
-        - $ref: '#/components/schemas/LongKey'
+        - $ref: "#/components/schemas/LongKey"
 
     FormKey:
       description: System-generated key for a deployed form.
@@ -51,7 +51,7 @@ components:
       example: "2251799813684365"
       type: string
       allOf:
-        - $ref: '#/components/schemas/LongKey'
+        - $ref: "#/components/schemas/LongKey"
 
     VariableKey:
       description: System-generated key for a variable.
@@ -60,7 +60,7 @@ components:
       example: "2251799813683287"
       type: string
       allOf:
-        - $ref: '#/components/schemas/LongKey'
+        - $ref: "#/components/schemas/LongKey"
 
     ScopeKey:
       description: |
@@ -70,8 +70,8 @@ components:
       format: ScopeKey
       x-semantic-type: ScopeKey
       oneOf:
-        - $ref: '#/components/schemas/ProcessInstanceKey'
-        - $ref: '#/components/schemas/ElementInstanceKey'
+        - $ref: "#/components/schemas/ProcessInstanceKey"
+        - $ref: "#/components/schemas/ElementInstanceKey"
 
     IncidentKey:
       description: System-generated key for a incident.
@@ -80,7 +80,7 @@ components:
       example: "2251799813689432"
       type: string
       allOf:
-        - $ref: '#/components/schemas/LongKey'
+        - $ref: "#/components/schemas/LongKey"
 
     JobKey:
       description: System-generated key for a job.
@@ -89,7 +89,7 @@ components:
       example: "2251799813653498"
       type: string
       allOf:
-        - $ref: '#/components/schemas/LongKey'
+        - $ref: "#/components/schemas/LongKey"
 
     DecisionDefinitionKey:
       description: System-generated key for a decision definition.
@@ -98,7 +98,7 @@ components:
       example: "2251799813326547"
       type: string
       allOf:
-        - $ref: '#/components/schemas/LongKey'
+        - $ref: "#/components/schemas/LongKey"
 
     DecisionEvaluationInstanceKey:
       description: |
@@ -115,7 +115,7 @@ components:
 
     DecisionEvaluationKey:
       allOf:
-        - $ref: '#/components/schemas/LongKey'
+        - $ref: "#/components/schemas/LongKey"
       description: System-generated key for a decision evaluation.
       format: DecisionEvaluationKey
       x-semantic-type: DecisionEvaluationKey
@@ -124,7 +124,7 @@ components:
 
     DecisionRequirementsKey:
       allOf:
-        - $ref: '#/components/schemas/LongKey'
+        - $ref: "#/components/schemas/LongKey"
       description: System-generated key for a deployed decision requirements definition.
       format: DecisionRequirementsKey
       x-semantic-type: DecisionRequirementsKey
@@ -133,7 +133,7 @@ components:
 
     DecisionInstanceKey:
       allOf:
-        - $ref: '#/components/schemas/LongKey'
+        - $ref: "#/components/schemas/LongKey"
       description: System-generated key for a deployed decision instance.
       format: DecisionInstanceKey
       x-semantic-type: DecisionInstanceKey
@@ -162,7 +162,7 @@ components:
       example: "2251799813691958"
       type: string
       allOf:
-        - $ref: '#/components/schemas/LongKey'
+        - $ref: "#/components/schemas/LongKey"
 
     AgentInstanceKey:
       description: System-generated key for an agent instance.
@@ -171,7 +171,7 @@ components:
       example: "4503599627370496"
       type: string
       allOf:
-        - $ref: '#/components/schemas/LongKey'
+        - $ref: "#/components/schemas/LongKey"
 
     AgentHistoryItemKey:
       description: System-generated key for an agent history item.
@@ -180,17 +180,16 @@ components:
       example: "6755399441055744"
       type: string
       allOf:
-        - $ref: '#/components/schemas/LongKey'
+        - $ref: "#/components/schemas/LongKey"
 
     AuditLogKey:
       allOf:
-        - $ref: '#/components/schemas/LongKey'
+        - $ref: "#/components/schemas/LongKey"
       description: System-generated key for an audit log entry.
       format: AuditLogKey
       x-semantic-type: AuditLogKey
       example: "22517998136843567"
       type: string
-
 
     ## Filters
 
@@ -202,7 +201,7 @@ components:
           description: Matches the value exactly.
           allOf:
             - $ref: "#/components/schemas/ProcessDefinitionKey"
-        - $ref: '#/components/schemas/AdvancedProcessDefinitionKeyFilter'
+        - $ref: "#/components/schemas/AdvancedProcessDefinitionKeyFilter"
 
     AdvancedProcessDefinitionKeyFilter:
       title: Advanced filter
@@ -250,7 +249,7 @@ components:
           description: Matches the value exactly.
           allOf:
             - $ref: "#/components/schemas/ProcessInstanceKey"
-        - $ref: '#/components/schemas/AdvancedProcessInstanceKeyFilter'
+        - $ref: "#/components/schemas/AdvancedProcessInstanceKeyFilter"
 
     AdvancedProcessInstanceKeyFilter:
       title: Advanced filter
@@ -298,7 +297,7 @@ components:
           description: Matches the value exactly.
           allOf:
             - $ref: "#/components/schemas/ElementInstanceKey"
-        - $ref: '#/components/schemas/AdvancedElementInstanceKeyFilter'
+        - $ref: "#/components/schemas/AdvancedElementInstanceKeyFilter"
 
     AdvancedElementInstanceKeyFilter:
       title: Advanced filter
@@ -345,8 +344,8 @@ components:
           title: Exact match
           description: Matches the value exactly.
           allOf:
-            - $ref: '#/components/schemas/JobKey'
-        - $ref: '#/components/schemas/AdvancedJobKeyFilter'
+            - $ref: "#/components/schemas/JobKey"
+        - $ref: "#/components/schemas/AdvancedJobKeyFilter"
 
     AdvancedJobKeyFilter:
       title: Advanced filter
@@ -356,11 +355,11 @@ components:
         $eq:
           description: Checks for equality with the provided value.
           allOf:
-            - $ref: '#/components/schemas/JobKey'
+            - $ref: "#/components/schemas/JobKey"
         $neq:
           description: Checks for inequality with the provided value.
           allOf:
-            - $ref: '#/components/schemas/JobKey'
+            - $ref: "#/components/schemas/JobKey"
         $exists:
           description: Checks if the current property exists.
           type: boolean
@@ -368,12 +367,12 @@ components:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
-            $ref: '#/components/schemas/JobKey'
+            $ref: "#/components/schemas/JobKey"
         $notIn:
           description: Checks if the property matches none of the provided values.
           type: array
           items:
-            $ref: '#/components/schemas/JobKey'
+            $ref: "#/components/schemas/JobKey"
       x-properties-added-in-version:
         - propertyName: "$eq"
           addedInVersion: "8.8"
@@ -394,7 +393,7 @@ components:
           description: Matches the value exactly.
           allOf:
             - $ref: "#/components/schemas/DecisionDefinitionKey"
-        - $ref: '#/components/schemas/AdvancedDecisionDefinitionKeyFilter'
+        - $ref: "#/components/schemas/AdvancedDecisionDefinitionKeyFilter"
 
     AdvancedDecisionDefinitionKeyFilter:
       title: Advanced filter
@@ -444,7 +443,7 @@ components:
           description: Matches the value exactly.
           allOf:
             - $ref: "#/components/schemas/ScopeKey"
-        - $ref: '#/components/schemas/AdvancedScopeKeyFilter'
+        - $ref: "#/components/schemas/AdvancedScopeKeyFilter"
 
     AdvancedScopeKeyFilter:
       title: Advanced filter
@@ -481,7 +480,7 @@ components:
           description: Matches the value exactly.
           allOf:
             - $ref: "#/components/schemas/VariableKey"
-        - $ref: '#/components/schemas/AdvancedVariableKeyFilter'
+        - $ref: "#/components/schemas/AdvancedVariableKeyFilter"
 
     AdvancedVariableKeyFilter:
       title: Advanced filter
@@ -518,7 +517,7 @@ components:
           description: Matches the value exactly.
           allOf:
             - $ref: "#/components/schemas/DecisionEvaluationInstanceKey"
-        - $ref: '#/components/schemas/AdvancedDecisionEvaluationInstanceKeyFilter'
+        - $ref: "#/components/schemas/AdvancedDecisionEvaluationInstanceKeyFilter"
 
     AdvancedDecisionEvaluationInstanceKeyFilter:
       title: Advanced filter
@@ -566,7 +565,7 @@ components:
           description: Matches the value exactly.
           allOf:
             - $ref: "#/components/schemas/AgentDefinitionKey"
-        - $ref: '#/components/schemas/AdvancedAgentDefinitionKeyFilter'
+        - $ref: "#/components/schemas/AdvancedAgentDefinitionKeyFilter"
 
     AdvancedAgentDefinitionKeyFilter:
       title: Advanced filter
@@ -603,7 +602,7 @@ components:
           description: Matches the value exactly.
           allOf:
             - $ref: "#/components/schemas/AgentInstanceKey"
-        - $ref: '#/components/schemas/AdvancedAgentInstanceKeyFilter'
+        - $ref: "#/components/schemas/AdvancedAgentInstanceKeyFilter"
 
     AdvancedAgentInstanceKeyFilter:
       title: Advanced filter
@@ -640,7 +639,7 @@ components:
           description: Matches the value exactly.
           allOf:
             - $ref: "#/components/schemas/AgentHistoryItemKey"
-        - $ref: '#/components/schemas/AdvancedAgentHistoryItemKeyFilter'
+        - $ref: "#/components/schemas/AdvancedAgentHistoryItemKeyFilter"
 
     AdvancedAgentHistoryItemKeyFilter:
       title: Advanced filter
@@ -677,7 +676,7 @@ components:
           description: Matches the value exactly.
           allOf:
             - $ref: "#/components/schemas/AuditLogKey"
-        - $ref: '#/components/schemas/AdvancedAuditLogKeyFilter'
+        - $ref: "#/components/schemas/AdvancedAuditLogKeyFilter"
 
     AdvancedAuditLogKeyFilter:
       title: Advanced filter
@@ -743,7 +742,6 @@ components:
           items:
             $ref: "#/components/schemas/FormKey"
 
-
     DecisionEvaluationKeyFilterProperty:
       description: DecisionEvaluationKey property with full advanced search capabilities.
       oneOf:
@@ -752,7 +750,7 @@ components:
           description: Matches the value exactly.
           allOf:
             - $ref: "#/components/schemas/DecisionEvaluationKey"
-        - $ref: '#/components/schemas/AdvancedDecisionEvaluationKeyFilter'
+        - $ref: "#/components/schemas/AdvancedDecisionEvaluationKeyFilter"
 
     AdvancedDecisionEvaluationKeyFilter:
       title: Advanced filter
@@ -789,7 +787,7 @@ components:
           description: Matches the value exactly.
           allOf:
             - $ref: "#/components/schemas/DecisionRequirementsKey"
-        - $ref: '#/components/schemas/AdvancedDecisionRequirementsKeyFilter'
+        - $ref: "#/components/schemas/AdvancedDecisionRequirementsKeyFilter"
 
     AdvancedDecisionRequirementsKeyFilter:
       title: Advanced filter

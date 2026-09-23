@@ -65,6 +65,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   public static final StringValue JOB_RESERVATION_TOKEN_KEY =
       new StringValue("jobReservationToken");
   public static final StringValue STUB_CALL_ACTIVITIES_KEY = new StringValue("stubCallActivities");
+  public static final StringValue HOLD_TIMERS_KEY = new StringValue("holdTimers");
 
   private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final IntegerProperty versionProp = new IntegerProperty(VERSION_KEY, -1);
@@ -113,9 +114,10 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
       new StringProperty(JOB_RESERVATION_TOKEN_KEY, "");
   private final BooleanProperty stubCallActivitiesProp =
       new BooleanProperty(STUB_CALL_ACTIVITIES_KEY, false);
+  private final BooleanProperty holdTimersProp = new BooleanProperty(HOLD_TIMERS_KEY, false);
 
   public ProcessInstanceRecord() {
-    super(21);
+    super(22);
     declareProperty(bpmnElementTypeProp)
         .declareProperty(elementIdProp)
         .declareProperty(bpmnProcessIdProp)
@@ -136,7 +138,8 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
         .declareProperty(businessIdProp)
         .declareProperty(resumeFromJobKeyProp)
         .declareProperty(jobReservationTokenProp)
-        .declareProperty(stubCallActivitiesProp);
+        .declareProperty(stubCallActivitiesProp)
+        .declareProperty(holdTimersProp);
   }
 
   public void wrap(final ProcessInstanceRecord record) {
@@ -355,6 +358,16 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   public ProcessInstanceRecord setStubCallActivities(final boolean stubCallActivities) {
     stubCallActivitiesProp.setValue(stubCallActivities);
+    return this;
+  }
+
+  @Override
+  public boolean isHoldTimers() {
+    return holdTimersProp.getValue();
+  }
+
+  public ProcessInstanceRecord setHoldTimers(final boolean holdTimers) {
+    holdTimersProp.setValue(holdTimers);
     return this;
   }
 

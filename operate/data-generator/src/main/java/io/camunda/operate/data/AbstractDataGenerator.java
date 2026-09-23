@@ -346,6 +346,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
                         null,
                         Set.of(),
                         null,
+                        null,
                         null),
                     authentication));
   }

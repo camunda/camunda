@@ -100,6 +100,7 @@ import io.camunda.client.api.command.TenantScopedClusterVariableDeletionCommandS
 import io.camunda.client.api.command.TenantScopedClusterVariableUpdateCommandStep1;
 import io.camunda.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
+import io.camunda.client.api.command.TriggerTimerCommandStep1;
 import io.camunda.client.api.command.UnassignClientFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignClientFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
@@ -301,6 +302,7 @@ import io.camunda.client.impl.command.TenantScopedCreateClusterVariableImpl;
 import io.camunda.client.impl.command.TenantScopedDeleteClusterVariableImpl;
 import io.camunda.client.impl.command.TenantScopedUpdateClusterVariableImpl;
 import io.camunda.client.impl.command.TopologyRequestImpl;
+import io.camunda.client.impl.command.TriggerTimerCommandImpl;
 import io.camunda.client.impl.command.UnassignClientFromGroupCommandImpl;
 import io.camunda.client.impl.command.UnassignClientFromTenantCommandImpl;
 import io.camunda.client.impl.command.UnassignGroupFromTenantCommandImpl;
@@ -991,6 +993,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public ReleaseJobCommandStep1 newReleaseJobCommand(final long jobKey) {
     return new ReleaseJobCommandImpl(jobKey, httpClient, jsonMapper);
+  }
+
+  @Override
+  public TriggerTimerCommandStep1 newTriggerTimerCommand(final long processInstanceKey) {
+    return new TriggerTimerCommandImpl(processInstanceKey, httpClient, jsonMapper);
   }
 
   @Override

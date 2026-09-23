@@ -8,7 +8,10 @@ paths:
         - Process instance
       operationId: createProcessInstance
       x-required-permissions:
-        - { resourceType: PROCESS_DEFINITION, permissionType: CREATE_PROCESS_INSTANCE }
+        - {
+            resourceType: PROCESS_DEFINITION,
+            permissionType: CREATE_PROCESS_INSTANCE,
+          }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -27,7 +30,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ProcessInstanceCreationInstruction'
+              $ref: "#/components/schemas/ProcessInstanceCreationInstruction"
             examples:
               By process definition key:
                 summary: Create a process instance by processDefinitionKey.
@@ -52,9 +55,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CreateProcessInstanceResult'
+                $ref: "#/components/schemas/CreateProcessInstanceResult"
         "400":
-          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+          $ref: "common-responses.yaml#/components/responses/InvalidData"
         "409":
           description: |
             The process instance creation was rejected due to a business ID uniqueness conflict.
@@ -64,11 +67,11 @@ paths:
           content:
             application/problem+json:
               schema:
-                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
-          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+          $ref: "common-responses.yaml#/components/responses/InternalServerError"
         "503":
-          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+          $ref: "common-responses.yaml#/components/responses/ServiceUnavailable"
         "504":
           description: |
             The process instance creation request timed out in the gateway.
@@ -78,7 +81,7 @@ paths:
           content:
             application/problem+json:
               schema:
-                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
       x-added-in-version: "8.6"
       x-scope: physical-tenant
 
@@ -89,7 +92,10 @@ paths:
         - Process instance
       operationId: getProcessInstance
       x-required-permissions:
-        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
+        - {
+            resourceType: PROCESS_DEFINITION,
+            permissionType: READ_PROCESS_INSTANCE,
+          }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -101,28 +107,28 @@ paths:
           required: true
           description: The process instance key.
           schema:
-            $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+            $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
       responses:
         "200":
           description: The process instance is successfully returned.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProcessInstanceResult'
+                $ref: "#/components/schemas/ProcessInstanceResult"
         "400":
-          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+          $ref: "common-responses.yaml#/components/responses/InvalidData"
         "401":
-          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+          $ref: "common-responses.yaml#/components/responses/Unauthorized"
         "403":
-          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+          $ref: "common-responses.yaml#/components/responses/Forbidden"
         "404":
           description: The process instance with the given key was not found.
           content:
             application/problem+json:
               schema:
-                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
-          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+          $ref: "common-responses.yaml#/components/responses/InternalServerError"
       x-added-in-version: "8.8"
       x-scope: physical-tenant
 
@@ -133,7 +139,10 @@ paths:
         - Process instance
       operationId: getProcessInstanceSequenceFlows
       x-required-permissions:
-        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
+        - {
+            resourceType: PROCESS_DEFINITION,
+            permissionType: READ_PROCESS_INSTANCE,
+          }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -145,22 +154,22 @@ paths:
           required: true
           description: The assigned key of the process instance, which acts as a unique identifier for this process instance.
           schema:
-            $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+            $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
       responses:
         "200":
           description: The process instance sequence flows result.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProcessInstanceSequenceFlowsQueryResult'
+                $ref: "#/components/schemas/ProcessInstanceSequenceFlowsQueryResult"
         "400":
-          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+          $ref: "common-responses.yaml#/components/responses/InvalidData"
         "401":
-          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+          $ref: "common-responses.yaml#/components/responses/Unauthorized"
         "403":
-          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+          $ref: "common-responses.yaml#/components/responses/Forbidden"
         "500":
-          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+          $ref: "common-responses.yaml#/components/responses/InternalServerError"
       x-added-in-version: "8.8"
       x-scope: physical-tenant
 
@@ -172,7 +181,10 @@ paths:
       operationId: getProcessInstanceStatistics
       x-permission-enforcement: filter
       x-required-permissions:
-        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
+        - {
+            resourceType: PROCESS_DEFINITION,
+            permissionType: READ_PROCESS_INSTANCE,
+          }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -184,22 +196,22 @@ paths:
           required: true
           description: The assigned key of the process instance, which acts as a unique identifier for this process instance.
           schema:
-            $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+            $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
       responses:
         "200":
           description: The process instance statistics result.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProcessInstanceElementStatisticsQueryResult'
+                $ref: "#/components/schemas/ProcessInstanceElementStatisticsQueryResult"
         "400":
-          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+          $ref: "common-responses.yaml#/components/responses/InvalidData"
         "401":
-          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+          $ref: "common-responses.yaml#/components/responses/Unauthorized"
         "403":
-          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+          $ref: "common-responses.yaml#/components/responses/Forbidden"
         "500":
-          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+          $ref: "common-responses.yaml#/components/responses/InternalServerError"
       x-added-in-version: "8.8"
       x-scope: physical-tenant
 
@@ -211,7 +223,10 @@ paths:
       operationId: getProcessInstanceWaitStateStatistics
       x-permission-enforcement: filter
       x-required-permissions:
-        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
+        - {
+            resourceType: PROCESS_DEFINITION,
+            permissionType: READ_PROCESS_INSTANCE,
+          }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -223,22 +238,22 @@ paths:
           required: true
           description: The assigned key of the process instance, which acts as a unique identifier for this process instance.
           schema:
-            $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+            $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
       responses:
         "200":
           description: The process instance wait state statistics result.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProcessInstanceWaitStateStatisticsQueryResult'
+                $ref: "#/components/schemas/ProcessInstanceWaitStateStatisticsQueryResult"
         "400":
-          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+          $ref: "common-responses.yaml#/components/responses/InvalidData"
         "401":
-          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+          $ref: "common-responses.yaml#/components/responses/Unauthorized"
         "403":
-          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+          $ref: "common-responses.yaml#/components/responses/Forbidden"
         "500":
-          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+          $ref: "common-responses.yaml#/components/responses/InternalServerError"
       x-added-in-version: "8.10"
       x-scope: physical-tenant
 
@@ -250,7 +265,10 @@ paths:
       operationId: searchProcessInstances
       x-permission-enforcement: filter
       x-required-permissions:
-        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
+        - {
+            resourceType: PROCESS_DEFINITION,
+            permissionType: READ_PROCESS_INSTANCE,
+          }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -261,22 +279,22 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ProcessInstanceSearchQuery'
+              $ref: "#/components/schemas/ProcessInstanceSearchQuery"
       responses:
         "200":
           description: The process instance search result.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProcessInstanceSearchQueryResult'
+                $ref: "#/components/schemas/ProcessInstanceSearchQueryResult"
         "400":
-          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+          $ref: "common-responses.yaml#/components/responses/InvalidData"
         "401":
-          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+          $ref: "common-responses.yaml#/components/responses/Unauthorized"
         "403":
-          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+          $ref: "common-responses.yaml#/components/responses/Forbidden"
         "500":
-          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+          $ref: "common-responses.yaml#/components/responses/InternalServerError"
       x-added-in-version: "8.6"
       x-scope: physical-tenant
 
@@ -287,7 +305,10 @@ paths:
         - Process instance
       operationId: searchProcessInstanceIncidents
       x-required-permissions:
-        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
+        - {
+            resourceType: PROCESS_DEFINITION,
+            permissionType: READ_PROCESS_INSTANCE,
+          }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -305,34 +326,34 @@ paths:
           required: true
           description: The assigned key of the process instance, which acts as a unique identifier for this process instance.
           schema:
-            $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+            $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
       requestBody:
         required: false
         content:
           application/json:
             schema:
-              $ref: 'incidents.yaml#/components/schemas/IncidentSearchQuery'
+              $ref: "incidents.yaml#/components/schemas/IncidentSearchQuery"
       responses:
         "200":
           description: The process instance search result.
           content:
             application/json:
               schema:
-                $ref: 'incidents.yaml#/components/schemas/IncidentSearchQueryResult'
+                $ref: "incidents.yaml#/components/schemas/IncidentSearchQueryResult"
         "400":
-          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+          $ref: "common-responses.yaml#/components/responses/InvalidData"
         "401":
-          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+          $ref: "common-responses.yaml#/components/responses/Unauthorized"
         "403":
-          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+          $ref: "common-responses.yaml#/components/responses/Forbidden"
         "404":
           description: The process instance with the given key was not found.
           content:
             application/problem+json:
               schema:
-                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
-          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+          $ref: "common-responses.yaml#/components/responses/InternalServerError"
       x-added-in-version: "8.8"
       x-scope: physical-tenant
 
@@ -343,7 +364,10 @@ paths:
         - Process instance
       operationId: resolveProcessInstanceIncidents
       x-required-permissions:
-        - { resourceType: PROCESS_DEFINITION, permissionType: UPDATE_PROCESS_INSTANCE }
+        - {
+            resourceType: PROCESS_DEFINITION,
+            permissionType: UPDATE_PROCESS_INSTANCE,
+          }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -355,28 +379,28 @@ paths:
           required: true
           description: The key of the process instance to resolve incidents for.
           schema:
-            $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+            $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
       responses:
         "200":
           description: The batch operation request for incident resolution was created.
           content:
             application/json:
               schema:
-                $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
+                $ref: "batch-operations.yaml#/components/schemas/BatchOperationCreatedResult"
         "400":
-          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+          $ref: "common-responses.yaml#/components/responses/InvalidData"
         "401":
-          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+          $ref: "common-responses.yaml#/components/responses/Unauthorized"
         "404":
           description: The process instance is not found.
           content:
             application/problem+json:
               schema:
-                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
-          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+          $ref: "common-responses.yaml#/components/responses/InternalServerError"
         "503":
-          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+          $ref: "common-responses.yaml#/components/responses/ServiceUnavailable"
       x-added-in-version: "8.9"
       x-scope: physical-tenant
 
@@ -387,7 +411,10 @@ paths:
         - Process instance
       operationId: cancelProcessInstance
       x-required-permissions:
-        - { resourceType: PROCESS_DEFINITION, permissionType: CANCEL_PROCESS_INSTANCE }
+        - {
+            resourceType: PROCESS_DEFINITION,
+            permissionType: CANCEL_PROCESS_INSTANCE,
+          }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -404,18 +431,18 @@ paths:
           required: true
           description: The key of the process instance to cancel.
           schema:
-            $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+            $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
       requestBody:
         required: false
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CancelProcessInstanceRequest'
+              $ref: "#/components/schemas/CancelProcessInstanceRequest"
       responses:
         "204":
           description: The process instance is canceled.
         "400":
-          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+          $ref: "common-responses.yaml#/components/responses/InvalidData"
         "404":
           description: The process instance is not found.
           content:
@@ -432,11 +459,11 @@ paths:
               schema:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
-          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+          $ref: "common-responses.yaml#/components/responses/InternalServerError"
         "503":
-          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+          $ref: "common-responses.yaml#/components/responses/ServiceUnavailable"
         "504":
-          $ref: 'common-responses.yaml#/components/responses/GatewayTimeoutTaskListenerBlocking'
+          $ref: "common-responses.yaml#/components/responses/GatewayTimeoutTaskListenerBlocking"
       x-added-in-version: "8.6"
       x-scope: physical-tenant
 
@@ -449,7 +476,10 @@ paths:
       x-required-permissions:
         - anyOf:
             - { resourceType: BATCH, permissionType: CREATE }
-            - { resourceType: BATCH, permissionType: CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE }
+            - {
+                resourceType: BATCH,
+                permissionType: CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE,
+              }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -467,14 +497,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: 'batch-operations.yaml#/components/schemas/ProcessInstanceCancellationBatchOperationRequest'
+              $ref: "batch-operations.yaml#/components/schemas/ProcessInstanceCancellationBatchOperationRequest"
       responses:
         "200":
           description: The batch operation request was created.
           content:
             application/json:
               schema:
-                $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
+                $ref: "batch-operations.yaml#/components/schemas/BatchOperationCreatedResult"
         "400":
           description: >
             The process instance batch operation failed, for example because the filter requests a
@@ -484,13 +514,13 @@ paths:
           content:
             application/problem+json:
               schema:
-                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "401":
-          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+          $ref: "common-responses.yaml#/components/responses/Unauthorized"
         "403":
-          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+          $ref: "common-responses.yaml#/components/responses/Forbidden"
         "500":
-          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+          $ref: "common-responses.yaml#/components/responses/InternalServerError"
       x-added-in-version: "8.8"
       x-scope: physical-tenant
 
@@ -503,7 +533,10 @@ paths:
       x-required-permissions:
         - anyOf:
             - { resourceType: BATCH, permissionType: CREATE }
-            - { resourceType: BATCH, permissionType: CREATE_BATCH_OPERATION_RESOLVE_INCIDENT }
+            - {
+                resourceType: BATCH,
+                permissionType: CREATE_BATCH_OPERATION_RESOLVE_INCIDENT,
+              }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -517,14 +550,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: 'batch-operations.yaml#/components/schemas/ProcessInstanceIncidentResolutionBatchOperationRequest'
+              $ref: "batch-operations.yaml#/components/schemas/ProcessInstanceIncidentResolutionBatchOperationRequest"
       responses:
         "200":
           description: The batch operation request was created.
           content:
             application/json:
               schema:
-                $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
+                $ref: "batch-operations.yaml#/components/schemas/BatchOperationCreatedResult"
         "400":
           description: >
             The process instance batch operation failed, for example because the filter requests a
@@ -534,13 +567,13 @@ paths:
           content:
             application/problem+json:
               schema:
-                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "401":
-          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+          $ref: "common-responses.yaml#/components/responses/Unauthorized"
         "403":
-          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+          $ref: "common-responses.yaml#/components/responses/Forbidden"
         "500":
-          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+          $ref: "common-responses.yaml#/components/responses/InternalServerError"
       x-added-in-version: "8.8"
       x-scope: physical-tenant
 
@@ -553,7 +586,10 @@ paths:
       x-required-permissions:
         - anyOf:
             - { resourceType: BATCH, permissionType: CREATE }
-            - { resourceType: BATCH, permissionType: CREATE_BATCH_OPERATION_MIGRATE_PROCESS_INSTANCE }
+            - {
+                resourceType: BATCH,
+                permissionType: CREATE_BATCH_OPERATION_MIGRATE_PROCESS_INSTANCE,
+              }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -567,14 +603,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: 'batch-operations.yaml#/components/schemas/ProcessInstanceMigrationBatchOperationRequest'
+              $ref: "batch-operations.yaml#/components/schemas/ProcessInstanceMigrationBatchOperationRequest"
       responses:
         "200":
           description: The batch operation request was created.
           content:
             application/json:
               schema:
-                $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
+                $ref: "batch-operations.yaml#/components/schemas/BatchOperationCreatedResult"
         "400":
           description: >
             The process instance batch operation failed, for example because the filter requests a
@@ -584,13 +620,13 @@ paths:
           content:
             application/problem+json:
               schema:
-                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "401":
-          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+          $ref: "common-responses.yaml#/components/responses/Unauthorized"
         "403":
-          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+          $ref: "common-responses.yaml#/components/responses/Forbidden"
         "500":
-          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+          $ref: "common-responses.yaml#/components/responses/InternalServerError"
       x-added-in-version: "8.8"
       x-scope: physical-tenant
 
@@ -603,7 +639,10 @@ paths:
       x-required-permissions:
         - anyOf:
             - { resourceType: BATCH, permissionType: CREATE }
-            - { resourceType: BATCH, permissionType: CREATE_BATCH_OPERATION_MODIFY_PROCESS_INSTANCE }
+            - {
+                resourceType: BATCH,
+                permissionType: CREATE_BATCH_OPERATION_MODIFY_PROCESS_INSTANCE,
+              }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -619,14 +658,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: 'batch-operations.yaml#/components/schemas/ProcessInstanceModificationBatchOperationRequest'
+              $ref: "batch-operations.yaml#/components/schemas/ProcessInstanceModificationBatchOperationRequest"
       responses:
         "200":
           description: The batch operation request was created.
           content:
             application/json:
               schema:
-                $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
+                $ref: "batch-operations.yaml#/components/schemas/BatchOperationCreatedResult"
         "400":
           description: >
             The process instance batch operation failed, for example because the filter requests a
@@ -636,13 +675,13 @@ paths:
           content:
             application/problem+json:
               schema:
-                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "401":
-          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+          $ref: "common-responses.yaml#/components/responses/Unauthorized"
         "403":
-          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+          $ref: "common-responses.yaml#/components/responses/Forbidden"
         "500":
-          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+          $ref: "common-responses.yaml#/components/responses/InternalServerError"
       x-added-in-version: "8.8"
       x-scope: physical-tenant
 
@@ -655,7 +694,10 @@ paths:
       x-required-permissions:
         - anyOf:
             - { resourceType: BATCH, permissionType: CREATE }
-            - { resourceType: BATCH, permissionType: CREATE_BATCH_OPERATION_SUSPEND_PROCESS_INSTANCE }
+            - {
+                resourceType: BATCH,
+                permissionType: CREATE_BATCH_OPERATION_SUSPEND_PROCESS_INSTANCE,
+              }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -672,14 +714,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: 'batch-operations.yaml#/components/schemas/ProcessInstanceSuspensionBatchOperationRequest'
+              $ref: "batch-operations.yaml#/components/schemas/ProcessInstanceSuspensionBatchOperationRequest"
       responses:
         "200":
           description: The batch operation request was created.
           content:
             application/json:
               schema:
-                $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
+                $ref: "batch-operations.yaml#/components/schemas/BatchOperationCreatedResult"
         "400":
           description: >
             The process instance batch operation failed, for example because the filter requests a
@@ -689,13 +731,13 @@ paths:
           content:
             application/problem+json:
               schema:
-                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "401":
-          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+          $ref: "common-responses.yaml#/components/responses/Unauthorized"
         "403":
-          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+          $ref: "common-responses.yaml#/components/responses/Forbidden"
         "500":
-          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+          $ref: "common-responses.yaml#/components/responses/InternalServerError"
       x-added-in-version: "8.10"
       x-scope: physical-tenant
 
@@ -708,7 +750,10 @@ paths:
       x-required-permissions:
         - anyOf:
             - { resourceType: BATCH, permissionType: CREATE }
-            - { resourceType: BATCH, permissionType: CREATE_BATCH_OPERATION_SUSPEND_PROCESS_INSTANCE }
+            - {
+                resourceType: BATCH,
+                permissionType: CREATE_BATCH_OPERATION_SUSPEND_PROCESS_INSTANCE,
+              }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -725,14 +770,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: 'batch-operations.yaml#/components/schemas/ProcessInstanceResumptionBatchOperationRequest'
+              $ref: "batch-operations.yaml#/components/schemas/ProcessInstanceResumptionBatchOperationRequest"
       responses:
         "200":
           description: The batch operation request was created.
           content:
             application/json:
               schema:
-                $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
+                $ref: "batch-operations.yaml#/components/schemas/BatchOperationCreatedResult"
         "400":
           description: >
             The process instance batch operation failed, for example because the filter requests a
@@ -742,13 +787,13 @@ paths:
           content:
             application/problem+json:
               schema:
-                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "401":
-          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+          $ref: "common-responses.yaml#/components/responses/Unauthorized"
         "403":
-          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+          $ref: "common-responses.yaml#/components/responses/Forbidden"
         "500":
-          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+          $ref: "common-responses.yaml#/components/responses/InternalServerError"
       x-added-in-version: "8.10"
       x-scope: physical-tenant
 
@@ -759,7 +804,10 @@ paths:
         - Process instance
       operationId: deleteProcessInstance
       x-required-permissions:
-        - { resourceType: PROCESS_DEFINITION, permissionType: DELETE_PROCESS_INSTANCE }
+        - {
+            resourceType: PROCESS_DEFINITION,
+            permissionType: DELETE_PROCESS_INSTANCE,
+          }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -771,36 +819,36 @@ paths:
           required: true
           description: The key of the process instance to delete.
           schema:
-            $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+            $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
       requestBody:
         required: false
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DeleteProcessInstanceRequest'
+              $ref: "#/components/schemas/DeleteProcessInstanceRequest"
       responses:
         "204":
           description: The process instance is marked for deletion.
         "401":
-          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+          $ref: "common-responses.yaml#/components/responses/Unauthorized"
         "403":
-          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+          $ref: "common-responses.yaml#/components/responses/Forbidden"
         "404":
           description: The process instance is not found.
           content:
             application/problem+json:
               schema:
-                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "409":
           description: The process instance is not in a completed or terminated state and cannot be deleted.
           content:
             application/problem+json:
               schema:
-                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
-          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+          $ref: "common-responses.yaml#/components/responses/InternalServerError"
         "503":
-          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+          $ref: "common-responses.yaml#/components/responses/ServiceUnavailable"
       x-added-in-version: "8.9"
       x-scope: physical-tenant
 
@@ -813,7 +861,10 @@ paths:
       x-required-permissions:
         - anyOf:
             - { resourceType: BATCH, permissionType: CREATE }
-            - { resourceType: BATCH, permissionType: CREATE_BATCH_OPERATION_DELETE_PROCESS_INSTANCE }
+            - {
+                resourceType: BATCH,
+                permissionType: CREATE_BATCH_OPERATION_DELETE_PROCESS_INSTANCE,
+              }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -827,14 +878,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: 'batch-operations.yaml#/components/schemas/ProcessInstanceDeletionBatchOperationRequest'
+              $ref: "batch-operations.yaml#/components/schemas/ProcessInstanceDeletionBatchOperationRequest"
       responses:
         "200":
           description: The batch operation request was created.
           content:
             application/json:
               schema:
-                $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
+                $ref: "batch-operations.yaml#/components/schemas/BatchOperationCreatedResult"
         "400":
           description: >
             The process instance batch operation failed.
@@ -842,13 +893,13 @@ paths:
           content:
             application/problem+json:
               schema:
-                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "401":
-          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+          $ref: "common-responses.yaml#/components/responses/Unauthorized"
         "403":
-          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+          $ref: "common-responses.yaml#/components/responses/Forbidden"
         "500":
-          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+          $ref: "common-responses.yaml#/components/responses/InternalServerError"
       x-added-in-version: "8.9"
       x-scope: physical-tenant
 
@@ -859,7 +910,10 @@ paths:
         - Process instance
       operationId: migrateProcessInstance
       x-required-permissions:
-        - { resourceType: PROCESS_DEFINITION, permissionType: UPDATE_PROCESS_INSTANCE }
+        - {
+            resourceType: PROCESS_DEFINITION,
+            permissionType: UPDATE_PROCESS_INSTANCE,
+          }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -878,24 +932,24 @@ paths:
           required: true
           description: The key of the process instance that should be migrated.
           schema:
-            $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+            $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ProcessInstanceMigrationInstruction'
+              $ref: "#/components/schemas/ProcessInstanceMigrationInstruction"
       responses:
         "204":
           description: The process instance is migrated.
         "400":
-          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+          $ref: "common-responses.yaml#/components/responses/InvalidData"
         "404":
           description: The process instance is not found.
           content:
             application/problem+json:
               schema:
-                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "409":
           description: >
             The process instance migration failed.
@@ -903,11 +957,11 @@ paths:
           content:
             application/problem+json:
               schema:
-                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
-          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+          $ref: "common-responses.yaml#/components/responses/InternalServerError"
         "503":
-          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+          $ref: "common-responses.yaml#/components/responses/ServiceUnavailable"
       x-added-in-version: "8.6"
       x-scope: physical-tenant
 
@@ -918,7 +972,10 @@ paths:
         - Process instance
       operationId: assignProcessInstanceBusinessId
       x-required-permissions:
-        - { resourceType: PROCESS_DEFINITION, permissionType: UPDATE_PROCESS_INSTANCE }
+        - {
+            resourceType: PROCESS_DEFINITION,
+            permissionType: UPDATE_PROCESS_INSTANCE,
+          }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -938,24 +995,24 @@ paths:
           required: true
           description: The key of the process instance to assign the business id to.
           schema:
-            $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+            $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ProcessInstanceBusinessIdAssignmentInstruction'
+              $ref: "#/components/schemas/ProcessInstanceBusinessIdAssignmentInstruction"
       responses:
         "204":
           description: The business id is assigned to the process instance.
         "400":
-          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+          $ref: "common-responses.yaml#/components/responses/InvalidData"
         "404":
           description: The process instance is not found.
           content:
             application/problem+json:
               schema:
-                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "409":
           description: >
             The business id assignment failed because the process instance is not eligible,
@@ -965,11 +1022,11 @@ paths:
           content:
             application/problem+json:
               schema:
-                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
-          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+          $ref: "common-responses.yaml#/components/responses/InternalServerError"
         "503":
-          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+          $ref: "common-responses.yaml#/components/responses/ServiceUnavailable"
       x-added-in-version: "8.10"
       x-scope: physical-tenant
 
@@ -980,7 +1037,10 @@ paths:
         - Process instance
       operationId: modifyProcessInstance
       x-required-permissions:
-        - { resourceType: PROCESS_DEFINITION, permissionType: MODIFY_PROCESS_INSTANCE }
+        - {
+            resourceType: PROCESS_DEFINITION,
+            permissionType: MODIFY_PROCESS_INSTANCE,
+          }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -998,28 +1058,28 @@ paths:
           required: true
           description: The key of the process instance that should be modified.
           schema:
-            $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+            $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ProcessInstanceModificationInstruction'
+              $ref: "#/components/schemas/ProcessInstanceModificationInstruction"
       responses:
         "204":
           description: The process instance is modified.
         "400":
-          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+          $ref: "common-responses.yaml#/components/responses/InvalidData"
         "404":
           description: The process instance is not found.
           content:
             application/problem+json:
               schema:
-                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
-          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+          $ref: "common-responses.yaml#/components/responses/InternalServerError"
         "503":
-          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+          $ref: "common-responses.yaml#/components/responses/ServiceUnavailable"
       x-added-in-version: "8.6"
       x-scope: physical-tenant
 
@@ -1030,7 +1090,10 @@ paths:
         - Process instance
       operationId: suspendProcessInstance
       x-required-permissions:
-        - { resourceType: PROCESS_DEFINITION, permissionType: SUSPEND_PROCESS_INSTANCE }
+        - {
+            resourceType: PROCESS_DEFINITION,
+            permissionType: SUSPEND_PROCESS_INSTANCE,
+          }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -1046,24 +1109,24 @@ paths:
           required: true
           description: The key of the process instance to suspend.
           schema:
-            $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+            $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
       requestBody:
         required: false
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SuspendProcessInstanceRequest'
+              $ref: "#/components/schemas/SuspendProcessInstanceRequest"
       responses:
         "204":
           description: The process instance is suspended.
         "400":
-          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+          $ref: "common-responses.yaml#/components/responses/InvalidData"
         "404":
           description: The process instance is not found.
           content:
             application/problem+json:
               schema:
-                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "409":
           description: |
             The process instance is not in the ACTIVE state and cannot be suspended.
@@ -1071,11 +1134,11 @@ paths:
           content:
             application/problem+json:
               schema:
-                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
-          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+          $ref: "common-responses.yaml#/components/responses/InternalServerError"
         "503":
-          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+          $ref: "common-responses.yaml#/components/responses/ServiceUnavailable"
       x-added-in-version: "8.10"
       x-scope: physical-tenant
 
@@ -1086,7 +1149,10 @@ paths:
         - Process instance
       operationId: resumeProcessInstance
       x-required-permissions:
-        - { resourceType: PROCESS_DEFINITION, permissionType: SUSPEND_PROCESS_INSTANCE }
+        - {
+            resourceType: PROCESS_DEFINITION,
+            permissionType: SUSPEND_PROCESS_INSTANCE,
+          }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -1102,24 +1168,24 @@ paths:
           required: true
           description: The key of the process instance to resume.
           schema:
-            $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+            $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
       requestBody:
         required: false
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ResumeProcessInstanceRequest'
+              $ref: "#/components/schemas/ResumeProcessInstanceRequest"
       responses:
         "204":
           description: The process instance is resumed.
         "400":
-          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+          $ref: "common-responses.yaml#/components/responses/InvalidData"
         "404":
           description: The process instance is not found.
           content:
             application/problem+json:
               schema:
-                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "409":
           description: |
             The process instance is not in the SUSPENDED state and cannot be resumed.
@@ -1127,11 +1193,11 @@ paths:
           content:
             application/problem+json:
               schema:
-                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
-          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+          $ref: "common-responses.yaml#/components/responses/InternalServerError"
         "503":
-          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+          $ref: "common-responses.yaml#/components/responses/ServiceUnavailable"
       x-added-in-version: "8.10"
       x-scope: physical-tenant
 
@@ -1142,7 +1208,10 @@ paths:
         - Process instance
       operationId: getProcessInstanceCallHierarchy
       x-required-permissions:
-        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
+        - {
+            resourceType: PROCESS_DEFINITION,
+            permissionType: READ_PROCESS_INSTANCE,
+          }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -1154,7 +1223,7 @@ paths:
           required: true
           description: The key of the process instance to fetch the hierarchy for.
           schema:
-            $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+            $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
       responses:
         "200":
           description: The call hierarchy is successfully returned.
@@ -1163,21 +1232,21 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/ProcessInstanceCallHierarchyEntry'
+                  $ref: "#/components/schemas/ProcessInstanceCallHierarchyEntry"
         "400":
-          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+          $ref: "common-responses.yaml#/components/responses/InvalidData"
         "401":
-          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+          $ref: "common-responses.yaml#/components/responses/Unauthorized"
         "403":
-          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+          $ref: "common-responses.yaml#/components/responses/Forbidden"
         "404":
           description: The process instance is not found.
           content:
             application/problem+json:
               schema:
-                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
-          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+          $ref: "common-responses.yaml#/components/responses/InternalServerError"
       x-added-in-version: "8.8"
       x-scope: physical-tenant
 
@@ -1211,9 +1280,9 @@ components:
             If multi-tenancy is enabled, provide the tenant id of the process definition to start a
             process instance of. If multi-tenancy is disabled, don't provide this parameter.
           allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+            - $ref: "identifiers.yaml#/components/schemas/TenantId"
         operationReference:
-          $ref: 'keys.yaml#/components/schemas/OperationReference'
+          $ref: "keys.yaml#/components/schemas/OperationReference"
         startInstructions:
           description: |
             List of start instructions. By default, the process instance will start at
@@ -1221,7 +1290,7 @@ components:
             after it has been created.
           type: array
           items:
-            $ref: '#/components/schemas/ProcessInstanceCreationStartInstruction'
+            $ref: "#/components/schemas/ProcessInstanceCreationStartInstruction"
         runtimeInstructions:
           description: |
             Runtime instructions (alpha). List of instructions that affect the runtime behavior of
@@ -1231,7 +1300,7 @@ components:
             in future releases.
           type: array
           items:
-            $ref: '#/components/schemas/ProcessInstanceCreationRuntimeInstruction'
+            $ref: "#/components/schemas/ProcessInstanceCreationRuntimeInstruction"
         awaitCompletion:
           description: |
             Wait for the process instance to complete. If the process instance does not complete
@@ -1245,7 +1314,7 @@ components:
             List of variables by name to be included in the response when awaitCompletion is set to true.
             If empty, all visible variables in the root scope will be returned.
           type: array
-          example: [ ]
+          example: []
           items:
             type: string
         requestTimeout:
@@ -1256,9 +1325,9 @@ components:
           format: int64
           default: 0
         tags:
-          $ref: 'identifiers.yaml#/components/schemas/TagSet'
+          $ref: "identifiers.yaml#/components/schemas/TagSet"
         businessId:
-          $ref: 'identifiers.yaml#/components/schemas/BusinessId'
+          $ref: "identifiers.yaml#/components/schemas/BusinessId"
         stubCallActivities:
           description: |
             Starts no child process instance for the call activities of this process instance
@@ -1276,6 +1345,19 @@ components:
           type: boolean
           default: false
           example: true
+        holdTimers:
+          description: |
+            Holds every timer of this process instance and of the instances it calls (alpha).
+
+            A held timer never fires on its due date; it only fires when triggered explicitly via
+            the `POST /process-instances/{processInstanceKey}/timers/trigger` endpoint. This lets a
+            caller control when timer catch events fire, which is intended for test and debugging
+            tools rather than production traffic.
+
+            This parameter is an alpha feature and may be subject to change in future releases.
+          type: boolean
+          default: false
+          example: true
       x-properties-added-in-version:
         - propertyName: runtimeInstructions
           addedInVersion: "8.8"
@@ -1284,6 +1366,8 @@ components:
         - propertyName: businessId
           addedInVersion: "8.9"
         - propertyName: stubCallActivities
+          addedInVersion: "8.11"
+        - propertyName: holdTimers
           addedInVersion: "8.11"
 
     ProcessInstanceCreationInstructionById:
@@ -1352,7 +1436,7 @@ components:
       properties:
         processDefinitionKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+            - $ref: "keys.yaml#/components/schemas/ProcessDefinitionKey"
           description: |
             The unique key identifying the process definition, for example, returned for a process in the
             deploy resources endpoint.
@@ -1377,18 +1461,18 @@ components:
 
             For now, however, the start instruction is implicitly a "startBeforeElement" instruction
           allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+            - $ref: "identifiers.yaml#/components/schemas/ElementId"
 
     ProcessInstanceCreationRuntimeInstruction:
       x-polymorphic-schema: true
       discriminator:
         propertyName: type
         mapping:
-          TERMINATE_PROCESS_INSTANCE: '#/components/schemas/ProcessInstanceCreationTerminateInstruction'
-          RESERVE_JOBS: '#/components/schemas/ProcessInstanceCreationReserveJobsInstruction'
+          TERMINATE_PROCESS_INSTANCE: "#/components/schemas/ProcessInstanceCreationTerminateInstruction"
+          RESERVE_JOBS: "#/components/schemas/ProcessInstanceCreationReserveJobsInstruction"
       oneOf:
-        - $ref: '#/components/schemas/ProcessInstanceCreationTerminateInstruction'
-        - $ref: '#/components/schemas/ProcessInstanceCreationReserveJobsInstruction'
+        - $ref: "#/components/schemas/ProcessInstanceCreationTerminateInstruction"
+        - $ref: "#/components/schemas/ProcessInstanceCreationReserveJobsInstruction"
 
     ProcessInstanceCreationTerminateInstruction:
       type: object
@@ -1406,7 +1490,7 @@ components:
             The id of the element that, once completed or terminated, will cause the process to be terminated.
           example: Activity_106kb
           allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+            - $ref: "identifiers.yaml#/components/schemas/ElementId"
       x-properties-added-in-version:
         - propertyName: type
           addedInVersion: "8.9"
@@ -1439,7 +1523,7 @@ components:
             The token that reserves this process instance's jobs. Pass it back on every
             command against one of those jobs.
           allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/JobReservationToken'
+            - $ref: "identifiers.yaml#/components/schemas/JobReservationToken"
       x-properties-added-in-version:
         - propertyName: type
           addedInVersion: "8.11"
@@ -1465,7 +1549,7 @@ components:
             The BPMN process id of the process definition which was used to create the process.
             instance
           allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
+            - $ref: "identifiers.yaml#/components/schemas/ProcessDefinitionId"
           example: my-process-model-1
         processDefinitionVersion:
           description: |
@@ -1475,7 +1559,7 @@ components:
           example: 3
         tenantId:
           allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+            - $ref: "identifiers.yaml#/components/schemas/TenantId"
           description: The tenant id of the created process instance.
           example: <default>
         variables:
@@ -1484,22 +1568,22 @@ components:
           type: object
         processDefinitionKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+            - $ref: "keys.yaml#/components/schemas/ProcessDefinitionKey"
           description: |
             The key of the process definition which was used to create the process instance.
         processInstanceKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+            - $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
           description: |
             The unique identifier of the created process instance; to be used wherever a request
             needs a process instance key (e.g. CancelProcessInstanceRequest).
         tags:
-          $ref: 'identifiers.yaml#/components/schemas/TagSet'
+          $ref: "identifiers.yaml#/components/schemas/TagSet"
         businessId:
           nullable: true
           description: Business id as provided on creation.
           allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/BusinessId'
+            - $ref: "identifiers.yaml#/components/schemas/BusinessId"
       x-properties-added-in-version:
         - propertyName: tags
           addedInVersion: "8.8"
@@ -1529,7 +1613,7 @@ components:
             - tenantId
             - businessId
         order:
-          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+          $ref: "search-models.yaml#/components/schemas/SortOrderEnum"
       required:
         - field
 
@@ -1538,16 +1622,16 @@ components:
       type: object
       additionalProperties: false
       allOf:
-        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+        - $ref: "search-models.yaml#/components/schemas/SearchQueryRequest"
       properties:
         sort:
           description: Sort field criteria.
           type: array
           items:
-            $ref: '#/components/schemas/ProcessInstanceSearchQuerySortRequest'
+            $ref: "#/components/schemas/ProcessInstanceSearchQuerySortRequest"
         filter:
           allOf:
-            - $ref: '#/components/schemas/ProcessInstanceFilter'
+            - $ref: "#/components/schemas/ProcessInstanceFilter"
           description: The process instance search filters.
 
     BaseProcessInstanceFilterFields:
@@ -1556,49 +1640,49 @@ components:
       properties:
         startDate:
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
+            - $ref: "filters.yaml#/components/schemas/DateTimeFilterProperty"
           description: The start date.
         endDate:
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
+            - $ref: "filters.yaml#/components/schemas/DateTimeFilterProperty"
           description: The end date.
         state:
           allOf:
-            - $ref: '#/components/schemas/ProcessInstanceStateFilterProperty'
+            - $ref: "#/components/schemas/ProcessInstanceStateFilterProperty"
           description: The process instance state.
         hasIncident:
           type: boolean
           description: Whether this process instance has a related incident or not.
         suspendedDate:
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
+            - $ref: "filters.yaml#/components/schemas/DateTimeFilterProperty"
           description: |
             The time this process instance most recently entered the SUSPENDED state.
             This is cleared (null) again once the process instance is resumed.
         tenantId:
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+            - $ref: "filters.yaml#/components/schemas/StringFilterProperty"
           description: The tenant id.
         variables:
           description: The process instance variables.
           type: array
           items:
-            $ref: 'variables.yaml#/components/schemas/VariableValueFilterProperty'
+            $ref: "variables.yaml#/components/schemas/VariableValueFilterProperty"
         processInstanceKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
+            - $ref: "keys.yaml#/components/schemas/ProcessInstanceKeyFilterProperty"
           description: The key of this process instance.
         parentProcessInstanceKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
+            - $ref: "keys.yaml#/components/schemas/ProcessInstanceKeyFilterProperty"
           description: The parent process instance key.
         parentElementInstanceKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
+            - $ref: "keys.yaml#/components/schemas/ElementInstanceKeyFilterProperty"
           description: The parent element instance key.
         batchOperationId:
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+            - $ref: "filters.yaml#/components/schemas/StringFilterProperty"
           description: >
             The batch operation id.
 
@@ -1607,35 +1691,35 @@ components:
           deprecated: true
         batchOperationKey:
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+            - $ref: "filters.yaml#/components/schemas/StringFilterProperty"
           description: The batch operation key.
         errorMessage:
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+            - $ref: "filters.yaml#/components/schemas/StringFilterProperty"
           description: The error message related to the process.
         hasRetriesLeft:
           description: Whether the process has failed jobs with retries left.
           type: boolean
         elementInstanceState:
           allOf:
-            - $ref: 'element-instances.yaml#/components/schemas/ElementInstanceStateFilterProperty'
+            - $ref: "element-instances.yaml#/components/schemas/ElementInstanceStateFilterProperty"
           description: The state of the element instances associated with the process instance.
         elementId:
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+            - $ref: "filters.yaml#/components/schemas/StringFilterProperty"
           description: The element id associated with the process instance.
         hasElementInstanceIncident:
           description: Whether the element instance has an incident or not.
           type: boolean
         incidentErrorHashCode:
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/IntegerFilterProperty'
+            - $ref: "filters.yaml#/components/schemas/IntegerFilterProperty"
           description: The incident error hash code, associated with this process.
         tags:
-          $ref: 'identifiers.yaml#/components/schemas/TagSet'
+          $ref: "identifiers.yaml#/components/schemas/TagSet"
         businessId:
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+            - $ref: "filters.yaml#/components/schemas/StringFilterProperty"
           description: The business id associated with the process instance.
       x-properties-added-in-version:
         - propertyName: startDate
@@ -1683,7 +1767,7 @@ components:
     ProcessDefinitionStatisticsFilter:
       description: Process definition statistics search filter.
       allOf:
-        - $ref: '#/components/schemas/BaseProcessInstanceFilterFields'
+        - $ref: "#/components/schemas/BaseProcessInstanceFilterFields"
         - type: object
           properties:
             $or:
@@ -1720,33 +1804,33 @@ components:
                 <p>Note: Using complex <code>$or</code> conditions may impact performance, use with caution in high-volume environments.
               type: array
               items:
-                $ref: '#/components/schemas/BaseProcessInstanceFilterFields'
+                $ref: "#/components/schemas/BaseProcessInstanceFilterFields"
 
     ProcessInstanceFilterFields:
       description: Process instance search filter.
       type: object
       allOf:
-        - $ref: '#/components/schemas/BaseProcessInstanceFilterFields'
+        - $ref: "#/components/schemas/BaseProcessInstanceFilterFields"
       properties:
         processDefinitionId:
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+            - $ref: "filters.yaml#/components/schemas/StringFilterProperty"
           description: The process definition id.
         processDefinitionName:
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+            - $ref: "filters.yaml#/components/schemas/StringFilterProperty"
           description: The process definition name.
         processDefinitionVersion:
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/IntegerFilterProperty'
+            - $ref: "filters.yaml#/components/schemas/IntegerFilterProperty"
           description: The process definition version.
         processDefinitionVersionTag:
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+            - $ref: "filters.yaml#/components/schemas/StringFilterProperty"
           description: The process definition version tag.
         processDefinitionKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty'
+            - $ref: "keys.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty"
           description: The process definition key.
       x-properties-added-in-version:
         - propertyName: processDefinitionId
@@ -1763,7 +1847,7 @@ components:
     ProcessInstanceFilter:
       description: Process instance search filter.
       allOf:
-        - $ref: '#/components/schemas/ProcessInstanceFilterFields'
+        - $ref: "#/components/schemas/ProcessInstanceFilterFields"
         - type: object
           properties:
             $or:
@@ -1800,7 +1884,7 @@ components:
                 <p>Note: Using complex <code>$or</code> conditions may impact performance, use with caution in high-volume environments.
               type: array
               items:
-                $ref: '#/components/schemas/ProcessInstanceFilterFields'
+                $ref: "#/components/schemas/ProcessInstanceFilterFields"
           x-properties-added-in-version:
             - propertyName: "$or"
               addedInVersion: "8.8"
@@ -1809,7 +1893,7 @@ components:
       description: Process instance search response.
       type: object
       allOf:
-        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+        - $ref: "search-models.yaml#/components/schemas/SearchQueryResponse"
       required:
         - items
       properties:
@@ -1817,7 +1901,7 @@ components:
           description: The matching process instances.
           type: array
           items:
-            $ref: '#/components/schemas/ProcessInstanceResult'
+            $ref: "#/components/schemas/ProcessInstanceResult"
 
     ProcessInstanceResult:
       description: Process instance search response item.
@@ -1842,7 +1926,7 @@ components:
         - businessId
       properties:
         processDefinitionId:
-          $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
+          $ref: "identifiers.yaml#/components/schemas/ProcessDefinitionId"
         processDefinitionName:
           type: string
           nullable: true
@@ -1865,7 +1949,7 @@ components:
           type: string
           format: date-time
         state:
-          $ref: '#/components/schemas/ProcessInstanceStateEnum'
+          $ref: "#/components/schemas/ProcessInstanceStateEnum"
         suspendedDate:
           description: |
             The time this process instance most recently entered the `SUSPENDED` state.
@@ -1877,25 +1961,25 @@ components:
           type: boolean
           description: Whether this process instance has a related incident or not.
         tenantId:
-          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          $ref: "identifiers.yaml#/components/schemas/TenantId"
         processInstanceKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+            - $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
           description: The key of this process instance.
         processDefinitionKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+            - $ref: "keys.yaml#/components/schemas/ProcessDefinitionKey"
           description: The process definition key.
         parentProcessInstanceKey:
           description: The parent process instance key.
           nullable: true
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+            - $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
         parentElementInstanceKey:
           description: The parent element instance key.
           nullable: true
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+            - $ref: "keys.yaml#/components/schemas/ElementInstanceKey"
         rootProcessInstanceKey:
           description: |
             The key of the root process instance. The root process instance is the top-level
@@ -1903,14 +1987,14 @@ components:
             belonging to process instance hierarchies created in version 8.9 or later.
           nullable: true
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+            - $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
         tags:
-          $ref: 'identifiers.yaml#/components/schemas/TagSet'
+          $ref: "identifiers.yaml#/components/schemas/TagSet"
         businessId:
           description: The business id associated with this process instance.
           nullable: true
           allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/BusinessId'
+            - $ref: "identifiers.yaml#/components/schemas/BusinessId"
       x-properties-added-in-version:
         - propertyName: processDefinitionId
           addedInVersion: "8.8"
@@ -1953,7 +2037,7 @@ components:
       additionalProperties: false
       properties:
         operationReference:
-          $ref: 'keys.yaml#/components/schemas/OperationReference'
+          $ref: "keys.yaml#/components/schemas/OperationReference"
 
     DeleteProcessInstanceRequest:
       type: object
@@ -1961,7 +2045,7 @@ components:
       additionalProperties: false
       properties:
         operationReference:
-          $ref: 'keys.yaml#/components/schemas/OperationReference'
+          $ref: "keys.yaml#/components/schemas/OperationReference"
 
     SuspendProcessInstanceRequest:
       type: object
@@ -1969,7 +2053,7 @@ components:
       additionalProperties: false
       properties:
         operationReference:
-          $ref: 'keys.yaml#/components/schemas/OperationReference'
+          $ref: "keys.yaml#/components/schemas/OperationReference"
 
     ResumeProcessInstanceRequest:
       type: object
@@ -1977,7 +2061,7 @@ components:
       additionalProperties: false
       properties:
         operationReference:
-          $ref: 'keys.yaml#/components/schemas/OperationReference'
+          $ref: "keys.yaml#/components/schemas/OperationReference"
 
     ProcessInstanceCallHierarchyEntry:
       type: object
@@ -1988,11 +2072,11 @@ components:
       properties:
         processInstanceKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+            - $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
           description: The key of the process instance.
         processDefinitionKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+            - $ref: "keys.yaml#/components/schemas/ProcessDefinitionKey"
           description: The key of the process definition.
         processDefinitionName:
           type: string
@@ -2008,7 +2092,7 @@ components:
           description: The sequence flows.
           type: array
           items:
-            $ref: '#/components/schemas/ProcessInstanceSequenceFlowResult'
+            $ref: "#/components/schemas/ProcessInstanceSequenceFlowResult"
 
     ProcessInstanceSequenceFlowResult:
       description: Process instance sequence flow result.
@@ -2027,7 +2111,7 @@ components:
           description: The sequence flow id.
         processInstanceKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+            - $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
           description: The key of this process instance.
         rootProcessInstanceKey:
           description: |
@@ -2036,7 +2120,7 @@ components:
             belonging to process instance hierarchies created in version 8.9 or later.
           nullable: true
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+            - $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
         processDefinitionKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
@@ -2053,10 +2137,10 @@ components:
           nullable: true
         elementId:
           allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+            - $ref: "identifiers.yaml#/components/schemas/ElementId"
           description: The element id for this sequence flow, as provided in the BPMN process.
         tenantId:
-          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          $ref: "identifiers.yaml#/components/schemas/TenantId"
       x-properties-added-in-version:
         - propertyName: rootProcessInstanceKey
           addedInVersion: "8.9"
@@ -2071,7 +2155,7 @@ components:
           description: The element statistics.
           type: array
           items:
-            $ref: 'process-definitions.yaml#/components/schemas/ProcessElementStatisticsResult'
+            $ref: "process-definitions.yaml#/components/schemas/ProcessElementStatisticsResult"
 
     ProcessInstanceWaitStateStatisticsQueryResult:
       description: Process instance wait state statistics query response.
@@ -2083,7 +2167,7 @@ components:
           description: The wait state statistics.
           type: array
           items:
-            $ref: '#/components/schemas/ProcessInstanceWaitStateStatisticsResult'
+            $ref: "#/components/schemas/ProcessInstanceWaitStateStatisticsResult"
 
     ProcessInstanceWaitStateStatisticsResult:
       description: Process instance wait state statistics response item.
@@ -2094,7 +2178,7 @@ components:
       properties:
         elementId:
           allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+            - $ref: "identifiers.yaml#/components/schemas/ElementId"
           description: The element id for which the wait states are aggregated.
         waitingCount:
           description: The total number of waiting instances of the element.
@@ -2109,15 +2193,15 @@ components:
       properties:
         targetProcessDefinitionKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+            - $ref: "keys.yaml#/components/schemas/ProcessDefinitionKey"
           description: The key of process definition to migrate the process instance to.
         mappingInstructions:
           description: Element mappings from the source process instance to the target process instance.
           type: array
           items:
-            $ref: '#/components/schemas/MigrateProcessInstanceMappingInstruction'
+            $ref: "#/components/schemas/MigrateProcessInstanceMappingInstruction"
         operationReference:
-          $ref: 'keys.yaml#/components/schemas/OperationReference'
+          $ref: "keys.yaml#/components/schemas/OperationReference"
       required:
         - targetProcessDefinitionKey
         - mappingInstructions
@@ -2130,11 +2214,11 @@ components:
         sourceElementId:
           description: The element id to migrate from.
           allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+            - $ref: "identifiers.yaml#/components/schemas/ElementId"
         targetElementId:
           description: The element id to migrate into.
           allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+            - $ref: "identifiers.yaml#/components/schemas/ElementId"
       required:
         - sourceElementId
         - targetElementId
@@ -2151,7 +2235,7 @@ components:
         The instruction describing the business id to assign to a running process instance.
       properties:
         businessId:
-          $ref: 'identifiers.yaml#/components/schemas/BusinessId'
+          $ref: "identifiers.yaml#/components/schemas/BusinessId"
       required:
         - businessId
 
@@ -2160,22 +2244,22 @@ components:
       additionalProperties: false
       properties:
         operationReference:
-          $ref: 'keys.yaml#/components/schemas/OperationReference'
+          $ref: "keys.yaml#/components/schemas/OperationReference"
         activateInstructions:
           description: Instructions describing which elements to activate in which scopes and which variables to create or update.
           type: array
           items:
-            $ref: '#/components/schemas/ProcessInstanceModificationActivateInstruction'
+            $ref: "#/components/schemas/ProcessInstanceModificationActivateInstruction"
         moveInstructions:
           description: Instructions describing which elements to move from one scope to another.
           type: array
           items:
-            $ref: '#/components/schemas/ProcessInstanceModificationMoveInstruction'
+            $ref: "#/components/schemas/ProcessInstanceModificationMoveInstruction"
         terminateInstructions:
           description: Instructions describing which elements to terminate.
           type: array
           items:
-            $ref: '#/components/schemas/ProcessInstanceModificationTerminateInstruction'
+            $ref: "#/components/schemas/ProcessInstanceModificationTerminateInstruction"
       x-properties-added-in-version:
         - propertyName: moveInstructions
           addedInVersion: "8.9"
@@ -2187,12 +2271,12 @@ components:
         elementId:
           description: The id of the element to activate.
           allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+            - $ref: "identifiers.yaml#/components/schemas/ElementId"
         variableInstructions:
           description: Instructions describing which variables to create or update.
           type: array
           items:
-            $ref: '#/components/schemas/ModifyProcessInstanceVariableInstruction'
+            $ref: "#/components/schemas/ModifyProcessInstanceVariableInstruction"
         ancestorElementInstanceKey:
           description: |
             The key of the ancestor scope the element instance should be created in.
@@ -2200,7 +2284,7 @@ components:
             flow scope. If multiple instances of the target element's flow scope exist, choose one
             specifically with this property by providing its key.
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+            - $ref: "keys.yaml#/components/schemas/ElementInstanceKey"
       required:
         - elementId
 
@@ -2232,18 +2316,18 @@ components:
         body instances will activate new element instances at the target id.
       properties:
         sourceElementInstruction:
-          $ref: '#/components/schemas/SourceElementInstruction'
+          $ref: "#/components/schemas/SourceElementInstruction"
         targetElementId:
           allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+            - $ref: "identifiers.yaml#/components/schemas/ElementId"
           description: The target element id.
         ancestorScopeInstruction:
-          $ref: '#/components/schemas/AncestorScopeInstruction'
+          $ref: "#/components/schemas/AncestorScopeInstruction"
         variableInstructions:
           description: Instructions describing which variables to create or update.
           type: array
           items:
-            $ref: '#/components/schemas/ModifyProcessInstanceVariableInstruction'
+            $ref: "#/components/schemas/ModifyProcessInstanceVariableInstruction"
       required:
         - sourceElementInstruction
         - targetElementId
@@ -2255,8 +2339,8 @@ components:
       discriminator:
         propertyName: sourceType
         mapping:
-          byId: '#/components/schemas/SourceElementIdInstruction'
-          byKey: '#/components/schemas/SourceElementInstanceKeyInstruction'
+          byId: "#/components/schemas/SourceElementIdInstruction"
+          byKey: "#/components/schemas/SourceElementInstanceKeyInstruction"
       oneOf:
         - $ref: "#/components/schemas/SourceElementIdInstruction"
         - $ref: "#/components/schemas/SourceElementInstanceKeyInstruction"
@@ -2276,7 +2360,7 @@ components:
           description: |
             The id of the source element for the move instruction.
           allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+            - $ref: "identifiers.yaml#/components/schemas/ElementId"
       required:
         - sourceElementId
         - sourceType
@@ -2295,7 +2379,7 @@ components:
           description: |
             The source element instance key for the move instruction.
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+            - $ref: "keys.yaml#/components/schemas/ElementInstanceKey"
       required:
         - sourceElementInstanceKey
         - sourceType
@@ -2308,9 +2392,9 @@ components:
       discriminator:
         propertyName: ancestorScopeType
         mapping:
-          direct: '#/components/schemas/DirectAncestorKeyInstruction'
-          inferred: '#/components/schemas/InferredAncestorKeyInstruction'
-          sourceParent: '#/components/schemas/UseSourceParentKeyInstruction'
+          direct: "#/components/schemas/DirectAncestorKeyInstruction"
+          inferred: "#/components/schemas/InferredAncestorKeyInstruction"
+          sourceParent: "#/components/schemas/UseSourceParentKeyInstruction"
       oneOf:
         - $ref: "#/components/schemas/DirectAncestorKeyInstruction"
         - $ref: "#/components/schemas/InferredAncestorKeyInstruction"
@@ -2331,7 +2415,7 @@ components:
             flow scope. If multiple instances of the target element's flow scope exist, choose one
             specifically with this property by providing its key.
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+            - $ref: "keys.yaml#/components/schemas/ElementInstanceKey"
       required:
         - ancestorElementInstanceKey
         - ancestorScopeType
@@ -2375,7 +2459,7 @@ components:
       properties:
         elementId:
           allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+            - $ref: "identifiers.yaml#/components/schemas/ElementId"
           description: The id of the elements to terminate. The element instances are determined at runtime.
       required:
         - elementId
@@ -2389,7 +2473,7 @@ components:
       properties:
         elementInstanceKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+            - $ref: "keys.yaml#/components/schemas/ElementInstanceKey"
           description: The key of the element instance to terminate.
       required:
         - elementInstanceKey
@@ -2429,7 +2513,7 @@ components:
           items:
             $ref: "#/components/schemas/ProcessInstanceStateEnum"
         $like:
-          $ref: 'filters.yaml#/components/schemas/LikeFilter'
+          $ref: "filters.yaml#/components/schemas/LikeFilter"
 
     ProcessInstanceStateFilterProperty:
       description: ProcessInstanceStateEnum property with full advanced search capabilities.
@@ -2439,4 +2523,4 @@ components:
           description: Matches the value exactly.
           allOf:
             - $ref: "#/components/schemas/ProcessInstanceStateEnum"
-        - $ref: '#/components/schemas/AdvancedProcessInstanceStateFilter'
+        - $ref: "#/components/schemas/AdvancedProcessInstanceStateFilter"

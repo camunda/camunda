@@ -78,6 +78,9 @@
             "stubCallActivities": {
               "type": "boolean"
             },
+            "holdTimers": {
+              "type": "boolean"
+            },
             "elementInstanceKey": {
               "enabled": "false"
             }

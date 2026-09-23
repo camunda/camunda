@@ -23,20 +23,17 @@ import io.camunda.process.test.api.testCases.instructions.CreateProcessInstanceI
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.CreateProcessInstanceRuntimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.CreateProcessInstanceTerminateRuntimeInstruction;
 import io.camunda.process.test.impl.testCases.AssertionFacade;
+import io.camunda.process.test.impl.testCases.CreatedProcessInstanceRegistry;
 import io.camunda.process.test.impl.testCases.TestCaseInstructionHandler;
-import java.util.function.LongConsumer;
 
 public class CreateProcessInstanceInstructionHandler
     implements TestCaseInstructionHandler<CreateProcessInstanceInstruction> {
 
-  private final LongConsumer isolatedInstanceListener;
+  private final CreatedProcessInstanceRegistry createdProcessInstances;
 
-  public CreateProcessInstanceInstructionHandler() {
-    this(processInstanceKey -> {});
-  }
-
-  public CreateProcessInstanceInstructionHandler(final LongConsumer isolatedInstanceListener) {
-    this.isolatedInstanceListener = isolatedInstanceListener;
+  public CreateProcessInstanceInstructionHandler(
+      final CreatedProcessInstanceRegistry createdProcessInstances) {
+    this.createdProcessInstances = createdProcessInstances;
   }
 
   @Override
@@ -69,7 +66,10 @@ public class CreateProcessInstanceInstructionHandler
         .getRuntimeInstructions()
         .forEach(runtimeInstruction -> applyRuntimeInstruction(runtimeInstruction, command));
 
-    final boolean isolated = instruction.getReserveJobs() || instruction.getStubCallActivities();
+    final boolean isolated =
+        instruction.getReserveJobs()
+            || instruction.getStubCallActivities()
+            || instruction.getHoldTimers();
 
     if (instruction.getReserveJobs()) {
       command.reserveJobs(context.getJobReservationToken());
@@ -77,13 +77,19 @@ public class CreateProcessInstanceInstructionHandler
     if (instruction.getStubCallActivities()) {
       command.stubCallActivities(true);
     }
+    if (instruction.getHoldTimers()) {
+      command.holdTimers(true);
+    }
 
     final ProcessInstanceEvent processInstance = command.send().join();
 
-    if (isolated) {
-      // an isolated instance waits on jobs no worker takes, so it parks until the test ends it
-      isolatedInstanceListener.accept(processInstance.getProcessInstanceKey());
-    }
+    // an isolated instance waits on jobs no worker takes, or on timers that never fire, so it
+    // parks until the test ends it
+    createdProcessInstances.register(
+        processDefinitionId,
+        processInstance.getProcessInstanceKey(),
+        instruction.getHoldTimers(),
+        isolated);
   }
 
   @Override

@@ -51,6 +51,7 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
   private static final StringValue VERSION_TAG_KEY = new StringValue("versionTag");
   private static final StringValue STUB_CALL_ACTIVITIES_KEY = new StringValue("stubCallActivities");
+  private static final StringValue HOLD_TIMERS_KEY = new StringValue("holdTimers");
 
   private final StringProperty bpmnProcessIdProperty = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final LongProperty processDefinitionKeyProperty =
@@ -80,9 +81,10 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   private final StringProperty versionTagProperty = new StringProperty(VERSION_TAG_KEY, "");
   private final BooleanProperty stubCallActivitiesProperty =
       new BooleanProperty(STUB_CALL_ACTIVITIES_KEY, false);
+  private final BooleanProperty holdTimersProperty = new BooleanProperty(HOLD_TIMERS_KEY, false);
 
   public ProcessInstanceCreationRecord() {
-    super(15);
+    super(16);
     declareProperty(bpmnProcessIdProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(processInstanceKeyProperty)
@@ -96,7 +98,8 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
         .declareProperty(storageOrdinalProperty)
         .declareProperty(businessIdProperty)
         .declareProperty(versionTagProperty)
-        .declareProperty(stubCallActivitiesProperty);
+        .declareProperty(stubCallActivitiesProperty)
+        .declareProperty(holdTimersProperty);
     declareProperties(variablesPropertyGroup);
   }
 
@@ -333,6 +336,16 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
 
   public ProcessInstanceCreationRecord setStubCallActivities(final boolean stubCallActivities) {
     stubCallActivitiesProperty.setValue(stubCallActivities);
+    return this;
+  }
+
+  @Override
+  public boolean isHoldTimers() {
+    return holdTimersProperty.getValue();
+  }
+
+  public ProcessInstanceCreationRecord setHoldTimers(final boolean holdTimers) {
+    holdTimersProperty.setValue(holdTimers);
     return this;
   }
 

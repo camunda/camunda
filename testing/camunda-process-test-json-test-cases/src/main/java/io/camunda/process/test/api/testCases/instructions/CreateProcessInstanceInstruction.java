@@ -88,4 +88,17 @@ public interface CreateProcessInstanceInstruction extends TestCaseInstruction {
   default boolean getStubCallActivities() {
     return false;
   }
+
+  /**
+   * Whether the process instance's timers are kept out of the engine's due-date scheduler, so that
+   * none of them fires on its own. Defaults to false.
+   *
+   * <p>A held timer fires only when a {@link TriggerTimerInstruction} names its catch event.
+   *
+   * @return true if the instance's timers are held, false otherwise
+   */
+  @Value.Default
+  default boolean getHoldTimers() {
+    return false;
+  }
 }

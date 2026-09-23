@@ -143,6 +143,25 @@ final class InstructionSelectorFactory {
   }
 
   /**
+   * Reads the BPMN element id of a timer catch event from a DSL element selector.
+   *
+   * @param dslSelector the DSL element selector identifying the timer catch event
+   * @return the element id
+   * @throws IllegalArgumentException if the element is not selected by elementId
+   */
+  static String buildTimerElementId(
+      final io.camunda.process.test.api.testCases.ElementSelector dslSelector) {
+    return dslSelector
+        .getElementId()
+        .orElseThrow(
+            () ->
+                new IllegalArgumentException(
+                    "The timer catch event must be selected by elementId; a held timer is addressed"
+                        + " by its element id, which for a boundary timer is the boundary event's"
+                        + " own id."));
+  }
+
+  /**
    * Builds an element selector from a DSL element selector.
    *
    * @param dslSelector the DSL element selector

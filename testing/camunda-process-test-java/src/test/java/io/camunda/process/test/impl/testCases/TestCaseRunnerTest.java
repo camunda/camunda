@@ -38,8 +38,10 @@ import io.camunda.process.test.api.testCases.TestCaseInstruction;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertProcessInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableCreateProcessInstanceInstruction;
+import io.camunda.process.test.api.testCases.instructions.ImmutableIncreaseTimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableMockJobWorkerCompleteJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.assertProcessInstance.ProcessInstanceState;
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -290,11 +292,84 @@ public class TestCaseRunnerTest {
     assertThat(CamundaTestCaseRunner.reservesJobsAndMocksJobWorkers(testCase)).isFalse();
   }
 
+  @Test
+  void shouldDetectThatHeldTimersAreDrivenByTheClock() {
+    // given
+    final TestCase testCase =
+        ImmutableTestCase.builder()
+            .name("test")
+            .addInstructions(createProcessInstanceHoldingTimers(true))
+            .addInstructions(
+                ImmutableIncreaseTimeInstruction.builder().duration(Duration.ofHours(1)).build())
+            .build();
+
+    // when/then
+    assertThat(CamundaTestCaseRunner.holdsTimersAndMovesTheClock(testCase)).isTrue();
+  }
+
+  @Test
+  void shouldNotDetectClockMoveWithoutHeldTimers() {
+    // given
+    final TestCase testCase =
+        ImmutableTestCase.builder()
+            .name("test")
+            .addInstructions(createProcessInstanceHoldingTimers(false))
+            .addInstructions(
+                ImmutableIncreaseTimeInstruction.builder().duration(Duration.ofHours(1)).build())
+            .build();
+
+    // when/then
+    assertThat(CamundaTestCaseRunner.holdsTimersAndMovesTheClock(testCase)).isFalse();
+  }
+
+  @Test
+  void shouldNotDetectHeldTimersWithoutClockMove() {
+    // given
+    final TestCase testCase = createTestCase(createProcessInstanceHoldingTimers(true));
+
+    // when/then
+    assertThat(CamundaTestCaseRunner.holdsTimersAndMovesTheClock(testCase)).isFalse();
+  }
+
+  @Test
+  void shouldCancelProcessInstanceThatHoldsTimers() {
+    // given
+    final TestCaseRunner runner = new CamundaTestCaseRunner(processTestContext);
+    when(processTestContext.createClient()).thenReturn(camundaClient);
+
+    final ProcessInstanceEvent processInstance = mock(ProcessInstanceEvent.class);
+    when(processInstance.getProcessInstanceKey()).thenReturn(42L);
+    when(camundaClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(any())
+            .latestVersion()
+            .variables(anyMap())
+            .send()
+            .join())
+        .thenReturn(processInstance);
+
+    final TestCase testCase = createTestCase(createProcessInstanceHoldingTimers(true));
+
+    // when
+    runner.run(testCase);
+
+    // then a held-timer instance parks on a timer that never fires, so it must be cancelled
+    verify(camundaClient).newCancelInstanceCommand(42L);
+  }
+
   private static TestCaseInstruction createProcessInstance(final boolean reserveJobs) {
     return ImmutableCreateProcessInstanceInstruction.builder()
         .processDefinitionSelector(
             ImmutableProcessDefinitionSelector.builder().processDefinitionId("process").build())
         .reserveJobs(reserveJobs)
+        .build();
+  }
+
+  private static TestCaseInstruction createProcessInstanceHoldingTimers(final boolean holdTimers) {
+    return ImmutableCreateProcessInstanceInstruction.builder()
+        .processDefinitionSelector(
+            ImmutableProcessDefinitionSelector.builder().processDefinitionId("process").build())
+        .holdTimers(holdTimers)
         .build();
   }
 

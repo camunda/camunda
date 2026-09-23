@@ -50,7 +50,7 @@ public class CreateProcessInstanceInstructionTest {
   @Mock private AssertionFacade assertionFacade;
 
   private final CreateProcessInstanceInstructionHandler instructionHandler =
-      new CreateProcessInstanceInstructionHandler();
+      new CreateProcessInstanceInstructionHandler(new CreatedProcessInstanceRegistry());
 
   @Test
   void shouldCreateProcessInstanceByProcessDefinitionId() {
@@ -139,6 +139,35 @@ public class CreateProcessInstanceInstructionTest {
         .reserveJobs(org.mockito.ArgumentMatchers.any());
     verify(mockCommand, org.mockito.Mockito.never())
         .stubCallActivities(org.mockito.ArgumentMatchers.anyBoolean());
+    verify(mockCommand, org.mockito.Mockito.never())
+        .holdTimers(org.mockito.ArgumentMatchers.anyBoolean());
+  }
+
+  @Test
+  void shouldHoldTimers() {
+    // given
+    final CreateProcessInstanceInstruction instruction =
+        ImmutableCreateProcessInstanceInstruction.builder()
+            .processDefinitionSelector(
+                ImmutableProcessDefinitionSelector.builder()
+                    .processDefinitionId(PROCESS_DEFINITION_ID)
+                    .build())
+            .holdTimers(true)
+            .build();
+
+    // when
+    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+    // then
+    final CreateProcessInstanceCommandStep3 mockCommand =
+        camundaClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_DEFINITION_ID)
+            .latestVersion()
+            .variables(Collections.emptyMap());
+
+    verify(mockCommand).holdTimers(true);
+    verify(mockCommand).send();
   }
 
   @Test

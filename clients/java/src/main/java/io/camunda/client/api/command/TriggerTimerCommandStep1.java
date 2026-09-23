@@ -1,0 +1,35 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.camunda.client.api.command;
+
+import io.camunda.client.api.response.TriggerTimerResponse;
+
+public interface TriggerTimerCommandStep1 {
+
+  /**
+   * Sets the BPMN element id of the timer catch event whose held timer should fire.
+   *
+   * <p>For a boundary timer this is the id of the boundary event itself, not of the activity it is
+   * attached to.
+   *
+   * @param elementId the BPMN element id of the timer catch event
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
+  TriggerTimerCommandStep2 elementId(String elementId);
+
+  interface TriggerTimerCommandStep2 extends FinalCommandStep<TriggerTimerResponse> {}
+}

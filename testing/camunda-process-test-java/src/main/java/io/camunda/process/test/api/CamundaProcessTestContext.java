@@ -344,6 +344,38 @@ public interface CamundaProcessTestContext {
   void runCalledProcess(final JobSelector jobSelector);
 
   /**
+   * Fires a held timer of the selected process instance immediately, without waiting for its due
+   * date (alpha).
+   *
+   * <p>The timer belongs to an instance created with {@link
+   * io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3#holdTimers(boolean)
+   * holdTimers}, whose timers never fire on their own. Advancing the clock with {@link
+   * #increaseTime(java.time.Duration)} does not fire them either — that is the point of the hold,
+   * and it is why this method exists.
+   *
+   * <p>The element id is that of the timer catch event. For a boundary timer it is the boundary
+   * event's own id, not the id of the activity it is attached to.
+   *
+   * @param processInstanceSelector the selector to identify the process instance that owns the held
+   *     timer
+   * @param elementId the BPMN element id of the timer catch event
+   */
+  void triggerTimer(final ProcessInstanceSelector processInstanceSelector, final String elementId);
+
+  /**
+   * Fires a held timer of the given process instance immediately, without waiting for its due date
+   * (alpha).
+   *
+   * <p>Addresses the instance by key, which is what the instance's creator holds. Prefer it over
+   * {@link #triggerTimer(ProcessInstanceSelector, String)} whenever more than one instance of the
+   * process may exist, because a selector resolves to an arbitrary one of them.
+   *
+   * @param processInstanceKey the key of the process instance that owns the held timer
+   * @param elementId the BPMN element id of the timer catch event
+   */
+  void triggerTimer(final long processInstanceKey, final String elementId);
+
+  /**
    * Completes a user task with the given BPMN element ID.
    *
    * @param elementId the BPMN element ID of the user task to complete

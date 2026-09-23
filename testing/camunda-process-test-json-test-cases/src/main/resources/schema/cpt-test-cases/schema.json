@@ -141,6 +141,9 @@
           "$ref": "#/definitions/StubCallActivityThrowErrorInstruction"
         },
         {
+          "$ref": "#/definitions/TriggerTimerInstruction"
+        },
+        {
           "$ref": "#/definitions/UpdateVariablesInstruction"
         }
       ]
@@ -214,6 +217,10 @@
         },
         "stubCallActivities": {
           "description": "Whether the process instance's call activities start no called process, waiting on a job that stands in for it instead. Optional, defaults to false.",
+          "type": "boolean"
+        },
+        "holdTimers": {
+          "description": "Whether the process instance's timers are kept out of the engine's due-date scheduler, so that none of them fires on its own. A held timer fires only when a TRIGGER_TIMER instruction names its catch event. Optional, defaults to false.",
           "type": "boolean"
         }
       },
@@ -1470,6 +1477,31 @@
         "type",
         "conditions",
         "actions"
+      ],
+      "additionalProperties": false
+    },
+    "TriggerTimerInstruction": {
+      "description": "An instruction to fire a held timer immediately, without waiting for its due date.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "TRIGGER_TIMER"
+        },
+        "processInstanceSelector": {
+          "description": "The selector to identify the process instance that owns the held timer.",
+          "$ref": "#/definitions/ProcessInstanceSelector"
+        },
+        "elementSelector": {
+          "description": "The selector to identify the timer catch event. A held timer is addressed by the element id of its catch event, which for a boundary timer is the boundary event's own id, so the element must be selected by elementId.",
+          "$ref": "#/definitions/ElementSelector"
+        }
+      },
+      "required": [
+        "type",
+        "processInstanceSelector",
+        "elementSelector"
       ],
       "additionalProperties": false
     },

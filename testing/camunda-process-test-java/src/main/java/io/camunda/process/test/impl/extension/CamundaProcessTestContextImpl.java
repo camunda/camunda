@@ -430,6 +430,54 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
+  public void triggerTimer(
+      final ProcessInstanceSelector processInstanceSelector, final String elementId) {
+    final CamundaClient client = createClient();
+
+    // triggering inside the await block to handle the eventual consistency of the API: the
+    // rejection while the held timer does not exist yet is a ClientException, which the await
+    // behavior retries
+    awaitProcessInstance(
+        processInstanceSelector,
+        pi -> {
+          LOGGER.debug(
+              "Mock: Trigger held timer [elementId: '{}'] of process instance [{}, processInstanceKey: '{}']",
+              elementId,
+              processInstanceSelector.describe(),
+              pi.getProcessInstanceKey());
+
+          client
+              .newTriggerTimerCommand(pi.getProcessInstanceKey())
+              .elementId(elementId)
+              .send()
+              .join();
+        });
+  }
+
+  @Override
+  public void triggerTimer(final long processInstanceKey, final String elementId) {
+    final CamundaClient client = createClient();
+
+    LOGGER.debug(
+        "Mock: Trigger held timer [elementId: '{}'] of process instance [processInstanceKey: '{}']",
+        elementId,
+        processInstanceKey);
+
+    // triggering inside the await block to handle the eventual consistency of the API: the
+    // rejection while the held timer does not exist yet is a ClientException, which the await
+    // behavior retries
+    awaitBehaviorSupplier
+        .get()
+        .untilAsserted(
+            () ->
+                client
+                    .newTriggerTimerCommand(processInstanceKey)
+                    .elementId(elementId)
+                    .send()
+                    .join());
+  }
+
+  @Override
   public void completeUserTask(final String elementId) {
     completeUserTask(UserTaskSelectors.byElementId(elementId), Collections.emptyMap());
   }
@@ -949,7 +997,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
             processInstance -> {
               assertThat(processInstance)
                   .withFailMessage(
-                      "Expected to update variables for process instance [%s] but no process instance is available.",
+                      "Expected to act on process instance [%s] but no process instance is available.",
                       processInstanceSelector.describe())
                   .isPresent();
 

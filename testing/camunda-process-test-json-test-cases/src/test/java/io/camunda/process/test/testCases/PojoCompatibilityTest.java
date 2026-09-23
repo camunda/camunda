@@ -74,6 +74,7 @@ import io.camunda.process.test.api.testCases.instructions.ImmutableSetTimeInstru
 import io.camunda.process.test.api.testCases.instructions.ImmutableStubCallActivityCompleteInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableStubCallActivityThrowErrorInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableThrowBpmnErrorFromJobInstruction;
+import io.camunda.process.test.api.testCases.instructions.ImmutableTriggerTimerInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableUpdateVariablesInstruction;
 import io.camunda.process.test.api.testCases.instructions.assertElementInstance.ElementInstanceState;
 import io.camunda.process.test.api.testCases.instructions.assertElementInstances.ElementInstancesState;
@@ -189,6 +190,7 @@ public class PojoCompatibilityTest {
                             .build())
                     .reserveJobs(true)
                     .stubCallActivities(true)
+                    .holdTimers(true)
                     .build())),
         // ===== ASSERT_PROCESS_INSTANCE =====
         Arguments.of(
@@ -506,6 +508,18 @@ public class PojoCompatibilityTest {
                     .errorCode("PAYMENT_DECLINED")
                     .errorMessage("The card was declined.")
                     .putVariables("declineCode", 51)
+                    .build())),
+        // ===== TRIGGER_TIMER =====
+        Arguments.of(
+            "trigger timer",
+            singleTestCase(
+                ImmutableTriggerTimerInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("order-process")
+                            .build())
+                    .elementSelector(
+                        ImmutableElementSelector.builder().elementId("escalation").build())
                     .build())),
         // ===== MOCK_CHILD_PROCESS =====
         Arguments.of(
