@@ -116,7 +116,7 @@ test('commit and repo identifiers are sent as GraphQL variables, never string-co
   await resolver(fakeFetch([commitPage([])], calls)).mapCommitsToPrs(['deadbeef']);
   assert.equal(calls.length, 1);
   assert.ok(!calls[0]!.body.query.includes('deadbeef'), 'the sha must not be inlined into the query text');
-  assert.equal(calls[0]!.body.variables.sha0, 'deadbeef');
+  assert.equal(calls[0]!.body.variables.v0, 'deadbeef');
   assert.equal(calls[0]!.body.variables.owner, 'camunda');
   assert.equal(calls[0]!.body.variables.name, 'camunda');
 });
@@ -547,9 +547,9 @@ test('closer lookups batch at 100 per request and every number travels as a vari
   const got = await resolver(fakeFetch([page(100), page(50)], calls)).fetchIssueFacts(numbers);
   assert.equal(got.size, 150);
   assert.equal(calls.length, 2);
-  assert.equal(calls[0]!.body.variables.n0, 1);
-  assert.equal(calls[1]!.body.variables.n0, 101);
-  assert.match(calls[0]!.body.query, /issue\(number: \$n0\)/);
+  assert.equal(calls[0]!.body.variables.v0, 1);
+  assert.equal(calls[1]!.body.variables.v0, 101);
+  assert.match(calls[0]!.body.query, /issue\(number: \$v0\)/);
 });
 
 test('a closer in another repository is not read as a pull request of this one', async () => {

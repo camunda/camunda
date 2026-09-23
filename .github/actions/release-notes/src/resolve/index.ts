@@ -1,4 +1,4 @@
-import { githubHeaders } from '../github';
+import { githubHeaders, retryableStatus, backoffMs, MAX_RETRIES } from '../github';
 
 /**
  * The generator's network layer: two batched GraphQL phases — commit to PR
@@ -81,8 +81,6 @@ const COMMIT_BATCH_SIZE = 25;
 /** A direct lookup — 100 aliases return in under a second. */
 const PR_METADATA_BATCH_SIZE = 100;
 
-const MAX_RETRIES = 5;
-
 export const RATE_LIMITED_ERROR_TYPE = 'RATE_LIMITED';
 
 /** A field-level error, not a null field — the rest of the batch still comes back. */
@@ -93,37 +91,15 @@ const NOT_FOUND_ERROR_TYPE = 'NOT_FOUND';
  *  that would replace one clear error with a storm of requests. */
 export class RetriesExhaustedError extends Error {}
 
-const MAX_RETRY_AFTER_MS = 60_000; // beyond this the job should fail rather than hold a runner
-
 /**
  * GitHub reports a throttled GraphQL request three different ways: a
  * `RATE_LIMITED` error type inside a 200, HTTP 429, or HTTP 403 carrying a
  * `retry-after` (a 403 without one is a real permission failure and must not
  * be retried). 5xx is separate — a transient GraphQL backend failure, routine
- * on the multi-alias batch queries this client sends.
+ * on the multi-alias batch queries this client sends. `retryableStatus`/
+ * `backoffMs` are shared with github/index.ts's REST transport — same
+ * throttle shapes.
  */
-async function retryableStatus(res: Response): Promise<boolean> {
-  if (res.status === 429 || res.status >= 500) return true;
-  if (res.status !== 403) return false;
-  if (res.headers.get('retry-after') !== null) return true;
-  if (res.headers.get('x-ratelimit-remaining') === '0') return true;
-  // The secondary rate limit fires on concurrency, answers 403, and names
-  // itself only in the body while the primary counter still reads full.
-  try {
-    return /rate limit/i.test(await res.clone().text());
-  } catch {
-    return false;
-  }
-}
-
-/** The server's own wait, when it names one, else exponential backoff. */
-function backoffMs(res: Response | null, attempt: number): number {
-  const header = res?.headers.get('retry-after');
-  const seconds = header === null || header === undefined ? NaN : Number(header);
-  if (Number.isFinite(seconds) && seconds >= 0) return Math.min(seconds * 1000, MAX_RETRY_AFTER_MS);
-  return 2 ** attempt * 1000;
-}
-
 interface GraphqlError {
   readonly type?: string;
   readonly message?: string;
@@ -216,6 +192,26 @@ export class GithubGraphqlResolver implements GraphqlResolver {
     private readonly sleepImpl: (ms: number) => Promise<void> = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   ) {}
 
+  /** The one "batch N values into a multi-alias `repository()` query" shape
+   *  `mapCommitBatch`, `classifyRefs`, `fetchIssueFacts`, and `fetchMetadataBatch`
+   *  each built separately — only the variable type, alias prefix, and
+   *  per-item field selection actually differ between them. */
+  private buildBatchQuery<T extends string | number>(
+    items: readonly T[],
+    opts: { readonly varType: string; readonly aliasPrefix: string; readonly field: (varRef: string) => string },
+  ): { query: string; variables: Json } {
+    const varDecls = items.map((_, i) => `$v${i}: ${opts.varType}`).join(', ');
+    const body = items.map((_, i) => `${opts.aliasPrefix}${i}: ${opts.field(`$v${i}`)}`).join('\n');
+    const query = `query($owner: String!, $name: String!, ${varDecls}) {
+      repository(owner: $owner, name: $name) {
+        ${body}
+      }
+    }`;
+    const variables: Json = { owner: this.owner, name: this.repo };
+    items.forEach((item, i) => (variables[`v${i}`] = item));
+    return { query, variables };
+  }
+
   async mapCommitsToPrs(shas: readonly string[]): Promise<CommitPrMapping[]> {
     const results: CommitPrMapping[] = [];
     for (let i = 0; i < shas.length; i += COMMIT_BATCH_SIZE) {
@@ -249,18 +245,11 @@ export class GithubGraphqlResolver implements GraphqlResolver {
     const out = new Map<number, ClassifiedRef>();
     for (let i = 0; i < numbers.length; i += PR_METADATA_BATCH_SIZE) {
       const batch = numbers.slice(i, i + PR_METADATA_BATCH_SIZE);
-      const query = `query($owner: String!, $name: String!, ${batch.map((_, j) => `$n${j}: Int!`).join(', ')}) {
-        repository(owner: $owner, name: $name) {
-          ${batch
-            .map(
-              (_, j) =>
-                `r${j}: issueOrPullRequest(number: $n${j}) { __typename ... on Issue { title } ... on PullRequest { title } }`,
-            )
-            .join('\n')}
-        }
-      }`;
-      const variables: Json = { owner: this.owner, name: this.repo };
-      batch.forEach((number, j) => (variables[`n${j}`] = number));
+      const { query, variables } = this.buildBatchQuery(batch, {
+        varType: 'Int!',
+        aliasPrefix: 'r',
+        field: (ref) => `issueOrPullRequest(number: ${ref}) { __typename ... on Issue { title } ... on PullRequest { title } }`,
+      });
       const repository = await this.requestRepository(query, variables, true);
       batch.forEach((number, j) => {
         const node = repository[`r${j}`] as { __typename?: string; title?: string | null } | null | undefined;
@@ -284,18 +273,12 @@ export class GithubGraphqlResolver implements GraphqlResolver {
     const out = new Map<number, IssueFacts>();
     for (let i = 0; i < numbers.length; i += PR_METADATA_BATCH_SIZE) {
       const batch = numbers.slice(i, i + PR_METADATA_BATCH_SIZE);
-      const query = `query($owner: String!, $name: String!, ${batch.map((_, j) => `$n${j}: Int!`).join(', ')}) {
-        repository(owner: $owner, name: $name) {
-          ${batch
-            .map(
-              (_, j) =>
-                `i${j}: issue(number: $n${j}) { closed stateReason labels(first: 20) { nodes { name } pageInfo { hasNextPage } } timelineItems(last: 1, itemTypes: CLOSED_EVENT) { nodes { ... on ClosedEvent { closer { __typename ... on PullRequest { number repository { nameWithOwner } } } } } } }`,
-            )
-            .join('\n')}
-        }
-      }`;
-      const variables: Json = { owner: this.owner, name: this.repo };
-      batch.forEach((number, j) => (variables[`n${j}`] = number));
+      const { query, variables } = this.buildBatchQuery(batch, {
+        varType: 'Int!',
+        aliasPrefix: 'i',
+        field: (ref) =>
+          `issue(number: ${ref}) { closed stateReason labels(first: 20) { nodes { name } pageInfo { hasNextPage } } timelineItems(last: 1, itemTypes: CLOSED_EVENT) { nodes { ... on ClosedEvent { closer { __typename ... on PullRequest { number repository { nameWithOwner } } } } } } }`,
+      });
       const repository = await this.requestRepository(query, variables, true);
       batch.forEach((number, j) => {
         const node = repository[`i${j}`] as IssueFactsNode | null | undefined;
@@ -325,14 +308,11 @@ export class GithubGraphqlResolver implements GraphqlResolver {
   }
 
   private async mapCommitBatch(shas: readonly string[]): Promise<CommitPrMapping[]> {
-    const query = `query($owner: String!, $name: String!, ${shas.map((_, i) => `$sha${i}: GitObjectID!`).join(', ')}) {
-      repository(owner: $owner, name: $name) {
-        ${shas.map((_, i) => `c${i}: object(oid: $sha${i}) { ... on Commit { ${prConnection()} } }`).join('\n')}
-      }
-    }`;
-    const variables: Json = { owner: this.owner, name: this.repo };
-    shas.forEach((sha, i) => (variables[`sha${i}`] = sha));
-
+    const { query, variables } = this.buildBatchQuery(shas, {
+      varType: 'GitObjectID!',
+      aliasPrefix: 'c',
+      field: (ref) => `object(oid: ${ref}) { ... on Commit { ${prConnection()} } }`,
+    });
     const repository = await this.requestRepository(query, variables);
     const mappings: CommitPrMapping[] = [];
     for (const [i, sha] of shas.entries()) {
@@ -377,19 +357,12 @@ export class GithubGraphqlResolver implements GraphqlResolver {
    *  a thrown error) is what sends the commit to the `associatedPullRequests`
    *  fallback instead of aborting the release. */
   private async fetchMetadataBatch(numbers: readonly number[], speculative = false): Promise<PrMetadata[]> {
-    const query = `query($owner: String!, $name: String!, ${numbers.map((_, i) => `$n${i}: Int!`).join(', ')}) {
-      repository(owner: $owner, name: $name) {
-        ${numbers
-          .map(
-            (_, i) =>
-              `pr${i}: pullRequest(number: $n${i}) { number title body mergedAt baseRefName headRefName mergeCommit { oid } author { login __typename } labels(first: 20) { nodes { name } pageInfo { hasNextPage } } closingIssuesReferences(first: 20) { nodes { number } pageInfo { hasNextPage } } }`,
-          )
-          .join('\n')}
-      }
-    }`;
-    const variables: Json = { owner: this.owner, name: this.repo };
-    numbers.forEach((number, i) => (variables[`n${i}`] = number));
-
+    const { query, variables } = this.buildBatchQuery(numbers, {
+      varType: 'Int!',
+      aliasPrefix: 'pr',
+      field: (ref) =>
+        `pullRequest(number: ${ref}) { number title body mergedAt baseRefName headRefName mergeCommit { oid } author { login __typename } labels(first: 20) { nodes { name } pageInfo { hasNextPage } } closingIssuesReferences(first: 20) { nodes { number } pageInfo { hasNextPage } } }`,
+    });
     const repository = await this.requestRepository(query, variables, speculative);
     return numbers.flatMap((number, i) => {
       const node = repository[`pr${i}`] as PrMetadataNode | null | undefined;

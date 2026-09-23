@@ -2,19 +2,22 @@
  * Shared GitHub REST plumbing for the three fetch-based adapters (resolver,
  * comment, labels): one definition of auth/headers/retry, previously copied
  * into each. Stays octokit-free — a handful of endpoints, not a client.
+ *
+ * `retryableStatus`/`backoffMs`/`MAX_RETRIES` are also reused by resolve/index.ts
+ * for its GraphQL transport — same throttle shapes, different transport, so the
+ * classification logic is exported rather than duplicated there.
  */
 
 export const GITHUB_API = 'https://api.github.com';
 const USER_AGENT = 'camunda-release-notes-gate';
 const GITHUB_API_VERSION = '2022-11-28';
 
-const MAX_RETRIES = 5;
+export const MAX_RETRIES = 5;
 const MAX_RETRY_AFTER_MS = 60_000; // beyond this the job should fail rather than hold a runner
 
 /** 429, or 403 with a `retry-after` (a bare 403 is a real permission failure).
- *  5xx is transient. Mirrors resolve/index.ts's GraphQL-side check — same
- *  throttle shapes, REST transport. */
-async function retryableStatus(res: Response): Promise<boolean> {
+ *  5xx is transient. */
+export async function retryableStatus(res: Response): Promise<boolean> {
   if (res.status === 429 || res.status >= 500) return true;
   if (res.status !== 403) return false;
   if (res.headers.get('retry-after') !== null) return true;
@@ -29,7 +32,7 @@ async function retryableStatus(res: Response): Promise<boolean> {
 }
 
 /** The server's own wait, when it names one, else exponential backoff. */
-function backoffMs(res: Response | null, attempt: number): number {
+export function backoffMs(res: Response | null, attempt: number): number {
   const header = res?.headers.get('retry-after') ?? null;
   const seconds = header === null ? NaN : Number(header);
   if (Number.isFinite(seconds) && seconds >= 0) return Math.min(seconds * 1000, MAX_RETRY_AFTER_MS);
