@@ -122,6 +122,17 @@ export async function createCompletedBatchOperation(
 export async function getBatchOperationState(
   request: APIRequestContext,
   batchOperationKey: string,
+  // Defaults to the same generous budget as the other batch operation
+  // lifecycle actions in this file (cancel/suspend/resume): a freshly
+  // created/mutated batch operation can briefly 404 before the read model
+  // catches up, and a 15s budget was too tight under nightly RDBMS
+  // contention (camunda/camunda#63745). Callers with their own tighter
+  // time budget (e.g. a bounded suspend-probing loop) can pass a shorter
+  // options object instead of inheriting this one.
+  options: {
+    intervals?: number[];
+    timeout?: number;
+  } = batchOperationLifecycleOptions,
 ): Promise<string> {
   const result: {state?: string} = {};
   await expect(async () => {
@@ -129,16 +140,9 @@ export async function getBatchOperationState(
       buildUrl('/batch-operations/{batchOperationKey}', {batchOperationKey}),
       {headers: jsonHeaders()},
     );
-    // A freshly created batch operation can briefly 404 before the read
-    // model catches up with the write it was created from; retry through
-    // that instead of failing the caller on a transient gap. Share the same
-    // generous budget as the other batch operation lifecycle actions in
-    // this file (cancel/suspend/resume) -- a 15s budget was too tight under
-    // nightly RDBMS contention and surfaced as a bare 404
-    // (camunda/camunda#63745).
     await assertStatusCode(res, 200);
     result.state = (await res.json()).state;
-  }).toPass(batchOperationLifecycleOptions);
+  }).toPass(options);
   return result.state as string;
 }
 

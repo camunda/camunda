@@ -36,6 +36,18 @@ import {
 // which case waiting out the full 240s budget only delays the fresh-batch
 // retry that would actually recover. Disambiguate via the batch's own
 // state instead of guessing from elapsed time.
+//
+// getBatchOperationState()'s default budget is 240s (matching the other
+// lifecycle actions), which would let a single disambiguating read consume
+// this function's whole 30s window on its own. Use a short, bounded budget
+// here instead -- if the state read itself is still 404ing this deep into
+// the window, the fresh-batch retry above the caller will recover faster
+// than waiting it out.
+const suspendProbeStateOptions = {
+  intervals: [1_000, 2_000, 3_000, 5_000],
+  timeout: 15_000,
+};
+
 async function attemptSuspendBeforeCompletion(
   request: APIRequestContext,
   batchOperationKey: string,
@@ -52,7 +64,11 @@ async function attemptSuspendBeforeCompletion(
       return 'accepted';
     }
     if (res.status() === 404) {
-      const state = await getBatchOperationState(request, batchOperationKey);
+      const state = await getBatchOperationState(
+        request,
+        batchOperationKey,
+        suspendProbeStateOptions,
+      );
       if (state !== 'ACTIVE') {
         return 'lost';
       }
