@@ -69,8 +69,8 @@ public class TestWebappClient {
           e);
     }
 
-    // The login response only re-issues a token when it rotated one; otherwise the token fetched
-    // for the login POST stays valid for the session this client hands back.
+    // The login response sends a token only if the server rotated it. If it did not, the token from
+    // the GET is still valid for this session.
     final var csrfToken =
         lastResponse
             .get()
@@ -82,10 +82,11 @@ public class TestWebappClient {
   }
 
   /**
-   * Fetches the CSRF token the login endpoint issues on a GET, which the login POST has to echo
-   * back: since CSL ADR-0027 the login path enforces CSRF unconditionally, so a POST without a
-   * token is rejected even before a session exists. Returns {@code null} when the deployment issues
-   * no token (CSRF disabled), leaving the login POST unchanged for that shape.
+   * Gets the CSRF token that the login endpoint sends in a GET response. The login POST must send
+   * this token back, because the login path always enforces CSRF. The server rejects a POST without
+   * a token, even before a session exists.
+   *
+   * @return the token, or {@code null} if the deployment sends no token because CSRF is off
    */
   private String requestLoginCsrfToken(final HttpClient httpClient) {
     final var tokenRequest = HttpRequest.newBuilder().uri(endpoint.resolve("login")).GET().build();
