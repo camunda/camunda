@@ -215,6 +215,33 @@ public class BatchOperationUpdateTaskTest {
   }
 
   @Test
+  void shouldNotRestoreTheReadWhenNoReadOperationIsFinalizable() {
+    // given - one refused cycle, so the read is reduced
+    final var task = new BatchOperationUpdateTask(repository, 100, LOGGER, Runnable::run);
+    repository.batchOperations.add(
+        new NotFinishedBatchOperation("1", BatchOperationState.ACTIVE, 5));
+    repository.finishedOperationsCount.add(new OperationsAggData("1", Map.of("COMPLETED", 5L)));
+    Mockito.doReturn(
+            CompletableFuture.failedFuture(new BulkRequestTooLargeException("circuit_breaking")))
+        .when(repository)
+        .bulkUpdate(Mockito.any());
+    assertThat(task.execute().toCompletableFuture()).failsWithin(REQUEST_TIMEOUT);
+
+    // when - the cycle still reads an operation, but none of them can be finalized yet, so the
+    // bulk update is empty and never reaches the store
+    Mockito.doCallRealMethod().when(repository).bulkUpdate(Mockito.any());
+    repository.finishedOperationsCount.clear();
+    task.execute().toCompletableFuture().join();
+    task.execute().toCompletableFuture().join();
+
+    // then - a cycle that wrote nothing must not restore the read, or the next one rebuilds the
+    // same refused write
+    final var reads = ArgumentCaptor.forClass(Integer.class);
+    Mockito.verify(repository, Mockito.times(3)).getNotFinishedBatchOperations(reads.capture());
+    assertThat(reads.getAllValues()).containsExactly(100, 50, 50);
+  }
+
+  @Test
   void shouldNotHalveTheReadForFailuresThatWritingLessCannotHelp() {
     // given
     final var task = new BatchOperationUpdateTask(repository, 100, LOGGER, Runnable::run);
