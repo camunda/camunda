@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {HttpResponse} from 'msw';
+import {http, HttpResponse} from 'msw';
 import {describe, expect, beforeEach, afterEach} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
-import {mockLoginEndpoint, mockLogoutEndpoint} from '#/shared-test-modules/mock-handlers';
+import {mockLoginCsrfTokenEndpoint, mockLoginEndpoint, mockLogoutEndpoint} from '#/shared-test-modules/mock-handlers';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {authenticationStore} from './authentication.store';
 
@@ -29,6 +29,7 @@ describe('authentication store', () => {
 
 	it('should login', async ({worker}) => {
 		worker.use(
+			mockLoginCsrfTokenEndpoint({successResponse: new HttpResponse('')}),
 			mockLoginEndpoint({
 				successResponse: new HttpResponse('', {status: 200}),
 			}),
@@ -41,8 +42,26 @@ describe('authentication store', () => {
 		expect(authenticationStore.status).toBe('logged-in');
 	});
 
+	it('should send the CSRF token from the login page with the login request', async ({worker}) => {
+		const csrfToken = 'csrf-token-from-login-page';
+		let tokenSentWithLogin: string | null = null;
+
+		worker.use(
+			http.get('/login', () => new HttpResponse('', {headers: {'X-CSRF-TOKEN': csrfToken}})),
+			http.post('/login', ({request}) => {
+				tokenSentWithLogin = request.headers.get('X-CSRF-TOKEN');
+				return new HttpResponse('', {status: 204});
+			}),
+		);
+
+		await authenticationStore.handleLogin('demo', 'demo');
+
+		expect(tokenSentWithLogin).toBe(csrfToken);
+	});
+
 	it('should handle login failure', async ({worker}) => {
 		worker.use(
+			mockLoginCsrfTokenEndpoint({successResponse: new HttpResponse('')}),
 			mockLoginEndpoint({
 				successResponse: new HttpResponse('', {status: 401}),
 			}),
@@ -63,6 +82,7 @@ describe('authentication store', () => {
 
 	it('should logout', async ({worker}) => {
 		worker.use(
+			mockLoginCsrfTokenEndpoint({successResponse: new HttpResponse('')}),
 			mockLoginEndpoint({
 				successResponse: new HttpResponse('', {status: 200}),
 			}),
