@@ -86,7 +86,7 @@ if [[ -n "$storage_prefix_key" ]]; then
   if [[ "$storage_prefix_key" == "rdbms.prefix" ]]; then
     default_prefix="DEFAULT_"
   else
-    default_prefix="default-"
+    default_prefix="default"
   fi
   lines+=("camunda.data.secondary-storage.${storage_prefix_key}: ${default_prefix}")
 fi
@@ -98,7 +98,7 @@ for ((i = 1; i <= physical_tenant_count; i++)); do
     if [[ "$storage_prefix_key" == "rdbms.prefix" ]]; then
       tenant_prefix="PT${i}_"
     else
-      tenant_prefix="pt${i}-"
+      tenant_prefix="pt${i}"
     fi
     lines+=("camunda.physical-tenants.${tenant}.data.secondary-storage.${storage_prefix_key}: ${tenant_prefix}")
   fi
