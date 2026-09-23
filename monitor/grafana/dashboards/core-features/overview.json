@@ -985,7 +985,7 @@
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "  sum by(uri, method) (\n    rate(http_server_requests_seconds_sum{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\"\n    }[$__rate_interval])\n  )\n  /\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_count{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\"\n    }[$__rate_interval])\n  )\n",
+              "expr": "  sum by(uri, method) (\n    rate(http_server_requests_seconds_sum{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"${exclude_uri:raw}\"\n    }[$__rate_interval])\n  )\n  /\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_count{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"${exclude_uri:raw}\"\n    }[$__rate_interval])\n  )\n",
               "hide": false,
               "instant": false,
               "legendFormat": "{{method}} {{uri}}",
@@ -999,7 +999,7 @@
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "  sum by(uri, method) (\n    rate(http_server_requests_seconds_sum{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\"\n    }[$__rate_interval])\n  )\n  /\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_count{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",      \n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\"\n    }[$__rate_interval])\n  )\n",
+              "expr": "  sum by(uri, method) (\n    rate(http_server_requests_seconds_sum{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",\n      uri!~\"${exclude_uri:raw}\"\n    }[$__rate_interval])\n  )\n  /\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_count{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",      \n      uri!~\"${exclude_uri:raw}\"\n    }[$__rate_interval])\n  )\n",
               "hide": false,
               "instant": false,
               "legendFormat": "{{method}} {{uri}}",
@@ -1087,7 +1087,7 @@
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "topk(10,\n  ((sum by(uri, method) (\n    rate(http_server_requests_seconds_sum{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\"\n    }[4h])\n  )\n  /\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_count{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\"\n    }[4h])\n  )) or\n    ((sum by(uri, method) (\n    rate(http_server_requests_seconds_sum{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\"\n    }[4h])\n  )\n  /\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_count{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\"\n    }[4h])\n  ))\n  )\n))",
+              "expr": "topk(10,\n  ((sum by(uri, method) (\n    rate(http_server_requests_seconds_sum{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"${exclude_uri:raw}\"\n    }[4h])\n  )\n  /\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_count{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"${exclude_uri:raw}\"\n    }[4h])\n  )) or\n    ((sum by(uri, method) (\n    rate(http_server_requests_seconds_sum{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",\n      uri!~\"${exclude_uri:raw}\"\n    }[4h])\n  )\n  /\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_count{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",\n      uri!~\"${exclude_uri:raw}\"\n    }[4h])\n  ))\n  )\n))",
               "format": "table",
               "hide": false,
               "instant": true,
@@ -1206,7 +1206,7 @@
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_sum{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method!~\"GET|OPTIONS|HEAD\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\",\n      uri!~\".*/search.*|.*/statistics.*\",\n    }[$__rate_interval])\n  )\n  /\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_count{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method!~\"GET|OPTIONS|HEAD\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\",\n      uri!~\".*/search.*|.*/statistics.*\",\n    }[$__rate_interval])\n  )\n",
+              "expr": "\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_sum{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method!~\"GET|OPTIONS|HEAD\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"${exclude_uri:raw}\",\n      uri!~\".*/search.*|.*/statistics.*\",\n    }[$__rate_interval])\n  )\n  /\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_count{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method!~\"GET|OPTIONS|HEAD\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"${exclude_uri:raw}\",\n      uri!~\".*/search.*|.*/statistics.*\",\n    }[$__rate_interval])\n  )\n",
               "hide": false,
               "instant": false,
               "legendFormat": "{{method}} {{uri}}",
@@ -1294,7 +1294,7 @@
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "topk(10,\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_sum{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method!~\"GET|OPTIONS|HEAD\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\",\n      uri!~\".*/search.*|.*/statistics.*\",\n    }[4h])\n  )\n  /\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_count{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method!~\"GET|OPTIONS|HEAD\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\",\n      uri!~\".*/search.*|.*/statistics.*\",\n    }[4h])\n  )\n)\n",
+              "expr": "topk(10,\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_sum{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method!~\"GET|OPTIONS|HEAD\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"${exclude_uri:raw}\",\n      uri!~\".*/search.*|.*/statistics.*\",\n    }[4h])\n  )\n  /\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_count{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method!~\"GET|OPTIONS|HEAD\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"${exclude_uri:raw}\",\n      uri!~\".*/search.*|.*/statistics.*\",\n    }[4h])\n  )\n)\n",
               "format": "table",
               "hide": false,
               "instant": true,
@@ -1315,6 +1315,669 @@
                 "indexByName": {},
                 "renameByName": {
                   "Value": "Avg Response Time (s)"
+                }
+              }
+            }
+          ],
+          "type": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "REST search/query latency at this percentile, grouped by method and URI. GET endpoints plus POST /search and /statistics. Excludes actuator, MCP, /api/readyz, and long-poll /v2/jobs/activation.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "line"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 0.3
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 0,
+            "y": 59
+          },
+          "id": 128,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.2.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "histogram_quantile(0.9,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"${exclude_uri:raw}\"\n    }[$__rate_interval])\n  )\n)\n",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "{{method}} {{uri}}",
+              "range": true,
+              "refId": "GET"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "histogram_quantile(0.9,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",\n      uri!~\"${exclude_uri:raw}\"\n    }[$__rate_interval])\n  )\n)\n",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "{{method}} {{uri}}",
+              "range": true,
+              "refId": "POST search"
+            }
+          ],
+          "title": "p90 Latency REST",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "REST search/query endpoints with the highest latency at this percentile over the selected dashboard range. GET endpoints plus POST /search and /statistics. Excludes actuator, MCP, /api/readyz, and long-poll /v2/jobs/activation.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "footer": {
+                  "reducers": []
+                },
+                "inspect": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 0.3
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "uri"
+                },
+                "properties": [
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "title": "Show details",
+                        "url": "/d/core-features-rest/api?orgId=1&from=now-15m&to=now&timezone=browser&var-uri=${__value.raw}&${region:queryparam}&${container:queryparam}&${namespace:queryparam}"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 6,
+            "y": 59
+          },
+          "id": 129,
+          "options": {
+            "cellHeight": "sm",
+            "showHeader": true
+          },
+          "pluginVersion": "12.2.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "topk(10,\n  ((histogram_quantile(0.9,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"${exclude_uri:raw}\"\n    }[$__range])\n  )\n)) or\n    (histogram_quantile(0.9,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",\n      uri!~\"${exclude_uri:raw}\"\n    }[$__range])\n  )\n))\n  )\n)",
+              "format": "table",
+              "hide": false,
+              "instant": true,
+              "legendFormat": "{{method}} {{uri}}",
+              "range": false,
+              "refId": "Latency (p90 Response Time (s))"
+            }
+          ],
+          "title": "p90 Latency REST (top 10)",
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true
+                },
+                "includeByName": {},
+                "indexByName": {},
+                "renameByName": {
+                  "Value": "p90 Response Time (s)"
+                }
+              }
+            }
+          ],
+          "type": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "REST search/query latency at this percentile, grouped by method and URI. GET endpoints plus POST /search and /statistics. Excludes actuator, MCP, /api/readyz, and long-poll /v2/jobs/activation.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "line"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 0.3
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 12,
+            "y": 59
+          },
+          "id": 130,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.2.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "histogram_quantile(0.99,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"${exclude_uri:raw}\"\n    }[$__rate_interval])\n  )\n)\n",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "{{method}} {{uri}}",
+              "range": true,
+              "refId": "GET"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "histogram_quantile(0.99,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",\n      uri!~\"${exclude_uri:raw}\"\n    }[$__rate_interval])\n  )\n)\n",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "{{method}} {{uri}}",
+              "range": true,
+              "refId": "POST search"
+            }
+          ],
+          "title": "p99 Latency REST",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "REST search/query endpoints with the highest latency at this percentile over the selected dashboard range. GET endpoints plus POST /search and /statistics. Excludes actuator, MCP, /api/readyz, and long-poll /v2/jobs/activation.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "footer": {
+                  "reducers": []
+                },
+                "inspect": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 0.3
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "uri"
+                },
+                "properties": [
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "title": "Show details",
+                        "url": "/d/core-features-rest/api?orgId=1&from=now-15m&to=now&timezone=browser&var-uri=${__value.raw}&${region:queryparam}&${container:queryparam}&${namespace:queryparam}"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 18,
+            "y": 59
+          },
+          "id": 131,
+          "options": {
+            "cellHeight": "sm",
+            "showHeader": true
+          },
+          "pluginVersion": "12.2.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "topk(10,\n  ((histogram_quantile(0.99,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"${exclude_uri:raw}\"\n    }[$__range])\n  )\n)) or\n    (histogram_quantile(0.99,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",\n      uri!~\"${exclude_uri:raw}\"\n    }[$__range])\n  )\n))\n  )\n)",
+              "format": "table",
+              "hide": false,
+              "instant": true,
+              "legendFormat": "{{method}} {{uri}}",
+              "range": false,
+              "refId": "Latency (p99 Response Time (s))"
+            }
+          ],
+          "title": "p99 Latency REST (top 10)",
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true
+                },
+                "includeByName": {},
+                "indexByName": {},
+                "renameByName": {
+                  "Value": "p99 Response Time (s)"
+                }
+              }
+            }
+          ],
+          "type": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "REST search/query latency at this percentile, grouped by method and URI. GET endpoints plus POST /search and /statistics. Excludes actuator, MCP, /api/readyz, and long-poll /v2/jobs/activation.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "line"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 0.3
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 0,
+            "y": 67
+          },
+          "id": 132,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.2.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "histogram_quantile(0.999,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"${exclude_uri:raw}\"\n    }[$__rate_interval])\n  )\n)\n",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "{{method}} {{uri}}",
+              "range": true,
+              "refId": "GET"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "histogram_quantile(0.999,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",\n      uri!~\"${exclude_uri:raw}\"\n    }[$__rate_interval])\n  )\n)\n",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "{{method}} {{uri}}",
+              "range": true,
+              "refId": "POST search"
+            }
+          ],
+          "title": "p99.9 Latency REST",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "REST search/query endpoints with the highest latency at this percentile over the selected dashboard range. GET endpoints plus POST /search and /statistics. Excludes actuator, MCP, /api/readyz, and long-poll /v2/jobs/activation.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "footer": {
+                  "reducers": []
+                },
+                "inspect": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 0.3
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "uri"
+                },
+                "properties": [
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "title": "Show details",
+                        "url": "/d/core-features-rest/api?orgId=1&from=now-15m&to=now&timezone=browser&var-uri=${__value.raw}&${region:queryparam}&${container:queryparam}&${namespace:queryparam}"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 6,
+            "y": 67
+          },
+          "id": 133,
+          "options": {
+            "cellHeight": "sm",
+            "showHeader": true
+          },
+          "pluginVersion": "12.2.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "topk(10,\n  ((histogram_quantile(0.999,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"${exclude_uri:raw}\"\n    }[$__range])\n  )\n)) or\n    (histogram_quantile(0.999,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",\n      uri!~\"${exclude_uri:raw}\"\n    }[$__range])\n  )\n))\n  )\n)",
+              "format": "table",
+              "hide": false,
+              "instant": true,
+              "legendFormat": "{{method}} {{uri}}",
+              "range": false,
+              "refId": "Latency (p99.9 Response Time (s))"
+            }
+          ],
+          "title": "p99.9 Latency REST (top 10)",
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true
+                },
+                "includeByName": {},
+                "indexByName": {},
+                "renameByName": {
+                  "Value": "p99.9 Response Time (s)"
                 }
               }
             }
@@ -1388,7 +2051,7 @@
             "h": 8,
             "w": 6,
             "x": 0,
-            "y": 59
+            "y": 75
           },
           "id": 5,
           "options": {
@@ -1489,7 +2152,7 @@
             "h": 8,
             "w": 6,
             "x": 6,
-            "y": 59
+            "y": 75
           },
           "id": 14,
           "options": {
@@ -1603,7 +2266,7 @@
             "h": 8,
             "w": 6,
             "x": 12,
-            "y": 59
+            "y": 75
           },
           "id": 15,
           "options": {
@@ -1704,7 +2367,7 @@
             "h": 8,
             "w": 6,
             "x": 18,
-            "y": 59
+            "y": 75
           },
           "id": 16,
           "options": {
@@ -1833,7 +2496,7 @@
             "h": 8,
             "w": 6,
             "x": 0,
-            "y": 67
+            "y": 83
           },
           "id": 9,
           "options": {
@@ -1927,7 +2590,7 @@
             "h": 8,
             "w": 6,
             "x": 6,
-            "y": 67
+            "y": 83
           },
           "id": 18,
           "options": {
@@ -2048,7 +2711,7 @@
             "h": 8,
             "w": 6,
             "x": 12,
-            "y": 67
+            "y": 83
           },
           "id": 8,
           "options": {
@@ -2143,7 +2806,7 @@
             "h": 8,
             "w": 6,
             "x": 18,
-            "y": 67
+            "y": 83
           },
           "id": 19,
           "options": {
@@ -2262,7 +2925,7 @@
             "h": 8,
             "w": 6,
             "x": 0,
-            "y": 75
+            "y": 91
           },
           "id": 10,
           "options": {
@@ -2362,7 +3025,7 @@
             "h": 8,
             "w": 6,
             "x": 6,
-            "y": 75
+            "y": 91
           },
           "id": 20,
           "options": {
@@ -2446,7 +3109,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 75
+            "y": 91
           },
           "id": 11,
           "options": {
@@ -8899,6 +9562,19 @@
         "refresh": 1,
         "regex": "",
         "type": "query"
+      },
+      {
+        "current": {
+          "text": "^/actuator/health(/.*)?$|^/actuator/prometheus$|^/api/readyz$|.*/mcp.*|/v2/jobs/activation",
+          "value": "^/actuator/health(/.*)?$|^/actuator/prometheus$|^/api/readyz$|.*/mcp.*|/v2/jobs/activation"
+        },
+        "description": "URI regex excluded from REST latency panels. Hidden constant so the actuator, readiness, MCP, and long-poll job activation filter lives in one place.",
+        "hide": 2,
+        "label": "Excluded URIs",
+        "name": "exclude_uri",
+        "query": "^/actuator/health(/.*)?$|^/actuator/prometheus$|^/api/readyz$|.*/mcp.*|/v2/jobs/activation",
+        "skipUrlSync": true,
+        "type": "constant"
       }
     ]
   },
@@ -8939,5 +9615,5 @@
   "timezone": "browser",
   "title": "Core Features Overview",
   "uid": "core-features-overview",
-  "version": 4
+  "version": 5
 }
