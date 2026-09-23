@@ -505,6 +505,122 @@ public class CamundaProcessTestExtensionIT {
               coverage -> "tested-and-mocked-process".equals(coverage.getProcessDefinitionId()));
     }
 
+    /**
+     * The decision counterpart of {@link #shouldNotCoverMockedChildProcess(TestInfo)}: a mocked DMN
+     * decision is a stub that the test framework deploys in place of the real decision, so the
+     * report has nothing to say about it either.
+     *
+     * <p>Nothing has to be filtered for this to hold today - a mocked decision is deployed as a
+     * literal expression, and coverage only looks at decision tables. This pins the behaviour so
+     * that a change to either side has to keep mocks out of the report deliberately.
+     */
+    @Test
+    void shouldNotCoverMockedDmnDecision(final TestInfo testInfo) {
+      // given: a process that calls a decision, and a mock standing in for that decision
+      final CoverageCollector coverageCollector = CoverageCollector.newBuilder().build();
+      final BpmnModelInstance processCallingDecision =
+          Bpmn.createExecutableProcess("test-with-mocked-decision")
+              .startEvent("StartEvent")
+              .sequenceFlowId("FlowToDecision")
+              .businessRuleTask(
+                  "CallDecision",
+                  task ->
+                      task.zeebeCalledDecisionId("mocked-decision").zeebeResultVariable("result"))
+              .sequenceFlowId("FlowToEnd")
+              .endEvent("EndEvent")
+              .done();
+
+      processTestContext.mockDmnDecision("mocked-decision", "mocked-output");
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(processCallingDecision, "test-with-mocked-decision.bpmn")
+          .send()
+          .join();
+
+      // when
+      final ProcessInstanceEvent processInstance =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId("test-with-mocked-decision")
+              .latestVersion()
+              .send()
+              .join();
+      CamundaAssert.assertThat(processInstance).isCompleted();
+
+      final CoverageRunReport coverageRunReport =
+          collectCoverageRunReport(coverageCollector, testInfo.getDisplayName());
+
+      // then: the process under test is covered, the mocked decision is not
+      assertThat(coverageRunReport.getProcessCoverages())
+          .extracting(ProcessCoverage::getProcessDefinitionId)
+          .containsExactly("test-with-mocked-decision");
+      assertThat(coverageRunReport.getDecisionCoverages()).isEmpty();
+    }
+
+    /**
+     * The decision counterpart of {@link
+     * #shouldNotExceed100PercentWhenProcessIsAlsoMockedElsewhere()}: one suite covers a decision
+     * end to end, a second suite mocks that same decision id. The mock has to leave no trace in the
+     * aggregated report, or that report holds two models for the one decision id and reports the
+     * stub's rules - of which it has none - as the decision's own.
+     */
+    @Test
+    void shouldNotReportMockedDecisionWhenDecisionIsAlsoTestedElsewhere() {
+      // given: a suite that covers the decision end to end
+      final CoverageCollector coverageCollector = CoverageCollector.newBuilder().build();
+      final Instant decisionUnderTestSuiteStart = processTestContext.getCurrentTime();
+      client
+          .newDeployResourceCommand()
+          .addResourceFromClasspath("dmn/tested-and-mocked-decision.dmn")
+          .send()
+          .join();
+      for (final String input : Arrays.asList("yes", "no")) {
+        assertThatDecision(
+                client
+                    .newEvaluateDecisionCommand()
+                    .decisionId("tested-and-mocked-decision")
+                    .variable("yes_or_no", input)
+                    .send()
+                    .join())
+            .isEvaluated();
+      }
+      final CoverageReport decisionUnderTestReport =
+          collectSuiteCoverage(
+              coverageCollector, DecisionUnderTestSuite.class, decisionUnderTestSuiteStart);
+
+      // when: a second suite mocks that very decision
+      final Instant mockingSuiteStart = processTestContext.getCurrentTime();
+      processTestContext.mockDmnDecision("tested-and-mocked-decision", ":|");
+      assertThatDecision(
+              client
+                  .newEvaluateDecisionCommand()
+                  .decisionId("tested-and-mocked-decision")
+                  .send()
+                  .join())
+          .isEvaluated();
+      final CoverageReport mockingReport =
+          collectSuiteCoverage(coverageCollector, DecisionMockingSuite.class, mockingSuiteStart);
+
+      // then: the suite under test describes the decision by the table it covered, in full
+      assertThat(decisionUnderTestReport.getDecisionModels())
+          .filteredOn(model -> "tested-and-mocked-decision".equals(model.getDecisionDefinitionId()))
+          .singleElement()
+          .satisfies(model -> assertThat(model.getTotalRuleCount()).isEqualTo(2));
+      assertThat(decisionUnderTestReport.getDecisionCoverages())
+          .filteredOn(
+              coverage -> "tested-and-mocked-decision".equals(coverage.getDecisionDefinitionId()))
+          .singleElement()
+          .satisfies(coverage -> assertThat(coverage.getCoverage()).isEqualTo(1.0));
+
+      // and: the mocking suite contributes neither a stub model nor coverage for it, so
+      // aggregating the two can neither swap the decision table nor distort its coverage
+      assertThat(mockingReport.getDecisionModels())
+          .noneMatch(model -> "tested-and-mocked-decision".equals(model.getDecisionDefinitionId()));
+      assertThat(mockingReport.getDecisionCoverages())
+          .noneMatch(
+              coverage -> "tested-and-mocked-decision".equals(coverage.getDecisionDefinitionId()));
+    }
+
     private CoverageReport collectSuiteCoverage(
         final CoverageCollector coverageCollector,
         final Class<?> suite,
@@ -1790,3 +1906,9 @@ final class ProcessUnderTestSuite {}
 
 /** Stands in for a separate test suite that mocks that same process as a child. */
 final class MockingSuite {}
+
+/** Stands in for a test suite that covers the decision itself. */
+final class DecisionUnderTestSuite {}
+
+/** Stands in for a separate test suite that mocks that same decision. */
+final class DecisionMockingSuite {}
