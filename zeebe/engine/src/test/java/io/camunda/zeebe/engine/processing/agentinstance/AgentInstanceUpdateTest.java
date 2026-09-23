@@ -13,12 +13,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
@@ -153,6 +157,72 @@ public class AgentInstanceUpdateTest {
     assertThat(updated.getValue().getMetrics().getModelCalls()).isZero();
     assertThat(updated.getValue().getMetrics().getToolCalls()).isZero();
     assertThat(updated.getValue().getTools()).isEmpty();
+    assertThat(updated.getValue().getChangedAttributes()).containsExactly("status");
+  }
+
+  @Test
+  public void shouldOmitSystemPromptFromUpdatedEventWhenUnchanged() {
+    // given — the instance already carries a real system prompt from creation.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var jobBatch = ENGINE.jobs().withType("agent").withLease().activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("agent")
+            .getFirst()
+            .getKey();
+    final var jobIndex = jobBatch.getValue().getJobKeys().indexOf(jobKey);
+    final var jobLeaseToken = jobBatch.getValue().getJobs().get(jobIndex).getJobLeaseToken();
+    // a CONFIGURATION history item is applied inline by CREATE (unlike UPDATE, where it's only
+    // queued until committed), so this seeds a real, non-empty baseline system prompt.
+    final var baselineConfigItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-baseline")
+            .setRole(AgentHistoryRole.CONFIGURATION)
+            .setLoopIteration(1);
+    baselineConfigItem.setModel("gpt-4o").setProvider("openai");
+    baselineConfigItem.addSystemPrompt(
+        new AgentHistoryMessageContent()
+            .setContentType(AgentHistoryContentType.TEXT)
+            .setText("You are a helpful agent."));
+    baselineConfigItem.setChangedAttributes(List.of("model", "provider", "systemPrompt"));
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLeaseToken(jobLeaseToken)
+            .withHistory(List.of(baselineConfigItem))
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+
+    // when — status is updated; the system prompt is not named in changedAttributes and does not
+    // change, even though the instance's stored value is non-empty.
+    final var updated =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withJobKey(jobKey)
+            .withJobLeaseToken(jobLeaseToken)
+            .withStatus(AgentInstanceStatus.THINKING)
+            .withChangedAttributes(List.of("status"))
+            .update();
+
+    // then — the emitted event must not re-transmit the unchanged system prompt.
+    assertThat(updated.getValue().getDefinition().getSystemPrompt()).isEmpty();
     assertThat(updated.getValue().getChangedAttributes()).containsExactly("status");
   }
 
