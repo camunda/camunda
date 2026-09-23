@@ -114,6 +114,16 @@ jobs:
           echo "Shard ${{ matrix.shardIndex }} runs: ${tests}"
           echo "tests=${tests}" >> "$GITHUB_OUTPUT"
 
+      # Pre-pull so docker-start-{es,os} below (no retry) hits a cached image, not the network.
+      - name: Pull ${{ matrix.database }} image with retry
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 15
+          timeout_minutes: 10
+          shell: bash
+          command: DATABASE=${{ matrix.database }} docker compose -f tasklist/config/docker-compose.yml pull ${{ matrix.database }}
+
       # Run this shard's integration tests in parallel. Unit tests are covered by the unified
       # Tasklist CI, so only the integration-tests module is exercised here.
       - name: Run Integration Tests
