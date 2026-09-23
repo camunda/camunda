@@ -28,6 +28,7 @@ import io.camunda.zeebe.model.bpmn.instance.Process;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeVersionTag;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -57,6 +58,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
   private final BpmnElementOrderErrorTransformer elementOrderErrorTransformer;
   private final ProcessDefinitionMetrics processDefinitionMetrics;
   private final AgentDefinitionTransformer agentDefinitionTransformer;
+  private final ManagedScriptDefinitionTransformer managedScriptDefinitionTransformer;
   private final Map<DeploymentResource, BpmnModelInstance> parsedModels = new IdentityHashMap<>();
 
   /**
@@ -66,6 +68,9 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
    */
   private final Map<DeploymentResource, List<ExecutableProcess>> executableProcessesByResource =
       new IdentityHashMap<>();
+
+  private final List<ManagedScriptProcessContext> managedScriptProcessContexts =
+      new java.util.ArrayList<>();
 
   public BpmnResourceTransformer(
       final KeyGenerator keyGenerator,
@@ -90,6 +95,8 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
     elementOrderErrorTransformer = new BpmnElementOrderErrorTransformer();
     agentDefinitionTransformer = new AgentDefinitionTransformer(keyGenerator, stateWriter);
+    managedScriptDefinitionTransformer =
+        new ManagedScriptDefinitionTransformer(keyGenerator, stateWriter);
     this.processDefinitionMetrics = processDefinitionMetrics;
   }
 
@@ -116,6 +123,8 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
     elementOrderErrorTransformer = new BpmnElementOrderErrorTransformer();
     agentDefinitionTransformer = new AgentDefinitionTransformer(keyGenerator, stateWriter);
+    managedScriptDefinitionTransformer =
+        new ManagedScriptDefinitionTransformer(keyGenerator, stateWriter);
     this.processDefinitionMetrics = processDefinitionMetrics;
   }
 
@@ -212,10 +221,11 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
                       .wrap(metadata, resource.getResource())
                       .setTransformerVersions(bpmnTransformer.currentVersionsById());
               stateWriter.appendFollowUpEvent(key, ProcessIntent.CREATED, processRecord);
-              agentDefinitionTransformer.writeRecords(
-                  deployment,
-                  findExecutableProcess(resource, metadata.getBpmnProcessId()),
-                  metadata);
+              final var executableProcess =
+                  findExecutableProcess(resource, metadata.getBpmnProcessId());
+              agentDefinitionTransformer.writeRecords(deployment, executableProcess, metadata);
+              managedScriptProcessContexts.add(
+                  new ManagedScriptProcessContext(executableProcess, metadata));
               processDefinitionMetrics.processDefinitionDeployed(
                   key, processRecord.getBpmnProcessId(), resource.getResource().length);
             });
@@ -225,6 +235,14 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
   public void reset() {
     parsedModels.clear();
     executableProcessesByResource.clear();
+    managedScriptProcessContexts.clear();
+  }
+
+  void writeManagedScriptDefinitionRecords(final DeploymentRecord deployment) {
+    managedScriptProcessContexts.forEach(
+        context ->
+            managedScriptDefinitionTransformer.writeRecords(
+                deployment, context.process(), context.metadata()));
   }
 
   @VisibleForTesting
@@ -330,4 +348,6 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
         && lastVersionDigest.equals(resourceDigest)
         && lastProcess.getResourceName().equals(deploymentResource.getResourceNameBuffer());
   }
+
+  private record ManagedScriptProcessContext(ExecutableProcess process, ProcessMetadata metadata) {}
 }

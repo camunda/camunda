@@ -16,6 +16,7 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.agentdefinition.AgentDefinitionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.managedscriptdefinition.ManagedScriptDefinitionRecord;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
@@ -59,6 +60,9 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   private final ArrayProperty<AgentDefinitionRecord> agentDefinitionsMetadataProp =
       new ArrayProperty<>("agentDefinitionsMetadata", AgentDefinitionRecord::new);
 
+  private final ArrayProperty<ManagedScriptDefinitionRecord> managedScriptDefinitionsMetadataProp =
+      new ArrayProperty<>("managedScriptDefinitionsMetadata", ManagedScriptDefinitionRecord::new);
+
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
@@ -67,7 +71,7 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   private final LongProperty reconstructionKeyProp = new LongProperty("reconstructionKey", -1);
 
   public DeploymentRecord() {
-    super(9);
+    super(10);
     declareProperty(resourcesProp)
         .declareProperty(processesMetadataProp)
         .declareProperty(decisionRequirementsMetadataProp)
@@ -75,6 +79,7 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
         .declareProperty(formMetadataProp)
         .declareProperty(resourceMetadataProp)
         .declareProperty(agentDefinitionsMetadataProp)
+        .declareProperty(managedScriptDefinitionsMetadataProp)
         .declareProperty(tenantIdProp)
         .declareProperty(deploymentKeyProp);
   }
@@ -119,6 +124,10 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
    */
   public ValueArray<AgentDefinitionRecord> agentDefinitionsMetadata() {
     return agentDefinitionsMetadataProp;
+  }
+
+  public ValueArray<ManagedScriptDefinitionRecord> managedScriptDefinitionsMetadata() {
+    return managedScriptDefinitionsMetadataProp;
   }
 
   @Override

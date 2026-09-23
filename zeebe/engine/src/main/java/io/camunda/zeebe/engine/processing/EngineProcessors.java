@@ -73,6 +73,7 @@ import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizatio
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
+import io.camunda.zeebe.engine.processing.managedscriptdefinition.ManagedScriptDefinitionProcessors;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.metrics.job.JobMetricsProcessors;
@@ -395,6 +396,8 @@ public final class EngineProcessors {
         secretStoreRegistry,
         secretResolutionScheduler,
         suspensionMetrics);
+    ManagedScriptDefinitionProcessors.addProcessors(
+        typedRecordProcessors, processingState, writers, clock, partitionId);
 
     final var userTaskProcessor =
         createUserTaskProcessor(

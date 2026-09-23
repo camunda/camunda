@@ -52,6 +52,7 @@ import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.jobmetrics.JobMetricsBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.managedscriptdefinition.ManagedScriptDefinitionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
@@ -209,6 +210,7 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
       case ValueType.SCALE -> new ScaleRecord();
       case ValueType.GROUP -> new GroupRecord();
       case ValueType.MAPPING_RULE -> new MappingRuleRecord();
+      case ValueType.MANAGED_SCRIPT_DEFINITION -> new ManagedScriptDefinitionRecord();
       case ValueType.IDENTITY_SETUP -> new IdentitySetupRecord();
       case ValueType.RESOURCE -> new ResourceRecord();
       case ValueType.BATCH_OPERATION_CREATION -> new BatchOperationCreationRecord();

@@ -68,6 +68,9 @@ public interface MutableProcessingState extends ProcessingState {
   MutableAgentDefinitionState getAgentDefinitionState();
 
   @Override
+  MutableManagedScriptDefinitionState getManagedScriptDefinitionState();
+
+  @Override
   MutableTimerInstanceState getTimerState();
 
   @Override

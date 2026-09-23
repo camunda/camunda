@@ -50,6 +50,8 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
 
   AgentDefinitionState getAgentDefinitionState();
 
+  ManagedScriptDefinitionState getManagedScriptDefinitionState();
+
   TimerInstanceState getTimerState();
 
   ElementInstanceState getElementInstanceState();

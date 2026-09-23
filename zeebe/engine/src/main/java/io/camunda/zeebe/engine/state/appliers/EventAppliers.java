@@ -51,6 +51,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.JobMetricsBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.ManagedScriptDefinitionIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
@@ -176,6 +177,7 @@ public final class EventAppliers implements EventApplier {
     registerAgentHistoryEventAppliers(state);
     registerAgentHistoryBatchEventAppliers(state);
     registerAgentDefinitionEventAppliers(state);
+    registerManagedScriptDefinitionEventAppliers(state);
     registerSecretReferenceEventAppliers(state);
     return this;
   }
@@ -218,6 +220,20 @@ public final class EventAppliers implements EventApplier {
     register(
         AgentDefinitionIntent.DELETED,
         new AgentDefinitionDeletedApplier(state.getAgentDefinitionState()));
+  }
+
+  private void registerManagedScriptDefinitionEventAppliers(final MutableProcessingState state) {
+    final var updatedApplier =
+        new ManagedScriptDefinitionUpdatedApplier(state.getManagedScriptDefinitionState());
+    register(
+        ManagedScriptDefinitionIntent.CREATED,
+        new ManagedScriptDefinitionCreatedApplier(state.getManagedScriptDefinitionState()));
+    register(
+        ManagedScriptDefinitionIntent.DELETED,
+        new ManagedScriptDefinitionDeletedApplier(state.getManagedScriptDefinitionState()));
+    register(ManagedScriptDefinitionIntent.LEASED, updatedApplier);
+    register(ManagedScriptDefinitionIntent.LEASE_RENEWED, updatedApplier);
+    register(ManagedScriptDefinitionIntent.UPDATED, updatedApplier);
   }
 
   private void registerAgentInstanceEventAppliers(final MutableProcessingState state) {

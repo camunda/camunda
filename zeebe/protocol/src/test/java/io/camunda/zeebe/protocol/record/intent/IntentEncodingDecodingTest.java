@@ -105,6 +105,9 @@ final class IntentEncodingDecodingTest {
     result.addAll(buildParameterSets(JobBatchIntent.class, JobBatchIntent::from));
     result.addAll(buildParameterSets(JobMetricsBatchIntent.class, JobMetricsBatchIntent::from));
     result.addAll(buildParameterSets(MappingRuleIntent.class, MappingRuleIntent::from));
+    result.addAll(
+        buildParameterSets(
+            ManagedScriptDefinitionIntent.class, ManagedScriptDefinitionIntent::from));
     result.addAll(buildParameterSets(MessageIntent.class, MessageIntent::from));
     result.addAll(buildParameterSets(MessageBatchIntent.class, MessageBatchIntent::from));
     result.addAll(

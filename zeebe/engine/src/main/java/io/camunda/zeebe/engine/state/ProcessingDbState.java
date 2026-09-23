@@ -47,6 +47,7 @@ import io.camunda.zeebe.engine.state.instance.DbTimerInstanceState;
 import io.camunda.zeebe.engine.state.instance.DbUserTaskState;
 import io.camunda.zeebe.engine.state.jobmetrics.DbJobMetricsState;
 import io.camunda.zeebe.engine.state.jobmetrics.NoopJobMetricsState;
+import io.camunda.zeebe.engine.state.managedscriptdefinition.DbManagedScriptDefinitionState;
 import io.camunda.zeebe.engine.state.message.DbMessageCorrelationState;
 import io.camunda.zeebe.engine.state.message.DbMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbMessageStartProcessInstanceAskState;
@@ -80,6 +81,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
 import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobMetricsState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
+import io.camunda.zeebe.engine.state.mutable.MutableManagedScriptDefinitionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMappingRuleState;
 import io.camunda.zeebe.engine.state.mutable.MutableMembershipState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageCorrelationState;
@@ -133,6 +135,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableAgentHistoryState agentHistoryState;
   private final MutableAgentInstanceState agentInstanceState;
   private final MutableAgentDefinitionState agentDefinitionState;
+  private final MutableManagedScriptDefinitionState managedScriptDefinitionState;
   private final MutableDeploymentState deploymentState;
   private final MutableJobState jobState;
   private final MutableMessageState messageState;
@@ -193,6 +196,7 @@ public class ProcessingDbState implements MutableProcessingState {
     agentHistoryState = new DbAgentHistoryState(zeebeDb, transactionContext);
     agentInstanceState = new DbAgentInstanceState(zeebeDb, transactionContext);
     agentDefinitionState = new DbAgentDefinitionState(zeebeDb, transactionContext);
+    managedScriptDefinitionState = new DbManagedScriptDefinitionState(zeebeDb, transactionContext);
     // Transformation only parses expressions — the clock is never consulted. A fixed epoch
     // clock satisfies the ExpressionLanguage constructor contract while keeping cache-miss
     // rebuilds deterministic during replay.
@@ -354,6 +358,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableAgentDefinitionState getAgentDefinitionState() {
     return agentDefinitionState;
+  }
+
+  @Override
+  public MutableManagedScriptDefinitionState getManagedScriptDefinitionState() {
+    return managedScriptDefinitionState;
   }
 
   @Override

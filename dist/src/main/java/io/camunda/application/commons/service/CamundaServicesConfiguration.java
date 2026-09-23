@@ -55,6 +55,7 @@ import io.camunda.service.GroupServices;
 import io.camunda.service.HistoryBackupServices;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
+import io.camunda.service.ManagedScriptDefinitionServices;
 import io.camunda.service.ManagementServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.MessageServices;
@@ -451,6 +452,10 @@ public class CamundaServicesConfiguration {
                           executor,
                           converter,
                           maxNameFieldLength))
+                  .managedScriptDefinitionServices(
+                      tenantId,
+                      new ManagedScriptDefinitionServices(
+                          tenantId, brokerClient, securityContextProvider, executor, converter))
                   .mappingRuleServices(
                       tenantId,
                       new MappingRuleServices(

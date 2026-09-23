@@ -38,6 +38,7 @@ import io.camunda.service.GroupServices;
 import io.camunda.service.HistoryBackupServices;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
+import io.camunda.service.ManagedScriptDefinitionServices;
 import io.camunda.service.ManagementServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.MessageServices;
@@ -115,6 +116,8 @@ public interface ServiceRegistry {
   IncidentServices incidentServices(String physicalTenantId);
 
   <T> JobServices<T> jobServices(String physicalTenantId);
+
+  ManagedScriptDefinitionServices managedScriptDefinitionServices(String physicalTenantId);
 
   MappingRuleServices mappingRuleServices(String physicalTenantId);
 

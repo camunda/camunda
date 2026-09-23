@@ -397,7 +397,14 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // re-accumulate its metrics. Written when an item is first created (see
   // AgentHistoryCreatedApplier), survives commit/discard, and is deleted in one pass when the
   // instance completes (see AgentInstanceCompletedApplier).
-  AGENT_HISTORY_METRICS_ACCUMULATED_IDS(165, PARTITION_LOCAL);
+  AGENT_HISTORY_METRICS_ACCUMULATED_IDS(165, PARTITION_LOCAL),
+
+  // (processDefinitionKey, elementId) -> managedScriptDefinitionKey. Managed script definitions
+  // follow the process definition lifecycle and are distributed to every partition.
+  MANAGED_SCRIPT_DEFINITION_KEY_BY_PROCESS_DEFINITION_KEY_AND_ELEMENT_ID(166, GLOBAL),
+
+  // managedScriptDefinitionKey -> DbManagedScriptDefinition.
+  MANAGED_SCRIPT_DEFINITION_BY_KEY(167, GLOBAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

@@ -69,6 +69,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.jobmetrics.JobMetrics;
 import io.camunda.zeebe.protocol.impl.record.value.jobmetrics.JobMetricsBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.jobmetrics.StatusMetrics;
+import io.camunda.zeebe.protocol.impl.record.value.managedscriptdefinition.ManagedScriptDefinitionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
@@ -128,6 +129,7 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
+import io.camunda.zeebe.protocol.record.value.ManagedScriptDefinitionStatus;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ResolutionState;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
@@ -5223,6 +5225,66 @@ final class JsonSerializableToJsonTest {
           "processDefinitionKey": -1,
           "processDefinitionVersion": -1,
           "processDefinitionVersionTag": "",
+          "tenantId": "<default>"
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////// ManagedScriptDefinitionRecord ////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ManagedScriptDefinitionRecord",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new ManagedScriptDefinitionRecord()
+                    .setManagedScriptDefinitionKey(2251799813685252L)
+                    .setStatus(ManagedScriptDefinitionStatus.PENDING)
+                    .setResourceKey(2251799813685251L)
+                    .setResourceName("invoice.js")
+                    .setArtifactDigest(wrapString("digest"))
+                    .setElementId("validate-invoice")
+                    .setBpmnProcessId("invoice-process")
+                    .setProcessDefinitionKey(2251799813685100L)
+                    .setProcessDefinitionVersion(3)
+                    .setProcessDefinitionVersionTag("v1.0")
+                    .setLanguage("javascript")
+                    .setRuntime("nodejs22")
+                    .setTenantId("<default>"),
+        """
+        {
+          "managedScriptDefinitionKey": 2251799813685252,
+          "status": "PENDING",
+          "resourceKey": 2251799813685251,
+          "resourceName": "invoice.js",
+          "artifactDigest": "ZGlnZXN0",
+          "elementId": "validate-invoice",
+          "bpmnProcessId": "invoice-process",
+          "processDefinitionKey": 2251799813685100,
+          "processDefinitionVersion": 3,
+          "processDefinitionVersionTag": "v1.0",
+          "language": "javascript",
+          "runtime": "nodejs22",
+          "tenantId": "<default>"
+        }
+        """
+      },
+      {
+        "Empty ManagedScriptDefinitionRecord",
+        (Supplier<UnifiedRecordValue>) ManagedScriptDefinitionRecord::new,
+        """
+        {
+          "managedScriptDefinitionKey": -1,
+          "status": "UNSPECIFIED",
+          "resourceKey": -1,
+          "resourceName": "",
+          "artifactDigest": "",
+          "elementId": "",
+          "bpmnProcessId": "",
+          "processDefinitionKey": -1,
+          "processDefinitionVersion": -1,
+          "processDefinitionVersionTag": "",
+          "language": "",
+          "runtime": "",
           "tenantId": "<default>"
         }
         """

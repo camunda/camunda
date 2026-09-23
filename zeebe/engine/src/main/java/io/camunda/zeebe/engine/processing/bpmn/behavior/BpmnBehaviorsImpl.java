@@ -313,6 +313,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
         new BpmnProcessDeletionBehavior(
             processingState.getProcessState(),
             processingState.getAgentDefinitionState(),
+            processingState.getManagedScriptDefinitionState(),
             processingState.getElementInstanceState(),
             processingState.getBannedInstanceState(),
             writers.command(),

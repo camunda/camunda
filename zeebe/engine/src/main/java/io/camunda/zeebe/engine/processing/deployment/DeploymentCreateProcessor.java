@@ -59,6 +59,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
+import io.camunda.zeebe.protocol.record.intent.ManagedScriptDefinitionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
@@ -267,6 +268,7 @@ public final class DeploymentCreateProcessor
     createDmnResources(deploymentEvent);
     createFormResources(deploymentEvent);
     createResources(deploymentEvent);
+    createManagedScriptDefinitions(deploymentEvent);
     final var recordWithoutResource = createDeploymentWithoutResources(deploymentEvent);
     stateWriter.appendFollowUpEvent(
         command.getKey(), DeploymentIntent.CREATED, recordWithoutResource);
@@ -363,6 +365,17 @@ public final class DeploymentCreateProcessor
                 }
               }
             });
+  }
+
+  private void createManagedScriptDefinitions(final DeploymentRecord deploymentEvent) {
+    deploymentEvent
+        .managedScriptDefinitionsMetadata()
+        .forEach(
+            definition ->
+                stateWriter.appendFollowUpEvent(
+                    definition.getManagedScriptDefinitionKey(),
+                    ManagedScriptDefinitionIntent.CREATED,
+                    definition));
   }
 
   /**

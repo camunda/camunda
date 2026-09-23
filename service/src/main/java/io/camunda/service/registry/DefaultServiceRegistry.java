@@ -38,6 +38,7 @@ import io.camunda.service.GroupServices;
 import io.camunda.service.HistoryBackupServices;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
+import io.camunda.service.ManagedScriptDefinitionServices;
 import io.camunda.service.ManagementServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.MessageServices;
@@ -92,6 +93,7 @@ public record DefaultServiceRegistry(
     Map<String, HistoryBackupServices> historyBackupByTenant,
     Map<String, IncidentServices> incidentByTenant,
     Map<String, JobServices<?>> jobByTenant,
+    Map<String, ManagedScriptDefinitionServices> managedScriptDefinitionByTenant,
     Map<String, MappingRuleServices> mappingRuleByTenant,
     Map<String, MessageServices> messageByTenant,
     Map<String, MessageSubscriptionServices> messageSubscriptionByTenant,
@@ -247,6 +249,12 @@ public record DefaultServiceRegistry(
   @SuppressWarnings("unchecked")
   public <T> JobServices<T> jobServices(final String physicalTenantId) {
     return (JobServices<T>) byTenant(jobByTenant, physicalTenantId);
+  }
+
+  @Override
+  public ManagedScriptDefinitionServices managedScriptDefinitionServices(
+      final String physicalTenantId) {
+    return byTenant(managedScriptDefinitionByTenant, physicalTenantId);
   }
 
   @Override
@@ -445,6 +453,8 @@ public record DefaultServiceRegistry(
     private final Map<String, HistoryBackupServices> historyBackupByTenant = new HashMap<>();
     private final Map<String, IncidentServices> incidentByTenant = new HashMap<>();
     private final Map<String, JobServices<?>> jobByTenant = new HashMap<>();
+    private final Map<String, ManagedScriptDefinitionServices> managedScriptDefinitionByTenant =
+        new HashMap<>();
     private final Map<String, MappingRuleServices> mappingRuleByTenant = new HashMap<>();
     private final Map<String, MessageServices> messageByTenant = new HashMap<>();
     private final Map<String, MessageSubscriptionServices> messageSubscriptionByTenant =
@@ -605,6 +615,12 @@ public record DefaultServiceRegistry(
       return this;
     }
 
+    public Builder managedScriptDefinitionServices(
+        final String tenantId, final ManagedScriptDefinitionServices service) {
+      managedScriptDefinitionByTenant.put(tenantId, service);
+      return this;
+    }
+
     public Builder mappingRuleServices(final String tenantId, final MappingRuleServices service) {
       mappingRuleByTenant.put(tenantId, service);
       return this;
@@ -759,6 +775,7 @@ public record DefaultServiceRegistry(
           Map.copyOf(historyBackupByTenant),
           Map.copyOf(incidentByTenant),
           Map.copyOf(jobByTenant),
+          Map.copyOf(managedScriptDefinitionByTenant),
           Map.copyOf(mappingRuleByTenant),
           Map.copyOf(messageByTenant),
           Map.copyOf(messageSubscriptionByTenant),

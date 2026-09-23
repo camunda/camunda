@@ -89,6 +89,7 @@ public interface Intent {
     map.put(ValueType.JOB_BATCH, JobBatchIntent.class);
     map.put(ValueType.JOB_METRICS_BATCH, JobMetricsBatchIntent.class);
     map.put(ValueType.MAPPING_RULE, MappingRuleIntent.class);
+    map.put(ValueType.MANAGED_SCRIPT_DEFINITION, ManagedScriptDefinitionIntent.class);
     map.put(ValueType.MESSAGE, MessageIntent.class);
     map.put(ValueType.MESSAGE_BATCH, MessageBatchIntent.class);
     map.put(ValueType.MESSAGE_CORRELATION, MessageCorrelationIntent.class);

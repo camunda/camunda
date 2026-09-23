@@ -53,6 +53,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.JobMetricsBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.ManagedScriptDefinitionIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
@@ -124,6 +125,7 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.ManagedScriptDefinitionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageCorrelationRecordValue;
@@ -334,6 +336,10 @@ public final class ValueTypeMapping {
     mapping.put(
         ValueType.MAPPING_RULE,
         new Mapping<>(MappingRuleRecordValue.class, MappingRuleIntent.class));
+    mapping.put(
+        ValueType.MANAGED_SCRIPT_DEFINITION,
+        new Mapping<>(
+            ManagedScriptDefinitionRecordValue.class, ManagedScriptDefinitionIntent.class));
     mapping.put(
         ValueType.IDENTITY_SETUP,
         new Mapping<>(IdentitySetupRecordValue.class, IdentitySetupIntent.class));

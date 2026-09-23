@@ -16,9 +16,11 @@ import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProces
 import io.camunda.zeebe.engine.state.immutable.AgentDefinitionState;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ManagedScriptDefinitionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
+import io.camunda.zeebe.protocol.record.intent.ManagedScriptDefinitionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -42,6 +44,7 @@ public final class BpmnProcessDeletionBehavior {
 
   private final ProcessState processState;
   private final AgentDefinitionState agentDefinitionState;
+  private final ManagedScriptDefinitionState managedScriptDefinitionState;
   private final ElementInstanceState elementInstanceState;
   private final BannedInstanceState bannedInstanceState;
   private final TypedCommandWriter commandWriter;
@@ -52,6 +55,7 @@ public final class BpmnProcessDeletionBehavior {
   public BpmnProcessDeletionBehavior(
       final ProcessState processState,
       final AgentDefinitionState agentDefinitionState,
+      final ManagedScriptDefinitionState managedScriptDefinitionState,
       final ElementInstanceState elementInstanceState,
       final BannedInstanceState bannedInstanceState,
       final TypedCommandWriter commandWriter,
@@ -60,6 +64,7 @@ public final class BpmnProcessDeletionBehavior {
       final ProcessDefinitionMetrics processDefinitionMetrics) {
     this.processState = processState;
     this.agentDefinitionState = agentDefinitionState;
+    this.managedScriptDefinitionState = managedScriptDefinitionState;
     this.elementInstanceState = elementInstanceState;
     this.bannedInstanceState = bannedInstanceState;
     this.commandWriter = commandWriter;
@@ -143,6 +148,7 @@ public final class BpmnProcessDeletionBehavior {
     final long key = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(key, ProcessIntent.DELETING, processRecord);
     deleteAgentDefinitions(processRecord.getKey());
+    deleteManagedScriptDefinitions(processRecord.getKey());
     stateWriter.appendFollowUpEvent(key, ProcessIntent.DELETED, processRecord);
     commandWriter.appendFollowUpCommand(key, ProcessIntent.DELETE_COMPLETE, processRecord);
   }
@@ -160,5 +166,15 @@ public final class BpmnProcessDeletionBehavior {
                 agentDefinitionKey,
                 AgentDefinitionIntent.DELETED,
                 agentDefinitionState.getAgentDefinition(agentDefinitionKey)));
+  }
+
+  private void deleteManagedScriptDefinitions(final long processDefinitionKey) {
+    managedScriptDefinitionState.forEachManagedScriptDefinitionKey(
+        processDefinitionKey,
+        definitionKey ->
+            stateWriter.appendFollowUpEvent(
+                definitionKey,
+                ManagedScriptDefinitionIntent.DELETED,
+                managedScriptDefinitionState.getManagedScriptDefinition(definitionKey)));
   }
 }

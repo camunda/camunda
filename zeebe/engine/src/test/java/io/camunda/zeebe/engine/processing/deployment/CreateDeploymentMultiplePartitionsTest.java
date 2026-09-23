@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.deployment;
 
 import static io.camunda.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
@@ -16,6 +17,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -25,6 +27,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
+import io.camunda.zeebe.protocol.record.intent.ManagedScriptDefinitionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
@@ -660,6 +663,75 @@ public final class CreateDeploymentMultiplePartitionsTest {
                 .map(Record::getKey)
                 .distinct())
         .describedAs("All created events get the same agentDefinitionKey on every partition")
+        .hasSize(1);
+  }
+
+  @Test
+  public void shouldWriteManagedScriptDefinitionCreatedEventsWithSameKeysOnAllPartitions() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+    final var elementId = "managed-script-task";
+    final var resourceName = "script.js";
+
+    // when
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "process.bpmn",
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .scriptTask(
+                    elementId,
+                    task ->
+                        task.zeebeJobType("io.camunda:managed-script:1")
+                            .zeebeTaskHeader("language", "javascript")
+                            .zeebeTaskHeader("runtime", "nodejs22")
+                            .zeebeLinkedResources(
+                                link ->
+                                    link.resourceId(resourceName)
+                                        .resourceType("ManagedScript")
+                                        .linkName("script")
+                                        .bindingType(ZeebeBindingType.deployment)))
+                .endEvent()
+                .done())
+        .withJsonResource("export default () => 42;".getBytes(UTF_8), resourceName)
+        .deploy();
+
+    // then
+    ENGINE.forEachPartition(
+        partitionId -> {
+          final var record =
+              RecordingExporter.managedScriptDefinitionRecords(
+                      ManagedScriptDefinitionIntent.CREATED)
+                  .withPartitionId(partitionId)
+                  .withBpmnProcessId(processId)
+                  .getFirst();
+          assertThat(record)
+              .describedAs(
+                  "Should replicate ManagedScriptDefinition:CREATED to every partition, not only"
+                      + " the deployment partition")
+              .isNotNull();
+
+          final var managedScriptDefinitionState =
+              ENGINE.getProcessingState(partitionId).getManagedScriptDefinitionState();
+          assertThat(
+                  managedScriptDefinitionState.getManagedScriptDefinitionKey(
+                      record.getValue().getProcessDefinitionKey(), wrapString(elementId)))
+              .describedAs(
+                  "State on partition %d should resolve the replicated"
+                      + " managedScriptDefinitionKey",
+                  partitionId)
+              .isEqualTo(record.getKey());
+        });
+
+    assertThat(
+            RecordingExporter.managedScriptDefinitionRecords(ManagedScriptDefinitionIntent.CREATED)
+                .withBpmnProcessId(processId)
+                .limit(PARTITION_COUNT)
+                .map(Record::getKey)
+                .distinct())
+        .describedAs(
+            "All created events get the same managedScriptDefinitionKey on every partition")
         .hasSize(1);
   }
 

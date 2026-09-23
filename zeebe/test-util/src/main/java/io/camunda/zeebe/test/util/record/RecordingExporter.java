@@ -35,6 +35,7 @@ import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.ManagedScriptDefinitionIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
@@ -98,6 +99,7 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.ManagedScriptDefinitionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageCorrelationRecordValue;
@@ -368,6 +370,16 @@ public final class RecordingExporter implements Exporter {
   public static AgentDefinitionRecordStream agentDefinitionRecords(
       final AgentDefinitionIntent intent) {
     return agentDefinitionRecords().withIntent(intent);
+  }
+
+  public static ManagedScriptDefinitionRecordStream managedScriptDefinitionRecords() {
+    return new ManagedScriptDefinitionRecordStream(
+        records(ValueType.MANAGED_SCRIPT_DEFINITION, ManagedScriptDefinitionRecordValue.class));
+  }
+
+  public static ManagedScriptDefinitionRecordStream managedScriptDefinitionRecords(
+      final ManagedScriptDefinitionIntent intent) {
+    return managedScriptDefinitionRecords().withIntent(intent);
   }
 
   public static AgentHistoryRecordStream agentHistoryRecords() {

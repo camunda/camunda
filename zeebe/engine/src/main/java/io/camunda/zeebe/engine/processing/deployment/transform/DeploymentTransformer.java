@@ -194,6 +194,12 @@ public final class DeploymentTransformer {
       }
     }
 
+    try {
+      bpmnResourceTransformer.writeManagedScriptDefinitionRecords(deploymentEvent);
+    } catch (final RuntimeException e) {
+      errors.add("Failed to create managed script definitions: %s", e.getMessage());
+    }
+
     return errors.toEither();
   }
 
