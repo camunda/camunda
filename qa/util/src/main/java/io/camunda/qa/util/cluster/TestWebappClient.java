@@ -44,7 +44,10 @@ public class TestWebappClient {
 
     final var cookieManager = new CookieManager();
     final var httpClient = HttpClient.newBuilder().cookieHandler(cookieManager).build();
-    final var loginRequest = buildLoginRequest(username, password);
+    // Fetched once for the whole retry loop below: the server only rotates the token when a login
+    // succeeds, never on the rejections this loop retries through.
+    final var loginCsrfToken = requestLoginCsrfToken(httpClient);
+    final var loginRequest = buildLoginRequest(username, password, loginCsrfToken);
     final var lastResponse = new AtomicReference<HttpResponse<String>>();
 
     // Retry until the login is accepted (see LOGIN_TIMEOUT): until the user is searchable the
@@ -63,27 +66,65 @@ public class TestWebappClient {
     } catch (final ConditionTimeoutException e) {
       final var response = lastResponse.get();
       throw new IllegalStateException(
-          "Login of user '%s' did not succeed within %s; last response status was %s"
-              .formatted(username, LOGIN_TIMEOUT, response == null ? "n/a" : response.statusCode()),
+          "Login of user '%s' did not succeed within %s; last response status was %s, CSRF token sent: %s"
+              .formatted(
+                  username,
+                  LOGIN_TIMEOUT,
+                  response == null ? "n/a" : response.statusCode(),
+                  loginCsrfToken != null),
           e);
     }
 
+    // The login response sends a token only if the server rotated it. If it did not, the token from
+    // the GET is still valid for this session.
     final var csrfToken =
         lastResponse
             .get()
             .headers()
             .firstValue(CamundaSecurityFilterChainConstants.X_CSRF_TOKEN)
-            .orElse(null);
+            .orElse(loginCsrfToken);
 
     return new TestLoggedInWebappClient(httpClient, cookieManager, csrfToken);
   }
 
-  private HttpRequest buildLoginRequest(final String username, final String password) {
-    return HttpRequest.newBuilder()
-        .uri(endpoint.resolve("login"))
-        .header("Content-Type", "application/x-www-form-urlencoded")
-        .POST(HttpRequest.BodyPublishers.ofString("username=" + username + "&password=" + password))
-        .build();
+  /**
+   * Gets the CSRF token that the login endpoint sends in a GET response. The login POST must send
+   * this token back, because the login path always enforces CSRF. The server rejects a POST without
+   * a token, even before a session exists.
+   *
+   * <p>A transport failure of this request is thrown rather than swallowed. Logging in without a
+   * token fails for the rest of the timeout below and reports the rejected login, which hides that
+   * the token request was the part that broke; the failure of that wait names whether a token was
+   * sent.
+   *
+   * <p>The status of the response is deliberately not checked: the server writes the token header
+   * before it handles the request, so an error response carries a usable token just as a successful
+   * one does, and rejecting it here would break every deployment that answers this endpoint with
+   * anything other than a success.
+   *
+   * @return the token, or {@code null} if the response carries none
+   */
+  private String requestLoginCsrfToken(final HttpClient httpClient) {
+    final var tokenRequest = HttpRequest.newBuilder().uri(endpoint.resolve("login")).GET().build();
+    return sendRequestAndThrowExceptionOnFailure(httpClient, tokenRequest)
+        .headers()
+        .firstValue(CamundaSecurityFilterChainConstants.X_CSRF_TOKEN)
+        .orElse(null);
+  }
+
+  private HttpRequest buildLoginRequest(
+      final String username, final String password, final String csrfToken) {
+    final var request =
+        HttpRequest.newBuilder()
+            .uri(endpoint.resolve("login"))
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .POST(
+                HttpRequest.BodyPublishers.ofString(
+                    "username=" + username + "&password=" + password));
+    if (csrfToken != null) {
+      request.header(CamundaSecurityFilterChainConstants.X_CSRF_TOKEN, csrfToken);
+    }
+    return request.build();
   }
 
   private static boolean isSuccessful(final HttpResponse<?> response) {

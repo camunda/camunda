@@ -23,6 +23,7 @@ import static com.google.common.net.HttpHeaders.X_FRAME_OPTIONS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.authentication.config.controllers.TestApiController;
+import io.camunda.authentication.config.controllers.TestUserDetailsService;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.config.headers.ContentSecurityPolicyConfig;
 import io.camunda.security.api.model.config.headers.PermissionsPolicyConfig;
@@ -30,6 +31,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureWebMvc;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
@@ -106,6 +108,35 @@ public class AbstractWebSecurityConfigTest {
         .hasValue(STRICT_TRANSPORT_SECURITY, "max-age=31536000")
         .hasValue(PERMISSIONS_POLICY, PermissionsPolicyConfig.DEFAULT_PERMISSIONS_POLICY_VALUE)
         .doesNotContainHeaders(CONTENT_SECURITY_POLICY_REPORT_ONLY);
+  }
+
+  /**
+   * Gets the login page and returns the CSRF token from the response. The login endpoint always
+   * enforces CSRF, and an anonymous GET of the login path is the only place that sends a token. A
+   * login POST must therefore get the token first.
+   */
+  protected MvcTestResult requestCsrfTokenForLogin(final String loginUrl) {
+    final MvcTestResult result = mockMvcTester.get().uri(loginUrl).exchange();
+    assertThat(result.getResponse().getHeader(EXPECTED_CSRF_HEADER_NAME))
+        .as("GET %s must issue a CSRF token for the login form to echo back", loginUrl)
+        .isNotNull();
+    return result;
+  }
+
+  /** Logs in as demo and sends back the CSRF token from the login page. */
+  protected MvcTestResult logInAsDemo(final String loginUrl) {
+    final MvcTestResult csrfResult = requestCsrfTokenForLogin(loginUrl);
+    return mockMvcTester
+        .post()
+        .uri(loginUrl)
+        .cookie(csrfResult.getResponse().getCookies())
+        .header(
+            EXPECTED_CSRF_HEADER_NAME,
+            csrfResult.getResponse().getHeader(EXPECTED_CSRF_HEADER_NAME))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+        .formField("username", TestUserDetailsService.DEMO_USERNAME)
+        .formField("password", TestUserDetailsService.DEMO_USERNAME)
+        .exchange();
   }
 
   protected void assertMissingCsrfToken(final MvcTestResult response) {
