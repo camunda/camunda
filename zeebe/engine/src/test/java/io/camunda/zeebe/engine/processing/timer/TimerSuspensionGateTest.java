@@ -247,6 +247,65 @@ public final class TimerSuspensionGateTest {
     assertThat(bufferedTimerTriggerCount(processInstanceKey)).isEqualTo(1);
   }
 
+  @Test
+  public void shouldFireRepeatingTimerExactlyOnceAfterResumingAcrossSeveralIntervals() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType(processId))
+                .boundaryEvent("timer", b -> b.cancelActivity(false).timerWithCycle("R2/PT2S"))
+                .endEvent()
+                .moveToActivity("task")
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    final var firstCreated =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    final long elementInstanceKey = firstCreated.getValue().getElementInstanceKey();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when - the timer becomes overdue by ~5 intervals while the instance is suspended; the wider
+    // 2s cycle (vs. the 1s used elsewhere) leaves headroom so setup overhead on a slow runner
+    // cannot let the timer become due before suspend() takes effect
+    ENGINE.increaseTime(Duration.ofSeconds(10));
+    RecordingExporter.timerRecords(TimerIntent.SUSPENDED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).resume();
+
+    // then
+    final var triggered =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+            .withElementInstanceKey(elementInstanceKey)
+            .getFirst();
+    final var rescheduled =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withElementInstanceKey(elementInstanceKey)
+            .limit(2)
+            .getLast();
+
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+                        .withElementInstanceKey(elementInstanceKey)
+                        .skip(1)
+                        .exists()))
+        .describedAs(
+            "timer must fire exactly once after resuming across the overdue gap, not twice")
+        .isFalse();
+    assertThat(rescheduled.getValue().getDueDate() - triggered.getTimestamp())
+        .describedAs("reschedule must land in the future, not collapse onto the trigger time")
+        .isGreaterThanOrEqualTo(500L);
+  }
+
   private long bufferedTimerTriggerCount(final long processInstanceKey) {
     return RecordingExporter.records()
         .limitToProcessInstance(processInstanceKey)

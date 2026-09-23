@@ -53,10 +53,11 @@ a suspension marker for them.
 
 ## Consequences
 
-- A repeating timer that missed several cycles while suspended fires **twice** after resume: the
-  buffered trigger, plus one overdue reschedule snapped to now — not once per missed cycle. This is
-  the user-visible catch-up contract and is asserted on a live broker. This is illustrated by the
-  sequence diagram below.
+- A repeating timer that missed several cycles while suspended fires **once** after resume: the
+  buffered trigger fires, and `TimerTriggerProcessor#refreshTimer` re-anchors its reschedule one
+  full interval past "now" instead of snapping it onto "now" — not once per missed cycle, and not
+  twice for the same gap. This is the user-visible catch-up contract and is asserted on a live
+  broker. This is illustrated by the sequence diagram below.
 
   ```mermaid
   sequenceDiagram
@@ -64,7 +65,7 @@ a suspension marker for them.
     participant Clock
     participant DueDateChecker
     participant Processor as TimerTriggerProcessor
-    participant Interval as Interval.toEpochMilli
+    participant Interval as Interval.withStart
     participant Catch as CatchEventBehavior
     participant State as Timer state
 
@@ -77,22 +78,14 @@ a suspension marker for them.
     Processor->>State: TIMER.RESUMED (restore due-date index)
     Note over Processor: PROCESS buffered TRIGGER (due=1h)
 
-    Processor->>State: TIMER.TRIGGERED (fire 1)
-    Processor->>Processor: refreshTimer: start = 1h + 1h = 2h
-    Processor->>Catch: subscribeToTimerEvent(refreshed)
-    Catch->>Interval: getDueDate(now=4.5h)
-    Interval-->>Catch: max(2h, 4.5h) = 4.5h  (snap)
-    Catch->>State: TIMER.CREATED due=4.5h
-    Catch->>DueDateChecker: scheduleTimer(4.5h)
-
-    DueDateChecker->>Processor: TIMER.TRIGGER (already due)
-    Processor->>State: TIMER.TRIGGERED (fire 2, catch-up)
-    Processor->>Processor: refreshTimer: start = 4.5h + 1h = 5.5h
-    Processor->>Catch: subscribeToTimerEvent(refreshed)
-    Catch->>Interval: getDueDate(now≈4.5h)
-    Interval-->>Catch: max(5.5h, 4.5h) = 5.5h
+    Processor->>State: TIMER.TRIGGERED (the only fire for this gap)
+    Processor->>Processor: refreshTimer: naturalNextDueDate = 1h + 1h = 2h
+    Processor->>Interval: naturalNextDueDate (2h) > now (4.5h)?
+    Interval-->>Processor: no - overdue, re-anchor to now + interval = 5.5h
+    Processor->>Catch: subscribeToTimerEvent(re-anchored)
     Catch->>State: TIMER.CREATED due=5.5h
-    Note over Clock,State: Missed 2h/3h/4h are not replayed.<br/>Next fire is at 5.5h.
+    Catch->>DueDateChecker: scheduleTimer(5.5h)
+    Note over Clock,State: Missed 2h/3h/4h are not replayed.<br/>No second immediate fire:<br/>next due date (5.5h) is genuinely in the future.
   ```
 - A duplicate `TRIGGER` that arrives while suspended is also buffered; drain rejects the extra as
   `NOT_FOUND`. Suspension is not deduplicating.
@@ -106,8 +99,8 @@ a suspension marker for them.
 
 The due-date behavior is covered by a MultiDb IT (`ProcessInstanceSuspendResumeTimerIT`)
 with a controlled actor clock, asserting the user-visible outcomes: a timer due while suspended does
-not fire until resume, a timer due after resume fires normally, and the repeating-timer catch-up
-above. Unit test coverage sits in `TimerSuspensionGateTest`, `TimerSuspendedApplierTest`,
+not fire until resume, a timer due after resume fires normally, and the repeating-timer single-fire
+catch-up above. Unit test coverage sits in `TimerSuspensionGateTest`, `TimerSuspendedApplierTest`,
 `TimerInstanceStateTest`, and `SuspensionBehaviorTest`.
 
 ## Source
