@@ -102,13 +102,13 @@ public final class IncidentUpdateTask implements BackgroundTask {
     try {
       result = processNextBatch();
     } catch (final Exception e) {
-      return CompletableFuture.failedFuture(adjustBatchSize(e));
+      return CompletableFuture.failedFuture(adjustBatchSizeAndReturnCause(e));
     }
 
     return result.handleAsync(
         (documentsUpdated, error) -> {
           if (error != null) {
-            throw new CompletionException(adjustBatchSize(error));
+            throw new CompletionException(adjustBatchSizeAndReturnCause(error));
           }
 
           return documentsUpdated;
@@ -117,13 +117,13 @@ public final class IncidentUpdateTask implements BackgroundTask {
   }
 
   /** The read is the only lever on fan-out, so it is all that is reduced. */
-  private Throwable adjustBatchSize(final Throwable error) {
+  private Throwable adjustBatchSizeAndReturnCause(final Throwable error) {
     final var cause = FuturesUtil.unwrapCompletionException(error);
     if (!(cause instanceof BulkRequestTooLargeException)) {
       return cause;
     }
 
-    if (batchSize.reduce()) {
+    if (batchSize.halve()) {
       logger.warn(
           """
             The store refused the incident update write for being too large; retrying with at most \
