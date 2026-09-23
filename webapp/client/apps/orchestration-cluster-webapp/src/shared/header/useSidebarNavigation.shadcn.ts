@@ -8,10 +8,31 @@
 
 import {useMatchRoute, type RegisteredRouter} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
-import {GitBranch, History, LayoutDashboard, Layers, ListTodo, Settings2, Workflow} from '@camunda/design-system/icons';
+
+import {
+	Bot,
+	GitBranch,
+	History,
+	LayoutDashboard,
+	Layers,
+	ListChecks,
+	ListTodo,
+	Package,
+	Settings,
+	Settings2,
+	ShieldCheck,
+	User,
+	UserCog,
+	Users,
+	Waypoints,
+	Workflow,
+	Zap,
+} from '@camunda/design-system/icons';
 import {camundaAppIcons, type NavIcon, type SidebarNode} from '@camunda/design-system';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
 import {hasComponentAccess} from '#/shared/componentAccess';
+import {getBootConfig} from '#/shared/config/getBootConfig';
+import {getClientConfig} from '#/shared/config/getClientConfig';
 import {useActiveComponentHomeRoute} from '#/shared/useActiveComponentHomeRoute';
 
 type FileRouteTypes = RegisteredRouter['routeTree']['types']['fileRouteTypes'];
@@ -26,6 +47,17 @@ const tabRoutes = {
 	operateDecisions: '/operate/decisions',
 	operateOperationsLog: '/operate/operations-log',
 	operateBatchOperations: '/operate/batch-operations',
+	adminIndex: '/admin',
+	adminUsers: '/admin/users',
+	adminGroups: '/admin/groups',
+	adminRoles: '/admin/roles',
+	adminTenants: '/admin/tenants',
+	adminMappingRules: '/admin/mapping-rules',
+	adminAuthorizations: '/admin/authorizations',
+	adminGlobalTaskListeners: '/admin/global-task-listeners',
+	adminClusterVariables: '/admin/cluster-variables',
+	adminMcpProcesses: '/admin/mcp-processes',
+	adminOperationsLog: '/admin/operations-log',
 } as const satisfies Record<string, FileRouteTypes['to']>;
 
 type SidebarNavigation = {
@@ -38,6 +70,86 @@ type SidebarNavigation = {
 	};
 };
 
+type AdminNavConfig = {
+	isOidc: boolean;
+	isSaas: boolean;
+	isMultiTenancyEnabled: boolean;
+};
+
+type AdminNavItem = {
+	key: string;
+	to: FileRouteTypes['to'];
+	labelKey: string;
+	icon: NavIcon;
+	isAvailable?: (config: AdminNavConfig) => boolean;
+};
+
+const ADMIN_NAV_ITEMS: AdminNavItem[] = [
+	{
+		key: 'users',
+		to: tabRoutes['adminUsers'],
+		labelKey: 'admin.headerNavItemUsers',
+		icon: User,
+		isAvailable: ({isOidc}) => !isOidc,
+	},
+	{
+		key: 'mapping-rules',
+		to: tabRoutes['adminMappingRules'],
+		labelKey: 'admin.headerNavItemMappingRules',
+		icon: Waypoints,
+		isAvailable: ({isOidc, isSaas}) => isOidc && !isSaas,
+	},
+	{
+		key: 'groups',
+		to: tabRoutes['adminGroups'],
+		labelKey: 'admin.headerNavItemGroups',
+		icon: Users,
+	},
+	{
+		key: 'roles',
+		to: tabRoutes['adminRoles'],
+		labelKey: 'admin.headerNavItemRoles',
+		icon: UserCog,
+	},
+	{
+		key: 'tenants',
+		to: tabRoutes['adminTenants'],
+		labelKey: 'admin.headerNavItemTenants',
+		icon: Package,
+		isAvailable: ({isMultiTenancyEnabled}) => isMultiTenancyEnabled,
+	},
+	{
+		key: 'authorizations',
+		to: tabRoutes['adminAuthorizations'],
+		labelKey: 'admin.headerNavItemAuthorizations',
+		icon: ShieldCheck,
+	},
+	{
+		key: 'global-task-listeners',
+		to: tabRoutes['adminGlobalTaskListeners'],
+		labelKey: 'admin.headerNavItemGlobalTaskListeners',
+		icon: Zap,
+	},
+	{
+		key: 'cluster-variables',
+		to: tabRoutes['adminClusterVariables'],
+		labelKey: 'admin.headerNavItemClusterVariables',
+		icon: Settings,
+	},
+	{
+		key: 'mcp-processes',
+		to: tabRoutes['adminMcpProcesses'],
+		labelKey: 'admin.headerNavItemMcpProcesses',
+		icon: Bot,
+	},
+	{
+		key: 'operations-log',
+		to: tabRoutes['adminOperationsLog'],
+		labelKey: 'admin.headerNavItemOperationsLog',
+		icon: ListChecks,
+	},
+];
+
 function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 	const {t} = useTranslation();
 	const matchRoute = useMatchRoute();
@@ -45,6 +157,7 @@ function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 	const isProcessesRoute = matchRoute({to: tabRoutes['tasklistProcesses'], fuzzy: true}) !== false;
 	const activeComponentHomeRoute = useActiveComponentHomeRoute();
 	const isTasklistRoute = activeComponentHomeRoute === tabRoutes['tasklistIndex'];
+	const isAdminRoute = activeComponentHomeRoute === tabRoutes['adminIndex'];
 
 	if (isTasklistRoute) {
 		const hasTasklistAccess = hasComponentAccess('tasklist', authorizedComponents);
@@ -165,6 +278,38 @@ function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 							],
 						},
 					]
+				: [],
+		};
+	}
+
+	if (isAdminRoute) {
+		const hasAdminAccess = hasComponentAccess('admin', authorizedComponents);
+		const {organizationId, clusterId} = getBootConfig();
+		const {authentication, deployment} = getClientConfig();
+		const navConfig: AdminNavConfig = {
+			isOidc: authentication.isLoginDelegated,
+			isSaas: organizationId !== null && clusterId !== null,
+			isMultiTenancyEnabled: deployment.isMultiTenancyEnabled,
+		};
+
+		return {
+			ariaLabel: t('admin.adminPanelNavAria'),
+			homeRoute: activeComponentHomeRoute,
+			product: {
+				icon: camundaAppIcons.admin,
+				label: 'Admin',
+			},
+			items: hasAdminAccess
+				? ADMIN_NAV_ITEMS.filter(({isAvailable}) => isAvailable?.(navConfig) ?? true).map(
+						({key, to, labelKey, icon}): SidebarNode => ({
+							type: 'item',
+							key,
+							label: t(labelKey),
+							icon,
+							isActive: matchRoute({to, fuzzy: true}) !== false,
+							linkProps: {to},
+						}),
+					)
 				: [],
 		};
 	}

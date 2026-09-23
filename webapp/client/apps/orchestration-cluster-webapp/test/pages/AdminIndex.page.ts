@@ -20,6 +20,10 @@ class AdminIndexPage extends BasePage {
 	get heading() {
 		return this.page.getByRole('heading', {name: 'Admin'});
 	}
+
+	navItem(name: string) {
+		return this.page.getByRole('link', {name, exact: true});
+	}
 }
 
 export {AdminIndexPage};
