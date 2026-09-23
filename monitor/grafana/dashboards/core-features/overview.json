@@ -985,7 +985,7 @@
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "  sum by(uri, method) (\n    rate(http_server_requests_seconds_sum{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\"\n    }[$__rate_interval])\n  )\n  /\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_count{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\"\n    }[$__rate_interval])\n  )\n",
+              "expr": "  sum by(uri, method) (\n    rate(http_server_requests_seconds_sum{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"${exclude_uri:raw}\"\n    }[$__rate_interval])\n  )\n  /\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_count{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"${exclude_uri:raw}\"\n    }[$__rate_interval])\n  )\n",
               "hide": false,
               "instant": false,
               "legendFormat": "{{method}} {{uri}}",
@@ -999,7 +999,7 @@
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "  sum by(uri, method) (\n    rate(http_server_requests_seconds_sum{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\"\n    }[$__rate_interval])\n  )\n  /\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_count{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",      \n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\"\n    }[$__rate_interval])\n  )\n",
+              "expr": "  sum by(uri, method) (\n    rate(http_server_requests_seconds_sum{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",\n      uri!~\"${exclude_uri:raw}\"\n    }[$__rate_interval])\n  )\n  /\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_count{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",      \n      uri!~\"${exclude_uri:raw}\"\n    }[$__rate_interval])\n  )\n",
               "hide": false,
               "instant": false,
               "legendFormat": "{{method}} {{uri}}",
@@ -1087,7 +1087,7 @@
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "topk(10,\n  ((sum by(uri, method) (\n    rate(http_server_requests_seconds_sum{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\"\n    }[4h])\n  )\n  /\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_count{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\"\n    }[4h])\n  )) or\n    ((sum by(uri, method) (\n    rate(http_server_requests_seconds_sum{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\"\n    }[4h])\n  )\n  /\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_count{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\"\n    }[4h])\n  ))\n  )\n))",
+              "expr": "topk(10,\n  ((sum by(uri, method) (\n    rate(http_server_requests_seconds_sum{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"${exclude_uri:raw}\"\n    }[4h])\n  )\n  /\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_count{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"${exclude_uri:raw}\"\n    }[4h])\n  )) or\n    ((sum by(uri, method) (\n    rate(http_server_requests_seconds_sum{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",\n      uri!~\"${exclude_uri:raw}\"\n    }[4h])\n  )\n  /\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_count{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",\n      uri!~\"${exclude_uri:raw}\"\n    }[4h])\n  ))\n  )\n))",
               "format": "table",
               "hide": false,
               "instant": true,
@@ -1206,7 +1206,7 @@
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_sum{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method!~\"GET|OPTIONS|HEAD\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\",\n      uri!~\".*/search.*|.*/statistics.*\",\n    }[$__rate_interval])\n  )\n  /\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_count{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method!~\"GET|OPTIONS|HEAD\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\",\n      uri!~\".*/search.*|.*/statistics.*\",\n    }[$__rate_interval])\n  )\n",
+              "expr": "\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_sum{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method!~\"GET|OPTIONS|HEAD\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"${exclude_uri:raw}\",\n      uri!~\".*/search.*|.*/statistics.*\",\n    }[$__rate_interval])\n  )\n  /\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_count{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method!~\"GET|OPTIONS|HEAD\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"${exclude_uri:raw}\",\n      uri!~\".*/search.*|.*/statistics.*\",\n    }[$__rate_interval])\n  )\n",
               "hide": false,
               "instant": false,
               "legendFormat": "{{method}} {{uri}}",
@@ -1294,7 +1294,7 @@
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "topk(10,\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_sum{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method!~\"GET|OPTIONS|HEAD\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\",\n      uri!~\".*/search.*|.*/statistics.*\",\n    }[4h])\n  )\n  /\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_count{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method!~\"GET|OPTIONS|HEAD\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\",\n      uri!~\".*/search.*|.*/statistics.*\",\n    }[4h])\n  )\n)\n",
+              "expr": "topk(10,\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_sum{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method!~\"GET|OPTIONS|HEAD\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"${exclude_uri:raw}\",\n      uri!~\".*/search.*|.*/statistics.*\",\n    }[4h])\n  )\n  /\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_count{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method!~\"GET|OPTIONS|HEAD\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"${exclude_uri:raw}\",\n      uri!~\".*/search.*|.*/statistics.*\",\n    }[4h])\n  )\n)\n",
               "format": "table",
               "hide": false,
               "instant": true,
@@ -1326,7 +1326,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "REST search/query latency at this percentile, grouped by method and URI. GET endpoints plus POST /search and /statistics. Excludes actuator, MCP, and long-poll /v2/jobs/activation.",
+          "description": "REST search/query latency at this percentile, grouped by method and URI. GET endpoints plus POST /search and /statistics. Excludes actuator, MCP, /api/readyz, and long-poll /v2/jobs/activation.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -1413,7 +1413,7 @@
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "histogram_quantile(0.9,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\"\n    }[$__rate_interval])\n  )\n)\n",
+              "expr": "histogram_quantile(0.9,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"${exclude_uri:raw}\"\n    }[$__rate_interval])\n  )\n)\n",
               "hide": false,
               "instant": false,
               "legendFormat": "{{method}} {{uri}}",
@@ -1427,7 +1427,7 @@
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "histogram_quantile(0.9,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\"\n    }[$__rate_interval])\n  )\n)\n",
+              "expr": "histogram_quantile(0.9,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",\n      uri!~\"${exclude_uri:raw}\"\n    }[$__rate_interval])\n  )\n)\n",
               "hide": false,
               "instant": false,
               "legendFormat": "{{method}} {{uri}}",
@@ -1443,7 +1443,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "REST search/query endpoints with the highest latency at this percentile over the selected dashboard range. GET endpoints plus POST /search and /statistics. Excludes actuator, MCP, and long-poll /v2/jobs/activation.",
+          "description": "REST search/query endpoints with the highest latency at this percentile over the selected dashboard range. GET endpoints plus POST /search and /statistics. Excludes actuator, MCP, /api/readyz, and long-poll /v2/jobs/activation.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -1515,7 +1515,7 @@
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "topk(10,\n  ((histogram_quantile(0.9,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\"\n    }[$__range])\n  )\n)) or\n    (histogram_quantile(0.9,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\"\n    }[$__range])\n  )\n))\n  )\n)",
+              "expr": "topk(10,\n  ((histogram_quantile(0.9,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"${exclude_uri:raw}\"\n    }[$__range])\n  )\n)) or\n    (histogram_quantile(0.9,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",\n      uri!~\"${exclude_uri:raw}\"\n    }[$__range])\n  )\n))\n  )\n)",
               "format": "table",
               "hide": false,
               "instant": true,
@@ -1547,7 +1547,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "REST search/query latency at this percentile, grouped by method and URI. GET endpoints plus POST /search and /statistics. Excludes actuator, MCP, and long-poll /v2/jobs/activation.",
+          "description": "REST search/query latency at this percentile, grouped by method and URI. GET endpoints plus POST /search and /statistics. Excludes actuator, MCP, /api/readyz, and long-poll /v2/jobs/activation.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -1634,7 +1634,7 @@
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "histogram_quantile(0.99,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\"\n    }[$__rate_interval])\n  )\n)\n",
+              "expr": "histogram_quantile(0.99,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"${exclude_uri:raw}\"\n    }[$__rate_interval])\n  )\n)\n",
               "hide": false,
               "instant": false,
               "legendFormat": "{{method}} {{uri}}",
@@ -1648,7 +1648,7 @@
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "histogram_quantile(0.99,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\"\n    }[$__rate_interval])\n  )\n)\n",
+              "expr": "histogram_quantile(0.99,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",\n      uri!~\"${exclude_uri:raw}\"\n    }[$__rate_interval])\n  )\n)\n",
               "hide": false,
               "instant": false,
               "legendFormat": "{{method}} {{uri}}",
@@ -1664,7 +1664,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "REST search/query endpoints with the highest latency at this percentile over the selected dashboard range. GET endpoints plus POST /search and /statistics. Excludes actuator, MCP, and long-poll /v2/jobs/activation.",
+          "description": "REST search/query endpoints with the highest latency at this percentile over the selected dashboard range. GET endpoints plus POST /search and /statistics. Excludes actuator, MCP, /api/readyz, and long-poll /v2/jobs/activation.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -1736,7 +1736,7 @@
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "topk(10,\n  ((histogram_quantile(0.99,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\"\n    }[$__range])\n  )\n)) or\n    (histogram_quantile(0.99,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\"\n    }[$__range])\n  )\n))\n  )\n)",
+              "expr": "topk(10,\n  ((histogram_quantile(0.99,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"${exclude_uri:raw}\"\n    }[$__range])\n  )\n)) or\n    (histogram_quantile(0.99,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",\n      uri!~\"${exclude_uri:raw}\"\n    }[$__range])\n  )\n))\n  )\n)",
               "format": "table",
               "hide": false,
               "instant": true,
@@ -1768,7 +1768,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "REST search/query latency at this percentile, grouped by method and URI. GET endpoints plus POST /search and /statistics. Excludes actuator, MCP, and long-poll /v2/jobs/activation.",
+          "description": "REST search/query latency at this percentile, grouped by method and URI. GET endpoints plus POST /search and /statistics. Excludes actuator, MCP, /api/readyz, and long-poll /v2/jobs/activation.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -1855,7 +1855,7 @@
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "histogram_quantile(0.999,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\"\n    }[$__rate_interval])\n  )\n)\n",
+              "expr": "histogram_quantile(0.999,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"${exclude_uri:raw}\"\n    }[$__rate_interval])\n  )\n)\n",
               "hide": false,
               "instant": false,
               "legendFormat": "{{method}} {{uri}}",
@@ -1869,7 +1869,7 @@
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "histogram_quantile(0.999,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\"\n    }[$__rate_interval])\n  )\n)\n",
+              "expr": "histogram_quantile(0.999,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",\n      uri!~\"${exclude_uri:raw}\"\n    }[$__rate_interval])\n  )\n)\n",
               "hide": false,
               "instant": false,
               "legendFormat": "{{method}} {{uri}}",
@@ -1885,7 +1885,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "REST search/query endpoints with the highest latency at this percentile over the selected dashboard range. GET endpoints plus POST /search and /statistics. Excludes actuator, MCP, and long-poll /v2/jobs/activation.",
+          "description": "REST search/query endpoints with the highest latency at this percentile over the selected dashboard range. GET endpoints plus POST /search and /statistics. Excludes actuator, MCP, /api/readyz, and long-poll /v2/jobs/activation.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -1957,7 +1957,7 @@
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "topk(10,\n  ((histogram_quantile(0.999,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\"\n    }[$__range])\n  )\n)) or\n    (histogram_quantile(0.999,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*|/v2/jobs/activation\"\n    }[$__range])\n  )\n))\n  )\n)",
+              "expr": "topk(10,\n  ((histogram_quantile(0.999,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"GET\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri!~\"${exclude_uri:raw}\"\n    }[$__range])\n  )\n)) or\n    (histogram_quantile(0.999,\n  sum by (le, uri, method) (\n    rate(http_server_requests_seconds_bucket{\n      camunda_region=~\"$region\",\n      container=~\"$container\",\n      method=\"POST\",\n      namespace=~\"$namespace\",\n      uri=~\"$uri\",\n      uri=~\".*/search.*|.*/statistics.*\",\n      uri!~\"${exclude_uri:raw}\"\n    }[$__range])\n  )\n))\n  )\n)",
               "format": "table",
               "hide": false,
               "instant": true,
@@ -9562,6 +9562,19 @@
         "refresh": 1,
         "regex": "",
         "type": "query"
+      },
+      {
+        "current": {
+          "text": "^/actuator/health(/.*)?$|^/actuator/prometheus$|^/api/readyz$|.*/mcp.*|/v2/jobs/activation",
+          "value": "^/actuator/health(/.*)?$|^/actuator/prometheus$|^/api/readyz$|.*/mcp.*|/v2/jobs/activation"
+        },
+        "description": "URI regex excluded from REST latency panels. Hidden constant so the actuator, readiness, MCP, and long-poll job activation filter lives in one place.",
+        "hide": 2,
+        "label": "Excluded URIs",
+        "name": "exclude_uri",
+        "query": "^/actuator/health(/.*)?$|^/actuator/prometheus$|^/api/readyz$|.*/mcp.*|/v2/jobs/activation",
+        "skipUrlSync": true,
+        "type": "constant"
       }
     ]
   },
