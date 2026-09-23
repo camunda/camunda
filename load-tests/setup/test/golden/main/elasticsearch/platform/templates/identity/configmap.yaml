@@ -30,7 +30,7 @@ data:
         multi-tenancy: "false"
 
       authProvider:
-        issuer-url: ""
+        issuer-url: "http://localhost:18080/auth/realms/camunda-platform"
         backend-url: "http://c8-golden-main-elasticsearch.keycloak-operator.svc:18080/auth/realms/camunda-platform"
       component-presets:
         connectors:
