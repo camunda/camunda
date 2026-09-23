@@ -439,7 +439,7 @@ public class CamundaProcessTestExtensionIT {
           Bpmn.createExecutableProcess("tested-and-mocked-process")
               .startEvent("StartEvent")
               .sequenceFlowId("FlowToTask")
-              .task("Task")
+              .task("Task_Inside_Tested_Process")
               .sequenceFlowId("FlowToEnd")
               .endEvent("EndEvent")
               .done();
@@ -489,7 +489,7 @@ public class CamundaProcessTestExtensionIT {
       assertThat(processUnderTestReport.getProcessModels())
           .filteredOn(model -> "tested-and-mocked-process".equals(model.getProcessDefinitionId()))
           .singleElement()
-          .satisfies(model -> assertThat(model.getXml()).contains("Task"));
+          .satisfies(model -> assertThat(model.getXml()).contains("Task_Inside_Tested_Process"));
       assertThat(processUnderTestReport.getProcessCoverages())
           .filteredOn(
               coverage -> "tested-and-mocked-process".equals(coverage.getProcessDefinitionId()))
