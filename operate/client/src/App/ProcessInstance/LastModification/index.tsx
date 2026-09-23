@@ -7,7 +7,7 @@
  */
 
 import {Button} from '@carbon/react';
-import {Container, ModificationDetail} from './styled';
+import {Container, ModificationDetail, ModificationMessage} from './styled';
 import {observer} from 'mobx-react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {tracking} from 'modules/tracking';
@@ -34,7 +34,7 @@ const LastModification: React.FC = observer(() => {
   const {type, payload} = lastModification;
   return (
     <Container>
-      <div>
+      <ModificationMessage>
         Last added modification:{' '}
         <ModificationDetail>
           <>
@@ -52,7 +52,7 @@ const LastModification: React.FC = observer(() => {
               VARIABLE_TEMPLATES[payload.operation](payload.name)}
           </>
         </ModificationDetail>
-      </div>
+      </ModificationMessage>
       <Button
         kind="secondary"
         size="sm"

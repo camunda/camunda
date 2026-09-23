@@ -19,8 +19,20 @@ const Container = styled.div`
   padding: var(--cds-spacing-03) 0 var(--cds-spacing-03) var(--cds-spacing-05);
 
   #root.operate-nav-v2 & {
-    border-radius: var(--cds-spacing-03);
-    overflow: hidden;
+    background-color: transparent;
+    padding-left: 0;
+  }
+`;
+
+const ModificationMessage = styled.div`
+  #root.operate-nav-v2 & {
+    align-items: center;
+    background-color: var(--cds-button-secondary);
+    border-radius: var(--cds-spacing-03) 0 0 var(--cds-spacing-03);
+    display: flex;
+    gap: var(--cds-spacing-02);
+    height: 100%;
+    padding-left: var(--cds-spacing-05);
   }
 `;
 
@@ -38,4 +50,4 @@ const ModificationDetail = styled.div`
   }
 `;
 
-export {Container, ModificationDetail};
+export {Container, ModificationDetail, ModificationMessage};
