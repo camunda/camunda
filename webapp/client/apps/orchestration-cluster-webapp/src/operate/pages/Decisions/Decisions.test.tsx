@@ -8,7 +8,12 @@
 
 import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
-import {HttpResponse} from 'msw';
+import {http, HttpResponse} from 'msw';
+import {
+	endpoints,
+	queryDecisionInstancesRequestBodySchema,
+	type QueryDecisionInstancesRequestBody,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
@@ -21,7 +26,10 @@ import {
 	createQueryDecisionDefinitionsResponse,
 } from '#/shared-test-modules/api-mocks/decision-definitions';
 import {DMN_XML} from '#/shared-test-modules/api-mocks/decision-definition-xmls';
-import {createQueryDecisionInstancesResponse} from '#/shared-test-modules/api-mocks/decision-instances';
+import {
+	createDecisionInstance,
+	createQueryDecisionInstancesResponse,
+} from '#/shared-test-modules/api-mocks/decision-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {DecisionsHarness} from './DecisionsHarness';
 import {mockQueryDecisionDefinitionsEndpointByFilter} from './mockQueryDecisionDefinitionsEndpointByFilter';
@@ -38,11 +46,14 @@ const DECISION_DEFINITIONS = HttpResponse.json(
 
 const EMPTY_DECISION_INSTANCES = HttpResponse.json(createQueryDecisionInstancesResponse());
 
-function renderDecisionsPage(searchParams?: Record<string, string>) {
-	const query = searchParams ? `?${new URLSearchParams(searchParams).toString()}` : '';
+function renderDecisionsPage(searchParams: Record<string, string> = {}, legacy = false) {
+	const query = new URLSearchParams({
+		...(legacy ? {} : {evaluated: 'true', failed: 'true'}),
+		...searchParams,
+	}).toString();
 	return renderWithRouter(DecisionsHarness, {
 		path: '/operate/decisions',
-		initialEntry: `/operate/decisions${query}`,
+		initialEntry: `/operate/decisions?${query}`,
 	});
 }
 
@@ -195,6 +206,129 @@ describe('<Decisions />', () => {
 		});
 
 		await expect.element(screen.getByText('Decision "Invoice Approval" exists in more than one Tenant')).toBeVisible();
+	});
+
+	describe('legacy bookmarks', () => {
+		it('should not query instances when a bookmarked filter has no selected states', async ({worker}) => {
+			worker.use(mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}));
+
+			const screen = await renderDecisionsPage({tenantId: '<default>'}, true);
+
+			await expect.element(screen.getByRole('checkbox', {name: 'Evaluated'})).not.toBeChecked();
+			await expect.element(screen.getByRole('checkbox', {name: 'Failed'})).not.toBeChecked();
+			await expect.element(screen.getByText('To see some results, select at least one Instance state')).toBeVisible();
+		});
+
+		it('should hide previous rows and deletion when returning to a no-state bookmark', async ({worker}) => {
+			worker.use(
+				mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
+				mockQueryDecisionInstancesEndpoint({
+					successResponse: HttpResponse.json(
+						createQueryDecisionInstancesResponse({
+							items: [createDecisionInstance({decisionEvaluationInstanceKey: '123567'})],
+						}),
+					),
+				}),
+			);
+
+			const screen = await renderDecisionsPage({}, true);
+			await screen.router.navigate({
+				to: '/operate/decisions',
+				search: {evaluated: true, failed: true},
+			});
+			await expect.element(screen.getByTitle('View decision instance 123567')).toBeVisible();
+			await userEvent.click(screen.getByRole('checkbox', {name: 'Select row 123567'}), {force: true});
+			await expect.element(screen.getByRole('button', {name: 'Delete'})).toBeVisible();
+
+			screen.router.history.back();
+			await expect.element(screen.getByText('To see some results, select at least one Instance state')).toBeVisible();
+			await expect.element(screen.getByTitle('View decision instance 123567')).not.toBeInTheDocument();
+			await expect.element(screen.getByRole('button', {name: 'Delete'})).not.toBeInTheDocument();
+		});
+
+		it('should accept explicit false in a bookmarked URL without broadening the API filter', async ({worker}) => {
+			let requestedFilter: QueryDecisionInstancesRequestBody['filter'];
+			worker.use(
+				mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
+				http.post(endpoints.queryDecisionInstances.getUrl(), async ({request}) => {
+					const body = queryDecisionInstancesRequestBodySchema.parse(await request.json());
+					requestedFilter = body.filter;
+					return EMPTY_DECISION_INSTANCES.clone();
+				}),
+			);
+
+			const screen = await renderDecisionsPage({evaluated: 'false', failed: 'true'}, true);
+
+			await expect.element(screen.getByRole('checkbox', {name: 'Evaluated'})).not.toBeChecked();
+			await expect.element(screen.getByRole('checkbox', {name: 'Failed'})).toBeChecked();
+			await expect.poll(() => requestedFilter).toMatchObject({state: {$in: ['FAILED']}});
+		});
+
+		it('should preserve tenant and all-version selection in the instances request', async ({worker}) => {
+			let requestedFilter: QueryDecisionInstancesRequestBody['filter'];
+			worker.use(
+				mockQueryDecisionDefinitionsEndpointByFilter({
+					unfilteredResponse: DECISION_DEFINITIONS,
+					filteredResponse: DECISION_DEFINITIONS,
+				}),
+				http.post(endpoints.queryDecisionInstances.getUrl(), async ({request}) => {
+					const body = queryDecisionInstancesRequestBodySchema.parse(await request.json());
+					requestedFilter = body.filter;
+					return EMPTY_DECISION_INSTANCES.clone();
+				}),
+				mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
+			);
+
+			const screen = await renderDecisionsPage(
+				{
+					decisionDefinitionId: 'invoice-approval',
+					decisionDefinitionVersion: 'all',
+					tenantId: '<default>',
+					evaluated: 'true',
+				},
+				true,
+			);
+
+			await expect.element(screen.getByRole('checkbox', {name: 'Evaluated'})).toBeChecked();
+			await expect.element(screen.getByRole('checkbox', {name: 'Failed'})).not.toBeChecked();
+			await expect.element(screen.getByRole('combobox', {name: 'Version'})).toMatchTextContent('All versions');
+			await expect
+				.poll(() => requestedFilter)
+				.toMatchObject({
+					decisionDefinitionId: 'invoice-approval',
+					tenantId: '<default>',
+					state: {$in: ['EVALUATED']},
+				});
+			expect(requestedFilter?.decisionDefinitionVersion).toBeUndefined();
+		});
+
+		it('should preserve state selection through browser back and forward', async ({worker}) => {
+			const requestedFilters: Array<QueryDecisionInstancesRequestBody['filter']> = [];
+			worker.use(
+				mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
+				http.post(endpoints.queryDecisionInstances.getUrl(), async ({request}) => {
+					const body = queryDecisionInstancesRequestBodySchema.parse(await request.json());
+					requestedFilters.push(body.filter);
+					return EMPTY_DECISION_INSTANCES.clone();
+				}),
+			);
+
+			const screen = await renderDecisionsPage({evaluated: 'true'}, true);
+
+			await expect.element(screen.getByRole('checkbox', {name: 'Evaluated'})).toBeChecked();
+			await expect.element(screen.getByRole('checkbox', {name: 'Failed'})).not.toBeChecked();
+			await expect.poll(() => requestedFilters.at(-1)).toMatchObject({state: {$in: ['EVALUATED']}});
+
+			await userEvent.click(screen.getByText('Failed'));
+			await expect.poll(() => requestedFilters.at(-1)).toMatchObject({state: {$in: ['EVALUATED', 'FAILED']}});
+
+			screen.router.history.back();
+			await expect.element(screen.getByRole('checkbox', {name: 'Failed'})).not.toBeChecked();
+			await expect.element(screen.getByRole('checkbox', {name: 'Evaluated'})).toBeChecked();
+
+			screen.router.history.forward();
+			await expect.element(screen.getByRole('checkbox', {name: 'Failed'})).toBeChecked();
+		});
 	});
 
 	describe('instance state checkboxes', () => {

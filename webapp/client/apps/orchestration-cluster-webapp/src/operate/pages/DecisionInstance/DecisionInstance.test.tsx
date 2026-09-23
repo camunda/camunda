@@ -84,6 +84,7 @@ describe('<DecisionInstance />', () => {
 		const screen = await renderPage();
 
 		await expect.poll(() => screen.router.state.location.pathname).toBe('/operate/decisions');
+		await expect.poll(() => screen.router.state.location.search).toMatchObject({evaluated: true, failed: true});
 		await expect.element(screen.getByRole('button', {name: 'Try again'})).not.toBeInTheDocument();
 		await expect
 			.poll(() => notificationsStore.notifications.map((notification) => notification.title))

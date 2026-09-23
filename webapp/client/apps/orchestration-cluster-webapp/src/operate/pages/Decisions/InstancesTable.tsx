@@ -156,14 +156,16 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 				count={totalCount}
 				hasMoreTotalItems={hasMoreTotalItems}
 			/>
-			<Toolbar
-				selectedCount={selection.selectedCount}
-				includedIds={selection.includedIds}
-				excludedIds={selection.excludedIds}
-				filter={filter ?? {}}
-				onDeleted={selection.reset}
-				onDiscard={selection.reset}
-			/>
+			{filter !== undefined && (
+				<Toolbar
+					selectedCount={selection.selectedCount}
+					includedIds={selection.includedIds}
+					excludedIds={selection.excludedIds}
+					filter={filter}
+					onDeleted={selection.reset}
+					onDiscard={selection.reset}
+				/>
+			)}
 			<PaginatedSortableTable<DecisionInstance>
 				columns={columns}
 				rows={decisionInstances}

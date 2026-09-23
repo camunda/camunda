@@ -133,6 +133,7 @@ function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 							isActive: isOperateDecisionsRoute,
 							linkProps: {
 								to: tabRoutes['operateDecisions'],
+								search: {evaluated: true, failed: true},
 							},
 						},
 						{

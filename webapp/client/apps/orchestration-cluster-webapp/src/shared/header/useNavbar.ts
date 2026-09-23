@@ -137,6 +137,7 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 							isCurrentPage: hasRouteMatch('/operate/decisions'),
 							routeProps: {
 								to: tabRoutes['operateDecisions'],
+								search: {evaluated: true, failed: true},
 							},
 						},
 						{

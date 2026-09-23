@@ -91,7 +91,12 @@ describe('<DecisionOperations />', () => {
 		await expect.element(screen.getByRole('heading', {name: 'Delete DRD', exact: true})).not.toBeInTheDocument();
 		await expect.element(screen.getByText('Operation created', {exact: true})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: ACTION_NAME})).toBeEnabled();
-		expect(screen.router.state.location.search).toEqual({tenantId: 'tenant-a', businessId: 'order-1', failed: false});
+		expect(screen.router.state.location.search).toEqual({
+			tenantId: 'tenant-a',
+			businessId: 'order-1',
+			evaluated: false,
+			failed: false,
+		});
 	});
 
 	it.for([
@@ -138,7 +143,13 @@ describe('<DecisionOperations />', () => {
 			await submit(screen);
 			await screen.router.navigate({
 				to: '/operate/decisions',
-				search: {decisionDefinitionId: 'my-decision', decisionDefinitionVersion: 1, tenantId},
+				search: {
+					decisionDefinitionId: 'my-decision',
+					decisionDefinitionVersion: 1,
+					tenantId,
+					evaluated: true,
+					failed: true,
+				},
 			});
 
 			await expect.element(screen.getByText('Operation created', {exact: true})).toBeVisible();
@@ -146,6 +157,8 @@ describe('<DecisionOperations />', () => {
 				decisionDefinitionId: 'my-decision',
 				decisionDefinitionVersion: 1,
 				...(tenantId === undefined ? {} : {tenantId}),
+				evaluated: true,
+				failed: true,
 			});
 		},
 	);

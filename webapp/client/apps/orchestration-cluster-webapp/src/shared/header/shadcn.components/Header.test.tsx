@@ -166,7 +166,9 @@ describe('<Header /> (V2)', () => {
 
 		await expect.element(screen.getByRole('link', {name: 'Dashboard'})).toHaveAttribute('href', '/operate-preview');
 		await expect.element(screen.getByRole('link', {name: 'Processes'})).toHaveAttribute('href', '/operate/processes');
-		await expect.element(screen.getByRole('link', {name: 'Decisions'})).toHaveAttribute('href', '/operate/decisions');
+		await expect
+			.element(screen.getByRole('link', {name: 'Decisions'}))
+			.toHaveAttribute('href', '/operate/decisions?evaluated=true&failed=true');
 	});
 
 	it('should hide the Operate sidebar items if the application is unauthorized', async ({worker}) => {

@@ -63,7 +63,13 @@ const DecisionOperations: React.FC<Props> = ({definition}) => {
 				void router.navigate({
 					to: '/operate/decisions',
 					replace: true,
-					search: (prev) => ({...prev, decisionDefinitionId: undefined, decisionDefinitionVersion: undefined}),
+					search: (prev) => ({
+						...prev,
+						evaluated: prev.evaluated ?? false,
+						failed: prev.failed ?? false,
+						decisionDefinitionId: undefined,
+						decisionDefinitionVersion: undefined,
+					}),
 				});
 			}
 			void Promise.all([
