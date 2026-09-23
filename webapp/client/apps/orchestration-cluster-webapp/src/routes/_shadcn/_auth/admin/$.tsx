@@ -8,9 +8,9 @@
 
 import {createFileRoute, notFound} from '@tanstack/react-router';
 
-const Route = createFileRoute('/_carbon/_auth/admin/$')({
+const Route = createFileRoute('/_shadcn/_auth/admin/$')({
 	beforeLoad: () => {
-		throw notFound({routeId: '/_carbon/_auth/admin'});
+		throw notFound({routeId: '/_shadcn/_auth/admin'});
 	},
 });
 

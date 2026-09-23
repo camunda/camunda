@@ -6,20 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type Page} from '@playwright/test';
 import {BasePage} from './BasePage';
-import {Header} from './Header';
 
 class AdminIndexPage extends BasePage {
-	readonly header: Header;
-
-	constructor(page: Page) {
-		super(page);
-		this.header = new Header(page, 'Camunda Admin');
-	}
-
 	async goto() {
 		return this.page.goto('/admin');
+	}
+
+	get branding() {
+		return this.page.getByRole('link', {name: 'Camunda logo'});
 	}
 
 	get heading() {

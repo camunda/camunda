@@ -9,6 +9,6 @@
 import {createFileRoute} from '@tanstack/react-router';
 import {AdminPage} from '#/admin/pages/AdminPage';
 
-export const Route = createFileRoute('/_carbon/_auth/admin/')({
+export const Route = createFileRoute('/_shadcn/_auth/admin/')({
 	component: AdminPage,
 });
