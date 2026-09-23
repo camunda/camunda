@@ -37,6 +37,32 @@ async function parseRedirectUrl(response: Response): Promise<string> {
   return result.url;
 }
 
+/**
+ * Gets a CSRF token from the login page and keeps it for the requests that follow. The login
+ * endpoint rejects a POST without a token, and a GET of the login page is where the server sends
+ * one.
+ */
+async function requestLoginCsrfToken(): Promise<string | null> {
+  try {
+    const response = await fetch(getLoginApiUrl(), {
+      method: "get",
+      headers: { Accept: "text/html" },
+    });
+    const csrfToken = response.headers.get("X-CSRF-TOKEN");
+
+    if (csrfToken !== null) {
+      sessionStorage.setItem("X-CSRF-TOKEN", csrfToken);
+    }
+
+    return csrfToken;
+  } catch (e) {
+    // The login request that follows reports the failure to the user as a rejected login. Log the
+    // cause so a missing CSRF token is distinguishable from bad credentials.
+    console.error("fetching a CSRF token failed", e);
+    return null;
+  }
+}
+
 export async function login(
   username: string,
   password: string,
@@ -45,9 +71,11 @@ export async function login(
   data.set("username", username);
   data.set("password", password);
   try {
+    const csrfToken = await requestLoginCsrfToken();
     let response = await fetch(getLoginApiUrl(), {
       method: "post",
       body: data,
+      headers: csrfToken === null ? undefined : { "X-CSRF-TOKEN": csrfToken },
     });
     if (response.status < 400) {
       return { success: true, message: "" };

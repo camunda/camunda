@@ -26,6 +26,28 @@ function getCsrfTokenFromStorage() {
 	return sessionStorage.getItem('X-CSRF-TOKEN');
 }
 
+function storeCsrfTokenFromResponse(response: Response) {
+	const tokenFromResponse = response.headers.get('X-CSRF-TOKEN');
+
+	if (tokenFromResponse) {
+		sessionStorage.setItem('X-CSRF-TOKEN', tokenFromResponse);
+	}
+}
+
+/**
+ * Gets a CSRF token and keeps it for the requests that follow. Does not change the session state,
+ * because this request does not tell us if the user has a session.
+ */
+async function requestCsrfToken(input: Request) {
+	try {
+		storeCsrfTokenFromResponse(await fetch(input));
+	} catch (error) {
+		// The request that needs the token reports the failure to the user, which looks like a
+		// rejected login. Log the cause so a broken token request is distinguishable from that.
+		console.error('Failed to fetch a CSRF token', error);
+	}
+}
+
 async function request(
 	input: RequestInfo,
 	{skipSessionCheck} = {skipSessionCheck: false},
@@ -55,11 +77,7 @@ async function request(
 			authenticationStore.activateSession();
 		}
 
-		const tokenFromResponse = response.headers.get('X-CSRF-TOKEN');
-
-		if (tokenFromResponse) {
-			sessionStorage.setItem('X-CSRF-TOKEN', tokenFromResponse);
-		}
+		storeCsrfTokenFromResponse(response);
 
 		if (!skipSessionCheck && response.status === 401) {
 			authenticationStore.disableSession();
@@ -106,4 +124,4 @@ const requestErrorSchema = z.union([
 	}),
 ]);
 
-export {getCsrfTokenFromStorage, request, requestErrorSchema, type RequestError};
+export {getCsrfTokenFromStorage, request, requestCsrfToken, requestErrorSchema, type RequestError};

@@ -6,12 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {HttpResponse} from 'msw';
+import {http, HttpResponse} from 'msw';
 import {describe, expect, beforeEach, afterEach} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
-import {mockLoginEndpoint, mockLogoutEndpoint} from '#/shared-test-modules/mock-handlers';
+import {mockLoginCsrfTokenEndpoint, mockLoginEndpoint, mockLogoutEndpoint} from '#/shared-test-modules/mock-handlers';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {authenticationStore} from './authentication.store';
+
+/**
+ * Mocks the login POST together with the GET of the same path that precedes it, which is where the
+ * server sends the CSRF token that the POST has to send back.
+ */
+const mockLogin = (successResponse: Response) => [
+	mockLoginCsrfTokenEndpoint({successResponse: new HttpResponse('')}),
+	mockLoginEndpoint({successResponse}),
+];
 
 describe('authentication store', () => {
 	beforeEach(() => {
@@ -28,11 +37,7 @@ describe('authentication store', () => {
 	});
 
 	it('should login', async ({worker}) => {
-		worker.use(
-			mockLoginEndpoint({
-				successResponse: new HttpResponse('', {status: 200}),
-			}),
-		);
+		worker.use(...mockLogin(new HttpResponse('', {status: 200})));
 
 		authenticationStore.disableSession();
 		expect(authenticationStore.status).toBe('session-invalid');
@@ -41,12 +46,25 @@ describe('authentication store', () => {
 		expect(authenticationStore.status).toBe('logged-in');
 	});
 
-	it('should handle login failure', async ({worker}) => {
+	it('should send the CSRF token from the login page with the login request', async ({worker}) => {
+		const csrfToken = 'csrf-token-from-login-page';
+		let tokenSentWithLogin: string | null = null;
+
 		worker.use(
-			mockLoginEndpoint({
-				successResponse: new HttpResponse('', {status: 401}),
+			http.get('/login', () => new HttpResponse('', {headers: {'X-CSRF-TOKEN': csrfToken}})),
+			http.post('/login', ({request}) => {
+				tokenSentWithLogin = request.headers.get('X-CSRF-TOKEN');
+				return new HttpResponse('', {status: 204});
 			}),
 		);
+
+		await authenticationStore.handleLogin('demo', 'demo');
+
+		expect(tokenSentWithLogin).toBe(csrfToken);
+	});
+
+	it('should handle login failure', async ({worker}) => {
+		worker.use(...mockLogin(new HttpResponse('', {status: 401})));
 
 		const result = await authenticationStore.handleLogin('demo', 'demo');
 
@@ -63,9 +81,7 @@ describe('authentication store', () => {
 
 	it('should logout', async ({worker}) => {
 		worker.use(
-			mockLoginEndpoint({
-				successResponse: new HttpResponse('', {status: 200}),
-			}),
+			...mockLogin(new HttpResponse('', {status: 200})),
 			mockLogoutEndpoint({
 				successResponse: new HttpResponse('', {status: 204}),
 			}),
