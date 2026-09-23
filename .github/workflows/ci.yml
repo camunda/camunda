@@ -2923,6 +2923,42 @@ jobs:
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
+      - name: Import Nexus credentials
+        id: nexus-secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/github.com/organizations/camunda NEXUS_USR;
+            secret/data/github.com/organizations/camunda NEXUS_PSW;
+      - name: Check time since last snapshot deploy
+        id: snapshot-gate
+        env:
+          NEXUS_USR: ${{ steps.nexus-secrets.outputs.NEXUS_USR }}
+          NEXUS_PSW: ${{ steps.nexus-secrets.outputs.NEXUS_PSW }}
+          MIN_INTERVAL_HOURS: '3'
+          MARKER_ARTIFACT: io/camunda/zeebe-protocol
+        run: |
+          version="$(grep -m1 '<version>' pom.xml | sed -E 's|.*<version>([^<]+)</version>.*|\1|')"
+          url="https://repository.nexus.camunda.cloud/content/groups/internal/${MARKER_ARTIFACT}/${version}/maven-metadata.xml"
+          stamp=$(curl -sf --retry 3 --retry-all-errors -u "${NEXUS_USR}:${NEXUS_PSW}" "${url}" \
+                  | sed -n 's:.*<lastUpdated>\([0-9]\{14\}\)</lastUpdated>.*:\1:p' | head -n 1) || true
+          if [[ -z "${stamp}" ]]; then
+            echo "::warning::No lastUpdated at ${url}; deploying without debounce."
+            echo "fresh=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          published=$(date -u -d "${stamp:0:8} ${stamp:8:2}:${stamp:10:2}:${stamp:12:2}" +%s)
+          if (( $(date +%s) - published < MIN_INTERVAL_HOURS * 3600 )); then
+            echo "fresh=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::${version} was published at ${stamp} UTC (< ${MIN_INTERVAL_HOURS}h ago); skipping upload."
+          else
+            echo "fresh=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: snapshots
@@ -2962,6 +2998,7 @@ jobs:
       # that retry_on: error does NOT retry. timeout_minutes needs real margin for this to be useful,
       # else every run just hits the timeout wall on attempt 1 (see incident 2026-09-02).
       - name: Compile and deploy snapshot artifacts
+        if: github.event_name != 'push' || steps.snapshot-gate.outputs.fresh != 'true'
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 2
