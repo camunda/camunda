@@ -232,13 +232,13 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
   }
 
   @Override
-  public CompletionStage<List<String>> bulkUpdate(final IncidentBulkUpdate bulk) {
+  public CompletionStage<IncidentUpdateIdsResponse> bulkUpdate(final IncidentBulkUpdate bulk) {
     final var docUpdatesStream = bulk.stream();
     return bulkUpdate(docUpdatesStream, Refresh.WaitFor);
   }
 
   @Override
-  public CompletionStage<List<String>> bulkUpdate(final NonIncidentBulkUpdate bulk) {
+  public CompletionStage<IncidentUpdateIdsResponse> bulkUpdate(final NonIncidentBulkUpdate bulk) {
     final var docUpdatesStream = bulk.stream();
     return bulkUpdate(docUpdatesStream, Refresh.False);
   }
@@ -289,11 +289,11 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
         request, IncidentEntity.class, h -> new ActiveIncident(h.id(), h.source().getTreePath()));
   }
 
-  private CompletableFuture<List<String>> bulkUpdate(
+  private CompletableFuture<IncidentUpdateIdsResponse> bulkUpdate(
       final Stream<? extends IncidentTaskUpdate> docUpdatesStream, final Refresh refresh) {
     final var updates = docUpdatesStream.map(this::createUpdateOperation).toList();
     if (updates.isEmpty()) {
-      return CompletableFuture.completedFuture(List.of());
+      return CompletableFuture.completedFuture(new IncidentUpdateIdsResponse(List.of(), null));
     }
 
     final var request =
@@ -308,15 +308,18 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
           .bulk(request)
           .thenComposeAsync(
               r -> {
+                RuntimeException error = null;
                 if (r.errors()) {
-                  return CompletableFuture.failedFuture(collectBulkErrors(r.items()));
+                  error = collectBulkErrors(r.items());
                 }
 
-                return CompletableFuture.completedFuture(
+                final var updatedIds =
                     r.items().stream()
                         .filter(f -> f.result() != null && f.result().equalsIgnoreCase("updated"))
                         .map(BulkResponseItem::id)
-                        .toList());
+                        .toList();
+                return CompletableFuture.completedFuture(
+                    new IncidentUpdateIdsResponse(updatedIds, error));
               },
               executor);
     } catch (final IOException e) {

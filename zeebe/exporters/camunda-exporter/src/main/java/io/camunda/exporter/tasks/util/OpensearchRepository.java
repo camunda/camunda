@@ -150,7 +150,7 @@ public class OpensearchRepository implements AutoCloseable {
     }
   }
 
-  public Throwable collectBulkErrors(final List<BulkResponseItem> items) {
+  public ExporterException collectBulkErrors(final List<BulkResponseItem> items) {
     final var collectedErrors = new ArrayList<String>();
     items.stream()
         .flatMap(item -> Optional.ofNullable(item.error()).stream())

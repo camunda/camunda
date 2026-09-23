@@ -13,10 +13,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
 
 class ErrorInjectingIncidentUpdateRepository implements IncidentUpdateRepository {
   private IncidentUpdateRepository realUpdateRepository;
   private volatile boolean failFlowNodeBulkUpdates;
+  private final Set<String> incidentUpdatesToFail = ConcurrentHashMap.newKeySet();
 
   void setRealUpdateRepository(final IncidentUpdateRepository realUpdateRepository) {
     this.realUpdateRepository = realUpdateRepository;
@@ -24,6 +26,19 @@ class ErrorInjectingIncidentUpdateRepository implements IncidentUpdateRepository
 
   void setFailFlowNodeBulkUpdates(final boolean failFlowNodeBulkUpdates) {
     this.failFlowNodeBulkUpdates = failFlowNodeBulkUpdates;
+  }
+
+  void addIncidentIdToFail(final String id) {
+    incidentUpdatesToFail.add(id);
+  }
+
+  void removeIncidentIdToFail(final String id) {
+    incidentUpdatesToFail.remove(id);
+  }
+
+  @Override
+  public void close() throws Exception {
+    realUpdateRepository.close();
   }
 
   @Override
@@ -67,12 +82,25 @@ class ErrorInjectingIncidentUpdateRepository implements IncidentUpdateRepository
   }
 
   @Override
-  public CompletionStage<List<String>> bulkUpdate(final IncidentBulkUpdate update) {
+  public CompletionStage<IncidentUpdateIdsResponse> bulkUpdate(final IncidentBulkUpdate update) {
+    if (!incidentUpdatesToFail.isEmpty()) {
+      final IncidentBulkUpdate updateWithoutIncidents =
+          new IncidentBulkUpdate(
+              update.incidentRequests().stream()
+                  .filter(incident -> !incidentUpdatesToFail.contains(incident.id()))
+                  .toList());
+      return realUpdateRepository
+          .bulkUpdate(updateWithoutIncidents)
+          .thenApply(
+              response ->
+                  response.withError(
+                      new ExporterException("Simulated failure for incident bulk updates")));
+    }
     return realUpdateRepository.bulkUpdate(update);
   }
 
   @Override
-  public CompletionStage<List<String>> bulkUpdate(final NonIncidentBulkUpdate update) {
+  public CompletionStage<IncidentUpdateIdsResponse> bulkUpdate(final NonIncidentBulkUpdate update) {
     if (failFlowNodeBulkUpdates) {
       // Simulate a failure for flow node bulk updates and ensure that they are not updated
       // but allow the other updates to proceed (to simulate a partial update)
@@ -98,10 +126,5 @@ class ErrorInjectingIncidentUpdateRepository implements IncidentUpdateRepository
   public CompletionStage<Collection<ActiveIncident>> getActiveIncidentsByTreePaths(
       final Collection<String> treePathTerms) {
     return realUpdateRepository.getActiveIncidentsByTreePaths(treePathTerms);
-  }
-
-  @Override
-  public void close() throws Exception {
-    realUpdateRepository.close();
   }
 }

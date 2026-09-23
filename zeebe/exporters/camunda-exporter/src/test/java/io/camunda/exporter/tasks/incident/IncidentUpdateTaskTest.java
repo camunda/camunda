@@ -217,14 +217,16 @@ final class IncidentUpdateTaskTest {
               inv -> {
                 final IncidentBulkUpdate update = inv.getArgument(0);
                 return CompletableFuture.completedFuture(
-                    update.stream().map(IncidentTaskUpdate::id).toList());
+                    new IncidentUpdateIdsResponse(
+                        update.stream().map(IncidentTaskUpdate::id).toList(), null));
               });
       when(repository.bulkUpdate(any(NonIncidentBulkUpdate.class)))
           .then(
               inv -> {
                 final NonIncidentBulkUpdate update = inv.getArgument(0);
                 return CompletableFuture.completedFuture(
-                    update.stream().map(IncidentTaskUpdate::id).toList());
+                    new IncidentUpdateIdsResponse(
+                        update.stream().map(IncidentTaskUpdate::id).toList(), null));
               });
     }
 
@@ -867,9 +869,11 @@ final class IncidentUpdateTaskTest {
       when(repository.getActiveIncidentsByTreePaths(any()))
           .thenReturn(CompletableFuture.completedFuture(List.of()));
       when(repository.bulkUpdate(any(NonIncidentBulkUpdate.class)))
-          .thenReturn(CompletableFuture.completedFuture(List.of()));
+          .thenReturn(
+              CompletableFuture.completedFuture(new IncidentUpdateIdsResponse(List.of(), null)));
       when(repository.bulkUpdate(any(IncidentBulkUpdate.class)))
-          .thenReturn(CompletableFuture.completedFuture(List.of("5")));
+          .thenReturn(
+              CompletableFuture.completedFuture(new IncidentUpdateIdsResponse(List.of("5"), null)));
     }
 
     @Test
@@ -986,7 +990,8 @@ final class IncidentUpdateTaskTest {
 
     private void succeedNonIncidentWrite() {
       when(repository.bulkUpdate(any(NonIncidentBulkUpdate.class)))
-          .thenReturn(CompletableFuture.completedFuture(List.of()));
+          .thenReturn(
+              CompletableFuture.completedFuture(new IncidentUpdateIdsResponse(List.of(), null)));
     }
 
     private void failCycle(final IncidentUpdateTask task) {

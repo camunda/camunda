@@ -136,7 +136,9 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
 
     // then - client.bulk() must not be invoked; previously this sent an empty body and ES threw
     // "[es/bulk] failed: [parse_exception] request body is required"
-    assertThat(result).succeedsWithin(Duration.ofSeconds(5)).isEqualTo(List.of());
+    assertThat(result)
+        .succeedsWithin(Duration.ofSeconds(5))
+        .isEqualTo(new IncidentUpdateIdsResponse(List.of(), null));
     verify(client, Mockito.never()).bulk(Mockito.any(BulkRequest.class));
   }
 

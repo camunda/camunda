@@ -7,7 +7,6 @@
  */
 package io.camunda.exporter.tasks.incident;
 
-import com.google.common.collect.ImmutableList;
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.notifier.IncidentNotifier;
@@ -116,6 +115,16 @@ public final class IncidentUpdateTask implements BackgroundTask {
         executor);
   }
 
+  @Override
+  public String getCaption() {
+    return "Incident update task";
+  }
+
+  @Override
+  public void close() {
+    incidentNotifier.close();
+  }
+
   /** The read is the only lever on fan-out, so it is all that is reduced. */
   private Throwable adjustBatchSizeAndReturnCause(final Throwable error) {
     final var cause = FuturesUtil.unwrapCompletionException(error);
@@ -140,16 +149,6 @@ public final class IncidentUpdateTask implements BackgroundTask {
     }
 
     return cause;
-  }
-
-  @Override
-  public String getCaption() {
-    return "Incident update task";
-  }
-
-  @Override
-  public void close() {
-    incidentNotifier.close();
   }
 
   /**
@@ -384,11 +383,11 @@ public final class IncidentUpdateTask implements BackgroundTask {
                     executor),
             executor)
         .thenCompose(
-            ignored -> bulkUpdateAndNotify(state, nonIncidentBulkUpdate, incidentBulkUpdate))
+            ignored -> bulkUpdateBothAndNotify(state, nonIncidentBulkUpdate, incidentBulkUpdate))
         .join();
   }
 
-  private CompletionStage<Integer> bulkUpdateAndNotify(
+  private CompletionStage<Integer> bulkUpdateBothAndNotify(
       final IncidentsState state,
       final NonIncidentBulkUpdate nonIncidentBulkUpdate,
       final IncidentBulkUpdate incidentBulkUpdate) {
@@ -397,26 +396,27 @@ public final class IncidentUpdateTask implements BackgroundTask {
     // notifications for those incidents on the retry
     return repository
         .bulkUpdate(nonIncidentBulkUpdate)
+        .thenCompose(IncidentUpdateIdsResponse::processUpdatedCount)
         .thenCompose(
-            nonIncidentUpdatedIds ->
-                repository
-                    .bulkUpdate(incidentBulkUpdate)
-                    .thenApply(
-                        incidentUpdatedIds -> mergeIds(nonIncidentUpdatedIds, incidentUpdatedIds)))
-        .thenCompose(
-            updatedIds ->
-                notifyIncidents(
-                    updatedIds,
-                    incidentBulkUpdate.incidentRequests(),
-                    state.getIncidentDocuments()));
+            nonIncidentUpdatedIdsCount ->
+                bulkUpdateIncidentsAndNotify(state, incidentBulkUpdate)
+                    .thenApply(updatedIncidents -> updatedIncidents + nonIncidentUpdatedIdsCount));
   }
 
-  private List<String> mergeIds(
-      final List<String> nonIncidentUpdatedIds, final List<String> incidentUpdatedIds) {
-    return ImmutableList.<String>builder()
-        .addAll(nonIncidentUpdatedIds)
-        .addAll(incidentUpdatedIds)
-        .build();
+  private CompletionStage<Integer> bulkUpdateIncidentsAndNotify(
+      final IncidentsState state, final IncidentBulkUpdate incidentBulkUpdate) {
+    return repository
+        .bulkUpdate(incidentBulkUpdate)
+        .thenCompose(
+            // trigger callback so we send notification - even if some updates fail
+            // (e.g. due to issues one a single shard)
+            updatedIncidentIds ->
+                updatedIncidentIds.processUpdatedIds(
+                    updatedIds ->
+                        notifyIncidents(
+                            updatedIds,
+                            incidentBulkUpdate.incidentRequests(),
+                            state.getIncidentDocuments())));
   }
 
   private void seedResolvedIncidentsAsActive(
@@ -705,7 +705,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
     }
   }
 
-  private CompletableFuture<Integer> notifyIncidents(
+  private CompletableFuture<Void> notifyIncidents(
       final List<String> updatedIds,
       final Collection<IncidentUpdate> incidentUpdates,
       final Collection<IncidentDocument> incidentDocuments) {
@@ -724,9 +724,9 @@ public final class IncidentUpdateTask implements BackgroundTask {
             .map(List::getFirst)
             .toList();
     if (incidentsToNotify.isEmpty()) {
-      return CompletableFuture.completedFuture(updatedIds.size());
+      return CompletableFuture.completedFuture(null);
     }
-    return incidentNotifier.notifyAsync(incidentsToNotify).thenApply(ignored -> updatedIds.size());
+    return incidentNotifier.notifyAsync(incidentsToNotify);
   }
 
   private boolean shouldNotifyAboutUpdate(final IncidentUpdate update) {

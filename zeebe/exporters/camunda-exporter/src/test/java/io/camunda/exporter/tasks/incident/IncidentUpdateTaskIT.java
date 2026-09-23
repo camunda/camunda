@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -1186,6 +1187,140 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
         });
   }
 
+  @TestTemplate
+  void shouldSendNotificationsWhenRetryingAfterPartialIncidentBulkUpdateFailure(
+      final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
+    withTask(
+        config,
+        (job, resources) -> {
+          // given
+          final var listViewTemplate = resources.getIndexTemplateDescriptor(ListViewTemplate.class);
+
+          final ProcessInstanceForListViewEntity processInstance1 = newProcessInstance();
+          processInstance1.setTreePath(
+              String.format("PI_%d/FN_callActivity1", processInstance1.getKey()));
+          store(listViewTemplate, client, processInstance1);
+
+          final ProcessInstanceForListViewEntity processInstance2 = newProcessInstance();
+          processInstance2.setTreePath(
+              String.format("PI_%d/FN_callActivity1", processInstance2.getKey()));
+          store(listViewTemplate, client, processInstance2);
+
+          final FlowNodeInstanceForListViewEntity listViewFlowNodeInstance1 =
+              newFlowNodeInstanceForListViewEntity()
+                  .setProcessInstanceKey(processInstance1.getKey())
+                  .setRootProcessInstanceKey(processInstance1.getKey());
+          listViewFlowNodeInstance1.getJoinRelation().setParent(processInstance1.getKey());
+
+          final FlowNodeInstanceForListViewEntity listViewFlowNodeInstance2 =
+              newFlowNodeInstanceForListViewEntity()
+                  .setProcessInstanceKey(processInstance2.getKey())
+                  .setRootProcessInstanceKey(processInstance2.getKey());
+          listViewFlowNodeInstance2.getJoinRelation().setParent(processInstance2.getKey());
+
+          store(listViewTemplate, client, processInstance1, listViewFlowNodeInstance1);
+          store(listViewTemplate, client, processInstance2, listViewFlowNodeInstance2);
+
+          final var flowNodeInstanceTemplate =
+              resources.getIndexTemplateDescriptor(FlowNodeInstanceTemplate.class);
+
+          final FlowNodeInstanceEntity flowNodeInstance1 =
+              newFlowNodeInstanceEntity(listViewFlowNodeInstance1.getKey())
+                  .setProcessInstanceKey(processInstance1.getKey())
+                  .setRootProcessInstanceKey(processInstance1.getKey());
+
+          final FlowNodeInstanceEntity flowNodeInstance2 =
+              newFlowNodeInstanceEntity(listViewFlowNodeInstance2.getKey())
+                  .setProcessInstanceKey(processInstance2.getKey())
+                  .setRootProcessInstanceKey(processInstance2.getKey());
+
+          store(flowNodeInstanceTemplate, client, flowNodeInstance1);
+          store(flowNodeInstanceTemplate, client, flowNodeInstance2);
+
+          client.refresh(listViewTemplate.getFullQualifiedName());
+          client.refresh(flowNodeInstanceTemplate.getFullQualifiedName());
+
+          final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
+
+          final IncidentEntity incidentEntity1 =
+              newIncident()
+                  .setProcessInstanceKey(processInstance1.getKey())
+                  .setFlowNodeInstanceKey(flowNodeInstance1.getKey());
+
+          final IncidentEntity incidentEntity2 =
+              newIncident()
+                  .setProcessInstanceKey(processInstance2.getKey())
+                  .setFlowNodeInstanceKey(flowNodeInstance2.getKey());
+
+          store(incidentTemplate, client, incidentEntity1);
+          store(incidentTemplate, client, incidentEntity2);
+          client.refresh(incidentTemplate.getFullQualifiedName());
+
+          final var postImporterTemplate =
+              resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
+
+          final PostImporterQueueEntity queueEntity1 =
+              newPostImporterQueue("queue-1")
+                  .setIntent("CREATED")
+                  .setKey(incidentEntity1.getKey())
+                  .setPosition(1L);
+
+          final PostImporterQueueEntity queueEntity2 =
+              newPostImporterQueue("queue-2")
+                  .setIntent("CREATED")
+                  .setKey(incidentEntity2.getKey())
+                  .setPosition(2L);
+
+          store(postImporterTemplate, client, queueEntity1);
+          store(postImporterTemplate, client, queueEntity2);
+          client.refresh(postImporterTemplate.getFullQualifiedName());
+
+          errorInjectingRepository.addIncidentIdToFail(String.valueOf(incidentEntity1.getKey()));
+
+          // when
+          final var updatedFirst = job.execute();
+
+          // then
+          assertThat(updatedFirst)
+              .failsWithin(EXECUTE_TIMEOUT)
+              .withThrowableThat()
+              .withRootCauseInstanceOf(ExporterException.class)
+              .withMessageContaining("Simulated failure for incident bulk updates");
+
+          {
+            client.refresh(testPrefix);
+
+            verifyLatestIncidentNotificationsSent(1, incidentEntity2);
+
+            // confirm one incident updated, but not both
+            final var updatedIncident1 = getFromIndex(incidentTemplate, client, incidentEntity1);
+            assertThat(updatedIncident1.getState()).isNull();
+
+            final var updatedIncident2 = getFromIndex(incidentTemplate, client, incidentEntity2);
+            assertThat(updatedIncident2.getState()).isEqualTo(IncidentState.ACTIVE);
+          }
+
+          // given
+          errorInjectingRepository.removeIncidentIdToFail(String.valueOf(incidentEntity1.getKey()));
+
+          // when
+          final var updatedSecond = job.execute();
+
+          // then
+          assertThat(updatedSecond).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
+
+          client.refresh(testPrefix);
+
+          final var updatedIncident1 = getFromIndex(incidentTemplate, client, incidentEntity1);
+          assertThat(updatedIncident1.getState()).isEqualTo(IncidentState.ACTIVE);
+
+          final var updatedIncident2 = getFromIndex(incidentTemplate, client, incidentEntity2);
+          assertThat(updatedIncident2.getState()).isEqualTo(IncidentState.ACTIVE);
+
+          verifyLatestIncidentNotificationsSent(2, incidentEntity1);
+        });
+  }
+
   protected void storeDuplicates(
       final IndexDescriptor indexDescriptor,
       final SearchClientAdapter client,
@@ -1254,14 +1389,22 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
   }
 
   private void verifyIncidentNotificationsSent(final IncidentEntity... incidents) {
+    verifyLatestIncidentNotificationsSent(1, incidents);
+  }
+
+  private void verifyLatestIncidentNotificationsSent(
+      final int expectedCount, final IncidentEntity... incidents) {
     final ArgumentCaptor<List<IncidentEntity>> captor = ArgumentCaptor.forClass(List.class);
-    verify(incidentNotifier).notifyAsync(captor.capture());
+    verify(incidentNotifier, times(expectedCount)).notifyAsync(captor.capture());
 
     // just checking the IDs as the other fields may have been updated in the meantime
     final List<String> expectedIds =
         Arrays.stream(incidents).map(IncidentEntity::getId).sorted().toList();
     final List<String> actualIds =
-        captor.getValue().stream().map(IncidentEntity::getId).sorted().toList();
+        captor.getAllValues().get(expectedCount - 1).stream()
+            .map(IncidentEntity::getId)
+            .sorted()
+            .toList();
     assertThat(actualIds).isEqualTo(expectedIds);
   }
 
