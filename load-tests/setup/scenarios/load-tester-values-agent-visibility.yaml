@@ -25,12 +25,12 @@ load-tester:
     # replicas MUST stay at 1: Worker's round counter (Worker#adHocSubProcessRounds) is an
     # in-memory, per-pod map - with more than one replica, rounds for the same process
     # instance could be picked up by different pods and the count would become approximate.
-    orchestrator:
+    worker-orchestrator:
       replicas: 1
       capacity: 30
       jobType: "agent-visibility-orchestrator"
       completionDelay: 0ms
-      logLevel: "INFO"
+      logLevel: "DEBUG"
       resources:
         limits:
           cpu: 500m
@@ -42,13 +42,13 @@ load-tester:
     #####
     # Tool: lookup account - read-only/side-effect-free, the common case. Activated in
     # rounds 1 and 3 of the schedule.
-    tool-lookup-account:
+    worker-tool-lookup-account:
       replicas: 3
       capacity: 30
       jobType: "tool-lookup-account"
       payloadPath: "bpmn/agent-visibility/lookupAccountPayload.json"
       completionDelay: 0ms
-      logLevel: "INFO"
+      logLevel: "DEBUG"
       resources:
         limits:
           cpu: 500m
@@ -60,13 +60,13 @@ load-tester:
     #####
     # Tool: calculate score - a computation tool, distinct payload shape. Activated
     # alongside tool-send-notification in round 2 (parallel tool calls).
-    tool-calculate-score:
+    worker-tool-calculate-score:
       replicas: 3
       capacity: 30
       jobType: "tool-calculate-score"
       payloadPath: "bpmn/agent-visibility/calculateScorePayload.json"
       completionDelay: 0ms
-      logLevel: "INFO"
+      logLevel: "DEBUG"
       resources:
         limits:
           cpu: 500m
@@ -78,13 +78,13 @@ load-tester:
     #####
     # Tool: send notification - a slower/side-effecting tool, independently tunable delay.
     # Activated alongside tool-calculate-score in round 2.
-    tool-send-notification:
+    worker-tool-send-notification:
       replicas: 3
       capacity: 30
       jobType: "tool-send-notification"
       payloadPath: "bpmn/emptyPayload.json"
       completionDelay: 50ms
-      logLevel: "INFO"
+      logLevel: "DEBUG"
       resources:
         limits:
           cpu: 500m
