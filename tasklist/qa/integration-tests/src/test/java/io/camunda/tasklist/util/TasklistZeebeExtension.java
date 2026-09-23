@@ -36,6 +36,7 @@ public abstract class TasklistZeebeExtension
     implements BeforeEachCallback, AfterEachCallback, TestExecutionExceptionHandler {
 
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(15);
+  private static final Duration IDENTITY_ZEEBE_STARTUP_TIMEOUT = Duration.ofMinutes(3);
   private static final Logger LOGGER = LoggerFactory.getLogger(TasklistZeebeExtension.class);
 
   private static ContainerPoolManager<ZeebeContainer> zeebeContainerContainerPoolManager;
@@ -94,8 +95,9 @@ public abstract class TasklistZeebeExtension
                   IdentityTester.testContext.getInternalIdentityBaseUrl())
               .withEnv(
                   "ZEEBE_BROKER_GATEWAY_MULTITENANCY_ENABLED",
-                  String.valueOf(tasklistProperties.getMultiTenancy().isEnabled()));
-      zeebeContainer.start();
+                  String.valueOf(tasklistProperties.getMultiTenancy().isEnabled()))
+              .withStartupTimeout(IDENTITY_ZEEBE_STARTUP_TIMEOUT);
+      startIdentityZeebeContainer(zeebeContainer);
     } else {
       // for "standard" zeebe configuration, use a container from the pool
       if (zeebeContainerContainerPoolManager == null) {
@@ -118,6 +120,19 @@ public abstract class TasklistZeebeExtension
             .usePlaintext()
             .defaultRequestTimeout(REQUEST_TIMEOUT)
             .build();
+  }
+
+  static void startIdentityZeebeContainer(final ZeebeContainer container) {
+    try {
+      container.start();
+    } catch (final RuntimeException startFailure) {
+      try {
+        container.stop();
+      } catch (final RuntimeException stopFailure) {
+        startFailure.addSuppressed(stopFailure);
+      }
+      throw startFailure;
+    }
   }
 
   protected abstract String getZeebeExporterIndexPrefixConfigParameterName();
