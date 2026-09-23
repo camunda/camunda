@@ -19,22 +19,20 @@ const Container = styled.div`
   padding: var(--cds-spacing-03) 0 var(--cds-spacing-03) var(--cds-spacing-05);
 
   #root.operate-nav-v2 & {
-    background-color: transparent;
+    border-radius: var(--cds-spacing-03);
     gap: var(--cds-spacing-02);
     height: 2.5rem;
-    padding: 0;
+    padding: var(--cds-spacing-02);
   }
 `;
 
 const ModificationMessage = styled.div`
   #root.operate-nav-v2 & {
     align-items: center;
-    background-color: var(--cds-button-secondary);
-    border-radius: var(--cds-spacing-03);
     display: flex;
     gap: var(--cds-spacing-02);
     height: 100%;
-    padding-left: var(--cds-spacing-05);
+    padding-left: var(--cds-spacing-04);
   }
 `;
 
