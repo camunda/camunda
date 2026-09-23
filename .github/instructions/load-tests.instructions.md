@@ -96,8 +96,7 @@ if related documentation needs updating:
   `load-tests/setup/charts/load-test-setup/values.yaml` (Elasticsearch CPU/memory/disk) and
   `load-tests/setup/<branch>/values/camunda-platform-values-defaults.yaml` (Orchestration Cluster
   CPU/memory/disk). Changing any of these values here should come with a matching `camunda-docs`
-  PR (the main `docs/` copy plus the versioned copy for any affected stable branch). This has
-  drifted twice already (camunda-docs#9220, #9867).
+  PR (the main `docs/` copy plus the versioned copy for any affected stable branch).
 - This file (`.github/instructions/load-tests.instructions.md`) — AI-facing guidance
 
 ## Scheduled Release Load Tests
