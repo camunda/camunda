@@ -17,6 +17,11 @@ const Container = styled.div`
   background-color: var(--cds-button-secondary);
   color: var(--cds-text-on-color);
   padding: var(--cds-spacing-03) 0 var(--cds-spacing-03) var(--cds-spacing-05);
+
+  #root.operate-nav-v2 & {
+    border-radius: var(--cds-spacing-03);
+    overflow: hidden;
+  }
 `;
 
 const ModificationDetail = styled.div`
