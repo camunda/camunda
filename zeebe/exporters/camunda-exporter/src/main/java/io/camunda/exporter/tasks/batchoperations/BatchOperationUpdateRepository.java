@@ -18,17 +18,14 @@ import java.util.concurrent.CompletionStage;
 public interface BatchOperationUpdateRepository extends AutoCloseable {
 
   /**
-   * Returns the not finished batch operations. We can use endDate field to distinguish finished
-   * from running.
+   * Returns at most {@code batchSize} not finished batch operations, which bounds both the
+   * aggregation that counts their operations and the bulk update that writes them back. We can use
+   * endDate field to distinguish finished from running.
    *
    * <p>The state and the total operations count are returned alongside the key because a batch
    * operation with no single operations at all is indistinguishable, from the aggregation alone,
    * from one whose single operations are simply not in the operation index anymore. See {@link
    * BatchOperationUpdateTask}.
-   */
-  /**
-   * Returns at most {@code batchSize} batch operations, which bounds both the aggregation that
-   * counts their operations and the bulk update that writes them back.
    */
   CompletionStage<Collection<NotFinishedBatchOperation>> getNotFinishedBatchOperations(
       int batchSize);
