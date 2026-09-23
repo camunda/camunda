@@ -89,7 +89,7 @@
     <version.semver4j>3.1.0</version.semver4j>
     <version.servlet-api-optimize>6.1.0</version.servlet-api-optimize>
     <version.t-digest>3.3</version.t-digest>
-    <greenmail.version>2.1.13</greenmail.version>
+    <greenmail.version>2.1.14</greenmail.version>
     <google-java-format.plugin.version>1.36.1</google-java-format.plugin.version>
     <!-- This is the default profile used for the DB selection in tests -->
     <database.type>elasticsearch</database.type>
