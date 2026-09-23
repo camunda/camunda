@@ -12,7 +12,6 @@ dependencies {
   implementation(libs.io.camunda.security.library.spring.boot.starter)
   implementation(libs.io.camunda.security.library.api)
   implementation(libs.io.camunda.security.library.core)
-  implementation(libs.io.camunda.security.library.spring.boot.starter)
   implementation(project(":camunda-spring-utils"))
   api(libs.org.springframework.spring.context)
   api(libs.org.springframework.spring.web)
