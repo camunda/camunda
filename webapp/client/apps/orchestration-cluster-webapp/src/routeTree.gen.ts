@@ -39,6 +39,16 @@ import { Route as CarbonAuthOperateDecisionsIndexRouteImport } from './routes/_c
 import { Route as CarbonAuthOperateDecisionsDecisionInstanceIdRouteImport } from './routes/_carbon/_auth/operate/decisions/$decisionInstanceId'
 import { Route as CarbonAuthOperateProcessesIndexRouteImport } from './routes/_carbon/_auth/operate/processes/index'
 import { Route as CarbonAuthOperateProcessesProcessInstanceIdRouteRouteImport } from './routes/_carbon/_auth/operate/processes/$processInstanceId/route'
+import { Route as ShadcnAuthAdminAuthorizationsIndexRouteImport } from './routes/_shadcn/_auth/admin/authorizations/index'
+import { Route as ShadcnAuthAdminClusterVariablesIndexRouteImport } from './routes/_shadcn/_auth/admin/cluster-variables/index'
+import { Route as ShadcnAuthAdminGlobalTaskListenersIndexRouteImport } from './routes/_shadcn/_auth/admin/global-task-listeners/index'
+import { Route as ShadcnAuthAdminGroupsIndexRouteImport } from './routes/_shadcn/_auth/admin/groups/index'
+import { Route as ShadcnAuthAdminMappingRulesIndexRouteImport } from './routes/_shadcn/_auth/admin/mapping-rules/index'
+import { Route as ShadcnAuthAdminMcpProcessesIndexRouteImport } from './routes/_shadcn/_auth/admin/mcp-processes/index'
+import { Route as ShadcnAuthAdminOperationsLogIndexRouteImport } from './routes/_shadcn/_auth/admin/operations-log/index'
+import { Route as ShadcnAuthAdminRolesIndexRouteImport } from './routes/_shadcn/_auth/admin/roles/index'
+import { Route as ShadcnAuthAdminTenantsIndexRouteImport } from './routes/_shadcn/_auth/admin/tenants/index'
+import { Route as ShadcnAuthAdminUsersIndexRouteImport } from './routes/_shadcn/_auth/admin/users/index'
 import { Route as ShadcnAuthTasklistTasksIndexRouteImport } from './routes/_shadcn/_auth/tasklist/_tasks/index'
 import { Route as ShadcnAuthTasklistTasksUserTaskKeyRouteRouteImport } from './routes/_shadcn/_auth/tasklist/_tasks/$userTaskKey/route'
 import { Route as CarbonAuthOperateProcessesProcessInstanceIdIndexRouteImport } from './routes/_carbon/_auth/operate/processes/$processInstanceId/index'
@@ -211,6 +221,66 @@ const CarbonAuthOperateProcessesProcessInstanceIdRouteRoute =
     path: '/$processInstanceId',
     getParentRoute: () => CarbonAuthOperateProcessesRouteRoute,
   } as any)
+const ShadcnAuthAdminAuthorizationsIndexRoute =
+  ShadcnAuthAdminAuthorizationsIndexRouteImport.update({
+    id: '/authorizations/',
+    path: '/authorizations/',
+    getParentRoute: () => ShadcnAuthAdminRouteRoute,
+  } as any)
+const ShadcnAuthAdminClusterVariablesIndexRoute =
+  ShadcnAuthAdminClusterVariablesIndexRouteImport.update({
+    id: '/cluster-variables/',
+    path: '/cluster-variables/',
+    getParentRoute: () => ShadcnAuthAdminRouteRoute,
+  } as any)
+const ShadcnAuthAdminGlobalTaskListenersIndexRoute =
+  ShadcnAuthAdminGlobalTaskListenersIndexRouteImport.update({
+    id: '/global-task-listeners/',
+    path: '/global-task-listeners/',
+    getParentRoute: () => ShadcnAuthAdminRouteRoute,
+  } as any)
+const ShadcnAuthAdminGroupsIndexRoute =
+  ShadcnAuthAdminGroupsIndexRouteImport.update({
+    id: '/groups/',
+    path: '/groups/',
+    getParentRoute: () => ShadcnAuthAdminRouteRoute,
+  } as any)
+const ShadcnAuthAdminMappingRulesIndexRoute =
+  ShadcnAuthAdminMappingRulesIndexRouteImport.update({
+    id: '/mapping-rules/',
+    path: '/mapping-rules/',
+    getParentRoute: () => ShadcnAuthAdminRouteRoute,
+  } as any)
+const ShadcnAuthAdminMcpProcessesIndexRoute =
+  ShadcnAuthAdminMcpProcessesIndexRouteImport.update({
+    id: '/mcp-processes/',
+    path: '/mcp-processes/',
+    getParentRoute: () => ShadcnAuthAdminRouteRoute,
+  } as any)
+const ShadcnAuthAdminOperationsLogIndexRoute =
+  ShadcnAuthAdminOperationsLogIndexRouteImport.update({
+    id: '/operations-log/',
+    path: '/operations-log/',
+    getParentRoute: () => ShadcnAuthAdminRouteRoute,
+  } as any)
+const ShadcnAuthAdminRolesIndexRoute =
+  ShadcnAuthAdminRolesIndexRouteImport.update({
+    id: '/roles/',
+    path: '/roles/',
+    getParentRoute: () => ShadcnAuthAdminRouteRoute,
+  } as any)
+const ShadcnAuthAdminTenantsIndexRoute =
+  ShadcnAuthAdminTenantsIndexRouteImport.update({
+    id: '/tenants/',
+    path: '/tenants/',
+    getParentRoute: () => ShadcnAuthAdminRouteRoute,
+  } as any)
+const ShadcnAuthAdminUsersIndexRoute =
+  ShadcnAuthAdminUsersIndexRouteImport.update({
+    id: '/users/',
+    path: '/users/',
+    getParentRoute: () => ShadcnAuthAdminRouteRoute,
+  } as any)
 const ShadcnAuthTasklistTasksIndexRoute =
   ShadcnAuthTasklistTasksIndexRouteImport.update({
     id: '/',
@@ -311,6 +381,16 @@ export interface FileRoutesByFullPath {
   '/operate/batch-operations/': typeof CarbonAuthOperateBatchOperationsIndexRoute
   '/operate/decisions/': typeof CarbonAuthOperateDecisionsIndexRoute
   '/operate/processes/': typeof CarbonAuthOperateProcessesIndexRoute
+  '/admin/authorizations/': typeof ShadcnAuthAdminAuthorizationsIndexRoute
+  '/admin/cluster-variables/': typeof ShadcnAuthAdminClusterVariablesIndexRoute
+  '/admin/global-task-listeners/': typeof ShadcnAuthAdminGlobalTaskListenersIndexRoute
+  '/admin/groups/': typeof ShadcnAuthAdminGroupsIndexRoute
+  '/admin/mapping-rules/': typeof ShadcnAuthAdminMappingRulesIndexRoute
+  '/admin/mcp-processes/': typeof ShadcnAuthAdminMcpProcessesIndexRoute
+  '/admin/operations-log/': typeof ShadcnAuthAdminOperationsLogIndexRoute
+  '/admin/roles/': typeof ShadcnAuthAdminRolesIndexRoute
+  '/admin/tenants/': typeof ShadcnAuthAdminTenantsIndexRoute
+  '/admin/users/': typeof ShadcnAuthAdminUsersIndexRoute
   '/tasklist/': typeof ShadcnAuthTasklistTasksIndexRoute
   '/tasklist/$userTaskKey/history': typeof ShadcnAuthTasklistTasksUserTaskKeyHistoryRouteRouteWithChildren
   '/operate/processes/$processInstanceId/$': typeof CarbonAuthOperateProcessesProcessInstanceIdSplatRoute
@@ -342,6 +422,16 @@ export interface FileRoutesByTo {
   '/operate/batch-operations': typeof CarbonAuthOperateBatchOperationsIndexRoute
   '/operate/decisions': typeof CarbonAuthOperateDecisionsIndexRoute
   '/operate/processes': typeof CarbonAuthOperateProcessesIndexRoute
+  '/admin/authorizations': typeof ShadcnAuthAdminAuthorizationsIndexRoute
+  '/admin/cluster-variables': typeof ShadcnAuthAdminClusterVariablesIndexRoute
+  '/admin/global-task-listeners': typeof ShadcnAuthAdminGlobalTaskListenersIndexRoute
+  '/admin/groups': typeof ShadcnAuthAdminGroupsIndexRoute
+  '/admin/mapping-rules': typeof ShadcnAuthAdminMappingRulesIndexRoute
+  '/admin/mcp-processes': typeof ShadcnAuthAdminMcpProcessesIndexRoute
+  '/admin/operations-log': typeof ShadcnAuthAdminOperationsLogIndexRoute
+  '/admin/roles': typeof ShadcnAuthAdminRolesIndexRoute
+  '/admin/tenants': typeof ShadcnAuthAdminTenantsIndexRoute
+  '/admin/users': typeof ShadcnAuthAdminUsersIndexRoute
   '/tasklist/$userTaskKey/history': typeof ShadcnAuthTasklistTasksUserTaskKeyHistoryRouteRouteWithChildren
   '/operate/processes/$processInstanceId/$': typeof CarbonAuthOperateProcessesProcessInstanceIdSplatRoute
   '/operate/processes/$processInstanceId/details': typeof CarbonAuthOperateProcessesProcessInstanceIdDetailsRoute
@@ -386,6 +476,16 @@ export interface FileRoutesById {
   '/_carbon/_auth/operate/batch-operations/': typeof CarbonAuthOperateBatchOperationsIndexRoute
   '/_carbon/_auth/operate/decisions/': typeof CarbonAuthOperateDecisionsIndexRoute
   '/_carbon/_auth/operate/processes/': typeof CarbonAuthOperateProcessesIndexRoute
+  '/_shadcn/_auth/admin/authorizations/': typeof ShadcnAuthAdminAuthorizationsIndexRoute
+  '/_shadcn/_auth/admin/cluster-variables/': typeof ShadcnAuthAdminClusterVariablesIndexRoute
+  '/_shadcn/_auth/admin/global-task-listeners/': typeof ShadcnAuthAdminGlobalTaskListenersIndexRoute
+  '/_shadcn/_auth/admin/groups/': typeof ShadcnAuthAdminGroupsIndexRoute
+  '/_shadcn/_auth/admin/mapping-rules/': typeof ShadcnAuthAdminMappingRulesIndexRoute
+  '/_shadcn/_auth/admin/mcp-processes/': typeof ShadcnAuthAdminMcpProcessesIndexRoute
+  '/_shadcn/_auth/admin/operations-log/': typeof ShadcnAuthAdminOperationsLogIndexRoute
+  '/_shadcn/_auth/admin/roles/': typeof ShadcnAuthAdminRolesIndexRoute
+  '/_shadcn/_auth/admin/tenants/': typeof ShadcnAuthAdminTenantsIndexRoute
+  '/_shadcn/_auth/admin/users/': typeof ShadcnAuthAdminUsersIndexRoute
   '/_shadcn/_auth/tasklist/_tasks/': typeof ShadcnAuthTasklistTasksIndexRoute
   '/_shadcn/_auth/tasklist/_tasks/$userTaskKey/history': typeof ShadcnAuthTasklistTasksUserTaskKeyHistoryRouteRouteWithChildren
   '/_carbon/_auth/operate/processes/$processInstanceId/$': typeof CarbonAuthOperateProcessesProcessInstanceIdSplatRoute
@@ -427,6 +527,16 @@ export interface FileRouteTypes {
     | '/operate/batch-operations/'
     | '/operate/decisions/'
     | '/operate/processes/'
+    | '/admin/authorizations/'
+    | '/admin/cluster-variables/'
+    | '/admin/global-task-listeners/'
+    | '/admin/groups/'
+    | '/admin/mapping-rules/'
+    | '/admin/mcp-processes/'
+    | '/admin/operations-log/'
+    | '/admin/roles/'
+    | '/admin/tenants/'
+    | '/admin/users/'
     | '/tasklist/'
     | '/tasklist/$userTaskKey/history'
     | '/operate/processes/$processInstanceId/$'
@@ -458,6 +568,16 @@ export interface FileRouteTypes {
     | '/operate/batch-operations'
     | '/operate/decisions'
     | '/operate/processes'
+    | '/admin/authorizations'
+    | '/admin/cluster-variables'
+    | '/admin/global-task-listeners'
+    | '/admin/groups'
+    | '/admin/mapping-rules'
+    | '/admin/mcp-processes'
+    | '/admin/operations-log'
+    | '/admin/roles'
+    | '/admin/tenants'
+    | '/admin/users'
     | '/tasklist/$userTaskKey/history'
     | '/operate/processes/$processInstanceId/$'
     | '/operate/processes/$processInstanceId/details'
@@ -501,6 +621,16 @@ export interface FileRouteTypes {
     | '/_carbon/_auth/operate/batch-operations/'
     | '/_carbon/_auth/operate/decisions/'
     | '/_carbon/_auth/operate/processes/'
+    | '/_shadcn/_auth/admin/authorizations/'
+    | '/_shadcn/_auth/admin/cluster-variables/'
+    | '/_shadcn/_auth/admin/global-task-listeners/'
+    | '/_shadcn/_auth/admin/groups/'
+    | '/_shadcn/_auth/admin/mapping-rules/'
+    | '/_shadcn/_auth/admin/mcp-processes/'
+    | '/_shadcn/_auth/admin/operations-log/'
+    | '/_shadcn/_auth/admin/roles/'
+    | '/_shadcn/_auth/admin/tenants/'
+    | '/_shadcn/_auth/admin/users/'
     | '/_shadcn/_auth/tasklist/_tasks/'
     | '/_shadcn/_auth/tasklist/_tasks/$userTaskKey/history'
     | '/_carbon/_auth/operate/processes/$processInstanceId/$'
@@ -731,6 +861,76 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CarbonAuthOperateProcessesProcessInstanceIdRouteRouteImport
       parentRoute: typeof CarbonAuthOperateProcessesRouteRoute
     }
+    '/_shadcn/_auth/admin/authorizations/': {
+      id: '/_shadcn/_auth/admin/authorizations/'
+      path: '/authorizations'
+      fullPath: '/admin/authorizations/'
+      preLoaderRoute: typeof ShadcnAuthAdminAuthorizationsIndexRouteImport
+      parentRoute: typeof ShadcnAuthAdminRouteRoute
+    }
+    '/_shadcn/_auth/admin/cluster-variables/': {
+      id: '/_shadcn/_auth/admin/cluster-variables/'
+      path: '/cluster-variables'
+      fullPath: '/admin/cluster-variables/'
+      preLoaderRoute: typeof ShadcnAuthAdminClusterVariablesIndexRouteImport
+      parentRoute: typeof ShadcnAuthAdminRouteRoute
+    }
+    '/_shadcn/_auth/admin/global-task-listeners/': {
+      id: '/_shadcn/_auth/admin/global-task-listeners/'
+      path: '/global-task-listeners'
+      fullPath: '/admin/global-task-listeners/'
+      preLoaderRoute: typeof ShadcnAuthAdminGlobalTaskListenersIndexRouteImport
+      parentRoute: typeof ShadcnAuthAdminRouteRoute
+    }
+    '/_shadcn/_auth/admin/groups/': {
+      id: '/_shadcn/_auth/admin/groups/'
+      path: '/groups'
+      fullPath: '/admin/groups/'
+      preLoaderRoute: typeof ShadcnAuthAdminGroupsIndexRouteImport
+      parentRoute: typeof ShadcnAuthAdminRouteRoute
+    }
+    '/_shadcn/_auth/admin/mapping-rules/': {
+      id: '/_shadcn/_auth/admin/mapping-rules/'
+      path: '/mapping-rules'
+      fullPath: '/admin/mapping-rules/'
+      preLoaderRoute: typeof ShadcnAuthAdminMappingRulesIndexRouteImport
+      parentRoute: typeof ShadcnAuthAdminRouteRoute
+    }
+    '/_shadcn/_auth/admin/mcp-processes/': {
+      id: '/_shadcn/_auth/admin/mcp-processes/'
+      path: '/mcp-processes'
+      fullPath: '/admin/mcp-processes/'
+      preLoaderRoute: typeof ShadcnAuthAdminMcpProcessesIndexRouteImport
+      parentRoute: typeof ShadcnAuthAdminRouteRoute
+    }
+    '/_shadcn/_auth/admin/operations-log/': {
+      id: '/_shadcn/_auth/admin/operations-log/'
+      path: '/operations-log'
+      fullPath: '/admin/operations-log/'
+      preLoaderRoute: typeof ShadcnAuthAdminOperationsLogIndexRouteImport
+      parentRoute: typeof ShadcnAuthAdminRouteRoute
+    }
+    '/_shadcn/_auth/admin/roles/': {
+      id: '/_shadcn/_auth/admin/roles/'
+      path: '/roles'
+      fullPath: '/admin/roles/'
+      preLoaderRoute: typeof ShadcnAuthAdminRolesIndexRouteImport
+      parentRoute: typeof ShadcnAuthAdminRouteRoute
+    }
+    '/_shadcn/_auth/admin/tenants/': {
+      id: '/_shadcn/_auth/admin/tenants/'
+      path: '/tenants'
+      fullPath: '/admin/tenants/'
+      preLoaderRoute: typeof ShadcnAuthAdminTenantsIndexRouteImport
+      parentRoute: typeof ShadcnAuthAdminRouteRoute
+    }
+    '/_shadcn/_auth/admin/users/': {
+      id: '/_shadcn/_auth/admin/users/'
+      path: '/users'
+      fullPath: '/admin/users/'
+      preLoaderRoute: typeof ShadcnAuthAdminUsersIndexRouteImport
+      parentRoute: typeof ShadcnAuthAdminRouteRoute
+    }
     '/_shadcn/_auth/tasklist/_tasks/': {
       id: '/_shadcn/_auth/tasklist/_tasks/'
       path: '/'
@@ -953,11 +1153,35 @@ const CarbonRouteRouteWithChildren = CarbonRouteRoute._addFileChildren(
 interface ShadcnAuthAdminRouteRouteChildren {
   ShadcnAuthAdminSplatRoute: typeof ShadcnAuthAdminSplatRoute
   ShadcnAuthAdminIndexRoute: typeof ShadcnAuthAdminIndexRoute
+  ShadcnAuthAdminAuthorizationsIndexRoute: typeof ShadcnAuthAdminAuthorizationsIndexRoute
+  ShadcnAuthAdminClusterVariablesIndexRoute: typeof ShadcnAuthAdminClusterVariablesIndexRoute
+  ShadcnAuthAdminGlobalTaskListenersIndexRoute: typeof ShadcnAuthAdminGlobalTaskListenersIndexRoute
+  ShadcnAuthAdminGroupsIndexRoute: typeof ShadcnAuthAdminGroupsIndexRoute
+  ShadcnAuthAdminMappingRulesIndexRoute: typeof ShadcnAuthAdminMappingRulesIndexRoute
+  ShadcnAuthAdminMcpProcessesIndexRoute: typeof ShadcnAuthAdminMcpProcessesIndexRoute
+  ShadcnAuthAdminOperationsLogIndexRoute: typeof ShadcnAuthAdminOperationsLogIndexRoute
+  ShadcnAuthAdminRolesIndexRoute: typeof ShadcnAuthAdminRolesIndexRoute
+  ShadcnAuthAdminTenantsIndexRoute: typeof ShadcnAuthAdminTenantsIndexRoute
+  ShadcnAuthAdminUsersIndexRoute: typeof ShadcnAuthAdminUsersIndexRoute
 }
 
 const ShadcnAuthAdminRouteRouteChildren: ShadcnAuthAdminRouteRouteChildren = {
   ShadcnAuthAdminSplatRoute: ShadcnAuthAdminSplatRoute,
   ShadcnAuthAdminIndexRoute: ShadcnAuthAdminIndexRoute,
+  ShadcnAuthAdminAuthorizationsIndexRoute:
+    ShadcnAuthAdminAuthorizationsIndexRoute,
+  ShadcnAuthAdminClusterVariablesIndexRoute:
+    ShadcnAuthAdminClusterVariablesIndexRoute,
+  ShadcnAuthAdminGlobalTaskListenersIndexRoute:
+    ShadcnAuthAdminGlobalTaskListenersIndexRoute,
+  ShadcnAuthAdminGroupsIndexRoute: ShadcnAuthAdminGroupsIndexRoute,
+  ShadcnAuthAdminMappingRulesIndexRoute: ShadcnAuthAdminMappingRulesIndexRoute,
+  ShadcnAuthAdminMcpProcessesIndexRoute: ShadcnAuthAdminMcpProcessesIndexRoute,
+  ShadcnAuthAdminOperationsLogIndexRoute:
+    ShadcnAuthAdminOperationsLogIndexRoute,
+  ShadcnAuthAdminRolesIndexRoute: ShadcnAuthAdminRolesIndexRoute,
+  ShadcnAuthAdminTenantsIndexRoute: ShadcnAuthAdminTenantsIndexRoute,
+  ShadcnAuthAdminUsersIndexRoute: ShadcnAuthAdminUsersIndexRoute,
 }
 
 const ShadcnAuthAdminRouteRouteWithChildren =

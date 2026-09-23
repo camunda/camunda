@@ -79,6 +79,19 @@
 		"relativeDateYearsFmt_speech": "do 'of' MMMM, yyyy",
 		"relativeDateYearsFmt_time_speech": "do 'of' MMMM, yyyy 'at' p",
 		"relativeDateUnknown": "'Unknown'",
+		"admin": {
+			"adminPanelNavAria": "Admin navigation",
+			"headerNavItemUsers": "Users",
+			"headerNavItemGroups": "Groups",
+			"headerNavItemRoles": "Roles",
+			"headerNavItemTenants": "Tenants",
+			"headerNavItemMappingRules": "Mapping rules",
+			"headerNavItemAuthorizations": "Authorizations",
+			"headerNavItemGlobalTaskListeners": "Global user task listeners",
+			"headerNavItemClusterVariables": "Cluster variables",
+			"headerNavItemMcpProcesses": "MCP Processes",
+			"headerNavItemOperationsLog": "Operations Log"
+		},
 		"tasklist": {
 			"tasksPanelLabel": "Tasks side panel",
 			"headerNavItemTasks": "Tasks",
