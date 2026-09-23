@@ -179,7 +179,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
             poller -> {
               try {
                 poll(poller);
-              } catch (final Exception error) {
+              } catch (final Throwable error) {
                 LOG.warn("Unexpected failure to activate jobs", error);
                 onPollError(poller, error);
               }

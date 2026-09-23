@@ -713,6 +713,36 @@ final class JobWorkerImplTest {
     scheduler.tick(POLL_INTERVAL.toMillis(), TimeUnit.MILLISECONDS);
   }
 
+  @Test
+  void shouldKeepPollingAfterAPollThrowsAnError() {
+    // given a poller that throws an Error, as a protobuf gencode conflict does
+    final ErrorThrowingJobPoller poller = new ErrorThrowingJobPoller();
+    final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
+    try (final JobWorkerImpl ignored =
+        new JobWorkerImpl(
+            1,
+            scheduler,
+            POLL_INTERVAL,
+            Mockito.mock(JobClient.class),
+            (job, doneCallback) -> doneCallback,
+            poller,
+            JobStreamer.noop(),
+            delay -> delay,
+            JobWorkerMetrics.noop(),
+            Runnable::run)) {
+
+      // when the worker runs on
+
+      // then the worker polls again, because a lost Error stops it permanently
+      Awaitility.await("a poll after the failed one")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(() -> assertThat(poller.getPollCount()).isGreaterThan(1));
+    } finally {
+      scheduler.shutdownNow();
+    }
+  }
+
   /**
    * An executor that takes a fixed number of commands and refuses everything after that, the way a
    * saturated thread pool does. It holds on to the commands it took until the test runs them, so
@@ -928,6 +958,27 @@ final class JobWorkerImplTest {
                 doneCallback.get().accept(activatedJobs.size());
                 return null;
               });
+    }
+  }
+
+  /** Throws an {@link Error} on the first poll, and counts the polls. */
+  private static final class ErrorThrowingJobPoller implements JobPoller {
+    private final AtomicInteger pollCount = new AtomicInteger();
+
+    @Override
+    public void poll(
+        final int maxJobsToActivate,
+        final Consumer<io.camunda.zeebe.client.api.response.ActivatedJob> jobConsumer,
+        final IntConsumer doneCallback,
+        final Consumer<Throwable> errorCallback,
+        final BooleanSupplier openSupplier) {
+      if (pollCount.incrementAndGet() == 1) {
+        throw new NoSuchMethodError("simulated protobuf gencode/runtime version skew");
+      }
+    }
+
+    private int getPollCount() {
+      return pollCount.get();
     }
   }
 
