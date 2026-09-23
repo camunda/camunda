@@ -15,16 +15,25 @@ import {EmptyState} from '#/operate/components/EmptyState/shadcn.components/Empt
 
 type Row = {id: string; content: React.ReactNode};
 
+const PREVIOUS_LOADING_ROW_ID = '__expandable-list-loading-previous__';
+const NEXT_LOADING_ROW_ID = '__expandable-list-loading-next__';
+
+const LoadingRow: React.FC<{testId: string}> = ({testId}) => (
+	<div className="flex justify-center py-2" data-testid={testId}>
+		<Skeleton className="h-4 w-24" />
+	</div>
+);
+
 type ExpandableRowProps = {
 	row: Row;
 	expandedContent: React.ReactElement<{tabIndex: number}> | undefined;
 };
 
-// DS DataTable's own `expansion` prop injects a toggle for every row unconditionally
-// (`getRowCanExpand` has no public per-row override — confirmed against the installed
-// package's data-table.js). Carbon hid the toggle entirely for rows with nothing to
-// expand, so the expand/collapse control is composed here instead, inside the single
-// content column, rather than through that prop.
+// DS DataTable's own `expansion` prop injects a toggle for every row unconditionally, with
+// no per-row override — Carbon hid the toggle entirely for rows with nothing to expand, so
+// the expand/collapse control is composed here instead, inside the single content column,
+// rather than through that prop. Recorded for design review, see
+// docs/migration/operate-dashboard-ds-gaps.md.
 const ExpandableRow: React.FC<ExpandableRowProps> = ({row, expandedContent}) => {
 	const [isExpanded, setIsExpanded] = useState(false);
 	const canExpand = expandedContent !== undefined;
@@ -97,6 +106,13 @@ const ExpandableList: React.FC<Props> = ({
 	const topSentinelRef = useRef<HTMLDivElement | null>(null);
 	const bottomSentinelRef = useRef<HTMLDivElement | null>(null);
 
+	// Read via a ref inside the observer callback, rather than as an effect dependency —
+	// `observe()` fires its callback synchronously when the target is already intersecting,
+	// so depending on the fetching flags here would recreate+re-observe the sentinels on every
+	// fetch start/end and immediately re-trigger the same page load in a loop.
+	const latestRef = useRef({isFetchingNextPage, isFetchingPreviousPage, onLoadNextPage, onLoadPreviousPage});
+	latestRef.current = {isFetchingNextPage, isFetchingPreviousPage, onLoadNextPage, onLoadPreviousPage};
+
 	// DS DataTable owns its own scroll region (its `Table` wrapper), so wrapping it in
 	// another scrollable container to drive pagination via onScroll produces nested/double
 	// scrollbars (confirmed against DS docs). Sentinels below/above the table are observed
@@ -115,10 +131,10 @@ const ExpandableList: React.FC<Props> = ({
 					continue;
 				}
 
-				if (entry.target === topEl && !isFetchingPreviousPage) {
-					onLoadPreviousPage();
-				} else if (entry.target === bottomEl && !isFetchingNextPage) {
-					onLoadNextPage();
+				if (entry.target === topEl && !latestRef.current.isFetchingPreviousPage) {
+					latestRef.current.onLoadPreviousPage();
+				} else if (entry.target === bottomEl && !latestRef.current.isFetchingNextPage) {
+					latestRef.current.onLoadNextPage();
 				}
 			}
 		});
@@ -132,7 +148,7 @@ const ExpandableList: React.FC<Props> = ({
 		}
 
 		return () => observer.disconnect();
-	}, [hasNextPage, hasPreviousPage, isFetchingNextPage, isFetchingPreviousPage, onLoadNextPage, onLoadPreviousPage]);
+	}, [hasNextPage, hasPreviousPage]);
 
 	if (isPending) {
 		return (
@@ -158,30 +174,50 @@ const ExpandableList: React.FC<Props> = ({
 		return <>{emptyState}</>;
 	}
 
+	// DataTable always renders a header row; it's reduced to a sr-only label here since
+	// this list has none in Carbon. Recorded for design review, see
+	// docs/migration/operate-dashboard-ds-gaps.md.
 	const columns: DataTableColumn<Row>[] = [
 		{
 			id: 'content',
 			header: () => <span className="sr-only">{header}</span>,
-			cell: ({row}) => <ExpandableRow row={row.original} expandedContent={expandedContents[row.original.id]} />,
+			cell: ({row}) => {
+				const original = row.original;
+
+				if (original.id === PREVIOUS_LOADING_ROW_ID) {
+					return <LoadingRow testId={`${listTestId}-loading-previous`} />;
+				}
+
+				if (original.id === NEXT_LOADING_ROW_ID) {
+					return <LoadingRow testId={`${listTestId}-loading-next`} />;
+				}
+
+				return <ExpandableRow row={original} expandedContent={expandedContents[original.id]} />;
+			},
 		},
+	];
+
+	// Loading indicators render as synthetic rows inside DataTable's own body, rather than
+	// as siblings around it, so they sit at the last/first row position instead of visually
+	// detached above/below the table.
+	const tableRows: Row[] = [
+		...(isFetchingPreviousPage ? [{id: PREVIOUS_LOADING_ROW_ID, content: null}] : []),
+		...rows,
+		...(isFetchingNextPage ? [{id: NEXT_LOADING_ROW_ID, content: null}] : []),
 	];
 
 	return (
 		<div className="flex flex-1 flex-col" data-testid={listTestId}>
 			{hasPreviousPage && <div ref={topSentinelRef} data-testid={`${listTestId}-top-sentinel`} />}
-			{isFetchingPreviousPage && (
-				<div className="flex justify-center py-2" data-testid={`${listTestId}-loading-previous`}>
-					<Skeleton className="h-4 w-24" />
-				</div>
-			)}
 			<div data-testid={dataTestId}>
-				<DataTable<Row> size="sm" columns={columns} data={rows} aria-label={header} getRowId={(row) => row.id} />
+				<DataTable<Row>
+					size="sm"
+					columns={columns}
+					data={tableRows}
+					aria-label={header}
+					getRowId={(row) => row.id}
+				/>
 			</div>
-			{isFetchingNextPage && (
-				<div className="flex justify-center py-2" data-testid={`${listTestId}-loading-next`}>
-					<Skeleton className="h-4 w-24" />
-				</div>
-			)}
 			{hasNextPage && <div ref={bottomSentinelRef} data-testid={`${listTestId}-bottom-sentinel`} />}
 		</div>
 	);
