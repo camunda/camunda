@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
@@ -195,6 +196,52 @@ public class BlockingExecutorTest {
 
     // then
     assertThat(executed).isTrue();
+  }
+
+  @Test
+  public void shouldNotifyTheListenerWithAccurateCapacityAfterReleasingASlot() {
+    // given a single-slot executor whose listener reads the free capacity when it runs
+    final BlockingExecutor executor = new BlockingExecutor(Runnable::run, 1, Duration.ofMillis(10));
+    final AtomicInteger capacitySeenByListener = new AtomicInteger(-1);
+    final AtomicInteger notifications = new AtomicInteger();
+    executor.onCapacityAvailable(
+        () -> {
+          capacitySeenByListener.set(executor.freeCapacity());
+          notifications.incrementAndGet();
+        });
+
+    // when a command takes the slot and finishes
+    executor.execute(() -> {});
+
+    // then the listener was told once, after the slot was back, and saw it as free. A worker sizes
+    // its next poll from this callback, so a reading taken before the release would be one slot too
+    // few.
+    assertThat(notifications).hasValue(1);
+    assertThat(capacitySeenByListener).hasValue(1);
+  }
+
+  @Test
+  public void shouldReportNoJobsInFlightOnlyWhenEverySlotIsFree() {
+    // given a two-slot executor with a command holding one slot
+    final CountDownLatch releaseCommand = new CountDownLatch(1);
+    final ExecutorService wrappedExecutor = Executors.newSingleThreadExecutor();
+    try {
+      final BlockingExecutor executor =
+          new BlockingExecutor(wrappedExecutor, 2, Duration.ofSeconds(1));
+      assertThat(executor.hasNoJobsInFlight()).isTrue();
+
+      // when a command takes one of the two slots
+      executor.execute(() -> Uninterruptibles.awaitUninterruptibly(releaseCommand));
+
+      // then it reports a job in flight until that command gives its slot back
+      assertThat(executor.hasNoJobsInFlight()).isFalse();
+      releaseCommand.countDown();
+      Awaitility.await("No jobs should be in flight once the command is done")
+          .untilAsserted(() -> assertThat(executor.hasNoJobsInFlight()).isTrue());
+    } finally {
+      releaseCommand.countDown();
+      wrappedExecutor.shutdownNow();
+    }
   }
 
   @Test

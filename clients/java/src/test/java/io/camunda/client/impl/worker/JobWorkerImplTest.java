@@ -1122,6 +1122,184 @@ final class JobWorkerImplTest {
     }
   }
 
+  @Test
+  void shouldSizePollsToItsFreeCapacityWithoutStreaming() {
+    // given a polling worker with no stream, handing its jobs to handler threads that stay busy, so
+    // the capacity those jobs take is all the next poll has to work with
+    final RecordingJobPoller poller = new RecordingJobPoller();
+    final RecordingJobRunnableFactory handlers = new RecordingJobRunnableFactory();
+    final DeterministicScheduler scheduler = new AlwaysRunningDeterministicScheduler();
+    final BusyHandlerThreads handlerThreads = new BusyHandlerThreads();
+    final BlockingExecutor executor =
+        new BlockingExecutor(handlerThreads, MAX_JOBS_ACTIVE, JOB_TIMEOUT);
+
+    try (final JobWorkerImpl ignored =
+        new JobWorkerImpl(
+            MAX_JOBS_ACTIVE,
+            scheduler,
+            Duration.ofMillis(POLL_INTERVAL_IN_MS),
+            Mockito.mock(JobClient.class),
+            handlers,
+            poller,
+            JobStreamer.noop(),
+            delay -> delay,
+            delay -> delay,
+            JobWorkerMetrics.noop(),
+            executor,
+            new TestNanoClock(),
+            JOB_TIMEOUT)) {
+
+      // when a poll brings back part of a batch and those jobs sit on the busy handler threads
+      final int takenJobs = 2;
+      scheduler.tick(POLL_INTERVAL_IN_MS, TimeUnit.MILLISECONDS);
+      poller.handOverJobs(TestData.jobs(takenJobs));
+
+      // then the next poll asks only for the capacity those jobs left. The executor's slots are the
+      // worker's only count of the work it has in flight, without a parallel counter to keep in
+      // step: a job this worker polls for takes a slot the same way a pushed job does.
+      scheduler.tick(POLL_INTERVAL_IN_MS, TimeUnit.MILLISECONDS);
+      assertThat(handlers.getRanJobKeys()).isEmpty();
+      assertThat(executor.freeCapacity()).isEqualTo(MAX_JOBS_ACTIVE - takenJobs);
+      assertThat(poller.getLastRequestedJobCount()).isEqualTo(MAX_JOBS_ACTIVE - takenJobs);
+    }
+  }
+
+  @Test
+  void shouldPollAgainAsSoonAsAHandlerFreesCapacity() {
+    // given a polling worker filled to capacity, with every job it took sitting on a busy handler
+    // thread, so no capacity is free and nothing is scheduled to poll
+    final RecordingJobPoller poller = new RecordingJobPoller();
+    final RecordingJobRunnableFactory handlers = new RecordingJobRunnableFactory();
+    final DeterministicScheduler scheduler = new AlwaysRunningDeterministicScheduler();
+    final BusyHandlerThreads handlerThreads = new BusyHandlerThreads();
+    final BlockingExecutor executor =
+        new BlockingExecutor(handlerThreads, MAX_JOBS_ACTIVE, JOB_TIMEOUT);
+
+    try (final JobWorkerImpl ignored =
+        new JobWorkerImpl(
+            MAX_JOBS_ACTIVE,
+            scheduler,
+            Duration.ofMillis(POLL_INTERVAL_IN_MS),
+            Mockito.mock(JobClient.class),
+            handlers,
+            poller,
+            JobStreamer.noop(),
+            delay -> delay,
+            delay -> delay,
+            JobWorkerMetrics.noop(),
+            executor,
+            new TestNanoClock(),
+            JOB_TIMEOUT)) {
+
+      scheduler.tick(POLL_INTERVAL_IN_MS, TimeUnit.MILLISECONDS);
+      poller.handOverJobs(TestData.jobs(MAX_JOBS_ACTIVE));
+      assertThat(executor.freeCapacity()).isZero();
+      final int pollsWhileFull = poller.getPollCount();
+
+      // when a single handler thread finishes, without the scheduler running a scheduled poll
+      handlerThreads.runNext(1);
+
+      // then the freed slot drives a poll right away for the one job it now has room for, rather
+      // than the worker waiting out a poll interval before it asks again
+      assertThat(poller.getPollCount()).isEqualTo(pollsWhileFull + 1);
+      assertThat(poller.getLastRequestedJobCount()).isEqualTo(1);
+    }
+  }
+
+  @Test
+  void shouldNotReportClosedWhilePushedJobsAreStillInFlight() {
+    // given a worker with a pushed job sitting on a busy handler thread, holding one of its slots
+    final RecordingJobPoller poller = new RecordingJobPoller();
+    final RecordingJobRunnableFactory handlers = new RecordingJobRunnableFactory();
+    final DeterministicScheduler scheduler = new AlwaysRunningDeterministicScheduler();
+    final BusyHandlerThreads handlerThreads = new BusyHandlerThreads();
+    final RecordingJobStreamer streamer = new RecordingJobStreamer();
+    final BlockingExecutor executor =
+        new BlockingExecutor(handlerThreads, MAX_JOBS_ACTIVE, JOB_TIMEOUT);
+    final JobWorkerImpl worker =
+        new JobWorkerImpl(
+            MAX_JOBS_ACTIVE,
+            scheduler,
+            Duration.ofMillis(POLL_INTERVAL_IN_MS),
+            Mockito.mock(JobClient.class),
+            handlers,
+            poller,
+            streamer,
+            delay -> delay,
+            delay -> delay,
+            JobWorkerMetrics.noop(),
+            executor,
+            new TestNanoClock(),
+            JOB_TIMEOUT);
+    streamer.push(STREAMED_JOB_KEY_OFFSET);
+    assertThat(executor.freeCapacity()).isEqualTo(MAX_JOBS_ACTIVE - 1);
+
+    // when the worker is asked to close while that job is still running
+    worker.close();
+
+    // then it does not report itself closed yet: a pushed job holds an executor slot, and the
+    // worker is not done until every slot is back, since that slot is part of the same count the
+    // poll budget is drawn from
+    assertThat(worker.isClosed()).isFalse();
+
+    // and once the job finishes and gives its slot back, the worker reports closed
+    handlerThreads.runQueued();
+    assertThat(executor.freeCapacity()).isEqualTo(MAX_JOBS_ACTIVE);
+    assertThat(worker.isClosed()).isTrue();
+  }
+
+  @Test
+  void shouldBoundANonStreamingWorkerToItsMaxJobsActive() {
+    // given a non-streaming worker whose handlers all block, so every slot it has is taken
+    final int maxJobsActive = 4;
+    final CountDownLatch releaseHandlers = new CountDownLatch(1);
+    final AtomicInteger runningJobs = new AtomicInteger();
+    final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    final ExecutorService jobHandlingExecutor = Executors.newFixedThreadPool(maxJobsActive);
+
+    try (final CamundaClient client =
+            new CamundaClientImpl(
+                new CamundaClientBuilderImpl().preferRestOverGrpc(false).build().getConfiguration(),
+                channel,
+                GatewayGrpc.newStub(channel),
+                new JobWorkerExecutors(scheduler, true, jobHandlingExecutor, true));
+        final JobWorker ignored =
+            client
+                .newWorker()
+                .jobType("test")
+                .handler(
+                    (c, job) -> {
+                      runningJobs.incrementAndGet();
+                      Uninterruptibles.awaitUninterruptibly(releaseHandlers);
+                    })
+                .maxJobsActive(maxJobsActive)
+                .pollInterval(Duration.ofMillis(50))
+                .streamEnabled(false)
+                .open()) {
+
+      try {
+        // when a poll fills every slot with a blocked handler
+        gateway.respondWith(TestData.jobs(maxJobsActive));
+        Awaitility.await("Every slot should be taken by a blocked handler")
+            .untilAtomic(runningJobs, Matchers.is(maxJobsActive));
+        final int pollsBeforeItIsFull = gateway.getRequestedJobCounts().size();
+
+        // then it stops asking for jobs it has no room to run. Only the executor bounds a
+        // non-streaming worker now that the worker keeps no count of its own, so a builder that
+        // wired the raw executor instead would keep asking for a full batch every poll interval.
+        Awaitility.await("A full non-streaming worker should stop asking for jobs")
+            .pollDelay(Duration.ofMillis(500))
+            .atMost(Duration.ofSeconds(10))
+            .untilAsserted(
+                () ->
+                    assertThat(gateway.getRequestedJobCounts())
+                        .hasSizeLessThanOrEqualTo(pollsBeforeItIsFull + 1));
+      } finally {
+        releaseHandlers.countDown();
+      }
+    }
+  }
+
   private JobWorkerImpl workerWith(
       final ScheduledExecutorService scheduler,
       final JobPoller poller,

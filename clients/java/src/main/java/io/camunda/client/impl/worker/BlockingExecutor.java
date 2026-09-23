@@ -43,6 +43,7 @@ final class BlockingExecutor implements JobExecutor {
 
   private final Executor wrappedExecutor;
   private final Semaphore semaphore;
+  private final int maxCapacity;
   private final long timeoutMillis;
   private volatile Runnable capacityListener = () -> {};
 
@@ -50,6 +51,7 @@ final class BlockingExecutor implements JobExecutor {
       final Executor wrappedExecutor, final int maxActivate, final Duration jobActivationTimeout) {
     this.wrappedExecutor = wrappedExecutor;
     semaphore = new Semaphore(maxActivate);
+    maxCapacity = maxActivate;
     timeoutMillis = jobActivationTimeout.toMillis();
   }
 
@@ -70,6 +72,11 @@ final class BlockingExecutor implements JobExecutor {
   @Override
   public int freeCapacity() {
     return semaphore.availablePermits();
+  }
+
+  @Override
+  public boolean hasNoJobsInFlight() {
+    return semaphore.availablePermits() >= maxCapacity;
   }
 
   @Override

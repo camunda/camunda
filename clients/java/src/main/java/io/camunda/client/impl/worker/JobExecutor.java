@@ -38,6 +38,16 @@ interface JobExecutor extends Executor {
   }
 
   /**
+   * @return true if the executor is running no jobs right now, so that a worker that has stopped
+   *     acquiring can tell it has drained. An executor that does not limit how much work it takes
+   *     keeps no count of what it is running, so it cannot tell, and answers false rather than
+   *     claim a drain it cannot vouch for.
+   */
+  default boolean hasNoJobsInFlight() {
+    return false;
+  }
+
+  /**
    * Hands a job over, refusing it right away when there is no capacity for it instead of waiting
    * for capacity to free up.
    *
