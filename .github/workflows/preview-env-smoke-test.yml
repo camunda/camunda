@@ -657,4 +657,4 @@ jobs:
     secrets: inherit
     with:
       base_ref: main
-      dry_run: true
+      dry_run: false
