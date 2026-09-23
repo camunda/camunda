@@ -23,27 +23,14 @@ artifacts {
   }
 }
 
-// Configure SBE input files for caching
 sbe {
-  inputFiles.from(
+  schemaFiles.from(
     layout.projectDirectory.file("src/main/resources/protocol.xml"),
     layout.projectDirectory.file("src/main/resources/cluster-management-protocol.xml"),
-    layout.projectDirectory.file("src/main/resources/common-types.xml"),
   )
+  additionalInputFiles.from(layout.projectDirectory.file("src/main/resources/common-types.xml"))
   // SBE also emits a package-info.java for this package, which already has a hand-written one.
   generatedFilesToDelete.add("io/camunda/zeebe/protocol/record/package-info.java")
-}
-
-// Configure SBE generation with the XML schema files directly from source resources
-// so generateSbe does not need processResources anymore.
-tasks.named<JavaExec>("generateSbe") {
-  args(
-    layout.projectDirectory.file("src/main/resources/protocol.xml").asFile.absolutePath,
-    layout.projectDirectory
-      .file("src/main/resources/cluster-management-protocol.xml")
-      .asFile
-      .absolutePath,
-  )
 }
 
 dependencies {
