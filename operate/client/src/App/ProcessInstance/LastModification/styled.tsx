@@ -20,7 +20,9 @@ const Container = styled.div`
 
   #root.operate-nav-v2 & {
     background-color: transparent;
-    padding-left: 0;
+    gap: var(--cds-spacing-02);
+    height: 2.5rem;
+    padding: 0;
   }
 `;
 
@@ -28,7 +30,7 @@ const ModificationMessage = styled.div`
   #root.operate-nav-v2 & {
     align-items: center;
     background-color: var(--cds-button-secondary);
-    border-radius: var(--cds-spacing-03) 0 0 var(--cds-spacing-03);
+    border-radius: var(--cds-spacing-03);
     display: flex;
     gap: var(--cds-spacing-02);
     height: 100%;
@@ -40,6 +42,11 @@ const ModificationDetail = styled.div`
   display: inline-flex;
   position: relative;
   padding-right: var(--cds-spacing-05);
+
+  #root.operate-nav-v2 &::after {
+    display: none;
+  }
+
   &:after {
     content: ' ';
     position: absolute;
