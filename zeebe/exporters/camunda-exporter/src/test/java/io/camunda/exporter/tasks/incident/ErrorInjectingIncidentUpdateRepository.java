@@ -13,10 +13,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
 
 class ErrorInjectingIncidentUpdateRepository implements IncidentUpdateRepository {
   private IncidentUpdateRepository realUpdateRepository;
   private volatile boolean failFlowNodeBulkUpdates;
+  private final Set<String> incidentUpdatesToFail = ConcurrentHashMap.newKeySet();
 
   void setRealUpdateRepository(final IncidentUpdateRepository realUpdateRepository) {
     this.realUpdateRepository = realUpdateRepository;
@@ -24,6 +26,19 @@ class ErrorInjectingIncidentUpdateRepository implements IncidentUpdateRepository
 
   void setFailFlowNodeBulkUpdates(final boolean failFlowNodeBulkUpdates) {
     this.failFlowNodeBulkUpdates = failFlowNodeBulkUpdates;
+  }
+
+  void addIncidentIdToFail(final String id) {
+    incidentUpdatesToFail.add(id);
+  }
+
+  void removeIncidentIdToFail(final String id) {
+    incidentUpdatesToFail.remove(id);
+  }
+
+  @Override
+  public void close() throws Exception {
+    realUpdateRepository.close();
   }
 
   @Override
@@ -68,6 +83,20 @@ class ErrorInjectingIncidentUpdateRepository implements IncidentUpdateRepository
 
   @Override
   public CompletionStage<List<String>> bulkUpdate(final IncidentBulkUpdate update) {
+    if (!incidentUpdatesToFail.isEmpty()) {
+      final IncidentBulkUpdate updateWithoutIncidents =
+          new IncidentBulkUpdate(
+              update.incidentRequests().stream()
+                  .filter(incident -> !incidentUpdatesToFail.contains(incident.id()))
+                  .toList());
+      return realUpdateRepository
+          .bulkUpdate(updateWithoutIncidents)
+          .thenApply(
+              updatedIds -> {
+                throw new IncidentPartialBulkUpdateException(
+                    "Simulated failure for incident bulk updates", updatedIds);
+              });
+    }
     return realUpdateRepository.bulkUpdate(update);
   }
 
@@ -103,10 +132,5 @@ class ErrorInjectingIncidentUpdateRepository implements IncidentUpdateRepository
   @Override
   public CompletionStage<Long> getLegacyIncidentPostImporterPosition() {
     return realUpdateRepository.getLegacyIncidentPostImporterPosition();
-  }
-
-  @Override
-  public void close() throws Exception {
-    realUpdateRepository.close();
   }
 }

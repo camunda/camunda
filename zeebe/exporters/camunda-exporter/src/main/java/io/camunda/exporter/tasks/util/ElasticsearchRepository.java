@@ -142,6 +142,11 @@ public class ElasticsearchRepository implements AutoCloseable {
   }
 
   public Throwable collectBulkErrors(final List<BulkResponseItem> items) {
+    final var message = collectBulkErrorsIntoMessage(items);
+    return new ExporterException(message);
+  }
+
+  public String collectBulkErrorsIntoMessage(final List<BulkResponseItem> items) {
     final var collectedErrors = new ArrayList<String>();
     items.stream()
         .flatMap(item -> Optional.ofNullable(item.error()).stream())
@@ -153,7 +158,7 @@ public class ElasticsearchRepository implements AutoCloseable {
                         "Failed to update %d item(s) of bulk update [type: %s, reason: %s]",
                         errors.size(), type, errors.getFirst().reason())));
 
-    return new ExporterException("Failed to flush bulk request: " + collectedErrors);
+    return "Failed to flush bulk request: " + collectedErrors;
   }
 
   /**
