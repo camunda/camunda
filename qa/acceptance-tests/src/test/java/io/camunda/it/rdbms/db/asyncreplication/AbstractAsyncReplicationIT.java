@@ -39,8 +39,8 @@ import org.slf4j.LoggerFactory;
 @TestInstance(Lifecycle.PER_CLASS)
 abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(AbstractAsyncReplicationIT.class);
   protected static final Duration DEFAULT_MAX_LAG = Duration.ofSeconds(3);
+  private static final Logger LOG = LoggerFactory.getLogger(AbstractAsyncReplicationIT.class);
 
   /** The replication cluster; created by {@link #createCluster()} in {@link #beforeAll()}. */
   protected R cluster;
