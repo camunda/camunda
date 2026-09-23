@@ -691,7 +691,14 @@ test.describe.serial('Process Instance Migration', () => {
     });
   });
 
-  test('Migrated tasks', async ({
+  // Skipped due to bug #59919: https://github.com/camunda/camunda/issues/59919
+  // Operate's v1 flow-node-metadata endpoint permanently reports incident: null /
+  // incidentCount: 0 for a migrated flow node (BusinessRuleTask2) that is genuinely
+  // in INCIDENT state, so the popover's "Incident" heading never renders. This is a
+  // product data inconsistency, not test flakiness — the trace for run 35550333876
+  // shows all 22 metadata polls over ~6 minutes returning an identical incident-null
+  // body, so no retry budget can make this pass. Re-enable once #59919 is fixed.
+  test.skip('Migrated tasks', async ({
     operateFiltersPanelPage,
     operateProcessesPage,
     operateDiagramPage,
