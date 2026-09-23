@@ -14,50 +14,38 @@ import org.junit.jupiter.api.Test;
 public class OperatePropertiesTest {
 
   @Test
-  void shouldEnableNavV2ByDefaultForSelfManaged() {
+  void shouldEnableNavV2ByDefault() {
     // given
     final var properties = new OperateProperties();
 
     // when
-    final boolean result = properties.resolveNavV2Enabled(false);
+    final boolean result = properties.resolveNavV2Enabled();
 
     // then
     assertThat(result).isTrue();
   }
 
   @Test
-  void shouldDisableNavV2ByDefaultForSaas() {
-    // given
-    final var properties = new OperateProperties();
-
-    // when
-    final boolean result = properties.resolveNavV2Enabled(true);
-
-    // then
-    assertThat(result).isFalse();
-  }
-
-  @Test
-  void shouldEnableNavV2ForSaasWhenExplicitlyConfigured() {
+  void shouldEnableNavV2WhenExplicitlyConfigured() {
     // given
     final var properties = new OperateProperties();
     properties.setNavV2Enabled(true);
 
     // when
-    final boolean result = properties.resolveNavV2Enabled(true);
+    final boolean result = properties.resolveNavV2Enabled();
 
     // then
     assertThat(result).isTrue();
   }
 
   @Test
-  void shouldDisableNavV2ForSelfManagedWhenExplicitlyConfigured() {
+  void shouldDisableNavV2WhenExplicitlyConfigured() {
     // given
     final var properties = new OperateProperties();
     properties.setNavV2Enabled(false);
 
     // when
-    final boolean result = properties.resolveNavV2Enabled(false);
+    final boolean result = properties.resolveNavV2Enabled();
 
     // then
     assertThat(result).isFalse();

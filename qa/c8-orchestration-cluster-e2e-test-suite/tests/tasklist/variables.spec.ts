@@ -239,7 +239,7 @@ test.describe('variables page', () => {
       value: '"newVariableValue"',
     });
 
-    await taskDetailsPage.completeTaskButton.click();
+    await taskDetailsPage.clickCompleteTaskButton();
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
     await expect(taskDetailsPage.pickATaskHeader).toBeVisible();
 

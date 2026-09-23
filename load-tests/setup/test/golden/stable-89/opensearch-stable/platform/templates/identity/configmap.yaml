@@ -43,25 +43,9 @@ data:
                 - audience: "orchestration-api"
                   definition: read:*
         console:
-          applications:
-            - name: "Console"
-              id: ${CAMUNDA_CONSOLE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_CONSOLE_CLIENT_ID:console}}
-              type: public
-              root-url: "http://localhost:8087"
-              redirect-uris:
-                - "/"
-          apis:
-            - name: Console API
-              audience: "console-api"
-              permissions:
-                - definition: write:*
-                  description: "Write permission"
-          roles:
-            - name: "Console"
-              description: "Grants full access to Console"
-              permissions:
-                - audience: "console-api"
-                  definition: write:*
+          applications: []
+          apis: []
+          roles: []
         identity:
           apis:
             - name: "Camunda Identity Resource Server"
@@ -134,49 +118,9 @@ data:
                 - audience: "orchestration-api"
                   definition: write:*
         webmodeler:
-          applications:
-            - name: "Web Modeler"
-              id: ${CAMUNDA_WEBMODELER_CLIENT_ID:${VALUES_KEYCLOAK_INIT_WEBMODELER_CLIENT_ID:web-modeler}}
-              type: public
-              root-url: "http://localhost:8070"
-              redirect-uris:
-                - "/login-callback"
-          apis:
-            - name: Web Modeler Internal API
-              audience: "web-modeler-api"
-              permissions:
-                - definition: write:*
-                  description: "Write permission"
-                - definition: admin:*
-                  description: "Admin permission"
-            - name: Web Modeler API
-              audience: "web-modeler-public-api"
-              permissions:
-                - definition: create:*
-                  description: "Allows create access for all resources"
-                - definition: read:*
-                  description: "Allows read access to all resources"
-                - definition: update:*
-                  description: "Allows update access to all resources"
-                - definition: delete:*
-                  description: "Allows delete access for all resources"
-          roles:
-            - name: "Web Modeler"
-              description: "Grants full access to Web Modeler"
-              permissions:
-                - audience: "web-modeler-api"
-                  definition: write:*
-                - audience: "camunda-identity-resource-server"
-                  definition: read:users
-            - name: "Web Modeler Admin"
-              description: "Grants elevated access to Web Modeler"
-              permissions:
-                - audience: "camunda-identity-resource-server"
-                  definition: read:users
-                - audience: "web-modeler-api"
-                  definition: write:*
-                - audience: "web-modeler-api"
-                  definition: admin:*
+          applications: []
+          apis: []
+          roles: []
     keycloak:
       url: "http://c8-golden-stable-89-opensearch-stable.keycloak-operator.svc:18080/auth"
       setup:
@@ -185,14 +129,10 @@ data:
       init:
         connectors:
           secret: ${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}
-        console:
-          root-url: "http://localhost:8087"
         optimize:
           secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
         orchestration:
           secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
-        webmodeler:
-          root-url: "http://localhost:8070"
       clients:
       users:
         - username: "demo"

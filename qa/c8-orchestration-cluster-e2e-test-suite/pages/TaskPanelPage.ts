@@ -62,23 +62,33 @@ class TaskPanelPage {
 
   async openTask(name: string, options: {timeout?: number} = {}) {
     const timeout = options.timeout ?? 10000;
-    const task = this.availableTasks.getByText(name, {exact: true}).nth(0);
+    const task = this.taskCardByText(name);
 
-    await this.waitForTaskCard(task, name, timeout);
-
-    await task.scrollIntoViewIfNeeded().catch(() => {});
-    await task.click({timeout});
+    await waitForAssertion({
+      assertion: async () => {
+        await this.scrollListToTop();
+        await this.walkListFor(task, timeout);
+        await task.getByRole('link').click({timeout});
+        await expect(this.page).toHaveURL(/\/tasklist\/[^/?]+/);
+      },
+      onFailure: async () => {
+        await this.reloadPage();
+      },
+    });
   }
 
-  /**
-   * Waits for a card matching `name` (a task name or the process name below
-   * it) to be rendered in the available-tasks list. Use this instead of
-   * asserting on the card directly: the list is virtualized, so a card outside
-   * the rendered window has to be scrolled to before it exists in the DOM.
-   */
-  async assertTaskCardVisible(name: string, options: {timeout?: number} = {}) {
-    const card = this.availableTasks.getByText(name, {exact: true}).nth(0);
+  async assertTaskCardVisible(
+    name: string,
+    options: {timeout?: number} = {},
+  ): Promise<void> {
+    const card = this.taskCardByText(name);
     await this.waitForTaskCard(card, name, options.timeout ?? 10000);
+  }
+
+  private taskCardByText(text: string): Locator {
+    return this.taskCards
+      .filter({has: this.page.getByText(text, {exact: true})})
+      .first();
   }
 
   private async waitForTaskCard(

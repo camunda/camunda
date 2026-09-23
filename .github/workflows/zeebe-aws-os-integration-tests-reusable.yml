@@ -33,6 +33,9 @@ defaults:
 
 env:
   TEST_OWNER: '@camunda/core-features'
+  # Lower than ci.yml's PR/push counts (3/7): every rerun hits the shared AWS
+  # OpenSearch cluster directly, so we don't want to pile on retries here.
+  FLAKY_TEST_RERUN_COUNT: 2
 
 jobs:
   check-opensearch-version:
@@ -222,6 +225,7 @@ jobs:
           -D forkCount=${{ matrix.maven-test-fork-count }}
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
+          -D failsafe.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
           -D flaky.test.reportDir=failsafe-reports
           -D test.integration.opensearch.aws.url="${{ env.OPENSEARCH_URL }}"
           -D test.integration.camunda.database.type=AWS_OS

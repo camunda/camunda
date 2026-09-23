@@ -217,7 +217,7 @@ test.describe('task details page', () => {
 
     const taskUrl = page.url();
     await taskDetailsPage.clickAssignToMeButton();
-    await taskDetailsPage.completeTaskButton.click();
+    await taskDetailsPage.clickCompleteTaskButton();
     await expect(taskDetailsPage.pickATaskHeader).toBeVisible();
 
     await page.goto(taskUrl);
@@ -287,7 +287,7 @@ test.describe('task details page', () => {
     await expect(taskDetailsPage.form).toContainText('EUR 264');
     await expect(taskDetailsPage.form).toContainText('Total: EUR 544.5');
     await sleep(500);
-    await taskDetailsPage.completeTaskButton.click();
+    await taskDetailsPage.clickCompleteTaskButton();
 
     // 60s was hit by the May 20 nightly — give completion more headroom on
     // a loaded shared cluster.

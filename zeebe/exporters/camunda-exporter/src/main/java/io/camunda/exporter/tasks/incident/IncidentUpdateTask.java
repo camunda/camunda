@@ -14,6 +14,8 @@ import io.camunda.exporter.notifier.IncidentNotifier;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentBulkUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocument;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.NonIncidentBulkUpdate;
+import io.camunda.exporter.tasks.util.AdaptiveBatchSize;
+import io.camunda.exporter.tasks.util.BulkRequestTooLargeException;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentState;
@@ -29,6 +31,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
@@ -42,12 +45,13 @@ public final class IncidentUpdateTask implements BackgroundTask {
   private final ExporterMetadata metadata;
   private final IncidentUpdateRepository repository;
   private final boolean ignoreMissingData;
-  private final int batchSize;
   private final ExecutorService executor;
   private final Logger logger;
   private final Duration waitForRefreshInterval;
   private final IncidentNotifier incidentNotifier;
   private final CamundaExporterMetrics metrics;
+
+  private final AdaptiveBatchSize batchSize;
 
   public IncidentUpdateTask(
       final ExporterMetadata metadata,
@@ -84,7 +88,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
     this.metadata = metadata;
     this.repository = repository;
     this.ignoreMissingData = ignoreMissingData;
-    this.batchSize = batchSize;
+    this.batchSize = new AdaptiveBatchSize(batchSize);
     this.executor = executor;
     this.metrics = metrics;
     this.logger = logger;
@@ -94,11 +98,48 @@ public final class IncidentUpdateTask implements BackgroundTask {
 
   @Override
   public CompletionStage<Integer> execute() {
+    final CompletableFuture<Integer> result;
     try {
-      return processNextBatch();
+      result = processNextBatch();
     } catch (final Exception e) {
-      return CompletableFuture.failedFuture(e);
+      return CompletableFuture.failedFuture(adjustBatchSizeAndReturnCause(e));
     }
+
+    return result.handleAsync(
+        (documentsUpdated, error) -> {
+          if (error != null) {
+            throw new CompletionException(adjustBatchSizeAndReturnCause(error));
+          }
+
+          return documentsUpdated;
+        },
+        executor);
+  }
+
+  /** The read is the only lever on fan-out, so it is all that is reduced. */
+  private Throwable adjustBatchSizeAndReturnCause(final Throwable error) {
+    final var cause = FuturesUtil.unwrapCompletionException(error);
+    if (!(cause instanceof BulkRequestTooLargeException)) {
+      return cause;
+    }
+
+    if (batchSize.halve()) {
+      logger.warn(
+          """
+            The store refused the incident update write for being too large; retrying with at most \
+            {} pending update(s) per cycle instead of {}.""",
+          batchSize.current(),
+          batchSize.configured(),
+          cause);
+    } else {
+      logger.warn(
+          """
+            The store refused the incident update write for being too large at a single pending \
+            update; one incident fans out into more documents than it accepts per request.""",
+          cause);
+    }
+
+    return cause;
   }
 
   @Override
@@ -174,6 +215,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
                   batch.highestPosition());
 
               metadata.setLastIncidentUpdatePosition(batch.highestPosition());
+              batchSize.reset();
 
               metrics.recordIncidentUpdatesProcessed(incidentCount);
               metrics.recordIncidentUpdatesDocumentsUpdated(documentsUpdated);
@@ -737,7 +779,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final IncidentsState state) {
     final IncidentUpdateRepository.PendingIncidentUpdateBatch pendingIncidentsBatch =
         repository
-            .getPendingIncidentsBatch(metadata.getLastIncidentUpdatePosition(), batchSize)
+            .getPendingIncidentsBatch(metadata.getLastIncidentUpdatePosition(), batchSize.current())
             .toCompletableFuture()
             .join();
 

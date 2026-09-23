@@ -36,9 +36,20 @@ const PROCESS_DEFINITIONS = HttpResponse.json(
 );
 
 const NO_DECISION_DEFINITIONS = HttpResponse.json(createQueryDecisionDefinitionsResponse());
+const OPERATIONS_LOG_PATH = '/operate/operations-log';
 
-function renderPage(search?: Partial<OperationsLogSearch>) {
-	return renderWithRouter(() => <OperationsLog {...(search ?? {})} />, {path: '/operate/operations-log'});
+function renderPage({
+	search,
+	basepath = '',
+}: {
+	search?: Partial<OperationsLogSearch>;
+	basepath?: string;
+} = {}) {
+	return renderWithRouter(() => <OperationsLog {...(search ?? {})} />, {
+		path: OPERATIONS_LOG_PATH,
+		basepath,
+		initialEntry: `${basepath}${OPERATIONS_LOG_PATH}`,
+	});
 }
 
 describe('<OperationsLog />', () => {
@@ -104,7 +115,7 @@ describe('<OperationsLog />', () => {
 			mockQueryAuditLogsEndpoint({successResponse: HttpResponse.json(createQueryAuditLogsResponse())}),
 		);
 
-		const screen = await renderPage({actorId: 'demo'});
+		const screen = await renderPage({search: {actorId: 'demo'}});
 
 		await expect.element(screen.getByText('No operations log found')).toBeVisible();
 	});
@@ -170,34 +181,75 @@ describe('<OperationsLog />', () => {
 			.toHaveAttribute('href', '/operate/batch-operations/batch-123');
 	});
 
-	it('should render a process instance link for PROCESS_INSTANCE entity types', async ({worker}) => {
-		worker.use(
-			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
-			mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
-			mockQueryAuditLogsEndpoint({
-				successResponse: HttpResponse.json(
-					createQueryAuditLogsResponse({
-						items: [
-							createAuditLog({
-								auditLogKey: '123',
-								entityKey: '999',
-								processInstanceKey: '999',
-								entityType: 'PROCESS_INSTANCE',
-								operationType: 'CANCEL',
-								processDefinitionKey: '2251799813685279',
-							}),
-						],
-					}),
-				),
-			}),
-		);
+	it.for([
+		{basepath: '', expectedPathPrefix: ''},
+		{basepath: '/camunda', expectedPathPrefix: '/camunda'},
+	])(
+		'should render a process instance entity link with the correct basepath "$basepath"',
+		async ({basepath, expectedPathPrefix}, {worker}) => {
+			worker.use(
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+				mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
+				mockQueryAuditLogsEndpoint({
+					successResponse: HttpResponse.json(
+						createQueryAuditLogsResponse({
+							items: [
+								createAuditLog({
+									auditLogKey: '123',
+									entityKey: '999',
+									processInstanceKey: '999',
+									entityType: 'PROCESS_INSTANCE',
+									operationType: 'CANCEL',
+									processDefinitionKey: '2251799813685279',
+								}),
+							],
+						}),
+					),
+				}),
+			);
 
-		const screen = await renderPage();
+			const screen = await renderPage({basepath});
 
-		await expect
-			.element(screen.getByRole('link', {name: 'View process instance 999'}))
-			.toHaveAttribute('href', '/operate/processes/999');
-	});
+			await expect
+				.element(screen.getByRole('link', {name: 'View process instance 999'}))
+				.toHaveAttribute('href', `${expectedPathPrefix}/operate/processes/999`);
+		},
+	);
+
+	it.for([
+		{basepath: '', expectedPathPrefix: ''},
+		{basepath: '/camunda', expectedPathPrefix: '/camunda'},
+	])(
+		'should render a parent process instance link with the correct basepath "$basepath"',
+		async ({basepath, expectedPathPrefix}, {worker}) => {
+			worker.use(
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+				mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
+				mockQueryAuditLogsEndpoint({
+					successResponse: HttpResponse.json(
+						createQueryAuditLogsResponse({
+							items: [
+								createAuditLog({
+									auditLogKey: '123',
+									entityKey: 'variable-1',
+									processInstanceKey: '999',
+									entityType: 'VARIABLE',
+									operationType: 'UPDATE',
+									processDefinitionKey: '2251799813685279',
+								}),
+							],
+						}),
+					),
+				}),
+			);
+
+			const screen = await renderPage({basepath});
+
+			await expect
+				.element(screen.getByRole('link', {name: 'View process instance 999'}))
+				.toHaveAttribute('href', `${expectedPathPrefix}/operate/processes/999`);
+		},
+	);
 
 	it('should render a decision instance link for DECISION entity types', async ({worker}) => {
 		worker.use(
@@ -271,7 +323,7 @@ describe('<OperationsLog />', () => {
 				mockQueryAuditLogsEndpoint({successResponse: HttpResponse.json(createQueryAuditLogsResponse())}),
 			);
 
-			const screen = await renderPage({actorId: 'demo-user'});
+			const screen = await renderPage({search: {actorId: 'demo-user'}});
 
 			await expect.element(screen.getByRole('button', {name: 'Reset filters'})).not.toBeDisabled();
 		});

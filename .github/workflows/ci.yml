@@ -570,25 +570,25 @@ jobs:
           directory: ./optimize/client
       # Share the built frontend bundles so the snapshot deploy jobs download them
       # instead of rebuilding (see issue #52693).
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: fe-operate-${{ github.run_id }}
           path: operate/client/build
           retention-days: 2
           if-no-files-found: error
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: fe-webapp-${{ github.run_id }}
           path: webapp/client/apps/orchestration-cluster-webapp/dist
           retention-days: 2
           if-no-files-found: error
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: fe-identity-${{ github.run_id }}
           path: identity/client/dist
           retention-days: 2
           if-no-files-found: error
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: fe-optimize-${{ github.run_id }}
           path: optimize/client/dist
@@ -2711,6 +2711,9 @@ jobs:
       # apt-get without nick-fields/retry having to kill across the privilege boundary --
       # doing that externally throws `kill EPERM` and crashes instead of retrying, see
       # https://github.com/nick-fields/retry/issues/124.
+      #
+      # `apt-get update` exits 100 if *any* configured repository fails, so don't gate on it
+      # (INC-7943) -- a partial refresh still lands and `apt-get install` is the real gate.
       - name: Install bats and xmllint
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
@@ -2718,7 +2721,10 @@ jobs:
           retry_wait_seconds: 10
           timeout_minutes: 2
           shell: bash
-          command: sudo timeout 115 bash -c "apt-get install -y --no-install-recommends bats libxml2-utils"
+          command: |
+            sudo timeout 115 bash -c "apt-get update \
+              || echo '::warning::apt-get update could not refresh every repository, continuing with the index as-is'; \
+              apt-get install -y --no-install-recommends bats libxml2-utils"
       - name: Run ci-relevance tests
         run: bats .github/scripts/ci-relevance/check.bats
       - name: Run flattened-pom validation tests
@@ -2917,6 +2923,42 @@ jobs:
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
+      - name: Import Nexus credentials
+        id: nexus-secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/github.com/organizations/camunda NEXUS_USR;
+            secret/data/github.com/organizations/camunda NEXUS_PSW;
+      - name: Check time since last snapshot deploy
+        id: snapshot-gate
+        env:
+          NEXUS_USR: ${{ steps.nexus-secrets.outputs.NEXUS_USR }}
+          NEXUS_PSW: ${{ steps.nexus-secrets.outputs.NEXUS_PSW }}
+          MIN_INTERVAL_HOURS: '3'
+          MARKER_ARTIFACT: io/camunda/zeebe-protocol
+        run: |
+          version="$(grep -m1 '<version>' pom.xml | sed -E 's|.*<version>([^<]+)</version>.*|\1|')"
+          url="https://repository.nexus.camunda.cloud/content/groups/internal/${MARKER_ARTIFACT}/${version}/maven-metadata.xml"
+          stamp=$(curl -sf --retry 3 --retry-all-errors -u "${NEXUS_USR}:${NEXUS_PSW}" "${url}" \
+                  | sed -n 's:.*<lastUpdated>\([0-9]\{14\}\)</lastUpdated>.*:\1:p' | head -n 1) || true
+          if [[ -z "${stamp}" ]]; then
+            echo "::warning::No lastUpdated at ${url}; deploying without debounce."
+            echo "fresh=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          published=$(date -u -d "${stamp:0:8} ${stamp:8:2}:${stamp:10:2}:${stamp:12:2}" +%s)
+          if (( $(date +%s) - published < MIN_INTERVAL_HOURS * 3600 )); then
+            echo "fresh=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::${version} was published at ${stamp} UTC (< ${MIN_INTERVAL_HOURS}h ago); skipping upload."
+          else
+            echo "fresh=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: snapshots
@@ -2956,6 +2998,7 @@ jobs:
       # that retry_on: error does NOT retry. timeout_minutes needs real margin for this to be useful,
       # else every run just hits the timeout wall on attempt 1 (see incident 2026-09-02).
       - name: Compile and deploy snapshot artifacts
+        if: github.event_name != 'push' || steps.snapshot-gate.outputs.fresh != 'true'
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 2
