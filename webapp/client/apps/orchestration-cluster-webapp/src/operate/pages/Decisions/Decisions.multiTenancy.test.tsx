@@ -34,7 +34,7 @@ const DECISION_DEFINITIONS = HttpResponse.json(
 const EMPTY_DECISION_INSTANCES = HttpResponse.json(createQueryDecisionInstancesResponse());
 
 function renderDecisionsPage(searchParams?: Record<string, string>) {
-	const query = searchParams ? `?${new URLSearchParams(searchParams).toString()}` : '';
+	const query = `?${new URLSearchParams({evaluated: 'true', failed: 'true', ...searchParams}).toString()}`;
 	return renderWithRouter(DecisionsHarness, {
 		path: '/operate/decisions',
 		initialEntry: `/operate/decisions${query}`,
@@ -122,7 +122,13 @@ describe('Multi tenancy', () => {
 		await screen.getByRole('combobox', {name: 'Select a tenant'}).click();
 		await screen.getByRole('option', {name: 'Tenant A'}).click();
 
-		await expect.poll(() => getSearch()).toEqual({tenantId: '<tenant-A>'});
+		await expect
+			.poll(() => getSearch())
+			.toMatchObject({
+				tenantId: '<tenant-A>',
+				evaluated: true,
+				failed: true,
+			});
 	});
 
 	it('should scope the decision-definitions request to the selected tenant', async ({worker}) => {

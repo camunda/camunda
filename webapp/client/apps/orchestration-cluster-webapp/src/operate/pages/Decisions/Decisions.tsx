@@ -209,7 +209,7 @@ const Decisions: React.FC<Props> = ({
 									onResetClick={() => {
 										form.reset();
 										setVisibleFilters([]);
-										void navigate({to: '.', search: {}});
+										void navigate({to: '.', search: {evaluated: true, failed: true}});
 									}}
 								>
 									<Stack gap={8}>

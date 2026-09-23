@@ -46,7 +46,7 @@ function useDecisionInstancesSearch(search: DecisionsSearch) {
 			const previousPage = firstPageParam - PAGE_LIMIT;
 			return previousPage < 0 ? undefined : previousPage;
 		},
-		placeholderData: (previousData) => previousData,
+		placeholderData: filter === undefined ? undefined : (previousData) => previousData,
 		maxPages: 2,
 	});
 

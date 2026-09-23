@@ -36,7 +36,7 @@ const DecisionInstance: React.FC<Props> = ({decisionInstanceId}) => {
 				title: t('operate.decisionInstance.notFoundNotificationTitle', {decisionInstanceId}),
 				isDismissable: true,
 			});
-			void navigate({to: '/operate/decisions', replace: true});
+			void navigate({to: '/operate/decisions', search: {evaluated: true, failed: true}, replace: true});
 		}
 	}, [isNotFound, decisionInstanceId, navigate, t]);
 
