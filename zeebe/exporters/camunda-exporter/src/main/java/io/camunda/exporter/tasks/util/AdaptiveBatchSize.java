@@ -35,7 +35,7 @@ public final class AdaptiveBatchSize {
   }
 
   /** Halves the size, or reports that it is already at one and cannot be made smaller. */
-  public boolean reduce() {
+  public boolean halve() {
     if (current <= 1) {
       return false;
     }
