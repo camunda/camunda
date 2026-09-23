@@ -12,11 +12,24 @@ import {cn} from '#/shared/cn';
 import {useRunningInstancesCount} from '../useRunningInstancesCount';
 import {NoInstancesEmptyState} from './NoInstancesEmptyState';
 
-// A DataTable with zero columns renders zero-cell skeleton rows, which collapse to no
-// height at all — no loading indication shows up. One columnless placeholder column
-// gives the loading skeleton a cell to paint into; real columns replace this once
-// InstancesByProcess/IncidentsByError land.
-const PLACEHOLDER_COLUMNS: DataTableColumn<never>[] = [{id: 'placeholder', header: ''}];
+type PlaceholderRow = {id: string; name: string};
+
+// Real columns/data for InstancesByProcess and IncidentsByError land in later PRs. These mock
+// rows stand in until then, so the tiles show realistic populated content rather than an
+// indefinite loading skeleton. The column header carries the tile's own title — an empty
+// header fails the "table headers have discernible text" accessibility check.
+const placeholderColumns = (header: string): DataTableColumn<PlaceholderRow>[] => [
+	{id: 'name', header, cell: ({row}) => row.original.name},
+];
+const SAMPLE_PROCESS_ROWS: PlaceholderRow[] = [
+	{id: 'sample-process-1', name: 'Order process'},
+	{id: 'sample-process-2', name: 'Shipping process'},
+	{id: 'sample-process-3', name: 'Invoice process'},
+];
+const SAMPLE_INCIDENT_ROWS: PlaceholderRow[] = [
+	{id: 'sample-incident-1', name: 'Connection timeout'},
+	{id: 'sample-incident-2', name: 'Null pointer exception'},
+];
 
 const Dashboard: React.FC = () => {
 	const {t} = useTranslation();
@@ -36,20 +49,20 @@ const Dashboard: React.FC = () => {
 			<div className={cn('grid flex-1 gap-4 overflow-hidden', !hasNoInstances && 'grid-cols-2')}>
 				{/* Real columns/data for InstancesByProcess — wired in a later PR */}
 				<DataTable
-					title={t('operate.dashboard.processesByNameTitle')}
-					columns={PLACEHOLDER_COLUMNS}
-					data={[]}
-					loading={!hasNoInstances}
+					aria-label={t('operate.dashboard.processesByNameTitle')}
+					columns={placeholderColumns(t('operate.dashboard.processesByNameTitle'))}
+					data={hasNoInstances ? [] : SAMPLE_PROCESS_ROWS}
+					getRowId={(row) => row.id}
 					emptyState={hasNoInstances ? <NoInstancesEmptyState /> : undefined}
 					className="flex flex-col overflow-hidden"
 				/>
 				{!hasNoInstances && (
 					// Real columns/data for IncidentsByError — wired in a later PR
 					<DataTable
-						title={t('operate.dashboard.incidentsByErrorTitle')}
-						columns={PLACEHOLDER_COLUMNS}
-						data={[]}
-						loading
+						aria-label={t('operate.dashboard.incidentsByErrorTitle')}
+						columns={placeholderColumns(t('operate.dashboard.incidentsByErrorTitle'))}
+						data={SAMPLE_INCIDENT_ROWS}
+						getRowId={(row) => row.id}
 						className="flex flex-col overflow-hidden"
 					/>
 				)}

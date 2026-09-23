@@ -126,6 +126,27 @@ describe('<Dashboard />', () => {
 		await expect.element(screen.getByText('Process Incidents by Error Message')).toBeVisible();
 	});
 
+	it('should render sample rows in both list tiles, pending real data', async ({worker}) => {
+		worker.use(
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+				schema: PROCESS_STATS_REQUEST_SCHEMA,
+				successResponse: STATS_RESPONSE_WITH_INSTANCES,
+				failureResponse: FAILURE_RESPONSE,
+			}),
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+				schema: INCIDENTS_REQUEST_SCHEMA,
+				successResponse: INCIDENTS_RESPONSE_WITH_ERRORS,
+				failureResponse: FAILURE_RESPONSE,
+			}),
+		);
+
+		const screen = await renderWithRouter(Dashboard, {path: '/operate-preview'});
+
+		await expect.element(screen.getByText('Order process')).toBeVisible();
+		await expect.element(screen.getByText('Connection timeout')).toBeVisible();
+		expect(screen.getByText('Process One').elements()).toHaveLength(0);
+	});
+
 	it('should render the no-instances empty state when there are no running instances', async ({worker}) => {
 		worker.use(
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({
