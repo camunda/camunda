@@ -150,6 +150,21 @@ public class ManagedScriptDefinitionController {
         HttpStatus.OK);
   }
 
+  @CamundaGetMapping(path = "/by-process-definition/{processDefinitionKey}/elements/{elementId}")
+  public CompletableFuture<ResponseEntity<Object>> getByProcessDefinitionAndElement(
+      @PhysicalTenantId final String physicalTenantId,
+      @PathVariable final long processDefinitionKey,
+      @PathVariable final String elementId) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
+    return RequestExecutor.executeServiceMethod(
+        () ->
+            serviceRegistry
+                .managedScriptDefinitionServices(physicalTenantId)
+                .get(processDefinitionKey, elementId, authentication),
+        DefinitionResponse::from,
+        HttpStatus.OK);
+  }
+
   public record ActivationRequest(
       String provider, String worker, long leaseDuration, int maxDefinitions, String tenantId) {}
 

@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.impl.record.value.managedscriptdefinition.Manag
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ManagedScriptDefinitionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 
 @ExcludeAuthorizationCheck
 public final class ManagedScriptDefinitionGetProcessor
@@ -36,16 +37,29 @@ public final class ManagedScriptDefinitionGetProcessor
 
   @Override
   public void processRecord(final TypedRecord<ManagedScriptDefinitionRecord> command) {
-    final var definition = state.getManagedScriptDefinition(command.getKey());
+    final var request = command.getValue();
+    final Long definitionKey;
+    if (command.getKey() >= 0) {
+      definitionKey = command.getKey();
+    } else {
+      definitionKey =
+          state.getManagedScriptDefinitionKey(
+              request.getProcessDefinitionKey(), BufferUtil.wrapString(request.getElementId()));
+    }
+    final var definition =
+        definitionKey == null ? null : state.getManagedScriptDefinition(definitionKey);
     if (definition == null) {
       final var reason =
-          "Expected to get managed script definition '%d', but it was not found"
-              .formatted(command.getKey());
+          command.getKey() >= 0
+              ? "Expected to get managed script definition '%d', but it was not found"
+                  .formatted(command.getKey())
+              : "Expected to get managed script definition for process definition '%d' and element '%s', but it was not found"
+                  .formatted(request.getProcessDefinitionKey(), request.getElementId());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
       responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, reason);
       return;
     }
     responseWriter.writeAcceptedResponseOnCommand(
-        command.getKey(), ManagedScriptDefinitionIntent.GOT, definition, command);
+        definitionKey, ManagedScriptDefinitionIntent.GOT, definition, command);
   }
 }

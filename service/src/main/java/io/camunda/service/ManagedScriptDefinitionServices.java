@@ -164,6 +164,24 @@ public final class ManagedScriptDefinitionServices
         new BrokerGetManagedScriptDefinitionRequest(definitionKey), authentication);
   }
 
+  public CompletableFuture<ManagedScriptDefinitionRecord> get(
+      final long processDefinitionKey,
+      final String elementId,
+      final CamundaAuthentication authentication) {
+    if (processDefinitionKey <= 0) {
+      throw new ServiceException(
+          "The process definition key must be greater than zero",
+          ServiceException.Status.INVALID_ARGUMENT);
+    }
+    if (elementId == null || elementId.isBlank()) {
+      throw new ServiceException(
+          "The element ID must not be blank", ServiceException.Status.INVALID_ARGUMENT);
+    }
+    return sendBrokerRequest(
+        new BrokerGetManagedScriptDefinitionRequest(processDefinitionKey, elementId),
+        authentication);
+  }
+
   private CompletableFuture<List<ManagedScriptDefinitionRecord>> activateUntilLimit(
       final String provider,
       final String worker,
