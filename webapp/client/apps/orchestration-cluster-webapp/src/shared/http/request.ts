@@ -41,8 +41,10 @@ function storeCsrfTokenFromResponse(response: Response) {
 async function requestCsrfToken(input: Request) {
 	try {
 		storeCsrfTokenFromResponse(await fetch(input));
-	} catch {
-		// The request that needs the token reports the failure to the user.
+	} catch (error) {
+		// The request that needs the token reports the failure to the user, which looks like a
+		// rejected login. Log the cause so a broken token request is distinguishable from that.
+		console.error('Failed to fetch a CSRF token', error);
 	}
 }
 

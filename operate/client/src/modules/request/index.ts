@@ -116,8 +116,11 @@ async function requestCsrfToken(url: string) {
         mode: 'cors',
       }),
     );
-  } catch {
-    // The request that needs the token reports the failure to the user.
+  } catch (error) {
+    // The request that needs the token reports the failure to the user, which looks like a
+    // rejected login. Log the cause so a broken token request is distinguishable from that.
+    logger.error(`Failed to fetch a CSRF token from ${url}`);
+    logger.error(error);
   }
 }
 
