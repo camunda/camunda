@@ -112,11 +112,7 @@ test.describe.serial('Task visible to assignee with READ permission', () => {
 
     await taskPanelPage.filterBy('Assigned to me');
 
-    await expect(async () => {
-      await expect(
-        taskPanelPage.availableTasks.getByText(TASK_NAME),
-      ).toBeVisible();
-    }).toPass({timeout: 30000});
+    await taskPanelPage.assertTaskCardVisible(TASK_NAME, {timeout: 30000});
 
     await taskPanelPage.openTask(TASK_NAME);
 

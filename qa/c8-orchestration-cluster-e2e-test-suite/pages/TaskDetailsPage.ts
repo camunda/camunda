@@ -116,7 +116,8 @@ class TaskDetailsPage {
     // Same TabListNav migration as the history tab below: this is now a
     // `role="tab"`, not a Carbon-era nav link.
     this.processTab = page.getByRole('tab', {
-      name: 'show associated bpmn process',
+      name: 'Show associated BPMN process',
+      exact: true,
     });
     this.bpmnDiagram = page.getByTestId('diagram');
     this.assignedToMeText = page
@@ -127,6 +128,7 @@ class TaskDetailsPage {
     // name (`taskDetailsShowHistoryLabel`) is unchanged.
     this.historyTabButton = page.getByRole('tab', {
       name: 'Show task history',
+      exact: true,
     });
     this.historyTable = page
       .getByTestId('history-tab-content')
@@ -244,6 +246,9 @@ class TaskDetailsPage {
 
   async clickCompleteTaskButton() {
     await this.completeTaskButton.click({timeout: 60000});
+    await expect(this.page).toHaveURL(/\/tasklist(?:\?.*)?$/, {
+      timeout: 120000,
+    });
   }
 
   async clickAddVariableButton() {
