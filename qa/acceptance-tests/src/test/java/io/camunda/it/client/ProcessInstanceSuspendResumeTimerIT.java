@@ -129,11 +129,12 @@ public class ProcessInstanceSuspendResumeTimerIT {
 
   /**
    * When a cycling timer triggers during a suspension, we expect only a single trigger to be
-   * buffered. Following this, upon resumption, if next due date of the timer is in the past, the
-   * timer will be rescheduled again to now(), causing a second trigger.
+   * buffered. Following this, upon resumption, even if the timer's next due date is still in the
+   * past because several cycles were skipped, the timer must fire only once more, not once per
+   * skipped cycle.
    */
   @Test
-  void shouldFireCyclingTimerTwiceAfterResumeWhenSeveralCyclesWereDue() {
+  void shouldFireCyclingTimerOnceAfterResumeWhenSeveralCyclesWereDue() {
     // given
     final var processId = Strings.newRandomValidBpmnId();
     final var jobType = Strings.newRandomValidBpmnId();
@@ -193,15 +194,16 @@ public class ProcessInstanceSuspendResumeTimerIT {
 
     camundaClient.newResumeProcessInstanceCommand(processInstanceKey).send().join();
 
-    // then - buffered trigger plus one overdue reschedule snapped to now; not ten catch-up fires
+    // then - buffered trigger fires once; the overdue reschedule lands in the future, not a
+    // second immediate catch-up fire
     waitForElementInstances(
         camundaClient,
         f ->
             f.processInstanceKey(processInstanceKey)
                 .elementId("timerEnd")
                 .state(ElementInstanceState.COMPLETED),
-        2);
-    assertNumberOfCompletedTimers(processInstanceKey, "timerEnd", 2);
+        1);
+    assertNumberOfCompletedTimers(processInstanceKey, "timerEnd", 1);
   }
 
   private static void assertNumberOfCompletedTimers(
