@@ -44,14 +44,14 @@ import org.slf4j.Logger;
  * using the {@code pollInterval}.
  *
  * <p>If a poll successfully provides jobs, the worker submits each job to the job handler. Every
- * time a job is completed, the worker checks if it still has enough jobs to work on. If not, it
- * will poll for new jobs. To determine what is considered enough jobs it compares its number of
- * {@code remainingJobs} with the {@code activationThreshold}. A poll only asks for as many jobs as
- * the executor can take at that moment, which is not the same as the number of jobs the worker has
- * left to run: jobs the broker pushes to the worker take capacity too, and those it does not count.
- * If the executor refuses a job, the worker frees up that job's capacity immediately, so that a
- * refused job never takes up capacity for good. Each job's capacity is freed up exactly once,
- * whether the job ran, was refused, or was dropped for having waited out its activation.
+ * time a slot of the executor's capacity frees up, the worker polls again if the executor has room
+ * for more. A poll only asks for as many jobs as the executor can take at that moment, never more
+ * than {@code maxJobsActive}. That capacity is the worker's only account of the work it has in
+ * flight: jobs the broker pushes to the worker take capacity from the same executor as the jobs the
+ * worker polls for, so a single count covers both. If the executor refuses a job, it frees that
+ * job's capacity immediately, so that a refused job never takes up capacity for good. Each job's
+ * capacity is freed up exactly once, whether the job ran, was refused, or was dropped for having
+ * waited out its activation.
  *
  * <p>A job only reaches its handler while the activation it arrived with still holds. One that has
  * been waiting for a free handler thread for longer than that is dropped instead: the broker may
@@ -92,8 +92,6 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       "Expected to supply retry delay, but an exception was thrown. Falling back to default backoff supplier";
   // job queue state
   private final int maxJobsActive;
-  private final int activationThreshold;
-  private final AtomicInteger remainingJobs;
   private final AtomicInteger refusedJobsInPoll = new AtomicInteger(0);
 
   // job execution facilities
@@ -131,8 +129,6 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       final LongSupplier nanoClock,
       final Duration jobTimeout) {
     this.maxJobsActive = maxJobsActive;
-    activationThreshold = Math.round(maxJobsActive * 0.3f);
-    remainingJobs = new AtomicInteger(0);
 
     this.executor = jobExecutor;
     this.jobClient = jobClient;
@@ -149,8 +145,18 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     claimableJobPoller = new AtomicReference<>(jobPoller);
     this.pollInterval = initialPollInterval;
 
+    // Poll again as soon as, and no sooner than, the executor frees a slot. Runs on the thread that
+    // finished a job; tryPoll claims the single poller, so concurrent frees stay safe.
+    this.executor.onCapacityAvailable(this::pollWhenCapacityAllows);
+
     openStream();
     schedulePoll();
+  }
+
+  private void pollWhenCapacityAllows() {
+    if (!isPollScheduled.get() && shouldPoll()) {
+      tryPoll();
+    }
   }
 
   private void openStream() {
@@ -164,7 +170,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
 
   @Override
   public boolean isClosed() {
-    return !isOpen() && claimableJobPoller.get() != null && remainingJobs.get() <= 0;
+    return !isOpen() && claimableJobPoller.get() != null && executor.hasNoJobsInFlight();
   }
 
   @Override
@@ -186,14 +192,13 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   /** Frees up the scheduler and polls for new jobs. */
   private void onScheduledPoll() {
     isPollScheduled.set(false);
-    final int actualRemainingJobs = remainingJobs.get();
-    if (shouldPoll(actualRemainingJobs)) {
+    if (shouldPoll()) {
       tryPoll();
     }
   }
 
-  private boolean shouldPoll(final int remainingJobs) {
-    return acquiringJobs.get() && remainingJobs <= activationThreshold;
+  private boolean shouldPoll() {
+    return acquiringJobs.get() && executor.freeCapacity() > 0;
   }
 
   private void tryPoll() {
@@ -224,26 +229,20 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   private void poll(final JobPoller jobPoller) {
     // check the condition again within the critical section
     // to avoid race conditions that would let us exceed the buffer size
-    final int actualRemainingJobs = remainingJobs.get();
-    if (!shouldPoll(actualRemainingJobs)) {
-      LOG.trace("Expected to activate for jobs, but still enough remain. Reschedule poll.");
-      releaseJobPoller(jobPoller);
-      schedulePoll();
-      return;
-    }
     final int freeCapacity = executor.freeCapacity();
-    if (freeCapacity <= 0) {
-      // Everything this worker can run at a time is taken, in most cases by jobs the broker pushed
-      // to it, which the count above does not see. Jobs activated now would be handed straight back
-      // to the broker, so no request goes out at all and the next attempt waits for the poll
-      // interval.
+    if (!acquiringJobs.get() || freeCapacity <= 0) {
+      // Every slot the worker can run at a time is taken, in most cases by jobs the broker pushed
+      // to it. Jobs activated now would be handed straight back to the broker, so no request goes
+      // out and the next attempt waits for the poll interval.
       LOG.trace(
-          "Expected to activate jobs, but the job handler executor is full. Reschedule poll.");
+          "Expected to activate jobs, but the job handler executor has no room. Reschedule poll.");
       releaseJobPoller(jobPoller);
       schedulePoll();
       return;
     }
-    final int maxJobsToActivate = Math.min(maxJobsActive - actualRemainingJobs, freeCapacity);
+    // Never ask for more than the worker may run at a time, even when the executor does not bound
+    // how much it takes (which reports its free capacity as Integer.MAX_VALUE).
+    final int maxJobsToActivate = Math.min(maxJobsActive, freeCapacity);
     refusedJobsInPoll.set(0);
     jobPoller.poll(
         maxJobsToActivate,
@@ -257,21 +256,21 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     // Read the refusals before releasing the poller: once it is free, a job that finishes can start
     // the next poll, and that poll resets the count.
     final int refusedJobs = refusedJobsInPoll.get();
-    // first release, then lookup remaining jobs, to allow handleJobFinished() to poll
     releaseJobPoller(jobPoller);
-    final int actualRemainingJobs = remainingJobs.get();
 
     if (jobStreamer.isOpen() && activatedJobs == 0) {
       // to keep polling requests to a minimum, if streaming is enabled, and the response is empty,
       // we back off on poll success responses.
       backOffPolling(streamNoJobsBackoffSupplier);
       LOG.trace("No jobs to activate via polling, will backoff and poll in {}", pollInterval);
-    } else if (activatedJobs > 0 && refusedJobs == activatedJobs && actualRemainingJobs <= 0) {
+    } else if (activatedJobs > 0
+        && refusedJobs == activatedJobs
+        && executor.freeCapacity() >= maxJobsActive) {
       // The executor took none of the jobs in this response and the worker has nothing left
       // running. Polling again right away would activate another batch, hand it straight back, and
       // repeat as fast as the broker can answer. Both halves of the condition are needed: a worker
-      // that is keeping up can finish a whole response before this runs, which leaves no remaining
-      // jobs either, and it is the refusals that tell the two apart.
+      // that is keeping up can finish a whole response before this runs, which frees all its
+      // capacity too, and it is the refusals that tell the two apart.
       backOffPolling(backoffSupplier);
       LOG.debug(
           "The job handler executor took none of the {} jobs activated, will backoff and poll in {}",
@@ -280,11 +279,11 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     } else {
       pollInterval = initialPollInterval;
       // Normally the jobs just activated go on to free their own capacity as they finish, and each
-      // one that does asks for another poll. A job the executor refused gives its capacity back
-      // while this poll is still running, though, so the poll it asks for finds the poller still
-      // taken and is dropped. Asking again here, now that the poller is free, is what keeps a
-      // worker going that would otherwise sit still until the jobs it did take are done.
-      if (shouldPoll(actualRemainingJobs)) {
+      // one that does asks for another poll. A job the executor refused never took capacity to give
+      // back, though, so it raises no such ask. Asking again here, now that the poller is free, is
+      // what keeps a worker going that would otherwise sit still until the jobs it did take are
+      // done.
+      if (shouldPoll()) {
         schedulePoll();
       }
     }
@@ -326,38 +325,32 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   }
 
   private void handleJob(final ActivatedJob job) {
-    // Take a capacity slot for this job before handing it over, and give it back right away if
-    // the executor does not take the job. Taking capacity for the whole response at once would
-    // also count the jobs that were rejected, and that capacity would never be given back.
-    remainingJobs.incrementAndGet();
-    // The executor may run the job on the calling thread and still report it as refused, in which
-    // case the job both ran and was refused and the two paths below are taken for the same job.
-    // The flag makes sure the slot taken above is given back only once, as giving it back twice
-    // would let the worker ask the broker for more jobs than it is allowed to run at a time.
-    final AtomicBoolean capacityHeld = new AtomicBoolean(true);
-    if (!handleActivatedJob(
+    // The executor owns the capacity: it takes a slot when it accepts the job and frees it when the
+    // job finishes, is dropped for waiting out its activation, or is refused before it ran. The
+    // worker keeps no count of its own on top of that.
+    handleActivatedJob(
         job,
         executor::executeWithoutWaiting,
-        () -> handleJobFinished(capacityHeld),
-        () -> releaseCapacity(capacityHeld),
-        this::returnJobToBroker)) {
-      if (releaseCapacity(capacityHeld)) {
-        // Only a job whose slot was still held never ran, and only those say anything about
-        // whether the executor is taking work. Counting them lets the poll that activated them
-        // tell a response nobody took from one that is being worked through.
-        refusedJobsInPoll.incrementAndGet();
-      }
-    }
+        this::handleJobFinished,
+        // nothing to give back by hand: the executor frees the slot it took when the command
+        // returns, whether the handler ran or the job was dropped for having expired
+        () -> {},
+        (refusedJob, cause) -> {
+          // Only a job the executor refused before it ran reaches this, and only those say anything
+          // about whether the executor is taking work. Counting them lets the poll that activated
+          // them tell a response nobody took from one that is being worked through.
+          refusedJobsInPoll.incrementAndGet();
+          returnJobToBroker(refusedJob, cause);
+        });
   }
 
   private void handleStreamedJob(final ActivatedJob job) {
     handleActivatedJob(
         job,
         executor::execute,
-        this::handleStreamJobFinished,
-        // nothing to give back by hand: a pushed job takes no remainingJobs slot, and the executor
-        // permit it does take is released by BlockingExecutor when this command returns, early or
-        // not
+        this::handleJobFinished,
+        // nothing to give back by hand: the executor frees the slot it took when the command
+        // returns, early or not
         () -> {},
         this::leaveStreamedJobToBroker);
   }
@@ -377,12 +370,8 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
    * @param onRefused what to do with a job the executor would not take, which differs between a job
    *     the worker asked for and one the broker pushed to it. It is also what tells the user about
    *     the refusal, since the two paths leave the job in very different places.
-   * @return true if the executor took the job, in which case either the given finalizer or {@code
-   *     onExpired} is guaranteed to run. A false answer does not mean the handler never ran: an
-   *     executor may run the job on the calling thread and report it as refused all the same, so
-   *     anything the caller does with a refused job has to cope with the job having run.
    */
-  private boolean handleActivatedJob(
+  private void handleActivatedJob(
       final ActivatedJob job,
       final Consumer<Runnable> dispatch,
       final Runnable finalizer,
@@ -411,16 +400,15 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
             }
             jobRunnable.run();
           });
-      return true;
     } catch (final RejectedExecutionException e) {
       if (isClosed()) {
-        return false;
+        return;
       }
 
       if (scheduledExecutorService.isShutdown() || scheduledExecutorService.isTerminated()) {
         LOG.warn("Underlying executor was closed before the worker. Closing the worker now.", e);
         close();
-        return false;
+        return;
       }
 
       if (handlerStarted.get()) {
@@ -429,12 +417,11 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
                 + "refused. Leaving the job to the handler that ran it.",
             job.getKey(),
             e);
-        return false;
+        return;
       }
 
       metrics.jobRefused(1);
       onRefused.accept(job, e);
-      return false;
     }
   }
 
@@ -486,29 +473,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
         error);
   }
 
-  private void handleJobFinished(final AtomicBoolean capacityHeld) {
-    releaseCapacity(capacityHeld);
-    metrics.jobHandled(1);
-  }
-
-  /**
-   * Gives back the capacity slot taken for a job, and polls again if there is room for more. Does
-   * nothing if the slot was already given back.
-   *
-   * @return true if this call was the one that gave the slot back
-   */
-  private boolean releaseCapacity(final AtomicBoolean capacityHeld) {
-    if (!capacityHeld.compareAndSet(true, false)) {
-      return false;
-    }
-    final int actualRemainingJobs = remainingJobs.decrementAndGet();
-    if (!isPollScheduled.get() && shouldPoll(actualRemainingJobs)) {
-      tryPoll();
-    }
-    return true;
-  }
-
-  private void handleStreamJobFinished() {
+  private void handleJobFinished() {
     metrics.jobHandled(1);
   }
 }
