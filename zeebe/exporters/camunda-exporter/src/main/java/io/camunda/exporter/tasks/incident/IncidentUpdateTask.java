@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.tasks.incident;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
@@ -363,6 +364,34 @@ public final class IncidentUpdateTask implements BackgroundTask {
                     .bulkUpdate(incidentBulkUpdate)
                     .thenApply(
                         incidentUpdatedIds -> mergeIds(nonIncidentUpdatedIds, incidentUpdatedIds)))
+        .exceptionallyCompose(
+            error -> {
+              final var cause = Throwables.getRootCause(error);
+              if (cause instanceof final IncidentPartialBulkUpdateException e) {
+                // If we get a partial failure (some incidents updates ok in one shard, but
+                // not another) then we will do a "best effort" attempt to still send notifications.
+                // Otherwise, on a retry we would not reattempt to send notifications as the
+                // incident documents would already have been updated.
+                // This is very much a workaround to reduce the likelihood of notifications
+                // not being sent. We eventually want to rework/remove this task entirely
+                // so hopefully we can make sending notifications more robust then.
+                final var updatedIds = e.getUpdatedIds();
+                logger.warn(
+                    "Partial bulk incident update failure, will attempt to send notifications for incidents: {}",
+                    updatedIds);
+
+                return notifyIncidents(
+                        updatedIds,
+                        incidentBulkUpdate.incidentRequests(),
+                        state.getIncidentDocuments())
+                    .thenCompose(
+                        ignored ->
+                            CompletableFuture.failedFuture(
+                                new ExporterException(
+                                    "Not all incidents were updated during bulk update", e)));
+              }
+              return CompletableFuture.failedFuture(error);
+            })
         .thenCompose(
             updatedIds ->
                 notifyIncidents(
