@@ -45,8 +45,11 @@ configurations.named("testRuntimeClasspath") { extendsFrom(shadowBaseStarter) }
 
 val baseStarterProjectDir =
   layout.settingsDirectory.dir("clients/camunda-spring-boot-starter").asFile
-val baseStarterBuildDirectory =
-  layout.settingsDirectory.dir("clients/camunda-spring-boot-starter/build")
+val baseStarterMainOutput =
+  configurations.create("baseStarterMainOutput") {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+  }
 val generatedTestSourcesDir = layout.buildDirectory.dir("generated-test-sources/java")
 
 val testSourceGenerator =
@@ -108,6 +111,10 @@ dependencies {
   add(shadowBaseStarter.name, project(":camunda-spring-boot-starter")) {
     exclude(group = "org.springframework.boot", module = "spring-boot-health")
   }
+  add(
+    baseStarterMainOutput.name,
+    project(":camunda-spring-boot-starter", configuration = "mainOutput"),
+  )
   api(project(":camunda-client-java"))
   compileOnly(libs.io.micrometer.micrometer.core)
   testImplementation(libs.io.micrometer.micrometer.core)
@@ -152,16 +159,8 @@ tasks.named<Jar>("jar") { enabled = false }
 // resources from inside a JAR. The base starter's main output must appear as directories on the
 // test classpath rather than being consumed via its published JAR.
 tasks.named<Test>("test") {
-  dependsOn(
-    ":camunda-spring-boot-starter:compileJava",
-    ":camunda-spring-boot-starter:processResources",
-  )
   // Append these directories so the SB3 overrides in this module take precedence over SB4 classes.
-  classpath +=
-    files(
-      baseStarterBuildDirectory.dir("classes/java/main"),
-      baseStarterBuildDirectory.dir("resources/main"),
-    )
+  classpath += baseStarterMainOutput
 }
 
 // Use the shadow jar as the runtime artifact for inter-project dependencies.
