@@ -166,13 +166,35 @@ artifacts might not get built or uploaded to artifact repositories, and indicate
 since we expect only green builds. Unlike merge-queue failures which block PRs, base-branch failures
 affect artifact availability and release readiness.
 
-Each alert instance is grouped by workflow job name and thus spans multiple base branches, and includes:
+Each alert instance is grouped by workflow job name and thus spans multiple base branches (unless it
+is a flood, see below), and includes:
 
 - Number of unsuccessful runs in the evaluation window
 - Links to failed workflow runs in the evaluation window (useful for root cause analysis)
 - Owner of the job (assigned by default)
 - Link to the Job Trends dashboard for the job (useful to verify recovery)
 - Associated failed test cases (if any)
+
+#### Flood Instances
+
+When several Unified CI jobs fail within a short window they almost always share one cause, so they
+are grouped into a single **flood** instance named `CI: job failure flood (<timestamp>)` rather than
+one incident per job. Such an instance:
+
+- Lists the affected jobs (up to 10, plus a count of any remainder) and every affected branch
+- Is assigned to the Monorepo CI medic rather than to one of the several owning teams
+- Makes **no claim about the cause** — a flood only means "these failed together", and is as likely
+  to be one commit breaking many modules as an external outage
+
+Treat it as a single investigation: look for the shared symptom first (see [Third-Party Service
+Outage](#third-party-service-outage)) instead of triaging each listed job separately.
+
+**Single jobs alert later than you might expect.** A lone unsuccessful Unified CI job is held back
+until no further Unified CI job has failed for 20 minutes, so that a flood building up across two
+evaluation intervals is recognised as one flood instead of several separate incidents. Expect the
+alert 20–35 minutes after the job finished. Floods and all non-Unified-CI workflows are not held. A
+gap between a failure you can already see in GitHub Actions and the alert is therefore normal, not a
+sign that alerting is broken.
 
 #### Troubleshooting
 
@@ -193,7 +215,7 @@ You can leverage [incident.io MCP](https://docs.incident.io/ai/remote-mcp) toget
    - Infrastructure issues (self-hosted runner problems, disk space, etc.)
    - For `check-licenses.yml` see [find specific FOSSA instructions](#check-licenses-workflow-high-failure-rate)
 
-3. **Check for related alerts**: If multiple jobs or workflows are failing simultaneously, there may be a common root cause (e.g., external service outage, infrastructure problem). Cross-reference recent incident reports.
+3. **Check for related alerts**: If multiple jobs or workflows are failing simultaneously, there may be a common root cause (e.g., external service outage, infrastructure problem). Cross-reference recent incident reports. Simultaneous Unified CI job failures are already folded into one [flood instance](#flood-instances), so what is left to correlate manually are failures across *other* workflows in the same window.
 
 4. **Examine test failures**: If the alert includes unsuccessful test cases, use the test case names to determine whether:
    - The test is new and unstable
