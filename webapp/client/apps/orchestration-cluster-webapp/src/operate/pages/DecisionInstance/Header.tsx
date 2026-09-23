@@ -66,8 +66,18 @@ const Header: React.FC<Props> = ({decisionEvaluationInstanceKey, onOpenDrd}) => 
 			{
 				hideOverflowingContent: false,
 				content: (
-					// TODO(#55977): point at the filtered Decisions list once its search schema exists
-					<DecisionInstanceLink to="/operate/decisions" title={versionLinkTitle} aria-label={versionLinkTitle}>
+					<DecisionInstanceLink
+						to="/operate/decisions"
+						search={{
+							decisionDefinitionId: decisionInstance.decisionDefinitionId,
+							decisionDefinitionVersion: decisionInstance.decisionDefinitionVersion,
+							evaluated: true,
+							failed: true,
+							...(isMultiTenancyEnabled ? {tenantId} : {}),
+						}}
+						title={versionLinkTitle}
+						aria-label={versionLinkTitle}
+					>
 						{decisionInstance.decisionDefinitionVersion}
 					</DecisionInstanceLink>
 				),

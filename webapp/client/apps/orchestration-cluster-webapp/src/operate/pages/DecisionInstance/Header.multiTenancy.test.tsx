@@ -58,7 +58,36 @@ describe('<Header /> - multi tenancy', () => {
 					name: 'View decision "Invoice Classification version 1" instances - Default Tenant',
 				}),
 			)
-			.toBeVisible();
+			.toHaveAttribute(
+				'href',
+				'/operate/decisions?decisionDefinitionId=invoiceClassification&decisionDefinitionVersion=1&evaluated=true&failed=true&tenantId=%3Cdefault%3E',
+			);
+	});
+
+	it('should distinguish the same decision ID and version in another tenant', async ({worker}) => {
+		sessionStorage.setItem(
+			'clientConfig',
+			JSON.stringify(createSystemConfiguration({deployment: {isMultiTenancyEnabled: true, maxRequestSize: 0}})),
+		);
+		worker.use(
+			mockCurrentUserEndpoint({successResponse: CURRENT_USER_WITH_TENANTS}),
+			mockGetDecisionInstanceEndpoint({
+				successResponse: HttpResponse.json(createDecisionInstance({tenantId: 'tenant-a'})),
+			}),
+		);
+
+		const screen = await renderHeader();
+
+		await expect
+			.element(
+				screen.getByRole('link', {
+					name: 'View decision "Invoice Classification version 1" instances - Tenant A',
+				}),
+			)
+			.toHaveAttribute(
+				'href',
+				'/operate/decisions?decisionDefinitionId=invoiceClassification&decisionDefinitionVersion=1&evaluated=true&failed=true&tenantId=tenant-a',
+			);
 	});
 
 	it('should hide multi tenancy column and exclude tenant from version link', async ({worker}) => {
