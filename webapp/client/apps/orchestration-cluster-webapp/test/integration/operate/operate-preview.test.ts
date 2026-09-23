@@ -69,7 +69,7 @@ test.describe('Operate Dashboard DS preview (/operate-preview)', () => {
 		await expect(operatePreviewPage.incidentsByErrorTile).toBeVisible();
 	});
 
-	test('should render only the processes list tile when there are no running instances', async ({
+	test('should render the no-instances empty state when there are no running instances', async ({
 		network,
 		operatePreviewPage,
 	}) => {
@@ -84,8 +84,34 @@ test.describe('Operate Dashboard DS preview (/operate-preview)', () => {
 
 		await operatePreviewPage.goto();
 
-		await expect(operatePreviewPage.processesByNameTile).toBeVisible();
 		await expect(operatePreviewPage.incidentsByErrorTile).not.toBeAttached();
+		await expect(operatePreviewPage.noInstancesEmptyState).toBeVisible();
+		await expect(operatePreviewPage.noInstancesLearnMoreLink).toBeVisible();
+		await expect(operatePreviewPage.noInstancesModelerButton).not.toBeAttached();
+	});
+
+	test('should render the go-to-modeler button in the empty state when the user has a modeler link', async ({
+		network,
+		operatePreviewPage,
+	}) => {
+		network.use(
+			mockCurrentUserEndpoint({
+				successResponse: HttpResponse.json(
+					createCurrentUser({authorizedComponents: ['operate'], c8Links: {modeler: 'https://modeler.example.com'}}),
+				),
+			}),
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+				successResponse: HttpResponse.json(createPaginatedResponse()),
+			}),
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+				successResponse: HttpResponse.json(createPaginatedResponse()),
+			}),
+		);
+
+		await operatePreviewPage.goto();
+
+		await expect(operatePreviewPage.noInstancesModelerButton).toBeVisible();
+		await expect(operatePreviewPage.noInstancesModelerButton).toHaveAttribute('href', 'https://modeler.example.com');
 	});
 
 	test('should keep the list tiles as loading placeholders, since no content tile has landed yet', async ({
