@@ -217,11 +217,17 @@ describe('RichTextEditorModal', () => {
 		);
 		await userEvent.click(screen.getByRole('button', {name: 'Apply'}));
 		await expect.element(screen.getByRole('alert').filter({hasText: 'Enter a valid JSON value.'})).toBeVisible();
+		await expect
+			.element(screen.getByRole('textbox', {name: 'Value', exact: true}))
+			.toHaveAttribute('aria-invalid', 'true');
 		expect(onApply).not.toHaveBeenCalled();
 		await vi.advanceTimersByTimeAsync(100);
 		await screen.rerender(
 			<RichTextEditorModal isVisible value={'{\n "a": 1\n}'} onApply={onApply} title="Edit payload" />,
 		);
+		await expect
+			.element(screen.getByRole('textbox', {name: 'Value', exact: true}))
+			.toHaveAttribute('aria-invalid', 'false');
 		await userEvent.click(screen.getByRole('button', {name: 'Apply'}));
 		expect(onApply).toHaveBeenCalledWith('{"a":1}');
 	});

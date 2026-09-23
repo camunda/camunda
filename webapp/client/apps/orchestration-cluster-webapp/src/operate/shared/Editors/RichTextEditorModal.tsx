@@ -99,6 +99,7 @@ const ModalContent = ({
 				value={editedValue}
 				language={language}
 				readOnly={isReadOnly}
+				isInvalid={hasValidationError}
 				onChange={(nextValue) => {
 					setEditedValue(nextValue);
 					setHasValidationError(false);
