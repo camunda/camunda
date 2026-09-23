@@ -53,6 +53,12 @@ public final class ReplicationLsnProviderFactory {
   }
 
   private ReplicationLsnProvider createMssqlProvider() {
+    if (replicationStatusMapper.isAzureSqlDatabase()) {
+      throw new IllegalStateException(
+          "LSN-based replication monitoring (asyncReplication.type=LOG_SEQ) is not supported on "
+              + "Azure SQL Database because it does not expose a log sequence number. Use "
+              + "asyncReplication.type=TIME_LAG instead.");
+    }
     validateRequiredPrivileges("'VIEW SERVER STATE' or 'VIEW SERVER PERFORMANCE STATE' permission");
     LOG.debug("Detected MSSQL LogStatusProvider");
     return new DefaultReplicationLsnProvider(replicationStatusMapper);
