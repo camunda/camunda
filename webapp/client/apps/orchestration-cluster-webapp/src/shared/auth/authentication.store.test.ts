@@ -13,6 +13,15 @@ import {mockLoginCsrfTokenEndpoint, mockLoginEndpoint, mockLogoutEndpoint} from 
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {authenticationStore} from './authentication.store';
 
+/**
+ * Mocks the login POST together with the GET of the same path that precedes it, which is where the
+ * server sends the CSRF token that the POST has to send back.
+ */
+const mockLogin = (successResponse: Response) => [
+	mockLoginCsrfTokenEndpoint({successResponse: new HttpResponse('')}),
+	mockLoginEndpoint({successResponse}),
+];
+
 describe('authentication store', () => {
 	beforeEach(() => {
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
@@ -28,12 +37,7 @@ describe('authentication store', () => {
 	});
 
 	it('should login', async ({worker}) => {
-		worker.use(
-			mockLoginCsrfTokenEndpoint({successResponse: new HttpResponse('')}),
-			mockLoginEndpoint({
-				successResponse: new HttpResponse('', {status: 200}),
-			}),
-		);
+		worker.use(...mockLogin(new HttpResponse('', {status: 200})));
 
 		authenticationStore.disableSession();
 		expect(authenticationStore.status).toBe('session-invalid');
@@ -60,12 +64,7 @@ describe('authentication store', () => {
 	});
 
 	it('should handle login failure', async ({worker}) => {
-		worker.use(
-			mockLoginCsrfTokenEndpoint({successResponse: new HttpResponse('')}),
-			mockLoginEndpoint({
-				successResponse: new HttpResponse('', {status: 401}),
-			}),
-		);
+		worker.use(...mockLogin(new HttpResponse('', {status: 401})));
 
 		const result = await authenticationStore.handleLogin('demo', 'demo');
 
@@ -82,10 +81,7 @@ describe('authentication store', () => {
 
 	it('should logout', async ({worker}) => {
 		worker.use(
-			mockLoginCsrfTokenEndpoint({successResponse: new HttpResponse('')}),
-			mockLoginEndpoint({
-				successResponse: new HttpResponse('', {status: 200}),
-			}),
+			...mockLogin(new HttpResponse('', {status: 200})),
 			mockLogoutEndpoint({
 				successResponse: new HttpResponse('', {status: 204}),
 			}),
