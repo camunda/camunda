@@ -10,7 +10,7 @@ import {authenticationStore} from 'modules/stores/authentication';
 import {getStateLocally} from 'modules/utils/localStorage';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {createUser} from 'modules/testUtils';
-import {mockLogin, mockLoginCsrfToken} from 'modules/mocks/api/login';
+import {mockLogin} from 'modules/mocks/api/login';
 import {mockLogout} from 'modules/mocks/api/logout';
 import * as clientConfig from 'modules/utils/getClientConfig';
 import {mockServer} from 'modules/mock-server/node';
@@ -30,7 +30,6 @@ describe('authentication store', () => {
   });
 
   it('should login', async () => {
-    mockLoginCsrfToken().withSuccess('');
     mockLogin().withSuccess({});
     mockMe().withSuccess(mockUserResponse);
 
@@ -64,7 +63,6 @@ describe('authentication store', () => {
   });
 
   it('should handle login failure', async () => {
-    mockLoginCsrfToken().withSuccess('');
     mockLogin().withServerError(401);
 
     const result = await authenticationStore.handleLogin('demo', 'demo');
@@ -83,7 +81,6 @@ describe('authentication store', () => {
       href: mockHref,
     });
 
-    mockLoginCsrfToken().withSuccess('');
     mockLogin().withSuccess({});
     mockMe().withSuccess(mockUserResponse);
 
@@ -209,11 +206,9 @@ describe('authentication store', () => {
         isLoginDelegated,
       });
 
-      mockLoginCsrfToken().withSuccess('');
       mockLogin().withSuccess({});
       mockMe().withSuccess(mockUserResponse);
       mockLogout().withSuccess({}, {statusCode: 204});
-      mockLoginCsrfToken().withSuccess('');
       mockLogin().withSuccess({});
       mockMe().withSuccess(mockUserResponse);
 
@@ -257,11 +252,9 @@ describe('authentication store', () => {
 
     const mockIdpLogoutUrl = 'http://example.com/idpLogout';
 
-    mockLoginCsrfToken().withSuccess('');
     mockLogin().withSuccess({});
     mockMe().withSuccess(mockUserResponse);
     mockLogout().withSuccess({url: mockIdpLogoutUrl});
-    mockLoginCsrfToken().withSuccess('');
     mockLogin().withSuccess({});
     mockMe().withSuccess(mockUserResponse);
 
