@@ -520,6 +520,11 @@ async function run() {
         unattributedReason: input.unattributedReason,
         warnings: auditWarnings,
     });
+    // Same condition render() already folded into audit.json — surfaced here
+    // too so it isn't only visible to someone who goes looking at that file.
+    const emptyBodyWarning = (0, render_1.emptyCustomerBodyWarning)(attributed.length > 0, result.customerBody);
+    if (emptyBodyWarning)
+        core.warning(emptyBodyWarning);
     (0, node_fs_1.mkdirSync)(input.outputDir, { recursive: true }); // writeFileSync doesn't create the dir; recursive for a nested output-dir too
     (0, node_fs_1.writeFileSync)(`${input.outputDir}/CHANGELOG-${input.targetVersion}.md`, result.fullAsset);
     (0, node_fs_1.writeFileSync)(`${input.outputDir}/changelog.json`, JSON.stringify(result.changelogJson, null, 2));
@@ -1163,6 +1168,7 @@ function walkFirstParent(repoDir, baseline, target) {
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.SCHEMA_VERSION = void 0;
+exports.emptyCustomerBodyWarning = emptyCustomerBodyWarning;
 exports.render = render;
 /**
  * Turns the attributed-and-categorized PR list into the outputs downstream
@@ -1183,6 +1189,16 @@ const SECTION_ORDER = [
     'Maintenance', // asset-only, so last — never reached in the customer body
     'Uncategorized',
 ];
+/** An empty body reads as "this release ships nothing customer-facing" — true
+ *  for a maintenance-only patch, but indistinguishable from the outside if
+ *  attribution silently dropped everything into internal/opted-out buckets
+ *  instead. Warns either way rather than shipping an empty description that
+ *  looks identical to a correct one. See GENERATOR.md § 6. */
+function emptyCustomerBodyWarning(hasAttributedWork, customerBody) {
+    return hasAttributedWork && customerBody === ''
+        ? 'Customer-facing body is empty even though pull requests were attributed to this release — every one is internal-only, opted out, or otherwise excluded from the customer body. Verify this is genuinely a maintenance-only release before publishing.'
+        : undefined;
+}
 /** An opt-out PR is grouped under its own section, never its type's. */
 function groupNameFor(pr) {
     if (pr.attributionSource === 'optOut')
@@ -1376,6 +1392,8 @@ function render(prs, unattributed, options) {
     // Only recorded when the override actually let the guard pass — else a plain
     // failure would look identical to an approved exception in this file.
     const overrides = guardFailed ? [] : unattributed.map((pr) => ({ number: pr.number, reason: unattributedReason }));
+    const emptyBodyWarning = emptyCustomerBodyWarning(prs.length > 0, customerBody);
+    const warnings = [...(options.warnings ?? []), ...(emptyBodyWarning ? [emptyBodyWarning] : [])];
     return {
         customerBody,
         fullAsset,
@@ -1390,7 +1408,7 @@ function render(prs, unattributed, options) {
             schemaVersion: exports.SCHEMA_VERSION,
             version: options.version,
             overrides,
-            warnings: options.warnings ?? [],
+            warnings,
         },
         commentsJson: { schemaVersion: exports.SCHEMA_VERSION, version: options.version, entries: commentEntries },
         failureReason,
