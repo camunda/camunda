@@ -399,6 +399,7 @@ describe('<InstancesTable />', () => {
 					}),
 				),
 			}),
+			mockQueryBatchOperationItemsEndpoint({successResponse: EMPTY_BATCH_OPERATION_ITEMS_RESPONSE}),
 		);
 
 		await renderInstancesTable({

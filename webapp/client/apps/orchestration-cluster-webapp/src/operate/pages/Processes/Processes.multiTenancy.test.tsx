@@ -7,12 +7,14 @@
  */
 
 import {afterEach, beforeEach, describe, expect} from 'vitest';
-import {http, HttpResponse, type PathParams} from 'msw';
-import {endpoints, type QueryProcessDefinitionsRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import {HttpResponse} from 'msw';
+import {z} from 'zod';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
 	mockCurrentUserEndpoint,
+	mockGetProcessDefinitionStatisticsEndpoint,
+	mockGetProcessDefinitionXmlEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 	mockQueryProcessInstancesEndpoint,
 } from '#/shared-test-modules/mock-handlers';
@@ -21,6 +23,8 @@ import {
 	createProcessDefinition,
 	createQueryProcessDefinitionsResponse,
 } from '#/shared-test-modules/api-mocks/process-definitions';
+import {createGetProcessDefinitionStatisticsResponse} from '#/shared-test-modules/api-mocks/process-definition-statistics';
+import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
 import {createQueryProcessInstancesResponse} from '#/shared-test-modules/api-mocks/process-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {ProcessesHarness} from './ProcessesHarness';
@@ -52,6 +56,16 @@ const CURRENT_USER = HttpResponse.json(
 );
 
 const EMPTY_PROCESS_INSTANCES = HttpResponse.json(createQueryProcessInstancesResponse());
+
+const TENANT_A_SCOPED_REQUEST_SCHEMA = z.strictObject({
+	page: z.strictObject({limit: z.literal(1000)}),
+	filter: z.strictObject({tenantId: z.literal('<tenant-A>')}),
+});
+const UNSCOPED_REQUEST_SCHEMA = z.strictObject({
+	page: z.strictObject({limit: z.literal(1000)}),
+	filter: z.never().optional(),
+});
+const FAILURE_RESPONSE = new HttpResponse(null, {status: 400});
 
 describe('Multi tenancy', () => {
 	beforeEach(() => {
@@ -118,6 +132,10 @@ describe('Multi tenancy', () => {
 
 			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
 			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+			mockGetProcessDefinitionStatisticsEndpoint({
+				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
+			}),
 		);
 
 		const screen = await renderProcessesPage({
@@ -136,42 +154,38 @@ describe('Multi tenancy', () => {
 	});
 
 	it('should scope the process-definitions request to the selected tenant', async ({worker}) => {
-		let requestedFilter: unknown;
 		worker.use(
 			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
-
-			http.post<PathParams, QueryProcessDefinitionsRequestBody>(
-				endpoints.queryProcessDefinitions.getUrl(),
-				async ({request}) => {
-					requestedFilter = (await request.json()).filter;
-					return HttpResponse.json(createQueryProcessDefinitionsResponse({items: []}));
-				},
-			),
+			mockQueryProcessDefinitionsEndpoint({
+				schema: TENANT_A_SCOPED_REQUEST_SCHEMA,
+				successResponse: PROCESS_DEFINITIONS,
+				failureResponse: FAILURE_RESPONSE,
+			}),
 			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
 		);
 
-		await renderProcessesPage({tenantId: '<tenant-A>'});
+		const screen = await renderProcessesPage({tenantId: '<tenant-A>'});
 
-		await expect.poll(() => requestedFilter).toEqual({tenantId: '<tenant-A>'});
+		// The definitions are only listed when the request matched the schema.
+		await screen.getByRole('combobox', {name: 'Name'}).click({force: true});
+		await expect.element(screen.getByRole('option', {name: 'Order Process'})).toBeVisible();
 	});
 
 	it('should not scope the process-definitions request when "all tenants" is selected', async ({worker}) => {
-		let requestedFilter: unknown;
 		worker.use(
 			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
-
-			http.post<PathParams, QueryProcessDefinitionsRequestBody>(
-				endpoints.queryProcessDefinitions.getUrl(),
-				async ({request}) => {
-					requestedFilter = (await request.json()).filter;
-					return HttpResponse.json(createQueryProcessDefinitionsResponse({items: []}));
-				},
-			),
+			mockQueryProcessDefinitionsEndpoint({
+				schema: UNSCOPED_REQUEST_SCHEMA,
+				successResponse: PROCESS_DEFINITIONS,
+				failureResponse: FAILURE_RESPONSE,
+			}),
 			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
 		);
 
-		await renderProcessesPage({tenantId: 'all'});
+		const screen = await renderProcessesPage({tenantId: 'all'});
 
-		await expect.poll(() => requestedFilter).toBeUndefined();
+		// The definitions are only listed when the request matched the schema.
+		await screen.getByRole('combobox', {name: 'Name'}).click({force: true});
+		await expect.element(screen.getByRole('option', {name: 'Order Process'})).toBeVisible();
 	});
 });
