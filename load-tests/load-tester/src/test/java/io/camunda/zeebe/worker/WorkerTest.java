@@ -85,7 +85,7 @@ class WorkerTest {
     final var job = mockJob();
     final var client = mock(CamundaClient.class);
     mockSuccessfulPublish(client);
-    final var completeStep = mockCompleteJob(jobClient);
+    final var completeStep = mockCompleteJob(jobClient, job);
     final var worker = newWorker(client, sendMessageProperties());
 
     // when
@@ -95,7 +95,7 @@ class WorkerTest {
     assertThat(elapsed)
         .describedAs("handleJob should honour the completion delay on the success path")
         .isGreaterThanOrEqualTo(COMPLETION_DELAY.toMillis());
-    verify(jobClient).newCompleteCommand(job.getKey());
+    verify(jobClient).newCompleteCommand(job);
     verify(completeStep).send();
   }
 
@@ -249,15 +249,18 @@ class WorkerTest {
     final var job = mock(ActivatedJob.class);
     when(job.getType()).thenReturn("tool-lookup-account");
     when(job.getKey()).thenReturn(99L);
-    final var completeStep = mockCompleteJob(jobClient);
+    final var completeStep = mockCompleteJob(jobClient, job);
     final var worker = newWorker(mock(CamundaClient.class), zeroDelayProperties());
 
     // when
     worker.handleJob(jobClient, job);
 
-    // then — the existing plain-completion path is used, never the ad-hoc-sub-process one
-    verify(jobClient).newCompleteCommand(job.getKey());
-    verify(jobClient, never()).newCompleteCommand(job);
+    // then — the plain completion path is used, never the ad-hoc-sub-process one: both go
+    // through newCompleteCommand(ActivatedJob) (so a with-lease-enabled job's lease token is
+    // still attached - see Worker#handleJob), but only the ad-hoc-sub-process path builds a
+    // JobResult via withResult(...)
+    verify(jobClient).newCompleteCommand(job);
+    verify(completeStep, never()).withResult(any());
     verify(completeStep).send();
   }
 
@@ -426,10 +429,11 @@ class WorkerTest {
   }
 
   @SuppressWarnings("unchecked")
-  private static CompleteJobCommandStep1 mockCompleteJob(final JobClient jobClient) {
+  private static CompleteJobCommandStep1 mockCompleteJob(
+      final JobClient jobClient, final ActivatedJob job) {
     final var completeStep = mock(CompleteJobCommandStep1.class);
     final CamundaFuture<Object> future = mock(CamundaFuture.class);
-    when(jobClient.newCompleteCommand(anyLong())).thenReturn(completeStep);
+    when(jobClient.newCompleteCommand(job)).thenReturn(completeStep);
     when(completeStep.variables(anyString())).thenReturn(completeStep);
     when(completeStep.send()).thenReturn((CamundaFuture) future);
     return completeStep;

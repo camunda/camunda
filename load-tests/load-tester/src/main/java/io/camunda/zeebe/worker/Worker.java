@@ -171,7 +171,12 @@ public class Worker {
       }
     }
 
-    final var command = jobClient.newCompleteCommand(job.getKey()).variables(variables);
+    // newCompleteCommand(ActivatedJob) (not the jobKey-only overload) so the lease token the
+    // engine stamped on activation (when with-lease is enabled) is auto-attached
+    // (JobClientImpl#newCompleteCommand(ActivatedJob)) - otherwise JobLeaseFencingCheck rejects
+    // every completion of this job with INVALID_STATE, and the job times out and gets
+    // redelivered forever instead of ever completing.
+    final var command = jobClient.newCompleteCommand(job).variables(variables);
     addDelayToCompletion(workerCfg.getCompletionDelay().toMillis(), startHandlingTime);
     if (!requestFutures.offer(command.send())) {
       // Non-blocking: if the response-check queue is saturated, drop tracking for this
