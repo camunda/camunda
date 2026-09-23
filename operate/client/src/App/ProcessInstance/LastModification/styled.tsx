@@ -22,17 +22,8 @@ const Container = styled.div`
     border-radius: var(--cds-spacing-03);
     gap: var(--cds-spacing-02);
     height: 2.5rem;
-    padding: var(--cds-spacing-02);
-  }
-`;
-
-const ModificationMessage = styled.div`
-  #root.operate-nav-v2 & {
-    align-items: center;
-    display: flex;
-    gap: var(--cds-spacing-02);
-    height: 100%;
-    padding-left: var(--cds-spacing-04);
+    padding: var(--cds-spacing-02) var(--cds-spacing-02) var(--cds-spacing-02)
+      var(--cds-spacing-05);
   }
 `;
 
@@ -55,4 +46,4 @@ const ModificationDetail = styled.div`
   }
 `;
 
-export {Container, ModificationDetail, ModificationMessage};
+export {Container, ModificationDetail};
