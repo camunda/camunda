@@ -423,6 +423,14 @@ test.describe('task details page', () => {
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
+    // The just-completed task can take longer than openTask's 10s budget to
+    // surface in the Completed list on a loaded nightly; wait for it to render
+    // before opening, as the other completion tests in this file do.
+    await expect(async () => {
+      await expect(
+        taskPanelPage.availableTasks.getByText('UserTask_Number_Input').first(),
+      ).toBeVisible();
+    }).toPass();
     await taskPanelPage.openTask('UserTask_Number_Input');
 
     await taskDetailsPage.assertFieldValue('Number', '4');
@@ -456,6 +464,16 @@ test.describe('task details page', () => {
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
+    // The just-completed task can take longer than openTask's 10s budget to
+    // surface in the Completed list on a loaded nightly; wait for it to render
+    // before opening, as the other completion tests in this file do.
+    await expect(async () => {
+      await expect(
+        taskPanelPage.availableTasks
+          .getByText('UserTask_Number_Buttons')
+          .first(),
+      ).toBeVisible();
+    }).toPass();
     await taskPanelPage.openTask('UserTask_Number_Buttons');
     await taskDetailsPage.assertFieldValue('Number', '1');
   });
