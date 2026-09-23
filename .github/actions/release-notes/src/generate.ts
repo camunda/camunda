@@ -275,6 +275,7 @@ async function run(): Promise<void> {
 
   const attributed: RenderPrInput[] = [];
   const unattributed: RenderPrInput[] = [];
+  const issueFactsWarnings: string[] = [];
   for (const entry of processed) {
     if (!entry) continue;
     // A `kind/task` or `kind/epic` issue never reaches the customer body,
@@ -284,9 +285,16 @@ async function run(): Promise<void> {
       entry.renderPr.issueNumbers.map((issueNumber) => issueFacts.get(issueNumber)?.labels ?? []),
     );
     if (internalKind) {
-      core.warning(
+      issueFactsWarnings.push(
         `PR #${entry.renderPr.number}: linked issue is ${internalKind} — kept in the full asset, hidden from the customer body.`,
       );
+    }
+    for (const issueNumber of entry.renderPr.issueNumbers) {
+      if (issueFacts.get(issueNumber)?.labelsTruncated) {
+        issueFactsWarnings.push(
+          `Issue #${issueNumber} has more than 20 labels — kind/* visibility could not be verified against the full label set.`,
+        );
+      }
     }
 
     const renderPr: RenderPrInput = {
@@ -300,10 +308,12 @@ async function run(): Promise<void> {
     (entry.bucketed ? unattributed : attributed).push(renderPr);
   }
 
+  for (const warning of issueFactsWarnings) core.warning(warning);
+
   // The same lines the job logs as warnings, carried into the artifact: a log
   // is not something the cutover unit can read, diff between runs, or archive
   // beyond the runner's retention.
-  const auditWarnings = [...rangeReasons, ...processed.flatMap((entry) => entry?.warnings ?? [])];
+  const auditWarnings = [...rangeReasons, ...processed.flatMap((entry) => entry?.warnings ?? []), ...issueFactsWarnings];
 
   const result = render(attributed, unattributed, {
     version: input.targetVersion,

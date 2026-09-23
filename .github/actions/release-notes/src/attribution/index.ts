@@ -20,9 +20,17 @@ function uniqueNumbers(refs: readonly ResolvedRef[]): number[] {
 }
 
 /**
- * The unconditional attribution chain (D20): section refs, then GitHub's native
- * field, then a legacy body-wide scan. Pure — decides from one PR's own
- * already-resolved facts; the backport hop is the caller's composition.
+ * The unconditional attribution chain: section refs, then GitHub's native
+ * closing field, then a legacy body-wide scan. Pure — decides from one PR's
+ * own already-resolved facts; the backport hop is the caller's composition.
+ *
+ * A dead section ref (`missing`) still fails the chain outright rather than
+ * falling through — a bogus number should be fixed in the section, not
+ * silently covered by a fallback source. A section ref that resolves to a
+ * pull request is different: GitHub's native closing field can still name
+ * the issue correctly, so that case falls through instead of failing —
+ * otherwise a `Related issues` line pointing at a PR would block attribution
+ * even though `closingIssuesReferences` already has the answer.
  */
 export function decideAttribution(input: AttributionInput): AttributionDecision {
   if (input.optOut) {
@@ -30,17 +38,16 @@ export function decideAttribution(input: AttributionInput): AttributionDecision 
   }
 
   const sectionEligible = eligible(input.sectionRefs);
-  if (sectionEligible.length > 0) {
-    const live = sectionEligible.filter((ref) => ref.target === 'issue');
-    const notLive = sectionEligible.filter((ref) => ref.target !== 'issue');
-    const reasons = notLive.length
-      ? [`These section refs do not resolve to a live issue in this repo: ${uniqueNumbers(notLive).map((n) => `#${n}`).join(', ')}.`]
-      : [];
-
-    if (live.length > 0) {
-      return { source: 'section', issueNumbers: uniqueNumbers(live), deliveryPath: 'direct', reasons };
-    }
-    return { source: 'resolutionFailed', issueNumbers: [], deliveryPath: 'direct', reasons };
+  const sectionLive = sectionEligible.filter((ref) => ref.target === 'issue');
+  const sectionDead = sectionEligible.filter((ref) => ref.target === 'missing');
+  const deadReasons = sectionDead.length
+    ? [`These section refs do not resolve to a live issue in this repo: ${uniqueNumbers(sectionDead).map((n) => `#${n}`).join(', ')}.`]
+    : [];
+  if (sectionLive.length > 0) {
+    return { source: 'section', issueNumbers: uniqueNumbers(sectionLive), deliveryPath: 'direct', reasons: deadReasons };
+  }
+  if (sectionDead.length > 0) {
+    return { source: 'resolutionFailed', issueNumbers: [], deliveryPath: 'direct', reasons: deadReasons };
   }
 
   if (input.closingIssuesReferences.length > 0) {
@@ -61,10 +68,11 @@ export function decideAttribution(input: AttributionInput): AttributionDecision 
 }
 
 /**
- * D20: a PR merged after its branch's gate watermark terminates at the section
+ * A PR merged after its branch's gate watermark terminates at the section
  * step by construction, so any fallback source past that point means the
- * section contract wasn't observed. `mergedAt` must be the PR the decision came
- * FROM — for a backport hop, the original's.
+ * section contract wasn't observed. `mergedAt` must be the PR the decision
+ * came FROM — for a backport hop, the original's. See GENERATOR.md for the
+ * full attribution-chain rationale.
  */
 export function evaluatePostGateAnomaly(input: {
   readonly mergedAt: string;

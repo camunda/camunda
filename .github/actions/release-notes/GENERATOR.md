@@ -112,6 +112,11 @@ to walk to does not exist in this job's fresh checkout:
 Giving dry runs real coverage needs a separate input naming a ref that actually exists, which is a
 change to what the action accepts rather than a condition tweak.
 
+**Timeout is 60 minutes**, generous for a minor's thousands of commits. Because both the step and
+the job carry `continue-on-error`, a hit timeout would otherwise vanish with no evidence at all — so
+a final `always()` step writes the generator step's `outcome` to the job summary regardless of how
+it finished.
+
 ---
 
 ## Reading a run's log
@@ -258,15 +263,15 @@ them produces an audit line that is flatly untrue.
 
 The chain runs **unconditionally in this order** and terminates at the first step that decides:
 
-| Step |    `attributionSource`    |                                                                                             Meaning                                                                                             |
-|------|---------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 1    | `optOut`                  | The `Related issues` opt-out checkbox is ticked — an author's deliberate declaration. No issues.                                                                                                |
-| 2    | `section`                 | Eligible references in the `## Related issues` section resolve to at least one live issue.                                                                                                      |
-| 2′   | `resolutionFailed`        | The section *had* eligible references but **none** resolved to a live issue. A real problem: the link exists, its target is gone.                                                               |
-| 3    | `closingIssuesReferences` | GitHub's own native closing-reference field is non-empty.                                                                                                                                       |
-| 4    | `legacyBodyScan`          | A reference found anywhere in the body, outside the section.                                                                                                                                    |
-| 5    | `unattributed`            | Nothing found anywhere. A real problem: no link at all.                                                                                                                                         |
-| —    | `botExempt`               | Applied **last**, only over `unattributed`/`resolutionFailed`, for authors in `BOT_LINK_EXEMPT` (currently `renovate[bot]`). An exempt bot that *did* link a real issue keeps that attribution. |
+| Step |    `attributionSource`    |                                                                                                                                           Meaning                                                                                                                                           |
+|------|---------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1    | `optOut`                  | The `Related issues` opt-out checkbox is ticked — an author's deliberate declaration. No issues.                                                                                                                                                                                            |
+| 2    | `section`                 | Eligible references in the `## Related issues` section resolve to at least one live issue.                                                                                                                                                                                                  |
+| 2′   | `resolutionFailed`        | The section *had* eligible references, at least one **dead** (deleted/unknown number), and none resolved to a live issue. A real problem: the link exists, its target is gone. A section ref that resolves to a **pull request** rather than a dead number does not fail here — see step 3. |
+| 3    | `closingIssuesReferences` | GitHub's own native closing-reference field is non-empty. Also reached when the section's only references point at a pull request rather than an issue — GitHub itself may still know the closing issue.                                                                                    |
+| 4    | `legacyBodyScan`          | A reference found anywhere in the body, outside the section.                                                                                                                                                                                                                                |
+| 5    | `unattributed`            | Nothing found anywhere. A real problem: no link at all.                                                                                                                                                                                                                                     |
+| —    | `botExempt`               | Applied **last**, only over `unattributed`/`resolutionFailed`, for authors in `BOT_LINK_EXEMPT` (currently `renovate[bot]`). An exempt bot that *did* link a real issue keeps that attribution.                                                                                             |
 
 Parsing rules that catch people out:
 
@@ -350,6 +355,14 @@ and a QA task together — 8.9.19's #61857 closed both `kind/bug` #61719 and `ki
 hiding on any internal label would suppress the real fix along with the task. A pull request linking
 no issue at all is never hidden: absence is not a signal.
 
+The `kind/*` label is read from at most **20** labels per issue (GraphQL's page size); an issue with
+more carries `labelsTruncated` and produces a warning, since a `kind/*` label past the cap would
+otherwise leak internal work into the customer body with no signal that anything was missed.
+
+`SECTION_BY_TYPE` above is keyed on the same `TITLE_TYPES` tuple the PR-gate lints against
+(`src/title/index.ts`), so a new commitlint type is a compile error here until it is routed to a
+section — it cannot silently fall through to `Uncategorized`.
+
 Measured on 8.9.19: this removed 3 of 23 customer-facing lines, all internal work — the PR-gate
 epic under **Features**, a flaky integration test under **Bug Fixes**, and an *8.10* load-test epic
 under **Documentation**.
@@ -379,8 +392,9 @@ Three rules, in order:
    case seen from the other side: a fix merged straight to `stable/8.9` fires no close event, so its
    own keyword is the only signal that exists.
 
-An issue closed as `NOT_PLANNED` or `DUPLICATE` is excluded under every rule but the backport hop:
-whatever a body claims, GitHub's own record says that issue was abandoned, not shipped.
+An issue closed as `NOT_PLANNED` or `DUPLICATE` is excluded under **every** rule, backport hop
+included: whatever a body claims, GitHub's own record says that issue was abandoned, not shipped.
+This check runs before the backport-hop rule, not after it, precisely so the hop cannot bypass it.
 
 **A closer in another repository is not read as one of ours.** `camunda/camunda-docs#4852` genuinely
 closes `camunda/camunda#26937`, and its number means nothing in this repository's numbering — read

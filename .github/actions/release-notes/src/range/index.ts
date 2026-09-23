@@ -1,21 +1,13 @@
 /**
- * The pure part of the range resolver (#50968): which previous point to diff
- * against, and how to turn git's answer into a deduped PR list. The git calls
- * themselves live in ./walk.
+ * The pure part of the range resolver: which previous point to diff against,
+ * and how to turn git's answer into a deduped PR list. The git calls
+ * themselves live in ./walk. See GENERATOR.md § 1 for the baseline table.
  */
 
-// Alphas are 1-based: an `-alpha0` would make the previous-alpha baseline
-// `-alpha-1`, a ref that cannot exist, so it is rejected as unrecognized.
-//
-// Dotted alphas (`8.8.0-alpha4.1`) are deliberately NOT accepted, though the
-// 8.8 line has a couple and zcl parses them. The release process no longer
-// cuts them, so this is a closed shape, not an oversight — do not widen the
-// regex on the strength of those tags alone.
+// Alphas and candidates are both 1-based (no `-alpha0`/`-rc0`). Dotted alphas
+// (`8.8.0-alpha4.1`) are deliberately unaccepted — a closed shape from a
+// retired process, not an oversight.
 const VERSION = /^(\d+)\.(\d+)\.(\d+)(?:-alpha([1-9]\d*))?$/;
-
-// Release candidates are 1-based too, and appear at every level: `8.9.0-rc1`,
-// `8.7.6-rc2`, `8.10.0-alpha1-rc3`. Only the suffix is matched here — what it
-// is attached to still has to satisfy VERSION.
 const RC_SUFFIX = /-rc([1-9]\d*)$/;
 
 interface ParsedVersion {
@@ -57,38 +49,24 @@ export type BaselineStrategy =
 /** The baseline to diff `target` against, from the version string alone — no
  *  tag list to consult, every case is arithmetic on the version number. */
 export function resolveBaselineStrategy(target: string): BaselineStrategy {
-  // A candidate is resolved from the version it is a candidate *for*, so the
-  // shape of that version is validated first and names the errors below, even
-  // though `rcN` for N > 1 short-circuits to the previous candidate.
+  // Validated against the version a candidate is FOR, so `rcN > 1`'s
+  // short-circuit below still gets the right error on a bad shape.
   const rc = RC_SUFFIX.exec(target);
   const baseVersion = target.replace(RC_SUFFIX, '');
   const v = parseVersion(baseVersion, target);
 
-  // An alpha is a pre-release of a minor, so it only ever carries patch 0.
-  // Without this, `X.Y.1-alpha1` falls through to the previous-alpha branch and
-  // resolves to `X.Y.1` — the target's own base version, a tag never cut.
   if (v.alpha !== null && v.patch !== 0) {
     throw new Error(
       `Unsupported release version "${target}": an alpha is a pre-release of a minor, so it must carry patch 0.`,
     );
   }
 
-  // Candidates chain: `rcN` is diffed against `rc(N-1)`, matching how the
-  // release actually publishes them. Each candidate is cut as its own GitHub
-  // release, and zcl labels issues per candidate tag (`version:8.9.0-rc2`), so
-  // a candidate's notes are the delta since the previous one; the final
-  // untagged version then resolves normally and carries the whole release.
-  // Reporting the full contents under every candidate instead would republish
-  // rc1's entire changelog under rc2, rc3 and rc4.
-  //
-  // `rc1` has no previous candidate, so it falls through to the version it
-  // stands for — which is also what makes the chain terminate somewhere real.
+  // rcN -> rc(N-1); rc1 has no previous candidate and falls through below.
   if (rc && Number(rc[1]) > 1) {
     return { kind: 'previousTag', ref: `${baseVersion}-rc${Number(rc[1]) - 1}` };
   }
 
-  // alpha1-of-cycle: no prior tag on this line exists yet, so always the fork
-  // point off the previous minor's stable branch, never a tag lookup (V5).
+  // alpha1-of-cycle: no prior tag on this line yet, so fork off stable/<prev minor>.
   if (v.alpha === 1 && v.patch === 0) {
     return { kind: 'forkPoint', otherRef: `origin/stable/${v.major}.${previousMinor(v, target)}` };
   }
@@ -106,13 +84,8 @@ export function resolveBaselineStrategy(target: string): BaselineStrategy {
   return { kind: 'forkPoint', otherRef: previousMinorTag };
 }
 
-/** The only legitimate PR-less commits (C12); anything else without a PR on a
- *  protected branch is a ruleset-bypass anomaly.
- *
- *  The `Revert "..."` form is the orphaned-tag repair: when a release job has to
- *  redo its own version bumps it reverts them first, so those reverts are as
- *  much release automation as the commits they undo. Without them here, every
- *  repaired release reports its reverts as ruleset bypasses. */
+/** The only legitimate PR-less commits — release-plugin version bumps, and
+ *  the reverts that repair an orphaned tag. See GENERATOR.md § 1. */
 const AUTOMATION_WHITELIST = /^(?:Revert ")?\[maven-release-plugin\]/;
 
 /** A release branch is `release-<version>` — `release-8.9.19`,
@@ -122,18 +95,10 @@ const RELEASE_BRANCH = /^release-(\d+)\.(\d+)\.\d+/;
 
 /**
  * The branches a delivered pull request in this release could have targeted.
- *
- * The release workflow's `RELEASE_BRANCH` is the TEMPORARY `release-X.Y.Z`
- * branch the tag is cut on, and nothing merges into that — delivered work
- * targets the line it was cut from. Passing the temporary branch straight into
- * the ambiguity rule below meant no candidate ever matched, so every commit
- * with more than one shipped pull request was skipped instead of resolved.
- *
- * Both line branches are accepted because either can be right: a patch and a
- * post-branch alpha ship from `stable/X.Y`, while an alpha cut before the
- * stable branch exists ships from `main`. Guessing between them would be
- * wrong half the time, and accepting both only ever narrows an ambiguity that
- * would otherwise be abandoned.
+ * `RELEASE_BRANCH` is the temporary `release-X.Y.Z` tag branch, which nothing
+ * merges into, so this maps it to the real line(s): `stable/X.Y` for a patch
+ * or post-branch alpha, `main` for a pre-branch alpha. Both are accepted —
+ * guessing between them would be wrong half the time.
  */
 function releaseLineBranches(releaseBranch: string): string[] {
   const match = RELEASE_BRANCH.exec(releaseBranch);
@@ -157,19 +122,10 @@ export interface RangeResolution {
 }
 
 /**
- * A release-branch merge-back delivers nothing of its own. It merges
- * `release-X.Y.Z` back into the line it was cut from, and everything it carries
- * was already published in that release's own notes. The branch shape is the
- * definition, not a heuristic: no other pull request goes from a release branch
- * into a stable line (or into `main`, for a pre-branch alpha).
- *
- * D25 asks for these to carry a `merge:` title at the source, which would also
- * exclude them via `categorize`. That fix lives in release automation outside
- * this repository and cannot reach pull requests that already merged, so the
- * topology is checked here as well. Relying on the title alone would put the
- * previous release's merge-back in every release's notes, and — because it
- * links no issue — in every release's unattributed bucket, failing the gate on
- * the same known-benign pull request every single time.
+ * A release-branch merge-back delivers nothing of its own — it merges
+ * `release-X.Y.Z` back into the line it was cut from, already published in
+ * that release's own notes. Checked by branch topology, not title, since
+ * that also catches ones merged before this rule existed. See GENERATOR.md § 1.
  */
 function isReleaseMergeBack(pr: WalkedCommit['associatedPrs'][number]): boolean {
   // Version-shaped, not a bare `release-` prefix: a feature branch called
@@ -181,15 +137,9 @@ function isReleaseMergeBack(pr: WalkedCommit['associatedPrs'][number]): boolean 
 /**
  * Dedupe a first-parent commit walk to one entry per PR. Ambiguity rule: prefer
  * the PR targeting the release LINE (see `releaseLineBranches`); still tied ->
- * audit, never guess.
- *
- * `rangeShas` is the walk's own commits. A pull request ships in this range only
- * if its merge landed among them: commits pushed straight onto a release branch
- * — the release plugin's version bumps, and the reverts that repair an orphaned
- * tag — have no pull request of their own, so GitHub credits them to whichever
- * one later swept that branch into stable. That is the *next* release's
- * merge-back, whose merge commit is not in this range at all. Without the
- * check, 8.9.19's notes listed #62049, merged three days after the tag was cut.
+ * audit, never guess. `rangeShas` restricts "shipped" to merges actually inside
+ * the walk — a commit's associated PR can otherwise be the *next* release's
+ * merge-back, merged after this tag was cut. See GENERATOR.md § 1.
  */
 export function resolveCommitsToPrs(
   commits: readonly WalkedCommit[],
@@ -202,6 +152,12 @@ export function resolveCommitsToPrs(
   const prNumbers = new Set<number>();
 
   for (const commit of commits) {
+    // Checked first, ahead of any associated-PR anomaly below: a release-plugin
+    // commit must never be attributed to a pull request, even one GitHub
+    // reports with a null mergeCommitOid (which the shipped-anomaly branch
+    // below otherwise keeps unconditionally).
+    if (AUTOMATION_WHITELIST.test(commit.message)) continue;
+
     // Three outcomes, kept apart because they are three different facts about a
     // commit and collapsing them produces a wrong audit line: a merge-back is
     // excluded even though it merged here, while an out-of-range PR is excluded
@@ -224,7 +180,6 @@ export function resolveCommitsToPrs(
       // a commit pushed straight onto the release branch that one swept in.
       // Release plumbing either way — nothing delivered, nothing to report.
       if (mergeBacks.length > 0 && candidates.length === 0) continue;
-      if (AUTOMATION_WHITELIST.test(commit.message)) continue;
       const list = candidates.map((pr) => `#${pr.number}`).join(', ');
       reasons.push(
         candidates.length === 0

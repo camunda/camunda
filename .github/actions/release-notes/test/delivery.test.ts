@@ -12,7 +12,7 @@ function closures(entries: Record<number, Partial<IssueFacts>>): Map<number, Iss
   return new Map(
     Object.entries(entries).map(([number, closure]) => [
       Number(number),
-      { closed: true, stateReason: 'COMPLETED', closerPrNumber: null, labels: [], ...closure },
+      { closed: true, stateReason: 'COMPLETED', closerPrNumber: null, labels: [], labelsTruncated: false, ...closure },
     ]),
   );
 }
@@ -102,6 +102,17 @@ test('a backport hop delivers every issue it is attributed to, keyword or not', 
 
   // then
   assert.deepEqual(closes, [500, 501]);
+});
+
+test('a backport hop never claims an issue GitHub recorded as abandoned', () => {
+  // given
+  const closure = closures({ 500: { stateReason: 'NOT_PLANNED' }, 501: { closerPrNumber: 900 } });
+
+  // when
+  const closes = closesIssueNumbers(input({ deliveryPath: 'backportHop', issueNumbers: [500, 501] }), closure);
+
+  // then
+  assert.deepEqual(closes, [501]);
 });
 
 test('each issue of a multi-issue pull request is decided on its own', () => {

@@ -470,7 +470,13 @@ test('an issue closed by a pull request reports that pull request as the closer'
     },
   };
   const got = await resolver(fakeFetch([page])).fetchIssueFacts([500]);
-  assert.deepEqual(got.get(500), { closed: true, stateReason: 'COMPLETED', closerPrNumber: 101, labels: [] });
+  assert.deepEqual(got.get(500), {
+    closed: true,
+    stateReason: 'COMPLETED',
+    closerPrNumber: 101,
+    labels: [],
+    labelsTruncated: false,
+  });
 });
 
 test('an issue closed by a bare commit reports no closing pull request', async () => {
@@ -486,7 +492,25 @@ test('an issue closed by a bare commit reports no closing pull request', async (
 test('an open issue reports closed false and no closer', async () => {
   const page = { data: { repository: { i0: { closed: false, stateReason: null, labels: { nodes: [] }, timelineItems: { nodes: [] } } } } };
   const got = await resolver(fakeFetch([page])).fetchIssueFacts([500]);
-  assert.deepEqual(got.get(500), { closed: false, stateReason: null, closerPrNumber: null, labels: [] });
+  assert.deepEqual(got.get(500), {
+    closed: false,
+    stateReason: null,
+    closerPrNumber: null,
+    labels: [],
+    labelsTruncated: false,
+  });
+});
+
+test('an issue with more than 20 labels is flagged as truncated', async () => {
+  const page = {
+    data: {
+      repository: {
+        i0: issueNode({ labels: { nodes: [{ name: 'kind/task' }], pageInfo: { hasNextPage: true } } }),
+      },
+    },
+  };
+  const got = await resolver(fakeFetch([page])).fetchIssueFacts([500]);
+  assert.equal(got.get(500)!.labelsTruncated, true);
 });
 
 test('stateReason travels through so an abandoned issue can be told from a delivered one', async () => {

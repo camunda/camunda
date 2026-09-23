@@ -1,7 +1,7 @@
 import { githubHeaders } from '../github';
 
 /**
- * The generator's network layer: two batched GraphQL phases (V7) — commit to PR
+ * The generator's network layer: two batched GraphQL phases — commit to PR
  * mapping, then PR metadata — behind an interface so every other step tests
  * against a fake (mirrors the gate's Resolver split).
  *
@@ -78,6 +78,10 @@ export interface IssueFacts {
    *  `kind/*` label of its own, so the type in its title is all the
    *  categorizer would otherwise have to go on. */
   readonly labels: readonly string[];
+  /** True if the issue has more than 20 labels and `labels` above is a
+   *  partial list — the caller must warn rather than silently trust it as
+   *  the whole `kind/*` picture. */
+  readonly labelsTruncated: boolean;
 }
 
 export interface GraphqlResolver {
@@ -201,7 +205,10 @@ interface PrMetadataNode {
 interface IssueFactsNode {
   readonly closed?: boolean;
   readonly stateReason?: string | null;
-  readonly labels?: { readonly nodes?: readonly { readonly name: string }[] } | null;
+  readonly labels?: {
+    readonly nodes?: readonly { readonly name: string }[];
+    readonly pageInfo?: { readonly hasNextPage?: boolean };
+  } | null;
   readonly timelineItems?: {
     readonly nodes?: readonly ({
       readonly closer?: {
@@ -353,7 +360,7 @@ export class GithubGraphqlResolver implements GraphqlResolver {
           ${batch
             .map(
               (_, j) =>
-                `i${j}: issue(number: $n${j}) { closed stateReason labels(first: 20) { nodes { name } } timelineItems(last: 1, itemTypes: CLOSED_EVENT) { nodes { ... on ClosedEvent { closer { __typename ... on PullRequest { number repository { nameWithOwner } } } } } } }`,
+                `i${j}: issue(number: $n${j}) { closed stateReason labels(first: 20) { nodes { name } pageInfo { hasNextPage } } timelineItems(last: 1, itemTypes: CLOSED_EVENT) { nodes { ... on ClosedEvent { closer { __typename ... on PullRequest { number repository { nameWithOwner } } } } } } }`,
             )
             .join('\n')}
         }
@@ -376,6 +383,7 @@ export class GithubGraphqlResolver implements GraphqlResolver {
           stateReason: node.stateReason ?? null,
           closerPrNumber: closer?.__typename === 'PullRequest' && sameRepo ? (closer.number ?? null) : null,
           labels: (node.labels?.nodes ?? []).map((label) => label.name),
+          labelsTruncated: node.labels?.pageInfo?.hasNextPage ?? false,
         });
       });
     }

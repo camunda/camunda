@@ -72,6 +72,14 @@ test('all refs in the section dead: resolutionFailed, no fallthrough to native/l
   assert.deepEqual(d.issueNumbers, []);
 });
 
+test('a section ref pointing at a pull request falls through to the native closing field', () => {
+  const d = decideAttribution(
+    input({ sectionRefs: [ref(101, 'closing', 'pullRequest')], closingIssuesReferences: [100] }),
+  );
+  assert.equal(d.source, 'closingIssuesReferences');
+  assert.deepEqual(d.issueNumbers, [100]);
+});
+
 test('nothing found anywhere: unattributed', () => {
   const d = decideAttribution(input());
   assert.equal(d.source, 'unattributed');
