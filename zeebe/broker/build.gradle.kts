@@ -8,19 +8,10 @@ plugins {
   id("buildlogic.test-jar-conventions")
 }
 
-// Configure SBE input files for caching
 sbe {
-  inputFiles.from(
+  schemaFiles.from(
     layout.projectDirectory.file("src/main/resources/broker-protocol.xml"),
     layout.projectDirectory.file("src/main/resources/transfer-snapshot-schema.xml"),
-  )
-}
-
-// Configure SBE generation
-tasks.named<JavaExec>("generateSbe") {
-  args(
-    "${project.projectDir}/src/main/resources/broker-protocol.xml",
-    "${project.projectDir}/src/main/resources/transfer-snapshot-schema.xml",
   )
 }
 

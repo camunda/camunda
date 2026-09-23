@@ -12,21 +12,11 @@ plugins {
   id("buildlogic.test-jar-conventions")
 }
 
-// Configure SBE input files for caching
 sbe {
-  inputFiles.from(
+  schemaFiles.from(
     layout.projectDirectory.file("src/main/resources/snapshot-schema.xml"),
     layout.projectDirectory.file("src/main/resources/raft-entry-schema.xml"),
     layout.projectDirectory.file("src/main/resources/cluster-messaging.xml"),
-  )
-}
-
-// Configure SBE generation
-tasks.named<JavaExec>("generateSbe") {
-  args(
-    "${project.projectDir}/src/main/resources/snapshot-schema.xml",
-    "${project.projectDir}/src/main/resources/raft-entry-schema.xml",
-    "${project.projectDir}/src/main/resources/cluster-messaging.xml",
   )
 }
 
