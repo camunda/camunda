@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>camunda-library-parent</artifactId>
+    <version>8.10.0-SNAPSHOT</version>
+    <relativePath>../../library-parent/pom.xml</relativePath>
+  </parent>
+
+  <artifactId>camunda-spring-boot-protobuf-compatibility</artifactId>
+  <packaging>jar</packaging>
+
+  <name>Camunda Spring Boot Protobuf Compatibility</name>
+  <description>Proves that the generated gateway code loads on the lowest protobuf runtime that a user
+    application can get. No other module can prove this, because each module inherits
+    zeebe-parent, and zeebe-parent always gives the runtime that made the gencode.</description>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
+
+  <properties>
+    <maven.deploy.skip>true</maven.deploy.skip>
+    <version.java>21</version.java>
+    <license.header.file>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header.file>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-client-java</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-gateway-protocol-impl</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- an explicit version beats the management of zeebe-parent, and thus it gives this module
+         the classpath of a user application -->
+    <dependency>
+      <groupId>com.google.protobuf</groupId>
+      <artifactId>protobuf-java</artifactId>
+      <version>${version.protobuf-spring-boot-baseline}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <!-- the BOM is the source of truth for the protobuf runtime of a user application -->
+          <execution>
+            <id>copy-oldest-spring-boot-bom</id>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <phase>process-test-classes</phase>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.springframework.boot</groupId>
+                  <artifactId>spring-boot-dependencies</artifactId>
+                  <version>${version.spring-boot-oldest-managing-protobuf}</version>
+                  <type>pom</type>
+                  <destFileName>spring-boot-dependencies.pom</destFileName>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${project.build.testOutputDirectory}</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
