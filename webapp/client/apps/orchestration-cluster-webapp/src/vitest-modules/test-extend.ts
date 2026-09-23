@@ -8,6 +8,7 @@
 
 import {it as itBase} from 'vitest';
 import {setupWorker} from 'msw/browser';
+import {cleanup} from 'vitest-browser-react';
 
 const worker = setupWorker();
 
@@ -24,6 +25,7 @@ const it = itBase.extend<{
 
 			await use(worker);
 
+			await cleanup();
 			worker.resetHandlers();
 			worker.stop();
 		},

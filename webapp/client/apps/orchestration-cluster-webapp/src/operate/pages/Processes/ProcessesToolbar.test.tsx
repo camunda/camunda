@@ -26,12 +26,16 @@ import {
 	mockCreateSuspensionBatchOperationEndpoint,
 	mockCreateResumptionBatchOperationEndpoint,
 	mockGetBatchOperationEndpoint,
+	mockQueryBatchOperationItemsEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {
 	createProcessInstance,
 	createQueryProcessInstancesResponse,
 } from '#/shared-test-modules/api-mocks/process-instances';
-import {createBatchOperation} from '#/shared-test-modules/api-mocks/batch-operations';
+import {
+	createBatchOperation,
+	createQueryBatchOperationItemsResponse,
+} from '#/shared-test-modules/api-mocks/batch-operations';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {Notifications} from '#/shared/notifications/components/Notifications';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
@@ -58,16 +62,37 @@ const ITEMS = [
 	createProcessInstance({processInstanceKey: '4', state: 'TERMINATED', hasIncident: false}),
 	createProcessInstance({processInstanceKey: '5', state: 'SUSPENDED', hasIncident: true}),
 ];
-const list = (totalItems = 10, hasMoreTotalItems = false) =>
+
+const list = (totalItems = 10, hasMoreTotalItems = false) => [
 	mockQueryProcessInstancesEndpoint({
 		successResponse: HttpResponse.json(
 			createQueryProcessInstancesResponse({items: ITEMS, page: {totalItems, hasMoreTotalItems}}),
 		),
-	});
+	}),
+	mockQueryBatchOperationItemsEndpoint({
+		successResponse: HttpResponse.json(createQueryBatchOperationItemsResponse({items: []})),
+	}),
+];
 const accepted = (batchOperationType: BatchOperation['batchOperationType'] = 'CANCEL_PROCESS_INSTANCE') =>
 	HttpResponse.json({batchOperationKey: 'batch-op-1', batchOperationType}, {status: 202});
 const completed = (batchOperationType: BatchOperation['batchOperationType'] = 'CANCEL_PROCESS_INSTANCE') =>
 	mockGetBatchOperationEndpoint({successResponse: HttpResponse.json(createBatchOperation({batchOperationType}))});
+
+const exactKeys = ([first, ...rest]: readonly [string, ...string[]]) =>
+	z.tuple([z.literal(first), ...rest.map((key) => z.literal(key))]);
+// A batch operation request keeps the list's tenant/definition scope (from SEARCH) and carries
+// exactly the given instance-key criterion. The instance state criteria are covered by
+// processesFilter.test.ts.
+const batchOperationRequestSchema = (processInstanceKey: z.ZodType) =>
+	z.strictObject({
+		filter: z.looseObject({
+			tenantId: z.strictObject({$eq: z.literal('tenant-a')}),
+			processDefinitionId: z.strictObject({$eq: z.literal('orders')}),
+			processDefinitionVersion: z.literal(2),
+			processInstanceKey,
+		}),
+	});
+const FAILURE_RESPONSE = new HttpResponse(null, {status: 400});
 
 function renderTable(initial = SEARCH, isActionMode = false) {
 	function Harness() {
@@ -101,7 +126,7 @@ describe('Processes bulk toolbar', () => {
 	});
 
 	it('should derive checked-row eligibility from running, finished and incident states', async ({worker}) => {
-		worker.use(list());
+		worker.use(...list());
 		const screen = await renderTable();
 		await expect.element(screen.getByRole('button', {name: 'Delete', exact: true})).not.toBeInTheDocument();
 		await select(screen, '1');
@@ -127,7 +152,7 @@ describe('Processes bulk toolbar', () => {
 	});
 
 	it('should disable Cancel for an all-selected suspended-only view', async ({worker}) => {
-		worker.use(list());
+		worker.use(...list());
 		const screen = await renderTable({...SEARCH, active: false, incidents: false, completed: false, canceled: false});
 
 		await select(screen);
@@ -136,14 +161,13 @@ describe('Processes bulk toolbar', () => {
 	});
 
 	it('should exclude suspended instances from a mixed active+suspended Cancel request', async ({worker}) => {
-		const received = vi.fn(() => true);
 		worker.use(
-			list(),
+			...list(),
 			completed('CANCEL_PROCESS_INSTANCE'),
 			mockCreateCancellationBatchOperationEndpoint({
-				schema: z.custom(received),
+				schema: batchOperationRequestSchema(z.strictObject({$in: exactKeys(['1'])})),
 				successResponse: accepted('CANCEL_PROCESS_INSTANCE'),
-				failureResponse: new HttpResponse(null, {status: 400}),
+				failureResponse: FAILURE_RESPONSE,
 			}),
 		);
 		const screen = await renderTable();
@@ -158,9 +182,6 @@ describe('Processes bulk toolbar', () => {
 		await expect
 			.element(screen.getByText('The batch operation "Cancel Process Instance" has been started'))
 			.toBeVisible();
-		expect(received).toHaveBeenCalledWith({
-			filter: {...mapProcessInstancesFilter(SEARCH), processInstanceKey: {$in: ['1']}},
-		});
 	});
 
 	it.for([
@@ -199,14 +220,13 @@ describe('Processes bulk toolbar', () => {
 	] as const)(
 		'should confirm and submit %s with eligible keys and tenant/definition filters',
 		async ([action, mock, keys, message, batchOperationType, operationLabel], {worker}) => {
-			const received = vi.fn(() => true);
 			worker.use(
-				list(),
+				...list(),
 				completed(batchOperationType),
 				mock({
-					schema: z.custom(received),
+					schema: batchOperationRequestSchema(z.strictObject({$in: exactKeys(keys)})),
 					successResponse: accepted(batchOperationType),
-					failureResponse: new HttpResponse(null, {status: 400}),
+					failureResponse: FAILURE_RESPONSE,
 				}),
 			);
 			const screen = await renderTable();
@@ -223,23 +243,19 @@ describe('Processes bulk toolbar', () => {
 			}
 			await userEvent.click(modal.getByRole('button', {name: action === 'Delete' ? 'Delete' : 'Apply', exact: true}));
 			await expect.element(screen.getByText(`The batch operation "${operationLabel}" has been started`)).toBeVisible();
-			expect(received).toHaveBeenCalledWith({
-				filter: {...mapProcessInstancesFilter(SEARCH), processInstanceKey: {$in: keys}},
-			});
 			await expect.element(screen.getByRole('button', {name: 'Go to operation details'})).toBeVisible();
 			await expect.element(screen.getByRole('checkbox', {name: 'Select instance 1', exact: true})).not.toBeChecked();
 		},
 	);
 
 	it('should confirm and submit Resume for the checked suspended instance only', async ({worker}) => {
-		const received = vi.fn(() => true);
 		worker.use(
-			list(),
+			...list(),
 			completed('RESUME_PROCESS_INSTANCE'),
 			mockCreateResumptionBatchOperationEndpoint({
-				schema: z.custom(received),
+				schema: batchOperationRequestSchema(z.strictObject({$in: exactKeys(['5'])})),
 				successResponse: accepted('RESUME_PROCESS_INSTANCE'),
-				failureResponse: new HttpResponse(null, {status: 400}),
+				failureResponse: FAILURE_RESPONSE,
 			}),
 		);
 		const screen = await renderTable();
@@ -255,22 +271,18 @@ describe('Processes bulk toolbar', () => {
 		await expect
 			.element(screen.getByText('The batch operation "Resume Process Instance" has been started'))
 			.toBeVisible();
-		expect(received).toHaveBeenCalledWith({
-			filter: {...mapProcessInstancesFilter(SEARCH), processInstanceKey: {$in: ['5']}},
-		});
 		await expect.element(screen.getByRole('button', {name: 'Go to operation details'})).toBeVisible();
 		await expect.element(screen.getByRole('checkbox', {name: 'Select instance 5', exact: true})).not.toBeChecked();
 	});
 
 	it('should apply filter-wide selection and exclusions with a truncated count', async ({worker}) => {
-		const received = vi.fn(() => true);
 		worker.use(
-			list(100, true),
+			...list(100, true),
 			completed(),
 			mockCreateCancellationBatchOperationEndpoint({
-				schema: z.custom(received),
+				schema: batchOperationRequestSchema(z.strictObject({$notIn: exactKeys(['1'])})),
 				successResponse: accepted(),
-				failureResponse: new HttpResponse(null, {status: 400}),
+				failureResponse: FAILURE_RESPONSE,
 			}),
 		);
 		const screen = await renderTable();
@@ -284,15 +296,12 @@ describe('Processes bulk toolbar', () => {
 			.toBeVisible();
 		await userEvent.click(screen.getByRole('dialog').getByRole('button', {name: 'Apply'}));
 		await expect.element(screen.getByRole('button', {name: 'Go to operation details'})).toBeVisible();
-		expect(received).toHaveBeenCalledWith({
-			filter: {...mapProcessInstancesFilter(SEARCH), processInstanceKey: {$notIn: ['1']}},
-		});
 	});
 
 	it('should use the selected state filter rather than the visible rows for all-result eligibility', async ({
 		worker,
 	}) => {
-		worker.use(list(100));
+		worker.use(...list(100));
 		const screen = await renderTable({
 			...SEARCH,
 			active: false,
@@ -318,15 +327,16 @@ describe('Processes bulk toolbar', () => {
 	] as const)(
 		'should never widen an instance-key filter when excluding rows for %s',
 		async ([action, mock, batchOperationType], {worker}) => {
-			const received = vi.fn(() => true);
 			const search = {...SEARCH, processInstanceKey: '1,2,3,4,5'};
 			worker.use(
-				list(5),
+				...list(5),
 				completed(batchOperationType),
 				mock({
-					schema: z.custom(received),
+					schema: batchOperationRequestSchema(
+						z.strictObject({$in: exactKeys(['1', '2', '3', '4', '5']), $notIn: exactKeys(['1'])}),
+					),
 					successResponse: accepted(batchOperationType),
-					failureResponse: new HttpResponse(null, {status: 400}),
+					failureResponse: FAILURE_RESPONSE,
 				}),
 			);
 			const screen = await renderTable(search);
@@ -337,24 +347,17 @@ describe('Processes bulk toolbar', () => {
 				screen.getByRole('dialog').getByRole('button', {name: action === 'Delete' ? 'Delete' : 'Apply', exact: true}),
 			);
 			await expect.element(screen.getByRole('button', {name: 'Go to operation details'})).toBeVisible();
-			expect(received).toHaveBeenCalledWith({
-				filter: {
-					...mapProcessInstancesFilter(search),
-					processInstanceKey: {$in: ['1', '2', '3', '4', '5'], $notIn: ['1']},
-				},
-			});
 		},
 	);
 
 	it('should retain eligibility and included keys when selected rows leave the loaded page', async ({worker}) => {
-		const received = vi.fn(() => true);
 		worker.use(
-			list(),
+			...list(),
 			completed('DELETE_PROCESS_INSTANCE'),
 			mockCreateDeletionBatchOperationEndpoint({
-				schema: z.custom(received),
+				schema: batchOperationRequestSchema(z.strictObject({$in: exactKeys(['3', '4'])})),
 				successResponse: accepted('DELETE_PROCESS_INSTANCE'),
-				failureResponse: new HttpResponse(null, {status: 400}),
+				failureResponse: FAILURE_RESPONSE,
 			}),
 		);
 		const screen = await renderTable();
@@ -376,13 +379,10 @@ describe('Processes bulk toolbar', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Delete', exact: true}));
 		await userEvent.click(screen.getByRole('dialog').getByRole('button', {name: 'Delete', exact: true}));
 		await expect.element(screen.getByRole('button', {name: 'Go to operation details'})).toBeVisible();
-		expect(received).toHaveBeenCalledWith({
-			filter: {...mapProcessInstancesFilter(SEARCH), processInstanceKey: {$in: ['3', '4']}},
-		});
 	});
 
 	it('should preserve selection on dialog close but discard on secondary cancel', async ({worker}) => {
-		worker.use(list());
+		worker.use(...list());
 		const screen = await renderTable();
 		await select(screen, '3');
 		await userEvent.click(screen.getByRole('button', {name: 'Delete', exact: true}));
@@ -394,7 +394,7 @@ describe('Processes bulk toolbar', () => {
 	});
 
 	it('should preserve selection on sort but reset it when tenant filters change', async ({worker}) => {
-		worker.use(list());
+		worker.use(...list());
 		const screen = await renderTable();
 		await select(screen, '1');
 		worker.use(
@@ -407,7 +407,7 @@ describe('Processes bulk toolbar', () => {
 		await expect.element(screen.getByRole('checkbox', {name: 'Select instance 1', exact: true})).toBeChecked();
 		await expect.element(screen.getByText('1 item selected')).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Cancel', exact: true})).toBeEnabled();
-		worker.use(list());
+		worker.use(...list());
 		await userEvent.click(screen.getByRole('button', {name: 'Change tenant'}));
 		await expect.element(screen.getByRole('checkbox', {name: 'Select instance 1', exact: true})).not.toBeChecked();
 		await expect.element(screen.getByRole('button', {name: 'Discard'})).not.toBeInTheDocument();
@@ -422,7 +422,7 @@ describe('Processes bulk toolbar', () => {
 		{responseStatus: 500, response: new HttpResponse(null, {status: 500}), title: "Couldn't create operation"},
 		{responseStatus: 0, response: HttpResponse.error(), title: "Couldn't create operation"},
 	] as const)('should recover from $responseStatus without dropping selection', async ({response, title}, {worker}) => {
-		worker.use(list(), mockCreateCancellationBatchOperationEndpoint({successResponse: response}));
+		worker.use(...list(), mockCreateCancellationBatchOperationEndpoint({successResponse: response}));
 		const screen = await renderTable();
 		await select(screen, '1');
 		await userEvent.click(screen.getByRole('button', {name: 'Cancel', exact: true}));
@@ -437,7 +437,10 @@ describe('Processes bulk toolbar', () => {
 	});
 
 	it('should disable submission while a request is pending and during downstream action mode', async ({worker}) => {
-		worker.use(list(), mockCreateCancellationBatchOperationEndpoint({successResponse: accepted(), delay: 'infinite'}));
+		worker.use(
+			...list(),
+			mockCreateCancellationBatchOperationEndpoint({successResponse: accepted(), delay: 'infinite'}),
+		);
 		const screen = await renderTable();
 		await select(screen, '1');
 		await userEvent.click(screen.getByRole('button', {name: 'Cancel', exact: true}));
