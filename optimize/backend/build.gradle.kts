@@ -29,6 +29,17 @@ tasks.named<ProcessResources>("processResources") {
 
 sourceSets { main { resources { srcDir("src/main/ssl") } } }
 
+// :camunda-optimize packages localization and logo files from this source directory.
+val distributionResources =
+  configurations.create("distributionResources") {
+    isCanBeConsumed = true
+    isCanBeResolved = false
+  }
+
+artifacts {
+  add(distributionResources.name, layout.projectDirectory.dir("src/main/resources"))
+}
+
 dependencies {
   compileOnly(project(":optimize-client"))
   implementation(libs.org.codehaus.janino.janino)

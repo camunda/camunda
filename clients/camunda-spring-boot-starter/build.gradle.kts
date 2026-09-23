@@ -26,6 +26,25 @@ publishing {
   }
 }
 
+// :camunda-spring-boot-3-starter tests need classpath resources as files for ResourceUtils.getFile.
+val mainOutput =
+  configurations.create("mainOutput") {
+    isCanBeConsumed = true
+    isCanBeResolved = false
+  }
+
+artifacts {
+  add(
+    mainOutput.name,
+    tasks.named<JavaCompile>("compileJava").flatMap { it.destinationDirectory },
+  ) {
+    builtBy(tasks.named("classes"))
+  }
+  add(mainOutput.name, layout.buildDirectory.dir("resources/main")) {
+    builtBy(tasks.named("processResources"))
+  }
+}
+
 val generatedTestSourcesDir = layout.buildDirectory.dir("generated-test-sources/java")
 val testSourceGenerator =
   sourceSets.create("testSourceGenerator") {

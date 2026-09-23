@@ -8,6 +8,22 @@ java { disableAutoTargetJvm() }
 
 tasks.withType<JavaCompile>().configureEach { options.release.set(8) }
 
+// :zeebe-protocol-asserts needs these class files to resolve protocol record types.
+val mainClasses =
+  configurations.create("mainClasses") {
+    isCanBeConsumed = true
+    isCanBeResolved = false
+  }
+
+artifacts {
+  add(
+    mainClasses.name,
+    tasks.named<JavaCompile>("compileJava").flatMap { it.destinationDirectory },
+  ) {
+    builtBy(tasks.named("classes"))
+  }
+}
+
 dependencies {
   api(libs.io.camunda.security.library.api)
   testImplementation(libs.org.assertj.assertj.core)
