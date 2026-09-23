@@ -25,6 +25,10 @@ inputs:
     description: Behaviour when no files match `path`, one of `warn`, `error` or `ignore`.
     required: false
     default: warn
+  compression-level:
+    description: Zlib compression level (0-9). 0 skips compression, for already-compressed input.
+    required: false
+    default: "6"
   retry-delay-seconds:
     description: >
       Base seconds to wait before each retry. `0` retries immediately.
@@ -80,6 +84,7 @@ runs:
         retention-days: ${{ inputs.retention-days }}
         include-hidden-files: ${{ inputs.include-hidden-files }}
         if-no-files-found: ${{ inputs.if-no-files-found }}
+        compression-level: ${{ inputs.compression-level }}
         overwrite: true
 
     - name: Wait before attempt 2
@@ -102,6 +107,7 @@ runs:
         retention-days: ${{ inputs.retention-days }}
         include-hidden-files: ${{ inputs.include-hidden-files }}
         if-no-files-found: ${{ inputs.if-no-files-found }}
+        compression-level: ${{ inputs.compression-level }}
         overwrite: true
 
     - name: Wait before attempt 3
@@ -123,6 +129,7 @@ runs:
         retention-days: ${{ inputs.retention-days }}
         include-hidden-files: ${{ inputs.include-hidden-files }}
         if-no-files-found: ${{ inputs.if-no-files-found }}
+        compression-level: ${{ inputs.compression-level }}
         overwrite: true
 
     # A successful retry leaves the job green, so surface it in the run summary
