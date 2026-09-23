@@ -1,0 +1,71 @@
+---
+name: Install apt packages
+description: |
+  Installs apt packages, tolerating a flaky or hung Ubuntu mirror. Shortens
+  per-mirror timeouts via apt-fast-mirror-failover, retries the install, and
+  refreshes the package index WITHOUT gating the install on it: `apt-get update`
+  exits 100 if any single configured repository fails -- even one unrelated to
+  the packages being installed (INC-7943) -- so a partial refresh still lands
+  and `apt-get install` is the real gate.
+
+inputs:
+  packages:
+    description: Space-separated list of apt packages to install.
+    required: true
+  timeout:
+    description: Per-attempt timeout in seconds for the combined update + install.
+    default: "115"
+  no-install-recommends:
+    description: Whether to pass --no-install-recommends to apt-get install.
+    default: "true"
+  skip-if-exists:
+    description: >-
+      Absolute path checked before installing; when it already exists the install
+      is skipped entirely, so a mirror outage cannot fail an otherwise-ready
+      runner. Empty (the default) disables the check.
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Check whether install can be skipped
+      id: check
+      shell: bash
+      env:
+        SKIP_IF_EXISTS: ${{ inputs.skip-if-exists }}
+      run: |
+        if [ -n "$SKIP_IF_EXISTS" ] && [ -e "$SKIP_IF_EXISTS" ]; then
+          echo "skip=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - if: steps.check.outputs.skip == 'false'
+      uses: ./.github/actions/apt-fast-mirror-failover
+
+    # `timeout` runs inside the sudo'd root process tree so it can self-terminate a hung
+    # apt-get without nick-fields/retry having to kill across the privilege boundary --
+    # doing that externally throws `kill EPERM` and crashes instead of retrying, see
+    # https://github.com/nick-fields/retry/issues/124.
+    #
+    # `apt-get update` exits 100 if *any* configured repository fails, so don't gate on it
+    # (INC-7943) -- a partial refresh still lands and `apt-get install` is the real gate.
+    - name: Install packages
+      if: steps.check.outputs.skip == 'false'
+      uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+      env:
+        APT_PACKAGES: ${{ inputs.packages }}
+        APT_TIMEOUT: ${{ inputs.timeout }}
+        APT_RECOMMENDS: ${{ inputs.no-install-recommends == 'true' && '--no-install-recommends' || '' }}
+      with:
+        max_attempts: 3
+        retry_wait_seconds: 10
+        # Keep the retry budget just above the inner apt timeout so a hung mirror
+        # is killed by `timeout` and retried, rather than by nick-fields/retry
+        # across the sudo boundary (see the issue linked above).
+        timeout_seconds: ${{ fromJSON(inputs.timeout) + 5 }}
+        shell: bash
+        command: |
+          sudo timeout "$APT_TIMEOUT" bash -c "apt-get update \
+            || echo '::warning::apt-get update could not refresh every repository, continuing with the index as-is'; \
+            apt-get install -y $APT_RECOMMENDS $APT_PACKAGES"
