@@ -150,14 +150,20 @@ const InstancesBar: React.FC<Props> = ({
 				)}
 			</Text>
 			{showIncidentsBar && (
-				<div data-testid="instances-bar" className="relative my-2">
+				<div data-testid="instances-bar" className="relative my-2 overflow-hidden rounded-full">
 					<div
-						className={cn(barHeightClassNames[size], !hasActiveInstances && 'bg-border')}
-						style={hasActiveInstances ? {backgroundColor: 'var(--success-foreground-strong)'} : undefined}
+						className={cn(
+							barHeightClassNames[size],
+							'rounded-full transition-all',
+							hasActiveInstances ? 'bg-[var(--success-foreground-subtle)]' : 'bg-neutral-background-subtle',
+						)}
 					/>
 					<div
-						className={cn(barHeightClassNames[size], 'absolute top-0')}
-						style={{width: `${incidentsBarRatio}%`, backgroundColor: 'var(--danger-foreground-strong)'}}
+						className={cn(
+							barHeightClassNames[size],
+							'absolute top-0 rounded-full bg-[var(--danger-foreground-subtle)] transition-all',
+						)}
+						style={{width: `${incidentsBarRatio}%`}}
 					/>
 				</div>
 			)}
