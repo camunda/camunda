@@ -3,18 +3,12 @@ import type { DependencyUpdate } from '../categorize';
 
 /**
  * Turns the attributed-and-categorized PR list into the outputs downstream
- * reads. Pure: which issues a PR actually closed is supplied by the caller,
- * never derived here from a `closes` keyword — an accidental keyword on a
- * non-final PR must not stamp a premature "Released".
+ * reads. Pure — see GENERATOR.md § 6. Which issues a PR closed is supplied
+ * by the caller, never derived here from a `closes` keyword.
  */
 
-/** V6: every JSON output carries this, so a format change has to bump it
- *  deliberately instead of consumers misreading a shape they weren't built for.
- *
- *  2.0.0: `comments.json` entries went from one row per (issue, pull request)
- *  to one row per issue carrying `prNumbers`. Breaking, so a major bump, even
- *  though the only consumer is the not-yet-built cutover unit (#57714) — the
- *  point of the field is that a shape change is never silent. */
+/** Bumped deliberately on any output-shape change, so a consumer never
+ *  silently misreads a shape it wasn't built for. */
 export const SCHEMA_VERSION = '2.0.0';
 
 const SECTION_ORDER = [
@@ -38,16 +32,11 @@ export interface RenderPrInput {
   readonly component: string | null;
   readonly breaking: boolean;
   readonly issueNumbers: readonly number[];
-  /** The subset of issueNumbers this PR's merge actually closed — never
-   *  derived from a `closes`/`fixes` keyword alone. */
   readonly closesIssueNumbers: readonly number[];
   readonly attributionSource: AttributionSource;
-  /** Set for a `deps:` pull request whose bot prose parsed — see `collapseDependencies`. */
   readonly dependencies?: readonly DependencyUpdate[];
-  /** Of `issueNumbers`, the ones GitHub still reports as OPEN. Only these make
-   *  an entry read as partial: an issue closed with no recorded closer — a
-   *  human clicked Close — is finished work we merely cannot attribute, and
-   *  calling that "partially delivered" would be a false claim, not caution. */
+  /** Of `issueNumbers`, the ones GitHub still reports OPEN — only these mark
+   *  an entry partial. See GENERATOR.md § 6. */
   readonly openIssueNumbers?: readonly number[];
 }
 
@@ -55,10 +44,8 @@ export interface RenderOptions {
   readonly version: string;
   readonly allowUnattributed: boolean;
   readonly unattributedReason?: string;
-  /** Every audit line the run produced, in walk order: range anomalies,
-   *  ruleset bypasses, truncated fields, attribution and categorization
-   *  reasons, post-gate anomalies. Logged as warnings too, but a log is not an
-   *  artifact — nothing downstream can read, diff or archive one. */
+  /** Every audit line the run produced, in walk order — logged too, but a
+   *  log isn't an artifact downstream can read, diff, or archive. */
   readonly warnings?: readonly string[];
 }
 
@@ -69,62 +56,43 @@ export interface RenderResult {
   readonly labelsJson: object;
   readonly auditJson: object;
   readonly commentsJson: object;
-  /** Set when unattributed PRs are present and not overridden — the caller
-   *  must still write every output above (audit.json explains exactly why),
-   *  then fail the job with this message. */
+  /** Set when unattributed PRs are present and not overridden — caller must
+   *  still write every output above, then fail the job with this message. */
   readonly failureReason?: string;
 }
 
-/** D19: an opt-out PR is grouped under its own section, never its type's. */
+/** An opt-out PR is grouped under its own section, never its type's. */
 function groupNameFor(pr: RenderPrInput): string {
   if (pr.attributionSource === 'optOut') return 'Changes without a tracked issue';
   return pr.section ?? 'Uncategorized';
 }
 
-/**
- * One rendered line. The unit of presentation is the user-visible change, not
- * the pull request: an issue delivered by four PRs is one entry naming all
- * four. Rendering it per-PR instead repeats the issue's title once per PR,
- * and a reader counting delivered work reads four features where one shipped.
- */
+/** One rendered line — the unit is the user-visible change, not the pull
+ *  request. See GENERATOR.md § 6. */
 interface RenderEntry {
   readonly groupName: string;
   readonly title: string;
   readonly issueNumbers: readonly number[];
   readonly prNumbers: readonly number[];
   readonly breaking: boolean;
-  /** False when nothing in this range closed the entry's issue — the work
-   *  landed, the issue did not finish. Meaningless without an issue. */
   readonly delivered: boolean;
 }
 
-/** C1: the issue is the grouping key. A PR with no issue — opt-out, bot-exempt,
- *  unattributed — has nothing to group under and stays a single-PR entry. */
 function entryKeyFor(pr: RenderPrInput): string {
   return pr.issueNumbers.length > 0 ? `issue:${pr.issueNumbers[0]}` : `pr:${pr.number}`;
 }
 
-/** A section absent from SECTION_ORDER sorts after every known one, matching
- *  the output order below, which appends unknown names rather than dropping them. */
+/** Unknown section sorts after every known one — appended, never dropped. */
 function sectionRank(name: string): number {
   const index = SECTION_ORDER.indexOf(name);
   return index === -1 ? SECTION_ORDER.length : index;
 }
 
-/**
- * Where a group's PRs disagree on section — a `feat`, a `fix` and two
- * `refactor`s delivering one issue — the most customer-visible section wins,
- * and the entry appears there once rather than repeating under each.
- *
- * Deliberately not "the section of the PR that closed the issue": that needs
- * `closesIssueNumbers`, which is a proxy pending a real per-issue closer
- * lookup, and has no answer at all when nothing in the range closed the issue.
- * Ranking by visibility needs neither, so a wrong closer can never misplace an
- * entry, and it errs toward showing — the direction this epic exists to fix.
- */
+/** Where a group's PRs disagree on section, the most customer-visible one
+ *  wins (ranked by SECTION_ORDER) rather than "whichever PR closed the
+ *  issue" — see GENERATOR.md § 6 for why. */
 function toEntries(prs: readonly RenderPrInput[]): RenderEntry[] {
-  // A dependency bump is grouped by the package it moves, not by its own pull
-  // request; anything with a linked issue keeps the issue grouping below.
+  // Grouped by package, not by its own PR; anything with a linked issue keeps issue grouping below.
   const isDependencyBump = (pr: RenderPrInput): boolean =>
     (pr.dependencies?.length ?? 0) > 0 && pr.issueNumbers.length === 0;
 
@@ -138,12 +106,10 @@ function toEntries(prs: readonly RenderPrInput[]): RenderEntry[] {
   }
 
   const entries = [...grouped.values()].map((group) => {
-    // Non-empty by construction, and ties keep the first PR in range order.
     const lead = group.reduce((best, pr) =>
       sectionRank(groupNameFor(pr)) < sectionRank(groupNameFor(best)) ? pr : best,
     );
-    // Delivered is asked of the grouping key — the issue the entry is titled
-    // by — not of any issue the group happens to touch.
+    // Delivered is asked of the entry's own titling issue, not any issue the group touches.
     const [keyIssue] = lead.issueNumbers;
     const stillOpen = keyIssue !== undefined && group.some((pr) => pr.openIssueNumbers?.includes(keyIssue));
     return {
@@ -185,29 +151,13 @@ function renderSectionedBody(prs: readonly RenderPrInput[]): string {
 function renderLine(entry: RenderEntry): string {
   const prs = entry.prNumbers.map((n) => `#${n}`).join(', ');
   if (entry.issueNumbers.length === 0) return `- ${entry.title} (${prs})`;
-  // Grouping put one line under the issue's own title, which reads as the whole
-  // feature shipping. Say so when the issue is still OPEN: the work landed, the
-  // issue did not finish. Same vocabulary as the issue comment.
-  const partial = entry.delivered ? '' : ' (partially delivered)';
+  const partial = entry.delivered ? '' : ' (partially delivered)'; // issue still OPEN — work landed, issue didn't finish
   return `- ${entry.title} (${entry.issueNumbers.map((n) => `#${n}`).join(', ')}) — ${prs}${partial}`;
 }
 
-/**
- * One line per dependency, not per bump.
- *
- * A release that moves the same package five times published five lines a
- * reader has to reconcile by hand — and 8.9.19 shipped two byte-identical
- * `io.github.classgraph: 4.8.193 → 4.8.194` lines from #61527 and #61528. The
- * useful fact is where the package started the release and where it ended, so
- * the range is collapsed to the EARLIEST `from` and the LATEST `to`, citing
- * every pull request that moved it.
- *
- * The walk is newest-first, so the earliest update is the LAST element. The
- * same collapse fixes a single renovate pull request whose body table lists one
- * package twice.
- */
-/** Dotted-numeric versions compare numerically; anything else — a digest, a
- *  short sha, a date tag — has no order and returns null. */
+/** One line per dependency, not per bump — collapsed to the earliest `from`
+ *  and latest `to` across every PR that moved it. See GENERATOR.md § 6. */
+/** Dotted-numeric versions compare numerically; a digest/sha/date tag has no order and returns null. */
 function versionKey(value: string): number[] | null {
   const trimmed = value.replace(/^v/, '');
   return /^\d+(\.\d+)*$/.test(trimmed) ? trimmed.split('.').map(Number) : null;
@@ -223,17 +173,9 @@ function isLower(candidate: string, current: string): boolean {
   return false;
 }
 
-/**
- * The release's actual start and end version for one package.
- *
- * Across pull requests the walk order settles it — newest first, so the
- * earliest update is last. Within ONE pull request it cannot: a grouped
- * renovate body lists rows per lockfile, not in time order, and taking the
- * last row gave `browserslist: 4.28.2` when the release really started at
- * `4.28.1`. So versions are compared numerically where they can be, and the
- * positional answer is the fallback for anything unorderable — a digest or a
- * short sha, where walk order IS the chronology.
- */
+/** The release's actual start/end version for one package — numeric compare
+ *  where possible, walk-order positional fallback otherwise (a digest/sha,
+ *  where walk order IS the chronology). See GENERATOR.md § 6. */
 function versionRange(updates: readonly DependencyUpdate[]): { from: string; to: string } {
   let from = updates[updates.length - 1]!.from;
   let to = updates[0]!.to;
@@ -265,19 +207,9 @@ function collapseDependencies(prs: readonly RenderPrInput[]): RenderEntry[] {
   }));
 }
 
-/**
- * One comment per issue, not per pull request that touched it.
- *
- * The marker is keyed on `<version>:issue-<N>`, which is what lets a re-run
- * update the comment it posted last time instead of adding a second one. Two
- * pull requests delivering one issue therefore produced two rows carrying the
- * SAME marker: publishing them would have overwritten one with the other and
- * left whichever happened to be applied last, silently dropping the other.
- *
- * Aggregating also makes the sentence true. An issue delivered by four pull
- * requests is released when ANY of them closed it, and one sentence should
- * name all four rather than four sentences each naming one.
- */
+/** One comment per issue, not per PR that touched it — the marker is keyed
+ *  on `<version>:issue-<N>`, so two PRs sharing an issue must aggregate into
+ *  one row or the marker collision drops one silently on publish. */
 function commentFor(
   prs: readonly RenderPrInput[],
   issueNumber: number,
@@ -289,13 +221,8 @@ function commentFor(
     : { relationKind: 'contributor', text: `Partially delivered in ${version} by ${numbers}.` };
 }
 
-/**
- * The gate bucket holds two different failures — a PR that declared no issue at
- * all, and one whose every declared ref turned out to be dead. They need
- * opposite fixes (add a link vs. repair the target), so name them apart: a
- * release operator reading "unattributed" against a PR that visibly *has* a
- * `closes` line has no way to tell that the referenced issue is what is gone.
- */
+/** Two different failures need opposite fixes (add a link vs. repair the
+ *  target), so name them apart rather than one generic "unattributed". */
 function describeGuardFailure(bucket: readonly RenderPrInput[]): string {
   const list = (prs: readonly RenderPrInput[]) => prs.map((pr) => `#${pr.number}`).join(', ');
   const noRefs = bucket.filter((pr) => pr.attributionSource === 'unattributed');
@@ -322,7 +249,6 @@ export function render(
 ): RenderResult {
   const guardFailed = unattributed.length > 0 && (!options.allowUnattributed || !options.unattributedReason);
   const failureReason = guardFailed ? describeGuardFailure(unattributed) : undefined;
-  // A non-empty reason is proven whenever the guard passed with `unattributed` present.
   const unattributedReason = options.unattributedReason ?? '';
 
   const all = [...prs, ...unattributed];
@@ -332,8 +258,7 @@ export function render(
   const customerBody = renderSectionedBody(customerPrs);
   const fullAsset = renderSectionedBody(assetPrs);
 
-  // Insertion-ordered, so issues come out in walk order like everything else.
-  const prsByIssue = new Map<number, RenderPrInput[]>();
+  const prsByIssue = new Map<number, RenderPrInput[]>(); // insertion-ordered: issues come out in walk order
   for (const pr of all) {
     for (const issueNumber of pr.issueNumbers) {
       prsByIssue.set(issueNumber, [...(prsByIssue.get(issueNumber) ?? []), pr]);
@@ -346,10 +271,8 @@ export function render(
     marker: `<!-- release-notes:${options.version}:issue-${issueNumber} -->`,
   }));
 
-  // Only an override that actually LET the guard pass is an override. Recorded
-  // unconditionally, a failed default run wrote the same rows with an empty
-  // reason, so an approved exception and a plain failure looked identical in
-  // the one file whose job is telling them apart.
+  // Only recorded when the override actually let the guard pass — else a plain
+  // failure would look identical to an approved exception in this file.
   const overrides = guardFailed ? [] : unattributed.map((pr) => ({ number: pr.number, reason: unattributedReason }));
 
   return {

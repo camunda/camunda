@@ -17,7 +17,7 @@ export interface AttributionDecision {
   readonly source: AttributionSource;
   readonly issueNumbers: readonly number[]; // empty for optOut/botExempt/resolutionFailed/unattributed
   readonly deliveryPath: DeliveryPath;
-  /** Audit lines: dead refs named, cross-repo refs named — never silently dropped (C10). */
+  /** Audit lines: dead refs named, cross-repo refs named — never silently dropped. */
   readonly reasons: readonly string[];
 }
 

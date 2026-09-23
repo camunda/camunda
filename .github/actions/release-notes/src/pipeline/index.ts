@@ -8,15 +8,13 @@ import type { ParsedRef, ResolvedRef } from '../types';
 
 /**
  * Composes the pure attribution + categorize modules with ref resolution for
- * ONE PR, including the backport hop — the only place that knows the two run
- * together. Mirrors gate/index.ts: the pure core is tested against a fake
- * resolver, no network.
+ * ONE PR, including the backport hop. Mirrors gate/index.ts: pure core
+ * tested against a fake resolver, no network.
  *
- * ponytail: the hop attributes the original from its body alone (section +
- * legacy scan), without the original's native `closingIssuesReferences` — that
- * field comes only from the batched GraphQL metadata phase, and the original is
- * usually outside the release range. Only matters when the original has no ref
- * of either kind, i.e. the already-rare "nothing found anywhere" case.
+ * ponytail: the hop attributes the original from its body alone, without its
+ * native `closingIssuesReferences` (that field is only fetched for PRs in
+ * range, and the original usually isn't) — matters only in the already-rare
+ * "nothing found anywhere" case.
  */
 
 export interface OriginalPull {
@@ -28,9 +26,8 @@ export interface OriginalPull {
 
 export interface PipelineResolver {
   resolveRefs(refs: readonly ParsedRef[]): Promise<ResolvedRef[]>;
-  /** `repo` is the backport marker's explicit `owner/repo` prefix, or null for
-   *  a same-repo marker. A cross-repo marker must resolve to null — a same-
-   *  numbered PR in THIS repo would otherwise be inherited by mistake. */
+  /** `repo`: the marker's explicit `owner/repo`, or null for same-repo. A
+   *  cross-repo marker must resolve to null, never a same-numbered local PR. */
   fetchOriginalPull(number: number, repo: string | null): Promise<OriginalPull | null>;
   fetchIssueTitle(number: number): Promise<string | null>;
 }
@@ -47,7 +44,7 @@ export interface PipelinePrInput {
 
 export interface PipelineOptions {
   /** The branch's gate watermark, or null if it isn't gated yet — affects
-   *  anomaly severity only, never attribution itself (D20). */
+   *  anomaly severity only, never attribution itself. */
   readonly gateRequiredAt: string | null;
 }
 
@@ -57,18 +54,12 @@ export interface PipelinePrOutput {
   readonly attribution: AttributionDecision;
   readonly categorization: CategorizeDecision;
   readonly anomaly?: AttributionAnomaly;
-  /** Present only for a `deps:` pull request whose bot prose parsed. The
-   *  renderer collapses repeated updates of one package into one line. */
+  /** Present only for a `deps:` PR whose bot prose parsed. */
   readonly dependencies: readonly DependencyUpdate[];
 }
 
-/**
- * The legacy body-wide scan is the chain's last step, so its refs are only
- * resolved when the earlier steps cannot terminate — an opt-out, an eligible
- * section ref, or a native reference all decide the outcome without it. Every
- * ref costs an API call, and the section refs would otherwise be resolved a
- * second time as part of the body they live in.
- */
+/** The legacy scan resolves only when earlier steps can't terminate — every
+ *  ref costs an API call, and section refs would otherwise resolve twice. */
 async function attributeDirectly(
   resolver: PipelineResolver,
   body: string,
@@ -84,38 +75,21 @@ async function attributeDirectly(
   return decideAttribution({ optOut, sectionRefs, closingIssuesReferences, legacyRefs });
 }
 
-/** Attribution outcomes that found nothing to attribute to — the trigger for
- *  the bot-link exemption. Mirrors the gate's own failing-link outcomes, not
- *  just "nothing found". */
+/** The trigger for the bot-link exemption. Mirrors the gate's own
+ *  failing-link outcomes, not just "nothing found". */
 const UNRESOLVED_SOURCES: ReadonlySet<AttributionSource> = new Set(['unattributed', 'resolutionFailed']);
 
 interface Attributed {
   readonly decision: AttributionDecision;
-  /** The merge timestamp the anomaly rule keys on: the ORIGINAL's when the
-   *  decision came from a backport hop, because a post-gate backport of a
-   *  pre-gate original is not a gate violation (D20). Falls back to the
-   *  backport's own timestamp if the original's is unavailable. */
+  /** The ORIGINAL's merge timestamp when the decision came from a backport
+   *  hop — a post-gate backport of a pre-gate original is not a gate
+   *  violation. Falls back to the backport's own timestamp otherwise. */
   readonly mergedAt: string;
 }
 
-/**
- * Direct scan, then the backport hop (inheriting the original's decision,
- * C7/V2), then the bot link exemption LAST — an exempt bot that did link a real
- * issue keeps that attribution rather than being overridden by the exemption.
- *
- * The hop fires whenever a backport marker is present, NOT only when the
- * backport's own body yielded nothing: C7 makes the original canonical, and a
- * backport body is a bot's paraphrase of it. `backport-action` copies the
- * original's refs into `relates to ${issue_refs}` without stripping HTML
- * comments, so the PR template's own `<!-- closes #1234 -->` examples arrive
- * here as visible, author-looking refs — four of them, plus the real one. A
- * body-wide scan of that *succeeds*, which is exactly why gating the hop on
- * failure let a 2018 issue title describe a 2026 fix. Deciding from the
- * original makes the outcome independent of whatever the bot wrote.
- *
- * An explicit opt-out tick on the backport is the one thing that outranks the
- * original: unlike a copied ref, it is a deliberate statement about this PR.
- */
+/** Direct scan, then the backport hop, then bot link exemption last — an
+ *  exempt bot that did link a real issue keeps it. See GENERATOR.md § 3 for
+ *  why the hop always trusts the original over the backport's own body. */
 async function attributePr(
   resolver: PipelineResolver,
   pr: PipelinePrInput,
@@ -125,10 +99,7 @@ async function attributePr(
   let mergedAt = pr.mergedAt;
 
   if (decision.source !== 'optOut') {
-    // Resolves to null when there is no backport marker, so this costs nothing
-    // for an ordinary PR — and for a backport bot the original is fetched for
-    // the inherited title anyway, memoized by the caller.
-    const originalPull = await original();
+    const originalPull = await original(); // null for an ordinary PR — costs nothing
     if (originalPull) {
       const originalDecision = await attributeDirectly(resolver, originalPull.body, []);
       decision = { ...originalDecision, deliveryPath: 'backportHop' };
@@ -151,11 +122,8 @@ async function attributePr(
   return { decision, mergedAt };
 }
 
-/**
- * The category-detection title and the display title come from the same lookup:
- * an inherit-original bot's own title is garbage for both purposes. The
- * `[Backport ...]` marker is stripped either way — noise for the customer.
- */
+/** Category-detection title and display title share one lookup — an
+ *  inherit-original bot's own title is garbage for both. */
 async function categorizePr(
   resolver: PipelineResolver,
   pr: PipelinePrInput,
@@ -207,9 +175,7 @@ export async function processPr(
 ): Promise<PipelinePrOutput> {
   const backport = parseRefs(pr.body).find((ref) => ref.kind === 'backport');
   const override = pr.authorLogin ? BOT_CATEGORY_OVERRIDES[pr.authorLogin] : undefined;
-  // Both the attribution hop and the inherit-original title want the same
-  // original PR — fetch it at most once per PR, and only if one of them asks.
-  let pending: Promise<OriginalPull | null> | undefined;
+  let pending: Promise<OriginalPull | null> | undefined; // memoized: attribution + inherit-original both want the same original PR
   const original = (): Promise<OriginalPull | null> =>
     (pending ??= backport ? resolver.fetchOriginalPull(backport.number, backport.repo) : Promise.resolve(null));
 

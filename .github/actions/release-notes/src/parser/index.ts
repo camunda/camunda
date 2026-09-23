@@ -1,8 +1,8 @@
 import type { ParsedRef, RefKind } from '../types';
 
 /**
- * Pure, section-scoped reference parser. Shared verbatim with the generator
- * (#57713) — no IO, no repo awareness. Cross-repo detection and issue-vs-PR
+ * Pure, section-scoped reference parser, shared verbatim with the generator
+ * — no IO, no repo awareness. Cross-repo detection and issue-vs-PR
  * classification belong to the Resolver, not here.
  */
 
@@ -37,21 +37,15 @@ function kindOf(keyword: string | null): RefKind {
   return 'contributor'; // bare "#N"
 }
 
-/**
- * Strip HTML comments before any parsing. The PR template's own instructional
- * `<!-- ... closes #1234 ... -->` block lives inside "## Related issues" and is
- * invisible in GitHub's rendered body, so a PR that leaves the boilerplate
- * untouched must NOT be attributed to whatever issue the comment names.
- */
+/** Strips before any parsing — the PR template's own instructional
+ *  `<!-- closes #1234 -->` block is invisible in the rendered body, and a
+ *  PR that leaves the boilerplate untouched must not be attributed to it. */
 export function stripHtmlComments(text: string): string {
   return text.replace(/<!--[\s\S]*?-->/g, '');
 }
 
-/**
- * Strip fenced and inline Markdown code before any parsing. A reviewer citing
- * an example — `` `closes #1234` `` in prose, or a fenced snippet quoting the
- * template — must not be mistaken for the author's own ref or opt-out tick.
- */
+/** A reviewer citing an example (`` `closes #1234` `` in prose, or a fenced
+ *  snippet) must not be mistaken for the author's own ref or opt-out tick. */
 export function stripCode(text: string): string {
   return text.replace(/```[\s\S]*?```/g, '').replace(/`[^`\n]*`/g, '');
 }
@@ -82,10 +76,7 @@ export function parseRefs(text: string): ParsedRef[] {
   return refs.sort((first, second) => first.index - second.index);
 }
 
-/**
- * Slice out a markdown section body: everything after the matching heading up
- * to the next heading of any level (or EOF). Returns null if absent.
- */
+/** Everything after the matching heading up to the next heading (or EOF), or null if absent. */
 export function extractSection(body: string, heading = SECTION_HEADING): string | null {
   const lines = stripHtmlComments(body).split(/\r?\n/);
   const headingRe = new RegExp(`^#{1,6}\\s+${escapeRe(heading)}\\s*$`, 'i');

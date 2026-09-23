@@ -1,10 +1,12 @@
+import { TITLE_TYPES } from '../title';
+
 /**
- * Pure title-type -> release-notes-section categorization (D16-D19, table from
- * the signed design 53605-issue-proposals.html). No IO: the caller supplies the
- * already-resolved title and the labels already fetched from the API.
+ * Pure title-type -> release-notes-section categorization. No IO: the caller
+ * supplies the already-resolved title and the labels already fetched from
+ * the API. See GENERATOR.md for the full section table and rationale.
  */
 
-/** D16: bots whose own title can't be trusted as the category source. */
+/** Bots whose own title can't be trusted as the category source. */
 export const BOT_CATEGORY_OVERRIDES: Record<string, 'inherit-original' | 'deps'> = {
   'backport-action': 'inherit-original',
   'monorepo-devops-automation[bot]': 'inherit-original',
@@ -12,9 +14,11 @@ export const BOT_CATEGORY_OVERRIDES: Record<string, 'inherit-original' | 'deps'>
   'dependabot[bot]': 'deps',
 };
 
-/** null = excluded from both outputs (release-merge PRs, D25). An unknown or
- *  unparseable type falls back to Uncategorized — never dropped (C10). */
-const SECTION_BY_TYPE: Record<string, string | null> = {
+/** null = excluded from both outputs (release-merge PRs). An unparseable
+ *  title falls back to Uncategorized — never dropped. Keyed on the full
+ *  `TITLE_TYPES` tuple so a new commitlint type is a compile error here
+ *  until it is routed to a section. */
+const SECTION_BY_TYPE: Record<(typeof TITLE_TYPES)[number], string | null> = {
   feat: 'Features',
   fix: 'Bug Fixes',
   perf: 'Performance',
@@ -32,19 +36,8 @@ const SECTION_BY_TYPE: Record<string, string | null> = {
 /** The one section hidden from the customer-facing body — still in the full asset. */
 const INTERNAL_SECTION = 'Maintenance';
 
-/**
- * Issue kinds a customer must never be shown, whatever the delivering pull
- * request's title says.
- *
- * Section comes from the conventional-commit type, which describes the CHANGE,
- * not who it is for: a CI gate lands as `feat:`, a flaky-test repair as `fix:`,
- * a load-test folder marker as `docs:`. Each of those then reads to a customer
- * as a feature, a bug fix and a documentation change respectively. The issue's
- * `kind/*` label is the only place the audience is actually recorded — and it
- * lives on the issue alone; the delivering pull request carries no `kind/*` of
- * its own. Measured on 8.9.19: 3 of the 23 customer-facing lines were internal
- * work before this rule.
- */
+/** A customer must never see these, whatever the delivering PR's title says
+ *  — the conventional-commit type describes the CHANGE, not the audience. */
 const INTERNAL_ISSUE_KINDS: ReadonlySet<string> = new Set(['kind/task', 'kind/epic']);
 
 /** The `kind/*` label that marks one issue internal, or null. Returns the
@@ -53,26 +46,17 @@ export function internalIssueKind(issueLabels: readonly string[]): string | null
   return issueLabels.find((label) => INTERNAL_ISSUE_KINDS.has(label)) ?? null;
 }
 
-/**
- * The kind that hides an ENTRY from the customer body, or null to show it.
- *
- * Hidden only when EVERY linked issue is internal. One pull request routinely
- * closes a customer bug and a QA task together — 8.9.19's #61857 closed both
- * `kind/bug` #61719 and `kind/task` #56995 — and hiding on any internal label
- * would have suppressed a real customer-facing fix along with the task. A pull
- * request linking no issue at all is not hidden: absence is not a signal.
- */
+/** Hidden only when EVERY linked issue is internal — one PR routinely closes
+ *  a customer bug and a QA task together, and hiding on any internal label
+ *  would suppress the real fix too. No issue at all is never hidden. */
 export function hiddenFromCustomerBody(issueLabelSets: readonly (readonly string[])[]): string | null {
   if (issueLabelSets.length === 0) return null;
   const kinds = issueLabelSets.map(internalIssueKind);
   return kinds.every((kind) => kind !== null) ? kinds[0]! : null;
 }
 
-// `type` + optional `(scope)` + optional `!` + `: ` + subject. The caller
-// (pipeline/index.ts) already runs stripBackportPrefix on the title before
-// this ever sees it, so no bracket tolerance is needed here — a leading
-// bracket this regex still had to tolerate would only ever be a title that
-// never should have passed the PR-gate's stricter lint in the first place.
+// type + optional (scope) + optional ! + ": " + subject. Caller already
+// strips a `[Backport ...]` prefix, so no bracket tolerance needed here.
 const HEADER = /^(?<type>[^\s():!]+)(?:\([^)]*\))?!?:\s*(?<subject>.+)$/;
 
 function parseType(title: string): string | null {
@@ -90,9 +74,8 @@ export function stripBackportPrefix(title: string): string {
 // dependabot's default title states both sides directly: "Bump X from A to B".
 const DEPENDABOT_BUMP = /Bump (\S+) from (\S+) to (\S+)/i;
 
-// A renovate body table row: "| [package](url) ... | `old` → `new` | ...".
-// Anchored on the leading `[name]` and the backtick-quoted arrow pair only —
-// the column count varies between renovate's table shapes.
+// A renovate body table row. Anchored on the leading `[name]` and the
+// backtick-quoted arrow pair only — the column count varies between shapes.
 const RENOVATE_TABLE_ROW = /^\|\s*\[([^\]]+)\].*?`([^`]+)`\s*→\s*`([^`]+)`.*\|\s*$/gm;
 
 /** One package's version move, as the bot described it. */
@@ -102,17 +85,9 @@ export interface DependencyUpdate {
   readonly to: string;
 }
 
-/**
- * For a `deps:` PR, each dependency it moves and the versions it moved them
- * between — the customer wants "name: old → new", not the bot's verbose prose.
- * Renovate only puts the new version in its title, so its body table is read
- * instead, and one renovate PR can carry several rows. Empty when neither
- * shape matches; the caller then keeps the plain title.
- *
- * Structured rather than pre-formatted because the renderer collapses repeated
- * updates of one package across a release into a single first-to-last line,
- * which it cannot do from a string it would have to parse back.
- */
+/** Each dependency a `deps:` PR moves and its versions — "name: old → new",
+ *  not the bot's prose. Structured, not pre-formatted, so the renderer can
+ *  collapse repeated updates across a release into one line. */
 export function parseDependencyUpdate(input: { readonly title: string; readonly body: string }): DependencyUpdate[] {
   const bump = DEPENDABOT_BUMP.exec(input.title);
   if (bump) {
@@ -160,7 +135,7 @@ export function categorize(input: CategorizeInput): CategorizeDecision {
     reasons.push(`Title does not parse as a conventional commit${author}: "${input.title}".`);
   }
 
-  const mapped = type === null ? undefined : SECTION_BY_TYPE[type];
+  const mapped = type !== null && type in SECTION_BY_TYPE ? SECTION_BY_TYPE[type as keyof typeof SECTION_BY_TYPE] : undefined;
   const section = mapped === undefined ? 'Uncategorized' : mapped;
   const visibility: 'customer' | 'internal' = section === INTERNAL_SECTION ? 'internal' : 'customer';
 

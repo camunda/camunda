@@ -1,36 +1,26 @@
 /**
  * Shared GitHub REST plumbing for the three fetch-based adapters (resolver,
- * comment, labels). One definition of the bot's auth / API-version / user-agent
- * headers and the per-repo base URL — previously copied verbatim into each
- * adapter. The adapters stay octokit-free (a handful of endpoints each); this is
- * just the common boilerplate, not a client.
+ * comment, labels): one definition of auth/headers/retry, previously copied
+ * into each. Stays octokit-free — a handful of endpoints, not a client.
  */
 
 export const GITHUB_API = 'https://api.github.com';
 const USER_AGENT = 'camunda-release-notes-gate';
 const GITHUB_API_VERSION = '2022-11-28';
 
-/** A real secondary rate limit clears within minutes; past this, something else is wrong and must surface. */
 const MAX_RETRIES = 5;
+const MAX_RETRY_AFTER_MS = 60_000; // beyond this the job should fail rather than hold a runner
 
-/** Longest `retry-after` this honours; beyond it the job should fail rather
- *  than hold a runner. GitHub's own secondary-limit hints stay well under. */
-const MAX_RETRY_AFTER_MS = 60_000;
-
-/** GitHub reports a throttled REST request as HTTP 429, or HTTP 403 carrying a
- *  `retry-after` (a 403 without one is a real permission failure and must not
- *  be retried). 5xx is a transient backend failure. Mirrors resolve/index.ts's
- *  GraphQL-side retryableStatus — same throttle shapes, REST transport. */
+/** 429, or 403 with a `retry-after` (a bare 403 is a real permission failure).
+ *  5xx is transient. Mirrors resolve/index.ts's GraphQL-side check — same
+ *  throttle shapes, REST transport. */
 async function retryableStatus(res: Response): Promise<boolean> {
   if (res.status === 429 || res.status >= 500) return true;
   if (res.status !== 403) return false;
   if (res.headers.get('retry-after') !== null) return true;
   if (res.headers.get('x-ratelimit-remaining') === '0') return true;
-  // GitHub's SECONDARY rate limit — the one that fires on concurrency rather
-  // than on volume — answers 403 and often names itself only in the body, with
-  // the primary counter still reading full. Indistinguishable from a permission
-  // failure by status alone, so read the body of a 403 (from a clone, leaving
-  // the caller's stream intact) before deciding this job cannot proceed.
+  // The secondary rate limit fires on concurrency, answers 403, and names
+  // itself only in the body while the primary counter still reads full.
   try {
     return /rate limit/i.test(await res.clone().text());
   } catch {
@@ -38,8 +28,7 @@ async function retryableStatus(res: Response): Promise<boolean> {
   }
 }
 
-/** The server's own wait, when it names one, else exponential backoff. `null`
- *  when the request never produced a response at all. */
+/** The server's own wait, when it names one, else exponential backoff. */
 function backoffMs(res: Response | null, attempt: number): number {
   const header = res?.headers.get('retry-after') ?? null;
   const seconds = header === null ? NaN : Number(header);
@@ -47,12 +36,8 @@ function backoffMs(res: Response | null, attempt: number): number {
   return 2 ** attempt * 1000;
 }
 
-/**
- * `fetch`, retrying a throttled or transiently failed REST request with
- * backoff instead of aborting the whole generation job on one bad response.
- * Never retries a non-throttle failure (e.g. a bare 403, a 404) — the caller
- * sees those immediately.
- */
+/** `fetch` with backoff on a throttled or transient failure. Never retries a
+ *  non-throttle failure (bare 403, 404) — the caller sees those immediately. */
 export async function fetchWithRetry(
   url: string,
   init: RequestInit,
@@ -63,11 +48,8 @@ export async function fetchWithRetry(
     try {
       res = await fetch(url, init);
     } catch (error) {
-      // `fetch` REJECTS on a socket-level failure — connection reset, socket
-      // hang-up, DNS blip — rather than returning a Response, so none of the
-      // status handling below ever sees it. Left unguarded this aborts the
-      // whole job on one blip, which over the thousands of calls a minor
-      // release makes is close to certain.
+      // fetch REJECTS on a socket-level failure (reset, DNS blip) instead of
+      // returning a Response, so this must be handled separately from status.
       if (attempt >= MAX_RETRIES - 1) {
         const detail = error instanceof Error ? error.message : String(error);
         throw new Error(`GitHub API request never completed past ${MAX_RETRIES} attempts (${url}): ${detail}`);
@@ -87,12 +69,9 @@ export async function fetchWithRetry(
  *  there is no body to read. */
 export type JsonResult<T> = { readonly ok: true; readonly status: number; readonly data: T } | { readonly ok: false; readonly status: number };
 
-/**
- * `fetchWithRetry` plus the body read, so a truncated or empty body is retried
- * like any other transient instead of throwing a SyntaxError past the retry
- * loop. GitHub answers that way under load exactly as readily as it answers
- * 502, and parsing outside the loop meant one such body killed the run.
- */
+/** `fetchWithRetry` plus the body read — a truncated/empty body is retried
+ *  like any other transient (GitHub answers that way under load too) instead
+ *  of throwing a SyntaxError past the retry loop. */
 export async function fetchJsonWithRetry<T>(
   url: string,
   init: RequestInit,
@@ -113,10 +92,8 @@ export async function fetchJsonWithRetry<T>(
 }
 
 /** Auth + content-negotiation headers for the plain `GITHUB_TOKEN` every
- *  caller passes in. This action resolves from the PR head on `pull_request`
- *  (see the gate workflow's security-model header), so it must never be
- *  given a privileged token such as MONOREPO_RELEASE_APP. Pass `json: true`
- *  for write requests that send a JSON body. */
+ *  caller passes in — never a privileged token (this action resolves from
+ *  the PR head on `pull_request`). Pass `json: true` for a JSON body. */
 export function githubHeaders(token: string, opts: { json?: boolean } = {}): Record<string, string> {
   const headers: Record<string, string> = {
     authorization: `Bearer ${token}`,

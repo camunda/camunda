@@ -15,7 +15,7 @@ test('every conventional type maps to its designed section and visibility', () =
     ['ci', 'Maintenance', 'internal'],
     ['test', 'Maintenance', 'internal'],
     ['style', 'Maintenance', 'internal'],
-    ['merge', null, 'customer'], // excluded from both outputs, D25
+    ['merge', null, 'customer'], // excluded from both outputs
   ];
   for (const [type, section, visibility] of cases) {
     const d = categorize({ title: `${type}: something`, componentLabels: [], breakingChangeLabel: false });
@@ -41,7 +41,7 @@ test('stripBackportPrefix is a no-op on a title with no bracket prefix', () => {
   assert.equal(stripBackportPrefix('feat: add batch delete API'), 'feat: add batch delete API');
 });
 
-test('D27: unknown bot with a parseable title categorizes via the plain fallback, no map entry needed', () => {
+test('unknown bot with a parseable title categorizes via the plain fallback, no map entry needed', () => {
   const d = categorize({
     title: 'test: gate decision-instance batch delete',
     authorLogin: 'qa-processes[bot]',
@@ -53,7 +53,7 @@ test('D27: unknown bot with a parseable title categorizes via the plain fallback
   assert.deepEqual(d.reasons, []);
 });
 
-test('unknown bot with an unparseable title -> Uncategorized, audited by login (C10: never silently drop)', () => {
+test('unknown bot with an unparseable title -> Uncategorized, audited by login, never silently dropped', () => {
   const d = categorize({
     title: 'Automated update',
     authorLogin: 'some-random-bot[bot]',

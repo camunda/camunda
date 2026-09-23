@@ -1,14 +1,11 @@
 import { fetchJsonWithRetry, githubHeaders, repoApiUrl } from '../github';
 import type { ParsedRef, PullMeta, ResolvedRef, Resolver } from '../types';
 
-/** A PR body can carry at most this many refs to the API. A legitimate PR never
- *  needs more than a handful — this bounds the worst case (a body stuffed with
- *  hundreds of `#N` shorthands on `pull_request_target`) to a fixed cost. */
+/** Bounds the worst case — a body stuffed with hundreds of `#N` shorthands
+ *  on `pull_request_target` — to a fixed cost. */
 const MAX_REFS = 20;
 
-/** How many classify calls run concurrently. Caps the fan-out against GitHub's
- *  API even after dedup + the cap above, so a burst of distinct numbers cannot
- *  open dozens of sockets at once. */
+/** Caps fan-out even after dedup + the cap above. */
 const CONCURRENCY = 5;
 
 /** Lower sorts first. Closing/backport refs decide the gate's verdict, so they
@@ -20,40 +17,30 @@ function priorityOf(ref: ParsedRef): number {
 }
 
 /**
- * GitHub-API resolver: the only part of the pipeline that touches the network.
- * Classifies each ref as issue vs PR vs missing and flags cross-repo refs.
- *
- * GitHub's issues API returns PRs too (a PR is an issue with a `pull_request`
- * field), so one lookup per number classifies both. Cross-repo refs are not
- * queried — they never satisfy the gate, so their target stays "missing".
- *
- * ponytail: plain fetch (Node 24 global) over octokit — we hit exactly one
- * endpoint; octokit would inline the whole REST client into the bundle.
- * Throttled/transient responses are retried via fetchWithRetry (../github) —
- * the generator processes PRs serially, so one un-retried 5xx or secondary
- * rate limit anywhere in that chain would otherwise abort the whole job.
- */
-/**
- * The refs a caller will actually classify: closing/backport refs sorted ahead
- * of merely-informational ones so that when the cap has to drop something, it
- * drops the least consequential first.
- *
- * Exported so a caller that pre-resolves in bulk applies the SAME policy. A
- * copied `MAX_REFS` would let the gate cap at one number and the generator at
- * another the moment either changed — the gate/generator divergence C4 exists
- * to prevent. One function, two callers, no constant to copy.
+ * The refs a caller will actually classify, capped and priority-sorted so a
+ * dropped ref is always the least consequential one. Exported so the gate
+ * and the generator apply the SAME cap — a copied `MAX_REFS` would let them
+ * drift apart the moment either changed.
  */
 export function prioritizeAndCap(refs: readonly ParsedRef[]): ParsedRef[] {
   return [...refs].sort((first, second) => priorityOf(first) - priorityOf(second)).slice(0, MAX_REFS);
 }
 
+/**
+ * GitHub-API resolver: the only part of the pipeline that touches the network.
+ * Classifies each ref as issue vs PR vs missing and flags cross-repo refs —
+ * GitHub's issues API returns PRs too (a PR is an issue with a `pull_request`
+ * field), so one lookup per number classifies both.
+ *
+ * ponytail: plain fetch (Node 24 global) over octokit for this one endpoint.
+ * Transient responses retry via `fetchWithRetry` (../github) since PRs are
+ * processed serially — one un-retried 5xx would abort the whole job.
+ */
 export class GithubResolver implements Resolver {
   private readonly repoUrl: string;
   private readonly headers: Record<string, string>;
-  /** Titles seen while classifying refs, keyed by same-repo number (issues and
-   *  PRs alike — `/issues/N` serves both). `classify` and `fetchIssueTitle` hit
-   *  that same endpoint, and the generator asks for the title of a ref it has
-   *  just classified, so the second call is served from here. */
+  /** `classify` and `fetchIssueTitle` hit the same `/issues/N` endpoint, so a
+   *  title seen while classifying serves the later fetchIssueTitle call. */
   private readonly titlesByNumber = new Map<number, string | null>();
 
   constructor(
@@ -66,18 +53,10 @@ export class GithubResolver implements Resolver {
     this.headers = githubHeaders(token);
   }
 
-  /**
-   * Resolve every ref, deduped (repeats of the same "#N" cost one API call),
-   * capped at MAX_REFS (a legitimate PR never needs more), and bounded to
-   * CONCURRENCY in flight — defense against a body engineered to fan out
-   * unbounded concurrent requests through the gate's token.
-   */
+  /** Resolve every ref: deduped, capped at MAX_REFS, bounded to CONCURRENCY
+   *  in flight — defense against a body engineered to fan out unbounded
+   *  concurrent requests through the gate's token. */
   async resolve(refs: readonly ParsedRef[]): Promise<ResolvedRef[]> {
-    // Closing/backport refs decide the gate's verdict; bare/"relates to" refs
-    // are informational. A stable sort keeps refs of equal priority in their
-    // original order, so when the cap below has to drop something, it drops
-    // the least consequential refs first instead of whichever came last in
-    // the body.
     const capped = prioritizeAndCap(refs);
     const cache = new Map<string, Promise<Pick<ResolvedRef, 'target' | 'crossRepo'>>>();
     const classifyCached = (ref: ParsedRef): Promise<Pick<ResolvedRef, 'target' | 'crossRepo'>> => {
@@ -99,47 +78,29 @@ export class GithubResolver implements Resolver {
         results.push({ ...ref, target, crossRepo });
       });
     }
-    // Restore body order for the policy's messages — the priority sort above
-    // only controls what survives the cap, not how resolved refs get reported.
-    return results.sort((first, second) => first.index - second.index);
+    return results.sort((first, second) => first.index - second.index); // body order for messages — priority sort only controlled the cap
   }
 
-  /**
-   * Fetch a same-repo pull request's body for backport-hop validation, or null
-   * if it does not exist. Used to follow `Backport of #N` to the original PR and
-   * validate that PR's attribution (the backport inherits it — C7).
-   *
-   * A cross-repo marker (`Backport of owner/other#N`) resolves to null: this
-   * resolver is hardcoded to its own owner/repo, so #N there would name an
-   * unrelated PR in THIS repo. We only inherit attribution from our own repo.
-   */
+  /** A same-repo pull request's body, for backport-hop validation, or null if
+   *  it doesn't exist. Cross-repo (`Backport of owner/other#N`) resolves to
+   *  null: #N there would name an unrelated PR in THIS repo. */
   async fetchPullBody(number: number, repo: string | null): Promise<string | null> {
     if (this.isCrossRepo(repo)) return null;
     const pull = await this.fetchPull(number);
     return pull?.body ?? null;
   }
 
-  /**
-   * Fetch a same-repo pull request's full fields for the generator's backport
-   * hop (attribution + inherit-original title/mergedAt), or null if it does
-   * not exist. A cross-repo marker (`Backport of owner/other#N`) resolves to
-   * null for the same reason as {@link fetchPullBody}: #N there would name an
-   * unrelated PR in THIS repo.
-   */
+  /** Same as {@link fetchPullBody} but the full fields, for the generator's
+   *  backport hop (attribution + inherit-original title/mergedAt). */
   async fetchOriginalPull(number: number, repo: string | null): Promise<PullMeta | null> {
     if (this.isCrossRepo(repo)) return null;
     return this.fetchPull(number);
   }
 
-  /**
-   * Fetch the fields the gate evaluates for one same-repo pull request, or null
-   * if it does not exist.
-   *
-   * This is how the entrypoint obtains the PR under `workflow_run`, where the
-   * event payload carries no `pull_request` object at all. Fetching also means
-   * the body is read at evaluation time, so a stale or superseded trigger run
-   * can never evaluate an out-of-date body.
-   */
+  /** The fields the gate evaluates for one same-repo pull request, or null if
+   *  it doesn't exist. Fetched fresh rather than trusted from the webhook
+   *  payload, since `workflow_run` carries no `pull_request` object at all
+   *  and a stale trigger run must not evaluate an out-of-date body. */
   async fetchPull(number: number): Promise<PullMeta | null> {
     const res = await fetchJsonWithRetry<{
       body?: string | null;
@@ -158,11 +119,8 @@ export class GithubResolver implements Resolver {
     };
   }
 
-  /**
-   * The live title of a same-repo issue, or null if it doesn't exist. Used by
-   * the generator (#57713) to show the issue's own customer-facing wording
-   * in release notes rather than the delivering PR's dev-facing title.
-   */
+  /** The live title of a same-repo issue, or null if it doesn't exist — the
+   *  generator shows this customer-facing wording, not the PR's dev title. */
   async fetchIssueTitle(number: number): Promise<string | null> {
     const cached = this.titlesByNumber.get(number);
     if (cached !== undefined) return cached;
