@@ -24,6 +24,11 @@ const mockQueryProcessDefinitionsEndpoint = createEndpointMock({
 	method: endpoints.queryProcessDefinitions.method,
 });
 
+const mockQueryMessageSubscriptionsEndpoint = createEndpointMock({
+	endpoint: endpoints.queryMessageSubscriptions.getUrl(),
+	method: endpoints.queryMessageSubscriptions.method,
+});
+
 const mockGetProcessDefinitionEndpoint = createEndpointMock({
 	endpoint: endpoints.getProcessDefinition.getUrl({processDefinitionKey: ':processDefinitionKey'}),
 	method: endpoints.getProcessDefinition.method,
@@ -312,6 +317,7 @@ export {
 	mockGetAuditLogEndpoint,
 	mockQueryUserTasksEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
+	mockQueryMessageSubscriptionsEndpoint,
 	mockGetProcessDefinitionEndpoint,
 	mockGetProcessStartFormEndpoint,
 	mockCreateProcessInstanceEndpoint,
