@@ -171,3 +171,18 @@ jobs:
         secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
         secret_vault_address: ${{ secrets.VAULT_ADDR }}
         secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  # Auto-retry when integration-tests failed because its self-hosted runner was terminated
+  # mid-job rather than by a real test failure. Those runs end with "The runner has received a
+  # shutdown signal" partway through Maven Test Build, which says nothing about the code under
+  # test.
+  #
+  # send-slack-notification above still fires on the original failure, so a shutdown that the
+  # retry goes on to fix can leave one alert behind. See rerun-failed-jobs-reusable.yml.
+  rerun-failed-jobs:
+    needs: integration-tests
+    if: failure() && fromJSON(github.run_attempt) < 3
+    uses: ./.github/workflows/rerun-failed-jobs-reusable.yml
+    with:
+      test_owner: '@camunda/core-features'
+    secrets: inherit

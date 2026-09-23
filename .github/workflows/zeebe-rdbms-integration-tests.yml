@@ -200,3 +200,18 @@ jobs:
       test-type-label: "Identity"
       notify-slack-on-failure: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.notify-slack-on-failure) }}
       use-shared-distball: true
+
+  # Auto-retry when one of the jobs above failed because its self-hosted runner was terminated
+  # mid-job rather than by a real test failure, as in run 34190097454 where the MySQL 8.4 shard
+  # was killed partway through its test step.
+  #
+  # generate-matrix is deliberately not in `needs`: it runs on a GitHub-hosted runner and so is
+  # not exposed to spot preemption. build-distball is, and a shutdown there skips every shard
+  # below it, so it is covered. See rerun-failed-jobs-reusable.yml.
+  rerun-failed-jobs:
+    needs: [ build-distball, rdbms-integration-tests, rdbms-history-tests, rdbms-identity-tests ]
+    if: failure() && fromJSON(github.run_attempt) < 3
+    uses: ./.github/workflows/rerun-failed-jobs-reusable.yml
+    with:
+      test_owner: '@camunda/core-features'
+    secrets: inherit

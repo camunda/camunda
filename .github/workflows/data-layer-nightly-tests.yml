@@ -253,3 +253,18 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  # Auto-retry when a nightly leg failed because its self-hosted runner was terminated mid-job
+  # rather than by a real test failure. In run 34428217829 the stable/8.9 leg logged "The runner
+  # has received a shutdown signal" with no BUILD FAILURE and a log a fraction the length of the
+  # main leg's, so it was cut off before it could report a verdict at all.
+  #
+  # The aurora-async-replication legs run GitHub hosted and cannot be preempted; they are in
+  # `needs` only so this job sees the whole failure surface. See rerun-failed-jobs-reusable.yml.
+  rerun-failed-jobs:
+    needs: [nightly-tests, aurora-async-replication, aurora-async-replication-mysql]
+    if: failure() && fromJSON(github.run_attempt) < 3
+    uses: ./.github/workflows/rerun-failed-jobs-reusable.yml
+    with:
+      test_owner: '@camunda/data-layer'
+    secrets: inherit

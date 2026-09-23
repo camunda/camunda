@@ -172,3 +172,19 @@ jobs:
       test-type-label: "Identity"
       notify-slack-on-failure: ${{ github.event_name == 'schedule' }}
       use-shared-distball: true
+
+  # Auto-retry when one of the jobs above failed because its self-hosted runner was terminated
+  # mid-job rather than by a real test failure. No run here has been lost that way yet, but these
+  # shards use the same gcp-perf runner classes as the RDBMS ones that have, so the exposure is
+  # identical.
+  #
+  # generate-matrix is deliberately not in `needs`: it runs on a GitHub-hosted runner and so is
+  # not exposed to spot preemption. build-distball is, and a shutdown there skips every shard
+  # below it, so it is covered. See rerun-failed-jobs-reusable.yml.
+  rerun-failed-jobs:
+    needs: [ build-distball, search-integration-tests, search-history-tests, search-identity-tests ]
+    if: failure() && fromJSON(github.run_attempt) < 3
+    uses: ./.github/workflows/rerun-failed-jobs-reusable.yml
+    with:
+      test_owner: '@camunda/data-layer'
+    secrets: inherit
