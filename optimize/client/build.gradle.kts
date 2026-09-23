@@ -1,0 +1,56 @@
+// Does not use buildlogic.frontend-webjar-conventions because:
+//  1. Uses Yarn, not npm (convention uses NpmTask)
+//  2. No webjar packaging — processResources is not wired to copy build output into a JAR
+
+import com.github.gradle.node.NodeExtension
+import com.github.gradle.node.yarn.task.YarnTask
+import io.camunda.gradle.flags.asEnabledFlag
+import io.camunda.gradle.pom.PomResolver
+import io.camunda.gradle.pom.resolvePomProperty
+
+plugins {
+  id("buildlogic.server-conventions")
+  id("buildlogic.optimize-conventions")
+  id("com.github.node-gradle.node")
+}
+
+val parentPomVersions =
+  PomResolver(providers.fileContents(layout.settingsDirectory.file("parent/pom.xml")).asText.get())
+    .properties()
+
+extensions.configure<NodeExtension> {
+  download.set(true)
+  version.set(resolvePomProperty("version.node", parentPomVersions).removePrefix("v"))
+  yarnVersion.set(resolvePomProperty("version.yarn", parentPomVersions).removePrefix("v"))
+  distBaseUrl.set(null as String?)
+  workDir.set(layout.projectDirectory.dir(".node/nodejs"))
+  yarnWorkDir.set(layout.projectDirectory.dir(".node/yarn"))
+  nodeProjectDir.set(layout.projectDirectory)
+}
+
+val skipFrontendBuild =
+  providers
+    .gradleProperty("skip.fe.build")
+    .orElse(providers.gradleProperty("quickly"))
+    .asEnabledFlag()
+    .orElse(false)
+
+val yarnInstall =
+  tasks.register<YarnTask>("yarnInstall") {
+    enabled = !skipFrontendBuild.get()
+    dependsOn(tasks.named("yarnSetup"))
+    args.set(listOf("install"))
+  }
+
+val yarnBuild =
+  tasks.register<YarnTask>("yarnBuild") {
+    enabled = !skipFrontendBuild.get()
+    dependsOn(yarnInstall)
+    args.set(listOf("build"))
+  }
+
+tasks.named("processResources") { mustRunAfter(yarnBuild) }
+
+group = "io.camunda.optimize"
+
+description = "Optimize Client"
