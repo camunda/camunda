@@ -24,42 +24,42 @@ final class AdaptiveBatchSizeTest {
   }
 
   @Test
-  void shouldHalveOnReduce() {
+  void shouldHalve() {
     // given
     final var batchSize = new AdaptiveBatchSize(100);
 
     // when
-    final var reduced = batchSize.reduce();
+    final var halved = batchSize.halve();
 
     // then
-    assertThat(reduced).isTrue();
+    assertThat(halved).isTrue();
     assertThat(batchSize.current()).isEqualTo(50);
   }
 
   @Test
-  void shouldKeepHalvingOnEveryReduce() {
+  void shouldKeepHalvingOnEveryCall() {
     // given
     final var batchSize = new AdaptiveBatchSize(100);
 
     // when
-    batchSize.reduce();
-    batchSize.reduce();
-    batchSize.reduce();
+    batchSize.halve();
+    batchSize.halve();
+    batchSize.halve();
 
     // then
     assertThat(batchSize.current()).isEqualTo(12);
   }
 
   @Test
-  void shouldRefuseToReduceBelowOne() {
+  void shouldRefuseToHalveBelowOne() {
     // given
     final var batchSize = new AdaptiveBatchSize(1);
 
     // when
-    final var reduced = batchSize.reduce();
+    final var halved = batchSize.halve();
 
     // then - the caller has to handle a write it cannot make any smaller
-    assertThat(reduced).isFalse();
+    assertThat(halved).isFalse();
     assertThat(batchSize.current()).isEqualTo(1);
   }
 
@@ -67,8 +67,8 @@ final class AdaptiveBatchSizeTest {
   void shouldReturnToTheConfiguredSizeOnReset() {
     // given
     final var batchSize = new AdaptiveBatchSize(100);
-    batchSize.reduce();
-    batchSize.reduce();
+    batchSize.halve();
+    batchSize.halve();
 
     // when
     batchSize.reset();
