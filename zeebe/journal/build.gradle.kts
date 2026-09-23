@@ -4,17 +4,11 @@
 
 plugins { id("buildlogic.sbe-conventions") }
 
-// Configure SBE input files for caching
 sbe {
-  inputFiles.from(layout.projectDirectory.file("src/main/resources/journal-schema.xml"))
+  schemaFiles.from(layout.projectDirectory.file("src/main/resources/journal-schema.xml"))
   // SBE also emits a package-info.java for this package, which already has a hand-written one.
   generatedFilesToDelete.add("io/camunda/zeebe/journal/file/package-info.java")
 }
-
-// Configure SBE generation
-val journalSchema = layout.projectDirectory.file("src/main/resources/journal-schema.xml")
-
-tasks.named<JavaExec>("generateSbe") { args(journalSchema.asFile.absolutePath) }
 
 dependencies {
   implementation(libs.org.jspecify.jspecify)

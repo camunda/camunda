@@ -17,9 +17,10 @@ plugins { id("buildlogic.server-conventions") }
 val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
 val sbeToolVersion = versionCatalog.requiredVersion("uk-co-real-logic-sbe-tool")
 
-// Extension to configure SBE input files
+// Extension to configure SBE schema files and any additional files they reference.
 interface SbeExtension {
-  val inputFiles: ConfigurableFileCollection
+  val schemaFiles: ConfigurableFileCollection
+  val additionalInputFiles: ConfigurableFileCollection
 
   /**
    * Generated files, relative to the SBE output directory, to remove after generation. SBE emits a
@@ -46,9 +47,11 @@ val generateSbe =
 
     // Configure inputs and outputs for caching
     inputs
-      .files(sbeExtension.inputFiles)
+      .files(sbeExtension.schemaFiles, sbeExtension.additionalInputFiles)
       .withPropertyName("sbeInputFiles")
       .withPathSensitivity(PathSensitivity.RELATIVE)
+
+    args(sbeExtension.schemaFiles)
     outputs.dir(outputDir).withPropertyName("sbeOutputDir")
 
     // JavaExec is not cacheable by default; opt in so unchanged inputs hit the
@@ -71,9 +74,6 @@ val generateSbe =
     systemProperty("sbe.generate.ir", "true")
 
     workingDir(workingDir)
-
-    // Arguments will be configured per module (the XML schema files)
-    // args will be set in individual build.gradle.kts files
 
     val filesToDelete = sbeExtension.generatedFilesToDelete
 
