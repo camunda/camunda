@@ -151,8 +151,7 @@ describe('Multi tenancy', () => {
 
 		const screen = await renderDecisionsPage({tenantId: '<tenant-A>'});
 
-		// The definitions are only listed when the request matched the schema.
-		await screen.getByRole('combobox', {name: 'Name'}).click({force: true});
+		await screen.getByRole('combobox', {name: 'Name'}).click();
 		await expect.element(screen.getByRole('option', {name: 'Invoice Approval'})).toBeVisible();
 	});
 
@@ -169,8 +168,7 @@ describe('Multi tenancy', () => {
 
 		const screen = await renderDecisionsPage({tenantId: 'all'});
 
-		// The definitions are only listed when the request matched the schema.
-		await screen.getByRole('combobox', {name: 'Name'}).click({force: true});
+		await screen.getByRole('combobox', {name: 'Name'}).click();
 		await expect.element(screen.getByRole('option', {name: 'Invoice Approval'})).toBeVisible();
 	});
 });
