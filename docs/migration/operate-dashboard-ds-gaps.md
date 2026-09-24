@@ -18,13 +18,20 @@ non-interactive strip rather than removed outright.
 Needs design review: is an always-present (even if visually empty) header row acceptable for this
 list shape, or should DS `DataTable` gain a way to omit it?
 
-### Gap: no per-row override for the expansion toggle
+### Gap: no per-row override for the expansion toggle — resolved, adopted native `expansion`
 
 DS `DataTable`'s `expansion` prop renders an expand/collapse toggle for every row unconditionally —
 there is no public `getRowCanExpand`-style override (confirmed against the installed package's
 `data-table.js`). The Carbon original hid the toggle entirely for rows with nothing to expand.
-Current code doesn't use the `expansion` prop at all; it composes its own toggle inside the single
-content column instead, showing it only when a row has `expandedContents`.
 
-Needs design review: should DS `DataTable`'s `expansion` prop gain a per-row override, or is a
-composed-in-column toggle (as done here) the intended pattern for lists like this one?
+Decision: switched to the native `expansion` prop (matching the DS Storybook expansion pattern:
+https://camunda.github.io/design-system/?path=/story/ui-datatable--expansion) instead of the
+composed-in-column toggle. Rows with no `expandedContents` entry now show a toggle that expands
+into nothing — an accepted, intentional regression from Carbon parity, traded for matching the DS
+component's own expansion pattern out of the box.
+
+Follow-on: the pagination loading skeletons are kept as siblings around `DataTable` rather than
+synthetic table rows, specifically so they don't pick up this same always-on toggle.
+
+Still open: should DS `DataTable`'s `expansion` prop gain a per-row override so consumers aren't
+forced to choose between Carbon-parity behavior and the native pattern?

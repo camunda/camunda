@@ -191,7 +191,7 @@ describe('<ExpandableList />', () => {
 		await expect.element(screen.getByText('Version details for order process')).toBeVisible();
 	});
 
-	it('does not render an expand toggle for a row with no expandedContents entry', async () => {
+	it('renders an expand toggle for every row, even one with no expandedContents entry', async () => {
 		const screen = await render(
 			<ExpandableList
 				isPending={false}
@@ -215,7 +215,31 @@ describe('<ExpandableList />', () => {
 			/>,
 		);
 
-		expect(screen.getByRole('button', {name: 'Expand row'}).elements()).toHaveLength(1);
+		expect(screen.getByRole('button', {name: 'Expand row'}).elements()).toHaveLength(2);
+	});
+
+	it('expanding a row with no expandedContents entry reveals nothing', async () => {
+		const screen = await render(
+			<ExpandableList
+				isPending={false}
+				isError={false}
+				listTestId="list"
+				dataTestId="table"
+				header="Process name"
+				rows={[{id: 'process-1', content: <span>Order process</span>}]}
+				expandedContents={{}}
+				hasNextPage={false}
+				hasPreviousPage={false}
+				isFetchingNextPage={false}
+				isFetchingPreviousPage={false}
+				onLoadNextPage={noop}
+				onLoadPreviousPage={noop}
+			/>,
+		);
+
+		await userEvent.click(screen.getByRole('button', {name: 'Expand row'}));
+
+		await expect.element(screen.getByRole('button', {name: 'Collapse row'})).toBeVisible();
 	});
 
 	it('shows a loading indicator above the list while fetching the previous page', async () => {

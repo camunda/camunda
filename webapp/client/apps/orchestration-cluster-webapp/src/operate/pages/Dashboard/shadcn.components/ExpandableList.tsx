@@ -6,68 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useRef} from 'react';
 import {useTranslation} from 'react-i18next';
 import {DataTable, Skeleton, type DataTableColumn} from '@camunda/design-system';
-import {ChevronDown, ChevronRight} from '@camunda/design-system/icons';
 import SvgErrorRobot from '#/shared/svg/ErrorRobot';
 import {EmptyState} from '#/operate/components/EmptyState/shadcn.components/EmptyState';
 
 type Row = {id: string; content: React.ReactNode};
-
-const PREVIOUS_LOADING_ROW_ID = '__expandable-list-loading-previous__';
-const NEXT_LOADING_ROW_ID = '__expandable-list-loading-next__';
-
-const LoadingRow: React.FC<{testId: string}> = ({testId}) => (
-	<div className="flex justify-center py-2" data-testid={testId}>
-		<Skeleton className="h-4 w-24" />
-	</div>
-);
-
-type ExpandableRowProps = {
-	row: Row;
-	expandedContent: React.ReactElement<{tabIndex: number}> | undefined;
-};
-
-// DS DataTable's own `expansion` prop injects a toggle for every row unconditionally, with
-// no per-row override — Carbon hid the toggle entirely for rows with nothing to expand, so
-// the expand/collapse control is composed here instead, inside the single content column,
-// rather than through that prop. Recorded for design review, see
-// docs/migration/operate-dashboard-ds-gaps.md.
-const ExpandableRow: React.FC<ExpandableRowProps> = ({row, expandedContent}) => {
-	const [isExpanded, setIsExpanded] = useState(false);
-	const canExpand = expandedContent !== undefined;
-
-	return (
-		<div>
-			<div className="flex items-center gap-1">
-				{canExpand ? (
-					<button
-						type="button"
-						aria-expanded={isExpanded}
-						aria-label={isExpanded ? 'Collapse row' : 'Expand row'}
-						onClick={() => setIsExpanded((expanded) => !expanded)}
-						className="flex h-6 w-6 shrink-0 items-center justify-center rounded hover:bg-neutral-background-subtle focus-visible:bg-neutral-background-subtle focus-visible:outline-none"
-					>
-						{isExpanded ? (
-							<ChevronDown className="size-4" aria-hidden="true" />
-						) : (
-							<ChevronRight className="size-4" aria-hidden="true" />
-						)}
-					</button>
-				) : (
-					<div className="h-6 w-6 shrink-0" />
-				)}
-				<div className="min-w-0 flex-1">{row.content}</div>
-			</div>
-			{canExpand && isExpanded && (
-				<div className="bg-neutral-background-medium px-4 py-4">
-					{React.cloneElement(expandedContent, {tabIndex: 0})}
-				</div>
-			)}
-		</div>
-	);
-};
 
 type Props = {
 	isPending: boolean;
@@ -181,43 +126,44 @@ const ExpandableList: React.FC<Props> = ({
 		{
 			id: 'content',
 			header: () => <span className="sr-only">{header}</span>,
-			cell: ({row}) => {
-				const original = row.original;
-
-				if (original.id === PREVIOUS_LOADING_ROW_ID) {
-					return <LoadingRow testId={`${listTestId}-loading-previous`} />;
-				}
-
-				if (original.id === NEXT_LOADING_ROW_ID) {
-					return <LoadingRow testId={`${listTestId}-loading-next`} />;
-				}
-
-				return <ExpandableRow row={original} expandedContent={expandedContents[original.id]} />;
-			},
+			cell: ({row}) => row.original.content,
 		},
 	];
 
-	// Loading indicators render as synthetic rows inside DataTable's own body, rather than
-	// as siblings around it, so they sit at the last/first row position instead of visually
-	// detached above/below the table.
-	const tableRows: Row[] = [
-		...(isFetchingPreviousPage ? [{id: PREVIOUS_LOADING_ROW_ID, content: null}] : []),
-		...rows,
-		...(isFetchingNextPage ? [{id: NEXT_LOADING_ROW_ID, content: null}] : []),
-	];
+	// DS DataTable's `expansion` prop injects the toggle for every row unconditionally (no
+	// per-row suppression — confirmed against the installed package's data-table.js). Unlike
+	// Carbon, rows with nothing to expand still show a toggle here; accepted per design review
+	// to match the DS DataTable expansion pattern. See docs/migration/operate-dashboard-ds-gaps.md.
+	// The pagination skeletons are kept as siblings (not table rows) precisely to avoid picking
+	// up that same always-on toggle.
+	const expansion = (row: Row) => {
+		const content = expandedContents[row.id];
+		return content ? React.cloneElement(content, {tabIndex: 0}) : null;
+	};
 
 	return (
 		<div className="flex flex-1 flex-col" data-testid={listTestId}>
 			{hasPreviousPage && <div ref={topSentinelRef} data-testid={`${listTestId}-top-sentinel`} />}
+			{isFetchingPreviousPage && (
+				<div className="flex justify-center py-2" data-testid={`${listTestId}-loading-previous`}>
+					<Skeleton className="h-4 w-24" />
+				</div>
+			)}
 			<div data-testid={dataTestId}>
 				<DataTable<Row>
 					size="sm"
 					columns={columns}
-					data={tableRows}
+					data={rows}
+					expansion={expansion}
 					aria-label={header}
 					getRowId={(row) => row.id}
 				/>
 			</div>
+			{isFetchingNextPage && (
+				<div className="flex justify-center py-2" data-testid={`${listTestId}-loading-next`}>
+					<Skeleton className="h-4 w-24" />
+				</div>
+			)}
 			{hasNextPage && <div ref={bottomSentinelRef} data-testid={`${listTestId}-bottom-sentinel`} />}
 		</div>
 	);
