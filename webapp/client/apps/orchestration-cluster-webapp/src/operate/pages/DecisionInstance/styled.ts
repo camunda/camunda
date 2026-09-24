@@ -7,6 +7,8 @@
  */
 
 import styled from 'styled-components';
+import {Stack} from '@carbon/react';
+import {styles} from '@carbon/type';
 
 const Container = styled.div`
 	height: 100%;
@@ -14,4 +16,27 @@ const Container = styled.div`
 	padding-top: var(--cds-spacing-09);
 `;
 
-export {Container};
+const Section = styled.section`
+	height: 100%;
+	overflow: auto;
+`;
+
+const IncidentBanner = styled.div`
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	height: var(--cds-spacing-09);
+	${styles.bodyShort01};
+	background-color: var(--cds-notification-background-error);
+	border: 1px solid var(--cds-support-error);
+	border-left: 4px solid var(--cds-support-error);
+	color: var(--cds-text-primary);
+`;
+
+const RetryError = styled(Stack)`
+	flex-grow: 1;
+	align-items: center;
+	justify-content: center;
+`;
+
+export {Container, Section, IncidentBanner, RetryError};

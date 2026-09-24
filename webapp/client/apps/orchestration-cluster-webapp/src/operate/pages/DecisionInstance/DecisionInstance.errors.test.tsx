@@ -11,8 +11,13 @@ import {userEvent} from 'vitest/browser';
 import {HttpResponse} from 'msw';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {mockCurrentUserEndpoint, mockGetDecisionInstanceEndpoint} from '#/shared-test-modules/mock-handlers';
+import {
+	mockCurrentUserEndpoint,
+	mockGetDecisionDefinitionXmlEndpoint,
+	mockGetDecisionInstanceEndpoint,
+} from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {DMN_XML} from '#/shared-test-modules/api-mocks/decision-definition-xmls';
 import {createDecisionInstance} from '#/shared-test-modules/api-mocks/decision-instances';
 import {createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
@@ -27,13 +32,19 @@ const decisionInstance = createDecisionInstance({decisionEvaluationInstanceKey: 
 describe.each([
 	{
 		name: 'DecisionInstance',
-		Component: () => <DecisionInstance decisionInstanceId={DECISION_INSTANCE_ID} />,
+		loadedContent: 'Invoice Amount',
+		Component: () => (
+			<div style={{height: '100vh'}}>
+				<DecisionInstance decisionInstanceId={DECISION_INSTANCE_ID} />
+			</div>
+		),
 	},
 	{
 		name: 'Header',
+		loadedContent: DECISION_INSTANCE_ID,
 		Component: () => <Header decisionEvaluationInstanceKey={DECISION_INSTANCE_ID} onOpenDrd={() => {}} />,
 	},
-])('$name page-query recovery', ({Component}) => {
+])('$name page-query recovery', ({Component, loadedContent}) => {
 	beforeEach(() => {
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
 	});
@@ -52,6 +63,7 @@ describe.each([
 		worker.use(
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 			mockGetDecisionInstanceEndpoint({successResponse: response}),
+			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
 		);
 
 		const screen = await renderWithRouter(Component, {
@@ -75,6 +87,7 @@ describe.each([
 		await expect.element(screen.getByRole('heading', {name: 'Something went wrong'})).not.toBeInTheDocument();
 		await expect.element(screen.getByRole('button', {name: 'Try again'})).not.toBeInTheDocument();
 		expect(screen.router.state.location.href).toBe(INITIAL_ENTRY);
+		await expect.element(screen.getByText(loadedContent, {exact: true})).toBeVisible();
 	});
 
 	it('should remain recoverable when retry fails again', async ({worker}) => {
@@ -83,6 +96,7 @@ describe.each([
 			mockGetDecisionInstanceEndpoint({
 				successResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
 			}),
+			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
 		);
 
 		const screen = await renderWithRouter(Component, {
@@ -100,12 +114,14 @@ describe.each([
 		await userEvent.click(screen.getByRole('button', {name: 'Try again'}));
 
 		await expect.element(screen.getByText(decisionInstance.decisionDefinitionName)).toBeVisible();
+		await expect.element(screen.getByText(loadedContent, {exact: true})).toBeVisible();
 	});
 
 	it('should show recovery rather than stale details after a failed refetch', async ({worker}) => {
 		worker.use(
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 			mockGetDecisionInstanceEndpoint({successResponse: HttpResponse.json(decisionInstance)}),
+			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
 		);
 
 		const screen = await renderWithRouter(Component, {
@@ -114,6 +130,7 @@ describe.each([
 		});
 
 		await expect.element(screen.getByText(decisionInstance.decisionDefinitionName)).toBeVisible();
+		await expect.element(screen.getByText(loadedContent, {exact: true})).toBeVisible();
 		worker.use(mockGetDecisionInstanceEndpoint({successResponse: HttpResponse.error()}));
 		await screen.queryClient.invalidateQueries({queryKey: decisionInstanceQuery(DECISION_INSTANCE_ID).queryKey});
 
@@ -125,5 +142,6 @@ describe.each([
 
 		await expect.element(screen.getByText(decisionInstance.decisionDefinitionName)).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Try again'})).not.toBeInTheDocument();
+		await expect.element(screen.getByText(loadedContent, {exact: true})).toBeVisible();
 	});
 });

@@ -7,24 +7,50 @@
  */
 
 import {afterEach, beforeEach, describe, expect} from 'vitest';
+import {createInstance} from 'i18next';
 import {HttpResponse} from 'msw';
+import {I18nextProvider} from 'react-i18next';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {mockCurrentUserEndpoint, mockGetDecisionInstanceEndpoint} from '#/shared-test-modules/mock-handlers';
+import {
+	mockCurrentUserEndpoint,
+	mockGetDecisionDefinitionXmlEndpoint,
+	mockGetDecisionInstanceEndpoint,
+} from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {DMN_XML} from '#/shared-test-modules/api-mocks/decision-definition-xmls';
 import {createDecisionInstance} from '#/shared-test-modules/api-mocks/decision-instances';
 import {createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {translationResources} from '#/shared/i18n';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
-import {DecisionInstance} from './DecisionInstance';
+import {DecisionInstance, DecisionInstanceShell} from './DecisionInstance';
 
 const DECISION_INSTANCE_ID = '4294980768';
 
-function renderPage() {
-	return renderWithRouter(() => <DecisionInstance decisionInstanceId={DECISION_INSTANCE_ID} />, {
-		path: '/operate/decisions/$decisionInstanceId',
-		initialEntry: `/operate/decisions/${DECISION_INSTANCE_ID}`,
+async function createTranslations(language: 'de' | 'fr' | 'es') {
+	const translations = createInstance();
+	await translations.init({
+		lng: language,
+		resources: translationResources,
+		interpolation: {escapeValue: false},
 	});
+
+	return translations;
+}
+
+function renderPage() {
+	return renderWithRouter(
+		() => (
+			<div style={{height: '100vh'}}>
+				<DecisionInstance decisionInstanceId={DECISION_INSTANCE_ID} />
+			</div>
+		),
+		{
+			path: '/operate/decisions/$decisionInstanceId',
+			initialEntry: `/operate/decisions/${DECISION_INSTANCE_ID}`,
+		},
+	);
 }
 
 describe('<DecisionInstance />', () => {
@@ -37,17 +63,58 @@ describe('<DecisionInstance />', () => {
 		notificationsStore.reset();
 	});
 
-	it('should render the header', async ({worker}) => {
+	it('should show the decision panel loading state in the pending route shell', async () => {
+		const screen = await renderWithRouter(
+			() => (
+				<div style={{height: '100vh'}}>
+					<DecisionInstanceShell header={<div>Loading decision instance</div>} />
+				</div>
+			),
+			{path: '/operate/decisions/$decisionInstanceId', initialEntry: `/operate/decisions/${DECISION_INSTANCE_ID}`},
+		);
+
+		await expect
+			.element(screen.getByRole('region', {name: 'decision panel'}).getByRole('img', {name: 'loading'}))
+			.toBeVisible();
+	});
+
+	it.for(['de', 'fr', 'es'] as const)('should localize pending route shell landmark label for %s', async (language) => {
+		const translations = await createTranslations(language);
+		const screen = await renderWithRouter(
+			() => (
+				<I18nextProvider i18n={translations}>
+					<div style={{height: '100vh'}}>
+						<DecisionInstanceShell header={<div>Loading decision instance</div>} />
+					</div>
+				</I18nextProvider>
+			),
+			{path: '/operate/decisions/$decisionInstanceId', initialEntry: `/operate/decisions/${DECISION_INSTANCE_ID}`},
+		);
+
+		await expect
+			.element(
+				screen
+					.getByRole('region', {name: translations.t('operate.decisionInstance.panel.label')})
+					.getByRole('img', {name: 'loading'}),
+			)
+			.toBeVisible();
+	});
+
+	it('should render the header and evaluated decision panel', async ({worker}) => {
 		const decisionInstance = createDecisionInstance();
 		worker.use(
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 			mockGetDecisionInstanceEndpoint({successResponse: HttpResponse.json(decisionInstance)}),
+			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
 		);
 
 		const screen = await renderPage();
 
 		await expect.element(screen.getByTestId('instance-header')).toBeVisible();
 		await expect.element(screen.getByRole('heading', {name: 'Operate Decision Instance'})).toBeInTheDocument();
+		await expect
+			.element(screen.getByRole('region', {name: 'decision panel'}).getByText('Invoice Amount'))
+			.toBeVisible();
 	});
 
 	it('should display forbidden content', async ({worker}) => {
