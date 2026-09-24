@@ -79,6 +79,19 @@
 		"relativeDateYearsFmt_speech": "d 'de' MMMM, yyyy",
 		"relativeDateYearsFmt_time_speech": "d 'de' MMMM, yyyy 'a las' p",
 		"relativeDateUnknown": "'Desconocido'",
+		"admin": {
+			"adminPanelNavAria": "Navegación de Admin",
+			"headerNavItemUsers": "Usuarios",
+			"headerNavItemGroups": "Grupos",
+			"headerNavItemRoles": "Roles",
+			"headerNavItemTenants": "Inquilinos",
+			"headerNavItemMappingRules": "Reglas de asignación",
+			"headerNavItemAuthorizations": "Autorizaciones",
+			"headerNavItemGlobalTaskListeners": "Listeners globales de tareas de usuario",
+			"headerNavItemClusterVariables": "Variables del clúster",
+			"headerNavItemMcpProcesses": "Procesos MCP",
+			"headerNavItemOperationsLog": "Registro de operaciones"
+		},
 		"tasklist": {
 			"tasksPanelLabel": "Panel lateral de tareas",
 			"headerNavItemTasks": "Tareas",

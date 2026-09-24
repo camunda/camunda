@@ -6,9 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute} from '@tanstack/react-router';
-import {AdminPage} from '#/admin/pages/AdminPage';
+import {useTranslation} from 'react-i18next';
 
-export const Route = createFileRoute('/_carbon/_auth/admin/')({
-	component: AdminPage,
-});
+const AdminGroupsPage: React.FC = () => {
+	const {t} = useTranslation();
+
+	return <h1>{t('admin.headerNavItemGroups')}</h1>;
+};
+
+export {AdminGroupsPage};

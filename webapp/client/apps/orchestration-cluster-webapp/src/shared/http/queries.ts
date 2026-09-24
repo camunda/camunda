@@ -7,8 +7,8 @@
  */
 
 import {infiniteQueryOptions, queryOptions} from '@tanstack/react-query';
+import type {GetSystemConfigurationResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
 import type {
-	GetSystemConfigurationResponseBody,
 	CurrentUser,
 	License,
 	Form,

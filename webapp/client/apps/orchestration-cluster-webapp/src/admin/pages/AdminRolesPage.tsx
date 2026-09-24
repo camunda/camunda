@@ -6,12 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute, notFound} from '@tanstack/react-router';
+import {useTranslation} from 'react-i18next';
 
-const Route = createFileRoute('/_carbon/_auth/admin/$')({
-	beforeLoad: () => {
-		throw notFound({routeId: '/_carbon/_auth/admin'});
-	},
-});
+const AdminRolesPage: React.FC = () => {
+	const {t} = useTranslation();
 
-export {Route};
+	return <h1>{t('admin.headerNavItemRoles')}</h1>;
+};
+
+export {AdminRolesPage};

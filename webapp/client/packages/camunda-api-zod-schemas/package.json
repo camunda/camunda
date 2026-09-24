@@ -600,6 +600,216 @@
 				"default": "./dist/8.10/element-instance-inspection.js"
 			}
 		},
+		"./8.11": {
+			"import": {
+				"types": "./dist/8.11.d.ts",
+				"default": "./dist/8.11.js"
+			}
+		},
+		"./8.11/audit-log": {
+			"import": {
+				"types": "./dist/8.11/audit-log.d.ts",
+				"default": "./dist/8.11/audit-log.js"
+			}
+		},
+		"./8.11/ad-hoc-sub-process": {
+			"import": {
+				"types": "./dist/8.11/ad-hoc-sub-process.d.ts",
+				"default": "./dist/8.11/ad-hoc-sub-process.js"
+			}
+		},
+		"./8.11/authentication": {
+			"import": {
+				"types": "./dist/8.11/authentication.d.ts",
+				"default": "./dist/8.11/authentication.js"
+			}
+		},
+		"./8.11/authorization": {
+			"import": {
+				"types": "./dist/8.11/authorization.d.ts",
+				"default": "./dist/8.11/authorization.js"
+			}
+		},
+		"./8.11/batch-operation": {
+			"import": {
+				"types": "./dist/8.11/batch-operation.d.ts",
+				"default": "./dist/8.11/batch-operation.js"
+			}
+		},
+		"./8.11/clock": {
+			"import": {
+				"types": "./dist/8.11/clock.d.ts",
+				"default": "./dist/8.11/clock.js"
+			}
+		},
+		"./8.11/cluster": {
+			"import": {
+				"types": "./dist/8.11/cluster.d.ts",
+				"default": "./dist/8.11/cluster.js"
+			}
+		},
+		"./8.11/decision-definition": {
+			"import": {
+				"types": "./dist/8.11/decision-definition.d.ts",
+				"default": "./dist/8.11/decision-definition.js"
+			}
+		},
+		"./8.11/decision-instance": {
+			"import": {
+				"types": "./dist/8.11/decision-instance.d.ts",
+				"default": "./dist/8.11/decision-instance.js"
+			}
+		},
+		"./8.11/decision-requirements": {
+			"import": {
+				"types": "./dist/8.11/decision-requirements.d.ts",
+				"default": "./dist/8.11/decision-requirements.js"
+			}
+		},
+		"./8.11/document": {
+			"import": {
+				"types": "./dist/8.11/document.d.ts",
+				"default": "./dist/8.11/document.js"
+			}
+		},
+		"./8.11/element-instance": {
+			"import": {
+				"types": "./dist/8.11/element-instance.d.ts",
+				"default": "./dist/8.11/element-instance.js"
+			}
+		},
+		"./8.11/group": {
+			"import": {
+				"types": "./dist/8.11/group.d.ts",
+				"default": "./dist/8.11/group.js"
+			}
+		},
+		"./8.11/job": {
+			"import": {
+				"types": "./dist/8.11/job.d.ts",
+				"default": "./dist/8.11/job.js"
+			}
+		},
+		"./8.11/license": {
+			"import": {
+				"types": "./dist/8.11/license.d.ts",
+				"default": "./dist/8.11/license.js"
+			}
+		},
+		"./8.11/mapping-rule": {
+			"import": {
+				"types": "./dist/8.11/mapping-rule.d.ts",
+				"default": "./dist/8.11/mapping-rule.js"
+			}
+		},
+		"./8.11/message": {
+			"import": {
+				"types": "./dist/8.11/message.d.ts",
+				"default": "./dist/8.11/message.js"
+			}
+		},
+		"./8.11/process-definition": {
+			"import": {
+				"types": "./dist/8.11/process-definition.d.ts",
+				"default": "./dist/8.11/process-definition.js"
+			}
+		},
+		"./8.11/message-subscriptions": {
+			"import": {
+				"types": "./dist/8.11/message-subscriptions.d.ts",
+				"default": "./dist/8.11/message-subscriptions.js"
+			}
+		},
+		"./8.11/user-task": {
+			"import": {
+				"types": "./dist/8.11/user-task.d.ts",
+				"default": "./dist/8.11/user-task.js"
+			}
+		},
+		"./8.11/process-instance": {
+			"import": {
+				"types": "./dist/8.11/process-instance.d.ts",
+				"default": "./dist/8.11/process-instance.js"
+			}
+		},
+		"./8.11/resource": {
+			"import": {
+				"types": "./dist/8.11/resource.d.ts",
+				"default": "./dist/8.11/resource.js"
+			}
+		},
+		"./8.11/role": {
+			"import": {
+				"types": "./dist/8.11/role.d.ts",
+				"default": "./dist/8.11/role.js"
+			}
+		},
+		"./8.11/signal": {
+			"import": {
+				"types": "./dist/8.11/signal.d.ts",
+				"default": "./dist/8.11/signal.js"
+			}
+		},
+		"./8.11/tenant": {
+			"import": {
+				"types": "./dist/8.11/tenant.d.ts",
+				"default": "./dist/8.11/tenant.js"
+			}
+		},
+		"./8.11/usage-metrics": {
+			"import": {
+				"types": "./dist/8.11/usage-metrics.d.ts",
+				"default": "./dist/8.11/usage-metrics.js"
+			}
+		},
+		"./8.11/user": {
+			"import": {
+				"types": "./dist/8.11/user.d.ts",
+				"default": "./dist/8.11/user.js"
+			}
+		},
+		"./8.11/variable": {
+			"import": {
+				"types": "./dist/8.11/variable.d.ts",
+				"default": "./dist/8.11/variable.js"
+			}
+		},
+		"./8.11/incident": {
+			"import": {
+				"types": "./dist/8.11/incident.d.ts",
+				"default": "./dist/8.11/incident.js"
+			}
+		},
+		"./8.11/cluster-variable": {
+			"import": {
+				"types": "./dist/8.11/cluster-variable.d.ts",
+				"default": "./dist/8.11/cluster-variable.js"
+			}
+		},
+		"./8.11/global-task-listener": {
+			"import": {
+				"types": "./dist/8.11/global-task-listener.d.ts",
+				"default": "./dist/8.11/global-task-listener.js"
+			}
+		},
+		"./8.11/agent-instance": {
+			"import": {
+				"types": "./dist/8.11/agent-instance.d.ts",
+				"default": "./dist/8.11/agent-instance.js"
+			}
+		},
+		"./8.11/system-configuration": {
+			"import": {
+				"types": "./dist/8.11/system-configuration.d.ts",
+				"default": "./dist/8.11/system-configuration.js"
+			}
+		},
+		"./8.11/element-instance-inspection": {
+			"import": {
+				"types": "./dist/8.11/element-instance-inspection.d.ts",
+				"default": "./dist/8.11/element-instance-inspection.js"
+			}
+		},
 		"./package.json": "./package.json"
 	},
 	"publishConfig": {

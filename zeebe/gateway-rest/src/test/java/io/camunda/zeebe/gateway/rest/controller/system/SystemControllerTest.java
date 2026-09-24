@@ -19,8 +19,11 @@ import io.camunda.search.entities.UsageMetricTUStatisticsEntity.UsageMetricTUSta
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
+import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.security.api.model.config.SaasConfiguration;
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.service.registry.ServiceRegistry;
@@ -462,6 +465,7 @@ public class SystemControllerTest extends RestControllerTest {
     final var securityCfg = new CamundaSecurityLibraryProperties();
     when(cslProperties.getMultiTenancy()).thenReturn(securityCfg.getMultiTenancy());
     when(cslProperties.getSaas()).thenReturn(securityCfg.getSaas());
+    when(cslProperties.getAuthentication()).thenReturn(securityCfg.getAuthentication());
 
     // Properties are already set to true by default in SystemControllerTestConfiguration
 
@@ -484,11 +488,13 @@ public class SystemControllerTest extends RestControllerTest {
               },
               "deployment": {
                 "isMultiTenancyEnabled": false,
+                "isTenantsApiEnabled": true,
                 "maxRequestSize": 4194304
               },
               "authentication": {
                 "canLogout": true,
-                "isLoginDelegated": false
+                "isLoginDelegated": false,
+                "isCamundaGroupsEnabled": true
               },
               "cloud": {
                 "stage": null
@@ -553,6 +559,90 @@ public class SystemControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldReturnWebappConfigurationWithTenantsApiEnabled() {
+    // given
+    final var multiTenancyCfg = new MultiTenancyConfiguration();
+    multiTenancyCfg.setApiEnabled(true);
+    when(cslProperties.getMultiTenancy()).thenReturn(multiTenancyCfg);
+
+    // when/then
+    webClient
+        .get()
+        .uri(SYSTEM_CONFIGURATION_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            {
+              "deployment": {
+                "isTenantsApiEnabled": true
+              }
+            }
+            """,
+            JsonCompareMode.LENIENT);
+  }
+
+  @Test
+  void shouldReturnWebappConfigurationWithCamundaGroupsEnabledForBasicAuthentication() {
+    // given
+    final var authenticationCfg = new AuthenticationConfiguration();
+    authenticationCfg.setMethod(AuthenticationMethod.BASIC);
+    when(cslProperties.getAuthentication()).thenReturn(authenticationCfg);
+
+    // when/then
+    webClient
+        .get()
+        .uri(SYSTEM_CONFIGURATION_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            {
+              "authentication": {
+                "isCamundaGroupsEnabled": true
+              }
+            }
+            """,
+            JsonCompareMode.LENIENT);
+  }
+
+  @Test
+  void shouldReturnWebappConfigurationWithCamundaGroupsDisabledWhenOidcGroupsClaimConfigured() {
+    // given
+    final var oidcCfg = new OidcConfiguration();
+    oidcCfg.setGroupsClaim("groups");
+    final var authenticationCfg = new AuthenticationConfiguration();
+    authenticationCfg.setMethod(AuthenticationMethod.OIDC);
+    authenticationCfg.setOidc(oidcCfg);
+    when(cslProperties.getAuthentication()).thenReturn(authenticationCfg);
+
+    // when/then
+    webClient
+        .get()
+        .uri(SYSTEM_CONFIGURATION_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            {
+              "authentication": {
+                "isCamundaGroupsEnabled": false
+              }
+            }
+            """,
+            JsonCompareMode.LENIENT);
+  }
+
+  @Test
   void shouldReturnWebappConfigurationWithSaaSSettings() {
     // given
     final var saasCfg = new SaasConfiguration();
@@ -604,11 +694,13 @@ public class SystemControllerTest extends RestControllerTest {
               },
               "deployment": {
                 "isMultiTenancyEnabled": false,
+                "isTenantsApiEnabled": false,
                 "maxRequestSize": 4194304
               },
               "authentication": {
                 "canLogout": true,
-                "isLoginDelegated": false
+                "isLoginDelegated": false,
+                "isCamundaGroupsEnabled": false
               },
               "cloud": {
                 "stage": null

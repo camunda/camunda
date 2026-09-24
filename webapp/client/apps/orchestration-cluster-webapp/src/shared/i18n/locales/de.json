@@ -79,6 +79,19 @@
 		"relativeDateYearsFmt_speech": "do. MMMM, yyyy",
 		"relativeDateYearsFmt_time_speech": "do. MMMM, yyyy 'um' p",
 		"relativeDateUnknown": "'Unbekannt'",
+		"admin": {
+			"adminPanelNavAria": "Admin-Navigation",
+			"headerNavItemUsers": "Benutzer",
+			"headerNavItemGroups": "Gruppen",
+			"headerNavItemRoles": "Rollen",
+			"headerNavItemTenants": "Mandanten",
+			"headerNavItemMappingRules": "Zuordnungsregeln",
+			"headerNavItemAuthorizations": "Berechtigungen",
+			"headerNavItemGlobalTaskListeners": "Globale Benutzeraufgaben-Listener",
+			"headerNavItemClusterVariables": "Cluster-Variablen",
+			"headerNavItemMcpProcesses": "MCP-Prozesse",
+			"headerNavItemOperationsLog": "Vorgangsprotokoll"
+		},
 		"tasklist": {
 			"tasksPanelLabel": "Aufgaben-Seitenleiste",
 			"headerNavItemTasks": "Aufgaben",
