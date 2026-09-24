@@ -417,6 +417,9 @@ public final class DeploymentCreateProcessor
             startEvent.getId(),
             processMetadata.getTenantId(),
             NO_ELEMENT_INSTANCE,
+            // start event timers belong to the definition, not to an instance: these should not
+            // be ordinal-controlled
+            -1,
             processMetadata.getBpmnProcessId(),
             BpmnElementType.START_EVENT,
             timerOrError.get());

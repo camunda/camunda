@@ -331,6 +331,7 @@ public class ProcessInstanceMigrationCatchEventBehavior {
           timerRecord.setProcessDefinitionKey(targetProcessDefinition.getKey());
           timerRecord.setTenantId(timerInstance.getTenantId());
           timerRecord.setRootProcessInstanceKey(timerInstance.getRootProcessInstanceKey());
+          timerRecord.setStorageOrdinal(timerInstance.getStorageOrdinal());
           timerRecord.setBpmnProcessId(timerInstance.getBpmnProcessId());
           timerRecord.setElementType(timerInstance.getElementType());
 
