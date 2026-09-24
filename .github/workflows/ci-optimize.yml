@@ -96,6 +96,7 @@ jobs:
     permissions: { }  # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: IT
+      TEST_OWNER: '@camunda/data-layer'
     strategy:
       fail-fast: false
       matrix:
@@ -207,6 +208,7 @@ jobs:
     permissions: { }  # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: IT
+      TEST_OWNER: '@camunda/data-layer'
     strategy:
       fail-fast: false
       matrix:
@@ -318,6 +320,7 @@ jobs:
     env:
       LIMITS_CPU: 4
       TEST_TYPE: Unit
+      TEST_OWNER: '@camunda/optimize-frontend'
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@85d64191cacae8224a79d623a4bdc0fae084da46 # main
       - name: Checkout repository
