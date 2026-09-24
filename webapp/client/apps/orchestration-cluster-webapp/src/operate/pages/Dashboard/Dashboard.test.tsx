@@ -128,6 +128,10 @@ describe('<Dashboard />', () => {
 
 		await expect.element(screen.getByText('Process Instances by Name')).toBeVisible();
 		await expect.element(screen.getByText('Process Incidents by Error Message')).toBeVisible();
+		await expect
+			.element(screen.getByRole('link', {name: '3 Process One – 13 Instances in 1 Version 10'}))
+			.toBeVisible();
+		await expect.element(screen.getByText('Connection timeout')).toBeVisible();
 	});
 
 	it('should render instances by process list', async ({worker}) => {

@@ -107,6 +107,7 @@ describe('Multi tenancy', () => {
 		const screen = await renderProcessesPage({tenantId: '<tenant-A>'});
 
 		await expect.element(screen.getByRole('combobox', {name: 'Select a tenant'})).toMatchTextContent('Tenant A');
+		await expect.element(screen.getByText('There are no Instances matching this filter set')).toBeVisible();
 	});
 
 	it('should set the tenant to the URL on change', async ({worker}) => {
