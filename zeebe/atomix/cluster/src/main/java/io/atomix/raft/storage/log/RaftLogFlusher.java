@@ -19,6 +19,10 @@ import java.util.concurrent.CompletableFuture;
  *
  * <p>The default strategy is {@link DirectFlusher}, which is the safest but slowest option.
  *
+ * <p>{@link CoalescedFlusher} is as safe as {@link DirectFlusher}, but skips redundant flushes and
+ * covers concurrent flush requests with a single flush. Consider it when flushes are slow, e.g. on
+ * network attached storage.
+ *
  * <p>The {@link NoopFlusher} is the fastest but most dangerous option, as it will defer flushing to
  * the operating system. It's then possible to run into data corruption or data loss issues. Please
  * refer to the documentation regarding this.
@@ -43,6 +47,15 @@ public interface RaftLogFlusher extends CloseableSilently {
    *     or fails if the flush failed
    */
   CompletableFuture<Void> flush(final Journal journal, final long index);
+
+  /**
+   * Signals that all records after the given index were deleted from the log. Implementations which
+   * complete flush results asynchronously must fail the pending ones, as the records they wait for
+   * may never be flushed. Called on the thread which appends to and truncates the log.
+   *
+   * @param newLastIndex the last index which is still in the log
+   */
+  default void onLogTruncation(final long newLastIndex) {}
 
   /**
    * If this returns true, then any calls to {@link #flush(Journal, long)} are synchronous and

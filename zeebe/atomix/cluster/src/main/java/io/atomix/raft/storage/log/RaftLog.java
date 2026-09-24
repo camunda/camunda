@@ -186,6 +186,7 @@ public final class RaftLog implements Closeable {
                This situation probably requires manual intervention to resume operations""",
               index, commitIndex));
     }
+    flusher.onLogTruncation(index - 1);
     journal.reset(index);
     lastAppendedEntry = null;
   }
@@ -201,10 +202,14 @@ public final class RaftLog implements Closeable {
                This situation probably requires manual intervention to resume operations""",
               index, commitIndex));
     }
+    flusher.onLogTruncation(index);
     journal.deleteAfter(index);
     lastAppendedEntry = null;
 
-    // we have to flush here to ensure the truncated log is represented properly
+    // we have to flush here to ensure the truncated log is represented properly; flushers which
+    // skip
+    // flushes of already flushed indexes skip this too, as the flush of the next appended records
+    // also covers the truncation, and nothing is acknowledged based on the truncation before that
     flushSync(index);
   }
 

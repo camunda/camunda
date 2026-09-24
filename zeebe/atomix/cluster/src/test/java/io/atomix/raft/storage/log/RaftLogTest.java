@@ -48,6 +48,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.time.Instant;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
@@ -215,6 +216,23 @@ class RaftLogTest {
     // then
     assertThatThrownBy(() -> raftlog.deleteAfter(deleteIndex))
         .isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void shouldNotifyFlusherOfTruncations() throws CheckedJournalException {
+    // given
+    final var journal = mock(Journal.class);
+    final var flusher = mock(RaftLogFlusher.class);
+    when(flusher.flush(journal, 2L)).thenReturn(CompletableFuture.completedFuture(null));
+    final var log = new RaftLog(journal, flusher);
+
+    // when
+    log.deleteAfter(2);
+    log.reset(5);
+
+    // then
+    verify(flusher).onLogTruncation(2);
+    verify(flusher).onLogTruncation(4);
   }
 
   @Test

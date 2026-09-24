@@ -18,6 +18,7 @@ package io.atomix.raft.roles;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -39,7 +40,9 @@ import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.system.Configuration;
+import io.atomix.utils.concurrent.ThreadContext;
 import io.camunda.zeebe.journal.CheckedJournalException;
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -50,6 +53,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Rule;
@@ -72,6 +76,7 @@ public class PassiveRoleTest {
 
     log = mock(RaftLog.class);
     when(log.flushesDirectly()).thenReturn(true);
+    when(log.flush(anyLong())).thenReturn(CompletableFuture.completedFuture(null));
     when(ctx.getLog()).thenReturn(log);
 
     final PersistedSnapshot snapshot = mock(PersistedSnapshot.class);
@@ -144,7 +149,7 @@ public class PassiveRoleTest {
         role.handleAppend(ProtocolVersionHandler.transform(request)).join();
 
     // then
-    verify(log, times(1)).flushSync(2L);
+    verify(log, times(1)).flush(2L);
     assertThat(response.lastLogIndex()).isEqualTo(2);
   }
 
@@ -174,7 +179,7 @@ public class PassiveRoleTest {
         role.handleAppend(ProtocolVersionHandler.transform(request)).join();
 
     // then
-    verify(log, times(1)).flushSync(1L);
+    verify(log, times(1)).flush(1L);
     assertThat(response.lastLogIndex()).isOne();
   }
 
@@ -200,7 +205,7 @@ public class PassiveRoleTest {
         role.handleAppend(ProtocolVersionHandler.transform(request)).join();
 
     // then
-    verify(log, never()).flushSync(anyLong());
+    verify(log, never()).flush(anyLong());
     assertThat(response.lastLogIndex()).isZero();
   }
 
@@ -232,7 +237,7 @@ public class PassiveRoleTest {
     role.handleAppend(ProtocolVersionHandler.transform(request)).join();
 
     // then
-    verify(log, times(1)).flushSync(2L);
+    verify(log, times(1)).flush(2L);
   }
 
   @Test
@@ -266,6 +271,66 @@ public class PassiveRoleTest {
   }
 
   @Test
+  public void shouldAckOnlyOnceFlushCompleted() {
+    // given - a flush which completes asynchronously
+    final var flushed = new CompletableFuture<Void>();
+    when(log.flush(anyLong())).thenReturn(flushed);
+    runThreadContextInline();
+    when(log.append(any(ReplicatableJournalRecord.class)))
+        .thenReturn(mock(IndexedRaftLogEntry.class));
+
+    // when
+    final var response = role.handleAppend(ProtocolVersionHandler.transform(appendRequest()));
+
+    // then - neither acknowledged nor committed before the flush completed
+    assertThat(response).isNotDone();
+    verify(ctx, never()).setCommitIndex(anyLong());
+
+    when(log.getLastFlushedIndex()).thenReturn(1L);
+    flushed.complete(null);
+    assertThat(response.join().succeeded()).isTrue();
+    verify(ctx).setCommitIndex(1);
+  }
+
+  @Test
+  public void shouldRejectAppendWhenAsyncFlushFails() {
+    // given - a flush which fails asynchronously
+    final var flushed = new CompletableFuture<Void>();
+    when(log.flush(anyLong())).thenReturn(flushed);
+    runThreadContextInline();
+    when(log.append(any(ReplicatableJournalRecord.class)))
+        .thenReturn(mock(IndexedRaftLogEntry.class));
+    final var response = role.handleAppend(ProtocolVersionHandler.transform(appendRequest()));
+
+    // when
+    flushed.completeExceptionally(new FlushException(new IOException("failed to sync")));
+
+    // then - rejected, so that the leader retries
+    assertThat(response.join().succeeded()).isFalse();
+    verify(ctx, never()).setCommitIndex(anyLong());
+  }
+
+  @Test
+  public void shouldNotCommitBeyondFlushedIndexWhenLogIsTruncatedWhileFlushing() {
+    // given - entries are appended, but their flush is still in progress
+    final var flushed = new CompletableFuture<Void>();
+    when(log.flush(anyLong())).thenReturn(flushed);
+    runThreadContextInline();
+    when(log.append(any(ReplicatableJournalRecord.class)))
+        .thenReturn(mock(IndexedRaftLogEntry.class));
+    final var response = role.handleAppend(ProtocolVersionHandler.transform(appendRequest()));
+
+    // when - the flush completes, but the log was truncated in the meantime, which lowered the
+    // flushed index again
+    when(log.getLastFlushedIndex()).thenReturn(0L);
+    flushed.complete(null);
+
+    // then - the commit index does not cover the entry, as it may not be durable
+    assertThat(response.join().succeeded()).isTrue();
+    verify(ctx, never()).setCommitIndex(1);
+  }
+
+  @Test
   public void shouldFlushBeforeAckingEmptyAppendOfRecordsWhichAreNotDurable()
       throws CheckedJournalException {
     // given - records up to index 2 are appended, but only flushed up to index 1, e.g. because
@@ -288,7 +353,7 @@ public class PassiveRoleTest {
     final var response = role.handleAppend(ProtocolVersionHandler.transform(request)).join();
 
     // then
-    verify(log).flushSync(2L);
+    verify(log).flush(2L);
     assertThat(response.succeeded()).isTrue();
     assertThat(response.lastLogIndex()).isEqualTo(2);
   }
@@ -314,7 +379,7 @@ public class PassiveRoleTest {
     final var response = role.handleAppend(ProtocolVersionHandler.transform(request)).join();
 
     // then
-    verify(log, never()).flushSync(anyLong());
+    verify(log, never()).flush(anyLong());
     assertThat(response.succeeded()).isTrue();
   }
 
@@ -431,6 +496,29 @@ public class PassiveRoleTest {
     // understates the leader's log and cannot be used to detect data loss. The local log end never
     // trips the check, which is the point: an ex-leader demoted to PASSIVE tripped it spuriously.
     verify(ctx).setFirstCommitIndex(2, 120);
+  }
+
+  private static VersionedAppendRequest appendRequest() {
+    return VersionedAppendRequest.builder()
+        .withTerm(1)
+        .withLeader(MemberId.anonymous())
+        .withPrevLogTerm(0)
+        .withPrevLogIndex(0)
+        .withEntries(List.of(new ReplicatableJournalRecord(1, 1, 1, new byte[1])))
+        .withCommitIndex(1)
+        .build();
+  }
+
+  private void runThreadContextInline() {
+    final var threadContext = mock(ThreadContext.class);
+    doAnswer(
+            invocation -> {
+              invocation.getArgument(0, Runnable.class).run();
+              return null;
+            })
+        .when(threadContext)
+        .execute(any(Runnable.class));
+    when(ctx.getThreadContext()).thenReturn(threadContext);
   }
 
   private void givenLastEntry(final long index, final long term) {
