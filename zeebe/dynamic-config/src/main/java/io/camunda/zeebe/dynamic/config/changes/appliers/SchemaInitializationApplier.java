@@ -16,7 +16,9 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.function.UnaryOperator;
 
-/** Runs the broker-wide secondary-storage schema initialization for an in-process restore. */
+/**
+ * Runs the broker-wide secondary-storage schema initialization barrier for an in-process restore.
+ */
 public final class SchemaInitializationApplier implements PartitionGroupConfigurationChangeApplier {
 
   private final RestoreChangeExecutor restoreChangeExecutor;
