@@ -75,6 +75,9 @@ public sealed interface PartitionGroupOperation extends ClusterConfigurationChan
   record AwaitModeChangeOperation(MemberId memberId, Mode mode)
       implements PartitionGroupOperation {}
 
+  /** Applies this partition group's schema before any local data is dropped for restore. */
+  record SchemaInitializationOperation(MemberId memberId) implements PartitionGroupOperation {}
+
   sealed interface ScaleUpOperation extends PartitionGroupOperation {
     /**
      * Operation to initiate partition scale up. This instructs the cluster to redistribute

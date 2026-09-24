@@ -27,6 +27,7 @@ import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionPromoteApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionReconfigurePriorityApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionRestoreApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.RemovePhysicalTenantApplier;
+import io.camunda.zeebe.dynamic.config.changes.appliers.SchemaInitializationApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.StartPartitionScaleUpApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.UpdateIncarnationNumberApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.UpdateRoutingStateApplier;
@@ -52,6 +53,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOper
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRedistributionCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.StartPartitionScaleUp;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.SchemaInitializationOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 
@@ -149,6 +151,8 @@ public final class PartitionGroupConfigurationChangeAppliersImpl
       case final PartitionRestoreOperation op ->
           new PartitionRestoreApplier(
               op.memberId(), op.partitionId(), op.backupIds(), restoreChangeExecutor);
+      case final SchemaInitializationOperation op ->
+          new SchemaInitializationApplier(op.memberId(), restoreChangeExecutor);
     };
   }
 }
