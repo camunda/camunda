@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Iterables;
 import io.camunda.client.CamundaClient;
+import io.camunda.configuration.RdbmsAsyncReplication;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.ReplicationType;
 import io.camunda.it.rdbms.db.util.ReplicationClusterContainer;
@@ -83,6 +84,13 @@ abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer>
     return ReplicationType.LOG_SEQ;
   }
 
+  /**
+   * Extension point for async-replication config beyond the common fields set below - e.g.
+   * region-aware {@code regions} instead of the default flat {@code minSyncReplicas}. No-op by
+   * default, so every existing subclass is unaffected.
+   */
+  protected void configureAsyncReplication(final RdbmsAsyncReplication asyncReplication) {}
+
   @BeforeAll
   void beforeAll() {
     cluster = createCluster();
@@ -137,6 +145,8 @@ abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer>
                       .getRdbms()
                       .getAsyncReplication()
                       .setQueueDebounceTime(Duration.ZERO);
+                  configureAsyncReplication(
+                      cfg.getData().getSecondaryStorage().getRdbms().getAsyncReplication());
                 })
             .withBasicAuth();
 
@@ -146,6 +156,7 @@ abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer>
     // closing it would force camundaClient to re-negotiate a new TCP connection at a potentially
     // busy moment (e.g. during MSSQL AG seeding), causing CONNECTING-state failures.
     camundaClient = testInstance.newClientBuilder().build();
+    testInstance.awaitCompleteTopology(1, 1, 1, Duration.ofSeconds(60), camundaClient);
     meterRegistry = testInstance.bean(MeterRegistry.class);
 
     Objects.requireNonNull(meterRegistry);
