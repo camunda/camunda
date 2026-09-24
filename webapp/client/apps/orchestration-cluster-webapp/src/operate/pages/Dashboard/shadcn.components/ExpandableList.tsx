@@ -56,7 +56,12 @@ const ExpandableList: React.FC<Props> = ({
 	// so depending on the fetching flags here would recreate+re-observe the sentinels on every
 	// fetch start/end and immediately re-trigger the same page load in a loop.
 	const latestRef = useRef({isFetchingNextPage, isFetchingPreviousPage, onLoadNextPage, onLoadPreviousPage});
-	latestRef.current = {isFetchingNextPage, isFetchingPreviousPage, onLoadNextPage, onLoadPreviousPage};
+
+	// Declared before the observer effect so it has already refreshed the ref by the time
+	// `observe()` below fires its callback synchronously for an already-intersecting target.
+	useEffect(() => {
+		latestRef.current = {isFetchingNextPage, isFetchingPreviousPage, onLoadNextPage, onLoadPreviousPage};
+	});
 
 	// DS DataTable owns its own scroll region (its `Table` wrapper), so wrapping it in
 	// another scrollable container to drive pagination via onScroll produces nested/double
