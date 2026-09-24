@@ -7,24 +7,24 @@
  */
 
 import {Suspense, type ComponentProps} from 'react';
-import {InlineLoading} from '@carbon/react';
+import {LoaderCircle} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';
-import {EditorStyles} from './editorStyles';
-import {LazyMonacoEditor} from './LazyMonacoEditor';
+import {LazyMonacoEditor} from '../LazyMonacoEditor';
 
 const RichTextEditor = (props: ComponentProps<typeof LazyMonacoEditor>) => {
 	const {t} = useTranslation();
-	const loading = props.loading ?? <InlineLoading description={t('operate.shared.editors.loading')} />;
+	const loading = props.loading ?? (
+		<div role="status" className="flex items-center gap-2 p-2 text-sm text-muted-foreground">
+			<LoaderCircle className="size-4 animate-spin" aria-hidden />
+			{t('operate.shared.editors.loading')}
+		</div>
+	);
 
 	return (
-		<>
-			<EditorStyles />
-			<Suspense fallback={loading}>
-				<LazyMonacoEditor {...props} loading={loading} />
-			</Suspense>
-		</>
+		<Suspense fallback={loading}>
+			<LazyMonacoEditor {...props} loading={loading} />
+		</Suspense>
 	);
 };
 
 export {RichTextEditor};
-export type {EditorHandle} from './MonacoEditor';

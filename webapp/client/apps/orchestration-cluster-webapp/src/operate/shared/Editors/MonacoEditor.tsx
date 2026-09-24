@@ -12,7 +12,6 @@ import {useEffect, useId, useRef, useState, type ReactNode} from 'react';
 import {observer} from 'mobx-react-lite';
 import {useTranslation} from 'react-i18next';
 import {themeStore} from '#/shared/theme/theme';
-import {EditorStyles} from './editorStyles';
 
 type EditorHandle = {showMarkers: () => void; hideMarkers: () => void};
 type Props = {
@@ -87,53 +86,50 @@ const MonacoEditor = observer(
 		}, [monaco, jsonSchema, language, schemaUri, modelPath]);
 
 		return (
-			<>
-				<EditorStyles />
-				<Editor
-					loading={loading}
-					language={language}
-					value={value}
-					height={height}
-					width={width}
-					path={modelPath}
-					theme={themeStore.actualTheme === 'dark' ? 'vs-dark' : 'light'}
-					options={{
-						minimap: {enabled: false},
-						fontSize: 13,
-						lineHeight: 20,
-						fontFamily: '"IBM Plex Mono", "Droid Sans Mono", monospace',
-						formatOnPaste: true,
-						formatOnType: true,
-						tabSize: 2,
-						wordWrap: 'on',
-						scrollBeyondLastLine: false,
-						ariaLabel: t('operate.shared.editors.value'),
-						...options,
-						readOnly,
-					}}
-					onChange={(value) => onChange?.(value ?? '')}
-					onValidate={(markers) => onValidate?.(markers.length === 0)}
-					onMount={(editor: editor.IStandaloneCodeEditor, monaco) => {
-						editorRef.current = editor;
-						setMonaco(monaco);
-						if (autoFocus) {
-							editor.focus();
+			<Editor
+				loading={loading}
+				language={language}
+				value={value}
+				height={height}
+				width={width}
+				path={modelPath}
+				theme={themeStore.actualTheme === 'dark' ? 'vs-dark' : 'light'}
+				options={{
+					minimap: {enabled: false},
+					fontSize: 13,
+					lineHeight: 20,
+					fontFamily: '"IBM Plex Mono", "Droid Sans Mono", monospace',
+					formatOnPaste: true,
+					formatOnType: true,
+					tabSize: 2,
+					wordWrap: 'on',
+					scrollBeyondLastLine: false,
+					ariaLabel: t('operate.shared.editors.value'),
+					...options,
+					readOnly,
+				}}
+				onChange={(value) => onChange?.(value ?? '')}
+				onValidate={(markers) => onValidate?.(markers.length === 0)}
+				onMount={(editor: editor.IStandaloneCodeEditor, monaco) => {
+					editorRef.current = editor;
+					setMonaco(monaco);
+					if (autoFocus) {
+						editor.focus();
+					}
+					keyListener.current = editor.onKeyDown((event) => {
+						if (event.keyCode === monaco.KeyCode.Escape && document.activeElement instanceof HTMLElement) {
+							document.activeElement.blur();
 						}
-						keyListener.current = editor.onKeyDown((event) => {
-							if (event.keyCode === monaco.KeyCode.Escape && document.activeElement instanceof HTMLElement) {
-								document.activeElement.blur();
-							}
-						});
-						onMount?.({
-							showMarkers: () => {
-								editor.trigger('', 'editor.action.marker.next', undefined);
-								editor.trigger('', 'editor.action.marker.prev', undefined);
-							},
-							hideMarkers: () => editor.trigger('', 'closeMarkersNavigation', undefined),
-						});
-					}}
-				/>
-			</>
+					});
+					onMount?.({
+						showMarkers: () => {
+							editor.trigger('', 'editor.action.marker.next', undefined);
+							editor.trigger('', 'editor.action.marker.prev', undefined);
+						},
+						hideMarkers: () => editor.trigger('', 'closeMarkersNavigation', undefined),
+					});
+				}}
+			/>
 		);
 	},
 );
