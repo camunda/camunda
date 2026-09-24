@@ -163,9 +163,9 @@ describe('Editors', () => {
 			const editor = screen.getByRole('textbox', {name: 'Value', exact: true});
 			await expect.element(editor).toHaveFocus();
 			await userEvent.keyboard('true');
-			expect(onValidate).toHaveBeenLastCalledWith(true);
+			await expect.poll(() => onValidate.mock.lastCall?.[0]).toBe(true);
 			await userEvent.keyboard('x');
-			expect(onValidate).toHaveBeenLastCalledWith(false);
+			await expect.poll(() => onValidate.mock.lastCall?.[0]).toBe(false);
 			await userEvent.keyboard('{Escape}');
 			await expect.element(editor).not.toHaveFocus();
 			expect(onBlur).toHaveBeenCalledOnce();
