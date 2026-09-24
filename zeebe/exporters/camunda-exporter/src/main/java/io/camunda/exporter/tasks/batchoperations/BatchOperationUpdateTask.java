@@ -11,6 +11,7 @@ import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.NotFinishedBatchOperation;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.OperationsAggData;
 import io.camunda.exporter.tasks.util.AdaptiveBatchSize;
+import io.camunda.exporter.tasks.util.AsyncRepeatUntil;
 import io.camunda.exporter.tasks.util.BulkRequestTooLargeException;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOperationState;
 import io.camunda.zeebe.exporter.common.tasks.BackgroundTask;
@@ -29,11 +30,11 @@ import org.slf4j.Logger;
 public class BatchOperationUpdateTask implements BackgroundTask {
 
   /**
-   * Caps what one cycle reads, and through that the aggregation and the bulk update derived from
-   * it. Each batch operation contributes exactly one document, so this is far larger than the
+   * Caps what one page reads, and through that the aggregation and the bulk update derived from it.
+   * Each batch operation contributes exactly one document, so this is far larger than the
    * post-export batch size, which bounds a task whose every item fans out into a tree.
    */
-  public static final int MAX_BATCH_OPERATIONS_PER_CYCLE = 1000;
+  public static final int MAX_BATCH_OPERATIONS_PER_PAGE = 1000;
 
   private static final int NO_UPDATES = 0;
 
@@ -56,9 +57,9 @@ public class BatchOperationUpdateTask implements BackgroundTask {
 
   @Override
   public CompletionStage<Integer> execute() {
-    return batchOperationUpdateRepository
-        .getNotFinishedBatchOperations(batchSize.current())
-        .thenComposeAsync(this::updateBatchOperations, executor)
+    final var cycle = new Cycle(batchSize.current());
+    return AsyncRepeatUntil.repeatUntil(cycle::updateNextPage, ignored -> cycle.isComplete())
+        .thenApply(ignored -> cycle.updatesCount)
         .handleAsync(
             (updatesCount, error) -> {
               if (error != null) {
@@ -81,7 +82,7 @@ public class BatchOperationUpdateTask implements BackgroundTask {
       logger.warn(
           """
             The store refused the batch operation update write for being too large; retrying with \
-            at most {} batch operation(s) per cycle instead of {}.""",
+            at most {} batch operation(s) per page instead of {}.""",
           batchSize.current(),
           batchSize.configured(),
           cause);
@@ -167,5 +168,40 @@ public class BatchOperationUpdateTask implements BackgroundTask {
       final NotFinishedBatchOperation batchOperation) {
     return batchOperation.state() == BatchOperationState.COMPLETED
         && batchOperation.operationsTotalCount() == 0;
+  }
+
+  /**
+   * Pages through every unfinished batch operation in one cycle, so that a page full of long
+   * running ones cannot keep the ones after it from being updated or finalized.
+   */
+  private final class Cycle {
+    private final int pageSize;
+    private String afterId;
+    private boolean complete;
+    private int updatesCount;
+
+    private Cycle(final int pageSize) {
+      this.pageSize = pageSize;
+    }
+
+    private CompletableFuture<Integer> updateNextPage() {
+      return batchOperationUpdateRepository
+          .getNotFinishedBatchOperations(pageSize, afterId)
+          .thenComposeAsync(
+              page -> {
+                complete = page.size() < pageSize;
+                if (!page.isEmpty()) {
+                  afterId = page.getLast().id();
+                }
+                return updateBatchOperations(page);
+              },
+              executor)
+          .thenApply(count -> updatesCount += count)
+          .toCompletableFuture();
+    }
+
+    private boolean isComplete() {
+      return complete;
+    }
   }
 }

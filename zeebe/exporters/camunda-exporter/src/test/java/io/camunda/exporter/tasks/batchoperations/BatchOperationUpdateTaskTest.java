@@ -17,6 +17,7 @@ import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOp
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -139,7 +140,60 @@ public class BatchOperationUpdateTaskTest {
     bounded.execute().toCompletableFuture().join();
 
     // then
-    Mockito.verify(repository).getNotFinishedBatchOperations(25);
+    Mockito.verify(repository).getNotFinishedBatchOperations(25, null);
+  }
+
+  @Test
+  void shouldFinalizeBatchOperationsBehindAFullPageOfRunningOnes() {
+    // given - a full page of long running batch operations, and a completed one after them
+    final var task = new BatchOperationUpdateTask(repository, 2, LOGGER, Runnable::run);
+    repository.batchOperations.add(
+        new NotFinishedBatchOperation("1", BatchOperationState.ACTIVE, 5));
+    repository.batchOperations.add(
+        new NotFinishedBatchOperation("2", BatchOperationState.ACTIVE, 5));
+    repository.batchOperations.add(
+        new NotFinishedBatchOperation("3", BatchOperationState.COMPLETED, 5));
+    repository.finishedOperationsCount.add(new OperationsAggData("1", Map.of("ACTIVE", 5L)));
+    repository.finishedOperationsCount.add(new OperationsAggData("2", Map.of("ACTIVE", 5L)));
+    repository.finishedOperationsCount.add(new OperationsAggData("3", Map.of("COMPLETED", 5L)));
+
+    // when
+    final var result = task.execute();
+
+    // then - the same cycle pages past the running ones, so the completed one is not starved
+    assertThat(result)
+        .succeedsWithin(REQUEST_TIMEOUT)
+        .asInstanceOf(InstanceOfAssertFactories.type(Integer.class))
+        .isEqualTo(3);
+    assertThat(repository.documentUpdates)
+        .extracting(DocumentUpdate::id)
+        .containsExactlyInAnyOrder("1", "2", "3");
+    Mockito.verify(repository).getNotFinishedBatchOperations(2, null);
+    Mockito.verify(repository).getNotFinishedBatchOperations(2, "2");
+  }
+
+  @Test
+  void shouldStopPagingOnAnEmptyPage() {
+    // given - exactly two full pages
+    final var task = new BatchOperationUpdateTask(repository, 2, LOGGER, Runnable::run);
+    for (final var id : List.of("1", "2", "3", "4")) {
+      repository.batchOperations.add(
+          new NotFinishedBatchOperation(id, BatchOperationState.ACTIVE, 5));
+      repository.finishedOperationsCount.add(new OperationsAggData(id, Map.of("ACTIVE", 5L)));
+    }
+
+    // when
+    final var result = task.execute();
+
+    // then - a full page can always have a next one, so only the empty page after it ends the cycle
+    assertThat(result)
+        .succeedsWithin(REQUEST_TIMEOUT)
+        .asInstanceOf(InstanceOfAssertFactories.type(Integer.class))
+        .isEqualTo(4);
+    final var afterIds = ArgumentCaptor.forClass(String.class);
+    Mockito.verify(repository, Mockito.times(3))
+        .getNotFinishedBatchOperations(Mockito.eq(2), afterIds.capture());
+    assertThat(afterIds.getAllValues()).containsExactly(null, "2", "4");
   }
 
   @Test
@@ -161,7 +215,8 @@ public class BatchOperationUpdateTaskTest {
 
     // then - the next cycle reads fewer batch operations, so it fans out into a smaller write
     final var reads = ArgumentCaptor.forClass(Integer.class);
-    Mockito.verify(repository, Mockito.times(2)).getNotFinishedBatchOperations(reads.capture());
+    Mockito.verify(repository, Mockito.times(2))
+        .getNotFinishedBatchOperations(reads.capture(), Mockito.any());
     assertThat(reads.getAllValues()).containsExactly(100, 50);
   }
 
@@ -185,7 +240,8 @@ public class BatchOperationUpdateTaskTest {
 
     // then - not sticky, since the fan-out depends on which operations the batch holds
     final var reads = ArgumentCaptor.forClass(Integer.class);
-    Mockito.verify(repository, Mockito.times(3)).getNotFinishedBatchOperations(reads.capture());
+    Mockito.verify(repository, Mockito.times(3))
+        .getNotFinishedBatchOperations(reads.capture(), Mockito.any());
     assertThat(reads.getAllValues()).containsExactly(100, 50, 100);
   }
 
@@ -210,7 +266,8 @@ public class BatchOperationUpdateTaskTest {
 
     // then - only a cycle that writes restores the read
     final var reads = ArgumentCaptor.forClass(Integer.class);
-    Mockito.verify(repository, Mockito.times(3)).getNotFinishedBatchOperations(reads.capture());
+    Mockito.verify(repository, Mockito.times(3))
+        .getNotFinishedBatchOperations(reads.capture(), Mockito.any());
     assertThat(reads.getAllValues()).containsExactly(100, 50, 50);
   }
 
@@ -237,7 +294,8 @@ public class BatchOperationUpdateTaskTest {
     // then - a cycle that wrote nothing must not restore the read, or the next one rebuilds the
     // same refused write
     final var reads = ArgumentCaptor.forClass(Integer.class);
-    Mockito.verify(repository, Mockito.times(3)).getNotFinishedBatchOperations(reads.capture());
+    Mockito.verify(repository, Mockito.times(3))
+        .getNotFinishedBatchOperations(reads.capture(), Mockito.any());
     assertThat(reads.getAllValues()).containsExactly(100, 50, 50);
   }
 
@@ -259,30 +317,40 @@ public class BatchOperationUpdateTaskTest {
 
     // then
     final var reads = ArgumentCaptor.forClass(Integer.class);
-    Mockito.verify(repository, Mockito.times(2)).getNotFinishedBatchOperations(reads.capture());
+    Mockito.verify(repository, Mockito.times(2))
+        .getNotFinishedBatchOperations(reads.capture(), Mockito.any());
     assertThat(reads.getAllValues()).containsExactly(100, 100);
   }
 
   private static final class TestRepository implements BatchOperationUpdateRepository {
     List<NotFinishedBatchOperation> batchOperations = new ArrayList<>();
     List<OperationsAggData> finishedOperationsCount = new ArrayList<>();
-    private List<DocumentUpdate> documentUpdates = new ArrayList<>();
+    private final List<DocumentUpdate> documentUpdates = new ArrayList<>();
 
     @Override
-    public CompletionStage<Collection<NotFinishedBatchOperation>> getNotFinishedBatchOperations(
-        final int batchSize) {
-      return CompletableFuture.completedFuture(batchOperations);
+    public CompletionStage<List<NotFinishedBatchOperation>> getNotFinishedBatchOperations(
+        final int batchSize, final String afterId) {
+      return CompletableFuture.completedFuture(
+          batchOperations.stream()
+              .sorted(Comparator.comparing(NotFinishedBatchOperation::id))
+              .filter(
+                  batchOperation -> afterId == null || batchOperation.id().compareTo(afterId) > 0)
+              .limit(batchSize)
+              .toList());
     }
 
     @Override
     public CompletionStage<List<OperationsAggData>> getOperationsCount(
         final Collection<String> batchOperationKeys) {
-      return CompletableFuture.completedFuture(finishedOperationsCount);
+      return CompletableFuture.completedFuture(
+          finishedOperationsCount.stream()
+              .filter(counts -> batchOperationKeys.contains(counts.batchOperationKey()))
+              .toList());
     }
 
     @Override
     public CompletionStage<Integer> bulkUpdate(final List<DocumentUpdate> documentUpdates) {
-      this.documentUpdates = documentUpdates;
+      this.documentUpdates.addAll(documentUpdates);
       return CompletableFuture.completedFuture(documentUpdates.size());
     }
 
