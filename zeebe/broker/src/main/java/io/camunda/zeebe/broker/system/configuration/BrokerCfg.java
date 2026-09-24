@@ -26,6 +26,7 @@ public class BrokerCfg {
   private DataCfg data = new DataCfg();
   private Map<String, ExporterCfg> exporters = new HashMap<>();
   private ExportingCfg exporting = ExportingCfg.defaultExportingCfg();
+  private DataProtectionCfg dataProtection = DataProtectionCfg.defaultDataProtectionCfg();
   private EmbeddedGatewayCfg gateway = new EmbeddedGatewayCfg();
   private FlowControlCfg flowControl = new FlowControlCfg();
   private LimitCfg backpressure = new LimitCfg();
@@ -114,6 +115,14 @@ public class BrokerCfg {
 
   public void setExporting(final ExportingCfg exporting) {
     this.exporting = exporting;
+  }
+
+  public DataProtectionCfg getDataProtection() {
+    return dataProtection;
+  }
+
+  public void setDataProtection(final DataProtectionCfg dataProtection) {
+    this.dataProtection = dataProtection;
   }
 
   public EmbeddedGatewayCfg getGateway() {

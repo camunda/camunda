@@ -144,7 +144,12 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     metrics.initializeExporterState(exporterPhase);
     recordExporter =
         recorderExporter.apply(
-            new RecordExporter(metrics, containers, partitionId.number(), clock));
+            new RecordExporter(
+                metrics,
+                containers,
+                partitionId.number(),
+                clock,
+                context.getSensitiveVariablePattern()));
     exportingRetryStrategy = new BackOffRetryStrategy(actor, Duration.ofSeconds(10));
     zeebeDb = context.getZeebeDb();
     this.exporterPhase = exporterPhase;

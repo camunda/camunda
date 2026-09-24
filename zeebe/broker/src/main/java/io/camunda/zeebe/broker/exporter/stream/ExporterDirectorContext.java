@@ -18,6 +18,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.Map;
+import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 
 public final class ExporterDirectorContext {
@@ -41,6 +42,7 @@ public final class ExporterDirectorContext {
   private @Nullable String licenseKey;
   private String tenantName;
   private boolean receiveOnLegacySubject = true;
+  private Pattern sensitiveVariablePattern = VariableRedaction.DEFAULT_SENSITIVE_VARIABLE_PATTERN;
 
   public int getId() {
     return id;
@@ -100,6 +102,10 @@ public final class ExporterDirectorContext {
 
   public boolean isReceiveOnLegacySubject() {
     return receiveOnLegacySubject;
+  }
+
+  public Pattern getSensitiveVariablePattern() {
+    return sensitiveVariablePattern;
   }
 
   public ExporterDirectorContext id(final int id) {
@@ -177,6 +183,11 @@ public final class ExporterDirectorContext {
 
   public ExporterDirectorContext receiveOnLegacySubject(final boolean receiveOnLegacySubject) {
     this.receiveOnLegacySubject = receiveOnLegacySubject;
+    return this;
+  }
+
+  public ExporterDirectorContext sensitiveVariablePattern(final Pattern sensitiveVariablePattern) {
+    this.sensitiveVariablePattern = sensitiveVariablePattern;
     return this;
   }
 

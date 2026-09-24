@@ -33,6 +33,7 @@ import io.camunda.configuration.Partitioning;
 import io.camunda.configuration.PrimaryStorage;
 import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.configuration.Processing;
+import io.camunda.configuration.Protection;
 import io.camunda.configuration.Rdbms;
 import io.camunda.configuration.S3;
 import io.camunda.configuration.SasToken;
@@ -48,6 +49,7 @@ import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.zeebe.backup.azure.SasTokenConfig;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
+import io.camunda.zeebe.broker.system.configuration.DataProtectionCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.ExportingCfg;
 import io.camunda.zeebe.broker.system.configuration.MembershipCfg;
@@ -808,6 +810,7 @@ public class BrokerBasedPropertiesOverride {
     override.getData().setSnapshotPeriod(data.getSnapshotPeriod());
 
     populateFromExport(override, camunda);
+    populateFromProtection(override, camunda);
     populateFromBackup(override, camunda);
   }
 
@@ -820,6 +823,12 @@ public class BrokerBasedPropertiesOverride {
             export.getDistributionInterval(),
             export.getMigrationStatusScanMaxRecords());
     override.setExporting(exportingCfg);
+  }
+
+  private static void populateFromProtection(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final Protection protection = camunda.getData().getProtection();
+    override.setDataProtection(new DataProtectionCfg(protection.getPattern()));
   }
 
   private static void populateFromBackup(

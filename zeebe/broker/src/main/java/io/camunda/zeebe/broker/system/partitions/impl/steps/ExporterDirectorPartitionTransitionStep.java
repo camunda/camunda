@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public final class ExporterDirectorPartitionTransitionStep implements PartitionTransitionStep {
@@ -139,8 +140,8 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
                     .orElse(""))
             .licenseKey(brokerCfg.getLicenseKey())
             .tenantName(tenantName)
-            .receiveOnLegacySubject(
-                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(tenantName));
+            .receiveOnLegacySubject(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(tenantName))
+            .sensitiveVariablePattern(Pattern.compile(brokerCfg.getDataProtection().pattern()));
 
     final ExporterDirector director =
         exporterDirectorBuilder.apply(exporterCtx, exporterPhase(context));

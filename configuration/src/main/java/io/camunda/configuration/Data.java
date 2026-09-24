@@ -37,6 +37,9 @@ public class Data {
   /** This section allows configuring export. */
   @NestedConfigurationProperty private Export export = new Export();
 
+  /** This section allows configuring sensitive process variable redaction. */
+  @NestedConfigurationProperty private Protection protection = new Protection();
+
   /** This section allows to configure Zeebe's secondary storage. */
   @NestedConfigurationProperty private SecondaryStorage secondaryStorage = new SecondaryStorage();
 
@@ -98,6 +101,14 @@ public class Data {
 
   public void setExport(final Export export) {
     this.export = export;
+  }
+
+  public Protection getProtection() {
+    return protection;
+  }
+
+  public void setProtection(final Protection protection) {
+    this.protection = protection;
   }
 
   public SecondaryStorage getSecondaryStorage() {
