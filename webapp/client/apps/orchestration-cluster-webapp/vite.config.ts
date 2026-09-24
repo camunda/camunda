@@ -105,6 +105,9 @@ const config = defineConfig(({mode}) => ({
 		outputFile: process.env['CI'] ? {junit: 'TEST-unit.xml'} : undefined,
 		attachmentsDir: 'test-artifacts/html/attachments',
 		retry: process.env['CI'] ? 3 : 0,
+		provide: {
+			failOnUnhandledRequests: !process.env['CI'],
+		},
 		browser: {
 			enabled: true,
 			screenshotFailures: Boolean(process.env['CI']),
