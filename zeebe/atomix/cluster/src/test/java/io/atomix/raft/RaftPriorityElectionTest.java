@@ -15,11 +15,11 @@
  */
 package io.atomix.raft;
 
-import io.camunda.zeebe.test.util.junit.SlowTest;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftRule.Configurator;
 import io.atomix.raft.RaftServer.Builder;
 import io.atomix.raft.partition.RaftElectionConfig;
+import io.camunda.zeebe.test.util.junit.SlowTest;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
