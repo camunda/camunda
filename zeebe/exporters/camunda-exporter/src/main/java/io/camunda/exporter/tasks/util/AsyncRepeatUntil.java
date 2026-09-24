@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.tasks.archiver;
+package io.camunda.exporter.tasks.util;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
@@ -15,7 +15,7 @@ import java.util.function.Supplier;
 // NB avoiding using closures for this as with all the callbacks it can
 // easily lead to memory leaks if not used carefully. By using an explicit class
 // we can ensure that the state is properly cleaned up after completion.
-final class AsyncRepeatUntil<T> {
+public final class AsyncRepeatUntil<T> {
   private final CompletableFuture<Void> finalFuture = new CompletableFuture<>();
   private final Supplier<CompletableFuture<T>> asyncTask;
   private final Predicate<T> until;
@@ -54,7 +54,7 @@ final class AsyncRepeatUntil<T> {
     return null;
   }
 
-  static <T> CompletableFuture<Void> repeatUntil(
+  public static <T> CompletableFuture<Void> repeatUntil(
       final Supplier<CompletableFuture<T>> asyncTask, final Predicate<T> until) {
     final var repeat = new AsyncRepeatUntil<>(asyncTask, until);
 
