@@ -79,9 +79,13 @@ cluster.raft.prefer-snapshot-replication-threshold
 cluster.raft.priority-election-enabled
 cluster.raft.promotion-lag-threshold
 cluster.raft.rebalance.leader-wait-timeout
+cluster.raft.rebalance.load-window
+cluster.raft.rebalance.max-commands-per-second
+cluster.raft.rebalance.max-process-instances-per-second
 cluster.raft.rebalance.max-transfer-attempts
 cluster.raft.rebalance.replication-lag-threshold
 cluster.raft.rebalance.replication-timeout
+cluster.raft.rebalance.schedule
 cluster.raft.request-timeout
 cluster.raft.segment-preallocation-strategy
 cluster.raft.snapshot-chunk-size

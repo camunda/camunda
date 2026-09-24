@@ -10,19 +10,26 @@ package io.camunda.zeebe.broker.bootstrap;
 import io.atomix.raft.RebalanceConfiguration;
 import io.atomix.raft.partition.impl.LeadershipTransferClient;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionLeaders;
+import io.camunda.zeebe.broker.system.configuration.RaftCfg;
 import io.camunda.zeebe.rebalance.ClusterLoadCollector;
 import io.camunda.zeebe.rebalance.ClusterRebalanceMetrics;
+import io.camunda.zeebe.rebalance.LoadMeasure;
 import io.camunda.zeebe.rebalance.PartitionBalanceMetrics;
 import io.camunda.zeebe.rebalance.PartitionBalancePlanner;
 import io.camunda.zeebe.rebalance.ProtoBufRebalanceSerializer;
 import io.camunda.zeebe.rebalance.RebalanceCoordinator;
 import io.camunda.zeebe.rebalance.RebalanceRequestServer;
+import io.camunda.zeebe.rebalance.RebalanceScheduler;
 import io.camunda.zeebe.rebalance.SequentialRebalanceRunner;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
+import io.camunda.zeebe.util.schedule.Schedule.NoneSchedule;
 import java.time.Clock;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +50,7 @@ public class RebalanceCoordinatorStep implements StartupStep<BrokerStartupContex
   private @Nullable LeadershipTransferClient leadershipTransferClient;
   private @Nullable PartitionBalanceMetrics partitionBalanceMetrics;
   private @Nullable ClusterLoadCollector loadCollector;
+  private @Nullable RebalanceScheduler rebalanceScheduler;
 
   @Override
   public String getName() {
@@ -134,6 +142,7 @@ public class RebalanceCoordinatorStep implements StartupStep<BrokerStartupContex
               brokerStartupContext
                   .getClusterConfigurationService()
                   .addUpdateListener(rebalanceCoordinator);
+              startScheduler(brokerStartupContext, raftCfg, rebalanceMetrics);
               started.complete(brokerStartupContext);
             });
 
@@ -146,6 +155,7 @@ public class RebalanceCoordinatorStep implements StartupStep<BrokerStartupContex
     final ActorFuture<BrokerStartupContext> stopped =
         brokerStartupContext.getConcurrencyControl().createFuture();
 
+    stopScheduler(brokerStartupContext);
     if (loadCollector != null) {
       loadCollector.close();
       loadCollector = null;
@@ -182,6 +192,51 @@ public class RebalanceCoordinatorStep implements StartupStep<BrokerStartupContex
             });
 
     return stopped;
+  }
+
+  private void startScheduler(
+      final BrokerStartupContext brokerStartupContext,
+      final RaftCfg raftCfg,
+      final ClusterRebalanceMetrics rebalanceMetrics) {
+    final var schedule = raftCfg.getRebalanceSchedule();
+    if (schedule instanceof NoneSchedule) {
+      return;
+    }
+    final var actor = Objects.requireNonNull(rebalanceCoordinatorActor);
+    final var loadWindow = raftCfg.getRebalanceLoadWindow();
+    final Map<LoadMeasure, Double> maxRates = new EnumMap<>(LoadMeasure.class);
+    final var maxProcessInstances = raftCfg.getRebalanceMaxProcessInstancesPerSecond();
+    if (maxProcessInstances != null) {
+      maxRates.put(LoadMeasure.ROOT_PROCESS_INSTANCES, maxProcessInstances);
+    }
+    final var maxCommands = raftCfg.getRebalanceMaxCommandsPerSecond();
+    if (maxCommands != null) {
+      maxRates.put(LoadMeasure.PROCESSED_COMMANDS, maxCommands);
+    }
+
+    rebalanceScheduler =
+        new RebalanceScheduler(
+            actor,
+            schedule,
+            Objects.requireNonNull(rebalanceCoordinator),
+            Objects.requireNonNull(loadCollector),
+            maxRates,
+            loadWindow,
+            Clock.systemUTC(),
+            rebalanceMetrics);
+    brokerStartupContext.getClusterConfigurationService().addUpdateListener(rebalanceScheduler);
+    rebalanceScheduler.start();
+    LOGGER.info("Scheduling rebalances on {} with load limits {}", schedule, maxRates);
+  }
+
+  private void stopScheduler(final BrokerStartupContext brokerStartupContext) {
+    if (rebalanceScheduler != null) {
+      brokerStartupContext
+          .getClusterConfigurationService()
+          .removeUpdateListener(rebalanceScheduler);
+      rebalanceScheduler.close();
+      rebalanceScheduler = null;
+    }
   }
 
   private ActorFuture<Void> closeRebalanceCoordinator() {

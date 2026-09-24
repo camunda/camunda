@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  * Measures the load across the cluster by reading every broker's running totals at the start and
  * end of a window, and answers other brokers' requests for this broker's totals.
  */
-public final class ClusterLoadCollector implements AutoCloseable {
+public final class ClusterLoadCollector implements ClusterLoadSource, AutoCloseable {
 
   static final String TOPIC = "cluster-rebalance-load-totals";
   private static final Duration TIMEOUT = Duration.ofSeconds(5);
@@ -77,6 +77,7 @@ public final class ClusterLoadCollector implements AutoCloseable {
    *
    * @param members the brokers expected to report, including this one if it is a member
    */
+  @Override
   public ActorFuture<ClusterLoad> collect(
       final Collection<MemberId> members, final Duration window) {
     final ActorFuture<ClusterLoad> result = executor.createFuture();
