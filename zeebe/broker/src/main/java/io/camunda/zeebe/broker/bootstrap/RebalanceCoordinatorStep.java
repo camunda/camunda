@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.bootstrap;
 import io.atomix.raft.RebalanceConfiguration;
 import io.atomix.raft.partition.impl.LeadershipTransferClient;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionLeaders;
+import io.camunda.zeebe.rebalance.ClusterLoadCollector;
 import io.camunda.zeebe.rebalance.ClusterRebalanceMetrics;
 import io.camunda.zeebe.rebalance.PartitionBalanceMetrics;
 import io.camunda.zeebe.rebalance.PartitionBalancePlanner;
@@ -41,6 +42,7 @@ public class RebalanceCoordinatorStep implements StartupStep<BrokerStartupContex
   private @Nullable RebalanceRequestServer rebalanceRequestServer;
   private @Nullable LeadershipTransferClient leadershipTransferClient;
   private @Nullable PartitionBalanceMetrics partitionBalanceMetrics;
+  private @Nullable ClusterLoadCollector loadCollector;
 
   @Override
   public String getName() {
@@ -121,6 +123,14 @@ public class RebalanceCoordinatorStep implements StartupStep<BrokerStartupContex
                       new ProtoBufRebalanceSerializer(),
                       rebalanceCoordinator);
               rebalanceRequestServer.start();
+              loadCollector =
+                  new ClusterLoadCollector(
+                      localMember,
+                      rebalanceCoordinatorActor,
+                      brokerStartupContext.getLoadCounters(),
+                      brokerStartupContext.getClusterServices().getCommunicationService(),
+                      Clock.systemUTC());
+              loadCollector.start();
               brokerStartupContext
                   .getClusterConfigurationService()
                   .addUpdateListener(rebalanceCoordinator);
@@ -136,6 +146,10 @@ public class RebalanceCoordinatorStep implements StartupStep<BrokerStartupContex
     final ActorFuture<BrokerStartupContext> stopped =
         brokerStartupContext.getConcurrencyControl().createFuture();
 
+    if (loadCollector != null) {
+      loadCollector.close();
+      loadCollector = null;
+    }
     if (rebalanceRequestServer != null) {
       rebalanceRequestServer.close();
       rebalanceRequestServer = null;

@@ -153,3 +153,22 @@ message RebalanceErrorResponse {
   RebalanceErrorCode errorCode = 1;
   string errorMessage = 2;
 }
+
+// A broker's running totals of each load measure, answering an empty request.
+message LoadTotals {
+  enum LoadMeasure {
+    LOAD_MEASURE_UNSPECIFIED = 0;
+    ROOT_PROCESS_INSTANCES = 1;
+    PROCESSED_COMMANDS = 2;
+  }
+
+  message Total {
+    LoadMeasure measure = 1;
+    uint64 count = 2;
+  }
+
+  // Changes whenever the broker restarts, so totals from either side of a restart are never
+  // compared.
+  uint64 incarnation = 1;
+  repeated Total totals = 2;
+}

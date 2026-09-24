@@ -20,6 +20,8 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.logstreams.state.DbPositionSupplier;
+import io.camunda.zeebe.broker.partitioning.BrokerLoadCounters;
+import io.camunda.zeebe.broker.partitioning.BrokerLoadCounters.PartitionLoadCounters;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -114,6 +116,7 @@ public final class ZeebePartitionFactory {
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
   private final ClusterConfigurationService clusterConfigurationService;
   private final RocksDbResources rocksDbResources;
+  private final BrokerLoadCounters loadCounters;
 
   // The tenant's secret store registry, shared across its partitions: the caches are read on job
   // activation to inject resolved secrets and populated by the background secret-resolution flow.
@@ -138,6 +141,7 @@ public final class ZeebePartitionFactory {
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final ClusterConfigurationService clusterConfigurationService,
       final RocksDbResources rocksDbResources,
+      final BrokerLoadCounters loadCounters,
       final SecretStoreRegistry secretStoreRegistry) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
@@ -157,6 +161,7 @@ public final class ZeebePartitionFactory {
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
     this.clusterConfigurationService = clusterConfigurationService;
     this.rocksDbResources = rocksDbResources;
+    this.loadCounters = loadCounters;
     this.secretStoreRegistry = secretStoreRegistry;
   }
 
@@ -166,12 +171,13 @@ public final class ZeebePartitionFactory {
       final DynamicPartitionConfig initialPartitionConfig,
       final BrokerHealthCheckService brokerHealthCheckService,
       final MeterRegistry partitionMeterRegistry,
-      final CommandApiService commandApiService) {
+      final CommandApiService commandApiService,
+      final PartitionLoadCounters partitionLoadCounters) {
 
     final var communicationService = clusterServices.getCommunicationService();
     final var membershipService = clusterServices.getMembershipService();
-    final var processingCounters = new EnumCounters<>(StreamProcessorAction.class);
-    final var rootProcessInstanceCounters = new EnumCounters<>(EngineAction.class);
+    final var processingCounters = partitionLoadCounters.processing();
+    final var rootProcessInstanceCounters = partitionLoadCounters.rootProcessInstances();
     final var typedRecordProcessorsFactory =
         createFactory(localBroker, featureFlags, rootProcessInstanceCounters);
 
@@ -224,6 +230,11 @@ public final class ZeebePartitionFactory {
         new PartitionTransitionImpl(generateTransitionSteps(processingCounters));
 
     return new ZeebePartition(context, newTransitionBehavior, STARTUP_STEPS);
+  }
+
+  /** Where the partitions this factory constructs count their load. */
+  public BrokerLoadCounters loadCounters() {
+    return loadCounters;
   }
 
   private List<PartitionTransitionStep> generateTransitionSteps(

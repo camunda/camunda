@@ -157,7 +157,7 @@ class RebalanceCoordinatorStepTest {
       assertThat(startupFuture).succeedsWithin(TIME_OUT);
       verify(clusterConfigurationService, timeout(TIME_OUT.toMillis()))
           .addUpdateListener(any(RebalanceCoordinator.class));
-      verify(communicationService, timeout(TIME_OUT.toMillis()).times(3))
+      verify(communicationService, timeout(TIME_OUT.toMillis()).times(4))
           .replyTo(any(), any(), any(), any());
     }
   }
@@ -193,7 +193,7 @@ class RebalanceCoordinatorStepTest {
 
       // then
       assertThat(shutdownFuture).succeedsWithin(TIME_OUT);
-      verify(communicationService, times(3)).unsubscribe(any());
+      verify(communicationService, times(4)).unsubscribe(any());
       verify(clusterConfigurationService).removeUpdateListener(registeredCoordinator);
     }
 
@@ -267,12 +267,12 @@ class RebalanceCoordinatorStepTest {
       verify(communicationService, timeout(TIME_OUT.toMillis()))
           .send(any(), any(), any(), any(), eq(member1), any());
       final ArgumentCaptor<Function> resultHandlerCaptor = ArgumentCaptor.forClass(Function.class);
-      verify(communicationService, timeout(TIME_OUT.toMillis()).times(4))
+      verify(communicationService, timeout(TIME_OUT.toMillis()).times(5))
           .replyTo(any(), any(), resultHandlerCaptor.capture(), any());
       @SuppressWarnings("unchecked")
       final Function<
               LeadershipTransferResultRequest, CompletableFuture<LeadershipTransferResultResponse>>
-          firstTransferResultHandler = resultHandlerCaptor.getAllValues().get(3);
+          firstTransferResultHandler = resultHandlerCaptor.getAllValues().get(4);
 
       // when
       final var shutdownFuture = sut.shutdown(testBrokerStartupContext);
