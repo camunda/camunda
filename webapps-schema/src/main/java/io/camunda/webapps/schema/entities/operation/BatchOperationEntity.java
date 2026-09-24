@@ -15,7 +15,6 @@ import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 
 public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationEntity> {
 
@@ -189,11 +188,6 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
 
   public BatchOperationEntity setActorId(final String actorId) {
     this.actorId = actorId;
-    return this;
-  }
-
-  public BatchOperationEntity withGeneratedId() {
-    setId(UUID.randomUUID().toString());
     return this;
   }
 

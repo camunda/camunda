@@ -104,9 +104,7 @@ public class ExportHandlerArchTest {
           .and()
           // TODO remove these exclusions once we have refactored the handlers to implement the
           // correct interface
-          .resideOutsideOfPackages(
-              "io.camunda.exporter.handlers.batchoperation..",
-              "io.camunda.exporter.handlers.operation..")
+          .resideOutsideOfPackages("io.camunda.exporter.handlers.batchoperation..")
           .should()
           .beAssignableTo(
               DescribedPredicate.or(
