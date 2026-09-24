@@ -193,7 +193,7 @@ jobs:
     timeout-minutes: 18
     permissions: {} # GITHUB_TOKEN unused in this job
     container:
-      image: mcr.microsoft.com/playwright:v1.62.1
+      image: mcr.microsoft.com/playwright:v1.63.0
       options: --user 1001:1000
     defaults:
       run:
@@ -248,7 +248,7 @@ jobs:
     timeout-minutes: 15
     permissions: {} # GITHUB_TOKEN unused in this job
     container:
-      image: mcr.microsoft.com/playwright:v1.62.1
+      image: mcr.microsoft.com/playwright:v1.63.0
       options: --user 1001:1000
     defaults:
       run:
@@ -298,7 +298,7 @@ jobs:
     timeout-minutes: 18
     permissions: {} # GITHUB_TOKEN unused in this job
     container:
-      image: mcr.microsoft.com/playwright:v1.62.1
+      image: mcr.microsoft.com/playwright:v1.63.0
       options: --user 1001:1000
     defaults:
       run:
@@ -350,7 +350,7 @@ jobs:
     timeout-minutes: 21
     permissions: {} # GITHUB_TOKEN unused in this job
     container:
-      image: mcr.microsoft.com/playwright:v1.62.1
+      image: mcr.microsoft.com/playwright:v1.63.0
       options: --user 1001:1000
     defaults:
       run:
