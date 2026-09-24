@@ -57,7 +57,7 @@
 		"monaco-editor": "0.53.0",
 		"react": "19.3.0",
 		"react-dom": "19.3.0",
-		"react-error-boundary": "6.1.5",
+		"react-error-boundary": "6.1.6",
 		"react-final-form": "7.0.1",
 		"react-final-form-arrays": "5.0.0",
 		"react-i18next": "17.0.14",
