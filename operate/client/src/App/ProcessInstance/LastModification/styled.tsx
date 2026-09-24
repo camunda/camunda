@@ -17,12 +17,25 @@ const Container = styled.div`
   background-color: var(--cds-button-secondary);
   color: var(--cds-text-on-color);
   padding: var(--cds-spacing-03) 0 var(--cds-spacing-03) var(--cds-spacing-05);
+
+  #root.operate-nav-v2 & {
+    border-radius: var(--cds-spacing-03);
+    gap: var(--cds-spacing-02);
+    height: 2.5rem;
+    padding: var(--cds-spacing-02) var(--cds-spacing-02) var(--cds-spacing-02)
+      var(--cds-spacing-05);
+  }
 `;
 
 const ModificationDetail = styled.div`
   display: inline-flex;
   position: relative;
   padding-right: var(--cds-spacing-05);
+
+  #root.operate-nav-v2 &::after {
+    display: none;
+  }
+
   &:after {
     content: ' ';
     position: absolute;
