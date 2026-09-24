@@ -15,7 +15,6 @@
  */
 package io.atomix.raft;
 
-import io.camunda.zeebe.test.util.junit.SlowTest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
@@ -27,6 +26,7 @@ import io.atomix.raft.protocol.TimeoutNowRequest;
 import io.atomix.raft.protocol.VersionedAppendRequest;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.roles.LeaderRole;
+import io.camunda.zeebe.test.util.junit.SlowTest;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;

@@ -7,7 +7,6 @@
  */
 package io.atomix.raft;
 
-import io.camunda.zeebe.test.util.junit.SlowTest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.ClusterMembershipService;
@@ -30,6 +29,7 @@ import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.utils.concurrent.SingleThreadContext;
+import io.camunda.zeebe.test.util.junit.SlowTest;
 import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;

@@ -15,7 +15,6 @@
  */
 package io.atomix.raft;
 
-import io.camunda.zeebe.test.util.junit.SlowTest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -23,6 +22,7 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
+import io.camunda.zeebe.test.util.junit.SlowTest;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;

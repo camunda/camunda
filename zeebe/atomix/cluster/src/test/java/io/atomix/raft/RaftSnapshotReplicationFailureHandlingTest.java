@@ -15,7 +15,6 @@
  */
 package io.atomix.raft;
 
-import io.camunda.zeebe.test.util.junit.SlowTest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.raft.RaftError.Type;
@@ -23,6 +22,7 @@ import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
 import io.atomix.raft.protocol.TestRaftServerProtocol.ResponseInterceptor;
+import io.camunda.zeebe.test.util.junit.SlowTest;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;

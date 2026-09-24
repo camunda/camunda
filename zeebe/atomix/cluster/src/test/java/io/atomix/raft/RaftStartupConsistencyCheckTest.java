@@ -7,7 +7,6 @@
  */
 package io.atomix.raft;
 
-import io.camunda.zeebe.test.util.junit.SlowTest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
@@ -17,6 +16,7 @@ import io.atomix.raft.RaftServer.Builder;
 import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
 import io.atomix.raft.snapshot.TestSnapshotStore;
+import io.camunda.zeebe.test.util.junit.SlowTest;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
