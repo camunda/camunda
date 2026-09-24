@@ -62,7 +62,7 @@ async function deployCycleTimerProcess(prefix: string) {
     'type="Task"': `type="${prefix}-child-job"`,
   });
   await deployWithSubstitutions(
-    './resources/updatable_boundary_timer_pattern.bpmn',
+    './resources/repeating_boundary_timer_process.bpmn',
     {
       'id="updatable_boundary_timer_process"': `id="${processDefinitionId}"`,
       'type="sr-tick"': `type="${tickJobType}"`,

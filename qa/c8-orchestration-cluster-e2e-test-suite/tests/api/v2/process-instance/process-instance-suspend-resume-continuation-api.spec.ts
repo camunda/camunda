@@ -102,13 +102,16 @@ async function deployLongSuspendProcess(prefix: string) {
   const messageName = `${prefix}-msg`;
   const msgJobType = `${prefix}-msg-done`;
   const timerJobType = `${prefix}-timer-done`;
-  await deployWithSubstitutions('./resources/sr_long_suspend.bpmn', {
-    'id="sr_long_suspend"': `id="${processDefinitionId}"`,
-    'name="sr-long-msg"': `name="${messageName}"`,
-    'type="sr-long-msg-done"': `type="${msgJobType}"`,
-    'type="sr-long-timer-done"': `type="${timerJobType}"`,
-    '<timeDuration>PT5M</timeDuration>': '<timeDuration>PT40S</timeDuration>',
-  });
+  await deployWithSubstitutions(
+    './resources/suspend_resume_parallel_join_process.bpmn',
+    {
+      'id="sr_long_suspend"': `id="${processDefinitionId}"`,
+      'name="sr-long-msg"': `name="${messageName}"`,
+      'type="sr-long-msg-done"': `type="${msgJobType}"`,
+      'type="sr-long-timer-done"': `type="${timerJobType}"`,
+      '<timeDuration>PT5M</timeDuration>': '<timeDuration>PT40S</timeDuration>',
+    },
+  );
   return {processDefinitionId, messageName, msgJobType, timerJobType};
 }
 
@@ -116,11 +119,14 @@ async function deployAsymProcess(prefix: string) {
   const processDefinitionId = `${prefix}-asym`;
   const signalName = `${prefix}-Signal`;
   const messageName = `${prefix}-asym-msg`;
-  await deployWithSubstitutions('./resources/sr_asym_signal_vs_message.bpmn', {
-    'id="sr_asym_signal_vs_message"': `id="${processDefinitionId}"`,
-    'name="SrAsymSignal"': `name="${signalName}"`,
-    'name="sr-asym-msg"': `name="${messageName}"`,
-  });
+  await deployWithSubstitutions(
+    './resources/signal_and_message_parallel_wait_process.bpmn',
+    {
+      'id="sr_asym_signal_vs_message"': `id="${processDefinitionId}"`,
+      'name="SrAsymSignal"': `name="${signalName}"`,
+      'name="sr-asym-msg"': `name="${messageName}"`,
+    },
+  );
   return {processDefinitionId, signalName, messageName};
 }
 
@@ -128,11 +134,14 @@ async function deploySignalCatchProcess(prefix: string) {
   const processDefinitionId = `${prefix}-signal`;
   const signalName = `${prefix}-Signal`;
   const jobType = `${prefix}-signal-done`;
-  await deployWithSubstitutions('./resources/sr_p3_signal.bpmn', {
-    'id="sr_p3_signal"': `id="${processDefinitionId}"`,
-    'name="SrP3Signal"': `name="${signalName}"`,
-    'type="sr-p3-signal-done"': `type="${jobType}"`,
-  });
+  await deployWithSubstitutions(
+    './resources/signal_catch_with_job_process.bpmn',
+    {
+      'id="sr_p3_signal"': `id="${processDefinitionId}"`,
+      'name="SrP3Signal"': `name="${signalName}"`,
+      'type="sr-p3-signal-done"': `type="${jobType}"`,
+    },
+  );
   return {processDefinitionId, signalName, jobType};
 }
 
@@ -140,7 +149,7 @@ async function deployMultiInstanceProcess(prefix: string) {
   const processDefinitionId = `${prefix}-mi`;
   const jobType = `${prefix}-item-job`;
   // The user task's form has to exist before the task can be created.
-  await deploy(['./resources/review-item-1arzgj2.form']);
+  await deploy(['./resources/multi_instance_review_item_form.form']);
   await deployWithSubstitutions('./resources/multi_instance_sub_process.bpmn', {
     'id="Process_MultiInstanceSubprocess"': `id="${processDefinitionId}"`,
     'type="tesz"': `type="${jobType}"`,
@@ -164,14 +173,17 @@ async function deployOrderProcess(prefix: string) {
     notdelivered: `${prefix}-NOTDELIVERED`,
     canceled: `${prefix}-CANCELED`,
   };
-  await deployWithSubstitutions('./resources/msg_process.bpmn', {
-    'id="order_process"': `id="${processDefinitionId}"`,
-    'name="ORDER"': `name="${msg.order}"`,
-    'name="INTRANSIT"': `name="${msg.intransit}"`,
-    'name="DELIVERED"': `name="${msg.delivered}"`,
-    'name="NOTDELIVERED"': `name="${msg.notdelivered}"`,
-    'name="CANCELED"': `name="${msg.canceled}"`,
-  });
+  await deployWithSubstitutions(
+    './resources/order_process_with_message_events.bpmn',
+    {
+      'id="order_process"': `id="${processDefinitionId}"`,
+      'name="ORDER"': `name="${msg.order}"`,
+      'name="INTRANSIT"': `name="${msg.intransit}"`,
+      'name="DELIVERED"': `name="${msg.delivered}"`,
+      'name="NOTDELIVERED"': `name="${msg.notdelivered}"`,
+      'name="CANCELED"': `name="${msg.canceled}"`,
+    },
+  );
   return {processDefinitionId, msg};
 }
 
@@ -253,11 +265,17 @@ async function expectElementInstanceCount(
 async function deployEventGatewayProcess(prefix: string) {
   const processDefinitionId = `${prefix}-race`;
   const signalName = `${prefix}-Signal`;
-  await deploy(['./resources/new_form_b.form', './resources/new_form_c.form']);
-  await deployWithSubstitutions('./resources/user_task_test_process.bpmn', {
-    'id="Process_0uj1r9h"': `id="${processDefinitionId}"`,
-    'name="Signal1"': `name="${signalName}"`,
-  });
+  await deploy([
+    './resources/event_based_gateway_form_b.form',
+    './resources/event_based_gateway_form_c.form',
+  ]);
+  await deployWithSubstitutions(
+    './resources/event_based_gateway_timer_signal_process.bpmn',
+    {
+      'id="Process_0uj1r9h"': `id="${processDefinitionId}"`,
+      'name="Signal1"': `name="${signalName}"`,
+    },
+  );
   return {processDefinitionId, signalName};
 }
 
