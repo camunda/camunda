@@ -14,7 +14,7 @@ echo "Looking for releases since: $CUTOFF_DATE"
 # the bare POST 403s and `set -e` aborts the whole job mid-run.
 post_comment_with_retry() {
   local issue_number="$1" comment_body="$2"
-  local attempt=0 max_attempts=8 response http_code retry_after sleep_for
+  local attempt=0 max_attempts=8 response http_code retry_after reset_at sleep_for retryable
 
   while :; do
     attempt=$((attempt + 1))
@@ -25,25 +25,51 @@ post_comment_with_retry() {
     fi
 
     http_code=$(printf '%s\n' "$response" | grep -oiE '^HTTP/[0-9.]+ [0-9]+' | grep -oE '[0-9]+$' | head -n1)
-    if [ "$http_code" != "403" ] && [ "$http_code" != "429" ]; then
-      echo "    ✗ Failed to comment on #$issue_number (HTTP ${http_code:-unknown})" >&2
+
+    # Only retry failures a wait can actually clear. 429 and 5xx are always
+    # transient; a 403 is worth retrying only when it is a rate limit -- a
+    # secondary-limit 403 carries Retry-After or a "rate limit"/"abuse" body, and
+    # a primary-limit 403 shows x-ratelimit-remaining: 0. A plain permission 403
+    # (or a 404/422) never clears, so failing fast on it keeps one bad issue from
+    # burning the entire backoff budget.
+    retryable=false
+    case "$http_code" in
+      429 | 5??) retryable=true ;;
+      403)
+        if printf '%s\n' "$response" | grep -qiE '^(retry-after|x-ratelimit-reset):' \
+          || printf '%s\n' "$response" | grep -qiE '^x-ratelimit-remaining: *0\b' \
+          || printf '%s\n' "$response" | grep -qiE 'rate limit|secondary rate|abuse'; then
+          retryable=true
+        fi
+        ;;
+    esac
+
+    if [ "$retryable" != true ]; then
+      echo "    ✗ Failed to comment on #$issue_number (HTTP ${http_code:-unknown}, not retryable)" >&2
       printf '%s\n' "$response" >&2
       return 1
     fi
     if [ "$attempt" -ge "$max_attempts" ]; then
-      echo "    ✗ Giving up on #$issue_number after $attempt attempts (still rate limited)" >&2
+      echo "    ✗ Giving up on #$issue_number after $attempt attempts (still failing, last HTTP $http_code)" >&2
       return 1
     fi
 
-    retry_after=$(printf '%s\n' "$response" | grep -oiE '^Retry-After: [0-9]+' | grep -oE '[0-9]+' | head -n1)
+    # Prefer the server's own hint: Retry-After seconds, or x-ratelimit-reset
+    # (epoch) when the primary limit is exhausted; otherwise linear backoff.
+    retry_after=$(printf '%s\n' "$response" | grep -oiE '^retry-after: *[0-9]+' | grep -oE '[0-9]+' | head -n1)
+    reset_at=$(printf '%s\n' "$response" | grep -oiE '^x-ratelimit-reset: *[0-9]+' | grep -oE '[0-9]+' | head -n1)
     if [ -n "$retry_after" ]; then
       sleep_for="$retry_after"
+    elif [ -n "$reset_at" ]; then
+      sleep_for=$((reset_at - $(date +%s)))
     else
-      # Secondary limit without Retry-After: linear backoff, capped.
       sleep_for=$((attempt * 60))
-      [ "$sleep_for" -gt 300 ] && sleep_for=300
     fi
-    echo "    Rate limited on #$issue_number; retrying in ${sleep_for}s (attempt $attempt/$max_attempts)" >&2
+    # Clamp: never a hot loop on a stale hint, never one huge stall on a distant
+    # reset -- split that across attempts instead.
+    [ "$sleep_for" -lt 5 ] && sleep_for=5
+    [ "$sleep_for" -gt 300 ] && sleep_for=300
+    echo "    Retrying #$issue_number in ${sleep_for}s (attempt $attempt/$max_attempts, HTTP $http_code)" >&2
     sleep "$sleep_for"
   done
 }
@@ -61,8 +87,13 @@ fi
 echo "Found releases:"
 echo "$RELEASES" | jq -r '.tag_name + " - " + .published_at'
 
-# Process each release
-echo "$RELEASES" | jq -c '.' | while read -r release; do
+# Track issues we could not comment on, so the run fails loudly at the end
+# instead of reporting success with silent gaps.
+FAILED_ISSUES=""
+
+# Process each release. Feed the loop via process substitution rather than a
+# pipe, so FAILED_ISSUES accumulates in this shell and survives the loop.
+while read -r release; do
   TAG_NAME=$(echo "$release" | jq -r '.tag_name')
   RELEASE_URL=$(echo "$release" | jq -r '.html_url')
   PUBLISHED_AT=$(echo "$release" | jq -r '.published_at')
@@ -154,10 +185,19 @@ echo "$RELEASES" | jq -c '.' | while read -r release; do
         echo "    ✓ Comment added successfully"
       else
         echo "    ✗ Skipped #$ISSUE_NUMBER after repeated failures"
+        FAILED_ISSUES="$FAILED_ISSUES #$ISSUE_NUMBER"
       fi
     fi
   done
-done
+done < <(echo "$RELEASES" | jq -c '.')
 
 echo ""
 echo "Release comment processing completed."
+
+# A rate-limit give-up or hard error leaves an issue uncommented. Surface it as a
+# job failure: the weekly re-run only recovers it while the release is still
+# inside DAYS_BACK, so a green run here would hide a permanent gap.
+if [ -n "$FAILED_ISSUES" ]; then
+  echo "::error::Could not comment on:$FAILED_ISSUES. Re-run the workflow (raise days_back if the release has aged out); already-commented issues are skipped." >&2
+  exit 1
+fi
