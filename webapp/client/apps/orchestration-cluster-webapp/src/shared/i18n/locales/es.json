@@ -699,6 +699,7 @@
 			},
 			"processInstance": {
 				"diagram": {
+					"downloadXml": "Descargar XML",
 					"panelLabel": "Diagrama de instancia de proceso",
 					"noDiagram": "No hay un diagrama disponible para este proceso",
 					"executionCount": "Número de ejecuciones",

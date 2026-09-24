@@ -26,9 +26,8 @@ const AgentTag = styled.span`
 `;
 
 const shine = keyframes`
-	0% { background-position: 0% 0%; }
+	0%, 100% { background-position: 0% 0%; }
 	50% { background-position: 100% 100%; }
-	100% { background-position: 0% 0%; }
 `;
 
 const AgentShine = styled.span<{$width: number; $height: number; $radius: number}>`

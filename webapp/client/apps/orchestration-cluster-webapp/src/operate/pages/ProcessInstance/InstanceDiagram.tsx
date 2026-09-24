@@ -62,7 +62,14 @@ function InstanceDiagram({
 		error: xmlError,
 		isFetching: isXmlFetching,
 	} = useDiagramXml(processInstance.processDefinitionKey);
-	const {statistics, sequenceFlows, agents} = useInstanceDiagramData(processInstance);
+	const rootElement = diagram?.diagramModel?.rootElement;
+	const hasDiagram =
+		diagram?.xml !== '' &&
+		rootElement !== undefined &&
+		'diagrams' in rootElement &&
+		Array.isArray(rootElement.diagrams) &&
+		rootElement.diagrams.some(({plane}) => plane);
+	const {statistics, sequenceFlows, agents} = useInstanceDiagramData(processInstance, hasDiagram);
 	const {data: waitStates} = useProcessInstanceWaitStateStatistics(processInstance);
 	const isRunning = isInstanceRunning(processInstance);
 	const overlaysData = useInstanceDiagramOverlays({
@@ -217,13 +224,6 @@ function InstanceDiagram({
 		}
 	};
 
-	const rootElement = diagram?.diagramModel?.rootElement;
-	const isNoDiagram =
-		diagram?.xml === '' ||
-		(rootElement !== undefined &&
-			(!('diagrams' in rootElement) ||
-				!Array.isArray(rootElement.diagrams) ||
-				!rootElement.diagrams.some(({plane}) => plane)));
 	const status =
 		isXmlPending || (isXmlFetching && diagram === undefined)
 			? 'loading'
@@ -231,14 +231,14 @@ function InstanceDiagram({
 				? 'forbidden'
 				: isXmlError
 					? 'error'
-					: isNoDiagram
+					: !hasDiagram
 						? 'empty'
 						: 'content';
 
 	return (
 		<Panel aria-label={t('operate.processInstance.diagram.panelLabel')}>
 			<DiagramShell status={status} emptyMessage={{message: t('operate.processInstance.diagram.noDiagram')}}>
-				{diagram && !isNoDiagram && (
+				{diagram && hasDiagram && (
 					<Diagram
 						key={processInstanceId}
 						xml={diagram.xml}

@@ -7,6 +7,7 @@
  */
 
 import {Add, CenterCircle, Subtract, Maximize, Minimize, Plan, Download} from '@carbon/react/icons';
+import {useTranslation} from 'react-i18next';
 import {ControlsContainer, ButtonsGroup, ControlButton, MinimapButton} from './styled';
 
 type Props = {
@@ -30,6 +31,7 @@ function DiagramControls({
 	isMinimapOpen,
 	download,
 }: Props) {
+	const {t} = useTranslation();
 	const handleDownload = () => {
 		if (!download) {
 			return;
@@ -105,8 +107,8 @@ function DiagramControls({
 						size="sm"
 						kind="tertiary"
 						align="top"
-						label="Download XML"
-						aria-label="Download BPMN definition XML"
+						label={t('operate.processInstance.diagram.downloadXml')}
+						aria-label={t('operate.processInstance.diagram.downloadXml')}
 						onClick={handleDownload}
 					>
 						<Download />

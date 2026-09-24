@@ -39,11 +39,8 @@ const PROCESS_XML = `<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/
 <bpmn:userTask id="task_1" /><bpmn:callActivity id="call_1" />
 <bpmn:businessRuleTask id="rule_1" /><bpmn:endEvent id="end_1" /></bpmn:process>
 <bpmndi:BPMNDiagram id="Diagram_1"><bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
-<bpmndi:BPMNShape id="start_di" bpmnElement="start_1"><dc:Bounds x="100" y="100" width="36" height="36" /></bpmndi:BPMNShape>
-<bpmndi:BPMNShape id="task_di" bpmnElement="task_1"><dc:Bounds x="200" y="100" width="100" height="80" /></bpmndi:BPMNShape>
-<bpmndi:BPMNShape id="call_di" bpmnElement="call_1"><dc:Bounds x="350" y="100" width="100" height="80" /></bpmndi:BPMNShape>
-<bpmndi:BPMNShape id="rule_di" bpmnElement="rule_1"><dc:Bounds x="500" y="100" width="100" height="80" /></bpmndi:BPMNShape>
-<bpmndi:BPMNShape id="end_di" bpmnElement="end_1"><dc:Bounds x="650" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="start_di" bpmnElement="start_1"><dc:Bounds x="100" y="100" width="36" height="36" /></bpmndi:BPMNShape><bpmndi:BPMNShape id="task_di" bpmnElement="task_1"><dc:Bounds x="200" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="call_di" bpmnElement="call_1"><dc:Bounds x="350" y="100" width="100" height="80" /></bpmndi:BPMNShape><bpmndi:BPMNShape id="rule_di" bpmnElement="rule_1"><dc:Bounds x="500" y="100" width="100" height="80" /></bpmndi:BPMNShape><bpmndi:BPMNShape id="end_di" bpmnElement="end_1"><dc:Bounds x="650" y="100" width="36" height="36" /></bpmndi:BPMNShape>
 </bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn:definitions>`;
 
 const INSTANCE = createProcessInstance({processInstanceKey: INSTANCE_ID, processDefinitionId: 'Process_1'});
@@ -54,11 +51,10 @@ const STATISTICS = [
 	createProcessDefinitionStatistic({elementId: 'end_1', completed: 1}),
 ];
 
-const singleResult = <T,>(item: T) =>
-	createPaginatedResponse({
-		items: [item],
-		page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
-	});
+const singleResult = <T,>(item: T) => ({
+	items: [item],
+	page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+});
 
 function Page(props: React.ComponentProps<typeof InstanceDiagram>) {
 	const location = useRouterState({select: (state) => state.location});

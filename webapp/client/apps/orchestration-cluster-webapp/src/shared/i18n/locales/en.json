@@ -713,6 +713,7 @@
 			},
 			"processInstance": {
 				"diagram": {
+					"downloadXml": "Download XML",
 					"panelLabel": "Process instance diagram",
 					"noDiagram": "No diagram available for this process",
 					"executionCount": "Execution Count",

@@ -34,28 +34,8 @@ async function getJson<T>(endpoint: Request): Promise<T> {
 	return response.json();
 }
 
-function instanceStatisticsQuery(processInstanceKey: string) {
-	return queryOptions({
-		queryKey: ['instanceDiagramStatistics', processInstanceKey] as const,
-		queryFn: async () =>
-			(
-				await getJson<GetProcessInstanceStatisticsResponseBody>(
-					endpoints.getProcessInstanceStatistics(processInstanceKey),
-				)
-			).items,
-	});
-}
-
-function instanceSequenceFlowsQuery(processInstanceKey: string) {
-	return queryOptions({
-		queryKey: ['instanceDiagramSequenceFlows', processInstanceKey] as const,
-		queryFn: async () =>
-			(
-				await getJson<GetProcessInstanceSequenceFlowsResponseBody>(
-					endpoints.getProcessInstanceSequenceFlows(processInstanceKey),
-				)
-			).items,
-	});
+async function getItems<T extends {items: unknown[]}>(endpoint: Request): Promise<T['items']> {
+	return (await getJson<T>(endpoint)).items;
 }
 
 function instanceAgentInstancesQuery(processInstanceKey: string) {
@@ -111,23 +91,41 @@ function calledDecisionQuery(elementInstanceKey: string) {
 	});
 }
 
-function useInstanceDiagramData(instance: ProcessInstance) {
+function useInstanceDiagramData(instance: ProcessInstance, hasDiagram: boolean) {
 	const processInstanceKey = instance.processInstanceKey;
 	const isRunning = isInstanceRunning(instance);
 	const wasRunning = useRef(isRunning);
 	const refetchInterval = isRunning ? POLLING_INTERVAL_MS : false;
-	const statistics = useQuery({...instanceStatisticsQuery(processInstanceKey), refetchInterval});
-	const sequenceFlows = useQuery({...instanceSequenceFlowsQuery(processInstanceKey), refetchInterval});
-	const agents = useQuery({...instanceAgentInstancesQuery(processInstanceKey), refetchInterval});
+	const statistics = useQuery({
+		queryKey: ['instanceDiagramStatistics', processInstanceKey],
+		queryFn: () =>
+			getItems<GetProcessInstanceStatisticsResponseBody>(endpoints.getProcessInstanceStatistics(processInstanceKey)),
+		refetchInterval,
+		enabled: hasDiagram,
+	});
+	const sequenceFlows = useQuery({
+		queryKey: ['instanceDiagramSequenceFlows', processInstanceKey],
+		queryFn: () =>
+			getItems<GetProcessInstanceSequenceFlowsResponseBody>(
+				endpoints.getProcessInstanceSequenceFlows(processInstanceKey),
+			),
+		refetchInterval,
+		enabled: hasDiagram,
+	});
+	const agents = useQuery({
+		...instanceAgentInstancesQuery(processInstanceKey),
+		refetchInterval,
+		enabled: hasDiagram && isRunning,
+	});
 	const refetchStatistics = statistics.refetch;
 	const refetchSequenceFlows = sequenceFlows.refetch;
 	useEffect(() => {
-		if (wasRunning.current && !isRunning) {
+		if (hasDiagram && wasRunning.current && !isRunning) {
 			void refetchStatistics();
 			void refetchSequenceFlows();
 		}
 		wasRunning.current = isRunning;
-	}, [isRunning, refetchStatistics, refetchSequenceFlows]);
+	}, [hasDiagram, isRunning, refetchStatistics, refetchSequenceFlows]);
 	return {statistics, sequenceFlows, agents};
 }
 
