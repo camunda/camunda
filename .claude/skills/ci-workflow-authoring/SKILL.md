@@ -16,6 +16,15 @@ Check `docs/monorepo-docs/ci.md` first.
 - Add `timeout-minutes` per job.
 - Pin all external actions to commit SHAs.
 - Ensure each job ends with `observe-build-status` step.
+
+## Reuse Existing Composite Actions
+
+- Before writing an inline install/setup/util step, check `.github/actions/` for an existing
+  composite action and prefer it over reimplementing the logic inline.
+- If the same step gets copy-pasted across workflows, extract it into a composite action under
+  `.github/actions/` (see `references/composite-action-template.md`) rather than duplicating it.
+- Composite/local actions do **not** enforce `required: true` on inputs (only `workflow_call`
+  inputs are validated), so validate required inputs inside the action and fail fast.
 - Fail fast: validate cheap preconditions (required secrets, Vault reachability, input/tag contracts) in a preflight step or job before expensive build/test steps.
 
 ## Unified CI Criteria
