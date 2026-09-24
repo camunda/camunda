@@ -71,7 +71,11 @@ describe('<Header /> - multi tenancy', () => {
 	it('should distinguish the same decision ID and version in another tenant', async ({worker}) => {
 		sessionStorage.setItem(
 			'clientConfig',
-			JSON.stringify(createSystemConfiguration({deployment: {isMultiTenancyEnabled: true, maxRequestSize: 0}})),
+			JSON.stringify(
+				createSystemConfiguration({
+					deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: true, maxRequestSize: 0},
+				}),
+			),
 		);
 		worker.use(
 			mockCurrentUserEndpoint({successResponse: CURRENT_USER_WITH_TENANTS}),
