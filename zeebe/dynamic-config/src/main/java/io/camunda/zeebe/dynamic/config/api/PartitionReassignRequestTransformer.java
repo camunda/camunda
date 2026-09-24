@@ -16,8 +16,10 @@ import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.Co
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDemoteOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRedistributionCompletion;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRelocationCompletion;
@@ -177,11 +179,12 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
         new PartitionBootstrapOperation(
             primary, partitionId, newMetadata.getPriority(primary), true));
 
-    // Join each remaining members to the partition
+    // Join each remaining member to the partition as a learner and promote it once caught up
     for (final MemberId member : newMetadata.members()) {
       if (!member.equals(primary)) {
         operations.add(
-            new PartitionJoinOperation(member, partitionId, newMetadata.getPriority(member)));
+            new PartitionJoinOperation(member, partitionId, newMetadata.getPriority(member), true));
+        operations.add(new PartitionPromoteOperation(member, partitionId));
       }
     }
 
@@ -193,18 +196,29 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
     final Integer partitionId = newMetadata.id().id();
     final List<ClusterConfigurationChangeOperation> operations = new ArrayList<>();
 
+    // New members join as learners and are promoted once caught up.
     final var membersToJoin =
         newMetadata.members().stream()
             .filter(member -> !oldMetadata.members().contains(member))
-            .map(
-                newMember ->
-                    new PartitionJoinOperation(
-                        newMember, partitionId, newMetadata.getPriority(newMember)))
+            .<ClusterConfigurationChangeOperation>mapMulti(
+                (newMember, downstream) -> {
+                  downstream.accept(
+                      new PartitionJoinOperation(
+                          newMember, partitionId, newMetadata.getPriority(newMember), true));
+                  downstream.accept(new PartitionPromoteOperation(newMember, partitionId));
+                })
             .toList();
+    // Demoting before leaving is safe unconditionally here: every join is emitted before any
+    // leave, and the target - which is validated to be non-empty - stays active, so another
+    // active replica always remains when the demotion runs.
     final var membersToLeave =
         oldMetadata.members().stream()
             .filter(member -> !newMetadata.members().contains(member))
-            .map(oldMember -> new PartitionLeaveOperation(oldMember, partitionId, 1))
+            .<ClusterConfigurationChangeOperation>mapMulti(
+                (oldMember, downstream) -> {
+                  downstream.accept(new PartitionDemoteOperation(oldMember, partitionId));
+                  downstream.accept(new PartitionLeaveOperation(oldMember, partitionId, 1));
+                })
             .toList();
     final var membersToChangePriority =
         oldMetadata.members().stream()

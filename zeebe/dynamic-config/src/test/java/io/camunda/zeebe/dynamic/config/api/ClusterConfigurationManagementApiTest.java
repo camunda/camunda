@@ -28,11 +28,13 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDemoteOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRedistributionCompletion;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRelocationCompletion;
@@ -184,7 +186,8 @@ final class ClusterConfigurationManagementApiTest {
 
     // then
     assertThat(changeStatus.plannedChanges())
-        .containsExactly(new PartitionJoinOperation(id1, 1, 3));
+        .containsExactly(
+            new PartitionJoinOperation(id1, 1, 3, true), new PartitionPromoteOperation(id1, 1));
   }
 
   @Test
@@ -226,7 +229,10 @@ final class ClusterConfigurationManagementApiTest {
     // then
     assertThat(changeStatus.plannedChanges())
         .containsExactly(
-            new PartitionJoinOperation(id2, 2, 1), new PartitionLeaveOperation(id1, 2, 1));
+            new PartitionJoinOperation(id2, 2, 1, true),
+            new PartitionPromoteOperation(id2, 2),
+            new PartitionDemoteOperation(id1, 2),
+            new PartitionLeaveOperation(id1, 2, 1));
   }
 
   @Test
@@ -247,7 +253,9 @@ final class ClusterConfigurationManagementApiTest {
     assertThat(changeStatus.plannedChanges())
         .containsExactly(
             new MemberJoinOperation(id1),
-            new PartitionJoinOperation(id1, 2, 1),
+            new PartitionJoinOperation(id1, 2, 1, true),
+            new PartitionPromoteOperation(id1, 2),
+            new PartitionDemoteOperation(id0, 2),
             new PartitionLeaveOperation(id0, 2, 1));
   }
 
@@ -267,11 +275,12 @@ final class ClusterConfigurationManagementApiTest {
 
     // then
     assertThat(changeStatus.plannedChanges())
-        .hasSize(4)
+        .hasSize(6)
         .startsWith(new MemberJoinOperation(id1))
-        .contains(new PartitionJoinOperation(id1, 2, 2))
+        .contains(new PartitionJoinOperation(id1, 2, 2, true))
         .containsSequence(
-            new PartitionJoinOperation(id1, 1, 1),
+            new PartitionJoinOperation(id1, 1, 1, true),
+            new PartitionPromoteOperation(id1, 1),
             new PartitionReconfigurePriorityOperation(id0, 1, 2));
   }
 
@@ -317,7 +326,9 @@ final class ClusterConfigurationManagementApiTest {
     // then
     assertThat(changeStatus.plannedChanges())
         .containsExactlyInAnyOrder(
+            new PartitionDemoteOperation(id0, 2),
             new PartitionLeaveOperation(id0, 2, 1),
+            new PartitionDemoteOperation(id1, 1),
             new PartitionLeaveOperation(id1, 1, 1),
             new PartitionReconfigurePriorityOperation(id0, 1, 1),
             new PartitionReconfigurePriorityOperation(id1, 2, 1));
@@ -370,7 +381,9 @@ final class ClusterConfigurationManagementApiTest {
     assertThat(changeStatus.plannedChanges())
         .containsExactly(
             new MemberJoinOperation(id1),
-            new PartitionJoinOperation(id1, 2, 1),
+            new PartitionJoinOperation(id1, 2, 1, true),
+            new PartitionPromoteOperation(id1, 2),
+            new PartitionDemoteOperation(id0, 2),
             new PartitionLeaveOperation(id0, 2, 1),
             new StartPartitionScaleUp(id0, 3),
             new PartitionBootstrapOperation(id0, 3, 1, true),
@@ -397,7 +410,9 @@ final class ClusterConfigurationManagementApiTest {
     assertThat(changeStatus.plannedChanges())
         .containsExactly(
             new MemberJoinOperation(id1),
-            new PartitionJoinOperation(id1, 2, 1),
+            new PartitionJoinOperation(id1, 2, 1, true),
+            new PartitionPromoteOperation(id1, 2),
+            new PartitionDemoteOperation(id0, 2),
             new PartitionLeaveOperation(id0, 2, 1),
             new StartPartitionScaleUp(id0, 3),
             new PartitionBootstrapOperation(id0, 3, 1, true),
