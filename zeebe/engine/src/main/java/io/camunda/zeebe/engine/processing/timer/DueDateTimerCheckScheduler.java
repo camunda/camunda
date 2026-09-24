@@ -127,6 +127,7 @@ public class DueDateTimerCheckScheduler implements StreamProcessorLifecycleAware
           .setProcessDefinitionKey(timer.getProcessDefinitionKey())
           .setTenantId(timer.getTenantId())
           .setRootProcessInstanceKey(timer.getRootProcessInstanceKey())
+          .setStorageOrdinal(timer.getStorageOrdinal())
           .setBpmnProcessId(timer.getBpmnProcessId())
           .setElementType(timer.getElementType());
 

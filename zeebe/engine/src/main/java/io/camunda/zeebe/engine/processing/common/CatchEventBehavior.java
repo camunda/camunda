@@ -463,6 +463,7 @@ public final class CatchEventBehavior {
                   event.getId(),
                   context.getTenantId(),
                   context.getRootProcessInstanceKey(),
+                  context.getStorageOrdinal(),
                   BufferUtil.bufferAsString(context.getBpmnProcessId()),
                   context.getBpmnElementType(),
                   timer);
@@ -476,6 +477,7 @@ public final class CatchEventBehavior {
       final DirectBuffer handlerNodeId,
       final String tenantId,
       final long rootProcessInstanceKey,
+      final int storageOrdinal,
       final String bpmnProcessId,
       final BpmnElementType elementType,
       final Timer timer) {
@@ -490,6 +492,7 @@ public final class CatchEventBehavior {
         .setProcessDefinitionKey(processDefinitionKey)
         .setTenantId(tenantId)
         .setRootProcessInstanceKey(rootProcessInstanceKey)
+        .setStorageOrdinal(storageOrdinal)
         .setBpmnProcessId(bpmnProcessId)
         .setElementType(elementType);
 
@@ -647,6 +650,7 @@ public final class CatchEventBehavior {
         .setProcessDefinitionKey(timer.getProcessDefinitionKey())
         .setTenantId(timer.getTenantId())
         .setRootProcessInstanceKey(timer.getRootProcessInstanceKey())
+        .setStorageOrdinal(timer.getStorageOrdinal())
         .setBpmnProcessId(timer.getBpmnProcessId())
         .setElementType(timer.getElementType());
 

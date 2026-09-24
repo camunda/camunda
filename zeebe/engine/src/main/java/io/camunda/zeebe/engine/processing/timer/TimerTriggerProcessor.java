@@ -98,6 +98,10 @@ public final class TimerTriggerProcessor
       return;
     }
 
+    // populate time record with the storage ordinal of the timer instance to ensure that the
+    // correct ordinal is used for the rescheduled timer
+    timer.setStorageOrdinal(timerInstance.getStorageOrdinal());
+
     final var tenantId = timer.getTenantId();
     // this is an additional safeguard to avoid banning unrelated instances
     // as noticed in https://github.com/camunda/camunda/issues/20677
@@ -184,6 +188,7 @@ public final class TimerTriggerProcessor
         event.getId(),
         record.getTenantId(),
         record.getRootProcessInstanceKey(),
+        record.getStorageOrdinal(),
         record.getBpmnProcessId(),
         record.getElementType(),
         refreshedTimer);
@@ -191,8 +196,8 @@ public final class TimerTriggerProcessor
 
   private Timer refreshTimer(final Timer timer, final TimerRecord record) {
     return switch (timer) {
-      case CronTimer cronTimer -> cronTimer;
-      case RepeatingInterval repeatingInterval -> {
+      case final CronTimer cronTimer -> cronTimer;
+      case final RepeatingInterval repeatingInterval -> {
         int repetitions = record.getRepetitions();
         if (repetitions != RepeatingInterval.INFINITE) {
           repetitions--;
