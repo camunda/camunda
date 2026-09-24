@@ -16,7 +16,10 @@ import {
   assertStatusCode,
 } from '../../../../utils/http';
 import {CREATE_CLUSTER_VARIABLE} from '../../../../utils/beans/requestBeans';
-import {defaultAssertionOptions} from '../../../../utils/constants';
+import {
+  defaultAssertionOptions,
+  extendedAssertionOptions,
+} from '../../../../utils/constants';
 import {
   createTenantClusterVariable,
   deleteTenantClusterVariable,
@@ -169,7 +172,12 @@ test.describe.parallel('Cluster Variable API Tests - Tenant Scope', () => {
       expect(json.name).toBe(variableName);
       expect(json.scope).toBe('TENANT');
       expect(json.tenantId).toBe(tenantId);
-    }).toPass(defaultAssertionOptions);
+      // A freshly created tenant-scoped cluster variable has to propagate
+      // through the secondary-storage indexer before the get-by-name endpoint
+      // can read it back. On a loaded RDBMS nightly (e.g. MySQL) that exporter
+      // lag can exceed the 30s default window, so poll on the extended budget
+      // that the suite already uses for secondary-storage propagation.
+    }).toPass(extendedAssertionOptions);
   });
 
   test('Get Tenant Cluster Variable Unauthorized', async ({request}) => {
