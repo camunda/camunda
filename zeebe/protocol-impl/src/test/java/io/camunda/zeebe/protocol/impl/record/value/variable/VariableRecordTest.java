@@ -10,6 +10,8 @@ package io.camunda.zeebe.protocol.impl.record.value.variable;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.record.value.ProtectionMode;
+import java.util.Set;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -130,6 +132,32 @@ final class VariableRecordTest {
     final String afterWrap = record.getValue();
     assertThat(afterWrap).isEqualTo(JSON_VALUE_2);
     assertThat(afterWrap).isNotSameAs(cachedValue);
+  }
+
+  @Test
+  void shouldRoundTripProtectionModesThroughWriteAndWrap() {
+    // given
+    final var record = createFullRecord(JSON_VALUE_1);
+    record.setProtectionModes(Set.of(ProtectionMode.MASK, ProtectionMode.ENCRYPT));
+
+    // when -- serialize and re-wrap, simulating how the engine reuses records
+    final var writeBuffer = new UnsafeBuffer(new byte[record.getLength()]);
+    record.write(writeBuffer, 0);
+    final var rewrapped = new VariableRecord();
+    rewrapped.wrap(writeBuffer, 0, record.getLength());
+
+    // then
+    assertThat(rewrapped.getProtectionModes())
+        .containsExactlyInAnyOrder(ProtectionMode.MASK, ProtectionMode.ENCRYPT);
+  }
+
+  @Test
+  void shouldDefaultToNoProtectionModes() {
+    // given
+    final var record = new VariableRecord();
+
+    // then
+    assertThat(record.getProtectionModes()).isEmpty();
   }
 
   private VariableRecord createFullRecord(final String jsonValue) {

@@ -33,6 +33,7 @@ import io.camunda.configuration.Partitioning;
 import io.camunda.configuration.PrimaryStorage;
 import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.configuration.Processing;
+import io.camunda.configuration.Protection;
 import io.camunda.configuration.Rdbms;
 import io.camunda.configuration.S3;
 import io.camunda.configuration.SasToken;
@@ -48,6 +49,7 @@ import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.zeebe.backup.azure.SasTokenConfig;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
+import io.camunda.zeebe.broker.system.configuration.DataProtectionCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.ExportingCfg;
 import io.camunda.zeebe.broker.system.configuration.MembershipCfg;
@@ -83,6 +85,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -277,6 +280,7 @@ public class BrokerBasedPropertiesOverride {
     populateFromValidators(override, camunda);
     populateFromSecretResolution(override, camunda);
     populateFromStorageOrdinals(override, camunda);
+    populateFromProtection(override, camunda);
 
     override
         .getExperimental()
@@ -820,6 +824,16 @@ public class BrokerBasedPropertiesOverride {
             export.getDistributionInterval(),
             export.getMigrationStatusScanMaxRecords());
     override.setExporting(exportingCfg);
+  }
+
+  private static void populateFromProtection(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final Protection protection = camunda.getData().getProtection();
+    override
+        .getExperimental()
+        .getEngine()
+        .setDataProtection(
+            new DataProtectionCfg(protection.getPatterns(), Set.copyOf(protection.getModes())));
   }
 
   private static void populateFromBackup(

@@ -78,6 +78,7 @@ data.primary-storage.rocks-db.sst-partitioning-enabled
 data.primary-storage.rocks-db.statistics-enabled
 data.primary-storage.rocks-db.wal-disabled
 data.primary-storage.runtime-directory
+data.protection.pattern
 data.secondary-storage.autoconfigure-camunda-exporter
 data.secondary-storage.elasticsearch.backup.incomplete-check-timeout
 data.secondary-storage.elasticsearch.backup.repository-name

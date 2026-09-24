@@ -1743,6 +1743,7 @@ final class JsonSerializableToJsonTest {
                   "rootProcessInstanceKey": 5,
                   "storageOrdinal": 6,
                   "elementInstanceKey": 3,
+                  "protectionModes": [],
                   "source": {
                     "type":"API"
                   }
@@ -1789,6 +1790,7 @@ final class JsonSerializableToJsonTest {
                   "rootProcessInstanceKey": 5,
                   "storageOrdinal": 6,
                   "elementInstanceKey": 3,
+                  "protectionModes": [],
                   "source": {
                     "type":"API"
                   }
