@@ -18,6 +18,7 @@ import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.EngineAction;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
@@ -89,6 +90,7 @@ import io.camunda.zeebe.test.util.TestUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher.ResetMode;
+import io.camunda.zeebe.util.EnumCounters;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -383,7 +385,8 @@ public final class EngineRule extends ExternalResource {
                         jobStreamer,
                         searchClientsProxy,
                         brokerRequestAuthorizationConverter,
-                        secretStoreRegistry)
+                        secretStoreRegistry,
+                        new EnumCounters<>(EngineAction.class))
                     .withListener(
                         new ProcessingExporterTransistor(
                             environmentRule.getLogStream(partitionId)));

@@ -23,6 +23,8 @@ import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
+import io.camunda.zeebe.stream.impl.metrics.StreamProcessorAction;
+import io.camunda.zeebe.util.EnumCounters;
 import java.util.List;
 import java.util.function.BiFunction;
 
@@ -31,8 +33,13 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
   private final BiFunction<PartitionTransitionContext, Role, StreamProcessor>
       streamProcessorCreator;
 
-  public StreamProcessorTransitionStep() {
-    this(StreamProcessorTransitionStep::createStreamProcessor);
+  /**
+   * @param processingCounters counts what the partition's stream processors do with each record,
+   *     across every stream processor this step creates
+   */
+  public StreamProcessorTransitionStep(
+      final EnumCounters<StreamProcessorAction> processingCounters) {
+    this((context, role) -> createStreamProcessor(context, role, processingCounters));
   }
 
   // Used for testing
@@ -128,7 +135,9 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
   }
 
   private static StreamProcessor createStreamProcessor(
-      final PartitionTransitionContext context, final Role targetRole) {
+      final PartitionTransitionContext context,
+      final Role targetRole,
+      final EnumCounters<StreamProcessorAction> processingCounters) {
     final StreamProcessorMode streamProcessorMode =
         targetRole == Role.LEADER ? StreamProcessorMode.PROCESSING : StreamProcessorMode.REPLAY;
 
@@ -164,6 +173,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
 
     return StreamProcessor.builder()
         .meterRegistry(context.getPartitionTransitionMeterRegistry())
+        .processingCounters(processingCounters)
         .logStream(context.getLogStream())
         .partitionId(context.partitionId())
         .actorSchedulingService(context.getActorSchedulingService())

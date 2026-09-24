@@ -14,28 +14,29 @@ import io.camunda.zeebe.stream.impl.metrics.StreamMetricsDoc.ErrorHandlingPhaseK
 import io.camunda.zeebe.stream.impl.metrics.StreamMetricsDoc.ProcessingDurationKeys;
 import io.camunda.zeebe.stream.impl.metrics.StreamMetricsDoc.StreamProcessorActionKeys;
 import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.EnumCounters;
 import io.camunda.zeebe.util.collection.Table;
 import io.camunda.zeebe.util.micrometer.EnumMeter;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.FunctionCounter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class ProcessingMetrics {
-  private static final String ACTION_WRITTEN = "written";
-  private static final String ACTION_SKIPPED = "skipped";
-  private static final String ACTION_PROCESSED = "processed";
-
   private final AtomicLong lastProcessedPosition = new AtomicLong();
   private final AtomicLong pendingSideEffects = new AtomicLong();
   private final Table<ValueType, Intent, Timer> processingDuration = Table.simple();
-  private final Map<String, Counter> streamProcessorEvents = new HashMap<>();
+  private final EnumCounters<StreamProcessorAction> streamProcessorEvents;
+  private final long[] streamProcessorEventsAtStart =
+      new long[StreamProcessorAction.values().length];
+  private final EnumSet<StreamProcessorAction> registeredStreamProcessorEvents =
+      EnumSet.noneOf(StreamProcessorAction.class);
 
   private final MeterRegistry registry;
   private final Timer batchProcessingDuration;
@@ -45,8 +46,18 @@ public class ProcessingMetrics {
   private final EnumMeter<ErrorHandlingPhase> errorHandlingPhase;
   private final Timer processingLatency;
 
-  public ProcessingMetrics(final MeterRegistry registry) {
+  /**
+   * @param streamProcessorEvents counts what the stream processor did with each record; may already
+   *     hold counts from before, which the exported metrics leave out
+   */
+  public ProcessingMetrics(
+      final MeterRegistry registry,
+      final EnumCounters<StreamProcessorAction> streamProcessorEvents) {
     this.registry = registry;
+    this.streamProcessorEvents = streamProcessorEvents;
+    for (final var action : StreamProcessorAction.values()) {
+      streamProcessorEventsAtStart[action.ordinal()] = streamProcessorEvents.get(action);
+    }
 
     registerLastProcessedPosition();
     registerPendingSideEffects();
@@ -102,7 +113,7 @@ public class ProcessingMetrics {
 
   /** We only process commands. */
   public void commandsProcessed() {
-    event(ACTION_PROCESSED);
+    event(StreamProcessorAction.PROCESSED);
   }
 
   /**
@@ -114,12 +125,12 @@ public class ProcessingMetrics {
       return;
     }
 
-    countStreamProcessorEvent(ACTION_WRITTEN, amount);
+    countStreamProcessorEvent(StreamProcessorAction.WRITTEN, amount);
   }
 
   /** We skip events on processing. */
   public void eventSkipped() {
-    event(ACTION_SKIPPED);
+    event(StreamProcessorAction.SKIPPED);
   }
 
   public void setLastProcessedPosition(final long position) {
@@ -172,21 +183,24 @@ public class ProcessingMetrics {
         .register(registry);
   }
 
-  private void event(final String action) {
+  private void event(final StreamProcessorAction action) {
     countStreamProcessorEvent(action, 1);
   }
 
-  private void countStreamProcessorEvent(final String action, final long count) {
-    streamProcessorEvents
-        .computeIfAbsent(action, this::registerStreamProcessorEventCounter)
-        .increment(count);
+  private void countStreamProcessorEvent(final StreamProcessorAction action, final long count) {
+    streamProcessorEvents.add(action, count);
+    if (registeredStreamProcessorEvents.add(action)) {
+      registerStreamProcessorEventCounter(action);
+    }
   }
 
-  private Counter registerStreamProcessorEventCounter(final String action) {
+  private void registerStreamProcessorEventCounter(final StreamProcessorAction action) {
     final var meterDoc = StreamMetricsDoc.STREAM_PROCESSOR_EVENTS;
-    return Counter.builder(meterDoc.getName())
+    final long atStart = streamProcessorEventsAtStart[action.ordinal()];
+    FunctionCounter.builder(
+            meterDoc.getName(), streamProcessorEvents, counts -> counts.get(action) - atStart)
         .description(meterDoc.getDescription())
-        .tag(StreamProcessorActionKeys.ACTION.asString(), action)
+        .tag(StreamProcessorActionKeys.ACTION.asString(), action.label())
         .register(registry);
   }
 

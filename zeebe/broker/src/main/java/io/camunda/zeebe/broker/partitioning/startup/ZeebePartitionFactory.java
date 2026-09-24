@@ -61,6 +61,7 @@ import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotCopy;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.EngineAction;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
@@ -72,7 +73,9 @@ import io.camunda.zeebe.scheduler.startup.StartupStep;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
+import io.camunda.zeebe.stream.impl.metrics.StreamProcessorAction;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.camunda.zeebe.util.EnumCounters;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -167,7 +170,10 @@ public final class ZeebePartitionFactory {
 
     final var communicationService = clusterServices.getCommunicationService();
     final var membershipService = clusterServices.getMembershipService();
-    final var typedRecordProcessorsFactory = createFactory(localBroker, featureFlags);
+    final var processingCounters = new EnumCounters<>(StreamProcessorAction.class);
+    final var rootProcessInstanceCounters = new EnumCounters<>(EngineAction.class);
+    final var typedRecordProcessorsFactory =
+        createFactory(localBroker, featureFlags, rootProcessInstanceCounters);
 
     final var databaseCfg = brokerCfg.getExperimental().getRocksdb();
     final var consistencyChecks = brokerCfg.getExperimental().getConsistencyChecks();
@@ -215,12 +221,13 @@ public final class ZeebePartitionFactory {
     context.setClusterConfigurationService(clusterConfigurationService);
 
     final PartitionTransition newTransitionBehavior =
-        new PartitionTransitionImpl(generateTransitionSteps());
+        new PartitionTransitionImpl(generateTransitionSteps(processingCounters));
 
     return new ZeebePartition(context, newTransitionBehavior, STARTUP_STEPS);
   }
 
-  private List<PartitionTransitionStep> generateTransitionSteps() {
+  private List<PartitionTransitionStep> generateTransitionSteps(
+      final EnumCounters<StreamProcessorAction> processingCounters) {
     return List.of(
         new MetricsStep(),
         new LogStoragePartitionTransitionStep(),
@@ -231,7 +238,7 @@ public final class ZeebePartitionFactory {
         new BackupStoreTransitionStep(),
         new BackupServiceTransitionStep(),
         new InterPartitionCommandServiceStep(),
-        new StreamProcessorTransitionStep(),
+        new StreamProcessorTransitionStep(processingCounters),
         new CommandApiServiceTransitionStep(),
         new SnapshotDirectorPartitionTransitionStep(),
         new SnapshotAfterMigrationTransitionStep(),
@@ -285,7 +292,9 @@ public final class ZeebePartitionFactory {
   }
 
   private TypedRecordProcessorsFactory createFactory(
-      final BrokerInfo localBroker, final FeatureFlags featureFlags) {
+      final BrokerInfo localBroker,
+      final FeatureFlags featureFlags,
+      final EnumCounters<EngineAction> rootProcessInstanceCounters) {
     return recordProcessorContext -> {
       final InterPartitionCommandSender partitionCommandSender =
           recordProcessorContext.getPartitionCommandSender();
@@ -302,7 +311,8 @@ public final class ZeebePartitionFactory {
           jobStreamer,
           searchClientsProxy,
           brokerRequestAuthorizationConverter,
-          secretStoreRegistry);
+          secretStoreRegistry,
+          rootProcessInstanceCounters);
     };
   }
 }
