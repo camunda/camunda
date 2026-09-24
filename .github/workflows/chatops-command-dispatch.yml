@@ -44,6 +44,7 @@ jobs:
             ci-problems
             ci-disable-cache
             ci-enable-cache
+            pull-in
 
       - name: Update comment in case of failure
         if: failure()
