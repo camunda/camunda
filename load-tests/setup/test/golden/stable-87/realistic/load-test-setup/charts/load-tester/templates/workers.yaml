@@ -31,7 +31,7 @@ spec:
         camunda.io/created-by: golden-test
         camunda.io/purpose: load-test
       annotations:
-
+        
         checksum/saas-credentials: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
     spec:
       imagePullSecrets:
@@ -89,9 +89,6 @@ spec:
                 secretKeyRef:
                   name: load-test-credentials
                   key: zeebeGrpcAddress
-            # To be able to load a separate/additional configuration
-            - name: SPRING_CONFIG_ADDITIONALLOCATION
-              value: "/usr/local/camunda/config/load-test-config.yaml"
             - name: LOAD_TESTER_LOG_APPENDER
               value: "Stackdriver"
             - name: LOAD_TESTER_LOG_STACKDRIVER_SERVICENAME
@@ -144,15 +141,6 @@ spec:
           ports:
             - containerPort: 9600
               name: "http"
-          volumeMounts:
-            - name: load-test-config
-              mountPath: /usr/local/camunda/config/load-test-config.yaml
-              subPath: load-test-config.yaml
-      volumes:
-        - name: load-test-config
-          configMap:
-            name: load-test-config
-            defaultMode: 0754
 
 ---
 # Source: load-test-setup/charts/load-tester/templates/workers.yaml
@@ -187,7 +175,7 @@ spec:
         camunda.io/created-by: golden-test
         camunda.io/purpose: load-test
       annotations:
-
+        
         checksum/saas-credentials: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
     spec:
       imagePullSecrets:
@@ -245,9 +233,6 @@ spec:
                 secretKeyRef:
                   name: load-test-credentials
                   key: zeebeGrpcAddress
-            # To be able to load a separate/additional configuration
-            - name: SPRING_CONFIG_ADDITIONALLOCATION
-              value: "/usr/local/camunda/config/load-test-config.yaml"
             - name: LOAD_TESTER_LOG_APPENDER
               value: "Stackdriver"
             - name: LOAD_TESTER_LOG_STACKDRIVER_SERVICENAME
@@ -294,15 +279,6 @@ spec:
           ports:
             - containerPort: 9600
               name: "http"
-          volumeMounts:
-            - name: load-test-config
-              mountPath: /usr/local/camunda/config/load-test-config.yaml
-              subPath: load-test-config.yaml
-      volumes:
-        - name: load-test-config
-          configMap:
-            name: load-test-config
-            defaultMode: 0754
 
 ---
 # Source: load-test-setup/charts/load-tester/templates/workers.yaml
@@ -337,7 +313,7 @@ spec:
         camunda.io/created-by: golden-test
         camunda.io/purpose: load-test
       annotations:
-
+        
         checksum/saas-credentials: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
     spec:
       imagePullSecrets:
@@ -395,9 +371,6 @@ spec:
                 secretKeyRef:
                   name: load-test-credentials
                   key: zeebeGrpcAddress
-            # To be able to load a separate/additional configuration
-            - name: SPRING_CONFIG_ADDITIONALLOCATION
-              value: "/usr/local/camunda/config/load-test-config.yaml"
             - name: LOAD_TESTER_LOG_APPENDER
               value: "Stackdriver"
             - name: LOAD_TESTER_LOG_STACKDRIVER_SERVICENAME
@@ -452,15 +425,6 @@ spec:
           ports:
             - containerPort: 9600
               name: "http"
-          volumeMounts:
-            - name: load-test-config
-              mountPath: /usr/local/camunda/config/load-test-config.yaml
-              subPath: load-test-config.yaml
-      volumes:
-        - name: load-test-config
-          configMap:
-            name: load-test-config
-            defaultMode: 0754
 
 ---
 # Source: load-test-setup/charts/load-tester/templates/workers.yaml
@@ -495,7 +459,7 @@ spec:
         camunda.io/created-by: golden-test
         camunda.io/purpose: load-test
       annotations:
-
+        
         checksum/saas-credentials: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
     spec:
       imagePullSecrets:
@@ -553,9 +517,6 @@ spec:
                 secretKeyRef:
                   name: load-test-credentials
                   key: zeebeGrpcAddress
-            # To be able to load a separate/additional configuration
-            - name: SPRING_CONFIG_ADDITIONALLOCATION
-              value: "/usr/local/camunda/config/load-test-config.yaml"
             - name: LOAD_TESTER_LOG_APPENDER
               value: "Stackdriver"
             - name: LOAD_TESTER_LOG_STACKDRIVER_SERVICENAME
@@ -602,15 +563,6 @@ spec:
           ports:
             - containerPort: 9600
               name: "http"
-          volumeMounts:
-            - name: load-test-config
-              mountPath: /usr/local/camunda/config/load-test-config.yaml
-              subPath: load-test-config.yaml
-      volumes:
-        - name: load-test-config
-          configMap:
-            name: load-test-config
-            defaultMode: 0754
 
 ---
 # Source: load-test-setup/charts/load-tester/templates/workers.yaml
@@ -645,7 +597,7 @@ spec:
         camunda.io/created-by: golden-test
         camunda.io/purpose: load-test
       annotations:
-
+        
         checksum/saas-credentials: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
     spec:
       imagePullSecrets:
@@ -703,9 +655,6 @@ spec:
                 secretKeyRef:
                   name: load-test-credentials
                   key: zeebeGrpcAddress
-            # To be able to load a separate/additional configuration
-            - name: SPRING_CONFIG_ADDITIONALLOCATION
-              value: "/usr/local/camunda/config/load-test-config.yaml"
             - name: LOAD_TESTER_LOG_APPENDER
               value: "Stackdriver"
             - name: LOAD_TESTER_LOG_STACKDRIVER_SERVICENAME
@@ -752,15 +701,6 @@ spec:
           ports:
             - containerPort: 9600
               name: "http"
-          volumeMounts:
-            - name: load-test-config
-              mountPath: /usr/local/camunda/config/load-test-config.yaml
-              subPath: load-test-config.yaml
-      volumes:
-        - name: load-test-config
-          configMap:
-            name: load-test-config
-            defaultMode: 0754
 
 ---
 # Source: load-test-setup/charts/load-tester/templates/workers.yaml
@@ -795,7 +735,7 @@ spec:
         camunda.io/created-by: golden-test
         camunda.io/purpose: load-test
       annotations:
-
+        
         checksum/saas-credentials: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
     spec:
       imagePullSecrets:
@@ -853,9 +793,6 @@ spec:
                 secretKeyRef:
                   name: load-test-credentials
                   key: zeebeGrpcAddress
-            # To be able to load a separate/additional configuration
-            - name: SPRING_CONFIG_ADDITIONALLOCATION
-              value: "/usr/local/camunda/config/load-test-config.yaml"
             - name: LOAD_TESTER_LOG_APPENDER
               value: "Stackdriver"
             - name: LOAD_TESTER_LOG_STACKDRIVER_SERVICENAME
@@ -904,12 +841,3 @@ spec:
           ports:
             - containerPort: 9600
               name: "http"
-          volumeMounts:
-            - name: load-test-config
-              mountPath: /usr/local/camunda/config/load-test-config.yaml
-              subPath: load-test-config.yaml
-      volumes:
-        - name: load-test-config
-          configMap:
-            name: load-test-config
-            defaultMode: 0754

@@ -271,7 +271,7 @@
     },
     {
       "name": "camunda.client.auth.token-fetch-non-retryable-cooldown",
-      "defaultValue": "PT5M"
+      "defaultValue": "PT30S"
     },
     {
       "name": "camunda.client.cluster-variables.global",
