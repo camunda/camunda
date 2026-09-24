@@ -195,9 +195,11 @@ public class AgentInstanceHandler
     batchRequest.upsert(index, entity.getId(), entity, updateFields);
   }
 
-  // `systemPrompt`/`tools`: null on the entity means "not touched by any record in this batch
-  // cycle" (see updateEntity()) — omitted here, mirroring the creationDate exclusion above, to
-  // avoid overwriting the existing index value with null.
+  /**
+   * A null value here means the field wasn't touched by any record in this batch cycle (see {@link
+   * #updateEntity}) — omitted rather than written, to avoid overwriting the existing index value
+   * with null.
+   */
   private static void putIfPresent(
       final Map<String, Object> updateFields, final String field, final Object value) {
     if (value != null) {
