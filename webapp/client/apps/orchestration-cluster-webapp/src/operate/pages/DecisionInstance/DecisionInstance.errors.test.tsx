@@ -44,7 +44,7 @@ describe.each([
 		loadedContent: DECISION_INSTANCE_ID,
 		Component: () => <Header decisionEvaluationInstanceKey={DECISION_INSTANCE_ID} onOpenDrd={() => {}} />,
 	},
-])('$name page-query recovery', ({Component, loadedContent}) => {
+])('$name page-query recovery', ({Component, loadedContent, name}) => {
 	beforeEach(() => {
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
 	});
@@ -72,6 +72,9 @@ describe.each([
 		});
 
 		await expect.element(screen.getByRole('heading', {name: 'Something went wrong'})).toBeVisible();
+		if (name === 'DecisionInstance') {
+			await expect.element(screen.getByTestId('decision-instance-variables-panel')).not.toBeInTheDocument();
+		}
 		await expect.element(screen.getByText("Couldn't load the page. Try again later.")).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Try again'})).toBeVisible();
 		await expect
