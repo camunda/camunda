@@ -7,6 +7,7 @@
  */
 
 import type {ExpandableListVariantComponent} from './ExpandableList.types';
+import {BadgeRow} from './variants/BadgeRow';
 import {ComposedCell} from './variants/ComposedCell';
 import {StructuredColumns} from './variants/StructuredColumns';
 
@@ -25,6 +26,7 @@ import {StructuredColumns} from './variants/StructuredColumns';
 const EXPANDABLE_LIST_VARIANTS = {
 	composed: ComposedCell,
 	structuredColumns: StructuredColumns,
+	badgeRow: BadgeRow,
 } satisfies Record<string, ExpandableListVariantComponent>;
 
 type ExpandableListVariant = keyof typeof EXPANDABLE_LIST_VARIANTS;
