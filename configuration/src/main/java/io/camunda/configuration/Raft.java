@@ -104,6 +104,16 @@ public class Raft {
    */
   private Duration flushDelay = Duration.ZERO;
 
+  /**
+   * If true, flushes of the Raft log are coalesced: a flush is skipped if an earlier flush already
+   * covered the records, and one flush covers all flush requests made while the previous flush ran.
+   * Unlike a flush delay, this does not trade durability for performance: appends are still only
+   * acknowledged, and commits only advance, once the records are flushed. This improves performance
+   * on disks with high flush latency, e.g. network attached storage. Cannot be combined with a
+   * flush delay.
+   */
+  private boolean flushCoalesced = false;
+
   /** Sets the maximum of appends which are send per follower. */
   private int maxAppendsPerFollower = DEFAULT_MAX_APPENDS_PER_FOLLOWER;
 
@@ -274,6 +284,14 @@ public class Raft {
 
   public void setFlushDelay(final Duration flushDelay) {
     this.flushDelay = flushDelay;
+  }
+
+  public boolean isFlushCoalesced() {
+    return flushCoalesced;
+  }
+
+  public void setFlushCoalesced(final boolean flushCoalesced) {
+    this.flushCoalesced = flushCoalesced;
   }
 
   public int getMaxAppendsPerFollower() {

@@ -239,6 +239,12 @@ camunda: # Type: io.camunda.configuration.Camunda
       # leader failures and thus leading to unnecessary leader changes. If the network latency between the
       # nodes is high, it is recommended to have a higher election timeout. This is an advanced setting.
       election-timeout: "2500ms" # Type: Duration, Env: CAMUNDA_CLUSTER_RAFT_ELECTIONTIMEOUT
+      # If true, flushes of the Raft log are coalesced: a flush is skipped if an earlier flush already
+      # covered the records, and one flush covers all flush requests made while the previous flush ran.
+      # Unlike a flush delay, this does not trade durability for performance: appends are still only
+      # acknowledged, and commits only advance, once the records are flushed. This improves performance on
+      # disks with high flush latency, e.g. network attached storage. Cannot be combined with a flush delay.
+      flush-coalesced: false # Type: Boolean, Env: CAMUNDA_CLUSTER_RAFT_FLUSHCOALESCED
       # If the delay is > 0, then flush requests are delayed by at least the given period. It is recommended
       # that you find the smallest delay here with which you achieve your performance goals. It's also
       # likely that anything above 30s is not useful, as this is the typical default flush interval for the
