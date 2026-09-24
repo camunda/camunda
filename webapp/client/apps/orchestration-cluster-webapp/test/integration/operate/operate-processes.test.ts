@@ -22,10 +22,7 @@ import {
 	mockGetProcessDefinitionXmlEndpoint,
 	mockGetProcessInstanceCallHierarchyEndpoint,
 	mockGetProcessInstanceEndpoint,
-	mockGetProcessInstanceSequenceFlowsEndpoint,
-	mockGetProcessInstanceStatisticsEndpoint,
 	mockGetProcessInstanceWaitStateStatisticsEndpoint,
-	mockQueryAgentInstancesEndpoint,
 	mockQueryProcessInstanceIncidentsEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
@@ -69,9 +66,6 @@ function getProcessInstanceShellHandlers({
 			successResponse: HttpResponse.json(callHierarchy),
 		}),
 		mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(PROCESS_INSTANCE_XML)}),
-		mockGetProcessInstanceStatisticsEndpoint({successResponse: HttpResponse.json(createPaginatedResponse())}),
-		mockGetProcessInstanceSequenceFlowsEndpoint({successResponse: HttpResponse.json(createPaginatedResponse())}),
-		mockQueryAgentInstancesEndpoint({successResponse: HttpResponse.json(createPaginatedResponse())}),
 	] as const;
 }
 
