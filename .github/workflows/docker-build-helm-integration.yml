@@ -624,7 +624,9 @@ jobs:
       camunda-helm-dir: ${{ inputs.helmRepositoryDirName || 'camunda-platform-8.10' }}
       namespace-prefix: monorepo
       test-enabled: true
-      e2e-enabled: true
+      # SM Playwright E2E suite disabled for AlwaysGreen (helm install/chart
+      # integration tests above still run via test-enabled).
+      e2e-enabled: false
       deployment-ttl: ${{ inputs.deployment-ttl || '' }}
       scenario: ${{ inputs.scenario || 'alwaysgreen' }}
       shortname: ${{ inputs.shortname || 'agrn' }}
