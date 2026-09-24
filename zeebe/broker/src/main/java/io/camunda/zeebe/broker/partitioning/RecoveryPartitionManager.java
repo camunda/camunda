@@ -72,6 +72,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.IntFunction;
+import java.util.function.Supplier;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -118,6 +119,7 @@ public final class RecoveryPartitionManager
   private final AtomixServerTransport gatewayBrokerTransport;
   private final @Nullable IntFunction<Long> exportedPositionSupplier;
   private final BrokerHealthCheckService healthCheckService;
+  private final Supplier<@Nullable Runnable> schemaInitializerSupplier;
   private final Map<Integer, HealthMonitorable> registeredHealthComponents = new LinkedHashMap<>();
   private boolean stopped = false;
   private @Nullable BackupStore backupStore;
@@ -135,8 +137,10 @@ public final class RecoveryPartitionManager
       final AtomixServerTransport gatewayBrokerTransport,
       final @Nullable IntFunction<Long> exportedPositionSupplier,
       final TopologyManagerImpl topologyManager,
-      final BrokerHealthCheckService healthCheckService) {
+      final BrokerHealthCheckService healthCheckService,
+      final Supplier<@Nullable Runnable> schemaInitializerSupplier) {
     this.healthCheckService = healthCheckService;
+    this.schemaInitializerSupplier = schemaInitializerSupplier;
     this.partitionGroup = partitionGroup;
     this.concurrencyControl = concurrencyControl;
     actorSchedulingService = schedulingService;

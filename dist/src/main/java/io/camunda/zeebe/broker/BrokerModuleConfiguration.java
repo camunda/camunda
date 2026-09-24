@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker;
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
+import io.camunda.application.commons.search.SearchEngineSchemaInitializer;
 import io.camunda.application.commons.secrets.SecretStoreRegistries;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
@@ -36,8 +37,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.IntFunction;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -79,6 +82,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final WorkingDirectory workingDirectory;
   private final SecretStoreRegistries secretStoreRegistries;
   private final ResolvedDataDirectory resolvedDataDirectory;
+  private final ObjectProvider<SearchEngineSchemaInitializer> searchEngineSchemaInitializer;
 
   private Broker broker;
 
@@ -104,7 +108,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       final NodeIdProvider nodeIdProvider,
       final WorkingDirectory workingDirectory,
       final SecretStoreRegistries secretStoreRegistries,
-      final ResolvedDataDirectory resolvedDataDirectory) {
+      final ResolvedDataDirectory resolvedDataDirectory,
+      final ObjectProvider<SearchEngineSchemaInitializer> searchEngineSchemaInitializer) {
     this.configuration = configuration;
     this.springBrokerBridge = springBrokerBridge;
     this.actorScheduler = actorScheduler;
@@ -124,6 +129,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.workingDirectory = workingDirectory;
     this.secretStoreRegistries = secretStoreRegistries;
     this.resolvedDataDirectory = resolvedDataDirectory;
+    this.searchEngineSchemaInitializer = searchEngineSchemaInitializer;
   }
 
   @Bean(destroyMethod = "close")
@@ -159,6 +165,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             .withResolvedDataDirectory(resolvedDataDirectory)
             .createSystemContext();
     springBrokerBridge.registerShutdownHelper(shutdownHelper::initiateShutdown);
+    springBrokerBridge.registerSchemaInitializerLookup(schemaInitializerLookupSupplier());
     broker = new Broker(systemContext, springBrokerBridge, Collections.emptyList());
 
     // already initiate starting the broker
@@ -202,6 +209,13 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     return partition -> {
       final var position = exporterPositionMapper.findOne(partition);
       return position == null ? null : position.lastExportedPosition();
+    };
+  }
+
+  private @NonNull Function<String, Runnable> schemaInitializerLookupSupplier() {
+    return tenantId -> {
+      final var initializer = searchEngineSchemaInitializer.getIfAvailable();
+      return initializer == null ? null : () -> initializer.initializeNow(tenantId);
     };
   }
 
