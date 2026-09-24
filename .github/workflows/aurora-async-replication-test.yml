@@ -76,6 +76,8 @@ env:
 jobs:
   aurora-it:
     name: Provision Aurora (${{ inputs.db_engine || 'postgresql' }}) and run async replication IT
+    outputs:
+      deployment_references_sha: ${{ steps.deployment_references.outputs.sha }}
     runs-on: ubuntu-latest
     timeout-minutes: 180
     permissions: {}
@@ -103,6 +105,10 @@ jobs:
           repository: camunda/camunda-deployment-references
           ref: ${{ inputs.deployment_references_ref || 'main' }}
           path: camunda-deployment-references
+
+      - name: Record deployment references revision
+        id: deployment_references
+        run: echo "sha=$(git -C camunda-deployment-references rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Import secrets from Vault
         id: secrets
@@ -361,7 +367,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: camunda/camunda-deployment-references
-          ref: ${{ inputs.deployment_references_ref || 'main' }}
+          ref: ${{ needs.aurora-it.outputs.deployment_references_sha || inputs.deployment_references_ref || 'main' }}
           path: camunda-deployment-references
 
       - name: Import secrets from Vault
@@ -497,7 +503,7 @@ jobs:
           fi
 
       - name: Notify Slack on cleanup failure
-        if: ${{ always() && failure() }}
+        if: ${{ always() && (failure() || cancelled()) }}
         uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_ZEEBOT_ZEEBE_CI_WEBHOOK_URL }}
