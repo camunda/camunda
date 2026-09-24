@@ -207,7 +207,9 @@ describe('Multi tenancy', () => {
 		const currentHash = () => (screen.router.state.location.search as Record<string, unknown>).incidentErrorHashCode;
 		await expect.poll(currentHash).toBe(-481);
 
-		screen.router.history.push('/operate/processes?tenantId=%3Ctenant-A%3E&incidents=false');
+		screen.router.history.push(
+			'/operate/processes?tenantId=%3Ctenant-A%3E&active=false&incidents=false&suspended=false',
+		);
 		await expect.poll(currentHash).toBeUndefined();
 		screen.router.history.back();
 		await expect.poll(currentHash).toBe(-481);
