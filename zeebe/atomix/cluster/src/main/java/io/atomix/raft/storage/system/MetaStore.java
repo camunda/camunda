@@ -191,7 +191,9 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
     return lastFlushedIndex != MetaEncoder.lastFlushedIndexNullValue();
   }
 
-  public void storeCommitIndex(final long index) {
+  // synchronized, as it shares the serializer's buffer with storeLastFlushedIndex, which a flushing
+  // thread may call concurrently
+  public synchronized void storeCommitIndex(final long index) {
     Preconditions.checkArgument(index >= 0, "commit index must be >= 0");
     if (index == commitIndex) {
       log.trace("Skip storing same last flushed commit index {}", index);
