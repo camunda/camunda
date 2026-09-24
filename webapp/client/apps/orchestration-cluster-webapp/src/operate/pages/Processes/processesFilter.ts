@@ -26,6 +26,7 @@ type ProcessesSearch = {
 	businessId?: string;
 	batchOperationKey?: string;
 	errorMessage?: string;
+	incidentErrorHashCode?: number;
 	hasRetriesLeft?: boolean;
 	startDateFrom?: string;
 	startDateTo?: string;
@@ -180,6 +181,7 @@ function mapProcessInstancesFilter(search: ProcessesSearch): ProcessInstancesFil
 		parentProcessInstanceKey: search.parentProcessInstanceKey ? {$eq: search.parentProcessInstanceKey} : undefined,
 		batchOperationKey: search.batchOperationKey ? {$eq: search.batchOperationKey} : undefined,
 		errorMessage: search.errorMessage ? {$in: [search.errorMessage]} : undefined,
+		incidentErrorHashCode: search.incidentErrorHashCode === undefined ? undefined : {$eq: search.incidentErrorHashCode},
 		hasRetriesLeft: search.hasRetriesLeft ? true : undefined,
 		startDate:
 			search.startDateFrom || search.startDateTo

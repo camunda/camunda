@@ -11,33 +11,50 @@ import {z} from 'zod';
 import {queries} from '#/shared/http/queries';
 import {Processes} from '#/operate/pages/Processes/Processes';
 
-const processesSearchSchema = z.object({
-	process: z.string().optional(),
-	version: z.number().int().positive().optional(),
-	elementId: z.string().optional(),
-	tenantId: z.coerce.string().optional(),
-	// coerce: small (safe-range) numeric-looking keys still arrive typed as a JS number from the
-	// router's search parser (main.tsx's parseSearchValueSafe only keeps precision-losing large
-	// keys as strings, it doesn't change the type of small ones) — normalize to string either way
-	processInstanceKey: z.coerce.string().optional(),
-	parentProcessInstanceKey: z.coerce.string().optional(),
-	businessId: z.coerce.string().optional(),
-	batchOperationKey: z.coerce.string().optional(),
-	// coerce: the router's search parser can turn a numeric-looking error message (e.g. "404")
-	// into a number, which a plain z.string() would reject — coerce keeps it valid either way
-	errorMessage: z.coerce.string().optional(),
-	hasRetriesLeft: z.boolean().optional(),
-	startDateFrom: z.string().optional(),
-	startDateTo: z.string().optional(),
-	endDateFrom: z.string().optional(),
-	endDateTo: z.string().optional(),
-	active: z.boolean().default(true),
-	incidents: z.boolean().default(true),
-	completed: z.boolean().default(false),
-	canceled: z.boolean().default(false),
-	suspended: z.boolean().default(true),
-	sort: z.string().optional(),
-});
+const processesSearchSchema = z
+	.object({
+		process: z.string().optional(),
+		version: z.number().int().positive().optional(),
+		processDefinitionId: z.string().optional(),
+		processDefinitionVersion: z
+			.union([z.coerce.number().int().positive(), z.literal('all')])
+			.optional()
+			.catch(undefined),
+		elementId: z.string().optional(),
+		tenantId: z.coerce.string().optional(),
+		processInstanceKey: z.coerce.string().optional(),
+		parentProcessInstanceKey: z.coerce.string().optional(),
+		businessId: z.coerce.string().optional(),
+		batchOperationKey: z.coerce.string().optional(),
+		errorMessage: z.coerce.string().optional(),
+		incidentErrorHashCode: z
+			.union([
+				z.number().int(),
+				z
+					.string()
+					.regex(/^-?\d+$/)
+					.transform(Number)
+					.pipe(z.number().int()),
+			])
+			.optional()
+			.catch(undefined),
+		hasRetriesLeft: z.boolean().optional(),
+		startDateFrom: z.string().optional(),
+		startDateTo: z.string().optional(),
+		endDateFrom: z.string().optional(),
+		endDateTo: z.string().optional(),
+		active: z.boolean().default(true),
+		incidents: z.boolean().default(true),
+		completed: z.boolean().default(false),
+		canceled: z.boolean().default(false),
+		suspended: z.boolean().default(true),
+		sort: z.string().optional(),
+	})
+	.transform(({processDefinitionId, processDefinitionVersion, ...search}) => ({
+		...search,
+		process: search.process ?? processDefinitionId,
+		version: search.version ?? (processDefinitionVersion === 'all' ? undefined : processDefinitionVersion),
+	}));
 
 const Route = createFileRoute('/_carbon/_auth/operate/processes/')({
 	validateSearch: processesSearchSchema,
@@ -48,4 +65,4 @@ const Route = createFileRoute('/_carbon/_auth/operate/processes/')({
 	},
 });
 
-export {Route};
+export {Route, processesSearchSchema};

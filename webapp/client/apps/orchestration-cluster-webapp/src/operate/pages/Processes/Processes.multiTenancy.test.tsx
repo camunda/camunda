@@ -170,6 +170,51 @@ describe('Multi tenancy', () => {
 		await expect.element(screen.getByRole('option', {name: 'Order Process'})).toBeVisible();
 	});
 
+	it('should keep the tenant and incident hash through navigation history and scope the instance query', async ({
+		worker,
+	}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				schema: z.object({
+					filter: z.object({
+						tenantId: z.object({$eq: z.literal('<tenant-A>')}),
+						errorMessage: z.object({$in: z.tuple([z.literal('Connection timeout')])}),
+						incidentErrorHashCode: z.object({$eq: z.literal(-481)}),
+					}),
+				}),
+				successResponse: EMPTY_PROCESS_INSTANCES,
+				failureResponse: FAILURE_RESPONSE,
+			}),
+			mockQueryProcessDefinitionsEndpoint({
+				schema: TENANT_A_SCOPED_REQUEST_SCHEMA,
+				successResponse: PROCESS_DEFINITIONS,
+				failureResponse: FAILURE_RESPONSE,
+			}),
+			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
+		);
+
+		const screen = await renderProcessesPage({
+			tenantId: '<tenant-A>',
+			errorMessage: 'Connection timeout',
+			incidentErrorHashCode: '-481',
+			active: 'false',
+			suspended: 'false',
+		});
+
+		await expect.element(screen.getByRole('combobox', {name: 'Select a tenant'})).toMatchTextContent('Tenant A');
+		await expect.element(screen.getByRole('button', {name: 'More Filters'})).toBeVisible();
+		await expect.element(screen.getByText('There are no Instances matching this filter set')).toBeVisible();
+		const currentHash = () => (screen.router.state.location.search as Record<string, unknown>).incidentErrorHashCode;
+		await expect.poll(currentHash).toBe(-481);
+
+		screen.router.history.push('/operate/processes?tenantId=%3Ctenant-A%3E&incidents=false');
+		await expect.poll(currentHash).toBeUndefined();
+		screen.router.history.back();
+		await expect.poll(currentHash).toBe(-481);
+		screen.router.history.forward();
+		await expect.poll(currentHash).toBeUndefined();
+	});
+
 	it('should not scope the process-definitions request when "all tenants" is selected', async ({worker}) => {
 		worker.use(
 			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),

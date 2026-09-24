@@ -7,6 +7,7 @@
  */
 
 import {describe, expect, it} from 'vitest';
+import {processesSearchSchema} from '../../../routes/_carbon/_auth/operate/processes/index';
 import {mapProcessInstancesFilter, mapProcessInstancesSort, type ProcessesSearch} from './processesFilter';
 
 const NO_STATES: ProcessesSearch = {
@@ -28,6 +29,47 @@ describe('mapProcessInstancesFilter', () => {
 
 	it('should ignore an empty tenant filter', () => {
 		expect(mapProcessInstancesFilter({...NO_STATES, active: true, tenantId: ''})?.tenantId).toBeUndefined();
+	});
+
+	it('should scope matching process and incident filters to the selected tenant and error hash', () => {
+		expect(
+			mapProcessInstancesFilter({
+				...NO_STATES,
+				incidents: true,
+				process: 'order-process',
+				version: 2,
+				tenantId: '<tenant-A>',
+				errorMessage: 'Connection timeout',
+				incidentErrorHashCode: -481,
+			}),
+		).toEqual({
+			hasIncident: true,
+			processDefinitionId: {$eq: 'order-process'},
+			processDefinitionVersion: 2,
+			tenantId: {$eq: '<tenant-A>'},
+			errorMessage: {$in: ['Connection timeout']},
+			incidentErrorHashCode: {$eq: -481},
+			processInstanceKey: undefined,
+			parentProcessInstanceKey: undefined,
+			batchOperationKey: undefined,
+			hasRetriesLeft: undefined,
+			startDate: undefined,
+			endDate: undefined,
+			businessId: undefined,
+		});
+	});
+
+	it('should preserve message-only bookmarks and the zero error hash', () => {
+		expect(
+			mapProcessInstancesFilter({...NO_STATES, incidents: true, errorMessage: 'Failure'})?.incidentErrorHashCode,
+		).toBeUndefined();
+		expect(
+			mapProcessInstancesFilter({...NO_STATES, incidents: true, errorMessage: 'Failure', incidentErrorHashCode: 0})
+				?.incidentErrorHashCode,
+		).toEqual({$eq: 0});
+		expect(
+			mapProcessInstancesFilter({...NO_STATES, incidents: true, incidentErrorHashCode: -481})?.incidentErrorHashCode,
+		).toEqual({$eq: -481});
 	});
 
 	it('should query for suspended instances alone', () => {
@@ -68,6 +110,58 @@ describe('mapProcessInstancesSort', () => {
 		['parentProcessInstanceKey+desc', 'parentProcessInstanceKey', 'desc'],
 	] as const)('should map the supported sort value %s', ([sort, field, order]) => {
 		expect(mapProcessInstancesSort(sort)).toEqual([{field, order}]);
+	});
+
+	describe('Processes route search', () => {
+		it.for([
+			{processDefinitionId: 'orders', processDefinitionVersion: '2', expectedVersion: 2},
+			{processDefinitionId: 'orders', processDefinitionVersion: 2, expectedVersion: 2},
+			{processDefinitionId: 'orders', processDefinitionVersion: 'all', expectedVersion: undefined},
+		] as const)(
+			'should normalize saved legacy process and version URLs',
+			({processDefinitionId, processDefinitionVersion, expectedVersion}) => {
+				expect(
+					processesSearchSchema.parse({processDefinitionId, processDefinitionVersion, tenantId: '<tenant-A>'}),
+				).toMatchObject({
+					process: 'orders',
+					version: expectedVersion,
+					tenantId: '<tenant-A>',
+				});
+			},
+		);
+
+		it('should prefer active process and version keys over saved aliases', () => {
+			expect(
+				processesSearchSchema.parse({
+					process: 'current',
+					version: 3,
+					processDefinitionId: 'old',
+					processDefinitionVersion: '2',
+				}),
+			).toMatchObject({process: 'current', version: 3});
+		});
+
+		it('should retain a valid process when a legacy version is invalid', () => {
+			expect(
+				processesSearchSchema.parse({processDefinitionId: 'orders', processDefinitionVersion: 'unknown'}),
+			).toMatchObject({
+				process: 'orders',
+				version: undefined,
+			});
+		});
+
+		it.for([
+			{hash: '-481', expected: -481},
+			{hash: '0', expected: 0},
+			{hash: 0, expected: 0},
+			{hash: '', expected: undefined},
+			{hash: null, expected: undefined},
+			{hash: 'invalid', expected: undefined},
+		] as const)('should validate incident hashes without losing the display message', ({hash, expected}) => {
+			const search = processesSearchSchema.parse({errorMessage: 'Connection timeout', incidentErrorHashCode: hash});
+			expect(search.errorMessage).toBe('Connection timeout');
+			expect(search.incidentErrorHashCode).toBe(expected);
+		});
 	});
 
 	it.for([undefined, 'unknown+asc', 'startDate+unknown'])('should fall back to the default sort for %s', (sort) => {
