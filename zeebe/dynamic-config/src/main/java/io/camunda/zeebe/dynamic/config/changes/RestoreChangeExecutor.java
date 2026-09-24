@@ -27,6 +27,9 @@ public interface RestoreChangeExecutor {
   /** Drops the member's local disk data for {@code partitionId}, preparing it for a restore. */
   ActorFuture<Void> preRestore(int partitionId);
 
+  /** Initializes the secondary-storage schema of this partition group in one attempt. */
+  ActorFuture<Void> initializeSchema();
+
   /**
    * Restores the given local partition from the given backups.
    *
@@ -44,6 +47,11 @@ public interface RestoreChangeExecutor {
     }
 
     @Override
+    public ActorFuture<Void> initializeSchema() {
+      return CompletableActorFuture.completed(unit());
+    }
+
+    @Override
     public ActorFuture<Void> restore(final int partitionId, final SortedSet<Long> backupIds) {
       return CompletableActorFuture.completed(unit());
     }
@@ -57,6 +65,11 @@ public interface RestoreChangeExecutor {
 
     @Override
     public ActorFuture<Void> preRestore(final int partitionId) {
+      return denied();
+    }
+
+    @Override
+    public ActorFuture<Void> initializeSchema() {
       return denied();
     }
 
