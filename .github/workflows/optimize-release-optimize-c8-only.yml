@@ -110,16 +110,24 @@ jobs:
             | base64 --decode \
             | gpg -q --import --no-tty --batch --yes
 
-      - name: Setup Github cli
+      - name: Install curl
         # On non-Github hosted runners it may be missing
         # https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian-ubuntu-linux-raspberry-pi-os-apt
+        uses: ./.github/actions/apt-install
+        with:
+          packages: curl
+          skip-if-exists: /usr/bin/curl
+
+      - name: Setup Github cli
         run: |
-          type -p curl >/dev/null || sudo apt install curl -y
           curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
           && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
-          && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
-          && sudo apt update \
-          && sudo apt install gh -y
+          && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+
+      - name: Install gh
+        uses: ./.github/actions/apt-install
+        with:
+          packages: gh
 
       - name: Setup Maven
         uses: ./.github/actions/setup-build
