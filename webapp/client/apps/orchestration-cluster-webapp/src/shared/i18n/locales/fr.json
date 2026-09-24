@@ -677,6 +677,21 @@
 				"title": "Instance de décision Operate",
 				"pageTitle": "Operate : Instance de décision {{decisionInstanceId}} de {{name}}",
 				"notFoundNotificationTitle": "L'instance de décision {{decisionInstanceId}} n'a pas pu être trouvée",
+				"variablesPanel": {
+					"tabsLabel": "Onglets du panneau des variables",
+					"inputsAndOutputs": "Entrées et sorties",
+					"result": "Résultat",
+					"inputs": "Entrées",
+					"outputs": "Sorties",
+					"inputVariables": "variables d'entrée",
+					"outputVariables": "variables de sortie",
+					"name": "Nom",
+					"value": "Valeur",
+					"rule": "Règle",
+					"noInput": "Aucune entrée disponible car l'évaluation a échoué",
+					"noOutput": "Aucune sortie disponible car l'évaluation a échoué",
+					"noResult": "Aucun résultat disponible car l'évaluation a échoué"
+				},
 				"header": {
 					"decisionInstanceKeyColumn": "Clé d'instance de décision",
 					"versionColumn": "Version",

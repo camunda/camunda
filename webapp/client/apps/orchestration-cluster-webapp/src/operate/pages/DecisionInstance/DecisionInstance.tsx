@@ -18,6 +18,7 @@ import {EmptyState} from '#/operate/components/EmptyState/EmptyState';
 import permissionDeniedIconUrl from '#/operate/assets/permission-denied.svg';
 import {Header} from './Header';
 import {DecisionPanel} from './DecisionPanel';
+import {VariablesPanel, VariablesPanelPending} from './VariablesPanel';
 import {useDecisionInstance} from './decisionInstance.queries';
 import {Container, Section} from './styled';
 
@@ -66,6 +67,7 @@ const DecisionInstance: React.FC<Props> = ({decisionInstanceId}) => {
 				<Header decisionEvaluationInstanceKey={decisionInstanceId} onOpenDrd={() => setDrdPanelState('minimized')} />
 			}
 			topPanel={<DecisionPanel decisionEvaluationInstanceKey={decisionInstanceId} />}
+			bottomPanel={<VariablesPanel decisionEvaluationInstanceKey={decisionInstanceId} />}
 			rightPanel={drdPanelState === 'minimized' ? <div /> : null}
 		/>
 	);
@@ -74,10 +76,11 @@ const DecisionInstance: React.FC<Props> = ({decisionInstanceId}) => {
 type ShellProps = {
 	header: React.ReactNode;
 	topPanel?: React.ReactNode;
+	bottomPanel?: React.ReactNode;
 	rightPanel?: React.ReactNode;
 };
 
-const DecisionInstanceShell: React.FC<ShellProps> = ({header, topPanel, rightPanel}) => {
+const DecisionInstanceShell: React.FC<ShellProps> = ({header, topPanel, bottomPanel, rightPanel}) => {
 	const {t} = useTranslation();
 	const pendingTopPanel = (
 		<Section aria-label={t('operate.decisionInstance.panel.label')} tabIndex={0}>
@@ -93,7 +96,7 @@ const DecisionInstanceShell: React.FC<ShellProps> = ({header, topPanel, rightPan
 					type="decision"
 					header={header}
 					topPanel={topPanel ?? pendingTopPanel}
-					bottomPanel={<div />}
+					bottomPanel={bottomPanel ?? <VariablesPanelPending />}
 					rightPanel={rightPanel}
 				/>
 			</Container>

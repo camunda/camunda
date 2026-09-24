@@ -674,6 +674,21 @@
 				"title": "Instancia de decisión de Operate",
 				"pageTitle": "Operate: Instancia de decisión {{decisionInstanceId}} de {{name}}",
 				"notFoundNotificationTitle": "No se pudo encontrar la instancia de decisión {{decisionInstanceId}}",
+				"variablesPanel": {
+					"tabsLabel": "Pestañas del panel de variables",
+					"inputsAndOutputs": "Entradas y salidas",
+					"result": "Resultado",
+					"inputs": "Entradas",
+					"outputs": "Salidas",
+					"inputVariables": "variables de entrada",
+					"outputVariables": "variables de salida",
+					"name": "Nombre",
+					"value": "Valor",
+					"rule": "Regla",
+					"noInput": "No hay entrada disponible porque la evaluación falló",
+					"noOutput": "No hay salida disponible porque la evaluación falló",
+					"noResult": "No hay resultado disponible porque la evaluación falló"
+				},
 				"header": {
 					"decisionInstanceKeyColumn": "Clave de instancia de decisión",
 					"versionColumn": "Versión",

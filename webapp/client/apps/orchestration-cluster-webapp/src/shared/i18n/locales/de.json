@@ -674,6 +674,21 @@
 				"title": "Operate Entscheidungsinstanz",
 				"pageTitle": "Operate: Entscheidungsinstanz {{decisionInstanceId}} von {{name}}",
 				"notFoundNotificationTitle": "Entscheidungsinstanz {{decisionInstanceId}} konnte nicht gefunden werden",
+				"variablesPanel": {
+					"tabsLabel": "Registerkarten des Variablenbereichs",
+					"inputsAndOutputs": "Eingaben und Ausgaben",
+					"result": "Ergebnis",
+					"inputs": "Eingaben",
+					"outputs": "Ausgaben",
+					"inputVariables": "Eingabevariablen",
+					"outputVariables": "Ausgabevariablen",
+					"name": "Name",
+					"value": "Wert",
+					"rule": "Regel",
+					"noInput": "Keine Eingabe verfügbar, da die Auswertung fehlgeschlagen ist",
+					"noOutput": "Keine Ausgabe verfügbar, da die Auswertung fehlgeschlagen ist",
+					"noResult": "Kein Ergebnis verfügbar, da die Auswertung fehlgeschlagen ist"
+				},
 				"header": {
 					"decisionInstanceKeyColumn": "Entscheidungsinstanzschlüssel",
 					"versionColumn": "Version",

@@ -7,6 +7,7 @@
  */
 
 import {afterEach, beforeEach, describe, expect} from 'vitest';
+import {userEvent} from 'vitest/browser';
 import {createInstance} from 'i18next';
 import {HttpResponse} from 'msw';
 import {I18nextProvider} from 'react-i18next';
@@ -76,6 +77,10 @@ describe('<DecisionInstance />', () => {
 		await expect
 			.element(screen.getByRole('region', {name: 'decision panel'}).getByRole('img', {name: 'loading'}))
 			.toBeVisible();
+		await expect.element(screen.getByTestId('inputs-skeleton')).toBeVisible();
+		await expect.element(screen.getByTestId('outputs-skeleton')).toBeVisible();
+		await userEvent.click(screen.getByRole('tab', {name: 'Result'}));
+		await expect.element(screen.getByTestId('result-loading-spinner')).toBeVisible();
 	});
 
 	it.for(['de', 'fr', 'es'] as const)('should localize pending route shell landmark label for %s', async (language) => {
@@ -115,6 +120,8 @@ describe('<DecisionInstance />', () => {
 		await expect
 			.element(screen.getByRole('region', {name: 'decision panel'}).getByText('Invoice Amount'))
 			.toBeVisible();
+		await expect.element(screen.getByRole('tab', {name: 'Inputs and Outputs'})).toBeVisible();
+		await expect.element(screen.getByRole('tab', {name: 'Result'})).toBeVisible();
 	});
 
 	it('should display forbidden content', async ({worker}) => {
