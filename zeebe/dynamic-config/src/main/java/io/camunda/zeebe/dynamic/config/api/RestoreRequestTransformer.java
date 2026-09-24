@@ -151,7 +151,10 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
    * <p>The edges, per partition {@code k} and broker {@code m}:
    *
    * <ul>
-   *   <li>{@code preRestore(m,k)} — nothing; every pre-restore of every partition starts at once.
+   *   <li>{@code schemaInitialization} — one group-wide barrier, applied by the first recovering
+   *       broker, before any local partition data is dropped.
+   *   <li>{@code preRestore(m,k)} — only {@code schemaInitialization}; once the shared schema is
+   *       ready, every pre-restore of every partition starts at once.
    *   <li>{@code restore(m,k)} — only {@code preRestore(m,k)}. Wiping and reloading a broker's copy
    *       of a partition is local to that broker, so one broker may reload {@code k} while a peer
    *       is still wiping its own copy of {@code k}. What makes leaving these unordered safe is
@@ -173,12 +176,13 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
    * writing something wider has to be paired with edges here that order it against the operations
    * it now shares a field with.
    *
-   * <p>So there is one cluster-wide barrier, at the awaits. Everything before it is scoped: the
-   * {@code N·P} wipes and reloads become {@code N·P} independent chains rather than two
-   * cluster-wide barriers, and a broker leaves recovery as soon as the partitions it holds are back
-   * rather than waiting on partitions it does not hold. On a tenant where every broker replicates
-   * every partition the mode-change edges collapse to cluster-wide anyway, since there every broker
-   * holds everything; the wipe/reload chains do not, and that is where the I/O is.
+   * <p>There are two intentional barriers: schema initialization before any restore I/O, and the
+   * cluster-wide awaits after all restores. Between them, the {@code N·P} wipes and reloads become
+   * {@code N·P} independent chains rather than another cluster-wide barrier, and a broker leaves
+   * recovery as soon as the partitions it holds are back rather than waiting on partitions it does
+   * not hold. On a tenant where every broker replicates every partition the mode-change edges
+   * collapse to cluster-wide anyway, since there every broker holds everything; the wipe/reload
+   * chains do not, and that is where the I/O is.
    */
   private static OperationGraph restoreGraph(
       final SortedMap<MemberId, Set<Integer>> partitionsPerMember,
