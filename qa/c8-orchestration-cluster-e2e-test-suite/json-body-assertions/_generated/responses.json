@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "590e389a0556e0e59d73465287777e2d797ef8fa",
-    "generatedAt": "2026-09-23T12:13:17.320Z",
+    "commit": "382c154a74ea4d1b875745e695e448d5603c4d9e",
+    "generatedAt": "2026-09-24T12:13:46.668Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "b4ea9109b801233a80a6b588707e86407b76e3056b417e6f778384c03c669263"
+    "specSha256": "b9a723f596c80f9c5f45fcb6b33019de32352f73032ffb71d4df28b47b7bae27"
   },
   "responses": [
     {
@@ -8931,6 +8931,10 @@
                   "type": "boolean"
                 },
                 {
+                  "name": "isCamundaGroupsEnabled",
+                  "type": "boolean"
+                },
+                {
                   "name": "isLoginDelegated",
                   "type": "boolean"
                 }
@@ -8977,6 +8981,10 @@
               "required": [
                 {
                   "name": "isMultiTenancyEnabled",
+                  "type": "boolean"
+                },
+                {
+                  "name": "isTenantsApiEnabled",
                   "type": "boolean"
                 },
                 {
