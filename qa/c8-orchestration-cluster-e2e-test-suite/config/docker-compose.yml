@@ -152,7 +152,7 @@ services:
   # is provisioned; startup and readiness do not depend on the realm existing.
   optimize:
     container_name: optimize
-    image: ${OPTIMIZE_DOCKER_IMAGE:-camunda/optimize:8.10-SNAPSHOT}
+    image: ${OPTIMIZE_DOCKER_IMAGE:-camunda/optimize:8.10.0-rc2}
     depends_on:
       - elasticsearch
     ports:
