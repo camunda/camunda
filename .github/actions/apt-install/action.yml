@@ -28,13 +28,19 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Check whether install can be skipped
+    - name: Validate inputs and check whether install can be skipped
       id: check
       shell: bash
       env:
+        APT_PACKAGES: ${{ inputs.packages }}
         SKIP_IF_EXISTS: ${{ inputs.skip-if-exists }}
         APT_TIMEOUT: ${{ inputs.timeout }}
       run: |
+        # `required: true` is not enforced for composite/local actions, so guard here.
+        if [ -z "${APT_PACKAGES// /}" ]; then
+          echo "::error::apt-install: the 'packages' input is required but was empty"
+          exit 1
+        fi
         if [ -n "$SKIP_IF_EXISTS" ] && [ -e "$SKIP_IF_EXISTS" ]; then
           echo "skip=true" >> "$GITHUB_OUTPUT"
         else
