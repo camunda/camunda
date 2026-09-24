@@ -239,7 +239,12 @@ test.describe('Process Instance Suspend and Resume API', () => {
   test('An unknown process instance key is not found on either endpoint', async ({
     request,
   }) => {
-    const unknownKey = '2251799813685999';
+    // A hardcoded key is not safe here: on a busy cluster it can belong to a
+    // real instance, which answers 409 instead of 404. Offsetting a freshly
+    // created key keeps the same partition and lands far past its sequence.
+    const {processInstanceKey} = await startServiceTaskInstance('sr-unknown');
+    const unknownKey = (BigInt(processInstanceKey) + 1_000_000n).toString();
+
     await assertNotFoundRequest(await suspend(request, unknownKey), unknownKey);
     await assertNotFoundRequest(await resume(request, unknownKey), unknownKey);
   });
