@@ -145,4 +145,23 @@ public class MockChildProcessTest {
               assertThat(output.getTarget()).isEqualTo("result");
             });
   }
+
+  /**
+   * A mocked child process is deployed under the process ID of the process it stands in for, so the
+   * name is the only thing that tells the two apart once they reach the engine. The coverage report
+   * relies on it to leave mocks out.
+   */
+  @Test
+  void shouldNameTheMockedChildProcessAsAMock() {
+    // when
+    processTestContext.mockChildProcess(CHILD_PROCESS_ID);
+
+    // then
+    verify(camundaClient.newDeployResourceCommand())
+        .addProcessModel(processModelCaptor.capture(), eq(CHILD_PROCESS_ID + ".bpmn"));
+
+    assertThat(processModelCaptor.getValue().getModelElementsByType(Process.class))
+        .singleElement()
+        .satisfies(process -> assertThat(process.getName()).isEqualTo("cpt-mock"));
+  }
 }
