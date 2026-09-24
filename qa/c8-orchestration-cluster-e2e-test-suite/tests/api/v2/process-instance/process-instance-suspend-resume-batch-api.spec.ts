@@ -19,10 +19,11 @@ import {
 } from '../../../../utils/http';
 import {
   activateSingleJob,
+  searchProcessInstances,
+  expectProcessInstanceCount,
   completeJob,
   deployServiceTaskProcess,
   expectBatchState,
-  expectProcessInstanceCount,
   expectProcessState,
   expectSuspendedDate,
 } from '@requestHelpers';
@@ -35,6 +36,12 @@ import {
  * Each test deploys its own definition and filters its batch on that id.
  * businessId cannot group instances — it is unique per instance and a second
  * create with the same value is rejected with 409.
+ *
+ * A batch resolves its items from secondary storage when it is created, and
+ * each operation selects on state: suspend takes ACTIVE, resume takes
+ * SUSPENDED, cancel takes either. So every batch here waits for its inputs to
+ * be visible *in the state it selects on* first — otherwise it silently
+ * resolves to nothing and still reports COMPLETED.
  */
 
 const INSTANCE_COUNT = 3;
@@ -68,21 +75,83 @@ async function runBatch(
   return String((await res.json()).batchOperationKey);
 }
 
-async function expectBatchCounts(
+/** Waits for the inputs in the exact state the batch's item provider selects. */
+async function expectAllInState(
   request: APIRequestContext,
-  batchOperationKey: string,
-  expected: {total: number; completed: number; failed: number},
+  processDefinitionId: string,
+  state: string,
+  count = INSTANCE_COUNT,
 ) {
-  await expectBatchState(request, batchOperationKey, 'COMPLETED');
-  const res = await request.get(
-    buildUrl('/batch-operations/{batchOperationKey}', {batchOperationKey}),
-    {headers: jsonHeaders()},
+  await expectProcessInstanceCount(
+    request,
+    {processDefinitionId, state: {$eq: state}},
+    count,
+    extendedAssertionOptions,
   );
-  await assertStatusCode(res, 200);
-  const body = await res.json();
-  expect(body.operationsTotalCount).toBe(expected.total);
-  expect(body.operationsCompletedCount).toBe(expected.completed);
-  expect(body.operationsFailedCount).toBe(expected.failed);
+}
+
+/**
+ * A batch resolves its items from secondary storage when it is created, so under
+ * parallel load one can cover only the subset indexed at that moment — it then
+ * reports COMPLETED for that subset, having moved fewer instances than asked.
+ * Per-batch totals are therefore not a safe assertion; what the endpoint
+ * promises is that every instance matching the filter ends up in the target
+ * state, so that is what this drives and asserts, issuing another batch for
+ * whatever the previous one missed.
+ */
+async function runBatchUntilAllInState(
+  request: APIRequestContext,
+  path:
+    | '/process-instances/suspension'
+    | '/process-instances/resumption'
+    | '/process-instances/cancellation',
+  processDefinitionId: string,
+  targetState: string,
+  count = INSTANCE_COUNT,
+) {
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const batchOperationKey = await runBatch(request, path, {
+      processDefinitionId,
+    });
+    await expectBatchState(request, batchOperationKey, 'COMPLETED');
+    // The state flips to COMPLETED before the counters finish aggregating, so
+    // reading them once can see total=3 alongside completed=0.
+    await expect(async () => {
+      const res = await request.get(
+        buildUrl('/batch-operations/{batchOperationKey}', {batchOperationKey}),
+        {headers: jsonHeaders()},
+      );
+      await assertStatusCode(res, 200);
+      const body = await res.json();
+      // Whatever it covered, it must not have failed on any of it.
+      expect(body.operationsFailedCount).toBe(0);
+      expect(body.operationsCompletedCount).toBe(body.operationsTotalCount);
+    }).toPass(extendedAssertionOptions);
+
+    const reached = await searchProcessInstances(request, {
+      processDefinitionId,
+      state: {$eq: targetState},
+    });
+    if (reached.length === count) {
+      return;
+    }
+    // Re-assert the inputs are still visible in the state the provider selects
+    // before trying again, so a retry is not issued against a stale read.
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
+    const pending = count - reached.length;
+    if (pending > 0 && path !== '/process-instances/cancellation') {
+      await expectProcessInstanceCount(
+        request,
+        {
+          processDefinitionId,
+          state: {$eq: path.endsWith('suspension') ? 'ACTIVE' : 'SUSPENDED'},
+        },
+        pending,
+        extendedAssertionOptions,
+      );
+    }
+  }
+  await expectAllInState(request, processDefinitionId, targetState, count);
 }
 
 async function completeAll(
@@ -124,23 +193,14 @@ test.describe('Process Instance Batch Suspend and Resume API', () => {
     const subject = await startInstances('sr-batch');
     const control = await startInstances('sr-batch-control');
 
-    // A batch resolves its items from secondary storage when it is created, so
-    // one created mid-propagation covers only the instances already indexed.
-    await expectProcessInstanceCount(
-      request,
-      {processDefinitionId: subject.processDefinitionId},
-      INSTANCE_COUNT,
-      extendedAssertionOptions,
-    );
+    await expectAllInState(request, subject.processDefinitionId, 'ACTIVE');
 
-    const batchKey = await runBatch(request, '/process-instances/suspension', {
-      processDefinitionId: subject.processDefinitionId,
-    });
-    await expectBatchCounts(request, batchKey, {
-      total: INSTANCE_COUNT,
-      completed: INSTANCE_COUNT,
-      failed: 0,
-    });
+    await runBatchUntilAllInState(
+      request,
+      '/process-instances/suspension',
+      subject.processDefinitionId,
+      'SUSPENDED',
+    );
 
     for (const processInstanceKey of subject.processInstanceKeys) {
       await expectProcessState(
@@ -171,14 +231,13 @@ test.describe('Process Instance Batch Suspend and Resume API', () => {
       );
     }
 
-    const resumeKey = await runBatch(request, '/process-instances/resumption', {
-      processDefinitionId: subject.processDefinitionId,
-    });
-    await expectBatchCounts(request, resumeKey, {
-      total: INSTANCE_COUNT,
-      completed: INSTANCE_COUNT,
-      failed: 0,
-    });
+    await expectAllInState(request, subject.processDefinitionId, 'SUSPENDED');
+    await runBatchUntilAllInState(
+      request,
+      '/process-instances/resumption',
+      subject.processDefinitionId,
+      'ACTIVE',
+    );
     await completeAll(request, subject.jobType, subject.processInstanceKeys);
     await completeAll(request, control.jobType, control.processInstanceKeys);
   });
@@ -188,32 +247,22 @@ test.describe('Process Instance Batch Suspend and Resume API', () => {
   }) => {
     const {processDefinitionId, jobType, processInstanceKeys} =
       await startInstances('sr-batch-resume');
-    await expectProcessInstanceCount(
-      request,
-      {processDefinitionId},
-      INSTANCE_COUNT,
-      extendedAssertionOptions,
-    );
+    await expectAllInState(request, processDefinitionId, 'ACTIVE');
 
-    const suspendKey = await runBatch(
+    await runBatchUntilAllInState(
       request,
       '/process-instances/suspension',
-      {processDefinitionId},
-    );
-    await expectBatchCounts(request, suspendKey, {
-      total: INSTANCE_COUNT,
-      completed: INSTANCE_COUNT,
-      failed: 0,
-    });
-
-    const resumeKey = await runBatch(request, '/process-instances/resumption', {
       processDefinitionId,
-    });
-    await expectBatchCounts(request, resumeKey, {
-      total: INSTANCE_COUNT,
-      completed: INSTANCE_COUNT,
-      failed: 0,
-    });
+      'SUSPENDED',
+    );
+
+    await expectAllInState(request, processDefinitionId, 'SUSPENDED');
+    await runBatchUntilAllInState(
+      request,
+      '/process-instances/resumption',
+      processDefinitionId,
+      'ACTIVE',
+    );
 
     for (const processInstanceKey of processInstanceKeys) {
       await expectProcessState(
@@ -233,18 +282,23 @@ test.describe('Process Instance Batch Suspend and Resume API', () => {
     await completeAll(request, jobType, processInstanceKeys);
   });
 
-  // eslint-disable-next-line playwright/expect-expect
   test('A batch whose filter matches nothing completes cleanly', async ({
     request,
   }) => {
-    const batchKey = await runBatch(request, '/process-instances/suspension', {
-      processDefinitionId: uniquePrefixedId('sr-batch-nomatch'),
-    });
-    await expectBatchCounts(request, batchKey, {
-      total: 0,
-      completed: 0,
-      failed: 0,
-    });
+    const batchOperationKey = await runBatch(
+      request,
+      '/process-instances/suspension',
+      {processDefinitionId: uniquePrefixedId('sr-batch-nomatch')},
+    );
+    await expectBatchState(request, batchOperationKey, 'COMPLETED');
+    const res = await request.get(
+      buildUrl('/batch-operations/{batchOperationKey}', {batchOperationKey}),
+      {headers: jsonHeaders()},
+    );
+    await assertStatusCode(res, 200);
+    const body = await res.json();
+    expect(body.operationsTotalCount).toBe(0);
+    expect(body.operationsFailedCount).toBe(0);
   });
 
   // eslint-disable-next-line playwright/expect-expect
@@ -277,36 +331,24 @@ test.describe('Process Instance Batch Suspend and Resume API', () => {
   test('A batch can cancel instances that are suspended', async ({request}) => {
     const {processDefinitionId, processInstanceKeys} =
       await startInstances('sr-batch-cancel');
-    await expectProcessInstanceCount(
-      request,
-      {processDefinitionId},
-      INSTANCE_COUNT,
-      extendedAssertionOptions,
-    );
+    await expectAllInState(request, processDefinitionId, 'ACTIVE');
 
-    const suspendKey = await runBatch(
+    await runBatchUntilAllInState(
       request,
       '/process-instances/suspension',
-      {processDefinitionId},
+      processDefinitionId,
+      'SUSPENDED',
     );
-    await expectBatchCounts(request, suspendKey, {
-      total: INSTANCE_COUNT,
-      completed: INSTANCE_COUNT,
-      failed: 0,
-    });
 
     // Suspension is not a shield: TERMINATED is the expected end state here, so
     // this is the one test in this file that does not resume.
-    const cancelKey = await runBatch(
+    await expectAllInState(request, processDefinitionId, 'SUSPENDED');
+    await runBatchUntilAllInState(
       request,
       '/process-instances/cancellation',
-      {processDefinitionId},
+      processDefinitionId,
+      'TERMINATED',
     );
-    await expectBatchCounts(request, cancelKey, {
-      total: INSTANCE_COUNT,
-      completed: INSTANCE_COUNT,
-      failed: 0,
-    });
 
     for (const processInstanceKey of processInstanceKeys) {
       await expectProcessState(
