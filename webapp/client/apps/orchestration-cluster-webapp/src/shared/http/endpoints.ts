@@ -17,6 +17,8 @@ import {
 	type GetIncidentProcessInstanceStatisticsByErrorRequestBody,
 	type GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
 	type QueryProcessInstancesRequestBody,
+	type QueryElementInstancesRequestBody,
+	type QueryAgentInstancesRequestBody,
 	type QueryProcessInstanceIncidentsRequestBody,
 	type CancelProcessInstanceRequestBody,
 	type DeleteProcessInstanceRequestBody,
@@ -281,6 +283,22 @@ const endpoints = {
 		new Request(getFullURL(unifiedAPIEndpoints.queryProcessInstances.getUrl()), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.queryProcessInstances.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryElementInstances: (body: QueryElementInstancesRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryElementInstances.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryElementInstances.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryAgentInstances: (body: QueryAgentInstancesRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryAgentInstances.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryAgentInstances.method,
 			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),
@@ -564,6 +582,26 @@ const endpoints = {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.getProcessInstanceWaitStateStatistics.method,
 			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getProcessInstanceStatistics: (processInstanceKey: string) =>
+		new Request(
+			getFullURL(
+				unifiedAPIEndpoints.getProcessInstanceStatistics.getUrl({
+					processInstanceKey,
+					statisticName: 'element-instances',
+				}),
+			),
+			{
+				...BASE_REQUEST_OPTIONS,
+				method: unifiedAPIEndpoints.getProcessInstanceStatistics.method,
+			},
+		),
+
+	getProcessInstanceSequenceFlows: (processInstanceKey: string) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getProcessInstanceSequenceFlows.getUrl({processInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getProcessInstanceSequenceFlows.method,
 		}),
 };
 

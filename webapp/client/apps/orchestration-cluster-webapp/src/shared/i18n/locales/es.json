@@ -698,6 +698,19 @@
 				}
 			},
 			"processInstance": {
+				"diagram": {
+					"panelLabel": "Diagrama de instancia de proceso",
+					"noDiagram": "No hay un diagrama disponible para este proceso",
+					"executionCount": "Número de ejecuciones",
+					"notModifiable": "No se admite la modificación de este elemento.",
+					"agentInitializing": "Inicializando...",
+					"agentDiscovering": "Buscando herramientas...",
+					"agentThinking": "Pensando...",
+					"agentCalling": "Llamando a herramientas...",
+					"moreAgents": " + {{count}} más activos",
+					"calledProcessError": "No se pudieron encontrar las instancias llamadas",
+					"calledDecisionError": "No se pudieron encontrar las instancias de decisión llamadas"
+				},
 				"title": "Instancia de proceso de Operate",
 				"pageTitle": "Operate: Instancia de proceso {{processInstanceId}} de {{name}}",
 				"notFoundNotificationTitle": "No se pudo encontrar la instancia {{processInstanceId}}",

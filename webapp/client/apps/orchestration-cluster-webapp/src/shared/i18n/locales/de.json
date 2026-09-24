@@ -698,6 +698,19 @@
 				}
 			},
 			"processInstance": {
+				"diagram": {
+					"panelLabel": "Prozessinstanzdiagramm",
+					"noDiagram": "Für diesen Prozess ist kein Diagramm verfügbar",
+					"executionCount": "Ausführungsanzahl",
+					"notModifiable": "Für dieses Element wird keine Änderung unterstützt.",
+					"agentInitializing": "Wird initialisiert...",
+					"agentDiscovering": "Tools werden gesucht...",
+					"agentThinking": "Denkt nach...",
+					"agentCalling": "Ruft Tools auf...",
+					"moreAgents": " + {{count}} weitere aktiv",
+					"calledProcessError": "Aufgerufene Instanzen konnten nicht ermittelt werden",
+					"calledDecisionError": "Aufgerufene Entscheidungsinstanzen konnten nicht ermittelt werden"
+				},
 				"title": "Operate Prozessinstanz",
 				"pageTitle": "Operate: Prozessinstanz {{processInstanceId}} von {{name}}",
 				"notFoundNotificationTitle": "Instanz {{processInstanceId}} konnte nicht gefunden werden",

@@ -701,6 +701,19 @@
 				}
 			},
 			"processInstance": {
+				"diagram": {
+					"panelLabel": "Diagramme de l'instance de processus",
+					"noDiagram": "Aucun diagramme disponible pour ce processus",
+					"executionCount": "Nombre d'exécutions",
+					"notModifiable": "La modification de cet élément n'est pas prise en charge.",
+					"agentInitializing": "Initialisation...",
+					"agentDiscovering": "Découverte des outils...",
+					"agentThinking": "Réflexion...",
+					"agentCalling": "Appel des outils...",
+					"moreAgents": " + {{count}} autres actifs",
+					"calledProcessError": "Impossible de trouver les instances appelées",
+					"calledDecisionError": "Impossible de trouver les instances de décision appelées"
+				},
 				"title": "Instance de processus Operate",
 				"pageTitle": "Operate : Instance de processus {{processInstanceId}} de {{name}}",
 				"notFoundNotificationTitle": "L'instance {{processInstanceId}} n'a pas pu être trouvée",

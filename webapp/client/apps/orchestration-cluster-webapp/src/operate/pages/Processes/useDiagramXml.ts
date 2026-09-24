@@ -26,10 +26,14 @@ function useDiagramXml(processDefinitionKey?: string) {
 						}
 
 						const xml = await response.text();
+						if (xml.trim() === '') {
+							return {xml: '', diagramModel: undefined, selectableElements: [], businessObjects: getBusinessObjects()};
+						}
 						const diagramModel = await parseDiagramXML(xml);
 
 						return {
 							xml,
+							diagramModel,
 							selectableElements: getFlowNodes(diagramModel.elementsById).map((element) => element.id),
 							businessObjects: getBusinessObjects(diagramModel.elementsById),
 						};

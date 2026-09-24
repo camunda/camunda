@@ -100,7 +100,7 @@ const DiagramPanel: React.FC<Props> = ({
 		if (isXmlFetching) {
 			return 'loading';
 		}
-		if (isXmlError) {
+		if (isXmlError || diagramData?.xml === '') {
 			return 'error';
 		}
 		if (processDefinitionSelection.kind !== 'single-version') {
@@ -126,7 +126,7 @@ const DiagramPanel: React.FC<Props> = ({
 							}
 				}
 			>
-				{diagramData?.xml !== undefined && (
+				{diagramData?.xml && (
 					<Diagram
 						key={selectedDefinitionKey}
 						xml={diagramData.xml}
