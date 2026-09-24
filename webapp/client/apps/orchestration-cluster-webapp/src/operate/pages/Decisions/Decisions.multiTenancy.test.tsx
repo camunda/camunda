@@ -7,12 +7,13 @@
  */
 
 import {afterEach, beforeEach, describe, expect} from 'vitest';
-import {http, HttpResponse, type PathParams} from 'msw';
-import {endpoints, type QueryDecisionDefinitionsRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import {HttpResponse} from 'msw';
+import {z} from 'zod';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
 	mockCurrentUserEndpoint,
+	mockGetDecisionDefinitionXmlEndpoint,
 	mockQueryDecisionDefinitionsEndpoint,
 	mockQueryDecisionInstancesEndpoint,
 } from '#/shared-test-modules/mock-handlers';
@@ -21,6 +22,7 @@ import {
 	createDecisionDefinition,
 	createQueryDecisionDefinitionsResponse,
 } from '#/shared-test-modules/api-mocks/decision-definitions';
+import {DMN_XML} from '#/shared-test-modules/api-mocks/decision-definition-xmls';
 import {createQueryDecisionInstancesResponse} from '#/shared-test-modules/api-mocks/decision-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {DecisionsHarness} from './DecisionsHarness';
@@ -32,6 +34,16 @@ const DECISION_DEFINITIONS = HttpResponse.json(
 );
 
 const EMPTY_DECISION_INSTANCES = HttpResponse.json(createQueryDecisionInstancesResponse());
+
+const TENANT_A_SCOPED_REQUEST_SCHEMA = z.strictObject({
+	page: z.strictObject({limit: z.literal(1000)}),
+	filter: z.strictObject({tenantId: z.literal('<tenant-A>')}),
+});
+const UNSCOPED_REQUEST_SCHEMA = z.strictObject({
+	page: z.strictObject({limit: z.literal(1000)}),
+	filter: z.never().optional(),
+});
+const FAILURE_RESPONSE = new HttpResponse(null, {status: 400});
 
 function renderDecisionsPage(searchParams?: Record<string, string>) {
 	const query = searchParams ? `?${new URLSearchParams(searchParams).toString()}` : '';
@@ -108,6 +120,7 @@ describe('Multi tenancy', () => {
 			mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
 			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
 			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
+			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
 		);
 
 		const screen = await renderDecisionsPage({
@@ -126,40 +139,36 @@ describe('Multi tenancy', () => {
 	});
 
 	it('should scope the decision-definitions request to the selected tenant', async ({worker}) => {
-		let requestedFilter: unknown;
 		worker.use(
-			http.post<PathParams, QueryDecisionDefinitionsRequestBody>(
-				endpoints.queryDecisionDefinitions.getUrl(),
-				async ({request}) => {
-					requestedFilter = (await request.json()).filter;
-					return HttpResponse.json(createQueryDecisionDefinitionsResponse({items: []}));
-				},
-			),
+			mockQueryDecisionDefinitionsEndpoint({
+				schema: TENANT_A_SCOPED_REQUEST_SCHEMA,
+				successResponse: DECISION_DEFINITIONS,
+				failureResponse: FAILURE_RESPONSE,
+			}),
 			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
 			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
 		);
 
-		await renderDecisionsPage({tenantId: '<tenant-A>'});
+		const screen = await renderDecisionsPage({tenantId: '<tenant-A>'});
 
-		await expect.poll(() => requestedFilter).toEqual({tenantId: '<tenant-A>'});
+		await screen.getByRole('combobox', {name: 'Name'}).click();
+		await expect.element(screen.getByRole('option', {name: 'Invoice Approval'})).toBeVisible();
 	});
 
 	it('should not scope the decision-definitions request when "all tenants" is selected', async ({worker}) => {
-		let requestedFilter: unknown;
 		worker.use(
-			http.post<PathParams, QueryDecisionDefinitionsRequestBody>(
-				endpoints.queryDecisionDefinitions.getUrl(),
-				async ({request}) => {
-					requestedFilter = (await request.json()).filter;
-					return HttpResponse.json(createQueryDecisionDefinitionsResponse({items: []}));
-				},
-			),
+			mockQueryDecisionDefinitionsEndpoint({
+				schema: UNSCOPED_REQUEST_SCHEMA,
+				successResponse: DECISION_DEFINITIONS,
+				failureResponse: FAILURE_RESPONSE,
+			}),
 			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
 			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
 		);
 
-		await renderDecisionsPage({tenantId: 'all'});
+		const screen = await renderDecisionsPage({tenantId: 'all'});
 
-		await expect.poll(() => requestedFilter).toBeUndefined();
+		await screen.getByRole('combobox', {name: 'Name'}).click();
+		await expect.element(screen.getByRole('option', {name: 'Invoice Approval'})).toBeVisible();
 	});
 });

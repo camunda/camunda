@@ -259,7 +259,13 @@ describe('<InstancesTable />', () => {
 					}),
 				),
 			}),
-			mockQueryBatchOperationItemsEndpoint({successResponse: EMPTY_BATCH_OPERATION_ITEMS_RESPONSE}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryBatchOperationItemsResponse({
+						items: [createBatchOperationItem({processInstanceKey: '1', state: 'ACTIVE'})],
+					}),
+				),
+			}),
 		);
 
 		const screen = await renderSearchHarness(BASE_SEARCH, {
@@ -270,6 +276,7 @@ describe('<InstancesTable />', () => {
 			suspended: false,
 		});
 		await expect.element(screen.getByText('Order Process')).toBeVisible();
+		await expect.element(screen.getByTitle('Instance 1 has scheduled operations')).toBeVisible();
 
 		await userEvent.click(screen.getByRole('button', {name: 'change search'}));
 
@@ -399,6 +406,7 @@ describe('<InstancesTable />', () => {
 					}),
 				),
 			}),
+			mockQueryBatchOperationItemsEndpoint({successResponse: EMPTY_BATCH_OPERATION_ITEMS_RESPONSE}),
 		);
 
 		await renderInstancesTable({

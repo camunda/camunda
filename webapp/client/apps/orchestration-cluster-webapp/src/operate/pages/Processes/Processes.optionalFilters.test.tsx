@@ -12,6 +12,8 @@ import {HttpResponse} from 'msw';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
+	mockGetProcessDefinitionStatisticsEndpoint,
+	mockGetProcessDefinitionXmlEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 	mockQueryProcessInstancesEndpoint,
 } from '#/shared-test-modules/mock-handlers';
@@ -19,6 +21,8 @@ import {
 	createProcessDefinition,
 	createQueryProcessDefinitionsResponse,
 } from '#/shared-test-modules/api-mocks/process-definitions';
+import {createGetProcessDefinitionStatisticsResponse} from '#/shared-test-modules/api-mocks/process-definition-statistics';
+import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
 import {createQueryProcessInstancesResponse} from '#/shared-test-modules/api-mocks/process-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {ProcessesHarness} from './ProcessesHarness';
@@ -154,6 +158,10 @@ describe('Optional Filters', () => {
 		worker.use(
 			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
 			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+			mockGetProcessDefinitionStatisticsEndpoint({
+				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
+			}),
 		);
 
 		const screen = await renderProcessesPage({
@@ -218,6 +226,10 @@ describe('Optional Filters', () => {
 		worker.use(
 			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
 			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+			mockGetProcessDefinitionStatisticsEndpoint({
+				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
+			}),
 		);
 
 		const screen = await renderProcessesPage({

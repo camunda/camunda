@@ -15,9 +15,11 @@ import {
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
 	mockCurrentUserEndpoint,
+	mockQueryProcessDefinitionsEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createProcessDefinitionInstanceStatistics} from '#/shared-test-modules/api-mocks/process-definition-statistics';
 import {createIncidentProcessInstanceStatisticsByError} from '#/shared-test-modules/api-mocks/incident-statistics';
+import {createQueryProcessDefinitionsResponse} from '#/shared-test-modules/api-mocks/process-definitions';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {Dashboard} from './Dashboard';
 
@@ -77,6 +79,7 @@ const INCIDENTS_RESPONSE_WITH_ERRORS = HttpResponse.json(
 );
 
 const INCIDENTS_RESPONSE_EMPTY = HttpResponse.json(createPaginatedResponse());
+const NO_DRAINING_RESPONSE = HttpResponse.json(createQueryProcessDefinitionsResponse());
 
 const CURRENT_USER_RESPONSE = HttpResponse.json({
 	userId: 'test-user',
@@ -87,6 +90,7 @@ const CURRENT_USER_RESPONSE = HttpResponse.json({
 describe('<Dashboard />', () => {
 	it('should render metric panel with running instance counts', async ({worker}) => {
 		worker.use(
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({
 				schema: PROCESS_STATS_REQUEST_SCHEMA,
 				successResponse: STATS_RESPONSE_WITH_INSTANCES,
@@ -107,6 +111,7 @@ describe('<Dashboard />', () => {
 
 	it('should render tile titles when running instances exist', async ({worker}) => {
 		worker.use(
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({
 				schema: PROCESS_STATS_REQUEST_SCHEMA,
 				successResponse: STATS_RESPONSE_WITH_INSTANCES,
@@ -123,10 +128,15 @@ describe('<Dashboard />', () => {
 
 		await expect.element(screen.getByText('Process Instances by Name')).toBeVisible();
 		await expect.element(screen.getByText('Process Incidents by Error Message')).toBeVisible();
+		await expect
+			.element(screen.getByRole('link', {name: '3 Process One – 13 Instances in 1 Version 10'}))
+			.toBeVisible();
+		await expect.element(screen.getByText('Connection timeout')).toBeVisible();
 	});
 
 	it('should render instances by process list', async ({worker}) => {
 		worker.use(
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({
 				schema: PROCESS_STATS_REQUEST_SCHEMA,
 				successResponse: STATS_RESPONSE_WITH_INSTANCES,
@@ -152,6 +162,7 @@ describe('<Dashboard />', () => {
 
 	it('should render incidents by error list', async ({worker}) => {
 		worker.use(
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({
 				schema: PROCESS_STATS_REQUEST_SCHEMA,
 				successResponse: STATS_RESPONSE_WITH_INSTANCES,
@@ -173,6 +184,7 @@ describe('<Dashboard />', () => {
 
 	it('should render healthy empty state when there are no incidents', async ({worker}) => {
 		worker.use(
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({
 				schema: PROCESS_STATS_REQUEST_SCHEMA,
 				successResponse: STATS_RESPONSE_WITH_INSTANCES,
@@ -192,6 +204,7 @@ describe('<Dashboard />', () => {
 
 	it('should render empty state when there are no running instances', async ({worker}) => {
 		worker.use(
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({
 				schema: PROCESS_STATS_REQUEST_SCHEMA,
 				successResponse: STATS_RESPONSE_EMPTY,
@@ -214,6 +227,7 @@ describe('<Dashboard />', () => {
 
 	it('should not render incidents tile when there are no running instances', async ({worker}) => {
 		worker.use(
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({
 				schema: PROCESS_STATS_REQUEST_SCHEMA,
 				successResponse: STATS_RESPONSE_EMPTY,
