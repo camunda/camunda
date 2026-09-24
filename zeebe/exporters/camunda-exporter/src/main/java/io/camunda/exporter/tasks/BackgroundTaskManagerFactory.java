@@ -422,7 +422,7 @@ public final class BackgroundTaskManagerFactory {
     return new ReschedulingTask(
         new BatchOperationUpdateTask(
             batchOperationUpdateRepository,
-            BatchOperationUpdateTask.MAX_BATCH_OPERATIONS_PER_CYCLE,
+            BatchOperationUpdateTask.MAX_BATCH_OPERATIONS_PER_PAGE,
             logger,
             executor),
         1,
