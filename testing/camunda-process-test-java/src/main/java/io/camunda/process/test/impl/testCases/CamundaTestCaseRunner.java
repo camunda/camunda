@@ -20,6 +20,8 @@ import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.DecisionInstanceAssert;
 import io.camunda.process.test.api.assertions.DecisionSelector;
+import io.camunda.process.test.api.assertions.IncidentAssert;
+import io.camunda.process.test.api.assertions.IncidentSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.UserTaskAssert;
@@ -105,6 +107,11 @@ public class CamundaTestCaseRunner implements TestCaseRunner {
     @Override
     public DecisionInstanceAssert assertThatDecision(final DecisionSelector selector) {
       return CamundaAssert.assertThatDecision(selector);
+    }
+
+    @Override
+    public IncidentAssert assertThatIncident(final IncidentSelector selector) {
+      return CamundaAssert.assertThatIncident(selector);
     }
   }
 }
