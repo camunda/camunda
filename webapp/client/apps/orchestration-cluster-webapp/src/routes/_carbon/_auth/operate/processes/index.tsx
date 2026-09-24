@@ -15,7 +15,7 @@ const processesSearchSchema = z
 	.object({
 		process: z.string().optional(),
 		version: z.number().int().positive().optional(),
-		processDefinitionId: z.string().optional(),
+		processDefinitionId: z.coerce.string().optional(),
 		processDefinitionVersion: z
 			.union([z.coerce.number().int().positive(), z.literal('all')])
 			.optional()

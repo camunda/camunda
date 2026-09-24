@@ -130,6 +130,13 @@ describe('mapProcessInstancesSort', () => {
 			},
 		);
 
+		it('should restore a numeric-looking legacy process ID after URL parsing', () => {
+			expect(processesSearchSchema.parse({processDefinitionId: 123, processDefinitionVersion: 2})).toMatchObject({
+				process: '123',
+				version: 2,
+			});
+		});
+
 		it('should prefer active process and version keys over saved aliases', () => {
 			expect(
 				processesSearchSchema.parse({
