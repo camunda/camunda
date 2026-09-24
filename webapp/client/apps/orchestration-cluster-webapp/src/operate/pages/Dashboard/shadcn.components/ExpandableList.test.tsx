@@ -11,8 +11,53 @@ import {render} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {ExpandableList} from './ExpandableList';
+import type {ExpandableListRow} from './ExpandableList.types';
+import {EXPANDABLE_LIST_VARIANT_IDS, type ExpandableListVariant} from './ExpandableList.variants';
 
 const noop = () => {};
+
+/**
+ * Every variant must be able to render a row from these fields alone, so the
+ * shared suite below builds rows only through this factory. `content` repeats
+ * `name` so one assertion on the name text holds whether the variant renders a
+ * single composed cell or a dedicated name column.
+ */
+function buildRow({
+	id,
+	name,
+	activeCount = 0,
+	incidentsCount = 0,
+}: {
+	id: string;
+	name: string;
+	activeCount?: number;
+	incidentsCount?: number;
+}): ExpandableListRow {
+	return {id, name, activeCount, incidentsCount, content: <span>{name}</span>};
+}
+
+type RenderOverrides = Partial<React.ComponentProps<typeof ExpandableList>>;
+
+function renderList(overrides: RenderOverrides = {}) {
+	return render(
+		<ExpandableList
+			isPending={false}
+			isError={false}
+			listTestId="list"
+			dataTestId="table"
+			header="Process name"
+			rows={[]}
+			expandedContents={{}}
+			hasNextPage={false}
+			hasPreviousPage={false}
+			isFetchingNextPage={false}
+			isFetchingPreviousPage={false}
+			onLoadNextPage={noop}
+			onLoadPreviousPage={noop}
+			{...overrides}
+		/>,
+	);
+}
 
 class FakeIntersectionObserver implements IntersectionObserver {
 	static instances: FakeIntersectionObserver[] = [];
@@ -66,326 +111,222 @@ afterEach(() => {
 	window.IntersectionObserver = originalIntersectionObserver;
 });
 
-describe('<ExpandableList />', () => {
-	it('shows a loading skeleton while pending', async () => {
-		const screen = await render(
-			<ExpandableList
-				isPending
-				isError={false}
-				listTestId="list"
-				dataTestId="table"
-				header="Process name"
-				rows={[]}
-				expandedContents={{}}
-				hasNextPage={false}
-				hasPreviousPage={false}
-				isFetchingNextPage={false}
-				isFetchingPreviousPage={false}
-				onLoadNextPage={noop}
-				onLoadPreviousPage={noop}
-			/>,
-		);
+// The row shape is an open design question, so these are the behaviours the shell
+// guarantees no matter which variant renders the rows. Registering a variant in
+// ExpandableList.variants.ts enrols it here automatically — that is what stops a
+// candidate row shape from silently regressing the list's mechanics.
+describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (variant: ExpandableListVariant) => {
+	it('should show a loading skeleton while pending', async () => {
+		// given / when
+		const screen = await renderList({variant, isPending: true});
 
+		// then
 		await expect.element(screen.getByTestId('list-skeleton')).toBeVisible();
 		expect(screen.getByTestId('table').elements()).toHaveLength(0);
 	});
 
-	it('shows the fetch-error empty state on error', async () => {
-		const screen = await render(
-			<ExpandableList
-				isPending={false}
-				isError
-				listTestId="list"
-				dataTestId="table"
-				header="Process name"
-				rows={[]}
-				expandedContents={{}}
-				hasNextPage={false}
-				hasPreviousPage={false}
-				isFetchingNextPage={false}
-				isFetchingPreviousPage={false}
-				onLoadNextPage={noop}
-				onLoadPreviousPage={noop}
-			/>,
-		);
+	it('should show the fetch-error empty state on error', async () => {
+		// given / when
+		const screen = await renderList({variant, isError: true});
 
+		// then
 		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
 		await expect.element(screen.getByText('Refresh the page to try again')).toBeVisible();
+		expect(screen.getByTestId('table').elements()).toHaveLength(0);
 	});
 
-	it('renders the caller-provided empty state instead of the table when given one', async () => {
-		const screen = await render(
-			<ExpandableList
-				isPending={false}
-				isError={false}
-				emptyState={<div data-testid="custom-empty-state">Nothing here</div>}
-				listTestId="list"
-				dataTestId="table"
-				header="Process name"
-				rows={[]}
-				expandedContents={{}}
-				hasNextPage={false}
-				hasPreviousPage={false}
-				isFetchingNextPage={false}
-				isFetchingPreviousPage={false}
-				onLoadNextPage={noop}
-				onLoadPreviousPage={noop}
-			/>,
-		);
+	it('should render the caller-provided empty state instead of the table when given one', async () => {
+		// given / when
+		const screen = await renderList({
+			variant,
+			emptyState: <div data-testid="custom-empty-state">Nothing here</div>,
+		});
 
+		// then
 		await expect.element(screen.getByTestId('custom-empty-state')).toBeVisible();
 		expect(screen.getByTestId('table').elements()).toHaveLength(0);
 	});
 
-	it('renders each row content', async () => {
-		const screen = await render(
-			<ExpandableList
-				isPending={false}
-				isError={false}
-				listTestId="list"
-				dataTestId="table"
-				header="Process name"
-				rows={[
-					{id: 'process-1', content: <span>Order process</span>},
-					{id: 'process-2', content: <span>Shipping process</span>},
-				]}
-				expandedContents={{}}
-				hasNextPage={false}
-				hasPreviousPage={false}
-				isFetchingNextPage={false}
-				isFetchingPreviousPage={false}
-				onLoadNextPage={noop}
-				onLoadPreviousPage={noop}
-			/>,
-		);
+	it('should render every row', async () => {
+		// given
+		const rows = [
+			buildRow({id: 'process-1', name: 'Order process', activeCount: 42, incidentsCount: 3}),
+			buildRow({id: 'process-2', name: 'Shipping process', activeCount: 18, incidentsCount: 0}),
+		];
 
+		// when
+		const screen = await renderList({variant, rows});
+
+		// then
 		await expect.element(screen.getByText('Order process')).toBeVisible();
 		await expect.element(screen.getByText('Shipping process')).toBeVisible();
 	});
 
-	it('reveals a row expandedContents entry when its toggle is expanded', async () => {
-		const screen = await render(
-			<ExpandableList
-				isPending={false}
-				isError={false}
-				listTestId="list"
-				dataTestId="table"
-				header="Process name"
-				rows={[{id: 'process-1', content: <span>Order process</span>}]}
-				expandedContents={{
-					'process-1': <div>Version details for order process</div>,
-				}}
-				hasNextPage={false}
-				hasPreviousPage={false}
-				isFetchingNextPage={false}
-				isFetchingPreviousPage={false}
-				onLoadNextPage={noop}
-				onLoadPreviousPage={noop}
-			/>,
-		);
+	it('should reveal a row expandedContents entry when its toggle is expanded', async () => {
+		// given
+		const screen = await renderList({
+			variant,
+			rows: [buildRow({id: 'process-1', name: 'Order process'})],
+			expandedContents: {'process-1': <span>Version details for order process</span>},
+		});
 
-		expect(screen.getByText('Version details for order process').elements()).toHaveLength(0);
-
+		// when
 		await userEvent.click(screen.getByRole('button', {name: 'Expand row'}));
 
+		// then
 		await expect.element(screen.getByText('Version details for order process')).toBeVisible();
 	});
 
-	it('renders an expand toggle for every row, even one with no expandedContents entry', async () => {
-		const screen = await render(
-			<ExpandableList
-				isPending={false}
-				isError={false}
-				listTestId="list"
-				dataTestId="table"
-				header="Process name"
-				rows={[
-					{id: 'process-1', content: <span>Order process</span>},
-					{id: 'process-2', content: <span>Shipping process</span>},
-				]}
-				expandedContents={{
-					'process-1': <div>Version details for order process</div>,
-				}}
-				hasNextPage={false}
-				hasPreviousPage={false}
-				isFetchingNextPage={false}
-				isFetchingPreviousPage={false}
-				onLoadNextPage={noop}
-				onLoadPreviousPage={noop}
-			/>,
-		);
+	it('should render an expand toggle for every row, even one with no expandedContents entry', async () => {
+		// given
+		const rows = [
+			buildRow({id: 'process-1', name: 'Order process'}),
+			buildRow({id: 'process-2', name: 'Shipping process'}),
+		];
 
+		// when
+		const screen = await renderList({
+			variant,
+			rows,
+			expandedContents: {'process-1': <span>Version details</span>},
+		});
+
+		// then
 		expect(screen.getByRole('button', {name: 'Expand row'}).elements()).toHaveLength(2);
 	});
 
-	it('expanding a row with no expandedContents entry reveals nothing', async () => {
-		const screen = await render(
-			<ExpandableList
-				isPending={false}
-				isError={false}
-				listTestId="list"
-				dataTestId="table"
-				header="Process name"
-				rows={[{id: 'process-1', content: <span>Order process</span>}]}
-				expandedContents={{}}
-				hasNextPage={false}
-				hasPreviousPage={false}
-				isFetchingNextPage={false}
-				isFetchingPreviousPage={false}
-				onLoadNextPage={noop}
-				onLoadPreviousPage={noop}
-			/>,
-		);
+	it('should reveal nothing when expanding a row with no expandedContents entry', async () => {
+		// given
+		const screen = await renderList({
+			variant,
+			rows: [buildRow({id: 'process-1', name: 'Order process'})],
+		});
 
+		// when
 		await userEvent.click(screen.getByRole('button', {name: 'Expand row'}));
 
+		// then
 		await expect.element(screen.getByRole('button', {name: 'Collapse row'})).toBeVisible();
 	});
 
-	it('shows a loading indicator above the list while fetching the previous page', async () => {
-		const screen = await render(
-			<ExpandableList
-				isPending={false}
-				isError={false}
-				listTestId="list"
-				dataTestId="table"
-				header="Process name"
-				rows={[{id: 'process-1', content: <span>Order process</span>}]}
-				expandedContents={{}}
-				hasNextPage={false}
-				hasPreviousPage={false}
-				isFetchingNextPage={false}
-				isFetchingPreviousPage
-				onLoadNextPage={noop}
-				onLoadPreviousPage={noop}
-			/>,
-		);
+	it('should show a loading indicator above the list while fetching the previous page', async () => {
+		// given / when
+		const screen = await renderList({
+			variant,
+			rows: [buildRow({id: 'process-1', name: 'Order process'})],
+			hasPreviousPage: true,
+			isFetchingPreviousPage: true,
+		});
 
+		// then
 		await expect.element(screen.getByTestId('list-loading-previous')).toBeVisible();
-		expect(screen.getByTestId('list-loading-next').elements()).toHaveLength(0);
 	});
 
-	it('shows a loading indicator below the list while fetching the next page', async () => {
-		const screen = await render(
-			<ExpandableList
-				isPending={false}
-				isError={false}
-				listTestId="list"
-				dataTestId="table"
-				header="Process name"
-				rows={[{id: 'process-1', content: <span>Order process</span>}]}
-				expandedContents={{}}
-				hasNextPage={false}
-				hasPreviousPage={false}
-				isFetchingNextPage
-				isFetchingPreviousPage={false}
-				onLoadNextPage={noop}
-				onLoadPreviousPage={noop}
-			/>,
-		);
+	it('should show a loading indicator below the list while fetching the next page', async () => {
+		// given / when
+		const screen = await renderList({
+			variant,
+			rows: [buildRow({id: 'process-1', name: 'Order process'})],
+			hasNextPage: true,
+			isFetchingNextPage: true,
+		});
 
+		// then
 		await expect.element(screen.getByTestId('list-loading-next')).toBeVisible();
-		expect(screen.getByTestId('list-loading-previous').elements()).toHaveLength(0);
 	});
 
-	it('does not render pagination sentinels when there is nothing more to load', async () => {
-		const screen = await render(
-			<ExpandableList
-				isPending={false}
-				isError={false}
-				listTestId="list"
-				dataTestId="table"
-				header="Process name"
-				rows={[{id: 'process-1', content: <span>Order process</span>}]}
-				expandedContents={{}}
-				hasNextPage={false}
-				hasPreviousPage={false}
-				isFetchingNextPage={false}
-				isFetchingPreviousPage={false}
-				onLoadNextPage={noop}
-				onLoadPreviousPage={noop}
-			/>,
-		);
+	it('should not render pagination sentinels when there is nothing more to load', async () => {
+		// given / when
+		const screen = await renderList({
+			variant,
+			rows: [buildRow({id: 'process-1', name: 'Order process'})],
+		});
 
+		// then
 		expect(screen.getByTestId('list-top-sentinel').elements()).toHaveLength(0);
 		expect(screen.getByTestId('list-bottom-sentinel').elements()).toHaveLength(0);
 	});
 
-	it('loads the next page when the bottom sentinel intersects', async () => {
+	it('should load the next page when the bottom sentinel intersects', async () => {
+		// given
 		const onLoadNextPage = vi.fn();
-		const screen = await render(
-			<ExpandableList
-				isPending={false}
-				isError={false}
-				listTestId="list"
-				dataTestId="table"
-				header="Process name"
-				rows={[{id: 'process-1', content: <span>Order process</span>}]}
-				expandedContents={{}}
-				hasNextPage
-				hasPreviousPage={false}
-				isFetchingNextPage={false}
-				isFetchingPreviousPage={false}
-				onLoadNextPage={onLoadNextPage}
-				onLoadPreviousPage={noop}
-			/>,
-		);
+		const screen = await renderList({
+			variant,
+			rows: [buildRow({id: 'process-1', name: 'Order process'})],
+			hasNextPage: true,
+			onLoadNextPage,
+		});
 
-		const sentinel = screen.getByTestId('list-bottom-sentinel').element();
-		getObserver().intersect(sentinel);
+		// when
+		getObserver().intersect(screen.getByTestId('list-bottom-sentinel').element());
 
+		// then
 		expect(onLoadNextPage).toHaveBeenCalledOnce();
 	});
 
-	it('loads the previous page when the top sentinel intersects', async () => {
+	it('should load the previous page when the top sentinel intersects', async () => {
+		// given
 		const onLoadPreviousPage = vi.fn();
-		const screen = await render(
-			<ExpandableList
-				isPending={false}
-				isError={false}
-				listTestId="list"
-				dataTestId="table"
-				header="Process name"
-				rows={[{id: 'process-1', content: <span>Order process</span>}]}
-				expandedContents={{}}
-				hasNextPage={false}
-				hasPreviousPage
-				isFetchingNextPage={false}
-				isFetchingPreviousPage={false}
-				onLoadNextPage={noop}
-				onLoadPreviousPage={onLoadPreviousPage}
-			/>,
-		);
+		const screen = await renderList({
+			variant,
+			rows: [buildRow({id: 'process-1', name: 'Order process'})],
+			hasPreviousPage: true,
+			onLoadPreviousPage,
+		});
 
-		const sentinel = screen.getByTestId('list-top-sentinel').element();
-		getObserver().intersect(sentinel);
+		// when
+		getObserver().intersect(screen.getByTestId('list-top-sentinel').element());
 
+		// then
 		expect(onLoadPreviousPage).toHaveBeenCalledOnce();
 	});
 
-	it('does not load the next page again while already fetching it', async () => {
+	it('should not load the next page again while already fetching it', async () => {
+		// given
 		const onLoadNextPage = vi.fn();
-		const screen = await render(
-			<ExpandableList
-				isPending={false}
-				isError={false}
-				listTestId="list"
-				dataTestId="table"
-				header="Process name"
-				rows={[{id: 'process-1', content: <span>Order process</span>}]}
-				expandedContents={{}}
-				hasNextPage
-				hasPreviousPage={false}
-				isFetchingNextPage
-				isFetchingPreviousPage={false}
-				onLoadNextPage={onLoadNextPage}
-				onLoadPreviousPage={noop}
-			/>,
-		);
+		const screen = await renderList({
+			variant,
+			rows: [buildRow({id: 'process-1', name: 'Order process'})],
+			hasNextPage: true,
+			isFetchingNextPage: true,
+			onLoadNextPage,
+		});
 
-		const sentinel = screen.getByTestId('list-bottom-sentinel').element();
-		getObserver().intersect(sentinel);
+		// when
+		getObserver().intersect(screen.getByTestId('list-bottom-sentinel').element());
 
+		// then
 		expect(onLoadNextPage).not.toHaveBeenCalled();
+	});
+});
+
+describe('<ExpandableList /> composed variant', () => {
+	it('should render the caller-composed content node rather than the row fields', async () => {
+		// given
+		const row: ExpandableListRow = {
+			id: 'process-1',
+			name: 'Unused name',
+			activeCount: 42,
+			incidentsCount: 3,
+			content: <span>Fully composed row</span>,
+		};
+
+		// when
+		const screen = await renderList({variant: 'composed', rows: [row]});
+
+		// then
+		await expect.element(screen.getByText('Fully composed row')).toBeVisible();
+		expect(screen.getByText('Unused name').elements()).toHaveLength(0);
+	});
+
+	it('should name the table for screen readers without a visible column header', async () => {
+		// given / when
+		const screen = await renderList({
+			variant: 'composed',
+			rows: [buildRow({id: 'process-1', name: 'Order process'})],
+		});
+
+		// then
+		await expect.element(screen.getByRole('table', {name: 'Process name'})).toBeVisible();
 	});
 });

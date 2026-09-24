@@ -8,11 +8,15 @@
 
 import React, {useEffect, useRef} from 'react';
 import {useTranslation} from 'react-i18next';
-import {DataTable, Skeleton, type DataTableColumn} from '@camunda/design-system';
+import {Skeleton} from '@camunda/design-system';
 import SvgErrorRobot from '#/shared/svg/ErrorRobot';
 import {EmptyState} from '#/operate/components/EmptyState/shadcn.components/EmptyState';
-
-type Row = {id: string; content: React.ReactNode};
+import type {ExpandableListRow} from './ExpandableList.types';
+import {
+	DEFAULT_EXPANDABLE_LIST_VARIANT,
+	EXPANDABLE_LIST_VARIANTS,
+	type ExpandableListVariant,
+} from './ExpandableList.variants';
 
 type Props = {
 	isPending: boolean;
@@ -21,8 +25,13 @@ type Props = {
 	listTestId: string;
 	dataTestId: string;
 	header: string;
-	rows: Row[];
+	rows: ExpandableListRow[];
 	expandedContents: Record<string, React.ReactElement<{tabIndex: number}>>;
+	/**
+	 * Row rendering to use. Consumers leave this unset so the adopted default
+	 * governs everywhere; only the design-review preview sets it explicitly.
+	 */
+	variant?: ExpandableListVariant;
 	hasNextPage: boolean;
 	hasPreviousPage: boolean;
 	isFetchingNextPage: boolean;
@@ -46,6 +55,7 @@ const ExpandableList: React.FC<Props> = ({
 	isFetchingPreviousPage,
 	onLoadNextPage,
 	onLoadPreviousPage,
+	variant = DEFAULT_EXPANDABLE_LIST_VARIANT,
 }) => {
 	const {t} = useTranslation();
 	const topSentinelRef = useRef<HTMLDivElement | null>(null);
@@ -124,27 +134,18 @@ const ExpandableList: React.FC<Props> = ({
 		return <>{emptyState}</>;
 	}
 
-	// DataTable always renders a header row; it's reduced to a sr-only label here since
-	// this list has none in Carbon. Recorded for design review, see
-	// docs/migration/operate-dashboard-ds-gaps.md.
-	const columns: DataTableColumn<Row>[] = [
-		{
-			id: 'content',
-			header: () => <span className="sr-only">{header}</span>,
-			cell: ({row}) => row.original.content,
-		},
-	];
-
 	// DS DataTable's `expansion` prop injects the toggle for every row unconditionally (no
 	// per-row suppression — confirmed against the installed package's data-table.js). Unlike
 	// Carbon, rows with nothing to expand still show a toggle here; accepted per design review
 	// to match the DS DataTable expansion pattern. See docs/migration/operate-dashboard-ds-gaps.md.
 	// The pagination skeletons are kept as siblings (not table rows) precisely to avoid picking
 	// up that same always-on toggle.
-	const expansion = (row: Row) => {
+	const renderExpansion = (row: ExpandableListRow) => {
 		const content = expandedContents[row.id];
 		return content ? React.cloneElement(content, {tabIndex: 0}) : null;
 	};
+
+	const Variant = EXPANDABLE_LIST_VARIANTS[variant];
 
 	return (
 		<div className="flex flex-1 flex-col" data-testid={listTestId}>
@@ -155,14 +156,7 @@ const ExpandableList: React.FC<Props> = ({
 				</div>
 			)}
 			<div data-testid={dataTestId}>
-				<DataTable<Row>
-					size="sm"
-					columns={columns}
-					data={rows}
-					expansion={expansion}
-					aria-label={header}
-					getRowId={(row) => row.id}
-				/>
+				<Variant header={header} rows={rows} renderExpansion={renderExpansion} />
 			</div>
 			{isFetchingNextPage && (
 				<div className="flex justify-center py-2" data-testid={`${listTestId}-loading-next`}>
@@ -175,4 +169,4 @@ const ExpandableList: React.FC<Props> = ({
 };
 
 export {ExpandableList};
-export type {Row};
+export type {ExpandableListRow};
