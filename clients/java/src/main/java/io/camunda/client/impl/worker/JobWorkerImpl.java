@@ -83,6 +83,9 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
           + "If this issue persists, make sure to either scale your workers, threads, increase the "
           + "job timeout or reduce maxJobsActive, so that a job can start within the time it was "
           + "activated for. ";
+  // Polls in a row without a refused job before the reserved poll lane is released. More than one
+  // keeps the lane from flapping under real contention, where a reserved lane stops the refusals.
+  private static final int RELEASE_POLL_LANE_AFTER_POLLS = 3;
   private static final BackoffSupplier DEFAULT_BACKOFF_SUPPLIER =
       JobWorkerBuilderImpl.DEFAULT_BACKOFF_SUPPLIER;
   private static final Logger LOG = Loggers.JOB_WORKER_LOGGER;
@@ -93,6 +96,9 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   // job queue state
   private final int maxJobsActive;
   private final AtomicInteger refusedJobsInPoll = new AtomicInteger(0);
+  // Only one poll is out at a time, and claiming the job poller orders one response's update before
+  // the next, so a plain field is enough.
+  private int pollsWithoutRefusal;
 
   // job execution facilities
   private final JobExecutor executor;
@@ -256,6 +262,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     // Read the refusals before releasing the poller: once it is free, a job that finishes can start
     // the next poll, and that poll resets the count.
     final int refusedJobs = refusedJobsInPoll.get();
+    updatePollLane(activatedJobs, refusedJobs);
     releaseJobPoller(jobPoller);
 
     if (jobStreamer.isOpen() && activatedJobs == 0) {
@@ -289,7 +296,33 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     }
   }
 
+  /**
+   * Reserves the poll lane only on evidence of starvation: a refused job means the push path took,
+   * during the round-trip, the slots this poll was sized for. A response with jobs alone is no such
+   * evidence; while the lane is reserved, the jobs it keeps from the push path fail at the gateway,
+   * the broker yields them back, and they come back through the poll, so that signal would keep the
+   * lane reserved on its own. The lane is released after an empty response, or after a few
+   * responses in a row that got their slots without a refusal, so a worker that the push path alone
+   * can keep busy gets every slot back. A failed poll releases it too; see {@link #onPollError}.
+   */
+  private void updatePollLane(final int activatedJobs, final int refusedJobs) {
+    if (refusedJobs > 0) {
+      pollsWithoutRefusal = 0;
+      executor.reservePollLane(true);
+    } else if (activatedJobs == 0 || ++pollsWithoutRefusal >= RELEASE_POLL_LANE_AFTER_POLLS) {
+      releasePollLane();
+    }
+  }
+
+  private void releasePollLane() {
+    pollsWithoutRefusal = 0;
+    executor.reservePollLane(false);
+  }
+
   private void onPollError(final JobPoller jobPoller, final Throwable error) {
+    // While polls fail, nothing can take the reserved slots, for example when the poll goes over
+    // REST and only the gRPC stream works. The next refused poll reserves the lane again.
+    releasePollLane();
     backoff(jobPoller, backoffSupplier);
     LOG.debug(
         "Failed to activate jobs due to {}, delay retry for {} ms",
