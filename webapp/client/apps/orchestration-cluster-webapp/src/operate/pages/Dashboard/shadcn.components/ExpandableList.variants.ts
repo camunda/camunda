@@ -8,6 +8,7 @@
 
 import type {ExpandableListVariantComponent} from './ExpandableList.types';
 import {ComposedCell} from './variants/ComposedCell';
+import {StructuredColumns} from './variants/StructuredColumns';
 
 /**
  * How a Dashboard list tile renders its rows.
@@ -23,6 +24,7 @@ import {ComposedCell} from './variants/ComposedCell';
  */
 const EXPANDABLE_LIST_VARIANTS = {
 	composed: ComposedCell,
+	structuredColumns: StructuredColumns,
 } satisfies Record<string, ExpandableListVariantComponent>;
 
 type ExpandableListVariant = keyof typeof EXPANDABLE_LIST_VARIANTS;

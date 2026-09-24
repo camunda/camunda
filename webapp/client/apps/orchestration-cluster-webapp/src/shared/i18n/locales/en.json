@@ -470,6 +470,8 @@
 				"runningInstancesTotal": "{{count}} Running Process Instances in total",
 				"instancesWithIncident": "Process Instances with Incident",
 				"activeInstances": "Active Process Instances",
+				"listActiveColumnHeader": "Active",
+				"listIncidentsColumnHeader": "Incidents",
 				"processesByNameTitle": "Process Instances by Name",
 				"incidentsByErrorTitle": "Process Incidents by Error Message",
 				"noInstancesHeading": "No running process instances",
