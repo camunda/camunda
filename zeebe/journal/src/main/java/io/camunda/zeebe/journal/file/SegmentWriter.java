@@ -52,8 +52,14 @@ final class SegmentWriter {
   private final long firstIndex;
   private final long firstAsqn;
   private long lastAsqn;
-  private @Nullable JournalRecord lastEntry;
-  private int lastEntryPosition;
+  // Volatile, as flushing threads read it to find out up to which index a flush covers the segment.
+  // It is only published once all bytes of the record are written, so a thread which sees a record
+  // here is guaranteed to also see all of its bytes, and to flush them.
+  private volatile @Nullable JournalRecord lastEntry;
+  // Only accessed by the writing thread; volatile only because the last entry is, which makes
+  // static
+  // analysis treat all of the writer's state as shared.
+  private volatile int lastEntryPosition;
   private final JournalRecordReaderUtil recordUtil;
   private final ChecksumGenerator checksumGenerator = new ChecksumGenerator();
   private final JournalRecordSerializer serializer = new SBESerializer();
@@ -94,7 +100,8 @@ final class SegmentWriter {
   }
 
   long getLastIndex() {
-    return lastEntry != null ? lastEntry.index() : segment.index() - 1;
+    final var entry = lastEntry;
+    return entry != null ? entry.index() : segment.index() - 1;
   }
 
   int getLastEntryPosition() {
@@ -106,8 +113,9 @@ final class SegmentWriter {
   }
 
   long getNextIndex() {
-    if (lastEntry != null) {
-      return lastEntry.index() + 1;
+    final var entry = lastEntry;
+    if (entry != null) {
+      return entry.index() + 1;
     } else {
       return firstIndex;
     }
@@ -249,9 +257,9 @@ final class SegmentWriter {
     final int nextEntryOffset = startPosition + frameLength + metadataLength + recordLength;
     invalidateNextEntry(nextEntryOffset);
 
-    final var record =
-        updateLastWrittenEntry(startPosition, frameLength, metadataLength, recordLength);
+    final var record = readWrittenRecord(startPosition, frameLength, metadataLength, recordLength);
     FrameUtil.writeVersion(buffer, startPosition);
+    updateLastWrittenEntry(record, startPosition);
 
     final int appendedBytes = frameLength + metadataLength + recordLength;
     buffer.position(startPosition + appendedBytes);
@@ -259,7 +267,7 @@ final class SegmentWriter {
     return record;
   }
 
-  private JournalRecord updateLastWrittenEntry(
+  private JournalRecord readWrittenRecord(
       final int startPosition,
       final int frameLength,
       final int metadataLength,
@@ -268,17 +276,19 @@ final class SegmentWriter {
     final var data = serializer.readData(writeBuffer, startPosition + frameLength + metadataLength);
     verifyNoIndexGap(data.index(), getNextIndex());
 
-    lastEntry =
-        new PersistedJournalRecord(
-            metadata,
-            data,
-            new UnsafeBuffer(
-                writeBuffer, startPosition + frameLength + metadataLength, recordLength),
-            frameLength + metadataLength + recordLength);
-    updateLastAsqn(lastEntry.asqn());
-    index.index(lastEntry, startPosition);
-    lastEntryPosition = startPosition;
-    return lastEntry;
+    return new PersistedJournalRecord(
+        metadata,
+        data,
+        new UnsafeBuffer(writeBuffer, startPosition + frameLength + metadataLength, recordLength),
+        frameLength + metadataLength + recordLength);
+  }
+
+  /** Must only be called once all bytes of the record are written, see {@link #lastEntry}. */
+  private void updateLastWrittenEntry(final JournalRecord record, final int position) {
+    updateLastAsqn(record.asqn());
+    index.index(record, position);
+    lastEntryPosition = position;
+    lastEntry = record;
   }
 
   private void updateLastAsqn(final long asqn) {
@@ -364,10 +374,7 @@ final class SegmentWriter {
   private void advanceToNextEntry(final long nextIndex) {
     final int position = buffer.position();
     FrameUtil.readVersion(buffer);
-    lastEntry = recordUtil.read(buffer, nextIndex, FrameUtil.getLength());
-    updateLastAsqn(lastEntry.asqn());
-    lastEntryPosition = position;
-    index.index(lastEntry, position);
+    updateLastWrittenEntry(recordUtil.read(buffer, nextIndex, FrameUtil.getLength()), position);
     buffer.mark();
   }
 

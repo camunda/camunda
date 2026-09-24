@@ -35,7 +35,10 @@ final class SegmentedJournalWriter {
   private final SegmentsManager segments;
   private final JournalMetaStore metaStore;
   private final JournalMetrics journalMetrics;
-  private long lastFlushedIndex;
+  // Volatile, as it may be read and advanced by flushing threads other than the writing thread.
+  // Flushes advance it while holding the journal's read lock, truncations lower it while holding
+  // the write lock, so the two never interleave.
+  private volatile long lastFlushedIndex;
 
   private Segment currentSegment;
   private SegmentWriter currentWriter;
@@ -126,9 +129,10 @@ final class SegmentedJournalWriter {
    */
   void deleteAfter(final long index, final boolean preserveDeletedRecords) {
     // reset the last flushed index first to avoid corruption on restart in case of partial
-    // truncation (e.g. the node crashed while deleting segments)
-    lastFlushedIndex = index;
-    metaStore.storeLastFlushedIndex(index);
+    // truncation (e.g. the node crashed while deleting segments). Only ever lower it: deleting
+    // records flushes nothing, so records up to the given index may still not be flushed.
+    lastFlushedIndex = Math.min(lastFlushedIndex, index);
+    metaStore.storeLastFlushedIndex(lastFlushedIndex);
 
     // Delete all segments with first indexes greater than the given index.
     while (index < currentSegment.index() && currentSegment != segments.getFirstSegment()) {
@@ -178,6 +182,8 @@ final class SegmentedJournalWriter {
    * Fetches all segments with a last index greater than or equal to current {@link
    * #getLastFlushedIndex()}. These are then flushed in order. The {@link Segment#lastIndex()} of
    * the last successful segment to be flushed will be stored in the given {@link JournalMetaStore}.
+   * This relies on the given segments not including segments created while flushing, see {@link
+   * SegmentsManager#getTailSegments(long)}.
    *
    * @param dirtySegments the list of segments which need to be flushed
    */
@@ -198,16 +204,26 @@ final class SegmentedJournalWriter {
         flushedIndex = lastSegmentIndex;
       }
     } finally {
-      // store whatever we managed to flush to avoid doing it again
-      if (flushedIndex > lastFlushedIndex) {
-        lastFlushedIndex = flushedIndex;
+      advanceLastFlushedIndex(flushedIndex, segmentsCount);
+    }
+  }
 
-        LOGGER.trace(
-            "Flushed {} segment(s), from index {} to index {}",
-            segmentsCount,
-            lastFlushedIndex,
-            flushedIndex);
-      }
+  /**
+   * Stores whatever we managed to flush to avoid doing it again. Concurrent flushes may race here,
+   * so the index is only ever advanced, and stored together with the in-memory index. As this is
+   * called while holding the journal's read lock, it cannot overtake a truncation, which lowers the
+   * index while holding the write lock.
+   */
+  private synchronized void advanceLastFlushedIndex(
+      final long flushedIndex, final int segmentsCount) {
+    if (flushedIndex > lastFlushedIndex) {
+      LOGGER.trace(
+          "Flushed {} segment(s), from index {} to index {}",
+          segmentsCount,
+          lastFlushedIndex,
+          flushedIndex);
+      lastFlushedIndex = flushedIndex;
+      metaStore.storeLastFlushedIndex(flushedIndex);
     }
   }
 
