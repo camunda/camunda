@@ -29,6 +29,14 @@ lookupTeamMedic["team-distributed-systems"]=$distributedSystemsMedic
 lookupTeamMedic["Distributed Systems"]=$distributedSystemsMedic
 lookupTeamMedic["DistributedSystems"]=$distributedSystemsMedic
 
+# @pod-operate-admin-medic
+operateFrontendMedic="<!subteam^S0BNSQUL9RV|pod-operate-admin-medic>"
+lookupTeamMedic["@camunda/operate-frontend"]=$operateFrontendMedic
+
+# @bi-pod-medic
+optimizeFrontendMedic="<!subteam^S0BPBPG5H2S|bi-pod-medic>"
+lookupTeamMedic["@camunda/optimize-frontend"]=$optimizeFrontendMedic
+
 # failure in QA test
 lookupTeamMedic["QA"]="QA Acceptance Test, requires investigation"
 
