@@ -47,6 +47,19 @@ describe('<CopyButton />', () => {
 		expect(mockWriteText).toHaveBeenCalledWith('hello world');
 	});
 
+	it('should transform the value only when clicked', async () => {
+		const transformValue = vi.fn((value: string) => `transformed ${value}`);
+		const screen = await render(<CopyButton value="hello world" transformValue={transformValue} />);
+
+		expect(transformValue).not.toHaveBeenCalled();
+
+		await userEvent.click(screen.getByRole('button', {name: 'Copy', exact: true}).element());
+
+		expect(transformValue).toHaveBeenCalledOnce();
+		expect(mockWriteText).toHaveBeenCalledWith('transformed hello world');
+		await expect.element(screen.getByRole('button', {name: 'Copied'})).toBeVisible();
+	});
+
 	it('should show copied feedback after clicking', async () => {
 		const screen = await render(<CopyButton value="hello world" />);
 

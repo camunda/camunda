@@ -963,6 +963,22 @@
 					"incidentsCount_one": "{{count}} incident",
 					"incidentsCount_other": "{{count}} incidents"
 				},
+				"editors": {
+					"value": "Value",
+					"valueLabel": "value",
+					"loading": "Loading editor",
+					"copyValue": "Copy {{label}}",
+					"copying": "Copying value",
+					"copied": "Copied {{label}} to clipboard",
+					"copyFailed": "Failed to copy {{label}} to clipboard",
+					"fetchFailed": "Failed to fetch full {{label}}",
+					"apply": "Apply",
+					"cancel": "Cancel",
+					"close": "Close",
+					"edit": "Edit",
+					"view": "View",
+					"invalidJSON": "Enter a valid JSON value."
+				},
 				"copyButton": {
 					"copy": "Copy",
 					"copied": "Copied",

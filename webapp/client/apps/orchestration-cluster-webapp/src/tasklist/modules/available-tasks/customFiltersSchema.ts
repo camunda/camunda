@@ -7,7 +7,7 @@
  */
 
 import {z} from 'zod';
-import {isValidJSON} from '#/tasklist/modules/json/isValidJSON';
+import {isValidJSON} from '#/shared/json/isValidJSON';
 
 const customFiltersSchema = z.object({
 	assignee: z.enum(['all', 'unassigned', 'me', 'user-and-group']).default('all'),

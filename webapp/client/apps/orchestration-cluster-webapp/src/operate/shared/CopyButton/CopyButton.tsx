@@ -13,13 +13,14 @@ import {Button, type ButtonBaseProps} from '@carbon/react';
 
 type Props = {
 	value: string;
+	transformValue?: (value: string) => string;
 	hasIconOnly?: ButtonBaseProps['hasIconOnly'];
 	tooltipAlignment?: ButtonBaseProps['tooltipAlignment'];
 };
 
 const COPY_FEEDBACK_TIMEOUT_MS = 5000;
 
-const CopyButton: React.FC<Props> = ({value, hasIconOnly, tooltipAlignment}) => {
+const CopyButton: React.FC<Props> = ({value, transformValue, hasIconOnly, tooltipAlignment}) => {
 	const {t} = useTranslation();
 	const [isCopied, setIsCopied] = useState(false);
 	const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -50,12 +51,13 @@ const CopyButton: React.FC<Props> = ({value, hasIconOnly, tooltipAlignment}) => 
 			return;
 		}
 
-		const copiedValue = value;
+		const sourceValue = value;
+		const copiedValue = transformValue?.(sourceValue) ?? sourceValue;
 
 		navigator.clipboard
 			.writeText(copiedValue)
 			.then(() => {
-				if (latestValueRef.current !== copiedValue) {
+				if (latestValueRef.current !== sourceValue) {
 					return;
 				}
 
@@ -70,7 +72,7 @@ const CopyButton: React.FC<Props> = ({value, hasIconOnly, tooltipAlignment}) => 
 			.catch(() => {
 				// Clipboard write blocked (insecure context, missing permission), silently ignore
 			});
-	}, [value]);
+	}, [transformValue, value]);
 
 	return (
 		<Button

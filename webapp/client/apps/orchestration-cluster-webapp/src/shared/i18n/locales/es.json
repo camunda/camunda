@@ -949,6 +949,22 @@
 					"incidentsCount_one": "{{count}} incidente",
 					"incidentsCount_other": "{{count}} incidentes"
 				},
+				"editors": {
+					"value": "Valor",
+					"valueLabel": "valor",
+					"loading": "Cargando el editor",
+					"copyValue": "Copiar {{label}}",
+					"copying": "Copiando el valor",
+					"copied": "{{label}} copiado al portapapeles",
+					"copyFailed": "No se pudo copiar {{label}} al portapapeles",
+					"fetchFailed": "No se pudo cargar el valor completo de {{label}}",
+					"apply": "Aplicar",
+					"cancel": "Cancelar",
+					"close": "Cerrar",
+					"edit": "Editar",
+					"view": "Ver",
+					"invalidJSON": "Introduzca un valor JSON válido."
+				},
 				"copyButton": {
 					"copy": "Copiar",
 					"copied": "Copiado",
