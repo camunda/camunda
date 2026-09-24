@@ -25,6 +25,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.SchemaInitializationOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
@@ -183,6 +184,8 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
       final SortedMap<MemberId, Set<Integer>> partitionsPerMember,
       final RestoreResolvedRequest resolved) {
     final var builder = OperationGraph.builder();
+    final var schemaInitialization =
+        builder.add(new SchemaInitializationOperation(partitionsPerMember.firstKey()));
 
     final Map<MemberId, Map<Integer, OperationId>> preRestoreOf = new TreeMap<>();
     partitionsPerMember.forEach(
@@ -193,7 +196,9 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
                         .computeIfAbsent(memberId, ignored -> new TreeMap<>())
                         .put(
                             partitionId,
-                            builder.add(new PartitionPreRestoreOperation(memberId, partitionId)))));
+                            builder.add(
+                                new PartitionPreRestoreOperation(memberId, partitionId),
+                                Set.of(schemaInitialization)))));
 
     final Map<Integer, Set<OperationId>> restoresOf = new TreeMap<>();
     partitionsPerMember.forEach(
