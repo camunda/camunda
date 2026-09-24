@@ -18,7 +18,7 @@ export async function cleanEntities({ctx}) {
     'optimize-dashboard',
   ];
 
-  deleteIndicesContent(
+  return deleteIndicesContent(
     indicesToDelete,
     ctx.users.map((user) => user.id)
   );
