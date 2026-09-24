@@ -13,6 +13,9 @@ import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
 import io.camunda.db.rdbms.write.util.CustomHeaderSerializer;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class UserTaskEntityMapper {
 
@@ -35,12 +38,20 @@ public class UserTaskEntityMapper {
         nullToEmpty(dbModel.tenantId()),
         dbModel.dueDate(),
         dbModel.followUpDate(),
-        dbModel.candidateGroups(),
-        dbModel.candidateUsers(),
+        // ensure candidate groups and users have a well-defined order
+        sortedList(dbModel.candidateGroups()),
+        sortedList(dbModel.candidateUsers()),
         dbModel.externalFormReference(),
         dbModel.processDefinitionVersion(),
         CustomHeaderSerializer.deserialize(dbModel.serializedCustomHeaders()),
         dbModel.priority(),
         dbModel.tags());
+  }
+
+  private static List<String> sortedList(final List<String> list) {
+    if (list == null) {
+      return null;
+    }
+    return list.stream().sorted().collect(Collectors.toCollection(ArrayList::new));
   }
 }
