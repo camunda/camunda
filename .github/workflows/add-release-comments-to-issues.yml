@@ -46,6 +46,14 @@ env:
   TEST_OWNER: '@camunda/engineering-operations'
   GHA_BEST_PRACTICES_LINTER: enabled
 
+# Serialize runs so a manual dispatch overlapping the weekly cron cannot both
+# pass the "comment already exists?" check and double-post. Queue the new run
+# rather than cancelling the in-flight one, which may be partway through ~900
+# issues.
+concurrency:
+  group: add-release-comments
+  cancel-in-progress: false
+
 permissions: {}
 
 jobs:
