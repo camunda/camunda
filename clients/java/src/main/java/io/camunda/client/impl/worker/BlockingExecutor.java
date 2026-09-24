@@ -43,30 +43,67 @@ final class BlockingExecutor implements JobExecutor {
 
   private final Executor wrappedExecutor;
   private final Semaphore semaphore;
+
+  // Sub-limit on the push path only: it caps the push path at `maxActivate - reservedPollCapacity`
+  // so the remaining slots stay reachable only by the poll path. `semaphore` still bounds total
+  // in-flight and remains the single capacity authority. Null when nothing is reserved.
+  private final Semaphore pushBudget;
+
   private final int maxCapacity;
   private final long timeoutMillis;
   private volatile Runnable capacityListener = () -> {};
 
   public BlockingExecutor(
       final Executor wrappedExecutor, final int maxActivate, final Duration jobActivationTimeout) {
+    this(wrappedExecutor, maxActivate, jobActivationTimeout, 0);
+  }
+
+  /**
+   * @param reservedPollCapacity how many of the {@code maxActivate} slots are kept reachable only
+   *     by the poll path (the push path may hold at most {@code maxActivate - reservedPollCapacity}
+   *     at a time). 0 disables the reservation and restores the single-pool behaviour.
+   */
+  public BlockingExecutor(
+      final Executor wrappedExecutor,
+      final int maxActivate,
+      final Duration jobActivationTimeout,
+      final int reservedPollCapacity) {
     this.wrappedExecutor = wrappedExecutor;
     semaphore = new Semaphore(maxActivate);
+    pushBudget =
+        reservedPollCapacity > 0 && reservedPollCapacity < maxActivate
+            ? new Semaphore(maxActivate - reservedPollCapacity)
+            : null;
     maxCapacity = maxActivate;
     timeoutMillis = jobActivationTimeout.toMillis();
   }
 
   @Override
   public void execute(final Runnable command) throws RejectedExecutionException {
-    acquireCapacity();
-    dispatch(command);
+    // The push path. When a lane is reserved it must first hold a budget permit, so it can never
+    // take the slots kept for the poll. The budget is taken before the capacity so a push that
+    // cannot fit within its budget is refused without ever holding a capacity permit. Both
+    // acquisitions share one deadline so the whole dispatch is bounded by the configured timeout,
+    // not by it twice.
+    final long deadlineNanos = System.nanoTime() + TIMEOUT_UNIT.toNanos(timeoutMillis);
+    acquirePushBudget(deadlineNanos);
+    try {
+      acquireCapacity(deadlineNanos);
+    } catch (final RuntimeException e) {
+      releasePushBudget();
+      throw e;
+    }
+    dispatch(command, pushBudget != null);
   }
 
   @Override
   public void executeWithoutWaiting(final Runnable command) throws RejectedExecutionException {
+    // The poll path. It only takes a capacity permit, never a budget permit, so it can reach every
+    // slot including the reserved ones.
     if (!semaphore.tryAcquire()) {
       throw new RejectedExecutionException("Not able to acquire a lease without waiting for one");
     }
-    dispatch(command);
+    dispatch(command, false);
   }
 
   @Override
@@ -84,7 +121,7 @@ final class BlockingExecutor implements JobExecutor {
     capacityListener = listener;
   }
 
-  private void dispatch(final Runnable command) {
+  private void dispatch(final Runnable command, final boolean holdsPushBudget) {
     // The wrapped executor may run the command on the calling thread. A command that fails then
     // looks exactly like a command the executor refused, so both paths below can be taken for the
     // same command. The flag makes sure its capacity is given back only once, as giving it back
@@ -96,28 +133,53 @@ final class BlockingExecutor implements JobExecutor {
             try {
               command.run();
             } finally {
-              releaseCapacity(capacityHeld);
+              releaseCapacity(capacityHeld, holdsPushBudget);
             }
           });
     } catch (final RuntimeException | Error e) {
       // nothing else will give the capacity back, unless the command ran on the calling thread and
       // its finalizer already did, which is what the flag above is there to catch
-      releaseCapacity(capacityHeld);
+      releaseCapacity(capacityHeld, holdsPushBudget);
       throw e;
     }
   }
 
-  private void releaseCapacity(final AtomicBoolean capacityHeld) {
+  private void releaseCapacity(final AtomicBoolean capacityHeld, final boolean holdsPushBudget) {
     if (capacityHeld.compareAndSet(true, false)) {
       semaphore.release();
+      if (holdsPushBudget) {
+        releasePushBudget();
+      }
       // Runs only after the permit is back, so a worker polling from here sees the freed slot.
       capacityListener.run();
     }
   }
 
-  private void acquireCapacity() {
+  private void acquirePushBudget(final long deadlineNanos) {
+    if (pushBudget == null) {
+      return;
+    }
     try {
-      if (!semaphore.tryAcquire(timeoutMillis, TIMEOUT_UNIT)) {
+      if (!pushBudget.tryAcquire(remainingNanos(deadlineNanos), TimeUnit.NANOSECONDS)) {
+        throw new RejectedExecutionException(
+            String.format("Not able to acquire a push lease in %d%s", timeoutMillis, TIMEOUT_UNIT));
+      }
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RejectedExecutionException(
+          "Interrupted while waiting to acquire a push lease to run the command", e);
+    }
+  }
+
+  private void releasePushBudget() {
+    if (pushBudget != null) {
+      pushBudget.release();
+    }
+  }
+
+  private void acquireCapacity(final long deadlineNanos) {
+    try {
+      if (!semaphore.tryAcquire(remainingNanos(deadlineNanos), TimeUnit.NANOSECONDS)) {
         throw new RejectedExecutionException(
             String.format("Not able to acquire lease in %d%s", timeoutMillis, TIMEOUT_UNIT));
       }
@@ -126,5 +188,11 @@ final class BlockingExecutor implements JobExecutor {
       throw new RejectedExecutionException(
           "Interrupted while waiting to acquire a lease to run the command", e);
     }
+  }
+
+  // Nanos left until the shared deadline, never negative so a passed deadline turns the acquire
+  // into an immediate poll rather than an unbounded wait.
+  private static long remainingNanos(final long deadlineNanos) {
+    return Math.max(0L, deadlineNanos - System.nanoTime());
   }
 }
