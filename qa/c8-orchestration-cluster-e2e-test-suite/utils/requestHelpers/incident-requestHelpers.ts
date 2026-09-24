@@ -15,6 +15,22 @@ import {createInstances, createSingleInstance} from '../zeebeClient';
 
 const INCIDENT_SEARCH_ENDPOINT = '/incidents/search';
 
+/**
+ * searchIncidentByPIK waits for incidents to appear, so it cannot express an
+ * absence — it would only ever time out.
+ */
+export async function expectNoIncidents(
+  request: APIRequestContext,
+  processInstanceKey: string,
+): Promise<void> {
+  const res = await request.post(buildUrl(INCIDENT_SEARCH_ENDPOINT), {
+    headers: jsonHeaders(),
+    data: {filter: {processInstanceKey}},
+  });
+  await assertStatusCode(res, 200);
+  expect((await res.json()).items ?? []).toHaveLength(0);
+}
+
 export async function searchIncidentByPIK(
   request: APIRequestContext,
   {processInstanceKey}: {processInstanceKey: string},

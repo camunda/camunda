@@ -178,12 +178,18 @@ export async function completeJob(
  * NOTE: /jobs/activation has no processInstanceKey filter — results are
  * filtered client-side using the processInstanceKey field on each activated job.
  */
+/**
+ * `requestTimeoutMs` caps the broker's long poll. Without it activation blocks
+ * for about 10s when no job matches, which exceeds the suite's action timeout —
+ * pass it whenever a caller expects to find nothing.
+ */
 export async function activateJobsByType(
   request: APIRequestContext,
   jobType: string,
   processInstanceKey: string,
   fetchVariables: string[] = [],
   maxJobs = 10,
+  requestTimeoutMs?: number,
 ): Promise<ActivatedJobWithVars[]> {
   const res = await request.post(buildUrl('/jobs/activation'), {
     headers: jsonHeaders(),
@@ -191,6 +197,7 @@ export async function activateJobsByType(
       type: jobType,
       maxJobsToActivate: maxJobs,
       timeout: 10_000,
+      ...(requestTimeoutMs !== undefined && {requestTimeout: requestTimeoutMs}),
       ...(fetchVariables.length > 0 && {fetchVariable: fetchVariables}),
     },
   });

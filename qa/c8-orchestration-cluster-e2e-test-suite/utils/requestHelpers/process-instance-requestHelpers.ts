@@ -348,6 +348,97 @@ async function runBatchAndWaitForCompletion(
   await expectBatchState(request, batchKey, 'COMPLETED');
 }
 
+export type SuspendableProcessInstance = ProcessInstanceItem & {
+  suspendedDate?: string | null;
+};
+
+export async function suspendProcessInstance(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  data?: unknown,
+) {
+  return request.post(
+    buildUrl('/process-instances/{processInstanceKey}/suspension', {
+      processInstanceKey,
+    }),
+    {headers: jsonHeaders(), ...(data !== undefined && {data})},
+  );
+}
+
+export async function resumeProcessInstance(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  data?: unknown,
+) {
+  return request.post(
+    buildUrl('/process-instances/{processInstanceKey}/resumption', {
+      processInstanceKey,
+    }),
+    {headers: jsonHeaders(), ...(data !== undefined && {data})},
+  );
+}
+
+export async function getProcessInstance(
+  request: APIRequestContext,
+  processInstanceKey: string,
+): Promise<SuspendableProcessInstance> {
+  const res = await request.post(buildUrl('/process-instances/search'), {
+    headers: jsonHeaders(),
+    data: {filter: {processInstanceKey}},
+  });
+  await assertStatusCode(res, 200);
+  const items = (await res.json()).items ?? [];
+  expect(items).toHaveLength(1);
+  return items[0] as SuspendableProcessInstance;
+}
+
+export async function expectSuspendedDate(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  present: boolean,
+  assertionOptions = defaultAssertionOptions,
+): Promise<void> {
+  await expect(async () => {
+    const {suspendedDate} = await getProcessInstance(
+      request,
+      processInstanceKey,
+    );
+    if (present) {
+      expect(suspendedDate).toBeTruthy();
+    } else {
+      expect(suspendedDate ?? null).toBeNull();
+    }
+  }).toPass(assertionOptions);
+}
+
+/**
+ * The 204 and the exported state are separate guarantees, and only the second is
+ * what an operator or Operate sees — so callers wait for both before asserting
+ * anything that depends on the instance being suspended.
+ */
+export async function suspendAndExpectSuspended(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  assertionOptions = defaultAssertionOptions,
+): Promise<void> {
+  await assertStatusCode(
+    await suspendProcessInstance(request, processInstanceKey),
+    204,
+  );
+  await expectProcessState(
+    request,
+    processInstanceKey,
+    'SUSPENDED',
+    assertionOptions,
+  );
+  await expectSuspendedDate(
+    request,
+    processInstanceKey,
+    true,
+    assertionOptions,
+  );
+}
+
 export async function expectProcessState(
   request: APIRequestContext,
   processInstanceKey: string,
