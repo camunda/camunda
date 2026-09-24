@@ -878,6 +878,55 @@ class OperateProcessInstancePage {
       .click();
   }
 
+  async suspendInstance(instanceId: string): Promise<void> {
+    await this.clickInstanceHeaderAction(
+      new RegExp(`Suspend Instance ${instanceId}`),
+      'Suspend',
+    );
+  }
+
+  async resumeInstance(instanceId: string): Promise<void> {
+    await this.clickInstanceHeaderAction(
+      new RegExp(`Resume Instance ${instanceId}`),
+      'Resume',
+    );
+  }
+
+  /**
+   * The header renders its actions either as direct buttons or behind an
+   * Actions menu, so callers asserting which actions are offered have to read
+   * whichever layout is present rather than assuming one.
+   */
+  async instanceHeaderActionNames(): Promise<string[]> {
+    const actionsMenuButton = this.instanceHeader.getByRole('button', {
+      name: 'Actions',
+    });
+    await actionsMenuButton
+      .or(this.instanceHeader.getByTestId('cancel-operation'))
+      .first()
+      .waitFor();
+    if (await actionsMenuButton.isVisible()) {
+      await actionsMenuButton.click();
+      const names = await this.page.getByRole('menuitem').allInnerTexts();
+      await this.page.keyboard.press('Escape');
+      return names.map((name) => name.trim());
+    }
+    const testIds = [
+      'suspend-operation',
+      'resume-operation',
+      'cancel-operation',
+      'retry-operation',
+      'enter-modification-mode',
+    ];
+    const present: string[] = [];
+    for (const testId of testIds) {
+      if (await this.instanceHeader.getByTestId(testId).isVisible()) {
+        present.push(testId);
+      }
+    }
+    return present;
+  }
+
   async cancelInstance(instanceId: string): Promise<void> {
     await this.clickInstanceHeaderAction(
       new RegExp(`Cancel Instance ${instanceId}`),
