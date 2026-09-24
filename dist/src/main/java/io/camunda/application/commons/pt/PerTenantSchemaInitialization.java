@@ -215,6 +215,17 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
     }
   }
 
+  /** Runs one schema attempt immediately and marks the tenant ready when it succeeds. */
+  public void initializeNow(final String physicalTenantId) {
+    final var state = tenants.get(physicalTenantId);
+    if (state == null) {
+      throw new IllegalArgumentException(
+          "Cannot initialize the schema of unknown physical tenant '" + physicalTenantId + "'");
+    }
+    attempt.accept(physicalTenantId);
+    markReady(state);
+  }
+
   /** Whether the physical tenant's schema has been applied. An unknown tenant is never ready. */
   @Override
   public boolean isInitialized(final String physicalTenantId) {
