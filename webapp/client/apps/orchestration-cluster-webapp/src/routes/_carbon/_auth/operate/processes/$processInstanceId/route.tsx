@@ -7,7 +7,6 @@
  */
 
 import {createFileRoute, Outlet} from '@tanstack/react-router';
-import type {QueryClient} from '@tanstack/react-query';
 import {t} from 'i18next';
 import {ProcessInstance, ProcessInstancePending} from '#/operate/pages/ProcessInstance/ProcessInstance';
 import {processInstanceQuery} from '#/operate/pages/ProcessInstance/processInstance.queries';
@@ -16,27 +15,18 @@ import {getProcessDefinitionName} from '#/operate/shared/utils/processInstance';
 import {ForbiddenError} from '#/shared/errors';
 import {requestErrorSchema} from '#/shared/http/request';
 
-async function loadProcessInstance({
-	queryClient,
-	processInstanceId,
-}: {
-	queryClient: QueryClient;
-	processInstanceId: string;
-}) {
-	try {
-		return await queryClient.ensureQueryData(processInstanceQuery(processInstanceId));
-	} catch (error) {
-		if (!(error instanceof ForbiddenError) && !requestErrorSchema.safeParse(error).success) {
-			throw error;
-		}
-		return undefined;
-	}
-}
-
 const Route = createFileRoute('/_carbon/_auth/operate/processes/$processInstanceId')({
 	validateSearch: validateProcessInstanceRouteSearch,
-	loader: ({context: {queryClient}, params: {processInstanceId}}) =>
-		loadProcessInstance({queryClient, processInstanceId}),
+	loader: async ({context: {queryClient}, params: {processInstanceId}}) => {
+		try {
+			return await queryClient.ensureQueryData(processInstanceQuery(processInstanceId));
+		} catch (error) {
+			if (!(error instanceof ForbiddenError) && !requestErrorSchema.safeParse(error).success) {
+				throw error;
+			}
+			return undefined;
+		}
+	},
 	head: ({loaderData, params: {processInstanceId}}) => ({
 		meta: loaderData
 			? [
@@ -58,4 +48,4 @@ const Route = createFileRoute('/_carbon/_auth/operate/processes/$processInstance
 	},
 });
 
-export {Route, loadProcessInstance};
+export {Route};

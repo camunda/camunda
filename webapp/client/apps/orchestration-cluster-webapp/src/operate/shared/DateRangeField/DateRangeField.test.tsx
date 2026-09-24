@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, cleanup, type RenderResult} from 'vitest-browser-react';
+import {render, type RenderResult} from 'vitest-browser-react';
 import {describe, it, expect, vi, afterEach} from 'vitest';
 import {MockDateRangeField} from './mocks';
 import {getWrapper} from './getWrapper';
@@ -100,9 +100,8 @@ async function applyDateRange(screen: RenderResult) {
 }
 
 describe('<DateRangeField />', () => {
-	afterEach(async () => {
+	afterEach(() => {
 		vi.useRealTimers();
-		await cleanup();
 	});
 
 	it('should close modal on cancel click', async () => {
