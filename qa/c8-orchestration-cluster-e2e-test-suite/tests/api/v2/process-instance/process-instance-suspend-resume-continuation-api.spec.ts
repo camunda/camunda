@@ -148,6 +148,104 @@ async function deployMultiInstanceProcess(prefix: string) {
   return {processDefinitionId, jobType};
 }
 
+/**
+ * The customer-style order model: a message start event, an interrupting
+ * CANCELED boundary on the multi-instance body, a non-interrupting
+ * duplicate-ORDER event subprocess, and one subscription per item. It has no
+ * job types — messages and PT1S timers drive it — so these tests assert element
+ * states rather than job counts.
+ */
+async function deployOrderProcess(prefix: string) {
+  const processDefinitionId = `${prefix}-order`;
+  const msg = {
+    order: `${prefix}-ORDER`,
+    intransit: `${prefix}-INTRANSIT`,
+    delivered: `${prefix}-DELIVERED`,
+    notdelivered: `${prefix}-NOTDELIVERED`,
+    canceled: `${prefix}-CANCELED`,
+  };
+  await deployWithSubstitutions('./resources/msg_process.bpmn', {
+    'id="order_process"': `id="${processDefinitionId}"`,
+    'name="ORDER"': `name="${msg.order}"`,
+    'name="INTRANSIT"': `name="${msg.intransit}"`,
+    'name="DELIVERED"': `name="${msg.delivered}"`,
+    'name="NOTDELIVERED"': `name="${msg.notdelivered}"`,
+    'name="CANCELED"': `name="${msg.canceled}"`,
+  });
+  return {processDefinitionId, msg};
+}
+
+async function listInstanceKeys(
+  request: APIRequestContext,
+  processDefinitionId: string,
+): Promise<string[]> {
+  const res = await request.post(buildUrl('/process-instances/search'), {
+    headers: jsonHeaders(),
+    data: {filter: {processDefinitionId}, page: {limit: 50}},
+  });
+  await assertStatusCode(res, 200);
+  return ((await res.json()).items ?? []).map(
+    (i: {processInstanceKey: string}) => String(i.processInstanceKey),
+  );
+}
+
+/** The model has no none start event: publishing the order message creates it. */
+async function startOrderInstance(
+  request: APIRequestContext,
+  fixture: {processDefinitionId: string; msg: {order: string}},
+  orderId: string,
+  items: string[],
+): Promise<string> {
+  const before = new Set(
+    await listInstanceKeys(request, fixture.processDefinitionId),
+  );
+  await assertStatusCode(
+    await publishMessage(request, fixture.msg.order, orderId, {items, orderId}),
+    200,
+  );
+  let created = '';
+  await expect(async () => {
+    const after = await listInstanceKeys(request, fixture.processDefinitionId);
+    const fresh = after.filter((key) => !before.has(key));
+    expect(fresh).toHaveLength(1);
+    created = fresh[0];
+  }).toPass(extendedAssertionOptions);
+  return track(created);
+}
+
+async function countElementInstances(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  elementId: string,
+  state: string,
+): Promise<number> {
+  const res = await request.post(buildUrl('/element-instances/search'), {
+    headers: jsonHeaders(),
+    data: {filter: {processInstanceKey, elementId, state}, page: {limit: 50}},
+  });
+  await assertStatusCode(res, 200);
+  return ((await res.json()).items ?? []).length;
+}
+
+async function expectElementInstanceCount(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  elementId: string,
+  state: string,
+  expected: number,
+) {
+  await expect(async () => {
+    expect(
+      await countElementInstances(
+        request,
+        processInstanceKey,
+        elementId,
+        state,
+      ),
+    ).toBe(expected);
+  }).toPass(extendedAssertionOptions);
+}
+
 test.describe('Process Instance Suspend and Resume Continuation API', () => {
   test.afterAll(async () => {
     for (const processInstanceKey of instancesToCancel) {
@@ -455,5 +553,281 @@ test.describe('Process Instance Suspend and Resume Continuation API', () => {
       extendedAssertionOptions,
     );
     await expectNoIncidents(request, parent.processInstanceKey);
+  });
+
+  test('Every item of a suspended order receives its own message after the resume', async ({
+    request,
+  }) => {
+    test.setTimeout(6 * 60 * 1000);
+    const prefix = uniquePrefixedId('sr-cont-order');
+    const fixture = await deployOrderProcess(prefix);
+    const items = [`${prefix}-p`, `${prefix}-q`, `${prefix}-r`];
+    const instanceKey = await startOrderInstance(
+      request,
+      fixture,
+      `${prefix}-oid`,
+      items,
+    );
+    await expectElementInstanceCount(
+      request,
+      instanceKey,
+      'Event_0vxlyed',
+      'ACTIVE',
+      items.length,
+    );
+
+    await suspendAndExpectSuspended(request, instanceKey);
+    for (const item of items) {
+      await assertStatusCode(
+        await publishMessage(request, fixture.msg.intransit, item),
+        200,
+      );
+    }
+    await hold(10);
+    expect(
+      await countElementInstances(
+        request,
+        instanceKey,
+        'Event_0vxlyed',
+        'ACTIVE',
+      ),
+    ).toBe(items.length);
+
+    await assertStatusCode(
+      await resumeProcessInstance(request, instanceKey),
+      204,
+    );
+
+    // All three advance, so none of the per-item subscriptions was lost.
+    await expectElementInstanceCount(
+      request,
+      instanceKey,
+      'Event_11lmoe2',
+      'ACTIVE',
+      items.length,
+    );
+    for (const item of items) {
+      await assertStatusCode(
+        await publishMessage(request, fixture.msg.delivered, item),
+        200,
+      );
+    }
+    await expectProcessState(
+      request,
+      instanceKey,
+      'COMPLETED',
+      extendedAssertionOptions,
+    );
+    await expectNoIncidents(request, instanceKey);
+  });
+
+  test('An interrupting boundary message waits for the resume and then cancels the order', async ({
+    request,
+  }) => {
+    test.setTimeout(6 * 60 * 1000);
+    const prefix = uniquePrefixedId('sr-cont-cancel');
+    const fixture = await deployOrderProcess(prefix);
+    const orderId = `${prefix}-oid`;
+    const instanceKey = await startOrderInstance(request, fixture, orderId, [
+      `${prefix}-p`,
+      `${prefix}-q`,
+    ]);
+    await expectElementInstanceCount(
+      request,
+      instanceKey,
+      'Event_0vxlyed',
+      'ACTIVE',
+      2,
+    );
+
+    await suspendAndExpectSuspended(request, instanceKey);
+    await assertStatusCode(
+      await publishMessage(request, fixture.msg.canceled, orderId),
+      200,
+    );
+    await hold(10);
+    expect(
+      await countElementInstances(request, instanceKey, 'orderItem', 'ACTIVE'),
+    ).toBeGreaterThan(0);
+
+    await assertStatusCode(
+      await resumeProcessInstance(request, instanceKey),
+      204,
+    );
+
+    await expectElementInstanceCount(
+      request,
+      instanceKey,
+      'Event_1x1zr5w',
+      'COMPLETED',
+      1,
+    );
+    await expectElementInstanceCount(
+      request,
+      instanceKey,
+      'orderItem',
+      'ACTIVE',
+      0,
+    );
+    await expectProcessState(
+      request,
+      instanceKey,
+      'COMPLETED',
+      extendedAssertionOptions,
+    );
+    await expectNoIncidents(request, instanceKey);
+  });
+
+  test('A non-interrupting event subprocess runs on resume and leaves the order running', async ({
+    request,
+  }) => {
+    test.setTimeout(6 * 60 * 1000);
+    const prefix = uniquePrefixedId('sr-cont-dup');
+    const fixture = await deployOrderProcess(prefix);
+    const orderId = `${prefix}-oid`;
+    const items = [`${prefix}-p`, `${prefix}-q`];
+    const instanceKey = await startOrderInstance(
+      request,
+      fixture,
+      orderId,
+      items,
+    );
+    await expectElementInstanceCount(
+      request,
+      instanceKey,
+      'Event_0vxlyed',
+      'ACTIVE',
+      items.length,
+    );
+
+    await suspendAndExpectSuspended(request, instanceKey);
+    // A duplicate order correlates to this instance's event subprocess rather
+    // than starting a second instance, because the orderId subscription matches.
+    await assertStatusCode(
+      await publishMessage(request, fixture.msg.order, orderId, {
+        items,
+        orderId,
+      }),
+      200,
+    );
+    await hold(10);
+    expect(
+      await countElementInstances(
+        request,
+        instanceKey,
+        'Activity_03jfohc',
+        'COMPLETED',
+      ),
+    ).toBe(0);
+
+    await assertStatusCode(
+      await resumeProcessInstance(request, instanceKey),
+      204,
+    );
+
+    await expectElementInstanceCount(
+      request,
+      instanceKey,
+      'Activity_03jfohc',
+      'COMPLETED',
+      1,
+    );
+    // Non-interrupting: the items are still waiting where they were.
+    await expectElementInstanceCount(
+      request,
+      instanceKey,
+      'Event_0vxlyed',
+      'ACTIVE',
+      items.length,
+    );
+
+    for (const item of items) {
+      await assertStatusCode(
+        await publishMessage(request, fixture.msg.intransit, item),
+        200,
+      );
+    }
+    for (const item of items) {
+      await assertStatusCode(
+        await publishMessage(request, fixture.msg.delivered, item),
+        200,
+      );
+    }
+    await expectProcessState(
+      request,
+      instanceKey,
+      'COMPLETED',
+      extendedAssertionOptions,
+    );
+    await expectNoIncidents(request, instanceKey);
+  });
+
+  test('A message start event still creates instances while a sibling is suspended', async ({
+    request,
+  }) => {
+    test.setTimeout(6 * 60 * 1000);
+    const prefix = uniquePrefixedId('sr-cont-start');
+    const fixture = await deployOrderProcess(prefix);
+    const suspendedKey = await startOrderInstance(
+      request,
+      fixture,
+      `${prefix}-oid-a`,
+      [`${prefix}-a1`],
+    );
+    await suspendAndExpectSuspended(request, suspendedKey);
+
+    // A different orderId, so this cannot correlate to the suspended instance.
+    const freshItems = [`${prefix}-b1`];
+    const freshKey = await startOrderInstance(
+      request,
+      fixture,
+      `${prefix}-oid-b`,
+      freshItems,
+    );
+    expect(freshKey).not.toBe(suspendedKey);
+
+    for (const item of freshItems) {
+      await assertStatusCode(
+        await publishMessage(request, fixture.msg.intransit, item),
+        200,
+      );
+      await assertStatusCode(
+        await publishMessage(request, fixture.msg.delivered, item),
+        200,
+      );
+    }
+    await expectProcessState(
+      request,
+      freshKey,
+      'COMPLETED',
+      extendedAssertionOptions,
+    );
+
+    // Untouched by its sibling's whole lifecycle.
+    await expectProcessState(
+      request,
+      suspendedKey,
+      'SUSPENDED',
+      extendedAssertionOptions,
+    );
+    await assertStatusCode(
+      await resumeProcessInstance(request, suspendedKey),
+      204,
+    );
+    await assertStatusCode(
+      await publishMessage(request, fixture.msg.intransit, `${prefix}-a1`),
+      200,
+    );
+    await assertStatusCode(
+      await publishMessage(request, fixture.msg.delivered, `${prefix}-a1`),
+      200,
+    );
+    await expectProcessState(
+      request,
+      suspendedKey,
+      'COMPLETED',
+      extendedAssertionOptions,
+    );
+    await expectNoIncidents(request, suspendedKey);
   });
 });
