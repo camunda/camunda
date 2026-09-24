@@ -234,9 +234,10 @@ describe('<BatchOperationActions />', () => {
 		worker,
 	}) => {
 		worker.use(
-			mockCancelBatchOperationEndpoint({successResponse: new HttpResponse(null, {status: 204}), delay: 200}),
+			mockCancelBatchOperationEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
 			mockGetBatchOperationEndpoint({
-				successResponse: HttpResponse.json(createBatchOperation({state: 'PARTIALLY_COMPLETED'})),
+				successResponse: HttpResponse.json(createBatchOperation({state: 'ACTIVE'})),
+				delay: 'infinite',
 			}),
 		);
 
@@ -244,13 +245,16 @@ describe('<BatchOperationActions />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'More actions'}));
 		await userEvent.click(screen.getByRole('menuitem', {name: 'Cancel'}));
 
-		// The OverflowMenu closes the item as soon as it's clicked, so re-open it to confirm the
-		// mutation actually went pending (proving the POST + transition poll ran) before asserting it
-		// settles — otherwise this would pass just as well if the poll were removed.
 		await expect.element(screen.getByRole('button', {name: 'More actions'})).toBeVisible();
 		await userEvent.click(screen.getByRole('button', {name: 'More actions'}));
 		await expect.element(screen.getByRole('menuitem', {name: 'Cancel'})).toBeDisabled();
-		// Still the same open menu — no need to reclick the trigger, which would toggle it shut.
+
+		worker.use(
+			mockGetBatchOperationEndpoint({
+				successResponse: HttpResponse.json(createBatchOperation({state: 'PARTIALLY_COMPLETED'})),
+			}),
+		);
+
 		await expect.element(screen.getByRole('menuitem', {name: 'Cancel'})).not.toBeDisabled();
 		expect(notificationsStore.notifications).toEqual([]);
 	});
