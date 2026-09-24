@@ -66,6 +66,9 @@ public final class StartEventSubscriptions {
                     timerStartEvent.getId(),
                     deployedProcess.getTenantId(),
                     NO_ELEMENT_INSTANCE,
+                    // start event timers belong to the definition, not to an instance: these should
+                    // not be ordinal-controlled
+                    -1,
                     BufferUtil.bufferAsString(deployedProcess.getBpmnProcessId()),
                     BpmnElementType.START_EVENT,
                     failureOrTimer.get());
