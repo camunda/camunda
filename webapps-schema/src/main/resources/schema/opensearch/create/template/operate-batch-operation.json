@@ -46,6 +46,9 @@
       "operationsCompletedCount": {
         "type": "long"
       },
+      "processedChunkRecordKeys": {
+        "type": "long"
+      },
       "errors": {
         "type": "object",
         "properties": {

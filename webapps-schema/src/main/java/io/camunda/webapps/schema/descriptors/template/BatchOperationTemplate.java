@@ -35,6 +35,7 @@ public class BatchOperationTemplate extends AbstractTemplateDescriptor implement
   public static final String OPERATIONS_FAILED_COUNT = "operationsFailedCount";
   public static final String OPERATIONS_COMPLETED_COUNT = "operationsCompletedCount";
   public static final String ERRORS = "errors";
+  public static final String PROCESSED_CHUNK_RECORD_KEYS = "processedChunkRecordKeys";
 
   public BatchOperationTemplate(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
