@@ -8,7 +8,7 @@
 
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {describe, expect} from 'vitest';
+import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
 import {
@@ -21,6 +21,7 @@ import {createProcessDefinitionInstanceStatistics} from '#/shared-test-modules/a
 import {createIncidentProcessInstanceStatisticsByError} from '#/shared-test-modules/api-mocks/incident-statistics';
 import {createQueryProcessDefinitionsResponse} from '#/shared-test-modules/api-mocks/process-definitions';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {Dashboard} from './Dashboard';
 
 const PROCESS_STATS_REQUEST_SCHEMA = z.object({
@@ -88,6 +89,14 @@ const CURRENT_USER_RESPONSE = HttpResponse.json({
 });
 
 describe('<Dashboard />', () => {
+	beforeEach(() => {
+		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
+	});
+
+	afterEach(() => {
+		sessionStorage.clear();
+	});
+
 	it('should render metric panel with running instance counts', async ({worker}) => {
 		worker.use(
 			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),

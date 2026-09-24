@@ -8,7 +8,7 @@
 
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {describe, expect} from 'vitest';
+import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
 import {userEvent} from 'vitest/browser';
@@ -16,7 +16,9 @@ import {
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockGetProcessDefinitionInstanceVersionStatisticsEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
+	mockCurrentUserEndpoint,
 } from '#/shared-test-modules/mock-handlers';
+import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {
 	createProcessDefinitionInstanceStatistics,
 	createProcessDefinitionInstanceVersionStatistics,
@@ -26,6 +28,7 @@ import {
 	createProcessDefinition,
 	createQueryProcessDefinitionsResponse,
 } from '#/shared-test-modules/api-mocks/process-definitions';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {InstancesByProcess} from './InstancesByProcess';
 
 const REQUEST_SCHEMA = z.object({
@@ -83,6 +86,14 @@ const PAGE_2_RESPONSE = HttpResponse.json(
 );
 
 describe('<InstancesByProcess />', () => {
+	beforeEach(() => {
+		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
+	});
+
+	afterEach(() => {
+		sessionStorage.clear();
+	});
+
 	it('should render the list of instances by process', async ({worker}) => {
 		worker.use(
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({
@@ -182,6 +193,120 @@ describe('<InstancesByProcess />', () => {
 				'href',
 				'/operate/processes?process=p2&active=true&incidents=true&completed=true&canceled=true&suspended=false',
 			);
+	});
+
+	it('should preserve the tenant of identical process IDs and the default tenant in drill-down links', async ({
+		worker,
+	}) => {
+		sessionStorage.setItem(
+			'clientConfig',
+			JSON.stringify(
+				createSystemConfiguration({
+					deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: true, maxRequestSize: 0},
+				}),
+			),
+		);
+		worker.use(
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+				successResponse: HttpResponse.json(
+					createPaginatedResponse({
+						items: [
+							createProcessDefinitionInstanceStatistics({
+								processDefinitionId: 'orders',
+								tenantId: '<tenant-A>',
+								latestProcessDefinitionName: 'Orders',
+							}),
+							createProcessDefinitionInstanceStatistics({
+								processDefinitionId: 'orders',
+								tenantId: '<tenant-B>',
+								latestProcessDefinitionName: 'Orders',
+							}),
+							createProcessDefinitionInstanceStatistics({
+								processDefinitionId: 'orders',
+								tenantId: '<default>',
+								latestProcessDefinitionName: 'Default Orders',
+							}),
+						],
+						page: {totalItems: 3, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+					}),
+				),
+			}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
+			mockCurrentUserEndpoint({
+				successResponse: HttpResponse.json(
+					createCurrentUser({
+						tenants: [
+							{tenantId: '<tenant-A>', name: 'Tenant A', description: null},
+							{tenantId: '<tenant-B>', name: 'Tenant B', description: null},
+							{tenantId: '<default>', name: 'Default Tenant', description: null},
+						],
+					}),
+				),
+			}),
+		);
+
+		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate'});
+
+		for (const [name, tenant] of [
+			['Tenant A', '<tenant-A>'],
+			['Tenant B', '<tenant-B>'],
+			['Default Tenant', '<default>'],
+		] as const) {
+			await expect
+				.element(screen.getByRole('link', {name: new RegExp(name)}))
+				.toHaveAttribute('href', expect.stringContaining(`process=orders&tenantId=${encodeURIComponent(tenant)}`));
+		}
+	});
+
+	it('should preserve the tenant and version of expanded process links', async ({worker}) => {
+		sessionStorage.setItem(
+			'clientConfig',
+			JSON.stringify(
+				createSystemConfiguration({
+					deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: true, maxRequestSize: 0},
+				}),
+			),
+		);
+		worker.use(
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+				successResponse: HttpResponse.json(
+					createPaginatedResponse({
+						items: [
+							createProcessDefinitionInstanceStatistics({
+								processDefinitionId: 'orders',
+								tenantId: '<tenant-B>',
+								hasMultipleVersions: true,
+							}),
+						],
+						page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+					}),
+				),
+			}),
+			mockGetProcessDefinitionInstanceVersionStatisticsEndpoint({
+				successResponse: HttpResponse.json(
+					createPaginatedResponse({
+						items: [
+							createProcessDefinitionInstanceVersionStatistics({
+								processDefinitionId: 'orders',
+								tenantId: '<tenant-B>',
+								processDefinitionVersion: 2,
+							}),
+						],
+						page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+					}),
+				),
+			}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
+		);
+
+		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate'});
+		await expect.element(screen.getByRole('button', {name: 'Expand current row'})).toBeVisible();
+		await userEvent.click(screen.getByRole('button', {name: 'Expand current row'}));
+
+		await expect
+			.element(screen.getByRole('link', {name: /My Process.*Version 2.*tenant-B/}))
+			.toHaveAttribute('href', expect.stringContaining('process=orders&version=2&tenantId=%3Ctenant-B%3E'));
 	});
 
 	it('should show an error state when the request fails', async ({worker}) => {

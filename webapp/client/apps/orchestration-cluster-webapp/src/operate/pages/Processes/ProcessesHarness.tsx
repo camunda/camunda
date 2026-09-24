@@ -38,6 +38,9 @@ function ProcessesHarness() {
 				businessId={toOptionalString(search.businessId)}
 				batchOperationKey={toOptionalString(search.batchOperationKey)}
 				errorMessage={toOptionalString(search.errorMessage)}
+				incidentErrorHashCode={
+					typeof search.incidentErrorHashCode === 'number' ? search.incidentErrorHashCode : undefined
+				}
 				hasRetriesLeft={search.hasRetriesLeft === undefined ? undefined : Boolean(search.hasRetriesLeft)}
 				startDateFrom={toOptionalString(search.startDateFrom)}
 				startDateTo={toOptionalString(search.startDateTo)}

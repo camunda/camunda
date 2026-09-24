@@ -58,6 +58,7 @@ const IncidentsByError: React.FC = () => {
 						to="/operate/processes"
 						search={{
 							errorMessage: item.errorMessage,
+							incidentErrorHashCode: item.errorHashCode,
 							incidents: true,
 							active: false,
 							completed: false,
