@@ -890,9 +890,7 @@ public class TaskStoreElasticSearch implements TaskStore {
 
   private List<String> retrieveTaskIdByProcessInstanceId(
       final List<String> processIds, final TaskByVariables[] taskVariablesFilter) {
-    final var variablesMap =
-        Arrays.stream(taskVariablesFilter)
-            .collect(Collectors.toMap(TaskByVariables::getName, TaskByVariables::getValue));
+    final var variablesMap = toVariablesMap(taskVariablesFilter);
     final var tasks = getActiveTasksByProcessInstanceIds(processIds);
     final var request =
         tasks.stream()
@@ -902,6 +900,29 @@ public class TaskStoreElasticSearch implements TaskStore {
                         .setVarNames(variablesMap.keySet().stream().toList()))
             .toList();
     return taskVariableSearchUtil.getTaskIdsContainingVariables(request, variablesMap);
+  }
+
+  /**
+   * Converts a {@link TaskByVariables} filter array into a variable-name-to-value map. Filter
+   * entries that repeat the same variable name (e.g. two filters on {@code businessKey}) are
+   * tolerated by keeping the first occurrence's value instead of throwing, which is what an
+   * unguarded {@link Collectors#toMap(java.util.function.Function, java.util.function.Function)}
+   * would otherwise do. See https://github.com/camunda/camunda/issues/63182.
+   */
+  static Map<String, String> toVariablesMap(final TaskByVariables[] taskVariablesFilter) {
+    return Arrays.stream(taskVariablesFilter)
+        .collect(
+            Collectors.toMap(
+                TaskByVariables::getName,
+                TaskByVariables::getValue,
+                (firstValue, duplicateValue) -> {
+                  LOGGER.warn(
+                      "Duplicate task variable filter name encountered; keeping the first "
+                          + "value \"{}\" and ignoring \"{}\"",
+                      firstValue,
+                      duplicateValue);
+                  return firstValue;
+                }));
   }
 
   private Query buildPriorityQuery(final TaskQuery query) {

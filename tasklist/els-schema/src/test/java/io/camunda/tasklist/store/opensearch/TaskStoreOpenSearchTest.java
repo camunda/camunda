@@ -19,6 +19,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.queries.TaskQuery;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.views.TaskSearchView;
@@ -29,6 +30,7 @@ import io.camunda.webapps.schema.entities.usertask.TaskState;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -136,6 +138,40 @@ public class TaskStoreOpenSearchTest {
     // leaking to the generic exception handler (logged at ERROR). See issue #35823.
     assertThatThrownBy(() -> instance.getTask("123456789"))
         .isInstanceOf(TasklistRuntimeException.class);
+  }
+
+  @Test
+  void toVariablesMapKeepsFirstValueOnDuplicateFilterName() {
+    // Given two filter entries for the same variable name (e.g. "businessKey") with
+    // different values -- this used to throw IllegalStateException from the unguarded
+    // Collectors.toMap() and crash the whole task search request. See #63182.
+    final TaskByVariables[] taskVariablesFilter = {
+      new TaskByVariables().setName("businessKey").setValue("first-value").setOperator("eq"),
+      new TaskByVariables().setName("businessKey").setValue("second-value").setOperator("eq")
+    };
+
+    // When
+    final Map<String, String> variablesMap =
+        TaskStoreOpenSearch.toVariablesMap(taskVariablesFilter);
+
+    // Then it does not throw and keeps the first value for the repeated name
+    assertThat(variablesMap)
+        .containsExactlyInAnyOrderEntriesOf(Map.of("businessKey", "first-value"));
+  }
+
+  @Test
+  void toVariablesMapKeepsAllValuesForUniqueFilterNames() {
+    final TaskByVariables[] taskVariablesFilter = {
+      new TaskByVariables().setName("businessKey").setValue("first-value").setOperator("eq"),
+      new TaskByVariables().setName("otherVariable").setValue("second-value").setOperator("eq")
+    };
+
+    final Map<String, String> variablesMap =
+        TaskStoreOpenSearch.toVariablesMap(taskVariablesFilter);
+
+    assertThat(variablesMap)
+        .containsExactlyInAnyOrderEntriesOf(
+            Map.of("businessKey", "first-value", "otherVariable", "second-value"));
   }
 
   private static TaskEntity getTaskEntity(final TaskState taskState) {
