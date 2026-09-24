@@ -27,14 +27,24 @@ import io.camunda.process.test.impl.coverage.data.ImmutableCoverageProcessDefini
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageProcessInstanceData;
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageTestData;
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageTestData.Builder;
+import io.camunda.process.test.impl.mock.MockChildProcessBuilderImpl;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class CoverageTestDataCollector {
 
   public static CoverageTestData collectData(final CamundaDataSource dataSource) {
     final Builder builder = ImmutableCoverageTestData.builder();
 
-    final List<ProcessInstance> processInstances = dataSource.findProcessInstances();
+    // A mocked process stands in for a real one, so what it covers says nothing about the
+    // processes under test.
+    final List<ProcessInstance> processInstances =
+        dataSource.findProcessInstances().stream()
+            .filter(
+                processInstance ->
+                    !MockChildProcessBuilderImpl.MOCK_PROCESS_NAME.equals(
+                        processInstance.getProcessDefinitionName()))
+            .collect(Collectors.toList());
 
     processInstances.stream()
         .map(
