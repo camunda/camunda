@@ -16,6 +16,13 @@ logging:
     # LOG_LEVEL=INFO. Pin this package to WARN; override with
     # LOGGING_LEVEL_ORG_APACHE_HC_CLIENT5_HTTP_IMPL_ASYNC=INFO to debug retries.
     org.apache.hc.client5.http.impl.async: WARN
+    # At LOG_LEVEL=DEBUG, HC5's wire/header loggers dump every HTTP request/response
+    # (including full hex-encoded payloads) - observed at ~3.5k lines/s alone on a single
+    # worker pod under agent-visibility load, starving the JVM of CPU for actual job
+    # completions until they miss the job timeout and get redelivered. Pin these to WARN
+    # regardless of root level; override individually to debug raw HTTP traffic.
+    org.apache.hc.client5.http.wire: WARN
+    org.apache.hc.client5.http.headers: WARN
 
 management:
   server:
