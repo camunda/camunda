@@ -113,8 +113,22 @@ public class ReadJobWorkerValueTest {
     assertThat(jobWorkerValue.get().getRequestTimeout()).isEqualTo(new Empty<>());
     assertThat(jobWorkerValue.get().getPollInterval()).isEqualTo(new Empty<>());
     assertThat(jobWorkerValue.get().getAutoComplete()).isEqualTo(new Empty<>());
+    assertThat(jobWorkerValue.get().getWithLease()).isEqualTo(new Empty<>());
     assertThat(jobWorkerValue.get().getFetchVariables()).isEqualTo(List.of());
     assertThat(jobWorkerValue.get().getStreamTimeout()).isEqualTo(new Empty<>());
+  }
+
+  @Test
+  void shouldReadWithLease() {
+    // given
+    final MethodInfo methodInfo = extract(SpringBeanInfoTest.WithLease.class);
+
+    // when
+    final Optional<JobWorkerValue> jobWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
+
+    // then
+    assertThat(jobWorkerValue.isPresent()).isTrue();
+    assertThat(jobWorkerValue.get().getWithLease()).isEqualTo(new FromAnnotation<>(true));
   }
 
   private MethodInfo extract(final Class<?> clazz) {
