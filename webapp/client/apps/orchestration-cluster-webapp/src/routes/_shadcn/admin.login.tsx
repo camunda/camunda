@@ -7,23 +7,23 @@
  */
 
 import {createFileRoute, isRedirect, redirect} from '@tanstack/react-router';
-import {appLoginSearchSchema, TASKLIST_LOGIN} from '#/shared/auth/resolveLoginRedirect';
+import {AdminLoginPage} from '#/admin/pages/AdminLoginPage';
+import {ADMIN_LOGIN, appLoginSearchSchema} from '#/shared/auth/resolveLoginRedirect';
 import {queries} from '#/shared/http/queries';
-import {TasklistLoginPage} from '#/tasklist/pages/TasklistLoginPage';
 
-const Route = createFileRoute('/_shadcn/tasklist/login')({
-	validateSearch: appLoginSearchSchema(TASKLIST_LOGIN),
+const Route = createFileRoute('/_shadcn/admin/login')({
+	validateSearch: appLoginSearchSchema(ADMIN_LOGIN),
 	beforeLoad: async ({search, context: {queryClient}}) => {
 		try {
 			await queryClient.ensureQueryData(queries.getCurrentUser());
-			throw redirect({href: search.redirect ?? TASKLIST_LOGIN.home, replace: true});
+			throw redirect({href: search.redirect ?? ADMIN_LOGIN.home, replace: true});
 		} catch (error) {
 			if (isRedirect(error)) {
 				throw error;
 			}
 		}
 	},
-	component: TasklistLoginPage,
+	component: AdminLoginPage,
 });
 
 export {Route};

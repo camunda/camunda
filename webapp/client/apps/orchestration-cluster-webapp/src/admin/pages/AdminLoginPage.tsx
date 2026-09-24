@@ -8,6 +8,6 @@
 
 import {LoginPage} from '#/shared/pages/shadcn.components/LoginPage';
 
-const TasklistLoginPage: React.FC = () => <LoginPage title="Tasklist" />;
+const AdminLoginPage: React.FC = () => <LoginPage title="Admin" />;
 
-export {TasklistLoginPage};
+export {AdminLoginPage};

@@ -55,6 +55,26 @@ test('should redirect the Tasklist index to Tasklist login and return after logi
 	await expect(tasklistIndexPage.noTasksMessage).toBeVisible();
 });
 
+test('should show the login form when the root is visited without a session', async ({
+	network,
+	page,
+	tasklistIndexPage,
+	tasklistLoginPage,
+}) => {
+	await page.goto('/');
+
+	await expect(page).toHaveURL('/tasklist/login');
+	await expect(tasklistLoginPage.usernameInput).toBeVisible();
+
+	network.use(mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}));
+
+	await tasklistLoginPage.fillCredentials('demo', 'demo');
+	await tasklistLoginPage.submitButton.click();
+
+	await expect(page).toHaveURL('/tasklist');
+	await expect(tasklistIndexPage.noTasksMessage).toBeVisible();
+});
+
 test('should preserve a Tasklist URL through login', async ({network, page, tasklistIndexPage, tasklistLoginPage}) => {
 	await tasklistLoginPage.gotoTasklist('?filter=assigned');
 

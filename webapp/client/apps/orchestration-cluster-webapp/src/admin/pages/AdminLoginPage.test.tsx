@@ -9,12 +9,12 @@
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {describe, expect} from 'vitest';
-import {TasklistLoginPage} from './TasklistLoginPage';
+import {AdminLoginPage} from './AdminLoginPage';
 
-describe('<TasklistLoginPage />', () => {
-	it('should identify itself as the Tasklist login', async () => {
-		const screen = await renderWithRouter(TasklistLoginPage, {path: '/tasklist/login'});
+describe('<AdminLoginPage />', () => {
+	it('should identify itself as the Admin login', async () => {
+		const screen = await renderWithRouter(AdminLoginPage, {path: '/admin/login'});
 
-		await expect.element(screen.getByRole('heading', {name: 'Tasklist'})).toBeVisible();
+		await expect.element(screen.getByRole('heading', {name: 'Admin'})).toBeVisible();
 	});
 });

@@ -122,8 +122,6 @@ const config = defineConfig(({mode}) => ({
 					browser: 'chromium',
 					name: 'carbon',
 					include: [
-						'src/admin/**/*.test.ts',
-						'src/admin/**/*.test.tsx',
 						'src/operate/**/*.test.ts',
 						'src/operate/**/*.test.tsx',
 						'src/routes/_carbon/**/*.test.ts',
@@ -142,6 +140,8 @@ const config = defineConfig(({mode}) => ({
 					include: [
 						'src/**/shadcn.components/**/*.test.ts',
 						'src/**/shadcn.components/**/*.test.tsx',
+						'src/admin/**/*.test.ts',
+						'src/admin/**/*.test.tsx',
 						'src/routes/_shadcn/**/*.test.ts',
 						'src/routes/_shadcn/**/*.test.tsx',
 						'src/tasklist/**/*.test.ts',

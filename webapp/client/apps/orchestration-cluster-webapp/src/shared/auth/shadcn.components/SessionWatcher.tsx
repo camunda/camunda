@@ -12,6 +12,7 @@ import {observer} from 'mobx-react-lite';
 import {useEffect, useRef} from 'react';
 import {useTranslation} from 'react-i18next';
 import {authenticationStore} from '#/shared/auth/authentication.store';
+import {resolveLoginRedirect} from '#/shared/auth/resolveLoginRedirect';
 
 const SessionWatcher: React.FC = observer(() => {
 	const location = useLocation();
@@ -41,9 +42,9 @@ const SessionWatcher: React.FC = observer(() => {
 	}, [status]);
 
 	if (isSessionExpired) {
-		return (
-			<Navigate to="/tasklist/login" search={location.href === '/tasklist' ? {} : {redirect: location.href}} replace />
-		);
+		const {to, search} = resolveLoginRedirect(location);
+
+		return <Navigate to={to} search={search} replace />;
 	}
 
 	return null;
