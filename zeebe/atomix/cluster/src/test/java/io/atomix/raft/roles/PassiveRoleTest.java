@@ -266,6 +266,59 @@ public class PassiveRoleTest {
   }
 
   @Test
+  public void shouldFlushBeforeAckingEmptyAppendOfRecordsWhichAreNotDurable()
+      throws CheckedJournalException {
+    // given - records up to index 2 are appended, but only flushed up to index 1, e.g. because
+    // flushing them failed for the request which appended them
+    when(log.getLastFlushedIndex()).thenReturn(1L);
+    givenLastEntry(2, 1);
+
+    // an empty append, e.g. a heartbeat, which acknowledges all records up to index 2
+    final VersionedAppendRequest request =
+        VersionedAppendRequest.builder()
+            .withTerm(1)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(1)
+            .withPrevLogIndex(2)
+            .withEntries(List.of())
+            .withCommitIndex(2)
+            .build();
+
+    // when
+    final var response = role.handleAppend(ProtocolVersionHandler.transform(request)).join();
+
+    // then
+    verify(log).flushSync(2L);
+    assertThat(response.succeeded()).isTrue();
+    assertThat(response.lastLogIndex()).isEqualTo(2);
+  }
+
+  @Test
+  public void shouldNotFlushBeforeAckingEmptyAppendOfDurableRecords()
+      throws CheckedJournalException {
+    // given
+    when(log.getLastFlushedIndex()).thenReturn(2L);
+    givenLastEntry(2, 1);
+
+    final VersionedAppendRequest request =
+        VersionedAppendRequest.builder()
+            .withTerm(1)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(1)
+            .withPrevLogIndex(2)
+            .withEntries(List.of())
+            .withCommitIndex(2)
+            .build();
+
+    // when
+    final var response = role.handleAppend(ProtocolVersionHandler.transform(request)).join();
+
+    // then
+    verify(log, never()).flushSync(anyLong());
+    assertThat(response.succeeded()).isTrue();
+  }
+
+  @Test
   public void shouldNotAbortPendingSnapshotOnEmptyAppend() throws Exception {
     // given - a pending snapshot is in progress
     final ReceivedSnapshot receivedSnapshot = mock(ReceivedSnapshot.class);
@@ -378,6 +431,13 @@ public class PassiveRoleTest {
     // understates the leader's log and cannot be used to detect data loss. The local log end never
     // trips the check, which is the point: an ex-leader demoted to PASSIVE tripped it spuriously.
     verify(ctx).setFirstCommitIndex(2, 120);
+  }
+
+  private void givenLastEntry(final long index, final long term) {
+    final var lastEntry = mock(IndexedRaftLogEntry.class);
+    when(lastEntry.index()).thenReturn(index);
+    when(lastEntry.term()).thenReturn(term);
+    when(log.getLastEntry()).thenReturn(lastEntry);
   }
 
   private void setPendingSnapshot(final ReceivedSnapshot snapshot) throws Exception {

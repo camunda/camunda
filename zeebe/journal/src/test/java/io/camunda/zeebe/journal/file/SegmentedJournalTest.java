@@ -22,6 +22,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.JournalException.InvalidAsqn;
 import io.camunda.zeebe.journal.JournalException.OutOfDiskSpace;
 import io.camunda.zeebe.journal.JournalReader;
@@ -1118,6 +1119,60 @@ class SegmentedJournalTest {
 
     // then
     journal.append(2, journalFactory.entry());
+  }
+
+  @Test
+  void shouldReportFlushedRecords() throws FlushException {
+    // given
+    journal = openJournal(2);
+    journal.append(1, journalFactory.entry());
+    journal.append(2, journalFactory.entry());
+    journal.append(3, journalFactory.entry());
+
+    // when
+    journal.flush();
+
+    // then
+    assertThat(journal.getLastFlushedIndex()).isEqualTo(3);
+  }
+
+  @Test
+  void shouldReportNothingAsFlushedInEmptyJournal() {
+    // given
+    journal = openJournal(2);
+
+    // when - then
+    assertThat(journal.getLastFlushedIndex()).isLessThan(journal.getFirstIndex());
+  }
+
+  @Test
+  void shouldReportRecordsBeforeResetIndexAsFlushed() {
+    // given
+    journal = openJournal(2);
+    journal.append(1, journalFactory.entry());
+
+    // when - the log is reset, e.g. after receiving a snapshot
+    journal.reset(10);
+
+    // then - the records before the reset index are covered by the snapshot
+    assertThat(journal.getLastFlushedIndex()).isEqualTo(9);
+  }
+
+  @Test
+  void shouldReportRecordsBeforeResetIndexAsFlushedAfterRestart() {
+    // given
+    journal = openJournal(2);
+    journal.append(1, journalFactory.entry());
+    journal.reset(10);
+
+    // when
+    journal.close();
+    journal = journalFactory.journal(journalFactory.segmentsManager(directory));
+    closeables.add(journal);
+
+    // then - the reset cleared the stored index, and nothing was flushed since
+    assertThat(journalFactory.metaStore().hasLastFlushedIndex()).isFalse();
+    assertThat(journal.getLastFlushedIndex()).isEqualTo(9);
   }
 
   // this test ensure that flushing is thread-safe w.r.t. write-exclusive methods such as

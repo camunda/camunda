@@ -949,10 +949,12 @@ public class PassiveRole extends InactiveRole {
     succeedAppend(lastLogIndex, future);
   }
 
-  private void flush(final long lastFlushedIndex, final long previousEntryIndex)
-      throws FlushException {
-    if (lastFlushedIndex > previousEntryIndex) {
-      raft.getLog().flushSync(lastFlushedIndex);
+  private void flush(final long lastLogIndex, final long previousEntryIndex) throws FlushException {
+    // A success response acknowledges all records up to the last log index, not only those this
+    // request appended, so all of them must be durable. Records appended by an earlier request may
+    // not be, e.g. if flushing them failed.
+    if (lastLogIndex > previousEntryIndex || lastLogIndex > raft.getLog().getLastFlushedIndex()) {
+      raft.getLog().flushSync(lastLogIndex);
     }
   }
 
