@@ -355,7 +355,7 @@ export type SuspendableProcessInstance = ProcessInstanceItem & {
 export async function suspendProcessInstance(
   request: APIRequestContext,
   processInstanceKey: string,
-  data?: unknown,
+  data?: Record<string, unknown>,
 ) {
   return request.post(
     buildUrl('/process-instances/{processInstanceKey}/suspension', {
@@ -368,7 +368,7 @@ export async function suspendProcessInstance(
 export async function resumeProcessInstance(
   request: APIRequestContext,
   processInstanceKey: string,
-  data?: unknown,
+  data?: Record<string, unknown>,
 ) {
   return request.post(
     buildUrl('/process-instances/{processInstanceKey}/resumption', {
