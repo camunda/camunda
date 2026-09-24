@@ -18,6 +18,10 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.impl.RaftContext;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
+import io.atomix.raft.storage.log.RaftLog;
+import io.atomix.raft.storage.log.RaftLogUncommittedReader;
+import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.storage.system.MetaStore;
 import io.atomix.utils.concurrent.Scheduled;
@@ -726,7 +730,46 @@ final class RaftClusterContextTest {
             new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now()));
   }
 
-  private RaftContext raftWithStoredConfiguration(final Configuration configuration) {
+  @Test
+  void shouldRecoverAppendedConfigurationFromLogOnBootstrap() {
+    // given -- a stored configuration and a newer configuration entry in the log
+    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var otherMember = new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now());
+    final var storedConfiguration =
+        new Configuration(1, 1, Instant.now().toEpochMilli(), List.of(localMember, otherMember));
+    final var configurationEntry =
+        new ConfigurationEntry(
+            Instant.now().toEpochMilli(), List.of(localMember), List.of(localMember, otherMember));
+    final var raft =
+        raftWithStoredConfiguration(storedConfiguration, logEntry(2, 1, configurationEntry));
+    final var context = new RaftClusterContext(localMember.memberId(), raft);
+
+    // when
+    context.bootstrap(List.of()).join();
+
+    // then -- the configuration from the log entry is applied on top of the stored one
+    assertThat(context.getConfiguration())
+        .isEqualTo(
+            new Configuration(
+                2,
+                1,
+                configurationEntry.timestamp(),
+                configurationEntry.newMembers(),
+                configurationEntry.oldMembers(),
+                false));
+  }
+
+  private static IndexedRaftLogEntry logEntry(
+      final long index, final long term, final ConfigurationEntry entry) {
+    final var logEntry = mock(IndexedRaftLogEntry.class, withSettings().stubOnly());
+    when(logEntry.index()).thenReturn(index);
+    when(logEntry.term()).thenReturn(term);
+    when(logEntry.entry()).thenReturn(entry);
+    return logEntry;
+  }
+
+  private RaftContext raftWithStoredConfiguration(
+      final Configuration configuration, final IndexedRaftLogEntry... logEntries) {
     final var threadContext =
         new ThreadContext() {
           @Override
@@ -748,9 +791,16 @@ final class RaftClusterContextTest {
         };
     final var raft = mock(RaftContext.class, withSettings().stubOnly());
     final var metaStore = mock(MetaStore.class, withSettings().stubOnly());
+    final var log = mock(RaftLog.class, withSettings().stubOnly());
+    final var reader = mock(RaftLogUncommittedReader.class, withSettings().stubOnly());
+    final var entries = List.of(logEntries).iterator();
     when(raft.getThreadContext()).thenReturn(threadContext);
     when(metaStore.loadConfiguration()).thenReturn(configuration);
     when(raft.getMetaStore()).thenReturn(metaStore);
+    when(raft.getLog()).thenReturn(log);
+    when(log.openUncommittedReader()).thenReturn(reader);
+    when(reader.hasNext()).thenAnswer(invocation -> entries.hasNext());
+    when(reader.next()).thenAnswer(invocation -> entries.next());
     return raft;
   }
 }
