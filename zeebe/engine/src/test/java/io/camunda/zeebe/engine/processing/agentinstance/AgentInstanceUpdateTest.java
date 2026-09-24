@@ -315,8 +315,8 @@ public class AgentInstanceUpdateTest {
     assertThat(queuedUpdate.getValue().getChangedAttributes()).isEmpty();
 
     // when — completing the job commits the batch, independently emitting the commit's own
-    // UPDATED event. Reset first so the next UPDATED event fetched is unambiguously that one.
-    RecordingExporter.reset();
+    // UPDATED event. Skip the queuing UPDATE's own UPDATED event above so this fetches the
+    // commit's event, not the same one already asserted on.
     ENGINE.job().withKey(jobKey).withType("agent").withJobLeaseToken(jobLeaseToken).complete();
 
     // then — the commit's own event reflects the maxTokens change once applied, but still must
@@ -324,6 +324,7 @@ public class AgentInstanceUpdateTest {
     final var committedUpdate =
         RecordingExporter.agentInstanceRecords(AgentInstanceIntent.UPDATED)
             .withAgentInstanceKey(agentInstanceKey)
+            .skip(1)
             .getFirst();
     assertThat(committedUpdate.getValue().getDefinition().getSystemPrompt()).isEmpty();
     assertThat(committedUpdate.getValue().getTools()).isEmpty();
