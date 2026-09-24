@@ -9,10 +9,11 @@ package io.camunda.zeebe.backup.s3;
 
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.s3.manifest.Manifest;
+import org.jspecify.annotations.Nullable;
 
 public abstract sealed class S3BackupStoreException extends RuntimeException {
 
-  private S3BackupStoreException(final String message, final Throwable cause) {
+  private S3BackupStoreException(final String message, final @Nullable Throwable cause) {
     super(message, cause);
   }
 
@@ -21,7 +22,7 @@ public abstract sealed class S3BackupStoreException extends RuntimeException {
    * recoverable and indicates a corrupted backup.
    */
   public static final class ManifestParseException extends S3BackupStoreException {
-    public ManifestParseException(final String message, final Throwable cause) {
+    public ManifestParseException(final String message, final @Nullable Throwable cause) {
       super(message, cause);
     }
   }
