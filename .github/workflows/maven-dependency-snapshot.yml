@@ -80,15 +80,19 @@ jobs:
       # Warm ~/.m2 (incl. the incremental-module-builder build extension) with retries so a
       # transient Nexus mirror blip during resolution can't fail the snapshot submission (INC-8321).
       # The submission step below then resolves from the local repo instead of re-hitting Nexus.
+      # -U forces each attempt to re-contact Nexus; without it Maven caches a transient failure in
+      # *.lastUpdated and later attempts fail instantly with the same error until the update interval
+      # expires. Worst case (3 x 4m + 2 x 15s waits ~= 12.5m) stays within the 20m job timeout, so
+      # the cap can't kill the retry loop before it delivers the recovery; -T1C keeps each pass short.
       - name: Pre-resolve Maven dependencies
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 3
-          retry_wait_seconds: 30
-          timeout_minutes: 10
+          retry_wait_seconds: 15
+          timeout_minutes: 4
           shell: bash
           command: >-
-            ./mvnw -B dependency:go-offline
+            ./mvnw -B -U -T1C dependency:go-offline
             -pl bom,clients/java,${{ env.SPRING_STARTER_MODULE }},zeebe/bpmn-model,zeebe/exporter-api,zeebe/gateway-protocol-impl,zeebe/protocol
             -am
             -Dquickly
