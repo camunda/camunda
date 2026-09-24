@@ -15,6 +15,8 @@
  */
 package io.camunda.process.test.impl.coverage.core;
 
+import static io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl.MOCK_PROCESS_NAME;
+
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.coverage.model.Coverage;
@@ -100,6 +102,11 @@ public final class CoverageCollector {
                 processInstance ->
                     !excludedProcessDefinitionIds.contains(
                         processInstance.getProcessDefinitionId()))
+            // A mocked process stands in for a real one, so what it covers says nothing about the
+            // processes under test.
+            .filter(
+                processInstance ->
+                    !MOCK_PROCESS_NAME.equals(processInstance.getProcessDefinitionName()))
             .collect(Collectors.toList());
 
     final List<Coverage> coverages =
