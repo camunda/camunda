@@ -349,13 +349,7 @@ public class BpmnJobActivationBehavior {
     notifyJobAvailable(jobRecord.getType(), jobRecord.getJobKind());
   }
 
-  private void notifyJobAvailable(final String jobType, final JobKind jobKind) {
-    sideEffectWriter.appendSideEffect(
-        () -> {
-          jobStreamer.notifyWorkAvailable(jobType);
-          jobMetrics.countJobEvent(JobAction.WORKERS_NOTIFIED, jobKind, jobType);
-        });
-  }
+  private void notifyJobAvailable(final String jobType, final JobKind jobKind) {}
 
   private void setJobProperties(
       final JobRecord jobRecord, final JobActivationProperties properties) {
