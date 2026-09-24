@@ -831,7 +831,7 @@
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
               <groups>async-repl</groups>
-              <excludedGroups>rdbms-aurora, rdbms-aurora-mysql, multi-db-test, compatibility-test, history</excludedGroups>
+              <excludedGroups>rdbms-aurora, rdbms-aurora-mysql, rdbms-oracle, multi-db-test, compatibility-test, history</excludedGroups>
             </configuration>
           </plugin>
         </plugins>
@@ -886,6 +886,27 @@
     For example against:
     Elasticsearch, OpenSearch, AWS OpenSearch, PostGreSQL, etc.
     -->
+    <!--
+    This profile runs the Oracle Data Guard async replication IT against the managed RDS for Oracle
+    environment provisioned by the Oracle CI workflow. Requires TEST_ORACLE_* environment
+    variables to be set.
+    -->
+    <profile>
+      <id>rdbms-oracle</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <groups>rdbms-oracle</groups>
+              <excludedGroups>multi-db-test, compatibility-test, history</excludedGroups>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
     <profile>
       <id>multi-db-test</id>
       <build>

@@ -11,11 +11,12 @@ import java.util.concurrent.Future;
 import org.testcontainers.lifecycle.Startable;
 
 /**
- * Abstraction over a containerised database replication cluster used in acceptance tests.
+ * Abstraction over a database replication cluster used in acceptance tests.
  *
- * <p>Both {@link PostgresReplicationClusterContainer} and {@link MSSQLReplicationClusterContainer}
- * implement this interface so that {@link CamundaRdbmsTestApplication} and the async-replication
- * test base class can treat them uniformly.
+ * <p>Containerised clusters such as {@link PostgresReplicationClusterContainer} and {@link
+ * MSSQLReplicationClusterContainer}, as well as managed clusters such as {@link
+ * OracleDataGuardReplicationCluster}, implement this interface so that {@link
+ * CamundaRdbmsTestApplication} and the async-replication test base class can treat them uniformly.
  */
 public interface ReplicationClusterContainer extends Startable {
 
