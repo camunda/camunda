@@ -30,7 +30,7 @@ load-tester:
       capacity: 30
       jobType: "agent-visibility-orchestrator"
       completionDelay: 0ms
-      logLevel: "DEBUG"
+      logLevel: "INFO"
       resources:
         limits:
           cpu: 500m
@@ -48,7 +48,7 @@ load-tester:
       jobType: "tool-lookup-account"
       payloadPath: "bpmn/agent-visibility/lookupAccountPayload.json"
       completionDelay: 0ms
-      logLevel: "DEBUG"
+      logLevel: "INFO"
       resources:
         limits:
           cpu: 500m
@@ -66,7 +66,7 @@ load-tester:
       jobType: "tool-calculate-score"
       payloadPath: "bpmn/agent-visibility/calculateScorePayload.json"
       completionDelay: 0ms
-      logLevel: "DEBUG"
+      logLevel: "INFO"
       resources:
         limits:
           cpu: 500m
@@ -84,7 +84,7 @@ load-tester:
       jobType: "tool-send-notification"
       payloadPath: "bpmn/emptyPayload.json"
       completionDelay: 50ms
-      logLevel: "DEBUG"
+      logLevel: "INFO"
       resources:
         limits:
           cpu: 500m
