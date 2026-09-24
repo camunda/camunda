@@ -624,6 +624,7 @@ class OperateProcessInstancePage {
       ? scope.getByTestId('code-mirror-editor')
       : this.editor;
     await expect(editor).toBeVisible();
+    // ControlOrMeta: on macOS, Control+A moves the cursor instead of selecting.
     await this.page.keyboard.press('ControlOrMeta+A');
     await this.page.keyboard.press('Backspace');
   }

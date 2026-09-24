@@ -12,7 +12,9 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {
+  activateJobsByType,
   activateSingleJob,
+  completeJob,
   deployCallActivityPair,
   createInstanceOnceDeployed,
   deployServiceTaskProcess,
@@ -26,7 +28,7 @@ import {
   suspendProcessInstance,
 } from '@requestHelpers';
 import {cancelProcessInstance} from 'utils/zeebeClient';
-import {assertStatusCode} from 'utils/http';
+import {assertStatusCode, buildUrl, jsonHeaders} from 'utils/http';
 import {uniquePrefixedId, extendedAssertionOptions} from 'utils/constants';
 
 /**
@@ -200,8 +202,13 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     await operateProcessInstancePage.gotoProcessInstancePage({
       id: instance.processInstanceKey,
     });
+    // The incident has to reach secondary storage and the Incidents tab has to
+    // be opened before the table exists, so both are retried together.
     await waitForAssertion({
       assertion: async () => {
+        if (await operateProcessInstancePage.incidentsTab.isVisible()) {
+          await operateProcessInstancePage.incidentsTab.click();
+        }
         await expect(operateProcessInstancePage.incidentsTable).toBeVisible({
           timeout: UI_REFRESH_TIMEOUT,
         });
@@ -224,27 +231,87 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     await expect(retryButton).toBeDisabled({timeout: UI_REFRESH_TIMEOUT});
   });
 
-  test('Variable editing stays available on a suspended instance', async ({
+  test('An existing variable can be edited on a suspended instance, and the edit is applied after the resume', async ({
     request,
     operateProcessInstancePage,
   }) => {
-    const serviceTask = await startServiceTaskInstance('sr-ui-vars');
-    await suspendAndExpectSuspended(request, serviceTask.processInstanceKey);
+    const processDefinitionId = uniquePrefixedId('sr-ui-edit');
+    const jobType = uniquePrefixedId('sr-ui-edit-job');
+    await deployServiceTaskProcess(processDefinitionId, jobType);
+    const instance = await createInstanceOnceDeployed(processDefinitionId, 1, {
+      approved: 'no',
+    });
+    instancesToCancel.push(instance.processInstanceKey);
+
+    await suspendAndExpectSuspended(request, instance.processInstanceKey);
     await operateProcessInstancePage.gotoProcessInstancePage({
-      id: serviceTask.processInstanceKey,
+      id: instance.processInstanceKey,
     });
     await expect(operateProcessInstancePage.suspendedStateIcon).toBeVisible({
       timeout: UI_REFRESH_TIMEOUT,
     });
 
-    // The visible effect of #62745: editing used to be disabled on every scope
-    // of a suspended instance, though the engine only refuses a user task
-    // scope. That per-scope split is asserted over the API instead -- the UI
-    // offers no variable controls on a user task scope either way, suspended or
-    // not, so there is nothing here that suspension changes.
-    await expect(operateProcessInstancePage.addVariableButton).toBeEnabled({
+    // Editing an existing variable used to be blocked outright on a suspended
+    // instance (#60873, fixed by #62745), so the edit itself is the assertion —
+    // not merely that a control was enabled.
+    await operateProcessInstancePage.clickEditVariableButton('approved');
+    await operateProcessInstancePage.clickVariableValueInput();
+    await operateProcessInstancePage.clearVariableValueInput();
+    await operateProcessInstancePage.fillVariableValueInput('"yes"');
+    await expect(operateProcessInstancePage.saveVariableButton).toBeEnabled({
       timeout: UI_REFRESH_TIMEOUT,
     });
+    await operateProcessInstancePage.saveVariableButton.click();
+    await expect(operateProcessInstancePage.operationSpinner).toBeHidden({
+      timeout: 60_000,
+    });
+
+    // Stored while still suspended, before anything resumes.
+    await expect(async () => {
+      const res = await request.post(buildUrl('/variables/search'), {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            processInstanceKey: instance.processInstanceKey,
+            name: 'approved',
+          },
+        },
+      });
+      await assertStatusCode(res, 200);
+      const items = (await res.json()).items ?? [];
+      expect(items).toHaveLength(1);
+      expect(items[0].value).toBe('"yes"');
+    }).toPass(extendedAssertionOptions);
+    await expectProcessState(
+      request,
+      instance.processInstanceKey,
+      'SUSPENDED',
+      extendedAssertionOptions,
+    );
+
+    await assertStatusCode(
+      await resumeProcessInstance(request, instance.processInstanceKey),
+      204,
+    );
+
+    // Applied, not just stored: the job the resumed instance hands out carries
+    // the value the operator typed, not the one it was started with.
+    const jobs = await activateJobsByType(
+      request,
+      jobType,
+      instance.processInstanceKey,
+      ['approved'],
+    );
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0].variables['approved']).toBe('yes');
+
+    await completeJob(request, jobs[0].jobKey);
+    await expectProcessState(
+      request,
+      instance.processInstanceKey,
+      'COMPLETED',
+      extendedAssertionOptions,
+    );
   });
 
   test('The operations log records the suspend and the resume', async ({
