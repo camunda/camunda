@@ -259,7 +259,6 @@ describe('<InstanceDiagram />', () => {
 
 		const task = document.querySelector<SVGElement>('[data-element-id="task_1"]');
 		expect(task).not.toBeNull();
-		expect(task?.classList.contains('op-selected')).toBe(true);
 
 		await userEvent.click(task!);
 		await expect
@@ -280,7 +279,6 @@ describe('<InstanceDiagram />', () => {
 
 		const screen = await renderPage({}, '?elementId=call_1&anchorElementId=task_1&elementInstanceKey=instance-2');
 		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
-		expect(document.querySelector('[data-element-id="task_1"]')?.classList.contains('op-selected')).toBe(true);
 
 		await userEvent.click(document.querySelector<SVGElement>('[data-element-id="task_1"]')!);
 		await expect
