@@ -139,7 +139,11 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
 
     const activeActions =
       await operateProcessInstancePage.instanceHeaderActionNames();
-    expect(activeActions.join(' ')).toMatch(/suspend/i);
+    expect(
+      activeActions.some((action) =>
+        /^(suspend|suspend-operation)$/i.test(action.trim()),
+      ),
+    ).toBe(true);
 
     await suspendAndExpectSuspended(request, processInstanceKey);
     await page.reload();
@@ -149,9 +153,13 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
 
     const suspendedActions =
       await operateProcessInstancePage.instanceHeaderActionNames();
-    expect(suspendedActions.join(' ')).toMatch(/resume/i);
-    expect(suspendedActions.join(' ')).toMatch(/cancel/i);
-    expect(suspendedActions.join(' ')).not.toMatch(/suspend[^e]/i);
+    const offers = (pattern: RegExp) =>
+      suspendedActions.some((action) => pattern.test(action.trim()));
+    expect(offers(/^(resume|resume-operation)$/i)).toBe(true);
+    expect(offers(/^(cancel|cancel-operation)$/i)).toBe(true);
+    // Checked per action: joining them and matching a substring would accept a
+    // menu that still ends with "Suspend".
+    expect(offers(/^(suspend|suspend-operation)$/i)).toBe(false);
   });
 
   test('The Suspended filter returns the suspended instance', async ({

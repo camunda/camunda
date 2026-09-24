@@ -19,7 +19,6 @@ import {
 } from '../../../../utils/http';
 import {
   activateSingleJob,
-  searchProcessInstances,
   expectProcessInstanceCount,
   completeJob,
   deployServiceTaskProcess,
@@ -91,13 +90,10 @@ async function expectAllInState(
 }
 
 /**
- * A batch resolves its items from secondary storage when it is created, so under
- * parallel load one can cover only the subset indexed at that moment — it then
- * reports COMPLETED for that subset, having moved fewer instances than asked.
- * Per-batch totals are therefore not a safe assertion; what the endpoint
- * promises is that every instance matching the filter ends up in the target
- * state, so that is what this drives and asserts, issuing another batch for
- * whatever the previous one missed.
+ * One batch per operation, asserted strictly: partial targeting is the
+ * regression these tests exist to catch, so re-issuing a batch for whatever the
+ * previous one missed would hide it. Callers wait for their inputs to be
+ * visible in the state the operation's item provider selects on first.
  */
 async function runBatchUntilAllInState(
   request: APIRequestContext,
@@ -109,48 +105,23 @@ async function runBatchUntilAllInState(
   targetState: string,
   count = INSTANCE_COUNT,
 ) {
-  for (let attempt = 0; attempt < 6; attempt++) {
-    const batchOperationKey = await runBatch(request, path, {
-      processDefinitionId,
-    });
-    await expectBatchState(request, batchOperationKey, 'COMPLETED');
-    // The state flips to COMPLETED before the counters finish aggregating, so
-    // reading them once can see total=3 alongside completed=0.
-    await expect(async () => {
-      const res = await request.get(
-        buildUrl('/batch-operations/{batchOperationKey}', {batchOperationKey}),
-        {headers: jsonHeaders()},
-      );
-      await assertStatusCode(res, 200);
-      const body = await res.json();
-      // Whatever it covered, it must not have failed on any of it.
-      expect(body.operationsFailedCount).toBe(0);
-      expect(body.operationsCompletedCount).toBe(body.operationsTotalCount);
-    }).toPass(extendedAssertionOptions);
-
-    const reached = await searchProcessInstances(request, {
-      processDefinitionId,
-      state: {$eq: targetState},
-    });
-    if (reached.length === count) {
-      return;
-    }
-    // Re-assert the inputs are still visible in the state the provider selects
-    // before trying again, so a retry is not issued against a stale read.
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
-    const pending = count - reached.length;
-    if (pending > 0 && path !== '/process-instances/cancellation') {
-      await expectProcessInstanceCount(
-        request,
-        {
-          processDefinitionId,
-          state: {$eq: path.endsWith('suspension') ? 'ACTIVE' : 'SUSPENDED'},
-        },
-        pending,
-        extendedAssertionOptions,
-      );
-    }
-  }
+  const batchOperationKey = await runBatch(request, path, {
+    processDefinitionId,
+  });
+  await expectBatchState(request, batchOperationKey, 'COMPLETED');
+  // The state flips to COMPLETED before the counters finish aggregating, so
+  // reading them once can see total=3 alongside completed=0.
+  await expect(async () => {
+    const res = await request.get(
+      buildUrl('/batch-operations/{batchOperationKey}', {batchOperationKey}),
+      {headers: jsonHeaders()},
+    );
+    await assertStatusCode(res, 200);
+    const body = await res.json();
+    expect(body.operationsTotalCount).toBe(count);
+    expect(body.operationsCompletedCount).toBe(count);
+    expect(body.operationsFailedCount).toBe(0);
+  }).toPass(extendedAssertionOptions);
   await expectAllInState(request, processDefinitionId, targetState, count);
 }
 

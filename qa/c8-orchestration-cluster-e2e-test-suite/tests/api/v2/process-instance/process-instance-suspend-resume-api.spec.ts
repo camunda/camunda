@@ -78,6 +78,22 @@ async function resume(
   return resumeProcessInstance(request, processInstanceKey, data);
 }
 
+/** A job must already exist, or "no job handed out" passes for the wrong reason. */
+async function expectJobExists(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  type: string,
+) {
+  await expect(async () => {
+    const res = await request.post(buildUrl('/jobs/search'), {
+      headers: jsonHeaders(),
+      data: {filter: {processInstanceKey, type}},
+    });
+    await assertStatusCode(res, 200);
+    expect((await res.json()).items ?? []).toHaveLength(1);
+  }).toPass(extendedAssertionOptions);
+}
+
 async function startServiceTaskInstance(prefix: string) {
   const processDefinitionId = uniquePrefixedId(prefix);
   const jobType = uniquePrefixedId(`${prefix}-job`);
@@ -147,6 +163,7 @@ test.describe('Process Instance Suspend and Resume API', () => {
   }) => {
     const {jobType, processInstanceKey} =
       await startServiceTaskInstance('sr-nojob');
+    await expectJobExists(request, processInstanceKey, jobType);
     await suspendAndExpectSuspended(request, processInstanceKey);
 
     for (let attempt = 0; attempt < 3; attempt++) {
@@ -828,6 +845,27 @@ test.describe('Process Instance Suspend and Resume API', () => {
       instance.processInstanceKey,
       'Event_1idbbd5',
       'ACTIVE',
+    );
+
+    // Control: the same message and key correlate on a running instance, so a
+    // refusal below cannot be "there was no subscription to correlate to".
+    const controlKey = uniquePrefixedId('sr-msg-key');
+    const control = await createInstanceOnceDeployed(processDefinitionId, 1, {
+      corrId: controlKey,
+    });
+    instancesToCancel.push(control.processInstanceKey);
+    await searchElementInstanceByElementIdAndState(
+      request,
+      control.processInstanceKey,
+      'Event_1idbbd5',
+      'ACTIVE',
+    );
+    await assertStatusCode(
+      await request.post(buildUrl('/messages/correlation'), {
+        headers: jsonHeaders(),
+        data: {name: messageName, correlationKey: controlKey, variables: {}},
+      }),
+      200,
     );
 
     await suspendAndExpectSuspended(request, instance.processInstanceKey);

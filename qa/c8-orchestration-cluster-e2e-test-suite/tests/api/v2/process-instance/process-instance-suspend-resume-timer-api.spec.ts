@@ -106,11 +106,22 @@ async function expectJobCount(
   processInstanceKey: string,
   type: string,
   expected: number,
+  assertionOptions = extendedAssertionOptions,
 ) {
   await expect(async () => {
     expect(await countJobs(request, processInstanceKey, type)).toBe(expected);
-  }).toPass(extendedAssertionOptions);
+  }).toPass(assertionOptions);
 }
+
+/**
+ * The cadence re-arms 20s after the catch-up fire, so a count that must equal
+ * an exact value has only that window to be observed in. Poll it fast rather
+ * than on the shared interval, which can first look after the next tick landed.
+ */
+const promptAssertionOptions = {
+  intervals: [250, 250, 500, 1000, 2000],
+  timeout: 15_000,
+};
 
 /** Holds for a fixed stretch. Absences cannot be polled for. */
 async function hold(seconds: number) {
@@ -233,6 +244,7 @@ test.describe('Process Instance Suspend and Resume Timer API', () => {
       fixture.processInstanceKey,
       fixture.tickJobType,
       2,
+      promptAssertionOptions,
     );
     await hold(10);
     expect(
@@ -254,6 +266,16 @@ test.describe('Process Instance Suspend and Resume Timer API', () => {
   }) => {
     test.setTimeout(6 * 60 * 1000);
     const fixture = await startCycleTimerInstance(uniquePrefixedId('sr-cond'));
+    // The conditional boundary is attached to the call activity, so it is only
+    // subscribed once that element is active. Suspending before then would
+    // leave the condition first observed after the resume, which is not the
+    // case under test.
+    await searchElementInstanceByElementIdAndState(
+      request,
+      fixture.processInstanceKey,
+      'Activity_1dpj0f1',
+      'ACTIVE',
+    );
     await suspendAndExpectSuspended(request, fixture.processInstanceKey);
 
     await assertStatusCode(
