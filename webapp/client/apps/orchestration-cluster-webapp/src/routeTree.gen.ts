@@ -30,6 +30,7 @@ import { Route as CarbonAuthOperateProcessesRouteRouteImport } from './routes/_c
 import { Route as ShadcnAuthAdminIndexRouteImport } from './routes/_shadcn/_auth/admin/index'
 import { Route as ShadcnAuthAdminSplatRouteImport } from './routes/_shadcn/_auth/admin/$'
 import { Route as ShadcnAuthOperatePreviewIndexRouteImport } from './routes/_shadcn/_auth/operate-preview/index'
+import { Route as ShadcnAuthOperatePreviewExpandableListVariantsRouteImport } from './routes/_shadcn/_auth/operate-preview/expandable-list-variants'
 import { Route as ShadcnAuthTasklistSplatRouteImport } from './routes/_shadcn/_auth/tasklist/$'
 import { Route as ShadcnAuthTasklistTasksRouteRouteImport } from './routes/_shadcn/_auth/tasklist/_tasks/route'
 import { Route as ShadcnAuthTasklistProcessesRouteRouteImport } from './routes/_shadcn/_auth/tasklist/processes/route'
@@ -167,6 +168,12 @@ const ShadcnAuthOperatePreviewIndexRoute =
   ShadcnAuthOperatePreviewIndexRouteImport.update({
     id: '/',
     path: '/',
+    getParentRoute: () => ShadcnAuthOperatePreviewRouteRoute,
+  } as any)
+const ShadcnAuthOperatePreviewExpandableListVariantsRoute =
+  ShadcnAuthOperatePreviewExpandableListVariantsRouteImport.update({
+    id: '/expandable-list-variants',
+    path: '/expandable-list-variants',
     getParentRoute: () => ShadcnAuthOperatePreviewRouteRoute,
   } as any)
 const ShadcnAuthTasklistSplatRoute = ShadcnAuthTasklistSplatRouteImport.update({
@@ -370,6 +377,7 @@ export interface FileRoutesByFullPath {
   '/operate/decisions': typeof CarbonAuthOperateDecisionsRouteWithChildren
   '/operate/operations-log': typeof CarbonAuthOperateOperationsLogRoute
   '/admin/$': typeof ShadcnAuthAdminSplatRoute
+  '/operate-preview/expandable-list-variants': typeof ShadcnAuthOperatePreviewExpandableListVariantsRoute
   '/tasklist/$': typeof ShadcnAuthTasklistSplatRoute
   '/operate/': typeof CarbonAuthOperateIndexRoute
   '/admin/': typeof ShadcnAuthAdminIndexRoute
@@ -413,6 +421,7 @@ export interface FileRoutesByTo {
   '/operate/$': typeof CarbonAuthOperateSplatRoute
   '/operate/operations-log': typeof CarbonAuthOperateOperationsLogRoute
   '/admin/$': typeof ShadcnAuthAdminSplatRoute
+  '/operate-preview/expandable-list-variants': typeof ShadcnAuthOperatePreviewExpandableListVariantsRoute
   '/tasklist/$': typeof ShadcnAuthTasklistSplatRoute
   '/operate': typeof CarbonAuthOperateIndexRoute
   '/admin': typeof ShadcnAuthAdminIndexRoute
@@ -465,6 +474,7 @@ export interface FileRoutesById {
   '/_carbon/_auth/operate/decisions': typeof CarbonAuthOperateDecisionsRouteWithChildren
   '/_carbon/_auth/operate/operations-log': typeof CarbonAuthOperateOperationsLogRoute
   '/_shadcn/_auth/admin/$': typeof ShadcnAuthAdminSplatRoute
+  '/_shadcn/_auth/operate-preview/expandable-list-variants': typeof ShadcnAuthOperatePreviewExpandableListVariantsRoute
   '/_shadcn/_auth/tasklist/$': typeof ShadcnAuthTasklistSplatRoute
   '/_carbon/_auth/operate/': typeof CarbonAuthOperateIndexRoute
   '/_shadcn/_auth/admin/': typeof ShadcnAuthAdminIndexRoute
@@ -516,6 +526,7 @@ export interface FileRouteTypes {
     | '/operate/decisions'
     | '/operate/operations-log'
     | '/admin/$'
+    | '/operate-preview/expandable-list-variants'
     | '/tasklist/$'
     | '/operate/'
     | '/admin/'
@@ -559,6 +570,7 @@ export interface FileRouteTypes {
     | '/operate/$'
     | '/operate/operations-log'
     | '/admin/$'
+    | '/operate-preview/expandable-list-variants'
     | '/tasklist/$'
     | '/operate'
     | '/admin'
@@ -610,6 +622,7 @@ export interface FileRouteTypes {
     | '/_carbon/_auth/operate/decisions'
     | '/_carbon/_auth/operate/operations-log'
     | '/_shadcn/_auth/admin/$'
+    | '/_shadcn/_auth/operate-preview/expandable-list-variants'
     | '/_shadcn/_auth/tasklist/$'
     | '/_carbon/_auth/operate/'
     | '/_shadcn/_auth/admin/'
@@ -796,6 +809,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/operate-preview/'
       preLoaderRoute: typeof ShadcnAuthOperatePreviewIndexRouteImport
+      parentRoute: typeof ShadcnAuthOperatePreviewRouteRoute
+    }
+    '/_shadcn/_auth/operate-preview/expandable-list-variants': {
+      id: '/_shadcn/_auth/operate-preview/expandable-list-variants'
+      path: '/expandable-list-variants'
+      fullPath: '/operate-preview/expandable-list-variants'
+      preLoaderRoute: typeof ShadcnAuthOperatePreviewExpandableListVariantsRouteImport
       parentRoute: typeof ShadcnAuthOperatePreviewRouteRoute
     }
     '/_shadcn/_auth/tasklist/$': {
@@ -1188,11 +1208,14 @@ const ShadcnAuthAdminRouteRouteWithChildren =
   ShadcnAuthAdminRouteRoute._addFileChildren(ShadcnAuthAdminRouteRouteChildren)
 
 interface ShadcnAuthOperatePreviewRouteRouteChildren {
+  ShadcnAuthOperatePreviewExpandableListVariantsRoute: typeof ShadcnAuthOperatePreviewExpandableListVariantsRoute
   ShadcnAuthOperatePreviewIndexRoute: typeof ShadcnAuthOperatePreviewIndexRoute
 }
 
 const ShadcnAuthOperatePreviewRouteRouteChildren: ShadcnAuthOperatePreviewRouteRouteChildren =
   {
+    ShadcnAuthOperatePreviewExpandableListVariantsRoute:
+      ShadcnAuthOperatePreviewExpandableListVariantsRoute,
     ShadcnAuthOperatePreviewIndexRoute: ShadcnAuthOperatePreviewIndexRoute,
   }
 
