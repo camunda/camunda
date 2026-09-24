@@ -51,7 +51,9 @@ permissions: {}
 jobs:
   add-release-comments:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # A full-cycle release (RC or minor GA) references ~900 issues; GitHub caps
+    # content creation at ~500/hour, so the job legitimately needs ~2h.
+    timeout-minutes: 180
     permissions:
       issues: write
       contents: read

@@ -8,6 +8,46 @@ set -euo pipefail
 CUTOFF_DATE=$(date -d "-${DAYS_BACK} days" --iso-8601)
 echo "Looking for releases since: $CUTOFF_DATE"
 
+# Post a comment, retrying on GitHub's secondary rate limit for content creation
+# (~80/min, ~500/hour). A full-cycle release (RC or minor GA) references ~900
+# issues, so a single run necessarily brushes against that ceiling; without this
+# the bare POST 403s and `set -e` aborts the whole job mid-run.
+post_comment_with_retry() {
+  local issue_number="$1" comment_body="$2"
+  local attempt=0 max_attempts=8 response http_code retry_after sleep_for
+
+  while :; do
+    attempt=$((attempt + 1))
+    # -i keeps the status line and headers so we can honour Retry-After on 403/429.
+    if response=$(gh api "repos/$REPOSITORY/issues/$issue_number/comments" \
+        -f body="$comment_body" -i 2>&1); then
+      return 0
+    fi
+
+    http_code=$(printf '%s\n' "$response" | grep -oiE '^HTTP/[0-9.]+ [0-9]+' | grep -oE '[0-9]+$' | head -n1)
+    if [ "$http_code" != "403" ] && [ "$http_code" != "429" ]; then
+      echo "    ✗ Failed to comment on #$issue_number (HTTP ${http_code:-unknown})" >&2
+      printf '%s\n' "$response" >&2
+      return 1
+    fi
+    if [ "$attempt" -ge "$max_attempts" ]; then
+      echo "    ✗ Giving up on #$issue_number after $attempt attempts (still rate limited)" >&2
+      return 1
+    fi
+
+    retry_after=$(printf '%s\n' "$response" | grep -oiE '^Retry-After: [0-9]+' | grep -oE '[0-9]+' | head -n1)
+    if [ -n "$retry_after" ]; then
+      sleep_for="$retry_after"
+    else
+      # Secondary limit without Retry-After: linear backoff, capped.
+      sleep_for=$((attempt * 60))
+      [ "$sleep_for" -gt 300 ] && sleep_for=300
+    fi
+    echo "    Rate limited on #$issue_number; retrying in ${sleep_for}s (attempt $attempt/$max_attempts)" >&2
+    sleep "$sleep_for"
+  done
+}
+
 # Fetch releases from GitHub API
 RELEASES=$(gh api repos/$REPOSITORY/releases \
   --jq ".[] | select(.published_at > \"$CUTOFF_DATE\") | {tag_name, html_url, published_at, body}" \
@@ -110,9 +150,11 @@ echo "$RELEASES" | jq -c '.' | while read -r release; do
       echo "    Comment: $COMMENT_BODY"
     else
       echo "    Adding comment to issue #$ISSUE_NUMBER"
-      gh api repos/$REPOSITORY/issues/$ISSUE_NUMBER/comments \
-        -f body="$COMMENT_BODY" > /dev/null
-      echo "    ✓ Comment added successfully"
+      if post_comment_with_retry "$ISSUE_NUMBER" "$COMMENT_BODY"; then
+        echo "    ✓ Comment added successfully"
+      else
+        echo "    ✗ Skipped #$ISSUE_NUMBER after repeated failures"
+      fi
     fi
   done
 done
