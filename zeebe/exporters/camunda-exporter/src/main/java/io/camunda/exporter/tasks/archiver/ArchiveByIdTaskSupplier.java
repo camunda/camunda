@@ -104,8 +104,9 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
                 return CompletableFuture.completedFuture(0L);
               }
 
-              return reindex(response)
-                  .thenCompose(reindexedCount -> delete(response))
+//              return reindex(response)
+//                  .thenCompose(reindexedCount -> delete(response))
+              return delete(response)
                   .thenApply(
                       deletedCount -> {
                         // advance search position only after both archive steps completed
