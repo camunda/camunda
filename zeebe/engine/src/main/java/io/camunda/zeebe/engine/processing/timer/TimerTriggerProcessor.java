@@ -22,7 +22,6 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
-import io.camunda.zeebe.model.bpmn.util.time.Interval;
 import io.camunda.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
@@ -32,7 +31,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.time.Instant;
+import java.time.InstantSource;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -57,11 +56,14 @@ public final class TimerTriggerProcessor implements TypedRecordProcessor<TimerRe
   private final TypedRejectionWriter rejectionWriter;
 
   private final EventHandle eventHandle;
+  private final InstantSource clock;
 
   public TimerTriggerProcessor(
       final MutableProcessingState processingState,
       final BpmnBehaviors bpmnBehaviors,
-      final Writers writers) {
+      final Writers writers,
+      final InstantSource clock) {
+    this.clock = clock;
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
     expressionProcessor = bpmnBehaviors.expressionBehavior();
     stateWriter = writers.state();
@@ -180,18 +182,21 @@ public final class TimerTriggerProcessor implements TypedRecordProcessor<TimerRe
   }
 
   private Timer refreshTimer(final Timer timer, final TimerRecord record) {
-    if (timer instanceof CronTimer) {
-      return timer;
-    }
-
-    int repetitions = record.getRepetitions();
-    if (repetitions != RepeatingInterval.INFINITE) {
-      repetitions--;
-    }
-
-    // Use the timer's last due date instead of the current time to avoid a time shift.
-    final Interval refreshedInterval =
-        timer.getInterval().withStart(Instant.ofEpochMilli(record.getDueDate()));
-    return new RepeatingInterval(repetitions, refreshedInterval);
+    return switch (timer) {
+      case CronTimer cronTimer -> cronTimer;
+      case RepeatingInterval repeatingInterval -> {
+        int repetitions = record.getRepetitions();
+        if (repetitions != RepeatingInterval.INFINITE) {
+          repetitions--;
+        }
+        yield repeatingInterval.nextOccurrenceAfter(
+            record.getDueDate(), clock.millis(), repetitions);
+      }
+      default ->
+          // Defensive gate; not expected to ever execute.
+          throw new IllegalStateException(
+              "Expected timer to reschedule as a CronTimer or RepeatingInterval, but was '%s'"
+                  .formatted(timer.getClass()));
+    };
   }
 }
