@@ -28,17 +28,26 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Check whether install can be skipped
+    - name: Validate inputs and check whether install can be skipped
       id: check
       shell: bash
       env:
+        APT_PACKAGES: ${{ inputs.packages }}
         SKIP_IF_EXISTS: ${{ inputs.skip-if-exists }}
+        APT_TIMEOUT: ${{ inputs.timeout }}
       run: |
+        # `required: true` is not enforced for composite/local actions, so guard here.
+        if [ -z "${APT_PACKAGES// /}" ]; then
+          echo "::error::apt-install: the 'packages' input is required but was empty"
+          exit 1
+        fi
         if [ -n "$SKIP_IF_EXISTS" ] && [ -e "$SKIP_IF_EXISTS" ]; then
           echo "skip=true" >> "$GITHUB_OUTPUT"
         else
           echo "skip=false" >> "$GITHUB_OUTPUT"
         fi
+        # Expression syntax has no arithmetic, so derive the retry budget here.
+        echo "retry_timeout=$((APT_TIMEOUT + 5))" >> "$GITHUB_OUTPUT"
 
     - if: steps.check.outputs.skip == 'false'
       uses: ./.github/actions/apt-fast-mirror-failover
@@ -50,6 +59,10 @@ runs:
     #
     # `apt-get update` exits 100 if *any* configured repository fails, so don't gate on it
     # (INC-7943) -- a partial refresh still lands and `apt-get install` is the real gate.
+    #
+    # The inner script is single-quoted so the caller-supplied package/flag tokens are never
+    # reparsed by the root shell: they reach the inner bash as positional arguments and are
+    # installed via "$@", so a package value containing shell syntax can't inject commands.
     - name: Install packages
       if: steps.check.outputs.skip == 'false'
       uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
@@ -63,9 +76,10 @@ runs:
         # Keep the retry budget just above the inner apt timeout so a hung mirror
         # is killed by `timeout` and retried, rather than by nick-fields/retry
         # across the sudo boundary (see the issue linked above).
-        timeout_seconds: ${{ fromJSON(inputs.timeout) + 5 }}
+        timeout_seconds: ${{ steps.check.outputs.retry_timeout }}
         shell: bash
         command: |
-          sudo timeout "$APT_TIMEOUT" bash -c "apt-get update \
-            || echo '::warning::apt-get update could not refresh every repository, continuing with the index as-is'; \
-            apt-get install -y $APT_RECOMMENDS $APT_PACKAGES"
+          sudo timeout "$APT_TIMEOUT" bash -c '
+            apt-get update || echo "::warning::apt-get update could not refresh every repository, continuing with the index as-is"
+            apt-get install -y "$@"
+          ' bash $APT_RECOMMENDS $APT_PACKAGES
