@@ -72,6 +72,7 @@ import co.elastic.clients.elasticsearch.indices.PutTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.RefreshRequest;
 import co.elastic.clients.elasticsearch.indices.RolloverRequest;
 import co.elastic.clients.elasticsearch.indices.RolloverResponse;
+import co.elastic.clients.elasticsearch.indices.add_block.IndicesBlockOptions;
 import co.elastic.clients.elasticsearch.snapshot.CreateSnapshotRequest;
 import co.elastic.clients.elasticsearch.snapshot.CreateSnapshotResponse;
 import co.elastic.clients.elasticsearch.snapshot.DeleteSnapshotRequest;
@@ -695,6 +696,29 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   @Override
   public void deleteAllIndexes() {
     deleteIndexByRawIndexNames("_all");
+  }
+
+  @Override
+  public void addWriteBlock(final String rawIndexName) {
+    try {
+      esWithTransportOptions()
+          .indices()
+          .addBlock(b -> b.index(rawIndexName).block(IndicesBlockOptions.Write));
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException("Could not add write block to index " + rawIndexName, e);
+    }
+  }
+
+  @Override
+  public void removeWriteBlock(final String rawIndexName) {
+    try {
+      esWithTransportOptions()
+          .indices()
+          .putSettings(b -> b.index(rawIndexName).settings(st -> st.blocks(bl -> bl.write(false))));
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException(
+          "Could not remove write block from index " + rawIndexName, e);
+    }
   }
 
   public long count(final String[] indexNames, final BoolQuery.Builder query) throws IOException {
