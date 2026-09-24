@@ -169,7 +169,7 @@ abstract class BatchOperationUpdateRepositoryIT {
       final var repository = createRepository();
 
       // when
-      final var documents = repository.getNotFinishedBatchOperations(100);
+      final var documents = repository.getNotFinishedBatchOperations(100, null);
 
       // then
       assertThat(documents)
@@ -187,7 +187,7 @@ abstract class BatchOperationUpdateRepositoryIT {
       createBatchOperationEntity("3", null, BatchOperationState.ACTIVE, 5);
 
       // when
-      final var documents = repository.getNotFinishedBatchOperations(100);
+      final var documents = repository.getNotFinishedBatchOperations(100, null);
 
       // then the update task can tell how many items the batch operation has, and whether it is
       // finished, without a second request
@@ -204,7 +204,7 @@ abstract class BatchOperationUpdateRepositoryIT {
       createBatchOperationEntity("1", null, BatchOperationState.COMPLETED, 0);
 
       // when
-      final var documents = repository.getNotFinishedBatchOperations(100);
+      final var documents = repository.getNotFinishedBatchOperations(100, null);
 
       // then
       assertThat(documents)
@@ -224,7 +224,7 @@ abstract class BatchOperationUpdateRepositoryIT {
       }
 
       // when
-      final var documents = repository.getNotFinishedBatchOperations(10);
+      final var documents = repository.getNotFinishedBatchOperations(10, null);
 
       // then - the read is capped, and with it both requests derived from what it returns
       assertThat(documents)
@@ -234,39 +234,28 @@ abstract class BatchOperationUpdateRepositoryIT {
     }
 
     @Test
-    void shouldReturnTheOldestUnfinishedOperationsFirst() throws PersistenceException {
-      // given - three unfinished operations indexed newest first
+    void shouldReturnTheNextPageAfterTheGivenId() throws PersistenceException {
+      // given - three unfinished operations, indexed out of id order
       final var repository = createRepository();
-      final var now = OffsetDateTime.now();
-      indexBatchOperation(
-          new BatchOperationEntity()
-              .setId("newest")
-              .setState(BatchOperationState.ACTIVE)
-              .setOperationsTotalCount(5)
-              .setStartDate(now));
-      indexBatchOperation(
-          new BatchOperationEntity()
-              .setId("middle")
-              .setState(BatchOperationState.ACTIVE)
-              .setOperationsTotalCount(5)
-              .setStartDate(now.minusHours(1)));
-      indexBatchOperation(
-          new BatchOperationEntity()
-              .setId("oldest")
-              .setState(BatchOperationState.ACTIVE)
-              .setOperationsTotalCount(5)
-              .setStartDate(now.minusHours(2)));
+      createBatchOperationEntity("c", null, BatchOperationState.ACTIVE, 5);
+      createBatchOperationEntity("a", null, BatchOperationState.ACTIVE, 5);
+      createBatchOperationEntity("b", null, BatchOperationState.ACTIVE, 5);
 
-      // when - only two of the three fit in this read
-      final var documents = repository.getNotFinishedBatchOperations(2);
+      // when - read in pages of two
+      final var firstPage = repository.getNotFinishedBatchOperations(2, null);
+      final var nextPage = repository.getNotFinishedBatchOperations(2, "b");
 
-      // then - a bounded read drains from the head rather than leaving the choice to the store, so
-      // operations cannot sit behind newer ones indefinitely
-      assertThat(documents)
+      // then - pages follow the id order, so paging on the last id reaches every operation once
+      assertThat(firstPage)
           .succeedsWithin(REQUEST_TIMEOUT)
-          .asInstanceOf(InstanceOfAssertFactories.collection(NotFinishedBatchOperation.class))
+          .asInstanceOf(InstanceOfAssertFactories.list(NotFinishedBatchOperation.class))
           .extracting(NotFinishedBatchOperation::id)
-          .containsExactly("oldest", "middle");
+          .containsExactly("a", "b");
+      assertThat(nextPage)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.list(NotFinishedBatchOperation.class))
+          .extracting(NotFinishedBatchOperation::id)
+          .containsExactly("c");
     }
 
     private void createBatchOperationEntity(

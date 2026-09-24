@@ -18,17 +18,20 @@ import java.util.concurrent.CompletionStage;
 public interface BatchOperationUpdateRepository extends AutoCloseable {
 
   /**
-   * Returns at most {@code batchSize} not finished batch operations, which bounds both the
-   * aggregation that counts their operations and the bulk update that writes them back. We can use
-   * endDate field to distinguish finished from running.
+   * Returns one page of at most {@code batchSize} not finished batch operations, which bounds both
+   * the aggregation that counts their operations and the bulk update that writes them back. We can
+   * use endDate field to distinguish finished from running.
+   *
+   * <p>Pages are ordered by id: pass the id of the last batch operation of the previous page as
+   * {@code afterId} to read the next one, or {@code null} to read the first.
    *
    * <p>The state and the total operations count are returned alongside the key because a batch
    * operation with no single operations at all is indistinguishable, from the aggregation alone,
    * from one whose single operations are simply not in the operation index anymore. See {@link
    * BatchOperationUpdateTask}.
    */
-  CompletionStage<Collection<NotFinishedBatchOperation>> getNotFinishedBatchOperations(
-      int batchSize);
+  CompletionStage<List<NotFinishedBatchOperation>> getNotFinishedBatchOperations(
+      int batchSize, String afterId);
 
   /**
    * Counts amount of single operations by state that are included in given batch operations.
@@ -93,8 +96,8 @@ public interface BatchOperationUpdateRepository extends AutoCloseable {
   class NoopBatchOperationUpdateRepository implements BatchOperationUpdateRepository {
 
     @Override
-    public CompletionStage<Collection<NotFinishedBatchOperation>> getNotFinishedBatchOperations(
-        final int batchSize) {
+    public CompletionStage<List<NotFinishedBatchOperation>> getNotFinishedBatchOperations(
+        final int batchSize, final String afterId) {
       return CompletableFuture.completedFuture(List.of());
     }
 

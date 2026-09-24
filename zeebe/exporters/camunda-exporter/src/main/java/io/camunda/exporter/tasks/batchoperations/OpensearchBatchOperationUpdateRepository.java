@@ -8,10 +8,10 @@
 package io.camunda.exporter.tasks.batchoperations;
 
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.END_DATE;
+import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.ID;
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_COMPLETED_COUNT;
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_FAILED_COUNT;
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_FINISHED_COUNT;
-import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.START_DATE;
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.BATCH_OPERATION_ID;
 
 import io.camunda.exporter.tasks.util.OpensearchRepository;
@@ -68,17 +68,18 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
   }
 
   @Override
-  public CompletionStage<Collection<NotFinishedBatchOperation>> getNotFinishedBatchOperations(
-      final int batchSize) {
-    final var request =
+  public CompletionStage<List<NotFinishedBatchOperation>> getNotFinishedBatchOperations(
+      final int batchSize, final String afterId) {
+    final var requestBuilder =
         new SearchRequest.Builder()
             .index(batchOperationIndex)
             .query(q -> q.bool(b -> b.mustNot(m -> m.exists(e -> e.field(END_DATE)))))
-            // oldest first, so a bounded read drains from the head instead of leaving it to the
-            // store which of the unfinished operations it returns
-            .sort(so -> so.field(f -> f.field(START_DATE).order(SortOrder.Asc)))
-            .size(batchSize)
-            .build();
+            .sort(so -> so.field(f -> f.field(ID).order(SortOrder.Asc)))
+            .size(batchSize);
+    if (afterId != null) {
+      requestBuilder.searchAfter(List.of(FieldValue.of(afterId)));
+    }
+    final var request = requestBuilder.build();
 
     try {
       return client
