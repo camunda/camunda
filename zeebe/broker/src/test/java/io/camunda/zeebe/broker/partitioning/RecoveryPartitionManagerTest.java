@@ -136,7 +136,8 @@ final class RecoveryPartitionManagerTest {
         transport,
         null,
         topologyManager,
-        healthCheckService);
+        healthCheckService,
+        () -> null);
   }
 
   private PartitionMetadata localPartitionMetadata(final int partitionId) {
