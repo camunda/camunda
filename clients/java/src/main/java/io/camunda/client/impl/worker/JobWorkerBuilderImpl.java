@@ -51,6 +51,10 @@ public final class JobWorkerBuilderImpl
   public static final Duration DEFAULT_STREAM_TIMEOUT = Duration.ofHours(8);
   public static final Duration DEFAULT_STREAM_INACTIVITY_TIMEOUT = Duration.ofMinutes(10);
   private static final Logger LOG = Loggers.JOB_WORKER_LOGGER;
+  // Prototype for #59734: fraction of a streaming worker's capacity reserved for its poll path. See
+  // reservedPollCapacity below. To be settled by the cluster benchmark before this becomes a real
+  // default.
+  private static final float RESERVED_POLL_FRACTION = 0.25f;
   private final JobClient jobClient;
   private final ScheduledExecutorService scheduledExecutor;
   private final ExecutorService jobHandlingExecutor;
@@ -270,7 +274,9 @@ public final class JobWorkerBuilderImpl
               System::nanoTime,
               metrics,
               withLease);
-      jobExecutor = new BlockingExecutor(jobHandlingExecutor, maxJobsActive, timeout);
+      jobExecutor =
+          new BlockingExecutor(
+              jobHandlingExecutor, maxJobsActive, timeout, reservedPollCapacity(maxJobsActive));
     } else {
       jobStreamer = JobStreamer.noop();
       // A worker without job push still bounds its work through the executor, so its poll sizing
@@ -319,5 +325,17 @@ public final class JobWorkerBuilderImpl
 
   private List<String> getTenantIds() {
     return customTenantIds.isEmpty() ? defaultTenantIds : customTenantIds;
+  }
+
+  // Prototype for #59734. A streaming worker's push path reaches a freed slot in microseconds while
+  // its poll path only reacts a network round-trip later, so under sustained push the poll — the
+  // only path that drains the ACTIVATABLE backlog and recovers timed-out jobs — is starved of
+  // slots.
+  // Keeping a small share of the capacity reachable only by the poll guarantees the backlog a way
+  // in. The share is the floor of a fixed fraction, so a worker reserves nothing until it has
+  // enough slots to spare a whole one — a small worker would otherwise hand the push path far too
+  // little. This value is a prototype knob to be settled by the cluster benchmark in #59734.
+  private static int reservedPollCapacity(final int maxJobsActive) {
+    return (int) Math.floor(maxJobsActive * RESERVED_POLL_FRACTION);
   }
 }

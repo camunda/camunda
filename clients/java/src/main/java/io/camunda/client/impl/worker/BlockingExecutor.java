@@ -43,30 +43,74 @@ final class BlockingExecutor implements JobExecutor {
 
   private final Executor wrappedExecutor;
   private final Semaphore semaphore;
+
+  // Prototype for #59734. When streaming is on, the push path (execute) and the poll path
+  // (executeWithoutWaiting) both draw from `semaphore`, but they do not reach a freed permit at the
+  // same speed: a pushed job is a thread already parked in acquireCapacity, unparked in
+  // microseconds
+  // on release, while a poll only issues its request a full network round-trip after a slot frees.
+  // Under sustained push the poll loses nearly every freed slot, and since polling is the only path
+  // that drains the ACTIVATABLE backlog and recovers timed-out jobs, that starves backlog drain.
+  // The push path must therefore also hold a permit from this smaller budget, which leaves
+  // `maxCapacity - pushBudget` slots that only the poll can ever take. `semaphore` still bounds
+  // total
+  // in-flight and remains the single capacity authority; `pushBudget` is a sub-limit on the push
+  // path, not a second count of the same thing. It is null when there is nothing to reserve (no
+  // streaming, so no push path to bound).
+  private final Semaphore pushBudget;
+
   private final int maxCapacity;
   private final long timeoutMillis;
   private volatile Runnable capacityListener = () -> {};
 
   public BlockingExecutor(
       final Executor wrappedExecutor, final int maxActivate, final Duration jobActivationTimeout) {
+    this(wrappedExecutor, maxActivate, jobActivationTimeout, 0);
+  }
+
+  /**
+   * @param reservedPollCapacity how many of the {@code maxActivate} slots are kept reachable only
+   *     by the poll path (the push path may hold at most {@code maxActivate - reservedPollCapacity}
+   *     at a time). 0 disables the reservation and restores the single-pool behaviour.
+   */
+  public BlockingExecutor(
+      final Executor wrappedExecutor,
+      final int maxActivate,
+      final Duration jobActivationTimeout,
+      final int reservedPollCapacity) {
     this.wrappedExecutor = wrappedExecutor;
     semaphore = new Semaphore(maxActivate);
+    pushBudget =
+        reservedPollCapacity > 0 && reservedPollCapacity < maxActivate
+            ? new Semaphore(maxActivate - reservedPollCapacity)
+            : null;
     maxCapacity = maxActivate;
     timeoutMillis = jobActivationTimeout.toMillis();
   }
 
   @Override
   public void execute(final Runnable command) throws RejectedExecutionException {
-    acquireCapacity();
-    dispatch(command);
+    // The push path. When a lane is reserved it must first hold a budget permit, so it can never
+    // take the slots kept for the poll. The budget is taken before the capacity so a push that
+    // cannot fit within its budget is refused without ever holding a capacity permit.
+    acquirePushBudget();
+    try {
+      acquireCapacity();
+    } catch (final RuntimeException e) {
+      releasePushBudget();
+      throw e;
+    }
+    dispatch(command, pushBudget != null);
   }
 
   @Override
   public void executeWithoutWaiting(final Runnable command) throws RejectedExecutionException {
+    // The poll path. It only takes a capacity permit, never a budget permit, so it can reach every
+    // slot including the reserved ones.
     if (!semaphore.tryAcquire()) {
       throw new RejectedExecutionException("Not able to acquire a lease without waiting for one");
     }
-    dispatch(command);
+    dispatch(command, false);
   }
 
   @Override
@@ -84,7 +128,7 @@ final class BlockingExecutor implements JobExecutor {
     capacityListener = listener;
   }
 
-  private void dispatch(final Runnable command) {
+  private void dispatch(final Runnable command, final boolean holdsPushBudget) {
     // The wrapped executor may run the command on the calling thread. A command that fails then
     // looks exactly like a command the executor refused, so both paths below can be taken for the
     // same command. The flag makes sure its capacity is given back only once, as giving it back
@@ -96,22 +140,47 @@ final class BlockingExecutor implements JobExecutor {
             try {
               command.run();
             } finally {
-              releaseCapacity(capacityHeld);
+              releaseCapacity(capacityHeld, holdsPushBudget);
             }
           });
     } catch (final RuntimeException | Error e) {
       // nothing else will give the capacity back, unless the command ran on the calling thread and
       // its finalizer already did, which is what the flag above is there to catch
-      releaseCapacity(capacityHeld);
+      releaseCapacity(capacityHeld, holdsPushBudget);
       throw e;
     }
   }
 
-  private void releaseCapacity(final AtomicBoolean capacityHeld) {
+  private void releaseCapacity(final AtomicBoolean capacityHeld, final boolean holdsPushBudget) {
     if (capacityHeld.compareAndSet(true, false)) {
       semaphore.release();
+      if (holdsPushBudget) {
+        releasePushBudget();
+      }
       // Runs only after the permit is back, so a worker polling from here sees the freed slot.
       capacityListener.run();
+    }
+  }
+
+  private void acquirePushBudget() {
+    if (pushBudget == null) {
+      return;
+    }
+    try {
+      if (!pushBudget.tryAcquire(timeoutMillis, TIMEOUT_UNIT)) {
+        throw new RejectedExecutionException(
+            String.format("Not able to acquire a push lease in %d%s", timeoutMillis, TIMEOUT_UNIT));
+      }
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RejectedExecutionException(
+          "Interrupted while waiting to acquire a push lease to run the command", e);
+    }
+  }
+
+  private void releasePushBudget() {
+    if (pushBudget != null) {
+      pushBudget.release();
     }
   }
 
