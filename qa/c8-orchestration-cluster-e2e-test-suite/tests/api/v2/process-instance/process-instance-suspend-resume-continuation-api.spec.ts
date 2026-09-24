@@ -246,6 +246,48 @@ async function expectElementInstanceCount(
   }).toPass(extendedAssertionOptions);
 }
 
+/**
+ * The model races a PT1M timer against a signal on an event-based gateway, with
+ * a second branch parked on a user task and an inclusive join after both.
+ */
+async function deployEventGatewayProcess(prefix: string) {
+  const processDefinitionId = `${prefix}-race`;
+  const signalName = `${prefix}-Signal`;
+  await deploy(['./resources/new_form_b.form', './resources/new_form_c.form']);
+  await deployWithSubstitutions('./resources/user_task_test_process.bpmn', {
+    'id="Process_0uj1r9h"': `id="${processDefinitionId}"`,
+    'name="Signal1"': `name="${signalName}"`,
+  });
+  return {processDefinitionId, signalName};
+}
+
+async function completeAllUserTasks(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  expected: number,
+) {
+  const keys: string[] = [];
+  await expect(async () => {
+    const res = await request.post(buildUrl('/user-tasks/search'), {
+      headers: jsonHeaders(),
+      data: {
+        filter: {processInstanceKey, state: 'CREATED'},
+        page: {limit: 50},
+      },
+    });
+    await assertStatusCode(res, 200);
+    const items = (await res.json()).items ?? [];
+    expect(items).toHaveLength(expected);
+    keys.length = 0;
+    keys.push(
+      ...items.map((i: {userTaskKey: string}) => String(i.userTaskKey)),
+    );
+  }).toPass(extendedAssertionOptions);
+  for (const userTaskKey of keys) {
+    await assertStatusCode(await completeUserTask(request, userTaskKey), 204);
+  }
+}
+
 test.describe('Process Instance Suspend and Resume Continuation API', () => {
   test.afterAll(async () => {
     for (const processInstanceKey of instancesToCancel) {
@@ -829,5 +871,74 @@ test.describe('Process Instance Suspend and Resume Continuation API', () => {
       extendedAssertionOptions,
     );
     await expectNoIncidents(request, suspendedKey);
+  });
+
+  test('An event-based gateway resolves once when its timer came due during a suspension', async ({
+    request,
+  }) => {
+    test.setTimeout(8 * 60 * 1000);
+    const fixture = await deployEventGatewayProcess(
+      uniquePrefixedId('sr-cont-race'),
+    );
+    // The exclusive gateway after both forms reads `proceed`; without it the
+    // instance raises an EXTRACT_VALUE_ERROR instead of reaching its end event.
+    const instance = await createInstanceOnceDeployed(
+      fixture.processDefinitionId,
+      1,
+      {proceed: false},
+    );
+    track(instance.processInstanceKey);
+    await searchElementInstanceByElementIdAndState(
+      request,
+      instance.processInstanceKey,
+      'Gateway_17vhv3u',
+      'ACTIVE',
+    );
+
+    await suspendAndExpectSuspended(request, instance.processInstanceKey);
+    await hold(75);
+
+    // Past the PT1M due date: the gateway has not resolved, so neither branch
+    // of the race has produced its follow-up task.
+    expect(
+      await countElementInstances(
+        request,
+        instance.processInstanceKey,
+        'Activity_1iaguca',
+        'ACTIVE',
+      ),
+    ).toBe(0);
+
+    await assertStatusCode(
+      await resumeProcessInstance(request, instance.processInstanceKey),
+      204,
+    );
+
+    // The buffered trigger resolves the race exactly once. A second fire would
+    // activate the timer path twice and leave the inclusive join short.
+    await expectElementInstanceCount(
+      request,
+      instance.processInstanceKey,
+      'Event_1s61blt',
+      'COMPLETED',
+      1,
+    );
+    await expectElementInstanceCount(
+      request,
+      instance.processInstanceKey,
+      'Activity_1iaguca',
+      'ACTIVE',
+      1,
+    );
+
+    // Form B from the parallel branch, and Form C from the timer path.
+    await completeAllUserTasks(request, instance.processInstanceKey, 2);
+    await expectProcessState(
+      request,
+      instance.processInstanceKey,
+      'COMPLETED',
+      extendedAssertionOptions,
+    );
+    await expectNoIncidents(request, instance.processInstanceKey);
   });
 });
