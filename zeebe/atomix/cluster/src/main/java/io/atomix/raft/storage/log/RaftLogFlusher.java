@@ -11,6 +11,7 @@ import io.atomix.utils.concurrent.ThreadContextFactory;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.util.CloseableSilently;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Configurable flush strategy for the {@link io.atomix.raft.storage.log.RaftLog}. You can use its
@@ -33,17 +34,20 @@ import io.camunda.zeebe.util.CloseableSilently;
 public interface RaftLogFlusher extends CloseableSilently {
 
   /**
-   * Signals that there is data to be flushed in the journal. The implementation may or may not
-   * immediately flush this.
+   * Signals that the journal should be flushed at least up to the given index. The implementation
+   * may or may not immediately flush this.
    *
    * @param journal the journal to flush
+   * @param index the index up to which the journal should be flushed
+   * @return a future which completes once the implementation's guarantees hold for the given index,
+   *     or fails if the flush failed
    */
-  void flush(final Journal journal) throws FlushException;
+  CompletableFuture<Void> flush(final Journal journal, final long index);
 
   /**
-   * If this returns true, then any calls to {@link #flush(Journal)} are synchronous and immediate,
-   * and any guarantees offered by the implementation will hold after a call to {@link
-   * #flush(Journal)}.
+   * If this returns true, then any calls to {@link #flush(Journal, long)} are synchronous and
+   * immediate, and any guarantees offered by the implementation will hold after a call to {@link
+   * #flush(Journal, long)}.
    */
   default boolean isDirect() {
     return false;
@@ -59,19 +63,27 @@ public interface RaftLogFlusher extends CloseableSilently {
   final class NoopFlusher implements RaftLogFlusher {
 
     @Override
-    public void flush(final Journal ignoredJournal) {}
+    public CompletableFuture<Void> flush(final Journal ignoredJournal, final long ignoredIndex) {
+      return CompletableFuture.completedFuture(null);
+    }
   }
 
   /**
    * An implementation of {@link RaftLogFlusher} which flushes immediately in a blocking fashion.
-   * After any calls to {@link #flush(Journal)}, any data written before the call is guaranteed to
-   * be on disk.
+   * Once the future returned by {@link #flush(Journal, long)} completed successfully, any data
+   * written before the call is guaranteed to be on disk. The future is always completed when the
+   * call returns.
    */
   final class DirectFlusher implements RaftLogFlusher {
 
     @Override
-    public void flush(final Journal journal) throws FlushException {
-      journal.flush();
+    public CompletableFuture<Void> flush(final Journal journal, final long ignoredIndex) {
+      try {
+        journal.flush();
+        return CompletableFuture.completedFuture(null);
+      } catch (final FlushException e) {
+        return CompletableFuture.failedFuture(e);
+      }
     }
 
     @Override
