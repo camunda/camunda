@@ -99,6 +99,26 @@ jobs:
           test_product: zeebe
           test_type: integration
 
+      - name: Validate Oracle prerequisites
+        run: |
+          set -euo pipefail
+          if [[ "${ORACLE_BYOL_ACKNOWLEDGED}" != "true" ]]; then
+            echo "::error::Oracle mode requires explicit acknowledgement of the Enterprise Edition BYOL requirement."
+            exit 1
+          fi
+
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Build dependencies
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: install -pl qa/acceptance-tests -am -Dquickly
+
       - name: Import secrets from Vault
         id: secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
@@ -111,14 +131,6 @@ jobs:
           secrets: |
             secret/data/products/zeebe/ci/common AWS_CORE_FOUNDATION_ACCESS_KEY | AWS_ACCESS_KEY_ID;
             secret/data/products/zeebe/ci/common AWS_CORE_FOUNDATION_SECRET_KEY | AWS_SECRET_ACCESS_KEY;
-
-      - name: Validate Oracle prerequisites
-        run: |
-          set -euo pipefail
-          if [[ "${ORACLE_BYOL_ACKNOWLEDGED}" != "true" ]]; then
-            echo "::error::Oracle mode requires explicit acknowledgement of the Enterprise Edition BYOL requirement."
-            exit 1
-          fi
 
       - name: Configure AWS CLI
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
@@ -255,18 +267,6 @@ jobs:
           echo "::error::SSM tunnel did not come up"
           cat /tmp/oracle-ssm-tunnel.log
           exit 1
-
-      - uses: ./.github/actions/setup-build
-        with:
-          dockerhub-readonly: true
-          vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-
-      - name: Build dependencies
-        uses: ./.github/actions/run-maven
-        with:
-          parameters: install -pl qa/acceptance-tests -am -Dquickly
 
       - name: Run Oracle async replication IT
         env:
