@@ -704,6 +704,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
                                         Map.Entry::getKey,
                                         entry -> JsonData.of(entry.getValue())))))
                     .retryOnConflict(requestDto.getRetryNumberOnConflict())
+                    .requireAlias(requestDto.isRequireAlias())
                     .build())
             .build();
       }

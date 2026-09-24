@@ -838,7 +838,8 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
                                               createDefaultScriptWithPrimitiveParams(
                                                   requestDto.getScriptData().scriptString(),
                                                   requestDto.getScriptData().params())))
-                              .retryOnConflict(requestDto.getRetryNumberOnConflict())));
+                              .retryOnConflict(requestDto.getRetryNumberOnConflict())
+                              .requireAlias(requestDto.isRequireAlias())));
       default -> throw new IllegalStateException("Unexpected value: " + requestDto.getType());
     }
   }
