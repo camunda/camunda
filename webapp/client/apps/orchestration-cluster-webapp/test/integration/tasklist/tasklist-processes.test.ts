@@ -480,6 +480,26 @@ test('should show non-retryable errors for missing, form-less, forbidden, and in
 	await expect(page).toHaveURL(`/tasklist/processes/${processDefinitionKey}/start`);
 });
 
+test('should show a non-retryable error when the referenced start form was not deployed', async ({
+	network,
+	tasklistProcessesPage,
+}) => {
+	const processDefinitionKey = '2251799813685279';
+	network.use(
+		mockGetProcessDefinitionEndpoint({
+			successResponse: HttpResponse.json(createGetProcessDefinitionResponse({processDefinitionKey})),
+		}),
+		mockGetProcessStartFormEndpoint({successResponse: new HttpResponse(null, {status: 404})}),
+	);
+
+	await tasklistProcessesPage.gotoStartForm(processDefinitionKey);
+
+	await expect(tasklistProcessesPage.startProcessFormError).toContainText(
+		'The start form for this process could not be loaded. Make sure the form has been deployed.',
+	);
+	await expect(tasklistProcessesPage.startProcessDialog.getByRole('button', {name: 'Try again'})).toHaveCount(0);
+});
+
 test('should retry after a transient start-form loading failure', async ({network, tasklistProcessesPage}) => {
 	const processDefinitionKey = '2251799813685279';
 	network.use(
