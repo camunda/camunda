@@ -286,25 +286,11 @@ jobs:
           persist-credentials: false
       - name: Print metadata
         uses: ./.github/actions/print-metadata
-      - uses: ./.github/actions/apt-fast-mirror-failover
-      # `timeout` runs inside the sudo'd root process tree so it can self-terminate a hung
-      # apt-get without nick-fields/retry having to kill across the privilege boundary --
-      # doing that externally throws `kill EPERM` and crashes instead of retrying, see
-      # https://github.com/nick-fields/retry/issues/124.
-      #
-      # `apt-get update` exits 100 if *any* configured repository fails, so don't gate on it
-      # (INC-7943) -- a partial refresh still lands and `apt-get install` is the real gate.
       - name: Install strace
-        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        uses: ./.github/actions/apt-install
         with:
-          max_attempts: 3
-          retry_wait_seconds: 10
-          timeout_minutes: 2
-          shell: bash
-          command: |
-            sudo timeout 115 bash -c "apt-get update \
-              || echo '::warning::apt-get update could not refresh every repository, continuing with the index as-is'; \
-              apt-get install -y strace"
+          packages: strace
+          no-install-recommends: "false"
       - name: Allow ptrace for strace tests
         run: sudo sysctl -w kernel.yama.ptrace_scope=0
       - uses: ./.github/actions/setup-build
