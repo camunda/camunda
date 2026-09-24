@@ -624,7 +624,9 @@ class OperateProcessInstancePage {
       ? scope.getByTestId('code-mirror-editor')
       : this.editor;
     await expect(editor).toBeVisible();
-    await this.page.keyboard.press('Control+A');
+    // ControlOrMeta so select-all works on macOS too, where Control+A moves the
+    // cursor to the line start and leaves the old value in place.
+    await this.page.keyboard.press('ControlOrMeta+A');
     await this.page.keyboard.press('Backspace');
   }
 
