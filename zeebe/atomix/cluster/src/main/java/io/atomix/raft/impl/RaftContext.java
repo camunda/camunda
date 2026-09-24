@@ -82,7 +82,6 @@ import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.SegmentInfo;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
-import io.camunda.zeebe.util.CheckedRunnable;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
@@ -98,6 +97,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -583,7 +583,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       if (isLeader()) {
         // leader counts itself in quorum, so in order to commit the leader must persist
         try {
-          raftLog.flush();
+          raftLog.flushSync(commitIndex);
         } catch (final FlushException e) {
           if (LOGGER.isWarnEnabled()) {
             LOGGER.warn(
@@ -690,7 +690,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       return CompletableFuture.completedFuture(null);
     }
 
-    return CompletableFuture.runAsync(CheckedRunnable.toUnchecked(raftLog::flush), threadContext);
+    return CompletableFuture.supplyAsync(() -> raftLog.flush(raftLog.getLastIndex()), threadContext)
+        .thenCompose(Function.identity());
   }
 
   /**

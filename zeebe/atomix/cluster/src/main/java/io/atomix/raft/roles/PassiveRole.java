@@ -952,7 +952,7 @@ public class PassiveRole extends InactiveRole {
   private void flush(final long lastFlushedIndex, final long previousEntryIndex)
       throws FlushException {
     if (lastFlushedIndex > previousEntryIndex) {
-      raft.getLog().flush();
+      raft.getLog().flushSync(lastFlushedIndex);
     }
   }
 

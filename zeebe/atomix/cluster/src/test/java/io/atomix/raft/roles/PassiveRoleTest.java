@@ -17,6 +17,7 @@ package io.atomix.raft.roles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -143,7 +144,7 @@ public class PassiveRoleTest {
         role.handleAppend(ProtocolVersionHandler.transform(request)).join();
 
     // then
-    verify(log, times(1)).flush();
+    verify(log, times(1)).flushSync(2L);
     assertThat(response.lastLogIndex()).isEqualTo(2);
   }
 
@@ -173,7 +174,7 @@ public class PassiveRoleTest {
         role.handleAppend(ProtocolVersionHandler.transform(request)).join();
 
     // then
-    verify(log, times(1)).flush();
+    verify(log, times(1)).flushSync(1L);
     assertThat(response.lastLogIndex()).isOne();
   }
 
@@ -199,7 +200,7 @@ public class PassiveRoleTest {
         role.handleAppend(ProtocolVersionHandler.transform(request)).join();
 
     // then
-    verify(log, never()).flush();
+    verify(log, never()).flushSync(anyLong());
     assertThat(response.lastLogIndex()).isZero();
   }
 
@@ -231,7 +232,7 @@ public class PassiveRoleTest {
     role.handleAppend(ProtocolVersionHandler.transform(request)).join();
 
     // then
-    verify(log, times(1)).flush();
+    verify(log, times(1)).flushSync(2L);
   }
 
   @Test

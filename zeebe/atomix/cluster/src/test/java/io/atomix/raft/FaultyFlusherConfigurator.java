@@ -14,9 +14,9 @@ import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLogFlusher;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
-import io.camunda.zeebe.journal.Journal;
 import java.io.IOException;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,19 +35,17 @@ public record FaultyFlusherConfigurator(
   private RaftLogFlusher.Factory faultyFlusher(
       final Supplier<Boolean> faultyWhen, final Runnable notifyFaultyFlush) {
     return (ignored) ->
-        new RaftLogFlusher() {
-          @Override
-          public void flush(final Journal journal) throws FlushException {
-            if (faultyWhen.get()) {
-              notifyFaultyFlush.run();
-              if (withDataLoss) {
-                journal.deleteAfter(journal.getLastIndex() - 1);
-              }
-              throw new FlushException(new IOException("Failed sync"));
-            } else {
-              journal.flush();
+        (journal, index) -> {
+          if (faultyWhen.get()) {
+            notifyFaultyFlush.run();
+            if (withDataLoss) {
+              journal.deleteAfter(journal.getLastIndex() - 1);
             }
+            return CompletableFuture.failedFuture(
+                new FlushException(new IOException("Failed sync")));
           }
+
+          return RaftLogFlusher.Factory.DIRECT.flush(journal, index);
         };
   }
 
