@@ -65,7 +65,7 @@ async function deployIncidentProcess(
 async function suspend(
   request: APIRequestContext,
   processInstanceKey: string,
-  data?: unknown,
+  data?: Record<string, unknown>,
 ) {
   return suspendProcessInstance(request, processInstanceKey, data);
 }
@@ -73,7 +73,7 @@ async function suspend(
 async function resume(
   request: APIRequestContext,
   processInstanceKey: string,
-  data?: unknown,
+  data?: Record<string, unknown>,
 ) {
   return resumeProcessInstance(request, processInstanceKey, data);
 }
