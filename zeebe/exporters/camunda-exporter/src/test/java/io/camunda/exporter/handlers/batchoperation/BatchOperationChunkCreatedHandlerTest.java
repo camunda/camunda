@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers.batchoperation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -97,6 +98,7 @@ class BatchOperationChunkCreatedHandlerTest {
     // then
     assertThat(entity.getOperationsTotalCount()).isEqualTo(1);
     assertThat(entity.getEndDate()).isNull();
+    assertThat(entity.getPendingChunkRecordItemCounts()).containsEntry(record.getKey(), 1);
   }
 
   @Test
@@ -114,6 +116,27 @@ class BatchOperationChunkCreatedHandlerTest {
     // then
     assertThat(entity.getOperationsTotalCount()).isEqualTo(2);
     assertThat(entity.getEndDate()).isNull();
+    assertThat(entity.getPendingChunkRecordItemCounts())
+        .containsEntry(record1.getKey(), 1)
+        .containsEntry(record2.getKey(), 1)
+        .hasSize(2);
+  }
+
+  @Test
+  void shouldNotReapplySameRecordKeyIfUpdateEntityCalledTwiceWithSameRecord() {
+    // given
+    final Record<BatchOperationChunkRecordValue> record = createRecord(1L, 11L);
+    final var entity = new BatchOperationEntity();
+
+    // when - simulates the same record being folded into the in-memory entity twice
+    underTest.updateEntity(record, entity);
+    underTest.updateEntity(record, entity);
+
+    // then - the per-record map still has exactly one entry for that key, and the total isn't
+    // doubled either (it is derived from the map, not incremented on each call)
+    assertThat(entity.getPendingChunkRecordItemCounts()).containsEntry(record.getKey(), 1);
+    assertThat(entity.getPendingChunkRecordItemCounts()).hasSize(1);
+    assertThat(entity.getOperationsTotalCount()).isEqualTo(1);
   }
 
   @Test
@@ -129,7 +152,9 @@ class BatchOperationChunkCreatedHandlerTest {
     underTest.flush(index, entity, mockRequest);
 
     final Map<String, Object> expectedParams = new HashMap<>();
-    expectedParams.put(BatchOperationTemplate.OPERATIONS_TOTAL_COUNT, 1);
+    expectedParams.put(
+        BatchOperationTemplate.PROCESSED_CHUNK_RECORD_KEYS, List.of(record.getKey()));
+    expectedParams.put("chunkRecordItemCounts", List.of(1));
 
     // then - the ES document ID is just the batchKey extracted from the composite ID
     final var scriptCaptor = ArgumentCaptor.forClass(String.class);
@@ -138,24 +163,62 @@ class BatchOperationChunkCreatedHandlerTest {
 
     final var script = scriptCaptor.getValue();
 
+    assertThat(script).contains("ctx._source.processedChunkRecordKeys");
+    assertThat(script).contains("((Number) processedKey).longValue() == recordKey");
     assertThat(script)
-        .contains(
-            "ctx._source.operationsTotalCount = ctx._source.operationsTotalCount + params.operationsTotalCount");
+        .contains("ctx._source.operationsTotalCount = ctx._source.operationsTotalCount + delta");
     assertThat(script).contains("ctx._source.endDate = null");
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void shouldTrackDistinctRecordKeysAcrossMultipleUpdatesBeforeFlush() throws PersistenceException {
+    // given - two distinct records with different item counts folded into one flush cycle
+    final Record<BatchOperationChunkRecordValue> record1 = createRecord(1L, 11L);
+    final Record<BatchOperationChunkRecordValue> record2 =
+        createRecordWithItems(
+            List.<BatchOperationChunkRecordValue.BatchOperationItemValue>of(
+                new BatchOperationItem(2L, 12L, 12L),
+                new BatchOperationItem(3L, 13L, 13L),
+                new BatchOperationItem(4L, 14L, 14L)));
+
+    final var entity = new BatchOperationEntity().setId("123:chunk").setEndDate(null);
+    underTest.updateEntity(record1, entity);
+    underTest.updateEntity(record2, entity);
+    final var index = TargetIndex.mainIndex("test-index");
+    final var mockRequest = mock(BatchRequest.class);
+
+    // when
+    underTest.flush(index, entity, mockRequest);
+
+    // then - the two parallel param lists stay index-aligned per record
+    final ArgumentCaptor<Map<String, Object>> paramsCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(mockRequest, times(1))
+        .updateWithScript(eq(index), eq("123"), any(), paramsCaptor.capture());
+
+    final Map<String, Object> params = paramsCaptor.getValue();
+    final var recordKeys =
+        (List<Long>) params.get(BatchOperationTemplate.PROCESSED_CHUNK_RECORD_KEYS);
+    final var itemCounts = (List<Integer>) params.get("chunkRecordItemCounts");
+
+    assertThat(recordKeys).containsExactly(record1.getKey(), record2.getKey());
+    assertThat(itemCounts).containsExactly(1, 3);
   }
 
   private Record<BatchOperationChunkRecordValue> createRecord(
       final long itemKey, final long processInstanceKey) {
+    return createRecordWithItems(
+        List.<BatchOperationChunkRecordValue.BatchOperationItemValue>of(
+            new BatchOperationItem(itemKey, processInstanceKey, processInstanceKey)));
+  }
+
+  private Record<BatchOperationChunkRecordValue> createRecordWithItems(
+      final List<BatchOperationChunkRecordValue.BatchOperationItemValue> items) {
     return factory.generateRecord(
         ValueType.BATCH_OPERATION_CHUNK,
         r ->
             r.withIntent(BatchOperationChunkIntent.CREATED)
                 .withValue(
-                    new BatchOperationChunkRecord()
-                        .setBatchOperationKey(123L)
-                        .setItems(
-                            List.of(
-                                new BatchOperationItem(
-                                    itemKey, processInstanceKey, processInstanceKey)))));
+                    new BatchOperationChunkRecord().setBatchOperationKey(123L).setItems(items)));
   }
 }

@@ -13,7 +13,9 @@ import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.SinceVersion;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
 import java.time.OffsetDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationEntity> {
@@ -54,7 +56,24 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
 
   @BeforeVersion880 private List<BatchOperationErrorEntity> errors = List.of();
 
+  /**
+   * Zeebe record keys of the BATCH_OPERATION_CHUNK CREATED records already applied to {@link
+   * #operationsTotalCount}, used to guard against double-counting when the same record is exported
+   * more than once (e.g. exporter restart before position acknowledgment).
+   *
+   * @since 8.11.0
+   */
+  @SinceVersion(value = "8.11.0", requireDefault = true)
+  private List<Long> processedChunkRecordKeys = List.of();
+
   @JsonIgnore private Object[] sortValues;
+
+  /**
+   * Per-record item counts accumulated within a single flush cycle by the batch operation chunk
+   * handler, keyed by the originating record's key. Not persisted; consumed when building the
+   * idempotency guard script params on flush.
+   */
+  @JsonIgnore private Map<Long, Integer> pendingChunkRecordItemCounts = new LinkedHashMap<>();
 
   public String getName() {
     return name;
@@ -173,6 +192,26 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
     return this;
   }
 
+  public List<Long> getProcessedChunkRecordKeys() {
+    return processedChunkRecordKeys;
+  }
+
+  public BatchOperationEntity setProcessedChunkRecordKeys(
+      final List<Long> processedChunkRecordKeys) {
+    this.processedChunkRecordKeys = processedChunkRecordKeys;
+    return this;
+  }
+
+  public Map<Long, Integer> getPendingChunkRecordItemCounts() {
+    return pendingChunkRecordItemCounts;
+  }
+
+  public BatchOperationEntity setPendingChunkRecordItemCounts(
+      final Map<Long, Integer> pendingChunkRecordItemCounts) {
+    this.pendingChunkRecordItemCounts = pendingChunkRecordItemCounts;
+    return this;
+  }
+
   public AuditLogActorType getActorType() {
     return actorType;
   }
@@ -210,6 +249,8 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
         31 * result + (operationsCompletedCount != null ? operationsCompletedCount.hashCode() : 0);
     result = 31 * result + (operationsFailedCount != null ? operationsFailedCount.hashCode() : 0);
     result = 31 * result + (errors != null ? errors.hashCode() : 0);
+    result =
+        31 * result + (processedChunkRecordKeys != null ? processedChunkRecordKeys.hashCode() : 0);
     return result;
   }
 
@@ -270,6 +311,9 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
     if (!Objects.equals(errors, that.errors)) {
       return false;
     }
+    if (!Objects.equals(processedChunkRecordKeys, that.processedChunkRecordKeys)) {
+      return false;
+    }
 
     return operationsFinishedCount != null
         ? operationsFinishedCount.equals(that.operationsFinishedCount)
@@ -312,6 +356,8 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
         + operationsCompletedCount
         + ", errors="
         + errors
+        + ", processedChunkRecordKeys="
+        + processedChunkRecordKeys
         + '}';
   }
 

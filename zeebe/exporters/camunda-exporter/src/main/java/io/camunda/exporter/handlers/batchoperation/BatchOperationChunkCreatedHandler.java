@@ -18,6 +18,8 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -37,6 +39,38 @@ import java.util.Map;
  */
 public class BatchOperationChunkCreatedHandler
     implements ExportHandler<BatchOperationEntity, BatchOperationChunkRecordValue> {
+
+  private static final String CHUNK_RECORD_ITEM_COUNTS_PARAM = "chunkRecordItemCounts";
+
+  // Guards operationsTotalCount against duplicate export of the same CHUNK_CREATED record (e.g.
+  // exporter restart before position acknowledgment causes a resend): each record's key is only
+  // allowed to contribute its item count once, tracked via processedChunkRecordKeys on the
+  // document itself. Elasticsearch/OpenSearch deserialize a persisted "long" array element back
+  // as a Painless Integer when its value happens to fit in an int, so List.contains(recordKey)
+  // (a boxed Long) would silently fail to match it; comparing via longValue() avoids that.
+  private static final String SCRIPT =
+      """
+          if (ctx._source.processedChunkRecordKeys == null) {
+            ctx._source.processedChunkRecordKeys = [];
+          }
+          int delta = 0;
+          for (int i = 0; i < params.processedChunkRecordKeys.size(); i++) {
+            long recordKey = params.processedChunkRecordKeys[i];
+            boolean alreadyProcessed = false;
+            for (def processedKey : ctx._source.processedChunkRecordKeys) {
+              if (((Number) processedKey).longValue() == recordKey) {
+                alreadyProcessed = true;
+                break;
+              }
+            }
+            if (!alreadyProcessed) {
+              ctx._source.processedChunkRecordKeys.add(recordKey);
+              delta += (int) params.chunkRecordItemCounts[i];
+            }
+          }
+          ctx._source.operationsTotalCount = ctx._source.operationsTotalCount + delta;
+          ctx._source.endDate = null;
+      """;
 
   private final String indexName;
 
@@ -76,9 +110,16 @@ public class BatchOperationChunkCreatedHandler
   @Override
   public void updateEntity(
       final Record<BatchOperationChunkRecordValue> record, final BatchOperationEntity entity) {
-    // set to just the size of the current chunk. delta update is performed in the update script
+    // keyed by the record's own (replay-stable) key so a duplicate updateEntity() call for the
+    // same record - e.g. the batch writer retrying this entity after a failed flush - overwrites
+    // rather than doubles its contribution
+    entity
+        .getPendingChunkRecordItemCounts()
+        .put(record.getKey(), record.getValue().getItems().size());
     entity.setOperationsTotalCount(
-        entity.getOperationsTotalCount() + record.getValue().getItems().size());
+        entity.getPendingChunkRecordItemCounts().values().stream()
+            .mapToInt(Integer::intValue)
+            .sum());
   }
 
   @Override
@@ -89,14 +130,14 @@ public class BatchOperationChunkCreatedHandler
     // re-processes the counts. Extract the batchKey from the composite cache ID (batchKey:chunk).
     final String batchOperationKey = entity.getId().split(":")[0];
 
-    batchRequest.updateWithScript(
-        index,
-        batchOperationKey,
-        """
-            ctx._source.operationsTotalCount = ctx._source.operationsTotalCount + params.operationsTotalCount;
-            ctx._source.endDate = null;
-        """,
-        Map.of(BatchOperationTemplate.OPERATIONS_TOTAL_COUNT, entity.getOperationsTotalCount()));
+    final var recordKeys = new ArrayList<>(entity.getPendingChunkRecordItemCounts().keySet());
+    final var itemCounts = new ArrayList<>(entity.getPendingChunkRecordItemCounts().values());
+
+    final Map<String, Object> params = new HashMap<>();
+    params.put(BatchOperationTemplate.PROCESSED_CHUNK_RECORD_KEYS, recordKeys);
+    params.put(CHUNK_RECORD_ITEM_COUNTS_PARAM, itemCounts);
+
+    batchRequest.updateWithScript(index, batchOperationKey, SCRIPT, params);
   }
 
   @Override
