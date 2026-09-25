@@ -69,6 +69,7 @@ services:
     ports:
       - '26500:26500'
       - '9600:9600'
+      - '8080:8080'
     healthcheck:
       test: ['CMD-SHELL', "timeout 10s bash -c ':> /dev/tcp/127.0.0.1/9600' || exit 1"]
       interval: 30s
@@ -92,6 +93,7 @@ services:
     ports:
       - 26500:26500
       - 9600:9600
+      - 8080:8080
     healthcheck:
       test: ['CMD-SHELL', "timeout 10s bash -c ':> /dev/tcp/127.0.0.1/9600' || exit 1"]
       interval: 30s
@@ -148,37 +150,17 @@ services:
       IDENTITY_AUTH_PROVIDER_BACKEND_URL: http://keycloak:8080/auth/realms/camunda-platform
       KEYCLOAK_INIT_OPTIMIZE_SECRET: XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
       KEYCLOAK_INIT_OPTIMIZE_ROOT_URL: http://localhost:3000
-      KEYCLOAK_USERS_0_USERNAME: 'ourief'
-      KEYCLOAK_USERS_0_PASSWORD: 'ourief'
-      KEYCLOAK_USERS_0_FIRST_NAME: 'ourief'
-      KEYCLOAK_USERS_0_ROLES_0: 'Identity'
-      KEYCLOAK_USERS_0_ROLES_1: 'Optimize'
-      KEYCLOAK_USERS_1_USERNAME: 'comentse'
-      KEYCLOAK_USERS_1_PASSWORD: 'comentse'
-      KEYCLOAK_USERS_1_FIRST_NAME: 'comentse'
+      KEYCLOAK_USERS_0_USERNAME: 'demo'
+      KEYCLOAK_USERS_0_PASSWORD: 'demo'
+      KEYCLOAK_USERS_0_EMAIL: 'demo@example.com'
+      KEYCLOAK_USERS_0_FIRST_NAME: 'demo'
+      KEYCLOAK_USERS_0_ROLES_0: 'Optimize'
+      KEYCLOAK_USERS_0_ROLES_1: 'Identity'
+      KEYCLOAK_USERS_1_USERNAME: 'john'
+      KEYCLOAK_USERS_1_PASSWORD: 'john'
+      KEYCLOAK_USERS_1_EMAIL: 'john@example.com'
+      KEYCLOAK_USERS_1_FIRST_NAME: 'john'
       KEYCLOAK_USERS_1_ROLES_0: 'Optimize'
-      KEYCLOAK_USERS_2_USERNAME: 'abook1998'
-      KEYCLOAK_USERS_2_PASSWORD: 'abook1998'
-      KEYCLOAK_USERS_2_FIRST_NAME: 'abook1998'
-      KEYCLOAK_USERS_2_ROLES_0: 'Optimize'
-      KEYCLOAK_USERS_3_USERNAME: 'aboys1960'
-      KEYCLOAK_USERS_3_PASSWORD: 'aboys1960'
-      KEYCLOAK_USERS_3_FIRST_NAME: 'aboys1960'
-      KEYCLOAK_USERS_3_ROLES_0: 'Optimize'
-      KEYCLOAK_USERS_4_USERNAME: 'abrount'
-      KEYCLOAK_USERS_4_PASSWORD: 'abrount'
-      KEYCLOAK_USERS_4_FIRST_NAME: 'abrount'
-      KEYCLOAK_USERS_4_ROLES_0: 'Optimize'
-      KEYCLOAK_USERS_5_USERNAME: 'abse1978'
-      KEYCLOAK_USERS_5_PASSWORD: 'abse1978'
-      KEYCLOAK_USERS_5_FIRST_NAME: 'abse1978'
-      KEYCLOAK_USERS_5_ROLES_0: 'Optimize'
-      KEYCLOAK_USERS_6_USERNAME: 'demo'
-      KEYCLOAK_USERS_6_PASSWORD: 'demo'
-      KEYCLOAK_USERS_6_EMAIL: 'demo@example.com'
-      KEYCLOAK_USERS_6_FIRST_NAME: 'demo'
-      KEYCLOAK_USERS_6_ROLES_0: 'Optimize'
-      KEYCLOAK_USERS_6_ROLES_1: 'Identity'
   operate:
     profiles: ['self-managed', 'self-managed:elasticsearch']
     image: camunda/operate:${OPERATE_VERSION:-8.5.0}
@@ -188,7 +170,6 @@ services:
       - CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200
       - CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
       - CAMUNDA_OPERATE_ARCHIVER_WAITPERIODBEFOREARCHIVING=1m
-      - SPRING_PROFILES_ACTIVE=dev-data
       - CAMUNDA_OPERATE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
       - CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL=http://localhost:18080/auth/realms/camunda-platform
       - CAMUNDA_OPERATE_IDENTITY_CLIENT_ID=operate
@@ -220,7 +201,6 @@ services:
       - CAMUNDA_OPERATE_ZEEBEOPENSEARCH_URL=http://opensearch:9200
       - CAMUNDA_OPERATE_DATABASE=opensearch
       - CAMUNDA_OPERATE_ARCHIVER_WAITPERIODBEFOREARCHIVING=1m
-      - SPRING_PROFILES_ACTIVE=dev-data
       - CAMUNDA_OPERATE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
       - CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL=http://localhost:18080/auth/realms/camunda-platform
       - CAMUNDA_OPERATE_IDENTITY_CLIENT_ID=operate
