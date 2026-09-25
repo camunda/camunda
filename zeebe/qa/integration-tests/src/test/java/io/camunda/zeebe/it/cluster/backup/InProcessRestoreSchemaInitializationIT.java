@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.it.cluster.backup;
 
+import static io.camunda.zeebe.qa.util.actuator.ClusterActuator.of;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.PrimaryStorageBackup;
@@ -15,6 +16,8 @@ import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupRuntimeResponse;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
+import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
+import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -92,8 +95,7 @@ final class InProcessRestoreSchemaInitializationIT {
       cluster.brokers().values().forEach(broker -> takeSnapshot(broker));
       takeBackup(BackupActuator.of(cluster.availableGateway()), BACKUP_ID);
 
-      final var clusterActuator =
-          io.camunda.zeebe.qa.util.actuator.ClusterActuator.of(cluster.anyGateway());
+      final var clusterActuator = of(cluster.anyGateway());
       final var toRecovering = InProcessRestoreTestUtil.changeMode(client, "RECOVERING", false);
       awaitChangeCompleted(cluster, clusterActuator, toRecovering);
 
@@ -113,9 +115,7 @@ final class InProcessRestoreSchemaInitializationIT {
   }
 
   private static void awaitChangeCompleted(
-      final TestCluster cluster,
-      final io.camunda.zeebe.qa.util.actuator.ClusterActuator actuator,
-      final long changeId) {
+      final TestCluster cluster, final ClusterActuator actuator, final long changeId) {
     Awaitility.await("cluster configuration change " + changeId + " completes")
         .atMost(Duration.ofMinutes(2))
         .untilAsserted(
@@ -126,7 +126,7 @@ final class InProcessRestoreSchemaInitializationIT {
   }
 
   private static void takeSnapshot(final TestStandaloneBroker broker) {
-    final var partitions = io.camunda.zeebe.qa.util.actuator.PartitionsActuator.of(broker);
+    final var partitions = PartitionsActuator.of(broker);
     partitions.takeSnapshot();
     Awaitility.await("snapshot is taken on broker " + broker.nodeId())
         .atMost(TIMEOUT)
