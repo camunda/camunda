@@ -102,13 +102,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
 
           final PostImporterQueueEntity queueEntity =
-              new PostImporterQueueEntity()
-                  .setId("queue-1")
-                  .setPartitionId(PARTITION_ID)
-                  .setActionType(PostImporterActionType.INCIDENT)
-                  .setIntent("CREATED")
-                  .setKey(9999L)
-                  .setPosition(1L);
+              newPostImporterQueue().setIntent("CREATED").setKey(9999L).setPosition(1L);
 
           store(postImporterTemplate, client, queueEntity);
           client.refresh(postImporterTemplate.getFullQualifiedName());
@@ -148,10 +142,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
 
           final PostImporterQueueEntity queueEntity =
-              new PostImporterQueueEntity()
-                  .setId("queue-1")
-                  .setPartitionId(PARTITION_ID)
-                  .setActionType(PostImporterActionType.INCIDENT)
+              newPostImporterQueue()
                   .setIntent("CREATED")
                   .setKey(incidentEntity.getKey())
                   .setPosition(1L);
@@ -196,10 +187,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
 
           final PostImporterQueueEntity queueEntity =
-              new PostImporterQueueEntity()
-                  .setId("queue-1")
-                  .setPartitionId(PARTITION_ID)
-                  .setActionType(PostImporterActionType.INCIDENT)
+              newPostImporterQueue()
                   .setIntent("CREATED")
                   .setKey(incidentEntity.getKey())
                   .setPosition(1L);
@@ -271,10 +259,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
 
           final PostImporterQueueEntity queueEntity =
-              new PostImporterQueueEntity()
-                  .setId("queue-1")
-                  .setPartitionId(PARTITION_ID)
-                  .setActionType(PostImporterActionType.INCIDENT)
+              newPostImporterQueue()
                   .setIntent("CREATED")
                   .setKey(incidentEntity.getKey())
                   .setPosition(1L);
@@ -364,10 +349,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
 
           final PostImporterQueueEntity queueEntity =
-              new PostImporterQueueEntity()
-                  .setId("queue-1")
-                  .setPartitionId(PARTITION_ID)
-                  .setActionType(PostImporterActionType.INCIDENT)
+              newPostImporterQueue()
                   .setIntent("CREATED")
                   .setKey(incidentEntity.getKey())
                   .setPosition(1L);
@@ -440,10 +422,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
 
           final PostImporterQueueEntity queueEntity =
-              new PostImporterQueueEntity()
-                  .setId("queue-1")
-                  .setPartitionId(PARTITION_ID)
-                  .setActionType(PostImporterActionType.INCIDENT)
+              newPostImporterQueue()
                   .setIntent("CREATED")
                   .setKey(incidentEntity.getKey())
                   .setPosition(1L);
@@ -533,10 +512,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
 
           final PostImporterQueueEntity queueEntity =
-              new PostImporterQueueEntity()
-                  .setId("queue-1")
-                  .setPartitionId(PARTITION_ID)
-                  .setActionType(PostImporterActionType.INCIDENT)
+              newPostImporterQueue()
                   .setIntent("RESOLVED")
                   .setKey(incidentEntity.getKey())
                   .setPosition(1L);
@@ -644,10 +620,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
 
           final PostImporterQueueEntity queueEntity =
-              new PostImporterQueueEntity()
-                  .setId("queue-1")
-                  .setPartitionId(PARTITION_ID)
-                  .setActionType(PostImporterActionType.INCIDENT)
+              newPostImporterQueue()
                   .setIntent("RESOLVED")
                   .setKey(resolvedIncidentEntity.getKey())
                   .setPosition(1L);
@@ -725,10 +698,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
 
           final PostImporterQueueEntity queueEntity =
-              new PostImporterQueueEntity()
-                  .setId("queue-1")
-                  .setPartitionId(PARTITION_ID)
-                  .setActionType(PostImporterActionType.INCIDENT)
+              newPostImporterQueue()
                   .setIntent("RESOLVED")
                   .setKey(incidentEntity.getKey())
                   .setPosition(1L);
@@ -797,10 +767,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
           store(
               postImporterTemplate,
               client,
-              new PostImporterQueueEntity()
-                  .setId("queue-1")
-                  .setPartitionId(PARTITION_ID)
-                  .setActionType(PostImporterActionType.INCIDENT)
+              newPostImporterQueue("queue-1")
                   .setIntent("CREATED")
                   .setKey(key)
                   .setProcessInstanceKey(key)
@@ -808,10 +775,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
           store(
               postImporterTemplate,
               client,
-              new PostImporterQueueEntity()
-                  .setId("queue-2")
-                  .setPartitionId(PARTITION_ID)
-                  .setActionType(PostImporterActionType.INCIDENT)
+              newPostImporterQueue("queue-2")
                   .setIntent("RESOLVED")
                   .setKey(key)
                   .setProcessInstanceKey(key)
@@ -910,10 +874,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
             store(
                 postImporterTemplate,
                 client,
-                new PostImporterQueueEntity()
-                    .setId("queue-" + position)
-                    .setPartitionId(PARTITION_ID)
-                    .setActionType(PostImporterActionType.INCIDENT)
+                newPostImporterQueue("queue-" + position)
                     .setIntent("CREATED")
                     .setKey(incident.getKey())
                     .setPosition(position));
@@ -1052,10 +1013,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
           store(
               postImporterTemplate,
               client,
-              new PostImporterQueueEntity()
-                  .setId("queue-1")
-                  .setPartitionId(PARTITION_ID)
-                  .setActionType(PostImporterActionType.INCIDENT)
+              newPostImporterQueue()
                   .setIntent("CREATED")
                   .setKey(incidentEntity.getKey())
                   .setPosition(1L));
@@ -1149,10 +1107,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
 
           final PostImporterQueueEntity queueEntity =
-              new PostImporterQueueEntity()
-                  .setId("queue-1")
-                  .setPartitionId(PARTITION_ID)
-                  .setActionType(PostImporterActionType.INCIDENT)
+              newPostImporterQueue()
                   .setIntent("CREATED")
                   .setKey(incidentEntity.getKey())
                   .setPosition(1L);
@@ -1349,6 +1304,17 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
         .setPartitionId(PARTITION_ID)
         .setKey(incidentKey)
         .setErrorMessage("An error happened");
+  }
+
+  private static PostImporterQueueEntity newPostImporterQueue() {
+    return newPostImporterQueue("queue-1");
+  }
+
+  private static PostImporterQueueEntity newPostImporterQueue(final String id) {
+    return new PostImporterQueueEntity()
+        .setId(id)
+        .setPartitionId(PARTITION_ID)
+        .setActionType(PostImporterActionType.INCIDENT);
   }
 
   private IncidentUpdateRepository createIncidentUpdateRepository(
