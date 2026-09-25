@@ -17,6 +17,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
+import io.camunda.zeebe.el.ExpressionLanguageMetrics;
+import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
@@ -33,7 +35,9 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.InstantSource;
 import java.util.function.LongConsumer;
+import org.agrona.io.DirectBufferInputStream;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Rule;
@@ -698,6 +702,62 @@ public final class ProcessStateTest {
     Assertions.assertThat(process).isNotNull();
     final AbstractFlowElement serviceTask = process.getElementById(wrapString("test"));
     Assertions.assertThat(serviceTask).isNotNull();
+  }
+
+  @Test
+  public void shouldReturnCachedExecutableProcess() {
+    // given
+    final var processRecord = creatingProcessRecord(processingState);
+    processState.putProcess(processRecord.getKey(), processRecord);
+    final var executableProcess = transform(processRecord);
+
+    // when
+    processState.cacheProcess(processRecord.getKey(), TENANT_ID, executableProcess);
+
+    // then
+    final var processByKey =
+        processState.getProcessByKeyAndTenant(processRecord.getKey(), TENANT_ID);
+    assertThat(processByKey.getProcess()).isSameAs(executableProcess);
+    assertThat(processByKey.getKey()).isEqualTo(processRecord.getKey());
+    assertThat(processByKey.getVersion()).isEqualTo(processRecord.getVersion());
+    assertThat(processByKey.getResource()).isEqualTo(processRecord.getResourceBuffer());
+    assertThat(
+            processState
+                .getProcessByProcessIdAndVersion(
+                    processRecord.getBpmnProcessIdBuffer(), processRecord.getVersion(), TENANT_ID)
+                .getProcess())
+        .isSameAs(executableProcess);
+  }
+
+  @Test
+  public void shouldRebuildCachedExecutableProcessAfterCacheIsCleared() {
+    // given
+    final var processRecord = creatingProcessRecord(processingState);
+    processState.putProcess(processRecord.getKey(), processRecord);
+    final var executableProcess = transform(processRecord);
+    processState.cacheProcess(processRecord.getKey(), TENANT_ID, executableProcess);
+
+    // when
+    processState.clearCache();
+
+    // then
+    final var process =
+        processState.getProcessByKeyAndTenant(processRecord.getKey(), TENANT_ID).getProcess();
+    assertThat(process).isNotSameAs(executableProcess);
+    assertThat(process.getElementById(wrapString("test"))).isNotNull();
+  }
+
+  @Test
+  public void shouldRejectCachingProcessThatIsNotPersisted() {
+    // given
+    final var processRecord = creatingProcessRecord(processingState);
+    final var executableProcess = transform(processRecord);
+
+    // when - then
+    assertThatThrownBy(
+            () -> processState.cacheProcess(processRecord.getKey(), TENANT_ID, executableProcess))
+        .isInstanceOf(IllegalStateException.class);
+    assertThat(processState.getProcessByKeyAndTenant(processRecord.getKey(), TENANT_ID)).isNull();
   }
 
   @Test
@@ -1421,6 +1481,14 @@ public final class ProcessStateTest {
         .setTenantId(TENANT_ID);
 
     return deploymentRecord;
+  }
+
+  private static ExecutableProcess transform(final ProcessRecord processRecord) {
+    final var modelInstance =
+        Bpmn.readModelFromStream(new DirectBufferInputStream(processRecord.getResourceBuffer()));
+    return BpmnFactory.createTransformer(InstantSource.system(), ExpressionLanguageMetrics.noop())
+        .transformDefinitions(modelInstance)
+        .getFirst();
   }
 
   public static ProcessRecord creatingProcessRecord(final MutableProcessingState processingState) {
