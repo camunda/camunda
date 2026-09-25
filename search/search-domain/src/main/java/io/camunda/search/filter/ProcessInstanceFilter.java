@@ -46,7 +46,37 @@ public record ProcessInstanceFilter(
     Set<String> tags,
     List<Operation<String>> businessIdOperations,
     List<ProcessInstanceFilter> orFilters)
-    implements FilterBase {
+    implements OrFilter<ProcessInstanceFilter> {
+
+  @Override
+  public boolean isEmpty() {
+    return !FilterUtil.hasAnyNonEmpty(
+        processInstanceKeyOperations,
+        processDefinitionIdOperations,
+        processDefinitionNameOperations,
+        processDefinitionVersionOperations,
+        processDefinitionVersionTagOperations,
+        processDefinitionKeyOperations,
+        parentProcessInstanceKeyOperations,
+        parentFlowNodeInstanceKeyOperations,
+        startDateOperations,
+        endDateOperations,
+        stateOperations,
+        hasIncident,
+        suspendedDateOperations,
+        tenantIdOperations,
+        variableFilters,
+        errorMessageOperations,
+        batchOperationIdOperations,
+        hasRetriesLeft,
+        flowNodeIdOperations,
+        hasFlowNodeInstanceIncident,
+        flowNodeInstanceStateOperations,
+        incidentErrorHashCodeOperations,
+        partitionId,
+        tags,
+        businessIdOperations);
+  }
 
   public Builder toBuilder() {
     return new Builder()

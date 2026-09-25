@@ -47,7 +47,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public final class ProcessInstanceFilterTransformer
-    extends IndexFilterTransformer<ProcessInstanceFilter> {
+    extends IndexFilterTransformer<ProcessInstanceFilter>
+    implements OrFilterTransformer<ProcessInstanceFilter> {
 
   private final ServiceTransformers transformers;
 
@@ -57,7 +58,8 @@ public final class ProcessInstanceFilterTransformer
     this.transformers = transformers;
   }
 
-  public ArrayList<SearchQuery> toSearchQueryFields(final ProcessInstanceFilter filter) {
+  @Override
+  public List<SearchQuery> toSearchQueryFields(final ProcessInstanceFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
     queries.addAll(longOperations(KEY, filter.processInstanceKeyOperations()));
     queries.addAll(stringOperations(BPMN_PROCESS_ID, filter.processDefinitionIdOperations()));
@@ -115,17 +117,9 @@ public final class ProcessInstanceFilterTransformer
 
   @Override
   public SearchQuery toSearchQuery(final ProcessInstanceFilter filter) {
-
     final var queries = new ArrayList<SearchQuery>();
     ofNullable(getIsProcessInstanceQuery()).ifPresent(queries::add);
-    queries.addAll(toSearchQueryFields(filter));
-
-    if (filter.orFilters() != null && !filter.orFilters().isEmpty()) {
-      final var orQueries = new ArrayList<SearchQuery>();
-      filter.orFilters().stream().map(f -> and(toSearchQueryFields(f))).forEach(orQueries::add);
-      queries.add(or(orQueries));
-    }
-
+    queries.addAll(toSearchQueryFieldsWithOr(filter));
     return and(queries);
   }
 
