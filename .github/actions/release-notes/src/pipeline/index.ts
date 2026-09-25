@@ -64,12 +64,16 @@ async function attributeDirectly(
   resolver: PipelineResolver,
   body: string,
   closingIssuesReferences: readonly number[],
+  authorLogin: string | undefined,
 ): Promise<AttributionDecision> {
   const section = extractSection(body);
   const optOut = section ? isOptOutTicked(section) : false;
   const sectionRefs = section ? await resolver.resolveRefs(parseRefs(section)) : [];
 
-  const needsLegacyScan = !optOut && !hasEligibleRefs(sectionRefs) && closingIssuesReferences.length === 0;
+  // A dependency bot's body is the upstream changelog: its "Fixes #N" point at
+  // the upstream repo, so scanning it only attributes unrelated issues.
+  const isDependencyBot = authorLogin !== undefined && BOT_CATEGORY_OVERRIDES[authorLogin] === 'deps';
+  const needsLegacyScan = !optOut && !isDependencyBot && !hasEligibleRefs(sectionRefs) && closingIssuesReferences.length === 0;
   // Unlike a section ref (deliberately listed there), a bare "#N" anywhere in
   // the body is as likely an incidental mention ("similar to #100") as a real
   // attribution — only a ref carrying an explicit keyword counts here.
@@ -98,13 +102,13 @@ async function attributePr(
   pr: PipelinePrInput,
   original: () => Promise<OriginalPull | null>,
 ): Promise<Attributed> {
-  let decision = await attributeDirectly(resolver, pr.body, pr.closingIssuesReferences);
+  let decision = await attributeDirectly(resolver, pr.body, pr.closingIssuesReferences, pr.authorLogin);
   let mergedAt = pr.mergedAt;
 
   if (decision.source !== 'optOut') {
     const originalPull = await original(); // null for an ordinary PR — costs nothing
     if (originalPull) {
-      const originalDecision = await attributeDirectly(resolver, originalPull.body, []);
+      const originalDecision = await attributeDirectly(resolver, originalPull.body, [], originalPull.authorLogin);
       decision = { ...originalDecision, deliveryPath: 'backportHop' };
       mergedAt = originalPull.mergedAt ?? pr.mergedAt;
     }

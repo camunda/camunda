@@ -269,7 +269,7 @@ The chain runs **unconditionally in this order** and terminates at the first ste
 | 2    | `section`                 | Eligible references in the `## Related issues` section resolve to at least one live issue.                                                                                                                                                                                                  |
 | 2′   | `resolutionFailed`        | The section *had* eligible references, at least one **dead** (deleted/unknown number), and none resolved to a live issue. A real problem: the link exists, its target is gone. A section ref that resolves to a **pull request** rather than a dead number does not fail here — see step 3. |
 | 3    | `closingIssuesReferences` | GitHub's own native closing-reference field is non-empty. Also reached when the section's only references point at a pull request rather than an issue — GitHub itself may still know the closing issue.                                                                                    |
-| 4    | `legacyBodyScan`          | A reference found anywhere in the body, outside the section.                                                                                                                                                                                                                                |
+| 4    | `legacyBodyScan`          | A **keyworded** reference (`closes`/`fixes`/`resolves`/`completes`/`relates to #N`) found in the body, outside the section. A bare `#N` never counts. Skipped for dependency bots (see below).                                                                                              |
 | 5    | `unattributed`            | Nothing found anywhere. A real problem: no link at all.                                                                                                                                                                                                                                     |
 | —    | `botExempt`               | Applied **last**, only over `unattributed`/`resolutionFailed`, for authors in `BOT_LINK_EXEMPT` (currently `renovate[bot]`). An exempt bot that *did* link a real issue keeps that attribution.                                                                                             |
 
@@ -286,6 +286,9 @@ Parsing rules that catch people out:
   (`CONCURRENCY`). This is a defence against a body engineered to fan out into hundreds of API calls.
 - The legacy body-wide scan only runs when the earlier steps cannot terminate. Since the body
   *contains* the section, running it unconditionally resolved every section reference a second time.
+- **Dependency-bot bodies are never body-scanned.** A `deps` author in `BOT_CATEGORY_OVERRIDES`
+  (`renovate[bot]`, `dependabot[bot]`) embeds the upstream changelog, whose `Fixes #N` point at the
+  upstream repo. For a backport, the original's author decides.
 
 **The backport hop.** If a backport marker is present, the decision is taken from **the original pull
 request's body**, not the backport's. The hop fires whenever the marker is present, not only when the

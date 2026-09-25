@@ -248,6 +248,41 @@ test('a non-exempt author with no linked issue still lands in the unattributed b
   assert.equal(out.attribution.source, 'unattributed');
 });
 
+// Dependency-bot bodies embed the upstream changelog, whose "Fixes #N" point
+// at the upstream repo — a legacy scan would attribute unrelated issues here.
+const UPSTREAM_CHANGELOG_BODY = 'Bumps foo from 1.2.2 to 1.2.3.\n\n### Release notes\n- Fixes #100 crash on startup';
+
+test('a dependency-bot PR never falls back to the legacy body scan — its keyworded refs belong to the upstream changelog', async () => {
+  const counts = { originalPulls: 0, resolveCalls: 0 };
+  const out = await processPr(
+    fakeResolver({}, {}, counts),
+    prInput({ number: 503, title: 'deps: bump foo to 1.2.3', body: UPSTREAM_CHANGELOG_BODY, authorLogin: 'renovate[bot]' }),
+    { gateRequiredAt: null },
+  );
+  assert.equal(out.attribution.source, 'botExempt');
+  assert.deepEqual(out.attribution.issueNumbers, []);
+  assert.equal(counts.resolveCalls, 0);
+});
+
+test('a dependabot PR skips the legacy body scan too, landing unattributed rather than on an upstream issue', async () => {
+  const out = await processPr(
+    fakeResolver(),
+    prInput({ number: 504, title: 'deps: bump foo to 1.2.3', body: UPSTREAM_CHANGELOG_BODY, authorLogin: 'dependabot[bot]' }),
+    { gateRequiredAt: null },
+  );
+  assert.equal(out.attribution.source, 'unattributed');
+});
+
+test('a backport of a dependency-bot original skips the legacy scan of the ORIGINAL body', async () => {
+  const out = await processPr(
+    fakeResolver({ 200: { body: UPSTREAM_CHANGELOG_BODY, title: 'deps: bump foo to 1.2.3', authorLogin: 'renovate[bot]' } }),
+    prInput({ number: 505, title: '[Backport 8.8] deps: bump foo', body: 'Backport of #200', authorLogin: 'monorepo-devops-automation[bot]' }),
+    { gateRequiredAt: null },
+  );
+  assert.deepEqual(out.attribution.issueNumbers, []);
+  assert.notEqual(out.attribution.source, 'legacyBodyScan');
+});
+
 test('a post-gate PR that falls back to the legacy scan is flagged as an anomaly', async () => {
   const out = await processPr(
     fakeResolver(),
