@@ -9,6 +9,7 @@ package io.camunda.application.commons.rdbms;
 
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
+import io.camunda.application.commons.pt.PhysicalTenantSchemaInitializationHealthIndicator;
 import io.camunda.application.commons.search.PhysicalTenantResourceAccessControllers;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
@@ -41,10 +42,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.health.contributor.CompositeHealthContributor;
 import org.springframework.boot.health.contributor.HealthContributor;
+import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.boot.jdbc.health.DataSourceHealthIndicator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Profile;
 
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnSecondaryStorageType(SecondaryStorageType.rdbms)
@@ -206,6 +209,17 @@ public class RdbmsConfiguration {
       return new DataSourceHealthIndicator(dataSources.values().iterator().next());
     }
     return CompositeHealthContributor.fromMap(dataSources, DataSourceHealthIndicator::new);
+  }
+
+  /**
+   * Reports each physical tenant's schema initialization for operators; like the status above, it
+   * is in no probe group. Absent from a restore, which initializes no schema.
+   */
+  @Bean
+  @Profile("!restore")
+  HealthIndicator physicalTenantSchemaInitializationHealthIndicator(
+      final RdbmsSchemaInitializer rdbmsSchemaInitializer) {
+    return new PhysicalTenantSchemaInitializationHealthIndicator(rdbmsSchemaInitializer::statuses);
   }
 
   private static RdbmsTenantReaders defaultReaders(

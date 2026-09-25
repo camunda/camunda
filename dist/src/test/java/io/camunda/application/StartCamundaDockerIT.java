@@ -102,6 +102,12 @@ public class StartCamundaDockerIT extends AbstractCamundaDockerIT {
                 "livenessState": {"status": "UP"},
                 "nodeIdProvider":{"status":"UP"},
                 "nodeIdProviderReady":{"status":"UP"},
+                "physicalTenantSchemaInitialization": {
+                  "status": "UP",
+                  "details": {
+                    "default": {"status": "UP", "state": "INITIALIZED"}
+                  }
+                },
                 "readinessState": {"status": "UP"},
                 "schemaReadinessCheck":{"status":"UP"},
                 "searchEngineStatus":{"status":"UP"}

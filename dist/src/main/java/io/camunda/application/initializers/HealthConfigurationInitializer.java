@@ -48,6 +48,9 @@ public class HealthConfigurationInitializer
     // Always enabled so that liveness and readiness endpoints are available for all profiles
     propertyMap.put("management.endpoint.health.probes.enabled", true);
 
+    propertyMap.put(
+        "management.endpoint.health.status.order", "down,out-of-service,unknown,degraded,up");
+
     final var readinessGroupHealthIndicators =
         collectReadinessGroupHealthIndicators(activeProfiles, environment);
     if (!readinessGroupHealthIndicators.isEmpty()) {
@@ -70,9 +73,6 @@ public class HealthConfigurationInitializer
       propertyMap.put("management.health.defaults.enabled", true);
       startupGroup.add(INDICATOR_GATEWAY_STARTED);
       propertyMap.put("management.endpoint.health.group.startup.show-details", "never");
-
-      propertyMap.put(
-          "management.endpoint.health.status.order", "down,out-of-service,unknown,degraded,up");
 
       if (activeProfiles.contains(Profile.STANDALONE.getId())) {
         propertyMap.put(

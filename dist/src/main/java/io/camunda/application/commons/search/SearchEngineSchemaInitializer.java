@@ -10,6 +10,7 @@ package io.camunda.application.commons.search;
 import io.camunda.application.commons.pt.PerTenantSchemaInitialization;
 import io.camunda.application.commons.pt.PerTenantSchemaInitialization.DeferralCheck;
 import io.camunda.application.commons.pt.SchemaInitializer;
+import io.camunda.application.commons.pt.SchemaInitializationStatus;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.SchemaManagerContainer;
@@ -21,6 +22,7 @@ import io.camunda.search.schema.metrics.SchemaManagerMetrics;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
@@ -163,6 +165,13 @@ public class SearchEngineSchemaInitializer
   @Override
   public void initializeNow(final String physicalTenantId) {
     initialization.initializeNow(physicalTenantId);
+  }
+
+  /** Where each physical tenant's schema initialization stands, in configuration order. */
+  public Map<String, SchemaInitializationStatus> statuses() {
+    final var statuses = new LinkedHashMap<String, SchemaInitializationStatus>();
+    configs.keySet().forEach(tenantId -> statuses.put(tenantId, initialization.status(tenantId)));
+    return statuses;
   }
 
   /**
