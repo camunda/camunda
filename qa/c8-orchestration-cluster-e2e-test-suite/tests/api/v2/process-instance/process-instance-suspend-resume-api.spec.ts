@@ -29,6 +29,7 @@ import {
   deployMessageCatchProcess,
   deployServiceTaskProcess,
   deployUserTaskProcess,
+  expectJobsByType,
   expectNoIncidents,
   expectProcessState,
   expectSuspendedDate,
@@ -60,6 +61,69 @@ async function deployIncidentProcess(
     },
   );
   return deployment.processes[0];
+}
+
+const MI_JOB_COUNT = 8;
+
+/**
+ * One instance that holds many jobs and several message subscriptions at once.
+ * Suspension closes subscriptions and parks jobs in a single processor, so a
+ * model carrying only one of the two cannot show the order they run in.
+ */
+async function deployJobsAndMessagesProcess(prefix: string) {
+  const processDefinitionId = `${prefix}-jobs-msgs`;
+  const jobType = `${prefix}-job`;
+  const messageName = `${prefix}-MSG`;
+  const cancelMessageName = `${prefix}-CANCEL`;
+  await deployWithSubstitutions(
+    './resources/parallel_jobs_and_message_waits_process.bpmn',
+    {
+      'id="sr_jobs_and_messages"': `id="${processDefinitionId}"`,
+      'type="sr-jm-job"': `type="${jobType}"`,
+      'name="sr-jm-msg"': `name="${messageName}"`,
+      'name="sr-jm-cancel"': `name="${cancelMessageName}"`,
+    },
+  );
+  return {processDefinitionId, jobType, messageName, cancelMessageName};
+}
+
+function correlateMessage(
+  request: APIRequestContext,
+  name: string,
+  correlationKey: string,
+) {
+  return request.post(buildUrl('/messages/correlation'), {
+    headers: jsonHeaders(),
+    data: {name, correlationKey, variables: {}},
+  });
+}
+
+/**
+ * Reads the subscriptions of one instance out of secondary storage. Suspension
+ * closes them in the engine but reopens them under the same keys, so what is
+ * exported has to stay unchanged — a closure that leaked out would show here as
+ * a DELETED row or a missing one.
+ */
+async function expectOpenSubscriptions(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  expected: number,
+) {
+  await expect(async () => {
+    const res = await request.post(buildUrl('/message-subscriptions/search'), {
+      headers: jsonHeaders(),
+      data: {filter: {processInstanceKey}},
+    });
+    await assertStatusCode(res, 200);
+    const items: Array<{messageSubscriptionState: string}> =
+      (await res.json()).items ?? [];
+    expect(items).toHaveLength(expected);
+    expect(items.map((item) => item.messageSubscriptionState)).toEqual(
+      Array(expected).fill('CREATED'),
+    );
+  }, `Expected ${expected} open subscriptions for ${processInstanceKey}`).toPass(
+    extendedAssertionOptions,
+  );
 }
 
 async function suspend(
@@ -907,6 +971,82 @@ test.describe('Process Instance Suspend and Resume API', () => {
       'COMPLETED',
       extendedAssertionOptions,
     );
+  });
+
+  test('Many jobs and several message subscriptions are all closed by one suspension', async ({
+    request,
+  }) => {
+    const prefix = uniquePrefixedId('sr-jm');
+    const {processDefinitionId, jobType, messageName, cancelMessageName} =
+      await deployJobsAndMessagesProcess(prefix);
+    const correlationKey = uniquePrefixedId('sr-jm-key');
+    const instance = await createInstanceOnceDeployed(processDefinitionId, 1, {
+      corrId: correlationKey,
+      items: Array.from({length: MI_JOB_COUNT}, (_, index) => index + 1),
+    });
+    instancesToCancel.push(instance.processInstanceKey);
+
+    await expectJobsByType(
+      request,
+      instance.processInstanceKey,
+      jobType,
+      MI_JOB_COUNT,
+      extendedAssertionOptions,
+    );
+    // The catch event and the boundary event on the multi-instance task.
+    await expectOpenSubscriptions(request, instance.processInstanceKey, 2);
+
+    await suspendAndExpectSuspended(request, instance.processInstanceKey);
+
+    expect(
+      await activateJobsByType(
+        request,
+        jobType,
+        instance.processInstanceKey,
+        [],
+        MI_JOB_COUNT,
+        1_000,
+      ),
+    ).toHaveLength(0);
+    // Both subscriptions, on two different scopes, have to be closed — the
+    // boundary event is the one that hangs off the task holding the jobs.
+    for (const name of [messageName, cancelMessageName]) {
+      expect([404, 409]).toContain(
+        (await correlateMessage(request, name, correlationKey)).status(),
+      );
+    }
+    // Closing subscriptions is engine-internal bookkeeping; it must not reach
+    // secondary storage, where a consumer would read it as unsubscribed.
+    await expectOpenSubscriptions(request, instance.processInstanceKey, 2);
+
+    await assertStatusCode(
+      await resume(request, instance.processInstanceKey),
+      204,
+    );
+
+    const jobs = await activateJobsByType(
+      request,
+      jobType,
+      instance.processInstanceKey,
+      [],
+      MI_JOB_COUNT,
+    );
+    expect(jobs).toHaveLength(MI_JOB_COUNT);
+    for (const job of jobs) {
+      await completeJob(request, job.jobKey);
+    }
+    await assertStatusCode(
+      await correlateMessage(request, messageName, correlationKey),
+      200,
+    );
+
+    await expectProcessState(
+      request,
+      instance.processInstanceKey,
+      'COMPLETED',
+      extendedAssertionOptions,
+    );
+    await expectNoIncidents(request, instance.processInstanceKey);
   });
 
   test('Suspended instances are searchable by state and by suspension date', async ({
