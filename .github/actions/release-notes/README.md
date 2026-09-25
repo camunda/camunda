@@ -9,7 +9,11 @@ package with two entrypoints that import **one** reference parser:
   syncs a sticky comment and a `no-issue` label. Live now, **warn-only**.
 - `generate/` — the **release-notes generator**
   ([#57713](https://github.com/camunda/camunda/issues/57713)): builds the changelog
-  from the PRs shipped in a release range. **Not built yet.**
+  from the PRs shipped in a release range. Documented in full in
+  **[GENERATOR.md](GENERATOR.md)** — read that one when a release job fails, or when
+  a release's notes are missing something or carry something they should not.
+
+The rest of this file is about the gate.
 
 ## Why this exists
 
@@ -33,8 +37,9 @@ The gate runs two checks (`gate.evaluateGate`) and reports a combined outcome.
 1. Slice the `## Related issues` section (`extractSection`).
 2. Extract every reference in it (`parseRefs`): closing keywords
    (`close/closes/closed`, `fix/fixes/fixed`, `resolve/resolves/resolved`),
-   the custom `completes #N`, the `Backport of #N` marker, `relates to #N`,
-   bare `#N`, `owner/repo#N`, and full GitHub URLs.
+   the custom `completes #N`, the `Backport of #N` marker, `relates to #N`
+   (also `relate`/`related to`), bare `#N`, `owner/repo#N`, and full GitHub
+   URLs.
 3. Resolve each ref against the API (`resolver`): is it an issue, a PR, or
    missing? Is it cross-repo?
 4. Decide PASS/FAIL (`policy`).

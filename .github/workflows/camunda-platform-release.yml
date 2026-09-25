@@ -669,6 +669,53 @@ jobs:
       dockerImage: ${{ (inputs.dryRun || inputs.releaseProcessDryRun) && '' || format('camunda/camunda:{0}', inputs.releaseVersion) }}
     secrets: inherit
 
+  # Shadow run of the new release-notes generator (#57713), beside the legacy
+  # zcl changelog the `github` job builds. Read-only, non-blocking, its own
+  # job so the token stays read-only unlike `github`'s. Runs after `github`
+  # (shared GITHUB_TOKEN, avoids tripping the secondary rate limit) and is
+  # skipped for patches/alphas only where the walked tag can't yet resolve
+  # (dry runs) or the comparison isn't useful (minors, candidates). Kill
+  # switch: repo variable RELEASE_NOTES_SHADOW_DISABLED=true. Full rationale
+  # and the version-shape rules: GENERATOR.md.
+  release-notes-shadow:
+    needs: [release, github]
+    name: Release Notes (shadow run)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    continue-on-error: true
+    timeout-minutes: 60 # A minor walks thousands of commits; give it headroom.
+    if: ${{ always() && !cancelled() &&
+      needs.release.result == 'success' && needs.github.result == 'success' &&
+      vars.RELEASE_NOTES_SHADOW_DISABLED != 'true' &&
+      !inputs.dryRun && !inputs.releaseProcessDryRun && !contains(inputs.releaseVersion, 'dryrun') &&
+      !contains(inputs.releaseVersion, '-rc') && !endsWith(inputs.releaseVersion, '.0') }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.RELEASE_BRANCH }}
+          fetch-depth: 0 # Tags and full history — the range walk needs both.
+          persist-credentials: false
+      - name: Generate Changelog (new generator, shadow run)
+        id: gen-changelog-shadow
+        continue-on-error: true
+        uses: ./.github/actions/release-notes/generate
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          target-version: ${{ inputs.releaseVersion }}
+          release-branch: ${{ env.RELEASE_BRANCH }}
+          allow-unattributed: 'true'
+          unattributed-reason: 'shadow run (#57713) — comparing against the legacy zcl changelog, not yet gating'
+          output-dir: release-notes-shadow
+      # continue-on-error above hides a timeout or crash from the job's own
+      # status; surface it here so a swallowed failure still shows up.
+      - name: Report shadow-run outcome
+        if: always()
+        run: |
+          echo "### Release Notes shadow run: ${{ steps.gen-changelog-shadow.outcome }}" >> "$GITHUB_STEP_SUMMARY"
+
   # GitHub release job creates a GitHub release with artifacts, changelog, and proper versioning.
   # Flags impact:
   # - With dryRun=true: Skips creating the actual GitHub release (only prepares artifacts and changelog)
