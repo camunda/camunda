@@ -45,18 +45,14 @@ public class Worker {
   private static final Logger THROTTLED_LOGGER = new ThrottledLogger(LOGGER, Duration.ofSeconds(5));
   private static final int REQUEST_FUTURES_CAPACITY = 10_000;
 
-  // Job type of the agent-visibility scenario's ad-hoc sub-process ("AI Agent" orchestrator
-  // element in agentTools.bpmn). Jobs of this type are completed via the ad-hoc-sub-process
-  // JobResult flavor (round-schedule + tool activation) instead of the plain completion path
-  // below; every other job type (the scenario's 3 tool roles, and every other scenario's
-  // worker role) is unaffected.
+  // Job type of the agent-visibility scenario's ad-hoc sub-process orchestrator element
+  // (agentTools.bpmn); routed to the ad-hoc-sub-process completion path below instead of the
+  // plain one.
   private static final String AD_HOC_SUB_PROCESS_JOB_TYPE = "agent-visibility-orchestrator";
 
-  // Fixed, deliberately non-configurable tool-calling schedule for the agent-visibility
-  // scenario: round 1 activates one tool, round 2 activates two tools in the same job result
-  // (parallel tool calls), round 3 activates one tool again, round 4 activates none and instead
-  // fulfills the completion condition. Baseline and treatment runs of the scenario must produce
-  // byte-identical tool-activation traffic, so this schedule is never driven by Helm/env config.
+  // Fixed tool-calling schedule for the orchestrator: one tool, then two tools in parallel,
+  // then one tool again, then an empty round that fulfills the completion condition. Not
+  // configurable - baseline and treatment runs must produce identical tool-activation traffic.
   private static final List<List<String>> AD_HOC_SUB_PROCESS_ROUND_SCHEDULE =
       List.of(
           List.of("tool-lookup-account"),
@@ -72,26 +68,15 @@ public class Worker {
   private final ResponseChecker responseChecker;
   private final ConnectionMonitor connectionMonitor;
 
-  // Per-process-instance round tracking for the ad-hoc-sub-process orchestration path, keyed by
-  // ActivatedJob#getProcessInstanceKey(). Each RoundTracker assigns a distinct round number to
-  // every distinct ActivatedJob#getKey() it sees, so a redelivered job - which Zeebe job workers
-  // permit even with stream-enabled=false, since job workers are at-least-once, not
-  // exactly-once - reuses its already-assigned round instead of advancing past it. A bare
-  // incrementing counter (the previous implementation) double-counts a redelivered job as a new
-  // round, desyncing the round number from the process instance's actual physical progress and
-  // corrupting adHocSubProcessAgentInstanceKeys below; see
-  // ctxt/results/2026-09-09-run2-treatment-then-baseline.md for the discovered failure mode.
-  // In-memory and per-worker-pod: exact with the scenario's default single orchestrator replica;
-  // approximate (rounds could interleave across pods) if that role is ever scaled beyond one
-  // replica. Entries are evicted once the final round completes, to keep this bounded over
-  // long-running soak tests.
+  // Tracks each process instance's current round in AD_HOC_SUB_PROCESS_ROUND_SCHEDULE. Keyed by
+  // process instance key; in-memory and per-pod, so exact only with a single orchestrator
+  // replica. Evicted once the final round completes.
   private final ConcurrentHashMap<Long, RoundTracker> adHocSubProcessRounds =
       new ConcurrentHashMap<>();
 
-  // Caches the AgentInstance key returned by the round-1 CREATE, keyed by process instance key,
-  // so later rounds' UPDATE calls (Worker#simulateAgentInstance) can address the same agent
-  // instance. Only populated/consulted when WorkerProperties#agentInstanceSimulationEnabled is
-  // true; evicted alongside the round counter once the final round completes.
+  // Caches the AgentInstance key returned by round 0's CREATE, keyed by process instance key,
+  // so later rounds' UPDATE calls can address the same agent instance. Only used when
+  // WorkerProperties#agentInstanceSimulationEnabled is true; evicted with the round counter.
   private final ConcurrentHashMap<Long, Long> adHocSubProcessAgentInstanceKeys =
       new ConcurrentHashMap<>();
 
@@ -171,11 +156,8 @@ public class Worker {
       }
     }
 
-    // newCompleteCommand(ActivatedJob) (not the jobKey-only overload) so the lease token the
-    // engine stamped on activation (when with-lease is enabled) is auto-attached
-    // (JobClientImpl#newCompleteCommand(ActivatedJob)) - otherwise JobLeaseFencingCheck rejects
-    // every completion of this job with INVALID_STATE, and the job times out and gets
-    // redelivered forever instead of ever completing.
+    // newCompleteCommand(ActivatedJob), not the jobKey-only overload, so the job's lease token
+    // is auto-attached when with-lease is enabled.
     final var command = jobClient.newCompleteCommand(job).variables(variables);
     addDelayToCompletion(workerCfg.getCompletionDelay().toMillis(), startHandlingTime);
     if (!requestFutures.offer(command.send())) {
@@ -189,12 +171,11 @@ public class Worker {
     }
   }
 
-  // Completes an agent-visibility scenario's ad-hoc-sub-process orchestrator job by following
-  // AD_HOC_SUB_PROCESS_ROUND_SCHEDULE: activates this round's tool(s) via the ad-hoc-sub-process
-  // JobResult flavor, or - on the final, empty round - fulfills the completion condition instead.
-  // The engine automatically creates a fresh job of the same type on the same element instance
-  // once the activated tool(s) complete, so no further loop-control is needed here; the next
-  // round is simply the next invocation of this method for the same process instance.
+  // Completes the ad-hoc-sub-process orchestrator job by following
+  // AD_HOC_SUB_PROCESS_ROUND_SCHEDULE: activates this round's tool(s), or - on the final, empty
+  // round - fulfills the completion condition instead. The engine creates a fresh job of the
+  // same type once the activated tool(s) complete, so the next round is simply the next
+  // invocation of this method.
   private void handleAdHocSubProcessOrchestration(
       final JobClient jobClient, final ActivatedJob job) {
     final long startHandlingTime = System.currentTimeMillis();
@@ -203,17 +184,10 @@ public class Worker {
         adHocSubProcessRounds
             .computeIfAbsent(processInstanceKey, key -> new RoundTracker())
             .roundFor(job.getKey());
-    // Clamped defensively: AD_HOC_SUB_PROCESS_ROUND_SCHEDULE's one parallel round (2 tools
-    // activated together) can make the engine create a transient "phantom" orchestrator job -
-    // the ad-hoc sub-process's JobWorkerBehavior cancels-and-recreates the orchestrator job on
-    // every completing parallel path, so the first of the two tools to finish spawns a job that
-    // gets canceled once the second tool finishes. If this worker activates that phantom job
-    // before the cancellation lands (more likely under the added latency of treatment's
-    // AgentInstance calls), RoundTracker - which counts distinct job keys, not logical rounds -
-    // miscounts it as an extra round, shifting every later round for this process instance past
-    // the schedule's bounds. Clamping treats any such overflow as the terminal round instead of
-    // throwing ArrayIndexOutOfBoundsException; the phantom job's own completion is a no-op on
-    // the engine side regardless, since it was already canceled.
+    // Clamped: the engine can create more distinct orchestrator job keys for one process
+    // instance than this schedule has rounds for (e.g. a parallel round's two tools each
+    // triggering their own job re-creation). Treat any overflow as the terminal round instead
+    // of throwing.
     final int round = Math.min(rawRound, AD_HOC_SUB_PROCESS_ROUND_SCHEDULE.size() - 1);
     final boolean isFinalRound = round == AD_HOC_SUB_PROCESS_ROUND_SCHEDULE.size() - 1;
     final var toolsToActivate = AD_HOC_SUB_PROCESS_ROUND_SCHEDULE.get(round);
@@ -222,9 +196,8 @@ public class Worker {
       simulateAgentInstance(job, round, isFinalRound);
     }
 
-    // Evicted only after this round's work (including the AgentInstance command above) has
-    // fully run, not before - evicting earlier would let a redelivered copy of this same final
-    // round see a fresh, empty RoundTracker and get miscategorized back to round 0.
+    // Evicted only after this round's work has fully run - evicting earlier would let a
+    // redelivered copy of this final round see a fresh RoundTracker and restart at round 0.
     if (isFinalRound) {
       adHocSubProcessRounds.remove(processInstanceKey);
     }
@@ -249,35 +222,26 @@ public class Worker {
     }
   }
 
-  // Issues the AgentInstance CREATE (round 1) or UPDATE (later rounds) call a real Connector
-  // would issue for this round, using synthetic history content - see docs/testing or the
-  // agent-visibility scenario plan for why no real LLM/Connector is involved. Called before the
-  // job is completed, so the extra command latency is genuinely part of what gets measured.
+  // Issues the AgentInstance CREATE (round 0) or UPDATE (later rounds) call a real Connector
+  // would issue for this round, using synthetic history content. Called before the job
+  // completes, so the extra command latency is part of what gets measured.
   private void simulateAgentInstance(
       final ActivatedJob job, final int round, final boolean isFinalRound) {
     final long processInstanceKey = job.getProcessInstanceKey();
 
     if (round == 0) {
-      // computeIfAbsent (not a plain CREATE-then-put) so that a redelivered copy of this same
-      // round-0 job - which with-lease permits the broker to push and start processing
-      // concurrently with the still-in-flight original, since fencing only applies at
-      // completion, not delivery (see docs.camunda.io/.../job-workers#job-leasing) - blocks on
-      // the in-flight CREATE instead of racing its own second CREATE for the same element
-      // instance. Without this, the losing call is rejected 409 ALREADY_EXISTS, uncaught, and
-      // the SDK's default fail-fallback (which does not attach a lease token) is itself rejected
-      // 409 INVALID_STATE, permanently stranding the job and its process instance.
+      // computeIfAbsent, not a plain CREATE-then-put: a redelivered copy of this round-0 job
+      // can be processed concurrently with the still-in-flight original under with-lease, so
+      // this blocks the redelivered copy on the in-flight CREATE instead of racing a second one
+      // for the same element instance.
       adHocSubProcessAgentInstanceKeys.computeIfAbsent(
           processInstanceKey, key -> createAgentInstance(job));
     } else {
       final Long agentInstanceKey = adHocSubProcessAgentInstanceKeys.get(processInstanceKey);
       if (agentInstanceKey == null) {
-        // Defensive only - RoundTracker (see adHocSubProcessRounds) and the reordered eviction
-        // above should prevent this for any redelivered job, but a cache miss here must never
-        // throw: an uncaught exception leaves the job unable to complete, and (per the discovery
-        // in ctxt/results/2026-09-09-run2-treatment-then-baseline.md) the framework's own FAIL
-        // fallback can itself be rejected by a concurrent redelivery holding the lease,
-        // permanently stranding the job. Skipping the UPDATE lets the round schedule below still
-        // complete the job normally; only this one AgentHistory item is missed.
+        // Defensive only - should not happen given RoundTracker and the eviction ordering
+        // above, but must never throw: skip the UPDATE and let the round schedule still
+        // complete the job normally.
         THROTTLED_LOGGER.warn(
             "No cached AgentInstance key for processInstanceKey={} at round={}; skipping "
                 + "AgentInstance UPDATE",
@@ -293,13 +257,9 @@ public class Worker {
     }
   }
 
-  // Issues the round-0 AgentInstance CREATE call for the given job, returning the created
-  // AgentInstance key, or null if the call failed. Never throws: called from
-  // adHocSubProcessAgentInstanceKeys.computeIfAbsent (see simulateAgentInstance above), so an
-  // uncaught exception here would leave the job unable to complete the same way a direct
-  // uncaught exception would (see the round>0 cache-miss branch's comment) - a null return
-  // degrades gracefully to that same, already-tolerated cache-miss path for every later round of
-  // this process instance.
+  // Issues the round-0 AgentInstance CREATE call, returning the created AgentInstance key, or
+  // null on failure. Never throws - an uncaught exception here would leave the job unable to
+  // complete.
   private Long createAgentInstance(final ActivatedJob job) {
     final var configurationItem =
         new AgentInstanceHistoryItem()
@@ -336,15 +296,9 @@ public class Worker {
     }
   }
 
-  // Issues the round>0 AgentInstance UPDATE call for the given job. Never throws: a stale
-  // redelivered copy of this job - which with-lease permits to be pushed and processed
-  // concurrently with a newer delivery that already completed or is completing this same round
-  // (see the CREATE-branch comment on simulateAgentInstance above for why this is possible) -
-  // gets rejected by the engine (observed: 404 NOT_FOUND, "job was not active") once it's no
-  // longer the current delivery. An uncaught exception here would leave the job unable to
-  // complete the same way it would from the CREATE branch or the cache-miss branch above, so
-  // this is caught and logged rather than propagated; the round schedule still completes the
-  // job normally, only this one AgentHistory item is missed.
+  // Issues the round>0 AgentInstance UPDATE call. Never throws - a stale redelivered copy can
+  // be rejected once a newer delivery already handled this round; caught and logged so the
+  // round schedule still completes the job normally.
   private void updateAgentInstance(
       final ActivatedJob job,
       final long agentInstanceKey,
@@ -428,11 +382,9 @@ public class Worker {
     }
   }
 
-  // Assigns each distinct ActivatedJob#getKey() exactly one round number for a given process
-  // instance. Zeebe job workers are at-least-once, not exactly-once, so the same job can be
-  // delivered more than once; computeIfAbsent guarantees the round-generating lambda runs at
-  // most once per job key even under concurrent redelivery, so a redelivered job always reuses
-  // its already-assigned round instead of advancing past it.
+  // Assigns each distinct job key exactly one round number per process instance, so a
+  // redelivered job (Zeebe job workers are at-least-once) reuses its already-assigned round
+  // instead of advancing past it.
   private static final class RoundTracker {
 
     private final ConcurrentHashMap<Long, Integer> roundsByJobKey = new ConcurrentHashMap<>();
