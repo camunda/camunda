@@ -30,6 +30,7 @@ BENCHMARK_JAR = f"{MICROBENCHMARKS_MODULE}/target/benchmarks.jar"
 SHORT_TIMEOUT_SECONDS = 120
 BUILD_TIMEOUT_SECONDS = 1800
 BENCHMARK_TIMEOUT_SECONDS = 3600
+COMMENT_MAX_LENGTH = 60000
 
 
 def parse_changed_files(value: str) -> list[str]:
@@ -148,6 +149,32 @@ def run_command(
         )
     except OSError as error:
         return subprocess.CompletedProcess(args, 127, stdout=str(error))
+
+
+def post_pr_comment(workspace: Path, body: str) -> None:
+    repo = os.environ["GITHUB_REPOSITORY"]
+    pr_number = os.environ["PR_NUMBER"]
+    if len(body) > COMMENT_MAX_LENGTH:
+        body = body[:COMMENT_MAX_LENGTH] + "\n\n[Output truncated to fit in a GitHub comment.]"
+    result = subprocess.run(
+        [
+            "gh",
+            "api",
+            "--method",
+            "POST",
+            f"repos/{repo}/issues/{pr_number}/comments",
+            "--input",
+            "-",
+        ],
+        cwd=workspace,
+        input=json.dumps({"body": body}),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        timeout=SHORT_TIMEOUT_SECONDS,
+    )
+    if result.returncode:
+        raise RuntimeError(f"Failed to post PR comment:\n{result.stdout}")
 
 
 def main() -> int:
@@ -298,8 +325,11 @@ def main() -> int:
                     if selectors:
                         result.append("```")
 
+        body = "\n".join(result).rstrip() + "\n"
         result_path = results_dir / f"{index:04d}-{kind}-{revision}.md"
-        result_path.write_text("\n".join(result).rstrip() + "\n", encoding="utf-8")
+        result_path.write_text(body, encoding="utf-8")
+        post_pr_comment(workspace, body)
+        print(f"Posted result: {marker}")
 
     try:
         baseline = git("merge-base", base_sha, head_sha).strip()
