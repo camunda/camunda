@@ -8,11 +8,11 @@
 package io.camunda.zeebe.engine.processing.expression;
 
 import io.camunda.secretstore.SecretStoreRegistry;
+import io.camunda.zeebe.el.ContextValue;
 import io.camunda.zeebe.el.EvaluationContext;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import org.agrona.DirectBuffer;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -51,7 +51,7 @@ public final class SecretReferenceEvaluationContext implements ScopedEvaluationC
   }
 
   @Override
-  public Either<DirectBuffer, EvaluationContext> getVariable(final String variableName) {
+  public Either<ContextValue, EvaluationContext> getVariable(final String variableName) {
     if (!ROOT.equals(variableName)) {
       return delegate.getVariable(variableName);
     }
@@ -83,12 +83,12 @@ public final class SecretReferenceEvaluationContext implements ScopedEvaluationC
    * forwards every other key to the delegate's {@code camunda} content (e.g. {@code vars}).
    */
   private record CamundaNamespaceContext(
-      Either<DirectBuffer, EvaluationContext> delegateCamunda,
+      Either<ContextValue, EvaluationContext> delegateCamunda,
       @Nullable ReferencedSecretCollector referencedSecretCollector)
       implements EvaluationContext {
 
     @Override
-    public Either<DirectBuffer, EvaluationContext> getVariable(final String variableName) {
+    public Either<ContextValue, EvaluationContext> getVariable(final String variableName) {
       if (NAMESPACE.equals(variableName)) {
         return Either.right(new SecretLeafContext(referencedSecretCollector));
       }
@@ -97,7 +97,7 @@ public final class SecretReferenceEvaluationContext implements ScopedEvaluationC
     }
 
     @SuppressWarnings("NullAway")
-    private static Either<DirectBuffer, EvaluationContext> notFound() {
+    private static Either<ContextValue, EvaluationContext> notFound() {
       return Either.left(null);
     }
   }
@@ -111,7 +111,7 @@ public final class SecretReferenceEvaluationContext implements ScopedEvaluationC
       implements EvaluationContext {
 
     @Override
-    public Either<DirectBuffer, EvaluationContext> getVariable(final String name) {
+    public Either<ContextValue, EvaluationContext> getVariable(final String name) {
       if (referencedSecretCollector != null) {
         // a reference used directly in the expression names no store, so it resolves against the
         // default one
@@ -120,7 +120,8 @@ public final class SecretReferenceEvaluationContext implements ScopedEvaluationC
       final String reference = ROOT + "." + NAMESPACE + "." + name;
       // cast to Object to serialize the string as a MessagePack string value, not parse it as JSON
       return Either.left(
-          BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack((Object) reference)));
+          new ContextValue.MsgPack(
+              BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack((Object) reference))));
     }
   }
 }
