@@ -242,6 +242,62 @@ class WorkerTest {
   }
 
   @Test
+  void shouldNotDuplicateAgentInstanceCreateWhenRoundZeroJobIsRedelivered() {
+    // given — with-lease permits the broker to push a redelivered copy of the round-0
+    // orchestrator job (same ActivatedJob#getKey()) while the original delivery's blocking
+    // AgentInstance CREATE call is still in flight (see Worker#simulateAgentInstance's comment);
+    // both deliveries reach simulateAgentInstance for round 0 here
+    final var jobClient = mock(JobClient.class);
+    final var client = mock(CamundaClient.class);
+    final var worker = newWorker(client, agentInstanceSimulationProperties());
+    final long processInstanceKey = 999L;
+    final long elementInstanceKey = 666L;
+    final long agentInstanceKey = 1313L;
+    mockCreateAgentInstanceCommand(client, agentInstanceKey);
+
+    // round 1 (round index 0), first delivery
+    driveAdHocSubProcessRound(
+        worker, jobClient, processInstanceKey, elementInstanceKey, 401L, "lease-1");
+
+    // round 1, redelivered — same job key as above, so RoundTracker still resolves round 0
+    driveAdHocSubProcessRound(
+        worker, jobClient, processInstanceKey, elementInstanceKey, 401L, "lease-1");
+
+    // then — only the first delivery ever issues a CREATE; the redelivered copy must not race
+    // its own CREATE for the same element instance and hit ALREADY_EXISTS
+    verify(client, times(1)).newCreateAgentInstanceCommand();
+  }
+
+  @Test
+  void shouldSkipAgentInstanceUpdateWhenCreateFailed() {
+    // given — the round-0 AgentInstance CREATE call fails (e.g. rejected by the engine);
+    // Worker#createAgentInstance must swallow this rather than let it propagate uncaught,
+    // since an uncaught exception here leaves the job unable to complete (see the round>0
+    // cache-miss branch's comment on Worker#simulateAgentInstance)
+    final var jobClient = mock(JobClient.class);
+    final var client = mock(CamundaClient.class);
+    final var worker = newWorker(client, agentInstanceSimulationProperties());
+    final long processInstanceKey = 1000L;
+    final long elementInstanceKey = 777L;
+    mockFailingCreateAgentInstanceCommand(client);
+
+    // round 1 — CREATE fails; must not throw out of handleJob
+    var round =
+        driveAdHocSubProcessRound(
+            worker, jobClient, processInstanceKey, elementInstanceKey, 501L, "lease-1");
+    assertThat(round.activatedElements()).containsExactly("tool-lookup-account");
+
+    // round 2 — no cached agent-instance key, so the UPDATE is skipped, but the round
+    // schedule/completion still proceeds normally
+    round =
+        driveAdHocSubProcessRound(
+            worker, jobClient, processInstanceKey, elementInstanceKey, 502L, "lease-2");
+    assertThat(round.activatedElements())
+        .containsExactly("tool-calculate-score", "tool-send-notification");
+    verify(client, never()).newUpdateAgentInstanceCommand(anyLong());
+  }
+
+  @Test
   void shouldFallThroughToPlainCompletionForOtherJobTypes() {
     // given — a job of a type that is not the ad-hoc-sub-process orchestrator (e.g. one of the
     // scenario's tool roles, or any other scenario's worker role)
@@ -346,6 +402,25 @@ class WorkerTest {
     when(future.join()).thenReturn(response);
     when(response.getAgentInstanceKey()).thenReturn(agentInstanceKey);
     return step1;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static void mockFailingCreateAgentInstanceCommand(final CamundaClient client) {
+    final var step1 = mock(CreateAgentInstanceCommandStep1.class);
+    final var step2 = mock(CreateAgentInstanceCommandStep1.CreateAgentInstanceCommandStep2.class);
+    final var step3 = mock(CreateAgentInstanceCommandStep1.CreateAgentInstanceCommandStep3.class);
+    final var step4 = mock(CreateAgentInstanceCommandStep1.CreateAgentInstanceCommandStep4.class);
+    final var step5 = mock(CreateAgentInstanceCommandStep1.CreateAgentInstanceCommandStep5.class);
+    final CamundaFuture<CreateAgentInstanceResponse> future = mock(CamundaFuture.class);
+
+    when(client.newCreateAgentInstanceCommand()).thenReturn(step1);
+    when(step1.elementInstanceKey(anyLong())).thenReturn(step2);
+    when(step2.jobKey(anyLong())).thenReturn(step3);
+    when(step3.jobLeaseToken(anyString())).thenReturn(step4);
+    when(step4.history(any())).thenReturn(step5);
+    when(step5.send()).thenReturn(future);
+    when(future.join())
+        .thenThrow(new RuntimeException("simulated ALREADY_EXISTS rejection from the engine"));
   }
 
   @SuppressWarnings("unchecked")

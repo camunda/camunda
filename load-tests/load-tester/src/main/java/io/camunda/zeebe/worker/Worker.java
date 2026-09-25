@@ -246,32 +246,16 @@ public class Worker {
     final long processInstanceKey = job.getProcessInstanceKey();
 
     if (round == 0) {
-      final var configurationItem =
-          new AgentInstanceHistoryItem()
-              .historyItemId("agent-visibility-configuration")
-              .loopIteration(1)
-              .role(AgentInstanceHistoryRole.CONFIGURATION)
-              .content(
-                  List.of(
-                      AgentInstanceHistoryContent.text(
-                          "Synthetic agent configuration for load testing.")))
-              .producedAt(OffsetDateTime.now())
-              .model("synthetic-load-test-model")
-              .provider("synthetic")
-              .systemPrompt(
-                  List.of(
-                      AgentInstanceHistoryContent.text("You are a synthetic load-test agent.")));
-
-      final var response =
-          client
-              .newCreateAgentInstanceCommand()
-              .elementInstanceKey(job.getElementInstanceKey())
-              .jobKey(job.getKey())
-              .jobLeaseToken(job.getJobLeaseToken())
-              .history(List.of(configurationItem))
-              .send()
-              .join();
-      adHocSubProcessAgentInstanceKeys.put(processInstanceKey, response.getAgentInstanceKey());
+      // computeIfAbsent (not a plain CREATE-then-put) so that a redelivered copy of this same
+      // round-0 job - which with-lease permits the broker to push and start processing
+      // concurrently with the still-in-flight original, since fencing only applies at
+      // completion, not delivery (see docs.camunda.io/.../job-workers#job-leasing) - blocks on
+      // the in-flight CREATE instead of racing its own second CREATE for the same element
+      // instance. Without this, the losing call is rejected 409 ALREADY_EXISTS, uncaught, and
+      // the SDK's default fail-fallback (which does not attach a lease token) is itself rejected
+      // 409 INVALID_STATE, permanently stranding the job and its process instance.
+      adHocSubProcessAgentInstanceKeys.computeIfAbsent(
+          processInstanceKey, key -> createAgentInstance(job));
     } else {
       final Long agentInstanceKey = adHocSubProcessAgentInstanceKeys.get(processInstanceKey);
       if (agentInstanceKey == null) {
@@ -314,6 +298,49 @@ public class Worker {
 
     if (isFinalRound) {
       adHocSubProcessAgentInstanceKeys.remove(processInstanceKey);
+    }
+  }
+
+  // Issues the round-0 AgentInstance CREATE call for the given job, returning the created
+  // AgentInstance key, or null if the call failed. Never throws: called from
+  // adHocSubProcessAgentInstanceKeys.computeIfAbsent (see simulateAgentInstance above), so an
+  // uncaught exception here would leave the job unable to complete the same way a direct
+  // uncaught exception would (see the round>0 cache-miss branch's comment) - a null return
+  // degrades gracefully to that same, already-tolerated cache-miss path for every later round of
+  // this process instance.
+  private Long createAgentInstance(final ActivatedJob job) {
+    final var configurationItem =
+        new AgentInstanceHistoryItem()
+            .historyItemId("agent-visibility-configuration")
+            .loopIteration(1)
+            .role(AgentInstanceHistoryRole.CONFIGURATION)
+            .content(
+                List.of(
+                    AgentInstanceHistoryContent.text(
+                        "Synthetic agent configuration for load testing.")))
+            .producedAt(OffsetDateTime.now())
+            .model("synthetic-load-test-model")
+            .provider("synthetic")
+            .systemPrompt(
+                List.of(AgentInstanceHistoryContent.text("You are a synthetic load-test agent.")));
+
+    try {
+      final var response =
+          client
+              .newCreateAgentInstanceCommand()
+              .elementInstanceKey(job.getElementInstanceKey())
+              .jobKey(job.getKey())
+              .jobLeaseToken(job.getJobLeaseToken())
+              .history(List.of(configurationItem))
+              .send()
+              .join();
+      return response.getAgentInstanceKey();
+    } catch (final RuntimeException e) {
+      THROTTLED_LOGGER.warn(
+          "AgentInstance CREATE failed for processInstanceKey={}: {}",
+          job.getProcessInstanceKey(),
+          e.getMessage());
+      return null;
     }
   }
 
