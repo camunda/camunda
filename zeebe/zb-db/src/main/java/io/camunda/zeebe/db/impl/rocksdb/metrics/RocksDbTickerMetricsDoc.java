@@ -124,7 +124,7 @@ public enum RocksDbTickerMetricsDoc implements RocksDbMeterDoc {
   BYTES_READ(
       TickerType.BYTES_READ,
       "rocksdb.reads",
-      "bytes",
+      "size",
       "Cumulative bytes read by point gets",
       BaseUnits.BYTES),
   MEMTABLE_HIT(
@@ -187,7 +187,7 @@ public enum RocksDbTickerMetricsDoc implements RocksDbMeterDoc {
       TickerType.ITER_BYTES_READ,
       "rocksdb.iterators",
       "bytes.read",
-      "Cumulative bytes read through iterators. Compare against reads.bytes to see how much of the read path is iteration",
+      "Cumulative bytes read through iterators. Compare against reads.size to see how much of the read path is iteration",
       BaseUnits.BYTES),
   NO_ITERATOR_CREATED(
       TickerType.NO_ITERATOR_CREATED,
@@ -224,7 +224,7 @@ public enum RocksDbTickerMetricsDoc implements RocksDbMeterDoc {
   BYTES_WRITTEN(
       TickerType.BYTES_WRITTEN,
       "rocksdb.writes",
-      "bytes",
+      "size",
       "Cumulative bytes written",
       BaseUnits.BYTES),
   WRITE_DONE_BY_SELF(
@@ -249,19 +249,19 @@ public enum RocksDbTickerMetricsDoc implements RocksDbMeterDoc {
   COMPACT_READ_BYTES(
       TickerType.COMPACT_READ_BYTES,
       "rocksdb.compaction",
-      "read.bytes",
+      "read.size",
       "Cumulative bytes read by compaction",
       BaseUnits.BYTES),
   COMPACT_WRITE_BYTES(
       TickerType.COMPACT_WRITE_BYTES,
       "rocksdb.compaction",
-      "write.bytes",
+      "write.size",
       "Cumulative bytes written by compaction",
       BaseUnits.BYTES),
   FLUSH_WRITE_BYTES(
       TickerType.FLUSH_WRITE_BYTES,
       "rocksdb.compaction",
-      "flush.write.bytes",
+      "flush.write.size",
       "Cumulative bytes written by memtable flushes",
       BaseUnits.BYTES),
   COMPACTION_KEY_DROP_OBSOLETE(
