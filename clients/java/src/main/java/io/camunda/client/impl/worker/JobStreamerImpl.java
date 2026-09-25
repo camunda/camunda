@@ -361,22 +361,31 @@ final class JobStreamerImpl implements JobStreamer {
       return;
     }
 
-    if (error != null && handleSentinelException(error)) {
+    if (error == null) {
+      // A normal completion (e.g. a graceful drain by the gateway or a proxy) is not a failure, so
+      // reopen right away like the timeout paths do instead of backing off.
+      LOGGER.debug(
+          "Job stream of type '{}' for worker '{}' was completed by the server, recreating it",
+          jobType,
+          workerName);
+      lockedOpen();
       return;
     }
 
-    if (error != null) {
-      logStreamError(error);
-      retryDelay = backoffSupplier.supplyRetryDelay(retryDelay);
-      LOGGER
-          .atDebug()
-          .addArgument(jobType)
-          .addArgument(workerName)
-          .addArgument(() -> Duration.ofMillis(retryDelay))
-          .setMessage("Recreating closed stream of type '{}' and worker '{}' in {}")
-          .log();
-      executor.schedule(() -> open(command), retryDelay, TimeUnit.MILLISECONDS);
+    if (handleSentinelException(error)) {
+      return;
     }
+
+    logStreamError(error);
+    retryDelay = backoffSupplier.supplyRetryDelay(retryDelay);
+    LOGGER
+        .atDebug()
+        .addArgument(jobType)
+        .addArgument(workerName)
+        .addArgument(() -> Duration.ofMillis(retryDelay))
+        .setMessage("Recreating closed stream of type '{}' and worker '{}' in {}")
+        .log();
+    executor.schedule(() -> open(command), retryDelay, TimeUnit.MILLISECONDS);
   }
 
   private boolean handleSentinelException(final Throwable error) {
