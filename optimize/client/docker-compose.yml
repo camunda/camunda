@@ -148,6 +148,7 @@ services:
       IDENTITY_AUTH_PROVIDER_BACKEND_URL: http://keycloak:8080/auth/realms/camunda-platform
       KEYCLOAK_INIT_OPTIMIZE_SECRET: XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
       KEYCLOAK_INIT_OPTIMIZE_ROOT_URL: http://localhost:3000
+<<<<<<< HEAD
       KEYCLOAK_USERS_0_USERNAME: 'ourief'
       KEYCLOAK_USERS_0_PASSWORD: 'ourief'
       KEYCLOAK_USERS_0_FIRST_NAME: 'ourief'
@@ -180,10 +181,25 @@ services:
       KEYCLOAK_USERS_6_ROLES_0: 'Optimize'
       KEYCLOAK_USERS_6_ROLES_1: 'Identity'
   operate:
+=======
+      KEYCLOAK_USERS_0_USERNAME: 'demo'
+      KEYCLOAK_USERS_0_PASSWORD: 'demo'
+      KEYCLOAK_USERS_0_EMAIL: 'demo@example.com'
+      KEYCLOAK_USERS_0_FIRST_NAME: 'demo'
+      KEYCLOAK_USERS_0_ROLES_0: 'Optimize'
+      KEYCLOAK_USERS_0_ROLES_1: 'ManagementIdentity'
+      KEYCLOAK_USERS_1_USERNAME: 'john'
+      KEYCLOAK_USERS_1_PASSWORD: 'john'
+      KEYCLOAK_USERS_1_EMAIL: 'john@example.com'
+      KEYCLOAK_USERS_1_FIRST_NAME: 'john'
+      KEYCLOAK_USERS_1_ROLES_0: 'Optimize'
+  camunda:
+>>>>>>> ad34046b (test: migrate Optimize e2e tests from TestCafe to Playwright)
     profiles: ['self-managed', 'self-managed:elasticsearch']
     image: camunda/operate:${OPERATE_VERSION:-8.5.0}
     container_name: operate
     environment:
+<<<<<<< HEAD
       - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
       - CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200
       - CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
@@ -197,6 +213,22 @@ services:
       - CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME=test
       - SERVER_SERVLET_CONTEXT_PATH=/
       - CAMUNDA_OPERATE_CLUSTERNODE_PARTITIONIDS=1,2
+=======
+      - SPRING_PROFILES_ACTIVE=broker,operate,tasklist,consolidated-auth
+      - CAMUNDA_SECURITY_AUTHENTICATION_METHOD=basic
+      - CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false
+      - CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=true
+      - CAMUNDA_SECURITY_MULTITENANCY_CHECKSENABLED=false
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME=demo
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD=demo
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME=Demo
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL=demo@example.com
+      - CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0=demo
+      - JAVA_TOOL_OPTIONS=-Xms1g -Xmx2g
+      - CAMUNDA_DATA_SECONDARYSTORAGE_TYPE=elasticsearch
+      - CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL=http://elasticsearch:9200
+      - JAVA_OPTS=-XX:+IgnoreUnrecognizedVMOptions -XX:UseSVE=0
+>>>>>>> ad34046b (test: migrate Optimize e2e tests from TestCafe to Playwright)
     ports:
       - '28080:8080'
     healthcheck:
@@ -214,6 +246,7 @@ services:
     image: camunda/operate:${OPERATE_VERSION:-8.5.0}
     container_name: operate-opensearch
     environment:
+<<<<<<< HEAD
       - SERVER_PORT=8080
       - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe-opensearch:26500
       - CAMUNDA_OPERATE_OPENSEARCH_URL=http://opensearch:9200
@@ -229,6 +262,26 @@ services:
       - CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME=test
       - SERVER_SERVLET_CONTEXT_PATH=/
       - CAMUNDA_OPERATE_CLUSTERNODE_PARTITIONIDS=1,2
+=======
+      - SPRING_PROFILES_ACTIVE=broker,operate,tasklist,consolidated-auth
+      - CAMUNDA_SECURITY_AUTHENTICATION_METHOD=basic
+      - CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false
+      - CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=true
+      - CAMUNDA_SECURITY_MULTITENANCY_CHECKSENABLED=false
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME=demo
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD=demo
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME=Demo
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL=demo@example.com
+      - CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0=demo
+      - JAVA_TOOL_OPTIONS=-Xms1g -Xmx2g
+      - CAMUNDA_DATA_SECONDARYSTORAGE_TYPE=opensearch
+      - CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_URL=http://opensearch:9200
+      - DATABASE_URL=http://opensearch
+      - DATABASE_PORT=9200
+      - DATABASE_TYPE=opensearch
+      - ZEEBE_EXPORTER_CLASS_NAME=io.camunda.zeebe.exporter.opensearch.OpensearchExporter
+      - JAVA_OPTS=-XX:+IgnoreUnrecognizedVMOptions -XX:UseSVE=0
+>>>>>>> ad34046b (test: migrate Optimize e2e tests from TestCafe to Playwright)
     ports:
       - '28080:8080'
     healthcheck:
