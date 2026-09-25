@@ -374,7 +374,7 @@ under **Documentation**.
 
 ### 5. The delivery claim — released, or partially delivered?
 
-**File:** [`src/delivery/index.ts`](src/delivery/index.ts) (pure), fed by `fetchIssueClosers` in [`src/resolve/index.ts`](src/resolve/index.ts).
+**File:** [`src/delivery/index.ts`](src/delivery/index.ts) (pure), fed by `fetchIssueFacts` in [`src/resolve/index.ts`](src/resolve/index.ts).
 
 This decides, per issue, whether **this** pull request is the one that delivered it — the difference
 between `Released in 8.9.19 (#61871)` and `Partially delivered in 8.9.19 by #61960` in `comments.json`.

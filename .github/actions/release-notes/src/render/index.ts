@@ -169,8 +169,6 @@ function renderLine(entry: RenderEntry): string {
   return `- ${entry.title} (${entry.issueNumbers.map((n) => `#${n}`).join(', ')}) — ${prs}${partial}`;
 }
 
-/** One line per dependency, not per bump — collapsed to the earliest `from`
- *  and latest `to` across every PR that moved it. See GENERATOR.md § 6. */
 /** Dotted-numeric versions compare numerically; a digest/sha/date tag has no order and returns null. */
 function versionKey(value: string): number[] | null {
   const trimmed = value.replace(/^v/, '');
