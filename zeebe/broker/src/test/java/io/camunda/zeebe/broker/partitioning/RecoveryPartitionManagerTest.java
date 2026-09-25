@@ -776,7 +776,7 @@ final class RecoveryPartitionManagerTest {
   class SchemaInitialization {
 
     @Test
-    void shouldInvokeSchemaInitializerAfterStart() {
+    void shouldInvokeSchemaInitializerOnlyWhenExplicitlyRequested() {
       // given
       final var invocationCount = new AtomicReference<>(0);
       partitionManager =
@@ -785,6 +785,8 @@ final class RecoveryPartitionManagerTest {
               actorScheduler,
               () -> () -> invocationCount.updateAndGet(count -> count + 1));
       assertThat(partitionManager.start()).succeedsWithin(Duration.ofSeconds(10));
+
+      assertThat(invocationCount).hasValue(0);
 
       // when
       final var future = new AtomicReference<ActorFuture<Void>>();
