@@ -19637,7 +19637,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Share of block cache lookups served without touching the filesystem. A high ratio means the read path is CPU bound rather than IO bound, which is the question that decides whether shaving allocations or copies is worth anything.\n\nOnly present when RocksDB statistics are enabled (`zeebe.broker.experimental.rocksdb.enableStatistics`).",
+          "description": "Share of block cache lookups served without touching the filesystem. A high ratio means the read path is CPU bound rather than IO bound, which is the question that decides whether shaving allocations or copies is worth anything.\n\nOnly present when RocksDB statistics are enabled.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -19738,7 +19738,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Data, index and filter block lookups split by hit and miss. Index and filter blocks are pinned in cache, so sustained misses there point at a cache that is too small for the working set.\n\nOnly present when RocksDB statistics are enabled (`zeebe.broker.experimental.rocksdb.enableStatistics`).",
+          "description": "Data, index and filter block lookups split by hit and miss. Index and filter blocks are pinned in cache, so sustained misses there point at a cache that is too small for the working set.\n\nOnly present when RocksDB statistics are enabled.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -19899,7 +19899,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Gets resolved by the memtable versus each LSM level. Everything below the memtable line went through the block cache or the filesystem.\n\nOnly present when RocksDB statistics are enabled (`zeebe.broker.experimental.rocksdb.enableStatistics`).",
+          "description": "Gets resolved by the memtable versus each LSM level. Everything below the memtable line went through the block cache or the filesystem.\n\nOnly present when RocksDB statistics are enabled.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -20036,7 +20036,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Fraction of bloom lookups that avoided reading a block. The prefix extractor is a fixed 8-byte prefix, which is the column family id only, so a prefix ratio near zero means the prefix bloom is spending memtable memory without filtering anything.\n\nOnly present when RocksDB statistics are enabled (`zeebe.broker.experimental.rocksdb.enableStatistics`).",
+          "description": "Fraction of bloom lookups that avoided reading a block. The prefix extractor is a fixed 8-byte prefix, which is the column family id only, so a prefix ratio near zero means the prefix bloom is spending memtable memory without filtering anything.\n\nOnly present when RocksDB statistics are enabled.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -20149,7 +20149,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Every whileEqualPrefix / whileTrue call constructs a fresh iterator, which acquires a superversion and builds a merging iterator over the memtables and L0 files. This is a fixed per-call cost that is paid even when the scan returns a single entry.\n\nOnly present when RocksDB statistics are enabled (`zeebe.broker.experimental.rocksdb.enableStatistics`).",
+          "description": "Every whileEqualPrefix / whileTrue call constructs a fresh iterator, which acquires a superversion and builds a merging iterator over the memtables and L0 files. This is a fixed per-call cost that is paid even when the scan returns a single entry.\n\nOnly present when RocksDB statistics are enabled.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -20274,7 +20274,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Seeks, forward and backward steps, plus internal keys skipped and re-seeks. A high skip or reseek rate relative to next means iteration is walking over tombstones or shadowed versions.\n\nOnly present when RocksDB statistics are enabled (`zeebe.broker.experimental.rocksdb.enableStatistics`).",
+          "description": "Seeks, forward and backward steps, plus internal keys skipped and re-seeks. A high skip or reseek rate relative to next means iteration is walking over tombstones or shadowed versions.\n\nOnly present when RocksDB statistics are enabled.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -20423,7 +20423,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Bytes read through point gets compared with bytes read through iterators. Tells you which of the two read paths is worth optimising.\n\nOnly present when RocksDB statistics are enabled (`zeebe.broker.experimental.rocksdb.enableStatistics`).",
+          "description": "Bytes read through point gets compared with bytes read through iterators. Tells you which of the two read paths is worth optimising.\n\nOnly present when RocksDB statistics are enabled.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -20536,7 +20536,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Key throughput as seen by RocksDB itself, independent of Zeebe record throughput.\n\nOnly present when RocksDB statistics are enabled (`zeebe.broker.experimental.rocksdb.enableStatistics`).",
+          "description": "Key throughput as seen by RocksDB itself, independent of Zeebe record throughput.\n\nOnly present when RocksDB statistics are enabled.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -20649,7 +20649,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Mean time spent inside RocksDB per operation, derived as rate(sum)/rate(count) over the query window. This excludes the JNI boundary and Zeebe serialization, so comparing it against zeebe_rocksdb_latency separates RocksDB cost from Zeebe-side cost.\n\nOnly present when RocksDB statistics are enabled (`zeebe.broker.experimental.rocksdb.enableStatistics`).",
+          "description": "Mean time spent inside RocksDB per operation, derived as rate(sum)/rate(count) over the query window. This excludes the JNI boundary and Zeebe serialization, so comparing it against zeebe_rocksdb_latency separates RocksDB cost from Zeebe-side cost.\n\nOnly present when RocksDB statistics are enabled.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -20774,7 +20774,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Mean time for a single SST file read and for fetching a block on behalf of a get. A rising mean here is the clearest sign that reads are leaving the block cache and hitting the filesystem.\n\nOnly present when RocksDB statistics are enabled (`zeebe.broker.experimental.rocksdb.enableStatistics`).",
+          "description": "Mean time for a single SST file read and for fetching a block on behalf of a get. A rising mean here is the clearest sign that reads are leaving the block cache and hitting the filesystem.\n\nOnly present when RocksDB statistics are enabled.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -20887,7 +20887,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "SST file opens and read errors, plus how many reads are served from the last (compressed) level versus the levels above it.\n\nOnly present when RocksDB statistics are enabled (`zeebe.broker.experimental.rocksdb.enableStatistics`).",
+          "description": "SST file opens and read errors, plus how many reads are served from the last (compressed) level versus the levels above it.\n\nOnly present when RocksDB statistics are enabled.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -21024,7 +21024,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Bytes moved by background work. Read plus write bytes against the write rate gives the effective write amplification.\n\nOnly present when RocksDB statistics are enabled (`zeebe.broker.experimental.rocksdb.enableStatistics`).",
+          "description": "Bytes moved by background work. Read plus write bytes against the write rate gives the effective write amplification.\n\nOnly present when RocksDB statistics are enabled.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -21149,7 +21149,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Microseconds per second that writes were stalled waiting on flushes or compactions. Complements the write-stall counters above, which say how often rather than how long.\n\nOnly present when RocksDB statistics are enabled (`zeebe.broker.experimental.rocksdb.enableStatistics`).",
+          "description": "Microseconds per second that writes were stalled waiting on flushes or compactions. Complements the write-stall counters above, which say how often rather than how long.\n\nOnly present when RocksDB statistics are enabled.",
           "fieldConfig": {
             "defaults": {
               "color": {
