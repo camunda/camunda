@@ -598,11 +598,11 @@ schemas:
           - ENTER_RECOVERY
           - EXIT_RECOVERY
           - AWAIT_MODE_CHANGE
-          - INITIALIZE_SCHEMA
           - EXPORTING_STATE_CHANGE
           - REMOVE_PHYSICAL_TENANT
           - PARTITION_PROMOTE
           - PARTITION_DEMOTE
+          - INITIALIZE_SCHEMA
       brokerId:
         $ref: "components.yaml#/schemas/BrokerId"
       partitionId:
