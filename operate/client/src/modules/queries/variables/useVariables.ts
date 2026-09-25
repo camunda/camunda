@@ -12,6 +12,8 @@ import {searchVariables} from 'modules/api/v2/variables/searchVariables';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {useDisplayStatus, useVariableScopeKey} from 'modules/hooks/variables';
 import {useIsPlaceholderSelected} from 'modules/hooks/elementSelection';
+import {modificationsStore} from 'modules/stores/modifications';
+import {TOKEN_OPERATIONS} from 'modules/constants';
 import {queryKeys} from '../queryKeys';
 
 const MAX_VARIABLES_PER_REQUEST = 50;
@@ -27,6 +29,11 @@ function useVariables(options?: {
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const scopeKey = useVariableScopeKey();
   const isPlaceholderSelected = useIsPlaceholderSelected();
+  const isPendingAddTokenScope = modificationsStore.elementModifications.some(
+    (modification) =>
+      modification.operation === TOKEN_OPERATIONS.ADD_TOKEN &&
+      modification.scopeId === scopeKey,
+  );
   const {
     refetchInterval = false,
     documentsOnly = false,
@@ -46,7 +53,7 @@ function useVariables(options?: {
       value: valueFilter,
       name: nameFilter,
     }),
-    enabled: !isPlaceholderSelected,
+    enabled: !isPlaceholderSelected && !isPendingAddTokenScope,
     queryFn: async ({pageParam = 0}) => {
       const {response, error} = await searchVariables({
         filter: {

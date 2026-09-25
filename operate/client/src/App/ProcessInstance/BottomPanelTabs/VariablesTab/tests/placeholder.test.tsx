@@ -25,6 +25,19 @@ import {useProcessInstanceElementSelectActions} from 'modules/hooks/useProcessIn
 import {Paths} from 'modules/Routes';
 import {mockServer} from 'modules/mock-server/node';
 import {http, HttpResponse} from 'msw';
+import {useIsPlaceholderSelected} from 'modules/hooks/elementSelection';
+import {useVariableScopeKey} from 'modules/hooks/variables';
+
+const TestScopeState: React.FC = () => {
+  const isPlaceholderSelected = useIsPlaceholderSelected();
+  const scopeKey = useVariableScopeKey();
+
+  return (
+    <output>
+      {isPlaceholderSelected ? 'placeholder' : `pending scope: ${scopeKey}`}
+    </output>
+  );
+};
 
 const TestSelectionControls: React.FC = () => {
   const {selectElement, selectElementInstance} =
@@ -207,6 +220,66 @@ describe('VariablesTab placeholders', () => {
       expect(invalidScopeQuery).not.toHaveBeenCalled();
     },
   );
+
+  it('should not query a planned scope when selecting an element with existing tokens', async () => {
+    const scopeId = crypto.randomUUID();
+    modificationsStore.enableModificationMode();
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        scopeId,
+        element: {id: 'TEST_ELEMENT', name: 'Test Element'},
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        parentScopeIds: {},
+      },
+    });
+    mockSearchElementInstances().withSuccess({
+      items: [
+        selectedElementInstance,
+        {...selectedElementInstance, elementInstanceKey: '3'},
+      ],
+      page: {
+        totalItems: 2,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    const invalidScopeQuery = vi.fn();
+    mockServer.use(
+      http.post('/v2/variables/search', async ({request}) => {
+        invalidScopeQuery(await request.json());
+        return HttpResponse.json({error: 'Invalid scopeKey'}, {status: 400});
+      }),
+    );
+
+    render(
+      <>
+        <VariablesTab />
+        <TestScopeState />
+      </>,
+      {
+        wrapper: getWrapper([
+          `${Paths.processInstance('1')}?elementId=TEST_ELEMENT`,
+        ]),
+      },
+    );
+
+    expect(
+      await screen.findByText(`pending scope: ${scopeId}`),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        'To view the variables, select a single element instance in the instance history.',
+      ),
+    ).toBeInTheDocument();
+    expect(invalidScopeQuery).not.toHaveBeenCalled();
+    expect(
+      screen.queryByText('Variables could not be fetched'),
+    ).not.toBeInTheDocument();
+  });
 
   it.each([true, false])(
     'should show multiple scope placeholder when multiple nodes are selected - modification mode: %p',
