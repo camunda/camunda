@@ -1,0 +1,1 @@
+"use strict";(globalThis.webpackChunkmonorepo_docs_site=globalThis.webpackChunkmonorepo_docs_site||[]).push([[3490],{3490:(e,o,s)=>{s.d(o,{createInfoServices:()=>c.v});var c=s(1885);s(7960)}}]);

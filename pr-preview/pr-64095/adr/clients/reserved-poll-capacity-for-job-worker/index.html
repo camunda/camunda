@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-adr docs-version-current docs-doc-page docs-doc-id-clients/reserved-poll-capacity-for-job-worker" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.10.2">
+<title data-rh="true">Reserve a minimum share of job-worker capacity for the polling path | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-64095/adr/clients/reserved-poll-capacity-for-job-worker/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="Reserve a minimum share of job-worker capacity for the polling path | Camunda Platform"><meta data-rh="true" name="description" content="DRI: Alexandre Janoni"><meta data-rh="true" property="og:description" content="DRI: Alexandre Janoni"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-64095/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-64095/adr/clients/reserved-poll-capacity-for-job-worker/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-64095/adr/clients/reserved-poll-capacity-for-job-worker/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-64095/adr/clients/reserved-poll-capacity-for-job-worker/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-64095/assets/css/styles.44533d03.css">
+<script src="/camunda/pr-preview/pr-64095/assets/js/runtime~main.561d1fdf.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-64095/assets/js/main.70c846aa.js" defer="defer"></script>
+</head>
+<body>
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||"light"),document.documentElement.setAttribute("data-theme-choice",t||"light")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/camunda/pr-preview/pr-64095/img/black-C.png"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/camunda/pr-preview/pr-64095/"><div class="navbar__logo"><img src="/camunda/pr-preview/pr-64095/img/black-C.png" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/camunda/pr-preview/pr-64095/img/black-C.png" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">Camunda Platform</b></a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/camunda/camunda" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"><div class="navbar__search"><span aria-label="expand searchbar" role="button" class="search-icon" tabindex="0"></span><input id="search_input_react" type="search" placeholder="Loading..." aria-label="Search" class="navbar__search-input search-bar" disabled=""></div></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><main class="docMainContainer_TBSr docMainContainerEnhanced_lQrH"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>Reserve a minimum share of job-worker capacity for the polling path</h1></header>
+<p><strong>DRI</strong>: Alexandre Janoni</p>
+<p><strong>Status</strong>: Proposed</p>
+<p><strong>Deciders</strong></p>
+<ul>
+<li class="">Alexandre Janoni</li>
+<li class="">Zeebe job-worker / client domain owner (to confirm the direction)</li>
+</ul>
+<p><strong>Purpose</strong>: Decide whether the Java client&#x27;s job worker should reserve a
+minimum slice of its shared activation capacity for the polling (ActivateJobs)
+path so it cannot be starved by the streaming (push) path, and record the
+numbers that back the decision as issue #59734 demanded.</p>
+<p><strong>Audience</strong>: Engineers working on the Java client job worker
+(<code>clients/java/.../worker/</code>), and anyone reasoning about streaming vs polling
+job delivery under load.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="context">Context<a href="#context" class="hash-link" aria-label="Direct link to Context" title="Direct link to Context" translate="no">​</a></h2>
+<p>A streaming job worker delivers jobs through two paths that share a single
+capacity budget:</p>
+<ul>
+<li class=""><strong>Push (streaming).</strong> Jobs are pushed to the client as they become
+activatable. In <code>BlockingExecutor.execute</code> a caller thread parks in a blocking
+<code>tryAcquire(timeout)</code> and is unparked in microseconds the instant a permit is
+released.</li>
+<li class=""><strong>Poll (ActivateJobs).</strong> The worker issues an <code>ActivateJobs</code> request only when
+it observes free capacity (<code>onCapacityAvailable</code>), pays a network round-trip,
+and then takes an untimed <code>tryAcquire()</code>. Polling is the recovery path: it is
+the only mechanism that drains jobs the push path missed (created while no
+stream had capacity, yielded back after a blocked push, or recovered after a
+lease timeout).</li>
+</ul>
+<p>Both paths draw from one <code>Semaphore(maxJobsActive)</code> (unified under #59632).
+Issue #59734 observed the semaphore is non-fair and asked — <strong>with numbers, and
+sanctioning a won&#x27;t-fix</strong> — whether that starves one path.</p>
+<p>Under sustained load the two paths are asymmetric: when a permit frees, the
+locally-parked push thread wins it in microseconds, while the poll must first
+pay a network round-trip before it can even attempt the acquire. So push wins
+nearly every contested slot and poll — the recovery path — is starved.</p>
+<p>We validated this on a cluster A/B: a single streaming worker
+(<code>maxJobsActive=30</code>), oversubscribed (~150 jobs/s created vs ~29/s drained) so
+the worker is pinned at capacity with a live push stream and a standing
+activatable backlog. Two arms differed <strong>only</strong> by the reserved-lane code.
+Broker <code>zeebe_job_events_total</code> gives the delivery split (<code>pushed</code> vs
+<code>activated</code>=poll) at matched offered load (~365 s window):</p>
+<table><thead><tr><th>metric (per s)</th><th style="text-align:right">SHARED (baseline)</th><th style="text-align:right">RESERVED (this ADR)</th></tr></thead><tbody><tr><td>created</td><td style="text-align:right">150.1</td><td style="text-align:right">149.7</td></tr><tr><td>completed (throughput)</td><td style="text-align:right">28.5</td><td style="text-align:right">28.9</td></tr><tr><td>push-delivered</td><td style="text-align:right">140.7</td><td style="text-align:right">118.7</td></tr><tr><td>poll-delivered</td><td style="text-align:right">11.8</td><td style="text-align:right">13.1</td></tr><tr><td><strong>poll share</strong></td><td style="text-align:right"><strong>7.7%</strong></td><td style="text-align:right"><strong>10.0%</strong></td></tr><tr><td>timed out</td><td style="text-align:right">30.1</td><td style="text-align:right">22.3</td></tr></tbody></table>
+<p>A second, load-asymmetric window corroborated the direction (poll share 5.9% vs
+11.0%). The <code>BLOCKED</code>/<code>YIELD</code> counters were large throughout, confirming push is
+frequently unable to deliver and the poll path genuinely matters.</p>
+<p><strong>Reading:</strong> poll starvation is real and measurable — on the shared semaphore
+the poll path wins only ~6–8% of delivered jobs under push contention. It is
+<em>not</em> a throughput cliff: push carries ~90% of delivery and total throughput is
+identical in both arms. The harm is to poll-path liveness — the fairness of the
+recovery/backlog-drain mechanism — not to throughput.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision">Decision<a href="#decision" class="hash-link" aria-label="Direct link to Decision" title="Direct link to Decision" translate="no">​</a></h2>
+<p>Add an <strong>optional reserved poll lane</strong> to <code>BlockingExecutor</code>, wired on the
+streaming path only.</p>
+<ul>
+<li class=""><code>total = Semaphore(maxJobsActive)</code> remains the single capacity authority.
+<code>freeCapacity()</code>, poll request sizing, and <code>hasNoJobsInFlight()</code> are unchanged,
+so the unification from #59632 is preserved — the reserved lane is a sub-limit
+on one path, not a second tally.</li>
+<li class="">The push path additionally acquires a <code>pushBudget = Semaphore(maxJobsActive − reserved)</code> permit before <code>total</code>; both are released together in the same
+<code>finally</code>. The poll path acquires only <code>total</code>, so it can still reach every
+slot including the reserved ones.</li>
+<li class="">Reservation size = <code>floor(maxJobsActive × 0.25)</code>. <code>floor</code> reserves nothing
+until a whole slot can be spared (<code>N&lt;4→0, N=4→1, N=30→7</code>), which avoids halving
+push at small <code>maxJobsActive</code> (a <code>round</code>-with-minimum-1 policy broke
+<code>shouldNotAskForJobsWhileItCannotRunAnyMore</code> at N=2). The 0.25 fraction is a
+tunable knob, not a load-bearing constant.</li>
+<li class="">The non-streaming (poll-only) path passes <code>reserved = 0</code> and is byte-for-byte
+unchanged.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="consequences">Consequences<a href="#consequences" class="hash-link" aria-label="Direct link to Consequences" title="Direct link to Consequences" translate="no">​</a></h2>
+<ul>
+<li class=""><strong>Poll-path liveness is protected.</strong> Poll&#x27;s share of delivery rises from
+~6–8% to ~10–11%, guaranteeing the recovery path reaches its reserved slots
+even under sustained push contention.</li>
+<li class=""><strong>No throughput cost.</strong> At matched load, completed/s is identical (28.5 vs
+28.9) and timeouts are no worse (fewer, in the matched-load window). Reserving
+slots for poll does not reduce total delivery in the oversubscribed regime.</li>
+<li class=""><strong>Streaming-only, opt-in by construction.</strong> Only the streaming builder path
+sets a non-zero reservation; existing poll-only workers are unaffected.</li>
+<li class=""><strong>A purely-pushed streaming worker keeps polling for its reserved slots.</strong> It
+no longer fills entirely from push — this is the backlog-drain mechanism doing
+its job, at the cost of a few more <code>ActivateJobs</code> requests.</li>
+<li class=""><strong>Moderate severity, honest framing.</strong> Because push masks most of the impact,
+a won&#x27;t-fix remains defensible; this ADR lands the fix as a low-risk liveness
+improvement rather than a throughput fix, and leaves the final call to the
+domain owner — now backed by numbers.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="alternatives-considered">Alternatives considered<a href="#alternatives-considered" class="hash-link" aria-label="Direct link to Alternatives considered" title="Direct link to Alternatives considered" translate="no">​</a></h2>
+<ul>
+<li class=""><strong>Fair semaphore (<code>new Semaphore(n, true)</code>), as the issue first proposed.</strong>
+Rejected: fairness orders <em>waiters</em>, but the poll path does not wait on the
+semaphore — it only attempts an untimed acquire after a network round-trip, by
+which time the parked push thread has already taken the freed permit. A fair
+semaphore therefore cannot arbitrate poll-vs-push here, and a microbenchmark
+confirmed it does not help (and can hurt) once the poll&#x27;s round-trip is
+modelled.</li>
+<li class=""><strong>Won&#x27;t-fix.</strong> Defensible on severity (push carries throughput; no cliff).
+Not chosen because the reserved lane is throughput-neutral and cheaply
+restores recovery-path liveness, but recorded here as the reasonable
+alternative the issue explicitly sanctioned.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="references">References<a href="#references" class="hash-link" aria-label="Direct link to References" title="Direct link to References" translate="no">​</a></h2>
+<ul>
+<li class="">Issue: camunda/camunda#59734 (non-fair shared capacity semaphore)</li>
+<li class="">Prerequisite: camunda/camunda#59632 / PR #63915 (unified worker capacity
+accounting)</li>
+<li class="">Implementation: <code>clients/java/src/main/java/io/camunda/client/impl/worker/BlockingExecutor.java</code>,
+<code>JobWorkerBuilderImpl.java</code></li>
+<li class="">Validation benchmarks:
+<code>microbenchmarks/.../worker/CapacityLaneReservationBenchmark.java</code> (RTT-aware
+A/B) and <code>CapacitySemaphoreFairnessBenchmark.java</code> (fair-semaphore control)</li>
+</ul></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/camunda/camunda/edit/main/docs/adr/clients/0002-reserved-poll-capacity-for-job-worker.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#context" class="table-of-contents__link toc-highlight">Context</a></li><li><a href="#decision" class="table-of-contents__link toc-highlight">Decision</a></li><li><a href="#consequences" class="table-of-contents__link toc-highlight">Consequences</a></li><li><a href="#alternatives-considered" class="table-of-contents__link toc-highlight">Alternatives considered</a></li><li><a href="#references" class="table-of-contents__link toc-highlight">References</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Camunda.</div></div></div></footer></div>
+</body>
+</html>
