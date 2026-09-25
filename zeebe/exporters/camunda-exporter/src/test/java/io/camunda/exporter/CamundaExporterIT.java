@@ -34,6 +34,7 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.VariableHandler;
+import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedHandler;
 import io.camunda.exporter.utils.CamundaExporterITTemplateExtension;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
@@ -773,6 +774,7 @@ final class CamundaExporterIT {
             r ->
                 r.withBrokerVersion("8.8.0")
                     .withIntent(BatchOperationChunkIntent.CREATED)
+                    .withPartitionId(1)
                     .withValue(
                         new BatchOperationChunkRecord()
                             .setBatchOperationKey(batchOperationKey)
@@ -789,10 +791,12 @@ final class CamundaExporterIT {
     exporter.export(chunkRecord);
     clientAdapter.refresh(testPrefix);
 
-    // then
+    // then - filter by the concrete handler class: several handlers match
+    // BATCH_OPERATION_CHUNK (operation-item, list-view), so filtering by ValueType alone is
+    // ambiguous and can pick the wrong index/entity type
     final var handler =
         getHandlers(config).stream()
-            .filter(h -> h.getHandledValueType().equals(ValueType.BATCH_OPERATION_CHUNK))
+            .filter(h -> BatchOperationChunkCreatedHandler.class.isAssignableFrom(h.getClass()))
             .findFirst()
             .orElseThrow();
     final var documentId = String.valueOf(batchOperationKey);
@@ -803,8 +807,11 @@ final class CamundaExporterIT {
               final var entity =
                   clientAdapter.get(documentId, handler.getIndexName(), BatchOperationEntity.class);
               assertThat(entity.getOperationsTotalCount()).isEqualTo(3);
-              assertThat(entity.getProcessedChunkRecordKeys())
-                  .containsExactly(chunkRecord.getKey());
+              assertThat(entity.getLastProcessedChunkRecords()).hasSize(1);
+              assertThat(entity.getLastProcessedChunkRecords().get(0).getPartitionId())
+                  .isEqualTo(1);
+              assertThat(entity.getLastProcessedChunkRecords().get(0).getRecordKey())
+                  .isEqualTo(chunkRecord.getKey());
             });
   }
 }

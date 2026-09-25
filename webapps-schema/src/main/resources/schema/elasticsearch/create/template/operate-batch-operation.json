@@ -46,8 +46,16 @@
       "operationsCompletedCount": {
         "type": "long"
       },
-      "processedChunkRecordKeys": {
-        "type": "long"
+      "lastProcessedChunkRecords": {
+        "type": "object",
+        "properties": {
+          "partitionId": {
+            "type": "integer"
+          },
+          "recordKey": {
+            "type": "long"
+          }
+        }
       },
       "errors": {
         "type": "object",
