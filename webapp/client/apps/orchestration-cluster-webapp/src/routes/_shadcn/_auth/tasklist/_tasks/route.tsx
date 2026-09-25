@@ -45,8 +45,8 @@ export const Route = createFileRoute('/_shadcn/_auth/tasklist/_tasks')({
 		const isFromTaskCompletion = location.state.tasklistAutoSelectSource === 'task-completion';
 		const shouldAutoSelectNextTask = isAutoSelectNextTaskEnabled && isFromTaskCompletion;
 		const currentUser = await queryClient.query(queries.getCurrentUser());
-		const queryOptions = queries.queryUserTasks(getTasksRequestBody(search, {currentUsername: currentUser.username}));
-		const {pages} = await queryClient.infiniteQuery(queryOptions);
+		const tasksRequestBody = getTasksRequestBody(search, {currentUsername: currentUser.username});
+		const {pages} = await queryClient.infiniteQuery(queries.queryUserTasks(tasksRequestBody));
 		const nextOpenTask = pages.flatMap((page) => page.items).find(({state}) => state === 'CREATED');
 
 		if (shouldAutoSelectNextTask && nextOpenTask !== undefined) {
@@ -57,12 +57,13 @@ export const Route = createFileRoute('/_shadcn/_auth/tasklist/_tasks')({
 				replace: true,
 			});
 		}
+
+		return {tasksRequestBody};
 	},
 	component: function TasksLayoutRoute() {
-		const search = Route.useSearch();
+		const tasksRequestBody = Route.useRouteContext({select: ({tasksRequestBody}) => tasksRequestBody});
 		const isPending = useRouterState({select: ({status}) => status === 'pending'});
 		const {data: currentUser} = useSuspenseQuery(queries.getCurrentUser());
-		const requestBody = getTasksRequestBody(search, {currentUsername: currentUser.username});
 		const {
 			data,
 			fetchNextPage,
@@ -72,7 +73,7 @@ export const Route = createFileRoute('/_shadcn/_auth/tasklist/_tasks')({
 			isFetchingNextPage,
 			isFetchingPreviousPage,
 		} = useSuspenseInfiniteQuery({
-			...queries.queryUserTasks(requestBody),
+			...queries.queryUserTasks(tasksRequestBody),
 			refetchInterval: 5000,
 		});
 		const onScrollDown = useCallback(async () => {
