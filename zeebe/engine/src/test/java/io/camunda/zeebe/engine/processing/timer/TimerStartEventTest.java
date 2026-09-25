@@ -735,6 +735,50 @@ public final class TimerStartEventTest {
   }
 
   @Test
+  public void shouldCreateTimerForEachProcessOfResource() {
+    // given
+    final String resource =
+        """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+            id="definitions" targetNamespace="http://camunda.org/examples">
+          <process id="process_a" isExecutable="true">
+            <startEvent id="start_a">
+              <timerEventDefinition><timeCycle>R/PT1M</timeCycle></timerEventDefinition>
+            </startEvent>
+          </process>
+          <process id="process_b" isExecutable="true">
+            <startEvent id="start_b">
+              <timerEventDefinition><timeCycle>R/PT2M</timeCycle></timerEventDefinition>
+            </startEvent>
+          </process>
+        </definitions>
+        """;
+
+    // when
+    final var deployedProcesses =
+        engine
+            .deployment()
+            .withXmlResource(resource.getBytes(), "two-processes.bpmn")
+            .deploy()
+            .getValue()
+            .getProcessesMetadata();
+
+    // then
+    assertThat(deployedProcesses)
+        .extracting(
+            process ->
+                tuple(
+                    process.getBpmnProcessId(),
+                    RecordingExporter.timerRecords(TimerIntent.CREATED)
+                        .withProcessDefinitionKey(process.getProcessDefinitionKey())
+                        .getFirst()
+                        .getValue()
+                        .getTargetElementId()))
+        .containsExactlyInAnyOrder(tuple("process_a", "start_a"), tuple("process_b", "start_b"));
+  }
+
+  @Test
   public void shouldCreateMultipleInstanceAtTheCorrectTimes() {
     // given
     final var deployedProcess =
