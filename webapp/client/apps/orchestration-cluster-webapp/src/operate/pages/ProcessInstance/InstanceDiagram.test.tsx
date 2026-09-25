@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, describe, expect, vi} from 'vitest';
+import {afterEach, describe, expect, onTestFinished, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup, render} from 'vitest-browser-react';
 import {
@@ -219,6 +219,7 @@ describe('<InstanceDiagram />', () => {
 		const pendingXml = new Promise<void>((resolve) => {
 			releaseXml = resolve;
 		});
+		onTestFinished(releaseXml);
 		worker.use(
 			http.get(endpoints.getProcessDefinitionXml({processDefinitionKey: '2251799813685279'}).url, async () => {
 				await pendingXml;
@@ -227,16 +228,12 @@ describe('<InstanceDiagram />', () => {
 			...handlers(),
 		);
 
-		try {
-			const screen = await renderPage();
-			await expect.element(screen.getByTestId('diagram-spinner')).toBeVisible();
-			await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).not.toBeInTheDocument();
-			releaseXml();
-			await expect.element(screen.getByTestId('diagram-spinner')).not.toBeInTheDocument();
-			await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
-		} finally {
-			releaseXml();
-		}
+		const screen = await renderPage();
+		await expect.element(screen.getByTestId('diagram-spinner')).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).not.toBeInTheDocument();
+		releaseXml();
+		await expect.element(screen.getByTestId('diagram-spinner')).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
 	});
 
 	it.for([
@@ -316,6 +313,30 @@ describe('<InstanceDiagram />', () => {
 		await expect
 			.element(screen.getByTestId('instance-agent-call_1'))
 			.toHaveTextContent('Calling tools... + 2 more active agents');
+	});
+
+	it('should mark waiting multi-instance elements as active when statistics omit them', async ({worker}) => {
+		worker.use(
+			...handlers({
+				xml: PROCESS_XML.replace(
+					'<bpmn:userTask id="task_1" />',
+					'<bpmn:userTask id="task_1"><bpmn:multiInstanceLoopCharacteristics /></bpmn:userTask>',
+				),
+				statistics: [],
+				waitStates: [
+					{elementId: 'task_1', waitingCount: 2},
+					{elementId: 'call_1', waitingCount: 1},
+				],
+			}),
+		);
+
+		const screen = await renderLoadedPage();
+
+		await expect.element(screen.getByTestId('instance-state-task_1-active')).toBeVisible();
+		await expect.element(screen.getByTestId('instance-state-task_1-active')).toHaveTextContent('');
+		await expect.element(screen.getByTestId('instance-waiting-task_1')).toHaveTextContent('2 waiting');
+		await expect.element(screen.getByTestId('instance-state-call_1-active')).not.toBeInTheDocument();
+		await expect.element(screen.getByTestId('instance-waiting-call_1')).toHaveTextContent('Waiting');
 	});
 
 	it.for([0, 2])('should fetch all agent pages and stop after %s trailing results', async (trailingCount, {worker}) => {
@@ -680,6 +701,10 @@ describe('<InstanceDiagram />', () => {
 			const pendingElementResponse = new Promise<void>((resolve) => {
 				releaseElementResponse = resolve;
 			});
+			onTestFinished(() => {
+				releaseElementResponse();
+				releaseLoader();
+			});
 			let oldInstanceRequests = 0;
 			worker.use(
 				http.post(
@@ -698,22 +723,19 @@ describe('<InstanceDiagram />', () => {
 				params: {processInstanceId: 'instance-2'},
 				search: {elementId: 'task_1'},
 			});
-			try {
-				await expect
-					.poll(() => screen.router.history.location.pathname)
-					.toBe(`${basepath}/operate/processes/instance-2/details`);
-				await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
-				await userEvent.dblClick(document.querySelector<SVGElement>('[data-element-id="call_1"]')!);
+			await expect
+				.poll(() => screen.router.history.location.pathname)
+				.toBe(`${basepath}/operate/processes/instance-2/details`);
+			await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
+			await userEvent.dblClick(document.querySelector<SVGElement>('[data-element-id="call_1"]')!);
 
-				expect(
-					screen.queryClient.getQueryState(['instanceDiagramDrilldownElement', INSTANCE_ID, 'call_1']),
-				).toBeUndefined();
-				expect(oldInstanceRequests).toBe(0);
-			} finally {
-				releaseElementResponse();
-				releaseLoader();
-				await navigation;
-			}
+			expect(
+				screen.queryClient.getQueryState(['instanceDiagramDrilldownElement', INSTANCE_ID, 'call_1']),
+			).toBeUndefined();
+			expect(oldInstanceRequests).toBe(0);
+			releaseElementResponse();
+			releaseLoader();
+			await navigation;
 			expect(screen.router.state.location.pathname).toBe('/operate/processes/instance-2/details');
 			await expect
 				.poll(() => screen.queryClient.getQueryState(['instanceDiagramStatistics', 'instance-2'])?.status)

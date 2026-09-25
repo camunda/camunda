@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, onTestFinished, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
 import {HttpResponse, http} from 'msw';
@@ -180,6 +180,7 @@ describe('<ProcessInstance />', () => {
 		const pendingXml = new Promise<void>((resolve) => {
 			releaseXml = resolve;
 		});
+		onTestFinished(releaseXml);
 		worker.use(
 			http.get(endpoints.getProcessDefinitionXml({processDefinitionKey: '2251799813685279'}).url, async () => {
 				await pendingXml;
@@ -187,26 +188,22 @@ describe('<ProcessInstance />', () => {
 			}),
 			...getProcessInstancePageHandlers(),
 		);
-		try {
-			const screen = await renderWithRouter(SelectionPage, {
-				path: '/operate/processes/$processInstanceId/variables',
-				initialEntry: `/operate/processes/${PROCESS_INSTANCE_ID}/variables?elementId=user-task`,
-			});
-			await expect
-				.poll(() => screen.queryClient.getQueryState(['processInstance', PROCESS_INSTANCE_ID])?.status)
-				.toBe('success');
-			await expect.element(screen.getByTestId('instance-header-skeleton')).toBeVisible();
+		const screen = await renderWithRouter(SelectionPage, {
+			path: '/operate/processes/$processInstanceId/variables',
+			initialEntry: `/operate/processes/${PROCESS_INSTANCE_ID}/variables?elementId=user-task`,
+		});
+		await expect
+			.poll(() => screen.queryClient.getQueryState(['processInstance', PROCESS_INSTANCE_ID])?.status)
+			.toBe('success');
+		await expect.element(screen.getByTestId('instance-header-skeleton')).toBeVisible();
 
-			await screen.router.navigate({to: '.', search: {elementId: 'call-activity'}});
-			expect(screen.router.state.location.pathname).toBe(`/operate/processes/${PROCESS_INSTANCE_ID}/variables`);
-			releaseXml();
+		await screen.router.navigate({to: '.', search: {elementId: 'call-activity'}});
+		expect(screen.router.state.location.pathname).toBe(`/operate/processes/${PROCESS_INSTANCE_ID}/variables`);
+		releaseXml();
 
-			await expect
-				.poll(() => screen.router.state.location.pathname)
-				.toBe(`/operate/processes/${PROCESS_INSTANCE_ID}/details`);
-		} finally {
-			releaseXml();
-		}
+		await expect
+			.poll(() => screen.router.state.location.pathname)
+			.toBe(`/operate/processes/${PROCESS_INSTANCE_ID}/details`);
 	});
 
 	it('should redirect to processes and notify when the process instance is not found', async ({worker}) => {
