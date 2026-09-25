@@ -550,6 +550,11 @@ public final class EventAppliers implements EventApplier {
     register(JobIntent.PRIORITY_UPDATED, new JobPriorityUpdatedApplier(state));
     register(JobIntent.SUSPENDED, new JobSuspendedApplier(state));
     register(JobIntent.RESUMED, new JobResumedApplier(state));
+    // The secret-resolution state transitions are owned by the SecretReferenceIntent appliers; the
+    // two JobIntent events below exist only so the parked/resumed transition is observable on the
+    // JOB record stream for the wait-state exporter, and carry no state change of their own.
+    register(JobIntent.SECRET_RESOLUTION_PARKED, NOOP_EVENT_APPLIER);
+    register(JobIntent.SECRET_RESOLUTION_RESUMED, NOOP_EVENT_APPLIER);
   }
 
   private void registerMessageAppliers(final MutableProcessingState state) {
