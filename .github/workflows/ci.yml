@@ -2739,12 +2739,15 @@ jobs:
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
-      - name: Install repository script test dependencies
+      - name: Install repository script test and type-check dependencies
         if: needs.detect-changes.outputs.scripts-changes == 'true'
-        run: python3 -m pip install --quiet pytest -r .github/actions/read-db-versions/requirements.txt
+        run: python3 -m pip install --quiet mypy pytest -r .github/actions/read-db-versions/requirements.txt
       - name: Install load-test script test dependencies
         if: needs.detect-changes.outputs.load-test-scripts-changes == 'true'
         uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+      - name: Type-check JMH benchmark runner
+        if: needs.detect-changes.outputs.scripts-changes == 'true'
+        run: mypy --strict .github/scripts/run_pr_microbenchmarks.py
       - name: Run repository script unit tests
         if: needs.detect-changes.outputs.scripts-changes == 'true'
         run: pytest --verbose --color=yes --tb=short .github/scripts .github/actions/adjust-pom-for-license-analysis .github/actions/read-db-versions

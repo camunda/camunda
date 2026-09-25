@@ -29,7 +29,7 @@ MICROBENCHMARKS_MODULE = "microbenchmarks"
 BENCHMARK_JAR = f"{MICROBENCHMARKS_MODULE}/target/benchmarks.jar"
 
 
-def parse_changed_files(value):
+def parse_changed_files(value: str) -> list[str]:
     try:
         paths = json.loads(value)
     except json.JSONDecodeError as error:
@@ -48,7 +48,7 @@ def parse_changed_files(value):
     return [path for path in paths if isinstance(path, str)]
 
 
-def selector_marker_suffix(selectors):
+def selector_marker_suffix(selectors: list[str]) -> str:
     # A changed request gets a new marker; identical requests remain idempotent.
     if not selectors:
         return ""
@@ -56,17 +56,17 @@ def selector_marker_suffix(selectors):
     return f":{digest}"
 
 
-def is_jmh_benchmark_source(source):
+def is_jmh_benchmark_source(source: str) -> bool:
     return JMH_ANNOTATION.search(source) is not None
 
 
-def benchmark_selector(path, source):
+def benchmark_selector(path: str, source: str) -> str:
     package = PACKAGE.search(source)
     name = Path(path).stem
     return f"{package.group(1)}.{name}" if package else name
 
 
-def available_benchmarks(output):
+def available_benchmarks(output: str) -> list[str]:
     return [
         line.strip()
         for line in output.splitlines()
@@ -74,7 +74,7 @@ def available_benchmarks(output):
     ]
 
 
-def parse_pr_selectors(body):
+def parse_pr_selectors(body: str) -> list[str]:
     selectors = set()
     for line in HTML_COMMENT.sub("", body).splitlines():
         match = PR_SELECTOR_LINE.match(line)
@@ -88,11 +88,13 @@ def parse_pr_selectors(body):
     return sorted(selectors)
 
 
-def is_perf_commit(subject):
+def is_perf_commit(subject: str) -> bool:
     return PERF_SUBJECT.match(subject) is not None
 
 
-def resolve_requested_selectors(requested, available):
+def resolve_requested_selectors(
+    requested: list[str], available: list[str]
+) -> tuple[list[str], list[str]]:
     classes = list(dict.fromkeys(name.rsplit(".", 1)[0] for name in available))
     selected_classes, selected_methods, missing = [], [], []
     for selector in requested:
@@ -124,7 +126,7 @@ def resolve_requested_selectors(requested, available):
     return selected_classes + selected_methods, missing
 
 
-def run_command(args, workspace):
+def run_command(args: list[str], workspace: Path) -> subprocess.CompletedProcess[str]:
     try:
         return subprocess.run(
             args,
@@ -137,7 +139,7 @@ def run_command(args, workspace):
         return subprocess.CompletedProcess(args, 127, stdout=str(error))
 
 
-def main():
+def main() -> int:
     try:
         base_sha = os.environ["BASE_SHA"]
         head_sha = os.environ["HEAD_SHA"]
@@ -160,24 +162,24 @@ def main():
     )
     failed = False
 
-    def command(*args):
+    def command(*args: str) -> subprocess.CompletedProcess[str]:
         return run_command(list(args), workspace)
 
-    def git(*args):
+    def git(*args: str) -> str:
         result = command("git", *args)
         if result.returncode:
             raise RuntimeError(f"git {' '.join(args)} failed:\n{result.stdout}")
         return result.stdout
 
-    def checkout(revision):
+    def checkout(revision: str) -> bool:
         result = command("git", "checkout", "--detach", revision)
         return result.returncode == 0
 
-    def source_at(revision, path):
+    def source_at(revision: str, path: str) -> str | None:
         result = command("git", "show", f"{revision}:{path}")
         return result.stdout if result.returncode == 0 else None
 
-    def run_revision(index, kind, revision, marker_suffix):
+    def run_revision(index: int, kind: str, revision: str, marker_suffix: str) -> None:
         nonlocal failed
         marker = f"<!-- jmh-run:{kind}:{revision}{marker_suffix} -->"
         if marker in reported:
@@ -188,7 +190,8 @@ def main():
             raise RuntimeError(f"Could not check out revision {revision}")
 
         result = [marker, "", f"## JMH {kind} results for `{revision}`", ""]
-        selectors = []
+        # Re-read changed files at this revision so deleted or not-yet-added benchmarks are skipped.
+        selectors: list[str] = []
         for path in changed_files:
             source = source_at(revision, path)
             if source and is_jmh_benchmark_source(source):
@@ -234,6 +237,7 @@ def main():
                         ]
                     )
                 else:
+                    # JMH lists fully qualified names; suffix matching also accepts short PR selectors.
                     explicit, missing = resolve_requested_selectors(
                         requested, available_benchmarks(listing.stdout)
                     )
@@ -294,6 +298,7 @@ def main():
             "--format=%H%x09%s",
             f"{baseline}..{head_sha}",
         )
+        # Compare the merge-base once, then each non-merge perf commit in chronological order.
         revisions = [("baseline", baseline)]
         revisions.extend(
             ("commit", sha)
