@@ -12,6 +12,9 @@ import {afterEach, describe, expect} from 'vitest';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
 import {userEvent} from 'vitest/browser';
+import {createInstance} from 'i18next';
+import {I18nextProvider} from 'react-i18next';
+import {translationResources} from '#/shared/i18n';
 import {
 	mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint,
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
@@ -244,6 +247,81 @@ describe('<IncidentsByError />', () => {
 				);
 		}
 	});
+
+	it.for([
+		{language: 'en', label: 'Orders – Version 2 – Tenant A'},
+		{language: 'de', label: 'Orders (Tenant A) – Version 2'},
+		{language: 'fr', label: 'Orders – Version 2 (Tenant A)'},
+		{language: 'es', label: 'Orders – Versión 2 – Tenant A'},
+	] as const)(
+		'should localize the complete tenant-scoped incident link in $language',
+		async ({language, label}, {worker}) => {
+			const translations = createInstance();
+			await translations.init({lng: language, resources: translationResources, interpolation: {escapeValue: false}});
+			sessionStorage.setItem(
+				'clientConfig',
+				JSON.stringify(
+					createSystemConfiguration({
+						deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: true, maxRequestSize: 0},
+					}),
+				),
+			);
+			worker.use(
+				mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+					successResponse: HttpResponse.json(
+						createPaginatedResponse({
+							items: [
+								createIncidentProcessInstanceStatisticsByError({
+									errorMessage: 'Connection timeout',
+									errorHashCode: -481,
+								}),
+							],
+							page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+						}),
+					),
+				}),
+				mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint({
+					successResponse: HttpResponse.json(
+						createPaginatedResponse({
+							items: [
+								createIncidentProcessInstanceStatisticsByDefinition({
+									processDefinitionId: 'orders',
+									processDefinitionName: 'Orders',
+									processDefinitionVersion: 2,
+									tenantId: '<tenant-A>',
+								}),
+							],
+							page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+						}),
+					),
+				}),
+				mockCurrentUserEndpoint({
+					successResponse: HttpResponse.json(
+						createCurrentUser({
+							tenants: [{tenantId: '<tenant-A>', name: 'Tenant A', description: null}],
+						}),
+					),
+				}),
+			);
+
+			const screen = await renderWithRouter(
+				() => (
+					<I18nextProvider i18n={translations}>
+						<IncidentsByError />
+					</I18nextProvider>
+				),
+				{path: '/operate'},
+			);
+
+			await userEvent.click(screen.getByRole('button', {name: 'Expand current row'}));
+			await expect
+				.element(screen.getByTitle(label))
+				.toHaveAttribute(
+					'href',
+					expect.stringContaining('errorMessage=Connection+timeout&incidentErrorHashCode=-481&tenantId='),
+				);
+		},
+	);
 
 	it('should show an error state when the request fails', async ({worker}) => {
 		worker.use(

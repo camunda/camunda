@@ -30,7 +30,14 @@ const IncidentsByErrorDefinitions: React.FC<Props> = ({errorHashCode, errorMessa
 			{data.items.map((item: IncidentProcessInstanceStatisticsByDefinition) => {
 				const tenantId = dashboardTenantId(item.tenantId, isMultiTenancyEnabled);
 				const tenantName = tenantId ? (tenantsById[tenantId] ?? tenantId) : undefined;
-				const labelText = `${item.processDefinitionName ?? item.processDefinitionId} – ${t('operate.dashboard.version', {version: item.processDefinitionVersion})}${tenantName ? ` – ${tenantName}` : ''}`;
+				const name = item.processDefinitionName ?? item.processDefinitionId;
+				const labelText = tenantName
+					? t('operate.dashboard.versionWithTenant', {
+							name,
+							version: item.processDefinitionVersion,
+							tenant: tenantName,
+						})
+					: `${name} – ${t('operate.dashboard.version', {version: item.processDefinitionVersion})}`;
 
 				return (
 					<Li key={`${item.processDefinitionKey}:${item.tenantId}`}>
