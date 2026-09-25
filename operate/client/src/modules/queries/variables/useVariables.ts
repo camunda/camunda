@@ -11,6 +11,7 @@ import {keepPreviousData, useInfiniteQuery} from '@tanstack/react-query';
 import {searchVariables} from 'modules/api/v2/variables/searchVariables';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {useDisplayStatus, useVariableScopeKey} from 'modules/hooks/variables';
+import {useIsPlaceholderSelected} from 'modules/hooks/elementSelection';
 import {queryKeys} from '../queryKeys';
 
 const MAX_VARIABLES_PER_REQUEST = 50;
@@ -25,6 +26,7 @@ function useVariables(options?: {
 }) {
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const scopeKey = useVariableScopeKey();
+  const isPlaceholderSelected = useIsPlaceholderSelected();
   const {
     refetchInterval = false,
     documentsOnly = false,
@@ -44,6 +46,7 @@ function useVariables(options?: {
       value: valueFilter,
       name: nameFilter,
     }),
+    enabled: !isPlaceholderSelected,
     queryFn: async ({pageParam = 0}) => {
       const {response, error} = await searchVariables({
         filter: {
