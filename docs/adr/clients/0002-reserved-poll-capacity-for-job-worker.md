@@ -49,7 +49,7 @@ activatable backlog. Two arms differed **only** by the reserved-lane code.
 Broker `zeebe_job_events_total` gives the delivery split (`pushed` vs
 `activated`=poll) at matched offered load (~365 s window):
 
-| metric (per s)         | SHARED (baseline) | RESERVED (this ADR) |
+|     metric (per s)     | SHARED (baseline) | RESERVED (this ADR) |
 |------------------------|------------------:|--------------------:|
 | created                |             150.1 |               149.7 |
 | completed (throughput) |              28.5 |                28.9 |
@@ -131,3 +131,4 @@ streaming path only.
 - Validation benchmarks:
   `microbenchmarks/.../worker/CapacityLaneReservationBenchmark.java` (RTT-aware
   A/B) and `CapacitySemaphoreFairnessBenchmark.java` (fair-semaphore control)
+

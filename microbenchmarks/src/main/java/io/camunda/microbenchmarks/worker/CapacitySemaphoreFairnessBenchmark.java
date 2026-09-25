@@ -87,6 +87,47 @@ public class CapacitySemaphoreFairnessBenchmark {
     new Runner(options).run();
   }
 
+  /**
+   * Models the pushed-job path: a timed blocking acquire that parks until a permit frees. This is
+   * the party a fair semaphore is meant to protect from barging.
+   */
+  @Benchmark
+  @Group("contention")
+  @GroupThreads(8)
+  public void push(final Capacity capacity, final PushCounters counters)
+      throws InterruptedException {
+    if (capacity.semaphore.tryAcquire(PUSH_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
+      counters.pushAcquired++;
+      hold();
+      capacity.semaphore.release();
+    } else {
+      counters.pushTimedOut++;
+    }
+  }
+
+  /**
+   * Models the poll-delivered-job path: the untimed {@code tryAcquire()} that barges past parked
+   * push waiters even on a fair semaphore, and never parks itself.
+   */
+  @Benchmark
+  @Group("contention")
+  @GroupThreads(8)
+  public void poll(final Capacity capacity, final PollCounters counters) {
+    if (capacity.semaphore.tryAcquire()) {
+      counters.pollAcquired++;
+      hold();
+      capacity.semaphore.release();
+    } else {
+      counters.pollRefused++;
+    }
+  }
+
+  private static void hold() {
+    // A held permit stands in for a job handler running while its slot is taken. Without a hold the
+    // semaphore would never actually be contended and neither path could starve the other.
+    Blackhole.consumeCPU(HOLD_SPIN_TOKENS);
+  }
+
   /** The shared capacity permits, mirroring {@code BlockingExecutor}'s single semaphore. */
   @State(Scope.Group)
   public static class Capacity {
@@ -129,46 +170,5 @@ public class CapacitySemaphoreFairnessBenchmark {
       pollAcquired = 0;
       pollRefused = 0;
     }
-  }
-
-  /**
-   * Models the pushed-job path: a timed blocking acquire that parks until a permit frees. This is
-   * the party a fair semaphore is meant to protect from barging.
-   */
-  @Benchmark
-  @Group("contention")
-  @GroupThreads(8)
-  public void push(final Capacity capacity, final PushCounters counters)
-      throws InterruptedException {
-    if (capacity.semaphore.tryAcquire(PUSH_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
-      counters.pushAcquired++;
-      hold();
-      capacity.semaphore.release();
-    } else {
-      counters.pushTimedOut++;
-    }
-  }
-
-  /**
-   * Models the poll-delivered-job path: the untimed {@code tryAcquire()} that barges past parked
-   * push waiters even on a fair semaphore, and never parks itself.
-   */
-  @Benchmark
-  @Group("contention")
-  @GroupThreads(8)
-  public void poll(final Capacity capacity, final PollCounters counters) {
-    if (capacity.semaphore.tryAcquire()) {
-      counters.pollAcquired++;
-      hold();
-      capacity.semaphore.release();
-    } else {
-      counters.pollRefused++;
-    }
-  }
-
-  private static void hold() {
-    // A held permit stands in for a job handler running while its slot is taken. Without a hold the
-    // semaphore would never actually be contended and neither path could starve the other.
-    Blackhole.consumeCPU(HOLD_SPIN_TOKENS);
   }
 }

@@ -94,6 +94,53 @@ public class CapacityLaneReservationBenchmark {
     new Runner(options).run();
   }
 
+  @Benchmark
+  @Group("contention")
+  @GroupThreads(8)
+  public void push(final Capacity capacity, final PushCounters counters)
+      throws InterruptedException {
+    if (capacity.pushBudget != null && !capacity.pushBudget.tryAcquire()) {
+      // Push has used its whole budget; the remaining slots are the poll's reserved lane.
+      counters.pushTimedOut++;
+      return;
+    }
+    try {
+      if (capacity.total.tryAcquire(PUSH_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
+        counters.pushAcquired++;
+        hold();
+        capacity.total.release();
+      } else {
+        counters.pushTimedOut++;
+      }
+    } finally {
+      if (capacity.pushBudget != null) {
+        capacity.pushBudget.release();
+      }
+    }
+  }
+
+  @Benchmark
+  @Group("contention")
+  @GroupThreads(8)
+  public void poll(final Capacity capacity, final PollCounters counters) {
+    // The poll only learns of a freed slot a round-trip late; by then a parked push usually took
+    // it.
+    if (capacity.pollRoundTripNanos > 0) {
+      LockSupport.parkNanos(capacity.pollRoundTripNanos);
+    }
+    if (capacity.total.tryAcquire()) {
+      counters.pollAcquired++;
+      hold();
+      capacity.total.release();
+    } else {
+      counters.pollRefused++;
+    }
+  }
+
+  private static void hold() {
+    Blackhole.consumeCPU(HOLD_SPIN_TOKENS);
+  }
+
   /** The shared capacity, in either the single-pool or reserved-lane structure. */
   @State(Scope.Group)
   public static class Capacity {
@@ -154,52 +201,5 @@ public class CapacityLaneReservationBenchmark {
       pollAcquired = 0;
       pollRefused = 0;
     }
-  }
-
-  @Benchmark
-  @Group("contention")
-  @GroupThreads(8)
-  public void push(final Capacity capacity, final PushCounters counters)
-      throws InterruptedException {
-    if (capacity.pushBudget != null && !capacity.pushBudget.tryAcquire()) {
-      // Push has used its whole budget; the remaining slots are the poll's reserved lane.
-      counters.pushTimedOut++;
-      return;
-    }
-    try {
-      if (capacity.total.tryAcquire(PUSH_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
-        counters.pushAcquired++;
-        hold();
-        capacity.total.release();
-      } else {
-        counters.pushTimedOut++;
-      }
-    } finally {
-      if (capacity.pushBudget != null) {
-        capacity.pushBudget.release();
-      }
-    }
-  }
-
-  @Benchmark
-  @Group("contention")
-  @GroupThreads(8)
-  public void poll(final Capacity capacity, final PollCounters counters) {
-    // The poll only learns of a freed slot a round-trip late; by then a parked push usually took
-    // it.
-    if (capacity.pollRoundTripNanos > 0) {
-      LockSupport.parkNanos(capacity.pollRoundTripNanos);
-    }
-    if (capacity.total.tryAcquire()) {
-      counters.pollAcquired++;
-      hold();
-      capacity.total.release();
-    } else {
-      counters.pollRefused++;
-    }
-  }
-
-  private static void hold() {
-    Blackhole.consumeCPU(HOLD_SPIN_TOKENS);
   }
 }
