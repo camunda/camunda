@@ -135,7 +135,7 @@ for ((i = 1; i <= physical_tenant_count; i++)); do
   )
 done
 
-pt_lines_file="$(mktemp)"
+pt_lines_file="$(mktemp "${TMPDIR:-/tmp}/pt-lines.XXXXXXXXXX")"
 trap 'rm -f "$pt_lines_file"' EXIT
 printf '%s\n' "${lines[@]}" > "$pt_lines_file"
 export PT_LINES_FILE="$pt_lines_file"
