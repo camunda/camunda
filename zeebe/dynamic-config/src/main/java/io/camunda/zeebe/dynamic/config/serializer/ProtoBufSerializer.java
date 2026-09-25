@@ -1844,10 +1844,7 @@ public class ProtoBufSerializer
     builder
         .setChangeId(clusterConfigurationChangeResponse.changeId())
         .addAllPlannedChanges(
-            legacyResponse.plannedChanges().stream()
-                .filter(operation -> !(operation instanceof SchemaInitializationOperation))
-                .map(this::encodeOperation)
-                .toList())
+            legacyResponse.plannedChanges().stream().map(this::encodeOperation).toList())
         .putAllCurrentTopology(encodeMemberStateMap(legacyResponse.currentConfiguration()))
         .putAllExpectedTopology(encodeMemberStateMap(legacyResponse.expectedConfiguration()));
 
