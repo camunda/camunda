@@ -102,7 +102,8 @@ public final class MessageCorrelationCorrelateProcessor
             writers,
             processState,
             bpmnBehaviors.eventTriggerBehavior(),
-            bpmnBehaviors.stateBehavior());
+            bpmnBehaviors.stateBehavior(),
+            bpmnBehaviors.storageOrdinalProvider());
     correlateBehavior =
         new MessageCorrelateBehavior(
             startEventSubscriptionState,
