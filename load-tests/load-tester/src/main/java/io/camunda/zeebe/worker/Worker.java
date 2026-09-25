@@ -14,8 +14,10 @@ import io.camunda.client.api.worker.JobClient;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.WorkerProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
+import io.camunda.zeebe.metrics.RequestOutcomeRecorder;
 import io.camunda.zeebe.util.PayloadReader;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;
@@ -35,6 +37,8 @@ public class Worker {
   private static final Logger LOGGER = LoggerFactory.getLogger(Worker.class);
   private static final Logger THROTTLED_LOGGER = new ThrottledLogger(LOGGER, Duration.ofSeconds(5));
   private static final int REQUEST_FUTURES_CAPACITY = 10_000;
+  static final String COMPLETE_JOB = "complete_job";
+  private static final String PUBLISH_MESSAGE = "publish_message";
 
   private final CamundaClient client;
   private final WorkerProperties workerCfg;
@@ -43,16 +47,19 @@ public class Worker {
       new ArrayBlockingQueue<>(REQUEST_FUTURES_CAPACITY);
   private final ResponseChecker responseChecker;
   private final ConnectionMonitor connectionMonitor;
+  private final RequestOutcomeRecorder requestOutcomeRecorder;
 
   public Worker(
       final CamundaClient client,
       final LoadTesterProperties properties,
       final PayloadReader payloadReader,
-      final ConnectionMonitor connectionMonitor) {
+      final ConnectionMonitor connectionMonitor,
+      final MeterRegistry registry) {
     this.client = client;
     workerCfg = properties.getWorker();
     variables = payloadReader.readPayload(workerCfg.getPayloadPath());
-    responseChecker = new ResponseChecker(requestFutures);
+    requestOutcomeRecorder = new RequestOutcomeRecorder(registry);
+    responseChecker = new ResponseChecker(requestFutures, requestOutcomeRecorder);
     this.connectionMonitor = connectionMonitor;
   }
 
@@ -141,8 +148,10 @@ public class Worker {
 
     try {
       messageSendFuture.get(10, TimeUnit.SECONDS);
+      requestOutcomeRecorder.record(PUBLISH_MESSAGE, null);
       return true;
     } catch (final Exception ex) {
+      requestOutcomeRecorder.record(PUBLISH_MESSAGE, ex);
       THROTTLED_LOGGER.error(
           "Exception on publishing a message with name {} and correlationKey {}",
           messageName,
