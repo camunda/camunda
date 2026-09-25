@@ -8,6 +8,7 @@
 
 import {Page, Locator, expect} from '@playwright/test';
 import {sleep} from 'utils/sleep';
+import {waitForAssertion} from 'utils/waitForAssertion';
 
 class OperateProcessInstancePage {
   private page: Page;
@@ -878,6 +879,26 @@ class OperateProcessInstancePage {
     await this.getIncidentRow(incidentType)
       .getByRole('link', {name: failingElement})
       .click();
+  }
+
+  /**
+   * Reloads until the header shows the instance as suspended.
+   *
+   * Operate resolves the instance state when the detail view loads, so a
+   * suspension applied over REST only shows after a reload. One reload is not
+   * enough: the view can still be served the pre-suspension state for a moment
+   * after the API reports SUSPENDED.
+   */
+  async reloadUntilSuspended(timeout = 15000): Promise<void> {
+    await this.page.reload();
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(this.suspendedStateIcon).toBeVisible({timeout});
+      },
+      onFailure: async () => {
+        await this.page.reload();
+      },
+    });
   }
 
   async suspendInstance(instanceId: string): Promise<void> {

@@ -28,6 +28,8 @@ import {
   deployCallActivityPair,
   deployMessageCatchProcess,
   deployServiceTaskProcess,
+  startServiceTaskInstance,
+  completeServiceTaskInstance,
   deployUserTaskProcess,
   expectJobsByType,
   expectNoIncidents,
@@ -173,38 +175,10 @@ async function expectJobExists(
   }).toPass(extendedAssertionOptions);
 }
 
-/**
- * Runs the instance's service task and waits for it to finish. Every case that
- * suspends a real instance ends this way: a refusal proves a request was
- * turned down, not that the instance survived the suspension intact.
- */
-async function completeServiceTaskInstance(
-  request: APIRequestContext,
-  jobType: string,
-  processInstanceKey: string,
-) {
-  const jobKey = await activateSingleJob(request, jobType, processInstanceKey);
-  await completeJob(request, jobKey);
-  await expectProcessState(
-    request,
-    processInstanceKey,
-    'COMPLETED',
-    extendedAssertionOptions,
-  );
-  await expectNoIncidents(request, processInstanceKey);
-}
-
-async function startServiceTaskInstance(prefix: string) {
-  const processDefinitionId = uniquePrefixedId(prefix);
-  const jobType = uniquePrefixedId(`${prefix}-job`);
-  await deployServiceTaskProcess(processDefinitionId, jobType);
-  const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
+async function startInstance(prefix: string) {
+  const instance = await startServiceTaskInstance(prefix);
   instancesToCancel.push(instance.processInstanceKey);
-  return {
-    processDefinitionId,
-    jobType,
-    processInstanceKey: instance.processInstanceKey,
-  };
+  return instance;
 }
 
 test.describe('Process Instance Suspend and Resume API', () => {
@@ -223,8 +197,8 @@ test.describe('Process Instance Suspend and Resume API', () => {
   test('A suspended instance completes as if it had never been suspended', async ({
     request,
   }) => {
-    const control = await startServiceTaskInstance('sr-control');
-    const subject = await startServiceTaskInstance('sr-subject');
+    const control = await startInstance('sr-control');
+    const subject = await startInstance('sr-subject');
 
     await suspendAndExpectSuspended(request, subject.processInstanceKey);
 
@@ -261,8 +235,7 @@ test.describe('Process Instance Suspend and Resume API', () => {
   test('No job is handed out while the instance is suspended', async ({
     request,
   }) => {
-    const {jobType, processInstanceKey} =
-      await startServiceTaskInstance('sr-nojob');
+    const {jobType, processInstanceKey} = await startInstance('sr-nojob');
     await expectJobExists(request, processInstanceKey, jobType);
     await suspendAndExpectSuspended(request, processInstanceKey);
 
@@ -297,8 +270,7 @@ test.describe('Process Instance Suspend and Resume API', () => {
   test('Suspending an already suspended instance is rejected and leaves the state untouched', async ({
     request,
   }) => {
-    const {jobType, processInstanceKey} =
-      await startServiceTaskInstance('sr-double');
+    const {jobType, processInstanceKey} = await startInstance('sr-double');
     await suspendAndExpectSuspended(request, processInstanceKey);
     const before = await getProcessInstance(request, processInstanceKey);
 
@@ -326,8 +298,7 @@ test.describe('Process Instance Suspend and Resume API', () => {
   test('Resuming an instance that is not suspended is rejected', async ({
     request,
   }) => {
-    const {jobType, processInstanceKey} =
-      await startServiceTaskInstance('sr-notsusp');
+    const {jobType, processInstanceKey} = await startInstance('sr-notsusp');
 
     await assertInvalidState(await resume(request, processInstanceKey));
 
@@ -359,7 +330,7 @@ test.describe('Process Instance Suspend and Resume API', () => {
     // A hardcoded key is not safe here: on a busy cluster it can belong to a
     // real instance, which answers 409 instead of 404. Offsetting a freshly
     // created key keeps the same partition and lands far past its sequence.
-    const {processInstanceKey} = await startServiceTaskInstance('sr-unknown');
+    const {processInstanceKey} = await startInstance('sr-unknown');
     const unknownKey = (BigInt(processInstanceKey) + 1_000_000n).toString();
 
     await assertNotFoundRequest(await suspend(request, unknownKey), unknownKey);
@@ -367,7 +338,7 @@ test.describe('Process Instance Suspend and Resume API', () => {
   });
 
   test('A terminal instance cannot be suspended', async ({request}) => {
-    const completed = await startServiceTaskInstance('sr-completed');
+    const completed = await startInstance('sr-completed');
     const jobKey = await activateSingleJob(
       request,
       completed.jobType,
@@ -381,7 +352,7 @@ test.describe('Process Instance Suspend and Resume API', () => {
       extendedAssertionOptions,
     );
 
-    const terminated = await startServiceTaskInstance('sr-terminated');
+    const terminated = await startInstance('sr-terminated');
     await cancelProcessInstance(terminated.processInstanceKey);
     await expectProcessState(
       request,
@@ -465,7 +436,7 @@ test.describe('Process Instance Suspend and Resume API', () => {
   test('Cancelling a suspended instance clears the suspension for good', async ({
     request,
   }) => {
-    const {processInstanceKey} = await startServiceTaskInstance('sr-cancel');
+    const {processInstanceKey} = await startInstance('sr-cancel');
     await suspendAndExpectSuspended(request, processInstanceKey);
 
     await cancelProcessInstance(processInstanceKey);
@@ -486,7 +457,7 @@ test.describe('Process Instance Suspend and Resume API', () => {
   test('Suspension accepts no body and an empty body, and rejects a malformed one', async ({
     request,
   }) => {
-    const first = await startServiceTaskInstance('sr-body-a');
+    const first = await startInstance('sr-body-a');
     await assertStatusCode(
       await suspend(request, first.processInstanceKey),
       204,
@@ -496,7 +467,7 @@ test.describe('Process Instance Suspend and Resume API', () => {
       204,
     );
 
-    const second = await startServiceTaskInstance('sr-body-b');
+    const second = await startInstance('sr-body-b');
     await assertStatusCode(
       await suspend(request, second.processInstanceKey, {}),
       204,
@@ -519,7 +490,7 @@ test.describe('Process Instance Suspend and Resume API', () => {
       second.processInstanceKey,
     );
 
-    const third = await startServiceTaskInstance('sr-body-c');
+    const third = await startInstance('sr-body-c');
     for (const operationReference of [-1, 'not-a-number']) {
       await assertStatusCode(
         await suspend(request, third.processInstanceKey, {operationReference}),
@@ -537,7 +508,7 @@ test.describe('Process Instance Suspend and Resume API', () => {
   test('Suspension and resumption require authentication', async ({
     request,
   }) => {
-    const {processInstanceKey} = await startServiceTaskInstance('sr-noauth');
+    const {processInstanceKey} = await startInstance('sr-noauth');
 
     for (const path of [
       '/process-instances/{processInstanceKey}/suspension',
@@ -560,8 +531,7 @@ test.describe('Process Instance Suspend and Resume API', () => {
   test('Job commands are rejected while the instance is suspended', async ({
     request,
   }) => {
-    const {jobType, processInstanceKey} =
-      await startServiceTaskInstance('sr-jobgate');
+    const {jobType, processInstanceKey} = await startInstance('sr-jobgate');
     // Activate first, so the rejections are about suspension and not about there
     // being no job to act on.
     const jobKey = await activateSingleJob(
@@ -670,8 +640,7 @@ test.describe('Process Instance Suspend and Resume API', () => {
   test('Modification is rejected while the instance is suspended', async ({
     request,
   }) => {
-    const {jobType, processInstanceKey} =
-      await startServiceTaskInstance('sr-modify');
+    const {jobType, processInstanceKey} = await startInstance('sr-modify');
     await suspendAndExpectSuspended(request, processInstanceKey);
 
     await assertInvalidState(
@@ -706,8 +675,7 @@ test.describe('Process Instance Suspend and Resume API', () => {
   test('Incident resolution is rejected while the instance is suspended', async ({
     request,
   }) => {
-    const {jobType, processInstanceKey} =
-      await startServiceTaskInstance('sr-incident');
+    const {jobType, processInstanceKey} = await startInstance('sr-incident');
     const jobKey = await activateSingleJob(
       request,
       jobType,
@@ -760,8 +728,7 @@ test.describe('Process Instance Suspend and Resume API', () => {
   test('Variable edits on a suspended instance follow the element scope', async ({
     request,
   }) => {
-    const {jobType, processInstanceKey} =
-      await startServiceTaskInstance('sr-vars');
+    const {jobType, processInstanceKey} = await startInstance('sr-vars');
     // Left unactivated so the element instance stays ACTIVE and addressable.
     const serviceTaskScope = await searchElementInstanceByElementIdAndState(
       request,
@@ -1083,8 +1050,7 @@ test.describe('Process Instance Suspend and Resume API', () => {
   test('Suspended instances are searchable by state and by suspension date', async ({
     request,
   }) => {
-    const {jobType, processInstanceKey} =
-      await startServiceTaskInstance('sr-search');
+    const {jobType, processInstanceKey} = await startInstance('sr-search');
     await suspendAndExpectSuspended(request, processInstanceKey);
 
     await expect(async () => {
@@ -1173,9 +1139,9 @@ test.describe('Process Instance Suspend and Resume API', () => {
   test('Suspended instances can be sorted by suspension date', async ({
     request,
   }) => {
-    const first = await startServiceTaskInstance('sr-sort-a');
+    const first = await startInstance('sr-sort-a');
     await suspendAndExpectSuspended(request, first.processInstanceKey);
-    const second = await startServiceTaskInstance('sr-sort-b');
+    const second = await startInstance('sr-sort-b');
     await suspendAndExpectSuspended(request, second.processInstanceKey);
 
     await expect(async () => {

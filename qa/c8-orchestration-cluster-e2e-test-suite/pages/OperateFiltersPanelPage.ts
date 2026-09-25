@@ -412,6 +412,19 @@ export class OperateFiltersPanelPage {
     await this.activeInstancesCheckbox.click();
   }
 
+  /**
+   * Turns the Suspended filter on unless the URL already carries it. The list
+   * drops an instance once it is no longer ACTIVE, so the row comes back only
+   * with that filter on, and the filter lives in the URL. Clicking blindly
+   * would be worse than not clicking at all: a click on an already-checked box
+   * turns the filter back off.
+   */
+  async applySuspendedFilter(): Promise<void> {
+    if (new URL(this.page.url()).searchParams.get('suspended') !== 'true') {
+      await this.clickSuspendedInstancesCheckbox();
+    }
+  }
+
   async clickSuspendedInstancesCheckbox(): Promise<void> {
     await this.suspendedInstancesCheckbox.click({timeout: 60000});
   }

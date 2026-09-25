@@ -9,7 +9,13 @@
 import type {APIRequestContext, APIResponse} from 'playwright-core';
 import {expect} from '@playwright/test';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
-import {DEFAULT_PAGE_LIMIT, defaultAssertionOptions} from '../constants';
+import {
+  DEFAULT_PAGE_LIMIT,
+  defaultAssertionOptions,
+  extendedAssertionOptions,
+} from '../constants';
+import {activateSingleJob, completeJob} from './job-requestHelpers';
+import {expectNoIncidents} from './incident-requestHelpers';
 import {cancelProcessInstance} from '../zeebeClient';
 import {validateResponse} from 'json-body-assertions';
 import {expectBatchState} from './batch-operation-requestHelpers';
@@ -518,4 +524,43 @@ export async function expectProcessInstanceCount(
       expectedCount,
     );
   }).toPass(assertionOptions);
+}
+
+/**
+ * Runs the instance's service task and waits for it to finish with no open
+ * incident.
+ *
+ * Every suspend/resume case ends this way: a refusal proves a request was
+ * turned down, not that the instance came through the suspension able to work.
+ */
+export async function completeServiceTaskInstance(
+  request: APIRequestContext,
+  jobType: string,
+  processInstanceKey: string,
+): Promise<void> {
+  const jobKey = await activateSingleJob(request, jobType, processInstanceKey);
+  await completeJob(request, jobKey);
+  await expectProcessState(
+    request,
+    processInstanceKey,
+    'COMPLETED',
+    extendedAssertionOptions,
+  );
+  await expectNoIncidents(request, processInstanceKey);
+}
+
+/**
+ * Resumes the instance and then runs it to a finish.
+ *
+ * The resume response is not asserted: a caller that already resumed through
+ * the UI answers 409 here. The completion is the assertion — a job cannot be
+ * activated while the instance is still suspended.
+ */
+export async function resumeAndCompleteServiceTask(
+  request: APIRequestContext,
+  jobType: string,
+  processInstanceKey: string,
+): Promise<void> {
+  await resumeProcessInstance(request, processInstanceKey);
+  await completeServiceTaskInstance(request, jobType, processInstanceKey);
 }
