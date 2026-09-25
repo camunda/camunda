@@ -60,8 +60,6 @@ jobs:
         id: changed-microbenchmarks
         uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         with:
-          base: ${{ github.event.merge_group.base_ref || '' }}
-          ref: ${{ github.event.merge_group.head_ref || github.ref }}
           list-files: json
           filters: |
             microbenchmark_java:

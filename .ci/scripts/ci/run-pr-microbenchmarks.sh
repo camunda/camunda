@@ -46,7 +46,8 @@ done <<< "$body_without_comments"
 selection_marker_suffix=""
 if ((${#explicit_benchmarks[@]} > 0)); then
   mapfile -t explicit_benchmarks < <(printf '%s\n' "${explicit_benchmarks[@]}" | LC_ALL=C sort -u)
-  selection_hash=$(printf '%s\n' "${explicit_benchmarks[@]}" | sha256sum | cut -d ' ' -f 1)
+  # No trailing newline, matching the Python runner's "\n".join(sorted(set(...))) digest.
+  selection_hash=$(IFS=$'\n'; printf '%s' "${explicit_benchmarks[*]}" | sha256sum | cut -d ' ' -f 1)
   selection_marker_suffix=":$selection_hash"
 fi
 
