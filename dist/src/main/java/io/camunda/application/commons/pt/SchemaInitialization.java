@@ -41,6 +41,12 @@ public interface SchemaInitialization extends AutoCloseable {
    */
   boolean isInitialized(String physicalTenantId);
 
+  /**
+   * Where the physical tenant's schema initialization stands. As with {@link #isInitialized}, a
+   * shape that tracks the pass rather than each tenant answers the same for every tenant.
+   */
+  SchemaInitializationStatus status(String physicalTenantId);
+
   /** Stops any work still in flight; idempotent, and never throws. */
   @Override
   void close();

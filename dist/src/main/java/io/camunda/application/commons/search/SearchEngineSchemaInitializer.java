@@ -7,8 +7,11 @@
  */
 package io.camunda.application.commons.search;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.application.commons.pt.PerTenantSchemaInitialization;
 import io.camunda.application.commons.pt.PerTenantSchemaInitialization.DeferralCheck;
+import io.camunda.application.commons.pt.SchemaInitializationStatus;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.SchemaManagerContainer;
@@ -20,9 +23,11 @@ import io.camunda.search.schema.metrics.SchemaManagerMetrics;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
+import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -34,6 +39,7 @@ import org.springframework.beans.factory.InitializingBean;
  * the storage-specific parts: what one attempt does, which failures retrying cannot repair, and
  * whether this node holds startup at the gate.
  */
+@NullMarked
 public class SearchEngineSchemaInitializer
     implements InitializingBean, DisposableBean, SchemaManagerContainer {
 
@@ -110,7 +116,7 @@ public class SearchEngineSchemaInitializer
             configs.keySet(),
             this::initializeTenant,
             SearchEngineSchemaInitializer::isTerminal,
-            tenantId -> configs.get(tenantId).schemaManager().getRetry(),
+            tenantId -> requireNonNull(configs.get(tenantId)).schemaManager().getRetry(),
             deferral);
   }
 
@@ -155,6 +161,13 @@ public class SearchEngineSchemaInitializer
     return initialization.isInitialized(physicalTenantId);
   }
 
+  /** Where each physical tenant's schema initialization stands, in configuration order. */
+  public Map<String, SchemaInitializationStatus> statuses() {
+    final var statuses = new LinkedHashMap<String, SchemaInitializationStatus>();
+    configs.keySet().forEach(tenantId -> statuses.put(tenantId, initialization.status(tenantId)));
+    return statuses;
+  }
+
   /**
    * Returns true if the schema initialization completed successfully for <em>all</em> physical
    * tenants. This can be used by dependent components to check if they should proceed with their
@@ -178,7 +191,7 @@ public class SearchEngineSchemaInitializer
    */
   @VisibleForTesting
   void initializeTenant(final String physicalTenantId) {
-    final SearchEngineConfiguration configuration = configs.get(physicalTenantId);
+    final SearchEngineConfiguration configuration = requireNonNull(configs.get(physicalTenantId));
     final IndexDescriptors indexDescriptors = descriptors.get(physicalTenantId);
     if (indexDescriptors == null) {
       // A wiring defect rather than a storage failure: no amount of retrying produces descriptors,

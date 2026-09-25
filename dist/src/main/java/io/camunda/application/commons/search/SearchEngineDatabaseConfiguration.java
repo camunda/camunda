@@ -9,6 +9,7 @@ package io.camunda.application.commons.search;
 
 import static io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled.AnyHttpGatewayEnabledCondition.isAnyHttpGatewayEnabled;
 
+import io.camunda.application.commons.pt.PhysicalTenantSchemaInitializationHealthIndicator;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.search.connect.tenant.SearchClients;
@@ -18,13 +19,17 @@ import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Map;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.health.contributor.HealthContributor;
+import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 
+@NullMarked
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnSecondaryStorageType({
   SecondaryStorageType.elasticsearch,
@@ -59,7 +64,7 @@ public class SearchEngineDatabaseConfiguration {
       final Environment environment,
       final BrokerTopologyManager brokerTopologyManager,
       // if present, then it will ensure that the broker is started first
-      @Autowired(required = false) final Broker broker) {
+      @Autowired(required = false) final @Nullable Broker broker) {
     return new SearchEngineSchemaInitializer(
         searchEngineConfigurationsByTenant,
         physicalTenantScopedIndexDescriptors,
@@ -81,5 +86,16 @@ public class SearchEngineDatabaseConfiguration {
           final Map<String, SearchEngineConfiguration> searchEngineConfigurationsByTenant) {
     return SearchEngineStatusHealthIndicator.forPhysicalTenants(
         searchClients, searchEngineConfigurationsByTenant);
+  }
+
+  /**
+   * Reports each physical tenant's schema initialization for operators, outside every probe group
+   * for the same reason as the search engine status above.
+   */
+  @Bean
+  public HealthIndicator physicalTenantSchemaInitializationHealthIndicator(
+      final SearchEngineSchemaInitializer searchEngineSchemaInitializer) {
+    return new PhysicalTenantSchemaInitializationHealthIndicator(
+        searchEngineSchemaInitializer::statuses);
   }
 }
