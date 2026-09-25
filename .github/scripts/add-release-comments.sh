@@ -8,13 +8,18 @@ set -euo pipefail
 CUTOFF_DATE=$(date -d "-${DAYS_BACK} days" --iso-8601)
 echo "Looking for releases since: $CUTOFF_DATE"
 
+# Leave headroom under the job's timeout-minutes so an uncapped Retry-After wait
+# cannot run us past it. SECONDS counts wall-clock since this script started,
+# which is effectively the whole job step.
+RUN_DEADLINE=${RUN_DEADLINE_SECONDS:-10200}  # 170m of the 180m job budget
+
 # Post a comment, retrying on GitHub's secondary rate limit for content creation
 # (~80/min, ~500/hour). A full-cycle release (RC or minor GA) references ~900
 # issues, so a single run necessarily brushes against that ceiling; without this
 # the bare POST 403s and `set -e` aborts the whole job mid-run.
 post_comment_with_retry() {
   local issue_number="$1" comment_body="$2"
-  local attempt=0 max_attempts=8 response http_code retry_after reset_at sleep_for retryable
+  local attempt=0 max_attempts=8 response http_code retry_after remaining reset_at sleep_for retryable
 
   while :; do
     attempt=$((attempt + 1))
@@ -27,18 +32,19 @@ post_comment_with_retry() {
     http_code=$(printf '%s\n' "$response" | grep -oiE '^HTTP/[0-9.]+ [0-9]+' | grep -oE '[0-9]+$' | head -n1)
 
     # Only retry failures a wait can actually clear. 429 and 5xx are always
-    # transient; a 403 is worth retrying only when it is a rate limit -- a
-    # secondary-limit 403 carries Retry-After or a "rate limit"/"abuse" body, and
-    # a primary-limit 403 shows x-ratelimit-remaining: 0. A plain permission 403
-    # (or a 404/422) never clears, so failing fast on it keeps one bad issue from
-    # burning the entire backoff budget.
+    # transient; a 403 is worth retrying only when it is a rate limit. The
+    # x-ratelimit-* headers ride on *every* response (even a plain 404), so they
+    # cannot be used as presence signals -- only an explicit Retry-After, an
+    # exhausted remaining (0), or a rate-limit/abuse body mean a real limit. A
+    # plain permission 403 (or a 404/422) never clears, so failing fast on it
+    # keeps one bad issue from burning the entire backoff budget.
     retryable=false
     case "$http_code" in
       429 | 5??) retryable=true ;;
       403)
-        if printf '%s\n' "$response" | grep -qiE '^(retry-after|x-ratelimit-reset):' \
+        if printf '%s\n' "$response" | grep -qiE '^retry-after:' \
           || printf '%s\n' "$response" | grep -qiE '^x-ratelimit-remaining: *0\b' \
-          || printf '%s\n' "$response" | grep -qiE 'rate limit|secondary rate|abuse'; then
+          || printf '%s\n' "$response" | grep -qiE 'rate limit|abuse'; then
           retryable=true
         fi
         ;;
@@ -54,21 +60,29 @@ post_comment_with_retry() {
       return 1
     fi
 
-    # Prefer the server's own hint: Retry-After seconds, or x-ratelimit-reset
-    # (epoch) when the primary limit is exhausted; otherwise linear backoff.
-    retry_after=$(printf '%s\n' "$response" | grep -oiE '^retry-after: *[0-9]+' | grep -oE '[0-9]+' | head -n1)
-    reset_at=$(printf '%s\n' "$response" | grep -oiE '^x-ratelimit-reset: *[0-9]+' | grep -oE '[0-9]+' | head -n1)
+    # Honour the server's own hint uncapped: GitHub's docs say not to retry
+    # before Retry-After elapses, and an exhausted primary limit's reset window
+    # can legitimately exceed a few minutes. Only the fallback backoff (no hint
+    # given) is capped.
+    retry_after=$(printf '%s\n' "$response" | grep -oiE '^retry-after: *[0-9]+' | grep -oE '[0-9]+$' | head -n1)
+    remaining=$(printf '%s\n' "$response" | grep -oiE '^x-ratelimit-remaining: *[0-9]+' | grep -oE '[0-9]+$' | head -n1)
+    reset_at=$(printf '%s\n' "$response" | grep -oiE '^x-ratelimit-reset: *[0-9]+' | grep -oE '[0-9]+$' | head -n1)
     if [ -n "$retry_after" ]; then
       sleep_for="$retry_after"
-    elif [ -n "$reset_at" ]; then
-      sleep_for=$((reset_at - $(date +%s)))
+    elif [ "$remaining" = "0" ] && [ -n "$reset_at" ]; then
+      sleep_for=$((reset_at - $(date +%s) + 1))
     else
-      sleep_for=$((attempt * 60))
+      sleep_for=$((60 * 2 ** (attempt - 1)))
+      [ "$sleep_for" -gt 900 ] && sleep_for=900
     fi
-    # Clamp: never a hot loop on a stale hint, never one huge stall on a distant
-    # reset -- split that across attempts instead.
-    [ "$sleep_for" -lt 5 ] && sleep_for=5
-    [ "$sleep_for" -gt 300 ] && sleep_for=300
+    [ "$sleep_for" -lt 1 ] && sleep_for=1
+
+    # A large (now uncapped) wait must not sleep past the job budget; give up and
+    # let the end-of-run failure surface it for a re-run instead.
+    if [ $((SECONDS + sleep_for)) -gt "$RUN_DEADLINE" ]; then
+      echo "    ✗ Giving up on #$issue_number: waiting ${sleep_for}s would overrun the job budget" >&2
+      return 1
+    fi
     echo "    Retrying #$issue_number in ${sleep_for}s (attempt $attempt/$max_attempts, HTTP $http_code)" >&2
     sleep "$sleep_for"
   done
