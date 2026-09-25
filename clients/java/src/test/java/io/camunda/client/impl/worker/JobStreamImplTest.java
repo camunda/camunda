@@ -241,6 +241,27 @@ final class JobStreamImplTest {
   }
 
   @Test
+  void shouldReopenStreamImmediatelyWhenServerCompletesIt() {
+    // given
+    final List<ActivatedJob> jobs = new ArrayList<>();
+    jobStreamer.openStreamer(jobs::add);
+    final ServerCallStreamObserver<GatewayOuterClass.ActivatedJob> initialStream =
+        service.lastStream();
+
+    // when - the server ends the stream normally; no time passes, so no backoff can elapse
+    initialStream.onCompleted();
+    scheduler.runUntilIdle();
+
+    // then - a new stream is open and delivers jobs, without a WARN
+    final ServerCallStreamObserver<GatewayOuterClass.ActivatedJob> recreatedStream =
+        service.lastStream();
+    assertThat(recreatedStream).isNotNull().isNotEqualTo(initialStream);
+    service.pushJob();
+    assertThat(jobs).hasSize(1);
+    assertThat(eventsAt(Level.WARN)).isEmpty();
+  }
+
+  @Test
   void shouldReopenStreamOnStreamingTimeout() {
     // given
     final Duration streamingTimeout = Duration.ofSeconds(2);
