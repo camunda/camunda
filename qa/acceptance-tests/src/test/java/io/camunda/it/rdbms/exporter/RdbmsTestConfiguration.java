@@ -12,6 +12,8 @@ import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import io.camunda.application.commons.configuration.UnifiedConfigurationModule;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.application.commons.rdbms.RdbmsDataSources;
+import io.camunda.it.rdbms.db.util.RdbmsTestTopology;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import javax.sql.DataSource;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -32,5 +34,10 @@ public class RdbmsTestConfiguration {
   @Bean(destroyMethod = "") // DataSource will be closed when closing RdbmsDataSources
   public DataSource dataSource(final RdbmsDataSources dataSources) {
     return dataSources.dataSourceFor(DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Bean
+  BrokerTopologyManager brokerTopologyManager() {
+    return RdbmsTestTopology.processingTopologyManager();
   }
 }
