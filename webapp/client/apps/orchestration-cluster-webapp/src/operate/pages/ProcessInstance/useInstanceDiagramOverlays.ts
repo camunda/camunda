@@ -22,7 +22,6 @@ import {
 	COMPLETED_END_EVENT_BADGE,
 	INCIDENTS_BADGE,
 } from '#/operate/shared/utils/badgePositions';
-import {getWaitStateLabel} from '#/operate/shared/utils/waitStates';
 
 type Props = {
 	statistics?: ProcessDefinitionStatistic[];
@@ -159,8 +158,7 @@ function useInstanceDiagramOverlays({
 			if (elementId === processDefinitionId || agentByElement.has(elementId)) {
 				return [];
 			}
-			const label = getWaitStateLabel(waitingCount);
-			if (label === null) {
+			if (waitingCount <= 0) {
 				return [];
 			}
 			const isNarrow = NARROW_TYPES.has(businessObjects?.[elementId]?.$type ?? '');
@@ -169,7 +167,7 @@ function useInstanceDiagramOverlays({
 					elementId,
 					type: 'instance-waiting',
 					position: isNarrow ? {top: -36, left: 18} : {top: -36, left: 0},
-					payload: {label, centered: isNarrow},
+					payload: {waitingCount, centered: isNarrow},
 				},
 			];
 		});

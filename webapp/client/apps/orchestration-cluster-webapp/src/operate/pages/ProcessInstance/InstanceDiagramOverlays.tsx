@@ -14,6 +14,7 @@ import type {AgentInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {DiagramOverlayContext} from '#/operate/shared/Diagram/DiagramOverlayContext';
 import type {OverlayEntry} from '#/operate/shared/Diagram/overlayTypes';
 import {StateOverlay, type ElementState} from '#/operate/shared/StateOverlay/StateOverlay';
+import {getWaitStateLabel} from '#/operate/shared/utils/waitStates';
 
 const AgentTag = styled.span`
 	display: inline-block;
@@ -72,7 +73,7 @@ const ModificationBadge = styled.span`
 `;
 
 type StatePayload = {elementState: ElementState | 'completedEndEvents'; count?: number};
-type WaitingPayload = {label: string; centered: boolean};
+type WaitingPayload = {waitingCount: number; centered: boolean};
 type AgentPayload = {
 	agentInstanceKey: string;
 	status: AgentInstance['status'];
@@ -120,10 +121,10 @@ function InstanceDiagramOverlays() {
 			);
 		}
 		if (type === 'instance-waiting') {
-			const {label, centered} = payload as WaitingPayload;
+			const {waitingCount, centered} = payload as WaitingPayload;
 			return createPortal(
 				<WaitingTag key={elementId} $centered={centered} data-testid={`instance-waiting-${elementId}`}>
-					{label}
+					{getWaitStateLabel(waitingCount)}
 				</WaitingTag>,
 				container,
 				`waiting-${elementId}`,

@@ -94,7 +94,7 @@ function calledDecisionQuery(elementInstanceKey: string) {
 function useInstanceDiagramData(instance: ProcessInstance, hasDiagram: boolean) {
 	const processInstanceKey = instance.processInstanceKey;
 	const isRunning = isInstanceRunning(instance);
-	const wasRunning = useRef(isRunning);
+	const previousInstance = useRef({processInstanceKey, isRunning});
 	const refetchInterval = isRunning ? POLLING_INTERVAL_MS : false;
 	const statistics = useQuery({
 		queryKey: ['instanceDiagramStatistics', processInstanceKey],
@@ -120,12 +120,17 @@ function useInstanceDiagramData(instance: ProcessInstance, hasDiagram: boolean) 
 	const refetchStatistics = statistics.refetch;
 	const refetchSequenceFlows = sequenceFlows.refetch;
 	useEffect(() => {
-		if (hasDiagram && wasRunning.current && !isRunning) {
+		if (
+			hasDiagram &&
+			previousInstance.current.processInstanceKey === processInstanceKey &&
+			previousInstance.current.isRunning &&
+			!isRunning
+		) {
 			void refetchStatistics();
 			void refetchSequenceFlows();
 		}
-		wasRunning.current = isRunning;
-	}, [hasDiagram, isRunning, refetchStatistics, refetchSequenceFlows]);
+		previousInstance.current = {processInstanceKey, isRunning};
+	}, [hasDiagram, isRunning, processInstanceKey, refetchStatistics, refetchSequenceFlows]);
 	return {statistics, sequenceFlows, agents};
 }
 

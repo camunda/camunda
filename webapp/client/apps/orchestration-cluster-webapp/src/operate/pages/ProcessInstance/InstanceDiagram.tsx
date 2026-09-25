@@ -187,9 +187,27 @@ function InstanceDiagram({
 		if (elementType !== 'bpmn:CallActivity' && elementType !== 'bpmn:BusinessRuleTask') {
 			return;
 		}
+		const instancePathname = router.buildLocation({
+			to: '/operate/processes/$processInstanceId',
+			params: {processInstanceId},
+			search: {},
+		}).pathname;
+		const isCurrentInstanceRoute = () => {
+			const currentPathname = router.parseLocation(router.history.location).pathname;
+			return currentPathname === instancePathname || currentPathname.startsWith(`${instancePathname}/`);
+		};
+		if (!isCurrentInstanceRoute()) {
+			return;
+		}
+		const pathname = router.history.location.pathname;
 		const version = ++drillDownVersion.current;
 		const isCurrentDrillDown = () => {
-			if (currentInstanceId.current !== processInstanceId || drillDownVersion.current !== version) {
+			if (
+				!isCurrentInstanceRoute() ||
+				router.history.location.pathname !== pathname ||
+				currentInstanceId.current !== processInstanceId ||
+				drillDownVersion.current !== version
+			) {
 				return false;
 			}
 			const currentSearch = processInstanceSearchSchema.parse(router.state.location.search);
