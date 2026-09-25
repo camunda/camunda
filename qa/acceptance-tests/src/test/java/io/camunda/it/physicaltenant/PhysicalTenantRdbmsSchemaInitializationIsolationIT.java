@@ -9,6 +9,8 @@ package io.camunda.it.physicaltenant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.qa.util.actuator.PrometheusActuator;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;
@@ -90,6 +92,7 @@ final class PhysicalTenantRdbmsSchemaInitializationIsolationIT {
   private static final Duration DEGRADED_TENANT_CONNECTION_TIMEOUT = Duration.ofSeconds(2);
 
   private static final HttpClient HTTP = HttpClient.newHttpClient();
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   @SuppressWarnings("resource")
   private static final PostgreSQLContainer<?> POSTGRES =
@@ -160,6 +163,16 @@ final class PhysicalTenantRdbmsSchemaInitializationIsolationIT {
     assertThat(readinessGaugeFor(DEFAULT_TENANT)).isEqualTo(1);
     assertThat(readinessGaugeFor(TENANT_A)).isZero();
 
+    // then - the actuator tells an operator the tenant is still being retried, so it needs no one
+    final JsonNode schemaInitialization = schemaInitializationHealth();
+    assertThat(schemaInitialization.path("status").asText()).isEqualTo("DEGRADED");
+    assertThat(schemaInitialization.at("/details/" + DEFAULT_TENANT + "/status").asText())
+        .isEqualTo("UP");
+    final JsonNode retryingTenant = schemaInitialization.at("/details/" + TENANT_A);
+    assertThat(retryingTenant.path("status").asText()).isEqualTo("DEGRADED");
+    assertThat(retryingTenant.path("state").asText()).isEqualTo("RETRYING");
+    assertThat(retryingTenant.path("failedAttempts").asInt()).isPositive();
+
     // then - the healthy tenant is served ...
     assertThat(searchProcessInstances(DEFAULT_TENANT).statusCode()).isEqualTo(200);
 
@@ -186,6 +199,22 @@ final class PhysicalTenantRdbmsSchemaInitializationIsolationIT {
 
     // and - the healthy tenant was never affected
     assertThat(readinessGaugeFor(DEFAULT_TENANT)).isEqualTo(1);
+    assertThat(schemaInitializationHealth().path("status").asText()).isEqualTo("UP");
+  }
+
+  /**
+   * The component rather than the whole response: while tenant A's database is unreachable, its
+   * {@code rdbmsStatus} is down and takes the response's own status with it.
+   */
+  private JsonNode schemaInitializationHealth() throws IOException, InterruptedException {
+    final HttpResponse<String> health =
+        HTTP.send(
+            HttpRequest.newBuilder(broker.actuatorUri("health")).GET().build(),
+            BodyHandlers.ofString());
+    return OBJECT_MAPPER
+        .readTree(health.body())
+        .path("components")
+        .path("physicalTenantSchemaInitialization");
   }
 
   private HttpResponse<String> searchProcessInstances(final String physicalTenantId)
