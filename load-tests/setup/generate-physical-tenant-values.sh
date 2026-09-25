@@ -86,7 +86,7 @@ if [[ -n "$storage_prefix_key" ]]; then
   if [[ "$storage_prefix_key" == "rdbms.prefix" ]]; then
     default_prefix="DEFAULT_"
   else
-    default_prefix="default-"
+    default_prefix="default"
   fi
   lines+=("camunda.data.secondary-storage.${storage_prefix_key}: ${default_prefix}")
 fi
@@ -98,7 +98,7 @@ for ((i = 1; i <= physical_tenant_count; i++)); do
     if [[ "$storage_prefix_key" == "rdbms.prefix" ]]; then
       tenant_prefix="PT${i}_"
     else
-      tenant_prefix="pt${i}-"
+      tenant_prefix="pt${i}"
     fi
     lines+=("camunda.physical-tenants.${tenant}.data.secondary-storage.${storage_prefix_key}: ${tenant_prefix}")
   fi
@@ -135,8 +135,10 @@ for ((i = 1; i <= physical_tenant_count; i++)); do
   )
 done
 
-PT_LINES="$(printf '%s\n' "${lines[@]}")"
-export PT_LINES
+pt_lines_file="$(mktemp "${TMPDIR:-/tmp}/pt-lines.XXXXXXXXXX")"
+trap 'rm -f "$pt_lines_file"' EXIT
+printf '%s\n' "${lines[@]}" > "$pt_lines_file"
+export PT_LINES_FILE="$pt_lines_file"
 
 {
   echo "########################################################################################"
@@ -148,7 +150,7 @@ export PT_LINES
   echo "# \`make install\`/\`make template\`, not meant to be hand-edited."
   # .content already ends in exactly one trailing newline (YAML clip-mode "|" block
   # scalar), so no extra separator is needed here — one would insert a blank line.
-  yq eval '{"orchestration": {"extraConfiguration": [{"file": .orchestration.extraConfiguration[0].file, "content": (.orchestration.extraConfiguration[0].content + strenv(PT_LINES))}, .orchestration.extraConfiguration[1]]}}' "$base_file"
+  yq eval '{"orchestration": {"extraConfiguration": [{"file": .orchestration.extraConfiguration[0].file, "content": (.orchestration.extraConfiguration[0].content + load_str(strenv(PT_LINES_FILE)))}, .orchestration.extraConfiguration[1]]}}' "$base_file"
 } > "$output_file"
 
 echo "Generated ${output_file} (physical_tenant_count=${physical_tenant_count}, secondary_storage=${secondary_storage})."
