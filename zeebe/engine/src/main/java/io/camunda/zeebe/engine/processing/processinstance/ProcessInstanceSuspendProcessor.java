@@ -146,7 +146,8 @@ public final class ProcessInstanceSuspendProcessor
       return false;
     }
 
-    if (suspensionState.isSuspended(command.getKey())) {
+    // Check marker presence so all duplicate suspend requests are rejected.
+    if (suspensionState.getSuspensionState(command.getKey()) != null) {
       final var reason = String.format(PROCESS_ALREADY_SUSPENDED_MESSAGE, command.getKey());
       enrichRejectionCommand(command, elementInstance.getValue());
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);

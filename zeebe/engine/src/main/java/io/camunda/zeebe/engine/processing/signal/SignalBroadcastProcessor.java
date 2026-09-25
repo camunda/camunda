@@ -191,11 +191,8 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
     // signal start events have no process instance yet to check, so skip only for non-start
     // subscriptions
     final var isStartEvent = subscription.getCatchEventInstanceKey() == -1;
-    if (!isStartEvent) {
-      final var marker = suspensionState.getSuspensionState(subscription.getProcessInstanceKey());
-      if (marker == SuspensionState.State.SUSPENDED || marker == SuspensionState.State.RESUMING) {
-        return;
-      }
+    if (!isStartEvent && suspensionState.isSuspended(subscription.getProcessInstanceKey())) {
+      return;
     }
 
     final var processDefinitionKey = subscription.getProcessDefinitionKey();

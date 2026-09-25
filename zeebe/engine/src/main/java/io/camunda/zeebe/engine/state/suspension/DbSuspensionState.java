@@ -62,8 +62,8 @@ public final class DbSuspensionState implements MutableSuspensionState {
 
   @Override
   public boolean isSuspended(final long key) {
-    processInstanceKey.wrapLong(key);
-    return suspensionColumnFamily.exists(processInstanceKey);
+    final var state = getSuspensionState(key);
+    return state == SuspensionState.State.SUSPENDED || state == SuspensionState.State.RESUMING;
   }
 
   @Override
