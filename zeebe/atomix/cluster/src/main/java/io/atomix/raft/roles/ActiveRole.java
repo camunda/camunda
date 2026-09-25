@@ -17,11 +17,14 @@
 package io.atomix.raft.roles;
 
 import io.atomix.raft.RaftServer;
+import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.InternalAppendRequest;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
+import io.atomix.raft.utils.VoteQuorum.VoteErrorStatus;
+import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import java.util.concurrent.CompletableFuture;
 
 /** Abstract active state. */
@@ -29,6 +32,21 @@ public abstract class ActiveRole extends PassiveRole {
 
   protected ActiveRole(final RaftContext context) {
     super(context);
+  }
+
+  /**
+   * Logs a failed poll or vote request to a member and returns how the failure was classified, so
+   * the caller reports the same status to the vote quorum it just logged. The status decides the
+   * level, see {@link VoteErrorStatus#logLevel()}.
+   */
+  protected VoteErrorStatus logRequestFailure(
+      final String requestType, final RaftMember member, final Throwable error) {
+    // request futures complete exceptionally with the cause wrapped in a CompletionException
+    final var cause = FuturesUtil.unwrapCompletionException(error);
+    final var status = VoteErrorStatus.of(cause);
+    log.atLevel(status.logLevel())
+        .log("{} request to {} failed with {}: {}", requestType, member.memberId(), status, cause);
+    return status;
   }
 
   @Override
