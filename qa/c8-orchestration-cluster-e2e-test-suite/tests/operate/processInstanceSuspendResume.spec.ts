@@ -7,7 +7,7 @@
  */
 
 import {test} from 'fixtures';
-import {expect} from '@playwright/test';
+import {expect, type Locator, type Page} from '@playwright/test';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
@@ -51,6 +51,26 @@ async function startServiceTaskInstance(prefix: string) {
     jobType,
     processInstanceKey: instance.processInstanceKey,
   };
+}
+
+/**
+ * Operate resolves the instance state when the detail view loads, so a
+ * suspension applied over REST only shows after a reload. One reload is not
+ * enough: the view can still be served the pre-suspension state for a moment
+ * after the API reports SUSPENDED, so the reload is retried.
+ */
+async function reloadUntilSuspended(page: Page, suspendedStateIcon: Locator) {
+  await page.reload();
+  await waitForAssertion({
+    assertion: async () => {
+      await expect(suspendedStateIcon).toBeVisible({
+        timeout: UI_REFRESH_TIMEOUT,
+      });
+    },
+    onFailure: async () => {
+      await page.reload();
+    },
+  });
 }
 
 test.describe('Operate Process Instance Suspend and Resume', () => {
@@ -146,10 +166,10 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     ).toBe(true);
 
     await suspendAndExpectSuspended(request, processInstanceKey);
-    await page.reload();
-    await expect(operateProcessInstancePage.suspendedStateIcon).toBeVisible({
-      timeout: UI_REFRESH_TIMEOUT,
-    });
+    await reloadUntilSuspended(
+      page,
+      operateProcessInstancePage.suspendedStateIcon,
+    );
 
     const suspendedActions =
       await operateProcessInstancePage.instanceHeaderActionNames();
@@ -210,13 +230,17 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     await operateProcessInstancePage.gotoProcessInstancePage({
       id: instance.processInstanceKey,
     });
-    // The incident has to reach secondary storage and the Incidents tab has to
-    // be opened before the table exists, so both are retried together.
+    // The tab appears only once the incident has reached Operate's view, and
+    // the table renders only once the tab is open, so both waits share one
+    // retry budget. Waiting for the tab rather than probing it is what makes
+    // the budget usable: a probe that finds no tab yet leaves the table wait
+    // to time out against a table that cannot appear.
     await waitForAssertion({
       assertion: async () => {
-        if (await operateProcessInstancePage.incidentsTab.isVisible()) {
-          await operateProcessInstancePage.incidentsTab.click();
-        }
+        await expect(operateProcessInstancePage.incidentsTab).toBeVisible({
+          timeout: UI_REFRESH_TIMEOUT,
+        });
+        await operateProcessInstancePage.incidentsTab.click();
         await expect(operateProcessInstancePage.incidentsTable).toBeVisible({
           timeout: UI_REFRESH_TIMEOUT,
         });
@@ -232,10 +256,10 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     await expect(retryButton).toBeEnabled({timeout: UI_REFRESH_TIMEOUT});
 
     await suspendAndExpectSuspended(request, instance.processInstanceKey);
-    await page.reload();
-    await expect(operateProcessInstancePage.suspendedStateIcon).toBeVisible({
-      timeout: UI_REFRESH_TIMEOUT,
-    });
+    await reloadUntilSuspended(
+      page,
+      operateProcessInstancePage.suspendedStateIcon,
+    );
     await expect(retryButton).toBeDisabled({timeout: UI_REFRESH_TIMEOUT});
   });
 
