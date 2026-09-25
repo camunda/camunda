@@ -8,9 +8,8 @@
 package io.camunda.application.commons.rdbms;
 
 import io.camunda.application.commons.pt.PerTenantSchemaInitialization;
-import io.camunda.application.commons.pt.SchemaInitialization;
+import io.camunda.application.commons.pt.PerTenantSchemaInitialization.DeferralCheck;
 import io.camunda.application.commons.pt.SchemaInitializer;
-import io.camunda.application.commons.pt.SingleTenantSchemaInitialization;
 import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.exception.RdbmsSchemaMigrationFailedException;
@@ -31,27 +30,12 @@ import org.springframework.beans.factory.InitializingBean;
  * exporter, the request-time rejection path and the per-tenant readiness gauge that all consult
  * {@link RdbmsSchemaManagerRegistry}.
  *
- * <p>Which of two shapes it takes is decided by how many tenants there are:
+ * <p>Every broker node uses {@link PerTenantSchemaInitialization}, including single-tenant nodes,
+ * so recovery-aware deferral and retry behavior are consistent with Elasticsearch/OpenSearch.
+ * RestoreApp does not create this bean; it only uses the RDBMS datasource and mapper wiring needed
+ * to resolve exported positions.
  *
- * <ul>
- *   <li><b>Two or more tenants</b> — {@link PerTenantSchemaInitialization}, the isolated shape. It
- *       owns the retry loop, the startup gate and the per-tenant state; this class supplies only
- *       the storage-specific parts, exactly as {@code SearchEngineSchemaInitializer} does for
- *       Elasticsearch/OpenSearch. One tenant's failure degrades that tenant alone.
- *   <li><b>One tenant, or none</b> — {@link SingleTenantSchemaInitialization}, the synchronous
- *       shape this application has always had: apply the schema during the context refresh and let
- *       a failure abort startup.
- * </ul>
- *
- * <p>The fork is not a simplification for the trivial case; it is required. {@code RestoreApp}
- * imports the RDBMS configuration and is single-tenant by design, so on the isolated path it would
- * hold at the gate and retry forever where today it exits non-zero in seconds — and forcing it not
- * to hold is worse still, because it would then write exporter positions against a schema that may
- * not exist yet. What a one-shot job needs is "block until all settled, then fail if any failed",
- * which neither shape offers. Forking on the tenant count keeps such a process on the synchronous
- * path by construction, and makes this class a no-op for every existing single-tenant deployment.
- *
- * <p>Unlike the Elasticsearch/OpenSearch adapter, the isolated path holds startup on every node,
+ * <p>Unlike the Elasticsearch/OpenSearch adapter, initialization holds startup on every node,
  * gateway or not. Holding is not incidental to the abort, it <em>is</em> the abort: {@code
  * EveryTenantTerminallyFailedException} is raised only by {@link
  * PerTenantSchemaInitialization#awaitGate()}, so a broker whose every tenant is terminal would
@@ -66,7 +50,7 @@ public class RdbmsSchemaInitializer
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsSchemaInitializer.class);
 
   private final Map<String, RdbmsSchemaManager> schemaManagers;
-  private final SchemaInitialization initialization;
+  private final PerTenantSchemaInitialization initialization;
 
   /**
    * @param retryConfig the backoff a degraded tenant retries on, per physical tenant. Unbounded is
@@ -79,25 +63,20 @@ public class RdbmsSchemaInitializer
    */
   public RdbmsSchemaInitializer(
       final Map<String, RdbmsSchemaManager> schemaManagersByTenant,
-      final Function<String, RetryConfiguration> retryConfig) {
+      final Function<String, RetryConfiguration> retryConfig,
+      final DeferralCheck deferralCheck) {
     schemaManagers = schemaManagersByTenant;
     initialization =
-        isIsolated()
-            ? new PerTenantSchemaInitialization(
-                schemaManagers.keySet(),
-                this::initializeTenant,
-                RdbmsSchemaInitializer::isTerminal,
-                retryConfig)
-            : new SingleTenantSchemaInitialization(this::initializeSynchronously);
+        new PerTenantSchemaInitialization(
+            schemaManagers.keySet(),
+            this::initializeTenant,
+            RdbmsSchemaInitializer::isTerminal,
+            retryConfig,
+            deferralCheck);
   }
 
   @Override
-  public void afterPropertiesSet() throws Exception {
-    if (!isIsolated()) {
-      initialization.start();
-      return;
-    }
-
+  public void afterPropertiesSet() {
     LOG.info(
         "Initializing the RDBMS schema of {} physical tenants independently: {}",
         schemaManagers.size(),
@@ -120,8 +99,8 @@ public class RdbmsSchemaInitializer
   }
 
   /**
-   * The tenant screen is here rather than in either shape: this is the side that knows which
-   * tenants the node has, and a tenant it does not have has no schema to have applied.
+   * This class screens tenants because it knows which tenants the node has, and a tenant it does
+   * not have has no schema to have applied.
    */
   @Override
   public boolean isInitialized(final String physicalTenantId) {
@@ -133,41 +112,13 @@ public class RdbmsSchemaInitializer
   @Override
   public void initializeNow(final String physicalTenantId) {
     schemaManagerOf(physicalTenantId);
-    if (isIsolated()) {
-      ((PerTenantSchemaInitialization) initialization).initializeNow(physicalTenantId);
-    } else {
-      try {
-        initializeSynchronously();
-      } catch (final Exception e) {
-        throw new SchemaInitializationFailedException(physicalTenantId, e);
-      }
-    }
-  }
-
-  /** Whether one tenant's failure has anyone else's startup to spare. */
-  private boolean isIsolated() {
-    return schemaManagers.size() > 1;
+    initialization.initializeNow(physicalTenantId);
   }
 
   /**
-   * The single-tenant pass, which is {@code DefaultRdbmsSchemaManagerRegistry}'s loop unchanged:
-   * the failure propagates out of the context refresh, so the node exits non-zero rather than
-   * coming up degraded, and it propagates unwrapped so that what an operator reads is unchanged
-   * from before this class existed.
-   */
-  private void initializeSynchronously() throws Exception {
-    for (final var tenant : schemaManagers.entrySet()) {
-      LOG.info("[RDBMS Schema] Initializing schema for physical tenant '{}'.", tenant.getKey());
-      tenant.getValue().initialize();
-      LOG.debug("[RDBMS Schema] Schema initialized for physical tenant '{}'.", tenant.getKey());
-    }
-  }
-
-  /**
-   * One attempt at applying a tenant's schema on the isolated path. Any failure propagates to the
-   * retry loop, which walks the cause chain to classify it — so wrapping a checked failure, which
-   * the loop's {@code Consumer} cannot declare, cannot hide a terminal cause inside a retryable
-   * wrapper.
+   * One attempt at applying a tenant's schema. Any failure propagates to the retry loop, which
+   * walks the cause chain to classify it — so wrapping a checked failure, which the loop's {@code
+   * Consumer} cannot declare, cannot hide a terminal cause inside a retryable wrapper.
    */
   @VisibleForTesting
   void initializeTenant(final String physicalTenantId) {

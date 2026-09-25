@@ -11,6 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.application.commons.pt.EveryTenantTerminallyFailedException;
+import io.camunda.application.commons.pt.PerTenantSchemaInitialization.Deferral;
+import io.camunda.application.commons.pt.PerTenantSchemaInitialization.DeferralCheck;
 import io.camunda.application.commons.rdbms.RdbmsDataSources;
 import io.camunda.application.commons.rdbms.RdbmsSchemaInitializer;
 import io.camunda.cluster.PhysicalTenantIds;
@@ -125,14 +128,16 @@ class RdbmsSchemaInitializerH2IT {
 
   @Test
   void shouldFailStartupWhenTheOnlyTenantCannotBeMigrated() throws Exception {
-    // given - the same failure on a single-tenant node, which stays on the synchronous path
+    // given - the same failure on a single-tenant node
     try (final var tenants = wireTenants(TENANT_A)) {
       seedSchemaVersion(tenants.dataSourceFor(TENANT_A), UNMIGRATABLE_SCHEMA_VERSION);
       final var initializer = initializerFor(tenants);
       try {
-        // when / then - there is nothing to isolate it from, so it still aborts, as it always has
+        // when / then - there is no healthy tenant that would allow startup to proceed
         assertThatThrownBy(initializer::afterPropertiesSet)
-            .isInstanceOf(RdbmsSchemaVersionIncompatibleException.class)
+            .isInstanceOf(EveryTenantTerminallyFailedException.class)
+            .hasCauseInstanceOf(RdbmsSchemaVersionIncompatibleException.class)
+            .cause()
             .hasMessageContaining(UNMIGRATABLE_SCHEMA_VERSION);
         assertThat(initializer.isInitialized(TENANT_A)).isFalse();
       } finally {
@@ -149,7 +154,10 @@ class RdbmsSchemaInitializerH2IT {
     converted.setMaxRetries(retry.getMaxRetries());
     converted.setMinRetryDelay(retry.getMinRetryDelay());
     converted.setMaxRetryDelay(retry.getMaxRetryDelay());
-    return new RdbmsSchemaInitializer(schemaManagersFor(tenants), physicalTenantId -> converted);
+    return new RdbmsSchemaInitializer(
+        schemaManagersFor(tenants),
+        physicalTenantId -> converted,
+        DeferralCheck.of(ignored -> Deferral.NONE));
   }
 
   private static Map<String, RdbmsSchemaManager> schemaManagersFor(final RdbmsDataSources tenants) {
