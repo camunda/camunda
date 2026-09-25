@@ -33,7 +33,15 @@ const InputsAndOutputs: React.FC<Props> = ({query}) => {
 	const [width, setWidth] = useState(0);
 
 	useEffect(() => {
-		setWidth(containerRef.current?.clientWidth ?? 0);
+		const container = containerRef.current;
+		if (container === null) {
+			return;
+		}
+
+		const observer = new ResizeObserver(() => setWidth(container.clientWidth));
+		observer.observe(container);
+
+		return () => observer.disconnect();
 	}, []);
 
 	const decisionInstance = query.data;
@@ -43,9 +51,9 @@ const InputsAndOutputs: React.FC<Props> = ({query}) => {
 			columns: [{cellContent: input.inputName}, {cellContent: input.inputValue}],
 		})) ?? [];
 	const outputRows =
-		decisionInstance?.matchedRules.flatMap((rule) =>
-			rule.evaluatedOutputs.map((output) => ({
-				key: `${output.outputId}--${rule.ruleId ?? rule.ruleIndex ?? 'no-rule-id'}`,
+		decisionInstance?.matchedRules.flatMap((rule, rulePosition) =>
+			rule.evaluatedOutputs.map((output, outputPosition) => ({
+				key: `${output.outputId}--${rulePosition}--${outputPosition}`,
 				columns: [
 					{cellContent: rule.ruleIndex ?? '--'},
 					{cellContent: output.outputName},
