@@ -54,13 +54,10 @@ global:
         existingSecret: camunda-credentials
         existingSecretKey: identity-keycloak-admin-password
 
-      # The address of the Keycloak deployed via the Keycloak Operator.
-      # Note that this instance of Keycloak **runs in a different namespace**
-      # than the namespace of the load test. This is on purpose, due to a
-      # limitation in how the Keycloak Operator works.
+      # The address of the Keycloak instance deployed via the Keycloak Operator.
       url:
         protocol: http
-        host: __NAMESPACE__.keycloak-operator.svc
+        host: keycloak # Keycloak Kubernetes Service
         port: '18080'
   # To override the names - and remove the release name from the names
   # Allows shorter names like zeebe-0, zeebe-1, etc.

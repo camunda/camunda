@@ -42,7 +42,7 @@ data:
           redirectRootUrl: "http://localhost:8083"
     api:
       audience: "optimize-api"
-      jwtSetUri: "http://keycloak/auth/realms/camunda-platform/protocol/openid-connect/certs"
+      jwtSetUri: "http://keycloak:18080/auth/realms/camunda-platform/protocol/openid-connect/certs"
     
     ## Changed from the default configuration
     # Configure and enable the process data cleanup
@@ -57,4 +57,4 @@ data:
         clientId: "optimize"
         audience: "optimize-api"
         issuer: "http://localhost:18080/auth/realms/camunda-platform"
-        issuerBackendUrl: "http://c8-golden-stable-87-elasticsearch.keycloak-operator.svc:18080/auth/realms/camunda-platform"
+        issuerBackendUrl: "http://keycloak:18080/auth/realms/camunda-platform"
