@@ -33,22 +33,12 @@ COMMENT_MAX_LENGTH = 60000
 
 
 def parse_changed_files(value: str) -> list[str]:
+    # The workflow supplies this as dorny/paths-filter's list-files:json output for the
+    # microbenchmarks/**/*.java filter, so it's always a well-formed path array.
     try:
-        paths = json.loads(value)
+        return json.loads(value) if value else []
     except json.JSONDecodeError as error:
-        raise ValueError(
-            "Changed Java files must be supplied as a JSON array."
-        ) from error
-    if not isinstance(paths, list) or not all(isinstance(path, str) for path in paths):
-        raise ValueError("Changed Java files must be a JSON string array.")
-    if any(
-        not path.startswith(f"{MICROBENCHMARKS_MODULE}/") or not path.endswith(".java")
-        for path in paths
-    ):
-        raise ValueError(
-            f"Changed file list contains a path outside {MICROBENCHMARKS_MODULE} Java sources."
-        )
-    return [path for path in paths if isinstance(path, str)]
+        raise ValueError("Changed Java files must be supplied as a JSON array.") from error
 
 
 def selector_marker_suffix(selectors: list[str]) -> str:
@@ -213,7 +203,13 @@ def main() -> int:
         result = command("git", "show", f"{revision}:{path}", timeout=SHORT_TIMEOUT_SECONDS)
         return result.stdout if result.returncode == 0 else None
 
-    def run_revision(index: int, kind: str, revision: str, marker_suffix: str) -> None:
+    def run_revision(
+        index: int,
+        kind: str,
+        revision: str,
+        marker_suffix: str,
+        known_selectors: list[str] | None = None,
+    ) -> None:
         nonlocal failed
         marker = f"<!-- jmh-run:{kind}:{revision}{marker_suffix} -->"
         if marker in reported:
@@ -224,13 +220,16 @@ def main() -> int:
             raise RuntimeError(f"Could not check out revision {revision}")
 
         result = [marker, "", f"## JMH {kind} results for `{revision}`", ""]
-        # Re-read changed files at this revision so deleted or not-yet-added benchmarks are skipped.
-        selectors: list[str] = []
-        for path in changed_files:
-            source = source_at(revision, path)
-            if source and is_jmh_benchmark_source(source):
-                selectors.append(benchmark_selector(path, source))
-        selectors = list(dict.fromkeys(selectors))
+        if known_selectors is not None:
+            selectors = known_selectors
+        else:
+            # Re-read changed files at this revision so deleted or not-yet-added benchmarks are skipped.
+            selectors = []
+            for path in changed_files:
+                source = source_at(revision, path)
+                if source and is_jmh_benchmark_source(source):
+                    selectors.append(benchmark_selector(path, source))
+            selectors = list(dict.fromkeys(selectors))
 
         if not selectors and not requested:
             result.append(
@@ -353,7 +352,8 @@ def main() -> int:
         # which benchmarks are in scope is not skipped as an already-reported baseline.
         suffix = selector_marker_suffix(requested + changed_benchmarks)
         for index, (kind, revision) in enumerate(revisions):
-            run_revision(index, kind, revision, suffix)
+            known = changed_benchmarks if kind == "head" else None
+            run_revision(index, kind, revision, suffix, known)
 
         if failed:
             failure_file.touch()
