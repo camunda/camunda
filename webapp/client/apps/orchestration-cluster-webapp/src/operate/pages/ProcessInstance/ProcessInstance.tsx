@@ -42,7 +42,7 @@ const ProcessInstance: React.FC<Props> = ({processInstanceId, search, topPanel, 
 	const navigate = useNavigate();
 	const {query, isUnauthorized, isNotFound, isGenericError} = useProcessInstance(processInstanceId);
 	const {data: processInstance, error, refetch} = query;
-	const {data: diagram} = useDiagramXml(processInstance?.processDefinitionKey);
+	const {data: diagram, isPending: isDiagramPending} = useDiagramXml(processInstance?.processDefinitionKey);
 	const previousSelection = useRef({
 		processInstanceId,
 		hasSelection: hasProcessInstanceSelection(search),
@@ -78,10 +78,13 @@ const ProcessInstance: React.FC<Props> = ({processInstanceId, search, topPanel, 
 			return;
 		}
 		const isFirstSelection = !previous.hasSelection && hasSelection;
+		const hasSwitchedElement = previous.elementId && search.elementId && previous.elementId !== search.elementId;
+		if (hasSwitchedElement && !isFirstSelection && isDiagramPending) {
+			return;
+		}
 		const isSwitchingToCallActivity =
-			previous.elementId &&
-			search.elementId &&
-			previous.elementId !== search.elementId &&
+			hasSwitchedElement &&
+			search.elementId !== undefined &&
 			diagram?.businessObjects[search.elementId]?.$type === 'bpmn:CallActivity';
 		previousSelection.current = {processInstanceId, hasSelection, elementId: search.elementId};
 		if (isFirstSelection || isSwitchingToCallActivity) {
@@ -92,7 +95,7 @@ const ProcessInstance: React.FC<Props> = ({processInstanceId, search, topPanel, 
 				replace: true,
 			});
 		}
-	}, [processInstance, diagram, search, processInstanceId, navigate]);
+	}, [processInstance, diagram, isDiagramPending, search, processInstanceId, navigate]);
 
 	if (isUnauthorized) {
 		return (

@@ -112,7 +112,17 @@ function useInstanceDiagramOverlays({
 				];
 			});
 		});
-		stateOverlays.push(...getSubprocessOverlayFromIncidentElements(incidentElements, 'instance-state'));
+		const incidentOverlayIds = new Set(
+			statistics
+				?.filter(({elementId, incidents}) => incidents > 0 && businessObjects?.[elementId])
+				.map(({elementId}) => elementId),
+		);
+		for (const overlay of getSubprocessOverlayFromIncidentElements(incidentElements, 'instance-state')) {
+			if (!incidentOverlayIds.has(overlay.elementId)) {
+				stateOverlays.push(overlay);
+				incidentOverlayIds.add(overlay.elementId);
+			}
+		}
 
 		const elementsInStats = new Set(statistics?.map(({elementId}) => elementId));
 		for (const {elementId, waitingCount} of waitStates ?? []) {

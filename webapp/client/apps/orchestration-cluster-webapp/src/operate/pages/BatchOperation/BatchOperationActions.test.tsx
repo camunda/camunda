@@ -19,8 +19,9 @@ import {
 import {HttpResponse, http} from 'msw';
 import {render} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
-import {endpoints, type BatchOperationState} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {BatchOperationState} from '@camunda/camunda-api-zod-schemas/8.10';
 import {it} from '#/vitest-modules/test-extend';
+import {endpoints} from '#/shared/http/endpoints';
 import {
 	mockGetBatchOperationEndpoint,
 	mockSuspendBatchOperationEndpoint,
@@ -80,7 +81,7 @@ function holdConvergedRead(state: BatchOperationState) {
 	});
 
 	return {
-		handler: http.get(endpoints.getBatchOperation.getUrl({batchOperationKey: ':batchOperationKey'}), async () => {
+		handler: http.get(endpoints.getBatchOperation({batchOperationKey: BATCH_OPERATION_KEY}).url, async () => {
 			requested = true;
 			await pending;
 			return HttpResponse.json(createBatchOperation({state}));

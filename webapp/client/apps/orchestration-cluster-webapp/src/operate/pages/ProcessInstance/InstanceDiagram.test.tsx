@@ -23,6 +23,7 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {TooltipProvider} from '@camunda/design-system';
 import {HttpResponse, http, delay} from 'msw';
 import i18n from 'i18next';
+import {z} from 'zod';
 import type {ProcessInstance as ProcessInstanceData} from '@camunda/camunda-api-zod-schemas/8.10';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
@@ -60,8 +61,15 @@ const NESTED_XML = PROCESS_XML.replace(
 	'<bpmn:endEvent id="end_1" />',
 	'<bpmn:subProcess id="sub_1"><bpmn:userTask id="inner_1" /></bpmn:subProcess><bpmn:endEvent id="end_1" />',
 ).replace(
-	'</bpmndi:BPMNDiagram></bpmn:definitions>',
-	'<bpmndi:BPMNShape id="sub_di" bpmnElement="sub_1"><dc:Bounds x="750" y="100" width="120" height="100" /></bpmndi:BPMNShape></bpmndi:BPMNDiagram><bpmndi:BPMNDiagram id="Nested_Diagram"><bpmndi:BPMNPlane id="Nested_Plane" bpmnElement="sub_1"><bpmndi:BPMNShape id="inner_di" bpmnElement="inner_1"><dc:Bounds x="770" y="120" width="80" height="60" /></bpmndi:BPMNShape></bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn:definitions>',
+	'</bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn:definitions>',
+	'<bpmndi:BPMNShape id="sub_di" bpmnElement="sub_1"><dc:Bounds x="750" y="100" width="120" height="100" /></bpmndi:BPMNShape></bpmndi:BPMNPlane></bpmndi:BPMNDiagram><bpmndi:BPMNDiagram id="Nested_Diagram"><bpmndi:BPMNPlane id="Nested_Plane" bpmnElement="sub_1"><bpmndi:BPMNShape id="inner_di" bpmnElement="inner_1"><dc:Bounds x="770" y="120" width="80" height="60" /></bpmndi:BPMNShape></bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn:definitions>',
+);
+const NESTED_INCIDENT_XML = NESTED_XML.replace(
+	'<bpmn:userTask id="inner_1" />',
+	'<bpmn:userTask id="inner_1" /><bpmn:userTask id="inner_2" />',
+).replace(
+	'</bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn:definitions>',
+	'<bpmndi:BPMNShape id="inner_2_di" bpmnElement="inner_2"><dc:Bounds x="870" y="120" width="80" height="60" /></bpmndi:BPMNShape></bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn:definitions>',
 );
 
 const INSTANCE = createProcessInstance({processInstanceKey: INSTANCE_ID, processDefinitionId: 'Process_1'});
@@ -203,7 +211,7 @@ describe('<InstanceDiagram />', () => {
 
 		expect(click).toHaveBeenCalledOnce();
 		expect(filename).toBe('my-process_v1.bpmn');
-		expect(revoke).toHaveBeenCalledWith('blob:diagram');
+		await expect.poll(() => revoke.mock.calls).toEqual([['blob:diagram']]);
 	});
 
 	it('should show a spinner while loading the XML', async ({worker}) => {
@@ -309,6 +317,74 @@ describe('<InstanceDiagram />', () => {
 			.element(screen.getByTestId('instance-agent-call_1'))
 			.toHaveTextContent('Calling tools... + 2 more active agents');
 	});
+
+	it.for([0, 2])('should fetch all agent pages and stop after %s trailing results', async (trailingCount, {worker}) => {
+		const agents = Array.from({length: 100 + trailingCount}, (_, index) =>
+			createAgentInstance({
+				agentInstanceKey: `agent-${index}`,
+				elementId: 'call_1',
+				status: index === 100 ? 'INITIALIZING' : 'THINKING',
+			}),
+		);
+		const pageStarts: number[] = [];
+		worker.use(
+			http.post(
+				endpoints.queryAgentInstances({filter: {processInstanceKey: INSTANCE_ID}, page: {from: 0}}).url,
+				async ({request}) => {
+					const {page} = z.object({page: z.object({from: z.number(), limit: z.number()})}).parse(await request.json());
+					expect(page.limit).toBe(100);
+					pageStarts.push(page.from);
+					return HttpResponse.json(
+						createPaginatedResponse({
+							items: page.from === 0 ? agents.slice(0, 100) : agents.slice(100),
+							page: {
+								totalItems: agents.length,
+								startCursor: null,
+								endCursor: null,
+								hasMoreTotalItems: page.from === 0 || trailingCount === 0,
+							},
+						}),
+					);
+				},
+			),
+			...handlers(),
+		);
+
+		const screen = await renderLoadedPage();
+
+		await expect
+			.element(screen.getByTestId('instance-agent-call_1'))
+			.toHaveTextContent(
+				`${trailingCount ? 'Initializing...' : 'Thinking...'} + ${agents.length - 1} more active agents`,
+			);
+		expect(pageStarts).toEqual([0, 100]);
+		expect(screen.queryClient.getQueryData(['instanceDiagramAgents', INSTANCE_ID])).toEqual(agents);
+	});
+
+	it.for([0, 3])(
+		'should show one incident badge for a subprocess with multiple incident-bearing children and %s direct incidents',
+		async (parentIncidents, {worker}) => {
+			worker.use(
+				...handlers({
+					xml: NESTED_INCIDENT_XML,
+					statistics: [
+						createProcessDefinitionStatistic({elementId: 'inner_1', incidents: 1}),
+						createProcessDefinitionStatistic({elementId: 'inner_2', incidents: 2}),
+						...(parentIncidents > 0
+							? [createProcessDefinitionStatistic({elementId: 'sub_1', incidents: parentIncidents})]
+							: []),
+					],
+				}),
+			);
+
+			const screen = await renderLoadedPage();
+			const subprocessIncidents = screen.getByTestId('instance-state-sub_1-incidents');
+
+			await expect.element(subprocessIncidents).toBeVisible();
+			expect(subprocessIncidents.elements()).toHaveLength(1);
+			await expect.element(subprocessIncidents).toHaveTextContent(parentIncidents ? String(parentIncidents) : '');
+		},
+	);
 
 	it('should refresh waiting and agent overlays when the language changes', async ({worker}) => {
 		worker.use(
@@ -443,7 +519,7 @@ describe('<InstanceDiagram />', () => {
 		let statisticsReads = 0;
 		let sequenceFlowReads = 0;
 		worker.use(
-			http.get(endpoints.getProcessInstanceStatistics('instance-2').url, () => {
+			http.get(endpoints.getProcessInstanceElementInstanceStatistics('instance-2').url, () => {
 				statisticsReads++;
 				return HttpResponse.json({items: STATISTICS});
 			}),
@@ -475,7 +551,7 @@ describe('<InstanceDiagram />', () => {
 		let statisticsReads = 0;
 		let sequenceFlowReads = 0;
 		worker.use(
-			http.get(endpoints.getProcessInstanceStatistics(INSTANCE_ID).url, () => {
+			http.get(endpoints.getProcessInstanceElementInstanceStatistics(INSTANCE_ID).url, () => {
 				statisticsReads++;
 				return HttpResponse.json({items: STATISTICS});
 			}),

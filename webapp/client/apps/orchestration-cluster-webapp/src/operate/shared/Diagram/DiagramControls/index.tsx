@@ -41,9 +41,12 @@ function DiagramControls({
 		link.href = url;
 		link.download = download.filename;
 		document.body.appendChild(link);
-		link.click();
-		link.remove();
-		URL.revokeObjectURL(url);
+		try {
+			link.click();
+		} finally {
+			link.remove();
+			setTimeout(() => URL.revokeObjectURL(url), 0);
+		}
 	};
 
 	return (

@@ -99,7 +99,9 @@ function useInstanceDiagramData(instance: ProcessInstance, hasDiagram: boolean) 
 	const statistics = useQuery({
 		queryKey: ['instanceDiagramStatistics', processInstanceKey],
 		queryFn: () =>
-			getItems<GetProcessInstanceStatisticsResponseBody>(endpoints.getProcessInstanceStatistics(processInstanceKey)),
+			getItems<GetProcessInstanceStatisticsResponseBody>(
+				endpoints.getProcessInstanceElementInstanceStatistics(processInstanceKey),
+			),
 		refetchInterval,
 		enabled: hasDiagram,
 	});

@@ -584,7 +584,7 @@ const endpoints = {
 			headers: {'Content-Type': 'application/json'},
 		}),
 
-	getProcessInstanceStatistics: (processInstanceKey: string) =>
+	getProcessInstanceElementInstanceStatistics: (processInstanceKey: string) =>
 		new Request(
 			getFullURL(
 				unifiedAPIEndpoints.getProcessInstanceStatistics.getUrl({
