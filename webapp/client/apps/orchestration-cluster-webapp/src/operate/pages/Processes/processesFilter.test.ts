@@ -7,8 +7,22 @@
  */
 
 import {describe, expect, it} from 'vitest';
-import {processesSearchSchema} from '../../../routes/_carbon/_auth/operate/processes/index';
-import {mapProcessInstancesFilter, mapProcessInstancesSort, type ProcessesSearch} from './processesFilter';
+import {
+	createMemoryHistory,
+	createRootRoute,
+	createRoute,
+	createRouter,
+	parseSearchWith,
+	stringifySearchWith,
+} from '@tanstack/react-router';
+import {parseSearchValueSafe} from '#/shared/parseSearchValueSafe';
+import {
+	mapProcessInstancesFilter,
+	mapProcessInstancesSort,
+	processesSearchSchema,
+	stripLegacyProcessFilters,
+	type ProcessesSearch,
+} from './processesFilter';
 
 const NO_STATES: ProcessesSearch = {
 	active: false,
@@ -113,6 +127,27 @@ describe('mapProcessInstancesSort', () => {
 	});
 
 	describe('Processes route search', () => {
+		const createProcessesSearchRouter = async (initialEntry: string) => {
+			const rootRoute = createRootRoute();
+			const processesRoute = createRoute({
+				getParentRoute: () => rootRoute,
+				path: '/operate/processes',
+				validateSearch: processesSearchSchema,
+				search: {middlewares: [stripLegacyProcessFilters]},
+			});
+			const router = createRouter({
+				routeTree: rootRoute.addChildren([processesRoute]),
+				history: createMemoryHistory({initialEntries: [initialEntry]}),
+				parseSearch: parseSearchWith(parseSearchValueSafe),
+				stringifySearch: stringifySearchWith(JSON.stringify, parseSearchValueSafe),
+			});
+
+			await router.load();
+			return router;
+		};
+		const legacyEntry =
+			'/operate/processes?processDefinitionId=orders&processDefinitionVersion=2&tenantId=%3Ctenant-A%3E&errorMessage=Connection%20timeout&incidentErrorHashCode=-481';
+
 		it.for([
 			{processDefinitionId: 'orders', processDefinitionVersion: '2', expectedVersion: 2},
 			{processDefinitionId: 'orders', processDefinitionVersion: 2, expectedVersion: 2},
@@ -137,6 +172,27 @@ describe('mapProcessInstancesSort', () => {
 			});
 		});
 
+		it('should map validated legacy incident links into tenant-scoped API filters', () => {
+			const search = processesSearchSchema.parse({
+				processDefinitionId: 'orders',
+				processDefinitionVersion: '2',
+				tenantId: '<tenant-A>',
+				errorMessage: 'Connection timeout',
+				incidentErrorHashCode: '-481',
+				active: false,
+				suspended: false,
+			});
+
+			expect(mapProcessInstancesFilter(search)).toMatchObject({
+				hasIncident: true,
+				processDefinitionId: {$eq: 'orders'},
+				processDefinitionVersion: 2,
+				tenantId: {$eq: '<tenant-A>'},
+				errorMessage: {$in: ['Connection timeout']},
+				incidentErrorHashCode: {$eq: -481},
+			});
+		});
+
 		it('should prefer active process and version keys over saved aliases', () => {
 			expect(
 				processesSearchSchema.parse({
@@ -146,6 +202,86 @@ describe('mapProcessInstancesSort', () => {
 					processDefinitionVersion: '2',
 				}),
 			).toMatchObject({process: 'current', version: 3});
+		});
+
+		it.for([
+			{action: 'choose all versions', changes: {version: undefined}, expected: {process: 'orders', version: undefined}},
+			{
+				action: 'clear the process',
+				changes: {process: undefined, version: undefined, elementId: undefined},
+				expected: {process: undefined, version: undefined},
+			},
+			{
+				action: 'select another process',
+				changes: {process: 'invoices', version: undefined, elementId: undefined},
+				expected: {process: 'invoices', version: undefined},
+			},
+			{
+				action: 'change the tenant',
+				changes: {tenantId: '<tenant-B>', process: undefined, version: undefined, elementId: undefined},
+				expected: {tenantId: '<tenant-B>', process: undefined, version: undefined},
+			},
+		] as const)('should not restore legacy filters when users $action', async ({changes, expected}) => {
+			const router = await createProcessesSearchRouter(legacyEntry);
+			expect(router.state.matches.at(-1)?.search).toMatchObject({
+				process: 'orders',
+				version: 2,
+				tenantId: '<tenant-A>',
+			});
+
+			await router.navigate({to: '/operate/processes', search: (search) => ({...search, ...changes})});
+			expect(router.state.matches.at(-1)?.search).toMatchObject({
+				tenantId: '<tenant-A>',
+				errorMessage: 'Connection timeout',
+				incidentErrorHashCode: -481,
+				...expected,
+			});
+			expect(router.state.location.href).not.toContain('processDefinitionId');
+			expect(router.state.location.href).not.toContain('processDefinitionVersion');
+
+			const reloaded = await createProcessesSearchRouter(router.state.location.href);
+			expect(reloaded.state.matches.at(-1)?.search).toMatchObject({
+				tenantId: '<tenant-A>',
+				errorMessage: 'Connection timeout',
+				incidentErrorHashCode: -481,
+				...expected,
+			});
+		});
+
+		it('should preserve legacy bookmark and cleared version through back and forward navigation', async () => {
+			const router = await createProcessesSearchRouter(legacyEntry);
+
+			await router.navigate({to: '/operate/processes', search: (search) => ({...search, version: undefined})});
+			const clearedHref = router.state.location.href;
+			router.history.back();
+			await router.load();
+			expect(router.state.matches.at(-1)?.search).toMatchObject({version: 2});
+			expect(router.state.location.href).toContain('processDefinitionVersion=2');
+
+			router.history.forward();
+			await router.load();
+			expect(router.state.matches.at(-1)?.search).toMatchObject({version: undefined});
+			expect(router.state.location.href).toBe(clearedHref);
+			expect(router.state.matches.at(-1)?.search).toMatchObject({
+				process: 'orders',
+				tenantId: '<tenant-A>',
+				errorMessage: 'Connection timeout',
+				incidentErrorHashCode: -481,
+			});
+		});
+
+		it('should reset legacy bookmarks without restoring process, version, or tenant', async () => {
+			const router = await createProcessesSearchRouter(legacyEntry);
+
+			await router.navigate({to: '/operate/processes', search: {}});
+			expect(router.state.matches.at(-1)?.search).toMatchObject({
+				process: undefined,
+				version: undefined,
+			});
+			expect(router.state.matches.at(-1)?.search).not.toHaveProperty('tenantId');
+			expect(router.state.matches.at(-1)?.search).not.toHaveProperty('incidentErrorHashCode');
+			expect(router.state.location.href).not.toContain('processDefinitionId');
+			expect(router.state.location.href).not.toContain('processDefinitionVersion');
 		});
 
 		it('should retain a valid process when a legacy version is invalid', () => {

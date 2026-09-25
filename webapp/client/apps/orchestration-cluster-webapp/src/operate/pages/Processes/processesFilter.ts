@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {SearchMiddleware} from '@tanstack/react-router';
 import type {ProcessInstanceState, QueryProcessInstancesRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import {z} from 'zod';
 import {parseIds} from '#/operate/shared/utils/parseIds';
@@ -38,6 +39,56 @@ type ProcessesSearch = {
 	canceled: boolean;
 	suspended: boolean;
 	sort?: string;
+};
+
+const processesSearchSchema = z
+	.object({
+		process: z.string().optional(),
+		version: z.number().int().positive().optional(),
+		processDefinitionId: z.coerce.string().optional(),
+		processDefinitionVersion: z
+			.union([z.coerce.number().int().positive(), z.literal('all')])
+			.optional()
+			.catch(undefined),
+		elementId: z.string().optional(),
+		tenantId: z.coerce.string().optional(),
+		processInstanceKey: z.coerce.string().optional(),
+		parentProcessInstanceKey: z.coerce.string().optional(),
+		businessId: z.coerce.string().optional(),
+		batchOperationKey: z.coerce.string().optional(),
+		errorMessage: z.coerce.string().optional(),
+		incidentErrorHashCode: z
+			.union([
+				z.number().int(),
+				z
+					.string()
+					.regex(/^-?\d+$/)
+					.transform(Number)
+					.pipe(z.number().int()),
+			])
+			.optional()
+			.catch(undefined),
+		hasRetriesLeft: z.boolean().optional(),
+		startDateFrom: z.string().optional(),
+		startDateTo: z.string().optional(),
+		endDateFrom: z.string().optional(),
+		endDateTo: z.string().optional(),
+		active: z.boolean().default(true),
+		incidents: z.boolean().default(true),
+		completed: z.boolean().default(false),
+		canceled: z.boolean().default(false),
+		suspended: z.boolean().default(true),
+		sort: z.string().optional(),
+	})
+	.transform(({processDefinitionId, processDefinitionVersion, ...search}) => ({
+		...search,
+		process: search.process ?? processDefinitionId,
+		version: search.version ?? (processDefinitionVersion === 'all' ? undefined : processDefinitionVersion),
+	}));
+
+const stripLegacyProcessFilters: SearchMiddleware<z.output<typeof processesSearchSchema>> = ({search, next}) => {
+	const withoutAliases = {...search, processDefinitionId: undefined, processDefinitionVersion: undefined};
+	return next(withoutAliases);
 };
 
 // The route schema types the date params as plain strings, so a hand-edited URL can carry
@@ -233,5 +284,5 @@ function mapProcessInstancesSort(sort: string | undefined): ResolvedProcessInsta
 	return result.success ? [result.data] : DEFAULT_SORT;
 }
 
-export {mapProcessInstancesFilter, mapProcessInstancesSort};
+export {mapProcessInstancesFilter, mapProcessInstancesSort, processesSearchSchema, stripLegacyProcessFilters};
 export type {ProcessesSearch};
