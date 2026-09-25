@@ -9,6 +9,7 @@ package io.camunda.application.commons.search;
 
 import io.camunda.application.commons.pt.PerTenantSchemaInitialization;
 import io.camunda.application.commons.pt.PerTenantSchemaInitialization.DeferralCheck;
+import io.camunda.application.commons.pt.SchemaInitializer;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.SchemaManagerContainer;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +37,7 @@ import org.springframework.beans.factory.InitializingBean;
  * whether this node holds startup at the gate.
  */
 public class SearchEngineSchemaInitializer
-    implements InitializingBean, DisposableBean, SchemaManagerContainer {
+    implements InitializingBean, DisposableBean, SchemaManagerContainer, SchemaInitializer {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SearchEngineSchemaInitializer.class);
   private final Map<String, SearchEngineConfiguration> configs;
@@ -50,6 +52,8 @@ public class SearchEngineSchemaInitializer
    * failing keeps its entry, and its client, for its next attempt.
    */
   private final Map<String, ClientAdapter> clientsByTenant = new ConcurrentHashMap<>();
+
+  private final Map<String, ReentrantLock> attemptLocks = new ConcurrentHashMap<>();
 
   /**
    * @param holdsStartup whether this node keeps its listening socket closed until a physical tenant
@@ -155,6 +159,12 @@ public class SearchEngineSchemaInitializer
     return initialization.isInitialized(physicalTenantId);
   }
 
+  /** Applies one tenant schema attempt without using the startup retry loop. */
+  @Override
+  public void initializeNow(final String physicalTenantId) {
+    initialization.initializeNow(physicalTenantId);
+  }
+
   /**
    * Returns true if the schema initialization completed successfully for <em>all</em> physical
    * tenants. This can be used by dependent components to check if they should proceed with their
@@ -178,6 +188,16 @@ public class SearchEngineSchemaInitializer
    */
   @VisibleForTesting
   void initializeTenant(final String physicalTenantId) {
+    final var lock = attemptLocks.computeIfAbsent(physicalTenantId, ignored -> new ReentrantLock());
+    lock.lock();
+    try {
+      initializeTenantExclusively(physicalTenantId);
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  private void initializeTenantExclusively(final String physicalTenantId) {
     final SearchEngineConfiguration configuration = configs.get(physicalTenantId);
     final IndexDescriptors indexDescriptors = descriptors.get(physicalTenantId);
     if (indexDescriptors == null) {

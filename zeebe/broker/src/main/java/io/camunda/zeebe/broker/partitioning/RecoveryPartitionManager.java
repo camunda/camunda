@@ -65,6 +65,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.CompletableFuture;
@@ -72,6 +73,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.IntFunction;
+import java.util.function.Supplier;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -118,6 +120,7 @@ public final class RecoveryPartitionManager
   private final AtomixServerTransport gatewayBrokerTransport;
   private final @Nullable IntFunction<Long> exportedPositionSupplier;
   private final BrokerHealthCheckService healthCheckService;
+  private final Supplier<@Nullable Runnable> schemaInitializerSupplier;
   private final Map<Integer, HealthMonitorable> registeredHealthComponents = new LinkedHashMap<>();
   private boolean stopped = false;
   private @Nullable BackupStore backupStore;
@@ -135,8 +138,10 @@ public final class RecoveryPartitionManager
       final AtomixServerTransport gatewayBrokerTransport,
       final @Nullable IntFunction<Long> exportedPositionSupplier,
       final TopologyManagerImpl topologyManager,
-      final BrokerHealthCheckService healthCheckService) {
+      final BrokerHealthCheckService healthCheckService,
+      final Supplier<@Nullable Runnable> schemaInitializerSupplier) {
     this.healthCheckService = healthCheckService;
+    this.schemaInitializerSupplier = schemaInitializerSupplier;
     this.partitionGroup = partitionGroup;
     this.concurrencyControl = concurrencyControl;
     actorSchedulingService = schedulingService;
@@ -381,14 +386,12 @@ public final class RecoveryPartitionManager
     final var result = concurrencyControl.<Void>createFuture();
     concurrencyControl.run(
         () -> {
-          final var executor = restoreExecutor;
-          if (executor == null) {
-            result.completeExceptionally(
-                new IllegalStateException("RecoveryPartitionManager is not started"));
+          final var executor = getRestoreExecutor(result);
+          if (executor.isEmpty()) {
             return;
           }
           final var partitionDir = partitionDirectory(new PartitionId(partitionGroup, partitionId));
-          CompletableFuture.runAsync(() -> deleteDirectory(partitionDir), executor)
+          CompletableFuture.runAsync(() -> deleteDirectory(partitionDir), executor.get())
               .whenCompleteAsync(
                   (ok, error) -> {
                     if (error != null) {
@@ -404,15 +407,45 @@ public final class RecoveryPartitionManager
   }
 
   @Override
+  public ActorFuture<Void> initializeSchema() {
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(
+        () -> {
+          final var executor = getRestoreExecutor(result);
+          if (executor.isEmpty()) {
+            return;
+          }
+          CompletableFuture.runAsync(
+                  () -> {
+                    final var initializer = schemaInitializerSupplier.get();
+                    if (initializer == null) {
+                      LOG.debug("No schema initializer available for tenant {}", partitionGroup);
+                    } else {
+                      initializer.run();
+                    }
+                  },
+                  executor.get())
+              .whenCompleteAsync(
+                  (ignored, error) -> {
+                    if (error == null) {
+                      result.complete(null);
+                    } else {
+                      result.completeExceptionally(FuturesUtil.unwrapCompletionException(error));
+                    }
+                  },
+                  concurrencyControl);
+        });
+    return result;
+  }
+
+  @Override
   public ActorFuture<Void> restore(
       final int partitionId, @NonNull final SortedSet<Long> backupIds) {
     final var result = concurrencyControl.<Void>createFuture();
     concurrencyControl.run(
         () -> {
-          final var executor = restoreExecutor;
-          if (executor == null) {
-            result.completeExceptionally(
-                new IllegalStateException("RecoveryPartitionManager is not started"));
+          final var executor = getRestoreExecutor(result);
+          if (executor.isEmpty()) {
             return;
           }
           final var store = backupStore;
@@ -437,8 +470,8 @@ public final class RecoveryPartitionManager
           final var ids = backupIds.stream().mapToLong(Long::longValue).toArray();
           final var partitionDir = partitionDirectory(metadata.id());
 
-          CompletableFuture.runAsync(() -> restorePartition(metadata, store, ids), executor)
-              .thenRunAsync(() -> verifyRestoredPartition(metadata), executor)
+          CompletableFuture.runAsync(() -> restorePartition(metadata, store, ids), executor.get())
+              .thenRunAsync(() -> verifyRestoredPartition(metadata), executor.get())
               .whenCompleteAsync(
                   (ok, error) -> {
                     if (error != null) {
@@ -454,7 +487,7 @@ public final class RecoveryPartitionManager
                       }
                     }
                   },
-                  executor)
+                  executor.get())
               .whenCompleteAsync(
                   (ok, error) -> {
                     if (error != null) {
@@ -467,6 +500,15 @@ public final class RecoveryPartitionManager
                   concurrencyControl);
         });
     return result;
+  }
+
+  private Optional<ExecutorService> getRestoreExecutor(final ActorFuture<Void> future) {
+    if (restoreExecutor == null) {
+      future.completeExceptionally(
+          new IllegalStateException("RecoveryPartitionManager is not started"));
+      return Optional.empty();
+    }
+    return Optional.of(restoreExecutor);
   }
 
   private static void deleteDirectory(final Path directory) {

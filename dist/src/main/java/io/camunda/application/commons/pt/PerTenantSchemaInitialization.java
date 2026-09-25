@@ -51,7 +51,8 @@ import org.slf4j.LoggerFactory;
  *
  * <p>A tenant may also be <em>deferred</em>: its schema must not be touched at all for now, which
  * is not a failure and is not retried against a budget. A deferred tenant stops counting as still
- * trying, so it never holds the gate shut, and it stays uninitialized until the deferral lifts.
+ * trying, so it never holds the gate shut. It stays uninitialized until the deferral lifts or an
+ * explicit {@link #initializeNow(String)} call succeeds.
  */
 @NullMarked
 public final class PerTenantSchemaInitialization implements SchemaInitialization {
@@ -235,6 +236,24 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
     signalGateChanged();
   }
 
+  /**
+   * Runs an explicit schema attempt even if already ready, and marks the tenant ready on success.
+   */
+  public void initializeNow(final String physicalTenantId) {
+    final var state = tenants.get(physicalTenantId);
+    if (state == null) {
+      throw new IllegalArgumentException(
+          "Cannot initialize the schema of unknown physical tenant '" + physicalTenantId + "'");
+    }
+    state.attemptLock.lock();
+    try {
+      attempt.accept(physicalTenantId);
+      markReady(state);
+    } finally {
+      state.attemptLock.unlock();
+    }
+  }
+
   /** Must be called with {@link #gateLock} held. */
   private boolean isGateOpen() {
     if (shutdown.get()) {
@@ -294,7 +313,7 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
       int attemptNumber = 1;
       int consecutiveDeferrals = 0;
       boolean recoveryDeferred = false;
-      while (!shutdown.get()) {
+      while (!shutdown.get() && !state.ready.get()) {
         switch (deferral.check(physicalTenantId)) {
           case DEFERRED -> {
             consecutiveDeferrals++;
@@ -337,8 +356,16 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
 
         final long retryDelayMillis;
         try {
-          attempt.accept(physicalTenantId);
-          markReady(state);
+          state.attemptLock.lockInterruptibly();
+          try {
+            if (shutdown.get() || state.ready.get()) {
+              return;
+            }
+            attempt.accept(physicalTenantId);
+            markReady(state);
+          } finally {
+            state.attemptLock.unlock();
+          }
           logInitialized(physicalTenantId, attemptNumber);
           return;
         } catch (final Exception failure) {
@@ -595,6 +622,7 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
    * every way of stopping clears alike.
    */
   private static final class TenantState {
+    private final ReentrantLock attemptLock = new ReentrantLock();
     private final AtomicBoolean ready = new AtomicBoolean(false);
     private boolean settled;
     private boolean trying = true;

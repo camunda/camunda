@@ -116,6 +116,19 @@ final class RdbmsSchemaInitializerTest {
     assertThat(initializer.isInitialized("no-such-tenant")).isFalse();
   }
 
+  @Test
+  void shouldInitializeSingleTenantImmediately() {
+    // given
+    final var manager = new FakeSchemaManager();
+    initializer = initializer(Map.of(TENANT_A, manager));
+
+    // when
+    initializer.initializeNow(TENANT_A);
+
+    // then
+    assertThat(manager.attempts()).isOne();
+  }
+
   // ---- the multi-tenant shape: isolated, retried in the background, gated ----
 
   @Test
@@ -150,6 +163,21 @@ final class RdbmsSchemaInitializerTest {
     Awaitility.await()
         .atMost(Duration.ofSeconds(10))
         .untilAsserted(() -> assertThat(initializer.isInitialized(TENANT_B)).isTrue());
+  }
+
+  @Test
+  void shouldInitializeOnlyTheRequestedTenantImmediately() {
+    // given
+    final var managerA = new FakeSchemaManager();
+    final var managerB = new FakeSchemaManager();
+    initializer = initializer(tenants(managerA, managerB));
+
+    // when
+    initializer.initializeNow(TENANT_B);
+
+    // then
+    assertThat(managerA.attempts()).isZero();
+    assertThat(managerB.attempts()).isOne();
   }
 
   @Test

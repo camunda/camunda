@@ -95,6 +95,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.RemovePhysicalTenantOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.*;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.SchemaInitializationOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
@@ -666,6 +667,8 @@ public class ProtoBufSerializer
                   .setPartitionId(op.partitionId())
                   .addAllBackupIds(op.backupIds())
                   .build());
+      case final SchemaInitializationOperation ignored ->
+          builder.setSchemaInitialization(Topology.SchemaInitializationOperation.newBuilder());
     }
     return builder.build();
   }
@@ -1016,6 +1019,8 @@ public class ProtoBufSerializer
           memberId,
           topologyChangeOperation.getPartitionRestore().getPartitionId(),
           new TreeSet<>(topologyChangeOperation.getPartitionRestore().getBackupIdsList()));
+    } else if (topologyChangeOperation.hasSchemaInitialization()) {
+      return new SchemaInitializationOperation(memberId);
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any
@@ -1102,18 +1107,6 @@ public class ProtoBufSerializer
         .setForce(req.force())
         .build()
         .toByteArray();
-  }
-
-  @Override
-  public RemovePhysicalTenantRequest decodeRemovePhysicalTenantRequest(
-      final byte[] encodedRequest) {
-    try {
-      final var request = Requests.RemovePhysicalTenantRequest.parseFrom(encodedRequest);
-      return new RemovePhysicalTenantRequest(
-          request.getPhysicalTenantId(), request.getDryRun(), request.getForce());
-    } catch (final InvalidProtocolBufferException e) {
-      throw new DecodingFailed(e);
-    }
   }
 
   @Override
@@ -1505,6 +1498,18 @@ public class ProtoBufSerializer
               ? Optional.of(purgeRequest.getPhysicalTenantId())
               : Optional.empty();
       return new PurgeRequest(physicalTenantId, purgeRequest.getDryRun());
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  @Override
+  public RemovePhysicalTenantRequest decodeRemovePhysicalTenantRequest(
+      final byte[] encodedRequest) {
+    try {
+      final var request = Requests.RemovePhysicalTenantRequest.parseFrom(encodedRequest);
+      return new RemovePhysicalTenantRequest(
+          request.getPhysicalTenantId(), request.getDryRun(), request.getForce());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
@@ -2566,6 +2571,8 @@ public class ProtoBufSerializer
                   .setPartitionId(op.partitionId())
                   .addAllBackupIds(op.backupIds())
                   .build());
+      case final SchemaInitializationOperation ignored ->
+          builder.setSchemaInitialization(Topology.SchemaInitializationOperation.newBuilder());
       case final RemovePhysicalTenantOperation ignored ->
           builder.setRemovePhysicalTenant(Topology.RemovePhysicalTenantOperation.newBuilder());
     }
@@ -2674,6 +2681,8 @@ public class ProtoBufSerializer
           memberId,
           proto.getPartitionRestore().getPartitionId(),
           new TreeSet<>(proto.getPartitionRestore().getBackupIdsList()));
+    } else if (proto.hasSchemaInitialization()) {
+      return new SchemaInitializationOperation(memberId);
     } else if (proto.hasRemovePhysicalTenant()) {
       return new RemovePhysicalTenantOperation(memberId);
     } else {
