@@ -143,15 +143,8 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
         (job, resources) -> {
           final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
 
-          final var incidentKey = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity =
-              new IncidentEntity()
-                  .setId(String.valueOf(incidentKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(incidentKey)
-                  .setErrorMessage("An error happened")
-                  .setProcessInstanceKey(9999L)
-                  .setFlowNodeInstanceKey(9999L);
+              newIncident().setProcessInstanceKey(9999L).setFlowNodeInstanceKey(9999L);
 
           store(incidentTemplate, client, incidentEntity);
           client.refresh(incidentTemplate.getFullQualifiedName());
@@ -196,13 +189,8 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
 
-          final var incidentKey = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity =
-              new IncidentEntity()
-                  .setId(String.valueOf(incidentKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(incidentKey)
-                  .setErrorMessage("An error happened")
+              newIncident()
                   .setProcessInstanceKey(processInstance.getKey())
                   .setFlowNodeInstanceKey(9999L);
 
@@ -274,13 +262,8 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
 
-          final var incidentKey = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity =
-              new IncidentEntity()
-                  .setId(String.valueOf(incidentKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(incidentKey)
-                  .setErrorMessage("An error happened")
+              newIncident()
                   .setProcessInstanceKey(processInstance.getKey())
                   .setFlowNodeInstanceKey(flowNodeInstance.getKey());
 
@@ -371,11 +354,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           final var incidentKey = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity =
-              new IncidentEntity()
-                  .setId(String.valueOf(incidentKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(incidentKey)
-                  .setErrorMessage("An error happened")
+              newIncident()
                   .setProcessInstanceKey(processInstance.getKey())
                   .setFlowNodeInstanceKey(flowNodeInstance.getKey());
 
@@ -451,11 +430,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           final var incidentKey = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity =
-              new IncidentEntity()
-                  .setId(String.valueOf(incidentKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(incidentKey)
-                  .setErrorMessage("An error happened")
+              newIncident()
                   .setProcessInstanceKey(processInstance.getKey())
                   .setFlowNodeInstanceKey(processInstance.getKey());
 
@@ -540,12 +515,8 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
 
-          final var incidentKey = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity =
-              new IncidentEntity()
-                  .setId(String.valueOf(incidentKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(incidentKey)
+              newIncident()
                   .setState(IncidentState.ACTIVE)
                   .setErrorMessage("An error happened")
                   .setProcessInstanceKey(processInstance.getKey())
@@ -640,12 +611,8 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
 
-          final var activeIncidentKey = ID_GENERATOR.getAndIncrement();
           final IncidentEntity activeIncidentEntity =
-              new IncidentEntity()
-                  .setId(String.valueOf(activeIncidentKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(activeIncidentKey)
+              newIncident()
                   .setState(IncidentState.ACTIVE)
                   .setErrorMessage("An error happened")
                   .setProcessInstanceKey(processInstance.getKey())
@@ -658,10 +625,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           final var resolvedIncidentKey = ID_GENERATOR.getAndIncrement();
           final IncidentEntity resolvedIncidentEntity =
-              new IncidentEntity()
-                  .setId(String.valueOf(resolvedIncidentKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(resolvedIncidentKey)
+              newIncident()
                   .setState(IncidentState.ACTIVE)
                   .setErrorMessage("An error happened")
                   .setProcessInstanceKey(processInstance.getKey())
@@ -745,13 +709,8 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
 
-          final var incidentKey = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity =
-              new IncidentEntity()
-                  .setId(String.valueOf(incidentKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(incidentKey)
-                  .setErrorMessage("An error happened")
+              newIncident()
                   .setProcessInstanceKey(processInstance.getKey())
                   .setFlowNodeInstanceKey(processInstance.getKey())
                   .setTreePath(processInstance.getTreePath());
@@ -815,10 +774,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
           // RESOLVED is present in the same batch, so it never transitions to ACTIVE
           final var key = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity =
-              new IncidentEntity()
-                  .setId(String.valueOf(key))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(key)
+              newIncident(key)
                   .setState(IncidentState.PENDING)
                   .setErrorMessage("An error happened")
                   .setProcessInstanceKey(key)
@@ -919,33 +875,18 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
 
-          final var incidentKey1 = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity1 =
-              new IncidentEntity()
-                  .setId(String.valueOf(incidentKey1))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(incidentKey1)
-                  .setErrorMessage("An error happened")
+              newIncident()
                   .setProcessInstanceKey(processInstance.getKey())
                   .setFlowNodeInstanceKey(flowNodeInstance.getKey());
 
-          final var incidentKey2 = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity2 =
-              new IncidentEntity()
-                  .setId(String.valueOf(incidentKey2))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(incidentKey2)
-                  .setErrorMessage("An error happened")
+              newIncident()
                   .setProcessInstanceKey(processInstance.getKey())
                   .setFlowNodeInstanceKey(flowNodeInstance.getKey());
 
-          final var incidentKey3 = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity3 =
-              new IncidentEntity()
-                  .setId(String.valueOf(incidentKey3))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(incidentKey3)
-                  .setErrorMessage("An error happened")
+              newIncident()
                   .setProcessInstanceKey(processInstance.getKey())
                   .setFlowNodeInstanceKey(flowNodeInstance.getKey());
 
@@ -1090,13 +1031,8 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
 
-          final var incidentKey = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity =
-              new IncidentEntity()
-                  .setId(String.valueOf(incidentKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(incidentKey)
-                  .setErrorMessage("An error happened")
+              newIncident()
                   .setProcessInstanceKey(processInstance.getKey())
                   .setFlowNodeInstanceKey(flowNodeInstance.getKey());
 
@@ -1192,13 +1128,8 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
 
-          final var incidentKey = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity =
-              new IncidentEntity()
-                  .setId(String.valueOf(incidentKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(incidentKey)
-                  .setErrorMessage("An error happened")
+              newIncident()
                   .setProcessInstanceKey(processInstance.getKey())
                   .setFlowNodeInstanceKey(flowNodeInstance.getKey());
 
@@ -1397,6 +1328,18 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
         .setId(String.valueOf(flowNodeInstanceKey))
         .setPartitionId(PARTITION_ID)
         .setKey(flowNodeInstanceKey);
+  }
+
+  private static IncidentEntity newIncident() {
+    return newIncident(ID_GENERATOR.getAndIncrement());
+  }
+
+  private static IncidentEntity newIncident(final long incidentKey) {
+    return new IncidentEntity()
+        .setId(String.valueOf(incidentKey))
+        .setPartitionId(PARTITION_ID)
+        .setKey(incidentKey)
+        .setErrorMessage("An error happened");
   }
 
   private IncidentUpdateRepository createIncidentUpdateRepository(
