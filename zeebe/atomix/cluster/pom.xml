@@ -236,14 +236,8 @@
     </dependency>
 
     <dependency>
-      <groupId>net.jqwik</groupId>
-      <artifactId>jqwik</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>net.jqwik</groupId>
-      <artifactId>jqwik-api</artifactId>
+      <groupId>dev.hegel</groupId>
+      <artifactId>hegel-jna</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -357,7 +351,6 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <usedDependencies>
-            <dependency>net.jqwik:jqwik</dependency>
             <dependency>io.netty:netty-tcnative-boringssl-static</dependency>
             <dependency>io.netty:netty-transport-native-epoll</dependency>
           </usedDependencies>

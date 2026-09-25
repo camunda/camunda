@@ -7,9 +7,19 @@
  */
 package io.camunda.zeebe.backup.gcs;
 
+import static dev.hegel.Generators.composite;
+import static dev.hegel.Generators.forType;
+import static dev.hegel.Generators.fromRegex;
+import static dev.hegel.Generators.integers;
+import static dev.hegel.Generators.longs;
+import static dev.hegel.Generators.optional;
+import static dev.hegel.Generators.sampledFrom;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.cloud.storage.Blob;
+import dev.hegel.Generator;
+import dev.hegel.HegelTest;
+import dev.hegel.TestCase;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
@@ -19,12 +29,6 @@ import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.time.Instant;
 import java.util.Map;
 import java.util.OptionalLong;
-import net.jqwik.api.Arbitraries;
-import net.jqwik.api.Arbitrary;
-import net.jqwik.api.Combinators;
-import net.jqwik.api.ForAll;
-import net.jqwik.api.Property;
-import net.jqwik.api.Provide;
 import org.mockito.Mockito;
 
 final class ManifestMetadataPropertyTest {
@@ -32,9 +36,60 @@ final class ManifestMetadataPropertyTest {
   private static final String BASE_PATH = "base/";
   private static final String MANIFEST_BLOB_NAME = "manifest.json";
 
-  @Property(tries = 100)
-  void shouldRoundTripAnyManifest(@ForAll("manifests") final Manifest manifest) {
+  private static final Generator<BackupIdentifierImpl> IDENTIFIERS =
+      composite(
+          tc ->
+              new BackupIdentifierImpl(
+                  tc.draw(integers().min(0).max(100)),
+                  tc.draw(integers().min(1).max(64)),
+                  tc.draw(longs().min(1).max(1_000_000L))));
+
+  private static final Generator<Instant> CHECKPOINT_TIMESTAMPS =
+      longs()
+          .min(Instant.parse("2020-01-01T00:00:00Z").getEpochSecond())
+          .max(Instant.parse("2030-01-01T00:00:00Z").getEpochSecond())
+          .map(Instant::ofEpochSecond);
+
+  private static final Generator<BackupDescriptorImpl> DESCRIPTORS =
+      composite(
+          tc ->
+              new BackupDescriptorImpl(
+                  tc.draw(optional(fromRegex("[a-zA-Z]{1,10}"))),
+                  tc.draw(optional(longs().min(0).max(1_000_000L)))
+                      .map(OptionalLong::of)
+                      .orElse(OptionalLong.empty()),
+                  tc.draw(longs().min(0).max(1_000_000L)),
+                  tc.draw(integers().min(1).max(32)),
+                  tc.draw(fromRegex("[a-zA-Z0-9]{1,20}")),
+                  tc.draw(CHECKPOINT_TIMESTAMPS),
+                  tc.draw(forType(CheckpointType.class))));
+
+  private static final Generator<BackupImpl> BACKUPS =
+      composite(
+          tc ->
+              new BackupImpl(
+                  tc.draw(IDENTIFIERS),
+                  tc.draw(DESCRIPTORS),
+                  new NamedFileSetImpl(Map.of()),
+                  new NamedFileSetImpl(Map.of())));
+
+  private static final Generator<Manifest> MANIFESTS =
+      composite(
+          tc -> {
+            final var inProgress = Manifest.createInProgress(tc.draw(BACKUPS));
+            return switch (tc.draw(sampledFrom("IN_PROGRESS", "COMPLETED", "FAILED", "DELETED"))) {
+              case "IN_PROGRESS" -> inProgress;
+              case "COMPLETED" -> inProgress.complete();
+              case "FAILED" -> inProgress.fail("test failure reason");
+              case "DELETED" -> inProgress.complete().delete();
+              default -> throw new IllegalStateException();
+            };
+          });
+
+  @HegelTest(testCases = 100)
+  void shouldRoundTripAnyManifest(final TestCase tc) {
     // given
+    final var manifest = tc.draw(MANIFESTS, "manifest");
     final var expectedStatus = Manifest.toStatus(manifest);
     final var id = manifest.id();
     final var blobName =
@@ -80,68 +135,5 @@ final class ManifestMetadataPropertyTest {
     } else {
       assertThat(status.descriptor()).isEmpty();
     }
-  }
-
-  @Provide
-  Arbitrary<Manifest> manifests() {
-    return backups()
-        .flatMap(
-            backup -> {
-              final var inProgress = Manifest.createInProgress(backup);
-              return Arbitraries.of("IN_PROGRESS", "COMPLETED", "FAILED", "DELETED")
-                  .map(
-                      state ->
-                          switch (state) {
-                            case "IN_PROGRESS" -> inProgress;
-                            case "COMPLETED" -> inProgress.complete();
-                            case "FAILED" -> inProgress.fail("test failure reason");
-                            case "DELETED" -> inProgress.complete().delete();
-                            default -> throw new IllegalStateException();
-                          });
-            });
-  }
-
-  Arbitrary<BackupImpl> backups() {
-    return Combinators.combine(identifiers(), descriptors())
-        .as(
-            (id, descriptor) ->
-                new BackupImpl(
-                    id,
-                    descriptor,
-                    new NamedFileSetImpl(Map.of()),
-                    new NamedFileSetImpl(Map.of())));
-  }
-
-  Arbitrary<BackupIdentifierImpl> identifiers() {
-    return Combinators.combine(
-            Arbitraries.integers().between(0, 100),
-            Arbitraries.integers().between(1, 64),
-            Arbitraries.longs().between(1L, 1_000_000L))
-        .as(BackupIdentifierImpl::new);
-  }
-
-  Arbitrary<BackupDescriptorImpl> descriptors() {
-    return Combinators.combine(
-            Arbitraries.strings().alpha().ofMinLength(1).ofMaxLength(10).optional(),
-            Arbitraries.longs().between(0L, 1_000_000L).optional(),
-            Arbitraries.longs().between(0L, 1_000_000L),
-            Arbitraries.integers().between(1, 32),
-            Arbitraries.strings().alpha().numeric().ofMinLength(1).ofMaxLength(20),
-            Arbitraries.longs()
-                .between(
-                    Instant.parse("2020-01-01T00:00:00Z").getEpochSecond(),
-                    Instant.parse("2030-01-01T00:00:00Z").getEpochSecond())
-                .map(Instant::ofEpochSecond),
-            Arbitraries.of(CheckpointType.values()))
-        .as(
-            (snapshotId, firstLogPos, checkpointPos, partitions, version, timestamp, type) ->
-                new BackupDescriptorImpl(
-                    snapshotId,
-                    firstLogPos.map(OptionalLong::of).orElse(OptionalLong.empty()),
-                    checkpointPos,
-                    partitions,
-                    version,
-                    timestamp,
-                    type));
   }
 }

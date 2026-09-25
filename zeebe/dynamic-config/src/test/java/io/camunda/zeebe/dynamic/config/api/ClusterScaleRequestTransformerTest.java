@@ -7,11 +7,14 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static dev.hegel.Generators.integers;
 import static io.camunda.zeebe.dynamic.config.api.TestChangePlan.plannedOperations;
 import static io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration.DEFAULT_GROUP;
 import static io.camunda.zeebe.test.util.asserts.EitherAssert.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.hegel.HegelTest;
+import dev.hegel.TestCase;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
@@ -49,9 +52,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import net.jqwik.api.ForAll;
-import net.jqwik.api.Property;
-import net.jqwik.api.constraints.IntRange;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -69,11 +69,11 @@ final class ClusterScaleRequestTransformerTest {
   private final MemberId id1 = MemberId.from("1");
   private final MemberId id2 = MemberId.from("2");
 
-  @Property(tries = 10)
-  void shouldScaleBrokersWhenPartitionsUnchanged(
-      @ForAll @IntRange(min = 1, max = 100) final int partitionCount,
-      @ForAll @IntRange(min = 2, max = 100) final int oldClusterSize,
-      @ForAll @IntRange(min = 2, max = 100) final int newClusterSize) {
+  @HegelTest(testCases = 10)
+  void shouldScaleBrokersWhenPartitionsUnchanged(final TestCase tc) {
+    final int partitionCount = tc.draw(integers().min(1).max(100), "partitionCount");
+    final int oldClusterSize = tc.draw(integers().min(2).max(100), "oldClusterSize");
+    final int newClusterSize = tc.draw(integers().min(2).max(100), "newClusterSize");
     shouldScaleBrokersAndPartitionsByCount(
         partitionCount,
         Optional.empty(),
@@ -84,11 +84,11 @@ final class ClusterScaleRequestTransformerTest {
         Optional.empty());
   }
 
-  @Property(tries = 10)
-  void shouldScaleBrokersWhenPartitionsUnchangedWhenZoned(
-      @ForAll @IntRange(min = 1, max = 100) final int partitionCount,
-      @ForAll @IntRange(min = 2, max = 100) final int oldClusterSize,
-      @ForAll @IntRange(min = 2, max = 100) final int newClusterSize) {
+  @HegelTest(testCases = 10)
+  void shouldScaleBrokersWhenPartitionsUnchangedWhenZoned(final TestCase tc) {
+    final int partitionCount = tc.draw(integers().min(1).max(100), "partitionCount");
+    final int oldClusterSize = tc.draw(integers().min(2).max(100), "oldClusterSize");
+    final int newClusterSize = tc.draw(integers().min(2).max(100), "newClusterSize");
     shouldScaleBrokersAndPartitionsByCount(
         partitionCount,
         Optional.empty(),
@@ -99,11 +99,11 @@ final class ClusterScaleRequestTransformerTest {
         Optional.of(ZONE_A));
   }
 
-  @Property(tries = 10)
-  void shouldScalePartitionsWhenClusterSizeUnchanged(
-      @ForAll @IntRange(min = 3, max = 100) final int clusterSize,
-      @ForAll @IntRange(min = 1, max = 10) final int oldPartitionCount,
-      @ForAll @IntRange(min = 10, max = 20) final int newPartitionCount) {
+  @HegelTest(testCases = 10)
+  void shouldScalePartitionsWhenClusterSizeUnchanged(final TestCase tc) {
+    final int clusterSize = tc.draw(integers().min(3).max(100), "clusterSize");
+    final int oldPartitionCount = tc.draw(integers().min(1).max(10), "oldPartitionCount");
+    final int newPartitionCount = tc.draw(integers().min(10).max(20), "newPartitionCount");
     shouldScaleBrokersAndPartitionsByCount(
         oldPartitionCount,
         Optional.of(newPartitionCount),
@@ -114,11 +114,11 @@ final class ClusterScaleRequestTransformerTest {
         Optional.empty());
   }
 
-  @Property(tries = 10)
-  void shouldScalePartitionsWhenClusterSizeUnchangedWhenZoned(
-      @ForAll @IntRange(min = 3, max = 100) final int clusterSize,
-      @ForAll @IntRange(min = 1, max = 10) final int oldPartitionCount,
-      @ForAll @IntRange(min = 10, max = 20) final int newPartitionCount) {
+  @HegelTest(testCases = 10)
+  void shouldScalePartitionsWhenClusterSizeUnchangedWhenZoned(final TestCase tc) {
+    final int clusterSize = tc.draw(integers().min(3).max(100), "clusterSize");
+    final int oldPartitionCount = tc.draw(integers().min(1).max(10), "oldPartitionCount");
+    final int newPartitionCount = tc.draw(integers().min(10).max(20), "newPartitionCount");
     shouldScaleBrokersAndPartitionsByCount(
         oldPartitionCount,
         Optional.of(newPartitionCount),
@@ -129,12 +129,12 @@ final class ClusterScaleRequestTransformerTest {
         Optional.of(ZONE_A));
   }
 
-  @Property(tries = 10)
-  void shouldChangeReplicationFactorWhenClusterSizeAndPartitionsUnchanged(
-      @ForAll @IntRange(min = 5, max = 10) final int clusterSize,
-      @ForAll @IntRange(min = 1, max = 100) final int partitionCount,
-      @ForAll @IntRange(min = 1, max = 5) final int oldReplicationFactor,
-      @ForAll @IntRange(min = 1, max = 5) final int newReplicationFactor) {
+  @HegelTest(testCases = 10)
+  void shouldChangeReplicationFactorWhenClusterSizeAndPartitionsUnchanged(final TestCase tc) {
+    final int clusterSize = tc.draw(integers().min(5).max(10), "clusterSize");
+    final int partitionCount = tc.draw(integers().min(1).max(100), "partitionCount");
+    final int oldReplicationFactor = tc.draw(integers().min(1).max(5), "oldReplicationFactor");
+    final int newReplicationFactor = tc.draw(integers().min(1).max(5), "newReplicationFactor");
     shouldScaleBrokersAndPartitionsByCount(
         partitionCount,
         Optional.empty(),
@@ -146,12 +146,12 @@ final class ClusterScaleRequestTransformerTest {
         Optional.empty());
   }
 
-  @Property(tries = 10)
-  void shouldScaleBrokersAndPartitions(
-      @ForAll @IntRange(min = 3, max = 100) final int oldClusterSize,
-      @ForAll @IntRange(min = 3, max = 100) final int newClusterSize,
-      @ForAll @IntRange(min = 1, max = 10) final int oldPartitionCount,
-      @ForAll @IntRange(min = 10, max = 20) final int newPartitionCount) {
+  @HegelTest(testCases = 10)
+  void shouldScaleBrokersAndPartitions(final TestCase tc) {
+    final int oldClusterSize = tc.draw(integers().min(3).max(100), "oldClusterSize");
+    final int newClusterSize = tc.draw(integers().min(3).max(100), "newClusterSize");
+    final int oldPartitionCount = tc.draw(integers().min(1).max(10), "oldPartitionCount");
+    final int newPartitionCount = tc.draw(integers().min(10).max(20), "newPartitionCount");
     shouldScaleBrokersAndPartitionsByCount(
         oldPartitionCount,
         Optional.of(newPartitionCount),
@@ -162,12 +162,12 @@ final class ClusterScaleRequestTransformerTest {
         Optional.of(ZONE_A));
   }
 
-  @Property(tries = 10)
-  void shouldScaleBrokersAndPartitionsWhenZoned(
-      @ForAll @IntRange(min = 3, max = 100) final int oldClusterSize,
-      @ForAll @IntRange(min = 3, max = 100) final int newClusterSize,
-      @ForAll @IntRange(min = 1, max = 10) final int oldPartitionCount,
-      @ForAll @IntRange(min = 10, max = 20) final int newPartitionCount) {
+  @HegelTest(testCases = 10)
+  void shouldScaleBrokersAndPartitionsWhenZoned(final TestCase tc) {
+    final int oldClusterSize = tc.draw(integers().min(3).max(100), "oldClusterSize");
+    final int newClusterSize = tc.draw(integers().min(3).max(100), "newClusterSize");
+    final int oldPartitionCount = tc.draw(integers().min(1).max(10), "oldPartitionCount");
+    final int newPartitionCount = tc.draw(integers().min(10).max(20), "newPartitionCount");
     shouldScaleBrokersAndPartitionsByCount(
         oldPartitionCount,
         Optional.of(newPartitionCount),
@@ -178,14 +178,14 @@ final class ClusterScaleRequestTransformerTest {
         Optional.of(ZONE_A));
   }
 
-  @Property(tries = 10)
-  void shouldScaleBrokersAndPartitionsAndChangeReplicationFactor(
-      @ForAll @IntRange(min = 5, max = 100) final int oldClusterSize,
-      @ForAll @IntRange(min = 5, max = 100) final int newClusterSize,
-      @ForAll @IntRange(min = 1, max = 10) final int oldPartitionCount,
-      @ForAll @IntRange(min = 10, max = 20) final int newPartitionCount,
-      @ForAll @IntRange(min = 1, max = 5) final int oldReplicationFactor,
-      @ForAll @IntRange(min = 1, max = 5) final int newReplicationFactor) {
+  @HegelTest(testCases = 10)
+  void shouldScaleBrokersAndPartitionsAndChangeReplicationFactor(final TestCase tc) {
+    final int oldClusterSize = tc.draw(integers().min(5).max(100), "oldClusterSize");
+    final int newClusterSize = tc.draw(integers().min(5).max(100), "newClusterSize");
+    final int oldPartitionCount = tc.draw(integers().min(1).max(10), "oldPartitionCount");
+    final int newPartitionCount = tc.draw(integers().min(10).max(20), "newPartitionCount");
+    final int oldReplicationFactor = tc.draw(integers().min(1).max(5), "oldReplicationFactor");
+    final int newReplicationFactor = tc.draw(integers().min(1).max(5), "newReplicationFactor");
     shouldScaleBrokersAndPartitionsByCount(
         oldPartitionCount,
         Optional.of(newPartitionCount),

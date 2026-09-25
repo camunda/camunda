@@ -9,6 +9,9 @@ package io.camunda.zeebe.dynamic.config.serializer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.hegel.Generator;
+import dev.hegel.HegelTest;
+import dev.hegel.TestCase;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
@@ -17,10 +20,6 @@ import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.util.ClusterTopologyDomain;
 import java.util.Map;
-import net.jqwik.api.ForAll;
-import net.jqwik.api.Property;
-import net.jqwik.api.domains.Domain;
-import net.jqwik.api.domains.DomainContext;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -35,14 +34,17 @@ final class ClusterConfigurationJsonSerializerPropertyTest {
   private static final String EQUALITY_HINT =
       """
       Configuration read back from JSON must equal the one written.
-      If both look the same, compare the collection types: jqwik generates sorted sets and maps, and \
-      a reader that builds unsorted ones yields an unequal-but-identical-looking configuration.""";
+      If both look the same, compare the collection types: the generators build sorted sets and maps, \
+      and a reader that builds unsorted ones yields an unequal-but-identical-looking configuration.""";
 
-  @Property(tries = 100)
-  @Domain(ClusterTopologyDomain.class)
-  @Domain(DomainContext.Global.class)
-  void shouldWriteAndReadBackAnyConfiguration(
-      @ForAll final CurrentClusterConfiguration configuration) {
+  private static final Generator<CurrentClusterConfiguration> CONFIGURATIONS =
+      ClusterTopologyDomain.currentClusterConfigurations();
+
+  @HegelTest(testCases = 100)
+  void shouldWriteAndReadBackAnyConfiguration(final TestCase tc) {
+    // given
+    final var configuration = tc.draw(CONFIGURATIONS, "configuration");
+
     // when
     final var json = ClusterConfigurationJsonSerializer.toJson(configuration);
 
