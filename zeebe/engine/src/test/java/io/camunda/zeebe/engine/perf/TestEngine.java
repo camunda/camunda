@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingExporterTransistor;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.engine.util.StreamProcessingComposite;
@@ -123,6 +124,10 @@ public final class TestEngine {
 
   public ProcessInstanceClient createProcessInstanceClient() {
     return new ProcessInstanceClient(streamProcessingComposite);
+  }
+
+  public MutableProcessingState getProcessingState() {
+    return streamProcessingComposite.getProcessingState();
   }
 
   public JobActivationClient createJobActivationClient() {

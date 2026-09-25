@@ -55,9 +55,7 @@ public final class ProcessInstanceSuspendProcessor
   private final CslAuthorizationCheck cslCheck;
   private final AsyncRequestState asyncRequestState;
   private final SuspensionState suspensionState;
-  private final ProcessInstanceSuspensionJobBehavior suspensionJobBehavior;
-  private final ProcessInstanceSuspensionMessageSubscriptionBehavior suspensionSubscriptionBehavior;
-  private final SuspensionMetrics suspensionMetrics;
+  private final ProcessInstanceSuspendingProcessor suspendingProcessor;
 
   public ProcessInstanceSuspendProcessor(
       final ProcessingState processingState,
@@ -74,19 +72,14 @@ public final class ProcessInstanceSuspendProcessor
     this.cslCheck = cslCheck;
     asyncRequestState = processingState.getAsyncRequestState();
     suspensionState = processingState.getSuspensionState();
-    suspensionJobBehavior =
-        new ProcessInstanceSuspensionJobBehavior(
-            elementInstanceState, processingState.getJobState(), stateWriter);
-    suspensionSubscriptionBehavior =
-        new ProcessInstanceSuspensionMessageSubscriptionBehavior(
-            elementInstanceState,
-            processingState.getProcessMessageSubscriptionState(),
-            stateWriter,
-            writers.sideEffect(),
+    suspendingProcessor =
+        new ProcessInstanceSuspendingProcessor(
+            processingState,
+            writers,
             subscriptionCommandSender,
             transientProcessMessageSubscriptionState,
-            clock);
-    this.suspensionMetrics = suspensionMetrics;
+            clock,
+            suspensionMetrics);
   }
 
   @Override
@@ -97,27 +90,9 @@ public final class ProcessInstanceSuspendProcessor
       return;
     }
 
-    final ProcessInstanceRecord value = elementInstance.getValue();
-    final int suspendedJobCount = closeSubscriptionsAndSuspendJobs(command.getKey());
-    stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.SUSPENDED, value);
-    responseWriter.writeAcceptedResponseOnCommand(
-        command.getKey(), ProcessInstanceIntent.SUSPENDED, value, command);
-    suspensionMetrics.instanceSuspended();
-    if (suspendedJobCount > 0) {
-      suspensionMetrics.jobsSuspended(suspendedJobCount);
-    }
-  }
-
-  /**
-   * Keep this order, closing subscriptions first keeps RocksDB seeks cheap. Currently, subscription
-   * closures visit all element instance subscriptions which runs a RocksDB seek command. If the
-   * order is reversed, job suspensions will write to the transaction batch first, which requires
-   * the seek command to also check against those batched writes. See <a
-   * href="https://github.com/camunda/camunda/issues/62933">#62933</a>.
-   */
-  private int closeSubscriptionsAndSuspendJobs(final long processInstanceKey) {
-    suspensionSubscriptionBehavior.closeSubscriptions(processInstanceKey);
-    return suspensionJobBehavior.suspendJobs(processInstanceKey);
+    stateWriter.appendFollowUpEvent(
+        command.getKey(), ProcessInstanceIntent.SUSPENDING, elementInstance.getValue());
+    suspendingProcessor.processRecord(command);
   }
 
   private boolean validateCommand(
