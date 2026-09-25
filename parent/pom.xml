@@ -264,7 +264,7 @@
     <plugin.version.jacoco>0.8.15</plugin.version.jacoco>
     <plugin.version.maven-jar>3.5.1</plugin.version.maven-jar>
     <plugin.version.openapi-generator>7.25.0</plugin.version.openapi-generator>
-    <plugin.version.protobuf-maven-plugin>5.1.9</plugin.version.protobuf-maven-plugin>
+    <plugin.version.protobuf-maven-plugin>5.1.10</plugin.version.protobuf-maven-plugin>
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
     <plugin.version.resources>3.5.0</plugin.version.resources>
     <plugin.version.revapi>0.15.1</plugin.version.revapi>
