@@ -167,6 +167,60 @@ describe('<VariablesPanel />', () => {
 		await expect.element(inputs.getByText('Customer age')).toBeVisible();
 	});
 
+	it('should refresh input and output rows when navigating between decision tables', async ({worker}) => {
+		worker.use(
+			mockGetDecisionInstanceEndpoint({
+				successResponse: HttpResponse.json(
+					createDecisionInstance({
+						decisionEvaluationInstanceKey: TABLE_ID,
+						evaluatedInputs: [{inputId: 'input', inputName: 'First input', inputValue: '1'}],
+						matchedRules: [
+							{
+								ruleId: null,
+								ruleIndex: null,
+								evaluatedOutputs: [
+									{outputId: 'output', outputName: 'First output', outputValue: '"one"', ruleId: null, ruleIndex: null},
+								],
+							},
+						],
+					}),
+				),
+			}),
+		);
+
+		const screen = await renderPanel();
+		const inputs = screen.getByRole('region', {name: 'input variables'});
+		const outputs = screen.getByRole('region', {name: 'output variables'});
+		await expect.element(inputs.getByText('First input')).toBeVisible();
+		await expect.element(outputs.getByText('First output')).toBeVisible();
+
+		worker.use(
+			mockGetDecisionInstanceEndpoint({
+				successResponse: HttpResponse.json(
+					createDecisionInstance({
+						decisionEvaluationInstanceKey: NEXT_TABLE_ID,
+						evaluatedInputs: [{inputId: 'input', inputName: 'Next input', inputValue: '2'}],
+						matchedRules: [
+							{
+								ruleId: null,
+								ruleIndex: null,
+								evaluatedOutputs: [
+									{outputId: 'output', outputName: 'Next output', outputValue: '"two"', ruleId: null, ruleIndex: null},
+								],
+							},
+						],
+					}),
+				),
+			}),
+		);
+		await screen.router.navigate({to: ROUTE, params: {decisionInstanceId: NEXT_TABLE_ID}});
+
+		await expect.element(inputs.getByText('Next input')).toBeVisible();
+		await expect.element(outputs.getByText('Next output')).toBeVisible();
+		await expect.element(inputs.getByText('First input')).not.toBeInTheDocument();
+		await expect.element(outputs.getByText('First output')).not.toBeInTheDocument();
+	});
+
 	it('should render distinct output rows when rule identity and output IDs repeat', async ({worker}) => {
 		worker.use(
 			mockGetDecisionInstanceEndpoint({

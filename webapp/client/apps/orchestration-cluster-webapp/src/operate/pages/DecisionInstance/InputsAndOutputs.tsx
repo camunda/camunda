@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {ResizablePanel, SplitDirection} from '#/operate/shared/ResizablePanel/ResizablePanel';
 import {useDecisionInstance} from './decisionInstance.queries';
@@ -44,23 +44,30 @@ const InputsAndOutputs: React.FC<Props> = ({query}) => {
 		return () => observer.disconnect();
 	}, []);
 
-	const decisionInstance = query.data;
-	const inputRows =
-		decisionInstance?.evaluatedInputs.map((input) => ({
-			key: input.inputId,
-			columns: [{cellContent: input.inputName}, {cellContent: input.inputValue}],
-		})) ?? [];
-	const outputRows =
-		decisionInstance?.matchedRules.flatMap((rule, rulePosition) =>
-			rule.evaluatedOutputs.map((output, outputPosition) => ({
-				key: `${output.outputId}--${rulePosition}--${outputPosition}`,
-				columns: [
-					{cellContent: rule.ruleIndex ?? '--'},
-					{cellContent: output.outputName},
-					{cellContent: output.outputValue},
-				],
-			})),
-		) ?? [];
+	const evaluatedInputs = query.data?.evaluatedInputs;
+	const matchedRules = query.data?.matchedRules;
+	const inputRows = useMemo(
+		() =>
+			evaluatedInputs?.map((input) => ({
+				key: input.inputId,
+				columns: [{cellContent: input.inputName}, {cellContent: input.inputValue}],
+			})) ?? [],
+		[evaluatedInputs],
+	);
+	const outputRows = useMemo(
+		() =>
+			matchedRules?.flatMap((rule, rulePosition) =>
+				rule.evaluatedOutputs.map((output, outputPosition) => ({
+					key: `${output.outputId}--${rulePosition}--${outputPosition}`,
+					columns: [
+						{cellContent: rule.ruleIndex ?? '--'},
+						{cellContent: output.outputName},
+						{cellContent: output.outputValue},
+					],
+				})),
+			) ?? [],
+		[matchedRules],
+	);
 
 	return (
 		<InputOutputContainer ref={containerRef}>
