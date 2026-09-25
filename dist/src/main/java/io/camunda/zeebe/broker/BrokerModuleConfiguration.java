@@ -10,7 +10,7 @@ package io.camunda.zeebe.broker;
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
-import io.camunda.application.commons.search.SearchEngineSchemaInitializer;
+import io.camunda.application.commons.pt.SchemaInitializer;
 import io.camunda.application.commons.secrets.SecretStoreRegistries;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
@@ -82,7 +82,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final WorkingDirectory workingDirectory;
   private final SecretStoreRegistries secretStoreRegistries;
   private final ResolvedDataDirectory resolvedDataDirectory;
-  private final ObjectProvider<SearchEngineSchemaInitializer> searchEngineSchemaInitializer;
+  private final ObjectProvider<SchemaInitializer> schemaInitializer;
 
   private Broker broker;
 
@@ -109,7 +109,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       final WorkingDirectory workingDirectory,
       final SecretStoreRegistries secretStoreRegistries,
       final ResolvedDataDirectory resolvedDataDirectory,
-      final ObjectProvider<SearchEngineSchemaInitializer> searchEngineSchemaInitializer) {
+      final ObjectProvider<SchemaInitializer> schemaInitializer) {
     this.configuration = configuration;
     this.springBrokerBridge = springBrokerBridge;
     this.actorScheduler = actorScheduler;
@@ -129,7 +129,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.workingDirectory = workingDirectory;
     this.secretStoreRegistries = secretStoreRegistries;
     this.resolvedDataDirectory = resolvedDataDirectory;
-    this.searchEngineSchemaInitializer = searchEngineSchemaInitializer;
+    this.schemaInitializer = schemaInitializer;
   }
 
   @Bean(destroyMethod = "close")
@@ -214,7 +214,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
 
   private @NonNull Function<String, Runnable> schemaInitializerLookupSupplier() {
     return tenantId -> {
-      final var initializer = searchEngineSchemaInitializer.getIfAvailable();
+      final var initializer = schemaInitializer.getIfAvailable();
       return initializer == null ? null : () -> initializer.initializeNow(tenantId);
     };
   }

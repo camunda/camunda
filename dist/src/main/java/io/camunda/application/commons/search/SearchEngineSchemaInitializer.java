@@ -9,6 +9,7 @@ package io.camunda.application.commons.search;
 
 import io.camunda.application.commons.pt.PerTenantSchemaInitialization;
 import io.camunda.application.commons.pt.PerTenantSchemaInitialization.DeferralCheck;
+import io.camunda.application.commons.pt.SchemaInitializer;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.SchemaManagerContainer;
@@ -36,7 +37,7 @@ import org.springframework.beans.factory.InitializingBean;
  * whether this node holds startup at the gate.
  */
 public class SearchEngineSchemaInitializer
-    implements InitializingBean, DisposableBean, SchemaManagerContainer {
+    implements InitializingBean, DisposableBean, SchemaManagerContainer, SchemaInitializer {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SearchEngineSchemaInitializer.class);
   private final Map<String, SearchEngineConfiguration> configs;
@@ -159,6 +160,7 @@ public class SearchEngineSchemaInitializer
   }
 
   /** Applies one tenant schema attempt without using the startup retry loop. */
+  @Override
   public void initializeNow(final String physicalTenantId) {
     initialization.initializeNow(physicalTenantId);
   }

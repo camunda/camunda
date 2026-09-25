@@ -9,6 +9,7 @@ package io.camunda.application.commons.rdbms;
 
 import io.camunda.application.commons.pt.PerTenantSchemaInitialization;
 import io.camunda.application.commons.pt.SchemaInitialization;
+import io.camunda.application.commons.pt.SchemaInitializer;
 import io.camunda.application.commons.pt.SingleTenantSchemaInitialization;
 import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
@@ -61,7 +62,7 @@ import org.springframework.beans.factory.InitializingBean;
  */
 @NullMarked
 public class RdbmsSchemaInitializer
-    implements InitializingBean, DisposableBean, RdbmsSchemaManagerRegistry {
+    implements InitializingBean, DisposableBean, RdbmsSchemaManagerRegistry, SchemaInitializer {
 
   static final Duration MIN_RETRY_DELAY = Duration.ofMillis(500);
   static final Duration MAX_RETRY_DELAY = Duration.ofSeconds(10);
@@ -142,6 +143,21 @@ public class RdbmsSchemaInitializer
   public boolean isInitialized(final String physicalTenantId) {
     return schemaManagers.containsKey(physicalTenantId)
         && initialization.isInitialized(physicalTenantId);
+  }
+
+  /** Applies one tenant's schema immediately for an in-process restore. */
+  @Override
+  public void initializeNow(final String physicalTenantId) {
+    schemaManagerOf(physicalTenantId);
+    if (isIsolated()) {
+      ((PerTenantSchemaInitialization) initialization).initializeNow(physicalTenantId);
+    } else {
+      try {
+        initializeSynchronously();
+      } catch (final Exception e) {
+        throw new SchemaInitializationFailedException(physicalTenantId, e);
+      }
+    }
   }
 
   /** Whether one tenant's failure has anyone else's startup to spare. */
