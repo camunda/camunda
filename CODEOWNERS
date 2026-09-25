@@ -38,7 +38,6 @@
 /.github/workflows/ci-optimize.yml                        @camunda/core-features
 /.github/workflows/optimize-check-c4.yml                  @camunda/core-features
 /.github/workflows/optimize-e2e-smoke.yml                 @camunda/bi-intelligence
-/.github/workflows/optimize-e2e-tests-sm-nightly.yml      @camunda/core-features
 /.github/workflows/optimize-ci-data-upgrade-nightly.yml                       @camunda/core-features
 /.github/workflows/assign-urgency-to-issues-cron.yml                          @camunda/core-features
 /.github/workflows/c8-orchestration-cluster-nightly-metrics-report.yml        @camunda/core-features

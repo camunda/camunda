@@ -1,5 +1,5 @@
 # description: Nightly E2E smoke run for Optimize in Cloud (SaaS) mode against the Auth0 dev tenant.
-# test location: /optimize/client/e2e/cloud-tests
+# test location: /optimize/client/e2e/cloud
 # type: CI
 # owner: @camunda/optimize-frontend
 #
@@ -20,8 +20,8 @@ on:
   pull_request:
     paths:
       - ".github/workflows/optimize-e2e-tests-cloud-nightly.yml"
-      - "optimize/client/e2e/cloud-tests/**"
-      - "optimize/client/e2e/config.js"
+      - "optimize/client/e2e/cloud/**"
+      - "optimize/client/playwright.config.ts"
       - "optimize/client/scripts/start-backend.js"
 
 # One bucket for the whole workflow: every run authenticates the same user against the same Auth0
@@ -178,7 +178,27 @@ jobs:
       - name: Wait for frontend to start
         run: ./.github/optimize/scripts/wait-for.sh http://localhost:3000/ready
 
+      # stable/8.8 and stable/8.9 still ship the TestCafe suite, newer branches the Playwright one.
+      - name: Install Playwright browser
+        if: ${{ hashFiles('optimize/client/playwright.config.ts') != '' }}
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 15
+          timeout_minutes: 6
+          shell: bash
+          command: cd optimize/client && npx playwright install --with-deps chromium
+
       - name: Run E2E tests
+        if: ${{ hashFiles('optimize/client/playwright.config.ts') != '' }}
+        working-directory: ./optimize/client
+        env:
+          AUTH0_USEREMAIL: "${{ steps.vault_secrets.outputs.AUTH0_USEREMAIL }}"
+          AUTH0_USERPASSWORD: "${{ steps.vault_secrets.outputs.AUTH0_USERPASSWORD }}"
+        run: yarn e2e:cloud
+
+      - name: Run E2E tests (TestCafe)
+        if: ${{ hashFiles('optimize/client/playwright.config.ts') == '' }}
         working-directory: ./optimize/client
         env:
           AUTH0_CLIENTSECRET: "${{ steps.vault_secrets.outputs.AUTH0_CLIENTSECRET }}"
@@ -194,6 +214,8 @@ jobs:
           path: |
             ./optimize/client/build/*.log
             ./optimize/client/build/screenshots/
+            ./optimize/client/e2e/playwright-report/
+            ./optimize/client/e2e/test-results/
           if-no-files-found: ignore
 
       - name: Docker log dump

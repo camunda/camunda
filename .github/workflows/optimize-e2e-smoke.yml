@@ -1,8 +1,8 @@
-# description: Standalone Optimize Self-Managed E2E smoke tests. Extracted from the unified CI (ci-optimize.yml) so it runs independently and is not part of the merge-queue required checks.
-# test location: /optimize/client/e2e/sm-tests
+# description: Optimize Self-Managed E2E tests (Playwright) against a real Camunda, Identity and Elasticsearch stack. Runs independently of the unified CI (ci-optimize.yml) and is not part of the merge-queue required checks.
+# test location: /optimize/client/e2e
 # type: CI
 # owner: @camunda/bi-intelligence
-name: Optimize E2E Smoke
+name: Optimize E2E
 
 on:
   push:
@@ -26,7 +26,12 @@ on:
       - .github/actions/**
       - .github/optimize/scripts/**
       - .github/workflows/optimize-e2e-smoke.yml
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      update-snapshots:
+        description: Re-render the visual baselines and upload them as an artifact instead of running the tests
+        type: boolean
+        default: false
 
 # Limit workflow to 1 concurrent run per ref (branch) and trigger event (push/schedule/etc): new commit -> old runs are canceled to save costs
 # Exception for main + stable/* branches: complete builds for every commit needed for confidenence
@@ -51,7 +56,7 @@ env:
 
 jobs:
   optimize-e2e-smoke:
-    name: "E2E / Self-Managed (Smoke)"
+    name: "E2E / Self-Managed"
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 30
     permissions: { }
@@ -71,40 +76,6 @@ jobs:
         uses: ./.github/actions/print-metadata
 
       - uses: ./.github/actions/apt-fast-mirror-failover
-      # Every network-bound, sudo'd step below is wrapped in its own `sudo timeout ...`
-      # so a hang self-terminates inside the sudo'd root process tree instead of
-      # requiring nick-fields/retry to kill across the privilege boundary -- doing
-      # that externally throws `kill EPERM` and crashes instead of retrying, see
-      # https://github.com/nick-fields/retry/issues/124. Budgeted against the 6-minute
-      # outer timeout: 30s + 180s = 300s worst case, leaving some minutes of headroom
-      # for the (fast, non-network) tee/verification steps and process overhead.
-      # google-chrome-stable itself gets the largest share (180s): it and its
-      # dependencies are a much bigger download than the other two apt calls.
-      - name: Install Google Chrome
-        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
-        with:
-          max_attempts: 3
-          retry_wait_seconds: 15
-          timeout_minutes: 6
-          shell: bash
-          command: |
-            set -euo pipefail
-
-            if ! command -v google-chrome >/dev/null 2>&1; then
-              sudo timeout 30 bash -o pipefail -c 'wget -qO- https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor --yes -o /usr/share/keyrings/google-chrome.gpg'
-
-              echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" \
-                | sudo tee /etc/apt/sources.list.d/google-chrome.list >/dev/null
-
-              # `apt-get update` exits 100 if *any* configured repository fails, so don't gate
-              # on it (INC-7943) -- a partial refresh still lands and the install is the gate.
-              sudo timeout 180 bash -c "apt-get update \
-                || echo '::warning::apt-get update could not refresh every repository, continuing with the index as-is'; \
-                apt-get install -y --no-install-recommends google-chrome-stable"
-            fi
-
-            google-chrome --version
-            google-chrome --headless=new --no-sandbox --disable-gpu --dump-dom about:blank >/dev/null
 
       - name: "Parse pom.xml for versions"
         id: "pom_info"
@@ -122,10 +93,25 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
+      # Built before the backend, which serves this build to clients without a session (e.g. login).
       - name: Build frontend
         uses: ./.github/actions/build-frontend
         with:
           directory: ./optimize/client
+
+      # Fail fast on e2e lint/type errors before the expensive backend build.
+      - name: Lint e2e tests
+        working-directory: ./optimize/client
+        run: yarn e2e:lint
+
+      - name: Install Playwright browser
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 15
+          timeout_minutes: 6
+          shell: bash
+          command: cd optimize/client && npx playwright install --with-deps chromium
 
       - uses: ./.github/actions/build-zeebe
         id: build-camunda
@@ -156,30 +142,44 @@ jobs:
         run: |
           yarn run start-backend ci &> ./build/backendLogs.log &
 
-      - name: Start frontend
+      - name: Wait for backend to start
+        run: ./.github/optimize/scripts/wait-for.sh http://localhost:8090/api/readyz
+
+      # Playwright starts the frontend dev server, seeds the data and waits for the import itself.
+      - name: Run E2E tests
+        if: ${{ !inputs.update-snapshots }}
         working-directory: ./optimize/client
-        run: yarn start &
+        run: yarn e2e
 
-      - name: Wait for import to complete
-        run: ./.github/optimize/scripts/wait-for-import.sh
-
-      - name: Wait for frontend to start
-        run: ./.github/optimize/scripts/wait-for.sh http://localhost:3000/ready
-
-      - name: Run smoke tests
+      - name: Update visual baselines
+        if: ${{ inputs.update-snapshots }}
         working-directory: ./optimize/client
-        run: yarn run e2e:ci:sm:smoke:headless
+        run: yarn e2e:visual:update
+
+      - name: Upload visual baselines
+        if: ${{ inputs.update-snapshots }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: optimize-e2e-visual-baselines
+          path: ./optimize/client/e2e/visual/__screenshots__/
+
+      - name: Upload test report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: optimize-e2e-report
+          path: |
+            ./optimize/client/e2e/playwright-report/
+            ./optimize/client/e2e/test-results/
+          if-no-files-found: ignore
+          retention-days: 14
 
       - name: Upload logs
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: optimize-e2e-smoke-logs
-          path: |
-            ./optimize/client/build/*.log
-            ./optimize/client/build/smoke-test-results.txt
-            ./optimize/client/build/screenshots/
-            ./optimize/client/build/videos/
+          path: ./optimize/client/build/*.log
 
       - name: Docker log dump
         uses: ./.github/actions/docker-logs

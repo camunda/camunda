@@ -50,6 +50,8 @@ yarn install          # Install dependencies
 yarn build            # Build for production
 yarn test:ci          # Run unit tests (CI/non-interactive)
 yarn start            # Start dev server
+yarn e2e              # Playwright E2E tests against a running stack (see optimize/client/e2e/AGENTS.md)
+yarn e2e:lint         # ESLint + TypeScript for the E2E tests
 ```
 
 ## Conventions
