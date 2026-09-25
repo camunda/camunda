@@ -51,6 +51,11 @@ ADR for that domain is written.
   path, remapping `camunda.client.*` to `camunda.clients.default.*`, with a
   `defaultCamundaClient` `@Primary` bean plus a `camundaClient` alias for
   backward compatibility (camunda/camunda#57344).
+- `clients/0002-reserved-poll-capacity-for-job-worker.md` — reserve a minimum
+  share (`floor(0.25·maxJobsActive)`) of the job worker's shared activation
+  capacity for the polling path so the streaming (push) path cannot starve the
+  poll recovery path; the total semaphore stays the single capacity authority,
+  streaming-only, throughput-neutral in a cluster A/B (camunda/camunda#59734).
 - `storage/001-remove-numeric-key-from-identity-entity-filters.md` — drop the
   internal numeric `key` filter fields from `UserFilter`, `GroupFilter`,
   `TenantFilter`, and `MappingRuleFilter`; Identity entities are filtered by their
