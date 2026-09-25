@@ -686,10 +686,10 @@ exports.OPT_OUT_PHRASE = 'this pr does not need a linked issue';
 exports.SECTION_HEADING = 'Related issues';
 // GitHub's closing keywords + our custom "completes". Case-insensitive.
 const CLOSING = /^(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?|completes?)$/i;
-const RELATES = /^relates?\s+to$/i;
+const RELATES = /^relate[sd]?\s+to$/i;
 const BACKPORT = /^backport\s+of$/i;
 // Optional keyword prefix shared by both ref shapes.
-const KW = String.raw `(?:\b(close[sd]?|fix(?:e[sd])?|resolve[sd]?|completes?|relates?\s+to|backport\s+of)\b[\s:]+)?`;
+const KW = String.raw `(?:\b(close[sd]?|fix(?:e[sd])?|resolve[sd]?|completes?|relate[sd]?\s+to|backport\s+of)\b[\s:]+)?`;
 const OWNER_REPO = String.raw `([A-Za-z0-9][\w.-]*\/[A-Za-z0-9][\w.-]*)`;
 // "closes #12", "camunda/other#7", bare "#12".
 const SHORTHAND = new RegExp(KW + `(?:${OWNER_REPO})?#(\\d+)`, 'gi');
