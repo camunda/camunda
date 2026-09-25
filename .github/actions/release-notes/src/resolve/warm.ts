@@ -43,13 +43,13 @@ export function backportTargets(bodies: readonly string[], ownRepo: string): num
   return [...targets];
 }
 
-/** `originals` holds the backport originals fetched in bulk; a key mapped to
- *  null is a known miss (not a PR), answered without a request. */
+/** `originals` holds the backport originals fetched in bulk; anything absent
+ *  (not prefetched, or not a merged PR) still goes to REST. */
 export function buildPipelineResolver(
   rest: RefResolver,
   warmRefs: ReadonlyMap<number, ClassifiedRef>,
   ownRepo: string,
-  originals: ReadonlyMap<number, OriginalPull | null> = new Map(),
+  originals: ReadonlyMap<number, OriginalPull> = new Map(),
 ): PipelineResolver {
   // Cross-repo refs are never pre-warmed — the REST path classifies those without an API call.
   const sameRepoNumber = (ref: ParsedRef): number | null => (isOwnRepo(ref.repo, ownRepo) ? ref.number : null);
@@ -76,7 +76,7 @@ export function buildPipelineResolver(
         .sort((first, second) => first.index - second.index);
     },
     fetchOriginalPull: async (number, repo) =>
-      isOwnRepo(repo, ownRepo) && originals.has(number) ? originals.get(number)! : rest.fetchOriginalPull(number, repo),
+      (isOwnRepo(repo, ownRepo) ? originals.get(number) : undefined) ?? rest.fetchOriginalPull(number, repo),
     fetchIssueTitle: async (number) => warmRefs.get(number)?.title ?? rest.fetchIssueTitle(number),
   };
 }

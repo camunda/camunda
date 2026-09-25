@@ -68,7 +68,7 @@ async function run(): Promise<void> {
   const restResolver = new GithubResolver(input.token, input.owner, input.repo);
   const ownRepo = `${input.owner}/${input.repo}`;
   const warmRefs = new Map<number, ClassifiedRef>();
-  const originals = new Map<number, OriginalPull | null>();
+  const originals = new Map<number, OriginalPull>();
   const pipelineResolver = buildPipelineResolver(restResolver, warmRefs, ownRepo, originals);
 
   const strategy = resolveBaselineStrategy(input.targetVersion);
@@ -131,12 +131,13 @@ async function run(): Promise<void> {
   const metadata = prNumbers.map((number) => metaByNumber.get(number)).filter((meta): meta is PrMetadata => meta !== undefined); // walk order, kept stable
 
   // One bulk query for every backport's original, instead of one REST call per
-  // backport when the pipeline's hop follows the marker.
+  // backport when the pipeline's hop follows the marker. The speculative batch
+  // drops unmerged PRs, but a backport can point at a closed-unmerged original
+  // that still carries attribution, so a miss is left to the REST fallback.
   const targets = backportTargets(metadata.map((pr) => pr.body), ownRepo);
   const originalByNumber = new Map((await graphql.fetchPrMetadata(targets, true)).map((meta) => [meta.number, meta]));
-  for (const number of targets) {
-    const meta = originalByNumber.get(number);
-    originals.set(number, meta ? { body: meta.body, title: meta.title, authorLogin: meta.authorLogin, mergedAt: meta.mergedAt ?? undefined } : null);
+  for (const meta of originalByNumber.values()) {
+    originals.set(meta.number, { body: meta.body, title: meta.title, authorLogin: meta.authorLogin, mergedAt: meta.mergedAt });
   }
   core.info(`Prefetched ${originalByNumber.size} of ${targets.length} backport originals in ${Math.ceil(targets.length / 100)} requests.`);
 

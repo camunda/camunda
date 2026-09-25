@@ -116,19 +116,19 @@ test('which repo counts as own comes from the caller, not a hardcoded name', asy
   assert.deepEqual(rest.calls[0]!.map((r) => r.repo), ['camunda/camunda']);
 });
 
-test('a prefetched original costs no request, and a prefetched miss stays a miss without one', async () => {
+test('a prefetched original costs no request; anything not prefetched still reaches REST', async () => {
+  // The bulk fetch skips unmerged PRs, so a closed-unmerged original is simply
+  // absent from the map and must still be fetched, not treated as missing.
   const rest = fakeRest();
   const original: OriginalPull = { body: 'body', title: 'fix: thing', authorLogin: 'someone', mergedAt: '2026-01-01T00:00:00Z' };
-  const originals = new Map<number, OriginalPull | null>([[200, original], [201, null]]);
-  const resolver = buildPipelineResolver(rest, new Map(), OWN_REPO, originals);
+  const resolver = buildPipelineResolver(rest, new Map(), OWN_REPO, new Map([[200, original]]));
 
   assert.equal(await resolver.fetchOriginalPull(200, null), original);
   assert.equal(await resolver.fetchOriginalPull(200, 'camunda/camunda'), original);
-  assert.equal(await resolver.fetchOriginalPull(201, null), null);
   assert.deepEqual(rest.pullCalls, []);
 
-  await resolver.fetchOriginalPull(202, null);
-  assert.deepEqual(rest.pullCalls, [202], 'an original not prefetched still reaches REST');
+  await resolver.fetchOriginalPull(201, null);
+  assert.deepEqual(rest.pullCalls, [201]);
 });
 
 test('backport targets are the own-repo markers only, deduped', () => {
