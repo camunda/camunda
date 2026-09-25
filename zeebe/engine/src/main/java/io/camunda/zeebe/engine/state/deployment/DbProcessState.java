@@ -651,6 +651,25 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   @Override
+  public void cacheProcess(
+      final long processDefinitionKey,
+      final String tenantId,
+      final ExecutableProcess executableProcess) {
+    tenantIdKey.wrapString(tenantId);
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+
+    final PersistedProcess persistedProcess =
+        processColumnFamily.get(tenantAwareProcessDefinitionKey);
+    if (persistedProcess == null) {
+      throw new IllegalStateException(
+          "Expected to cache process with key '%d' for tenant '%s', but it is not persisted"
+              .formatted(processDefinitionKey, tenantId));
+    }
+
+    addProcessToInMemoryState(new DeployedProcess(executableProcess, copy(persistedProcess)));
+  }
+
+  @Override
   public void forEachProcess(
       final ProcessIdentifier previousProcess, final PersistedProcessVisitor visitor) {
 
