@@ -307,23 +307,20 @@ This section provides guidance for developers who want to contribute to metrics 
 
 #### Running the Monitoring Stack Locally
 
-The `monitor/` directory contains a complete local monitoring setup using Docker Compose:
+The [monitor/local-env](../../monitor/local-env) folder contains a Docker Compose setup with
+Prometheus, Grafana, and a Zeebe broker, for testing locally that metrics are exported and
+scraped correctly:
 
 ```bash
-# Navigate to the monitor directory
-cd monitor/
-
-# Start Prometheus, Grafana, and related services
+cd monitor/local-env/
 docker-compose up -d
-
-# View logs
-docker-compose logs -f
 ```
 
-This setup includes:
 - **Prometheus**: Metrics collection and storage (http://localhost:9090)
 - **Grafana**: Visualization and dashboards (http://localhost:3000)
-- **Pre-configured dashboards**: Located in `grafana/dashboards/`
+- **Pre-provisioned dashboards**: From [monitor/grafana](../../monitor/grafana)
+
+See [monitor/README.md](../../monitor/README.md) for details.
 
 #### Running Camunda with Metrics
 
@@ -341,21 +338,10 @@ Access metrics at: http://localhost:9600/actuator/prometheus
 
 #### Local Dashboard Development
 
-To serve and test dashboards locally with [Grizzly](https://grafana.github.io/grizzly/):
-
-```bash
-make grizzly
-```
-
-This uses the grr CLI to serve dashboards from grafana/dashboards on http://localhost:8093
-.
-Make sure to set your Grafana credentials in a .env file:
-
-```env
-GRAFANA_URL=http://localhost:3000
-GRAFANA_USER=admin
-GRAFANA_TOKEN=your-token
-```
+Dashboards are stored as JSON files in [monitor/grafana](../../monitor/grafana). See
+[monitor/README.md](../../monitor/README.md) for how to edit them, either through Grafana's
+Git Sync in the benchmark environment or by editing the JSON files directly. To preview changes
+before opening a pull request, run the monitoring stack locally as described above.
 
 ### Future Improvements
 
