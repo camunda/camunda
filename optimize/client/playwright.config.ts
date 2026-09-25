@@ -63,6 +63,7 @@ export default defineConfig({
       // Baselines are rendered on the Linux CI runner; other platforms only exercise the flow.
       ignoreSnapshots: !isCI && !process.env.E2E_VISUAL,
       snapshotPathTemplate: '{testDir}/{testFileDir}/__screenshots__/{testFileName}/{arg}{ext}',
+      expect: {toHaveScreenshot: {stylePath: './e2e/visual/screenshot.css'}},
     },
     {
       name: 'cloud',
