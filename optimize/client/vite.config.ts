@@ -15,7 +15,17 @@ import sbom from 'rollup-plugin-sbom';
 const outDir = 'dist';
 
 const backend = 'http://localhost:8090';
-let sessionRejected = false;
+const sessionCookies = ['X-CSRF-TOKEN', 'X-Optimize-Authorization_0', 'X-Optimize-Refresh-Token'];
+// Per client, so a 401 in one browser (e.g. an expired session) does not affect the others.
+const rejectedSessions = new Set<string>();
+
+function getSessionKey(cookieHeader?: string): string | undefined {
+  const cookies = (cookieHeader ?? '').split(';').map((cookie) => cookie.trim());
+  const session = cookies.filter((cookie) =>
+    sessionCookies.some((name) => cookie.startsWith(`${name}=`))
+  );
+  return session.length > 0 ? session.join(';') : undefined;
+}
 
 const plugins: PluginOption[] = [
   {
@@ -82,8 +92,16 @@ export default defineConfig(({mode}) => ({
       '^/(api|external/api|external/static)': {
         target: backend,
         configure: (proxy) => {
-          proxy.on('proxyRes', (proxyRes) => {
-            sessionRejected = proxyRes.statusCode === 401;
+          proxy.on('proxyRes', (proxyRes, req) => {
+            const session = getSessionKey(req.headers.cookie);
+            if (!session) {
+              return;
+            }
+            if (proxyRes.statusCode === 401) {
+              rejectedSessions.add(session);
+            } else {
+              rejectedSessions.delete(session);
+            }
           });
         },
       },
@@ -95,12 +113,8 @@ export default defineConfig(({mode}) => ({
             return;
           }
 
-          if (
-            !sessionRejected &&
-            (req.headers.cookie?.includes('X-CSRF-TOKEN') ||
-              req.headers.cookie?.includes('X-Optimize-Authorization_0') ||
-              req.headers.cookie?.includes('X-Optimize-Refresh-Token'))
-          ) {
+          const session = getSessionKey(req.headers.cookie);
+          if (session && !rejectedSessions.has(session)) {
             return path;
           }
 
