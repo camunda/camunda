@@ -94,7 +94,7 @@ public class ItemProviderFactory {
         metrics,
         filter.toBuilder()
             .partitionId(partitionId)
-            .states(ProcessInstanceState.ACTIVE.name())
+            .replaceStates(ProcessInstanceState.ACTIVE.name())
             .build(),
         authentication);
   }
@@ -106,7 +106,7 @@ public class ItemProviderFactory {
         metrics,
         filter.toBuilder()
             .partitionId(partitionId)
-            .states(ProcessInstanceState.ACTIVE.name())
+            .replaceStates(ProcessInstanceState.ACTIVE.name())
             .build(),
         authentication);
   }
@@ -118,7 +118,7 @@ public class ItemProviderFactory {
         metrics,
         filter.toBuilder()
             .partitionId(partitionId)
-            .states(ProcessInstanceState.ACTIVE.name())
+            .replaceStates(ProcessInstanceState.ACTIVE.name())
             .build(),
         authentication);
   }
