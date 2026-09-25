@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSignal;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.storageordinals.TimerStorageOrdinals;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -650,7 +651,7 @@ public final class CatchEventBehavior {
         .setProcessDefinitionKey(timer.getProcessDefinitionKey())
         .setTenantId(timer.getTenantId())
         .setRootProcessInstanceKey(timer.getRootProcessInstanceKey())
-        .setStorageOrdinal(timer.getStorageOrdinal())
+        .setStorageOrdinal(TimerStorageOrdinals.of(timer))
         .setBpmnProcessId(timer.getBpmnProcessId())
         .setElementType(timer.getElementType());
 

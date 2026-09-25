@@ -66,6 +66,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -417,9 +418,7 @@ public final class DeploymentCreateProcessor
             startEvent.getId(),
             processMetadata.getTenantId(),
             NO_ELEMENT_INSTANCE,
-            // start event timers belong to the definition, not to an instance: these should not
-            // be ordinal-controlled
-            -1,
+            StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED,
             processMetadata.getBpmnProcessId(),
             BpmnElementType.START_EVENT,
             timerOrError.get());

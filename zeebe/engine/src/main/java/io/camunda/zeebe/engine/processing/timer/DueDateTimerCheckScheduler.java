@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.timer;
 
 import io.camunda.zeebe.engine.processing.scheduled.DueDateCheckScheduler;
+import io.camunda.zeebe.engine.processing.storageordinals.TimerStorageOrdinals;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState.TimerVisitor;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
@@ -127,7 +128,7 @@ public class DueDateTimerCheckScheduler implements StreamProcessorLifecycleAware
           .setProcessDefinitionKey(timer.getProcessDefinitionKey())
           .setTenantId(timer.getTenantId())
           .setRootProcessInstanceKey(timer.getRootProcessInstanceKey())
-          .setStorageOrdinal(timer.getStorageOrdinal())
+          .setStorageOrdinal(TimerStorageOrdinals.of(timer))
           .setBpmnProcessId(timer.getBpmnProcessId())
           .setElementType(timer.getElementType());
 
