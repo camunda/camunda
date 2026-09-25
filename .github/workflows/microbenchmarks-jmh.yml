@@ -1,0 +1,110 @@
+# Runs JMH benchmarks changed in an opted-in pull request against its branch baseline and PR tip.
+# test location: microbenchmarks/src/main/java
+# type: CI Helper
+# owner: @camunda/reliability-testing
+---
+name: JMH PR benchmarks
+
+on:
+  pull_request:
+    types: [edited, opened, labeled, reopened, synchronize]
+
+concurrency:
+  group: jmh-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+permissions: {}
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+  TEST_OWNER: '@camunda/reliability-testing'
+
+jobs:
+  run-jmh:
+    name: Run JMH benchmarks
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      ((github.event.action == 'labeled' && github.event.label.name == 'jmh-run') ||
+       (github.event.action != 'labeled' && contains(github.event.pull_request.labels.*.name, 'jmh-run')))
+    runs-on: ubuntu-latest
+    # Two revisions (baseline, PR tip), each a full Maven build plus one or more JMH runs.
+    timeout-minutes: 360
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout pull request head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+
+      - name: Set up Java 21
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Maven cache
+        uses: ./.github/actions/setup-maven-cache
+
+      - name: Detect changed microbenchmark Java files
+        id: changed-microbenchmarks
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          list-files: json
+          filters: |
+            microbenchmark_java:
+              - 'microbenchmarks/**/*.java'
+
+      - name: Find already-reported benchmark commits
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/jmh-results"
+          gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" --jq '
+            .[]
+            | select(.user.login == "github-actions[bot]")
+            | .body
+            | split("\n")[0]
+            | select(test("^<!-- jmh-run:(baseline|head):[0-9a-f]{40}(:[0-9a-f]{64})? -->$"))
+          ' > "$RUNNER_TEMP/jmh-reported-markers"
+
+      - name: Copy benchmark runner before checking out historical commits
+        run: cp .github/scripts/run_pr_microbenchmarks.py "$RUNNER_TEMP/run_pr_microbenchmarks.py"
+
+      - name: Run baseline and PR tip benchmarks, posting a comment per revision
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          JMH_RESULTS_DIR: ${{ runner.temp }}/jmh-results
+          JMH_REPORTED_MARKERS: ${{ runner.temp }}/jmh-reported-markers
+          JMH_FAILURE_FILE: ${{ runner.temp }}/jmh-failure
+          CHANGED_JAVA_FILES_JSON: ${{ steps.changed-microbenchmarks.outputs.microbenchmark_java_files }}
+          PR_BODY: ${{ github.event.pull_request.body || '' }}
+        run: python3 "$RUNNER_TEMP/run_pr_microbenchmarks.py"
+
+      - name: Fail if any benchmark build or run failed
+        if: always()
+        run: test ! -f "$RUNNER_TEMP/jmh-failure"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
