@@ -9,7 +9,7 @@
 - Lena Schönburg
 - Deepthi Akkoorath
 
-**Purpose**: Define how a physical tenant's secondary-storage schema is initialized when one cluster hosts several tenants: what startup waits for, what "ready" asserts, and what happens to a tenant whose storage cannot be reached.
+**Purpose**: Define how a physical tenant's secondary-storage schema is initialized when one cluster hosts several tenants: what startup waits for, what "ready" asserts, what happens to a tenant whose storage cannot be reached, and how each tenant's state is reported.
 
 **Audience**: Engineers working on the distribution, the schema managers and the data layer; operators of multi-tenant clusters.
 
@@ -67,7 +67,11 @@ Unrepairable failures stop that tenant's loop and log at ERROR; everything else 
 
 **D6. One storage-agnostic per-tenant component owns retry, state and observability; each schema manager exposes a single-attempt operation.**
 
-Bounded transient retries stay inside an attempt, where they already live. The unbounded outer loop, the gate, per-tenant state and the transition logs live in the shared component, used by Elasticsearch/OpenSearch and RDBMS alike. Degradation is surfaced through its transition logs and the existing per-tenant readiness gauge, satisfying [001](001-physical-tenant-health-status-topology.md) D2 without a new state metric.
+Bounded transient retries stay inside an attempt, where they already live. The unbounded outer loop, the gate, per-tenant state and the transition logs live in the shared component, used by Elasticsearch/OpenSearch and RDBMS alike. Degradation is surfaced through its transition logs, the existing per-tenant readiness gauge and the health endpoint of D7 — none of them a node probe, satisfying [001](001-physical-tenant-health-status-topology.md) D2 without a new state metric.
+
+**D7. The catch-all health endpoint reports each tenant's schema-initialization state, outside every probe group, rolled up three ways like the cluster.**
+
+A tenant reads `UP` when serviceable; `DEGRADED` when it is not serviceable but nothing has failed for good — still initializing, retrying, or held back while its tenant is in recovery mode; and `DOWN` once it has stopped without becoming serviceable, which only a fix and a restart repair. The indicator reads `UP` when every tenant is up, `DOWN` when every tenant is down, and `DEGRADED` in between — the three-way roll-up of the gateway's cluster health indicator and of [001](001-physical-tenant-health-status-topology.md) D4. Each tenant's status, state, failed-attempt count and last failure are in its details, with states named after the broker's where one exists. Only `DOWN` answers 503, so a node that can still serve some tenant stays 2xx however badly another one failed, and a health check wired to this endpoint cannot restart it into the same failure. It is kept out of the startup, readiness and liveness groups, which stay governed by D2–D4.
 
 ## Alternatives considered
 
@@ -76,6 +80,7 @@ Bounded transient retries stay inside an attempt, where they already live. The u
 - **Come up not-ready when every tenant is terminal, rather than aborting.** Rejected, having first been decided: nothing about that state is transient, the failure is already in the container log, and the node would still export into the schema the classification refused.
 - **Abort on every node, gateway or not.** Rejected for Elasticsearch/OpenSearch, realized for RDBMS. On the search engine a gateway-less node never reaches the gate, so aborting there needs asynchronous self-termination after the context refreshed — a heavier mechanism for a node whose exporter retries per partition by design. On RDBMS the same outcome is free, because such a node's context refresh already blocks on schema initialization.
 - **Apply D1 to RDBMS whatever the tenant count.** Rejected: a restore job would hold at the gate and retry forever instead of exiting non-zero in seconds — and forcing it not to hold has it write exporter positions against a schema that may not exist yet.
+- **One health component per tenant, rolled up by the endpoint.** The shape of the per-tenant storage connectivity indicators. Rejected: the roll-up is the worst child, which forces a choice between one tenant that needs an operator turning the whole node 503 until they act, and a node that serves no tenant still answering 200.
 
 ## Consequences
 
@@ -89,6 +94,8 @@ Bounded transient retries stay inside an attempt, where they already live. The u
 - Mapping validation stays retryable until `IndexSchemaValidationException` is split, so a node whose only tenant cannot be migrated is held at startup rather than told why.
 - Single-tenant RDBMS never retries in the background, where single-tenant Elasticsearch/OpenSearch always does. Closing that asymmetry needs a one-shot-job contract — "block until all settled, then fail if any failed" — that neither shape offers today.
 - While the gate is held the management context has not started, so logs are the only startup diagnostic. That bites hardest on a gateway-less RDBMS node, where every tenant failing *retryably* now holds startup instead of dying, and an orchestrator reads the hold as a liveness failure rather than a not-ready pod.
+- One tenant needing an operator is visible on `/actuator/health` without failing it: alerting on it reads the component's status or details, not the HTTP code, which turns 503 only once no tenant is left that could be served.
+- `DEGRADED` is registered in the health status order on every node, not only on gateways, so a broker-only node rolls it up the same way.
 
 ## Deferred
 
@@ -103,4 +110,5 @@ Bounded transient retries stay inside an attempt, where they already live. The u
 - [#54299](https://github.com/camunda/camunda/issues/54299) — the same isolation for RDBMS, which realizes D6's second adapter and narrows D1 and D2 as above; [#57007](https://github.com/camunda/camunda/issues/57007) — parent epic.
 - [001 — Health, readiness, and status semantics for multi-physical-tenant clusters](001-physical-tenant-health-status-topology.md), implemented by this ADR.
 - [#60888](https://github.com/camunda/camunda/issues/60888) — schema-manager retry configuration for both storages, which D6 currently hardcodes.
+- [#63674](https://github.com/camunda/camunda/issues/63674) — per-physical-tenant schema-initialization visibility, which D7 answers.
 
