@@ -207,18 +207,28 @@ describe('<InstanceDiagram />', () => {
 	});
 
 	it('should show a spinner while loading the XML', async ({worker}) => {
+		let releaseXml!: () => void;
+		const pendingXml = new Promise<void>((resolve) => {
+			releaseXml = resolve;
+		});
 		worker.use(
 			http.get(endpoints.getProcessDefinitionXml({processDefinitionKey: '2251799813685279'}).url, async () => {
-				await delay(500);
+				await pendingXml;
 				return HttpResponse.text(PROCESS_XML);
 			}),
 			...handlers(),
 		);
 
-		const screen = await renderPage();
-
-		await expect.element(screen.getByTestId('diagram-spinner')).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
+		try {
+			const screen = await renderPage();
+			await expect.element(screen.getByTestId('diagram-spinner')).toBeVisible();
+			await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).not.toBeInTheDocument();
+			releaseXml();
+			await expect.element(screen.getByTestId('diagram-spinner')).not.toBeInTheDocument();
+			await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
+		} finally {
+			releaseXml();
+		}
 	});
 
 	it.for([
