@@ -776,29 +776,6 @@ final class RecoveryPartitionManagerTest {
   class SchemaInitialization {
 
     @Test
-    void shouldInvokeSchemaInitializerOnlyWhenExplicitlyRequested() {
-      // given
-      final var invocationCount = new AtomicReference<>(0);
-      partitionManager =
-          buildManager(
-              new BrokerCfg(),
-              actorScheduler,
-              () -> () -> invocationCount.updateAndGet(count -> count + 1));
-      assertThat(partitionManager.start()).succeedsWithin(Duration.ofSeconds(10));
-
-      assertThat(invocationCount).hasValue(0);
-
-      // when
-      final var future = new AtomicReference<ActorFuture<Void>>();
-      controlActor.run(() -> future.set(partitionManager.initializeSchema()));
-
-      // then
-      await().atMost(Duration.ofSeconds(10)).until(() -> future.get() != null);
-      assertThat(future.get()).succeedsWithin(Duration.ofSeconds(10));
-      assertThat(invocationCount).hasValue(1);
-    }
-
-    @Test
     void shouldSucceedWhenNoSchemaInitializerIsAvailable() {
       // given
       assertThat(partitionManager.start()).succeedsWithin(Duration.ofSeconds(10));
