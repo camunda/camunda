@@ -13,6 +13,8 @@ import {
 } from '../../../../utils/zeebeClient';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../../../../utils/http';
 import {
+  activateJobsByType,
+  completeJob,
   createInstanceOnceDeployed,
   expectNoIncidents,
   expectProcessState,
@@ -86,6 +88,51 @@ async function startCycleTimerInstance(prefix: string, amount = 10) {
   );
   instancesToCancel.push(instance.processInstanceKey);
   return {...fixture, processInstanceKey: instance.processInstanceKey};
+}
+
+/**
+ * Runs the work a boundary event spawned and waits for its branch to end.
+ *
+ * The model cannot reach a terminal state — one branch parks on an event-based
+ * gateway whose timer is years out — so completing the branch the resume
+ * revived is the strongest available evidence that the work is genuinely
+ * runnable, rather than a job record that merely appeared.
+ */
+async function completeBoundaryWork(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  jobType: string,
+  endElementId: string,
+) {
+  const jobs = await activateJobsByType(
+    request,
+    jobType,
+    processInstanceKey,
+    [],
+    10,
+  );
+  expect(jobs.length).toBeGreaterThan(0);
+  for (const job of jobs) {
+    await completeJob(request, job.jobKey);
+  }
+  // One end event per job: a non-interrupting boundary spawns its own token
+  // each time it fires, so the branch is only fully drained when every one of
+  // them has reached the end.
+  await expect(async () => {
+    const res = await request.post(buildUrl('/element-instances/search'), {
+      headers: jsonHeaders(),
+      data: {
+        filter: {
+          processInstanceKey,
+          elementId: endElementId,
+          state: 'COMPLETED',
+        },
+      },
+    });
+    await assertStatusCode(res, 200);
+    expect((await res.json()).items ?? []).toHaveLength(jobs.length);
+  }).toPass(extendedAssertionOptions);
+  await expectNoIncidents(request, processInstanceKey);
 }
 
 async function countJobs(
@@ -258,7 +305,12 @@ test.describe('Process Instance Suspend and Resume Timer API', () => {
       fixture.tickJobType,
       3,
     );
-    await expectNoIncidents(request, fixture.processInstanceKey);
+    await completeBoundaryWork(
+      request,
+      fixture.processInstanceKey,
+      fixture.tickJobType,
+      'Event_tick_end',
+    );
   });
 
   test('A conditional boundary raised during a suspension fires once on resume', async ({
@@ -307,6 +359,11 @@ test.describe('Process Instance Suspend and Resume Timer API', () => {
       fixture.thresholdJobType,
       1,
     );
-    await expectNoIncidents(request, fixture.processInstanceKey);
+    await completeBoundaryWork(
+      request,
+      fixture.processInstanceKey,
+      fixture.thresholdJobType,
+      'Event_threshold_end',
+    );
   });
 });

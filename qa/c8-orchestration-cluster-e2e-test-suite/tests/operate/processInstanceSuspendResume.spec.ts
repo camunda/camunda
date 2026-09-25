@@ -7,7 +7,12 @@
  */
 
 import {test} from 'fixtures';
-import {expect, type Locator, type Page} from '@playwright/test';
+import {
+  expect,
+  type APIRequestContext,
+  type Locator,
+  type Page,
+} from '@playwright/test';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
@@ -19,6 +24,7 @@ import {
   deployCallActivityPair,
   createInstanceOnceDeployed,
   deployServiceTaskProcess,
+  expectNoIncidents,
   expectProcessState,
   expectSuspendedDate,
   failJob,
@@ -52,6 +58,32 @@ async function startServiceTaskInstance(prefix: string) {
     jobType,
     processInstanceKey: instance.processInstanceKey,
   };
+}
+
+/**
+ * Resumes the instance and runs its service task to the end. A UI assertion
+ * about a suspended instance says nothing about whether the resume left it
+ * able to run, so every case that suspends one finishes this way.
+ *
+ * The resume response is not asserted: a case that already resumed through the
+ * UI answers 409 here. The completion below is the assertion — a job cannot be
+ * activated while the instance is still suspended.
+ */
+async function resumeAndComplete(
+  request: APIRequestContext,
+  jobType: string,
+  processInstanceKey: string,
+) {
+  await resumeProcessInstance(request, processInstanceKey);
+  const jobKey = await activateSingleJob(request, jobType, processInstanceKey);
+  await completeJob(request, jobKey);
+  await expectProcessState(
+    request,
+    processInstanceKey,
+    'COMPLETED',
+    extendedAssertionOptions,
+  );
+  await expectNoIncidents(request, processInstanceKey);
 }
 
 /**
@@ -160,6 +192,11 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       false,
       extendedAssertionOptions,
     );
+    await resumeAndComplete(
+      request,
+      subject.jobType,
+      subject.processInstanceKey,
+    );
   });
 
   test('A suspended instance offers Resume and Cancel but not Suspend', async ({
@@ -167,7 +204,7 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     page,
     operateProcessInstancePage,
   }) => {
-    const {processInstanceKey} =
+    const {jobType, processInstanceKey} =
       await startServiceTaskInstance('sr-ui-actions');
     await operateProcessInstancePage.gotoProcessInstancePage({
       id: processInstanceKey,
@@ -197,6 +234,7 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     // Checked per action: joining them and matching a substring would accept a
     // menu that still ends with "Suspend".
     expect(offers(/^(suspend|suspend-operation)$/i)).toBe(false);
+    await resumeAndComplete(request, jobType, processInstanceKey);
   });
 
   test('The Suspended filter returns the suspended instance', async ({
@@ -222,6 +260,11 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     await expect(
       page.getByText(suspended.processInstanceKey, {exact: false}).first(),
     ).toBeVisible({timeout: UI_REFRESH_TIMEOUT});
+    await resumeAndComplete(
+      request,
+      suspended.jobType,
+      suspended.processInstanceKey,
+    );
   });
 
   test('Retry Incident stays disabled while the instance is suspended', async ({
@@ -278,6 +321,25 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       operateProcessInstancePage.suspendedStateIcon,
     );
     await expect(retryButton).toBeDisabled({timeout: UI_REFRESH_TIMEOUT});
+
+    // The mirror of the assertion above: once resumed, the button works. The
+    // job needs its retries back first, or the retry only fails again.
+    await resumeProcessInstance(request, instance.processInstanceKey);
+    await assertStatusCode(
+      await request.patch(
+        buildUrl('/jobs/{jobKey}', {jobKey: String(jobKey)}),
+        {
+          headers: jsonHeaders(),
+          data: {changeset: {retries: 2}},
+        },
+      ),
+      204,
+    );
+    await page.reload();
+    await expect(retryButton).toBeEnabled({timeout: UI_REFRESH_TIMEOUT});
+    await retryButton.click();
+
+    await resumeAndComplete(request, jobType, instance.processInstanceKey);
   });
 
   test('An existing variable can be edited on a suspended instance, and the edit is applied after the resume', async ({
@@ -367,7 +429,8 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     request,
     operateProcessInstancePage,
   }) => {
-    const {processInstanceKey} = await startServiceTaskInstance('sr-ui-log');
+    const {jobType, processInstanceKey} =
+      await startServiceTaskInstance('sr-ui-log');
     await assertStatusCode(
       await suspendProcessInstance(request, processInstanceKey),
       204,
@@ -410,6 +473,7 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
         })
         .first(),
     ).toBeVisible({timeout: UI_REFRESH_TIMEOUT});
+    await resumeAndComplete(request, jobType, processInstanceKey);
   });
 
   test('Suspending and resuming from an instances-table row targets that row only', async ({
@@ -485,6 +549,11 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       'ACTIVE',
       extendedAssertionOptions,
     );
+    await resumeAndComplete(
+      request,
+      subject.jobType,
+      subject.processInstanceKey,
+    );
   });
 
   test('A call activity child instance offers Suspend in its own header', async ({
@@ -493,7 +562,8 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     operateProcessInstancePage,
   }) => {
     const prefix = uniquePrefixedId('sr-ui-child');
-    const {parentId, childId} = await deployCallActivityPair(prefix);
+    const {parentId, childId, childJobType} =
+      await deployCallActivityPair(prefix);
     const parent = await createInstanceOnceDeployed(parentId, 1);
     instancesToCancel.push(parent.processInstanceKey);
 
@@ -535,6 +605,16 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       request,
       childKey,
       'ACTIVE',
+      extendedAssertionOptions,
+    );
+
+    // The child's job is what both instances are waiting on, so running it
+    // shows the resumed child still carries its parent to the end.
+    await resumeAndComplete(request, childJobType, childKey);
+    await expectProcessState(
+      request,
+      parent.processInstanceKey,
+      'COMPLETED',
       extendedAssertionOptions,
     );
     void page;
