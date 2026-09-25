@@ -168,8 +168,16 @@ public class ModelUtil {
 
   public static void verifyNoDuplicatedBoundaryEvents(
       final Activity activity, final Consumer<String> errorCollector) {
+    verifyNoDuplicatedBoundaryEvents(activity.getBoundaryEvents().list(), errorCollector);
+  }
 
-    final List<EventDefinition> definitions = getEventDefinitionsForBoundaryEvents(activity);
+  public static void verifyNoDuplicatedBoundaryEvents(
+      final Collection<BoundaryEvent> boundaryEvents, final Consumer<String> errorCollector) {
+
+    final List<EventDefinition> definitions =
+        boundaryEvents.stream()
+            .flatMap(event -> event.getEventDefinitions().stream())
+            .collect(Collectors.toList());
 
     verifyNoDuplicatedEventDefinition(definitions, errorCollector);
     verifyNoDuplicatedEscalationHandler(definitions, errorCollector);

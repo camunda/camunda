@@ -16,7 +16,10 @@
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
 import io.camunda.zeebe.model.bpmn.instance.Activity;
+import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.camunda.zeebe.model.bpmn.util.ModelUtil;
+import io.camunda.zeebe.model.bpmn.validation.ZeebeValidationResultsCollector;
+import java.util.Collection;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
@@ -31,7 +34,12 @@ public class ActivityValidator implements ModelElementValidator<Activity> {
       final Activity element, final ValidationResultCollector validationResultCollector) {
     IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
 
+    final Collection<BoundaryEvent> boundaryEvents =
+        validationResultCollector instanceof ZeebeValidationResultsCollector
+            ? ((ZeebeValidationResultsCollector) validationResultCollector)
+                .boundaryEventsOf(element)
+            : element.getBoundaryEvents().list();
     ModelUtil.verifyNoDuplicatedBoundaryEvents(
-        element, error -> validationResultCollector.addError(0, error));
+        boundaryEvents, error -> validationResultCollector.addError(0, error));
   }
 }

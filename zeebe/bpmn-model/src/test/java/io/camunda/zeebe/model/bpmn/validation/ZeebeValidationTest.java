@@ -70,6 +70,28 @@ public class ZeebeValidationTest extends AbstractZeebeValidationTest {
                 "Multiple message event definitions with the same name 'message' are not allowed."))
       },
       {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task1", b -> b.zeebeJobType("type"))
+            .boundaryEvent("msg1")
+            .message(m -> m.name("message").zeebeCorrelationKeyExpression("id"))
+            .endEvent()
+            .moveToActivity("task1")
+            .serviceTask("task2", b -> b.zeebeJobType("type"))
+            .boundaryEvent("msg2")
+            .message(m -> m.name("message").zeebeCorrelationKeyExpression("id"))
+            .endEvent()
+            .moveToActivity("task2")
+            .boundaryEvent("msg3")
+            .message(m -> m.name("message").zeebeCorrelationKeyExpression("orderId"))
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                "task2",
+                "Multiple message event definitions with the same name 'message' are not allowed."))
+      },
+      {
         eventSubprocWithNoneStart(),
         singletonList(
             expect(

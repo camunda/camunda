@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import org.camunda.bpm.model.xml.impl.validation.ValidationResultsCollectorImpl;
 import org.camunda.bpm.model.xml.type.ModelElementType;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResults;
@@ -32,12 +31,12 @@ public class ValidationVisitor extends TypeHierarchyVisitor {
 
   private final Map<Class, List<ModelElementValidator>> validators;
 
-  private ValidationResultsCollectorImpl resultCollector;
+  private ZeebeValidationResultsCollector resultCollector;
 
   public ValidationVisitor(final Collection<ModelElementValidator<?>> validators) {
     this.validators =
         validators.stream().collect(groupingBy(ModelElementValidator::getElementType));
-    resultCollector = new ValidationResultsCollectorImpl();
+    resultCollector = new ZeebeValidationResultsCollector();
   }
 
   @Override
@@ -52,7 +51,7 @@ public class ValidationVisitor extends TypeHierarchyVisitor {
   }
 
   public void reset() {
-    resultCollector = new ValidationResultsCollectorImpl();
+    resultCollector = new ZeebeValidationResultsCollector();
   }
 
   public ValidationResults getValidationResult() {
