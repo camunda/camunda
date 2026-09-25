@@ -7,12 +7,8 @@
  */
 package io.camunda.zeebe.it.physicaltenant;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
-import io.camunda.client.api.response.PartitionBrokerRole;
-import io.camunda.client.api.response.PartitionInfo;
-import io.camunda.client.api.response.Topology;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
@@ -151,35 +147,10 @@ final class PhysicalTenantStandaloneGatewayTopologyIT {
           .pollInSameThread()
           .ignoreExceptions()
           .untilAsserted(
-              () -> {
-                final var topology = client.newTopologyRequest().send().join();
-                TopologyAssert.assertThat(topology)
-                    .isComplete(BROKERS_COUNT, partitionsCount, BROKERS_COUNT);
-                assertResolvedRoles(topology, partitionsCount);
-              });
+              () ->
+                  TopologyAssert.assertThat(client.newTopologyRequest().send().join())
+                      .isComplete(BROKERS_COUNT, partitionsCount, BROKERS_COUNT));
     }
-  }
-
-  private static void assertResolvedRoles(final Topology topology, final int partitionsCount) {
-    final var partitionsById =
-        topology.getBrokers().stream()
-            .flatMap(broker -> broker.getPartitions().stream())
-            .collect(Collectors.groupingBy(PartitionInfo::getPartitionId));
-
-    assertThat(partitionsById)
-        .describedAs("topology partitions with resolved roles")
-        .hasSize(partitionsCount);
-    partitionsById.forEach(
-        (partitionId, replicas) -> {
-          assertThat(replicas)
-              .describedAs("replicas of partition %d", partitionId)
-              .extracting(PartitionInfo::getRole)
-              .containsOnly(PartitionBrokerRole.LEADER, PartitionBrokerRole.FOLLOWER);
-          assertThat(replicas)
-              .describedAs("leaders of partition %d", partitionId)
-              .filteredOn(PartitionInfo::isLeader)
-              .hasSize(1);
-        });
   }
 
   private void awaitLeaderAmongSurvivors(
@@ -218,38 +189,10 @@ final class PhysicalTenantStandaloneGatewayTopologyIT {
           .pollInSameThread()
           .ignoreExceptions()
           .untilAsserted(
-              () -> {
-                final var topology = client.newTopologyRequest().send().join();
-                final var brokerInfo =
-                    topology.getBrokers().stream()
-                        .filter(broker -> broker.getNodeId() == restartedNodeId)
-                        .findFirst()
-                        .orElse(null);
-                assertThat(brokerInfo)
-                    .describedAs(
-                        "physical tenant '%s' topology entry for restarted broker %d",
-                        group, restartedNodeId)
-                    .isNotNull();
-                final var hostedPartitions =
-                    brokerInfo.getPartitions().stream()
-                        .map(PartitionInfo::getPartitionId)
-                        .collect(Collectors.toSet());
-                assertThat(hostedPartitions)
-                    .describedAs(
-                        "partitions hosted by restarted broker %d in physical tenant '%s'",
-                        restartedNodeId, group)
-                    .containsExactlyInAnyOrderElementsOf(expectedPartitions(partitionsCount));
-                final Set<PartitionBrokerRole> roles =
-                    brokerInfo.getPartitions().stream()
-                        .map(PartitionInfo::getRole)
-                        .collect(Collectors.toSet());
-                assertThat(roles)
-                    .describedAs(
-                        "roles reported by the topology for restarted broker %d in physical"
-                            + " tenant '%s'",
-                        restartedNodeId, group)
-                    .doesNotContain((PartitionBrokerRole) null, PartitionBrokerRole.INACTIVE);
-              });
+              () ->
+                  TopologyAssert.assertThat(client.newTopologyRequest().send().join())
+                      .hasBrokerWithActivePartitions(
+                          restartedNodeId, expectedPartitions(partitionsCount)));
     }
   }
 
