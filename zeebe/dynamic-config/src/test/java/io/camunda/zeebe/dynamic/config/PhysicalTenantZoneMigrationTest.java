@@ -32,10 +32,8 @@ import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor.No
 import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor.NoopRestoreChangeExecutor;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
@@ -146,10 +144,10 @@ final class PhysicalTenantZoneMigrationTest {
    * are left holding partitions, not how the two tenants differ.
    */
   private CurrentClusterConfiguration twoTenantBareCluster() {
-    final var legacy =
+    final var single =
         unzonedTopology(4, PARTITIONS_PER_TENANT, REPLICATION_FACTOR)
-            .setPartitionDistributorConfig(new ZoneAwareConfig(DUAL_REGION));
-    final var single = CurrentClusterConfiguration.fromLegacy(legacy);
+            .updateGlobalConfiguration(
+                global -> global.setPartitionDistributorConfig(new ZoneAwareConfig(DUAL_REGION)));
     return new CurrentClusterConfiguration(
         single.version(),
         single.globalConfiguration(),
@@ -161,7 +159,7 @@ final class PhysicalTenantZoneMigrationTest {
         single.phasedChangeState());
   }
 
-  private ClusterConfiguration unzonedTopology(
+  private CurrentClusterConfiguration unzonedTopology(
       final int clusterSize, final int partitionCount, final int replicationFactor) {
     final Set<MemberId> members =
         IntStream.range(0, clusterSize).mapToObj(MemberId::from).collect(Collectors.toSet());
@@ -176,14 +174,11 @@ final class PhysicalTenantZoneMigrationTest {
                             new PartitionId(CurrentClusterConfiguration.DEFAULT_GROUP, number))
                     .toList(),
                 replicationFactor);
-    var topology =
-        ConfigurationUtil.getClusterConfigFrom(distribution, partitionConfig, "clusterId");
-    for (final MemberId member : members) {
-      if (!topology.hasMember(member)) {
-        topology = topology.addMember(member, MemberState.initializeAsActive(Map.of()));
-      }
-    }
-    return topology;
+    return ConfigurationUtil.getCurrentClusterConfigurationFrom(
+        members,
+        distribution,
+        Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, partitionConfig),
+        "clusterId");
   }
 
   private void wire(final MemberId localMemberId, final CurrentClusterConfiguration seed) {

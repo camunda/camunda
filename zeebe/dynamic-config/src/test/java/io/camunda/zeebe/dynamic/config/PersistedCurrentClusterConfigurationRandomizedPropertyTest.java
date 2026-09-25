@@ -10,7 +10,7 @@ package io.camunda.zeebe.dynamic.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.util.ClusterTopologyDomain;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -19,29 +19,31 @@ import net.jqwik.api.Property;
 import net.jqwik.api.domains.Domain;
 import net.jqwik.api.domains.DomainContext;
 
-final class PersistedClusterConfigurationRandomizedPropertyTest {
+final class PersistedCurrentClusterConfigurationRandomizedPropertyTest {
 
   @Property(tries = 100)
   @Domain(ClusterTopologyDomain.class)
   @Domain(DomainContext.Global.class)
   void shouldUpdatePersistedFile(
-      @ForAll final ClusterConfiguration initialTopology,
-      @ForAll final ClusterConfiguration updatedTopology)
+      @ForAll final CurrentClusterConfiguration initialConfiguration,
+      @ForAll final CurrentClusterConfiguration updatedConfiguration)
       throws IOException {
     // given
     final var tmp = Files.createTempDirectory("topology");
-    final var topologyFile = tmp.resolve("topology.meta");
+    final var configurationFile = tmp.resolve("config.meta");
     final var serializer = new ProtoBufSerializer();
-    final var persistedClusterTopology =
-        PersistedClusterConfiguration.ofFile(topologyFile, serializer);
+    final var persisted =
+        PersistedCurrentClusterConfiguration.ofFile(configurationFile, serializer);
 
     // when
-    persistedClusterTopology.update(initialTopology);
-    persistedClusterTopology.update(updatedTopology);
+    persisted.update(initialConfiguration);
+    persisted.update(updatedConfiguration);
 
     // then
-    assertThat(updatedTopology).isEqualTo(persistedClusterTopology.getConfiguration());
-    assertThat(PersistedClusterConfiguration.ofFile(topologyFile, serializer).getConfiguration())
-        .isEqualTo(updatedTopology);
+    assertThat(persisted.getConfiguration()).isEqualTo(updatedConfiguration);
+    assertThat(
+            PersistedCurrentClusterConfiguration.ofFile(configurationFile, serializer)
+                .getConfiguration())
+        .isEqualTo(updatedConfiguration);
   }
 }

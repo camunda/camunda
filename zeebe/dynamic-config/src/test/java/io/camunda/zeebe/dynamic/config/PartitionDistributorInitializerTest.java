@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.cluster.PartitionId;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
@@ -37,83 +36,6 @@ final class PartitionDistributorInitializerTest {
   }
 
   @Test
-  void shouldSkipIfAlreadySet() {
-    // given
-    final var config =
-        ClusterConfiguration.init()
-            .setPartitionDistributorConfig(new PartitionDistributorConfig.RoundRobinConfig());
-    final var initializer =
-        PartitionDistributorInitializer.legacyPartitionDistributorInitializer(
-            staticConfigWith(new RoundRobinPartitionDistributor()));
-
-    // when
-    final var result = initializer.modify(config).join();
-
-    // then
-    assertThat(result).isEqualTo(config);
-  }
-
-  @Test
-  void shouldDeriveRoundRobinConfig() {
-    // given
-    final var config = ClusterConfiguration.init();
-    final var initializer =
-        PartitionDistributorInitializer.legacyPartitionDistributorInitializer(
-            staticConfigWith(new RoundRobinPartitionDistributor()));
-
-    // when
-    final var result = initializer.modify(config).join();
-
-    // then
-    assertThat(result.partitionDistributorConfig())
-        .hasValue(new PartitionDistributorConfig.RoundRobinConfig());
-  }
-
-  @Test
-  void shouldDeriveZoneAwareConfig() {
-    // given
-    final var zoneSpecs = List.of(new ZoneSpec("zone-a", 2, 1000), new ZoneSpec("zone-b", 1, 500));
-    final var config = ClusterConfiguration.init();
-    final var initializer =
-        PartitionDistributorInitializer.legacyPartitionDistributorInitializer(
-            staticConfigWith(new ZoneAwarePartitionDistributor(zoneSpecs)));
-
-    // when
-    final var result = initializer.modify(config).join();
-
-    // then
-    assertThat(result.partitionDistributorConfig())
-        .hasValueSatisfying(
-            distributorConfig -> {
-              assertThat(distributorConfig)
-                  .isInstanceOf(PartitionDistributorConfig.ZoneAwareConfig.class);
-              final var zoneAware = (PartitionDistributorConfig.ZoneAwareConfig) distributorConfig;
-              assertThat(zoneAware.zones())
-                  .containsExactlyInAnyOrder(
-                      new PartitionDistributorConfig.ZoneSpec("zone-a", 2, 1000),
-                      new PartitionDistributorConfig.ZoneSpec("zone-b", 1, 500));
-            });
-  }
-
-  @Test
-  void shouldUseFixedConfigForUnknownDistributor() {
-    // given
-    final PartitionDistributor unknownDistributor =
-        (members, partitionIds, replicationFactor) -> Set.of();
-    final var config = ClusterConfiguration.init();
-    final var initializer =
-        PartitionDistributorInitializer.legacyPartitionDistributorInitializer(
-            staticConfigWith(unknownDistributor));
-
-    // when
-    final var result = initializer.modify(config).join();
-
-    // then
-    assertThat(result.partitionDistributorConfig())
-        .hasValue(new PartitionDistributorConfig.FixedConfig());
-  }
-
-  @Test
   void shouldSkipIfAlreadySetOnGlobalConfiguration() {
     // given
     final var configuration =
@@ -134,7 +56,7 @@ final class PartitionDistributorInitializerTest {
   }
 
   @Test
-  void shouldDeriveConfigOnGlobalConfigurationWhenAbsent() {
+  void shouldDeriveRoundRobinConfigOnGlobalConfigurationWhenAbsent() {
     // given
     final var configuration = CurrentClusterConfiguration.init();
     final var initializer =
@@ -147,5 +69,49 @@ final class PartitionDistributorInitializerTest {
     // then
     assertThat(result.globalConfiguration().partitionDistributorConfig())
         .hasValue(new PartitionDistributorConfig.RoundRobinConfig());
+  }
+
+  @Test
+  void shouldDeriveZoneAwareConfigOnGlobalConfiguration() {
+    // given
+    final var zoneSpecs = List.of(new ZoneSpec("zone-a", 2, 1000), new ZoneSpec("zone-b", 1, 500));
+    final var configuration = CurrentClusterConfiguration.init();
+    final var initializer =
+        PartitionDistributorInitializer.currentClusterConfigurationPartitionDistributorInitializer(
+            staticConfigWith(new ZoneAwarePartitionDistributor(zoneSpecs)));
+
+    // when
+    final var result = initializer.modify(configuration).join();
+
+    // then
+    assertThat(result.globalConfiguration().partitionDistributorConfig())
+        .hasValueSatisfying(
+            distributorConfig -> {
+              assertThat(distributorConfig)
+                  .isInstanceOf(PartitionDistributorConfig.ZoneAwareConfig.class);
+              final var zoneAware = (PartitionDistributorConfig.ZoneAwareConfig) distributorConfig;
+              assertThat(zoneAware.zones())
+                  .containsExactlyInAnyOrder(
+                      new PartitionDistributorConfig.ZoneSpec("zone-a", 2, 1000),
+                      new PartitionDistributorConfig.ZoneSpec("zone-b", 1, 500));
+            });
+  }
+
+  @Test
+  void shouldUseFixedConfigForUnknownDistributorOnGlobalConfiguration() {
+    // given
+    final PartitionDistributor unknownDistributor =
+        (members, partitionIds, replicationFactor) -> Set.of();
+    final var configuration = CurrentClusterConfiguration.init();
+    final var initializer =
+        PartitionDistributorInitializer.currentClusterConfigurationPartitionDistributorInitializer(
+            staticConfigWith(unknownDistributor));
+
+    // when
+    final var result = initializer.modify(configuration).join();
+
+    // then
+    assertThat(result.globalConfiguration().partitionDistributorConfig())
+        .hasValue(new PartitionDistributorConfig.FixedConfig());
   }
 }

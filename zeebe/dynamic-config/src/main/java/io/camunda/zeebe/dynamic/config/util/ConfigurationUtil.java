@@ -12,11 +12,9 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
@@ -36,46 +34,15 @@ public final class ConfigurationUtil {
 
   private ConfigurationUtil() {}
 
-  public static ClusterConfiguration getClusterConfigFrom(
-      final Set<PartitionMetadata> partitionDistribution,
-      final DynamicPartitionConfig partitionConfig,
-      @Nullable final String clusterId) {
-    final var partitionStatesByMember = new HashMap<MemberId, Map<Integer, PartitionState>>();
-    for (final var partitionMetadata : partitionDistribution) {
-      final var partitionId = partitionMetadata.id().number();
-      for (final var member : partitionMetadata.members()) {
-        final var memberPriority = partitionMetadata.getPriority(member);
-        partitionStatesByMember
-            .computeIfAbsent(member, k -> new HashMap<>())
-            .put(partitionId, PartitionState.active(memberPriority, partitionConfig));
-      }
-    }
-    final var memberStates = new HashMap<MemberId, MemberState>();
-    for (final var e : partitionStatesByMember.entrySet()) {
-      memberStates.put(e.getKey(), MemberState.initializeAsActive(e.getValue()));
-    }
-
-    final var routingState =
-        Optional.of(RoutingState.initializeWithPartitionCount(partitionDistribution.size()));
-
-    return ClusterConfiguration.builder()
-        .version(ClusterConfiguration.INITIAL_VERSION)
-        .members(Map.copyOf(memberStates))
-        .routingState(routingState)
-        .clusterId(Optional.ofNullable(clusterId))
-        .incarnationNumber(ClusterConfiguration.INITIAL_INCARNATION_NUMBER)
-        .build();
-  }
-
   /**
-   * Generates the multi-partition-group counterpart of {@link #getClusterConfigFrom}, used by the
-   * new configuration model. Every member in {@code clusterMembers} appears in the returned {@link
-   * GlobalConfiguration} as {@code ACTIVE}, regardless of whether it replicates any partition — the
-   * global configuration is the single authority for cluster membership, independent of partition
-   * assignment. {@code partitionDistribution} is split into one {@link PartitionGroupConfiguration}
-   * per distinct {@link PartitionId#group()} found in it, each with its own {@link RoutingState}
-   * initialized from that group's own partition count; only members that replicate at least one
-   * partition of a group appear in that group.
+   * Generates the multi-partition-group cluster configuration used by the configuration model.
+   * Every member in {@code clusterMembers} appears in the returned {@link GlobalConfiguration} as
+   * {@code ACTIVE}, regardless of whether it replicates any partition — the global configuration is
+   * the single authority for cluster membership, independent of partition assignment. {@code
+   * partitionDistribution} is split into one {@link PartitionGroupConfiguration} per distinct
+   * {@link PartitionId#group()} found in it, each with its own {@link RoutingState} initialized
+   * from that group's own partition count; only members that replicate at least one partition of a
+   * group appear in that group.
    *
    * <p>{@code clusterId} may be {@code null}, in which case a random one is generated: the returned
    * configuration always carries a cluster id.
