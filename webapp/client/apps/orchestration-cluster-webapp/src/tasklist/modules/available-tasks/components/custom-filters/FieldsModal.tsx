@@ -82,10 +82,8 @@ function hasAdvancedFilters(values: NamedCustomFilters | undefined): boolean {
 	});
 }
 
-function omitAdvancedFilters<T extends object>(values: T): Partial<T> {
-	return Object.fromEntries(
-		Object.entries(values).filter(([key]) => !ADVANCED_FILTERS.includes(key as keyof NamedCustomFilters)),
-	) as Partial<T>;
+function omitAdvancedFilters(values: Partial<NamedCustomFilters>): Partial<NamedCustomFilters> {
+	return {...values, ...Object.fromEntries(ADVANCED_FILTERS.map((key) => [key, undefined]))};
 }
 
 const clearAdvancedFilters: Mutator<FormValues> = (_args, state, {changeValue}) => {
