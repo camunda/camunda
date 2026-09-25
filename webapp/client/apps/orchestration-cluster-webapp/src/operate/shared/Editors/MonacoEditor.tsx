@@ -9,6 +9,7 @@
 import Editor, {type Monaco} from '@monaco-editor/react';
 import type {editor} from 'monaco-editor';
 import {useEffect, useId, useRef, useState, type ReactNode} from 'react';
+import {flushSync} from 'react-dom';
 import {observer} from 'mobx-react-lite';
 import {useTranslation} from 'react-i18next';
 import {themeStore} from '#/shared/theme/theme';
@@ -108,7 +109,11 @@ const MonacoEditor = observer(
 					...options,
 					readOnly,
 				}}
-				onChange={(value) => onChange?.(value ?? '')}
+				onChange={(value) =>
+					editorRef.current?.getRawOptions().readOnly
+						? onChange?.(value ?? '')
+						: flushSync(() => onChange?.(value ?? ''))
+				}
 				onValidate={(markers) => onValidate?.(markers.length === 0)}
 				onMount={(editor: editor.IStandaloneCodeEditor, monaco) => {
 					editorRef.current = editor;
