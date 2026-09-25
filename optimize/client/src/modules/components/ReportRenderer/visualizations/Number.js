@@ -134,7 +134,7 @@ export function Number({report, formatter, mightFail, overlay}) {
 
           return (
             <React.Fragment key={idx}>
-              <div className="data">
+              <div className="data" data-testid="report-number">
                 {formatValue(
                   measure.data,
                   valueFormat ?? measure.property,
