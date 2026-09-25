@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
+import io.camunda.zeebe.engine.processing.storageordinals.TimerStorageOrdinals;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -100,7 +101,7 @@ public final class TimerTriggerProcessor
 
     // populate time record with the storage ordinal of the timer instance to ensure that the
     // correct ordinal is used for the rescheduled timer
-    timer.setStorageOrdinal(timerInstance.getStorageOrdinal());
+    timer.setStorageOrdinal(TimerStorageOrdinals.of(timerInstance));
 
     final var tenantId = timer.getTenantId();
     // this is an additional safeguard to avoid banning unrelated instances

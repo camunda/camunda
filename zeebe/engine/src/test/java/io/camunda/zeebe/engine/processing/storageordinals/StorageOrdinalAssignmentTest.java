@@ -36,6 +36,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
@@ -1123,6 +1124,54 @@ public final class StorageOrdinalAssignmentTest {
   }
 
   @Test
+  public void shouldRestoreConfiguredOrdinalFromStateWhenCancelCommandCarriesNone() {
+    // given: a timer whose ordinal is persisted in state
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("timer-cancel-restore-process")
+                .startEvent()
+                .intermediateCatchEvent("timer-catch", c -> c.timerWithDuration("PT1H"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("timer-cancel-restore-process").create();
+    final var timerCreated =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    final var created = timerCreated.getValue();
+
+    // when: a CANCEL command is written whose value carries no ordinal, as a command written before
+    // the ordinal existed would
+    final var cancel =
+        new TimerRecord()
+            .setElementInstanceKey(created.getElementInstanceKey())
+            .setProcessInstanceKey(created.getProcessInstanceKey())
+            .setProcessDefinitionKey(created.getProcessDefinitionKey())
+            .setTargetElementId(BufferUtil.wrapString(created.getTargetElementId()))
+            .setDueDate(created.getDueDate())
+            .setRepetitions(created.getRepetitions())
+            .setTenantId(created.getTenantId())
+            .setRootProcessInstanceKey(created.getRootProcessInstanceKey())
+            .setBpmnProcessId(created.getBpmnProcessId())
+            .setElementType(created.getElementType());
+    engine.writeRecords(
+        RecordToWrite.command().timer(TimerIntent.CANCEL, cancel).key(timerCreated.getKey()));
+
+    // then: CANCELED carries the ordinal restored from state, not the command's 0
+    assertThat(cancel.getStorageOrdinal()).isZero();
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.CANCELED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
   public void shouldMarkDeploymentScopedTimerStartEventAsNotOrdinalControlled() {
     // given: a definition with a timer start event, which belongs to the definition, not an
     // instance, so it is not ordinal-controlled
@@ -1146,7 +1195,74 @@ public final class StorageOrdinalAssignmentTest {
             .getFirst()
             .getValue();
     assertThat(startTimerCreated.getProcessInstanceKey()).isEqualTo(-1L);
-    assertThat(startTimerCreated.getStorageOrdinal()).isEqualTo(-1);
+    assertThat(startTimerCreated.getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+  }
+
+  @Test
+  public void shouldMarkLegacyStartEventTimerAsNotOrdinalControlledWhenTriggered() {
+    // given: a definition with a repeating timer start event
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("legacy-timer-start-process")
+                    .startEvent("timer-start")
+                    .timerWithCycle("R/PT1H")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long processDefinitionKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+    final var created =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst();
+
+    // and: a start timer row as the v1/v2 appliers left it, with the default ordinal 0 persisted
+    final var legacyTimerKey = created.getKey() + 100_000L;
+    final var legacyTimer =
+        new TimerRecord()
+            .setElementInstanceKey(created.getValue().getElementInstanceKey())
+            .setProcessInstanceKey(created.getValue().getProcessInstanceKey())
+            .setProcessDefinitionKey(processDefinitionKey)
+            .setTargetElementId(BufferUtil.wrapString("timer-start"))
+            .setDueDate(created.getValue().getDueDate() + 1)
+            .setRepetitions(created.getValue().getRepetitions())
+            .setTenantId(created.getValue().getTenantId())
+            .setRootProcessInstanceKey(created.getValue().getRootProcessInstanceKey())
+            .setBpmnProcessId(created.getValue().getBpmnProcessId())
+            .setElementType(BpmnElementType.START_EVENT)
+            .setStorageOrdinal(StorageOrdinalRelated.MAIN_INDEX);
+    // the engine only applies a written event to state on replay, so stop and restart it around
+    // the write, as the neighbouring concurrent-timer tests do
+    engine.stop();
+    engine.writeRecords(
+        RecordToWrite.event().timer(TimerIntent.CREATED, legacyTimer).key(legacyTimerKey));
+    // starting the engine re-exports the whole partition log, so clear the previously seen records
+    RecordingExporter.reset();
+    engine.start();
+
+    // when: the timer fires
+    engine.increaseTime(Duration.ofHours(2));
+
+    // then: TRIGGERED and the rescheduled CREATED derive -1 instead of the persisted 0
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .filter(r -> r.getKey() == legacyTimerKey)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.CREATED)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .filter(r -> r.getKey() != created.getKey() && r.getKey() != legacyTimerKey)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
   }
 
   @Test
