@@ -10606,7 +10606,7 @@ components:
           type: integer
           format: int32
           default: 100
-          minimum: 1
+          minimum: 0
     CursorForwardPagination:
       type: object
       title: Cursor-based forward pagination
@@ -10622,6 +10622,7 @@ components:
           type: integer
           format: int32
           default: 100
+          minimum: 0
     CursorBackwardPagination:
       type: object
       title: Cursor-based backward pagination
@@ -10637,6 +10638,7 @@ components:
           type: integer
           format: int32
           default: 100
+          minimum: 0
     SearchQueryResponse:
       type: object
       required:
