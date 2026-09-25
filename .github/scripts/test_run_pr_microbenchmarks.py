@@ -55,11 +55,6 @@ class ExampleBenchmark {
             (["io.example.MsgpackBenchmark.serialize"], []),
         )
 
-    def test_recognizes_perf_commit_subjects(self):
-        self.assertTrue(runner.is_perf_commit("perf: improve benchmark"))
-        self.assertTrue(runner.is_perf_commit("perf(engine): improve benchmark"))
-        self.assertFalse(runner.is_perf_commit("feat: improve benchmark"))
-
 
 if __name__ == "__main__":
     unittest.main()

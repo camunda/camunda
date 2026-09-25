@@ -1,4 +1,4 @@
-# Runs JMH benchmarks changed in an opted-in pull request against its branch baseline and perf commits.
+# Runs JMH benchmarks changed in an opted-in pull request against its branch baseline and PR tip.
 # test location: microbenchmarks/src/main/java
 # type: CI Helper
 # owner: @camunda/reliability-testing
@@ -27,7 +27,7 @@ jobs:
       ((github.event.action == 'labeled' && github.event.label.name == 'jmh-run') ||
        (github.event.action != 'labeled' && contains(github.event.pull_request.labels.*.name, 'jmh-run')))
     runs-on: ubuntu-latest
-    # Keep revisions on one standard runner; this opt-in run can scale with the number of perf commits.
+    # Two revisions (baseline, PR tip), each a full Maven build plus one or more JMH runs.
     timeout-minutes: 360
     permissions:
       contents: read
@@ -76,13 +76,13 @@ jobs:
             | select(.user.login == "github-actions[bot]")
             | .body
             | split("\n")[0]
-            | select(test("^<!-- jmh-run:(baseline|commit|head):[0-9a-f]{40}(:[0-9a-f]{64})? -->$"))
+            | select(test("^<!-- jmh-run:(baseline|head):[0-9a-f]{40}(:[0-9a-f]{64})? -->$"))
           ' > "$RUNNER_TEMP/jmh-reported-markers"
 
       - name: Copy benchmark runner before checking out historical commits
         run: cp .github/scripts/run_pr_microbenchmarks.py "$RUNNER_TEMP/run_pr_microbenchmarks.py"
 
-      - name: Run baseline and perf-commit benchmarks, posting a comment per revision
+      - name: Run baseline and PR tip benchmarks, posting a comment per revision
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}

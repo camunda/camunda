@@ -5,7 +5,7 @@
 # Licensed under the Camunda License 1.0. You may not use this file
 # except in compliance with the Camunda License 1.0.
 
-"""Compare changed and PR-requested JMH benchmarks across a PR's baseline and perf commits.
+"""Compare changed and PR-requested JMH benchmarks between a PR's baseline and its tip.
 
 The workflow supplies changed Java paths and posts each result file as a PR comment.
 """
@@ -21,7 +21,6 @@ from pathlib import Path
 JMH_ANNOTATION = re.compile(r"(?m)^\s*(?:@[\w$.]+\s*)*@(?:[\w$]+\.)*Benchmark\b")
 PACKAGE = re.compile(r"(?m)^\s*package\s+([\w$]+(?:\.[\w$]+)*)\s*;")
 BENCHMARK_NAME = re.compile(r"[A-Za-z0-9_$][A-Za-z0-9_.$]*")
-PERF_SUBJECT = re.compile(r"^perf(?:\([^)]*\))?!?:")
 PR_SELECTOR_LINE = re.compile(r"^\s*JMH:\s*(.*)$", re.IGNORECASE)
 PR_SELECTOR = re.compile(r"[A-Za-z0-9_$]+(?:\.[A-Za-z0-9_$]+)*")
 HTML_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
@@ -90,10 +89,6 @@ def parse_pr_selectors(body: str) -> list[str]:
                     )
                 selectors.add(selector)
     return sorted(selectors)
-
-
-def is_perf_commit(subject: str) -> bool:
-    return PERF_SUBJECT.match(subject) is not None
 
 
 def resolve_requested_selectors(
@@ -349,24 +344,10 @@ def main() -> int:
                     file.write("## JMH PR benchmarks\n\nNo benchmarks were selected.\n")
             return 0
 
-        commits = git(
-            "log",
-            "--no-merges",
-            "--reverse",
-            "--format=%H%x09%s",
-            f"{baseline}..{head_sha}",
-        )
-        # Compare the merge-base, then each non-merge perf commit in chronological order,
-        # then the PR tip itself (unless a perf commit already covers it) so a run always
-        # yields a before/after comparison even without a perf-tagged commit.
+        # Compare the merge-base baseline against the PR tip; no point benchmarking
+        # intermediate commits since only the final diff matters.
         revisions = [("baseline", baseline)]
-        perf_shas = set()
-        for line in commits.splitlines():
-            sha, _, subject = line.partition("\t")
-            if is_perf_commit(subject):
-                revisions.append(("commit", sha))
-                perf_shas.add(sha)
-        if head_sha != baseline and head_sha not in perf_shas:
+        if head_sha != baseline:
             revisions.append(("head", head_sha))
         # Hash both explicit and auto-detected selectors so a later push that changes
         # which benchmarks are in scope is not skipped as an already-reported baseline.
