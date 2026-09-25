@@ -131,13 +131,17 @@ def resolve_requested_selectors(
 
 
 def run_command(
-    args: list[str], workspace: Path, timeout: int | None = None
+    args: list[str],
+    workspace: Path,
+    timeout: int | None = None,
+    input_text: str | None = None,
 ) -> subprocess.CompletedProcess[str]:
     try:
         return subprocess.run(
             args,
             cwd=workspace,
             text=True,
+            input=input_text,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             timeout=timeout,
@@ -156,7 +160,7 @@ def post_pr_comment(workspace: Path, body: str) -> None:
     pr_number = os.environ["PR_NUMBER"]
     if len(body) > COMMENT_MAX_LENGTH:
         body = body[:COMMENT_MAX_LENGTH] + "\n\n[Output truncated to fit in a GitHub comment.]"
-    result = subprocess.run(
+    result = run_command(
         [
             "gh",
             "api",
@@ -166,12 +170,9 @@ def post_pr_comment(workspace: Path, body: str) -> None:
             "--input",
             "-",
         ],
-        cwd=workspace,
-        input=json.dumps({"body": body}),
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+        workspace,
         timeout=SHORT_TIMEOUT_SECONDS,
+        input_text=json.dumps({"body": body}),
     )
     if result.returncode:
         raise RuntimeError(f"Failed to post PR comment:\n{result.stdout}")
