@@ -255,13 +255,8 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               String.format("PI_%d/FN_callActivity1", processInstance.getKey()));
           store(listViewTemplate, client, processInstance);
 
-          final var flowNodeInstanceKey = ID_GENERATOR.getAndIncrement();
-
           final FlowNodeInstanceForListViewEntity listViewFlowNodeInstance =
-              new FlowNodeInstanceForListViewEntity()
-                  .setId(String.valueOf(flowNodeInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(flowNodeInstanceKey)
+              newFlowNodeInstanceForListViewEntity()
                   .setProcessInstanceKey(processInstance.getKey());
           listViewFlowNodeInstance.getJoinRelation().setParent(processInstance.getKey());
           store(listViewTemplate, client, processInstance, listViewFlowNodeInstance);
@@ -270,10 +265,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(FlowNodeInstanceTemplate.class);
 
           final FlowNodeInstanceEntity flowNodeInstance =
-              new FlowNodeInstanceEntity()
-                  .setId(String.valueOf(flowNodeInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(flowNodeInstanceKey)
+              newFlowNodeInstanceEntity(listViewFlowNodeInstance.getKey())
                   .setProcessInstanceKey(processInstance.getKey());
           store(flowNodeInstanceTemplate, client, flowNodeInstance);
 
@@ -358,13 +350,8 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
           final ProcessInstanceForListViewEntity processInstance = newProcessInstance();
           store(listViewTemplate, client, processInstance);
 
-          final var flowNodeInstanceKey = ID_GENERATOR.getAndIncrement();
-
           final FlowNodeInstanceForListViewEntity listViewFlowNodeInstance =
-              new FlowNodeInstanceForListViewEntity()
-                  .setId(String.valueOf(flowNodeInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(flowNodeInstanceKey)
+              newFlowNodeInstanceForListViewEntity()
                   .setProcessInstanceKey(processInstance.getKey());
           listViewFlowNodeInstance.getJoinRelation().setParent(processInstance.getKey());
           store(listViewTemplate, client, processInstance, listViewFlowNodeInstance);
@@ -373,10 +360,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(FlowNodeInstanceTemplate.class);
 
           final FlowNodeInstanceEntity flowNodeInstance =
-              new FlowNodeInstanceEntity()
-                  .setId(String.valueOf(flowNodeInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(flowNodeInstanceKey)
+              newFlowNodeInstanceEntity(listViewFlowNodeInstance.getKey())
                   .setProcessInstanceKey(processInstance.getKey());
           store(flowNodeInstanceTemplate, client, flowNodeInstance);
 
@@ -535,13 +519,8 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               .setIncident(true);
           store(listViewTemplate, client, processInstance);
 
-          final var flowNodeInstanceKey = ID_GENERATOR.getAndIncrement();
-
           final FlowNodeInstanceForListViewEntity listViewFlowNodeInstance =
-              new FlowNodeInstanceForListViewEntity()
-                  .setId(String.valueOf(flowNodeInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(flowNodeInstanceKey)
+              newFlowNodeInstanceForListViewEntity()
                   .setProcessInstanceKey(processInstance.getKey())
                   .setIncident(true);
           listViewFlowNodeInstance.getJoinRelation().setParent(processInstance.getKey());
@@ -551,10 +530,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(FlowNodeInstanceTemplate.class);
 
           final FlowNodeInstanceEntity flowNodeInstance =
-              new FlowNodeInstanceEntity()
-                  .setId(String.valueOf(flowNodeInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(flowNodeInstanceKey)
+              newFlowNodeInstanceEntity(listViewFlowNodeInstance.getKey())
                   .setProcessInstanceKey(processInstance.getKey())
                   .setIncident(true);
           store(flowNodeInstanceTemplate, client, flowNodeInstance);
@@ -643,13 +619,8 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               .setIncident(true);
           store(listViewTemplate, client, processInstance);
 
-          final var flowNodeInstanceKey = ID_GENERATOR.getAndIncrement();
-
           final FlowNodeInstanceForListViewEntity listViewFlowNodeInstance =
-              new FlowNodeInstanceForListViewEntity()
-                  .setId(String.valueOf(flowNodeInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(flowNodeInstanceKey)
+              newFlowNodeInstanceForListViewEntity()
                   .setProcessInstanceKey(processInstance.getKey())
                   .setIncident(true);
           listViewFlowNodeInstance.getJoinRelation().setParent(processInstance.getKey());
@@ -659,10 +630,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(FlowNodeInstanceTemplate.class);
 
           final FlowNodeInstanceEntity flowNodeInstance =
-              new FlowNodeInstanceEntity()
-                  .setId(String.valueOf(flowNodeInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(flowNodeInstanceKey)
+              newFlowNodeInstanceEntity(listViewFlowNodeInstance.getKey())
                   .setProcessInstanceKey(processInstance.getKey())
                   .setIncident(true);
           store(flowNodeInstanceTemplate, client, flowNodeInstance);
@@ -932,13 +900,8 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           client.refresh(listViewTemplate.getFullQualifiedName());
 
-          final var flowNodeInstanceKey = ID_GENERATOR.getAndIncrement();
-
           final FlowNodeInstanceForListViewEntity listViewFlowNodeInstance =
-              new FlowNodeInstanceForListViewEntity()
-                  .setId(String.valueOf(flowNodeInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(flowNodeInstanceKey)
+              newFlowNodeInstanceForListViewEntity()
                   .setProcessInstanceKey(processInstance.getKey());
           listViewFlowNodeInstance.getJoinRelation().setParent(processInstance.getKey());
           store(listViewTemplate, client, processInstance, listViewFlowNodeInstance);
@@ -947,10 +910,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(FlowNodeInstanceTemplate.class);
 
           final FlowNodeInstanceEntity flowNodeInstance =
-              new FlowNodeInstanceEntity()
-                  .setId(String.valueOf(flowNodeInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(flowNodeInstanceKey)
+              newFlowNodeInstanceEntity(listViewFlowNodeInstance.getKey())
                   .setProcessInstanceKey(processInstance.getKey());
           store(flowNodeInstanceTemplate, client, flowNodeInstance);
 
@@ -1102,13 +1062,8 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           client.refresh(listViewTemplate.getFullQualifiedName() + "*");
 
-          final var flowNodeInstanceKey = ID_GENERATOR.getAndIncrement();
-
           final FlowNodeInstanceForListViewEntity listViewFlowNodeInstance =
-              new FlowNodeInstanceForListViewEntity()
-                  .setId(String.valueOf(flowNodeInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(flowNodeInstanceKey)
+              newFlowNodeInstanceForListViewEntity()
                   .setProcessInstanceKey(processInstance.getKey());
           listViewFlowNodeInstance.getJoinRelation().setParent(processInstance.getKey());
           store(listViewTemplate, client, processInstance, listViewFlowNodeInstance);
@@ -1124,10 +1079,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(FlowNodeInstanceTemplate.class);
 
           final FlowNodeInstanceEntity flowNodeInstance =
-              new FlowNodeInstanceEntity()
-                  .setId(String.valueOf(flowNodeInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(flowNodeInstanceKey)
+              newFlowNodeInstanceEntity(listViewFlowNodeInstance.getKey())
                   .setProcessInstanceKey(processInstance.getKey());
           store(flowNodeInstanceTemplate, client, flowNodeInstance);
           storeDuplicates(
@@ -1221,13 +1173,8 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               String.format("PI_%d/FN_callActivity1", processInstance.getKey()));
           store(listViewTemplate, client, processInstance);
 
-          final var flowNodeInstanceKey = ID_GENERATOR.getAndIncrement();
-
           final FlowNodeInstanceForListViewEntity listViewFlowNodeInstance =
-              new FlowNodeInstanceForListViewEntity()
-                  .setId(String.valueOf(flowNodeInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(flowNodeInstanceKey)
+              newFlowNodeInstanceForListViewEntity()
                   .setProcessInstanceKey(processInstance.getKey());
           listViewFlowNodeInstance.getJoinRelation().setParent(processInstance.getKey());
           store(listViewTemplate, client, processInstance, listViewFlowNodeInstance);
@@ -1236,10 +1183,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               resources.getIndexTemplateDescriptor(FlowNodeInstanceTemplate.class);
 
           final FlowNodeInstanceEntity flowNodeInstance =
-              new FlowNodeInstanceEntity()
-                  .setId(String.valueOf(flowNodeInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(flowNodeInstanceKey)
+              newFlowNodeInstanceEntity(listViewFlowNodeInstance.getKey())
                   .setProcessInstanceKey(processInstance.getKey());
           store(flowNodeInstanceTemplate, client, flowNodeInstance);
 
@@ -1438,6 +1382,21 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
         .setKey(processInstanceKey)
         .setProcessDefinitionKey(9999L)
         .setBpmnProcessId("process-1");
+  }
+
+  private static FlowNodeInstanceForListViewEntity newFlowNodeInstanceForListViewEntity() {
+    final var flowNodeInstanceKey = ID_GENERATOR.getAndIncrement();
+    return new FlowNodeInstanceForListViewEntity()
+        .setId(String.valueOf(flowNodeInstanceKey))
+        .setPartitionId(PARTITION_ID)
+        .setKey(flowNodeInstanceKey);
+  }
+
+  private static FlowNodeInstanceEntity newFlowNodeInstanceEntity(final long flowNodeInstanceKey) {
+    return new FlowNodeInstanceEntity()
+        .setId(String.valueOf(flowNodeInstanceKey))
+        .setPartitionId(PARTITION_ID)
+        .setKey(flowNodeInstanceKey);
   }
 
   private IncidentUpdateRepository createIncidentUpdateRepository(
