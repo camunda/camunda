@@ -19,6 +19,8 @@ import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Map;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.health.contributor.HealthContributor;
@@ -27,6 +29,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 
+@NullMarked
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnSecondaryStorageType({
   SecondaryStorageType.elasticsearch,
@@ -61,7 +64,7 @@ public class SearchEngineDatabaseConfiguration {
       final Environment environment,
       final BrokerTopologyManager brokerTopologyManager,
       // if present, then it will ensure that the broker is started first
-      @Autowired(required = false) final Broker broker) {
+      @Autowired(required = false) final @Nullable Broker broker) {
     return new SearchEngineSchemaInitializer(
         searchEngineConfigurationsByTenant,
         physicalTenantScopedIndexDescriptors,
