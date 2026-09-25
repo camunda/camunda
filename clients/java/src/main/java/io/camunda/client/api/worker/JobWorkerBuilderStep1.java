@@ -273,8 +273,15 @@ public interface JobWorkerBuilderStep1 {
      * longer producing jobs (for example, because an intermediary proxy keeps the socket warm while
      * the broker-side handler has stopped pushing).
      *
-     * <p>Must be strictly less than {@link #streamTimeout(Duration)} when both are configured. Pass
-     * {@code null} to disable the inactivity watchdog.
+     * <p>If the worker connects through an HTTP/2 proxy or load balancer that closes idle streams
+     * (for example, Cloudflare and nginx close them after 60 seconds by default), set this below
+     * the proxy's idle timeout, so that the worker recycles an idle stream before the proxy closes
+     * it. Tuning the client's gRPC keepalive does not reliably prevent this: keepalive PINGs are
+     * sent per connection, are answered by the first proxy, and are deferred by any other traffic
+     * on the same connection, such as job polling.
+     *
+     * <p>Defaults to 10 minutes. Must be strictly less than {@link #streamTimeout(Duration)} when
+     * both are configured. Pass {@code null} to disable the inactivity watchdog.
      *
      * @param timeout duration of inactivity after which the stream is cancelled and recreated, or
      *     {@code null} to disable
