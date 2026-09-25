@@ -255,7 +255,9 @@ describe('<Processes />', () => {
 			);
 
 			const screen = await renderPage();
-			await userEvent.click(screen.getByRole('checkbox', {name: 'Suspended'}), {force: true});
+			const suspendedCheckbox = screen.getByRole('checkbox', {name: 'Suspended'});
+			await expect.element(suspendedCheckbox).toBeChecked();
+			await userEvent.click(screen.getByTestId('expanded-panel').getByText('Suspended'));
 
 			const getSearch = () => screen.router.state.location.search as Record<string, unknown>;
 			await expect.poll(getSearch).toMatchObject({suspended: false});
