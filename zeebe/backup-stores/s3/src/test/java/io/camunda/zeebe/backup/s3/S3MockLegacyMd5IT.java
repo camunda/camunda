@@ -103,7 +103,6 @@ public class S3MockLegacyMd5IT implements S3BackupStoreTests {
             S3TestBackupProvider.simpleBackupWithId(
                 new BackupIdentifierImpl(1, 2, 3), VersionUtil.getVersion());
         interceptingStore.save(backup).join();
-        interceptingStore.markDeleted(backup.id()).join();
 
         // when
         interceptingStore.delete(backup.id()).join();
