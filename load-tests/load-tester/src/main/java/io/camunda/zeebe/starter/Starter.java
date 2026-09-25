@@ -21,6 +21,7 @@ import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.metrics.ProcessInstanceStartMeter;
+import io.camunda.zeebe.metrics.RequestOutcomeRecorder;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
 import io.camunda.zeebe.metrics.StarterMetricsDoc;
 import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
@@ -84,6 +85,7 @@ public class Starter implements CommandLineRunner {
   private final ConnectionMonitor connectionMonitor;
   private final WebClient.Builder webClientBuilder;
   private final ObjectMapper objectMapper;
+  private final RequestOutcomeRecorder requestOutcomeRecorder;
   private final AtomicLong businessKey = new AtomicLong(0);
   private final AtomicLong lastProcessInstanceKey = new AtomicLong(0);
   private final AtomicInteger runFinished = new AtomicInteger(0);
@@ -113,6 +115,7 @@ public class Starter implements CommandLineRunner {
     this.connectionMonitor = connectionMonitor;
     this.webClientBuilder = webClientBuilder;
     this.objectMapper = objectMapper;
+    requestOutcomeRecorder = new RequestOutcomeRecorder(registry);
 
     // Expose the client information early: these are only static values which are not supposed to
     // be affected by the current state of the client (whether it successfully connects to the
@@ -283,17 +286,22 @@ public class Starter implements CommandLineRunner {
 
             final var startTime = System.nanoTime();
             final CompletionStage<?> requestFuture;
+            final String command;
             if (starterCfg.isStartViaMessage()) {
               requestFuture = startInstanceByMessagePublishing(vars);
+              command = "publish_message";
             } else if (starterCfg.isWithResults()) {
               requestFuture = startInstanceWithAwaitingResult(starterCfg.getProcessId(), vars);
+              command = "create_instance_with_result";
             } else {
               requestFuture = startInstance(startTime, starterCfg.getProcessId(), vars);
+              command = "create_instance";
             }
             requestFuture.whenComplete(
                 (noop, error) -> {
                   final long durationNanos = System.nanoTime() - startTime;
                   responseLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
+                  requestOutcomeRecorder.record(command, error);
                   if (error instanceof final StatusRuntimeException statusRuntimeException) {
                     if (statusRuntimeException.getStatus().getCode() != Code.RESOURCE_EXHAUSTED) {
                       THROTTLED_LOGGER.warn(
