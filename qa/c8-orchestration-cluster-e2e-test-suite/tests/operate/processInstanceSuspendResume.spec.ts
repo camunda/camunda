@@ -11,6 +11,7 @@ import {expect, type Locator, type Page} from '@playwright/test';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
+import type {OperateFiltersPanelPage} from '@pages/OperateFiltersPanelPage';
 import {
   activateJobsByType,
   activateSingleJob,
@@ -51,6 +52,22 @@ async function startServiceTaskInstance(prefix: string) {
     jobType,
     processInstanceKey: instance.processInstanceKey,
   };
+}
+
+/**
+ * Turns the Suspended filter on unless the URL already carries it. The list
+ * drops an instance once it is no longer ACTIVE, so the row comes back only
+ * with that filter on, and the filter lives in the URL. Clicking blindly would
+ * be worse than not clicking at all: a click on an already-checked box turns
+ * the filter back off.
+ */
+async function applySuspendedFilter(
+  page: Page,
+  operateFiltersPanelPage: OperateFiltersPanelPage,
+) {
+  if (new URL(page.url()).searchParams.get('suspended') !== 'true') {
+    await operateFiltersPanelPage.clickSuspendedInstancesCheckbox();
+  }
 }
 
 /**
@@ -448,10 +465,10 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       extendedAssertionOptions,
     );
 
-    await operateFiltersPanelPage.clickSuspendedInstancesCheckbox();
     const resumeRowAction = subjectRow.getByTestId('resume-operation');
     await waitForAssertion({
       assertion: async () => {
+        await applySuspendedFilter(page, operateFiltersPanelPage);
         await expect(resumeRowAction).toBeVisible({
           timeout: UI_REFRESH_TIMEOUT,
         });
