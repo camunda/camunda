@@ -216,7 +216,25 @@ public final class IncidentQueryTransformerTest extends AbstractTransformerTest 
               final var mustNotQuery = t.mustNot().getFirst();
               assertThat(mustNotQuery.queryOption())
                   .isInstanceOfSatisfying(
-                      SearchBoolQuery.class, should -> assertThat(should.should()).hasSize(2));
+                      SearchBoolQuery.class,
+                      should -> {
+                        assertThat(should.should()).hasSize(2);
+                        assertThat(should.should().get(0).queryOption())
+                            .isInstanceOfSatisfying(
+                                SearchMatchPhraseQuery.class,
+                                matchPhraseQuery -> {
+                                  assertThat(matchPhraseQuery.field()).isEqualTo("errorMessage");
+                                  assertThat(matchPhraseQuery.query())
+                                      .isEqualTo("Failed to send activated jobs to client");
+                                });
+                        assertThat(should.should().get(1).queryOption())
+                            .isInstanceOfSatisfying(
+                                SearchMatchPhraseQuery.class,
+                                matchPhraseQuery -> {
+                                  assertThat(matchPhraseQuery.field()).isEqualTo("errorMessage");
+                                  assertThat(matchPhraseQuery.query()).isEqualTo("no retries left");
+                                });
+                      });
             });
   }
 
