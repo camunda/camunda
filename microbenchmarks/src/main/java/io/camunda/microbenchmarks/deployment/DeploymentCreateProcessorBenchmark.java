@@ -9,6 +9,7 @@ package io.camunda.microbenchmarks.deployment;
 
 import static io.camunda.microbenchmarks.deployment.LargeProcess.RESOURCE_NAME;
 import static io.camunda.microbenchmarks.deployment.LargeProcess.VERSION_PLACEHOLDER;
+import static io.camunda.microbenchmarks.deployment.LargeProcess.createLargeProcess;
 
 import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
@@ -38,8 +39,6 @@ import io.camunda.zeebe.engine.state.message.TransientPendingMessageStartProcess
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -262,30 +261,6 @@ public class DeploymentCreateProcessorBenchmark {
             null, null, EngineSecurityConfigurations.unauthenticatedAndUnauthorized()),
         expressionLanguageMetrics,
         new ProcessDefinitionMetrics(meterRegistry, processingState.getProcessState()));
-  }
-
-  /**
-   * Creates a sequential process of service tasks, each with FEEL input/output mappings and a job
-   * type expression, since expressions are parsed and validated on deployment too. The process name
-   * contains a placeholder to make each deployed version unique.
-   */
-  public static BpmnModelInstance createLargeProcess(final int serviceTaskCount) {
-    AbstractFlowNodeBuilder<?, ?> builder =
-        Bpmn.createExecutableProcess("large-process")
-            .name("large-process-" + VERSION_PLACEHOLDER)
-            .startEvent();
-    for (int i = 0; i < serviceTaskCount; i++) {
-      final var index = i;
-      builder =
-          builder.serviceTask(
-              "task-" + i,
-              t ->
-                  t.zeebeJobTypeExpression("\"task-\" + string(" + index + ")")
-                      .zeebeInputExpression("order.items[" + (index + 1) + "]", "item")
-                      .zeebeInputExpression("if item.price > 100 then true else false", "premium")
-                      .zeebeOutputExpression("result.status", "status" + index));
-    }
-    return builder.endEvent().done();
   }
 
   /**

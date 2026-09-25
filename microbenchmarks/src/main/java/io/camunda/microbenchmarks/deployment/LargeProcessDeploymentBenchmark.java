@@ -7,7 +7,7 @@
  */
 package io.camunda.microbenchmarks.deployment;
 
-import static io.camunda.microbenchmarks.deployment.DeploymentCreateProcessorBenchmark.createLargeProcess;
+import static io.camunda.microbenchmarks.deployment.LargeProcess.createLargeProcess;
 
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
