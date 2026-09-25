@@ -127,6 +127,7 @@ read any code.
 ```
 Range <baseline-sha-or-tag>..<target>: <N> first-parent commits.
 Mapped <N> commits from their own subject; <M> need the commit-to-PR query.
+Prefetched <N> of <M> backport originals in <K> requests.
 Pre-classified <N> distinct references in <M> requests.
 Read labels and the close event of <N> of <M> referenced issue(s).
 Generated release notes for <version>: <N> attributed PR(s).
@@ -136,7 +137,8 @@ Generated release notes for <version>: <N> attributed PR(s).
 |---------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `Range ...`                                 | The baseline was resolved and git walked it. A wrong range is visible **here** — check it before reading anything else.                                                                                                                                                                                                     |
 | `Mapped ... from their own subject`         | How many commits carried their pull request number in the merge subject (the fast path) versus how many needed the expensive `associatedPullRequests` query. On a healthy squash-merge repo the second number is small: 32 of 3,694 on 8.9.0.                                                                               |
-| `Pre-classified ...`                        | Every same-repo reference in every pull request body, classified in one batched pass.                                                                                                                                                                                                                                       |
+| `Prefetched ... backport originals`         | Every backport marker's original pull request, fetched in one batched pass so the backport hop costs no request of its own. `N < M` means some markers name a number that is not a pull request.                                                                                                                            |
+| `Pre-classified ...`                        | Every same-repo reference — bare `#N` or a full `github.com/<owner>/<repo>/...` URL — in every pull request body and every backport original, plus every `closingIssuesReferences` issue, classified in one batched pass.                                                                                                   |
 | `Read labels and the close event of N of M` | `M` is every issue attribution produced; `N` how many resolved. `M - N` are references to deleted or transferred issues, which is normal. Every attributed issue is asked about, including ones a backport hop already settled — the delivery rule does not need those, but the `kind/*` visibility rule needs all of them. |
 | `Generated release notes ...`               | Success. Files are on disk.                                                                                                                                                                                                                                                                                                 |
 

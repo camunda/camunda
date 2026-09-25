@@ -1,19 +1,18 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import * as core from './gha';
 import { processPr } from './pipeline';
-import type { PipelineResolver } from './pipeline';
+import type { OriginalPull, PipelineResolver } from './pipeline';
 import { resolveBaselineStrategy, resolveCommitsToPrs } from './range';
 import { resolveBaselineRef, walkFirstParent } from './range/walk';
 import type { RenderPrInput } from './render';
 import { render, emptyCustomerBodyWarning } from './render';
-import { extractSection, parseRefs } from './parser';
 import { hiddenFromCustomerBody } from './categorize';
 import { closesIssueNumbers } from './delivery';
 import type { DeliveryInput } from './delivery';
 import { GithubGraphqlResolver } from './resolve';
 import type { AssociatedPr, ClassifiedRef, PrMetadata } from './resolve';
-import { buildPipelineResolver } from './resolve/warm';
-import { GithubResolver, prioritizeAndCap } from './resolver';
+import { backportTargets, buildPipelineResolver, prewarmNumbers } from './resolve/warm';
+import { GithubResolver } from './resolver';
 
 /**
  * The `generate` entrypoint (release time). Wires the steps in order: range
@@ -67,8 +66,10 @@ async function run(): Promise<void> {
   const input = readInputs();
   const graphql = new GithubGraphqlResolver(input.token, input.owner, input.repo);
   const restResolver = new GithubResolver(input.token, input.owner, input.repo);
+  const ownRepo = `${input.owner}/${input.repo}`;
   const warmRefs = new Map<number, ClassifiedRef>();
-  const pipelineResolver = buildPipelineResolver(restResolver, warmRefs);
+  const originals = new Map<number, OriginalPull | null>();
+  const pipelineResolver = buildPipelineResolver(restResolver, warmRefs, ownRepo, originals);
 
   const strategy = resolveBaselineStrategy(input.targetVersion);
   const baseline = resolveBaselineRef(process.cwd(), strategy, input.targetVersion);
@@ -129,17 +130,20 @@ async function run(): Promise<void> {
   }
   const metadata = prNumbers.map((number) => metaByNumber.get(number)).filter((meta): meta is PrMetadata => meta !== undefined); // walk order, kept stable
 
-  // Pre-warm the union of section refs + full-body refs the pipeline might ask
-  // about, each capped by the same policy the resolver applies per call.
-  const wanted = new Set<number>();
-  for (const pr of metadata) {
-    const section = extractSection(pr.body);
-    for (const refs of [section ? parseRefs(section) : [], parseRefs(pr.body)]) {
-      for (const ref of prioritizeAndCap(refs)) {
-        if (ref.repo === null) wanted.add(ref.number);
-      }
-    }
+  // One bulk query for every backport's original, instead of one REST call per
+  // backport when the pipeline's hop follows the marker.
+  const targets = backportTargets(metadata.map((pr) => pr.body), ownRepo);
+  const originalByNumber = new Map((await graphql.fetchPrMetadata(targets, true)).map((meta) => [meta.number, meta]));
+  for (const number of targets) {
+    const meta = originalByNumber.get(number);
+    originals.set(number, meta ? { body: meta.body, title: meta.title, authorLogin: meta.authorLogin, mergedAt: meta.mergedAt ?? undefined } : null);
   }
+  core.info(`Prefetched ${originalByNumber.size} of ${targets.length} backport originals in ${Math.ceil(targets.length / 100)} requests.`);
+
+  // Pre-warm every ref the pipeline might resolve — the release's own bodies and
+  // the originals the hop reads — plus the closing issues whose titles it shows.
+  const wanted = prewarmNumbers([...metadata.map((pr) => pr.body), ...[...originalByNumber.values()].map((meta) => meta.body)], ownRepo);
+  for (const pr of metadata) for (const number of pr.closingIssuesReferences) wanted.add(number);
   for (const [number, classified] of await graphql.classifyRefs([...wanted])) {
     warmRefs.set(number, classified);
   }
