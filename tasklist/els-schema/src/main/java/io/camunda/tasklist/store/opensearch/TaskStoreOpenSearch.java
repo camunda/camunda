@@ -453,10 +453,13 @@ public class TaskStoreOpenSearch implements TaskStore {
 
   private List<String> getTasksContainsVarNameAndValue(
       final TaskByVariables[] taskVariablesFilter) {
-    final List<String> varNames =
-        Arrays.stream(taskVariablesFilter).map(TaskByVariables::getName).collect(toList());
-    final List<String> varValues =
-        Arrays.stream(taskVariablesFilter).map(TaskByVariables::getValue).collect(toList());
+    // Deduplicate the filter once (keeping the first value per name) and reuse the same
+    // varNames/varValues for every query path below, so active-task matching, completed-task
+    // matching and retrieveTaskIdByProcessInstanceId all agree on which filter actually applies.
+    // See https://github.com/camunda/camunda/issues/63182.
+    final var variablesMap = toVariablesMap(taskVariablesFilter);
+    final List<String> varNames = new ArrayList<>(variablesMap.keySet());
+    final List<String> varValues = varNames.stream().map(variablesMap::get).collect(toList());
 
     final List<String> processIdsCreatedFiltered =
         variableStoreOpensearch.getProcessInstanceKeysWithMatchingVars(varNames, varValues).stream()
@@ -464,7 +467,7 @@ public class TaskStoreOpenSearch implements TaskStore {
             .toList();
 
     final List<String> tasksIdsCreatedFiltered =
-        retrieveTaskIdByProcessInstanceId(processIdsCreatedFiltered, taskVariablesFilter);
+        retrieveTaskIdByProcessInstanceId(processIdsCreatedFiltered, variablesMap);
 
     final List<String> taskIdsCompletedFiltered =
         getTasksIdsCompletedWithMatchingVars(varNames, varValues);
@@ -1008,8 +1011,7 @@ public class TaskStoreOpenSearch implements TaskStore {
   }
 
   private List<String> retrieveTaskIdByProcessInstanceId(
-      final List<String> processIds, final TaskByVariables[] taskVariablesFilter) {
-    final var variablesMap = toVariablesMap(taskVariablesFilter);
+      final List<String> processIds, final Map<String, String> variablesMap) {
     final var tasks = getActiveTasksByProcessInstanceIds(processIds);
     final var request =
         tasks.stream()
