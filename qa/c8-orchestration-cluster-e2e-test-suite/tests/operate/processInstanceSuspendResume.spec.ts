@@ -55,6 +55,29 @@ async function startServiceTaskInstance(prefix: string) {
 }
 
 /**
+ * Opens the Process Instance Key(s) filter, retrying the whole dropdown
+ * interaction. The menu item is mounted when the trigger opens the menu, so a
+ * click that lands before the menu is interactive leaves nothing to click and
+ * no later wait can recover it; reloading gives the next attempt a fresh menu.
+ * Re-opening is safe because the call returns early once the filter is shown.
+ */
+async function openProcessInstanceKeyFilter(
+  page: Page,
+  operateFiltersPanelPage: OperateFiltersPanelPage,
+) {
+  await waitForAssertion({
+    assertion: async () => {
+      await operateFiltersPanelPage.displayOptionalFilter(
+        'Process Instance Key(s)',
+      );
+    },
+    onFailure: async () => {
+      await page.reload();
+    },
+  });
+}
+
+/**
  * Turns the Suspended filter on unless the URL already carries it. The list
  * drops an instance once it is no longer ACTIVE, so the row comes back only
  * with that filter on, and the filter lives in the URL. Clicking blindly would
@@ -212,9 +235,7 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     await expect(operateHomePage.operateBanner).toBeVisible();
     await operateHomePage.clickProcessesTab();
     await operateFiltersPanelPage.clickSuspendedInstancesCheckbox();
-    await operateFiltersPanelPage.displayOptionalFilter(
-      'Process Instance Key(s)',
-    );
+    await openProcessInstanceKeyFilter(page, operateFiltersPanelPage);
     await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
       suspended.processInstanceKey,
     );
@@ -424,9 +445,7 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     await navigateToAppHome(page, 'operate');
     await expect(operateHomePage.operateBanner).toBeVisible();
     await operateHomePage.clickProcessesTab();
-    await operateFiltersPanelPage.displayOptionalFilter(
-      'Process Instance Key(s)',
-    );
+    await openProcessInstanceKeyFilter(page, operateFiltersPanelPage);
     await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
       subject.processInstanceKey,
     );
