@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useCallback, useMemo} from 'react';
+import {useCallback} from 'react';
 import {useSuspenseInfiniteQuery, useSuspenseQuery} from '@tanstack/react-query';
 import {
 	createFileRoute,
@@ -62,10 +62,7 @@ export const Route = createFileRoute('/_shadcn/_auth/tasklist/_tasks')({
 		const search = Route.useSearch();
 		const isPending = useRouterState({select: ({status}) => status === 'pending'});
 		const {data: currentUser} = useSuspenseQuery(queries.getCurrentUser());
-		const requestBody = useMemo(
-			() => getTasksRequestBody(search, {currentUsername: currentUser.username}),
-			[search, currentUser.username],
-		);
+		const requestBody = getTasksRequestBody(search, {currentUsername: currentUser.username});
 		const {
 			data,
 			fetchNextPage,
