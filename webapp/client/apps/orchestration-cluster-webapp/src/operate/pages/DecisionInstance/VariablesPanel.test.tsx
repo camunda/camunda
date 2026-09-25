@@ -9,7 +9,8 @@
 import {describe, expect, vi} from 'vitest';
 import {useParams} from '@tanstack/react-router';
 import {userEvent} from 'vitest/browser';
-import {HttpResponse} from 'msw';
+import {HttpResponse, http} from 'msw';
+import {endpoints} from '@camunda/camunda-api-zod-schemas/8.10';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {mockGetDecisionInstanceEndpoint} from '#/shared-test-modules/mock-handlers';
@@ -225,18 +226,31 @@ describe('<VariablesPanel />', () => {
 	});
 
 	it('should show both input and output skeletons during loading', async ({worker}) => {
+		let release!: () => void;
+		const pending = new Promise<void>((resolve) => {
+			release = resolve;
+		});
 		worker.use(
-			mockGetDecisionInstanceEndpoint({
-				successResponse: HttpResponse.json(createDecisionInstance()),
-				delay: 600,
-			}),
+			http.get(
+				endpoints.getDecisionInstance.getUrl({decisionEvaluationInstanceKey: ':decisionEvaluationInstanceKey'}),
+				async () => {
+					await pending;
+					return HttpResponse.json(createDecisionInstance());
+				},
+			),
 		);
 
-		const screen = await renderPanel();
-
-		await expect.element(screen.getByTestId('inputs-skeleton')).toBeVisible();
-		await expect.element(screen.getByTestId('outputs-skeleton')).toBeVisible();
-		await expect.element(screen.getByTestId('inputs-skeleton')).not.toBeInTheDocument();
+		try {
+			const screen = await renderPanel();
+			await expect.element(screen.getByTestId('inputs-skeleton')).toBeVisible();
+			await expect.element(screen.getByTestId('outputs-skeleton')).toBeVisible();
+			await expect.element(screen.getByTestId('results-json-viewer')).not.toBeInTheDocument();
+			release();
+			await expect.element(screen.getByTestId('inputs-skeleton')).not.toBeInTheDocument();
+			await expect.element(screen.getByRole('region', {name: 'output variables'}).getByText('Rule')).toBeVisible();
+		} finally {
+			release();
+		}
 	});
 
 	it.for([
@@ -291,18 +305,33 @@ describe('<VariablesPanel />', () => {
 	});
 
 	it('should show a result loading spinner when the result tab is selected while fetching', async ({worker}) => {
+		let release!: () => void;
+		const pending = new Promise<void>((resolve) => {
+			release = resolve;
+		});
 		worker.use(
-			mockGetDecisionInstanceEndpoint({
-				successResponse: HttpResponse.json(createDecisionInstance()),
-				delay: 600,
-			}),
+			http.get(
+				endpoints.getDecisionInstance.getUrl({decisionEvaluationInstanceKey: ':decisionEvaluationInstanceKey'}),
+				async () => {
+					await pending;
+					return HttpResponse.json(createDecisionInstance());
+				},
+			),
 		);
 
-		const screen = await renderPanel();
-
-		await userEvent.click(screen.getByRole('tab', {name: 'Result'}));
-		await expect.element(screen.getByTestId('result-loading-spinner')).toBeVisible();
-		await expect.element(screen.getByTestId('results-json-viewer').getByRole('textbox', {name: 'Value'})).toBeVisible();
+		try {
+			const screen = await renderPanel();
+			await userEvent.click(screen.getByRole('tab', {name: 'Result'}));
+			await expect.element(screen.getByTestId('result-loading-spinner')).toBeVisible();
+			await expect.element(screen.getByTestId('results-json-viewer')).not.toBeInTheDocument();
+			release();
+			await expect.element(screen.getByTestId('result-loading-spinner')).not.toBeInTheDocument();
+			await expect
+				.element(screen.getByTestId('results-json-viewer').getByRole('textbox', {name: 'Value'}))
+				.toBeVisible();
+		} finally {
+			release();
+		}
 	});
 
 	it('should switch from a decision table to a literal expression and reset to the new result', async ({worker}) => {
