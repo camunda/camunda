@@ -29,6 +29,7 @@ import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.utils.concurrent.SingleThreadContext;
+import io.camunda.zeebe.test.util.junit.SlowTest;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.ByteBuffer;
@@ -57,6 +58,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+@SlowTest
 final class VotingTest {
   private final SingleThreadContext context = new SingleThreadContext("raft-%d");
   private final TestRaftProtocolFactory protocolFactory = new TestRaftProtocolFactory();

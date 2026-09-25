@@ -19,14 +19,17 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftRule.Configurator;
 import io.atomix.raft.RaftServer.Builder;
 import io.atomix.raft.partition.RaftElectionConfig;
+import io.camunda.zeebe.test.util.junit.SlowTest;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
+@Category(SlowTest.class)
 public class RaftPriorityElectionTest {
 
   @Rule @Parameter public RaftRule raftRule;
