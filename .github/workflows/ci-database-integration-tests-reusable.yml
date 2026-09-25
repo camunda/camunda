@@ -260,8 +260,24 @@ jobs:
       contents: read
       actions: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+      # Stay quiet when the caller's rerun-failed-jobs is about to retry this run, otherwise a
+      # runner shutdown that the retry goes on to fix leaves a false alarm behind. A genuine
+      # failure, or one on the last permitted attempt, still alerts. The check is per run, so a
+      # shard that failed for real while another was killed waits for the retry too and alerts
+      # once, after it, instead of before and after.
+      - name: Decide whether this run will be retried
+        id: retry
+        uses: ./.github/actions/detect-runner-shutdown
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Import secrets from Vault
         id: secrets
+        if: steps.retry.outputs.should-retry != 'true'
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
@@ -271,6 +287,7 @@ jobs:
           secrets: |
             secret/data/products/camunda/ci/github-actions DATA_ENGINE_CI_ALERT_WEBHOOK_URL;
       - name: Send notification
+        if: steps.retry.outputs.should-retry != 'true'
         uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
           webhook: ${{ steps.secrets.outputs.DATA_ENGINE_CI_ALERT_WEBHOOK_URL }}
@@ -284,11 +301,6 @@ jobs:
                   type: "mrkdwn"
                   text: "Scheduled Database Integration Tests for **${{inputs.database-name}}** on **${{ github.ref_name }}** FAILED or WERE CANCELLED\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
       # Send metrics about CI health
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          sparse-checkout: .github
-          persist-credentials: false
       - name: Observe build status
         if: always()
         continue-on-error: true

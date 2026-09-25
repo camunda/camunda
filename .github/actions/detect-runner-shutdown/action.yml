@@ -1,0 +1,113 @@
+# This action expects the code to have been checked out beforehand, e.g. via actions/checkout,
+# and needs a token with `actions: read` to list jobs and download their logs.
+---
+name: Detect runner shutdown
+
+# owner: @camunda/data-layer
+
+description: >-
+  Answers one question about the current workflow run: will its failed jobs be retried by
+  rerun-failed-jobs-reusable.yml? That is the case only when all three hold: the retry cap has not
+  been reached, the run's commit is still on its branch (a re-run of an unreachable commit dies at
+  startup), and at least one failed job's log contains a runner-shutdown message, i.e. the job was
+  killed by spot preemption, autoscaler scale-down or node eviction rather than by the tests.
+  The retry job uses the answer to decide whether to dispatch. Slack notification jobs use the same
+  answer to stay quiet while a retry is coming, so a failure caused by a dead runner never alerts
+  and a genuine failure alerts exactly once, after the last attempt that could have fixed it.
+
+inputs:
+  github-token:
+    description: "Token with actions:read on this repository, normally secrets.GITHUB_TOKEN."
+    required: true
+  run-id:
+    description: The workflow run to inspect.
+    required: false
+    default: ${{ github.run_id }}
+  attempt:
+    description: The run attempt to inspect.
+    required: false
+    default: ${{ github.run_attempt }}
+  max-attempts:
+    description: >-
+      Total attempts allowed, including the first. Must match the cap in the caller's
+      `if: fromJSON(github.run_attempt) < N` on the retry job.
+    required: false
+    default: '3'
+  error-messages:
+    description: Newline-separated log fragments that identify a runner shutdown.
+    required: false
+    default: |
+      The runner has received a shutdown signal
+      lost communication with the server
+
+outputs:
+  should-retry:
+    description: "'true' when a retry of this run's failed jobs will be dispatched, 'false' otherwise."
+    value: ${{ steps.decide.outputs.should-retry }}
+
+runs:
+  using: composite
+  steps:
+    - name: Decide whether this run will be retried
+      id: decide
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        REPO: ${{ github.repository }}
+        RUN_ID: ${{ inputs.run-id }}
+        ATTEMPT: ${{ inputs.attempt }}
+        MAX_ATTEMPTS: ${{ inputs.max-attempts }}
+        SHA: ${{ github.sha }}
+        BRANCH: ${{ github.ref_name }}
+        ERROR_MESSAGES: ${{ inputs.error-messages }}
+      run: |
+        set -euo pipefail
+
+        decide() {
+          echo "should-retry=$1" >> "$GITHUB_OUTPUT"
+          echo "should-retry=$1: $2"
+          exit 0
+        }
+
+        if (( ATTEMPT >= MAX_ATTEMPTS )); then
+          decide false "attempt ${ATTEMPT} of ${MAX_ATTEMPTS}, retries exhausted"
+        fi
+
+        # A GitHub re-run always reuses this run's original commit. If the branch moved on
+        # (force-push), that commit is unreachable and every re-run, automated or via the
+        # "Re-run failed jobs" button, fails at startup with a generic "workflow file issue"
+        # message that never names the cause. Say so here instead.
+        status=$(gh api "repos/${REPO}/compare/${SHA}...${BRANCH}" --jq .status 2>/dev/null || echo "unreachable")
+        if [[ "${status}" != "ahead" && "${status}" != "identical" ]]; then
+          echo "::warning title=Auto-retry skipped, run commit not on branch::Commit ${SHA} is no longer reachable from ${BRANCH} (compare status: ${status}). Re-running this run, including via the 'Re-run failed jobs' button, will fail at startup with GitHub's generic 'workflow file issue' message. Dispatch a fresh run of this workflow on ${BRANCH} instead."
+          decide false "commit ${SHA} not reachable from ${BRANCH}"
+        fi
+
+        grep_args=()
+        while IFS= read -r line; do
+          [[ -n "${line// }" ]] && grep_args+=(-e "${line}")
+        done <<< "${ERROR_MESSAGES}"
+
+        log_file=$(mktemp)
+        trap 'rm -f "${log_file}"' EXIT
+
+        # Only `failure` conclusions count, because the retry job that acts on this answer is
+        # itself gated on `failure()`, which a `cancelled` job does not satisfy. Widening the
+        # filter would mute the alert for a run that no retry is going to touch. Jobs carried
+        # over from an earlier attempt keep their old conclusion in this listing, so the filter
+        # sees exactly the jobs that are red right now.
+        # Build logs carry ANSI colour codes, and gh refuses to write those to a file unless told
+        # to. Without the flag every download "fails" and every failure looks genuine.
+        while IFS=$'\t' read -r job_id job_name; do
+          [[ -z "${job_id}" ]] && continue
+          if ! gh api --allow-escape-sequences "repos/${REPO}/actions/jobs/${job_id}/logs" > "${log_file}" 2>/dev/null; then
+            echo "Could not download log of job '${job_name}' (${job_id}), treating it as a genuine failure."
+            continue
+          fi
+          if grep -qF "${grep_args[@]}" "${log_file}"; then
+            decide true "runner shutdown message found in log of job '${job_name}' (${job_id})"
+          fi
+        done < <(gh api --paginate "repos/${REPO}/actions/runs/${RUN_ID}/attempts/${ATTEMPT}/jobs" \
+                   --jq '.jobs[] | select(.conclusion == "failure") | [.id, .name] | @tsv')
+
+        decide false "no runner shutdown message in any failed job's log"

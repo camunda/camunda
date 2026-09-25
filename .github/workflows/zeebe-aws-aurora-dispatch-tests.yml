@@ -134,8 +134,22 @@ jobs:
       contents: read
       actions: write
     steps:
+    - name: Checkout
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        sparse-checkout: .github
+        persist-credentials: false
+    # Stay quiet when rerun-failed-jobs is about to retry this run, otherwise a runner shutdown
+    # that the retry goes on to fix leaves a false alarm behind. A genuine failure, or one on the
+    # last permitted attempt, still alerts.
+    - name: Decide whether this run will be retried
+      id: retry
+      uses: ./.github/actions/detect-runner-shutdown
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
     - name: Import secrets from Vault
       id: secrets
+      if: steps.retry.outputs.should-retry != 'true'
       uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
       with:
         url: ${{ secrets.VAULT_ADDR }}
@@ -145,6 +159,7 @@ jobs:
         secrets: |
           secret/data/products/camunda/ci/github-actions DATA_ENGINE_CI_ALERT_WEBHOOK_URL;
     - name: Send notification
+      if: steps.retry.outputs.should-retry != 'true'
       uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
       with:
         webhook: ${{ steps.secrets.outputs.DATA_ENGINE_CI_ALERT_WEBHOOK_URL }}
@@ -158,10 +173,6 @@ jobs:
                 type: "mrkdwn"
                 text: "AWS Aurora Manual/Scheduled Run Integration Tests FAILED or WERE CANCELLED\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
       # Send metrics about CI health
-    - name: Checkout
-      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      with:
-        sparse-checkout: .github
     - name: Observe build status
       if: always()
       continue-on-error: true
@@ -175,10 +186,7 @@ jobs:
   # Auto-retry when integration-tests failed because its self-hosted runner was terminated
   # mid-job rather than by a real test failure. Those runs end with "The runner has received a
   # shutdown signal" partway through Maven Test Build, which says nothing about the code under
-  # test.
-  #
-  # send-slack-notification above still fires on the original failure, so a shutdown that the
-  # retry goes on to fix can leave one alert behind. See rerun-failed-jobs-reusable.yml.
+  # test. See rerun-failed-jobs-reusable.yml.
   rerun-failed-jobs:
     needs: integration-tests
     if: failure() && fromJSON(github.run_attempt) < 3

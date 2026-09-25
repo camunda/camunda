@@ -6,11 +6,12 @@
 # type: CI
 # owner: @camunda/data-layer
 #
-# The underlying action reads the run logs first and does nothing unless one of those messages is
-# present, so nights that fail for real cost nothing and genuine failures are never masked. It
-# re-runs failed jobs only, so already-green jobs are left alone. Note the log check is per run
-# rather than per job: once a shutdown is found anywhere, every failed job in the run is re-run, so
-# a job that failed for real alongside a killed one is re-run too and simply fails again.
+# The decision to rerun-failed-jobs workflow is made by .github/actions/detect-runner-shutdown,
+# which reads the failed jobs' logs and only says yes when a shutdown message is present, so nights
+# that fail for real cost nothing and genuine failures are never masked. Only failed jobs are
+# re-run, so already-green jobs are left alone. Note the decision is per run rather than per job:
+# once a shutdown is found anywhere, every failed job in the run is re-run, so a job that failed
+# for real alongside a killed one is re-run too and simply fails again.
 #
 # Callers own the retry cap and the failure condition, since both live on the job that calls this
 # workflow:
@@ -27,6 +28,10 @@
 # preempted, so they only need to be there when you want this job to see the whole failure surface.
 # `github.run_id`: resolves to the caller's run even when the caller is itself a reusable workflow,
 # which is what we want: the re-run then targets the run that actually holds the failed jobs.
+#
+# A Slack notification job in the same run should ask detect-runner-shutdown the same question and
+# skip the send while `should-retry` is 'true'. Otherwise it alerts on the killed attempt, and again
+# after the retry if that fails too, while a retry that passes leaves a false alarm behind.
 
 name: Rerun failed jobs reusable
 
@@ -47,46 +52,31 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      actions: read
     steps:
-      # A GitHub re-run always reuses this run's original commit; there is no way
-      # to re-run on a newer one. If the branch is force-pushed after this run
-      # started, that commit becomes unreachable and EVERY re-run of this run,
-      # whether requested by the action below or by a human pressing "Re-run
-      # failed jobs", dies as startup_failure with GitHub's generic "workflow
-      # file issue" message that never mentions the real cause. So when the
-      # commit is no longer on the branch, skip the doomed retry and leave a
-      # warning annotation on this run saying what happened and what to do.
-      - name: Check this run's commit is still on the branch
-        id: rerunnable
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SHA: ${{ github.sha }}
-          BRANCH: ${{ github.ref_name }}
-          REPO: ${{ github.repository }}
-        run: |
-          status=$(gh api "repos/${REPO}/compare/${SHA}...${BRANCH}" --jq .status 2>/dev/null || echo "unreachable")
-          if [ "${status}" = "ahead" ] || [ "${status}" = "identical" ]; then
-            echo "ok=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "ok=false" >> "$GITHUB_OUTPUT"
-            echo "::warning title=Auto-retry skipped, branch was force-pushed::Commit ${SHA} is no longer reachable from ${BRANCH} (compare status: ${status}). Re-running this run, including via the 'Re-run failed jobs' button, will fail at startup with GitHub's generic 'workflow file issue' message. Dispatch a fresh run of this workflow on ${BRANCH} instead."
-          fi
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Decide whether this run will be retried
+        id: retry
+        uses: ./.github/actions/detect-runner-shutdown
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      # The action dispatches a workflow in camunda/infra-global-github-actions that performs the
+      # re-run asynchronously; nothing in this run learns whether it happened. With no
+      # error-messages given it re-runs unconditionally, which is what we want here because the
+      # decision has already been made above.
       - name: Rerun failed jobs on runner shutdown
-        if: steps.rerunnable.outputs.ok == 'true'
+        if: steps.retry.outputs.should-retry == 'true'
         uses: camunda/infra-global-github-actions/rerun-failed-run@7fe5cca167f7826bedbc078ae36ff2e974cc8cb5 # rerun-failed-run-1.1.3
         with:
-          error-messages: |
-            The runner has received a shutdown signal
-            lost communication with the server
           run-id: ${{ github.run_id }}
           repository: ${{ github.repository }}
           vault-addr: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          sparse-checkout: .github
       - name: Observe build status
         if: always()
         continue-on-error: true
