@@ -5,10 +5,7 @@
 # Licensed under the Camunda License 1.0. You may not use this file
 # except in compliance with the Camunda License 1.0.
 
-"""Compare changed and PR-requested JMH benchmarks between a PR's baseline and its tip.
-
-The workflow supplies changed Java paths and posts each result file as a PR comment.
-"""
+"""Compare changed and PR-requested JMH benchmarks at the PR baseline and tip."""
 
 import hashlib
 import json
@@ -24,8 +21,7 @@ BENCHMARK_NAME = re.compile(r"[A-Za-z0-9_$][A-Za-z0-9_.$]*")
 PR_SELECTOR_LINE = re.compile(r"^\s*JMH:\s*(.*)$", re.IGNORECASE)
 PR_SELECTOR = re.compile(r"[A-Za-z0-9_$]+(?:\.[A-Za-z0-9_$]+)*")
 HTML_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
-MICROBENCHMARKS_MODULE = "microbenchmarks"
-BENCHMARK_JAR = f"{MICROBENCHMARKS_MODULE}/target/benchmarks.jar"
+BENCHMARK_JAR = "microbenchmarks/target/benchmarks.jar"
 SHORT_TIMEOUT_SECONDS = 120
 BUILD_TIMEOUT_SECONDS = 1800
 BENCHMARK_TIMEOUT_SECONDS = 3600
@@ -33,16 +29,15 @@ COMMENT_MAX_LENGTH = 60000
 
 
 def parse_changed_files(value: str) -> list[str]:
-    # The workflow supplies this as dorny/paths-filter's list-files:json output for the
-    # microbenchmarks/**/*.java filter, so it's always a well-formed path array.
     try:
         return json.loads(value) if value else []
     except json.JSONDecodeError as error:
-        raise ValueError("Changed Java files must be supplied as a JSON array.") from error
+        raise ValueError(
+            "Changed Java files must be supplied as a JSON array."
+        ) from error
 
 
 def selector_marker_suffix(selectors: list[str]) -> str:
-    # A changed request gets a new marker; identical requests remain idempotent.
     if not selectors:
         return ""
     digest = hashlib.sha256("\n".join(sorted(set(selectors))).encode()).hexdigest()
@@ -106,13 +101,11 @@ def resolve_requested_selectors(
             missing.append(selector)
     selected_classes = list(dict.fromkeys(selected_classes))
     selected_methods = list(dict.fromkeys(selected_methods))
-    # Selecting a class already covers its methods, so don't benchmark them twice.
-    selected_methods = [
+    return selected_classes + [
         name
         for name in selected_methods
         if not any(name.startswith(f"{class_name}.") for class_name in selected_classes)
-    ]
-    return selected_classes + selected_methods, missing
+    ], missing
 
 
 def run_command(
@@ -132,16 +125,13 @@ def run_command(
             timeout=timeout,
         )
     except subprocess.TimeoutExpired as error:
-        # error.stdout is typed as bytes | None, but text=True actually gives us str.
-        stdout = error.stdout
-        if isinstance(stdout, bytes):
-            output = stdout.decode(errors="replace")
-        elif isinstance(stdout, str):
-            output = stdout
+        output = error.stdout
+        if isinstance(output, bytes):
+            text = output.decode(errors="replace")
         else:
-            output = ""
+            text = output or ""
         return subprocess.CompletedProcess(
-            args, 124, stdout=f"{output}\nCommand timed out after {timeout}s."
+            args, 124, stdout=f"{text}\nCommand timed out after {timeout}s."
         )
     except OSError as error:
         return subprocess.CompletedProcess(args, 127, stdout=str(error))
@@ -151,7 +141,10 @@ def post_pr_comment(workspace: Path, body: str) -> None:
     repo = os.environ["GITHUB_REPOSITORY"]
     pr_number = os.environ["PR_NUMBER"]
     if len(body) > COMMENT_MAX_LENGTH:
-        body = body[:COMMENT_MAX_LENGTH] + "\n\n[Output truncated to fit in a GitHub comment.]"
+        body = (
+            body[:COMMENT_MAX_LENGTH]
+            + "\n\n[Output truncated to fit in a GitHub comment.]"
+        )
     result = run_command(
         [
             "gh",
@@ -193,174 +186,150 @@ def main() -> int:
     )
     failed = False
 
-    def command(*args: str, timeout: int | None = None) -> subprocess.CompletedProcess[str]:
+    def command(
+        *args: str, timeout: int = SHORT_TIMEOUT_SECONDS
+    ) -> subprocess.CompletedProcess[str]:
         return run_command(list(args), workspace, timeout=timeout)
 
     def git(*args: str) -> str:
-        result = command("git", *args, timeout=SHORT_TIMEOUT_SECONDS)
+        result = command("git", *args)
         if result.returncode:
             raise RuntimeError(f"git {' '.join(args)} failed:\n{result.stdout}")
         return result.stdout
 
     def checkout(revision: str) -> bool:
-        result = command("git", "checkout", "--detach", revision, timeout=SHORT_TIMEOUT_SECONDS)
-        return result.returncode == 0
+        return command("git", "checkout", "--detach", revision).returncode == 0
 
-    def source_at(revision: str, path: str) -> str | None:
-        result = command("git", "show", f"{revision}:{path}", timeout=SHORT_TIMEOUT_SECONDS)
-        return result.stdout if result.returncode == 0 else None
+    def changed_selectors(revision: str) -> list[str]:
+        selectors = []
+        for path in changed_files:
+            source = command("git", "show", f"{revision}:{path}")
+            if source.returncode == 0 and is_jmh_benchmark_source(source.stdout):
+                selectors.append(benchmark_selector(path, source.stdout))
+        return list(dict.fromkeys(selectors))
 
-    def run_revision(
-        index: int,
-        kind: str,
-        revision: str,
-        marker_suffix: str,
-        known_selectors: list[str] | None = None,
-    ) -> None:
+    def benchmark_results(selectors: list[str]) -> list[str]:
         nonlocal failed
-        marker = f"<!-- jmh-run:{kind}:{revision}{marker_suffix} -->"
+        build = command(
+            "./mvnw",
+            "-pl",
+            "microbenchmarks",
+            "-am",
+            "-DskipTests",
+            "clean",
+            "package",
+            timeout=BUILD_TIMEOUT_SECONDS,
+        )
+        if build.returncode:
+            failed = True
+            return [
+                f"Maven benchmark build failed with status {build.returncode}.",
+                "",
+                "Last 120 lines of build output:",
+                "```text",
+                *build.stdout.splitlines()[-120:],
+                "```",
+            ]
+
+        listing = command("java", "-jar", BENCHMARK_JAR, "-l")
+        if listing.returncode:
+            failed = True
+            return [
+                f"Could not list available JMH benchmarks (exit {listing.returncode}).",
+                "```text",
+                *listing.stdout.splitlines()[-80:],
+                "```",
+            ]
+
+        explicit, missing = resolve_requested_selectors(
+            requested, available_benchmarks(listing.stdout)
+        )
+        selectors = list(
+            dict.fromkeys(
+                selectors
+                + [
+                    name
+                    for name in explicit
+                    if not any(
+                        name.startswith(f"{class_name}.") for class_name in selectors
+                    )
+                ]
+            )
+        )
+        result = []
+        if missing:
+            result.extend(
+                [
+                    "Requested selectors unavailable at this revision:",
+                    *[f"- `{name}`" for name in missing],
+                    "",
+                ]
+            )
+        if not selectors:
+            return result + [
+                "No selected benchmark is available at this revision; execution was skipped."
+            ]
+
+        result.extend([f"Benchmarks: `{', '.join(selectors)}`", "", "```text"])
+        for selector in selectors:
+            print(f"Running JMH selector: {selector}")
+            run = command(
+                "java",
+                "-jar",
+                BENCHMARK_JAR,
+                selector,
+                timeout=BENCHMARK_TIMEOUT_SECONDS,
+            )
+            result.extend(run.stdout.rstrip().splitlines())
+            if run.returncode:
+                failed = True
+                result.append(
+                    f"JMH exited with status {run.returncode} for `{selector}`."
+                )
+        result.append("```")
+        return result
+
+    def run_revision(index: int, kind: str, revision: str, suffix: str) -> None:
+        marker = f"<!-- jmh-run:{kind}:{revision}{suffix} -->"
         if marker in reported:
             print(f"Already benchmarked: {marker}")
             return
-        # Build each historical snapshot in place, then restore the PR head for later workflow steps.
         if not checkout(revision):
             raise RuntimeError(f"Could not check out revision {revision}")
 
         result = [marker, "", f"## JMH {kind} results for `{revision}`", ""]
-        if known_selectors is not None:
-            selectors = known_selectors
+        selectors = changed_selectors(revision)
+        if selectors or requested:
+            result.extend(benchmark_results(selectors))
         else:
-            # Re-read changed files at this revision so deleted or not-yet-added benchmarks are skipped.
-            selectors = []
-            for path in changed_files:
-                source = source_at(revision, path)
-                if source and is_jmh_benchmark_source(source):
-                    selectors.append(benchmark_selector(path, source))
-            selectors = list(dict.fromkeys(selectors))
-
-        if not selectors and not requested:
             result.append(
                 "No selected benchmark source exists at this revision; execution was skipped."
             )
-        else:
-            build = command(
-                "./mvnw",
-                "-pl",
-                MICROBENCHMARKS_MODULE,
-                "-am",
-                "-DskipTests",
-                "clean",
-                "package",
-                timeout=BUILD_TIMEOUT_SECONDS,
-            )
-            if build.returncode:
-                failed = True
-                result.extend(
-                    [
-                        f"Maven benchmark build failed with status {build.returncode}.",
-                        "",
-                        "Last 120 lines of build output:",
-                        "```text",
-                        *build.stdout.splitlines()[-120:],
-                        "```",
-                    ]
-                )
-            else:
-                listing = command(
-                    "java", "-jar", BENCHMARK_JAR, "-l", timeout=SHORT_TIMEOUT_SECONDS
-                )
-                if listing.returncode:
-                    failed = True
-                    result.extend(
-                        [
-                            f"Could not list available JMH benchmarks (exit {listing.returncode}).",
-                            "```text",
-                            *listing.stdout.splitlines()[-80:],
-                            "```",
-                        ]
-                    )
-                else:
-                    # JMH lists fully qualified names; suffix matching also accepts short PR selectors.
-                    explicit, missing = resolve_requested_selectors(
-                        requested, available_benchmarks(listing.stdout)
-                    )
-                    # A class selector already covers its methods; drop explicit methods
-                    # that duplicate a class already picked up from the changed files.
-                    explicit = [
-                        name
-                        for name in explicit
-                        if not any(name.startswith(f"{cls}.") for cls in selectors)
-                    ]
-                    selectors = list(dict.fromkeys(selectors + explicit))
-                    if missing:
-                        result.extend(
-                            [
-                                "Requested selectors unavailable at this revision:",
-                                *[f"- `{name}`" for name in missing],
-                                "",
-                            ]
-                        )
-                    if selectors:
-                        result.extend(
-                            [f"Benchmarks: `{', '.join(selectors)}`", "", "```text"]
-                        )
-                        # Pass no iteration flags so JMH uses the benchmark annotations/defaults.
-                        for selector in selectors:
-                            print(f"Running JMH selector: {selector}")
-                            run = command(
-                                "java",
-                                "-jar",
-                                BENCHMARK_JAR,
-                                selector,
-                                timeout=BENCHMARK_TIMEOUT_SECONDS,
-                            )
-                            result.extend(run.stdout.rstrip().splitlines())
-                            if run.returncode:
-                                failed = True
-                                result.append(
-                                    f"JMH exited with status {run.returncode} for `{selector}`."
-                                )
-                    else:
-                        result.append(
-                            "No selected benchmark is available at this revision; execution was skipped."
-                        )
-                    if selectors:
-                        result.append("```")
-
         body = "\n".join(result).rstrip() + "\n"
-        result_path = results_dir / f"{index:04d}-{kind}-{revision}.md"
-        result_path.write_text(body, encoding="utf-8")
+        (results_dir / f"{index:04d}-{kind}-{revision}.md").write_text(
+            body, encoding="utf-8"
+        )
         post_pr_comment(workspace, body)
         print(f"Posted result: {marker}")
 
     try:
         baseline = git("merge-base", base_sha, head_sha).strip()
-        changed_benchmarks = []
-        for path in changed_files:
-            source = source_at(head_sha, path)
-            if source and is_jmh_benchmark_source(source):
-                changed_benchmarks.append(benchmark_selector(path, source))
-        if not changed_benchmarks and not requested:
+        selected = changed_selectors(head_sha)
+        if not selected and not requested:
             print(
                 "No changed Java benchmark files or explicit JMH selectors were found."
             )
-            summary = os.environ.get("GITHUB_STEP_SUMMARY")
-            if summary:
+            if summary := os.environ.get("GITHUB_STEP_SUMMARY"):
                 with Path(summary).open("a", encoding="utf-8") as file:
                     file.write("## JMH PR benchmarks\n\nNo benchmarks were selected.\n")
             return 0
 
-        # Compare the merge-base baseline against the PR tip; no point benchmarking
-        # intermediate commits since only the final diff matters.
+        suffix = selector_marker_suffix(requested + selected)
         revisions = [("baseline", baseline)]
         if head_sha != baseline:
             revisions.append(("head", head_sha))
-        # Hash both explicit and auto-detected selectors so a later push that changes
-        # which benchmarks are in scope is not skipped as an already-reported baseline.
-        suffix = selector_marker_suffix(requested + changed_benchmarks)
         for index, (kind, revision) in enumerate(revisions):
-            known = changed_benchmarks if kind == "head" else None
-            run_revision(index, kind, revision, suffix, known)
+            run_revision(index, kind, revision, suffix)
 
         if failed:
             failure_file.touch()
