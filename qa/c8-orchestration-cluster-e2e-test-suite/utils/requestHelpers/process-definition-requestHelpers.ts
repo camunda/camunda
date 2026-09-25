@@ -15,7 +15,11 @@ import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
 import {createSingleInstance, deployWithSubstitutions} from '../zeebeClient';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types';
 import {sleep} from '../sleep';
-import {defaultAssertionOptions, extendedAssertionOptions} from '../constants';
+import {
+  defaultAssertionOptions,
+  extendedAssertionOptions,
+  uniquePrefixedId,
+} from '../constants';
 import {validateResponse} from 'json-body-assertions';
 import {deleteResource} from './resource-requestHelpers';
 
@@ -242,4 +246,21 @@ export async function deployUserTaskProcess(
       : {}),
   });
   return deployment.processes[0];
+}
+
+/**
+ * Deploys a single-service-task definition under a unique id and starts one
+ * instance of it. Process id and job type are unique per call, so a worker in
+ * another test cannot activate this instance's job.
+ */
+export async function startServiceTaskInstance(prefix: string) {
+  const processDefinitionId = uniquePrefixedId(prefix);
+  const jobType = uniquePrefixedId(`${prefix}-job`);
+  await deployServiceTaskProcess(processDefinitionId, jobType);
+  const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
+  return {
+    processDefinitionId,
+    jobType,
+    processInstanceKey: instance.processInstanceKey,
+  };
 }
