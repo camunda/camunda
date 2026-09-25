@@ -298,6 +298,34 @@ class WorkerTest {
   }
 
   @Test
+  void shouldCompleteRoundWhenAgentInstanceUpdateFails() {
+    // given — the round>0 AgentInstance UPDATE call is rejected (e.g. 404 NOT_FOUND: "job was
+    // not active", the observed outcome when a stale redelivered copy's UPDATE reaches the
+    // engine after a newer delivery already advanced this round - see with-lease's delivery-time
+    // bypass, documented on the CREATE branch above); Worker#updateAgentInstance must swallow
+    // this rather than let it propagate uncaught
+    final var jobClient = mock(JobClient.class);
+    final var client = mock(CamundaClient.class);
+    final var worker = newWorker(client, agentInstanceSimulationProperties());
+    final long processInstanceKey = 1001L;
+    final long elementInstanceKey = 888L;
+    mockCreateAgentInstanceCommand(client, 5151L);
+    mockFailingUpdateAgentInstanceCommand(client);
+
+    // round 1 — CREATE succeeds
+    driveAdHocSubProcessRound(
+        worker, jobClient, processInstanceKey, elementInstanceKey, 601L, "lease-1");
+
+    // round 2 — UPDATE fails; must not throw out of handleJob, and the round schedule/completion
+    // still proceeds normally
+    final var round =
+        driveAdHocSubProcessRound(
+            worker, jobClient, processInstanceKey, elementInstanceKey, 602L, "lease-2");
+    assertThat(round.activatedElements())
+        .containsExactly("tool-calculate-score", "tool-send-notification");
+  }
+
+  @Test
   void shouldFallThroughToPlainCompletionForOtherJobTypes() {
     // given — a job of a type that is not the ad-hoc-sub-process orchestrator (e.g. one of the
     // scenario's tool roles, or any other scenario's worker role)
@@ -441,6 +469,25 @@ class WorkerTest {
     when(step4.send()).thenReturn(future);
     when(future.join()).thenReturn(mock(UpdateAgentInstanceResponse.class));
     return step1;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static void mockFailingUpdateAgentInstanceCommand(final CamundaClient client) {
+    final var step1 = mock(UpdateAgentInstanceCommandStep1.class);
+    final var step2 = mock(UpdateAgentInstanceCommandStep1.UpdateAgentInstanceCommandStep2.class);
+    final var step3 = mock(UpdateAgentInstanceCommandStep1.UpdateAgentInstanceCommandStep3.class);
+    final var step4 = mock(UpdateAgentInstanceCommandStep1.UpdateAgentInstanceCommandStep4.class);
+    final CamundaFuture<UpdateAgentInstanceResponse> future = mock(CamundaFuture.class);
+
+    when(client.newUpdateAgentInstanceCommand(anyLong())).thenReturn(step1);
+    when(step1.elementInstanceKey(anyLong())).thenReturn(step2);
+    when(step2.status(any())).thenReturn(step2);
+    when(step2.jobKey(anyLong())).thenReturn(step3);
+    when(step3.jobLeaseToken(anyString())).thenReturn(step4);
+    when(step4.history(any())).thenReturn(step4);
+    when(step4.send()).thenReturn(future);
+    when(future.join())
+        .thenThrow(new RuntimeException("simulated 404 NOT_FOUND rejection from the engine"));
   }
 
   private static long timeHandleJob(

@@ -272,27 +272,7 @@ public class Worker {
             processInstanceKey,
             round);
       } else {
-        final var assistantItem =
-            new AgentInstanceHistoryItem()
-                .historyItemId("agent-visibility-round-" + (round + 1))
-                .loopIteration(round + 1)
-                .role(AgentInstanceHistoryRole.ASSISTANT)
-                .content(
-                    List.of(
-                        AgentInstanceHistoryContent.text(
-                            "Synthetic assistant message for round " + (round + 1) + ".")))
-                .producedAt(OffsetDateTime.now());
-
-        client
-            .newUpdateAgentInstanceCommand(agentInstanceKey)
-            .elementInstanceKey(job.getElementInstanceKey())
-            .status(
-                isFinalRound ? AgentInstanceUpdateStatus.IDLE : AgentInstanceUpdateStatus.THINKING)
-            .jobKey(job.getKey())
-            .jobLeaseToken(job.getJobLeaseToken())
-            .history(List.of(assistantItem))
-            .send()
-            .join();
+        updateAgentInstance(job, agentInstanceKey, round, isFinalRound);
       }
     }
 
@@ -341,6 +321,51 @@ public class Worker {
           job.getProcessInstanceKey(),
           e.getMessage());
       return null;
+    }
+  }
+
+  // Issues the round>0 AgentInstance UPDATE call for the given job. Never throws: a stale
+  // redelivered copy of this job - which with-lease permits to be pushed and processed
+  // concurrently with a newer delivery that already completed or is completing this same round
+  // (see the CREATE-branch comment on simulateAgentInstance above for why this is possible) -
+  // gets rejected by the engine (observed: 404 NOT_FOUND, "job was not active") once it's no
+  // longer the current delivery. An uncaught exception here would leave the job unable to
+  // complete the same way it would from the CREATE branch or the cache-miss branch above, so
+  // this is caught and logged rather than propagated; the round schedule still completes the
+  // job normally, only this one AgentHistory item is missed.
+  private void updateAgentInstance(
+      final ActivatedJob job,
+      final long agentInstanceKey,
+      final int round,
+      final boolean isFinalRound) {
+    final var assistantItem =
+        new AgentInstanceHistoryItem()
+            .historyItemId("agent-visibility-round-" + (round + 1))
+            .loopIteration(round + 1)
+            .role(AgentInstanceHistoryRole.ASSISTANT)
+            .content(
+                List.of(
+                    AgentInstanceHistoryContent.text(
+                        "Synthetic assistant message for round " + (round + 1) + ".")))
+            .producedAt(OffsetDateTime.now());
+
+    try {
+      client
+          .newUpdateAgentInstanceCommand(agentInstanceKey)
+          .elementInstanceKey(job.getElementInstanceKey())
+          .status(
+              isFinalRound ? AgentInstanceUpdateStatus.IDLE : AgentInstanceUpdateStatus.THINKING)
+          .jobKey(job.getKey())
+          .jobLeaseToken(job.getJobLeaseToken())
+          .history(List.of(assistantItem))
+          .send()
+          .join();
+    } catch (final RuntimeException e) {
+      THROTTLED_LOGGER.warn(
+          "AgentInstance UPDATE failed for processInstanceKey={} at round={}: {}",
+          job.getProcessInstanceKey(),
+          round,
+          e.getMessage());
     }
   }
 
