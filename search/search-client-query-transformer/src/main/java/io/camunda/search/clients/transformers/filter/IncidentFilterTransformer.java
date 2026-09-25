@@ -11,6 +11,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.intOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringMatchPhraseOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
@@ -47,7 +48,7 @@ public class IncidentFilterTransformer extends IndexFilterTransformer<IncidentFi
         stringOperations(BPMN_PROCESS_ID, filter.processDefinitionIdOperations()),
         longOperations(PROCESS_INSTANCE_KEY, filter.processInstanceKeyOperations()),
         stringOperations(ERROR_TYPE, filter.errorTypeOperations()),
-        stringOperations(ERROR_MSG, filter.errorMessageOperations()),
+        stringMatchPhraseOperations(ERROR_MSG, filter.errorMessageOperations()),
         stringOperations(FLOW_NODE_ID, filter.flowNodeIdOperations()),
         longOperations(FLOW_NODE_INSTANCE_KEY, filter.flowNodeInstanceKeyOperations()),
         dateTimeOperations(CREATION_TIME, filter.creationTimeOperations()),
