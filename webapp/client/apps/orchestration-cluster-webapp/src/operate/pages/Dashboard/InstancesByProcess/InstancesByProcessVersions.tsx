@@ -41,7 +41,14 @@ const InstancesByProcessVersions: React.FC<Props> = ({
 				const total = version.activeInstancesWithoutIncidentCount + version.activeInstancesWithIncidentCount;
 				const linkTenantId = dashboardTenantId(version.tenantId, isMultiTenancyEnabled);
 				const tenantName = linkTenantId ? (tenantsById[linkTenantId] ?? linkTenantId) : undefined;
-				const labelText = `${name} – ${t('operate.dashboard.instancesInVersion', {count: total, version: version.processDefinitionVersion})}${tenantName ? ` – ${tenantName}` : ''}`;
+				const labelText = tenantName
+					? t('operate.dashboard.instancesInVersionWithTenant', {
+							name,
+							count: total,
+							version: version.processDefinitionVersion,
+							tenant: tenantName,
+						})
+					: `${name} – ${t('operate.dashboard.instancesInVersion', {count: total, version: version.processDefinitionVersion})}`;
 
 				return (
 					<Li key={`${version.processDefinitionKey}:${version.tenantId}`}>

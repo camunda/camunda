@@ -12,6 +12,9 @@ import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
 import {userEvent} from 'vitest/browser';
+import {createInstance} from 'i18next';
+import {I18nextProvider} from 'react-i18next';
+import {translationResources} from '#/shared/i18n';
 import {
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockGetProcessDefinitionInstanceVersionStatisticsEndpoint,
@@ -257,6 +260,111 @@ describe('<InstancesByProcess />', () => {
 				.toHaveAttribute('href', expect.stringContaining(`process=orders&tenantId=${encodeURIComponent(tenant)}`));
 		}
 	});
+
+	it.for([
+		{
+			language: 'en',
+			oneVersion: 'Invoices – 1 Instance in 1 Version – Tenant A',
+			multipleVersions: 'Orders – 2 Instances in 2+ Versions – Tenant A',
+			version: 'Orders – 2 Instances in Version 2 – Tenant A',
+		},
+		{
+			language: 'de',
+			oneVersion: 'Invoices (Tenant A) – 1 Instanz in 1 Version',
+			multipleVersions: 'Orders (Tenant A) – 2 Instanzen in 2+ Versionen',
+			version: 'Orders (Tenant A) – 2 Instanzen in Version 2',
+		},
+		{
+			language: 'fr',
+			oneVersion: 'Invoices – 1 Instance dans 1 Version (Tenant A)',
+			multipleVersions: 'Orders – 2 Instances dans 2+ Versions (Tenant A)',
+			version: 'Orders – 2 Instances dans la Version 2 (Tenant A)',
+		},
+		{
+			language: 'es',
+			oneVersion: 'Invoices – 1 Instancia en 1 Versión – Tenant A',
+			multipleVersions: 'Orders – 2 Instancias en 2+ Versiones – Tenant A',
+			version: 'Orders – 2 Instancias en la Versión 2 – Tenant A',
+		},
+	] as const)(
+		'should localize tenant-scoped process and version labels in $language without requiring the tenants API',
+		async ({language, oneVersion, multipleVersions, version}, {worker}) => {
+			const translations = createInstance();
+			await translations.init({lng: language, resources: translationResources, interpolation: {escapeValue: false}});
+			sessionStorage.setItem(
+				'clientConfig',
+				JSON.stringify(
+					createSystemConfiguration({
+						deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: false, maxRequestSize: 0},
+					}),
+				),
+			);
+			worker.use(
+				mockGetProcessDefinitionInstanceStatisticsEndpoint({
+					successResponse: HttpResponse.json(
+						createPaginatedResponse({
+							items: [
+								createProcessDefinitionInstanceStatistics({
+									processDefinitionId: 'orders',
+									tenantId: '<tenant-A>',
+									latestProcessDefinitionName: 'Orders',
+									hasMultipleVersions: true,
+									activeInstancesWithoutIncidentCount: 2,
+								}),
+								createProcessDefinitionInstanceStatistics({
+									processDefinitionId: 'invoices',
+									tenantId: '<tenant-A>',
+									latestProcessDefinitionName: 'Invoices',
+									activeInstancesWithoutIncidentCount: 1,
+								}),
+							],
+							page: {totalItems: 2, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+						}),
+					),
+				}),
+				mockGetProcessDefinitionInstanceVersionStatisticsEndpoint({
+					successResponse: HttpResponse.json(
+						createPaginatedResponse({
+							items: [
+								createProcessDefinitionInstanceVersionStatistics({
+									processDefinitionId: 'orders',
+									processDefinitionName: 'Orders',
+									processDefinitionVersion: 2,
+									tenantId: '<tenant-A>',
+									activeInstancesWithoutIncidentCount: 2,
+								}),
+							],
+							page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+						}),
+					),
+				}),
+				mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
+				mockCurrentUserEndpoint({
+					successResponse: HttpResponse.json(
+						createCurrentUser({
+							tenants: [{tenantId: '<tenant-A>', name: 'Tenant A', description: null}],
+						}),
+					),
+				}),
+			);
+
+			const screen = await renderWithRouter(
+				() => (
+					<I18nextProvider i18n={translations}>
+						<InstancesByProcess />
+					</I18nextProvider>
+				),
+				{path: '/operate'},
+			);
+
+			await expect.element(screen.getByTitle(oneVersion)).toHaveAttribute('href', expect.stringContaining('tenantId='));
+			await expect.element(screen.getByTitle(multipleVersions)).toBeVisible();
+			await userEvent.click(screen.getByRole('button', {name: 'Expand current row'}));
+			await expect
+				.element(screen.getByTitle(version))
+				.toHaveAttribute('href', expect.stringContaining('version=2&tenantId='));
+		},
+	);
 
 	it('should preserve the tenant and version of expanded process links', async ({worker}) => {
 		sessionStorage.setItem(

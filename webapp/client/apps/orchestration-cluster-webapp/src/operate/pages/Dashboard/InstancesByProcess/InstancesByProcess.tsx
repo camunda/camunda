@@ -64,7 +64,15 @@ const InstancesByProcess: React.FC = () => {
 					: 'operate.dashboard.instancesInOneVersion';
 				const tenantId = dashboardTenantId(item.tenantId, isMultiTenancyEnabled);
 				const tenantName = tenantId ? (tenantsById[tenantId] ?? tenantId) : undefined;
-				const labelText = `${item.latestProcessDefinitionName || item.processDefinitionId} – ${t(versionKey, {count: total})}${tenantName ? ` – ${tenantName}` : ''}`;
+				const name = item.latestProcessDefinitionName || item.processDefinitionId;
+				const labelText = tenantName
+					? t(
+							item.hasMultipleVersions
+								? 'operate.dashboard.instancesInMultipleVersionsWithTenant'
+								: 'operate.dashboard.instancesInOneVersionWithTenant',
+							{name, count: total, tenant: tenantName},
+						)
+					: `${name} – ${t(versionKey, {count: total})}`;
 
 				return {
 					id: `${item.processDefinitionId}:${item.tenantId}`,
