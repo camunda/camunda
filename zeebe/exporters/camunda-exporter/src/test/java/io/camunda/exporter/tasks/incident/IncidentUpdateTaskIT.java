@@ -186,14 +186,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
         (job, resources) -> {
           final var listViewTemplate = resources.getIndexTemplateDescriptor(ListViewTemplate.class);
 
-          final var processInstanceKey = ID_GENERATOR.getAndIncrement();
-          final ProcessInstanceForListViewEntity processInstance =
-              new ProcessInstanceForListViewEntity()
-                  .setId(String.valueOf(processInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(processInstanceKey)
-                  .setProcessDefinitionKey(9999L)
-                  .setBpmnProcessId("process-1");
+          final ProcessInstanceForListViewEntity processInstance = newProcessInstance();
           store(listViewTemplate, client, processInstance);
           client.refresh(listViewTemplate.getFullQualifiedName());
 
@@ -253,15 +246,9 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
         (job, resources) -> {
           final var listViewTemplate = resources.getIndexTemplateDescriptor(ListViewTemplate.class);
 
-          final var processInstanceKey = ID_GENERATOR.getAndIncrement();
-          final ProcessInstanceForListViewEntity processInstance =
-              new ProcessInstanceForListViewEntity()
-                  .setId(String.valueOf(processInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(processInstanceKey)
-                  .setProcessDefinitionKey(9999L)
-                  .setBpmnProcessId("process-1")
-                  .setTreePath(String.format("PI_%d/FN_callActivity1", processInstanceKey));
+          final ProcessInstanceForListViewEntity processInstance = newProcessInstance();
+          processInstance.setTreePath(
+              String.format("PI_%d/FN_callActivity1", processInstance.getKey()));
           store(listViewTemplate, client, processInstance);
 
           final var flowNodeInstanceKey = ID_GENERATOR.getAndIncrement();
@@ -366,14 +353,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
         (job, resources) -> {
           final var listViewTemplate = resources.getIndexTemplateDescriptor(ListViewTemplate.class);
 
-          final var processInstanceKey = ID_GENERATOR.getAndIncrement();
-          final ProcessInstanceForListViewEntity processInstance =
-              new ProcessInstanceForListViewEntity()
-                  .setId(String.valueOf(processInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(processInstanceKey)
-                  .setProcessDefinitionKey(9999L)
-                  .setBpmnProcessId("process-1");
+          final ProcessInstanceForListViewEntity processInstance = newProcessInstance();
           store(listViewTemplate, client, processInstance);
 
           final var flowNodeInstanceKey = ID_GENERATOR.getAndIncrement();
@@ -477,15 +457,8 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
         (job, resources) -> {
           final var listViewTemplate = resources.getIndexTemplateDescriptor(ListViewTemplate.class);
 
-          final var processInstanceKey = ID_GENERATOR.getAndIncrement();
-          final ProcessInstanceForListViewEntity processInstance =
-              new ProcessInstanceForListViewEntity()
-                  .setId(String.valueOf(processInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(processInstanceKey)
-                  .setProcessDefinitionKey(9999L)
-                  .setBpmnProcessId("process-1")
-                  .setTreePath(String.format("PI_%d", processInstanceKey));
+          final ProcessInstanceForListViewEntity processInstance = newProcessInstance();
+          processInstance.setTreePath(String.format("PI_%d", processInstance.getKey()));
           store(listViewTemplate, client, processInstance);
 
           client.refresh(listViewTemplate.getFullQualifiedName());
@@ -556,16 +529,10 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
         (job, resources) -> {
           final var listViewTemplate = resources.getIndexTemplateDescriptor(ListViewTemplate.class);
 
-          final var processInstanceKey = ID_GENERATOR.getAndIncrement();
-          final ProcessInstanceForListViewEntity processInstance =
-              new ProcessInstanceForListViewEntity()
-                  .setId(String.valueOf(processInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(processInstanceKey)
-                  .setProcessDefinitionKey(9999L)
-                  .setBpmnProcessId("process-1")
-                  .setTreePath(String.format("PI_%d/FN_callActivity1", processInstanceKey))
-                  .setIncident(true);
+          final ProcessInstanceForListViewEntity processInstance = newProcessInstance();
+          processInstance
+              .setTreePath(String.format("PI_%d/FN_callActivity1", processInstance.getKey()))
+              .setIncident(true);
           store(listViewTemplate, client, processInstance);
 
           final var flowNodeInstanceKey = ID_GENERATOR.getAndIncrement();
@@ -672,16 +639,10 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
         (job, resources) -> {
           final var listViewTemplate = resources.getIndexTemplateDescriptor(ListViewTemplate.class);
 
-          final var processInstanceKey = ID_GENERATOR.getAndIncrement();
-          final ProcessInstanceForListViewEntity processInstance =
-              new ProcessInstanceForListViewEntity()
-                  .setId(String.valueOf(processInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(processInstanceKey)
-                  .setProcessDefinitionKey(9999L)
-                  .setBpmnProcessId("process-1")
-                  .setTreePath(String.format("PI_%d/FN_callActivity1", processInstanceKey))
-                  .setIncident(true);
+          final ProcessInstanceForListViewEntity processInstance = newProcessInstance();
+          processInstance
+              .setTreePath(String.format("PI_%d/FN_callActivity1", processInstance.getKey()))
+              .setIncident(true);
           store(listViewTemplate, client, processInstance);
 
           final var flowNodeInstanceKey = ID_GENERATOR.getAndIncrement();
@@ -812,15 +773,8 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
         (job, resources) -> {
           final var listViewTemplate = resources.getIndexTemplateDescriptor(ListViewTemplate.class);
 
-          final var processInstanceKey = ID_GENERATOR.getAndIncrement();
-          final ProcessInstanceForListViewEntity processInstance =
-              new ProcessInstanceForListViewEntity()
-                  .setId(String.valueOf(processInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(processInstanceKey)
-                  .setProcessDefinitionKey(9999L)
-                  .setBpmnProcessId("process-1")
-                  .setTreePath(String.format("PI_%d", processInstanceKey));
+          final ProcessInstanceForListViewEntity processInstance = newProcessInstance();
+          processInstance.setTreePath(String.format("PI_%d", processInstance.getKey()));
           store(listViewTemplate, client, processInstance);
 
           client.refresh(listViewTemplate.getFullQualifiedName());
@@ -912,14 +866,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
           // the process instance is already displaying an incident (incident=true) in the list
           // view
           final ProcessInstanceForListViewEntity processInstance =
-              new ProcessInstanceForListViewEntity()
-                  .setId(String.valueOf(key))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(key)
-                  .setProcessDefinitionKey(9999L)
-                  .setBpmnProcessId("process-1")
-                  .setTreePath("PI_" + key)
-                  .setIncident(true);
+              newProcessInstance(key).setTreePath("PI_" + key).setIncident(true);
           store(listViewTemplate, client, processInstance);
           client.refresh(listViewTemplate.getFullQualifiedName());
 
@@ -983,15 +930,8 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
         (job, resources) -> {
           final var listViewTemplate = resources.getIndexTemplateDescriptor(ListViewTemplate.class);
 
-          final var processInstanceKey = ID_GENERATOR.getAndIncrement();
-          final ProcessInstanceForListViewEntity processInstance =
-              new ProcessInstanceForListViewEntity()
-                  .setId(String.valueOf(processInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(processInstanceKey)
-                  .setProcessDefinitionKey(9999L)
-                  .setBpmnProcessId("process-1")
-                  .setTreePath(String.format("PI_%d", processInstanceKey));
+          final ProcessInstanceForListViewEntity processInstance = newProcessInstance();
+          processInstance.setTreePath(String.format("PI_%d", processInstance.getKey()));
           store(listViewTemplate, client, processInstance);
 
           client.refresh(listViewTemplate.getFullQualifiedName());
@@ -1161,15 +1101,8 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
         (job, resources) -> {
           final var listViewTemplate = resources.getIndexTemplateDescriptor(ListViewTemplate.class);
 
-          final var processInstanceKey = ID_GENERATOR.getAndIncrement();
-          final ProcessInstanceForListViewEntity processInstance =
-              new ProcessInstanceForListViewEntity()
-                  .setId(String.valueOf(processInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(processInstanceKey)
-                  .setProcessDefinitionKey(9999L)
-                  .setBpmnProcessId("process-1")
-                  .setTreePath(String.format("PI_%d", processInstanceKey));
+          final ProcessInstanceForListViewEntity processInstance = newProcessInstance();
+          processInstance.setTreePath(String.format("PI_%d", processInstance.getKey()));
           store(listViewTemplate, client, processInstance);
           storeDuplicates(listViewTemplate, client, processInstance, "2026-07-12", "2026-07-13");
 
@@ -1291,15 +1224,9 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
         (job, resources) -> {
           final var listViewTemplate = resources.getIndexTemplateDescriptor(ListViewTemplate.class);
 
-          final var processInstanceKey = ID_GENERATOR.getAndIncrement();
-          final ProcessInstanceForListViewEntity processInstance =
-              new ProcessInstanceForListViewEntity()
-                  .setId(String.valueOf(processInstanceKey))
-                  .setPartitionId(PARTITION_ID)
-                  .setKey(processInstanceKey)
-                  .setProcessDefinitionKey(9999L)
-                  .setBpmnProcessId("process-1")
-                  .setTreePath(String.format("PI_%d/FN_callActivity1", processInstanceKey));
+          final ProcessInstanceForListViewEntity processInstance = newProcessInstance();
+          processInstance.setTreePath(
+              String.format("PI_%d/FN_callActivity1", processInstance.getKey()));
           store(listViewTemplate, client, processInstance);
 
           final var flowNodeInstanceKey = ID_GENERATOR.getAndIncrement();
@@ -1507,6 +1434,20 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
     final List<String> actualIds =
         captor.getValue().stream().map(IncidentEntity::getId).sorted().toList();
     assertThat(actualIds).isEqualTo(expectedIds);
+  }
+
+  private static ProcessInstanceForListViewEntity newProcessInstance() {
+    return newProcessInstance(ID_GENERATOR.getAndIncrement());
+  }
+
+  private static ProcessInstanceForListViewEntity newProcessInstance(
+      final long processInstanceKey) {
+    return new ProcessInstanceForListViewEntity()
+        .setId(String.valueOf(processInstanceKey))
+        .setPartitionId(PARTITION_ID)
+        .setKey(processInstanceKey)
+        .setProcessDefinitionKey(9999L)
+        .setBpmnProcessId("process-1");
   }
 
   private IncidentUpdateRepository createIncidentUpdateRepository(
