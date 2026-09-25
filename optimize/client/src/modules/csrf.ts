@@ -14,10 +14,30 @@ const CSRF_PROTECTED_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
 
 export function csrfRequestHeader(method: string | undefined): Record<string, string> {
   const token = sessionStorage.getItem(CSRF_TOKEN_HEADER);
-  if (token && method && CSRF_PROTECTED_METHODS.includes(method.toUpperCase())) {
+  if (token && isProtected(method)) {
     return {[CSRF_TOKEN_HEADER]: token};
   }
   return {};
+}
+
+let tokenFetch: Promise<void> | undefined;
+
+// A fresh tab has no token yet: fetch one before the first write instead of racing the first reads.
+export async function ensureCsrfToken(method: string | undefined): Promise<void> {
+  if (!isProtected(method) || sessionStorage.getItem(CSRF_TOKEN_HEADER)) {
+    return;
+  }
+  tokenFetch ??= fetch('api/identity/current/user', {credentials: 'same-origin'})
+    .then(storeCsrfToken)
+    .catch(() => undefined)
+    .finally(() => {
+      tokenFetch = undefined;
+    });
+  await tokenFetch;
+}
+
+function isProtected(method: string | undefined): boolean {
+  return !!method && CSRF_PROTECTED_METHODS.includes(method.toUpperCase());
 }
 
 export function storeCsrfToken(response: Response): void {
