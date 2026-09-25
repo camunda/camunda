@@ -276,7 +276,7 @@ export class AlertModal extends React.Component {
                     size="sm"
                     items={reports}
                     selectedItem={selectedReport}
-                    itemToString={(item) => item.name || item.id}
+                    itemToString={(item) => item?.name || item?.id || ''}
                     disabled={!!this.props.initialReport || !reports?.length}
                     placeholder={t('alert.form.reportPlaceholder')}
                     titleText={t('alert.form.report')}
