@@ -24,6 +24,16 @@ import org.immutables.value.Value;
 @ImmutableProtocol(builder = ImmutableAgentInstanceRecordValue.Builder.class)
 public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRelated, TenantOwned {
 
+  String ATTR_STATUS = "status";
+  String ATTR_METRICS = "metrics";
+  String ATTR_TOOLS = "tools";
+  String ATTR_MODEL = "model";
+  String ATTR_PROVIDER = "provider";
+  String ATTR_MAX_TOKENS = "maxTokens";
+  String ATTR_MAX_MODEL_CALLS = "maxModelCalls";
+  String ATTR_MAX_TOOL_CALLS = "maxToolCalls";
+  String ATTR_SYSTEM_PROMPT = "systemPrompt";
+
   /**
    * @return the unique key of the agent instance
    */

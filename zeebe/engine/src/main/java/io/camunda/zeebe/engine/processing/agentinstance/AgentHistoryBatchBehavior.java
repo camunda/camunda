@@ -393,6 +393,30 @@ public final class AgentHistoryBatchBehavior {
   }
 
   /**
+   * Returns a copy of {@code record} with {@code systemPrompt}/{@code tools} cleared whenever they
+   * are absent from {@code record}'s own {@code changedAttributes} — those two fields can carry
+   * large payloads, so an UPDATED event that didn't touch them shouldn't re-transmit their current
+   * value on every unrelated update (e.g. a metrics-only or status-only change). {@code record}
+   * itself is left untouched, since it may still be needed afterwards (e.g. for the command
+   * response, which must keep reporting the full, current state).
+   *
+   * <p>Only meant for the {@code AgentInstanceIntent.UPDATED} event value: CREATED/COMPLETED/
+   * MIGRATED events always carry full data and must not be trimmed this way.
+   */
+  public static AgentInstanceRecord trimUnchangedContentFields(final AgentInstanceRecord record) {
+    final var changed = Set.copyOf(record.getChangedAttributes());
+    final var copy = new AgentInstanceRecord();
+    copy.copyFrom(record);
+    if (!changed.contains(AgentInstanceRecord.ATTR_SYSTEM_PROMPT)) {
+      copy.getDefinition().setSystemPrompt(List.of());
+    }
+    if (!changed.contains(AgentInstanceRecord.ATTR_TOOLS)) {
+      copy.setTools(List.of());
+    }
+    return copy;
+  }
+
+  /**
    * Sums each positive field of {@code item}'s metrics onto {@code current}, skipping non-positive
    * fields (covers the {@code -1} not-provided sentinel and {@code 0} no-change). {@code
    * modelCalls}/{@code toolCalls} aren't part of the item's metrics — they're derived instead:
