@@ -722,7 +722,9 @@
 					"agentDiscovering": "Discovering tools...",
 					"agentThinking": "Thinking...",
 					"agentCalling": "Calling tools...",
-					"moreAgents": " + {{count}} more active",
+					"moreAgents": "+ {{count}} more active agents",
+					"moreAgents_one": "+ {{count}} more active agent",
+					"moreAgents_other": "+ {{count}} more active agents",
 					"calledProcessError": "Failed to resolve called instances",
 					"calledDecisionError": "Failed to resolve called decision instances"
 				},

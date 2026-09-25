@@ -708,7 +708,9 @@
 					"agentDiscovering": "Buscando herramientas...",
 					"agentThinking": "Pensando...",
 					"agentCalling": "Llamando a herramientas...",
-					"moreAgents": " + {{count}} más activos",
+					"moreAgents": "+ {{count}} agentes activos más",
+					"moreAgents_one": "+ {{count}} agente activo más",
+					"moreAgents_other": "+ {{count}} agentes activos más",
 					"calledProcessError": "No se pudieron encontrar las instancias llamadas",
 					"calledDecisionError": "No se pudieron encontrar las instancias de decisión llamadas"
 				},

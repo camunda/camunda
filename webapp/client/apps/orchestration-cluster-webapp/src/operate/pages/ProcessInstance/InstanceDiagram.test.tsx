@@ -42,6 +42,13 @@ const PROCESS_XML = `<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/
 <bpmndi:BPMNShape id="start_di" bpmnElement="start_1"><dc:Bounds x="100" y="100" width="36" height="36" /></bpmndi:BPMNShape><bpmndi:BPMNShape id="task_di" bpmnElement="task_1"><dc:Bounds x="200" y="100" width="100" height="80" /></bpmndi:BPMNShape>
 <bpmndi:BPMNShape id="call_di" bpmnElement="call_1"><dc:Bounds x="350" y="100" width="100" height="80" /></bpmndi:BPMNShape><bpmndi:BPMNShape id="rule_di" bpmnElement="rule_1"><dc:Bounds x="500" y="100" width="100" height="80" /></bpmndi:BPMNShape><bpmndi:BPMNShape id="end_di" bpmnElement="end_1"><dc:Bounds x="650" y="100" width="36" height="36" /></bpmndi:BPMNShape>
 </bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn:definitions>`;
+const NESTED_XML = PROCESS_XML.replace(
+	'<bpmn:endEvent id="end_1" />',
+	'<bpmn:subProcess id="sub_1"><bpmn:userTask id="inner_1" /></bpmn:subProcess><bpmn:endEvent id="end_1" />',
+).replace(
+	'</bpmndi:BPMNDiagram></bpmn:definitions>',
+	'<bpmndi:BPMNShape id="sub_di" bpmnElement="sub_1"><dc:Bounds x="750" y="100" width="120" height="100" /></bpmndi:BPMNShape></bpmndi:BPMNDiagram><bpmndi:BPMNDiagram id="Nested_Diagram"><bpmndi:BPMNPlane id="Nested_Plane" bpmnElement="sub_1"><bpmndi:BPMNShape id="inner_di" bpmnElement="inner_1"><dc:Bounds x="770" y="120" width="80" height="60" /></bpmndi:BPMNShape></bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn:definitions>',
+);
 
 const INSTANCE = createProcessInstance({processInstanceKey: INSTANCE_ID, processDefinitionId: 'Process_1'});
 const STATISTICS = [
@@ -59,6 +66,9 @@ const singleResult = <T,>(item: T) => ({
 function Page(props: React.ComponentProps<typeof InstanceDiagram>) {
 	const location = useRouterState({select: (state) => state.location});
 	const processInstanceId = useParams({strict: false}).processInstanceId ?? INSTANCE_ID;
+	if (!location.pathname.startsWith('/operate/processes/')) {
+		return null;
+	}
 	const search = processInstanceSearchSchema.parse(location.search);
 	return (
 		<ProcessInstanceContext
@@ -82,6 +92,12 @@ function renderPage(props: React.ComponentProps<typeof InstanceDiagram> = {}, se
 		path: '/operate/processes/$processInstanceId/details',
 		initialEntry: `/operate/processes/${INSTANCE_ID}/details${search}`,
 	});
+}
+
+async function renderLoadedPage(props: React.ComponentProps<typeof InstanceDiagram> = {}, search = '') {
+	const screen = await renderPage(props, search);
+	await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
+	return screen;
 }
 
 function handlers({
@@ -124,8 +140,7 @@ describe('<InstanceDiagram />', () => {
 		vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:diagram');
 		const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
 
-		const screen = await renderPage();
-		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
+		const screen = await renderLoadedPage();
 		await userEvent.click(screen.getByRole('button', {name: 'Download XML'}));
 
 		expect(click).toHaveBeenCalledOnce();
@@ -185,7 +200,10 @@ describe('<InstanceDiagram />', () => {
 					{elementId: 'call_1', waitingCount: 1},
 					{elementId: 'Process_1', waitingCount: 1},
 				],
-				agents: [createAgentInstance({elementId: 'call_1'})],
+				agents: [
+					createAgentInstance({elementId: 'call_1'}),
+					createAgentInstance({agentInstanceKey: 'agent-2', elementId: 'call_1'}),
+				],
 			}),
 		);
 
@@ -194,8 +212,13 @@ describe('<InstanceDiagram />', () => {
 		await expect.element(screen.getByTestId('instance-state-task_1-active')).toHaveTextContent('2');
 		await expect.element(screen.getByTestId('instance-state-end_1-completedEndEvents')).toBeVisible();
 		await expect.element(screen.getByTestId('instance-waiting-task_1')).toHaveTextContent('2 waiting');
-		await expect.element(screen.getByTestId('instance-agent-call_1')).toHaveTextContent('Thinking...');
+		await expect
+			.element(screen.getByTestId('instance-agent-call_1'))
+			.toHaveTextContent('Thinking... + 1 more active agent');
 		await expect.element(screen.getByTestId('instance-agent-shine-call_1')).toBeVisible();
+		const shineStyle = getComputedStyle(screen.getByTestId('instance-agent-shine-call_1').element());
+		expect(shineStyle.mask).toContain('content-box');
+		expect(shineStyle.maskComposite.split(',')[0]).toBe('exclude');
 		await expect.element(screen.getByTestId('instance-waiting-call_1')).not.toBeInTheDocument();
 		await expect.element(screen.getByTestId('instance-waiting-Process_1')).not.toBeInTheDocument();
 		await expect.element(screen.getByTestId('instance-state-task_1-completed')).not.toBeInTheDocument();
@@ -210,9 +233,36 @@ describe('<InstanceDiagram />', () => {
 
 		await screen.queryClient.setQueryData(
 			['instanceDiagramAgents', INSTANCE_ID],
-			[createAgentInstance({elementId: 'call_1', status: 'TOOL_CALLING'})],
+			Array.from({length: 3}, (_, index) =>
+				createAgentInstance({agentInstanceKey: `agent-${index + 1}`, elementId: 'call_1', status: 'TOOL_CALLING'}),
+			),
 		);
-		await expect.element(screen.getByTestId('instance-agent-call_1')).toHaveTextContent('Calling tools...');
+		await expect
+			.element(screen.getByTestId('instance-agent-call_1'))
+			.toHaveTextContent('Calling tools... + 2 more active agents');
+	});
+
+	it('should measure agent shine against its own diagram when two viewers share an element ID', async ({worker}) => {
+		worker.use(...handlers({agents: [createAgentInstance({elementId: 'call_1'})]}));
+		await renderLoadedPage();
+		worker.use(
+			...handlers({
+				xml: PROCESS_XML.replace(
+					'bpmnElement="call_1"><dc:Bounds x="350" y="100" width="100"',
+					'bpmnElement="call_1"><dc:Bounds x="350" y="100" width="140"',
+				),
+				agents: [createAgentInstance({elementId: 'call_1'})],
+			}),
+		);
+		await renderLoadedPage();
+
+		await expect
+			.poll(() =>
+				[...document.querySelectorAll<HTMLElement>('[data-testid="instance-agent-shine-call_1"]')].map(
+					(shine) => getComputedStyle(shine).width,
+				),
+			)
+			.toEqual(['102px', '142px']);
 	});
 
 	it('should show only execution states and pending badges in modification mode', async ({worker}) => {
@@ -254,8 +304,7 @@ describe('<InstanceDiagram />', () => {
 	it('should synchronize selection and clear the instance key when the selected node is clicked', async ({worker}) => {
 		worker.use(...handlers());
 
-		const screen = await renderPage({}, '?elementId=task_1&elementInstanceKey=instance-2');
-		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
+		const screen = await renderLoadedPage({}, '?elementId=task_1&elementInstanceKey=instance-2');
 
 		const task = document.querySelector<SVGElement>('[data-element-id="task_1"]');
 		expect(task).not.toBeNull();
@@ -277,8 +326,7 @@ describe('<InstanceDiagram />', () => {
 	it('should select the URL anchor element and clear the previous instance selection', async ({worker}) => {
 		worker.use(...handlers());
 
-		const screen = await renderPage({}, '?elementId=call_1&anchorElementId=task_1&elementInstanceKey=instance-2');
-		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
+		const screen = await renderLoadedPage({}, '?elementId=call_1&anchorElementId=task_1&elementInstanceKey=instance-2');
 
 		await userEvent.click(document.querySelector<SVGElement>('[data-element-id="task_1"]')!);
 		await expect
@@ -291,8 +339,7 @@ describe('<InstanceDiagram />', () => {
 	it('should clear the previous selection when navigating to a different process instance', async ({worker}) => {
 		worker.use(...handlers());
 
-		const screen = await renderPage({}, '?elementId=task_1');
-		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
+		const screen = await renderLoadedPage({}, '?elementId=task_1');
 
 		await screen.router.navigate({
 			to: '/operate/processes/$processInstanceId/details',
@@ -306,6 +353,30 @@ describe('<InstanceDiagram />', () => {
 			.toBeUndefined();
 	});
 
+	it('should retain a newly selected element when switching to its subprocess root', async ({worker}) => {
+		worker.use(
+			...handlers({
+				xml: NESTED_XML,
+				statistics: [...STATISTICS, createProcessDefinitionStatistic({elementId: 'inner_1', active: 1})],
+			}),
+		);
+		const screen = await renderLoadedPage({}, '?elementId=task_1');
+
+		await screen.router.navigate({to: '.', search: {elementId: 'inner_1'}});
+		await expect
+			.poll(() => document.querySelector('[data-element-id="inner_1"]')?.classList.contains('op-selected'))
+			.toBe(true);
+		await delay(350);
+		expect(processInstanceSearchSchema.parse(screen.router.state.location.search).elementId).toBe('inner_1');
+
+		await userEvent.click(screen.getByRole('link', {name: 'Process_1'}));
+		await expect
+			.poll(() => processInstanceSearchSchema.parse(screen.router.state.location.search).elementId)
+			.toBeUndefined();
+		await delay(350);
+		expect(processInstanceSearchSchema.parse(screen.router.state.location.search).elementId).toBeUndefined();
+	});
+
 	it('should drill into a called process without inheriting parent selection', async ({worker}) => {
 		worker.use(
 			...handlers(),
@@ -317,8 +388,7 @@ describe('<InstanceDiagram />', () => {
 			}),
 		);
 
-		const screen = await renderPage({}, '?elementId=task_1');
-		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
+		const screen = await renderLoadedPage({}, '?elementId=task_1');
 
 		await userEvent.dblClick(document.querySelector<SVGElement>('[data-element-id="call_1"]')!);
 
@@ -337,14 +407,18 @@ describe('<InstanceDiagram />', () => {
 			}),
 		);
 
-		const screen = await renderPage();
-		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
+		const screen = await renderLoadedPage();
 		await userEvent.dblClick(document.querySelector<SVGElement>('[data-element-id="rule_1"]')!);
 
 		await expect.poll(() => screen.router.state.location.pathname).toBe('/operate/decisions/decision-1');
 	});
 
-	it('should ignore a drilldown response after changing process instances', async ({worker}) => {
+	it.for([
+		'changing process instances',
+		'selecting a different element',
+		'navigating to a different selection',
+		'navigating away with unrelated search',
+	] as const)('should ignore a drilldown response after %s', async (action, {worker}) => {
 		let release: () => void = () => {};
 		let hasRequested = false;
 		const delayedResponse = new Promise<void>((resolve) => {
@@ -364,20 +438,50 @@ describe('<InstanceDiagram />', () => {
 			}),
 			...handlers(),
 		);
-		const screen = await renderPage();
-		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
+		const screen = await renderLoadedPage();
 		await userEvent.dblClick(document.querySelector<SVGElement>('[data-element-id="call_1"]')!);
 		await expect.poll(() => hasRequested).toBe(true);
 
-		await screen.router.navigate({
-			to: '/operate/processes/$processInstanceId/details',
-			params: {processInstanceId: 'instance-2'},
-			search: {},
-		});
+		if (action === 'changing process instances') {
+			await screen.router.navigate({
+				to: '/operate/processes/$processInstanceId/details',
+				params: {processInstanceId: 'instance-2'},
+				search: {},
+			});
+		} else if (action === 'navigating away with unrelated search') {
+			screen.router.history.push('/operate/missing?isMultiInstanceBody=invalid');
+			await expect.poll(() => screen.router.state.location.pathname).toBe('/operate/missing');
+		} else if (action === 'navigating to a different selection') {
+			await screen.router.navigate({to: '.', search: {elementId: 'task_1'}});
+		} else {
+			await userEvent.click(document.querySelector<SVGElement>('[data-element-id="task_1"]')!);
+			await expect
+				.poll(() => processInstanceSearchSchema.parse(screen.router.state.location.search).elementId)
+				.toBe('task_1');
+		}
 		release();
 		await expect
-			.poll(() => screen.queryClient.getQueryData(['instanceDiagramDrilldownElement', INSTANCE_ID, 'call_1']))
-			.toBeDefined();
-		await expect.poll(() => screen.router.state.location.pathname).toBe('/operate/processes/instance-2/details');
+			.poll(
+				() => screen.queryClient.getQueryState(['instanceDiagramDrilldownElement', INSTANCE_ID, 'call_1'])?.fetchStatus,
+			)
+			.toBe('idle');
+		await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+		expect(screen.router.state.location.pathname).toBe(
+			action === 'changing process instances'
+				? '/operate/processes/instance-2/details'
+				: action === 'navigating away with unrelated search'
+					? '/operate/missing'
+					: `/operate/processes/${INSTANCE_ID}/details`,
+		);
+		if (action === 'navigating away with unrelated search') {
+			expect(screen.router.state.location.search).toMatchObject({isMultiInstanceBody: 'invalid'});
+		} else {
+			expect(processInstanceSearchSchema.parse(screen.router.state.location.search).elementId).toBe(
+				action === 'changing process instances' ? undefined : 'task_1',
+			);
+		}
+		if (action === 'selecting a different element' || action === 'navigating to a different selection') {
+			expect(screen.queryClient.getQueryData(['instanceDiagramCalledProcess', 'element-1'])).toBeUndefined();
+		}
 	});
 });

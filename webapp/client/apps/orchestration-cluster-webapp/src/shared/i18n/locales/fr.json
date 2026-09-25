@@ -711,7 +711,9 @@
 					"agentDiscovering": "Découverte des outils...",
 					"agentThinking": "Réflexion...",
 					"agentCalling": "Appel des outils...",
-					"moreAgents": " + {{count}} autres actifs",
+					"moreAgents": "+ {{count}} autres agents actifs",
+					"moreAgents_one": "+ {{count}} autre agent actif",
+					"moreAgents_other": "+ {{count}} autres agents actifs",
 					"calledProcessError": "Impossible de trouver les instances appelées",
 					"calledDecisionError": "Impossible de trouver les instances de décision appelées"
 				},

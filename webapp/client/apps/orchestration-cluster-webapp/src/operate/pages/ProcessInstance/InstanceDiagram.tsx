@@ -7,7 +7,7 @@
  */
 
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {useNavigate} from '@tanstack/react-router';
+import {useNavigate, useRouter} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import {useQueryClient as useReactQueryClient} from '@tanstack/react-query';
 import kebabCase from 'lodash/kebabCase';
@@ -19,6 +19,7 @@ import {isInstanceRunning} from '#/operate/shared/utils/processInstance';
 import {useDiagramXml} from '#/operate/pages/Processes/useDiagramXml';
 import {useProcessInstanceWaitStateStatistics} from './processInstance.queries';
 import {useProcessInstancePage} from './useProcessInstancePage';
+import {processInstanceSearchSchema} from './processInstanceSearch';
 import {
 	useInstanceDiagramData,
 	elementDrilldownQuery,
@@ -51,10 +52,24 @@ function InstanceDiagram({
 	const {processInstanceId, processInstance, selection, search} = useProcessInstancePage();
 	const {t} = useTranslation();
 	const navigate = useNavigate();
+	const router = useRouter();
 	const queryClient = useReactQueryClient();
 	const [pendingDrillDownElementId, setPendingDrillDownElementId] = useState<string | null>(null);
+	const drillDownVersion = useRef(0);
 	const previousInstanceId = useRef(processInstanceId);
 	const currentInstanceId = useRef<string | null>(processInstanceId);
+	const selectedElementId = selection.anchorElementId ?? selection.elementId;
+	const previousSelection = useRef({elementId: selectedElementId, elementInstanceKey: selection.elementInstanceKey});
+	useEffect(() => {
+		if (
+			previousSelection.current.elementId !== selectedElementId ||
+			previousSelection.current.elementInstanceKey !== selection.elementInstanceKey
+		) {
+			drillDownVersion.current++;
+			setPendingDrillDownElementId(null);
+		}
+		previousSelection.current = {elementId: selectedElementId, elementInstanceKey: selection.elementInstanceKey};
+	}, [selectedElementId, selection.elementInstanceKey]);
 	const {
 		data: diagram,
 		isPending: isXmlPending,
@@ -83,13 +98,7 @@ function InstanceDiagram({
 		modificationBadges,
 	});
 	const selectableElements = useMemo(() => statistics.data?.map(({elementId}) => elementId) ?? [], [statistics.data]);
-	const selectedElementIds = useMemo(
-		() =>
-			(selection.anchorElementId ?? selection.elementId)
-				? [selection.anchorElementId ?? selection.elementId!]
-				: undefined,
-		[selection.anchorElementId, selection.elementId],
-	);
+	const selectedElementIds = useMemo(() => (selectedElementId ? [selectedElementId] : undefined), [selectedElementId]);
 	const highlightedElementIds = useMemo(
 		() => statistics.data?.filter(({completed}) => completed > 0).map(({elementId}) => elementId),
 		[statistics.data],
@@ -117,26 +126,35 @@ function InstanceDiagram({
 		return drilldownElements;
 	}, [diagram, isModificationModeEnabled, pendingDrillDownElementId]);
 
-	const clearSelection = useCallback(() => {
-		void navigate({
-			to: '.',
-			search: (current) => ({
-				...current,
-				elementId: undefined,
-				elementInstanceKey: undefined,
-				anchorElementId: undefined,
-				isMultiInstanceBody: undefined,
-				isPlaceholder: undefined,
-			}),
-			replace: true,
-		});
-	}, [navigate]);
+	const clearSelection = useCallback(
+		(shouldClear?: (elementId?: string) => boolean) => {
+			drillDownVersion.current++;
+			setPendingDrillDownElementId(null);
+			void navigate({
+				to: '.',
+				search: (current) => {
+					if (shouldClear && !shouldClear(current.anchorElementId ?? current.elementId)) {
+						return current;
+					}
+					return {
+						...current,
+						elementId: undefined,
+						elementInstanceKey: undefined,
+						anchorElementId: undefined,
+						isMultiInstanceBody: undefined,
+						isPlaceholder: undefined,
+					};
+				},
+				replace: true,
+			});
+		},
+		[navigate],
+	);
 
 	useEffect(() => {
 		currentInstanceId.current = processInstanceId;
 		if (previousInstanceId.current !== processInstanceId) {
 			clearSelection();
-			setPendingDrillDownElementId(null);
 		}
 		previousInstanceId.current = processInstanceId;
 		return () => {
@@ -145,6 +163,8 @@ function InstanceDiagram({
 	}, [clearSelection, processInstanceId]);
 
 	const selectElement = (elementId: string, isMultiInstanceBody?: boolean) => {
+		drillDownVersion.current++;
+		setPendingDrillDownElementId(null);
 		void navigate({
 			to: '.',
 			search: (current) => ({
@@ -167,10 +187,21 @@ function InstanceDiagram({
 		if (elementType !== 'bpmn:CallActivity' && elementType !== 'bpmn:BusinessRuleTask') {
 			return;
 		}
+		const version = ++drillDownVersion.current;
+		const isCurrentDrillDown = () => {
+			if (currentInstanceId.current !== processInstanceId || drillDownVersion.current !== version) {
+				return false;
+			}
+			const currentSearch = processInstanceSearchSchema.parse(router.state.location.search);
+			return (
+				(currentSearch.anchorElementId ?? currentSearch.elementId) === selectedElementId &&
+				currentSearch.elementInstanceKey === selection.elementInstanceKey
+			);
+		};
 		setPendingDrillDownElementId(elementId);
 		try {
 			const element = await queryClient.fetchQuery(elementDrilldownQuery(processInstanceId, elementId));
-			if (currentInstanceId.current !== processInstanceId) {
+			if (!isCurrentDrillDown()) {
 				return;
 			}
 			const elementInstance = element.items[0];
@@ -180,7 +211,7 @@ function InstanceDiagram({
 			const elementInstanceKey = elementInstance.elementInstanceKey;
 			if (elementType === 'bpmn:CallActivity') {
 				const called = await queryClient.fetchQuery(calledProcessQuery(elementInstanceKey));
-				if (currentInstanceId.current !== processInstanceId) {
+				if (!isCurrentDrillDown()) {
 					return;
 				}
 				const calledInstance = called.items[0];
@@ -193,7 +224,7 @@ function InstanceDiagram({
 				}
 			} else {
 				const called = await queryClient.fetchQuery(calledDecisionQuery(elementInstanceKey));
-				if (currentInstanceId.current !== processInstanceId) {
+				if (!isCurrentDrillDown()) {
 					return;
 				}
 				const calledDecision = called.items[0];
@@ -205,7 +236,7 @@ function InstanceDiagram({
 				}
 			}
 		} catch {
-			if (currentInstanceId.current !== processInstanceId) {
+			if (!isCurrentDrillDown()) {
 				return;
 			}
 			notificationsStore.displayNotification({
@@ -218,7 +249,7 @@ function InstanceDiagram({
 				isDismissable: true,
 			});
 		} finally {
-			if (currentInstanceId.current === processInstanceId) {
+			if (isCurrentDrillDown()) {
 				setPendingDrillDownElementId(null);
 			}
 		}
@@ -255,11 +286,7 @@ function InstanceDiagram({
 							}
 							if (elementId) {
 								selectElement(elementId, isMultiInstance);
-							} else if (
-								clickedElementId &&
-								selectedElementIds?.includes(clickedElementId) &&
-								!isModificationModeEnabled
-							) {
+							} else if (clickedElementId && selectedElementIds?.includes(clickedElementId)) {
 								selectElement(
 									clickedElementId,
 									diagram.businessObjects[clickedElementId]?.loopCharacteristics?.$type ===
@@ -270,10 +297,7 @@ function InstanceDiagram({
 							}
 						}}
 						onRootChange={(rootElementId, getSelectionRootId) => {
-							const displayedElementId = selection.anchorElementId ?? selection.elementId;
-							if (displayedElementId && rootElementId !== getSelectionRootId(displayedElementId)) {
-								clearSelection();
-							}
+							clearSelection((elementId) => elementId !== undefined && rootElementId !== getSelectionRootId(elementId));
 						}}
 						overlaysData={overlaysData}
 						selectedElementOverlay={isModificationModeEnabled ? selectedElementOverlay : undefined}

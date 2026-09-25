@@ -6,12 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useContext} from 'react';
+import {useContext, useLayoutEffect, useRef} from 'react';
 import {createPortal} from 'react-dom';
 import styled, {keyframes} from 'styled-components';
 import {useTranslation} from 'react-i18next';
 import type {AgentInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {DiagramOverlayContext} from '#/operate/shared/Diagram/DiagramOverlayContext';
+import type {OverlayEntry} from '#/operate/shared/Diagram/overlayTypes';
 import {StateOverlay, type ElementState} from '#/operate/shared/StateOverlay/StateOverlay';
 
 const AgentTag = styled.span`
@@ -30,17 +31,24 @@ const shine = keyframes`
 	50% { background-position: 100% 100%; }
 `;
 
-const AgentShine = styled.span<{$width: number; $height: number; $radius: number}>`
-	display: block;
+const AgentShine = styled.span`
+	position: absolute;
+	inset: -1px;
+	display: none;
 	pointer-events: none;
-	border: 2px solid var(--cds-focus);
-	width: ${({$width}) => `${$width}px`};
-	height: ${({$height}) => `${$height}px`};
-	border-radius: ${({$radius}) => `${$radius}px`};
+	padding: var(--cds-spacing-01);
 	opacity: 0.7;
 	animation: ${shine} 8s linear infinite;
 	background-image: linear-gradient(120deg, transparent, var(--cds-focus), transparent);
 	background-size: 300% 300%;
+	mask:
+		linear-gradient(#fff 0 0) content-box,
+		linear-gradient(#fff 0 0);
+	-webkit-mask:
+		linear-gradient(#fff 0 0) content-box,
+		linear-gradient(#fff 0 0);
+	-webkit-mask-composite: xor;
+	mask-composite: exclude;
 `;
 
 const WaitingTag = styled.span<{$centered: boolean}>`
@@ -70,6 +78,28 @@ type AgentPayload = {
 	status: AgentInstance['status'];
 	additionalActiveCount: number;
 };
+
+function AgentShineOverlay({container, elementId}: Pick<OverlayEntry, 'container' | 'elementId'>) {
+	const shineRef = useRef<HTMLSpanElement>(null);
+
+	useLayoutEffect(() => {
+		const shine = shineRef.current;
+		if (!shine) {
+			return;
+		}
+		const shape = container
+			.closest('.djs-container')
+			?.querySelector<SVGRectElement>(`[data-element-id="${CSS.escape(elementId)}"] .djs-visual rect`);
+		shine.style.display = shape ? 'block' : 'none';
+		if (shape) {
+			shine.style.width = `${Number(shape.getAttribute('width') ?? 0) + 2}px`;
+			shine.style.height = `${Number(shape.getAttribute('height') ?? 0) + 2}px`;
+			shine.style.borderRadius = `${Number(shape.getAttribute('rx') ?? 0) + 1}px`;
+		}
+	}, [container, elementId]);
+
+	return createPortal(<AgentShine ref={shineRef} data-testid={`instance-agent-shine-${elementId}`} />, container);
+}
 
 function InstanceDiagramOverlays() {
 	const overlays = useContext(DiagramOverlayContext);
@@ -114,7 +144,9 @@ function InstanceDiagramOverlays() {
 			return createPortal(
 				<AgentTag data-testid={`instance-agent-${elementId}`}>
 					{label}
-					{additionalActiveCount > 0 && t('operate.processInstance.diagram.moreAgents', {count: additionalActiveCount})}
+					{additionalActiveCount > 0 && (
+						<> {t('operate.processInstance.diagram.moreAgents', {count: additionalActiveCount})}</>
+					)}
 				</AgentTag>,
 				container,
 				`${agentInstanceKey}-status`,
@@ -122,22 +154,7 @@ function InstanceDiagramOverlays() {
 		}
 		if (type === 'instance-agent-shine') {
 			const {agentInstanceKey} = payload as AgentPayload;
-			const shape = document.querySelector<SVGRectElement>(
-				`[data-element-id="${CSS.escape(elementId)}"] .djs-visual rect`,
-			);
-			if (!shape) {
-				return null;
-			}
-			return createPortal(
-				<AgentShine
-					$width={Number(shape.getAttribute('width') ?? 0)}
-					$height={Number(shape.getAttribute('height') ?? 0)}
-					$radius={Number(shape.getAttribute('rx') ?? 0)}
-					data-testid={`instance-agent-shine-${elementId}`}
-				/>,
-				container,
-				`${agentInstanceKey}-shine`,
-			);
+			return <AgentShineOverlay key={`${agentInstanceKey}-shine`} container={container} elementId={elementId} />;
 		}
 		if (type === 'instance-modification') {
 			const {newTokenCount, cancelledTokenCount} = payload as {newTokenCount: number; cancelledTokenCount: number};

@@ -708,7 +708,9 @@
 					"agentDiscovering": "Tools werden gesucht...",
 					"agentThinking": "Denkt nach...",
 					"agentCalling": "Ruft Tools auf...",
-					"moreAgents": " + {{count}} weitere aktiv",
+					"moreAgents": "+ {{count}} weitere aktive Agenten",
+					"moreAgents_one": "+ {{count}} weiterer aktiver Agent",
+					"moreAgents_other": "+ {{count}} weitere aktive Agenten",
 					"calledProcessError": "Aufgerufene Instanzen konnten nicht ermittelt werden",
 					"calledDecisionError": "Aufgerufene Entscheidungsinstanzen konnten nicht ermittelt werden"
 				},
