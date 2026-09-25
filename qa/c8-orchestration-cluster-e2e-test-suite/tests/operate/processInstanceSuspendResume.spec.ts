@@ -556,6 +556,48 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     );
   });
 
+  // Skipped due to bug 64086: https://github.com/camunda/camunda/issues/64086
+  test.skip('Cancelling suspended instances from the toolbar terminates them', async ({
+    request,
+    page,
+    operateHomePage,
+    operateFiltersPanelPage,
+    operateProcessesPage,
+  }) => {
+    const subject = await startServiceTaskInstance('sr-ui-batch-cancel');
+    await suspendAndExpectSuspended(request, subject.processInstanceKey);
+
+    await navigateToAppHome(page, 'operate');
+    await expect(operateHomePage.operateBanner).toBeVisible();
+    await operateHomePage.clickProcessesTab();
+    // Active and Incidents stay on, as the default view has them: the filter
+    // the client builds from that combination is the one that loses the
+    // suspended instances, and narrowing to Suspended alone would not
+    // reproduce it.
+    await applySuspendedFilter(page, operateFiltersPanelPage);
+    await operateFiltersPanelPage.displayOptionalFilter(
+      'Process Instance Key(s)',
+    );
+    await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
+      subject.processInstanceKey,
+    );
+    await expect(
+      page.getByText(subject.processInstanceKey, {exact: false}).first(),
+    ).toBeVisible({timeout: UI_REFRESH_TIMEOUT});
+
+    await operateProcessesPage.cancelAllProcessInstancesInBatch();
+
+    // The batch reports COMPLETED either way, so the instance's own state is
+    // the only thing that separates a cancellation from one that matched
+    // nothing.
+    await expectProcessState(
+      request,
+      subject.processInstanceKey,
+      'TERMINATED',
+      extendedAssertionOptions,
+    );
+  });
+
   test('A call activity child instance offers Suspend in its own header', async ({
     request,
     page,
