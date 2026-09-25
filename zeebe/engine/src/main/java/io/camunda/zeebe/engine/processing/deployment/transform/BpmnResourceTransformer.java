@@ -50,6 +50,21 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
   private final BpmnValidator validator;
   private final ProcessState processState;
   private final boolean enableStraightThroughProcessingLoopDetector;
+<<<<<<< HEAD
+=======
+  private final BpmnElementOrderErrorTransformer elementOrderErrorTransformer;
+  private final ProcessDefinitionMetrics processDefinitionMetrics;
+  private final AgentDefinitionTransformer agentDefinitionTransformer;
+  private final Map<DeploymentResource, BpmnModelInstance> parsedModels = new IdentityHashMap<>();
+
+  /**
+   * Executable processes parsed for each resource in {@link #createMetadata}, kept around for
+   * {@link #writeRecords} to seed the process cache and scan for agent-marked elements once the
+   * process' final key/version are known.
+   */
+  private final Map<DeploymentResource, List<ExecutableProcess>> executableProcessesByResource =
+      new IdentityHashMap<>();
+>>>>>>> e873e1132 (perf: reuse the process transformed at deploy time for lookups)
 
   public BpmnResourceTransformer(
       final KeyGenerator keyGenerator,
@@ -139,10 +154,24 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
                     .setDuplicate(false)
                     .setDeploymentKey(deployment.getDeploymentKey());
               }
+<<<<<<< HEAD
               stateWriter.appendFollowUpEvent(
                   key,
                   ProcessIntent.CREATED,
                   new ProcessRecord().wrap(metadata, resource.getResource()));
+=======
+              final var processRecord =
+                  new ProcessRecord()
+                      .wrap(metadata, resource.getResource())
+                      .setTransformerVersions(bpmnTransformer.currentVersionsById());
+              stateWriter.appendFollowUpEvent(key, ProcessIntent.CREATED, processRecord);
+              final var executableProcess =
+                  findExecutableProcess(resource, metadata.getBpmnProcessId());
+              processState.cacheProcess(key, deployment.getTenantId(), executableProcess);
+              agentDefinitionTransformer.writeRecords(deployment, executableProcess, metadata);
+              processDefinitionMetrics.processDefinitionDeployed(
+                  key, processRecord.getBpmnProcessId(), resource.getResource().length);
+>>>>>>> e873e1132 (perf: reuse the process transformed at deploy time for lookups)
             });
   }
 
