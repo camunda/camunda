@@ -395,12 +395,13 @@ async function run() {
     }
     const metadata = prNumbers.map((number) => metaByNumber.get(number)).filter((meta) => meta !== undefined); // walk order, kept stable
     // One bulk query for every backport's original, instead of one REST call per
-    // backport when the pipeline's hop follows the marker.
+    // backport when the pipeline's hop follows the marker. The speculative batch
+    // drops unmerged PRs, but a backport can point at a closed-unmerged original
+    // that still carries attribution, so a miss is left to the REST fallback.
     const targets = (0, warm_1.backportTargets)(metadata.map((pr) => pr.body), ownRepo);
     const originalByNumber = new Map((await graphql.fetchPrMetadata(targets, true)).map((meta) => [meta.number, meta]));
-    for (const number of targets) {
-        const meta = originalByNumber.get(number);
-        originals.set(number, meta ? { body: meta.body, title: meta.title, authorLogin: meta.authorLogin, mergedAt: meta.mergedAt ?? undefined } : null);
+    for (const meta of originalByNumber.values()) {
+        originals.set(meta.number, { body: meta.body, title: meta.title, authorLogin: meta.authorLogin, mergedAt: meta.mergedAt });
     }
     core.info(`Prefetched ${originalByNumber.size} of ${targets.length} backport originals in ${Math.ceil(targets.length / 100)} requests.`);
     // Pre-warm every ref the pipeline might resolve — the release's own bodies and
@@ -1785,8 +1786,8 @@ function backportTargets(bodies, ownRepo) {
     }
     return [...targets];
 }
-/** `originals` holds the backport originals fetched in bulk; a key mapped to
- *  null is a known miss (not a PR), answered without a request. */
+/** `originals` holds the backport originals fetched in bulk; anything absent
+ *  (not prefetched, or not a merged PR) still goes to REST. */
 function buildPipelineResolver(rest, warmRefs, ownRepo, originals = new Map()) {
     // Cross-repo refs are never pre-warmed — the REST path classifies those without an API call.
     const sameRepoNumber = (ref) => (isOwnRepo(ref.repo, ownRepo) ? ref.number : null);
@@ -1811,7 +1812,7 @@ function buildPipelineResolver(rest, warmRefs, ownRepo, originals = new Map()) {
             })
                 .sort((first, second) => first.index - second.index);
         },
-        fetchOriginalPull: async (number, repo) => isOwnRepo(repo, ownRepo) && originals.has(number) ? originals.get(number) : rest.fetchOriginalPull(number, repo),
+        fetchOriginalPull: async (number, repo) => (isOwnRepo(repo, ownRepo) ? originals.get(number) : undefined) ?? rest.fetchOriginalPull(number, repo),
         fetchIssueTitle: async (number) => warmRefs.get(number)?.title ?? rest.fetchIssueTitle(number),
     };
 }
