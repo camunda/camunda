@@ -46,12 +46,22 @@ env:
   TEST_OWNER: '@camunda/engineering-operations'
   GHA_BEST_PRACTICES_LINTER: enabled
 
+# Serialize runs so a manual dispatch overlapping the weekly cron cannot both
+# pass the "comment already exists?" check and double-post. Queue the new run
+# rather than cancelling the in-flight one, which may be partway through ~900
+# issues.
+concurrency:
+  group: add-release-comments
+  cancel-in-progress: false
+
 permissions: {}
 
 jobs:
   add-release-comments:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # A full-cycle release (RC or minor GA) references ~900 issues; GitHub caps
+    # content creation at ~500/hour, so the job legitimately needs ~2h.
+    timeout-minutes: 180
     permissions:
       issues: write
       contents: read
