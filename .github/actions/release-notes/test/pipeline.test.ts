@@ -460,3 +460,22 @@ test('a legacy body saying "Related to #N" attributes via the keyword scan', asy
   assert.equal(out.attribution.source, 'legacyBodyScan');
   assert.deepEqual(out.attribution.issueNumbers, [100]);
 });
+
+test('a section that links only a pull request still reaches the legacy scan for a "closes #N" in the body', async () => {
+  // The PR-gate now rejects a PR ref in the section, but pre-gate and stable/* PRs carry them,
+  // usually with an empty closingIssuesReferences.
+  const resolver = fakeResolver();
+  const classifyPrAsPull: PipelineResolver = {
+    ...resolver,
+    async resolveRefs(refs) {
+      return (await resolver.resolveRefs(refs)).map((ref) => (ref.number === 300 ? { ...ref, target: 'pullRequest' } : ref));
+    },
+  };
+  const out = await processPr(
+    classifyPrAsPull,
+    prInput({ number: 507, body: '## Related issues\nrelates to #300\n\n## Notes\nThis closes #100.' }),
+    { gateRequiredAt: null },
+  );
+  assert.equal(out.attribution.source, 'legacyBodyScan');
+  assert.deepEqual(out.attribution.issueNumbers, [100]);
+});

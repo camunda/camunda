@@ -10,9 +10,10 @@ function eligible(refs: readonly ResolvedRef[]): ResolvedRef[] {
 }
 
 /** Whether the section carries anything the chain can terminate on, so a
- *  caller can tell in advance that the later steps will not be consulted. */
+ *  caller can tell in advance that the later steps will not be consulted.
+ *  A ref to a pull request falls through the chain, so it does not count. */
 export function hasEligibleRefs(refs: readonly ResolvedRef[]): boolean {
-  return eligible(refs).length > 0;
+  return eligible(refs).some((ref) => ref.target === 'issue' || ref.target === 'missing');
 }
 
 function uniqueNumbers(refs: readonly ResolvedRef[]): number[] {
