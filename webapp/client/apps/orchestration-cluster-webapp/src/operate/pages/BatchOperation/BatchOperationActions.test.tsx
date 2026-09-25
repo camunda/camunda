@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, describe, expect, onTestFinished} from 'vitest';
+import {afterEach, describe, expect} from 'vitest';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {
 	Outlet,
@@ -19,9 +19,8 @@ import {
 import {HttpResponse, http} from 'msw';
 import {render} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
-import type {BatchOperationState} from '@camunda/camunda-api-zod-schemas/8.10';
+import {endpoints, type BatchOperationState} from '@camunda/camunda-api-zod-schemas/8.10';
 import {it} from '#/vitest-modules/test-extend';
-import {endpoints} from '#/shared/http/endpoints';
 import {
 	mockGetBatchOperationEndpoint,
 	mockSuspendBatchOperationEndpoint,
@@ -81,7 +80,7 @@ function holdConvergedRead(state: BatchOperationState) {
 	});
 
 	return {
-		handler: http.get(endpoints.getBatchOperation({batchOperationKey: BATCH_OPERATION_KEY}).url, async () => {
+		handler: http.get(endpoints.getBatchOperation.getUrl({batchOperationKey: ':batchOperationKey'}), async () => {
 			requested = true;
 			await pending;
 			return HttpResponse.json(createBatchOperation({state}));
@@ -158,7 +157,6 @@ describe('<BatchOperationActions />', () => {
 
 	it('should suspend and disable the button while the mutation is in flight, then re-enable it', async ({worker}) => {
 		const convergedRead = holdConvergedRead('SUSPENDED');
-		onTestFinished(convergedRead.release);
 		worker.use(
 			mockSuspendBatchOperationEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
 			convergedRead.handler,
@@ -167,11 +165,14 @@ describe('<BatchOperationActions />', () => {
 		const screen = await renderActions('ACTIVE');
 		const suspendButton = screen.getByRole('button', {name: 'Suspend'});
 
-		await userEvent.click(suspendButton);
-		await expect.element(suspendButton).toBeDisabled();
-		await expect.poll(convergedRead.requested).toBe(true);
-		convergedRead.release();
-		await expect.element(suspendButton).not.toBeDisabled();
+		try {
+			await userEvent.click(suspendButton);
+			await expect.element(suspendButton).toBeDisabled();
+			await expect.poll(convergedRead.requested).toBe(true);
+		} finally {
+			convergedRead.release();
+			await expect.element(suspendButton).not.toBeDisabled();
+		}
 	});
 
 	it('should seed the display cache with the confirmed converged state, not a possibly-stale refetch', async ({
@@ -192,7 +193,6 @@ describe('<BatchOperationActions />', () => {
 
 	it('should resume without requiring the intermediate ACTIVE state to be observed', async ({worker}) => {
 		const convergedRead = holdConvergedRead('COMPLETED');
-		onTestFinished(convergedRead.release);
 		worker.use(
 			mockResumeBatchOperationEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
 			// The batch already reached a terminal state by the time of the first poll — resume must
@@ -203,11 +203,14 @@ describe('<BatchOperationActions />', () => {
 		const screen = await renderActions('SUSPENDED');
 		const resumeButton = screen.getByRole('button', {name: 'Resume'});
 
-		await userEvent.click(resumeButton);
-		await expect.element(resumeButton).toBeDisabled();
-		await expect.poll(convergedRead.requested).toBe(true);
-		convergedRead.release();
-		await expect.element(resumeButton).not.toBeDisabled();
+		try {
+			await userEvent.click(resumeButton);
+			await expect.element(resumeButton).toBeDisabled();
+			await expect.poll(convergedRead.requested).toBe(true);
+		} finally {
+			convergedRead.release();
+			await expect.element(resumeButton).not.toBeDisabled();
+		}
 		expect(notificationsStore.notifications).toEqual([]);
 	});
 
@@ -218,40 +221,41 @@ describe('<BatchOperationActions />', () => {
 		// loads) and require more than one before accepting the outcome, proving the first (CREATED)
 		// read was actually rejected rather than mistaken for convergence.
 		let pollRequestCount = 0;
-		const onRequest = ({request}: {request: Request}) => {
+		worker.events.on('request:start', ({request}) => {
 			if (request.method === 'GET' && request.url.endsWith(`/batch-operations/${BATCH_OPERATION_KEY}`)) {
 				pollRequestCount += 1;
 			}
-		};
-		worker.events.on('request:start', onRequest);
-		onTestFinished(() => worker.events.removeListener('request:start', onRequest));
+		});
 
-		worker.use(
-			mockResumeBatchOperationEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-			mockGetBatchOperationEndpoint({
-				successResponse: HttpResponse.json(createBatchOperation({state: 'CREATED'})),
-			}),
-		);
+		try {
+			worker.use(
+				mockResumeBatchOperationEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+				mockGetBatchOperationEndpoint({
+					successResponse: HttpResponse.json(createBatchOperation({state: 'CREATED'})),
+				}),
+			);
 
-		const screen = await renderActions('SUSPENDED');
-		const resumeButton = screen.getByRole('button', {name: 'Resume'});
-		await userEvent.click(resumeButton);
-		await expect.element(resumeButton).toBeDisabled();
-		await expect.poll(() => pollRequestCount).toBeGreaterThan(0);
+			const screen = await renderActions('SUSPENDED');
+			const resumeButton = screen.getByRole('button', {name: 'Resume'});
+			await userEvent.click(resumeButton);
+			await expect.element(resumeButton).toBeDisabled();
+			await expect.poll(() => pollRequestCount).toBeGreaterThan(0);
 
-		worker.use(
-			mockGetBatchOperationEndpoint({successResponse: HttpResponse.json(createBatchOperation({state: 'ACTIVE'}))}),
-		);
-		await expect.element(resumeButton).not.toBeDisabled();
-		expect(pollRequestCount).toBeGreaterThan(1);
-		expect(notificationsStore.notifications).toEqual([]);
+			worker.use(
+				mockGetBatchOperationEndpoint({successResponse: HttpResponse.json(createBatchOperation({state: 'ACTIVE'}))}),
+			);
+			await expect.element(resumeButton).not.toBeDisabled();
+			expect(pollRequestCount).toBeGreaterThan(1);
+			expect(notificationsStore.notifications).toEqual([]);
+		} finally {
+			worker.events.removeAllListeners('request:start');
+		}
 	});
 
 	it('should cancel and converge on a partial-completion outcome without waiting for CANCELED specifically', async ({
 		worker,
 	}) => {
 		const convergedRead = holdConvergedRead('PARTIALLY_COMPLETED');
-		onTestFinished(convergedRead.release);
 		worker.use(
 			mockCancelBatchOperationEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
 			convergedRead.handler,
@@ -259,15 +263,18 @@ describe('<BatchOperationActions />', () => {
 
 		const screen = await renderActions('ACTIVE');
 		const cancel = screen.getByRole('menuitem', {name: 'Cancel'});
-		await userEvent.click(screen.getByRole('button', {name: 'More actions'}));
-		await userEvent.click(cancel);
+		try {
+			await userEvent.click(screen.getByRole('button', {name: 'More actions'}));
+			await userEvent.click(cancel);
 
-		await expect.element(screen.getByRole('button', {name: 'More actions'})).toBeVisible();
-		await userEvent.click(screen.getByRole('button', {name: 'More actions'}));
-		await expect.element(cancel).toBeDisabled();
-		await expect.poll(convergedRead.requested).toBe(true);
-		convergedRead.release();
-		await expect.element(cancel).not.toBeDisabled();
+			await expect.element(screen.getByRole('button', {name: 'More actions'})).toBeVisible();
+			await userEvent.click(screen.getByRole('button', {name: 'More actions'}));
+			await expect.element(cancel).toBeDisabled();
+			await expect.poll(convergedRead.requested).toBe(true);
+		} finally {
+			convergedRead.release();
+			await expect.element(cancel).not.toBeDisabled();
+		}
 		expect(notificationsStore.notifications).toEqual([]);
 	});
 
@@ -276,38 +283,42 @@ describe('<BatchOperationActions />', () => {
 		// starts, before the first poll GET is even sent. Count the poll's own GETs and wait for one to
 		// have actually landed against the failing mock before swapping it, so the success mock can't
 		// win a race against the first attempt and let this pass without exercising a retry at all.
+		// The worker is shared across tests in this file, so the listener is removed in `finally` —
+		// otherwise it keeps counting every later test's GETs too.
 		let pollRequestCount = 0;
-		const onRequest = ({request}: {request: Request}) => {
+		worker.events.on('request:start', ({request}) => {
 			if (request.method === 'GET' && request.url.endsWith(`/batch-operations/${BATCH_OPERATION_KEY}`)) {
 				pollRequestCount += 1;
 			}
-		};
-		worker.events.on('request:start', onRequest);
-		onTestFinished(() => worker.events.removeListener('request:start', onRequest));
+		});
 
-		worker.use(
-			mockSuspendBatchOperationEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-			mockGetBatchOperationEndpoint({
-				successResponse: HttpResponse.json(createProblemDetails({status: 503}), {status: 503}),
-			}),
-		);
+		try {
+			worker.use(
+				mockSuspendBatchOperationEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+				mockGetBatchOperationEndpoint({
+					successResponse: HttpResponse.json(createProblemDetails({status: 503}), {status: 503}),
+				}),
+			);
 
-		const screen = await renderActions('ACTIVE');
-		const suspendButton = screen.getByRole('button', {name: 'Suspend'});
-		await userEvent.click(suspendButton);
+			const screen = await renderActions('ACTIVE');
+			const suspendButton = screen.getByRole('button', {name: 'Suspend'});
+			await userEvent.click(suspendButton);
 
-		await expect.element(suspendButton).toBeDisabled();
-		await expect.poll(() => pollRequestCount).toBeGreaterThan(0);
+			await expect.element(suspendButton).toBeDisabled();
+			await expect.poll(() => pollRequestCount).toBeGreaterThan(0);
 
-		worker.use(
-			mockGetBatchOperationEndpoint({
-				successResponse: HttpResponse.json(createBatchOperation({state: 'SUSPENDED'})),
-			}),
-		);
+			worker.use(
+				mockGetBatchOperationEndpoint({
+					successResponse: HttpResponse.json(createBatchOperation({state: 'SUSPENDED'})),
+				}),
+			);
 
-		await expect.element(suspendButton).not.toBeDisabled();
-		expect(pollRequestCount).toBeGreaterThan(1);
-		expect(notificationsStore.notifications).toEqual([]);
+			await expect.element(suspendButton).not.toBeDisabled();
+			expect(pollRequestCount).toBeGreaterThan(1);
+			expect(notificationsStore.notifications).toEqual([]);
+		} finally {
+			worker.events.removeAllListeners('request:start');
+		}
 	});
 
 	it('should show a permission warning and keep the button usable when suspending is forbidden', async ({worker}) => {

@@ -690,6 +690,37 @@ describe('<InstanceDiagram />', () => {
 		await expect.poll(() => screen.router.state.location.pathname).toBe('/operate/decisions/decision-1');
 	});
 
+	it.for([
+		{elementId: 'call_1', message: 'Failed to resolve called instances'},
+		{elementId: 'rule_1', message: 'Failed to resolve called decision instances'},
+	])(
+		'should report a failed drilldown for $elementId and clear its loading state',
+		async ({elementId, message}, {worker}) => {
+			const failure = {
+				successResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
+				delay: 200,
+			};
+			worker.use(
+				...handlers(),
+				mockQueryElementInstancesEndpoint({
+					successResponse: HttpResponse.json(singleResult({elementInstanceKey: 'element-1'})),
+				}),
+				elementId === 'call_1'
+					? mockQueryProcessInstancesEndpoint(failure)
+					: mockQueryDecisionInstancesEndpoint(failure),
+			);
+
+			const screen = await renderLoadedPage();
+			const shape = document.querySelector<SVGElement>(`[data-element-id="${elementId}"]`);
+			await userEvent.dblClick(shape!);
+
+			await expect.poll(() => shape?.classList.contains('op-drilldown-loading')).toBe(true);
+			await expect.poll(() => notificationsStore.notifications.map(({title}) => title)).toContain(message);
+			await expect.poll(() => shape?.classList.contains('op-drilldown-loading')).toBe(false);
+			expect(screen.router.state.location.pathname).toBe(`/operate/processes/${INSTANCE_ID}/details`);
+		},
+	);
+
 	it.for(['', '/camunda'] as const)(
 		'should ignore a double click on the previous instance while the next instance loads with basepath "%s"',
 		async (basepath, {worker}) => {
