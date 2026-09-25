@@ -7,6 +7,8 @@
  */
 package io.camunda.application.commons.search;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.application.commons.pt.PerTenantSchemaInitialization;
 import io.camunda.application.commons.pt.PerTenantSchemaInitialization.DeferralCheck;
 import io.camunda.application.commons.pt.SchemaInitializationStatus;
@@ -25,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
+import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -36,6 +39,7 @@ import org.springframework.beans.factory.InitializingBean;
  * the storage-specific parts: what one attempt does, which failures retrying cannot repair, and
  * whether this node holds startup at the gate.
  */
+@NullMarked
 public class SearchEngineSchemaInitializer
     implements InitializingBean, DisposableBean, SchemaManagerContainer {
 
@@ -112,7 +116,7 @@ public class SearchEngineSchemaInitializer
             configs.keySet(),
             this::initializeTenant,
             SearchEngineSchemaInitializer::isTerminal,
-            tenantId -> configs.get(tenantId).schemaManager().getRetry(),
+            tenantId -> requireNonNull(configs.get(tenantId)).schemaManager().getRetry(),
             deferral);
   }
 
@@ -187,7 +191,7 @@ public class SearchEngineSchemaInitializer
    */
   @VisibleForTesting
   void initializeTenant(final String physicalTenantId) {
-    final SearchEngineConfiguration configuration = configs.get(physicalTenantId);
+    final SearchEngineConfiguration configuration = requireNonNull(configs.get(physicalTenantId));
     final IndexDescriptors indexDescriptors = descriptors.get(physicalTenantId);
     if (indexDescriptors == null) {
       // A wiring defect rather than a storage failure: no amount of retrying produces descriptors,

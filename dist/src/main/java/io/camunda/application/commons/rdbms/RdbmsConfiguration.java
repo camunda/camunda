@@ -37,6 +37,7 @@ import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -48,6 +49,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
+@NullMarked
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnSecondaryStorageType(SecondaryStorageType.rdbms)
 @Import(MyBatisConfiguration.class)

@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.jspecify.annotations.NullMarked;
 import org.springframework.boot.env.DefaultPropertiesPropertySource;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -27,6 +28,7 @@ import org.springframework.core.env.Environment;
  * Collects and configures the readiness group depending on which applications/profiles are
  * activated.
  */
+@NullMarked
 public class HealthConfigurationInitializer
     implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
