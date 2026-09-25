@@ -154,6 +154,17 @@ public final class SegmentedJournal implements Journal {
   }
 
   @Override
+  public long getLastFlushedIndex() {
+    // An empty journal has nothing left to flush: the records before its first index were compacted
+    // or reset away, and are covered by a snapshot. The stored index cannot always tell, as a reset
+    // clears it, and only the next flush of an appended record stores it again.
+    final long firstIndex = getFirstIndex();
+    return isEmpty()
+        ? Math.max(writer.getLastFlushedIndex(), firstIndex - 1)
+        : writer.getLastFlushedIndex();
+  }
+
+  @Override
   public boolean isEmpty() {
     return writer.getNextIndex() - getFirstIndex() == 0;
   }
@@ -174,13 +185,10 @@ public final class SegmentedJournal implements Journal {
       // sequentially anyway, meaning there is virtually no contention
       final var stamp = rwlock.readLock();
       try {
+        // also stores the last flushed index, which must happen under the lock as well
         writer.flush();
       } finally {
         rwlock.unlockRead(stamp);
-      }
-    } finally {
-      if (writer.getLastFlushedIndex() > 0) {
-        metaStore.storeLastFlushedIndex((writer.getLastFlushedIndex()));
       }
     }
   }
