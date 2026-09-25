@@ -30,7 +30,7 @@ yarn add @camunda/camunda-api-zod-schemas
 The library exports modules that correspond to the different parts of
 the Camunda API. Import schemas and types from the main package or from
 a specific version sub-module — `@camunda/camunda-api-zod-schemas/8.8`,
-`/8.9`, or `/8.10`.
+`/8.9`, `/8.10`, or `/8.11`.
 
 For the full list of exported schemas and types, refer to the source
 under `packages/camunda-api-zod-schemas/lib/` — for example
