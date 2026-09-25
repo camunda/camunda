@@ -12,7 +12,7 @@ import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.test.testcontainers.MinioContainer;
+import io.camunda.zeebe.test.testcontainers.S3MockTestContainer;
 import java.time.Duration;
 import java.util.Map;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -29,19 +29,22 @@ final class S3BackupCompatibilityIT implements BackupCompatibilityAcceptance, Af
   private static final String BUCKET_NAME =
       RandomStringUtils.insecure().nextAlphabetic(10).toLowerCase();
   private static final Network NETWORK = Network.newNetwork();
+  private static final String S3_NETWORK_ALIAS = "s3mock";
 
-  @Container
-  private static final MinioContainer MINIO =
-      new MinioContainer().withNetwork(NETWORK).withDomain("minio.local", BUCKET_NAME);
+  @Container private static final S3MockTestContainer S3 = new S3MockTestContainer();
+
+  static {
+    S3.withNetwork(NETWORK).withNetworkAliases(S3_NETWORK_ALIAS);
+  }
 
   @BeforeAll
   static void setupBucket() {
     final var config =
         new Builder()
             .withBucketName(BUCKET_NAME)
-            .withEndpoint(MINIO.externalEndpoint())
-            .withRegion(MINIO.region())
-            .withCredentials(MINIO.accessKey(), MINIO.secretKey())
+            .withEndpoint(S3.externalEndpoint())
+            .withRegion(S3.region())
+            .withCredentials(S3.accessKey(), S3.secretKey())
             .withApiCallTimeout(Duration.ofSeconds(25))
             .forcePathStyleAccess(true)
             .build();
@@ -61,14 +64,14 @@ final class S3BackupCompatibilityIT implements BackupCompatibilityAcceptance, Af
         "ZEEBE_BROKER_DATA_BACKUP_STORE", "S3",
         "ZEEBE_BROKER_DATA_BACKUP_S3_BUCKETNAME", BUCKET_NAME,
         "ZEEBE_BROKER_DATA_BACKUP_S3_BASEPATH", storeBasePath,
-        "ZEEBE_BROKER_DATA_BACKUP_S3_ENDPOINT", MINIO.internalEndpoint(),
-        "ZEEBE_BROKER_DATA_BACKUP_S3_REGION", MINIO.region(),
-        "ZEEBE_BROKER_DATA_BACKUP_S3_ACCESSKEY", MINIO.accessKey(),
-        "ZEEBE_BROKER_DATA_BACKUP_S3_SECRETKEY", MINIO.secretKey(),
+        "ZEEBE_BROKER_DATA_BACKUP_S3_ENDPOINT", S3.internalEndpoint(S3_NETWORK_ALIAS),
+        "ZEEBE_BROKER_DATA_BACKUP_S3_REGION", S3.region(),
+        "ZEEBE_BROKER_DATA_BACKUP_S3_ACCESSKEY", S3.accessKey(),
+        "ZEEBE_BROKER_DATA_BACKUP_S3_SECRETKEY", S3.secretKey(),
         "ZEEBE_BROKER_DATA_BACKUP_S3_FORCEPATHSTYLEACCESS", "true",
         // Also set AWS SDK env vars as fallback for credential discovery
-        "AWS_ACCESS_KEY_ID", MINIO.accessKey(),
-        "AWS_SECRET_ACCESS_KEY", MINIO.secretKey());
+        "AWS_ACCESS_KEY_ID", S3.accessKey(),
+        "AWS_SECRET_ACCESS_KEY", S3.secretKey());
   }
 
   @Override
@@ -78,11 +81,11 @@ final class S3BackupCompatibilityIT implements BackupCompatibilityAcceptance, Af
 
     final var s3 = backup.getS3();
     s3.setBasePath(storeBasePath);
-    s3.setRegion(MINIO.region());
-    s3.setSecretKey(MINIO.secretKey());
+    s3.setRegion(S3.region());
+    s3.setSecretKey(S3.secretKey());
     s3.setBucketName(BUCKET_NAME);
-    s3.setEndpoint(MINIO.externalEndpoint());
-    s3.setAccessKey(MINIO.accessKey());
+    s3.setEndpoint(S3.externalEndpoint());
+    s3.setAccessKey(S3.accessKey());
     s3.setForcePathStyleAccess(true);
   }
 
