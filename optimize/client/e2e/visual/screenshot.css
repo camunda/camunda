@@ -1,0 +1,5 @@
+/* Parts of the page that differ between runs (random collection names, user avatar). */
+nav[aria-label='Breadcrumb'],
+[data-slot='user-menu-trigger'] {
+  visibility: hidden !important;
+}
