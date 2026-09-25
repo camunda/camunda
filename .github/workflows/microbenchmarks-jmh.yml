@@ -78,7 +78,7 @@ jobs:
             | select(.user.login == "github-actions[bot]")
             | .body
             | split("\n")[0]
-            | select(test("^<!-- jmh-run:(baseline|commit):[0-9a-f]{40}(:[0-9a-f]{64})? -->$"))
+            | select(test("^<!-- jmh-run:(baseline|commit|head):[0-9a-f]{40}(:[0-9a-f]{64})? -->$"))
           ' > "$RUNNER_TEMP/jmh-reported-markers"
 
       - name: Copy benchmark runner before checking out historical commits

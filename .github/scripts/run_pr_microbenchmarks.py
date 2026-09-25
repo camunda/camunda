@@ -27,6 +27,9 @@ PR_SELECTOR = re.compile(r"[A-Za-z0-9_$]+(?:\.[A-Za-z0-9_$]+)*")
 HTML_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
 MICROBENCHMARKS_MODULE = "microbenchmarks"
 BENCHMARK_JAR = f"{MICROBENCHMARKS_MODULE}/target/benchmarks.jar"
+SHORT_TIMEOUT_SECONDS = 120
+BUILD_TIMEOUT_SECONDS = 1800
+BENCHMARK_TIMEOUT_SECONDS = 3600
 
 
 def parse_changed_files(value: str) -> list[str]:
@@ -126,7 +129,9 @@ def resolve_requested_selectors(
     return selected_classes + selected_methods, missing
 
 
-def run_command(args: list[str], workspace: Path) -> subprocess.CompletedProcess[str]:
+def run_command(
+    args: list[str], workspace: Path, timeout: int | None = None
+) -> subprocess.CompletedProcess[str]:
     try:
         return subprocess.run(
             args,
@@ -134,6 +139,12 @@ def run_command(args: list[str], workspace: Path) -> subprocess.CompletedProcess
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as error:
+        output = error.stdout or ""
+        return subprocess.CompletedProcess(
+            args, 124, stdout=f"{output}\nCommand timed out after {timeout}s."
         )
     except OSError as error:
         return subprocess.CompletedProcess(args, 127, stdout=str(error))
@@ -162,21 +173,21 @@ def main() -> int:
     )
     failed = False
 
-    def command(*args: str) -> subprocess.CompletedProcess[str]:
-        return run_command(list(args), workspace)
+    def command(*args: str, timeout: int | None = None) -> subprocess.CompletedProcess[str]:
+        return run_command(list(args), workspace, timeout=timeout)
 
     def git(*args: str) -> str:
-        result = command("git", *args)
+        result = command("git", *args, timeout=SHORT_TIMEOUT_SECONDS)
         if result.returncode:
             raise RuntimeError(f"git {' '.join(args)} failed:\n{result.stdout}")
         return result.stdout
 
     def checkout(revision: str) -> bool:
-        result = command("git", "checkout", "--detach", revision)
+        result = command("git", "checkout", "--detach", revision, timeout=SHORT_TIMEOUT_SECONDS)
         return result.returncode == 0
 
     def source_at(revision: str, path: str) -> str | None:
-        result = command("git", "show", f"{revision}:{path}")
+        result = command("git", "show", f"{revision}:{path}", timeout=SHORT_TIMEOUT_SECONDS)
         return result.stdout if result.returncode == 0 else None
 
     def run_revision(index: int, kind: str, revision: str, marker_suffix: str) -> None:
@@ -211,6 +222,7 @@ def main() -> int:
                 "-DskipTests",
                 "clean",
                 "package",
+                timeout=BUILD_TIMEOUT_SECONDS,
             )
             if build.returncode:
                 failed = True
@@ -225,7 +237,9 @@ def main() -> int:
                     ]
                 )
             else:
-                listing = command("java", "-jar", BENCHMARK_JAR, "-l")
+                listing = command(
+                    "java", "-jar", BENCHMARK_JAR, "-l", timeout=SHORT_TIMEOUT_SECONDS
+                )
                 if listing.returncode:
                     failed = True
                     result.extend(
@@ -241,6 +255,13 @@ def main() -> int:
                     explicit, missing = resolve_requested_selectors(
                         requested, available_benchmarks(listing.stdout)
                     )
+                    # A class selector already covers its methods; drop explicit methods
+                    # that duplicate a class already picked up from the changed files.
+                    explicit = [
+                        name
+                        for name in explicit
+                        if not any(name.startswith(f"{cls}.") for cls in selectors)
+                    ]
                     selectors = list(dict.fromkeys(selectors + explicit))
                     if missing:
                         result.extend(
@@ -257,7 +278,13 @@ def main() -> int:
                         # Pass no iteration flags so JMH uses the benchmark annotations/defaults.
                         for selector in selectors:
                             print(f"Running JMH selector: {selector}")
-                            run = command("java", "-jar", BENCHMARK_JAR, selector)
+                            run = command(
+                                "java",
+                                "-jar",
+                                BENCHMARK_JAR,
+                                selector,
+                                timeout=BENCHMARK_TIMEOUT_SECONDS,
+                            )
                             result.extend(run.stdout.rstrip().splitlines())
                             if run.returncode:
                                 failed = True
@@ -298,15 +325,21 @@ def main() -> int:
             "--format=%H%x09%s",
             f"{baseline}..{head_sha}",
         )
-        # Compare the merge-base once, then each non-merge perf commit in chronological order.
+        # Compare the merge-base, then each non-merge perf commit in chronological order,
+        # then the PR tip itself (unless a perf commit already covers it) so a run always
+        # yields a before/after comparison even without a perf-tagged commit.
         revisions = [("baseline", baseline)]
-        revisions.extend(
-            ("commit", sha)
-            for line in commits.splitlines()
-            for sha, _, subject in [line.partition("\t")]
-            if is_perf_commit(subject)
-        )
-        suffix = selector_marker_suffix(requested)
+        perf_shas = set()
+        for line in commits.splitlines():
+            sha, _, subject = line.partition("\t")
+            if is_perf_commit(subject):
+                revisions.append(("commit", sha))
+                perf_shas.add(sha)
+        if head_sha != baseline and head_sha not in perf_shas:
+            revisions.append(("head", head_sha))
+        # Hash both explicit and auto-detected selectors so a later push that changes
+        # which benchmarks are in scope is not skipped as an already-reported baseline.
+        suffix = selector_marker_suffix(requested + changed_benchmarks)
         for index, (kind, revision) in enumerate(revisions):
             run_revision(index, kind, revision, suffix)
 
