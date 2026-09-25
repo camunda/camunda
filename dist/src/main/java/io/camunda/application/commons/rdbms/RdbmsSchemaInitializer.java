@@ -9,6 +9,7 @@ package io.camunda.application.commons.rdbms;
 
 import io.camunda.application.commons.pt.PerTenantSchemaInitialization;
 import io.camunda.application.commons.pt.SchemaInitialization;
+import io.camunda.application.commons.pt.SchemaInitializationStatus;
 import io.camunda.application.commons.pt.SingleTenantSchemaInitialization;
 import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
@@ -17,6 +18,7 @@ import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIncompatibleException;
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIndeterminateException;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.retry.RetryConfiguration;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Function;
 import org.jspecify.annotations.NullMarked;
@@ -126,6 +128,15 @@ public class RdbmsSchemaInitializer
   public boolean isInitialized(final String physicalTenantId) {
     return schemaManagers.containsKey(physicalTenantId)
         && initialization.isInitialized(physicalTenantId);
+  }
+
+  /** Where each physical tenant's schema initialization stands. */
+  public Map<String, SchemaInitializationStatus> statuses() {
+    final var statuses = new LinkedHashMap<String, SchemaInitializationStatus>();
+    schemaManagers
+        .keySet()
+        .forEach(tenantId -> statuses.put(tenantId, initialization.status(tenantId)));
+    return statuses;
   }
 
   /** Whether one tenant's failure has anyone else's startup to spare. */

@@ -52,6 +52,17 @@ public final class SingleTenantSchemaInitialization implements SchemaInitializat
     return initialized;
   }
 
+  /**
+   * Only ever initializing or initialized: a failed pass propagates out of {@link #start()} and
+   * aborts startup, so there is no node left to report it.
+   */
+  @Override
+  public SchemaInitializationStatus status(final String physicalTenantId) {
+    return initialized
+        ? SchemaInitializationStatus.INITIALIZED
+        : SchemaInitializationStatus.INITIALIZING;
+  }
+
   @Override
   public void close() {
     // nothing outlives start()
