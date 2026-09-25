@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {describe, expect} from 'vitest';
+import {describe, expect, vi} from 'vitest';
 import {useParams} from '@tanstack/react-router';
 import {userEvent} from 'vitest/browser';
 import {HttpResponse} from 'msw';
@@ -15,6 +15,7 @@ import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {mockGetDecisionInstanceEndpoint} from '#/shared-test-modules/mock-handlers';
 import {createDecisionInstance} from '#/shared-test-modules/api-mocks/decision-instances';
 import {createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
+import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local-storage';
 import {VariablesPanel} from './VariablesPanel';
 
 const TABLE_ID = '4294980768';
@@ -39,6 +40,62 @@ function renderPanel() {
 }
 
 describe('<VariablesPanel />', () => {
+	it.for([
+		{initialWidth: 0, change: 'appears', side: 'input'},
+		{initialWidth: 0, change: 'appears', side: 'output'},
+		{initialWidth: 600, change: 'grows', side: 'input'},
+		{initialWidth: 600, change: 'grows', side: 'output'},
+	] as const)(
+		'should keep the $side panel at least one third wide when the container $change',
+		async ({initialWidth, side}, {worker}) => {
+			worker.use(
+				mockGetDecisionInstanceEndpoint({
+					successResponse: HttpResponse.json(createDecisionInstance({decisionEvaluationInstanceKey: TABLE_ID})),
+				}),
+			);
+
+			const previousPanelStates = localStorage.getItem('operate.panelStates');
+			try {
+				storeStateLocally('operate.panelStates', {
+					...(getStateLocally('operate.panelStates') ?? {}),
+					'decision-instance-horizontal-panel': [50, 50],
+				});
+				const screen = await renderWithRouter(
+					() => (
+						<div data-testid="resizable-panel-container" style={{width: initialWidth}}>
+							<PanelOnRoute />
+						</div>
+					),
+					{path: ROUTE, initialEntry: `/operate/decisions/${TABLE_ID}`},
+				);
+				const container = screen.getByTestId('resizable-panel-container');
+				const panel = screen.getByRole('region', {name: `${side} variables`});
+				container.element().style.width = '900px';
+
+				await expect.poll(() => panel.element().getBoundingClientRect().width).toBeGreaterThan(400);
+				const dragger = screen
+					.getByTestId('decision-instance-variables-panel')
+					.element()
+					.querySelector<HTMLElement>('.custom-dragger-Horizontal');
+				if (dragger === null) {
+					throw new Error('Expected a horizontal panel dragger');
+				}
+				await userEvent.dragAndDrop(dragger, panel);
+
+				await expect.poll(() => panel.element().getBoundingClientRect().width).toBeLessThan(360);
+				expect(panel.element().getBoundingClientRect().width).toBeGreaterThanOrEqual(
+					container.element().getBoundingClientRect().width / 3 - 1,
+				);
+			} finally {
+				if (previousPanelStates === null) {
+					localStorage.removeItem('operate.panelStates');
+				} else {
+					localStorage.setItem('operate.panelStates', previousPanelStates);
+				}
+			}
+		},
+	);
+
 	it('should display evaluated inputs and matched-rule outputs in separate structured tables', async ({worker}) => {
 		worker.use(
 			mockGetDecisionInstanceEndpoint({
@@ -107,6 +164,64 @@ describe('<VariablesPanel />', () => {
 
 		await userEvent.click(screen.getByRole('tab', {name: 'Inputs and Outputs'}));
 		await expect.element(inputs.getByText('Customer age')).toBeVisible();
+	});
+
+	it('should render distinct output rows when rule identity and output IDs repeat', async ({worker}) => {
+		worker.use(
+			mockGetDecisionInstanceEndpoint({
+				successResponse: HttpResponse.json(
+					createDecisionInstance({
+						decisionEvaluationInstanceKey: TABLE_ID,
+						matchedRules: [
+							{
+								ruleId: null,
+								ruleIndex: null,
+								evaluatedOutputs: [
+									{
+										outputId: 'shared-output',
+										outputName: 'First outcome',
+										outputValue: '"first"',
+										ruleId: null,
+										ruleIndex: null,
+									},
+								],
+							},
+							{
+								ruleId: null,
+								ruleIndex: null,
+								evaluatedOutputs: [
+									{
+										outputId: 'shared-output',
+										outputName: 'Second outcome',
+										outputValue: '"second"',
+										ruleId: null,
+										ruleIndex: null,
+									},
+								],
+							},
+						],
+					}),
+				),
+			}),
+		);
+
+		const consoleError = vi.spyOn(console, 'error');
+		try {
+			const screen = await renderPanel();
+			const outputs = screen.getByRole('region', {name: 'output variables'});
+			const rows = outputs.getByRole('row');
+			await expect.element(rows.nth(1).getByText('First outcome')).toBeVisible();
+			await expect.element(rows.nth(1).getByText('"first"')).toBeVisible();
+			await expect.element(rows.nth(2).getByText('Second outcome')).toBeVisible();
+			await expect.element(rows.nth(2).getByText('"second"')).toBeVisible();
+			expect(
+				consoleError.mock.calls.some(
+					([message]) => typeof message === 'string' && message.includes('Encountered two children with the same key'),
+				),
+			).toBe(false);
+		} finally {
+			consoleError.mockRestore();
+		}
 	});
 
 	it('should show both input and output skeletons during loading', async ({worker}) => {
