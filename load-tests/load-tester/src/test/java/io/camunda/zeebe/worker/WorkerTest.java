@@ -41,8 +41,10 @@ import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.util.PayloadReader;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -177,6 +179,56 @@ class WorkerTest {
             worker, jobClient, processInstanceKey, elementInstanceKey, 302L, "lease-2");
     assertThat(round.activatedElements())
         .containsExactly("tool-calculate-score", "tool-send-notification");
+  }
+
+  @Test
+  void shouldTreatRoundsBeyondTheScheduleAsTerminalInsteadOfThrowing() throws Exception {
+    // given — the ad-hoc sub-process's round 2 (0-indexed: round 1) activates two tools in
+    // parallel; Zeebe's AdHocSubProcessProcessor#afterExecutionPathCompleted fires once per
+    // completing parallel path and cancels-then-recreates the orchestrator job on each firing,
+    // so the first of the two tools to complete can spawn a transient job that only gets
+    // canceled once the second tool completes. If this worker activates that transient job
+    // before the cancellation lands (with-lease permits exactly this kind of concurrent
+    // delivery - see the CREATE/UPDATE fixes above), RoundTracker sees it as a genuinely new,
+    // distinct job key and counts it as an extra round, eventually pushing the round index past
+    // the schedule's last valid slot. Reflection seeds that overflow deterministically here
+    // (rather than racing real threads, which cannot reliably force the interleaving: as soon
+    // as any one delivery reaches the final round it evicts the round counter immediately, so a
+    // real race only reproduces this intermittently)
+    final var jobClient = mock(JobClient.class);
+    final var worker = newWorker(mock(CamundaClient.class), zeroDelayProperties());
+    final long processInstanceKey = 999L;
+    final long elementInstanceKey = 222L;
+
+    // round 1 — establishes the round tracker for this process instance without reaching the
+    // final round (which would otherwise evict it before we can seed the overflow below)
+    driveAdHocSubProcessRound(
+        worker, jobClient, processInstanceKey, elementInstanceKey, 401L, "lease-1");
+
+    seedNextRoundCounter(worker, processInstanceKey, 10);
+
+    // when — a further job key arrives for the same process instance and is assigned round 10
+    // by the seeded counter, ten past the schedule's last valid index (3); this must not throw
+    // ArrayIndexOutOfBoundsException
+    final var round =
+        driveAdHocSubProcessRound(
+            worker, jobClient, processInstanceKey, elementInstanceKey, 402L, "lease-2");
+
+    // then — clamped to the terminal round instead of crashing
+    assertThat(round.activatedElements()).isEmpty();
+    assertThat(round.completionConditionFulfilled()).isTrue();
+  }
+
+  @SuppressWarnings("unchecked")
+  private static void seedNextRoundCounter(
+      final Worker worker, final long processInstanceKey, final int nextRound) throws Exception {
+    final var roundsField = Worker.class.getDeclaredField("adHocSubProcessRounds");
+    roundsField.setAccessible(true);
+    final var rounds = (ConcurrentHashMap<Long, Object>) roundsField.get(worker);
+    final var tracker = rounds.get(processInstanceKey);
+    final var nextRoundField = tracker.getClass().getDeclaredField("nextRound");
+    nextRoundField.setAccessible(true);
+    ((AtomicInteger) nextRoundField.get(tracker)).set(nextRound);
   }
 
   @Test

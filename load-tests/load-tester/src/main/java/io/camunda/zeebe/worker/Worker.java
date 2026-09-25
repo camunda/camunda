@@ -199,10 +199,22 @@ public class Worker {
       final JobClient jobClient, final ActivatedJob job) {
     final long startHandlingTime = System.currentTimeMillis();
     final long processInstanceKey = job.getProcessInstanceKey();
-    final int round =
+    final int rawRound =
         adHocSubProcessRounds
             .computeIfAbsent(processInstanceKey, key -> new RoundTracker())
             .roundFor(job.getKey());
+    // Clamped defensively: AD_HOC_SUB_PROCESS_ROUND_SCHEDULE's one parallel round (2 tools
+    // activated together) can make the engine create a transient "phantom" orchestrator job -
+    // the ad-hoc sub-process's JobWorkerBehavior cancels-and-recreates the orchestrator job on
+    // every completing parallel path, so the first of the two tools to finish spawns a job that
+    // gets canceled once the second tool finishes. If this worker activates that phantom job
+    // before the cancellation lands (more likely under the added latency of treatment's
+    // AgentInstance calls), RoundTracker - which counts distinct job keys, not logical rounds -
+    // miscounts it as an extra round, shifting every later round for this process instance past
+    // the schedule's bounds. Clamping treats any such overflow as the terminal round instead of
+    // throwing ArrayIndexOutOfBoundsException; the phantom job's own completion is a no-op on
+    // the engine side regardless, since it was already canceled.
+    final int round = Math.min(rawRound, AD_HOC_SUB_PROCESS_ROUND_SCHEDULE.size() - 1);
     final boolean isFinalRound = round == AD_HOC_SUB_PROCESS_ROUND_SCHEDULE.size() - 1;
     final var toolsToActivate = AD_HOC_SUB_PROCESS_ROUND_SCHEDULE.get(round);
 
