@@ -35,7 +35,7 @@
 	"publishConfig": {
 		"access": "public"
 	},
-	"packageManager": "npm@12.0.2",
+	"packageManager": "npm@12.1.0",
 	"devDependencies": {
 		"@camunda/camunda-composite-components": "0.25.4",
 		"@camunda/design-system": "0.63.0",

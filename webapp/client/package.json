@@ -29,7 +29,7 @@
 		"publish:session-heartbeat": "npm run prepublishOnly && npm publish -w @camunda/session-heartbeat",
 		"prettier:format": "prettier --write ."
 	},
-	"packageManager": "npm@12.0.2",
+	"packageManager": "npm@12.1.0",
 	"devDependencies": {
 		"@eslint/js": "10.0.1",
 		"@tanstack/eslint-plugin-query": "5.103.2",
