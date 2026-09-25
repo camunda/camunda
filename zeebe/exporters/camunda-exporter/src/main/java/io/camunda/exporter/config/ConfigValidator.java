@@ -8,6 +8,7 @@
 package io.camunda.exporter.config;
 
 import io.camunda.zeebe.exporter.api.ExporterException;
+import io.camunda.zeebe.exporter.support.IndexPrefixValidation;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.function.Predicate;
@@ -36,7 +37,6 @@ public final class ConfigValidator {
       Pattern.compile(PATTERN_ROLLOVER_INTERVAL_FORMAT).asPredicate();
   private static final Predicate<String> CHECK_USAGE_METRICS_ROLLOVER_INTERVAL =
       Pattern.compile(PATTERN_USAGE_METRICS_ROLLOVER_INTERVAL_FORMAT).asPredicate();
-  private static final Pattern INVALID_INDEX_PREFIX_CHARS = Pattern.compile("[\\\\/*?\"<>| _]");
 
   private ConfigValidator() {}
 
@@ -52,15 +52,11 @@ public final class ConfigValidator {
     }
 
     final String configuredPrefix = configuration.getConnect().getIndexPrefix();
-    if (configuredPrefix != null) {
-      if (INVALID_INDEX_PREFIX_CHARS.matcher(configuredPrefix).find()) {
-        throw new ExporterException(
-            "CamundaExporter index.prefix must not contain invalid characters [\\ / * ? \" < > | space _].");
-      }
-      if (configuredPrefix.startsWith(".") || configuredPrefix.startsWith("+")) {
-        throw new ExporterException(
-            "CamundaExporter index.prefix must not begin with invalid characters [. +].");
-      }
+    IndexPrefixValidation.validateIndexPrefix(
+        "CamundaExporter index.prefix", configuredPrefix, false);
+    if (!ConnectionTypes.isElasticSearch(configuration.getConnect().getType())) {
+      IndexPrefixValidation.validateNoPlusCharacter(
+          "CamundaExporter index.prefix", configuredPrefix);
     }
 
     final Integer numberOfShards = configuration.getIndex().getNumberOfShards();
