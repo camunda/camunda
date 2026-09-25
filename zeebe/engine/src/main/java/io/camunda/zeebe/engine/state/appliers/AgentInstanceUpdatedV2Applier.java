@@ -13,14 +13,15 @@ import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import java.util.List;
+import java.util.Set;
 
-public final class AgentInstanceUpdatedV1Applier
+public final class AgentInstanceUpdatedV2Applier
     implements TypedEventApplier<AgentInstanceIntent, AgentInstanceRecord> {
 
   private final MutableAgentInstanceState agentInstanceState;
   private final MutableElementInstanceState elementInstanceState;
 
-  public AgentInstanceUpdatedV1Applier(
+  public AgentInstanceUpdatedV2Applier(
       final MutableAgentInstanceState agentInstanceState,
       final MutableElementInstanceState elementInstanceState) {
     this.agentInstanceState = agentInstanceState;
@@ -39,6 +40,22 @@ public final class AgentInstanceUpdatedV1Applier
     final var forStorage = new AgentInstanceRecord();
     forStorage.copyFrom(value);
     forStorage.setHistory(List.of()).setJobKey(-1L).setJobLeaseToken("");
+
+    // `systemPrompt`/`tools` are trimmed from the event by the emitting processor whenever they
+    // aren't in `changedAttributes` (see AgentHistoryBatchBehavior#trimUnchangedContentFields), to
+    // avoid re-transmitting large payloads on every unrelated update. Patch the trimmed fields back
+    // in from the existing record so primary storage keeps holding the real, current value.
+    final var changed = Set.copyOf(value.getChangedAttributes());
+    final var existing = agentInstanceState.getRecord(key);
+    if (existing != null) {
+      if (!changed.contains(AgentInstanceRecord.ATTR_SYSTEM_PROMPT)) {
+        forStorage.getDefinition().setSystemPrompt(existing.getDefinition().getSystemPrompt());
+      }
+      if (!changed.contains(AgentInstanceRecord.ATTR_TOOLS)) {
+        forStorage.setTools(existing.getTools());
+      }
+    }
+
     agentInstanceState.update(key, forStorage);
 
     final var elementInstance = elementInstanceState.getInstance(value.getElementInstanceKey());

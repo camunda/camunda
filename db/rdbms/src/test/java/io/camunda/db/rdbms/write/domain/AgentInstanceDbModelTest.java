@@ -73,6 +73,18 @@ class AgentInstanceDbModelTest {
   }
 
   @Test
+  void shouldSerializeExplicitEmptyToolListAsNonNullEmptyArray() {
+    // given — an update that explicitly clears tools, as opposed to one that never touches them
+    // (Builder().build() above, where tools() stays null)
+    final var model = new AgentInstanceDbModel.Builder().toolValues(List.of()).build();
+
+    // then — raw field is a non-null "[]", not null, so AgentInstanceWriter's merge/update logic
+    // (which treats null as "unchanged, skip") still applies this write instead of skipping it
+    assertThat(model.tools()).isEqualTo("[]");
+    assertThat(model.toolValues()).isEmpty();
+  }
+
+  @Test
   void shouldReturnNullWhenJsonIsEmpty() {
     // Oracle treats empty CLOB as NULL; MyBatis maps it back to "" on read.
     final var model = new AgentInstanceDbModel.Builder("").build();

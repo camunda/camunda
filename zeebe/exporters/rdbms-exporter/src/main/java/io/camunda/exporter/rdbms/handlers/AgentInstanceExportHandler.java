@@ -81,8 +81,6 @@ public class AgentInstanceExportHandler implements RdbmsExportHandler<AgentInsta
             .status(mapStatus(value.getStatus()))
             .model(value.getDefinition().getModel())
             .provider(value.getDefinition().getProvider())
-            .systemPromptItems(
-                AgentContentMapper.mapContent(value.getDefinition().getSystemPrompt()))
             .maxTokens(value.getLimits().getMaxTokens())
             .maxModelCalls(value.getLimits().getMaxModelCalls())
             .maxToolCalls(value.getLimits().getMaxToolCalls())
@@ -93,9 +91,22 @@ public class AgentInstanceExportHandler implements RdbmsExportHandler<AgentInsta
             .cacheReadTokenCount(value.getMetrics().getCacheReadTokenCount())
             .modelCalls(value.getMetrics().getModelCalls())
             .toolCalls(value.getMetrics().getToolCalls())
-            .toolValues(toToolDbValues(value.getTools()))
             .lastUpdatedDate(timestamp)
             .elementInstanceKeys(value.getElementInstanceKeys());
+
+    // `systemPrompt`/`tools` can carry large payloads; on UPDATED, the engine only includes them
+    // in the event when they actually changed (see AgentHistoryBatchBehavior). Leave the builder
+    // field unset (null) otherwise, so AgentInstanceWriter's merge/update logic doesn't overwrite
+    // the stored value with nothing.
+    if (intent != AgentInstanceIntent.UPDATED
+        || value.getChangedAttributes().contains(AgentInstanceRecordValue.ATTR_SYSTEM_PROMPT)) {
+      builder.systemPromptItems(
+          AgentContentMapper.mapContent(value.getDefinition().getSystemPrompt()));
+    }
+    if (intent != AgentInstanceIntent.UPDATED
+        || value.getChangedAttributes().contains(AgentInstanceRecordValue.ATTR_TOOLS)) {
+      builder.toolValues(toToolDbValues(value.getTools()));
+    }
 
     if (intent == AgentInstanceIntent.CREATED) {
       builder.creationDate(timestamp);
@@ -128,7 +139,10 @@ public class AgentInstanceExportHandler implements RdbmsExportHandler<AgentInsta
 
   private static List<AgentInstanceToolDbValue> toToolDbValues(
       final List<? extends AgentInstanceRecordValue.AgentInstanceToolValue> tools) {
-    if (tools == null || tools.isEmpty()) {
+    // Does NOT collapse an empty list to null: AgentInstanceDbModel#serializeTools relies on
+    // "empty list" and "null" staying distinguishable so a UPDATED event that explicitly clears
+    // tools isn't mistaken for one that never touched them.
+    if (tools == null) {
       return null;
     }
     return tools.stream()

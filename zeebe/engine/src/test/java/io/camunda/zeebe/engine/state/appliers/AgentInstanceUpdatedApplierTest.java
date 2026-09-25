@@ -13,10 +13,14 @@ import io.camunda.zeebe.engine.state.mutable.MutableAgentInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceTool;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -34,14 +38,25 @@ public class AgentInstanceUpdatedApplierTest {
   private MutableAgentInstanceState agentInstanceState;
   private MutableElementInstanceState elementInstanceState;
   private AgentInstanceCreatedApplier createdApplier;
-  private AgentInstanceUpdatedApplier updatedApplier;
+  private EventAppliers eventAppliers;
 
   @BeforeEach
   public void setup() {
     agentInstanceState = processingState.getAgentInstanceState();
     elementInstanceState = processingState.getElementInstanceState();
     createdApplier = new AgentInstanceCreatedApplier(agentInstanceState, elementInstanceState);
-    updatedApplier = new AgentInstanceUpdatedApplier(agentInstanceState, elementInstanceState);
+    eventAppliers = new EventAppliers();
+    eventAppliers.registerEventAppliers(processingState);
+  }
+
+  // Dispatches through EventAppliers#applyState with the latest registered version, so this test
+  // always exercises whichever applier is currently latest instead of pinning to V2.
+  private void applyUpdated(final long key, final AgentInstanceRecord value) {
+    eventAppliers.applyState(
+        key,
+        AgentInstanceIntent.UPDATED,
+        value,
+        eventAppliers.getLatestVersion(AgentInstanceIntent.UPDATED));
   }
 
   @Test
@@ -61,7 +76,7 @@ public class AgentInstanceUpdatedApplierTest {
             .setAgentInstanceKey(agentInstanceKey)
             .setStatus(AgentInstanceStatus.THINKING);
     updated.getMetrics().setInputTokens(10L).setOutputTokens(5L);
-    updatedApplier.applyState(agentInstanceKey, updated);
+    applyUpdated(agentInstanceKey, updated);
 
     // then — the stored record reflects the updated values.
     final var stored = agentInstanceState.getRecord(agentInstanceKey);
@@ -89,7 +104,7 @@ public class AgentInstanceUpdatedApplierTest {
         new AgentHistoryRecord().setHistoryItemId("item-1").setRole(AgentHistoryRole.USER));
 
     // when
-    updatedApplier.applyState(agentInstanceKey, updated);
+    applyUpdated(agentInstanceKey, updated);
 
     // then — history is a transient per-command payload, not real AgentInstance state: every item
     // it carries is already persisted independently as its own AGENT_HISTORY record.
@@ -117,7 +132,7 @@ public class AgentInstanceUpdatedApplierTest {
             .setJobLeaseToken("lease-1");
 
     // when
-    updatedApplier.applyState(agentInstanceKey, updated);
+    applyUpdated(agentInstanceKey, updated);
 
     // then — jobKey/jobLeaseToken are per-command payload, not real AgentInstance state: they're
     // redundant with what's already captured on the separate AGENT_HISTORY entities.
@@ -153,12 +168,12 @@ public class AgentInstanceUpdatedApplierTest {
             .setStatus(AgentInstanceStatus.THINKING);
     updated.getMetrics().setInputTokens(42L);
 
-    updatedApplier.applyState(agentInstanceKey, updated);
+    applyUpdated(agentInstanceKey, updated);
     final var afterFirst = agentInstanceState.getRecord(agentInstanceKey);
     final var ei2AfterFirst = elementInstanceState.getInstance(ei2Key);
 
     // when — replay the same UPDATED event.
-    updatedApplier.applyState(agentInstanceKey, updated);
+    applyUpdated(agentInstanceKey, updated);
 
     // then — the stored state is identical after the replay.
     final var afterReplay = agentInstanceState.getRecord(agentInstanceKey);
@@ -206,7 +221,7 @@ public class AgentInstanceUpdatedApplierTest {
             .setElementInstanceKey(ei2Key)
             .setElementInstanceKeys(List.of(ei1Key, ei2Key))
             .setStatus(AgentInstanceStatus.THINKING);
-    updatedApplier.applyState(agentInstanceKey, updated);
+    applyUpdated(agentInstanceKey, updated);
 
     // then — EI₂ now has the back-link set.
     final var ei2 = elementInstanceState.getInstance(ei2Key);
@@ -238,13 +253,59 @@ public class AgentInstanceUpdatedApplierTest {
             .setElementInstanceKey(ei2Key)
             .setElementInstanceKeys(List.of(ei1Key, ei2Key))
             .setStatus(AgentInstanceStatus.THINKING);
-    updatedApplier.applyState(agentInstanceKey, updated);
+    applyUpdated(agentInstanceKey, updated);
 
     // then — the persisted record carries [EI₁, EI₂] in the plural list.
     final var stored = agentInstanceState.getRecord(agentInstanceKey);
     assertThat(stored).isNotNull();
     assertThat(stored.getElementInstanceKeys()).containsExactly(ei1Key, ei2Key);
     assertThat(stored.getElementInstanceKey()).isEqualTo(ei2Key);
+  }
+
+  @Test
+  void shouldNotErasePromptAndToolsWhenTrimmedFromUpdatedEvent() {
+    // given — a CREATED record carrying a non-empty systemPrompt and non-empty tools.
+    final long agentInstanceKey = 66L;
+    final var initial =
+        new AgentInstanceRecord()
+            .setAgentInstanceKey(agentInstanceKey)
+            .setStatus(AgentInstanceStatus.INITIALIZING)
+            .setTools(
+                List.of(
+                    new AgentInstanceTool()
+                        .setName("tool-1")
+                        .setDescription("does a thing")
+                        .setElementId("tool-element")));
+    initial
+        .getDefinition()
+        .setModel("gpt-5")
+        .addSystemPrompt(
+            new AgentHistoryMessageContent()
+                .setContentType(AgentHistoryContentType.TEXT)
+                .setText("you are a helpful agent"));
+    createdApplier.applyState(agentInstanceKey, initial);
+
+    // when — apply an UPDATED event that changes only status, with systemPrompt/tools trimmed to
+    // empty (as AgentHistoryBatchBehavior#trimUnchangedContentFields does when they're unchanged)
+    // and correspondingly absent from changedAttributes.
+    final var updated =
+        new AgentInstanceRecord()
+            .setAgentInstanceKey(agentInstanceKey)
+            .setStatus(AgentInstanceStatus.THINKING)
+            .setChangedAttributes(List.of(AgentInstanceRecord.ATTR_STATUS));
+    applyUpdated(agentInstanceKey, updated);
+
+    // then — the stored systemPrompt and tools are still the original, non-empty values; the V2
+    // applier patches them back in from existing state instead of overwriting with the event's
+    // trimmed (empty) content.
+    final var stored = agentInstanceState.getRecord(agentInstanceKey);
+    assertThat(stored).isNotNull();
+    assertThat(stored.getStatus()).isEqualTo(AgentInstanceStatus.THINKING);
+    assertThat(stored.getDefinition().getSystemPrompt()).isNotEmpty();
+    assertThat(stored.getDefinition().getSystemPrompt().get(0).getText())
+        .isEqualTo("you are a helpful agent");
+    assertThat(stored.getTools()).isNotEmpty();
+    assertThat(stored.getTools().get(0).getName()).isEqualTo("tool-1");
   }
 
   private void givenElementInstance(final long elementInstanceKey) {
