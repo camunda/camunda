@@ -10,11 +10,7 @@ package io.camunda.search.schema;
 import static io.camunda.zeebe.test.util.testcontainers.TestSearchContainers.createDefaultElasticsearchContainer;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import co.elastic.clients.elasticsearch._types.mapping.DynamicMapping;
-import io.camunda.search.connect.configuration.ConnectConfiguration;
-import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
-import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -96,24 +92,17 @@ class SchemaManagerStartupIT {
   //   shutdown signal arrives while the context refresh is still blocked at the gate.
   void shouldGracefullyShutdownWhenSchemaStartupStillRunning(
       final boolean waitForSchemaStartupBeforeShutdown, final boolean gatewayEnabled)
-      throws InterruptedException, IOException {
+      throws InterruptedException {
     // given
     final var shutdownLatch = new CountDownLatch(1);
 
-    // create the role index with incorrect mapping to force the schema manager to retry
-    final ConnectConfiguration cfg = new ConnectConfiguration();
-    cfg.setUrl(es.getHttpHostAddress());
-    try (final var esClient = new ElasticsearchConnector(cfg).createClient()) {
-      esClient
-          .indices()
-          .create(
-              r ->
-                  r.index(new RoleIndex("", true).getFullQualifiedName())
-                      .mappings(
-                          m ->
-                              m.dynamic(DynamicMapping.Strict)
-                                  .properties("roleId", p -> p.long_(l -> l))));
-    }
+    // point the node at an Elasticsearch that is not there, so every schema-initialization attempt
+    // fails in a way retrying may yet repair and the tenant's task stays in its retry loop for the
+    // shutdown signal to arrive during
+    camunda
+        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", UNREACHABLE_ELASTICSEARCH_URL)
+        .withEnv("CAMUNDA_DATABASE_URL", UNREACHABLE_ELASTICSEARCH_URL)
+        .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", UNREACHABLE_ELASTICSEARCH_URL);
 
     if (gatewayEnabled) {
       // enable embedded gateway and operate webapp

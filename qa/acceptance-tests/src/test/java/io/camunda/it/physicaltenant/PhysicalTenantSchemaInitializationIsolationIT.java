@@ -13,6 +13,7 @@ import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.zeebe.qa.util.actuator.PrometheusActuator;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;
+import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -35,14 +36,15 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
 /**
  * Verifies the per-physical-tenant isolation of schema initialization on a live Elasticsearch: a
  * tenant whose schema cannot be applied is degraded on its own, the node still serves the healthy
- * tenants, and the degraded tenant recovers in the background once the cause is removed — with no
- * restart and no operator action. See {@code
+ * tenants. A conflicting mapping is classified terminal, so that tenant's retry loop stops and
+ * removing the cause does not bring it back on its own — the node has to be restarted for the
+ * repair to be picked up. See {@code
  * docs/adr/management/005-per-physical-tenant-schema-initialization.md}.
  *
  * <p>The failure is injected at schema-initialization time by pre-creating one of tenant A's
  * indices with a strict, conflicting mapping, so the tenant's very first attempt fails while
- * everything else about the cluster stays healthy — no network games, one container, and a recovery
- * that is a single index deletion. The same trick is used by {@code SchemaManagerStartupIT}.
+ * everything else about the cluster stays healthy — no network games and one container. The same
+ * trick is used by {@code SchemaManagerStartupIT}.
  *
  * <p>The degraded tenant is deliberately <em>not</em> the default one: until the module-specific
  * search-engine readiness indicators are replaced ({@code #51861}), a degraded default tenant still
@@ -97,7 +99,7 @@ final class PhysicalTenantSchemaInitializationIsolationIT {
   }
 
   @Test
-  void shouldDegradeOnlyTheTenantWhoseSchemaFailedAndRecoverItInTheBackground() throws Exception {
+  void shouldDegradeOnlyTheTenantWhoseSchemaFailedUntilTheNodeIsRestarted() throws Exception {
     // given - the node started and was admitted even though tenant A never initialized, which is
     // the behaviour that used to require the whole context to come down
     assertThat(readinessGaugeFor(DEFAULT_TENANT)).isEqualTo(1);
@@ -114,16 +116,29 @@ final class PhysicalTenantSchemaInitializationIsolationIT {
         .contains("Physical tenant '" + TENANT_A + "' is degraded")
         .contains("\"status\":503");
 
-    // when - the cause is removed, without restarting the node
+    // when - the cause is removed while the node keeps running
     deleteConflictingRoleIndex();
 
-    // then - the background retry loop initializes tenant A on its own
-    Awaitility.await("tenant A recovers without a restart")
+    // then - the tenant stays degraded: a conflicting mapping is terminal, so this tenant's retry
+    // loop has already stopped and nothing is left running to pick the repair up
+    Awaitility.await("tenant A stays degraded for as long as the node runs")
+        .during(Duration.ofSeconds(15))
+        .atMost(Duration.ofSeconds(45))
+        .pollInterval(Duration.ofSeconds(1))
+        .untilAsserted(() -> assertThat(readinessGaugeFor(TENANT_A)).isZero());
+
+    // and - restarting the node is the only way back, because that is what starts a fresh attempt
+    broker.stop();
+    broker.start().await(TestHealthProbe.READY);
+
+    Awaitility.await("tenant A initializes on the restarted node")
         .atMost(Duration.ofSeconds(90))
         .pollInterval(Duration.ofSeconds(1))
+        .ignoreExceptions()
         .untilAsserted(() -> assertThat(readinessGaugeFor(TENANT_A)).isEqualTo(1));
     Awaitility.await("tenant A is served again")
         .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions()
         .untilAsserted(
             () -> assertThat(searchProcessInstances(TENANT_A).statusCode()).isEqualTo(200));
 
