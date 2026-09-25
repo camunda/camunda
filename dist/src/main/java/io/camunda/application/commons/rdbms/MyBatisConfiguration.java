@@ -7,13 +7,14 @@
  */
 package io.camunda.application.commons.rdbms;
 
+import io.camunda.application.commons.search.SchemaInitializationRecoveryCheck;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.PerTenantSchemaConfig;
-import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.RdbmsSchemaManagers;
 import io.camunda.db.rdbms.RdbmsSchemaMigrationStatusProvider;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.retry.RetryConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -31,6 +32,7 @@ import org.mybatis.spring.SqlSessionTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 public class MyBatisConfiguration {
@@ -39,20 +41,24 @@ public class MyBatisConfiguration {
 
   /**
    * The registry every consumer of "is this tenant's schema ready" resolves — the RDBMS exporter,
-   * the request-time rejection path and the per-tenant readiness gauge — and, on a multi-tenant
-   * node, the bean that initializes each tenant's schema in isolation.
+   * the request-time rejection path and the per-tenant readiness gauge — and the bean that
+   * initializes each tenant's schema in isolation.
    */
   @Bean
-  public RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry(
+  @Profile("!restore")
+  public RdbmsSchemaInitializer rdbmsSchemaManagerRegistry(
       final RdbmsDataSources rdbmsDataSources,
-      final PhysicalTenantResolver physicalTenantResolver) {
+      final PhysicalTenantResolver physicalTenantResolver,
+      final BrokerTopologyManager brokerTopologyManager) {
     // VersionUtil.getVersion() may not be a valid semantic version during local development;
     // the schema-version check is skipped in that case.
     return new RdbmsSchemaInitializer(
         RdbmsSchemaManagers.fromConfigs(
             physicalTenantSchemaConfigs(rdbmsDataSources, physicalTenantResolver),
             VersionUtil.getVersion()),
-        physicalTenantId -> retryConfiguration(physicalTenantResolver, physicalTenantId));
+        physicalTenantId -> retryConfiguration(physicalTenantResolver, physicalTenantId),
+        io.camunda.application.commons.pt.PerTenantSchemaInitialization.DeferralCheck.of(
+            new SchemaInitializationRecoveryCheck(brokerTopologyManager)::shouldDefer));
   }
 
   private static RetryConfiguration retryConfiguration(

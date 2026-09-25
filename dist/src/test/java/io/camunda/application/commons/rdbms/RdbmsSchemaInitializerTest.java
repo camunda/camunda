@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.application.commons.pt.EveryTenantTerminallyFailedException;
+import io.camunda.application.commons.pt.PerTenantSchemaInitialization.Deferral;
+import io.camunda.application.commons.pt.PerTenantSchemaInitialization.DeferralCheck;
 import io.camunda.application.commons.rdbms.RdbmsSchemaInitializer.TerminalSchemaInitializationException;
 import io.camunda.configuration.Rdbms;
 import io.camunda.db.rdbms.NoopSchemaManager;
@@ -26,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import org.awaitility.Awaitility;
@@ -59,10 +62,10 @@ final class RdbmsSchemaInitializerTest {
     }
   }
 
-  // ---- the single-tenant shape: synchronous, fail-fast, as before this class existed ----
+  // ---- single-tenant broker behavior ----
 
   @Test
-  void shouldInitializeASingleTenantSynchronously() throws Exception {
+  void shouldInitializeASingleTenantBeforeReleasingStartup() throws Exception {
     // given
     final var manager = new FakeSchemaManager();
     initializer = initializer(Map.of(TENANT_A, manager));
@@ -70,41 +73,38 @@ final class RdbmsSchemaInitializerTest {
     // when
     initializer.afterPropertiesSet();
 
-    // then - applied during the context refresh, not in the background
+    // then
     assertThat(manager.attempts()).isEqualTo(1);
     assertThat(initializer.isInitialized(TENANT_A)).isTrue();
   }
 
   @Test
-  void shouldFailStartupWhenTheSingleTenantCannotBeInitialized() {
-    // given - the case a one-shot job such as RestoreApp depends on: it has to exit non-zero in
-    // seconds rather than hold at a gate no second tenant can ever release
-    final var manager = FakeSchemaManager.alwaysFailingWith(new SQLException("no DDL grant"));
+  void shouldAbortStartupWhenTheSingleTenantFailsTerminally() {
+    // given
+    final var manager =
+        FakeSchemaManager.alwaysFailingWith(
+            new RdbmsSchemaVersionIncompatibleException("8.9.0", "8.11.0"));
     initializer = initializer(Map.of(TENANT_A, manager));
 
-    // when / then - and unwrapped, so what an operator reads has not changed
+    // when / then
     assertThatThrownBy(() -> initializer.afterPropertiesSet())
-        .isInstanceOf(SQLException.class)
-        .hasMessage("no DDL grant");
+        .isInstanceOf(EveryTenantTerminallyFailedException.class)
+        .hasMessageContaining(TENANT_A);
     assertThat(initializer.isInitialized(TENANT_A)).isFalse();
   }
 
   @Test
-  void shouldNotRetryASingleTenantInTheBackground() {
+  void shouldRetryASingleTenantUntilItCanInitialize() throws Exception {
     // given
-    final var manager = FakeSchemaManager.alwaysFailingWith(new SQLException("no DDL grant"));
+    final var manager = FakeSchemaManager.failingTimes(2, new SQLException("no DDL grant"));
     initializer = initializer(Map.of(TENANT_A, manager));
 
     // when
-    assertThatThrownBy(() -> initializer.afterPropertiesSet()).isNotNull();
+    initializer.afterPropertiesSet();
 
-    // then - exactly one attempt was made and no task outlives the failure; a job that kept
-    // retrying would never terminate against an unbounded budget
-    assertThat(manager.attempts()).isEqualTo(1);
-    Awaitility.await()
-        .during(Duration.ofMillis(200))
-        .atMost(Duration.ofSeconds(5))
-        .untilAsserted(() -> assertThat(manager.attempts()).isEqualTo(1));
+    // then
+    assertThat(manager.attempts()).isEqualTo(3);
+    assertThat(initializer.isInitialized(TENANT_A)).isTrue();
   }
 
   @Test
@@ -127,6 +127,36 @@ final class RdbmsSchemaInitializerTest {
 
     // then
     assertThat(manager.attempts()).isOne();
+  }
+
+  @Test
+  void shouldDeferSingleTenantStartupDuringRecoveryAndAllowImmediateRestoreInitialization()
+      throws Exception {
+    // given
+    final var recovering = new AtomicBoolean(true);
+    final var manager = new FakeSchemaManager();
+    initializer =
+        initializer(
+            Map.of(TENANT_A, manager),
+            DeferralCheck.of(ignored -> recovering.get() ? Deferral.DEFERRED : Deferral.NONE));
+
+    // when - startup discovers the tenant is recovering
+    initializer.afterPropertiesSet();
+
+    // then - startup is released without touching its schema
+    assertThat(manager.attempts()).isZero();
+    assertThat(initializer.isInitialized(TENANT_A)).isFalse();
+
+    // when - the restore graph explicitly initializes the schema
+    initializer.initializeNow(TENANT_A);
+    recovering.set(false);
+
+    // then - the tenant is ready, and the background task does not apply the schema again
+    Awaitility.await()
+        .during(Duration.ofMillis(200))
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(() -> assertThat(manager.attempts()).isOne());
+    assertThat(initializer.isInitialized(TENANT_A)).isTrue();
   }
 
   // ---- the multi-tenant shape: isolated, retried in the background, gated ----
@@ -325,9 +355,14 @@ final class RdbmsSchemaInitializerTest {
 
   // ---- helpers ----
 
-  /** Always holds startup at the gate on the isolated path, as an RDBMS node does. */
+  /** Always holds startup at the gate, as an RDBMS node does. */
   private RdbmsSchemaInitializer initializer(final Map<String, RdbmsSchemaManager> managers) {
-    return new RdbmsSchemaInitializer(managers, fastRetry());
+    return initializer(managers, DeferralCheck.of(ignored -> Deferral.NONE));
+  }
+
+  private RdbmsSchemaInitializer initializer(
+      final Map<String, RdbmsSchemaManager> managers, final DeferralCheck deferralCheck) {
+    return new RdbmsSchemaInitializer(managers, fastRetry(), deferralCheck);
   }
 
   private static Map<String, RdbmsSchemaManager> tenants(

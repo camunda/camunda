@@ -9,6 +9,7 @@ package io.camunda.zeebe.restore;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.application.commons.rdbms.RdbmsSchemaInitializer;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ActiveProfiles;
 
 @ActiveProfiles("restore")
@@ -32,6 +34,10 @@ import org.springframework.test.context.ActiveProfiles;
     properties = {
       "camunda.data.backup.store=filesystem",
       "camunda.data.backup.filesystem.basepath=/tmp",
+      "camunda.data.secondary-storage.type=rdbms",
+      "camunda.data.secondary-storage.rdbms.url=jdbc:h2:mem:restore-app-test;MODE=PostgreSQL",
+      "camunda.data.secondary-storage.rdbms.username=sa",
+      "camunda.data.secondary-storage.rdbms.password=",
       "camunda.cluster.node-id=26",
       "backupId=27"
     })
@@ -41,6 +47,7 @@ public class RestoreAppTest {
   private static final long BACKUP_ID = 27L;
 
   @Autowired private BrokerBasedProperties brokerBasedProperties;
+  @Autowired private ApplicationContext applicationContext;
 
   /**
    * The RestoreApp now validates the backup existence before proceeding. We stub a completed backup
@@ -67,5 +74,6 @@ public class RestoreAppTest {
     assertThat(brokerBasedProperties).isNotNull();
     assertThat(brokerBasedProperties.getCluster()).isNotNull();
     assertThat(brokerBasedProperties.getCluster().getNodeId()).isEqualTo(26);
+    assertThat(applicationContext.getBeansOfType(RdbmsSchemaInitializer.class)).isEmpty();
   }
 }
