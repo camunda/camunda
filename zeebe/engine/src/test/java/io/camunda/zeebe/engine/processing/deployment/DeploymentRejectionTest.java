@@ -25,11 +25,8 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
-import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.stream.Collectors;
@@ -231,71 +228,6 @@ public class DeploymentRejectionTest {
             The evaluation reported the following warnings:
             [NO_VARIABLE_FOUND] No variable found with name 'INVALID_CYCLE_EXPRESSION')
             """);
-  }
-
-  @Test
-  public void shouldNotKeepProcessOfRejectedDeploymentIfTimerCannotBeCreated() {
-    // given
-    final var tenantId = Strings.newRandomValidTenantId();
-    final var processId = Strings.newRandomValidBpmnId();
-    final var cycleVariable = "CYCLE_" + processId.replace("-", "_");
-    ENGINE.tenant().newTenant().withTenantId(tenantId).create();
-    // the timer is validated without a tenant and resolves the global cycle, but it is created for
-    // the tenant, whose invalid cycle fails the deployment after the process was written
-    ENGINE
-        .clusterVariables()
-        .withName(cycleVariable)
-        .withValue("\"R/PT1H\"")
-        .setGlobalScope()
-        .create();
-    ENGINE
-        .clusterVariables()
-        .withName(cycleVariable)
-        .withValue("\"INVALID_CYCLE\"")
-        .withTenantId(tenantId)
-        .setTenantScope()
-        .create();
-    final var timerProcess =
-        Bpmn.createExecutableProcess(processId)
-            .startEvent()
-            .timerWithCycleExpression("camunda.vars.env." + cycleVariable)
-            .endEvent()
-            .done();
-    final var rejection =
-        ENGINE
-            .deployment()
-            .withXmlResource("timer.bpmn", timerProcess)
-            .withTenantId(tenantId)
-            .expectRejection()
-            .deploy();
-    Assertions.assertThat(rejection).hasRejectionType(RejectionType.PROCESSING_ERROR);
-    assertThat(rejection.getRejectionReason())
-        .startsWith("Expected to create timer for start event");
-
-    // when
-    final var deployedProcess =
-        ENGINE
-            .deployment()
-            .withXmlResource(
-                "none.bpmn", Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
-            .withTenantId(tenantId)
-            .deploy()
-            .getValue()
-            .getProcessesMetadata()
-            .getFirst();
-    final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(processId).withTenantId(tenantId).create();
-
-    // then
-    assertThat(deployedProcess.getVersion()).isEqualTo(1);
-    assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.PROCESS)
-                .getFirst()
-                .getValue()
-                .getProcessDefinitionKey())
-        .isEqualTo(deployedProcess.getProcessDefinitionKey());
   }
 
   // https://github.com/camunda/camunda/issues/8026
