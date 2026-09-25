@@ -1,0 +1,174 @@
+---
+# Source: load-test-setup/templates/k6/configmap-scripts.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k6-scripts
+  labels:
+    app.kubernetes.io/component: k6
+data:
+  lib.helpers.js: |
+    import http from 'k6/http';
+    import { sleep } from 'k6';
+    import { Counter } from 'k6/metrics';
+  
+    export function createToken() {
+      console.log('Creating new token');
+      let token = {
+        accessToken: null,
+        expiryDate: 0,
+      };
+      renew(token);
+      return token;
+    }
+  
+    export function renew(token) {
+      if (token.expiryDate > Date.now()) {
+        return token;
+      }
+  
+      console.log("Token will expire soon, will renew now.")
+      try {
+        updateAuthenticationToken(token);
+      } catch (e) {
+        console.error(`Error while renewing the token: ${e.stack}`);
+        sleep(1);
+      }
+      return token;
+    };
+  
+    export function ensureEnvVars() {
+      const vars = [
+          "CAMUNDA_BASE_URL",
+          "CAMUNDA_CLIENT_ID",
+          "CAMUNDA_CLIENT_SECRET",
+          "CAMUNDA_OAUTH_URL",
+          "CAMUNDA_TOKEN_AUDIENCE",
+      ];
+  
+      let missing = [];
+  
+      for (let i = 0; i < vars.length; i++) {
+        const name = vars[i];
+        const value = __ENV[name];
+        if (value === undefined) {
+          missing.push(name);
+          console.error(`Environment variable ${name} is not defined.`);
+        }
+      }
+  
+      if (missing.length > 0) {
+        throw Error(`Missing environment variables: ${missing.join(', ')}`);
+      }
+    }
+  
+    function updateAuthenticationToken(token) {
+      const token_url = __ENV.CAMUNDA_OAUTH_URL;
+      const client_id = __ENV.CAMUNDA_CLIENT_ID;
+      const client_secret = __ENV.CAMUNDA_CLIENT_SECRET;
+      const audience = __ENV.CAMUNDA_TOKEN_AUDIENCE;
+  
+      console.log(`Fetching authentication token from: ${token_url}`);
+  
+      const payload = {
+        grant_type: 'client_credentials',
+        audience: audience,
+        client_id: client_id,
+        client_secret: client_secret,
+      };
+  
+      const params = {
+        tags: { name: 'token-request' },
+      };
+  
+      const response = http.post(token_url, payload, params);
+      if (response.status != 200) {
+        const result = response.body;
+        throw new Error(`unable to fetch token: ${result}`);
+      }
+  
+      token.accessToken = response.json('access_token');
+      const expiresIn = response.json('expires_in');
+      token.expiryDate = Date.now() + expiresIn * 1000;
+  
+      console.log(`Authentication token fetched successfully; will renew in ${expiresIn}s`);
+    };
+  test.default.js: |
+    import http from 'k6/http';
+    import { sleep } from 'k6';
+    import { Counter } from 'k6/metrics';
+  
+    import { createToken, renew, ensureEnvVars } from './lib.helpers.js';
+  
+  
+    export const options = {
+      scenarios: {
+        topology: {
+          exec: 'checkTopology',
+          executor: 'constant-vus',
+          duration: '1d',
+          vus: 1,
+        },
+        searchInstances: {
+          exec: 'checkForProcessInstances',
+          executor: 'constant-vus',
+          duration: '1d',
+          vus: 2,
+        },
+      },
+    };
+  
+    export async function setup() {
+      ensureEnvVars();
+  
+      const token = createToken();
+      // The returned context object must be JSON serializable.
+      const context = {
+        token: token,
+      };
+      return context;
+    }
+  
+    export async function checkTopology(context) {
+      const token = renew(context.token);
+      const endpoint = '/v1/topology';
+      const params = {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': "Bearer " + token.accessToken,
+        },
+        tags: { name: endpoint },
+      };
+  
+      http.get(__ENV.CAMUNDA_BASE_URL + endpoint, params);
+      sleep(1);
+    };
+  
+  
+    // https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/search-process-instances/
+    export async function checkForProcessInstances(context) {
+      const token = renew(context.token);
+  
+      const endpoint = '/v2/process-instances/search';
+      const params = {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': "Bearer " + token.accessToken,
+        },
+        tags: { name: endpoint },
+      };
+      const payload = {
+        sort: [
+          {
+            field: "startDate",
+            order: "DESC",
+          },
+        ],
+        filter: {
+          processDefinitionId: "benchmark",
+        },
+      };
+  
+      http.post(__ENV.CAMUNDA_BASE_URL + endpoint, JSON.stringify(payload), params);
+      sleep(1);
+    };
