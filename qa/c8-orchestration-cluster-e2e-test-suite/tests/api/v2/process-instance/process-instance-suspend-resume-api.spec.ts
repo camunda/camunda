@@ -49,20 +49,6 @@ import {
 
 const instancesToCancel: string[] = [];
 
-async function deployIncidentProcess(
-  processDefinitionId: string,
-  jobType: string,
-) {
-  const deployment = await deployWithSubstitutions(
-    './resources/processWithAnIncident.bpmn',
-    {
-      'id="processWithAnIncident"': `id="${processDefinitionId}"`,
-      'type="alwaysFailingTask"': `type="${jobType}"`,
-    },
-  );
-  return deployment.processes[0];
-}
-
 const MI_JOB_COUNT = 8;
 
 /**
@@ -185,6 +171,27 @@ async function expectJobExists(
     await assertStatusCode(res, 200);
     expect((await res.json()).items ?? []).toHaveLength(1);
   }).toPass(extendedAssertionOptions);
+}
+
+/**
+ * Runs the instance's service task and waits for it to finish. Every case that
+ * suspends a real instance ends this way: a refusal proves a request was
+ * turned down, not that the instance survived the suspension intact.
+ */
+async function completeServiceTaskInstance(
+  request: APIRequestContext,
+  jobType: string,
+  processInstanceKey: string,
+) {
+  const jobKey = await activateSingleJob(request, jobType, processInstanceKey);
+  await completeJob(request, jobKey);
+  await expectProcessState(
+    request,
+    processInstanceKey,
+    'COMPLETED',
+    extendedAssertionOptions,
+  );
+  await expectNoIncidents(request, processInstanceKey);
 }
 
 async function startServiceTaskInstance(prefix: string) {
@@ -501,6 +508,17 @@ test.describe('Process Instance Suspend and Resume API', () => {
       204,
     );
 
+    await completeServiceTaskInstance(
+      request,
+      first.jobType,
+      first.processInstanceKey,
+    );
+    await completeServiceTaskInstance(
+      request,
+      second.jobType,
+      second.processInstanceKey,
+    );
+
     const third = await startServiceTaskInstance('sr-body-c');
     for (const operationReference of [-1, 'not-a-number']) {
       await assertStatusCode(
@@ -688,34 +706,22 @@ test.describe('Process Instance Suspend and Resume API', () => {
   test('Incident resolution is rejected while the instance is suspended', async ({
     request,
   }) => {
-    const processDefinitionId = uniquePrefixedId('sr-incident');
-    const jobType = uniquePrefixedId('sr-incident-job');
-    await deployIncidentProcess(processDefinitionId, jobType);
-    // Without these variables the model raises three further incidents, leaving
-    // the target one ambiguous.
-    const instance = await createInstanceOnceDeployed(processDefinitionId, 1, {
-      goUp: 1,
-      clientId: 'sr-incident-client',
-      orderId: 'sr-incident-order',
-    });
-    instancesToCancel.push(instance.processInstanceKey);
-
+    const {jobType, processInstanceKey} =
+      await startServiceTaskInstance('sr-incident');
     const jobKey = await activateSingleJob(
       request,
       jobType,
-      instance.processInstanceKey,
+      processInstanceKey,
     );
     await failJob(request, String(jobKey), 0);
     const incidents = (await searchIncidentByPIK(request, {
-      processInstanceKey: instance.processInstanceKey,
+      processInstanceKey,
     })) as Record<string, unknown>[];
-    const jobIncidents = incidents.filter(
-      (i) => i['errorType'] === 'JOB_NO_RETRIES',
-    );
-    expect(jobIncidents).toHaveLength(1);
-    const incidentKey = String(jobIncidents[0]['incidentKey']);
+    expect(incidents).toHaveLength(1);
+    expect(incidents[0]['errorType']).toBe('JOB_NO_RETRIES');
+    const incidentKey = String(incidents[0]['incidentKey']);
 
-    await suspendAndExpectSuspended(request, instance.processInstanceKey);
+    await suspendAndExpectSuspended(request, processInstanceKey);
 
     await assertInvalidState(
       await request.post(
@@ -724,10 +730,7 @@ test.describe('Process Instance Suspend and Resume API', () => {
       ),
     );
 
-    await assertStatusCode(
-      await resume(request, instance.processInstanceKey),
-      204,
-    );
+    await assertStatusCode(await resume(request, processInstanceKey), 204);
 
     // A JOB_NO_RETRIES incident needs its job's retries back before it can be
     // resolved at all — the engine answers 409 and says so.
@@ -748,6 +751,10 @@ test.describe('Process Instance Suspend and Resume API', () => {
       ),
       204,
     );
+
+    // The retried job is the one the suspension refused to unblock, so running
+    // it to the end is what shows the resume left the instance workable.
+    await completeServiceTaskInstance(request, jobType, processInstanceKey);
   });
 
   test('Variable edits on a suspended instance follow the element scope', async ({
@@ -1112,6 +1119,30 @@ test.describe('Process Instance Suspend and Resume API', () => {
     const firstSuspendedDate = (
       await getProcessInstance(request, processInstanceKey)
     ).suspendedDate;
+
+    // A range either side of the recorded date: $exists alone would pass on a
+    // date the filter cannot actually compare.
+    const suspendedAt = new Date(String(firstSuspendedDate)).getTime();
+    for (const [suspendedDate, expected] of [
+      [
+        {
+          $gte: new Date(suspendedAt - 60_000).toISOString(),
+          $lte: new Date(suspendedAt + 60_000).toISOString(),
+        },
+        1,
+      ],
+      [{$gt: new Date(suspendedAt + 60_000).toISOString()}, 0],
+    ] as const) {
+      const rangeRes = await request.post(
+        buildUrl('/process-instances/search'),
+        {
+          headers: jsonHeaders(),
+          data: {filter: {processInstanceKey, suspendedDate}},
+        },
+      );
+      await assertStatusCode(rangeRes, 200);
+      expect((await rangeRes.json()).items ?? []).toHaveLength(expected);
+    }
 
     await assertStatusCode(await resume(request, processInstanceKey), 204);
     await expectSuspendedDate(request, processInstanceKey, false);
