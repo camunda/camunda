@@ -150,6 +150,45 @@ describe('<CustomFiltersModal />', () => {
 		});
 	});
 
+	it('should remove advanced filters from storage when the advanced toggle is turned off on edit', async ({worker}) => {
+		worker.use(...MOCKS);
+		storeStateLocally('tasklist.customFilters', {
+			'filter-1': {
+				assignee: 'all',
+				status: 'open',
+				name: 'My filter',
+				taskId: 'task-0',
+				variables: [{name: 'variable-0', value: '"value-0"'}],
+			},
+		});
+
+		const mockOnSuccess = vi.fn();
+		const screen = await renderWithRouter(
+			() => (
+				<CustomFiltersModal
+					filterId="filter-1"
+					isOpen
+					onClose={() => {}}
+					onSuccess={mockOnSuccess}
+					onDelete={() => {}}
+				/>
+			),
+			{path: '/tasklist'},
+		);
+
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
+		await expect.element(screen.getByRole('switch', {name: 'Advanced filters'})).toBeChecked();
+
+		await userEvent.click(screen.getByRole('switch', {name: 'Advanced filters'}), {force: true});
+		await expect.element(screen.getByRole('switch', {name: 'Advanced filters'})).not.toBeChecked();
+		await userEvent.click(screen.getByRole('button', {name: /save and apply/i}));
+
+		expect(mockOnSuccess).toHaveBeenCalledWith('filter-1');
+		expect(getStateLocally('tasklist.customFilters')).toEqual({
+			'filter-1': {assignee: 'all', status: 'open', name: 'My filter'},
+		});
+	});
+
 	it('should delete a filter from storage and call onDelete on confirm', async ({worker}) => {
 		worker.use(...MOCKS);
 		storeStateLocally('tasklist.customFilters', {

@@ -30,6 +30,7 @@ import {
 } from '@camunda/design-system';
 import {Plus, X} from '@camunda/design-system/icons';
 import {ErrorBoundary} from 'react-error-boundary';
+import type {Mutator} from 'final-form';
 import {Field, Form, type FieldInputProps} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
 import arrayMutators from 'final-form-arrays';
@@ -72,6 +73,28 @@ const EMPTY_SELECT_VALUE = '__empty__';
 function setPath<T extends Record<string, unknown>>(obj: T, key: PropertyKey, value: unknown): T {
 	return {...obj, [String(key)]: value};
 }
+
+function hasAdvancedFilters(values: NamedCustomFilters | undefined): boolean {
+	return ADVANCED_FILTERS.some((key) => {
+		const value = values?.[key];
+
+		return Array.isArray(value) ? value.length > 0 : value !== undefined;
+	});
+}
+
+function omitAdvancedFilters<T extends object>(values: T): Partial<T> {
+	return Object.fromEntries(
+		Object.entries(values).filter(([key]) => !ADVANCED_FILTERS.includes(key as keyof NamedCustomFilters)),
+	) as Partial<T>;
+}
+
+const clearAdvancedFilters: Mutator<FormValues> = (_args, state, {changeValue}) => {
+	ADVANCED_FILTERS.forEach((key) => changeValue(state, key, () => undefined));
+
+	if (state.formState.initialValues !== undefined) {
+		state.formState.initialValues = omitAdvancedFilters(state.formState.initialValues);
+	}
+};
 
 function getDateFormat(format: string) {
 	return format.replaceAll('Y', 'yyyy').replaceAll('m', 'MM').replaceAll('d', 'dd');
@@ -197,8 +220,10 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply, onSave, onEdit,
 			>
 				{isOpen ? (
 					<Form<FormValues>
-						onSubmit={({areAdvancedFiltersEnabled: _, action, ...values}) => {
-							const result = namedCustomFiltersSchema.safeParse(values);
+						onSubmit={({areAdvancedFiltersEnabled, action, ...values}) => {
+							const result = namedCustomFiltersSchema.safeParse(
+								areAdvancedFiltersEnabled ? values : omitAdvancedFilters(values),
+							);
 
 							if (!result.success) {
 								return result.error.flatten(({path, message}) => {
@@ -232,9 +257,9 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply, onSave, onEdit,
 						}}
 						initialValues={{
 							...initialValues,
-							areAdvancedFiltersEnabled: ADVANCED_FILTERS.some((key) => initialValues?.[key] !== undefined),
+							areAdvancedFiltersEnabled: hasAdvancedFilters(initialValues),
 						}}
-						mutators={{...arrayMutators}}
+						mutators={{...arrayMutators, clearAdvancedFilters}}
 					>
 						{({handleSubmit, form, values}) => (
 							<>
@@ -413,7 +438,15 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply, onSave, onEdit,
 														size="sm"
 														aria-label={label}
 														checked={input.value}
-														onCheckedChange={input.onChange}
+														onCheckedChange={(checked) => {
+															form.batch(() => {
+																input.onChange(checked);
+
+																if (!checked) {
+																	form.mutators.clearAdvancedFilters?.();
+																}
+															});
+														}}
 													/>
 													<Label htmlFor="toggle-advanced-filters">{label}</Label>
 												</div>
