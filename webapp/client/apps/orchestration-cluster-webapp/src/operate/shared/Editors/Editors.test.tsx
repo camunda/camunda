@@ -141,7 +141,7 @@ describe('Editors', () => {
 				.toHaveTextContent('Invalid value');
 		});
 
-		it('should edit, validate and blur on Escape without losing changes', async () => {
+		it.for(['true', 'false', 'null', '12345'])('should preserve %s edits on Escape', async (inputValue) => {
 			const onValidate = vi.fn();
 			const onBlur = vi.fn();
 			const onFocus = vi.fn();
@@ -162,7 +162,7 @@ describe('Editors', () => {
 			const screen = await render(<Form />);
 			const editor = screen.getByRole('textbox', {name: 'Value', exact: true});
 			await expect.element(editor).toHaveFocus();
-			await userEvent.keyboard('true');
+			await userEvent.keyboard(inputValue);
 			await expect.poll(() => onValidate.mock.lastCall?.[0]).toBe(true);
 			await userEvent.keyboard('x');
 			await expect.poll(() => onValidate.mock.lastCall?.[0]).toBe(false);
@@ -170,7 +170,7 @@ describe('Editors', () => {
 			await expect.element(editor).not.toHaveFocus();
 			expect(onBlur).toHaveBeenCalledOnce();
 			expect(onFocus).toHaveBeenCalledOnce();
-			await expect.element(screen.getByText('truex', {exact: true})).toBeVisible();
+			await expect.element(screen.getByText(`${inputValue}x`, {exact: true})).toBeVisible();
 		});
 
 		it('should expose and clear field errors on the editable input', async () => {
@@ -234,6 +234,7 @@ describe('Editors', () => {
 		});
 
 		it('should switch modes, discard edits on View and copy the variable key with its value', async () => {
+			const consoleError = vi.spyOn(console, 'error');
 			const screen = await render(
 				<RichTextEditorModal
 					isVisible
@@ -253,6 +254,7 @@ describe('Editors', () => {
 			await userEvent.click(screen.getByRole('button', {name: 'View', exact: true}));
 			await userEvent.click(screen.getByRole('button', {name: 'Copy', exact: true}));
 			expect(navigator.clipboard.writeText).toHaveBeenCalledWith('{"enabled":true}');
+			expect(consoleError).not.toHaveBeenCalled();
 		});
 
 		it('should reset when reopened and preserve markdown without JSON parsing', async () => {
