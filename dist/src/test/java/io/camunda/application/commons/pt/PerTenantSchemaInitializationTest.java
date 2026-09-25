@@ -19,9 +19,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -840,6 +842,126 @@ final class PerTenantSchemaInitializationTest {
       Awaitility.await("the tenant initializes")
           .atMost(Duration.ofSeconds(10))
           .untilAsserted(() -> assertThat(initialization.isInitialized(TENANT_A)).isTrue());
+    }
+  }
+
+  @Test
+  void shouldNotReinitializeAfterImmediateInitializationWhileDeferred() throws Exception {
+    // given
+    final var deferred = new AtomicBoolean(true);
+    final var attempts = new AtomicInteger();
+    final var worker = new AtomicReference<Thread>();
+    try (final var initialization =
+        initialization(
+            Set.of(TENANT_A),
+            tenantId -> attempts.incrementAndGet(),
+            tenantId -> {
+              worker.set(Thread.currentThread());
+              return deferred.get();
+            })) {
+      assertThat(startInBackground(initialization).await(10, TimeUnit.SECONDS)).isTrue();
+
+      // when
+      initialization.initializeNow(TENANT_A);
+      deferred.set(false);
+
+      // then
+      Awaitility.await().until(() -> !worker.get().isAlive());
+      assertThat(initialization.isInitialized(TENANT_A)).isTrue();
+      assertThat(attempts).hasValue(1);
+    }
+  }
+
+  @Test
+  void shouldWaitForImmediateInitializationBeforeSkippingBackgroundAttempt() throws Exception {
+    // given
+    final var entered = new CountDownLatch(1);
+    final var release = new CountDownLatch(1);
+    final var attempts = new AtomicInteger();
+    final var worker = new AtomicReference<Thread>();
+    try (final var initialization =
+            initialization(
+                Set.of(TENANT_A),
+                tenantId -> {
+                  if (attempts.incrementAndGet() == 1) {
+                    entered.countDown();
+                    awaitUninterruptibly(release);
+                  }
+                },
+                tenantId -> {
+                  worker.set(Thread.currentThread());
+                  return false;
+                });
+        final var executor = Executors.newSingleThreadExecutor()) {
+      try {
+        final var immediate = executor.submit(() -> initialization.initializeNow(TENANT_A));
+        assertThat(entered.await(10, TimeUnit.SECONDS)).isTrue();
+
+        // when
+        initialization.start();
+        Awaitility.await()
+            .until(
+                () ->
+                    worker.get() != null
+                        && (worker.get().getState() == Thread.State.WAITING
+                            || !worker.get().isAlive()));
+
+        // then
+        assertThat(attempts).hasValue(1);
+        release.countDown();
+        immediate.get(10, TimeUnit.SECONDS);
+        Awaitility.await().until(() -> !worker.get().isAlive());
+        assertThat(attempts).hasValue(1);
+        assertThat(initialization.isInitialized(TENANT_A)).isTrue();
+      } finally {
+        release.countDown();
+      }
+    }
+  }
+
+  @Test
+  void shouldReapplySchemaOnEveryExplicitRequestEvenWhenReady() {
+    // given
+    final var attempts = new AtomicInteger();
+    try (final var initialization =
+        initialization(Set.of(TENANT_A), tenantId -> attempts.incrementAndGet())) {
+      initialization.initializeNow(TENANT_A);
+      assertThat(initialization.isInitialized(TENANT_A)).isTrue();
+
+      // when
+      initialization.initializeNow(TENANT_A);
+
+      // then
+      assertThat(attempts).hasValue(2);
+    }
+  }
+
+  @Test
+  void shouldInitializeInBackgroundAfterImmediateAttemptFails() throws Exception {
+    // given
+    final var deferred = new AtomicBoolean(true);
+    final var attempts = new AtomicInteger();
+    try (final var initialization =
+        initialization(
+            Set.of(TENANT_A),
+            tenantId -> {
+              if (attempts.incrementAndGet() == 1) {
+                throw new IllegalStateException("storage unavailable");
+              }
+            },
+            tenantId -> deferred.get())) {
+      assertThat(startInBackground(initialization).await(10, TimeUnit.SECONDS)).isTrue();
+
+      // when
+      assertThatThrownBy(() -> initialization.initializeNow(TENANT_A))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessage("storage unavailable");
+      assertThat(initialization.isInitialized(TENANT_A)).isFalse();
+      deferred.set(false);
+
+      // then
+      Awaitility.await().until(() -> initialization.isInitialized(TENANT_A));
+      assertThat(attempts).hasValue(2);
     }
   }
 
