@@ -19,10 +19,9 @@ const config: KnipConfig = {
 		// TODO(#55735): remove when consumer migration is complete
 		'src/operate/shared/utils/**',
 		'src/operate/shared/FiltersPanel/**',
-		'src/operate/shared/DeleteDefinition/**',
 		'src/operate/shared/StructuredList/**',
-		// TODO(#61095, #55987): remove when Process Instance header / Processes toolbar operations are migrated
-		'src/operate/components/DrainingTag/**',
+		// TODO(#63423, #63424): remove when InstancesByProcess/IncidentsByError consume ExpandableListRow
+		'src/operate/pages/Dashboard/shadcn.components/ExpandableList.tsx',
 	],
 	ignoreDependencies: ['@vitest/browser'],
 	typescript: {

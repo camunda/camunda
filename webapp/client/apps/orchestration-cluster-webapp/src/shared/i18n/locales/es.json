@@ -500,6 +500,8 @@
 				"versionWithTenant": "{{name}} – Versión {{version}} – {{tenant}}",
 				"fetchErrorHeading": "No se pudieron recuperar los datos",
 				"fetchErrorDescription": "Actualice la página para intentarlo de nuevo",
+				"loadingPreviousRows": "Cargando {{header}} anteriores",
+				"loadingMoreRows": "Cargando más {{header}}",
 				"versionDetailsFetchError": "No se pudieron cargar los detalles de las versiones",
 				"incidentDetailsFetchError": "No se pudieron cargar los detalles de los incidentes",
 				"draining": "Vaciando",

@@ -7,3 +7,10 @@
  */
 
 @import 'tailwindcss';
+
+/*
+ * Tailwind's automatic source scanner cannot extract this compound
+ * arbitrary-variant candidate (nested `:has()` + attribute selectors) from
+ * ComposedCell.tsx, so it must be declared explicitly here to be generated.
+ */
+@source inline("[&_tr:has([data-expandable=false])_[data-slot=data-table-expand-toggle]]:hidden!");

@@ -512,6 +512,8 @@
 				"versionWithTenant": "{{name}} – Version {{version}} – {{tenant}}",
 				"fetchErrorHeading": "Couldn't fetch data",
 				"fetchErrorDescription": "Refresh the page to try again",
+				"loadingPreviousRows": "Loading previous {{header}}",
+				"loadingMoreRows": "Loading more {{header}}",
 				"versionDetailsFetchError": "Failed to load version details",
 				"incidentDetailsFetchError": "Failed to load incident details",
 				"draining": "Draining",
