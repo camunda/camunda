@@ -57,14 +57,15 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
   @BeforeVersion880 private List<BatchOperationErrorEntity> errors = List.of();
 
   /**
-   * Zeebe record keys of the BATCH_OPERATION_CHUNK CREATED records already applied to {@link
-   * #operationsTotalCount}, used to guard against double-counting when the same record is exported
-   * more than once (e.g. exporter restart before position acknowledgment).
+   * Per-partition high-water mark of the last BATCH_OPERATION_CHUNK CREATED record key applied to
+   * {@link #operationsTotalCount}, used to guard against double-counting when the same record is
+   * exported more than once (e.g. exporter restart before position acknowledgment). Bounded by the
+   * number of partitions rather than growing with every chunk record.
    *
    * @since 8.11.0
    */
   @SinceVersion(value = "8.11.0", requireDefault = true)
-  private List<Long> processedChunkRecordKeys = List.of();
+  private List<LastProcessedChunkRecordEntity> lastProcessedChunkRecords = List.of();
 
   @JsonIgnore private Object[] sortValues;
 
@@ -74,6 +75,13 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
    * idempotency guard script params on flush.
    */
   @JsonIgnore private Map<Long, Integer> pendingChunkRecordItemCounts = new LinkedHashMap<>();
+
+  /**
+   * Partition ID of the pending chunk records above. Not persisted; all records folded into a
+   * single flush cycle originate from the same partition, since one exporter instance only
+   * processes its own partition's record stream.
+   */
+  @JsonIgnore private Integer pendingChunkRecordPartitionId;
 
   public String getName() {
     return name;
@@ -192,13 +200,13 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
     return this;
   }
 
-  public List<Long> getProcessedChunkRecordKeys() {
-    return processedChunkRecordKeys;
+  public List<LastProcessedChunkRecordEntity> getLastProcessedChunkRecords() {
+    return lastProcessedChunkRecords;
   }
 
-  public BatchOperationEntity setProcessedChunkRecordKeys(
-      final List<Long> processedChunkRecordKeys) {
-    this.processedChunkRecordKeys = processedChunkRecordKeys;
+  public BatchOperationEntity setLastProcessedChunkRecords(
+      final List<LastProcessedChunkRecordEntity> lastProcessedChunkRecords) {
+    this.lastProcessedChunkRecords = lastProcessedChunkRecords;
     return this;
   }
 
@@ -209,6 +217,16 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
   public BatchOperationEntity setPendingChunkRecordItemCounts(
       final Map<Long, Integer> pendingChunkRecordItemCounts) {
     this.pendingChunkRecordItemCounts = pendingChunkRecordItemCounts;
+    return this;
+  }
+
+  public Integer getPendingChunkRecordPartitionId() {
+    return pendingChunkRecordPartitionId;
+  }
+
+  public BatchOperationEntity setPendingChunkRecordPartitionId(
+      final Integer pendingChunkRecordPartitionId) {
+    this.pendingChunkRecordPartitionId = pendingChunkRecordPartitionId;
     return this;
   }
 
@@ -250,7 +268,8 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
     result = 31 * result + (operationsFailedCount != null ? operationsFailedCount.hashCode() : 0);
     result = 31 * result + (errors != null ? errors.hashCode() : 0);
     result =
-        31 * result + (processedChunkRecordKeys != null ? processedChunkRecordKeys.hashCode() : 0);
+        31 * result
+            + (lastProcessedChunkRecords != null ? lastProcessedChunkRecords.hashCode() : 0);
     return result;
   }
 
@@ -311,7 +330,7 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
     if (!Objects.equals(errors, that.errors)) {
       return false;
     }
-    if (!Objects.equals(processedChunkRecordKeys, that.processedChunkRecordKeys)) {
+    if (!Objects.equals(lastProcessedChunkRecords, that.lastProcessedChunkRecords)) {
       return false;
     }
 
@@ -356,8 +375,8 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
         + operationsCompletedCount
         + ", errors="
         + errors
-        + ", processedChunkRecordKeys="
-        + processedChunkRecordKeys
+        + ", lastProcessedChunkRecords="
+        + lastProcessedChunkRecords
         + '}';
   }
 
