@@ -14,15 +14,36 @@ import io.camunda.zeebe.snapshots.SnapshotChunk;
 import java.nio.ByteBuffer;
 import java.nio.ReadOnlyBufferException;
 import java.nio.charset.StandardCharsets;
+import java.util.function.IntFunction;
+import java.util.stream.Stream;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 final class SnapshotChunkImplTest {
 
   private static final byte[] CONTENT = "snapshot-chunk-content".getBytes(StandardCharsets.UTF_8);
 
+  @ParameterizedTest(name = "{0} message at offset {1}")
+  @MethodSource("messages")
+  void shouldReadContentBufferFromMessage(
+      final IntFunction<ByteBuffer> allocator, final int offset) {
+    // given
+    final var chunk = decode(allocator, CONTENT, offset);
+
+    // when
+    final var contentBuffer = chunk.getContentBuffer();
+
+    // then
+    assertThat(contentBuffer).isEqualTo(ByteBuffer.wrap(CONTENT));
+    assertThat(contentBuffer).isEqualTo(ByteBuffer.wrap(chunk.getContent()));
+  }
+
   @Test
-  void shouldReadContentBufferWithoutCopyingFromHeapBackedMessage() {
+  void shouldReadContentBufferWithoutCopyingTheMessage() {
     // given
     final var message = encode(CONTENT, 0);
     final var chunk = decode(new UnsafeBuffer(message));
@@ -36,47 +57,6 @@ final class SnapshotChunkImplTest {
     // then
     assertThat(contentBuffer.get(0)).isEqualTo(message[contentStart]);
     assertThat(contentBuffer.remaining()).isEqualTo(CONTENT.length);
-  }
-
-  @Test
-  void shouldReadContentBufferFromDirectBackedMessage() {
-    // given
-    final var message = encode(CONTENT, 0);
-    final var direct = ByteBuffer.allocateDirect(message.length).put(message).clear();
-    final var chunk = decode(new UnsafeBuffer(direct));
-
-    // when
-    final var contentBuffer = chunk.getContentBuffer();
-
-    // then
-    assertThat(contentBuffer.isDirect()).isTrue();
-    assertThat(contentBuffer).isEqualTo(ByteBuffer.wrap(CONTENT));
-  }
-
-  @Test
-  void shouldReadContentBufferFromMessageAtNonZeroOffset() {
-    // given
-    final var offset = 7;
-    final var message = encode(CONTENT, offset);
-    final var chunk = decode(new UnsafeBuffer(message, offset, message.length - offset));
-
-    // when
-    final var contentBuffer = chunk.getContentBuffer();
-
-    // then
-    assertThat(contentBuffer).isEqualTo(ByteBuffer.wrap(CONTENT));
-  }
-
-  @Test
-  void shouldReturnContentBufferMatchingContentArray() {
-    // given
-    final var chunk = decode(new UnsafeBuffer(encode(CONTENT, 0)));
-
-    // when
-    final var contentBuffer = chunk.getContentBuffer();
-
-    // then
-    assertThat(contentBuffer).isEqualTo(ByteBuffer.wrap(chunk.getContent()));
   }
 
   @Test
@@ -120,6 +100,25 @@ final class SnapshotChunkImplTest {
     // then
     assertThat(contentBuffer.hasRemaining()).isFalse();
     assertThat(chunk.getContentLength()).isZero();
+  }
+
+  private static Stream<Arguments> messages() {
+    final var allocators =
+        Stream.of(
+            Named.<IntFunction<ByteBuffer>>of("heap", ByteBuffer::allocate),
+            Named.<IntFunction<ByteBuffer>>of("direct", ByteBuffer::allocateDirect));
+
+    return allocators.flatMap(
+        allocator -> Stream.of(0, 7).map(offset -> Arguments.of(allocator, offset)));
+  }
+
+  private static SnapshotChunkImpl decode(
+      final IntFunction<ByteBuffer> allocator, final byte[] content, final int offset) {
+    final var encoded = new SnapshotChunkImpl(new TestChunk(content));
+    final var message = allocator.apply(offset + encoded.getLength());
+    encoded.write(new UnsafeBuffer(message), offset);
+
+    return decode(new UnsafeBuffer(message, offset, encoded.getLength()));
   }
 
   private static byte[] encode(final byte[] content, final int offset) {

@@ -156,17 +156,12 @@ public final class SnapshotChunkImpl
 
     final var byteArray = content.byteArray();
     if (byteArray != null) {
-      return ByteBuffer.wrap(byteArray, wrapAdjustment, capacity).slice().asReadOnlyBuffer();
+      return ByteBuffer.wrap(byteArray).slice(wrapAdjustment, capacity).asReadOnlyBuffer();
     }
 
     final var byteBuffer = content.byteBuffer();
     if (byteBuffer != null) {
-      return byteBuffer
-          .duplicate()
-          .position(wrapAdjustment)
-          .limit(wrapAdjustment + capacity)
-          .slice()
-          .asReadOnlyBuffer();
+      return byteBuffer.slice(wrapAdjustment, capacity).asReadOnlyBuffer();
     }
 
     return ByteBuffer.wrap(BufferUtil.bufferAsArray(content)).asReadOnlyBuffer();
