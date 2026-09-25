@@ -132,7 +132,14 @@ def run_command(
             timeout=timeout,
         )
     except subprocess.TimeoutExpired as error:
-        output = error.stdout or ""
+        # error.stdout is typed as bytes | None, but text=True actually gives us str.
+        stdout = error.stdout
+        if isinstance(stdout, bytes):
+            output = stdout.decode(errors="replace")
+        elif isinstance(stdout, str):
+            output = stdout
+        else:
+            output = ""
         return subprocess.CompletedProcess(
             args, 124, stdout=f"{output}\nCommand timed out after {timeout}s."
         )
