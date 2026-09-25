@@ -17,7 +17,6 @@ import static org.mockito.Mockito.verify;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
@@ -152,9 +151,10 @@ class BatchOperationChunkCreatedHandlerTest {
     underTest.flush(index, entity, mockRequest);
 
     final Map<String, Object> expectedParams = new HashMap<>();
-    expectedParams.put(
-        BatchOperationTemplate.PROCESSED_CHUNK_RECORD_KEYS, List.of(record.getKey()));
+    expectedParams.put("partitionId", record.getPartitionId());
+    expectedParams.put("recordKeys", List.of(record.getKey()));
     expectedParams.put("chunkRecordItemCounts", List.of(1));
+    expectedParams.put("maxRecordKey", record.getKey());
 
     // then - the ES document ID is just the batchKey extracted from the composite ID
     final var scriptCaptor = ArgumentCaptor.forClass(String.class);
@@ -163,8 +163,9 @@ class BatchOperationChunkCreatedHandlerTest {
 
     final var script = scriptCaptor.getValue();
 
-    assertThat(script).contains("ctx._source.processedChunkRecordKeys");
-    assertThat(script).contains("((Number) processedKey).longValue() == recordKey");
+    assertThat(script).contains("ctx._source.lastProcessedChunkRecords");
+    assertThat(script).contains("((Number) m.partitionId).intValue() == (int) params.partitionId");
+    assertThat(script).contains("((Number) marker.recordKey).longValue()");
     assertThat(script)
         .contains("ctx._source.operationsTotalCount = ctx._source.operationsTotalCount + delta");
     assertThat(script).contains("ctx._source.endDate = null");
@@ -197,12 +198,12 @@ class BatchOperationChunkCreatedHandlerTest {
         .updateWithScript(eq(index), eq("123"), any(), paramsCaptor.capture());
 
     final Map<String, Object> params = paramsCaptor.getValue();
-    final var recordKeys =
-        (List<Long>) params.get(BatchOperationTemplate.PROCESSED_CHUNK_RECORD_KEYS);
+    final var recordKeys = (List<Long>) params.get("recordKeys");
     final var itemCounts = (List<Integer>) params.get("chunkRecordItemCounts");
 
     assertThat(recordKeys).containsExactly(record1.getKey(), record2.getKey());
     assertThat(itemCounts).containsExactly(1, 3);
+    assertThat(params.get("maxRecordKey")).isEqualTo(record2.getKey());
   }
 
   private Record<BatchOperationChunkRecordValue> createRecord(
@@ -218,6 +219,7 @@ class BatchOperationChunkCreatedHandlerTest {
         ValueType.BATCH_OPERATION_CHUNK,
         r ->
             r.withIntent(BatchOperationChunkIntent.CREATED)
+                .withPartitionId(1)
                 .withValue(
                     new BatchOperationChunkRecord().setBatchOperationKey(123L).setItems(items)));
   }

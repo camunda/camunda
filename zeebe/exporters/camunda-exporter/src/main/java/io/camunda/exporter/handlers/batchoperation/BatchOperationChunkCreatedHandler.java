@@ -12,7 +12,6 @@ import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateTask;
-import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -41,32 +40,43 @@ public class BatchOperationChunkCreatedHandler
     implements ExportHandler<BatchOperationEntity, BatchOperationChunkRecordValue> {
 
   private static final String CHUNK_RECORD_ITEM_COUNTS_PARAM = "chunkRecordItemCounts";
+  private static final String RECORD_KEYS_PARAM = "recordKeys";
+  private static final String PARTITION_ID_PARAM = "partitionId";
+  private static final String MAX_RECORD_KEY_PARAM = "maxRecordKey";
 
   // Guards operationsTotalCount against duplicate export of the same CHUNK_CREATED record (e.g.
-  // exporter restart before position acknowledgment causes a resend): each record's key is only
-  // allowed to contribute its item count once, tracked via processedChunkRecordKeys on the
-  // document itself. Elasticsearch/OpenSearch deserialize a persisted "long" array element back
-  // as a Painless Integer when its value happens to fit in an int, so List.contains(recordKey)
-  // (a boxed Long) would silently fail to match it; comparing via longValue() avoids that.
+  // exporter restart before position acknowledgment causes a resend). An exporter replays only its
+  // own partition's log, in ascending position, and chunk records are keyed in ascending order
+  // within a partition, so a single high-water-mark key per partition (lastProcessedChunkRecords)
+  // is enough to recognise an already-applied record - bounded by partition count rather than
+  // growing with every chunk record. Elasticsearch/OpenSearch deserialize a persisted "long" back
+  // as a Painless Integer when its value happens to fit in an int, so the marker's recordKey is
+  // compared via longValue() rather than ==.
   private static final String SCRIPT =
       """
-          if (ctx._source.processedChunkRecordKeys == null) {
-            ctx._source.processedChunkRecordKeys = [];
+          if (ctx._source.lastProcessedChunkRecords == null) {
+            ctx._source.lastProcessedChunkRecords = [];
           }
-          int delta = 0;
-          for (int i = 0; i < params.processedChunkRecordKeys.size(); i++) {
-            long recordKey = params.processedChunkRecordKeys[i];
-            boolean alreadyProcessed = false;
-            for (def processedKey : ctx._source.processedChunkRecordKeys) {
-              if (((Number) processedKey).longValue() == recordKey) {
-                alreadyProcessed = true;
-                break;
-              }
+          def marker = null;
+          for (def m : ctx._source.lastProcessedChunkRecords) {
+            if (((Number) m.partitionId).intValue() == (int) params.partitionId) {
+              marker = m;
+              break;
             }
-            if (!alreadyProcessed) {
-              ctx._source.processedChunkRecordKeys.add(recordKey);
+          }
+          long lastAppliedKey = marker == null ? -1L : ((Number) marker.recordKey).longValue();
+          int delta = 0;
+          for (int i = 0; i < params.recordKeys.size(); i++) {
+            long recordKey = params.recordKeys[i];
+            if (recordKey > lastAppliedKey) {
               delta += (int) params.chunkRecordItemCounts[i];
             }
+          }
+          if (marker == null) {
+            ctx._source.lastProcessedChunkRecords.add(
+                ['partitionId': params.partitionId, 'recordKey': params.maxRecordKey]);
+          } else if (((Number) params.maxRecordKey).longValue() > lastAppliedKey) {
+            marker.recordKey = params.maxRecordKey;
           }
           ctx._source.operationsTotalCount = ctx._source.operationsTotalCount + delta;
           ctx._source.endDate = null;
@@ -116,6 +126,8 @@ public class BatchOperationChunkCreatedHandler
     entity
         .getPendingChunkRecordItemCounts()
         .put(record.getKey(), record.getValue().getItems().size());
+    // all records folded into one flush cycle come from this handler's own partition
+    entity.setPendingChunkRecordPartitionId(record.getPartitionId());
     entity.setOperationsTotalCount(
         entity.getPendingChunkRecordItemCounts().values().stream()
             .mapToInt(Integer::intValue)
@@ -132,10 +144,13 @@ public class BatchOperationChunkCreatedHandler
 
     final var recordKeys = new ArrayList<>(entity.getPendingChunkRecordItemCounts().keySet());
     final var itemCounts = new ArrayList<>(entity.getPendingChunkRecordItemCounts().values());
+    final long maxRecordKey = recordKeys.stream().mapToLong(Long::longValue).max().orElseThrow();
 
     final Map<String, Object> params = new HashMap<>();
-    params.put(BatchOperationTemplate.PROCESSED_CHUNK_RECORD_KEYS, recordKeys);
+    params.put(PARTITION_ID_PARAM, entity.getPendingChunkRecordPartitionId());
+    params.put(RECORD_KEYS_PARAM, recordKeys);
     params.put(CHUNK_RECORD_ITEM_COUNTS_PARAM, itemCounts);
+    params.put(MAX_RECORD_KEY_PARAM, maxRecordKey);
 
     batchRequest.updateWithScript(index, batchOperationKey, SCRIPT, params);
   }
