@@ -8,12 +8,22 @@
 package io.camunda.it.rdbms.db.util;
 
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.application.commons.configuration.UnifiedConfigurationModule;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.application.commons.rdbms.RdbmsDataSources;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import javax.sql.DataSource;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -43,5 +53,21 @@ public class RdbmsTestConfiguration {
   @Bean
   public MeterRegistry meterRegistry() {
     return new SimpleMeterRegistry();
+  }
+
+  @Bean
+  public BrokerTopologyManager brokerTopologyManager() {
+    final var member = mock(BrokerPartitionState.class);
+    when(member.mode()).thenReturn(Mode.PROCESSING);
+    final SortedMap<MemberId, BrokerPartitionState> members = new TreeMap<>();
+    members.put(MemberId.from("0"), member);
+    final var partitionGroup = mock(PartitionGroupConfiguration.class);
+    when(partitionGroup.members()).thenReturn(members);
+    final var clusterConfiguration = mock(CurrentClusterConfiguration.class);
+    when(clusterConfiguration.partitionGroup(DEFAULT_PHYSICAL_TENANT_ID))
+        .thenReturn(partitionGroup);
+    final var topologyManager = mock(BrokerTopologyManager.class);
+    when(topologyManager.getClusterConfiguration()).thenReturn(clusterConfiguration);
+    return topologyManager;
   }
 }
