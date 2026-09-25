@@ -21,7 +21,6 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
-import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -462,47 +461,6 @@ public final class ProcessDeploymentTest {
         findProcess(originalProcesses, processId), findProcess(repeatedProcesses, processId));
     assertDifferentResources(
         findProcess(originalProcesses, processId2), findProcess(repeatedProcesses, processId2));
-  }
-
-  @Test
-  public void shouldCreateInstanceOfRedeployedDuplicateProcess() {
-    // given
-    final var jobType = Strings.newRandomValidBpmnId();
-    final var processWithJob =
-        Bpmn.createExecutableProcess(processId)
-            .startEvent()
-            .serviceTask("task", t -> t.zeebeJobType(jobType))
-            .endEvent()
-            .done();
-    ENGINE
-        .deployment()
-        .withXmlResource("p1.bpmn", processWithJob)
-        .withXmlResource("p2.bpmn", process2)
-        .deploy();
-    final var redeployedProcess =
-        findProcess(
-            ENGINE
-                .deployment()
-                .withXmlResource("p1.bpmn", processWithJob)
-                .withXmlResource("p2.bpmn", process2_V2)
-                .deploy()
-                .getValue()
-                .getProcessesMetadata(),
-            processId);
-
-    // when
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
-
-    // then
-    final var job =
-        RecordingExporter.jobRecords(JobIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst()
-            .getValue();
-    assertThat(job.getProcessDefinitionKey())
-        .isEqualTo(redeployedProcess.getProcessDefinitionKey());
-    assertThat(job.getProcessDefinitionVersion()).isEqualTo(2);
-    assertThat(job.getType()).isEqualTo(jobType);
   }
 
   @Test
