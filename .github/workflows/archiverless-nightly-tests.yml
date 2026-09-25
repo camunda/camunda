@@ -1,0 +1,122 @@
+# Nightly workflow that runs the Data Layer Nightly Tests against configurable branches.
+# test location: qa/acceptance-tests
+# owner: @camunda/data-layer
+name: Archiverless Nightly Tests
+
+on:
+  schedule:
+    # Run at 04:00 every night
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+  pull_request:
+    types: [ labeled, synchronize ]
+
+env:
+  TEST_OWNER: '@camunda/data-layer'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  generate-db-versions:
+    name: "Generate DB versions"
+    runs-on: ubuntu-slim
+    # Run fixed branches on schedule, or the current branch for manual dispatch and PR label runs
+    if: |
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       (github.event.action == 'labeled' && github.event.label.name == 'run-archiverless-tests' ||
+        github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'run-archiverless-tests')))
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      ci-database-matrix: ${{ steps.db-versions.outputs.ci-database-matrix }}
+      elasticsearch-8: ${{ steps.db-versions.outputs.elasticsearch-8 }}
+      opensearch-3: ${{ steps.db-versions.outputs.opensearch-3 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 3
+        with:
+          persist-credentials: false
+      - name: Read DB versions
+        id: db-versions
+        uses: ./.github/actions/read-db-versions
+
+  # Builds the distball once and shares it with the test jobs below via GCS
+  build-distball:
+    needs: [ generate-db-versions ]
+    name: "Build zeebe"
+    permissions:
+      contents: read
+      id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
+    uses: ./.github/workflows/ci-build-distball-reusable.yml
+    secrets: inherit
+    with:
+      skip-artifact-upload: true  # no docker-checks-style GH-artifact consumer in this workflow
+
+  database-integration-tests:
+    needs: [ generate-db-versions, build-distball ]
+    name: "Database Integration Tests"
+    permissions:
+      contents: read
+      id-token: write  # granted through to the reusable workflow's WIF GCS auth
+      actions: write   # reusable workflow's send-slack-notification job declares it; validated at startup even though ci.yml never triggers it
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - database-type: "elasticsearch"
+            database-name: "ES 8.x"
+            it-database-type: "es"
+            database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-8 }}"
+          - database-type: "opensearch"
+            database-name: "OS 3.x"
+            it-database-type: "os"
+            database-image-version: "${{ needs.generate-db-versions.outputs.opensearch-3 }}"
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      maven-profiles: "archiverless"
+      test-type: "archiverless-tests"
+      test-type-label: "Archiverless"
+      database-type: "${{ matrix.database-type }}"
+      database-image-version: "${{ matrix.database-image-version }}"
+      database-name: "${{ matrix.database-name }}"
+      it-database-type: "${{ matrix.it-database-type }}"
+      use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
+      notify-slack-on-failure: false
+
+  identity-tests:
+    needs: [ generate-db-versions, build-distball ]
+    name: "Identity Integration Tests"
+    permissions:
+      contents: read
+      id-token: write  # granted through to the reusable workflow's WIF GCS auth
+      actions: write   # reusable workflow's send-slack-notification job declares it; validated at startup even though ci.yml never triggers it
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - database-type: "elasticsearch"
+            database-name: "ES 8.x"
+            it-database-type: "es"
+            database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-8 }}"
+          - database-type: "opensearch"
+            database-name: "OS 3.x"
+            it-database-type: "os"
+            database-image-version: "${{ needs.generate-db-versions.outputs.opensearch-3 }}"
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      maven-profiles: "archiverless-identity"
+      test-type: "archiverless-identity-tests"
+      test-type-label: "Archiverless Identity"
+      database-type: "${{ matrix.database-type }}"
+      database-image-version: "${{ matrix.database-image-version }}"
+      database-name: "${{ matrix.database-name }}"
+      it-database-type: "${{ matrix.it-database-type }}"
+      use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
+      notify-slack-on-failure: false
