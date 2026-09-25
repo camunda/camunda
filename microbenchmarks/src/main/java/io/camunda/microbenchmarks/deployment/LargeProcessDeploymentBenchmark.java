@@ -7,6 +7,8 @@
  */
 package io.camunda.microbenchmarks.deployment;
 
+import static io.camunda.microbenchmarks.deployment.DeploymentCreateProcessorBenchmark.createLargeProcess;
+
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
@@ -19,7 +21,6 @@ import io.camunda.zeebe.engine.processing.deployment.transform.ValidationConfig;
 import io.camunda.zeebe.engine.processing.expression.ScopedEvaluationContext;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -112,26 +113,5 @@ public class LargeProcessDeploymentBenchmark {
 
   private BpmnModelInstance parse() {
     return Bpmn.readModelFromStream(new ByteArrayInputStream(resource));
-  }
-
-  /**
-   * Creates a sequential process of service tasks, each with FEEL input/output mappings and a job
-   * type expression, since expressions are parsed and validated on deployment too.
-   */
-  private static BpmnModelInstance createLargeProcess(final int serviceTaskCount) {
-    AbstractFlowNodeBuilder<?, ?> builder =
-        Bpmn.createExecutableProcess("large-process").startEvent();
-    for (int i = 0; i < serviceTaskCount; i++) {
-      final var index = i;
-      builder =
-          builder.serviceTask(
-              "task-" + i,
-              t ->
-                  t.zeebeJobTypeExpression("\"task-\" + string(" + index + ")")
-                      .zeebeInputExpression("order.items[" + (index + 1) + "]", "item")
-                      .zeebeInputExpression("if item.price > 100 then true else false", "premium")
-                      .zeebeOutputExpression("result.status", "status" + index));
-    }
-    return builder.endEvent().done();
   }
 }
