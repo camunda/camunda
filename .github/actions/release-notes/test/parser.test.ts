@@ -85,3 +85,10 @@ test('isOptOutTicked only fires on a ticked checkbox with the phrase', () => {
   assert.equal(isOptOutTicked('- [ ] This PR does not need a linked issue'), false);
   assert.equal(isOptOutTicked('This PR does not need a linked issue'), false);
 });
+
+test('parseRefs keeps "related to" as its keyword, like "relates to"', () => {
+  // The keyword-only legacy scan drops refs without one, so "Related to #N" must not read as bare.
+  const [ref] = parseRefs('Related to #35247');
+  assert.equal(ref?.keyword, 'related to');
+  assert.equal(ref?.kind, 'contributor');
+});

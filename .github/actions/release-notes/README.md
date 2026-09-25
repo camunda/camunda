@@ -37,8 +37,9 @@ The gate runs two checks (`gate.evaluateGate`) and reports a combined outcome.
 1. Slice the `## Related issues` section (`extractSection`).
 2. Extract every reference in it (`parseRefs`): closing keywords
    (`close/closes/closed`, `fix/fixes/fixed`, `resolve/resolves/resolved`),
-   the custom `completes #N`, the `Backport of #N` marker, `relates to #N`,
-   bare `#N`, `owner/repo#N`, and full GitHub URLs.
+   the custom `completes #N`, the `Backport of #N` marker, `relates to #N`
+   (also `relate`/`related to`), bare `#N`, `owner/repo#N`, and full GitHub
+   URLs.
 3. Resolve each ref against the API (`resolver`): is it an issue, a PR, or
    missing? Is it cross-repo?
 4. Decide PASS/FAIL (`policy`).

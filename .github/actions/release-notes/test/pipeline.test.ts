@@ -454,3 +454,9 @@ test('a section holding only a dead ref reports resolutionFailed and does NOT fa
   assert.equal(out.attribution.source, 'resolutionFailed');
   assert.equal(counts.resolveCalls, 1);
 });
+
+test('a legacy body saying "Related to #N" attributes via the keyword scan', async () => {
+  const out = await processPr(fakeResolver(), prInput({ number: 506, body: 'Some prose.\n\nRelated to #100' }), { gateRequiredAt: null });
+  assert.equal(out.attribution.source, 'legacyBodyScan');
+  assert.deepEqual(out.attribution.issueNumbers, [100]);
+});
