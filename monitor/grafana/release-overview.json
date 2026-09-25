@@ -1297,7 +1297,7 @@
                       "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
-                        "expr": "sum(rate(zeebe_camunda_exporter_archiver_process_instances_total{namespace=~\"(c8-)?release-8.8.*\", state=\"archived\"}[1d])) by (namespace) \n/\nsum(rate(zeebe_element_instance_events_total{namespace=~\"(c8-)?release-8.8.*\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)\n",
+                        "expr": "sum(rate(zeebe_camunda_exporter_archiver_process_instances_total{namespace=~\"(c8-)?release-8.8.*\", state=\"archived\"}[1d])) by (namespace) \n/\nsum(rate(zeebe_element_instance_events_total{namespace=~\"(c8-)?release-8.8.*\", action=\"completed\", type=\"PROCESS\"}[1d])) by (namespace)\n",
                         "instant": false,
                         "legendFormat": "__auto",
                         "range": true
