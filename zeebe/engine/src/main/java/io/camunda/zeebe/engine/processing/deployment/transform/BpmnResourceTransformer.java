@@ -61,8 +61,8 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
 
   /**
    * Executable processes parsed for each resource in {@link #createMetadata}, kept around for
-   * {@link #writeRecords} to scan for agent-marked elements once the process' final key/version are
-   * known.
+   * {@link #writeRecords} to seed the process cache and scan for agent-marked elements once the
+   * process' final key/version are known.
    */
   private final Map<DeploymentResource, List<ExecutableProcess>> executableProcessesByResource =
       new IdentityHashMap<>();
@@ -212,10 +212,10 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
                       .wrap(metadata, resource.getResource())
                       .setTransformerVersions(bpmnTransformer.currentVersionsById());
               stateWriter.appendFollowUpEvent(key, ProcessIntent.CREATED, processRecord);
-              agentDefinitionTransformer.writeRecords(
-                  deployment,
-                  findExecutableProcess(resource, metadata.getBpmnProcessId()),
-                  metadata);
+              final var executableProcess =
+                  findExecutableProcess(resource, metadata.getBpmnProcessId());
+              processState.cacheProcess(key, deployment.getTenantId(), executableProcess);
+              agentDefinitionTransformer.writeRecords(deployment, executableProcess, metadata);
               processDefinitionMetrics.processDefinitionDeployed(
                   key, processRecord.getBpmnProcessId(), resource.getResource().length);
             });
