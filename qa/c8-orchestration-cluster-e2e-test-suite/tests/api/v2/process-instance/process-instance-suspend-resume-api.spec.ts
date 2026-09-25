@@ -87,6 +87,35 @@ async function deployJobsAndMessagesProcess(prefix: string) {
   return {processDefinitionId, jobType, messageName, cancelMessageName};
 }
 
+/**
+ * Activates and completes jobs until every one of them is done. A resume hands
+ * the parked jobs back over several batches, so a single activation call can
+ * return only some of them; a completed job is never handed out again, so
+ * repeating the call cannot double-count.
+ */
+async function completeEveryJob(
+  request: APIRequestContext,
+  jobType: string,
+  processInstanceKey: string,
+  expected: number,
+) {
+  let completed = 0;
+  await expect(async () => {
+    const jobs = await activateJobsByType(
+      request,
+      jobType,
+      processInstanceKey,
+      [],
+      expected,
+    );
+    for (const job of jobs) {
+      await completeJob(request, job.jobKey);
+      completed += 1;
+    }
+    expect(completed).toBe(expected);
+  }).toPass(extendedAssertionOptions);
+}
+
 function correlateMessage(
   request: APIRequestContext,
   name: string,
@@ -1024,17 +1053,12 @@ test.describe('Process Instance Suspend and Resume API', () => {
       204,
     );
 
-    const jobs = await activateJobsByType(
+    await completeEveryJob(
       request,
       jobType,
       instance.processInstanceKey,
-      [],
       MI_JOB_COUNT,
     );
-    expect(jobs).toHaveLength(MI_JOB_COUNT);
-    for (const job of jobs) {
-      await completeJob(request, job.jobKey);
-    }
     await assertStatusCode(
       await correlateMessage(request, messageName, correlationKey),
       200,
