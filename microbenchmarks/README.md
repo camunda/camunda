@@ -57,8 +57,8 @@ JMH: MsgpackBenchmark.serialize, DeduplicationCacheBenchmark
 ```
 
 Selectors can name a benchmark class or an individual `ClassName.methodName`. The workflow runs
-the requested benchmarks at the baseline and each `perf:` commit where the selector exists. Editing
-the selector list triggers a new comparison for that list.
+the requested benchmarks at the merge-base baseline and at the PR tip. Editing the selector list
+triggers a new comparison for that list.
 
 ## Customizing Benchmark Execution
 
