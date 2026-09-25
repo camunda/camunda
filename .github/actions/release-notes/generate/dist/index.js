@@ -301,7 +301,6 @@ const pipeline_1 = __nccwpck_require__(782);
 const range_1 = __nccwpck_require__(53);
 const walk_1 = __nccwpck_require__(600);
 const render_1 = __nccwpck_require__(624);
-const parser_1 = __nccwpck_require__(883);
 const categorize_1 = __nccwpck_require__(493);
 const delivery_1 = __nccwpck_require__(388);
 const resolve_1 = __nccwpck_require__(940);
@@ -338,8 +337,10 @@ async function run() {
     const input = readInputs();
     const graphql = new resolve_1.GithubGraphqlResolver(input.token, input.owner, input.repo);
     const restResolver = new resolver_1.GithubResolver(input.token, input.owner, input.repo);
+    const ownRepo = `${input.owner}/${input.repo}`;
     const warmRefs = new Map();
-    const pipelineResolver = (0, warm_1.buildPipelineResolver)(restResolver, warmRefs);
+    const originals = new Map();
+    const pipelineResolver = (0, warm_1.buildPipelineResolver)(restResolver, warmRefs, ownRepo, originals);
     const strategy = (0, range_1.resolveBaselineStrategy)(input.targetVersion);
     const baseline = (0, walk_1.resolveBaselineRef)(process.cwd(), strategy, input.targetVersion);
     const walked = (0, walk_1.walkFirstParent)(process.cwd(), baseline, input.targetVersion);
@@ -393,18 +394,21 @@ async function run() {
         metaByNumber.set(meta.number, meta);
     }
     const metadata = prNumbers.map((number) => metaByNumber.get(number)).filter((meta) => meta !== undefined); // walk order, kept stable
-    // Pre-warm the union of section refs + full-body refs the pipeline might ask
-    // about, each capped by the same policy the resolver applies per call.
-    const wanted = new Set();
-    for (const pr of metadata) {
-        const section = (0, parser_1.extractSection)(pr.body);
-        for (const refs of [section ? (0, parser_1.parseRefs)(section) : [], (0, parser_1.parseRefs)(pr.body)]) {
-            for (const ref of (0, resolver_1.prioritizeAndCap)(refs)) {
-                if (ref.repo === null)
-                    wanted.add(ref.number);
-            }
-        }
+    // One bulk query for every backport's original, instead of one REST call per
+    // backport when the pipeline's hop follows the marker.
+    const targets = (0, warm_1.backportTargets)(metadata.map((pr) => pr.body), ownRepo);
+    const originalByNumber = new Map((await graphql.fetchPrMetadata(targets, true)).map((meta) => [meta.number, meta]));
+    for (const number of targets) {
+        const meta = originalByNumber.get(number);
+        originals.set(number, meta ? { body: meta.body, title: meta.title, authorLogin: meta.authorLogin, mergedAt: meta.mergedAt ?? undefined } : null);
     }
+    core.info(`Prefetched ${originalByNumber.size} of ${targets.length} backport originals in ${Math.ceil(targets.length / 100)} requests.`);
+    // Pre-warm every ref the pipeline might resolve — the release's own bodies and
+    // the originals the hop reads — plus the closing issues whose titles it shows.
+    const wanted = (0, warm_1.prewarmNumbers)([...metadata.map((pr) => pr.body), ...[...originalByNumber.values()].map((meta) => meta.body)], ownRepo);
+    for (const pr of metadata)
+        for (const number of pr.closingIssuesReferences)
+            wanted.add(number);
     for (const [number, classified] of await graphql.classifyRefs([...wanted])) {
         warmRefs.set(number, classified);
     }
@@ -864,11 +868,14 @@ const parser_1 = __nccwpck_require__(883);
 const title_1 = __nccwpck_require__(150);
 /** The legacy scan resolves only when earlier steps can't terminate — every
  *  ref costs an API call, and section refs would otherwise resolve twice. */
-async function attributeDirectly(resolver, body, closingIssuesReferences) {
+async function attributeDirectly(resolver, body, closingIssuesReferences, authorLogin) {
     const section = (0, parser_1.extractSection)(body);
     const optOut = section ? (0, parser_1.isOptOutTicked)(section) : false;
     const sectionRefs = section ? await resolver.resolveRefs((0, parser_1.parseRefs)(section)) : [];
-    const needsLegacyScan = !optOut && !(0, attribution_1.hasEligibleRefs)(sectionRefs) && closingIssuesReferences.length === 0;
+    // A dependency bot's body is the upstream changelog: its "Fixes #N" point at
+    // the upstream repo, so scanning it only attributes unrelated issues.
+    const isDependencyBot = authorLogin !== undefined && categorize_1.BOT_CATEGORY_OVERRIDES[authorLogin] === 'deps';
+    const needsLegacyScan = !optOut && !isDependencyBot && !(0, attribution_1.hasEligibleRefs)(sectionRefs) && closingIssuesReferences.length === 0;
     // Unlike a section ref (deliberately listed there), a bare "#N" anywhere in
     // the body is as likely an incidental mention ("similar to #100") as a real
     // attribution — only a ref carrying an explicit keyword counts here.
@@ -882,12 +889,12 @@ const UNRESOLVED_SOURCES = new Set(['unattributed', 'resolutionFailed']);
  *  exempt bot that did link a real issue keeps it. See GENERATOR.md § 3 for
  *  why the hop always trusts the original over the backport's own body. */
 async function attributePr(resolver, pr, original) {
-    let decision = await attributeDirectly(resolver, pr.body, pr.closingIssuesReferences);
+    let decision = await attributeDirectly(resolver, pr.body, pr.closingIssuesReferences, pr.authorLogin);
     let mergedAt = pr.mergedAt;
     if (decision.source !== 'optOut') {
         const originalPull = await original(); // null for an ordinary PR — costs nothing
         if (originalPull) {
-            const originalDecision = await attributeDirectly(resolver, originalPull.body, []);
+            const originalDecision = await attributeDirectly(resolver, originalPull.body, [], originalPull.authorLogin);
             decision = { ...originalDecision, deliveryPath: 'backportHop' };
             mergedAt = originalPull.mergedAt ?? pr.mergedAt;
         }
@@ -1742,11 +1749,47 @@ exports.GithubGraphqlResolver = GithubGraphqlResolver;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.isOwnRepo = isOwnRepo;
+exports.prewarmNumbers = prewarmNumbers;
+exports.backportTargets = backportTargets;
 exports.buildPipelineResolver = buildPipelineResolver;
+const parser_1 = __nccwpck_require__(883);
 const resolver_1 = __nccwpck_require__(306);
-function buildPipelineResolver(rest, warmRefs) {
+/** A full-URL ref to this repo parses with `repo` set, so `null` alone misses it. */
+function isOwnRepo(repo, ownRepo) {
+    return repo === null || repo.toLowerCase() === ownRepo.toLowerCase();
+}
+/** Every own-repo number the pipeline might resolve for these bodies — section
+ *  refs plus full-body refs, each capped by the policy the resolver applies. */
+function prewarmNumbers(bodies, ownRepo) {
+    const wanted = new Set();
+    for (const body of bodies) {
+        const section = (0, parser_1.extractSection)(body);
+        for (const refs of [section ? (0, parser_1.parseRefs)(section) : [], (0, parser_1.parseRefs)(body)]) {
+            for (const ref of (0, resolver_1.prioritizeAndCap)(refs)) {
+                if (isOwnRepo(ref.repo, ownRepo))
+                    wanted.add(ref.number);
+            }
+        }
+    }
+    return wanted;
+}
+/** The own-repo PRs these bodies are backports of, deduped — the same marker
+ *  the pipeline's hop follows. A cross-repo marker never resolves here. */
+function backportTargets(bodies, ownRepo) {
+    const targets = new Set();
+    for (const body of bodies) {
+        const marker = (0, parser_1.parseRefs)(body).find((ref) => ref.kind === 'backport');
+        if (marker && isOwnRepo(marker.repo, ownRepo))
+            targets.add(marker.number);
+    }
+    return [...targets];
+}
+/** `originals` holds the backport originals fetched in bulk; a key mapped to
+ *  null is a known miss (not a PR), answered without a request. */
+function buildPipelineResolver(rest, warmRefs, ownRepo, originals = new Map()) {
     // Cross-repo refs are never pre-warmed — the REST path classifies those without an API call.
-    const sameRepoNumber = (ref) => (ref.repo === null ? ref.number : null);
+    const sameRepoNumber = (ref) => (isOwnRepo(ref.repo, ownRepo) ? ref.number : null);
     return {
         async resolveRefs(refs) {
             const capped = (0, resolver_1.prioritizeAndCap)(refs); // same cap/priority as the REST resolver — imported, not restated
@@ -1764,11 +1807,11 @@ function buildPipelineResolver(rest, warmRefs) {
                 const warm = number === null ? undefined : warmRefs.get(number);
                 if (warm)
                     return { ...ref, target: warm.target, crossRepo: false };
-                return freshByPosition.get(ref.index) ?? { ...ref, target: 'missing', crossRepo: ref.repo !== null };
+                return freshByPosition.get(ref.index) ?? { ...ref, target: 'missing', crossRepo: !isOwnRepo(ref.repo, ownRepo) };
             })
                 .sort((first, second) => first.index - second.index);
         },
-        fetchOriginalPull: (number, repo) => rest.fetchOriginalPull(number, repo),
+        fetchOriginalPull: async (number, repo) => isOwnRepo(repo, ownRepo) && originals.has(number) ? originals.get(number) : rest.fetchOriginalPull(number, repo),
         fetchIssueTitle: async (number) => warmRefs.get(number)?.title ?? rest.fetchIssueTitle(number),
     };
 }
