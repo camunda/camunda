@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
+import io.atomix.raft.LeadershipTransferHandover;
 import io.atomix.raft.LeadershipTransferWriteBarrier;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
@@ -84,6 +85,8 @@ public final class ZeebePartition extends Actor
           return toCompletableFuture(unfreezeAfterTransfer());
         }
       };
+
+  private final LeadershipTransferHandover handover = this::handOverExporterState;
 
   public ZeebePartition(
       final PartitionStartupAndTransitionContextImpl transitionContext,
@@ -232,6 +235,7 @@ public final class ZeebePartition extends Actor
   private void installLeadershipTransferHooks() {
     final var server = context.getRaftPartition().getServer();
     server.setLeadershipTransferWriteBarrier(writeBarrier);
+    server.setLeadershipTransferHandover(handover);
     server
         .setLeadershipTransferCoordinatorCheck(coordinatorCheck)
         .whenCompleteAsync(
@@ -668,6 +672,20 @@ public final class ZeebePartition extends Actor
             result.completeExceptionally(processorError);
           } else {
             result.complete(null);
+          }
+        });
+  }
+
+  /**
+   * Sends this leader's exporter state to the followers ahead of a coordinated leadership transfer,
+   * so the new leader starts exporting from close to where this one left off.
+   */
+  private void handOverExporterState() {
+    actor.run(
+        () -> {
+          final var exporterDirector = context.getExporterDirector();
+          if (exporterDirector != null) {
+            exporterDirector.distributeExporterStateNow();
           }
         });
   }

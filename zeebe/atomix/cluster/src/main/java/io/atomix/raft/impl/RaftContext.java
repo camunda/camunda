@@ -25,6 +25,7 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.ElectionTimer;
 import io.atomix.raft.LeadershipTransferCoordinatorCheck;
+import io.atomix.raft.LeadershipTransferHandover;
 import io.atomix.raft.LeadershipTransferWriteBarrier;
 import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
 import io.atomix.raft.RaftCommitListener;
@@ -158,6 +159,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private EntryValidator entryValidator;
   private LeadershipTransferWriteBarrier leadershipTransferWriteBarrier =
       LeadershipTransferWriteBarrier.NONE;
+  private LeadershipTransferHandover leadershipTransferHandover = LeadershipTransferHandover.NONE;
   private LeadershipTransferCoordinatorCheck leadershipTransferCoordinatorCheck =
       LeadershipTransferCoordinatorCheck.NONE;
   // Used for randomizing election timeout
@@ -1078,6 +1080,23 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    */
   public void setLeadershipTransferWriteBarrier(final LeadershipTransferWriteBarrier barrier) {
     threadContext.execute(() -> leadershipTransferWriteBarrier = barrier);
+  }
+
+  /**
+   * The broker-supplied handover the leader runs just before promoting the desired leader of a
+   * coordinated leadership transfer. Defaults to {@link LeadershipTransferHandover#NONE} when no
+   * broker is attached. Must be read on the Raft thread.
+   */
+  public LeadershipTransferHandover getLeadershipTransferHandover() {
+    return leadershipTransferHandover;
+  }
+
+  /**
+   * Registers the handover the broker attaches on its own thread. Applied on the Raft thread, so
+   * the registration only takes effect once the Raft thread picks it up.
+   */
+  public void setLeadershipTransferHandover(final LeadershipTransferHandover handover) {
+    threadContext.execute(() -> leadershipTransferHandover = handover);
   }
 
   /**

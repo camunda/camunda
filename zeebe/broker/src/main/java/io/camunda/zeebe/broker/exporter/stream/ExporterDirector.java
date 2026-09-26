@@ -383,6 +383,19 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     }
   }
 
+  /** Distributes the exporter state to the followers now, rather than on the next interval. */
+  public ActorFuture<Void> distributeExporterStateNow() {
+    if (actor.isClosed()) {
+      return CompletableActorFuture.completed(null);
+    }
+    return actor.call(
+        () -> {
+          if (exporterMode == ExporterMode.ACTIVE) {
+            distributeExporterState();
+          }
+        });
+  }
+
   public ActorFuture<ExporterPhase> getPhase() {
     if (actor.isClosed()) {
       return CompletableActorFuture.completed(ExporterPhase.CLOSED);

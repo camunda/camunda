@@ -189,6 +189,34 @@ public final class ExporterDirectorDistributionTest {
     assertThat(passiveExporterState.getPosition(EXPORTER_ID_1)).isEqualTo(position);
   }
 
+  @Test
+  public void shouldDistributeExporterStateOnDemand() {
+    // given
+    startExporters(exporterDescriptors);
+
+    Awaitility.await("Exporter has recovered and started exporting.")
+        .untilAsserted(
+            () ->
+                assertThat(activeExporters.getDirector().getPhase().join())
+                    .isEqualTo(ExporterPhase.EXPORTING));
+
+    final long position = 10L;
+    activeExporters.getExportersState().setPosition(EXPORTER_ID_1, position);
+    activeExporters.getExportersState().setPosition(EXPORTER_ID_2, position);
+
+    // when
+    activeExporters.getDirector().distributeExporterStateNow().join();
+
+    // then
+    final var passiveExporterState = passiveExporters.getExportersState();
+    Awaitility.await("Passive has received the positions without waiting for the interval")
+        .untilAsserted(
+            () -> {
+              assertThat(passiveExporterState.getPosition(EXPORTER_ID_1)).isEqualTo(position);
+              assertThat(passiveExporterState.getPosition(EXPORTER_ID_2)).isEqualTo(position);
+            });
+  }
+
   @Parameters
   public static Object[][] activeExporters() {
     return new Object[][] {

@@ -32,9 +32,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * One accepted coordinated leadership transfer, sequenced from freezing the partition to reporting
- * the result to the coordinator: pause, wait for the desired leader to catch up, promote it, then
- * resume and report. A fresh attempt is created per accepted transfer, so no state can leak from
- * one transfer into the next.
+ * the result to the coordinator: pause, wait for the desired leader to catch up, hand over to it,
+ * promote it, then resume and report. A fresh attempt is created per accepted transfer, so no state
+ * can leak from one transfer into the next.
  *
  * <p>Each step runs as a {@link TransferPhase}; role and pause events are forwarded to the phase
  * currently in flight, and every terminal outcome converges on {@link #finish}.
@@ -67,6 +67,9 @@ import org.slf4j.LoggerFactory;
  *     |                           REPLICATION_TIMED_OUT
  *     |
  *     | desired leader reached the frozen log head
+ *     v
+ *   HAND OVER (broker, not awaited)
+ *     |
  *     v
  *   PROMOTE (TimeoutNowPromotion) --.
  *     |                             |
@@ -199,8 +202,13 @@ final class LeadershipTransferAttempt {
         .whenComplete(
             (failureReason, ignored) -> {
               activePhase = null;
-              failureReason.ifPresentOrElse(this::finish, this::promote);
+              failureReason.ifPresentOrElse(this::finish, this::handOverAndPromote);
             });
+  }
+
+  private void handOverAndPromote() {
+    raft.getLeadershipTransferHandover().handOver();
+    promote();
   }
 
   private void promote() {

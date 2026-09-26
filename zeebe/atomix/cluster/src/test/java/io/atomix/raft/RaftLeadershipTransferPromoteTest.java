@@ -26,6 +26,7 @@ import io.atomix.raft.protocol.TimeoutNowResponse;
 import io.atomix.raft.protocol.VoteRequest;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -261,6 +262,34 @@ public class RaftLeadershipTransferPromoteTest {
     assertThat(leader.getRole())
         .as("the leader only steps down for an acknowledgement, not for a rejection")
         .isEqualTo(RaftServer.Role.LEADER);
+  }
+
+  @Test
+  public void shouldHandOverBeforeSendingTimeoutNow() throws Exception {
+    // given
+    raftRule.appendEntries(10);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var driver = new CoordinatedTransferDriver(raftRule, leader);
+    final var target = driver.followerOutsideCoordinator();
+    final var events = new CopyOnWriteArrayList<String>();
+    leader.getContext().setLeadershipTransferHandover(() -> events.add("handover"));
+    ((TestRaftServerProtocol) leader.getContext().getProtocol())
+        .interceptRequest(
+            TimeoutNowRequest.class,
+            request -> {
+              events.add("timeoutNow");
+            });
+
+    // when
+    final var ack = driver.initiate(target);
+
+    // then
+    assertThat(ack.accepted()).isTrue();
+    assertThat(driver.reportedResult())
+        .succeedsWithin(Duration.ofSeconds(15))
+        .extracting(LeadershipTransferResultRequest::result)
+        .isEqualTo(LeadershipTransferResult.TRANSFERRED);
+    assertThat(events).startsWith("handover", "timeoutNow");
   }
 
   private static void rejectTimeoutNow(final RaftServer member) {

@@ -24,6 +24,7 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.LeadershipTransferCoordinatorCheck;
+import io.atomix.raft.LeadershipTransferHandover;
 import io.atomix.raft.LeadershipTransferWriteBarrier;
 import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
 import io.atomix.raft.RaftCommitListener;
@@ -343,6 +344,15 @@ public class RaftPartitionServer implements HealthMonitorable {
    */
   public void setLeadershipTransferWriteBarrier(final LeadershipTransferWriteBarrier barrier) {
     server.getContext().setLeadershipTransferWriteBarrier(barrier);
+  }
+
+  /**
+   * Registers the broker-supplied handover the leader runs just before promoting the desired leader
+   * of a coordinated leadership transfer. Safe to call from the broker's thread; the handover takes
+   * effect once the Raft thread picks the registration up.
+   */
+  public void setLeadershipTransferHandover(final LeadershipTransferHandover handover) {
+    server.getContext().setLeadershipTransferHandover(handover);
   }
 
   /**
