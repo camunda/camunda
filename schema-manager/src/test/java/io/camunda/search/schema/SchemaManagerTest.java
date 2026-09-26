@@ -197,11 +197,12 @@ class SchemaManagerTest {
     startupWithRetry(schemaManager, config);
 
     // Then: Should complete without throwing exceptions
-    verifyInvokedOperations(currentVersion, expectSchemaUpgrade);
+    verifyInvokedOperations(
+        currentVersion, expectSchemaUpgrade, currentVersion.equals(previousVersion));
   }
 
   private void verifyInvokedOperations(
-      final String currentVersion, final boolean expectSchemaUpgrade) {
+      final String currentVersion, final boolean expectSchemaUpgrade, final boolean sameVersion) {
     if (expectSchemaUpgrade) {
       // Verify schema upgrade operations were called via searchEngineClient
       verify(searchEngineClient)
@@ -227,7 +228,8 @@ class SchemaManagerTest {
     verify(searchEngineClient).createIndexTemplate(testTemplateDescriptor, config.index(), true);
     // Index template settings are always checked - the search engine no-ops internally when they
     // are already up to date, so the check itself stays unconditional.
-    verify(searchEngineClient).updateIndexTemplateSettings(testTemplateDescriptor, config.index());
+    verify(searchEngineClient)
+        .updateIndexTemplateSettings(testTemplateDescriptor, config.index(), sameVersion);
     // Replica settings are only written when they have drifted from configuration. The mocked
     // client reports no current replica counts by default, so nothing here counts as drifted.
     verify(searchEngineClient, never()).putSettings(any(), any());
@@ -284,7 +286,7 @@ class SchemaManagerTest {
     startupWithRetry(spySchemaManager, config);
 
     // Then: Should proceed with schema upgrade despite incompatibility
-    verifyInvokedOperations("9.0.0", true);
+    verifyInvokedOperations("9.0.0", true, false);
   }
 
   @Test
@@ -297,7 +299,7 @@ class SchemaManagerTest {
     startupWithRetry(spySchemaManager, config);
 
     // Then: Should proceed with full schema initialization
-    verifyInvokedOperations("8.8.0", true);
+    verifyInvokedOperations("8.8.0", true, false);
   }
 
   @Test
@@ -310,7 +312,7 @@ class SchemaManagerTest {
     startupWithRetry(spySchemaManager, config);
 
     // Then: Should trigger schema upgrade for SNAPSHOT versions even when same version
-    verifyInvokedOperations("8.8.0-SNAPSHOT", true);
+    verifyInvokedOperations("8.8.0-SNAPSHOT", true, true);
   }
 
   @Test
@@ -328,7 +330,7 @@ class SchemaManagerTest {
     startupWithRetry(schemaManager, config);
 
     // Then: Should proceed with full schema initialization including metadata index creation
-    verifyInvokedOperations("8.8.0", true);
+    verifyInvokedOperations("8.8.0", true, false);
   }
 
   @Test

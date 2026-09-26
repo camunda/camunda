@@ -19,6 +19,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
@@ -33,6 +35,16 @@ public class SearchEngineClientUtils {
    * a lower value to be conservative
    */
   public static final int MAX_INDEX_PATTERN_REQUEST_LENGTH = 3500;
+
+  /**
+   * Index-level settings keys that runtime configuration owns and can therefore be safely diffed
+   * against the search engine's normalized rendering. Any other key (e.g. {@code analysis}) is
+   * owned by the template JSON, not runtime config, and comparing it against the engine's
+   * normalized form is unreliable (key relocation, injected defaults, scalar/list coercion), so it
+   * is deliberately excluded from {@link SchemaSettingsAppender#equalsManagedSettings(Map)}.
+   */
+  private static final Set<String> MANAGED_INDEX_SETTINGS_KEYS =
+      Set.of("number_of_shards", "number_of_replicas", "refresh_interval");
 
   private static final Logger LOG = LoggerFactory.getLogger(SearchEngineClientUtils.class);
   private final ObjectMapper objectMapper;
@@ -154,6 +166,21 @@ public class SearchEngineClientUtils {
 
     public boolean equalsSettings(final Map<String, Object> otherSettings) {
       return settingsBlock.equals(otherSettings);
+    }
+
+    /**
+     * Compares only the index-level settings that runtime configuration owns ({@link
+     * #MANAGED_INDEX_SETTINGS_KEYS}), ignoring everything else in the settings block (e.g. an
+     * {@code analysis} block owned by the template JSON). Unlike {@link #equalsSettings(Map)}, this
+     * survives search-engine normalization of the settings it does not compare, at the cost of not
+     * detecting drift in those settings.
+     */
+    @SuppressWarnings("unchecked")
+    public boolean equalsManagedSettings(final Map<String, Object> otherSettings) {
+      final var otherIndexBlock =
+          (Map<String, Object>) otherSettings.getOrDefault("index", Map.of());
+      return MANAGED_INDEX_SETTINGS_KEYS.stream()
+          .allMatch(key -> Objects.equals(indexBlock.get(key), otherIndexBlock.get(key)));
     }
   }
 }
