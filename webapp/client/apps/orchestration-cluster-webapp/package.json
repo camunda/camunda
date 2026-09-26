@@ -75,7 +75,7 @@
 		"@playwright/test": "1.63.0",
 		"@svgr/cli": "8.1.0",
 		"@tanstack/devtools-vite": "0.8.5",
-		"@tanstack/react-devtools": "0.10.12",
+		"@tanstack/react-devtools": "0.10.13",
 		"@types/lodash": "4.17.25",
 		"@types/node": "26.5.1",
 		"@types/react": "19.3.0",
