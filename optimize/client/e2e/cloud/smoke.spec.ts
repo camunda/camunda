@@ -13,6 +13,7 @@ import {expect, test} from '@playwright/test';
 import {HomePage} from '../pages/HomePage';
 import {ReportPage} from '../pages/ReportPage';
 import {TemplateDialog} from '../pages/components/TemplateDialog';
+import {LOGIN_TIMEOUT} from '../setup/login';
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -33,7 +34,9 @@ test('log in through Auth0 and create a report', async ({page}) => {
     .getByRole('textbox', {name: 'Password', exact: true})
     .fill(requireEnv('AUTH0_USERPASSWORD'));
   await page.getByRole('button', {name: 'Continue', exact: true}).click();
-  await expect(page.getByRole('navigation', {name: 'Main navigation'})).toBeVisible();
+  await expect(page.getByRole('navigation', {name: 'Main navigation'})).toBeVisible({
+    timeout: LOGIN_TIMEOUT,
+  });
 
   await homePage.goto();
   await homePage.createNew('Report');
