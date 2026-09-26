@@ -199,7 +199,37 @@ class ItemProviderFactoryTest {
 
     final var usedFilter = ((ProcessInstanceItemProvider) itemProvider).getFilter();
     assertThat(usedFilter.parentProcessInstanceKeyOperations()).isEmpty();
-    assertThat(usedFilter.stateOperations()).contains(Operation.eq("ACTIVE"));
+    assertThat(usedFilter.stateOperations()).containsExactly(Operation.eq("ACTIVE"));
+    assertThat(usedFilter.partitionId()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldOverrideFiltersForMigrateProcessInstance() {
+    // given
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .states("COMPLETED")
+            .parentProcessInstanceKeys(12345L)
+            .processInstanceKeys(67890L)
+            .build();
+    final var batchOperation = mock(PersistedBatchOperation.class);
+    when(batchOperation.getBatchOperationType())
+        .thenReturn(BatchOperationType.MIGRATE_PROCESS_INSTANCE);
+    when(batchOperation.getEntityFilter(ProcessInstanceFilter.class)).thenReturn(filter);
+
+    // when
+    final var itemProvider = factory.fromBatchOperation(batchOperation);
+
+    // then
+    assertThat(itemProvider).isNotNull();
+    assertThat(itemProvider).isInstanceOf(ProcessInstanceItemProvider.class);
+
+    final var usedFilter = ((ProcessInstanceItemProvider) itemProvider).getFilter();
+    assertThat(usedFilter.stateOperations()).containsExactly(Operation.eq("ACTIVE"));
+    // unlike cancel/suspend/resume, migrate does not override parentProcessInstanceKey
+    assertThat(usedFilter.parentProcessInstanceKeyOperations())
+        .containsExactly(Operation.eq(12345L));
+    assertThat(usedFilter.processInstanceKeyOperations()).containsExactly(Operation.eq(67890L));
     assertThat(usedFilter.partitionId()).isEqualTo(1);
   }
 
@@ -221,7 +251,37 @@ class ItemProviderFactoryTest {
 
     final var usedFilter = ((ProcessInstanceItemProvider) itemProvider).getFilter();
     assertThat(usedFilter.parentProcessInstanceKeyOperations()).isEmpty();
-    assertThat(usedFilter.stateOperations()).contains(Operation.eq("ACTIVE"));
+    assertThat(usedFilter.stateOperations()).containsExactly(Operation.eq("ACTIVE"));
+    assertThat(usedFilter.partitionId()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldOverrideFiltersForModifyProcessInstance() {
+    // given
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .states("COMPLETED")
+            .parentProcessInstanceKeys(12345L)
+            .processInstanceKeys(67890L)
+            .build();
+    final var batchOperation = mock(PersistedBatchOperation.class);
+    when(batchOperation.getBatchOperationType())
+        .thenReturn(BatchOperationType.MODIFY_PROCESS_INSTANCE);
+    when(batchOperation.getEntityFilter(ProcessInstanceFilter.class)).thenReturn(filter);
+
+    // when
+    final var itemProvider = factory.fromBatchOperation(batchOperation);
+
+    // then
+    assertThat(itemProvider).isNotNull();
+    assertThat(itemProvider).isInstanceOf(ProcessInstanceItemProvider.class);
+
+    final var usedFilter = ((ProcessInstanceItemProvider) itemProvider).getFilter();
+    assertThat(usedFilter.stateOperations()).containsExactly(Operation.eq("ACTIVE"));
+    // unlike cancel/suspend/resume, modify does not override parentProcessInstanceKey
+    assertThat(usedFilter.parentProcessInstanceKeyOperations())
+        .containsExactly(Operation.eq(12345L));
+    assertThat(usedFilter.processInstanceKeyOperations()).containsExactly(Operation.eq(67890L));
     assertThat(usedFilter.partitionId()).isEqualTo(1);
   }
 
@@ -242,7 +302,36 @@ class ItemProviderFactoryTest {
 
     final var usedFilter = ((IncidentItemProvider) itemProvider).getFilter();
     assertThat(usedFilter.parentProcessInstanceKeyOperations()).isEmpty();
-    assertThat(usedFilter.stateOperations()).contains(Operation.eq("ACTIVE"));
+    assertThat(usedFilter.stateOperations()).containsExactly(Operation.eq("ACTIVE"));
+    assertThat(usedFilter.partitionId()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldOverrideFiltersForResolveIncident() {
+    // given
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .states("COMPLETED")
+            .parentProcessInstanceKeys(12345L)
+            .processInstanceKeys(67890L)
+            .build();
+    final var batchOperation = mock(PersistedBatchOperation.class);
+    when(batchOperation.getBatchOperationType()).thenReturn(BatchOperationType.RESOLVE_INCIDENT);
+    when(batchOperation.getEntityFilter(ProcessInstanceFilter.class)).thenReturn(filter);
+
+    // when
+    final var itemProvider = factory.fromBatchOperation(batchOperation);
+
+    // then
+    assertThat(itemProvider).isNotNull();
+    assertThat(itemProvider).isInstanceOf(IncidentItemProvider.class);
+
+    final var usedFilter = ((IncidentItemProvider) itemProvider).getFilter();
+    assertThat(usedFilter.stateOperations()).containsExactly(Operation.eq("ACTIVE"));
+    // unlike cancel/suspend/resume, resolve-incident does not override parentProcessInstanceKey
+    assertThat(usedFilter.parentProcessInstanceKeyOperations())
+        .containsExactly(Operation.eq(12345L));
+    assertThat(usedFilter.processInstanceKeyOperations()).containsExactly(Operation.eq(67890L));
     assertThat(usedFilter.partitionId()).isEqualTo(1);
   }
 
