@@ -20,6 +20,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,6 +31,10 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Variables", description = "API to query variables.")
 @RestController
 @RequestMapping(value = TasklistURIs.VARIABLES_URL_V1, produces = MediaType.APPLICATION_JSON_VALUE)
+@ConditionalOnProperty(
+    name = "camunda.tasklist.v1-variable-by-id-enabled",
+    havingValue = "true",
+    matchIfMissing = true)
 public class VariablesController extends ApiErrorController {
 
   @Autowired private VariableService variableService;
