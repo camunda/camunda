@@ -315,6 +315,39 @@ class IncidentSearchIT {
   }
 
   @Test
+  void shouldFilterByErrorMessageEqualsMultiWordValue() {
+    // when
+    final var result =
+        camundaClient
+            .newIncidentSearchRequest()
+            .filter(f -> f.errorMessage(f2 -> f2.eq("fail job")))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().getFirst().getJobKey()).isEqualTo(jobKey);
+  }
+
+  @Test
+  void shouldFilterByErrorMessageLikeSingleWordValue() {
+    // errorMessage is an analyzed text field, so $like matches against individual indexed
+    // tokens - a pattern spanning multiple words (with a literal space) can never match, since
+    // no single token contains a space. This is pre-existing, unrelated to #64014.
+    // when
+    final var result =
+        camundaClient
+            .newIncidentSearchRequest()
+            .filter(f -> f.errorMessage(f2 -> f2.like("*job*")))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().getFirst().getJobKey()).isEqualTo(jobKey);
+  }
+
+  @Test
   void shouldFilterByTenantId() {
     // given
     final var tenantId = incident.getTenantId();
