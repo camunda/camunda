@@ -42,7 +42,7 @@ import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.testcontainers.MinioContainer;
+import io.camunda.zeebe.test.testcontainers.S3MockTestContainer;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -68,7 +68,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 @ZeebeIntegration
 class BackupMultiPartitionTest {
-  @Container private static final MinioContainer S3 = new MinioContainer();
+  @Container private static final S3MockTestContainer S3 = new S3MockTestContainer();
   private static final String JOB_TYPE = "test";
   private static final BpmnModelInstance SIMPLE_PROCESS =
       Bpmn.createExecutableProcess("process").startEvent("start").endEvent("end").done();
