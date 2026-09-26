@@ -34,6 +34,7 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.VariableHandler;
+import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedHandler;
 import io.camunda.exporter.utils.CamundaExporterITTemplateExtension;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
@@ -41,21 +42,27 @@ import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationItem;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceBusinessIdRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
@@ -731,5 +738,80 @@ final class CamundaExporterIT {
 
     // act
     assertThatCode(() -> camundaExporter.export(record)).doesNotThrowAnyException();
+  }
+
+  @TestTemplate
+  void shouldNotDoubleCountOperationsTotalCountWhenSameChunkRecordIsReplayed(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    // given - a batch operation document and one CHUNK CREATED record with 3 items
+    config.getConnect().setIndexPrefix(testPrefix);
+    config.getIndex().setNumberOfReplicas(0);
+    createSchemas(config);
+    config.getBulk().setSize(1);
+    final var exporter = new CamundaExporter();
+    exporter.configure(getContextFromConfig(config));
+    exporter.open(new ExporterTestController());
+
+    final long batchOperationKey = 123L;
+
+    final Record creationRecord =
+        factory.generateRecord(
+            ValueType.BATCH_OPERATION_CREATION,
+            r ->
+                r.withBrokerVersion("8.8.0")
+                    .withIntent(BatchOperationIntent.CREATED)
+                    .withValue(
+                        new BatchOperationCreationRecord()
+                            .setBatchOperationKey(batchOperationKey)
+                            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE)));
+    exporter.export(creationRecord);
+    clientAdapter.refresh(testPrefix);
+
+    final Record chunkRecord =
+        factory.generateRecord(
+            ValueType.BATCH_OPERATION_CHUNK,
+            r ->
+                r.withBrokerVersion("8.8.0")
+                    .withIntent(BatchOperationChunkIntent.CREATED)
+                    .withPartitionId(1)
+                    .withValue(
+                        new BatchOperationChunkRecord()
+                            .setBatchOperationKey(batchOperationKey)
+                            .setItems(
+                                List.of(
+                                    new BatchOperationItem(1L, 11L, 11L),
+                                    new BatchOperationItem(2L, 12L, 12L),
+                                    new BatchOperationItem(3L, 13L, 13L)))));
+
+    // when - export the SAME chunk record twice, simulating a broker resend of an
+    // already-applied-but-unacknowledged record after an exporter crash/restart
+    exporter.export(chunkRecord);
+    clientAdapter.refresh(testPrefix);
+    exporter.export(chunkRecord);
+    clientAdapter.refresh(testPrefix);
+
+    // then - filter by the concrete handler class: several handlers match
+    // BATCH_OPERATION_CHUNK (operation-item, list-view), so filtering by ValueType alone is
+    // ambiguous and can pick the wrong index/entity type
+    final var handler =
+        getHandlers(config).stream()
+            .filter(h -> BatchOperationChunkCreatedHandler.class.isAssignableFrom(h.getClass()))
+            .findFirst()
+            .orElseThrow();
+    final var documentId = String.valueOf(batchOperationKey);
+
+    await()
+        .untilAsserted(
+            () -> {
+              final var entity =
+                  clientAdapter.get(documentId, handler.getIndexName(), BatchOperationEntity.class);
+              assertThat(entity.getOperationsTotalCount()).isEqualTo(3);
+              assertThat(entity.getLastProcessedChunkRecords()).hasSize(1);
+              assertThat(entity.getLastProcessedChunkRecords().get(0).getPartitionId())
+                  .isEqualTo(1);
+              assertThat(entity.getLastProcessedChunkRecords().get(0).getRecordKey())
+                  .isEqualTo(chunkRecord.getKey());
+            });
   }
 }
