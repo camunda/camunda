@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, describe, expect} from 'vitest';
+import {afterEach, describe, expect, vi} from 'vitest';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {
 	Outlet,
@@ -16,10 +16,10 @@ import {
 	createRoute,
 	createRouter,
 } from '@tanstack/react-router';
-import {HttpResponse} from 'msw';
+import {HttpResponse, http} from 'msw';
 import {render} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
-import type {BatchOperationState} from '@camunda/camunda-api-zod-schemas/8.10';
+import {endpoints, type BatchOperationState} from '@camunda/camunda-api-zod-schemas/8.10';
 import {it} from '#/vitest-modules/test-extend';
 import {
 	mockGetBatchOperationEndpoint,
@@ -74,6 +74,7 @@ function renderActions(batchOperationState: BatchOperationState) {
 
 describe('<BatchOperationActions />', () => {
 	afterEach(() => {
+		vi.useRealTimers();
 		notificationsStore.reset();
 		sessionStorage.clear();
 	});
@@ -171,72 +172,66 @@ describe('<BatchOperationActions />', () => {
 	});
 
 	it('should resume without requiring the intermediate ACTIVE state to be observed', async ({worker}) => {
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout'], shouldAdvanceTime: true});
 		worker.use(
 			mockResumeBatchOperationEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-			// The batch already reached a terminal state by the time of the first poll — resume must
-			// not wait for ACTIVE to be observed first.
 			mockGetBatchOperationEndpoint({
-				successResponse: HttpResponse.json(createBatchOperation({state: 'COMPLETED'})),
+				successResponse: HttpResponse.json(createBatchOperation({state: 'ACTIVE'})),
+				delay: 'infinite',
 			}),
 		);
 
 		const screen = await renderActions('SUSPENDED');
 		const resumeButton = screen.getByRole('button', {name: 'Resume'});
-
 		await userEvent.click(resumeButton);
 
-		// Confirm the mutation actually went pending (proving the POST + transition poll ran) before
-		// asserting it settles — otherwise this would pass just as well if the poll were removed.
 		await expect.element(resumeButton).toBeDisabled();
+
+		worker.use(
+			mockGetBatchOperationEndpoint({
+				successResponse: HttpResponse.json(createBatchOperation({state: 'COMPLETED'})),
+			}),
+		);
+		await vi.advanceTimersByTimeAsync(11_000);
+
 		await expect.element(resumeButton).not.toBeDisabled();
 		expect(notificationsStore.notifications).toEqual([]);
 	});
 
 	it('should not treat a stale CREATED read as resume having converged', async ({worker}) => {
-		// CREATED converging immediately (the bug) and CREATED correctly being retried past (the fix)
-		// both eventually end with the button enabled, so that alone can't tell them apart — count GETs
-		// to the batch operation's own endpoint specifically (not incidental browser requests like font
-		// loads) and require more than one before accepting the outcome, proving the first (CREATED)
-		// read was actually rejected rather than mistaken for convergence.
 		let pollRequestCount = 0;
-		worker.events.on('request:start', ({request}) => {
-			if (request.method === 'GET' && request.url.endsWith(`/batch-operations/${BATCH_OPERATION_KEY}`)) {
+		const countingGet = (state: BatchOperationState) =>
+			http.get(endpoints.getBatchOperation.getUrl({batchOperationKey: ':batchOperationKey'}), () => {
 				pollRequestCount += 1;
-			}
-		});
+				return HttpResponse.json(createBatchOperation({state}));
+			});
 
-		try {
-			worker.use(
-				mockResumeBatchOperationEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-				mockGetBatchOperationEndpoint({
-					successResponse: HttpResponse.json(createBatchOperation({state: 'CREATED'})),
-				}),
-			);
+		worker.use(
+			mockResumeBatchOperationEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+			countingGet('CREATED'),
+		);
 
-			const screen = await renderActions('SUSPENDED');
-			const resumeButton = screen.getByRole('button', {name: 'Resume'});
-			await userEvent.click(resumeButton);
-			await expect.element(resumeButton).toBeDisabled();
-			await expect.poll(() => pollRequestCount).toBeGreaterThan(0);
+		const screen = await renderActions('SUSPENDED');
+		const resumeButton = screen.getByRole('button', {name: 'Resume'});
+		await userEvent.click(resumeButton);
+		await expect.element(resumeButton).toBeDisabled();
+		await expect.poll(() => pollRequestCount).toBeGreaterThan(0);
 
-			worker.use(
-				mockGetBatchOperationEndpoint({successResponse: HttpResponse.json(createBatchOperation({state: 'ACTIVE'}))}),
-			);
-			await expect.element(resumeButton).not.toBeDisabled();
-			expect(pollRequestCount).toBeGreaterThan(1);
-			expect(notificationsStore.notifications).toEqual([]);
-		} finally {
-			worker.events.removeAllListeners('request:start');
-		}
+		worker.use(countingGet('ACTIVE'));
+		await expect.element(resumeButton).not.toBeDisabled();
+		expect(pollRequestCount).toBeGreaterThan(1);
+		expect(notificationsStore.notifications).toEqual([]);
 	});
 
 	it('should cancel and converge on a partial-completion outcome without waiting for CANCELED specifically', async ({
 		worker,
 	}) => {
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout'], shouldAdvanceTime: true});
 		worker.use(
-			mockCancelBatchOperationEndpoint({successResponse: new HttpResponse(null, {status: 204}), delay: 200}),
+			mockCancelBatchOperationEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
 			mockGetBatchOperationEndpoint({
-				successResponse: HttpResponse.json(createBatchOperation({state: 'PARTIALLY_COMPLETED'})),
+				successResponse: HttpResponse.json(createBatchOperation({state: 'ACTIVE'})),
+				delay: 'infinite',
 			}),
 		);
 
@@ -244,58 +239,46 @@ describe('<BatchOperationActions />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'More actions'}));
 		await userEvent.click(screen.getByRole('menuitem', {name: 'Cancel'}));
 
-		// The OverflowMenu closes the item as soon as it's clicked, so re-open it to confirm the
-		// mutation actually went pending (proving the POST + transition poll ran) before asserting it
-		// settles — otherwise this would pass just as well if the poll were removed.
 		await expect.element(screen.getByRole('button', {name: 'More actions'})).toBeVisible();
 		await userEvent.click(screen.getByRole('button', {name: 'More actions'}));
 		await expect.element(screen.getByRole('menuitem', {name: 'Cancel'})).toBeDisabled();
-		// Still the same open menu — no need to reclick the trigger, which would toggle it shut.
+
+		worker.use(
+			mockGetBatchOperationEndpoint({
+				successResponse: HttpResponse.json(createBatchOperation({state: 'PARTIALLY_COMPLETED'})),
+			}),
+		);
+		await vi.advanceTimersByTimeAsync(11_000);
+
 		await expect.element(screen.getByRole('menuitem', {name: 'Cancel'})).not.toBeDisabled();
 		expect(notificationsStore.notifications).toEqual([]);
 	});
 
 	it('should recover from a transient polling failure and still converge on success', async ({worker}) => {
-		// "Disabled" alone doesn't prove the retry path ran — it becomes true as soon as the mutation
-		// starts, before the first poll GET is even sent. Count the poll's own GETs and wait for one to
-		// have actually landed against the failing mock before swapping it, so the success mock can't
-		// win a race against the first attempt and let this pass without exercising a retry at all.
-		// The worker is shared across tests in this file, so the listener is removed in `finally` —
-		// otherwise it keeps counting every later test's GETs too.
 		let pollRequestCount = 0;
-		worker.events.on('request:start', ({request}) => {
-			if (request.method === 'GET' && request.url.endsWith(`/batch-operations/${BATCH_OPERATION_KEY}`)) {
+		const countingGet = (respond: () => Response) =>
+			http.get(endpoints.getBatchOperation.getUrl({batchOperationKey: ':batchOperationKey'}), () => {
 				pollRequestCount += 1;
-			}
-		});
+				return respond();
+			});
 
-		try {
-			worker.use(
-				mockSuspendBatchOperationEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-				mockGetBatchOperationEndpoint({
-					successResponse: HttpResponse.json(createProblemDetails({status: 503}), {status: 503}),
-				}),
-			);
+		worker.use(
+			mockSuspendBatchOperationEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+			countingGet(() => HttpResponse.json(createProblemDetails({status: 503}), {status: 503})),
+		);
 
-			const screen = await renderActions('ACTIVE');
-			const suspendButton = screen.getByRole('button', {name: 'Suspend'});
-			await userEvent.click(suspendButton);
+		const screen = await renderActions('ACTIVE');
+		const suspendButton = screen.getByRole('button', {name: 'Suspend'});
+		await userEvent.click(suspendButton);
 
-			await expect.element(suspendButton).toBeDisabled();
-			await expect.poll(() => pollRequestCount).toBeGreaterThan(0);
+		await expect.element(suspendButton).toBeDisabled();
+		await expect.poll(() => pollRequestCount).toBeGreaterThan(0);
 
-			worker.use(
-				mockGetBatchOperationEndpoint({
-					successResponse: HttpResponse.json(createBatchOperation({state: 'SUSPENDED'})),
-				}),
-			);
+		worker.use(countingGet(() => HttpResponse.json(createBatchOperation({state: 'SUSPENDED'}))));
 
-			await expect.element(suspendButton).not.toBeDisabled();
-			expect(pollRequestCount).toBeGreaterThan(1);
-			expect(notificationsStore.notifications).toEqual([]);
-		} finally {
-			worker.events.removeAllListeners('request:start');
-		}
+		await expect.element(suspendButton).not.toBeDisabled();
+		expect(pollRequestCount).toBeGreaterThan(1);
+		expect(notificationsStore.notifications).toEqual([]);
 	});
 
 	it('should show a permission warning and keep the button usable when suspending is forbidden', async ({worker}) => {
