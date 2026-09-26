@@ -29,7 +29,9 @@ test('log in through Auth0 and create a report', async ({page}) => {
   await page.goto('/');
   await page.getByRole('textbox', {name: /email/i}).fill(requireEnv('AUTH0_USEREMAIL'));
   await page.getByRole('button', {name: 'Continue', exact: true}).click();
-  await page.getByLabel('Password', {exact: true}).fill(requireEnv('AUTH0_USERPASSWORD'));
+  await page
+    .getByRole('textbox', {name: 'Password', exact: true})
+    .fill(requireEnv('AUTH0_USERPASSWORD'));
   await page.getByRole('button', {name: 'Continue', exact: true}).click();
   await expect(page.getByRole('navigation', {name: 'Main navigation'})).toBeVisible();
 
