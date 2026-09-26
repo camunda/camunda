@@ -15,6 +15,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
 env:
   TEST_OWNER: '@camunda/data-layer'
 
@@ -107,23 +113,35 @@ jobs:
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
 
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+
       - name: Run Nightly Tests
         env:
           FLAKY_TEST_RERUN_COUNT: 3
-        run: |
-          ./mvnw -B --no-snapshot-updates \
-          -D forkCount=3 \
-          -D skipUTs -D skipChecks \
-          -D maven.javadoc.skip=true \
-          -D "failsafe.rerunFailingTestsCount=${FLAKY_TEST_RERUN_COUNT:-3}" \
-          -D flaky.test.reportDir=failsafe-reports \
-          -D junit.jupiter.extensions.autodetection.enabled=true \
-          -D "argLine=--add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED" \
-          -pl qa/acceptance-tests \
-          -D groups="dl-nightly" \
-          -D failsafe.excludedGroups="" \
-          -P dl-nightly,parallel-tests \
+        run: >
+          ./mvnw -B --no-snapshot-updates
+          -D forkCount=3
+          -D skipUTs -D skipChecks
+          -D maven.javadoc.skip=true
+          -D "failsafe.rerunFailingTestsCount=${FLAKY_TEST_RERUN_COUNT:-3}"
+          -D flaky.test.reportDir=failsafe-reports
+          -D junit.jupiter.extensions.autodetection.enabled=true
+          -D "argLine=--add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED"
+          -pl qa/acceptance-tests
+          -D groups="dl-nightly"
+          -D failsafe.excludedGroups=""
+          -P dl-nightly,extract-flaky-tests,parallel-tests
           verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+          skipSummary: true
 
       - name: Sanitize branch name for artifact names
         id: sanitize
