@@ -1,0 +1,344 @@
+---
+# Source: load-test-setup/templates/dmn-k6.yaml
+# In-cluster k6 DMN decision-evaluation load generator.
+#
+# ISOLATION — the generator must not steal CPU from the brokers, or the latency
+# numbers are meaningless. Two guarantees keep k6 off the broker nodes:
+#   1. It does NOT tolerate the `nodepool=n2-standard-4:NoSchedule` taint the
+#      benchmark broker nodes carry, so the scheduler cannot place it there.
+#   2. podAntiAffinity against `app.kubernetes.io/component: zeebe-broker`
+#      (hostname topology) — belt-and-braces even if the taint changes.
+# If it stays Pending, the cluster has no spare (non-broker) node — add one; do
+# NOT relax the isolation.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dmn-k6-scripts
+data:
+  dmn-evaluation.js: |
+    import http from 'k6/http';
+    import { check } from 'k6';
+    import encoding from 'k6/encoding';
+    
+    // Self-contained DMN decision-evaluation load test.
+    //
+    // Drives POST /v2/decision-definitions/evaluation at a FIXED arrival rate
+    // (requests/second) so the target throughput is held independent of latency:
+    // latency degradation shows up as a growing VU count, not a slowing rate.
+    //
+    // No external imports and no dependency on any operator — it runs as-is with
+    // `k6 run`, or inside the k6 Job rendered by the load-test-setup chart
+    // (templates/dmn-k6.yaml, gated by dmnK6.enabled).
+    //
+    // Auth (pick whichever your cluster uses; checked in this order):
+    //   CAMUNDA_BASIC_AUTH = "user:pass"          -> Basic auth
+    //   CAMUNDA_CLIENT_ID (+SECRET/OAUTH_URL/...) -> OAuth2 client-credentials Bearer
+    //   (neither set)                             -> no Authorization header
+    //
+    // Single vs. mixed:
+    //   default            -> one decision, DMN_DECISION_ID (default: small_decision)
+    //   DMN_MIX set        -> weighted mix, JSON array of {id, weight, variables?}
+    //
+    // Load knobs:
+    //   DMN_RATE      evaluations per second               (default: 100)
+    //   DMN_DURATION  how long to sustain the rate          (default: 60s)
+    //   DMN_MAX_VUS   cap on concurrent in-flight requests  (default: 200)
+    //   DMN_VARIABLES JSON input variables for single mode  (default: {})
+    
+    const RATE = Number(__ENV.DMN_RATE || 100);
+    const DURATION = __ENV.DMN_DURATION || '60s';
+    const MAX_VUS = Number(__ENV.DMN_MAX_VUS || 200);
+    const BASE_URL = __ENV.CAMUNDA_BASE_URL || 'http://camunda-gateway:8080';
+    
+    const MIX = __ENV.DMN_MIX
+      ? JSON.parse(__ENV.DMN_MIX)
+      : [
+          {
+            id: __ENV.DMN_DECISION_ID || 'small_decision',
+            weight: 1,
+            variables: JSON.parse(__ENV.DMN_VARIABLES || '{}'),
+          },
+        ];
+    
+    const TOTAL_WEIGHT = MIX.reduce((sum, e) => sum + e.weight, 0);
+    
+    function pickDecision() {
+      let r = Math.random() * TOTAL_WEIGHT;
+      for (let i = 0; i < MIX.length; i++) {
+        r -= MIX[i].weight;
+        if (r <= 0) {
+          return MIX[i];
+        }
+      }
+      return MIX[MIX.length - 1];
+    }
+    
+    // --- Auth --------------------------------------------------------------------
+    // Token is cached at module scope and refreshed shortly before it expires.
+    let cachedToken = { accessToken: null, expiryDate: 0 };
+    
+    function bearerToken() {
+      if (cachedToken.expiryDate > Date.now() + 5000) {
+        return cachedToken.accessToken;
+      }
+      const res = http.post(
+        __ENV.CAMUNDA_OAUTH_URL,
+        {
+          grant_type: 'client_credentials',
+          audience: __ENV.CAMUNDA_TOKEN_AUDIENCE,
+          client_id: __ENV.CAMUNDA_CLIENT_ID,
+          client_secret: __ENV.CAMUNDA_CLIENT_SECRET,
+        },
+        { tags: { name: 'token-request' } },
+      );
+      if (res.status !== 200) {
+        throw new Error(`unable to fetch token: ${res.status} ${res.body}`);
+      }
+      cachedToken.accessToken = res.json('access_token');
+      cachedToken.expiryDate = Date.now() + res.json('expires_in') * 1000;
+      return cachedToken.accessToken;
+    }
+    
+    function authHeader() {
+      if (__ENV.CAMUNDA_BASIC_AUTH) {
+        return 'Basic ' + encoding.b64encode(__ENV.CAMUNDA_BASIC_AUTH);
+      }
+      if (__ENV.CAMUNDA_CLIENT_ID) {
+        return 'Bearer ' + bearerToken();
+      }
+      return null;
+    }
+    
+    // --- Scenario ----------------------------------------------------------------
+    export const options = {
+      scenarios: {
+        dmnEvaluation: {
+          exec: 'evaluate',
+          executor: 'constant-arrival-rate',
+          rate: RATE,
+          timeUnit: '1s',
+          duration: DURATION,
+          preAllocatedVUs: Math.min(RATE, MAX_VUS),
+          maxVUs: MAX_VUS,
+        },
+      },
+      thresholds: {
+        'http_req_duration{name:evaluation}': ['p(95)<200', 'p(99)<350'],
+        checks: ['rate>0.999'],
+      },
+    };
+    
+    export function evaluate() {
+      const decision = pickDecision();
+      const headers = { 'Content-Type': 'application/json' };
+      const auth = authHeader();
+      if (auth) {
+        headers['Authorization'] = auth;
+      }
+      const params = {
+        headers: headers,
+        // Constant tag so per-URL cardinality stays low; break down by decision.
+        tags: { name: 'evaluation', decision: decision.id },
+      };
+      const payload = {
+        decisionDefinitionId: decision.id,
+        variables: decision.variables || {},
+      };
+    
+      const res = http.post(
+        BASE_URL + '/v2/decision-definitions/evaluation',
+        JSON.stringify(payload),
+        params,
+      );
+      check(res, { 'status is 200': (r) => r.status === 200 });
+    }
+---
+# Source: load-test-setup/templates/dmn-k6.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dmn-k6-resources
+data:
+  small_decision.dmn: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" id="small_decision_drg" name="small_decision_drg" namespace="https://example.com/dmn">
+      <decision id="small_decision" name="small_decision">
+        <decisionTable id="small_decision_dt" hitPolicy="FIRST">
+          <input id="small_in1" label="category">
+            <inputExpression id="small_ie1" typeRef="string">
+              <text>category</text>
+            </inputExpression>
+          </input>
+          <output id="small_out1" name="result" typeRef="string" />
+          <rule id="small_rule1">
+            <inputEntry id="small_r1c1"><text>"a"</text></inputEntry>
+            <outputEntry id="small_r1o1"><text>"first"</text></outputEntry>
+          </rule>
+          <rule id="small_rule2">
+            <inputEntry id="small_r2c1"><text>"b"</text></inputEntry>
+            <outputEntry id="small_r2o1"><text>"second"</text></outputEntry>
+          </rule>
+        </decisionTable>
+      </decision>
+    </definitions>
+---
+# Source: load-test-setup/templates/dmn-k6.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: dmn-k6
+  labels:
+    app.kubernetes.io/component: dmn-k6
+spec:
+  backoffLimit: 0
+  completions: 1
+  parallelism: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: dmn-k6
+    spec:
+      restartPolicy: Never
+      # Prefer (not require) a node with no broker pod so the generator does not
+      # steal broker CPU, while still guaranteeing the pod can always schedule --
+      # a hard requirement would leave it Pending if every free node runs a broker.
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/component
+                      operator: In
+                      values:
+                        - zeebe-broker
+                topologyKey: kubernetes.io/hostname
+      nodeSelector:
+        topology.kubernetes.io/zone: "europe-west1-d"
+      initContainers:
+        # Deploy the bundled decision(s), then poll an evaluation until it
+        # resolves (200) so k6 never races an undeployed decision.
+        - name: deploy-decisions
+          image: curlimages/curl:8.11.1
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: CAMUNDA_BASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: zeebeRestAddress
+            - name: CAMUNDA_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: clientId
+            - name: CAMUNDA_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: clientSecret
+            - name: CAMUNDA_OAUTH_URL
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: authServer
+            - name: CAMUNDA_TOKEN_AUDIENCE
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: authorizationAudience
+            - name: DMN_DECISION_ID
+              value: "small_decision"
+          command:
+            - /bin/sh
+            - -ceu
+            - |-
+              # A fresh cluster (image pull + broker/Keycloak boot) can take a few
+              # minutes to accept requests. Retry token -> deploy -> evaluate as one
+              # idempotent loop for up to ~10 minutes; succeed as soon as an
+              # evaluation returns 200 so k6 never races an unready cluster.
+              for i in $(seq 1 120); do
+                AUTH=""
+                if [ -n "${CAMUNDA_CLIENT_ID:-}" ]; then
+                  TOKEN="$(curl -s "${CAMUNDA_OAUTH_URL}" \
+                    -d grant_type=client_credentials \
+                    -d audience="${CAMUNDA_TOKEN_AUDIENCE}" \
+                    -d client_id="${CAMUNDA_CLIENT_ID}" \
+                    -d client_secret="${CAMUNDA_CLIENT_SECRET}" \
+                    | sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p')"
+                  if [ -z "$TOKEN" ]; then echo "attempt $i: token not ready"; sleep 5; continue; fi
+                  AUTH="Authorization: Bearer $TOKEN"
+                fi
+                # (Re)deploy the decision(s); redeploying the same file is cheap and idempotent.
+                for f in /resources/*.dmn; do
+                  curl -s -o /dev/null -X POST "${CAMUNDA_BASE_URL}/v2/deployments" \
+                    ${AUTH:+-H "$AUTH"} -F "resources=@$f" || true
+                done
+                code="$(curl -s -o /dev/null -w '%{http_code}' \
+                  -X POST "${CAMUNDA_BASE_URL}/v2/decision-definitions/evaluation" \
+                  ${AUTH:+-H "$AUTH"} -H 'Content-Type: application/json' \
+                  -d "{\"decisionDefinitionId\":\"${DMN_DECISION_ID}\",\"variables\":{}}")"
+                if [ "$code" = "200" ]; then echo "Decision '${DMN_DECISION_ID}' is evaluable."; exit 0; fi
+                echo "attempt $i: evaluation HTTP $code, retrying ..."; sleep 5
+              done
+              echo "ERROR: decision '${DMN_DECISION_ID}' never became evaluable"; exit 1
+          volumeMounts:
+            - name: resources
+              mountPath: /resources
+      containers:
+        - name: k6
+          image: grafana/k6:0.55.0
+          imagePullPolicy: IfNotPresent
+          command: ["k6", "run", "/scripts/dmn-evaluation.js"]
+          resources:
+            limits:
+              cpu: "2"
+              memory: 1Gi
+            requests:
+              cpu: "2"
+              memory: 1Gi
+          env:
+            - name: CAMUNDA_BASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: zeebeRestAddress
+            - name: CAMUNDA_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: clientId
+            - name: CAMUNDA_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: clientSecret
+            - name: CAMUNDA_OAUTH_URL
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: authServer
+            - name: CAMUNDA_TOKEN_AUDIENCE
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: authorizationAudience
+            - name: DMN_RATE
+              value: "100"
+            - name: DMN_DURATION
+              value: "60s"
+            - name: DMN_MAX_VUS
+              value: "200"
+            - name: DMN_DECISION_ID
+              value: "small_decision"
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+      volumes:
+        - name: scripts
+          configMap:
+            name: dmn-k6-scripts
+        - name: resources
+          configMap:
+            name: dmn-k6-resources
