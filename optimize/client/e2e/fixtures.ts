@@ -15,7 +15,7 @@ import {CollectionPage} from './pages/CollectionPage';
 import {DashboardPage} from './pages/DashboardPage';
 import {HomePage} from './pages/HomePage';
 import {ReportPage} from './pages/ReportPage';
-import {login, NO_SESSION} from './setup/login';
+import {login, LOGIN_TIMEOUT, NO_SESSION} from './setup/login';
 
 export type Collection = {id: string; name: string; url: string};
 
@@ -49,13 +49,13 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
     async ({browser}, use, workerInfo) => {
       await use(await login(browser, 'demo', `worker-${workerInfo.parallelIndex}`));
     },
-    {scope: 'worker'},
+    {scope: 'worker', timeout: 2 * LOGIN_TIMEOUT},
   ],
   johnSession: [
     async ({browser}, use, workerInfo) => {
       await use(await login(browser, 'john', `worker-${workerInfo.parallelIndex}`));
     },
-    {scope: 'worker'},
+    {scope: 'worker', timeout: 2 * LOGIN_TIMEOUT},
   ],
   storageState: async ({demoSession}, use) => {
     await use(demoSession);
