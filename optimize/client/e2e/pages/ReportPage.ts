@@ -28,7 +28,8 @@ export class ReportPage {
 
   constructor(private readonly page: Page) {
     const main = page.getByRole('main');
-    this.heading = main.getByRole('heading', {level: 1});
+    // Empty-state notices in the report result also render an h1; the report name comes first.
+    this.heading = main.getByRole('heading', {level: 1}).first();
     this.nameInput = main.getByRole('textbox', {name: 'Report name'});
     this.editLink = main.getByRole('link', {name: 'Edit', exact: true});
     this.result = page.getByTestId('report-renderer');
