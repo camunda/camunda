@@ -153,6 +153,7 @@ jobs:
       it-database-type: ${{ matrix.it-database-type }}
       notify-slack-on-failure: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.notify-slack-on-failure) }}
       use-shared-distball: true
+      failsafe-timeout-seconds: 780
 
   rdbms-history-tests:
     name: "RDBMS History Tests / ${{ matrix.database-name }}"
@@ -177,6 +178,7 @@ jobs:
       runs-on: "gcp-perf-core-8-default"
       notify-slack-on-failure: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.notify-slack-on-failure) }}
       use-shared-distball: true
+      failsafe-timeout-seconds: 780
 
   rdbms-identity-tests:
     name: "RDBMS Identity Tests / ${{ matrix.database-name }}"
@@ -200,3 +202,4 @@ jobs:
       test-type-label: "Identity"
       notify-slack-on-failure: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.notify-slack-on-failure) }}
       use-shared-distball: true
+      failsafe-timeout-seconds: 780

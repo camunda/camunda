@@ -123,6 +123,9 @@ jobs:
       it-database-type: ${{ matrix.it-database-type }}
       notify-slack-on-failure: ${{ github.event_name == 'schedule' }}
       use-shared-distball: true
+      # This job isn't PR/merge-blocking, so it can take more job budget and longer failsafe timeout
+      timeout-minutes: 25
+      failsafe-timeout-seconds: 1020
 
   search-history-tests:
     name: "Search History Tests / ${{ matrix.database-name }}"
@@ -148,6 +151,7 @@ jobs:
       runs-on: "gcp-perf-core-8-default"
       notify-slack-on-failure: ${{ github.event_name == 'schedule' }}
       use-shared-distball: true
+      failsafe-timeout-seconds: 780
 
   search-identity-tests:
     name: "Search Identity Tests / ${{ matrix.database-name }}"
@@ -172,3 +176,4 @@ jobs:
       test-type-label: "Identity"
       notify-slack-on-failure: ${{ github.event_name == 'schedule' }}
       use-shared-distball: true
+      failsafe-timeout-seconds: 780
