@@ -16,10 +16,10 @@ import {
 	createRoute,
 	createRouter,
 } from '@tanstack/react-router';
-import {HttpResponse} from 'msw';
+import {HttpResponse, http} from 'msw';
 import {render} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
-import type {BatchOperationState} from '@camunda/camunda-api-zod-schemas/8.10';
+import {endpoints, type BatchOperationState} from '@camunda/camunda-api-zod-schemas/8.10';
 import {it} from '#/vitest-modules/test-extend';
 import {
 	mockGetBatchOperationEndpoint,
@@ -70,6 +70,24 @@ async function renderWithSharedRouter(queryClient: QueryClient, batchOperationSt
 function renderActions(batchOperationState: BatchOperationState) {
 	const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
 	return renderWithSharedRouter(queryClient, batchOperationState);
+}
+
+function holdConvergedRead(state: BatchOperationState) {
+	let release!: () => void;
+	let requested = false;
+	const pending = new Promise<void>((resolve) => {
+		release = resolve;
+	});
+
+	return {
+		handler: http.get(endpoints.getBatchOperation.getUrl({batchOperationKey: ':batchOperationKey'}), async () => {
+			requested = true;
+			await pending;
+			return HttpResponse.json(createBatchOperation({state}));
+		}),
+		requested: () => requested,
+		release,
+	};
 }
 
 describe('<BatchOperationActions />', () => {
@@ -138,20 +156,23 @@ describe('<BatchOperationActions />', () => {
 	});
 
 	it('should suspend and disable the button while the mutation is in flight, then re-enable it', async ({worker}) => {
+		const convergedRead = holdConvergedRead('SUSPENDED');
 		worker.use(
-			mockSuspendBatchOperationEndpoint({successResponse: new HttpResponse(null, {status: 204}), delay: 200}),
-			mockGetBatchOperationEndpoint({
-				successResponse: HttpResponse.json(createBatchOperation({state: 'SUSPENDED'})),
-			}),
+			mockSuspendBatchOperationEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+			convergedRead.handler,
 		);
 
 		const screen = await renderActions('ACTIVE');
 		const suspendButton = screen.getByRole('button', {name: 'Suspend'});
 
-		await userEvent.click(suspendButton);
-
-		await expect.element(suspendButton).toBeDisabled();
-		await expect.element(suspendButton).not.toBeDisabled();
+		try {
+			await userEvent.click(suspendButton);
+			await expect.element(suspendButton).toBeDisabled();
+			await expect.poll(convergedRead.requested).toBe(true);
+		} finally {
+			convergedRead.release();
+			await expect.element(suspendButton).not.toBeDisabled();
+		}
 	});
 
 	it('should seed the display cache with the confirmed converged state, not a possibly-stale refetch', async ({
@@ -171,24 +192,25 @@ describe('<BatchOperationActions />', () => {
 	});
 
 	it('should resume without requiring the intermediate ACTIVE state to be observed', async ({worker}) => {
+		const convergedRead = holdConvergedRead('COMPLETED');
 		worker.use(
 			mockResumeBatchOperationEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
 			// The batch already reached a terminal state by the time of the first poll — resume must
 			// not wait for ACTIVE to be observed first.
-			mockGetBatchOperationEndpoint({
-				successResponse: HttpResponse.json(createBatchOperation({state: 'COMPLETED'})),
-			}),
+			convergedRead.handler,
 		);
 
 		const screen = await renderActions('SUSPENDED');
 		const resumeButton = screen.getByRole('button', {name: 'Resume'});
 
-		await userEvent.click(resumeButton);
-
-		// Confirm the mutation actually went pending (proving the POST + transition poll ran) before
-		// asserting it settles — otherwise this would pass just as well if the poll were removed.
-		await expect.element(resumeButton).toBeDisabled();
-		await expect.element(resumeButton).not.toBeDisabled();
+		try {
+			await userEvent.click(resumeButton);
+			await expect.element(resumeButton).toBeDisabled();
+			await expect.poll(convergedRead.requested).toBe(true);
+		} finally {
+			convergedRead.release();
+			await expect.element(resumeButton).not.toBeDisabled();
+		}
 		expect(notificationsStore.notifications).toEqual([]);
 	});
 
@@ -233,25 +255,26 @@ describe('<BatchOperationActions />', () => {
 	it('should cancel and converge on a partial-completion outcome without waiting for CANCELED specifically', async ({
 		worker,
 	}) => {
+		const convergedRead = holdConvergedRead('PARTIALLY_COMPLETED');
 		worker.use(
-			mockCancelBatchOperationEndpoint({successResponse: new HttpResponse(null, {status: 204}), delay: 200}),
-			mockGetBatchOperationEndpoint({
-				successResponse: HttpResponse.json(createBatchOperation({state: 'PARTIALLY_COMPLETED'})),
-			}),
+			mockCancelBatchOperationEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+			convergedRead.handler,
 		);
 
 		const screen = await renderActions('ACTIVE');
-		await userEvent.click(screen.getByRole('button', {name: 'More actions'}));
-		await userEvent.click(screen.getByRole('menuitem', {name: 'Cancel'}));
+		const cancel = screen.getByRole('menuitem', {name: 'Cancel'});
+		try {
+			await userEvent.click(screen.getByRole('button', {name: 'More actions'}));
+			await userEvent.click(cancel);
 
-		// The OverflowMenu closes the item as soon as it's clicked, so re-open it to confirm the
-		// mutation actually went pending (proving the POST + transition poll ran) before asserting it
-		// settles — otherwise this would pass just as well if the poll were removed.
-		await expect.element(screen.getByRole('button', {name: 'More actions'})).toBeVisible();
-		await userEvent.click(screen.getByRole('button', {name: 'More actions'}));
-		await expect.element(screen.getByRole('menuitem', {name: 'Cancel'})).toBeDisabled();
-		// Still the same open menu — no need to reclick the trigger, which would toggle it shut.
-		await expect.element(screen.getByRole('menuitem', {name: 'Cancel'})).not.toBeDisabled();
+			await expect.element(screen.getByRole('button', {name: 'More actions'})).toBeVisible();
+			await userEvent.click(screen.getByRole('button', {name: 'More actions'}));
+			await expect.element(cancel).toBeDisabled();
+			await expect.poll(convergedRead.requested).toBe(true);
+		} finally {
+			convergedRead.release();
+			await expect.element(cancel).not.toBeDisabled();
+		}
 		expect(notificationsStore.notifications).toEqual([]);
 	});
 

@@ -11,13 +11,15 @@ import {useTranslation} from 'react-i18next';
 import type {ProcessDefinitionInstanceVersionStatistics} from '@camunda/camunda-api-zod-schemas/8.10';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
 import {instancesByProcessVersionsQuery, type DrainingLookup} from './instancesByProcess.queries';
-import {runningOrAllInstancesFilter} from '../processesLinkFilters';
+import {dashboardTenantId, runningOrAllInstancesFilter} from '../processesLinkFilters';
 import {Li, LinkWrapper} from '../styled';
 
 type Props = {
 	processDefinitionId: string;
 	tenantId: string | null;
 	drainingDefinitionKeys?: DrainingLookup['byKey'];
+	isMultiTenancyEnabled: boolean;
+	tenantsById: Record<string, string>;
 	tabIndex?: number;
 };
 
@@ -25,6 +27,8 @@ const InstancesByProcessVersions: React.FC<Props> = ({
 	processDefinitionId,
 	tenantId,
 	drainingDefinitionKeys,
+	isMultiTenancyEnabled,
+	tenantsById,
 	tabIndex,
 }) => {
 	const {t} = useTranslation();
@@ -35,7 +39,16 @@ const InstancesByProcessVersions: React.FC<Props> = ({
 			{data.items.map((version: ProcessDefinitionInstanceVersionStatistics) => {
 				const name = version.processDefinitionName ?? version.processDefinitionId;
 				const total = version.activeInstancesWithoutIncidentCount + version.activeInstancesWithIncidentCount;
-				const labelText = `${name} – ${t('operate.dashboard.instancesInVersion', {count: total, version: version.processDefinitionVersion})}`;
+				const linkTenantId = dashboardTenantId(version.tenantId, isMultiTenancyEnabled);
+				const tenantName = linkTenantId ? (tenantsById[linkTenantId] ?? linkTenantId) : undefined;
+				const labelText = tenantName
+					? t('operate.dashboard.instancesInVersionWithTenant', {
+							name,
+							count: total,
+							version: version.processDefinitionVersion,
+							tenant: tenantName,
+						})
+					: `${name} – ${t('operate.dashboard.instancesInVersion', {count: total, version: version.processDefinitionVersion})}`;
 
 				return (
 					<Li key={`${version.processDefinitionKey}:${version.tenantId}`}>
@@ -44,6 +57,7 @@ const InstancesByProcessVersions: React.FC<Props> = ({
 							search={{
 								process: version.processDefinitionId,
 								version: version.processDefinitionVersion,
+								tenantId: linkTenantId,
 								...runningOrAllInstancesFilter(total),
 							}}
 							tabIndex={tabIndex ?? 0}

@@ -11,6 +11,7 @@ import {useTranslation} from 'react-i18next';
 import type {IncidentProcessInstanceStatisticsByDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
 import {incidentsByErrorDefinitionsQuery} from './incidentsByError.queries';
+import {dashboardTenantId, useDashboardTenants} from '../processesLinkFilters';
 import {Li, LinkWrapper} from '../styled';
 
 type Props = {
@@ -21,12 +22,22 @@ type Props = {
 
 const IncidentsByErrorDefinitions: React.FC<Props> = ({errorHashCode, errorMessage, tabIndex}) => {
 	const {t} = useTranslation();
+	const {isMultiTenancyEnabled, tenantsById} = useDashboardTenants();
 	const {data} = useSuspenseQuery(incidentsByErrorDefinitionsQuery(errorHashCode));
 
 	return (
 		<ul>
 			{data.items.map((item: IncidentProcessInstanceStatisticsByDefinition) => {
-				const labelText = `${item.processDefinitionName ?? item.processDefinitionId} – ${t('operate.dashboard.version', {version: item.processDefinitionVersion})}`;
+				const tenantId = dashboardTenantId(item.tenantId, isMultiTenancyEnabled);
+				const tenantName = tenantId ? (tenantsById[tenantId] ?? tenantId) : undefined;
+				const name = item.processDefinitionName ?? item.processDefinitionId;
+				const labelText = tenantName
+					? t('operate.dashboard.versionWithTenant', {
+							name,
+							version: item.processDefinitionVersion,
+							tenant: tenantName,
+						})
+					: `${name} – ${t('operate.dashboard.version', {version: item.processDefinitionVersion})}`;
 
 				return (
 					<Li key={`${item.processDefinitionKey}:${item.tenantId}`}>
@@ -36,6 +47,8 @@ const IncidentsByErrorDefinitions: React.FC<Props> = ({errorHashCode, errorMessa
 								process: item.processDefinitionId,
 								version: item.processDefinitionVersion,
 								errorMessage,
+								incidentErrorHashCode: errorHashCode,
+								tenantId,
 								incidents: true,
 								active: false,
 								completed: false,

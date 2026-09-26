@@ -100,6 +100,7 @@ describe('<Processes />', () => {
 		const screen = await renderPage();
 
 		await expect.element(screen.getByRole('combobox', {name: 'Version'})).toBeDisabled();
+		await expect.element(screen.getByText('There are no Instances matching this filter set')).toBeVisible();
 	});
 
 	it('should enable the version dropdown once a process is selected', async ({worker}) => {
@@ -246,6 +247,7 @@ describe('<Processes />', () => {
 			const screen = await renderPage();
 
 			await expect.element(screen.getByRole('checkbox', {name: 'Suspended'})).toBeChecked();
+			await expect.element(screen.getByText('There are no Instances matching this filter set')).toBeVisible();
 		});
 
 		it('updates the URL search state when toggled', async ({worker}) => {
