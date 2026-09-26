@@ -8,7 +8,7 @@ process-execution data path). These are module-scoped decisions; see the
 
 ### 8.10
 
-|                                 ADR                                 |                                                   Decision                                                    |
+| ADR                                                                 | Decision                                                                                                      |
 |---------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
 | [0001](0001-810-message-correlation-business-id-cross-partition.md) | Business ID message correlation: `P_K` owns messages, `P_B` enforces uniqueness, `P_K` pulls for lock release |
 | [0002](0002-810-message-start-rejection-retry.md)                   | Retry rejected message-starts until they start or their TTL expires                                           |
@@ -23,4 +23,5 @@ process-execution data path). These are module-scoped decisions; see the
 | [0011](0011-810-agent-definition-from-bpmn-marker.md)               | Agent definitions derived at deploy time from a `zeebe:agentDefinition` BPMN marker, no marker no agent       |
 | [0012](0012-810-agent-instance-written-by-agent-runtime.md)         | Agent instance as the anchor for one agent run, written by the agent runtime, engine owns completion          |
 | [0013](0013-810-agent-history-commit-under-job-lease.md)            | Agent history committed per job activation under the job lease, superseded items discarded at commit          |
+| [0014](0014-810-concurrent-exporters.md)                            | One actor per exporter: decouple readers, positions, and failure domains                                      |
 

@@ -17,9 +17,9 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -29,13 +29,13 @@ public final class ExporterMetrics {
   private static final String LABEL_NAME_ACTION = "action";
   private static final String LABEL_NAME_VALUE_TYPE = "valueType";
 
-  private final Map<String, AtomicLong> lastExportedPositions = new HashMap<>();
-  private final Map<String, AtomicLong> lastUpdatedExportedPositions = new HashMap<>();
+  private final Map<String, AtomicLong> lastExportedPositions = new ConcurrentHashMap<>();
+  private final Map<String, AtomicLong> lastUpdatedExportedPositions = new ConcurrentHashMap<>();
   private final AtomicInteger exporterState = new AtomicInteger();
-  private final Map<ValueType, Timer> exportingLatency = new HashMap<>();
-  private final Table<String, ValueType, Timer> exporterExportingDuration = Table.simple();
+  private final Map<ValueType, Timer> exportingLatency = new ConcurrentHashMap<>();
+  private final Table<String, ValueType, Timer> exporterExportingDuration = Table.concurrent();
   private final Table<ExporterActionKeyNames, ValueType, Counter> exporterEvents =
-      Table.ofEnum(ExporterActionKeyNames.class, ValueType.class, Counter[]::new);
+      Table.concurrent();
 
   private final MeterRegistry meterRegistry;
 
