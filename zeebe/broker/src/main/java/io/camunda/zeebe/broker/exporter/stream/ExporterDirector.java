@@ -390,8 +390,17 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     }
     return actor.call(
         () -> {
+          LOG.info(
+              "HOTS partition-{} exporter-actor mode={} at={}",
+              partitionId.number(),
+              exporterMode,
+              System.currentTimeMillis());
           if (exporterMode == ExporterMode.ACTIVE) {
             distributeExporterState();
+            LOG.info(
+                "HOTS partition-{} broadcast-sent at={}",
+                partitionId.number(),
+                System.currentTimeMillis());
           }
         });
   }
@@ -430,6 +439,12 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     }
 
     isOpened.set(true);
+    LOG.info(
+        "HOTS partition-{} director-started mode={} lowest={} at={}",
+        partitionId.number(),
+        exporterMode,
+        state.getLowestPosition(),
+        System.currentTimeMillis());
 
     // remove exporters from state
     // which are no longer in our configuration
@@ -457,6 +472,11 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
   @Override
   protected void onActorCloseRequested() {
+    LOG.info(
+        "HOTS partition-{} director-close-requested mode={} at={}",
+        partitionId.number(),
+        exporterMode,
+        System.currentTimeMillis());
     isOpened.set(false);
     containers.forEach(ExporterContainer::close);
     exporterDistributionService.close();
@@ -493,6 +513,13 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       final String exporterId,
       final ExporterStateDistributeMessage.ExporterStateEntry exporterState) {
 
+    LOG.info(
+        "HOTS partition-{} received exporter={} position={} closing={} at={}",
+        partitionId.number(),
+        exporterId,
+        exporterState.position(),
+        !isOpened.get(),
+        System.currentTimeMillis());
     if (!isExporterConfigured(exporterId)) {
       // The exporter is not configured (anymore) on this node, e.g. it was disabled or deleted.
       // Accepting its state would re-introduce a removed exporter into the runtime state, where its

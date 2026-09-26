@@ -216,6 +216,8 @@ public final class FollowerRole extends ActiveRole {
               }
 
               log.info(
+                  "HOTS {} timeoutnow-received at={}", raft.getName(), System.currentTimeMillis());
+              log.info(
                   "Received TimeoutNow from leader {} in term {}, starting election immediately",
                   request.leader(),
                   request.term());

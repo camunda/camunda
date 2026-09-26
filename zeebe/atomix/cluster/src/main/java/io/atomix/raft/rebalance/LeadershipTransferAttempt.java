@@ -155,6 +155,10 @@ final class LeadershipTransferAttempt {
       finish(result);
       return;
     }
+    LOG.info(
+        "HOTS {} handover-requested stage=freeze at={}",
+        raft.getName(),
+        System.currentTimeMillis());
     raft.getLeadershipTransferHandover().handOver();
     catchUp(targetIndex);
   }
@@ -208,6 +212,10 @@ final class LeadershipTransferAttempt {
   }
 
   private void handOverAndPromote() {
+    LOG.info(
+        "HOTS {} handover-requested stage=promote at={}",
+        raft.getName(),
+        System.currentTimeMillis());
     raft.getLeadershipTransferHandover().handOver();
     promote();
   }

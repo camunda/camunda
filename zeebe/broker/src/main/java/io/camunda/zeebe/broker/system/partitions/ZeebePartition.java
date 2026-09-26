@@ -684,6 +684,11 @@ public final class ZeebePartition extends Actor
     actor.run(
         () -> {
           final var exporterDirector = context.getExporterDirector();
+          LOG.info(
+              "HOTS partition-{} partition-actor director={} at={}",
+              context.getPartitionId(),
+              exporterDirector != null,
+              System.currentTimeMillis());
           if (exporterDirector != null) {
             exporterDirector.distributeExporterStateNow();
           }
