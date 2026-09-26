@@ -239,19 +239,16 @@ USER 1001:1001
 # in group 0 and so needs these group-writable and empty.
 #
 # On by default, so an image built straight from this file is the image we ship, but
-# only ever for amd64. Training boots Camunda, and a multi-arch build would boot the
-# foreign platform under QEMU: on the Docker Checks job that took the image build from
-# ~1m15s to 8m05s, nearly all of it emulating the arm64 boot. The arch has to be tested
-# here rather than in CI because a build arg applies to every platform of one buildx
-# invocation, so excluding arm64 from the caller would cost amd64 its cache too. The
-# price of excluding it at all is that arm64 images get no startup win.
-#
-# The test is for arm64 rather than against amd64 so that an unset TARGETARCH -- a
-# builder that does not populate it -- still trains, instead of silently producing
-# an image with no cache.
+# only trained when the target platform is the builder's own. Training boots Camunda,
+# and a foreign platform would boot under QEMU: on the Docker Checks job that took the
+# image build from ~1m15s to 8m05s. In CI that means amd64 gets a cache and arm64 does
+# not. This is tested here rather than in CI because a build arg applies to every
+# platform of one buildx invocation. Builders that do not populate the platform args
+# leave both empty, which still trains.
 ARG AOT_CACHE="true"
 ARG TARGETARCH
-RUN if [ "${AOT_CACHE}" = "true" ] && [ "${TARGETARCH}" != "arm64" ]; then \
+ARG BUILDARCH
+RUN if [ "${AOT_CACHE}" = "true" ] && [ "${TARGETARCH}" = "${BUILDARCH}" ]; then \
       printf -- '%s\n' -XX:+UnlockDiagnosticVMOptions -XX:-AOTAdapterCaching -XX:-AOTStubCaching \
         >> "${CAMUNDA_HOME}/config/jvm.options" && \
       CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_CREATESCHEMA=false \

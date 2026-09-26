@@ -46,9 +46,10 @@ inputs:
     # harmless "build-args were not consumed" warning for it. Expected, not a misconfiguration.
     description: >
       Train an AOT cache into the image, so the JVM starts faster. On by default, because
-      an image should be the image we ship; camunda.Dockerfile trains the amd64 platform
-      only, so this costs one extra Camunda boot and nothing on an arm64 build. Set to
-      false when the image is never started, e.g. one built purely to be scanned.
+      an image should be the image we ship; camunda.Dockerfile trains only the builder's
+      native platform, so this costs one extra Camunda boot on amd64 and nothing on an
+      arm64 build. Set to false when the image is never started, e.g. one built purely to
+      be scanned.
     required: false
     default: 'true'
 
