@@ -155,6 +155,7 @@ final class LeadershipTransferAttempt {
       finish(result);
       return;
     }
+    raft.getLeadershipTransferHandover().handOver();
     catchUp(targetIndex);
   }
 
