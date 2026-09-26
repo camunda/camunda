@@ -22,6 +22,63 @@ import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {useProcessInstanceElementSelectActions} from 'modules/hooks/useProcessInstanceElementSelection';
+import {Paths} from 'modules/Routes';
+import {mockServer} from 'modules/mock-server/node';
+import {http, HttpResponse} from 'msw';
+import {
+  useHasRunningOrFinishedTokens,
+  useIsPlaceholderSelected,
+} from 'modules/hooks/elementSelection';
+import {useVariableScopeKey} from 'modules/hooks/variables';
+import {useQueryClient} from '@tanstack/react-query';
+import {queryKeys} from 'modules/queries/queryKeys';
+
+const TestScopeState: React.FC = () => {
+  const isPlaceholderSelected = useIsPlaceholderSelected();
+  const scopeKey = useVariableScopeKey();
+
+  return (
+    <output>
+      {isPlaceholderSelected ? 'placeholder' : `pending scope: ${scopeKey}`}
+    </output>
+  );
+};
+
+const TestStatisticsState: React.FC = () => {
+  const hasRunningOrFinishedTokens = useHasRunningOrFinishedTokens();
+  return (
+    <output>
+      {hasRunningOrFinishedTokens ? 'historical stats loaded' : 'loading stats'}
+    </output>
+  );
+};
+
+const TestStatisticsUpdate: React.FC = () => {
+  const queryClient = useQueryClient();
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        queryClient.setQueryData(
+          queryKeys.elementInstancesStatistics.get('1'),
+          {
+            items: [
+              {
+                elementId: 'NEW_ELEMENT',
+                active: 0,
+                completed: 1,
+                canceled: 0,
+                incidents: 0,
+              },
+            ],
+          },
+        )
+      }
+    >
+      update statistics
+    </button>
+  );
+};
 
 const TestSelectionControls: React.FC = () => {
   const {selectElement, selectElementInstance} =
@@ -139,6 +196,285 @@ describe('VariablesTab placeholders', () => {
         hasMoreTotalItems: false,
       },
     });
+  });
+
+  it.each([
+    {
+      selection: 'instance history',
+      search: (scopeId: string) =>
+        `?elementId=TEST_ELEMENT&elementInstanceKey=${scopeId}&isPlaceholder=true`,
+      elementId: 'TEST_ELEMENT',
+    },
+    {
+      selection: 'diagram',
+      search: () => '?elementId=NEW_ELEMENT',
+      elementId: 'NEW_ELEMENT',
+    },
+  ])(
+    'should keep unsaved variables visible without querying a planned scope selected from the $selection',
+    async ({search, elementId}) => {
+      const scopeId = crypto.randomUUID();
+      modificationsStore.enableModificationMode();
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'ADD_TOKEN',
+          scopeId,
+          element: {id: elementId, name: 'New Element'},
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          parentScopeIds: {},
+        },
+      });
+      if (elementId === 'NEW_ELEMENT') {
+        mockSearchElementInstances().withSuccess({
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        });
+      }
+      const invalidScopeQuery = vi.fn();
+      mockServer.use(
+        http.post('/v2/variables/search', async ({request}) => {
+          invalidScopeQuery(await request.json());
+          return HttpResponse.json({error: 'Invalid scopeKey'}, {status: 400});
+        }),
+      );
+
+      const {user} = render(<VariablesTab />, {
+        wrapper: getWrapper([
+          `${Paths.processInstance('1')}${search(scopeId)}`,
+        ]),
+      });
+      await user.click(
+        await screen.findByRole('button', {name: /add variable/i}),
+      );
+      const nameInput = await screen.findByTestId('new-variable-name');
+      await user.type(nameInput, 'plannedVariable');
+
+      expect(nameInput).toHaveValue('plannedVariable');
+      expect(screen.getByRole('button', {name: /add variable/i})).toBeVisible();
+      expect(invalidScopeQuery).not.toHaveBeenCalled();
+    },
+  );
+
+  it('should keep a planned diagram token editable when statistics include an older instance', async () => {
+    const scopeId = crypto.randomUUID();
+    modificationsStore.enableModificationMode();
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        scopeId,
+        element: {id: 'NEW_ELEMENT', name: 'New Element'},
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        parentScopeIds: {},
+      },
+    });
+    mockSearchElementInstances().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockServer.use(
+      http.get(
+        '/v2/process-instances/:processInstanceKey/statistics/element-instances',
+        () =>
+          HttpResponse.json({
+            items: [
+              {
+                elementId: 'NEW_ELEMENT',
+                active: 0,
+                completed: 1,
+                canceled: 0,
+                incidents: 0,
+              },
+            ],
+          }),
+      ),
+    );
+
+    const {user} = render(
+      <>
+        <VariablesTab />
+        <TestStatisticsState />
+      </>,
+      {
+        wrapper: getWrapper([
+          `${Paths.processInstance('1')}?elementId=NEW_ELEMENT`,
+        ]),
+      },
+    );
+    expect(await screen.findByText('historical stats loaded')).toBeVisible();
+    await user.click(screen.getByRole('button', {name: /add variable/i}));
+    const nameInput = await screen.findByTestId('new-variable-name');
+    await user.type(nameInput, 'unsavedName');
+
+    expect(screen.getByRole('button', {name: /add variable/i})).toBeVisible();
+    expect(nameInput).toHaveValue('unsavedName');
+  });
+
+  it('should preserve unsaved planned-token variables when statistics refresh', async () => {
+    modificationsStore.enableModificationMode();
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        scopeId: crypto.randomUUID(),
+        element: {id: 'NEW_ELEMENT', name: 'New Element'},
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        parentScopeIds: {},
+      },
+    });
+    mockSearchElementInstances().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    const {user} = render(
+      <>
+        <VariablesTab />
+        <TestStatisticsState />
+        <TestStatisticsUpdate />
+      </>,
+      {
+        wrapper: getWrapper([
+          `${Paths.processInstance('1')}?elementId=NEW_ELEMENT`,
+        ]),
+      },
+    );
+    await user.click(
+      await screen.findByRole('button', {name: /add variable/i}),
+    );
+    const nameInput = await screen.findByTestId('new-variable-name');
+    await user.type(nameInput, 'unsavedName');
+
+    await user.click(screen.getByRole('button', {name: 'update statistics'}));
+
+    expect(await screen.findByText('historical stats loaded')).toBeVisible();
+    expect(screen.getByRole('button', {name: /add variable/i})).toBeVisible();
+    expect(nameInput).toHaveValue('unsavedName');
+  });
+
+  it('should not query a planned scope when selecting an element with existing tokens', async () => {
+    const scopeId = crypto.randomUUID();
+    modificationsStore.enableModificationMode();
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        scopeId,
+        element: {id: 'TEST_ELEMENT', name: 'Test Element'},
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        parentScopeIds: {},
+      },
+    });
+    mockSearchElementInstances().withSuccess({
+      items: [
+        selectedElementInstance,
+        {...selectedElementInstance, elementInstanceKey: '3'},
+      ],
+      page: {
+        totalItems: 2,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    const invalidScopeQuery = vi.fn();
+    mockServer.use(
+      http.post('/v2/variables/search', async ({request}) => {
+        invalidScopeQuery(await request.json());
+        return HttpResponse.json({error: 'Invalid scopeKey'}, {status: 400});
+      }),
+    );
+
+    render(
+      <>
+        <VariablesTab />
+        <TestScopeState />
+      </>,
+      {
+        wrapper: getWrapper([
+          `${Paths.processInstance('1')}?elementId=TEST_ELEMENT`,
+        ]),
+      },
+    );
+
+    expect(
+      await screen.findByText(`pending scope: ${scopeId}`),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        'To view the variables, select a single element instance in the instance history.',
+      ),
+    ).toBeInTheDocument();
+    expect(invalidScopeQuery).not.toHaveBeenCalled();
+    expect(
+      screen.queryByText('Variables could not be fetched'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should not display existing variables or query when a diagram node has one existing and one planned token', async () => {
+    const scopeId = crypto.randomUUID();
+    modificationsStore.enableModificationMode();
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        scopeId,
+        element: {id: 'TEST_ELEMENT', name: 'Test Element'},
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        parentScopeIds: {},
+      },
+    });
+    mockSearchElementInstances().withSuccess({
+      items: [selectedElementInstance],
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    const variablesSearch = vi.fn();
+    mockServer.use(
+      http.post('/v2/variables/search', async ({request}) => {
+        variablesSearch(await request.json());
+        return HttpResponse.json({error: 'Variables failed'}, {status: 400});
+      }),
+    );
+
+    render(<VariablesTab />, {
+      wrapper: getWrapper([
+        `${Paths.processInstance('1')}?elementId=TEST_ELEMENT`,
+      ]),
+    });
+
+    expect(
+      await screen.findByText(
+        'To view the variables, select a single element instance in the instance history.',
+      ),
+    ).toBeVisible();
+    expect(screen.queryByRole('button', {name: /add variable/i})).toBeNull();
+    expect(variablesSearch).not.toHaveBeenCalled();
   });
 
   it.each([true, false])(
