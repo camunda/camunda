@@ -414,14 +414,7 @@ public final class DbProcessState implements MutableProcessState {
 
   // is called on getters, if process is not in memory
   private DeployedProcess updateInMemoryState(final PersistedProcess persistedProcess) {
-
-    // we have to copy to store this in cache
-    final byte[] bytes = new byte[persistedProcess.getLength()];
-    final MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
-    persistedProcess.write(buffer, 0);
-
-    final PersistedProcess copiedProcess = new PersistedProcess();
-    copiedProcess.wrap(buffer, 0, persistedProcess.getLength());
+    final PersistedProcess copiedProcess = copy(persistedProcess);
 
     final BpmnModelInstance modelInstance =
         readModelInstanceFromBuffer(copiedProcess.getResource());
@@ -447,6 +440,17 @@ public final class DbProcessState implements MutableProcessState {
     addProcessToInMemoryState(deployedProcess);
 
     return deployedProcess;
+  }
+
+  private static PersistedProcess copy(final PersistedProcess persistedProcess) {
+    // we have to copy to store this in cache
+    final byte[] bytes = new byte[persistedProcess.getLength()];
+    final MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
+    persistedProcess.write(buffer, 0);
+
+    final PersistedProcess copiedProcess = new PersistedProcess();
+    copiedProcess.wrap(buffer, 0, persistedProcess.getLength());
+    return copiedProcess;
   }
 
   private BpmnModelInstance readModelInstanceFromBuffer(final DirectBuffer buffer) {
@@ -644,6 +648,25 @@ public final class DbProcessState implements MutableProcessState {
     processesByTenantAndProcessIdAndVersionCache.invalidateAll();
     processDefinitionKeyByTenantAndProcessIdAndDeploymentKeyCache.invalidateAll();
     versionManager.clear();
+  }
+
+  @Override
+  public void cacheProcess(
+      final long processDefinitionKey,
+      final String tenantId,
+      final ExecutableProcess executableProcess) {
+    tenantIdKey.wrapString(tenantId);
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+
+    final PersistedProcess persistedProcess =
+        processColumnFamily.get(tenantAwareProcessDefinitionKey);
+    if (persistedProcess == null) {
+      throw new IllegalStateException(
+          "Expected to cache process with key '%d' for tenant '%s', but it is not persisted"
+              .formatted(processDefinitionKey, tenantId));
+    }
+
+    addProcessToInMemoryState(new DeployedProcess(executableProcess, copy(persistedProcess)));
   }
 
   @Override
