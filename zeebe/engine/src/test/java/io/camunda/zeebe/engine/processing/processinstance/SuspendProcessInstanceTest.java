@@ -54,7 +54,7 @@ public final class SuspendProcessInstanceTest {
   }
 
   @Test
-  public void shouldRejectSuspendIfAlreadySuspended() {
+  public void shouldRejectSuspendWhenSuspensionMarkerPresent() {
     // given
     final String processId = Strings.newRandomValidBpmnId();
     ENGINE

@@ -18,7 +18,8 @@ public interface SuspensionState {
 
   enum State {
     SUSPENDED,
-    RESUMING
+    RESUMING,
+    SUSPENDING
   }
 
   /**
@@ -28,14 +29,10 @@ public interface SuspensionState {
   @Nullable State getSuspensionState(long processInstanceKey);
 
   /**
-   * @return {@code true} if the process instance has any suspension marker (either {@link
-   *     State#SUSPENDED} or {@link State#RESUMING}); {@code false} if it has none. The marker is
-   *     only removed once resuming has fully drained the buffer.
-   *     <p>This reflects marker <em>presence</em>, not a specific state, and does not imply {@link
-   *     State#SUSPENDED} and {@link State#RESUMING} should be gated identically — e.g. the primary
-   *     buffering gate must buffer forward-progress commands while {@code SUSPENDED} but pass them
-   *     through while {@code RESUMING}. Callers that need to distinguish the two should branch on
-   *     {@link #getSuspensionState} instead.
+   * @return {@code true} while the process instance is {@link State#SUSPENDED} or {@link
+   *     State#RESUMING}; {@code false} while {@link State#SUSPENDING} or without a marker. The
+   *     marker remains while buffered commands drain during resuming. Use {@link
+   *     #getSuspensionState(long)} to check for any marker or distinguish the states.
    */
   boolean isSuspended(long processInstanceKey);
 

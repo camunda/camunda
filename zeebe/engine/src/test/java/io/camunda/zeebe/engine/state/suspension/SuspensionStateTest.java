@@ -61,7 +61,8 @@ public final class SuspensionStateTest {
 
     // then
     assertThat(suspensionState.getSuspensionState(processInstanceKey)).isEqualTo(state);
-    assertThat(suspensionState.isSuspended(processInstanceKey)).isTrue();
+    assertThat(suspensionState.isSuspended(processInstanceKey))
+        .isEqualTo(state != State.SUSPENDING);
   }
 
   @Test

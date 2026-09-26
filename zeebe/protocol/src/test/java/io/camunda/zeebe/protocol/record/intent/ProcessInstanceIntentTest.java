@@ -38,8 +38,9 @@ final class ProcessInstanceIntentTest {
   }
 
   @Test
-  void shouldMarkSuspendedAndResumedAsEvents() {
+  void shouldMarkSuspendingSuspendedAndResumedAsEvents() {
     // given / when / then
+    assertThat(ProcessInstanceIntent.SUSPENDING.isEvent()).isTrue();
     assertThat(ProcessInstanceIntent.SUSPENDED.isEvent()).isTrue();
     assertThat(ProcessInstanceIntent.RESUMING.isEvent()).isTrue();
     assertThat(ProcessInstanceIntent.RESUMED.isEvent()).isTrue();
@@ -63,5 +64,6 @@ final class ProcessInstanceIntentTest {
     assertThat(ProcessInstanceIntent.from((short) 22))
         .isEqualTo(ProcessInstanceIntent.COMPLETE_RESUMING);
     assertThat(ProcessInstanceIntent.from((short) 23)).isEqualTo(ProcessInstanceIntent.RESUME_JOBS);
+    assertThat(ProcessInstanceIntent.from((short) 24)).isEqualTo(ProcessInstanceIntent.SUSPENDING);
   }
 }
