@@ -38,7 +38,7 @@ All automated load tests flow through `camunda-load-test.yml`, which builds imag
 ```mermaid
 graph TD
     subgraph "Scheduled Triggers"
-        SCHEDULED["camunda-scheduled-release-<br/>load-tests.yml<br/><i>Weekdays 02:00 UTC</i>"]
+        SCHEDULED["camunda-scheduled-release-<br/>load-tests.yml<br/><i>Weekdays 00:00 UTC</i>"]
         DAILY["camunda-daily-load-tests.yml<br/><i>Weekdays 02:00 UTC</i>"]
         WEEKLY["camunda-weekly-load-tests.yml<br/><i>Monday 01:00 UTC</i>"]
         ROLLING["zeebe-update-long-running-<br/>migrating-benchmark.yaml<br/><i>Monday 00:00 UTC</i>"]
@@ -103,7 +103,7 @@ graph TD
 |       Time        |                  Workflow                  | Frequency |
 |-------------------|--------------------------------------------|-----------|
 | 01:00 UTC Monday  | `camunda-weekly-load-tests.yml`            | Weekly    |
-| 02:00 UTC Mon-Fri | `camunda-scheduled-release-load-tests.yml` | Weekdays  |
+| 00:00 UTC Mon-Fri | `camunda-scheduled-release-load-tests.yml` | Weekdays  |
 | 02:00 UTC Mon-Fri | `camunda-daily-load-tests.yml`             | Weekdays  |
 | 04:00 UTC         | `camunda-load-test-ttl-cleanup.yml`        | Daily     |
 
@@ -282,7 +282,7 @@ The [release load test GitHub workflow](https://github.com/camunda/camunda/blob/
 graph TD
     subgraph "Callers"
         BPMN["Release Process<br/>(BPMN)"]
-        SCHEDULE["Daily Smoke Tests<br/>(weekdays 02:00 UTC)"]
+        SCHEDULE["Daily Smoke Tests<br/>(weekdays 00:00 UTC)"]
     end
 
     subgraph "Abstraction Layer — camunda-release-load-test.yaml"
