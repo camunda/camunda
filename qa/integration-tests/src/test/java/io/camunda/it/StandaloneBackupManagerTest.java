@@ -34,7 +34,7 @@ import io.camunda.zeebe.qa.util.actuator.ExportingActuator;
 import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.qa.util.testcontainers.MinioContainer;
+import io.camunda.zeebe.test.testcontainers.S3MockTestContainer;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.io.IOException;
 import java.net.http.HttpResponse;
@@ -129,7 +129,7 @@ final class StandaloneBackupManagerTest {
           .withProperty("camunda.tasklist.archiver.ilmEnabled", "true");
 
   // s3 container for storing Zeebe backups
-  @Container private final MinioContainer s3 = new MinioContainer();
+  @Container private final S3MockTestContainer s3 = new S3MockTestContainer();
 
   @Container
   private final ElasticsearchContainer es =
