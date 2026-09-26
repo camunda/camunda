@@ -29,7 +29,7 @@
     "@camunda/oc-saas-notifications": "0.0.1",
     "@camunda/session-heartbeat": "0.0.1",
     "@carbon/elements": "11.97.0",
-    "@carbon/react": "1.112.0",
+    "@carbon/react": "1.117.0",
     "@monaco-editor/react": "4.7.0",
     "@tanstack/react-query": "^5.100.14",
     "date-fns": "4.4.0",
