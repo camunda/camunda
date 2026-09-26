@@ -47,6 +47,11 @@ class RecordExporter {
 
     shouldExport = recordValue != null;
     if (shouldExport) {
+      // Redact before the fan-out, so every exporter -- including customer-built ones -- receives
+      // an already-redacted record. export() is retried per record, wrap() runs once, so the
+      // rewrite belongs here. The sensitivity verdict itself was already decided upstream, in
+      // VariableBehavior, and travels as metadata on the record.
+      VariableRedaction.apply(rawMetadata.getValueType(), recordValue);
       typedEvent.wrap(rawEvent, rawMetadata, recordValue);
       exporterIndex = 0;
     }

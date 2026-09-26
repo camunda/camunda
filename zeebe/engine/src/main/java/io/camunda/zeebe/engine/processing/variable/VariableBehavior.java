@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.variable;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnConditionalBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnConditionalBehavior.VariableEvent;
@@ -21,12 +22,17 @@ import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.VisibleForTesting;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.regex.Pattern;
 import org.agrona.DirectBuffer;
 
 /**
@@ -46,17 +52,23 @@ public final class VariableBehavior {
   private final IndexedDocument indexedDocument = new IndexedDocument();
   private final VariableRecord variableRecord = new VariableRecord();
   private final VariableSourceRecord variableSourceRecord;
+  private final List<Pattern> sensitiveVariablePatterns;
+  private final Set<ProtectionMode> configuredProtectionModes;
 
   public VariableBehavior(
       final VariableState variableState,
       final StateWriter stateWriter,
       final BpmnConditionalBehavior conditionalBehavior,
-      final KeyGenerator keyGenerator) {
+      final KeyGenerator keyGenerator,
+      final List<Pattern> sensitiveVariablePatterns,
+      final Set<ProtectionMode> configuredProtectionModes) {
     this.variableState = variableState;
     this.stateWriter = stateWriter;
     this.conditionalBehavior = conditionalBehavior;
     this.keyGenerator = keyGenerator;
-    variableSourceRecord = VariableSourceRecord.none();
+    this.variableSourceRecord = VariableSourceRecord.none();
+    this.sensitiveVariablePatterns = sensitiveVariablePatterns;
+    this.configuredProtectionModes = configuredProtectionModes;
   }
 
   public VariableBehavior(
@@ -64,17 +76,27 @@ public final class VariableBehavior {
       final StateWriter stateWriter,
       final BpmnConditionalBehavior conditionalBehavior,
       final KeyGenerator keyGenerator,
-      final VariableSourceRecord variableSourceRecord) {
+      final VariableSourceRecord variableSourceRecord,
+      final List<Pattern> sensitiveVariablePatterns,
+      final Set<ProtectionMode> configuredProtectionModes) {
     this.variableState = variableState;
     this.stateWriter = stateWriter;
     this.conditionalBehavior = conditionalBehavior;
     this.keyGenerator = keyGenerator;
     this.variableSourceRecord = variableSourceRecord;
+    this.sensitiveVariablePatterns = sensitiveVariablePatterns;
+    this.configuredProtectionModes = configuredProtectionModes;
   }
 
   public VariableBehavior withVariableSource(final VariableSourceRecord source) {
     return new VariableBehavior(
-        variableState, stateWriter, conditionalBehavior, keyGenerator, source);
+        variableState,
+        stateWriter,
+        conditionalBehavior,
+        keyGenerator,
+        source,
+        sensitiveVariablePatterns,
+        configuredProtectionModes);
   }
 
   /**
@@ -252,7 +274,8 @@ public final class VariableBehavior {
         .setBpmnProcessId(bpmnProcessId)
         .setTenantId(tenantId)
         .setName(name)
-        .setValue(value, valueOffset, valueLength);
+        .setValue(value, valueOffset, valueLength)
+        .setProtectionModes(resolveProtectionModes(name));
 
     final Optional<VariableEvent> variableEvent = setLocalVariable(variableRecord);
     final var variableEvents = variableEvent.map(List::of).orElseGet(List::of);
@@ -283,7 +306,17 @@ public final class VariableBehavior {
   }
 
   private void applyEntryToRecord(final DocumentEntry entry) {
-    variableRecord.setName(entry.getName()).setValue(entry.getValue());
+    variableRecord
+        .setName(entry.getName())
+        .setValue(entry.getValue())
+        .setProtectionModes(resolveProtectionModes(entry.getName()));
+  }
+
+  private Set<ProtectionMode> resolveProtectionModes(final DirectBuffer name) {
+    final String value = BufferUtil.bufferAsString(name);
+    final boolean matches =
+        sensitiveVariablePatterns.stream().anyMatch(pattern -> pattern.matcher(value).matches());
+    return matches ? configuredProtectionModes : Set.of();
   }
 
   private VariableRecord getVariableRecordCopy(final VariableRecord variableRecord) {

@@ -7,7 +7,10 @@
  */
 package io.camunda.zeebe.engine;
 
+import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import java.time.Duration;
+import java.util.List;
+import java.util.Set;
 import org.jspecify.annotations.Nullable;
 
 public final class EngineConfiguration {
@@ -111,6 +114,22 @@ public final class EngineConfiguration {
   public static final boolean DEFAULT_ENGINE_STORAGE_ORDINALS_ENABLE_ARCHIVERLESS = false;
   public static final int DEFAULT_ENGINE_STORAGE_ORDINALS_FIXED_STORAGE_ORDINAL = -1;
 
+  /**
+   * Proof of concept for permanently redacting sensitive process variables (product-hub #3805,
+   * PoC-2). Regular expressions matched against a variable's full name when the variable is set, so
+   * the protection decision is made once, at the engine boundary, and carried on the record as
+   * metadata from then on -- see {@link
+   * io.camunda.zeebe.engine.processing.variable.VariableBehavior}.
+   */
+  public static final List<String> DEFAULT_SENSITIVE_VARIABLE_PATTERNS = List.of("sensitive_.*");
+
+  /**
+   * The protection modes applied to every variable matched by {@link
+   * #DEFAULT_SENSITIVE_VARIABLE_PATTERNS} (or a configured override). See {@link ProtectionMode}
+   * for the composition rule.
+   */
+  public static final Set<ProtectionMode> DEFAULT_PROTECTION_MODES = Set.of(ProtectionMode.REDACT);
+
   public enum InputMappingMode {
     ORDERED,
     COMBINED
@@ -210,6 +229,9 @@ public final class EngineConfiguration {
    * default value of -1 means no override is applied.
    */
   private int fixedStorageOrdinal = DEFAULT_ENGINE_STORAGE_ORDINALS_FIXED_STORAGE_ORDINAL;
+
+  private List<String> sensitiveVariablePatterns = DEFAULT_SENSITIVE_VARIABLE_PATTERNS;
+  private Set<ProtectionMode> protectionModes = DEFAULT_PROTECTION_MODES;
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -816,6 +838,26 @@ public final class EngineConfiguration {
   public EngineConfiguration setOutputComparisonMode(
       final @Nullable OutputMappingMode outputComparisonMode) {
     this.outputComparisonMode = outputComparisonMode;
+    return this;
+  }
+
+  public List<String> getSensitiveVariablePatterns() {
+    return sensitiveVariablePatterns;
+  }
+
+  public EngineConfiguration setSensitiveVariablePatterns(
+      final List<String> sensitiveVariablePatterns) {
+    this.sensitiveVariablePatterns = sensitiveVariablePatterns;
+    return this;
+  }
+
+  public Set<ProtectionMode> getProtectionModes() {
+    return protectionModes;
+  }
+
+  public EngineConfiguration setProtectionModes(final Set<ProtectionMode> protectionModes) {
+    ProtectionMode.validateCombination(protectionModes);
+    this.protectionModes = protectionModes;
     return this;
   }
 }

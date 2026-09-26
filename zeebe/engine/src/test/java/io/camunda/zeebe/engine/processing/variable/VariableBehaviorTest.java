@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.util.RecordingTypedEventWriter;
 import io.camunda.zeebe.engine.util.RecordingTypedEventWriter.RecordedEvent;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValueAssert;
@@ -34,6 +35,8 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +48,13 @@ import org.junit.jupiter.params.provider.ValueSource;
 @ExtendWith(ProcessingStateExtension.class)
 final class VariableBehaviorTest {
 
+  private static final List<Pattern> DEFAULT_SENSITIVE_VARIABLE_PATTERNS =
+      EngineConfiguration.DEFAULT_SENSITIVE_VARIABLE_PATTERNS.stream()
+          .map(Pattern::compile)
+          .toList();
+
+  private static final Set<ProtectionMode> DEFAULT_PROTECTION_MODES =
+      EngineConfiguration.DEFAULT_PROTECTION_MODES;
   private static final ExpressionLanguage EXPRESSION_LANGUAGE =
       ExpressionLanguageFactory.createExpressionLanguage(
           new ZeebeFeelEngineClock(InstantSource.system()));
@@ -58,26 +68,34 @@ final class VariableBehaviorTest {
 
   private MutableVariableState state;
   private VariableBehavior behavior;
+  private EventApplyingStateWriter stateWriter;
+  private BpmnConditionalBehavior conditionalBehavior;
 
   @BeforeEach
   void beforeEach() {
     final var eventAppliers = new EventAppliers();
     eventAppliers.registerEventAppliers(processingState);
-    final var stateWriter = new EventApplyingStateWriter(eventWriter, eventAppliers);
+    stateWriter = new EventApplyingStateWriter(eventWriter, eventAppliers);
     final ExpressionProcessor expressionProcessor =
         new ExpressionProcessor(
             EXPRESSION_LANGUAGE,
             DEFAULT_CONTEXT_LOOKUP,
             EngineConfiguration.DEFAULT_EXPRESSION_EVALUATION_TIMEOUT);
     // commandWriter is never called in tests, so we can pass null
-    final var conditionalBehavior =
+    conditionalBehavior =
         new BpmnConditionalBehavior(
             processingState, null, expressionProcessor, EXPRESSION_LANGUAGE);
 
     state = processingState.getVariableState();
     behavior =
         new VariableBehavior(
-            state, stateWriter, conditionalBehavior, processingState.getKeyGenerator());
+            state,
+            stateWriter,
+            conditionalBehavior,
+            processingState.getKeyGenerator(),
+            VariableSourceRecord.none(),
+            DEFAULT_SENSITIVE_VARIABLE_PATTERNS,
+            DEFAULT_PROTECTION_MODES);
   }
 
   @Test
@@ -862,6 +880,148 @@ final class VariableBehaviorTest {
         .hasBpmnProcessId("process")
         .hasTenantId(tenantId)
         .hasSource(variableSource);
+  }
+
+  @Test
+  void shouldMarkDocumentVariablesSensitiveWhenNameMatchesThePattern()
+      throws VariableValidationException {
+    // given -- product-hub #3805, PoC-2: the pattern is matched once here, at the engine boundary,
+    // rather than re-matched downstream on every export or read
+    final long processDefinitionKey = 1;
+    final long scopeKey = 1;
+    final long rootKey = 1;
+    final int storageOrdinal = 1;
+    final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
+    final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    final Map<String, Object> document =
+        Map.of("sensitive_ssn", "123-45-6789", "customerId", "C-42");
+    state.createScope(scopeKey, VariableState.NO_PARENT);
+
+    // when
+    behavior.mergeLocalDocument(
+        scopeKey,
+        processDefinitionKey,
+        scopeKey,
+        rootKey,
+        storageOrdinal,
+        bpmnProcessId,
+        tenantId,
+        MsgPackUtil.asMsgPack(document));
+
+    // then
+    final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
+    assertThat(events)
+        .anySatisfy(
+            event -> {
+              assertThat(event.value.getName()).isEqualTo("sensitive_ssn");
+              assertThat(event.value.getProtectionModes()).containsExactly(ProtectionMode.REDACT);
+            })
+        .anySatisfy(
+            event -> {
+              assertThat(event.value.getName()).isEqualTo("customerId");
+              assertThat(event.value.getProtectionModes()).isEmpty();
+            });
+  }
+
+  @Test
+  void shouldMarkDirectlySetVariableSensitiveWhenNameMatchesThePattern() {
+    // given
+    final int processDefinitionKey = 1;
+    final int scopeKey = 1;
+    final int rootProcessInstanceKey = 1;
+    final int storageOrdinal = 1;
+    final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
+    final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    final DirectBuffer variableName = BufferUtil.wrapString("sensitive_ssn");
+    final DirectBuffer variableValue = packString("123-45-6789");
+    state.createScope(scopeKey, VariableState.NO_PARENT);
+
+    // when
+    behavior.setLocalVariable(
+        scopeKey,
+        processDefinitionKey,
+        scopeKey,
+        rootProcessInstanceKey,
+        storageOrdinal,
+        bpmnProcessId,
+        tenantId,
+        variableName,
+        variableValue,
+        0,
+        variableValue.capacity());
+
+    // then
+    assertThat(getFollowUpEvents().getFirst().value.getProtectionModes())
+        .containsExactly(ProtectionMode.REDACT);
+  }
+
+  @Test
+  void shouldPreserveTheSensitivePatternAfterWithVariableSource()
+      throws VariableValidationException {
+    // given -- withVariableSource derives a new behavior instance; the configured pattern must
+    // survive that, not silently reset to the default
+    final long processDefinitionKey = 1;
+    final long scopeKey = 1;
+    final long rootKey = 1;
+    final int storageOrdinal = 1;
+    final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
+    final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    final Map<String, Object> document = Map.of("sensitive_ssn", "123-45-6789");
+    state.createScope(scopeKey, VariableState.NO_PARENT);
+    final var behavior = this.behavior.withVariableSource(VariableSourceRecord.api());
+
+    // when
+    behavior.mergeLocalDocument(
+        scopeKey,
+        processDefinitionKey,
+        scopeKey,
+        rootKey,
+        storageOrdinal,
+        bpmnProcessId,
+        tenantId,
+        MsgPackUtil.asMsgPack(document));
+
+    // then
+    assertThat(getFollowUpEvents().getFirst().value.getProtectionModes())
+        .containsExactly(ProtectionMode.REDACT);
+  }
+
+  @Test
+  void shouldMatchAnyOfMultipleConfiguredPatterns() throws VariableValidationException {
+    // given -- a customer can configure more than one pattern; a name matching only the second one
+    // still receives the configured modes
+    final var multiPatternBehavior =
+        new VariableBehavior(
+            state,
+            stateWriter,
+            conditionalBehavior,
+            processingState.getKeyGenerator(),
+            VariableSourceRecord.none(),
+            List.of(Pattern.compile("sensitive_.*"), Pattern.compile("pii_.*")),
+            Set.of(ProtectionMode.REDACT));
+    final long processDefinitionKey = 1;
+    final long scopeKey = 1;
+    final long rootKey = 1;
+    final int storageOrdinal = 1;
+    final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
+    final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    final Map<String, Object> document = Map.of("pii_email", "a@b.com");
+    state.createScope(scopeKey, VariableState.NO_PARENT);
+
+    // when
+    multiPatternBehavior.mergeLocalDocument(
+        scopeKey,
+        processDefinitionKey,
+        scopeKey,
+        rootKey,
+        storageOrdinal,
+        bpmnProcessId,
+        tenantId,
+        MsgPackUtil.asMsgPack(document));
+
+    // then
+    assertThat(getFollowUpEvents().getFirst().value.getProtectionModes())
+        .containsExactly(ProtectionMode.REDACT);
   }
 
   @SuppressWarnings("unchecked")

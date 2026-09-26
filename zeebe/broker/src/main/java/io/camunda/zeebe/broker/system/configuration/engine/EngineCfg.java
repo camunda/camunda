@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.configuration.engine;
 
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
+import io.camunda.zeebe.broker.system.configuration.DataProtectionCfg;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.EngineConfiguration.InputMappingMode;
 import io.camunda.zeebe.engine.EngineConfiguration.OutputMappingMode;
@@ -37,6 +38,7 @@ public final class EngineCfg implements ConfigurationEntry {
   private ProcessInstanceCreationCfg processInstanceCreation = new ProcessInstanceCreationCfg();
   private StartupCfg startup = new StartupCfg();
   private StorageOrdinalsCfg storageOrdinals = new StorageOrdinalsCfg();
+  private DataProtectionCfg dataProtection = DataProtectionCfg.defaultDataProtectionCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -54,6 +56,7 @@ public final class EngineCfg implements ConfigurationEntry {
     processInstanceCreation.init(globalConfig, brokerBase);
     startup.init(globalConfig, brokerBase);
     storageOrdinals.init(globalConfig, brokerBase);
+    dataProtection.init(globalConfig, brokerBase);
   }
 
   public MessagesCfg getMessages() {
@@ -208,6 +211,14 @@ public final class EngineCfg implements ConfigurationEntry {
     this.storageOrdinals = storageOrdinals;
   }
 
+  public DataProtectionCfg getDataProtection() {
+    return dataProtection;
+  }
+
+  public void setDataProtection(final DataProtectionCfg dataProtection) {
+    this.dataProtection = dataProtection;
+  }
+
   @Override
   public String toString() {
     return "EngineCfg{"
@@ -241,6 +252,8 @@ public final class EngineCfg implements ConfigurationEntry {
         + startup
         + ", storageOrdinals="
         + storageOrdinals
+        + ", dataProtection="
+        + dataProtection
         + ", inputMappingMode="
         + inputMappingMode
         + ", inputComparisonMode="
@@ -254,6 +267,8 @@ public final class EngineCfg implements ConfigurationEntry {
 
   public EngineConfiguration createEngineConfiguration() {
     return new EngineConfiguration()
+        .setSensitiveVariablePatterns(dataProtection.patterns())
+        .setProtectionModes(dataProtection.modes())
         .setMessagesTtlCheckerBatchLimit(messages.getTtlCheckerBatchLimit())
         .setMessagesTtlCheckerInterval(messages.getTtlCheckerInterval())
         .setDrgCacheCapacity(caches.getDrgCacheCapacity())
