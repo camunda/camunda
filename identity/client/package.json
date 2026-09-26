@@ -25,7 +25,7 @@
   "dependencies": {
     "@camunda/camunda-api-zod-schemas": "0.0.94",
     "@camunda/camunda-composite-components": "0.25.4",
-    "@camunda/design-system": "0.61.2",
+    "@camunda/design-system": "0.64.0",
     "@camunda/oc-saas-notifications": "0.0.1",
     "@camunda/session-heartbeat": "0.0.1",
     "@carbon/elements": "11.97.0",
