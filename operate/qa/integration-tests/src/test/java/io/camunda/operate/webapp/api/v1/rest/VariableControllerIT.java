@@ -28,22 +28,24 @@ import io.camunda.operate.webapp.api.v1.exceptions.ForbiddenException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest(classes = {TestApplicationWithNoBeans.class, VariableController.class})
+@SpringBootTest(
+    classes = {
+      TestApplicationWithNoBeans.class,
+      VariableController.class,
+      VariableByKeyController.class
+    })
 public class VariableControllerIT {
 
   @Autowired WebApplicationContext context;
@@ -53,7 +55,7 @@ public class VariableControllerIT {
   @MockitoBean private VariableDao variableDao;
   @MockitoBean private PermissionsService permissionsService;
 
-  @Before
+  @BeforeEach
   public void setupMockMvc() {
     mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
   }
