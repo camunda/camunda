@@ -85,7 +85,7 @@
 		"@vitest/browser-playwright": "5.0.1",
 		"@vitest/ui": "5.0.1",
 		"cross-env": "10.1.0",
-		"knip": "6.37.0",
+		"knip": "6.38.0",
 		"msw": "2.15.0",
 		"rollup-plugin-sbom": "4.0.0",
 		"typescript": "7.0.2",
