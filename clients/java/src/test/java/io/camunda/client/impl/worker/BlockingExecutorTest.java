@@ -267,4 +267,127 @@ public class BlockingExecutorTest {
       wrappedExecutor.shutdownNow();
     }
   }
+
+  @Test
+  public void shouldKeepAReservedSlotReachableOnlyByThePollPath() {
+    // given a four-slot executor that reserves one slot for the poll path, leaving the push path a
+    // budget of three
+    final CountDownLatch releaseCommands = new CountDownLatch(1);
+    final ExecutorService wrappedExecutor = Executors.newFixedThreadPool(4);
+    try {
+      final BlockingExecutor executor =
+          new BlockingExecutor(wrappedExecutor, 4, Duration.ofMillis(50), 1);
+
+      // when the push path fills its whole budget with commands that hold their slots
+      for (int i = 0; i < 3; i++) {
+        executor.execute(() -> Uninterruptibles.awaitUninterruptibly(releaseCommands));
+      }
+
+      // then a fourth pushed job is refused even though a slot is still free
+      assertThat(executor.freeCapacity()).isEqualTo(1);
+      assertThatThrownBy(() -> executor.execute(() -> {}))
+          .isInstanceOf(RejectedExecutionException.class);
+
+      // and that free slot is the reserved one, reachable only by the poll path
+      final AtomicBoolean polledJobRan = new AtomicBoolean(false);
+      executor.executeWithoutWaiting(() -> polledJobRan.set(true));
+      Awaitility.await("The reserved slot should let a polled job through")
+          .untilAsserted(() -> assertThat(polledJobRan).isTrue());
+    } finally {
+      releaseCommands.countDown();
+      wrappedExecutor.shutdownNow();
+    }
+  }
+
+  @Test
+  public void shouldLetThePollPathReachEverySlotIncludingReservedOnes() {
+    // given a three-slot executor with one slot reserved for the poll path
+    final CountDownLatch releaseCommands = new CountDownLatch(1);
+    final ExecutorService wrappedExecutor = Executors.newFixedThreadPool(3);
+    try {
+      final BlockingExecutor executor =
+          new BlockingExecutor(wrappedExecutor, 3, Duration.ofMillis(50), 1);
+
+      // when the poll path takes every slot, the reserved one included
+      for (int i = 0; i < 3; i++) {
+        executor.executeWithoutWaiting(
+            () -> Uninterruptibles.awaitUninterruptibly(releaseCommands));
+      }
+
+      // then there is no capacity left at all, so the reservation never fences the poll path off
+      // from a slot the way it fences the push path
+      assertThat(executor.freeCapacity()).isEqualTo(0);
+      assertThatThrownBy(() -> executor.execute(() -> {}))
+          .isInstanceOf(RejectedExecutionException.class);
+    } finally {
+      releaseCommands.countDown();
+      wrappedExecutor.shutdownNow();
+    }
+  }
+
+  @Test
+  public void shouldLetThePushPathUseEverySlotWhenNoLaneIsReserved() {
+    // given a two-slot executor built with the constructor that reserves nothing
+    final CountDownLatch releaseCommands = new CountDownLatch(1);
+    final ExecutorService wrappedExecutor = Executors.newFixedThreadPool(2);
+    try {
+      final BlockingExecutor executor =
+          new BlockingExecutor(wrappedExecutor, 2, Duration.ofMillis(50));
+
+      // when the push path takes both slots
+      for (int i = 0; i < 2; i++) {
+        executor.execute(() -> Uninterruptibles.awaitUninterruptibly(releaseCommands));
+      }
+
+      // then it was allowed all of the capacity, unchanged from the single-pool behaviour
+      assertThat(executor.freeCapacity()).isEqualTo(0);
+    } finally {
+      releaseCommands.countDown();
+      wrappedExecutor.shutdownNow();
+    }
+  }
+
+  @Test
+  public void shouldFreeThePushBudgetWhenAPushedJobFinishes() {
+    // given a two-slot executor with one slot reserved, so the push budget is a single slot
+    final BlockingExecutor executor =
+        new BlockingExecutor(Runnable::run, 2, Duration.ofMillis(50), 1);
+
+    // when a pushed job takes the whole budget and finishes
+    executor.execute(() -> {});
+
+    // then the budget is back and the next pushed job can run, rather than the budget leaking
+    final AtomicBoolean secondJobRan = new AtomicBoolean(false);
+    executor.execute(() -> secondJobRan.set(true));
+    assertThat(secondJobRan).isTrue();
+  }
+
+  @Test
+  public void shouldBoundAWaitingPushByASingleTimeoutAcrossBothAcquisitions() {
+    // given a two-slot executor with one slot reserved, so a push must first take its budget and
+    // then a capacity slot; the poll path holds every slot, leaving the push nothing to acquire
+    final Duration timeout = Duration.ofMillis(300);
+    final CountDownLatch releaseCommands = new CountDownLatch(1);
+    final ExecutorService wrappedExecutor = Executors.newFixedThreadPool(2);
+    try {
+      final BlockingExecutor executor = new BlockingExecutor(wrappedExecutor, 2, timeout, 1);
+      for (int i = 0; i < 2; i++) {
+        executor.executeWithoutWaiting(
+            () -> Uninterruptibles.awaitUninterruptibly(releaseCommands));
+      }
+
+      // when a pushed job that can never fit is handed over
+      final long startedAt = System.nanoTime();
+      assertThatThrownBy(() -> executor.execute(() -> {}))
+          .isInstanceOf(RejectedExecutionException.class);
+      final Duration waited = Duration.ofNanos(System.nanoTime() - startedAt);
+
+      // then it is refused within a single configured timeout: the budget and capacity acquisitions
+      // share one deadline, so a saturated push never blocks for nearly twice the timeout
+      assertThat(waited).isLessThan(timeout.multipliedBy(2));
+    } finally {
+      releaseCommands.countDown();
+      wrappedExecutor.shutdownNow();
+    }
+  }
 }
