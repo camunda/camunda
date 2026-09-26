@@ -27,7 +27,7 @@
 		"@camunda/design-system": "0.63.0",
 		"@camunda/oc-saas-notifications": "0.0.2",
 		"@camunda/session-heartbeat": "0.0.1",
-		"@carbon/layout": "11.59.0",
+		"@carbon/layout": "11.60.0",
 		"@carbon/react": "1.112.0",
 		"@carbon/type": "11.67.0",
 		"@devbookhq/splitter": "1.4.2",
