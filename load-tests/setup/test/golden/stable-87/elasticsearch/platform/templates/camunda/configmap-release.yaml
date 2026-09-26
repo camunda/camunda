@@ -19,7 +19,7 @@ data:
   info: |-
     - name: c8-golden-stable-87-elasticsearch
       namespace: c8-golden-stable-87-elasticsearch
-      version: 12.13.7
+      version: 12.13.8
       components:
       - name: Keycloak
         id: keycloak
@@ -45,7 +45,7 @@ data:
         metrics: http://optimize.c8-golden-stable-87-elasticsearch:8092/actuator/prometheus
       - name: Connectors
         id: connectors
-        version: 8.7.26
+        version: 8.7.27
         url: http://connectors.c8-golden-stable-87-elasticsearch:8080
         readiness: http://connectors.c8-golden-stable-87-elasticsearch:8080/actuator/health/readiness
         metrics: http://connectors.c8-golden-stable-87-elasticsearch:8080/actuator/prometheus
