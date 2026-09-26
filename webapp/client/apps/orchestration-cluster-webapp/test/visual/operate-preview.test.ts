@@ -19,6 +19,7 @@ import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
+import {createProcessDefinitionInstanceStatistics} from '#/shared-test-modules/api-mocks/process-definition-statistics';
 
 test.beforeEach(({network}) => {
 	network.use(
@@ -65,6 +66,33 @@ test('should match the no-instances empty state snapshot with a modeler link', a
 
 	await operatePreviewPage.goto();
 	await expect(operatePreviewPage.noInstancesModelerButton).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});
+
+test('should match the list tiles snapshot with sample rows', async ({network, operatePreviewPage, page}) => {
+	network.use(
+		mockCurrentUserEndpoint({
+			successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['operate']})),
+		}),
+		mockGetProcessDefinitionInstanceStatisticsEndpoint({
+			successResponse: HttpResponse.json(
+				createPaginatedResponse({
+					items: [
+						createProcessDefinitionInstanceStatistics({
+							processDefinitionId: 'process-1',
+							activeInstancesWithoutIncidentCount: 10,
+							activeInstancesWithIncidentCount: 3,
+						}),
+					],
+					page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+				}),
+			),
+		}),
+	);
+
+	await operatePreviewPage.goto();
+	await expect(operatePreviewPage.processesByNameSampleRow).toBeVisible();
 
 	await expect(page).toHaveScreenshot();
 });

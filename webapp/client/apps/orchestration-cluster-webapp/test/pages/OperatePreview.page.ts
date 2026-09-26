@@ -34,8 +34,12 @@ class OperatePreviewPage extends BasePage {
 		return this.page.getByText('Process Incidents by Error Message');
 	}
 
-	get listTileSkeletonRows() {
-		return this.page.locator('[data-slot="data-table-skeleton-row"]');
+	get processesByNameSampleRow() {
+		return this.page.getByText('Order process');
+	}
+
+	get incidentsByErrorSampleRow() {
+		return this.page.getByText('Connection timeout');
 	}
 
 	get noInstancesEmptyState() {
