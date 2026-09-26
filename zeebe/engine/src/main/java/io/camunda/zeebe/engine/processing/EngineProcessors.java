@@ -292,6 +292,7 @@ public final class EngineProcessors {
             transientProcessMessageSubscriptionState,
             expressionLanguageMetrics,
             config,
+            storageOrdinalProvider,
             incidentMetrics,
             messageCorrelationMetrics,
             processDefinitionMetrics,
@@ -667,6 +668,7 @@ public final class EngineProcessors {
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final ExpressionLanguageMetrics expressionLanguageMetrics,
       final EngineConfiguration config,
+      final StorageOrdinalProvider storageOrdinalProvider,
       final IncidentMetrics incidentMetrics,
       final MessageCorrelationMetrics messageCorrelationMetrics,
       final ProcessDefinitionMetrics processDefinitionMetrics,
@@ -688,6 +690,7 @@ public final class EngineProcessors {
         transientProcessMessageSubscriptionState,
         expressionLanguageMetrics,
         config,
+        storageOrdinalProvider,
         incidentMetrics,
         messageCorrelationMetrics,
         processDefinitionMetrics,
@@ -951,7 +954,8 @@ public final class EngineProcessors {
             commandDistributionBehavior,
             cslCheck,
             tenantCheck,
-            bpmnBehaviors.variableBehavior());
+            bpmnBehaviors.variableBehavior(),
+            bpmnBehaviors.storageOrdinalProvider());
     typedRecordProcessors.onCommand(
         ValueType.SIGNAL, SignalIntent.BROADCAST, signalBroadcastProcessor);
   }
@@ -972,7 +976,8 @@ public final class EngineProcessors {
             bpmnBehaviors.eventTriggerBehavior(),
             cslCheck,
             tenantCheck,
-            bpmnBehaviors.expressionProcessor());
+            bpmnBehaviors.expressionProcessor(),
+            bpmnBehaviors.storageOrdinalProvider());
     typedRecordProcessors.onCommand(
         ValueType.CONDITIONAL_EVALUATION,
         ConditionalEvaluationIntent.EVALUATE,

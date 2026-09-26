@@ -42,6 +42,16 @@ package io.camunda.zeebe.protocol.record.value;
  */
 public interface StorageOrdinalRelated {
 
+  /** Ordinal of records that belong in the main (non-ordinal) index of their record type. */
+  int MAIN_INDEX = 0;
+
+  /**
+   * Ordinal of records that are not ordinal-controlled at all, e.g. subscriptions and timers
+   * created for start events at deployment time, which belong to a process definition rather than
+   * to a process instance.
+   */
+  int NOT_ORDINAL_CONTROLLED = -1;
+
   /**
    * @return the ordinal this record belongs to; {@code 0} means the record must be stored in the
    *     main index (either a legacy record or explicitly forced); {@code -1} means the record is

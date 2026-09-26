@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
+import io.camunda.zeebe.engine.processing.storageordinals.TimerStorageOrdinals;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -82,7 +83,8 @@ public final class TimerTriggerProcessor
             writers,
             processState,
             bpmnBehaviors.eventTriggerBehavior(),
-            bpmnBehaviors.stateBehavior());
+            bpmnBehaviors.stateBehavior(),
+            bpmnBehaviors.storageOrdinalProvider());
   }
 
   @Override
@@ -96,6 +98,10 @@ public final class TimerTriggerProcessor
           record, RejectionType.NOT_FOUND, NO_TIMER_FOUND_MESSAGE.formatted(record.getKey()));
       return;
     }
+
+    // populate time record with the storage ordinal of the timer instance to ensure that the
+    // correct ordinal is used for the rescheduled timer
+    timer.setStorageOrdinal(TimerStorageOrdinals.of(timerInstance));
 
     final var tenantId = timer.getTenantId();
     // this is an additional safeguard to avoid banning unrelated instances
@@ -183,6 +189,7 @@ public final class TimerTriggerProcessor
         event.getId(),
         record.getTenantId(),
         record.getRootProcessInstanceKey(),
+        record.getStorageOrdinal(),
         record.getBpmnProcessId(),
         record.getElementType(),
         refreshedTimer);
@@ -190,8 +197,8 @@ public final class TimerTriggerProcessor
 
   private Timer refreshTimer(final Timer timer, final TimerRecord record) {
     return switch (timer) {
-      case CronTimer cronTimer -> cronTimer;
-      case RepeatingInterval repeatingInterval -> {
+      case final CronTimer cronTimer -> cronTimer;
+      case final RepeatingInterval repeatingInterval -> {
         int repetitions = record.getRepetitions();
         if (repetitions != RepeatingInterval.INFINITE) {
           repetitions--;

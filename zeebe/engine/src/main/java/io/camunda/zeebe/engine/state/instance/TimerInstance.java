@@ -37,13 +37,14 @@ public final class TimerInstance extends UnpackedObject implements DbValue, Tena
   private final IntegerProperty repetitionsProp = new IntegerProperty("repetitions", 0);
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty("rootProcessInstanceKey", NO_ELEMENT_INSTANCE);
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty("storageOrdinal", 0);
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
   private final EnumProperty<BpmnElementType> elementTypeProp =
       new EnumProperty<>(
           new StringValue("elementType"), BpmnElementType.class, BpmnElementType.UNSPECIFIED);
 
   public TimerInstance() {
-    super(11);
+    super(12);
     declareProperty(handlerNodeIdProp)
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(keyProp)
@@ -53,6 +54,7 @@ public final class TimerInstance extends UnpackedObject implements DbValue, Tena
         .declareProperty(repetitionsProp)
         .declareProperty(tenantIdProp)
         .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(storageOrdinalProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(elementTypeProp);
   }
@@ -137,6 +139,15 @@ public final class TimerInstance extends UnpackedObject implements DbValue, Tena
 
   public TimerInstance setRootProcessInstanceKey(final long rootProcessInstanceKey) {
     rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
+    return this;
+  }
+
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
+  }
+
+  public TimerInstance setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
 
