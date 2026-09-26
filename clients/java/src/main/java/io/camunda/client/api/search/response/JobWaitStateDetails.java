@@ -30,4 +30,11 @@ public interface JobWaitStateDetails extends WaitStateDetails {
   ListenerEventType getListenerEventType();
 
   Integer getRetries();
+
+  /**
+   * @return {@code true} if the job is parked while a referenced secret is being resolved, {@code
+   *     false} if it is a plain job wait; may be {@code null} for entities written before this
+   *     field existed.
+   */
+  Boolean getSecretResolutionPending();
 }

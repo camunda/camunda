@@ -28,7 +28,8 @@ class WaitStateEntryTest {
   @Test
   void shouldExposeAllFieldsViaAccessors() {
     // given
-    final var details = new JobWaitStateDetails(42L, "payment", JobKind.BPMN_ELEMENT, null, 3);
+    final var details =
+        new JobWaitStateDetails(42L, "payment", JobKind.BPMN_ELEMENT, null, 3, false);
     final var entry =
         new WaitStateEntry()
             .setRootProcessInstanceKey(100L)
