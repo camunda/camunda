@@ -28,15 +28,18 @@ services:
       - 3000:3000
     volumes:
       - grafana:/var/lib/grafana
-      - ./grafana/dashboards/:/var/lib/grafana/dashboards/
-      - ./grafana/zeebe.json/:/var/lib/grafana/dashboards/zeebe.json
-      - ./grafana/zeebe-overview.json/:/var/lib/grafana/dashboards/zeebe-overview.json
-      - ./grafana/dashboards/core-features/overview.json:/var/lib/grafana/dashboards/overview.json
-      - ./grafana/dashboards/core-features/rest.json:/var/lib/grafana/dashboards/rest.json
+      - ../grafana/dashboards/:/var/lib/grafana/dashboards/
+      - ../grafana/zeebe.json/:/var/lib/grafana/dashboards/zeebe.json
+      - ../grafana/zeebe-overview.json/:/var/lib/grafana/dashboards/zeebe-overview.json
+      - ../grafana/dashboards/core-features/overview.json:/var/lib/grafana/dashboards/overview.json
+      - ../grafana/dashboards/core-features/rest.json:/var/lib/grafana/dashboards/rest.json
       - ./grafana/provisioning/:/etc/grafana/provisioning/
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=camunda
       - GF_USERS_ALLOW_SIGN_UP=false
+    extra_hosts:
+      # Lets the container reach a "kubectl port-forward" running on the host.
+      - "host.docker.internal:host-gateway"
 
   zeebe:
     image: camunda/camunda:${CAMUNDA_VERSION:-SNAPSHOT}
