@@ -9,7 +9,12 @@ package io.camunda.zeebe.worker;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.JobWorker;
+import io.camunda.client.api.command.AgentInstanceHistoryContent;
+import io.camunda.client.api.command.AgentInstanceHistoryItem;
+import io.camunda.client.api.command.AgentInstanceUpdateStatus;
+import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.WorkerProperties;
@@ -19,10 +24,14 @@ import io.camunda.zeebe.util.logging.ThrottledLogger;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -36,6 +45,21 @@ public class Worker {
   private static final Logger THROTTLED_LOGGER = new ThrottledLogger(LOGGER, Duration.ofSeconds(5));
   private static final int REQUEST_FUTURES_CAPACITY = 10_000;
 
+  // Job type of the agent-visibility scenario's ad-hoc sub-process orchestrator element
+  // (agentTools.bpmn); routed to the ad-hoc-sub-process completion path below instead of the
+  // plain one.
+  private static final String AD_HOC_SUB_PROCESS_JOB_TYPE = "agent-visibility-orchestrator";
+
+  // Fixed tool-calling schedule for the orchestrator: one tool, then two tools in parallel,
+  // then one tool again, then an empty round that fulfills the completion condition. Not
+  // configurable - baseline and treatment runs must produce identical tool-activation traffic.
+  private static final List<List<String>> AD_HOC_SUB_PROCESS_ROUND_SCHEDULE =
+      List.of(
+          List.of("tool-lookup-account"),
+          List.of("tool-calculate-score", "tool-send-notification"),
+          List.of("tool-lookup-account"),
+          List.of());
+
   private final CamundaClient client;
   private final WorkerProperties workerCfg;
   private final String variables;
@@ -43,6 +67,18 @@ public class Worker {
       new ArrayBlockingQueue<>(REQUEST_FUTURES_CAPACITY);
   private final ResponseChecker responseChecker;
   private final ConnectionMonitor connectionMonitor;
+
+  // Tracks each process instance's current round in AD_HOC_SUB_PROCESS_ROUND_SCHEDULE. Keyed by
+  // process instance key; in-memory and per-pod, so exact only with a single orchestrator
+  // replica. Evicted once the final round completes.
+  private final ConcurrentHashMap<Long, RoundTracker> adHocSubProcessRounds =
+      new ConcurrentHashMap<>();
+
+  // Caches the AgentInstance key returned by round 0's CREATE, keyed by process instance key,
+  // so later rounds' UPDATE calls can address the same agent instance. Only used when
+  // WorkerProperties#agentInstanceSimulationEnabled is true; evicted with the round counter.
+  private final ConcurrentHashMap<Long, Long> adHocSubProcessAgentInstanceKeys =
+      new ConcurrentHashMap<>();
 
   public Worker(
       final CamundaClient client,
@@ -85,6 +121,11 @@ public class Worker {
 
   @JobWorker(autoComplete = false)
   public void handleJob(final JobClient jobClient, final ActivatedJob job) {
+    if (AD_HOC_SUB_PROCESS_JOB_TYPE.equals(job.getType())) {
+      handleAdHocSubProcessOrchestration(jobClient, job);
+      return;
+    }
+
     final long startHandlingTime = System.currentTimeMillis();
 
     if (workerCfg.isSendMessage()) {
@@ -115,7 +156,9 @@ public class Worker {
       }
     }
 
-    final var command = jobClient.newCompleteCommand(job.getKey()).variables(variables);
+    // newCompleteCommand(ActivatedJob), not the jobKey-only overload, so the job's lease token
+    // is auto-attached when with-lease is enabled.
+    final var command = jobClient.newCompleteCommand(job).variables(variables);
     addDelayToCompletion(workerCfg.getCompletionDelay().toMillis(), startHandlingTime);
     if (!requestFutures.offer(command.send())) {
       // Non-blocking: if the response-check queue is saturated, drop tracking for this
@@ -125,6 +168,170 @@ public class Worker {
       THROTTLED_LOGGER.warn(
           "Completion-response queue full (capacity: {}); dropping future tracking",
           REQUEST_FUTURES_CAPACITY);
+    }
+  }
+
+  // Completes the ad-hoc-sub-process orchestrator job by following
+  // AD_HOC_SUB_PROCESS_ROUND_SCHEDULE: activates this round's tool(s), or - on the final, empty
+  // round - fulfills the completion condition instead. The engine creates a fresh job of the
+  // same type once the activated tool(s) complete, so the next round is simply the next
+  // invocation of this method.
+  private void handleAdHocSubProcessOrchestration(
+      final JobClient jobClient, final ActivatedJob job) {
+    final long startHandlingTime = System.currentTimeMillis();
+    final long processInstanceKey = job.getProcessInstanceKey();
+    final int rawRound =
+        adHocSubProcessRounds
+            .computeIfAbsent(processInstanceKey, key -> new RoundTracker())
+            .roundFor(job.getKey());
+    // Clamped: the engine can create more distinct orchestrator job keys for one process
+    // instance than this schedule has rounds for (e.g. a parallel round's two tools each
+    // triggering their own job re-creation). Treat any overflow as the terminal round instead
+    // of throwing.
+    final int round = Math.min(rawRound, AD_HOC_SUB_PROCESS_ROUND_SCHEDULE.size() - 1);
+    final boolean isFinalRound = round == AD_HOC_SUB_PROCESS_ROUND_SCHEDULE.size() - 1;
+    final var toolsToActivate = AD_HOC_SUB_PROCESS_ROUND_SCHEDULE.get(round);
+
+    if (workerCfg.isAgentInstanceSimulationEnabled()) {
+      simulateAgentInstance(job, round, isFinalRound);
+    }
+
+    // Evicted only after this round's work has fully run - evicting earlier would let a
+    // redelivered copy of this final round see a fresh RoundTracker and restart at round 0.
+    if (isFinalRound) {
+      adHocSubProcessRounds.remove(processInstanceKey);
+    }
+
+    addDelayToCompletion(workerCfg.getCompletionDelay().toMillis(), startHandlingTime);
+
+    final var command =
+        jobClient
+            .newCompleteCommand(job)
+            .withResult(
+                resultStep -> {
+                  CompleteAdHocSubProcessResultStep1 adHocResult = resultStep.forAdHocSubProcess();
+                  for (final var tool : toolsToActivate) {
+                    adHocResult = adHocResult.activateElement(tool);
+                  }
+                  return adHocResult.completionConditionFulfilled(isFinalRound);
+                });
+    if (!requestFutures.offer(command.send())) {
+      THROTTLED_LOGGER.warn(
+          "Completion-response queue full (capacity: {}); dropping future tracking",
+          REQUEST_FUTURES_CAPACITY);
+    }
+  }
+
+  // Issues the AgentInstance CREATE (round 0) or UPDATE (later rounds) call a real Connector
+  // would issue for this round, using synthetic history content. Called before the job
+  // completes, so the extra command latency is part of what gets measured.
+  private void simulateAgentInstance(
+      final ActivatedJob job, final int round, final boolean isFinalRound) {
+    final long processInstanceKey = job.getProcessInstanceKey();
+
+    if (round == 0) {
+      // computeIfAbsent, not a plain CREATE-then-put: a redelivered copy of this round-0 job
+      // can be processed concurrently with the still-in-flight original under with-lease, so
+      // this blocks the redelivered copy on the in-flight CREATE instead of racing a second one
+      // for the same element instance.
+      adHocSubProcessAgentInstanceKeys.computeIfAbsent(
+          processInstanceKey, key -> createAgentInstance(job));
+    } else {
+      final Long agentInstanceKey = adHocSubProcessAgentInstanceKeys.get(processInstanceKey);
+      if (agentInstanceKey == null) {
+        // Defensive only - should not happen given RoundTracker and the eviction ordering
+        // above, but must never throw: skip the UPDATE and let the round schedule still
+        // complete the job normally.
+        THROTTLED_LOGGER.warn(
+            "No cached AgentInstance key for processInstanceKey={} at round={}; skipping "
+                + "AgentInstance UPDATE",
+            processInstanceKey,
+            round);
+      } else {
+        updateAgentInstance(job, agentInstanceKey, round, isFinalRound);
+      }
+    }
+
+    if (isFinalRound) {
+      adHocSubProcessAgentInstanceKeys.remove(processInstanceKey);
+    }
+  }
+
+  // Issues the round-0 AgentInstance CREATE call, returning the created AgentInstance key, or
+  // null on failure. Never throws - an uncaught exception here would leave the job unable to
+  // complete.
+  private Long createAgentInstance(final ActivatedJob job) {
+    final var configurationItem =
+        new AgentInstanceHistoryItem()
+            .historyItemId("agent-visibility-configuration")
+            .loopIteration(1)
+            .role(AgentInstanceHistoryRole.CONFIGURATION)
+            .content(
+                List.of(
+                    AgentInstanceHistoryContent.text(
+                        "Synthetic agent configuration for load testing.")))
+            .producedAt(OffsetDateTime.now())
+            .model("synthetic-load-test-model")
+            .provider("synthetic")
+            .systemPrompt(
+                List.of(AgentInstanceHistoryContent.text("You are a synthetic load-test agent.")));
+
+    try {
+      final var response =
+          client
+              .newCreateAgentInstanceCommand()
+              .elementInstanceKey(job.getElementInstanceKey())
+              .jobKey(job.getKey())
+              .jobLeaseToken(job.getJobLeaseToken())
+              .history(List.of(configurationItem))
+              .send()
+              .join();
+      return response.getAgentInstanceKey();
+    } catch (final RuntimeException e) {
+      THROTTLED_LOGGER.warn(
+          "AgentInstance CREATE failed for processInstanceKey={}: {}",
+          job.getProcessInstanceKey(),
+          e.getMessage());
+      return null;
+    }
+  }
+
+  // Issues the round>0 AgentInstance UPDATE call. Never throws - a stale redelivered copy can
+  // be rejected once a newer delivery already handled this round; caught and logged so the
+  // round schedule still completes the job normally.
+  private void updateAgentInstance(
+      final ActivatedJob job,
+      final long agentInstanceKey,
+      final int round,
+      final boolean isFinalRound) {
+    final var assistantItem =
+        new AgentInstanceHistoryItem()
+            .historyItemId("agent-visibility-round-" + (round + 1))
+            .loopIteration(round + 1)
+            .role(AgentInstanceHistoryRole.ASSISTANT)
+            .content(
+                List.of(
+                    AgentInstanceHistoryContent.text(
+                        "Synthetic assistant message for round " + (round + 1) + ".")))
+            .producedAt(OffsetDateTime.now());
+
+    try {
+      client
+          .newUpdateAgentInstanceCommand(agentInstanceKey)
+          .elementInstanceKey(job.getElementInstanceKey())
+          .status(
+              isFinalRound ? AgentInstanceUpdateStatus.IDLE : AgentInstanceUpdateStatus.THINKING)
+          .jobKey(job.getKey())
+          .jobLeaseToken(job.getJobLeaseToken())
+          .history(List.of(assistantItem))
+          .send()
+          .join();
+    } catch (final RuntimeException e) {
+      THROTTLED_LOGGER.warn(
+          "AgentInstance UPDATE failed for processInstanceKey={} at round={}: {}",
+          job.getProcessInstanceKey(),
+          round,
+          e.getMessage());
     }
   }
 
@@ -172,6 +379,19 @@ public class Worker {
           "Interrupted during completion delay sleep of {} ms", completionDelay, e);
     } catch (final Exception e) {
       THROTTLED_LOGGER.error("Exception on sleep with completion delay {}", completionDelay, e);
+    }
+  }
+
+  // Assigns each distinct job key exactly one round number per process instance, so a
+  // redelivered job (Zeebe job workers are at-least-once) reuses its already-assigned round
+  // instead of advancing past it.
+  private static final class RoundTracker {
+
+    private final ConcurrentHashMap<Long, Integer> roundsByJobKey = new ConcurrentHashMap<>();
+    private final AtomicInteger nextRound = new AtomicInteger(0);
+
+    int roundFor(final long jobKey) {
+      return roundsByJobKey.computeIfAbsent(jobKey, key -> nextRound.getAndIncrement());
     }
   }
 }

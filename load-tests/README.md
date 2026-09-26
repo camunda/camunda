@@ -491,6 +491,40 @@ Select the `scenario` input in the workflow dispatch form:
 - `typical` — straight-through baseline with a representative BPMN model and `50` PI/s target load; use it for sustained baseline comparisons. See [typical load](../docs/testing/reliability-testing.md#typical-load).
 - `latency` — low-throughput artificial workload (`1` PI/s, `1` worker) to isolate latency and reduce blast radius while debugging. See [latency load test](../docs/testing/reliability-testing.md#latency-load-test).
 - `archiver` — multi-instance archiver-focused scenario with no workers; use it when validating archiver or secondary-storage-related behavior. Its current wiring is defined in [`load-tests/setup/main/Makefile`](setup/main/Makefile).
+- `agent-visibility` — ad-hoc sub-process ("AI Agent" element) driving a fixed 4-round tool-calling schedule (`agentTools.bpmn`), used to measure the overhead of Agent Visibility & Explainability's `AgentInstance`/`AgentHistory` commands. Run as a baseline/treatment pair rather than once:
+
+  ```bash
+  # Baseline — identical tool-calling workload, no AgentInstance/AgentHistory traffic. Sets the
+  # same job-worker defaults as treatment (with-lease) so the *only* variable between the two
+  # runs is whether agent-instance simulation is enabled. stream-enabled is left at its client
+  # default (false/polling) on both runs - CAMUNDA_CLIENT_WORKER_DEFAULTS_STREAM_ENABLED is not
+  # set here, so there's nothing to keep in sync between baseline and treatment.
+  #
+  # extraEnvVars[4..]: indices 4+ because scenarios/load-tester-values-defaults.yaml already sets
+  # indices 0-3 (Stackdriver logging + Optimize secret) release-wide. Helm merges --set list
+  # indices positionally, so reusing one of those (e.g. index 2, which carries a valueFrom.fieldRef
+  # for the pod's namespace) silently merges onto the existing entry instead of replacing it - the
+  # namespace value then wins over the literal `value` we set, breaking the boolean bind and
+  # crash-looping every load-tester role. See common.mk's install-load-test-physical-tenants target
+  # for the same convention.
+  gh workflow run camunda-load-test.yml -f ref=<branch> -f name=<initials>-agentviz-baseline -f scenario=agent-visibility \
+    -f load-test-load="--set global.extraEnvVars[4].name=CAMUNDA_CLIENT_WORKER_DEFAULTS_WITH_LEASE --set global.extraEnvVars[4].value=true"
+
+  # Treatment — same with-lease as baseline above (index 4), plus agent-instance simulation on
+  # (index 5). Both flags are release-scoped (global.extraEnvVars), not per-role:
+  # agentInstanceSimulationEnabled/with-lease aren't in the chart's per-worker whitelist, and
+  # applying them to all 4 roles is harmless since the 3 tool roles never read them. No
+  # stream-enabled override is needed either way: the ad-hoc-sub-process round tracking is
+  # idempotent against job redelivery (Worker.RoundTracker, keyed by ActivatedJob#getKey() - see
+  # WorkerTest#shouldReuseRoundWhenTheSameJobIsRedelivered), so the redelivery race this used to
+  # guard against - actually driven by job-lease timeouts under high handler latency, not by
+  # streaming itself - no longer corrupts round tracking or AgentHistory data regardless of the
+  # streaming setting.
+  gh workflow run camunda-load-test.yml -f ref=<branch> -f name=<initials>-agentviz-treatment -f scenario=agent-visibility \
+    -f load-test-load="--set global.extraEnvVars[4].name=CAMUNDA_CLIENT_WORKER_DEFAULTS_WITH_LEASE --set global.extraEnvVars[4].value=true --set global.extraEnvVars[5].name=LOAD_TESTER_WORKER_AGENT_INSTANCE_SIMULATION_ENABLED --set global.extraEnvVars[5].value=true"
+  ```
+
+  Compare the two namespaces' dashboards (PI/s, exporter backlog, broker CPU/heap, backpressure) — the delta is the measured cost of agent visibility on top of an already-realistic multi-tool-calling workload. See [`docs/metrics.md`](docs/metrics.md#slo-targets-by-test-variant) for the scenario's per-PI flow-node shape.
 
 For manual runs and deeper scenario details, see [`load-tests/setup/README.md`](setup/README.md#running-specific-scenarios).
 
