@@ -23,6 +23,8 @@ import io.camunda.db.rdbms.RdbmsServiceFactory;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
 import io.camunda.exporter.rdbms.RdbmsExporterFactory;
 import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
+import io.camunda.it.rdbms.db.util.RdbmsTestTopology;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -161,6 +163,11 @@ class RdbmsExporterPhysicalTenantIT {
     @Bean
     MeterRegistry meterRegistry() {
       return new SimpleMeterRegistry();
+    }
+
+    @Bean
+    BrokerTopologyManager brokerTopologyManager() {
+      return RdbmsTestTopology.processingTopologyManager();
     }
 
     private static void configureTenant(
