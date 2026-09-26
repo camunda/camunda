@@ -168,6 +168,7 @@ public class SchemaManager implements CloseableSilently {
     final boolean upgradeSchema;
     final var previousSchemaVersion = schemaMetadataStore.getSchemaVersion();
     final var checkResult = checkVersionCompatibility(previousSchemaVersion, currentVersion);
+    final boolean sameVersion = checkResult instanceof Compatible.SameVersion;
     switch (checkResult) {
       case final Compatible.SameVersion ignored:
         upgradeSchema = "SNAPSHOT".equals(SemanticVersion.parse(currentVersion).get().preRelease());
@@ -183,16 +184,22 @@ public class SchemaManager implements CloseableSilently {
     }
     // create any missing index templates, it is done even outside an upgrade scenario, to create
     // missing index templates after a backup restore
-    initialiseIndexTemplates();
+    final var createdIndexTemplates = initialiseIndexTemplates();
     if (upgradeSchema) {
       final var newIndexProperties = validateIndices();
       // create any missing indices
       initialiseIndices();
 
-      //  used to update existing indices/templates
-      if (!newIndexProperties.isEmpty()) {
-        LOG.info("Update index schema. '{}' indices need to be updated", newIndexProperties.size());
-        updateSchemaMappings(newIndexProperties);
+      // used to update existing indices/templates
+      final var templatesAndMappingsToUpdate =
+          sameVersion
+              ? newIndexProperties
+              : forceCustomSettingsTemplates(newIndexProperties, createdIndexTemplates);
+      if (!templatesAndMappingsToUpdate.isEmpty()) {
+        LOG.info(
+            "Update index schema. '{}' indices need to be updated",
+            templatesAndMappingsToUpdate.size());
+        updateIndexTemplatesAndMappings(templatesAndMappingsToUpdate);
       }
       // Store the current version as schema version after successful initialization
       schemaMetadataStore.storeSchemaVersion(currentVersion);
@@ -201,6 +208,34 @@ public class SchemaManager implements CloseableSilently {
     checkShardConfiguration();
     createLifecyclePolicies();
     LOG.info("Schema management completed.");
+  }
+
+  /**
+   * Adds every template that owns a custom settings block (see {@link
+   * IndexTemplateDescriptor#hasCustomSettings()}) to the work list, so that it gets a full,
+   * unconditional rewrite. Only called when the stored schema version differs from the running one.
+   *
+   * <p>{@link #updateSchemaSettings} only ever compares the settings runtime configuration owns
+   * (shards/replicas/refresh_interval) against such a template's stored state, by design — the
+   * search engine's normalization of the rest of the block (e.g. an {@code analysis} block:
+   * injected defaults, relocated keys, scalar/list coercion) can't be compared reliably. A version
+   * change is therefore the only point left where a real change to that JSON-owned part of the
+   * settings block gets applied.
+   *
+   * @param justCreatedTemplates templates {@link #initialiseIndexTemplates()} has just written from
+   *     their schema file in full. Forcing a rewrite of those would only re-send what the search
+   *     engine already stores — a redundant cluster-state write per tenant per node, which is what
+   *     makes a cold start of a large deployment expensive.
+   */
+  private Map<IndexDescriptor, Collection<IndexMappingProperty>> forceCustomSettingsTemplates(
+      final Map<IndexDescriptor, Collection<IndexMappingProperty>> newIndexProperties,
+      final Collection<IndexTemplateDescriptor> justCreatedTemplates) {
+    final var result = new HashMap<>(newIndexProperties);
+    indexTemplateDescriptors.stream()
+        .filter(IndexTemplateDescriptor::hasCustomSettings)
+        .filter(descriptor -> !justCreatedTemplates.contains(descriptor))
+        .forEach(descriptor -> result.putIfAbsent(descriptor, Set.of()));
+    return result;
   }
 
   private CheckResult checkVersionCompatibility(
@@ -391,7 +426,7 @@ public class SchemaManager implements CloseableSilently {
     final var indexSettingsFromConfig = getIndexSettingsFromConfig(indexDescriptor);
     if (indexDescriptor instanceof final IndexTemplateDescriptor indexTemplateDescriptor) {
       // already no-ops internally when unchanged, so it stays unconditional
-      searchEngineClient.updateIndexTemplateSettings(
+      searchEngineClient.updateIndexTemplateSettingsIfManagedSettingsChanged(
           indexTemplateDescriptor, indexSettingsFromConfig);
     }
 
@@ -454,11 +489,17 @@ public class SchemaManager implements CloseableSilently {
         .toList();
   }
 
+  /**
+   * Creates every index template that does not exist yet, from its schema file in full.
+   *
+   * @return the templates that were created, i.e. the ones whose stored state is now known to match
+   *     their schema file exactly. Callers use this to skip writes that would be redundant.
+   */
   @VisibleForTesting
-  void initialiseIndexTemplates() {
+  Collection<IndexTemplateDescriptor> initialiseIndexTemplates() {
     if (indexTemplateDescriptors.isEmpty()) {
       LOG.info("Do not create any index templates, as descriptors are missing");
-      return;
+      return List.of();
     }
     final var missingIndexTemplates = getMissingIndexTemplates(indexTemplateDescriptors);
     LOG.info("Found '{}' missing index templates", missingIndexTemplates.size());
@@ -475,6 +516,8 @@ public class SchemaManager implements CloseableSilently {
     // successfully
     // Doing this in parallel is still speeding up the bootstrap time
     joinOnFutures(futures);
+    // joinOnFutures throws unless every creation succeeded, so reaching here means all of them did
+    return missingIndexTemplates;
   }
 
   private List<IndexTemplateDescriptor> getMissingIndexTemplates(
@@ -528,24 +571,32 @@ public class SchemaManager implements CloseableSilently {
     }
   }
 
-  public void updateSchemaMappings(
+  /**
+   * Applies a template's full rewrite (settings + mappings, unconditionally) and/or a plain index's
+   * new mapping fields. A template is always rewritten; a plain index is only touched when {@code
+   * newFields} actually carries new properties for it — an empty collection means the entry exists
+   * solely to force a template's rewrite (see {@link #forceCustomSettingsTemplates}), and issuing a
+   * mapping PUT with nothing to add would be a pointless write.
+   */
+  public void updateIndexTemplatesAndMappings(
       final Map<IndexDescriptor, Collection<IndexMappingProperty>> newFields) {
     for (final var newFieldEntry : newFields.entrySet()) {
       final var descriptor = newFieldEntry.getKey();
       final var newProperties = newFieldEntry.getValue();
 
-      if (descriptor instanceof IndexTemplateDescriptor) {
-        LOG.debug(
-            "Updating template: '{}'", ((IndexTemplateDescriptor) descriptor).getTemplateName());
+      if (descriptor instanceof final IndexTemplateDescriptor indexTemplateDescriptor) {
+        LOG.debug("Updating template: '{}'", indexTemplateDescriptor.getTemplateName());
         searchEngineClient.createIndexTemplate(
-            (IndexTemplateDescriptor) descriptor, getIndexSettingsFromConfig(descriptor), false);
+            indexTemplateDescriptor, getIndexSettingsFromConfig(descriptor), false);
       } else {
         LOG.info(
             "Index alias: '{}'. New fields will be added '{}'",
             descriptor.getAlias(),
             newProperties);
       }
-      searchEngineClient.putMapping(descriptor, newProperties);
+      if (!newProperties.isEmpty()) {
+        searchEngineClient.putMapping(descriptor, newProperties);
+      }
     }
   }
 

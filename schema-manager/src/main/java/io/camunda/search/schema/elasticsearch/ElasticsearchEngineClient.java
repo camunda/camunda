@@ -61,7 +61,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -359,7 +358,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
    * @param indexTemplateDescriptor of the index template to have its settings overwritten.
    */
   @Override
-  public void updateIndexTemplateSettings(
+  public void updateIndexTemplateSettingsIfManagedSettingsChanged(
       final IndexTemplateDescriptor indexTemplateDescriptor,
       final IndexConfiguration indexConfiguration) {
     final var maybeRequest =
@@ -699,8 +698,10 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       final var configuredPriority =
           convertValue(indexConfiguration.getTemplatePriority(), Long::valueOf);
 
-      if (areTemplateSettingsEqualToConfigured(
-          currentTemplate, configuredSettings, configuredPriority)) {
+      if (configuredSettings.matchesConfiguredTemplate(
+          currentTemplate.priority(),
+          configuredPriority,
+          currentTemplateSettings(currentTemplate))) {
         LOG.debug(
             "Index template settings for [{}] are already up to date",
             indexTemplateDescriptor.getTemplateName());
@@ -735,12 +736,15 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     }
   }
 
-  private boolean areTemplateSettingsEqualToConfigured(
-      final IndexTemplate currentTemplate,
-      final SchemaSettingsAppender configuredSettings,
-      final Long configuredPriority) {
-    return Objects.equals(configuredPriority, currentTemplate.priority())
-        && configuredSettings.equalsSettings(serializeAsMap(currentTemplate.template().settings()));
+  /**
+   * Serializes an existing template's stored settings block. Both the template body and its
+   * settings are optional on a composable index template, so a template stored without either
+   * yields {@code null} — which {@link SchemaSettingsAppender#matchesConfiguredTemplate} treats as
+   * a mismatch and repairs, rather than failing the comparison.
+   */
+  private Map<String, Object> currentTemplateSettings(final IndexTemplate currentTemplate) {
+    final var template = currentTemplate.template();
+    return template == null ? null : serializeAsMap(template.settings());
   }
 
   private IndexTemplate getIndexTemplateState(

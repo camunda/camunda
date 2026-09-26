@@ -23,6 +23,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 import static org.assertj.core.api.InstanceOfAssertFactories.type;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
@@ -32,12 +34,17 @@ import static org.mockito.Mockito.verify;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.search.connect.configuration.DatabaseType;
+import io.camunda.search.connect.es.ElasticsearchConnector;
+import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.search.schema.exceptions.IndexSchemaValidationException;
 import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.search.schema.metrics.SchemaManagerMetrics;
+import io.camunda.search.schema.opensearch.OpensearchEngineClient;
 import io.camunda.search.schema.utils.SchemaManagerITInvocationProvider;
 import io.camunda.search.schema.utils.TestIndexDescriptor;
 import io.camunda.search.schema.utils.TestTemplateDescriptor;
@@ -69,6 +76,7 @@ import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 
 @DisabledIfSystemProperty(
@@ -128,7 +136,7 @@ public class SchemaManagerIT {
     final Map<IndexDescriptor, Collection<IndexMappingProperty>> schemasToChange =
         Map.of(index, newProperties);
 
-    schemaManager.updateSchemaMappings(schemasToChange);
+    schemaManager.updateIndexTemplatesAndMappings(schemasToChange);
 
     // then
     final var updatedIndex = searchClientAdapter.getIndexAsNode(index.getFullQualifiedName());
@@ -241,7 +249,7 @@ public class SchemaManagerIT {
 
     final Map<IndexDescriptor, Collection<IndexMappingProperty>> schemasToChange =
         Map.of(indexTemplate, Set.of());
-    schemaManager.updateSchemaMappings(schemasToChange);
+    schemaManager.updateIndexTemplatesAndMappings(schemasToChange);
 
     // then
     final var template =
@@ -908,6 +916,78 @@ public class SchemaManagerIT {
 
     startupWithRetry(schemaManager, config);
     assertThatNoException().isThrownBy(() -> startupWithRetry(schemaManager, config));
+  }
+
+  /**
+   * Regression test for #63764: schema-init used to re-issue an index-template settings PUT on
+   * every attempt for any template carrying a custom settings block (list-view, incident, see
+   * {@link IndexTemplateDescriptor#hasCustomSettings()}), because the raw JSON settings block can
+   * never compare equal to the search engine's normalized rendering of it. With 24 templates and an
+   * unbounded retry loop in production, that turned every schema-init retry into a redundant
+   * cluster-state write for the whole fleet. Runs the *entire* real schema (every descriptor, not a
+   * hand-picked subset) against a real container twice through the actual {@code startupOnce()}
+   * entry point, and asserts zero index/template creation or settings writes on the second,
+   * unchanged run.
+   */
+  @TestTemplate
+  void shouldNotIssueAnyWriteOnARepeatedRunOfTheFullSchema(
+      final SearchEngineConfiguration config, final SearchClientAdapter ignored)
+      throws IOException {
+    // given - the whole real schema, which must carry a template with custom settings, otherwise
+    // this test never exercises the path that regressed
+    config.schemaManager().setCreateSchema(true);
+    final var indexDescriptors =
+        new IndexDescriptors(
+            config.connect().getIndexPrefix(), config.connect().getTypeEnum().isElasticSearch());
+    assertThat(indexDescriptors.templates())
+        .anyMatch(IndexTemplateDescriptor::hasCustomSettings)
+        .anyMatch(descriptor -> !descriptor.hasCustomSettings());
+
+    final var writes = spiedSchemaWrites(config);
+    closeables.add(writes.engineClient());
+    final var schemaManager =
+        new SchemaManager(
+            writes.engineClient(),
+            indexDescriptors.indices(),
+            indexDescriptors.templates(),
+            config,
+            objectMapper);
+
+    // when - a first run, against an empty search engine, so it really does write the schema
+    startupWithRetry(schemaManager, config);
+    assertThat(writes.recorded())
+        .as("the first run must actually create the schema, or the second run proves nothing")
+        .isNotEmpty();
+
+    // and - a second, identical run
+    writes.reset();
+    startupWithRetry(schemaManager, config);
+
+    // then
+    assertThat(writes.recorded()).isEmpty();
+  }
+
+  /**
+   * Wraps a real engine client in a spy that records every schema write it issues, so a test can
+   * assert on writes without naming the engine-specific request types twice.
+   */
+  private SchemaWrites spiedSchemaWrites(final SearchEngineConfiguration config) {
+    if (config.connect().getTypeEnum() == DatabaseType.ELASTICSEARCH) {
+      final var connector = new ElasticsearchConnector(config.connect());
+      final var rawClient = connector.createClient();
+      final var indicesSpy = spy(rawClient.indices());
+      final var clientSpy = spy(rawClient);
+      doReturn(indicesSpy).when(clientSpy).indices();
+      return new SchemaWrites(
+          new ElasticsearchEngineClient(clientSpy, connector.objectMapper()), indicesSpy);
+    }
+    final var connector = new OpensearchConnector(config.connect());
+    final var rawClient = connector.createClient();
+    final var indicesSpy = spy(rawClient.indices());
+    final var clientSpy = spy(rawClient);
+    doReturn(indicesSpy).when(clientSpy).indices();
+    return new SchemaWrites(
+        new OpensearchEngineClient(clientSpy, connector.objectMapper()), indicesSpy);
   }
 
   @TestTemplate
@@ -1822,5 +1902,27 @@ public class SchemaManagerIT {
     final var searchClient = searchEngineClientFromConfig(config);
     closeables.add(searchClient);
     return searchClient;
+  }
+
+  private record SchemaWrites(SearchEngineClient engineClient, Object indicesSpy) {
+
+    /**
+     * The write operations both engines' indices clients share by name. Matching on names rather
+     * than request types keeps this engine-agnostic; a name that does not exist on a client simply
+     * never matches.
+     */
+    private static final Set<String> WRITE_OPERATIONS =
+        Set.of("create", "putIndexTemplate", "putMapping", "putSettings", "putTemplate");
+
+    List<String> recorded() {
+      return mockingDetails(indicesSpy).getInvocations().stream()
+          .map(invocation -> invocation.getMethod().getName())
+          .filter(WRITE_OPERATIONS::contains)
+          .toList();
+    }
+
+    void reset() {
+      Mockito.reset(indicesSpy);
+    }
   }
 }
