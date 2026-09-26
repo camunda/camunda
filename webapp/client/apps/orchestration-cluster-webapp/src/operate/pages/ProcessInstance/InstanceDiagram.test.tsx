@@ -1,0 +1,858 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {afterEach, describe, expect, onTestFinished, vi} from 'vitest';
+import {userEvent} from 'vitest/browser';
+import {cleanup, render} from 'vitest-browser-react';
+import {
+	Outlet,
+	RouterProvider,
+	createMemoryHistory,
+	createRootRouteWithContext,
+	createRoute,
+	createRouter,
+	useParams,
+	useRouterState,
+} from '@tanstack/react-router';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {TooltipProvider} from '@camunda/design-system';
+import {HttpResponse, http, delay} from 'msw';
+import i18n from 'i18next';
+import {z} from 'zod';
+import type {ProcessInstance as ProcessInstanceData} from '@camunda/camunda-api-zod-schemas/8.10';
+import {it} from '#/vitest-modules/test-extend';
+import {renderWithRouter} from '#/vitest-modules/render-with-router';
+import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
+import {createAgentInstance} from '#/shared-test-modules/api-mocks/agent-instances';
+import {createProcessDefinitionStatistic} from '#/shared-test-modules/api-mocks/process-definition-statistics';
+import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
+import {
+	mockGetProcessDefinitionXmlEndpoint,
+	mockGetProcessInstanceStatisticsEndpoint,
+	mockGetProcessInstanceSequenceFlowsEndpoint,
+	mockGetProcessInstanceWaitStateStatisticsEndpoint,
+	mockQueryAgentInstancesEndpoint,
+	mockQueryElementInstancesEndpoint,
+	mockQueryProcessInstancesEndpoint,
+	mockQueryDecisionInstancesEndpoint,
+} from '#/shared-test-modules/mock-handlers';
+import {endpoints} from '#/shared/http/endpoints';
+import {notificationsStore} from '#/shared/notifications/notifications.store';
+import {ProcessInstanceContext} from './useProcessInstancePage';
+import {processInstanceSearchSchema} from './processInstanceSearch';
+import {InstanceDiagram} from './InstanceDiagram';
+import {useInstanceDiagramData} from './instanceDiagram.queries';
+
+const INSTANCE_ID = 'instance-1';
+const PROCESS_XML = `<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+<bpmn:process id="Process_1" isExecutable="false"><bpmn:startEvent id="start_1" />
+<bpmn:userTask id="task_1" /><bpmn:callActivity id="call_1" />
+<bpmn:businessRuleTask id="rule_1" /><bpmn:endEvent id="end_1" /></bpmn:process>
+<bpmndi:BPMNDiagram id="Diagram_1"><bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+<bpmndi:BPMNShape id="start_di" bpmnElement="start_1"><dc:Bounds x="100" y="100" width="36" height="36" /></bpmndi:BPMNShape><bpmndi:BPMNShape id="task_di" bpmnElement="task_1"><dc:Bounds x="200" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="call_di" bpmnElement="call_1"><dc:Bounds x="350" y="100" width="100" height="80" /></bpmndi:BPMNShape><bpmndi:BPMNShape id="rule_di" bpmnElement="rule_1"><dc:Bounds x="500" y="100" width="100" height="80" /></bpmndi:BPMNShape><bpmndi:BPMNShape id="end_di" bpmnElement="end_1"><dc:Bounds x="650" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+</bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn:definitions>`;
+const NESTED_XML = PROCESS_XML.replace(
+	'<bpmn:endEvent id="end_1" />',
+	'<bpmn:subProcess id="sub_1"><bpmn:userTask id="inner_1" /></bpmn:subProcess><bpmn:endEvent id="end_1" />',
+).replace(
+	'</bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn:definitions>',
+	'<bpmndi:BPMNShape id="sub_di" bpmnElement="sub_1"><dc:Bounds x="750" y="100" width="120" height="100" /></bpmndi:BPMNShape></bpmndi:BPMNPlane></bpmndi:BPMNDiagram><bpmndi:BPMNDiagram id="Nested_Diagram"><bpmndi:BPMNPlane id="Nested_Plane" bpmnElement="sub_1"><bpmndi:BPMNShape id="inner_di" bpmnElement="inner_1"><dc:Bounds x="770" y="120" width="80" height="60" /></bpmndi:BPMNShape></bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn:definitions>',
+);
+const NESTED_INCIDENT_XML = NESTED_XML.replace(
+	'<bpmn:userTask id="inner_1" />',
+	'<bpmn:userTask id="inner_1" /><bpmn:userTask id="inner_2" />',
+).replace(
+	'</bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn:definitions>',
+	'<bpmndi:BPMNShape id="inner_2_di" bpmnElement="inner_2"><dc:Bounds x="870" y="120" width="80" height="60" /></bpmndi:BPMNShape></bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn:definitions>',
+);
+
+const INSTANCE = createProcessInstance({processInstanceKey: INSTANCE_ID, processDefinitionId: 'Process_1'});
+const STATISTICS = [
+	createProcessDefinitionStatistic({elementId: 'task_1', active: 2, completed: 3, canceled: 1}),
+	createProcessDefinitionStatistic({elementId: 'call_1', completed: 1}),
+	createProcessDefinitionStatistic({elementId: 'rule_1', completed: 1}),
+	createProcessDefinitionStatistic({elementId: 'end_1', completed: 1}),
+];
+
+const singleResult = <T,>(item: T) => ({
+	items: [item],
+	page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+});
+
+type PageProps = React.ComponentProps<typeof InstanceDiagram> & {nextInstanceState?: ProcessInstanceData['state']};
+
+function DiagramDataProbe({instance}: {instance: ProcessInstanceData}) {
+	useInstanceDiagramData(instance, true);
+	return null;
+}
+
+function Page({nextInstanceState, ...props}: PageProps) {
+	const location = useRouterState({select: (state) => state.location});
+	const processInstanceId = useParams({strict: false}).processInstanceId ?? INSTANCE_ID;
+	if (!location.pathname.startsWith('/operate/processes/')) {
+		return null;
+	}
+	const search = processInstanceSearchSchema.parse(location.search);
+	return (
+		<ProcessInstanceContext
+			value={{
+				processInstanceId,
+				processInstance:
+					processInstanceId === INSTANCE_ID
+						? INSTANCE
+						: createProcessInstance({processInstanceKey: processInstanceId, state: nextInstanceState ?? 'ACTIVE'}),
+				search,
+				selection: search,
+			}}
+		>
+			<div style={{width: '900px', height: '400px'}}>
+				<InstanceDiagram {...props} />
+			</div>
+		</ProcessInstanceContext>
+	);
+}
+
+function renderPage(props: PageProps = {}, search = '') {
+	return renderWithRouter(() => <Page {...props} />, {
+		path: '/operate/processes/$processInstanceId/details',
+		initialEntry: `/operate/processes/${INSTANCE_ID}/details${search}`,
+	});
+}
+
+async function renderLoadedPage(props: PageProps = {}, search = '') {
+	const screen = await renderPage(props, search);
+	await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
+	return screen;
+}
+
+async function renderPageWithPendingInstance(loader: Promise<void>, basepath: string) {
+	const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
+	const rootRoute = createRootRouteWithContext<{queryClient: QueryClient}>()({component: () => <Outlet />});
+	const instanceRoute = createRoute({
+		getParentRoute: () => rootRoute,
+		path: '/operate/processes/$processInstanceId/details',
+		loader: async ({params}) => {
+			if (params.processInstanceId === 'instance-2') {
+				await loader;
+			}
+		},
+		component: () => <Page />,
+	});
+	const router = createRouter({
+		routeTree: rootRoute.addChildren([instanceRoute]),
+		history: createMemoryHistory({
+			initialEntries: [`${basepath}/operate/processes/${INSTANCE_ID}/details?elementId=task_1`],
+		}),
+		basepath,
+		defaultPendingMinMs: 0,
+		context: {queryClient},
+	});
+	await router.load();
+	const screen = await render(
+		<TooltipProvider>
+			<QueryClientProvider client={queryClient}>
+				<RouterProvider router={router} />
+			</QueryClientProvider>
+		</TooltipProvider>,
+	);
+	await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
+	return {...screen, router, queryClient};
+}
+
+function handlers({
+	xml = PROCESS_XML,
+	statistics = STATISTICS,
+	agents = [],
+	waitStates = [],
+}: {
+	xml?: string;
+	statistics?: typeof STATISTICS;
+	agents?: ReturnType<typeof createAgentInstance>[];
+	waitStates?: {elementId: string; waitingCount: number}[];
+} = {}) {
+	return [
+		mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(xml)}),
+		mockGetProcessInstanceStatisticsEndpoint({successResponse: HttpResponse.json({items: statistics})}),
+		mockGetProcessInstanceSequenceFlowsEndpoint({successResponse: HttpResponse.json({items: []})}),
+		mockGetProcessInstanceWaitStateStatisticsEndpoint({
+			successResponse: HttpResponse.json(createPaginatedResponse({items: waitStates})),
+		}),
+		mockQueryAgentInstancesEndpoint({
+			successResponse: HttpResponse.json(createPaginatedResponse({items: agents})),
+		}),
+	] as const;
+}
+
+afterEach(async () => {
+	await cleanup();
+	await i18n.changeLanguage('en');
+	vi.restoreAllMocks();
+	notificationsStore.reset();
+});
+
+describe('<InstanceDiagram />', () => {
+	it('should download the rendered BPMN definition', async ({worker}) => {
+		worker.use(...handlers());
+		let filename = '';
+		const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+			filename = this.download;
+		});
+		vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:diagram');
+		const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+
+		const screen = await renderLoadedPage();
+		await userEvent.click(screen.getByRole('button', {name: 'Download XML'}));
+
+		expect(click).toHaveBeenCalledOnce();
+		expect(filename).toBe('my-process_v1.bpmn');
+		await expect.poll(() => revoke.mock.calls).toEqual([['blob:diagram']]);
+	});
+
+	it('should show a spinner while loading the XML', async ({worker}) => {
+		let releaseXml!: () => void;
+		const pendingXml = new Promise<void>((resolve) => {
+			releaseXml = resolve;
+		});
+		onTestFinished(releaseXml);
+		worker.use(
+			http.get(endpoints.getProcessDefinitionXml({processDefinitionKey: '2251799813685279'}).url, async () => {
+				await pendingXml;
+				return HttpResponse.text(PROCESS_XML);
+			}),
+			...handlers(),
+		);
+
+		const screen = await renderPage();
+		await expect.element(screen.getByTestId('diagram-spinner')).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).not.toBeInTheDocument();
+		releaseXml();
+		await expect.element(screen.getByTestId('diagram-spinner')).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
+	});
+
+	it.for([
+		{status: 403, message: 'Missing permissions to view the Definition'},
+		{status: 500, message: "Couldn't fetch data"},
+	])('should render the XML error state for $status', async ({status, message}, {worker}) => {
+		worker.use(
+			mockGetProcessDefinitionXmlEndpoint({
+				successResponse: HttpResponse.json(createProblemDetails({status}), {status}),
+			}),
+			...handlers(),
+		);
+
+		const screen = await renderPage();
+
+		await expect.element(screen.getByText(message)).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).not.toBeInTheDocument();
+	});
+
+	it.for([
+		'',
+		'<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" />',
+		PROCESS_XML.replace(/<bpmndi:BPMNPlane[\s\S]*?<\/bpmndi:BPMNPlane>/, ''),
+	])('should show an empty state when no diagram exists', async (xml, {worker}) => {
+		worker.use(...handlers({xml}));
+
+		const screen = await renderPage();
+
+		await expect.element(screen.getByText('No diagram available for this process')).toBeVisible();
+	});
+
+	it('should compose state, waiting and agent overlays and refresh when statistics change', async ({worker}) => {
+		worker.use(
+			...handlers({
+				waitStates: [
+					{elementId: 'task_1', waitingCount: 2},
+					{elementId: 'call_1', waitingCount: 1},
+					{elementId: 'Process_1', waitingCount: 1},
+				],
+				agents: [
+					createAgentInstance({elementId: 'call_1'}),
+					createAgentInstance({agentInstanceKey: 'agent-2', elementId: 'call_1'}),
+				],
+			}),
+		);
+
+		const screen = await renderPage();
+
+		await expect.element(screen.getByTestId('instance-state-task_1-active')).toHaveTextContent('2');
+		await expect.element(screen.getByTestId('instance-state-end_1-completedEndEvents')).toBeVisible();
+		await expect.element(screen.getByTestId('instance-waiting-task_1')).toHaveTextContent('2 waiting');
+		await expect
+			.element(screen.getByTestId('instance-agent-call_1'))
+			.toHaveTextContent('Thinking... + 1 more active agent');
+		await expect.element(screen.getByTestId('instance-agent-shine-call_1')).toBeVisible();
+		const shineStyle = getComputedStyle(screen.getByTestId('instance-agent-shine-call_1').element());
+		expect(shineStyle.mask).toContain('content-box');
+		expect(shineStyle.maskComposite.split(',')[0]).toBe('exclude');
+		await expect.element(screen.getByTestId('instance-waiting-call_1')).not.toBeInTheDocument();
+		await expect.element(screen.getByTestId('instance-waiting-Process_1')).not.toBeInTheDocument();
+		await expect.element(screen.getByTestId('instance-state-task_1-completed')).not.toBeInTheDocument();
+
+		await screen.queryClient.setQueryData(
+			['instanceDiagramStatistics', INSTANCE_ID],
+			[createProcessDefinitionStatistic({elementId: 'task_1', active: 5})],
+		);
+
+		await expect.element(screen.getByTestId('instance-state-task_1-active')).toHaveTextContent('5');
+		await expect.element(screen.getByTestId('instance-state-end_1-completedEndEvents')).not.toBeInTheDocument();
+
+		await screen.queryClient.setQueryData(
+			['instanceDiagramAgents', INSTANCE_ID],
+			Array.from({length: 3}, (_, index) =>
+				createAgentInstance({agentInstanceKey: `agent-${index + 1}`, elementId: 'call_1', status: 'TOOL_CALLING'}),
+			),
+		);
+		await expect
+			.element(screen.getByTestId('instance-agent-call_1'))
+			.toHaveTextContent('Calling tools... + 2 more active agents');
+	});
+
+	it('should mark waiting multi-instance elements as active when statistics omit them', async ({worker}) => {
+		worker.use(
+			...handlers({
+				xml: PROCESS_XML.replace(
+					'<bpmn:userTask id="task_1" />',
+					'<bpmn:userTask id="task_1"><bpmn:multiInstanceLoopCharacteristics /></bpmn:userTask>',
+				),
+				statistics: [],
+				waitStates: [
+					{elementId: 'task_1', waitingCount: 2},
+					{elementId: 'call_1', waitingCount: 1},
+				],
+			}),
+		);
+
+		const screen = await renderLoadedPage();
+
+		await expect.element(screen.getByTestId('instance-state-task_1-active')).toBeVisible();
+		await expect.element(screen.getByTestId('instance-state-task_1-active')).toHaveTextContent('');
+		await expect.element(screen.getByTestId('instance-waiting-task_1')).toHaveTextContent('2 waiting');
+		await expect.element(screen.getByTestId('instance-state-call_1-active')).not.toBeInTheDocument();
+		await expect.element(screen.getByTestId('instance-waiting-call_1')).toHaveTextContent('Waiting');
+	});
+
+	it.for([0, 2])('should fetch all agent pages and stop after %s trailing results', async (trailingCount, {worker}) => {
+		const agents = Array.from({length: 100 + trailingCount}, (_, index) =>
+			createAgentInstance({
+				agentInstanceKey: `agent-${index}`,
+				elementId: 'call_1',
+				status: index === 100 ? 'INITIALIZING' : 'THINKING',
+			}),
+		);
+		const pageStarts: number[] = [];
+		worker.use(
+			http.post(
+				endpoints.queryAgentInstances({filter: {processInstanceKey: INSTANCE_ID}, page: {from: 0}}).url,
+				async ({request}) => {
+					const {page} = z.object({page: z.object({from: z.number(), limit: z.number()})}).parse(await request.json());
+					expect(page.limit).toBe(100);
+					pageStarts.push(page.from);
+					return HttpResponse.json(
+						createPaginatedResponse({
+							items: page.from === 0 ? agents.slice(0, 100) : agents.slice(100),
+							page: {
+								totalItems: agents.length,
+								startCursor: null,
+								endCursor: null,
+								hasMoreTotalItems: page.from === 0 || trailingCount === 0,
+							},
+						}),
+					);
+				},
+			),
+			...handlers(),
+		);
+
+		const screen = await renderLoadedPage();
+
+		await expect
+			.element(screen.getByTestId('instance-agent-call_1'))
+			.toHaveTextContent(
+				`${trailingCount ? 'Initializing...' : 'Thinking...'} + ${agents.length - 1} more active agents`,
+			);
+		expect(pageStarts).toEqual([0, 100]);
+		expect(screen.queryClient.getQueryData(['instanceDiagramAgents', INSTANCE_ID])).toEqual(agents);
+	});
+
+	it.for([0, 3])(
+		'should show one incident badge for a subprocess with multiple incident-bearing children and %s direct incidents',
+		async (parentIncidents, {worker}) => {
+			worker.use(
+				...handlers({
+					xml: NESTED_INCIDENT_XML,
+					statistics: [
+						createProcessDefinitionStatistic({elementId: 'inner_1', incidents: 1}),
+						createProcessDefinitionStatistic({elementId: 'inner_2', incidents: 2}),
+						...(parentIncidents > 0
+							? [createProcessDefinitionStatistic({elementId: 'sub_1', incidents: parentIncidents})]
+							: []),
+					],
+				}),
+			);
+
+			const screen = await renderLoadedPage();
+			const subprocessIncidents = screen.getByTestId('instance-state-sub_1-incidents');
+
+			await expect.element(subprocessIncidents).toBeVisible();
+			expect(subprocessIncidents.elements()).toHaveLength(1);
+			await expect.element(subprocessIncidents).toHaveTextContent(parentIncidents ? String(parentIncidents) : '');
+		},
+	);
+
+	it('should refresh waiting and agent overlays when the language changes', async ({worker}) => {
+		worker.use(
+			...handlers({
+				waitStates: [{elementId: 'task_1', waitingCount: 2}],
+				agents: [createAgentInstance({elementId: 'call_1'})],
+			}),
+		);
+
+		const screen = await renderLoadedPage();
+		await expect.element(screen.getByTestId('instance-waiting-task_1')).toHaveTextContent('2 waiting');
+		await expect.element(screen.getByTestId('instance-agent-call_1')).toHaveTextContent('Thinking...');
+
+		await i18n.changeLanguage('de');
+
+		await expect.element(screen.getByTestId('instance-agent-call_1')).toHaveTextContent('Denkt nach...');
+		await expect.element(screen.getByTestId('instance-waiting-task_1')).toHaveTextContent('2 wartend');
+	});
+
+	it('should measure agent shine against its own diagram when two viewers share an element ID', async ({worker}) => {
+		worker.use(...handlers({agents: [createAgentInstance({elementId: 'call_1'})]}));
+		await renderLoadedPage();
+		worker.use(
+			...handlers({
+				xml: PROCESS_XML.replace(
+					'bpmnElement="call_1"><dc:Bounds x="350" y="100" width="100"',
+					'bpmnElement="call_1"><dc:Bounds x="350" y="100" width="140"',
+				),
+				agents: [createAgentInstance({elementId: 'call_1'})],
+			}),
+		);
+		await renderLoadedPage();
+
+		await expect
+			.poll(() =>
+				[...document.querySelectorAll<HTMLElement>('[data-testid="instance-agent-shine-call_1"]')].map(
+					(shine) => getComputedStyle(shine).width,
+				),
+			)
+			.toEqual(['102px', '142px']);
+	});
+
+	it('should show only execution states and pending badges in modification mode', async ({worker}) => {
+		const onSelection = vi.fn();
+		worker.use(
+			...handlers({
+				waitStates: [{elementId: 'task_1', waitingCount: 2}],
+				agents: [createAgentInstance({elementId: 'call_1'})],
+			}),
+		);
+
+		const screen = await renderPage({
+			isModificationModeEnabled: true,
+			isExecutionCountVisible: true,
+			onModificationElementSelection: onSelection,
+			modificationBadges: [
+				{
+					elementId: 'task_1',
+					type: 'instance-modification',
+					position: {top: 0, left: 0},
+					payload: {newTokenCount: 2, cancelledTokenCount: 1},
+				},
+			],
+		});
+
+		await expect.element(screen.getByTestId('instance-state-task_1-active')).toBeVisible();
+		await expect.element(screen.getByTestId('instance-modification-task_1')).toHaveTextContent('+2 −1');
+		await expect.element(screen.getByTestId('instance-state-task_1-completed')).not.toBeInTheDocument();
+		await expect.element(screen.getByTestId('instance-state-task_1-canceled')).not.toBeInTheDocument();
+		await expect.element(screen.getByTestId('instance-waiting-task_1')).not.toBeInTheDocument();
+		await expect.element(screen.getByTestId('instance-agent-call_1')).not.toBeInTheDocument();
+		await userEvent.click(document.querySelector<SVGElement>('[data-element-id="task_1"]')!);
+		expect(onSelection).not.toHaveBeenCalled();
+
+		await userEvent.dblClick(document.querySelector<SVGElement>('[data-element-id="call_1"]')!);
+		expect(screen.router.state.location.pathname).toBe(`/operate/processes/${INSTANCE_ID}/details`);
+	});
+
+	it('should synchronize selection and clear the instance key when the selected node is clicked', async ({worker}) => {
+		worker.use(...handlers());
+
+		const screen = await renderLoadedPage({}, '?elementId=task_1&elementInstanceKey=instance-2');
+
+		const task = document.querySelector<SVGElement>('[data-element-id="task_1"]');
+		expect(task).not.toBeNull();
+
+		await userEvent.click(task!);
+		await expect
+			.poll(() => processInstanceSearchSchema.parse(screen.router.state.location.search).elementInstanceKey)
+			.toBeUndefined();
+		expect(processInstanceSearchSchema.parse(screen.router.state.location.search).elementId).toBe('task_1');
+
+		await userEvent.click(document.querySelector<HTMLElement>('[data-testid="diagram-canvas"]')!, {
+			position: {x: 5, y: 5},
+		});
+		await expect
+			.poll(() => processInstanceSearchSchema.parse(screen.router.state.location.search).elementId)
+			.toBeUndefined();
+	});
+
+	it('should select the URL anchor element and clear the previous instance selection', async ({worker}) => {
+		worker.use(...handlers());
+
+		const screen = await renderLoadedPage({}, '?elementId=call_1&anchorElementId=task_1&elementInstanceKey=instance-2');
+
+		await userEvent.click(document.querySelector<SVGElement>('[data-element-id="task_1"]')!);
+		await expect
+			.poll(() => processInstanceSearchSchema.parse(screen.router.state.location.search).elementId)
+			.toBe('task_1');
+		expect(processInstanceSearchSchema.parse(screen.router.state.location.search).anchorElementId).toBeUndefined();
+		expect(processInstanceSearchSchema.parse(screen.router.state.location.search).elementInstanceKey).toBeUndefined();
+	});
+
+	it('should clear the previous selection when navigating to a different process instance', async ({worker}) => {
+		worker.use(...handlers());
+
+		const screen = await renderLoadedPage({}, '?elementId=task_1');
+
+		await screen.router.navigate({
+			to: '/operate/processes/$processInstanceId/details',
+			params: {processInstanceId: 'instance-2'},
+			search: {elementId: 'task_1'},
+		});
+
+		await expect.poll(() => screen.router.state.location.pathname).toBe('/operate/processes/instance-2/details');
+		await expect
+			.poll(() => processInstanceSearchSchema.parse(screen.router.state.location.search).elementId)
+			.toBeUndefined();
+	});
+
+	it('should not refetch cached statistics for a different completed process instance', async ({worker}) => {
+		let statisticsReads = 0;
+		let sequenceFlowReads = 0;
+		worker.use(
+			http.get(endpoints.getProcessInstanceElementInstanceStatistics('instance-2').url, () => {
+				statisticsReads++;
+				return HttpResponse.json({items: STATISTICS});
+			}),
+			http.get(endpoints.getProcessInstanceSequenceFlows('instance-2').url, () => {
+				sequenceFlowReads++;
+				return HttpResponse.json({items: []});
+			}),
+			...handlers(),
+		);
+		const screen = await renderLoadedPage({nextInstanceState: 'COMPLETED'});
+		screen.queryClient.setQueryDefaults(['instanceDiagramStatistics', 'instance-2'], {staleTime: Infinity});
+		screen.queryClient.setQueryDefaults(['instanceDiagramSequenceFlows', 'instance-2'], {staleTime: Infinity});
+		screen.queryClient.setQueryData(['instanceDiagramStatistics', 'instance-2'], STATISTICS);
+		screen.queryClient.setQueryData(['instanceDiagramSequenceFlows', 'instance-2'], []);
+
+		await screen.router.navigate({
+			to: '/operate/processes/$processInstanceId/details',
+			params: {processInstanceId: 'instance-2'},
+			search: {},
+		});
+		await expect.element(screen.getByTestId('instance-state-task_1-active')).toBeVisible();
+		await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+		expect(statisticsReads).toBe(0);
+		expect(sequenceFlowReads).toBe(0);
+	});
+
+	it('should refresh statistics when the same process instance completes', async ({worker}) => {
+		let statisticsReads = 0;
+		let sequenceFlowReads = 0;
+		worker.use(
+			http.get(endpoints.getProcessInstanceElementInstanceStatistics(INSTANCE_ID).url, () => {
+				statisticsReads++;
+				return HttpResponse.json({items: STATISTICS});
+			}),
+			http.get(endpoints.getProcessInstanceSequenceFlows(INSTANCE_ID).url, () => {
+				sequenceFlowReads++;
+				return HttpResponse.json({items: []});
+			}),
+			...handlers(),
+		);
+		const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
+		const screen = await render(
+			<QueryClientProvider client={queryClient}>
+				<DiagramDataProbe instance={INSTANCE} />
+			</QueryClientProvider>,
+		);
+		await expect
+			.poll(() => queryClient.getQueryState(['instanceDiagramStatistics', INSTANCE_ID])?.fetchStatus)
+			.toBe('idle');
+		await expect
+			.poll(() => queryClient.getQueryState(['instanceDiagramSequenceFlows', INSTANCE_ID])?.fetchStatus)
+			.toBe('idle');
+		expect(statisticsReads).toBe(1);
+		expect(sequenceFlowReads).toBe(1);
+
+		await screen.rerender(
+			<QueryClientProvider client={queryClient}>
+				<DiagramDataProbe instance={{...INSTANCE, state: 'COMPLETED'}} />
+			</QueryClientProvider>,
+		);
+
+		await expect.poll(() => statisticsReads).toBe(2);
+		await expect.poll(() => sequenceFlowReads).toBe(2);
+	});
+
+	it('should retain a newly selected element when switching to its subprocess root', async ({worker}) => {
+		worker.use(
+			...handlers({
+				xml: NESTED_XML,
+				statistics: [...STATISTICS, createProcessDefinitionStatistic({elementId: 'inner_1', active: 1})],
+			}),
+		);
+		const screen = await renderLoadedPage({}, '?elementId=task_1');
+
+		await screen.router.navigate({to: '.', search: {elementId: 'inner_1'}});
+		await expect
+			.poll(() => document.querySelector('[data-element-id="inner_1"]')?.classList.contains('op-selected'))
+			.toBe(true);
+		await delay(350);
+		expect(processInstanceSearchSchema.parse(screen.router.state.location.search).elementId).toBe('inner_1');
+
+		await userEvent.click(screen.getByRole('link', {name: 'Process_1'}));
+		await expect
+			.poll(() => processInstanceSearchSchema.parse(screen.router.state.location.search).elementId)
+			.toBeUndefined();
+		await delay(350);
+		expect(processInstanceSearchSchema.parse(screen.router.state.location.search).elementId).toBeUndefined();
+	});
+
+	it('should drill into a called process without inheriting parent selection', async ({worker}) => {
+		worker.use(
+			...handlers(),
+			mockQueryElementInstancesEndpoint({
+				successResponse: HttpResponse.json(singleResult({elementInstanceKey: 'element-1'})),
+			}),
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(singleResult(createProcessInstance({processInstanceKey: 'child-1'}))),
+			}),
+		);
+
+		const screen = await renderLoadedPage({}, '?elementId=task_1');
+
+		await userEvent.dblClick(document.querySelector<SVGElement>('[data-element-id="call_1"]')!);
+
+		await expect.poll(() => screen.router.state.location.pathname).toBe('/operate/processes/child-1/details');
+		expect(processInstanceSearchSchema.parse(screen.router.state.location.search).elementId).toBeUndefined();
+	});
+
+	it('should drill into a called process when deployed under a basepath', async ({worker}) => {
+		worker.use(
+			...handlers(),
+			mockQueryElementInstancesEndpoint({
+				successResponse: HttpResponse.json(singleResult({elementInstanceKey: 'element-1'})),
+			}),
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(singleResult(createProcessInstance({processInstanceKey: 'child-1'}))),
+			}),
+		);
+
+		const screen = await renderPageWithPendingInstance(Promise.resolve(), '/camunda');
+		await userEvent.dblClick(document.querySelector<SVGElement>('[data-element-id="call_1"]')!);
+
+		await expect
+			.poll(() => screen.queryClient.getQueryState(['instanceDiagramDrilldownElement', INSTANCE_ID, 'call_1'])?.status)
+			.toBe('success');
+		await expect.poll(() => screen.router.history.location.pathname).toBe('/camunda/operate/processes/child-1/details');
+		await expect.poll(() => screen.router.state.location.pathname).toBe('/operate/processes/child-1/details');
+		expect(processInstanceSearchSchema.parse(screen.router.state.location.search).elementId).toBeUndefined();
+		await expect.poll(() => screen.queryClient.isFetching()).toBe(0);
+	});
+
+	it('should drill into a called decision and skip ambiguous matches', async ({worker}) => {
+		worker.use(
+			...handlers(),
+			mockQueryElementInstancesEndpoint({
+				successResponse: HttpResponse.json(singleResult({elementInstanceKey: 'element-2'})),
+			}),
+			mockQueryDecisionInstancesEndpoint({
+				successResponse: HttpResponse.json(singleResult({decisionEvaluationInstanceKey: 'decision-1'})),
+			}),
+		);
+
+		const screen = await renderLoadedPage();
+		await userEvent.dblClick(document.querySelector<SVGElement>('[data-element-id="rule_1"]')!);
+
+		await expect.poll(() => screen.router.state.location.pathname).toBe('/operate/decisions/decision-1');
+	});
+
+	it.for([
+		{elementId: 'call_1', message: 'Failed to resolve called instances'},
+		{elementId: 'rule_1', message: 'Failed to resolve called decision instances'},
+	])(
+		'should report a failed drilldown for $elementId and clear its loading state',
+		async ({elementId, message}, {worker}) => {
+			const failure = {
+				successResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
+				delay: 200,
+			};
+			worker.use(
+				...handlers(),
+				mockQueryElementInstancesEndpoint({
+					successResponse: HttpResponse.json(singleResult({elementInstanceKey: 'element-1'})),
+				}),
+				elementId === 'call_1'
+					? mockQueryProcessInstancesEndpoint(failure)
+					: mockQueryDecisionInstancesEndpoint(failure),
+			);
+
+			const screen = await renderLoadedPage();
+			const shape = document.querySelector<SVGElement>(`[data-element-id="${elementId}"]`);
+			await userEvent.dblClick(shape!);
+
+			await expect.poll(() => shape?.classList.contains('op-drilldown-loading')).toBe(true);
+			await expect.poll(() => notificationsStore.notifications.map(({title}) => title)).toContain(message);
+			await expect.poll(() => shape?.classList.contains('op-drilldown-loading')).toBe(false);
+			expect(screen.router.state.location.pathname).toBe(`/operate/processes/${INSTANCE_ID}/details`);
+		},
+	);
+
+	it.for(['', '/camunda'] as const)(
+		'should ignore a double click on the previous instance while the next instance loads with basepath "%s"',
+		async (basepath, {worker}) => {
+			let releaseLoader: () => void = () => {};
+			const pendingLoader = new Promise<void>((resolve) => {
+				releaseLoader = resolve;
+			});
+			let releaseElementResponse: () => void = () => {};
+			const pendingElementResponse = new Promise<void>((resolve) => {
+				releaseElementResponse = resolve;
+			});
+			onTestFinished(() => {
+				releaseElementResponse();
+				releaseLoader();
+			});
+			let oldInstanceRequests = 0;
+			worker.use(
+				http.post(
+					endpoints.queryElementInstances({filter: {processInstanceKey: INSTANCE_ID}, page: {limit: 1}}).url,
+					async () => {
+						oldInstanceRequests++;
+						await pendingElementResponse;
+						return HttpResponse.json(singleResult({elementInstanceKey: 'element-1'}));
+					},
+				),
+				...handlers(),
+			);
+			const screen = await renderPageWithPendingInstance(pendingLoader, basepath);
+			const navigation = screen.router.navigate({
+				to: '/operate/processes/$processInstanceId/details',
+				params: {processInstanceId: 'instance-2'},
+				search: {elementId: 'task_1'},
+			});
+			await expect
+				.poll(() => screen.router.history.location.pathname)
+				.toBe(`${basepath}/operate/processes/instance-2/details`);
+			await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
+			await userEvent.dblClick(document.querySelector<SVGElement>('[data-element-id="call_1"]')!);
+
+			expect(
+				screen.queryClient.getQueryState(['instanceDiagramDrilldownElement', INSTANCE_ID, 'call_1']),
+			).toBeUndefined();
+			expect(oldInstanceRequests).toBe(0);
+			releaseElementResponse();
+			releaseLoader();
+			await navigation;
+			expect(screen.router.state.location.pathname).toBe('/operate/processes/instance-2/details');
+			await expect
+				.poll(() => screen.queryClient.getQueryState(['instanceDiagramStatistics', 'instance-2'])?.status)
+				.toBe('success');
+			await expect.poll(() => screen.queryClient.isFetching()).toBe(0);
+		},
+	);
+
+	it.for([
+		'changing process instances',
+		'changing process instances with retained selection',
+		'selecting a different element',
+		'navigating to a different selection',
+		'navigating away with unrelated search',
+	] as const)('should ignore a drilldown response after %s', async (action, {worker}) => {
+		let release: () => void = () => {};
+		let hasRequested = false;
+		const delayedResponse = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		worker.use(
+			http.post(
+				endpoints.queryElementInstances({filter: {processInstanceKey: INSTANCE_ID}, page: {limit: 1}}).url,
+				async () => {
+					hasRequested = true;
+					await delayedResponse;
+					return HttpResponse.json(singleResult({elementInstanceKey: 'element-1'}));
+				},
+			),
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(singleResult(createProcessInstance({processInstanceKey: 'child-1'}))),
+			}),
+			...handlers(),
+		);
+		const screen = await renderLoadedPage();
+		await userEvent.dblClick(document.querySelector<SVGElement>('[data-element-id="call_1"]')!);
+		await expect.poll(() => hasRequested).toBe(true);
+
+		if (action === 'changing process instances') {
+			await screen.router.navigate({
+				to: '/operate/processes/$processInstanceId/details',
+				params: {processInstanceId: 'instance-2'},
+				search: {},
+			});
+		} else if (action === 'changing process instances with retained selection') {
+			screen.router.history.push('/operate/processes/instance-2/details?elementId=task_1');
+		} else if (action === 'navigating away with unrelated search') {
+			screen.router.history.push('/operate/missing?isMultiInstanceBody=invalid');
+			await expect.poll(() => screen.router.state.location.pathname).toBe('/operate/missing');
+		} else if (action === 'navigating to a different selection') {
+			await screen.router.navigate({to: '.', search: {elementId: 'task_1'}});
+		} else {
+			await userEvent.click(document.querySelector<SVGElement>('[data-element-id="task_1"]')!);
+			await expect
+				.poll(() => processInstanceSearchSchema.parse(screen.router.state.location.search).elementId)
+				.toBe('task_1');
+		}
+		release();
+		await expect
+			.poll(
+				() => screen.queryClient.getQueryState(['instanceDiagramDrilldownElement', INSTANCE_ID, 'call_1'])?.fetchStatus,
+			)
+			.toBe('idle');
+		await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+		expect(screen.router.state.location.pathname).toBe(
+			action === 'changing process instances' || action === 'changing process instances with retained selection'
+				? '/operate/processes/instance-2/details'
+				: action === 'navigating away with unrelated search'
+					? '/operate/missing'
+					: `/operate/processes/${INSTANCE_ID}/details`,
+		);
+		if (action === 'navigating away with unrelated search') {
+			expect(screen.router.state.location.search).toMatchObject({isMultiInstanceBody: 'invalid'});
+		} else {
+			expect(processInstanceSearchSchema.parse(screen.router.state.location.search).elementId).toBe(
+				action === 'changing process instances' || action === 'changing process instances with retained selection'
+					? undefined
+					: 'task_1',
+			);
+		}
+		if (
+			action === 'selecting a different element' ||
+			action === 'navigating to a different selection' ||
+			action === 'changing process instances with retained selection'
+		) {
+			expect(screen.queryClient.getQueryData(['instanceDiagramCalledProcess', 'element-1'])).toBeUndefined();
+		}
+	});
+});

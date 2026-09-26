@@ -13,8 +13,9 @@ const ControlsContainer = styled.div`
 	display: flex;
 	flex-direction: row;
 	position: absolute;
+	z-index: 11;
 	right: var(--cds-spacing-05);
-	bottom: var(--cds-spacing-05);
+	bottom: var(--cds-spacing-09);
 	gap: var(--cds-spacing-03);
 	align-items: center;
 `;

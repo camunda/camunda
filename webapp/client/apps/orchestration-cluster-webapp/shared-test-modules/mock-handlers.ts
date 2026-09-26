@@ -119,6 +119,16 @@ const mockQueryProcessInstancesEndpoint = createEndpointMock({
 	method: endpoints.queryProcessInstances.method,
 });
 
+const mockQueryElementInstancesEndpoint = createEndpointMock({
+	endpoint: endpoints.queryElementInstances.getUrl(),
+	method: endpoints.queryElementInstances.method,
+});
+
+const mockQueryAgentInstancesEndpoint = createEndpointMock({
+	endpoint: endpoints.queryAgentInstances.getUrl(),
+	method: endpoints.queryAgentInstances.method,
+});
+
 const mockGetProcessInstanceEndpoint = createEndpointMock({
 	endpoint: endpoints.getProcessInstance.getUrl({processInstanceKey: ':processInstanceKey'}),
 	method: endpoints.getProcessInstance.method,
@@ -262,6 +272,19 @@ const mockGetProcessInstanceWaitStateStatisticsEndpoint = createEndpointMock({
 	method: endpoints.getProcessInstanceWaitStateStatistics.method,
 });
 
+const mockGetProcessInstanceStatisticsEndpoint = createEndpointMock({
+	endpoint: endpoints.getProcessInstanceStatistics.getUrl({
+		processInstanceKey: ':processInstanceKey',
+		statisticName: 'element-instances',
+	}),
+	method: endpoints.getProcessInstanceStatistics.method,
+});
+
+const mockGetProcessInstanceSequenceFlowsEndpoint = createEndpointMock({
+	endpoint: endpoints.getProcessInstanceSequenceFlows.getUrl({processInstanceKey: ':processInstanceKey'}),
+	method: endpoints.getProcessInstanceSequenceFlows.method,
+});
+
 const mockCreateCancellationBatchOperationEndpoint = createEndpointMock({
 	endpoint: endpoints.createCancellationBatchOperation.getUrl(),
 	method: endpoints.createCancellationBatchOperation.method,
@@ -322,6 +345,8 @@ export {
 	mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint,
 	mockQueryBatchOperationsEndpoint,
 	mockQueryProcessInstancesEndpoint,
+	mockQueryElementInstancesEndpoint,
+	mockQueryAgentInstancesEndpoint,
 	mockGetProcessInstanceEndpoint,
 	mockQueryProcessInstanceIncidentsEndpoint,
 	mockQueryBatchOperationItemsEndpoint,
@@ -343,4 +368,6 @@ export {
 	mockQueryAuditLogsEndpoint,
 	mockGetProcessInstanceCallHierarchyEndpoint,
 	mockGetProcessInstanceWaitStateStatisticsEndpoint,
+	mockGetProcessInstanceStatisticsEndpoint,
+	mockGetProcessInstanceSequenceFlowsEndpoint,
 };

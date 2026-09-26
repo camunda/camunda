@@ -6,12 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, onTestFinished, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
-import {HttpResponse} from 'msw';
+import {HttpResponse, http} from 'msw';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
+import {useRouterState} from '@tanstack/react-router';
 import {
 	mockCurrentUserEndpoint,
 	mockGetProcessDefinitionXmlEndpoint,
@@ -31,8 +32,10 @@ import {
 } from '#/shared-test-modules/api-mocks/process-definitions';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
+import {endpoints} from '#/shared/http/endpoints';
 import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local-storage';
 import {ProcessInstance} from './ProcessInstance';
+import {processInstanceSearchSchema} from './processInstanceSearch';
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
 const PROCESS_XML_WITH_CALL_ACTIVITY =
@@ -45,6 +48,11 @@ function renderPage() {
 		path: '/operate/processes/$processInstanceId/variables',
 		initialEntry: `/operate/processes/${PROCESS_INSTANCE_ID}/variables`,
 	});
+}
+
+function SelectionPage() {
+	const search = useRouterState({select: (state) => state.location.search});
+	return <ProcessInstance processInstanceId={PROCESS_INSTANCE_ID} search={processInstanceSearchSchema.parse(search)} />;
 }
 
 function getProcessInstancePageHandlers({
@@ -113,6 +121,7 @@ describe('<ProcessInstance />', () => {
 			processDefinitionName: 'Order',
 			tenantId: 'tenant-a',
 		});
+
 		worker.use(
 			...getProcessInstancePageHandlers({
 				processInstance,
@@ -142,6 +151,59 @@ describe('<ProcessInstance />', () => {
 		await expect
 			.element(screen.getByRole('link', {name: /View process .*Tenant A/}))
 			.toHaveAttribute('href', expect.stringContaining('tenantId=tenant-a'));
+	});
+
+	it.for([200, 403])('should open the details tab on first selection with XML status %i', async (status, {worker}) => {
+		worker.use(...getProcessInstancePageHandlers());
+		if (status === 403) {
+			worker.use(
+				mockGetProcessDefinitionXmlEndpoint({
+					successResponse: HttpResponse.json(createProblemDetails({status}), {status}),
+				}),
+			);
+		}
+		const screen = await renderWithRouter(SelectionPage, {
+			path: '/operate/processes/$processInstanceId/variables',
+			initialEntry: `/operate/processes/${PROCESS_INSTANCE_ID}/variables`,
+		});
+		await expect.element(screen.getByTestId('instance-header')).toBeVisible();
+
+		await screen.router.navigate({to: '.', search: {elementId: 'call-activity'}});
+
+		await expect
+			.poll(() => screen.router.state.location.pathname)
+			.toBe(`/operate/processes/${PROCESS_INSTANCE_ID}/details`);
+	});
+
+	it('should open the details tab when switching to a call activity before XML loads', async ({worker}) => {
+		let releaseXml!: () => void;
+		const pendingXml = new Promise<void>((resolve) => {
+			releaseXml = resolve;
+		});
+		onTestFinished(releaseXml);
+		worker.use(
+			http.get(endpoints.getProcessDefinitionXml({processDefinitionKey: '2251799813685279'}).url, async () => {
+				await pendingXml;
+				return HttpResponse.text(PROCESS_XML_WITH_CALL_ACTIVITY);
+			}),
+			...getProcessInstancePageHandlers(),
+		);
+		const screen = await renderWithRouter(SelectionPage, {
+			path: '/operate/processes/$processInstanceId/variables',
+			initialEntry: `/operate/processes/${PROCESS_INSTANCE_ID}/variables?elementId=user-task`,
+		});
+		await expect
+			.poll(() => screen.queryClient.getQueryState(['processInstance', PROCESS_INSTANCE_ID])?.status)
+			.toBe('success');
+		await expect.element(screen.getByTestId('instance-header-skeleton')).toBeVisible();
+
+		await screen.router.navigate({to: '.', search: {elementId: 'call-activity'}});
+		expect(screen.router.state.location.pathname).toBe(`/operate/processes/${PROCESS_INSTANCE_ID}/variables`);
+		releaseXml();
+
+		await expect
+			.poll(() => screen.router.state.location.pathname)
+			.toBe(`/operate/processes/${PROCESS_INSTANCE_ID}/details`);
 	});
 
 	it('should redirect to processes and notify when the process instance is not found', async ({worker}) => {

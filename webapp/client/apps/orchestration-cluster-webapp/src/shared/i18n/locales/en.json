@@ -712,6 +712,22 @@
 				}
 			},
 			"processInstance": {
+				"diagram": {
+					"downloadXml": "Download XML",
+					"panelLabel": "Process instance diagram",
+					"noDiagram": "No diagram available for this process",
+					"executionCount": "Execution Count",
+					"notModifiable": "Modification is not supported for this element.",
+					"agentInitializing": "Initializing...",
+					"agentDiscovering": "Discovering tools...",
+					"agentThinking": "Thinking...",
+					"agentCalling": "Calling tools...",
+					"moreAgents": "+ {{count}} more active agents",
+					"moreAgents_one": "+ {{count}} more active agent",
+					"moreAgents_other": "+ {{count}} more active agents",
+					"calledProcessError": "Failed to resolve called instances",
+					"calledDecisionError": "Failed to resolve called decision instances"
+				},
 				"title": "Operate Process Instance",
 				"pageTitle": "Operate: Process Instance {{processInstanceId}} of {{name}}",
 				"notFoundNotificationTitle": "Instance {{processInstanceId}} could not be found",

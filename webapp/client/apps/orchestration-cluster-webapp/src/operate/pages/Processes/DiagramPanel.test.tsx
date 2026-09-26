@@ -123,6 +123,28 @@ describe('<DiagramPanel />', () => {
 		await expect.element(screen.getByTestId('state-overlay-startEvent_1-active')).toHaveTextContent('3');
 	});
 
+	it('should show an empty state when the selected definition has no XML', async ({worker}) => {
+		worker.use(
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text('')}),
+			mockGetProcessDefinitionStatisticsEndpoint({
+				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
+			}),
+		);
+
+		const screen = await renderDiagramPanel({
+			processDefinitionSelection: {kind: 'single-version', definition: DEFINITION},
+			onElementSelection: vi.fn(),
+			active: true,
+			incidents: true,
+			completed: false,
+			canceled: false,
+			suspended: false,
+		});
+
+		await expect.element(screen.getByText('No diagram available for this process')).toBeVisible();
+		await expect.element(screen.getByText("Couldn't fetch data")).not.toBeInTheDocument();
+	});
+
 	it('shows an incidents badge on a subprocess containing an element with an incident', async ({worker}) => {
 		worker.use(
 			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML_WITH_SUBPROCESS)}),
