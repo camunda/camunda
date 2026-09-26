@@ -96,3 +96,32 @@ test('should match the list tiles snapshot with sample rows', async ({network, o
 
 	await expect(page).toHaveScreenshot();
 });
+
+test('should match the running-instances snapshot', async ({network, operatePreviewPage, page}) => {
+	network.use(
+		mockCurrentUserEndpoint({
+			successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['operate']})),
+		}),
+		mockGetProcessDefinitionInstanceStatisticsEndpoint({
+			successResponse: HttpResponse.json(
+				createPaginatedResponse({
+					items: [
+						createProcessDefinitionInstanceStatistics({
+							processDefinitionId: 'process-1',
+							latestProcessDefinitionName: 'Process One',
+							activeInstancesWithoutIncidentCount: 10,
+							activeInstancesWithIncidentCount: 3,
+						}),
+					],
+					page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+				}),
+			),
+		}),
+	);
+
+	await operatePreviewPage.goto();
+	await expect(operatePreviewPage.metricPanel).toBeVisible();
+	await expect(operatePreviewPage.incidentsByErrorTile).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});
