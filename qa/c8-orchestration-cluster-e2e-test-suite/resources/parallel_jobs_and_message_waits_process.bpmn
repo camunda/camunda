@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+                  id="Definitions_sr_jobs_and_messages"
+                  targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:message id="SrJmMsg" name="sr-jm-msg">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=corrId" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:message id="SrJmCancel" name="sr-jm-cancel">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=corrId" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:process id="sr_jobs_and_messages" name="SR many jobs alongside message subscriptions" isExecutable="true">
+    <bpmn:startEvent id="startEvt" name="Start">
+      <bpmn:outgoing>Flow_start_split</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:parallelGateway id="split" name="Jobs and waits">
+      <bpmn:incoming>Flow_start_split</bpmn:incoming>
+      <bpmn:outgoing>Flow_split_mi</bpmn:outgoing>
+      <bpmn:outgoing>Flow_split_msg</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:serviceTask id="miTask" name="Work every item">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="sr-jm-job" retries="3" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_split_mi</bpmn:incoming>
+      <bpmn:outgoing>Flow_mi_join</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=items" inputElement="item" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:serviceTask>
+    <bpmn:boundaryEvent id="cancelBoundary" name="Cancelled" attachedToRef="miTask">
+      <bpmn:outgoing>Flow_cancel_end</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="med_cancel" messageRef="SrJmCancel" />
+    </bpmn:boundaryEvent>
+    <bpmn:intermediateCatchEvent id="waitMsg" name="Wait for sr-jm-msg">
+      <bpmn:incoming>Flow_split_msg</bpmn:incoming>
+      <bpmn:outgoing>Flow_msg_join</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="med_msg" messageRef="SrJmMsg" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:parallelGateway id="join" name="Both done">
+      <bpmn:incoming>Flow_mi_join</bpmn:incoming>
+      <bpmn:incoming>Flow_msg_join</bpmn:incoming>
+      <bpmn:outgoing>Flow_join_end</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:endEvent id="endEvt" name="Done">
+      <bpmn:incoming>Flow_join_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="cancelledEnd" name="Cancelled">
+      <bpmn:incoming>Flow_cancel_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_start_split" sourceRef="startEvt" targetRef="split" />
+    <bpmn:sequenceFlow id="Flow_split_mi" sourceRef="split" targetRef="miTask" />
+    <bpmn:sequenceFlow id="Flow_split_msg" sourceRef="split" targetRef="waitMsg" />
+    <bpmn:sequenceFlow id="Flow_mi_join" sourceRef="miTask" targetRef="join" />
+    <bpmn:sequenceFlow id="Flow_msg_join" sourceRef="waitMsg" targetRef="join" />
+    <bpmn:sequenceFlow id="Flow_join_end" sourceRef="join" targetRef="endEvt" />
+    <bpmn:sequenceFlow id="Flow_cancel_end" sourceRef="cancelBoundary" targetRef="cancelledEnd" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="sr_jobs_and_messages">
+      <bpmndi:BPMNShape id="Shape_startEvt" bpmnElement="startEvt">
+        <dc:Bounds x="152" y="222" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="158" y="265" width="24" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_split" bpmnElement="split">
+        <dc:Bounds x="245" y="215" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="238" y="272" width="65" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_miTask" bpmnElement="miTask">
+        <dc:Bounds x="390" y="120" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_cancelBoundary" bpmnElement="cancelBoundary">
+        <dc:Bounds x="472" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="466" y="225" width="49" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_waitMsg" bpmnElement="waitMsg">
+        <dc:Bounds x="422" y="302" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="398" y="345" width="85" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_join" bpmnElement="join">
+        <dc:Bounds x="605" y="215" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="600" y="272" width="60" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_endEvt" bpmnElement="endEvt">
+        <dc:Bounds x="732" y="222" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="740" y="265" width="30" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_cancelledEnd" bpmnElement="cancelledEnd">
+        <dc:Bounds x="605" y="60" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="599" y="103" width="49" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_start_split" bpmnElement="Flow_start_split">
+        <di:waypoint x="188" y="240" />
+        <di:waypoint x="245" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_split_mi" bpmnElement="Flow_split_mi">
+        <di:waypoint x="270" y="215" />
+        <di:waypoint x="270" y="160" />
+        <di:waypoint x="390" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_split_msg" bpmnElement="Flow_split_msg">
+        <di:waypoint x="270" y="265" />
+        <di:waypoint x="270" y="320" />
+        <di:waypoint x="422" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_mi_join" bpmnElement="Flow_mi_join">
+        <di:waypoint x="490" y="160" />
+        <di:waypoint x="630" y="160" />
+        <di:waypoint x="630" y="215" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_msg_join" bpmnElement="Flow_msg_join">
+        <di:waypoint x="458" y="320" />
+        <di:waypoint x="630" y="320" />
+        <di:waypoint x="630" y="265" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_join_end" bpmnElement="Flow_join_end">
+        <di:waypoint x="655" y="240" />
+        <di:waypoint x="732" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_cancel_end" bpmnElement="Flow_cancel_end">
+        <di:waypoint x="490" y="182" />
+        <di:waypoint x="490" y="78" />
+        <di:waypoint x="605" y="78" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -15,7 +15,11 @@ import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
 import {createSingleInstance, deployWithSubstitutions} from '../zeebeClient';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types';
 import {sleep} from '../sleep';
-import {defaultAssertionOptions, extendedAssertionOptions} from '../constants';
+import {
+  defaultAssertionOptions,
+  extendedAssertionOptions,
+  uniquePrefixedId,
+} from '../constants';
 import {validateResponse} from 'json-body-assertions';
 import {deleteResource} from './resource-requestHelpers';
 
@@ -166,6 +170,59 @@ export async function createInstanceOnceDeployed(
   }
 }
 
+/**
+ * Process id and job type are substituted together so a parallel worker's poller
+ * cannot activate another test's job.
+ */
+export async function deployServiceTaskProcess(
+  processDefinitionId: string,
+  jobType: string,
+) {
+  const deployment = await deployWithSubstitutions(
+    './resources/simpleServiceTaskProcess.bpmn',
+    {
+      'id="simpleServiceTaskProcess"': `id="${processDefinitionId}"`,
+      'type="task"': `type="${jobType}"`,
+    },
+  );
+  return deployment.processes[0];
+}
+
+/** Leaving the child's job unworked keeps the child instance alive. */
+export async function deployCallActivityPair(prefix: string) {
+  const childId = `${prefix}-child`;
+  const parentId = `${prefix}-parent`;
+  const childJobType = `${prefix}-child-job`;
+  await deployWithSubstitutions('./resources/childProcess_v_1.bpmn', {
+    'id="childProcess"': `id="${childId}"`,
+    'type="Task"': `type="${childJobType}"`,
+  });
+  const parent = await deployWithSubstitutions(
+    './resources/callActivityParentProcess.bpmn',
+    {
+      'id="callActivityParentProcess"': `id="${parentId}"`,
+      'processId="childProcess"': `processId="${childId}"`,
+    },
+  );
+  return {parentId, childId, childJobType, parent: parent.processes[0]};
+}
+
+/** The correlation key is rewritten to read a `corrId` start variable. */
+export async function deployMessageCatchProcess(
+  processDefinitionId: string,
+  messageName: string,
+) {
+  const deployment = await deployWithSubstitutions(
+    './resources/messageCatchEvent1.bpmn',
+    {
+      messageCatchEvent1: processDefinitionId,
+      'name="Message_143t419"': `name="${messageName}"`,
+      'correlationKey="=143419"': 'correlationKey="=corrId"',
+    },
+  );
+  return deployment.processes[0];
+}
+
 const USER_TASK_MODEL = './resources/Zeebe_User_Task_Process.bpmn';
 const USER_TASK_MODEL_ID = 'Zeebe_User_Task_Process';
 
@@ -189,4 +246,21 @@ export async function deployUserTaskProcess(
       : {}),
   });
   return deployment.processes[0];
+}
+
+/**
+ * Deploys a single-service-task definition under a unique id and starts one
+ * instance of it. Process id and job type are unique per call, so a worker in
+ * another test cannot activate this instance's job.
+ */
+export async function startServiceTaskInstance(prefix: string) {
+  const processDefinitionId = uniquePrefixedId(prefix);
+  const jobType = uniquePrefixedId(`${prefix}-job`);
+  await deployServiceTaskProcess(processDefinitionId, jobType);
+  const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
+  return {
+    processDefinitionId,
+    jobType,
+    processInstanceKey: instance.processInstanceKey,
+  };
 }

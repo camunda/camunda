@@ -8,6 +8,7 @@
 
 import {Page, Locator, expect} from '@playwright/test';
 import {sleep} from 'utils/sleep';
+import {waitForAssertion} from 'utils/waitForAssertion';
 
 class OperateProcessInstancePage {
   private page: Page;
@@ -624,7 +625,9 @@ class OperateProcessInstancePage {
       ? scope.getByTestId('code-mirror-editor')
       : this.editor;
     await expect(editor).toBeVisible();
-    await this.page.keyboard.press('Control+A');
+    // ControlOrMeta so select-all works on macOS too, where Control+A moves the
+    // cursor to the line start and leaves the old value in place.
+    await this.page.keyboard.press('ControlOrMeta+A');
     await this.page.keyboard.press('Backspace');
   }
 
@@ -876,6 +879,75 @@ class OperateProcessInstancePage {
     await this.getIncidentRow(incidentType)
       .getByRole('link', {name: failingElement})
       .click();
+  }
+
+  /**
+   * Reloads until the header shows the instance as suspended.
+   *
+   * Operate resolves the instance state when the detail view loads, so a
+   * suspension applied over REST only shows after a reload. One reload is not
+   * enough: the view can still be served the pre-suspension state for a moment
+   * after the API reports SUSPENDED.
+   */
+  async reloadUntilSuspended(timeout = 15000): Promise<void> {
+    await this.page.reload();
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(this.suspendedStateIcon).toBeVisible({timeout});
+      },
+      onFailure: async () => {
+        await this.page.reload();
+      },
+    });
+  }
+
+  async suspendInstance(instanceId: string): Promise<void> {
+    await this.clickInstanceHeaderAction(
+      new RegExp(`Suspend Instance ${instanceId}`),
+      'Suspend',
+    );
+  }
+
+  async resumeInstance(instanceId: string): Promise<void> {
+    await this.clickInstanceHeaderAction(
+      new RegExp(`Resume Instance ${instanceId}`),
+      'Resume',
+    );
+  }
+
+  /**
+   * The header renders its actions either as direct buttons or behind an
+   * Actions menu, so callers asserting which actions are offered have to read
+   * whichever layout is present rather than assuming one.
+   */
+  async instanceHeaderActionNames(): Promise<string[]> {
+    const actionsMenuButton = this.instanceHeader.getByRole('button', {
+      name: 'Actions',
+    });
+    await actionsMenuButton
+      .or(this.instanceHeader.getByTestId('cancel-operation'))
+      .first()
+      .waitFor();
+    if (await actionsMenuButton.isVisible()) {
+      await actionsMenuButton.click();
+      const names = await this.page.getByRole('menuitem').allInnerTexts();
+      await this.page.keyboard.press('Escape');
+      return names.map((name) => name.trim());
+    }
+    const testIds = [
+      'suspend-operation',
+      'resume-operation',
+      'cancel-operation',
+      'retry-operation',
+      'enter-modification-mode',
+    ];
+    const present: string[] = [];
+    for (const testId of testIds) {
+      if (await this.instanceHeader.getByTestId(testId).isVisible()) {
+        present.push(testId);
+      }
+    }
+    return present;
   }
 
   async cancelInstance(instanceId: string): Promise<void> {

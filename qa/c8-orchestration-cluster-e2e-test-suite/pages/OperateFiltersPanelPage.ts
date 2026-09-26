@@ -164,17 +164,21 @@ export class OperateFiltersPanelPage {
     if (await this.isOptionalFilterDisplayed(filterName)) {
       return;
     }
-    // The dropdown is a Radix menu that mounts its items asynchronously, so
-    // clicking the trigger and immediately clicking the item can race the
-    // menu's open animation under CI load. Wait for the trigger and then the
-    // item to actually be visible, mirroring TaskPanelPage.filterBy()'s
-    // handling of the equivalent Tasklist dropdown.
     await expect(this.moreFiltersButton).toBeVisible({timeout: 10000});
-    await this.moreFiltersButton.click();
     const menuItem = this.page.getByRole('menuitem', {
       name: filterName,
     });
-    await expect(menuItem).toBeVisible({timeout: 10000});
+    // The dropdown is a Radix menu that mounts its items only while it is
+    // open, so a trigger click that lands before the menu is interactive
+    // leaves nothing to wait for and waiting longer cannot recover it. Open
+    // the menu until the item is there. Clicking the trigger while the menu
+    // is already open closes it, which is why this checks before it clicks.
+    await expect(async () => {
+      if (!(await menuItem.isVisible())) {
+        await this.moreFiltersButton.click();
+      }
+      await expect(menuItem).toBeVisible({timeout: 5000});
+    }).toPass({timeout: 30000});
     await menuItem.click();
   }
 
@@ -406,6 +410,19 @@ export class OperateFiltersPanelPage {
 
   async clickActiveInstancesCheckbox(): Promise<void> {
     await this.activeInstancesCheckbox.click();
+  }
+
+  /**
+   * Turns the Suspended filter on unless the URL already carries it. The list
+   * drops an instance once it is no longer ACTIVE, so the row comes back only
+   * with that filter on, and the filter lives in the URL. Clicking blindly
+   * would be worse than not clicking at all: a click on an already-checked box
+   * turns the filter back off.
+   */
+  async applySuspendedFilter(): Promise<void> {
+    if (new URL(this.page.url()).searchParams.get('suspended') !== 'true') {
+      await this.clickSuspendedInstancesCheckbox();
+    }
   }
 
   async clickSuspendedInstancesCheckbox(): Promise<void> {

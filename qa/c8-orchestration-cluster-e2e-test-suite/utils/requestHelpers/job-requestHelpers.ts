@@ -178,12 +178,18 @@ export async function completeJob(
  * NOTE: /jobs/activation has no processInstanceKey filter — results are
  * filtered client-side using the processInstanceKey field on each activated job.
  */
+/**
+ * `requestTimeoutMs` caps the broker's long poll. Without it activation blocks
+ * for about 10s when no job matches, which exceeds the suite's action timeout —
+ * pass it whenever a caller expects to find nothing.
+ */
 export async function activateJobsByType(
   request: APIRequestContext,
   jobType: string,
   processInstanceKey: string,
   fetchVariables: string[] = [],
   maxJobs = 10,
+  requestTimeoutMs?: number,
 ): Promise<ActivatedJobWithVars[]> {
   const res = await request.post(buildUrl('/jobs/activation'), {
     headers: jsonHeaders(),
@@ -191,6 +197,7 @@ export async function activateJobsByType(
       type: jobType,
       maxJobsToActivate: maxJobs,
       timeout: 10_000,
+      ...(requestTimeoutMs !== undefined && {requestTimeout: requestTimeoutMs}),
       ...(fetchVariables.length > 0 && {fetchVariable: fetchVariables}),
     },
   });
@@ -338,6 +345,10 @@ export interface StatisticsJobItem {
  * Retries until exactly one job of the given type is activatable for the process
  * instance and returns its key. Activation only becomes possible once the token
  * has reached the task, so the wait is on the engine rather than on an index.
+ *
+ * Each attempt asks the broker not to long-poll: left to its default the
+ * activation holds the request for about ten seconds, which overruns the
+ * action timeout before this retry loop gets a chance to run again.
  */
 export async function activateSingleJob(
   request: APIRequestContext,
@@ -346,7 +357,14 @@ export async function activateSingleJob(
 ): Promise<number> {
   let jobKey = 0;
   await expect(async () => {
-    const jobs = await activateJobsByType(request, jobType, processInstanceKey);
+    const jobs = await activateJobsByType(
+      request,
+      jobType,
+      processInstanceKey,
+      [],
+      10,
+      1_000,
+    );
     expect(jobs).toHaveLength(1);
     jobKey = Number(jobs[0]!.jobKey);
   }).toPass(defaultAssertionOptions);
