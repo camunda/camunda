@@ -7,10 +7,13 @@
  */
 package io.camunda.zeebe.backup.s3.util;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Phaser;
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
@@ -36,7 +39,7 @@ public class AsyncAggregatingSubscriber<T> implements Subscriber<CompletableFutu
   // Phaser used to await for all results. New parties are registered for every new future in
   // onNext().
   final Phaser phaser = new Phaser(1); // arrives in result()
-  private Subscription subscription;
+  private @Nullable Subscription subscription;
   private final long parallelism;
 
   public AsyncAggregatingSubscriber(final long parallelism) {
@@ -56,18 +59,18 @@ public class AsyncAggregatingSubscriber<T> implements Subscriber<CompletableFutu
     LOG.trace("Received next future: {}", future);
     phaser.register(); // arrives in handleAsync
     future.handleAsync(
-        (result, throwable) -> {
+        (T result, @Nullable Throwable throwable) -> {
           if (throwable == null) {
             LOG.trace("Completed: {}", result);
             results.add(result);
             if (phaser.arrive() >= 0) {
-              subscription.request(1);
+              requireNonNull(subscription, "Subscription not set").request(1);
             }
           } else {
             LOG.trace("Future failed.", throwable);
             resultsFuture.completeExceptionally(throwable);
             phaser.forceTermination();
-            subscription.cancel();
+            requireNonNull(subscription, "Subscription not set").cancel();
           }
           return null;
         });
