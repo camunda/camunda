@@ -284,7 +284,7 @@ public class ProcessEngineMetricsTest {
         .tag("type", "ROOT_PROCESS_INSTANCE")
         .tag("action", action)
         .tag("partition", "1")
-        .counter()
+        .functionCounter()
         .count();
   }
 

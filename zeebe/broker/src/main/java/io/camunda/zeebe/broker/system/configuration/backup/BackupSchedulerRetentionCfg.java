@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.broker.system.configuration.backup;
 
-import io.camunda.zeebe.backup.schedule.Schedule;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
+import io.camunda.zeebe.util.schedule.Schedule;
 import java.time.Duration;
 
 public class BackupSchedulerRetentionCfg implements ConfigurationEntry {

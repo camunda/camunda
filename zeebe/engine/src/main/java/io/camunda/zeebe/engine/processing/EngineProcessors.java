@@ -27,6 +27,7 @@ import io.camunda.zeebe.el.impl.ExpressionLanguageMetricsImpl;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.metrics.DistributionMetrics;
+import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.EngineAction;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
@@ -118,6 +119,7 @@ import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.EnumCounters;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.time.InstantSource;
 import java.util.List;
@@ -136,7 +138,8 @@ public final class EngineProcessors {
       final JobStreamer jobStreamer,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
-      final SecretStoreRegistry secretStoreRegistry) {
+      final SecretStoreRegistry secretStoreRegistry,
+      final EnumCounters<EngineAction> rootProcessInstanceCounters) {
 
     final var processingState = typedRecordProcessorContext.getProcessingState();
     final var keyGenerator = processingState.getKeyGenerator();
@@ -165,7 +168,8 @@ public final class EngineProcessors {
     final var processEngineMetrics =
         new ProcessEngineMetrics(
             typedRecordProcessorContext.getMeterRegistry(),
-            processingState.getElementInstanceState().getActiveProcessInstanceCount());
+            processingState.getElementInstanceState().getActiveProcessInstanceCount(),
+            rootProcessInstanceCounters);
     final var distributionMetrics =
         new DistributionMetrics(typedRecordProcessorContext.getMeterRegistry());
     final var batchOperationMetrics =

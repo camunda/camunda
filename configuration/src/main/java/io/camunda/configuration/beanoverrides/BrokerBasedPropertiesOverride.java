@@ -691,6 +691,17 @@ public class BrokerBasedPropertiesOverride {
         .getCluster()
         .getRaft()
         .setRebalanceLeaderWaitTimeout(raft.getRebalance().getLeaderWaitTimeout());
+    override.getCluster().getRaft().setRebalanceSchedule(raft.getRebalance().getSchedule());
+    override
+        .getCluster()
+        .getRaft()
+        .setRebalanceMaxProcessInstancesPerSecond(
+            raft.getRebalance().getMaxProcessInstancesPerSecond());
+    override
+        .getCluster()
+        .getRaft()
+        .setRebalanceMaxCommandsPerSecond(raft.getRebalance().getMaxCommandsPerSecond());
+    override.getCluster().getRaft().setRebalanceLoadWindow(raft.getRebalance().getLoadWindow());
     override
         .getExperimental()
         .getRaft()

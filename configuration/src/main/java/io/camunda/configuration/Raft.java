@@ -16,6 +16,7 @@ import static io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.D
 import static io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.DEFAULT_SNAPSHOT_REQUEST_TIMEOUT;
 
 import io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.PreAllocationStrategy;
+import io.camunda.zeebe.util.schedule.Schedule;
 import java.time.Duration;
 import java.util.Set;
 import org.springframework.util.unit.DataSize;
@@ -475,6 +476,28 @@ public class Raft {
      */
     private Duration leaderWaitTimeout = Duration.ofMinutes(1);
 
+    /**
+     * When to rebalance automatically: a cron expression, an ISO-8601 interval, or {@code none}. A
+     * due rebalance is skipped if the cluster is already balanced, or busier than {@code
+     * max-process-instances-per-second} or {@code max-commands-per-second}.
+     */
+    private String schedule = "none";
+
+    /**
+     * The cluster-wide root process instances activated per second, averaged over {@code
+     * load-window}, above which a scheduled rebalance is skipped. Unset means no limit.
+     */
+    private Double maxProcessInstancesPerSecond;
+
+    /**
+     * The cluster-wide commands processed per second, averaged over {@code load-window}, above
+     * which a scheduled rebalance is skipped. Unset means no limit.
+     */
+    private Double maxCommandsPerSecond;
+
+    /** How far back the load is averaged when deciding whether to run a scheduled rebalance. */
+    private Duration loadWindow = Duration.ofMinutes(5);
+
     public DataSize getReplicationLagThreshold() {
       return replicationLagThreshold;
     }
@@ -520,6 +543,51 @@ public class Raft {
         throw new IllegalArgumentException("leaderWaitTimeout must be non-negative");
       }
       this.leaderWaitTimeout = leaderWaitTimeout;
+    }
+
+    public String getSchedule() {
+      return schedule;
+    }
+
+    public void setSchedule(final String schedule) {
+      Schedule.parseSchedule(schedule);
+      this.schedule = schedule;
+    }
+
+    public Double getMaxProcessInstancesPerSecond() {
+      return maxProcessInstancesPerSecond;
+    }
+
+    public void setMaxProcessInstancesPerSecond(final Double maxProcessInstancesPerSecond) {
+      this.maxProcessInstancesPerSecond =
+          requireNonNegative("maxProcessInstancesPerSecond", maxProcessInstancesPerSecond);
+    }
+
+    public Double getMaxCommandsPerSecond() {
+      return maxCommandsPerSecond;
+    }
+
+    public void setMaxCommandsPerSecond(final Double maxCommandsPerSecond) {
+      this.maxCommandsPerSecond = requireNonNegative("maxCommandsPerSecond", maxCommandsPerSecond);
+    }
+
+    public Duration getLoadWindow() {
+      return loadWindow;
+    }
+
+    public void setLoadWindow(final Duration loadWindow) {
+      if (loadWindow == null || loadWindow.isNegative() || loadWindow.isZero()) {
+        throw new IllegalArgumentException("loadWindow must be positive");
+      }
+      this.loadWindow = loadWindow;
+    }
+
+    private static Double requireNonNegative(final String name, final Double value) {
+      if (value != null && value < 0) {
+        throw new IllegalArgumentException(
+            "%s must be non-negative but was %s".formatted(name, value));
+      }
+      return value;
     }
   }
 }

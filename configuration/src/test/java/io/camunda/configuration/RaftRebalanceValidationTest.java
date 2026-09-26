@@ -106,4 +106,53 @@ final class RaftRebalanceValidationTest {
             })
         .doesNotThrowAnyException();
   }
+
+  @Test
+  void shouldRejectInvalidSchedule() {
+    // given
+    final var rebalance = new Rebalance();
+
+    // when / then
+    assertThatThrownBy(() -> rebalance.setSchedule("every night"))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldAcceptCronSchedule() {
+    // given
+    final var rebalance = new Rebalance();
+
+    // when / then
+    assertThatCode(() -> rebalance.setSchedule("0 */15 1-4 * * *")).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldRejectNegativeMaxProcessInstancesPerSecond() {
+    // given
+    final var rebalance = new Rebalance();
+
+    // when / then
+    assertThatThrownBy(() -> rebalance.setMaxProcessInstancesPerSecond(-1.0))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldRejectNegativeMaxCommandsPerSecond() {
+    // given
+    final var rebalance = new Rebalance();
+
+    // when / then
+    assertThatThrownBy(() -> rebalance.setMaxCommandsPerSecond(-1.0))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldRejectZeroLoadWindow() {
+    // given
+    final var rebalance = new Rebalance();
+
+    // when / then
+    assertThatThrownBy(() -> rebalance.setLoadWindow(Duration.ZERO))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
 }

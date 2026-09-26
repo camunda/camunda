@@ -20,6 +20,8 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.logstreams.state.DbPositionSupplier;
+import io.camunda.zeebe.broker.partitioning.BrokerLoadCounters;
+import io.camunda.zeebe.broker.partitioning.BrokerLoadCounters.PartitionLoadCounters;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -61,6 +63,7 @@ import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotCopy;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.EngineAction;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
@@ -72,7 +75,9 @@ import io.camunda.zeebe.scheduler.startup.StartupStep;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
+import io.camunda.zeebe.stream.impl.metrics.StreamProcessorAction;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.camunda.zeebe.util.EnumCounters;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -111,6 +116,7 @@ public final class ZeebePartitionFactory {
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
   private final ClusterConfigurationService clusterConfigurationService;
   private final RocksDbResources rocksDbResources;
+  private final BrokerLoadCounters loadCounters;
 
   // The tenant's secret store registry, shared across its partitions: the caches are read on job
   // activation to inject resolved secrets and populated by the background secret-resolution flow.
@@ -135,6 +141,7 @@ public final class ZeebePartitionFactory {
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final ClusterConfigurationService clusterConfigurationService,
       final RocksDbResources rocksDbResources,
+      final BrokerLoadCounters loadCounters,
       final SecretStoreRegistry secretStoreRegistry) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
@@ -154,6 +161,7 @@ public final class ZeebePartitionFactory {
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
     this.clusterConfigurationService = clusterConfigurationService;
     this.rocksDbResources = rocksDbResources;
+    this.loadCounters = loadCounters;
     this.secretStoreRegistry = secretStoreRegistry;
   }
 
@@ -163,11 +171,15 @@ public final class ZeebePartitionFactory {
       final DynamicPartitionConfig initialPartitionConfig,
       final BrokerHealthCheckService brokerHealthCheckService,
       final MeterRegistry partitionMeterRegistry,
-      final CommandApiService commandApiService) {
+      final CommandApiService commandApiService,
+      final PartitionLoadCounters partitionLoadCounters) {
 
     final var communicationService = clusterServices.getCommunicationService();
     final var membershipService = clusterServices.getMembershipService();
-    final var typedRecordProcessorsFactory = createFactory(localBroker, featureFlags);
+    final var processingCounters = partitionLoadCounters.processing();
+    final var rootProcessInstanceCounters = partitionLoadCounters.rootProcessInstances();
+    final var typedRecordProcessorsFactory =
+        createFactory(localBroker, featureFlags, rootProcessInstanceCounters);
 
     final var databaseCfg = brokerCfg.getExperimental().getRocksdb();
     final var consistencyChecks = brokerCfg.getExperimental().getConsistencyChecks();
@@ -215,12 +227,18 @@ public final class ZeebePartitionFactory {
     context.setClusterConfigurationService(clusterConfigurationService);
 
     final PartitionTransition newTransitionBehavior =
-        new PartitionTransitionImpl(generateTransitionSteps());
+        new PartitionTransitionImpl(generateTransitionSteps(processingCounters));
 
     return new ZeebePartition(context, newTransitionBehavior, STARTUP_STEPS);
   }
 
-  private List<PartitionTransitionStep> generateTransitionSteps() {
+  /** Where the partitions this factory constructs count their load. */
+  public BrokerLoadCounters loadCounters() {
+    return loadCounters;
+  }
+
+  private List<PartitionTransitionStep> generateTransitionSteps(
+      final EnumCounters<StreamProcessorAction> processingCounters) {
     return List.of(
         new MetricsStep(),
         new LogStoragePartitionTransitionStep(),
@@ -231,7 +249,7 @@ public final class ZeebePartitionFactory {
         new BackupStoreTransitionStep(),
         new BackupServiceTransitionStep(),
         new InterPartitionCommandServiceStep(),
-        new StreamProcessorTransitionStep(),
+        new StreamProcessorTransitionStep(processingCounters),
         new CommandApiServiceTransitionStep(),
         new SnapshotDirectorPartitionTransitionStep(),
         new SnapshotAfterMigrationTransitionStep(),
@@ -285,7 +303,9 @@ public final class ZeebePartitionFactory {
   }
 
   private TypedRecordProcessorsFactory createFactory(
-      final BrokerInfo localBroker, final FeatureFlags featureFlags) {
+      final BrokerInfo localBroker,
+      final FeatureFlags featureFlags,
+      final EnumCounters<EngineAction> rootProcessInstanceCounters) {
     return recordProcessorContext -> {
       final InterPartitionCommandSender partitionCommandSender =
           recordProcessorContext.getPartitionCommandSender();
@@ -302,7 +322,8 @@ public final class ZeebePartitionFactory {
           jobStreamer,
           searchClientsProxy,
           brokerRequestAuthorizationConverter,
-          secretStoreRegistry);
+          secretStoreRegistry,
+          rootProcessInstanceCounters);
     };
   }
 }
