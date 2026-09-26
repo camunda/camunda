@@ -202,6 +202,14 @@ USER 1001:1001
 # Train an AOT cache (JEP 483/514) on a real boot, so that at runtime the JVM can
 # skip loading, parsing, verifying and linking the classes a startup touches.
 #
+# The cache must hold no machine code. JDK 25 turns on AOTAdapterCaching ergonomically
+# whenever a cache is created or used, which stores adapters generated for the training
+# machine's CPU. At runtime it mislinks some of them, even on the training CPU, and
+# crashes with SIGILL (#61440). With adapter and stub caching off, the cache holds only
+# CPU-independent metadata and profiles, and all code is still generated for the CPU it
+# runs on. The flags go into jvm.options before training, so the training run, the cache
+# assembly it spawns and every later start all see the same ones.
+#
 # There is no secondary storage to talk to during a build, but it does not need to
 # be reachable -- only reached for. create-schema=false makes SchemaManager.startup()
 # return before it touches the client, which is the one thing that would otherwise
@@ -244,6 +252,8 @@ USER 1001:1001
 ARG AOT_CACHE="true"
 ARG TARGETARCH
 RUN if [ "${AOT_CACHE}" = "true" ] && [ "${TARGETARCH}" != "arm64" ]; then \
+      printf -- '%s\n' -XX:+UnlockDiagnosticVMOptions -XX:-AOTAdapterCaching -XX:-AOTStubCaching \
+        >> "${CAMUNDA_HOME}/config/jvm.options" && \
       CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_CREATESCHEMA=false \
       JAVA_OPTS="-XX:AOTCacheOutput=${CAMUNDA_HOME}/camunda.aot -Dspring.context.exit=onRefresh" \
         "${CAMUNDA_HOME}/bin/camunda" && \
