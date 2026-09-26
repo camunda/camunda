@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.it.backup;
 
-import io.camunda.zeebe.qa.util.testcontainers.MinioContainer;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.test.testcontainers.S3MockTestContainer;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.zeebe.containers.ZeebeContainer;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -22,10 +22,13 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 final class S3BackupAuthenticationIT {
   private static final Network NETWORK = Network.newNetwork();
   private static final String BUCKET_NAME = RandomStringUtils.randomAlphabetic(10).toLowerCase();
+  private static final String S3_NETWORK_ALIAS = "s3mock";
 
-  @Container
-  private static final MinioContainer MINIO =
-      new MinioContainer().withNetwork(NETWORK).withDomain("minio.local", BUCKET_NAME);
+  @Container private static final S3MockTestContainer S3 = new S3MockTestContainer();
+
+  static {
+    S3.withNetwork(NETWORK).withNetworkAliases(S3_NETWORK_ALIAS);
+  }
 
   @Test
   @RegressionTest("https://github.com/camunda/camunda/issues/12433")
@@ -34,16 +37,17 @@ final class S3BackupAuthenticationIT {
     final var zeebe =
         new ZeebeContainer(ZeebeTestContainerDefaults.defaultTestImage())
             .withNetwork(NETWORK)
-            .dependsOn(MINIO)
+            .dependsOn(S3)
             .withoutTopologyCheck()
             .withEnv("MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE", "*")
             .withEnv("ZEEBE_BROKER_DATA_BACKUP_STORE", "S3")
             .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_BUCKETNAME", BUCKET_NAME)
-            .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_ENDPOINT", MINIO.internalEndpoint())
-            .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_REGION", MINIO.region())
+            .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_ENDPOINT", S3.internalEndpoint(S3_NETWORK_ALIAS))
+            .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_REGION", S3.region())
+            .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_FORCEPATHSTYLEACCESS", "true")
             // Set env variables discovered by the AWS SDK, not Zeebe
-            .withEnv("AWS_ACCESS_KEY_ID", MINIO.accessKey())
-            .withEnv("AWS_SECRET_ACCESS_KEY", MINIO.secretKey());
+            .withEnv("AWS_ACCESS_KEY_ID", S3.accessKey())
+            .withEnv("AWS_SECRET_ACCESS_KEY", S3.secretKey());
 
     // when
     zeebe.start();
