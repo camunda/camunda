@@ -49,6 +49,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -124,6 +125,13 @@ final class RecoveryPartitionManagerTest {
 
   private RecoveryPartitionManager buildManager(
       final BrokerCfg brokerCfg, final ActorSchedulingService schedulingService) {
+    return buildManager(brokerCfg, schedulingService, () -> null);
+  }
+
+  private RecoveryPartitionManager buildManager(
+      final BrokerCfg brokerCfg,
+      final ActorSchedulingService schedulingService,
+      final Supplier<Runnable> schemaInitializerSupplier) {
     return new RecoveryPartitionManager(
         GROUP,
         brokerCfg,
@@ -136,7 +144,8 @@ final class RecoveryPartitionManagerTest {
         transport,
         null,
         topologyManager,
-        healthCheckService);
+        healthCheckService,
+        schemaInitializerSupplier);
   }
 
   private PartitionMetadata localPartitionMetadata(final int partitionId) {
@@ -760,6 +769,47 @@ final class RecoveryPartitionManagerTest {
       } catch (final IOException e) {
         throw new UncheckedIOException(e);
       }
+    }
+  }
+
+  @Nested
+  class SchemaInitialization {
+
+    @Test
+    void shouldSucceedWhenNoSchemaInitializerIsAvailable() {
+      // given
+      assertThat(partitionManager.start()).succeedsWithin(Duration.ofSeconds(10));
+
+      // when
+      final var future = new AtomicReference<ActorFuture<Void>>();
+      controlActor.run(() -> future.set(partitionManager.initializeSchema()));
+
+      // then
+      await().atMost(Duration.ofSeconds(10)).until(() -> future.get() != null);
+      assertThat(future.get()).succeedsWithin(Duration.ofSeconds(10));
+    }
+
+    @Test
+    void shouldPropagateSchemaInitializerFailure() {
+      // given
+      partitionManager =
+          buildManager(
+              new BrokerCfg(),
+              actorScheduler,
+              () ->
+                  () -> {
+                    throw new IllegalStateException("schema initialization failed");
+                  });
+      assertThat(partitionManager.start()).succeedsWithin(Duration.ofSeconds(10));
+
+      // when
+      final var future = new AtomicReference<ActorFuture<Void>>();
+      controlActor.run(() -> future.set(partitionManager.initializeSchema()));
+
+      // then
+      await().atMost(Duration.ofSeconds(10)).until(() -> future.get() != null);
+      assertThat(future.get()).failsWithin(Duration.ofSeconds(10));
+      assertThat(future.get().getException()).hasMessageContaining("schema initialization failed");
     }
   }
 
