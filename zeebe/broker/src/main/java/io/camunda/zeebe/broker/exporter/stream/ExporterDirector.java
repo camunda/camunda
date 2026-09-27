@@ -108,6 +108,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private boolean idle;
   private final InstantSource clock;
   private final RecordMetadataBlock skipRecordDecoder = new RecordMetadataBlock();
+  private final ExporterStateHandover handover;
+  private final long leaderTerm;
 
   public ExporterDirector(
       final ExporterDirectorContext context, final ExporterPhase exporterPhase) {
@@ -163,6 +165,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     distributionInterval = context.getDistributionInterval();
     migrationStatusScanMaxRecords = context.getMigrationStatusScanMaxRecords();
     positionsToSkipFilter = context.getPositionsToSkipFilter();
+    handover = context.getExporterStateHandover();
+    leaderTerm = context.getLeaderTerm();
 
     // needs name to be initialized
     healthReport = HealthReport.healthy(this);
@@ -422,6 +426,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     // which are no longer in our configuration
     clearExporterState();
     if (exporterMode == ExporterMode.ACTIVE) {
+      handover.takeIncoming(leaderTerm).forEach(this::consumeExporterStateFromLeader);
+      handover.seed(state);
       startActiveExportingMode();
     } else { // PASSIVE, we consume the messages and set it in our state
       startPassiveExportingMode();
@@ -447,6 +453,9 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     isOpened.set(false);
     containers.forEach(ExporterContainer::close);
     exporterDistributionService.close();
+    if (exporterMode == ExporterMode.ACTIVE) {
+      handover.clearOutgoing();
+    }
   }
 
   @Override
@@ -513,7 +522,10 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   private void recoverFromSnapshot() {
-    state = new ExportersState(zeebeDb, zeebeDb.createContext());
+    state =
+        exporterMode == ExporterMode.ACTIVE
+            ? new ExportersState(zeebeDb, zeebeDb.createContext(), handover)
+            : new ExportersState(zeebeDb, zeebeDb.createContext());
     final long snapshotPosition = state.getLowestPosition();
     LOG.debug(
         "Recovered exporter '{}' from snapshot at lastExportedPosition {}",

@@ -85,7 +85,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
 
     if (shouldInstallOnTransition(targetRole, context.getCurrentRole())
         || (context.getExporterDirector() == null && targetRole != Role.INACTIVE)) {
-      return openExporter(context, targetRole);
+      return openExporter(context, term, targetRole);
     } else {
       return CompletableActorFuture.completed(null);
     }
@@ -107,7 +107,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
   }
 
   private ActorFuture<Void> openExporter(
-      final PartitionTransitionContext context, final Role targetRole) {
+      final PartitionTransitionContext context, final long term, final Role targetRole) {
     final var exporterDescriptors = getEnabledExporterDescriptors(context);
     final BrokerCfg brokerCfg = context.getBrokerCfg();
     final ExportingCfg exportingCfg = brokerCfg.getExporting();
@@ -129,6 +129,8 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
             .partitionMessagingService(context.getMessagingService())
             .descriptors(exporterDescriptors)
             .exporterMode(exporterMode)
+            .exporterStateHandover(context.getExporterStateHandover())
+            .leaderTerm(term)
             .positionsToSkipFilter(exporterFilter)
             .meterRegistry(context.getPartitionTransitionMeterRegistry())
             .clusterId(

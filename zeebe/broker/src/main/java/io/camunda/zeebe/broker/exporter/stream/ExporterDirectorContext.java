@@ -41,6 +41,8 @@ public final class ExporterDirectorContext {
   private @Nullable String licenseKey;
   private String tenantName;
   private boolean receiveOnLegacySubject = true;
+  private ExporterStateHandover exporterStateHandover = new ExporterStateHandover();
+  private long leaderTerm = -1;
 
   public int getId() {
     return id;
@@ -100,6 +102,14 @@ public final class ExporterDirectorContext {
 
   public boolean isReceiveOnLegacySubject() {
     return receiveOnLegacySubject;
+  }
+
+  public ExporterStateHandover getExporterStateHandover() {
+    return exporterStateHandover;
+  }
+
+  public long getLeaderTerm() {
+    return leaderTerm;
   }
 
   public ExporterDirectorContext id(final int id) {
@@ -177,6 +187,18 @@ public final class ExporterDirectorContext {
 
   public ExporterDirectorContext receiveOnLegacySubject(final boolean receiveOnLegacySubject) {
     this.receiveOnLegacySubject = receiveOnLegacySubject;
+    return this;
+  }
+
+  public ExporterDirectorContext exporterStateHandover(
+      final ExporterStateHandover exporterStateHandover) {
+    this.exporterStateHandover = exporterStateHandover;
+    return this;
+  }
+
+  /** The term this director exports in; only relevant in {@link ExporterMode#ACTIVE}. */
+  public ExporterDirectorContext leaderTerm(final long leaderTerm) {
+    this.leaderTerm = leaderTerm;
     return this;
   }
 
