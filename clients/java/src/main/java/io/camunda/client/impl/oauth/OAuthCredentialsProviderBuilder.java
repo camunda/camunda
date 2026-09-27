@@ -96,7 +96,7 @@ public final class OAuthCredentialsProviderBuilder {
   public static final int DEFAULT_TOKEN_FETCH_MAX_RETRIES = 5;
   public static final Duration DEFAULT_TOKEN_FETCH_INITIAL_BACKOFF = Duration.ofSeconds(1);
   public static final double DEFAULT_TOKEN_FETCH_BACKOFF_MULTIPLIER = 2.0;
-  public static final Duration DEFAULT_TOKEN_FETCH_NON_RETRYABLE_COOLDOWN = Duration.ofMinutes(5);
+  public static final Duration DEFAULT_TOKEN_FETCH_NON_RETRYABLE_COOLDOWN = Duration.ofSeconds(30);
 
   /**
    * HTTP status codes from the token endpoint that should trigger a retry with backoff. Any other
@@ -486,9 +486,9 @@ public final class OAuthCredentialsProviderBuilder {
    * The set of HTTP status codes from the token endpoint that should be retried with backoff. Any
    * non-200 status code outside this set trips the non-retryable-failure cooldown: token fetches
    * fail fast for the duration configured via {@link #tokenFetchNonRetryableCooldown(Duration)}
-   * (default 5 minutes), after which the provider automatically probes again. The default is {@link
-   * #DEFAULT_TOKEN_FETCH_RETRYABLE_STATUS_CODES}. Setting this fully replaces the default; callers
-   * wanting to extend or shrink the default should derive from {@link
+   * (default 30 seconds), after which the provider automatically probes again. The default is
+   * {@link #DEFAULT_TOKEN_FETCH_RETRYABLE_STATUS_CODES}. Setting this fully replaces the default;
+   * callers wanting to extend or shrink the default should derive from {@link
    * #DEFAULT_TOKEN_FETCH_RETRYABLE_STATUS_CODES}.
    */
   public OAuthCredentialsProviderBuilder tokenFetchRetryableStatusCodes(

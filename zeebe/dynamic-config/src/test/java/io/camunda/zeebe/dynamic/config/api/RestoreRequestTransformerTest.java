@@ -38,6 +38,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeO
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.SchemaInitializationOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
@@ -321,6 +322,7 @@ final class RestoreRequestTransformerTest {
     EitherAssert.assertThat(result).isRight();
     assertThat(result.get())
         .containsExactly(
+            new SchemaInitializationOperation(memberOne),
             new PartitionPreRestoreOperation(memberOne, 1),
             new PartitionPreRestoreOperation(memberTwo, 1),
             new PartitionRestoreOperation(memberOne, 1, new TreeSet<>(List.of(1L, 2L))),
@@ -352,6 +354,8 @@ final class RestoreRequestTransformerTest {
 
     // then - one phase scoped to the tenant's own group, phase-major within it
     EitherAssert.assertThat(result).isRight();
+    assertThat(schemaOperationsOf(result.get()))
+        .containsExactly(new SchemaInitializationOperation(memberOne));
     assertThat(groupOperationsOf(result.get()))
         .isEqualTo(
             Map.of(
@@ -519,12 +523,19 @@ final class RestoreRequestTransformerTest {
     // then - a plan started from this graph offers all four pre-restores at once: both brokers,
     // both partitions. Under the queue those were four serialised round trips.
     EitherAssert.assertThat(result).isRight();
-    final var plan = DependencyChangePlan.init(1L, graphOf(result.get()));
-    assertThat(plan.runnableFor(memberOne)).hasSize(2);
-    assertThat(plan.runnableFor(memberTwo)).hasSize(2);
+    final var graph = graphOf(result.get());
+    assertThat(idsOf(graph, SchemaInitializationOperation.class))
+        .singleElement()
+        .satisfies(
+            schemaInitialization ->
+                assertThat(memberOf(graph, schemaInitialization)).isEqualTo(memberOne));
+
+    final var plan = DependencyChangePlan.init(1L, graph);
+    assertThat(plan.runnableFor(memberOne)).hasSize(1);
+    assertThat(plan.runnableFor(memberTwo)).isEmpty();
     assertThat(plan.runnableFor(memberOne).values())
         .allSatisfy(
-            operation -> assertThat(operation).isInstanceOf(PartitionPreRestoreOperation.class));
+            operation -> assertThat(operation).isInstanceOf(SchemaInitializationOperation.class));
   }
 
   @Test
@@ -596,8 +607,14 @@ final class RestoreRequestTransformerTest {
         new PartitionGroupConfiguration(
                 1, 0, Map.of(), Optional.empty(), Optional.empty(), Optional.empty())
             .startGraphConfigurationChange(graph);
+    group =
+        group.completeOperation(
+            idsOf(graph, SchemaInitializationOperation.class).getFirst(), UnaryOperator.identity());
     for (final var preRestore : idsOf(graph, PartitionPreRestoreOperation.class)) {
       if (partitionOf(graph, preRestore) == 1 && memberOf(graph, preRestore).equals(memberOne)) {
+        group =
+            group.completeOperation(
+                OperationId.of(preRestore.value() - 1), UnaryOperator.identity());
         group = group.completeOperation(preRestore, UnaryOperator.identity());
       }
     }
@@ -787,6 +804,25 @@ final class RestoreRequestTransformerTest {
   private static Map<String, List<PartitionGroupOperation>> groupOperationsOf(
       final List<Phase> phases) {
     assertThat(phases).singleElement().isInstanceOf(PartitionGroupPhase.class);
-    return ((PartitionGroupPhase) phases.getFirst()).groupOperations();
+    return ((PartitionGroupPhase) phases.getFirst())
+        .groupOperations().entrySet().stream()
+            .collect(
+                java.util.stream.Collectors.toMap(
+                    Map.Entry::getKey,
+                    entry ->
+                        entry.getValue().stream()
+                            .filter(
+                                operation -> !(operation instanceof SchemaInitializationOperation))
+                            .toList()));
+  }
+
+  private static List<SchemaInitializationOperation> schemaOperationsOf(final List<Phase> phases) {
+    assertThat(phases).singleElement().isInstanceOf(PartitionGroupPhase.class);
+    return ((PartitionGroupPhase) phases.getFirst())
+        .groupOperations().values().stream()
+            .flatMap(List::stream)
+            .filter(SchemaInitializationOperation.class::isInstance)
+            .map(SchemaInitializationOperation.class::cast)
+            .toList();
   }
 }

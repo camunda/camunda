@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {it as itBase} from 'vitest';
+import {inject, it as itBase} from 'vitest';
 import {isCommonAssetRequest} from 'msw';
 import {setupWorker} from 'msw/browser';
 import {cleanup} from 'vitest-browser-react';
@@ -38,7 +38,7 @@ const it = itBase.extend<{
 			worker.resetHandlers();
 			worker.stop();
 
-			if (unhandledRequests.size > 0) {
+			if (inject('failOnUnhandledRequests') && unhandledRequests.size > 0) {
 				throw new Error(
 					`Unhandled requests (add a mock handler):\n${[...unhandledRequests].map((request) => `  - ${request}`).join('\n')}`,
 				);

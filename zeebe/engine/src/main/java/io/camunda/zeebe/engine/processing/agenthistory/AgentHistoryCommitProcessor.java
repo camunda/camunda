@@ -104,7 +104,7 @@ public final class AgentHistoryCommitProcessor
       stateWriter.appendFollowUpEvent(
           agentInstance.get().getAgentInstanceKey(),
           AgentInstanceIntent.UPDATED,
-          agentInstance.get());
+          AgentHistoryBatchBehavior.trimUnchangedContentFields(agentInstance.get()));
     }
   }
 

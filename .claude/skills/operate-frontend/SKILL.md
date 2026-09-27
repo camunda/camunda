@@ -63,7 +63,8 @@ multi-page fetching to the shared registry.
 Reference: `operate/pages/Dashboard/useRunningInstancesCount.ts` exports
 `runningInstancesCountQuery()` and `useRunningInstancesCount()`; the route imports the query options,
 the component imports the hook. Check `@camunda/camunda-api-zod-schemas/8.10` before writing a custom
-endpoint — most Operate endpoints are already there.
+endpoint — most Operate endpoints are already there. To add or change a schema there, follow the
+`camunda-api-zod-schemas` skill.
 
 Suspense queries throw initial errors without data, but a failed refetch can retain cached data —
 handle those explicitly. Where a panel needs independent loading and recovery, use a granular

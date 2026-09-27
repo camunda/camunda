@@ -98,7 +98,6 @@
       STATUS                         = #{status},
       MODEL                          = #{model},
       PROVIDER                       = #{provider},
-      SYSTEM_PROMPT                  = #{systemPrompt, jdbcType=CLOB},
       MAX_TOKENS                     = #{maxTokens},
       MAX_MODEL_CALLS                = #{maxModelCalls},
       MAX_TOOL_CALLS                 = #{maxToolCalls},
@@ -109,8 +108,16 @@
       CACHE_READ_TOKEN_COUNT         = #{cacheReadTokenCount},
       MODEL_CALLS                    = #{modelCalls},
       TOOL_CALLS                     = #{toolCalls},
-      TOOLS                          = #{tools, jdbcType=CLOB},
       LAST_UPDATED_DATE              = #{lastUpdatedDate, jdbcType=TIMESTAMP}
+      <!-- SYSTEM_PROMPT/TOOLS: null means this record's handler chose not to populate it
+      (unchanged since the last write), see AgentInstanceExportHandler#mapToDbModel. Omitted
+      rather than set to null, to avoid overwriting the stored value with nothing. -->
+      <if test="systemPrompt != null">
+        , SYSTEM_PROMPT = #{systemPrompt, jdbcType=CLOB}
+      </if>
+      <if test="tools != null">
+        , TOOLS = #{tools, jdbcType=CLOB}
+      </if>
       <if test="completionDate != null">
         , COMPLETION_DATE = #{completionDate, jdbcType=TIMESTAMP}
       </if>

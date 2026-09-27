@@ -280,7 +280,10 @@ public final class AgentInstanceUpdateProcessor
 
     current.setChangedAttributes(changedAttributes.stream().sorted().toList());
 
-    stateWriter.appendFollowUpEvent(agentInstanceKey, AgentInstanceIntent.UPDATED, current);
+    stateWriter.appendFollowUpEvent(
+        agentInstanceKey,
+        AgentInstanceIntent.UPDATED,
+        AgentHistoryBatchBehavior.trimUnchangedContentFields(current));
     responseWriter.writeAcceptedResponseOnCommand(
         agentInstanceKey, AgentInstanceIntent.UPDATED, current, command);
   }

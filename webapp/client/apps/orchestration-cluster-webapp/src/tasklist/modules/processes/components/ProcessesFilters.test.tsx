@@ -92,7 +92,11 @@ describe('<ProcessesFilters />', () => {
 	it('should show tenants and update the tenant filter when multi-tenancy is enabled', async () => {
 		sessionStorage.setItem(
 			'clientConfig',
-			JSON.stringify(createSystemConfiguration({deployment: {isMultiTenancyEnabled: true, maxRequestSize: 0}})),
+			JSON.stringify(
+				createSystemConfiguration({
+					deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: true, maxRequestSize: 0},
+				}),
+			),
 		);
 		const {router, ...screen} = await renderWithRouter(
 			() => <ProcessesFilters initialFilterValues={{}} tenants={TENANTS} />,

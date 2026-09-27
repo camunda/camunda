@@ -28,21 +28,6 @@ import java.util.stream.Collectors;
 public final class AgentInstanceRecord extends UnifiedRecordValue
     implements AgentInstanceRecordValue {
 
-  public static final String ATTR_STATUS = "status";
-  public static final String ATTR_METRICS = "metrics";
-  public static final String ATTR_TOOLS = "tools";
-
-  // Derived from the CONFIGURATION history entry kind on the output side, once the engine
-  // processing that merges them in lands (see #58791) — never from a request-level
-  // changedAttributes entry. Not part of ALLOWED_ATTRIBUTES in AgentInstanceUpdateProcessor, only
-  // of the output-side merge order.
-  public static final String ATTR_SYSTEM_PROMPT = "systemPrompt";
-  public static final String ATTR_MODEL = "model";
-  public static final String ATTR_PROVIDER = "provider";
-  public static final String ATTR_MAX_TOKENS = "maxTokens";
-  public static final String ATTR_MAX_MODEL_CALLS = "maxModelCalls";
-  public static final String ATTR_MAX_TOOL_CALLS = "maxToolCalls";
-
   private final LongProperty agentInstanceKeyProp = new LongProperty("agentInstanceKey", -1L);
   private final LongProperty agentDefinitionKeyProp = new LongProperty("agentDefinitionKey", -1L);
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);

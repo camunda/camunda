@@ -276,7 +276,7 @@ const SortableTable = <
                               colSpan={expandedRowColSpan}
                               $variant="default"
                             >
-                              {rowExpandedContent}
+                              {props.isExpanded ? rowExpandedContent : null}
                             </TableExpandedRow>
                           ) : (
                             rowExpandedContent

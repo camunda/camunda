@@ -31,7 +31,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Named;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 final class PartitionGroupExporterStateInitializerTest {
 
@@ -65,9 +72,14 @@ final class PartitionGroupExporterStateInitializerTest {
     }
   }
 
-  @Test
-  void shouldNotUpdateOtherMembersInAGroup() {
-    // given
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldNotUpdateOtherMembersInAGroupOnNormalRestart(final boolean isCoordinator) {
+    // given — a normal restart (no post-restore pending plan): isCoordinator alone must not
+    // widen the write scope beyond the local member, only isAfterRestore() does that (see
+    // PartitionGroupExporterStateInitializer's class javadoc on why writing another member's
+    // exporter state outside of that case races the group-version bump and gets the broker
+    // shut down as an inconsistent configuration)
     final var config = DynamicPartitionConfig.init();
     final var otherMember = MemberId.from("1");
     final var group =
@@ -83,7 +95,7 @@ final class PartitionGroupExporterStateInitializerTest {
     // when
     final var exporters = Map.of("tenant-a", Set.of("expA"));
     final var result =
-        new PartitionGroupExporterStateInitializer(exporters, LOCAL_MEMBER_ID, false)
+        new PartitionGroupExporterStateInitializer(exporters, LOCAL_MEMBER_ID, isCoordinator)
             .modify(configuration)
             .join();
 
@@ -455,6 +467,53 @@ final class PartitionGroupExporterStateInitializerTest {
     assertThat(result).isEqualTo(configuration);
   }
 
+  @Test
+  void shouldUpdateOnlyLocalMemberWhenPendingPlanIsNotARestore() {
+    // given — a pending PartitionGroupPhase with an UpdateRoutingState operation, the same shape
+    // a restore plan has, but under a normal plan id rather than the restore sentinel.
+    // isAfterRestore() keys off that sentinel id, not the operation shape, so even with
+    // isCoordinator=true this must be treated as an ordinary restart: only the local member is
+    // updated, not every member of the group.
+    final var config = DynamicPartitionConfig.init();
+    final var otherMember = MemberId.from("1");
+    final var group =
+        groupWithMember(LOCAL_MEMBER_ID, config)
+            .addMember(otherMember, initialPartitionState(config));
+    final var configuration =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            GlobalConfiguration.init(),
+            Map.of("tenant-a", group),
+            normalPendingState("tenant-a"));
+
+    // when
+    final var exporters = Map.of("tenant-a", Set.of("expA"));
+    final var result =
+        new PartitionGroupExporterStateInitializer(exporters, LOCAL_MEMBER_ID, true)
+            .modify(configuration)
+            .join();
+
+    // then
+    assertThat(
+            result
+                .partitionGroup("tenant-a")
+                .getMember(LOCAL_MEMBER_ID)
+                .getPartition(1)
+                .config()
+                .exporting()
+                .exporters())
+        .containsKey("expA");
+    assertThat(
+            result
+                .partitionGroup("tenant-a")
+                .getMember(otherMember)
+                .getPartition(1)
+                .config()
+                .exporting()
+                .exporters())
+        .doesNotContainKey("expA");
+  }
+
   /**
    * The post-restore plan as {@code RestoreManager} writes it: one phase naming every restored
    * partition group. The groups must be the configuration's own — a plan naming fewer groups than
@@ -472,6 +531,26 @@ final class PartitionGroupExporterStateInitializerTest {
     return new PhasedChangeState(1L, Map.of(plan.id(), plan), List.of());
   }
 
+  /**
+   * A pending plan carrying the same {@link PartitionGroupPhase}/{@link UpdateRoutingState} shape a
+   * restore plan has (see {@link #postRestorePendingState}), but under a normal plan id ({@link
+   * PhasedChangePlan#INITIAL_PLAN_ID}) rather than {@link PhasedChangePlan#RESTORED_PLAN_ID} — the
+   * distinction {@link CurrentClusterConfiguration#isAfterRestore()} keys off.
+   */
+  private static PhasedChangeState normalPendingState(final String... groupIds) {
+    final Map<String, List<PartitionGroupOperation>> operations = new TreeMap<>();
+    for (final var groupId : groupIds) {
+      operations.put(groupId, List.of(new UpdateRoutingState(LOCAL_MEMBER_ID, Optional.empty())));
+    }
+    final var plan =
+        new PhasedChangePlan(
+            PhasedChangePlan.INITIAL_PLAN_ID,
+            0,
+            List.of(PartitionGroupPhase.sequential(operations)),
+            Instant.EPOCH);
+    return new PhasedChangeState(plan.id() + 1, Map.of(plan.id(), plan), List.of());
+  }
+
   private static PartitionGroupConfiguration groupWithMember(
       final MemberId memberId, final DynamicPartitionConfig partitionConfig) {
     return PartitionGroupConfiguration.empty(PartitionGroupConfiguration.INITIAL_VERSION)
@@ -481,5 +560,209 @@ final class PartitionGroupExporterStateInitializerTest {
   private static BrokerPartitionState initialPartitionState(
       final DynamicPartitionConfig partitionConfig) {
     return BrokerPartitionState.initialize(Map.of(1, PartitionState.active(1, partitionConfig)));
+  }
+
+  /**
+   * Tests {@link PartitionGroupExporterStateInitializer#updateExporterStateInPartition} directly,
+   * as the pure function of a partition's state and the configured exporters that it is. Ported
+   * from the exporter-state-reconciliation cases of the (now removed) legacy {@code
+   * ExporterStateInitializer}, which shared this same static helper before the per-partition-group
+   * variant took it over.
+   */
+  @Nested
+  final class ExporterStateReconciliationTest {
+
+    @ParameterizedTest
+    @MethodSource("provideConfigs")
+    void shouldUpdateExporterConfig(final ExporterConfigParameter parameter) {
+      // when
+      final var updated =
+          PartitionGroupExporterStateInitializer.updateExporterStateInPartition(
+              parameter.initialState(), parameter.configuredExporters());
+
+      // then
+      assertThat(updated.config()).isEqualTo(parameter.expectedConfig());
+    }
+
+    @Test
+    void shouldUpdateExporterConfigOnFirstUpdateToV86() {
+      // given — a partition state persisted before exporter-state tracking was introduced
+      final var initialState = PartitionState.active(1, DynamicPartitionConfig.uninitialized());
+
+      final var expectedConfig =
+          new DynamicPartitionConfig(
+              new ExportingConfig(
+                  ExportingState.UNKNOWN,
+                  Map.of(
+                      "expA",
+                      new ExporterState(0, State.ENABLED, Optional.empty()),
+                      "expB",
+                      new ExporterState(0, State.ENABLED, Optional.empty()))));
+
+      // when
+      final var updated =
+          PartitionGroupExporterStateInitializer.updateExporterStateInPartition(
+              initialState, Set.of("expA", "expB"));
+
+      // then
+      assertThat(updated.config()).isEqualTo(expectedConfig);
+    }
+
+    static Stream<Arguments> provideConfigs() {
+      return Stream.of(
+          exporterAdded(),
+          enabledExporterRemoved(),
+          exporterAddedAndRemoved(),
+          disabledExporterConfigRemoved(),
+          exporterReadded(),
+          configNotFoundExporterNotReadded());
+    }
+
+    private static Arguments exporterAddedAndRemoved() {
+      final var expectedConfig =
+          new DynamicPartitionConfig(
+              new ExportingConfig(
+                  ExportingState.EXPORTING,
+                  Map.of(
+                      "expA",
+                      new ExporterState(0, State.ENABLED, Optional.empty()),
+                      "expB",
+                      new ExporterState(0, State.CONFIG_NOT_FOUND, Optional.empty()),
+                      "exporter1",
+                      new ExporterState(0, State.ENABLED, Optional.empty()),
+                      "exporter2",
+                      new ExporterState(0, State.ENABLED, Optional.empty()))));
+
+      return Arguments.of(
+          Named.of(
+              "Exporters Added and Removed",
+              new ExporterConfigParameter(
+                  withTwoEnabledExporters(),
+                  Set.of("exporter1", "exporter2", "expA"),
+                  expectedConfig)));
+    }
+
+    private static Arguments enabledExporterRemoved() {
+      final var expectedConfig =
+          new DynamicPartitionConfig(
+              new ExportingConfig(
+                  ExportingState.EXPORTING,
+                  Map.of(
+                      "expA",
+                      new ExporterState(0, State.ENABLED, Optional.empty()),
+                      "expB",
+                      new ExporterState(0, State.CONFIG_NOT_FOUND, Optional.empty()))));
+      return Arguments.of(
+          Named.of(
+              "Enabled Exporters Removed",
+              new ExporterConfigParameter(
+                  withTwoEnabledExporters(), Set.of("expA"), expectedConfig)));
+    }
+
+    private static Arguments exporterAdded() {
+      final var expectedConfig =
+          new DynamicPartitionConfig(
+              new ExportingConfig(
+                  ExportingState.EXPORTING,
+                  Map.of(
+                      "expA",
+                      new ExporterState(0, State.ENABLED, Optional.empty()),
+                      "expB",
+                      new ExporterState(0, State.ENABLED, Optional.empty()),
+                      "exporter1",
+                      new ExporterState(0, State.ENABLED, Optional.empty()),
+                      "exporter2",
+                      new ExporterState(0, State.ENABLED, Optional.empty()))));
+      return Arguments.of(
+          Named.of(
+              "New Exporters Added",
+              new ExporterConfigParameter(
+                  withTwoEnabledExporters(),
+                  Set.of("expA", "expB", "exporter1", "exporter2"),
+                  expectedConfig)));
+    }
+
+    private static Arguments exporterReadded() {
+      final var initialConfig =
+          new DynamicPartitionConfig(
+              new ExportingConfig(
+                  ExportingState.EXPORTING,
+                  Map.of(
+                      "expA",
+                      new ExporterState(0, State.ENABLED, Optional.empty()),
+                      "expC",
+                      new ExporterState(1, State.CONFIG_NOT_FOUND, Optional.empty()))));
+      final var initialState = PartitionState.active(1, initialConfig);
+
+      final var expectedConfig =
+          new DynamicPartitionConfig(
+              new ExportingConfig(
+                  ExportingState.EXPORTING,
+                  Map.of(
+                      "expA",
+                      new ExporterState(0, State.ENABLED, Optional.empty()),
+                      "expC",
+                      new ExporterState(1, State.ENABLED, Optional.empty()))));
+      return Arguments.of(
+          Named.of(
+              "Exporters Readded",
+              new ExporterConfigParameter(initialState, Set.of("expA", "expC"), expectedConfig)));
+    }
+
+    private static Arguments configNotFoundExporterNotReadded() {
+      final var initialConfig =
+          new DynamicPartitionConfig(
+              new ExportingConfig(
+                  ExportingState.EXPORTING,
+                  Map.of(
+                      "expA",
+                      new ExporterState(0, State.ENABLED, Optional.empty()),
+                      "expC",
+                      new ExporterState(1, State.CONFIG_NOT_FOUND, Optional.empty()))));
+      final var initialState = PartitionState.active(1, initialConfig);
+
+      // expC is still absent from the application config — it must stay CONFIG_NOT_FOUND
+      return Arguments.of(
+          Named.of(
+              "CONFIG_NOT_FOUND Exporter Not Readded",
+              new ExporterConfigParameter(initialState, Set.of("expA"), initialConfig)));
+    }
+
+    private static Arguments disabledExporterConfigRemoved() {
+      final var initialConfig =
+          new DynamicPartitionConfig(
+              new ExportingConfig(
+                  ExportingState.EXPORTING,
+                  Map.of(
+                      "expA",
+                      new ExporterState(0, State.ENABLED, Optional.empty()),
+                      "expB",
+                      new ExporterState(0, State.DISABLED, Optional.empty()))));
+      final var initialState = PartitionState.active(1, initialConfig);
+
+      // expectedConfig = initialConfig. Disabled exporters should stay disabled.
+      return Arguments.of(
+          Named.of(
+              "Disabled Exporter's Config is Removed",
+              new ExporterConfigParameter(initialState, Set.of("expA"), initialConfig)));
+    }
+
+    private static PartitionState withTwoEnabledExporters() {
+      final DynamicPartitionConfig config =
+          new DynamicPartitionConfig(
+              new ExportingConfig(
+                  ExportingState.EXPORTING,
+                  Map.of(
+                      "expA",
+                      new ExporterState(0, State.ENABLED, Optional.empty()),
+                      "expB",
+                      new ExporterState(0, State.ENABLED, Optional.empty()))));
+      return PartitionState.active(1, config);
+    }
+
+    private record ExporterConfigParameter(
+        PartitionState initialState,
+        Set<String> configuredExporters,
+        DynamicPartitionConfig expectedConfig) {}
   }
 }

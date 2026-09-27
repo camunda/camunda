@@ -215,7 +215,7 @@ test('should use the default tenant and update the process list when another ten
 			successResponse: HttpResponse.json(
 				createSystemConfiguration({
 					components: {active: ['tasklist']},
-					deployment: {isMultiTenancyEnabled: true, maxRequestSize: 0},
+					deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: true, maxRequestSize: 0},
 				}),
 			),
 		}),
@@ -328,7 +328,7 @@ test('should start a process with a form and selected tenant', async ({network, 
 			successResponse: HttpResponse.json(
 				createSystemConfiguration({
 					components: {active: ['tasklist']},
-					deployment: {isMultiTenancyEnabled: true, maxRequestSize: 4_194_304},
+					deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: true, maxRequestSize: 4_194_304},
 				}),
 			),
 		}),

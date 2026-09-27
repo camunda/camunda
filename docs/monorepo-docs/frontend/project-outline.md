@@ -22,7 +22,7 @@ webapp/client/
 ### `@camunda/camunda-api-zod-schemas`
 
 Published to npm. Provides Zod schemas and TypeScript types for
-the Camunda 8 REST API, versioned per release line (8.8 / 8.9 / 8.10).
+the Camunda 8 REST API, versioned per release line (8.8 / 8.9 / 8.10 / 8.11).
 Consumed by
 `@camunda/orchestration-cluster-webapp` and legacy frontend components for type-safe API calls and
 runtime validation.

@@ -10,7 +10,7 @@ import type {FieldValidator} from 'final-form';
 import get from 'lodash/get';
 import type {VariablesFormValues} from './types';
 import {createVariableFieldName, getNewVariablePrefix} from './variableFieldNames';
-import {isValidJSON} from '#/tasklist/modules/json/isValidJSON';
+import {isValidJSON} from '#/shared/json/isValidJSON';
 import {promisifyValidator} from './promisifyValidator';
 
 const ERROR_MESSAGES = {

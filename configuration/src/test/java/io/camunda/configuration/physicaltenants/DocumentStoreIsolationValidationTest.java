@@ -292,8 +292,8 @@ class DocumentStoreIsolationValidationTest {
       // backends are separate locations
       final Map<String, Camunda> resolved =
           tenants(
-              "tenanta", awsCamunda("docs", "shared/", "us-east-1", "https://minio-a.internal"),
-              "tenantb", awsCamunda("docs", "shared/", "us-east-1", "https://minio-b.internal"));
+              "tenanta", awsCamunda("docs", "shared/", "us-east-1", "https://s3-a.internal"),
+              "tenantb", awsCamunda("docs", "shared/", "us-east-1", "https://s3-b.internal"));
 
       // when / then
       assertThatCode(() -> validation.validate(resolved)).doesNotThrowAnyException();

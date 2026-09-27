@@ -14,7 +14,6 @@ const EXPECTED_KEYS = [
 	'appHeader.skipToContent',
 	'appSidebar.closeNavigation',
 	'appSidebar.collapse',
-	'appSidebar.collapseText',
 	'appSidebar.expand',
 	'dialog.close',
 	'navBreadcrumb.actionsLabel',

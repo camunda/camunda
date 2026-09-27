@@ -47,7 +47,6 @@ import static io.camunda.zeebe.protocol.record.ValueType.USAGE_METRIC;
 import static io.camunda.zeebe.protocol.record.ValueType.USER;
 import static io.camunda.zeebe.protocol.record.ValueType.USER_TASK;
 import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
-import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE_DOCUMENT;
 
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ConfigValidator;
@@ -414,7 +413,6 @@ public class CamundaExporter implements Exporter {
             PROCESS_INSTANCE_MODIFICATION,
             ROLE,
             VARIABLE,
-            VARIABLE_DOCUMENT,
             PROCESS_MESSAGE_SUBSCRIPTION,
             MESSAGE_SUBSCRIPTION,
             MESSAGE_START_EVENT_SUBSCRIPTION,

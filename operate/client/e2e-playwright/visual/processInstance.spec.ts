@@ -342,10 +342,60 @@ test.describe('process instance page', () => {
     await page.getByRole('link', {name: 'Incidents'}).click();
 
     await page.getByRole('button', {name: /expand current row/i}).click();
-    await expect(page.getByText('Job ID')).toBeVisible();
-    await expect(page.getByText('Error message')).toBeVisible();
+
+    const expandedRow = page.getByRole('row').last();
+    await expect(expandedRow.getByText('Job ID')).toBeVisible();
+    await expect(expandedRow.getByText('Error message')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
+  });
+
+  test('instance with incident keeps operations reachable at narrow width', async ({
+    page,
+    processInstancePage,
+  }) => {
+    await page.setViewportSize({width: 600, height: 720});
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: instanceWithIncident.detail,
+        callHierarchy: instanceWithIncident.callHierarchy,
+        elementInstances: instanceWithIncident.elementInstances,
+        statistics: instanceWithIncident.statistics,
+        sequenceFlows: instanceWithIncident.sequenceFlows,
+        variables: instanceWithIncident.variables,
+        xml: instanceWithIncident.xml,
+        incidents: instanceWithIncident.incidents,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: instanceWithIncident.detail.processInstanceKey,
+    });
+
+    await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+
+    await page.getByRole('link', {name: 'Incidents'}).click();
+
+    const tableContainer = page.getByTestId('data-table-container');
+    await expect(tableContainer).toBeVisible();
+    await expect
+      .poll(async () =>
+        tableContainer.evaluate(
+          (element) => element.scrollWidth > element.clientWidth,
+        ),
+      )
+      .toBe(true);
+
+    await tableContainer.evaluate((element) => {
+      element.scrollLeft = element.scrollWidth;
+    });
+
+    await expect(
+      page.getByRole('columnheader', {name: 'Operations'}),
+    ).toBeVisible();
   });
 
   test('completed instance', async ({page, processInstancePage}) => {

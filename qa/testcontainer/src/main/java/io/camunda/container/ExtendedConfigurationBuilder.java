@@ -197,6 +197,10 @@ public class ExtendedConfigurationBuilder {
       exporterConfigArgs.put(
           "retention", Map.of("enabled", true, "policyName", retentionPolicyName));
     }
+    // this manually-declared exporter and the secondary-storage-driven autoconfigured
+    // 'camundaexporter' both write to the same location whenever secondary storage is also
+    // ES/OS; disable autoconfiguration to avoid the two colliding
+    unifiedConfig.getData().getSecondaryStorage().setAutoconfigureCamundaExporter(false);
     withExporter(
         "CamundaExporter",
         cfg -> {

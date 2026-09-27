@@ -12,8 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
-import io.camunda.zeebe.dynamic.config.ClusterConfigurationAssert;
 import io.camunda.zeebe.dynamic.config.PartitionStateAssert;
+import io.camunda.zeebe.dynamic.config.RoutingStateAssert;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -23,7 +23,6 @@ import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
-import io.camunda.zeebe.dynamic.config.state.MemberState.State;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import java.util.Map;
 import java.util.Optional;
@@ -40,7 +39,7 @@ class ConfigurationUtilTest {
               Map.of("expA", new ExporterState(1, ExporterState.State.ENABLED, Optional.empty()))));
 
   @Test
-  void shouldGenerateTopologyFromPartitionDistribution() {
+  void shouldGenerateCurrentClusterConfigurationFromPartitionDistribution() {
     // given
     final PartitionMetadata partitionOne =
         new PartitionMetadata(
@@ -58,67 +57,49 @@ class ConfigurationUtilTest {
             member(0));
 
     final var partitionDistribution = Set.of(partitionTwo, partitionOne);
+    final var clusterMembers = Set.of(member(0), member(1), member(2));
 
     // when
-    final var topology =
-        ConfigurationUtil.getClusterConfigFrom(partitionDistribution, partitionConfig, "clusterId");
+    final var configuration =
+        ConfigurationUtil.getCurrentClusterConfigurationFrom(
+            clusterMembers,
+            partitionDistribution,
+            Map.of(GROUP_NAME, partitionConfig),
+            "clusterId");
 
     // then
-    ClusterConfigurationAssert.assertThatClusterTopology(topology)
-        .hasMemberWithState(0, State.ACTIVE)
-        .member(0)
-        .hasPartitionSatisfying(
-            1,
-            partition -> {
-              PartitionStateAssert.assertThat(partition)
-                  .hasPriority(1)
-                  .hasState(PartitionState.State.ACTIVE)
-                  .hasConfig(partitionConfig);
-            })
-        .hasPartitionSatisfying(
-            2,
-            partition ->
-                PartitionStateAssert.assertThat(partition)
-                    .hasPriority(3)
-                    .hasState(PartitionState.State.ACTIVE)
-                    .hasConfig(partitionConfig));
+    assertThat(configuration.globalConfiguration().getMember(member(0)).state())
+        .isEqualTo(BrokerState.State.ACTIVE);
+    assertThat(configuration.globalConfiguration().getMember(member(1)).state())
+        .isEqualTo(BrokerState.State.ACTIVE);
+    assertThat(configuration.globalConfiguration().getMember(member(2)).state())
+        .isEqualTo(BrokerState.State.ACTIVE);
 
-    ClusterConfigurationAssert.assertThatClusterTopology(topology)
-        .hasMemberWithState(1, State.ACTIVE)
-        .member(1)
-        .hasPartitionSatisfying(
-            1,
-            partition ->
-                PartitionStateAssert.assertThat(partition)
-                    .hasPriority(2)
-                    .hasState(PartitionState.State.ACTIVE)
-                    .hasConfig(partitionConfig))
-        .hasPartitionSatisfying(
-            2,
-            partition -> {
-              PartitionStateAssert.assertThat(partition)
-                  .hasPriority(2)
-                  .hasState(PartitionState.State.ACTIVE)
-                  .hasConfig(partitionConfig);
-            });
-
-    ClusterConfigurationAssert.assertThatClusterTopology(topology)
-        .hasMemberWithState(2, State.ACTIVE)
-        .member(2)
-        .hasPartitionSatisfying(
-            1,
-            partition ->
-                PartitionStateAssert.assertThat(partition)
-                    .hasPriority(3)
-                    .hasState(PartitionState.State.ACTIVE)
-                    .hasConfig(partitionConfig))
-        .hasPartitionSatisfying(
-            2,
-            partition ->
-                PartitionStateAssert.assertThat(partition)
-                    .hasPriority(1)
-                    .hasState(PartitionState.State.ACTIVE)
-                    .hasConfig(partitionConfig));
+    final var group = configuration.partitionGroup(GROUP_NAME);
+    PartitionStateAssert.assertThat(group.getMember(member(0)).partitions().get(1))
+        .hasPriority(1)
+        .hasState(PartitionState.State.ACTIVE)
+        .hasConfig(partitionConfig);
+    PartitionStateAssert.assertThat(group.getMember(member(0)).partitions().get(2))
+        .hasPriority(3)
+        .hasState(PartitionState.State.ACTIVE)
+        .hasConfig(partitionConfig);
+    PartitionStateAssert.assertThat(group.getMember(member(1)).partitions().get(1))
+        .hasPriority(2)
+        .hasState(PartitionState.State.ACTIVE)
+        .hasConfig(partitionConfig);
+    PartitionStateAssert.assertThat(group.getMember(member(1)).partitions().get(2))
+        .hasPriority(2)
+        .hasState(PartitionState.State.ACTIVE)
+        .hasConfig(partitionConfig);
+    PartitionStateAssert.assertThat(group.getMember(member(2)).partitions().get(1))
+        .hasPriority(3)
+        .hasState(PartitionState.State.ACTIVE)
+        .hasConfig(partitionConfig);
+    PartitionStateAssert.assertThat(group.getMember(member(2)).partitions().get(2))
+        .hasPriority(1)
+        .hasState(PartitionState.State.ACTIVE)
+        .hasConfig(partitionConfig);
   }
 
   @Test
@@ -250,7 +231,7 @@ class ConfigurationUtilTest {
   }
 
   @Test
-  void shouldInitializeRoutingState() {
+  void shouldInitializeRoutingStateOnCurrentClusterConfiguration() {
     // given
     final PartitionMetadata partitionOne =
         new PartitionMetadata(
@@ -268,15 +249,20 @@ class ConfigurationUtilTest {
             member(0));
 
     final var partitionDistribution = Set.of(partitionTwo, partitionOne);
+    final var clusterMembers = Set.of(member(0), member(1), member(2));
 
     // when
-    final var topology =
-        ConfigurationUtil.getClusterConfigFrom(partitionDistribution, partitionConfig, "clusterId");
+    final var configuration =
+        ConfigurationUtil.getCurrentClusterConfigurationFrom(
+            clusterMembers,
+            partitionDistribution,
+            Map.of(GROUP_NAME, partitionConfig),
+            "clusterId");
 
     // then
-    ClusterConfigurationAssert.assertThatClusterTopology(topology)
-        .hasRoutingState()
-        .routingState()
+    final var group = configuration.partitionGroup(GROUP_NAME);
+    assertThat(group.routingState()).isPresent();
+    RoutingStateAssert.assertThat(group.routingState().orElseThrow())
         .hasVersion(1)
         .hasActivatedPartitions(2)
         .correlatesMessagesToPartitions(2);

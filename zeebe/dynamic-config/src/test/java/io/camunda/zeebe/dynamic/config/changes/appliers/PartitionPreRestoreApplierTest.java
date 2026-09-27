@@ -192,6 +192,11 @@ final class PartitionPreRestoreApplierTest {
     }
 
     @Override
+    public ActorFuture<Void> initializeSchema() {
+      return CompletableActorFuture.completed(null);
+    }
+
+    @Override
     public ActorFuture<Void> restore(final int partitionId, final SortedSet<Long> backupIds) {
       return CompletableActorFuture.completed(null);
     }

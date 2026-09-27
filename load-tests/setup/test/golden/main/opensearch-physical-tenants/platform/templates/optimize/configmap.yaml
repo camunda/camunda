@@ -42,7 +42,7 @@ data:
           redirectRootUrl: "http://localhost:8083"
     api:
       audience: "optimize-api"
-      jwtSetUri: "http://c8-golden-main-opensearch-physical-tenants.keycloak-operator.svc:18080/auth/realms/camunda-platform/protocol/openid-connect/certs"
+      jwtSetUri: "http://keycloak:18080/auth/realms/camunda-platform/protocol/openid-connect/certs"
   application-ccsm.yaml: |
     spring:
       config:
@@ -52,7 +52,7 @@ data:
         clientId: "optimize"
         audience: "optimize-api"
         issuer: "http://localhost:18080/auth/realms/camunda-platform"
-        issuerBackendUrl: "http://c8-golden-main-opensearch-physical-tenants.keycloak-operator.svc:18080/auth/realms/camunda-platform"
+        issuerBackendUrl: "http://keycloak:18080/auth/realms/camunda-platform"
       security:
         authentication:
           method: "oidc"
@@ -64,8 +64,8 @@ data:
               - "optimize-api"
               - "web-modeler-api"
             authorization-uri: "http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/auth"
-            jwk-set-uri: "http://c8-golden-main-opensearch-physical-tenants.keycloak-operator.svc:18080/auth/realms/camunda-platform/protocol/openid-connect/certs"
-            token-uri: "http://c8-golden-main-opensearch-physical-tenants.keycloak-operator.svc:18080/auth/realms/camunda-platform/protocol/openid-connect/token"
+            jwk-set-uri: "http://keycloak:18080/auth/realms/camunda-platform/protocol/openid-connect/certs"
+            token-uri: "http://keycloak:18080/auth/realms/camunda-platform/protocol/openid-connect/token"
             redirect-uri: "http://localhost:8083/api/authentication/callback"
   application.yml: |
     historyCleanup:

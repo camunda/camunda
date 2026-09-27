@@ -184,7 +184,7 @@ test('should match the multi-tenant processes page snapshot', async ({network, t
 			successResponse: HttpResponse.json(
 				createSystemConfiguration({
 					components: {active: ['tasklist']},
-					deployment: {isMultiTenancyEnabled: true, maxRequestSize: 0},
+					deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: true, maxRequestSize: 0},
 				}),
 			),
 		}),

@@ -47,8 +47,9 @@ import org.slf4j.LoggerFactory;
  * <li>When the local configuration is empty, a non-coordinating member waits until it receives a
  *     valid configuration from the coordinator via gossip. See {@link GossipInitializer}.
  * <li>After initialization, the configuration can be modified using {@link
- *     ClusterConfigurationModifier}. For example, {@link ExporterStateInitializer} overwrites the
- *     local member's state to keep it in sync with the statically configured exporters.
+ *     ClusterConfigurationModifier}. For example, {@link PartitionGroupExporterStateInitializer}
+ *     overwrites the local member's state to keep it in sync with the statically configured
+ *     exporters.
  */
 public interface ClusterConfigurationInitializer<T extends InitializableClusterConfiguration> {
   Logger LOG = LoggerFactory.getLogger(ClusterConfigurationInitializer.class);
@@ -176,14 +177,6 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
       this.configurationFile = configurationFile;
       this.serializer = serializer;
       this.reader = reader;
-    }
-
-    public static FileInitializer<ClusterConfiguration> legacyFileInitializer(
-        final Path configurationFile, final ClusterConfigurationSerializer serializer) {
-      return new FileInitializer<>(
-          configurationFile,
-          serializer,
-          (f, s) -> PersistedClusterConfiguration.ofFile(f, s).getConfiguration());
     }
 
     public static FileInitializer<CurrentClusterConfiguration> fromPersistedConfiguration(
@@ -496,11 +489,6 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
 
     public StaticInitializer(final Supplier<T> configurationSupplier) {
       this.configurationSupplier = configurationSupplier;
-    }
-
-    public static StaticInitializer<ClusterConfiguration> legacyStaticInitializer(
-        final StaticConfiguration staticConfiguration) {
-      return new StaticInitializer<>(staticConfiguration::generateTopology);
     }
 
     @Override

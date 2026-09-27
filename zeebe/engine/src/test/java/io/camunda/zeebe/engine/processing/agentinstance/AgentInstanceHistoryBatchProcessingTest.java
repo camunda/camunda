@@ -2241,13 +2241,13 @@ public class AgentInstanceHistoryBatchProcessingTest {
 
     // then — the item is only queued, not yet applied: the live fields still reflect the
     // instance's definition at creation, so the instance always has a valid definition even
-    // while this CONFIGURATION item is pending.
+    // while this CONFIGURATION item is pending. systemPrompt/tools are trimmed off the emitted
+    // event itself since changedAttributes is empty here (see
+    // AgentHistoryBatchBehavior#trimUnchangedContentFields); primary storage keeps the baseline
+    // value regardless, patched back in by AgentInstanceUpdatedV2Applier.
     assertThat(updated.getValue().getDefinition().getModel()).isEqualTo("gpt-4o");
     assertThat(updated.getValue().getDefinition().getProvider()).isEqualTo("openai");
-    assertThat(updated.getValue().getDefinition().getSystemPrompt())
-        .hasSize(1)
-        .first()
-        .satisfies(block -> assertThat(block.getText()).isEqualTo("You are a helpful agent."));
+    assertThat(updated.getValue().getDefinition().getSystemPrompt()).isEmpty();
     assertThat(updated.getValue().getTools()).isEmpty();
     assertThat(updated.getValue().getChangedAttributes()).isEmpty();
 

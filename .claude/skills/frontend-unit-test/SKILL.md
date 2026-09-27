@@ -358,6 +358,8 @@ external or browser boundary that cannot be used directly.
 
 Co-locate each test with its source file.
 
+Place setup and teardown hooks inside the `describe` block that owns their tests. If hooks apply to multiple suites, nest those suites under a parent `describe` and put the shared hooks there rather than at the file top level.
+
 Name tests with the `should` prefix.
 
 ```tsx

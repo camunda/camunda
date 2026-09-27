@@ -12,11 +12,10 @@ import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.testcontainers.MinioContainer;
+import io.camunda.zeebe.test.testcontainers.S3MockTestContainer;
 import java.time.Duration;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -26,11 +25,8 @@ final class DocumentIsolationAwsIT extends AbstractDocumentIsolationIT {
 
   private static final String BUCKET_A = "bucket-a";
   private static final String BUCKET_B = "bucket-b";
-  private static final Network NETWORK = Network.newNetwork();
 
-  @Container
-  private static final MinioContainer MINIO =
-      new MinioContainer().withNetwork(NETWORK).withDomain("minio.local", BUCKET_A, BUCKET_B);
+  @Container private static final S3MockTestContainer MINIO = new S3MockTestContainer();
 
   @SuppressWarnings("resource") // lifecycle managed by @TestZeebe
   @TestZeebe(autoStart = false, purgeAfterEach = false)
@@ -55,7 +51,7 @@ final class DocumentIsolationAwsIT extends AbstractDocumentIsolationIT {
 
     // AwsDocumentStore uses S3Client.create() which reads from system properties.
     // Using an IP-based endpoint forces path-style access in the AWS SDK v2.
-    final String minioEndpoint = "http://127.0.0.1:" + MINIO.getMappedPort(9000);
+    final String minioEndpoint = "http://127.0.0.1:" + MINIO.getHttpServerPort();
     System.setProperty("aws.endpointUrl", minioEndpoint);
     System.setProperty("aws.accessKeyId", MINIO.accessKey());
     System.setProperty("aws.secretAccessKey", MINIO.secretKey());
@@ -99,6 +95,5 @@ final class DocumentIsolationAwsIT extends AbstractDocumentIsolationIT {
     System.clearProperty("aws.accessKeyId");
     System.clearProperty("aws.secretAccessKey");
     System.clearProperty("aws.region");
-    NETWORK.close();
   }
 }

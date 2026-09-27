@@ -36,6 +36,6 @@ test.describe('Admin index page', () => {
 		await adminIndexPage.goto();
 
 		await expect(adminIndexPage.heading).toBeVisible();
-		await expect(adminIndexPage.header.branding).toBeVisible();
+		await expect(adminIndexPage.branding).toBeVisible();
 	});
 });

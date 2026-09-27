@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context.RecordFilter;
 import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse;
+import io.camunda.zeebe.exporter.support.IndexPrefixValidation;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -558,10 +559,107 @@ final class OpensearchExporterTest {
 
   @Nested
   final class ValidationTest {
-    @Test
-    void shouldNotAllowUnderscoreInIndexPrefix() {
+
+    @ParameterizedTest
+    @ValueSource(strings = {"\\", "/", "*", "?", "\"", ">", "<", "|", " ", ",", "#", ":", "+"})
+    void shouldNotAllowInvalidCharactersInIndexPrefix(final String testCharacter) {
       // given
-      config.index.prefix = "i_am_invalid";
+      config.index.prefix = "test-prefix" + testCharacter;
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"\\", "/", "*", "?", "\"", ">", "<", "|", " ", ",", "#", ":", "+"})
+    void shouldNotAllowInvalidCharactersAtBeginningOfIndexPrefix(final String testCharacter) {
+      // given
+      config.index.prefix = testCharacter + "test-prefix";
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"\\", "/", "*", "?", "\"", ">", "<", "|", " ", ",", "#", ":", "+"})
+    void shouldNotAllowInvalidCharactersInMiddleOfIndexPrefix(final String testCharacter) {
+      // given
+      config.index.prefix = "test" + testCharacter + "prefix";
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {".", "+", "-", "_"})
+    void shouldNotAllowInvalidCharactersAtStartOfIndexPrefix(final String testCharacter) {
+      // given
+      config.index.prefix = testCharacter + "test-prefix";
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+    }
+
+    @Test
+    void shouldNotAllowPlusCharacterInMiddleOfIndexPrefix() {
+      // given - OpenSearch forbids `+` anywhere in an index name, unlike Elasticsearch, which only
+      // forbids it as a leading character
+      config.index.prefix = "test+prefix";
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+    }
+
+    @Test
+    void shouldNotAllowEmptyIndexPrefix() {
+      // given
+      config.index.prefix = "";
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+    }
+
+    @Test
+    void shouldNotAllowNullIndexPrefix() {
+      // given
+      config.index.prefix = null;
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"Prefix", "Test-Prefix", "TEST-PREFIX", "test-Prefix"})
+    void shouldNotAllowUppercaseCharactersInIndexPrefix(final String testPrefix) {
+      // given
+      config.index.prefix = testPrefix;
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+    }
+
+    @Test
+    void shouldNotAllowIndexPrefixExceedingMaxLength() {
+      // given
+      config.index.prefix = "a".repeat(IndexPrefixValidation.MAX_PREFIX_LENGTH + 1);
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+    }
+
+    @Test
+    void shouldAllowIndexPrefixAtMaxLength() {
+      // given
+      config.index.prefix = "a".repeat(IndexPrefixValidation.MAX_PREFIX_LENGTH);
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldNotAllowMultibyteIndexPrefixExceedingMaxLengthInBytes() {
+      // given - each 'é' is 2 UTF-8 bytes, so this has string length 120 but 240 bytes
+      config.index.prefix = "é".repeat(120);
 
       // when - then
       assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);

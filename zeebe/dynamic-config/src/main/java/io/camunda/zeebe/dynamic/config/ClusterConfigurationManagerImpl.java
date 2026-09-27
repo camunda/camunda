@@ -17,7 +17,6 @@ import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChange
 import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChangeAppliers;
 import io.camunda.zeebe.dynamic.config.changes.appliers.RemovePhysicalTenantApplier;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
@@ -52,8 +51,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * ClusterConfigurationManager is responsible for initializing ClusterConfiguration and managing
- * ClusterConfiguration changes.
+ * ClusterConfigurationManager is responsible for initializing the cluster configuration and
+ * managing configuration changes.
  *
  * <p>On startup, ClusterConfigurationManager initializes the configuration using {@link
  * ClusterConfigurationInitializer}s. The initialized configuration is gossiped to other members.
@@ -64,10 +63,10 @@ import org.slf4j.LoggerFactory;
  * <h4>Making configuration changes</h4>
  *
  * <p>Only a coordinator can start a configuration change. The steps to make a configuration change
- * are added to the {@link ClusterConfiguration}. To make a configuration change, the coordinator
- * update the configuration with a list of operations that needs to be executed to achieve the
- * target configuration and gossip the updated configuration. These operations are expected to be
- * executed in the order given.
+ * are added to the {@link CurrentClusterConfiguration}. To make a configuration change, the
+ * coordinator update the configuration with a list of operations that needs to be executed to
+ * achieve the target configuration and gossip the updated configuration. These operations are
+ * expected to be executed in the order given.
  *
  * <p>When a member receives a configuration with pending changes, it applies the change if it is
  * applicable to the member. Only a member can make changes to its own state in the configuration.
@@ -102,7 +101,6 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   private final MemberId localMemberId;
   private boolean initialized = false;
   private final TopologyManagerMetrics topologyMetrics;
-  private final boolean useNewConfig;
 
   private final PersistedCurrentClusterConfiguration persistedCurrentConfiguration;
   private @Nullable Consumer<CurrentClusterConfiguration> currentConfigurationGossiper;
@@ -175,30 +173,12 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     this.maxRetryDelay = maxRetryDelay;
     this.completedChangeHistoryLimit = completedChangeHistoryLimit;
     PhasedChangeState.setHistoryLimit(completedChangeHistoryLimit);
-    useNewConfig = true;
     coordinatorSupplier =
         ClusterConfigurationCoordinatorSupplier.from(
             () -> this.persistedCurrentConfiguration.getConfiguration());
   }
 
-  /**
-   * Not supported on the multi-partition-group model — the legacy single-group configuration cannot
-   * be mutated in isolation. Use {@link #updateMultiConfiguration} instead.
-   */
-  @Deprecated
-  @Override
-  public ActorFuture<ClusterConfiguration> updateClusterConfiguration(
-      final UnaryOperator<ClusterConfiguration> configUpdater) {
-    throw new UnsupportedOperationException(
-        "updateClusterConfiguration is not supported; use updateMultiConfiguration instead");
-  }
-
-  @Override
-  public boolean isUsingNewConfig() {
-    return useNewConfig;
-  }
-
-  /** Returns the full multi-group configuration. Only valid when {@link #useNewConfig} is true. */
+  /** Returns the full multi-group configuration. */
   @Override
   public ActorFuture<CurrentClusterConfiguration> getMultiConfiguration() {
     final var future = executor.<CurrentClusterConfiguration>createFuture();
@@ -208,8 +188,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
 
   /**
    * Applies {@code updater} to the multi-group configuration, persists and gossips the result, then
-   * triggers reconciliation (see {@link #reconcile}). Only valid when {@link #useNewConfig} is
-   * true.
+   * triggers reconciliation (see {@link #reconcile}).
    */
   @Override
   public ActorFuture<CurrentClusterConfiguration> updateMultiConfiguration(

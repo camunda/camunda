@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.0.94
+
+### 🚀 Enhancements
+
+- Add the `8.11` schema version, mirroring 8.10 and adding `isTenantsApiEnabled` (deployment) and `isCamundaGroupsEnabled` (authentication) to the system configuration schema ([#63648](https://github.com/camunda/camunda/pull/63648))
+
+### 🩹 Fixes
+
+- Make `batchOperationType` nullable in the 8.10 and 8.11 batch operation schemas, for legacy Operate batches and documents without a stored type ([#63685](https://github.com/camunda/camunda/pull/63685))
+
+### ⚠️ Breaking Changes
+
+- Rename `jobLease` to `jobLeaseToken` on 8.10 and 8.11 agent instance history items, matching the REST API rename ([#63086](https://github.com/camunda/camunda/pull/63086))
+
+### ❤️ Contributors
+
+- HeleneW-dot ([@HeleneW-dot](https://github.com/HeleneW-dot))
+- Nicola Puppa ([@nicpuppa](https://github.com/nicpuppa))
+- Victor Ronnerstedt ([@Krypt0r7](https://github.com/Krypt0r7))
+
 ## v0.0.93
 
 ### 🩹 Fixes

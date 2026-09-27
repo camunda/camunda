@@ -68,7 +68,7 @@ Uses TanStack Router loaders + TanStack Query. Three tiers in descending order o
 
 Work through these Camunda-specific considerations. They shape the page architecture:
 
-- **API schemas**: check if the endpoints exist in `@camunda/camunda-api-zod-schemas`. If not, add them as part of your work.
+- **API schemas**: check if the endpoints exist in `@camunda/camunda-api-zod-schemas`. If not, add them as part of your work — follow the `camunda-api-zod-schemas` skill.
 - **Pagination**: most list endpoints paginate. Default to infinite scroll with `useSuspenseInfiniteQuery`. Trust `hasMoreTotalItems`, not `totalItems`. Prefer cursor-based pagination over offset for performance.
 - **Permissions**: authorization is server-side. For actions, leave the button visible; surface a toast on 403. For data loads, render a forbidden state (page-level or section-level). A 403 can also mean a feature is disabled for the deployment.
 - **Eventual consistency**: reads from secondary storage are eventually consistent. If the OpenAPI spec flags `x-eventually-consistent`, poll with `refetchInterval`. Default to pessimistic UI — reach for optimistic updates only with an explicit reconciliation plan.

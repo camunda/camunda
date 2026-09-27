@@ -21,15 +21,8 @@ import {X} from '@camunda/design-system/icons';
 import {useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {themeStore} from '#/shared/theme/theme';
-import {isValidJSON} from '#/tasklist/modules/json/isValidJSON';
-
-function beautifyJSON(value: string): string {
-	try {
-		return JSON.stringify(JSON.parse(value), null, '\t');
-	} catch {
-		return value;
-	}
-}
+import {isValidJSON} from '#/shared/json/isValidJSON';
+import {beautifyJSON} from '#/shared/json/beautifyJSON';
 
 type Props = {
 	isOpen: boolean;

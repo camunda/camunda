@@ -55,7 +55,7 @@
     <version.commons-codec>1.22.1</version.commons-codec>
     <version.commons-compress>1.28.0</version.commons-compress>
     <version.commons-validator>1.11.0</version.commons-validator>
-    <version.zstd-jni>1.5.7-18</version.zstd-jni>
+    <version.zstd-jni>1.5.7-19</version.zstd-jni>
     <version.commons-text>1.15.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.7.1</version.docker-java-api>
@@ -79,10 +79,10 @@
     <version.httpcomponents>4.4.16</version.httpcomponents>
     <version.identity>8.10.0-alpha5.1</version.identity>
     <version.instancio>6.0.1</version.instancio>
-    <version.jackson>2.22.2</version.jackson>
-    <version.jackson3>3.2.2</version.jackson3>
+    <version.jackson>2.22.3</version.jackson>
+    <version.jackson3>3.2.3</version.jackson3>
     <version.json-base>3.0.0</version.json-base>
-    <version.json-flattener>0.18.4</version.json-flattener>
+    <version.json-flattener>0.18.5</version.json-flattener>
     <version.jspecify>1.0.1</version.jspecify>
     <version.junit>6.1.3</version.junit>
     <version.junit4>4.13.2</version.junit4>
@@ -100,6 +100,7 @@
     <version.opensearch.container>2.19.6</version.opensearch.container>
     <version.opensearch.testcontainers>4.1.0</version.opensearch.testcontainers>
     <version.prometheus>1.3.5</version.prometheus>
+    <version.s3mock-testcontainers>4.12.4</version.s3mock-testcontainers>
     <version.protobuf>4.36.2</version.protobuf>
     <!-- the oldest Spring Boot line that manages protobuf-java. A user application inherits
          spring-boot-starter-parent, thus this line gives our client the lowest runtime that a
@@ -117,11 +118,11 @@
     <version.rocksdbjni>10.10.1.1</version.rocksdbjni>
     <version.sbe>1.40.2</version.sbe>
     <version.scala>3.9.0</version.scala>
-    <version.slf4j>2.0.19</version.slf4j>
+    <version.slf4j>2.0.20</version.slf4j>
     <version.snakeyaml>2.7</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
     <version.wiremock>3.13.2</version.wiremock>
-    <version.wiremock-spring-boot>4.4.1</version.wiremock-spring-boot>
+    <version.wiremock-spring-boot>4.4.2</version.wiremock-spring-boot>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.10.1</version.asm>
     <version.testcontainers>2.0.5</version.testcontainers>
@@ -130,7 +131,7 @@
     <version.netflix.concurrency>0.5.4</version.netflix.concurrency>
     <version.zeebe-test-container>3.6.9</version.zeebe-test-container>
     <version.feel-scala>1.22.1</version.feel-scala>
-    <version.dmn-scala>1.12.2</version.dmn-scala>
+    <version.dmn-scala>1.12.3</version.dmn-scala>
     <version.rest-assured>6.0.1</version.rest-assured>
     <version.spring>7.0.9</version.spring>
     <version.spring-security>7.1.1</version.spring-security>
@@ -171,7 +172,7 @@
          dependencyManagement for why this is pinned at all. -->
     <version.google-http-client>2.2.0</version.google-http-client>
     <version.azure-sdk>1.3.8</version.azure-sdk>
-    <version.awssdk>2.55.1</version.awssdk>
+    <version.awssdk>2.55.3</version.awssdk>
     <version.toxiproxy>2.1.11</version.toxiproxy>
     <version.validation-api>3.1.1</version.validation-api>
     <version.bind-api>4.0.5</version.bind-api>
@@ -197,7 +198,7 @@
     <version.jna-platform>5.19.1</version.jna-platform>
     <version.liquibase>5.0.4</version.liquibase>
     <version.sqlformatter>2.0.5</version.sqlformatter>
-    <version.caffeine>3.2.4</version.caffeine>
+    <version.caffeine>3.3.0</version.caffeine>
     <version.commons-collections>20040616</version.commons-collections>
     <version.reflections>0.10.2</version.reflections>
     <version.hikari-cp>7.1.0</version.hikari-cp>
@@ -263,7 +264,7 @@
     <plugin.version.jacoco>0.8.15</plugin.version.jacoco>
     <plugin.version.maven-jar>3.5.1</plugin.version.maven-jar>
     <plugin.version.openapi-generator>7.25.0</plugin.version.openapi-generator>
-    <plugin.version.protobuf-maven-plugin>5.1.9</plugin.version.protobuf-maven-plugin>
+    <plugin.version.protobuf-maven-plugin>5.1.10</plugin.version.protobuf-maven-plugin>
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
     <plugin.version.resources>3.5.0</plugin.version.resources>
     <plugin.version.revapi>0.15.1</plugin.version.revapi>
@@ -1691,6 +1692,12 @@
         <groupId>org.opensearch</groupId>
         <artifactId>opensearch-testcontainers</artifactId>
         <version>${version.opensearch.testcontainers}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.adobe.testing</groupId>
+        <artifactId>s3mock-testcontainers</artifactId>
+        <version>${version.s3mock-testcontainers}</version>
       </dependency>
 
       <dependency>

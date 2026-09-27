@@ -227,7 +227,13 @@ public final class EventAppliers implements EventApplier {
             state.getAgentInstanceState(), state.getElementInstanceState()));
     register(
         AgentInstanceIntent.UPDATED,
-        new AgentInstanceUpdatedApplier(
+        1,
+        new AgentInstanceUpdatedV1Applier(
+            state.getAgentInstanceState(), state.getElementInstanceState()));
+    register(
+        AgentInstanceIntent.UPDATED,
+        2,
+        new AgentInstanceUpdatedV2Applier(
             state.getAgentInstanceState(), state.getElementInstanceState()));
     register(
         AgentInstanceIntent.COMPLETED,

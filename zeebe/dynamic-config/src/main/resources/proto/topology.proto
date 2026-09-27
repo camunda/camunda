@@ -207,8 +207,11 @@ message PartitionGroupChangeOperation {
     RemovePhysicalTenantOperation removePhysicalTenant = 21;
     PartitionPromoteOperation partitionPromote = 22;
     PartitionDemoteOperation partitionDemote = 23;
+    SchemaInitializationOperation schemaInitialization = 24;
   }
 }
+
+message SchemaInitializationOperation {}
 
 // Legacy message for cluster configuration, will be deprecated from 8.10.
 message ClusterTopology {
@@ -322,6 +325,7 @@ message TopologyChangeOperation {
     RemovePhysicalTenantOperation removePhysicalTenant = 29;
     PartitionPromoteOperation partitionPromote = 30;
     PartitionDemoteOperation partitionDemote = 31;
+    SchemaInitializationOperation schemaInitialization = 32;
   }
 }
 

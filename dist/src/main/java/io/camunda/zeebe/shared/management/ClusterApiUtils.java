@@ -58,6 +58,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.RemovePhysi
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRedistributionCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.StartPartitionScaleUp;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.SchemaInitializationOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
@@ -551,14 +552,14 @@ final class ClusterApiUtils {
                   .operation(OperationEnum.PRE_SCALING)
                   .brokers(
                       preScalingOperation.clusterMembers().stream()
-                          .map(m -> brokerIdValue(m))
+                          .map(ClusterApiUtils::brokerIdValue)
                           .toList());
           case final PostScalingOperation postScalingOperation ->
               new Operation()
                   .operation(OperationEnum.POST_SCALING)
                   .brokers(
                       postScalingOperation.clusterMembers().stream()
-                          .map(m -> brokerIdValue(m))
+                          .map(ClusterApiUtils::brokerIdValue)
                           .toList());
           case final UpdatePartitionDistributorConfigOperation
                   updatePartitionDistributorConfigOperation ->
@@ -573,6 +574,8 @@ final class ClusterApiUtils {
               };
           case final AwaitModeChangeOperation modeChange ->
               new Operation().operation(OperationEnum.AWAIT_MODE_CHANGE);
+          case final SchemaInitializationOperation ignored ->
+              new Operation().operation(OperationEnum.INITIALIZE_SCHEMA);
           case final ExportingStateChangeOperation exportingStateChangeOperation ->
               new Operation()
                   .operation(OperationEnum.EXPORTING_STATE_CHANGE)

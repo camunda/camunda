@@ -63,6 +63,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.RemovePhysicalTenantOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.SchemaInitializationOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
@@ -561,6 +562,7 @@ final class ProtoBufSerializerTest {
             new PartitionJoinOperation(MemberId.from("2"), 1, 2, true),
             new ModeChangeOperation(MemberId.from("2"), Mode.RECOVERING),
             new AwaitModeChangeOperation(MemberId.from("2"), Mode.RECOVERING),
+            new SchemaInitializationOperation(MemberId.from("1")),
             new PartitionPreRestoreOperation(MemberId.from("1"), 1),
             new PartitionRestoreOperation(MemberId.from("1"), 1, new TreeSet<>(List.of(1L, 2L))));
     final List<Phase> phases =
@@ -575,6 +577,7 @@ final class ProtoBufSerializerTest {
                         new AwaitModeChangeOperation(MemberId.from("2"), Mode.RECOVERING)),
                     "anothertenant",
                     List.of(
+                        new SchemaInitializationOperation(MemberId.from("1")),
                         new PartitionPreRestoreOperation(MemberId.from("1"), 1),
                         new PartitionRestoreOperation(
                             MemberId.from("1"), 1, new TreeSet<>(List.of(1L, 2L)))))));

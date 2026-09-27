@@ -58,7 +58,7 @@ jobs:
             runner: "aws-arm-core-4-longrunning"
             arch: arm64
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@85d64191cacae8224a79d623a4bdc0fae084da46 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -141,7 +141,7 @@ jobs:
     env:
       TEST_TYPE: Unit
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@85d64191cacae8224a79d623a4bdc0fae084da46 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -207,7 +207,7 @@ jobs:
       TEST_OWNER: '@camunda/core-features'
       TEST_TYPE: Performance
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@85d64191cacae8224a79d623a4bdc0fae084da46 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -280,31 +280,17 @@ jobs:
     env:
       TEST_TYPE: Unit
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@85d64191cacae8224a79d623a4bdc0fae084da46 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Print metadata
         uses: ./.github/actions/print-metadata
-      - uses: ./.github/actions/apt-fast-mirror-failover
-      # `timeout` runs inside the sudo'd root process tree so it can self-terminate a hung
-      # apt-get without nick-fields/retry having to kill across the privilege boundary --
-      # doing that externally throws `kill EPERM` and crashes instead of retrying, see
-      # https://github.com/nick-fields/retry/issues/124.
-      #
-      # `apt-get update` exits 100 if *any* configured repository fails, so don't gate on it
-      # (INC-7943) -- a partial refresh still lands and `apt-get install` is the real gate.
       - name: Install strace
-        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        uses: ./.github/actions/apt-install
         with:
-          max_attempts: 3
-          retry_wait_seconds: 10
-          timeout_minutes: 2
-          shell: bash
-          command: |
-            sudo timeout 115 bash -c "apt-get update \
-              || echo '::warning::apt-get update could not refresh every repository, continuing with the index as-is'; \
-              apt-get install -y strace"
+          packages: strace
+          no-install-recommends: "false"
       - name: Allow ptrace for strace tests
         run: sudo sysctl -w kernel.yama.ptrace_scope=0
       - uses: ./.github/actions/setup-build
@@ -368,7 +354,7 @@ jobs:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
       TEST_TYPE: Build
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@85d64191cacae8224a79d623a4bdc0fae084da46 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -385,7 +371,7 @@ jobs:
       - name: Upload Hadolint Results
         if: always()
         continue-on-error: ${{ github.event_name == 'merge_group' }}
-        uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+        uses: github/codeql-action/upload-sarif@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
         with:
           sarif_file: ./hadolint.sarif
       - uses: ./.github/actions/setup-build
@@ -408,6 +394,9 @@ jobs:
           platforms: ${{ env.DOCKER_PLATFORMS }}
           # push is needed for multi-arch images as buildkit does not support loading them locally
           push: true
+          # This job only inspects the image's labels, it never starts it, so training a
+          # cache for it would buy a startup nobody performs.
+          aot-cache: 'false'
       - name: Verify Docker image
         # Skip verification on fork PRs as there public base images are used that don't match our golden labels
         if: github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork
@@ -485,7 +474,7 @@ jobs:
       IMAGE_REPOSITORY: registry.camunda.cloud/team-zeebe
       IMAGE_TAG: ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag != '' && needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag || needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@85d64191cacae8224a79d623a4bdc0fae084da46 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -570,7 +559,7 @@ jobs:
     env:
       TEST_OWNER: '@camunda/engineering-operations'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@85d64191cacae8224a79d623a4bdc0fae084da46 # main
       - name: Generate GitHub token
         id: github-token
         uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@7fe5cca167f7826bedbc078ae36ff2e974cc8cb5 # generate-github-app-token-from-vault-secrets-1.1.2

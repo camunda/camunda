@@ -51,7 +51,7 @@ optimize:
           redirectRootUrl: "http://localhost:8083"
     api:
       audience: "optimize-api"
-      jwtSetUri: "http://keycloak/auth/realms/camunda-platform/protocol/openid-connect/certs"
+      jwtSetUri: "http://keycloak:18080/auth/realms/camunda-platform/protocol/openid-connect/certs"
 
     ## Changed from the default configuration
     # Configure and enable the process data cleanup

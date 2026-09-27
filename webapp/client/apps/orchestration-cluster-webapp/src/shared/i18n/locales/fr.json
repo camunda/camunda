@@ -79,6 +79,19 @@
 		"relativeDateYearsFmt_speech": "d MMMM, yyyy",
 		"relativeDateYearsFmt_time_speech": "d MMMM, yyyy 'à' p",
 		"relativeDateUnknown": "'Inconnu'",
+		"admin": {
+			"adminPanelNavAria": "Navigation Admin",
+			"headerNavItemUsers": "Utilisateurs",
+			"headerNavItemGroups": "Groupes",
+			"headerNavItemRoles": "Rôles",
+			"headerNavItemTenants": "Locataires",
+			"headerNavItemMappingRules": "Règles de correspondance",
+			"headerNavItemAuthorizations": "Autorisations",
+			"headerNavItemGlobalTaskListeners": "Écouteurs globaux de tâches utilisateur",
+			"headerNavItemClusterVariables": "Variables du cluster",
+			"headerNavItemMcpProcesses": "Processus MCP",
+			"headerNavItemOperationsLog": "Journal des opérations"
+		},
 		"tasklist": {
 			"tasksPanelLabel": "Panneau des tâches",
 			"headerNavItemTasks": "Tâches",
@@ -938,6 +951,22 @@
 				"instanceHeader": {
 					"incidentsCount_one": "{{count}} incident",
 					"incidentsCount_other": "{{count}} incidents"
+				},
+				"editors": {
+					"value": "Valeur",
+					"valueLabel": "valeur",
+					"loading": "Chargement de l’éditeur",
+					"copyValue": "Copier {{label}}",
+					"copying": "Copie de la valeur",
+					"copied": "{{label}} copié dans le presse-papiers",
+					"copyFailed": "Impossible de copier {{label}} dans le presse-papiers",
+					"fetchFailed": "Impossible de charger la valeur complète de {{label}}",
+					"apply": "Appliquer",
+					"cancel": "Annuler",
+					"close": "Fermer",
+					"edit": "Modifier",
+					"view": "Afficher",
+					"invalidJSON": "Saisissez une valeur JSON valide."
 				},
 				"copyButton": {
 					"copy": "Copier",

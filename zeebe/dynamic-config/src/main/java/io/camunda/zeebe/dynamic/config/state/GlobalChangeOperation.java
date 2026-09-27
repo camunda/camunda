@@ -20,16 +20,14 @@ public sealed interface GlobalChangeOperation extends ClusterConfigurationChange
    *
    * @param memberId the member id of the member that joined the cluster
    */
-  record MemberJoinOperation(MemberId memberId)
-      implements io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation {}
+  record MemberJoinOperation(MemberId memberId) implements GlobalChangeOperation {}
 
   /**
    * Operation to remove a member from the ClusterConfiguration.
    *
    * @param memberId the member id of the member that is leaving the cluster
    */
-  record MemberLeaveOperation(MemberId memberId)
-      implements io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation {}
+  record MemberLeaveOperation(MemberId memberId) implements GlobalChangeOperation {}
 
   /**
    * Operation to remove a member from the ClusterConfiguration. This operation is used to force
@@ -39,7 +37,7 @@ public sealed interface GlobalChangeOperation extends ClusterConfigurationChange
    * @param memberToRemove the id of the member to remove
    */
   record MemberRemoveOperation(MemberId memberId, MemberId memberToRemove)
-      implements io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation {}
+      implements GlobalChangeOperation {}
 
   /**
    * Operation to prepare a member for scaling. This operation is executed before scaling starts.
@@ -49,7 +47,7 @@ public sealed interface GlobalChangeOperation extends ClusterConfigurationChange
    *     completed
    */
   record PreScalingOperation(MemberId memberId, SortedSet<MemberId> clusterMembers)
-      implements io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation {
+      implements GlobalChangeOperation {
 
     public PreScalingOperation(final MemberId memberId, final Set<MemberId> clusterMembers) {
       this(memberId, ImmutableSortedSet.copyOf(clusterMembers));
@@ -64,7 +62,7 @@ public sealed interface GlobalChangeOperation extends ClusterConfigurationChange
    *     completed
    */
   record PostScalingOperation(MemberId memberId, SortedSet<MemberId> clusterMembers)
-      implements io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation {
+      implements GlobalChangeOperation {
 
     public PostScalingOperation(final MemberId memberId, final Set<MemberId> clusterMembers) {
       this(memberId, ImmutableSortedSet.copyOf(clusterMembers));
@@ -72,6 +70,5 @@ public sealed interface GlobalChangeOperation extends ClusterConfigurationChange
   }
 
   record UpdatePartitionDistributorConfigOperation(
-      MemberId memberId, PartitionDistributorConfig config)
-      implements io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation {}
+      MemberId memberId, PartitionDistributorConfig config) implements GlobalChangeOperation {}
 }

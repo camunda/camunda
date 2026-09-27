@@ -102,7 +102,11 @@ describe('<ProcessInstance />', () => {
 	it('should render the shell with header and breadcrumb', async ({worker}) => {
 		sessionStorage.setItem(
 			'clientConfig',
-			JSON.stringify(createSystemConfiguration({deployment: {isMultiTenancyEnabled: true, maxRequestSize: 0}})),
+			JSON.stringify(
+				createSystemConfiguration({
+					deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: false, maxRequestSize: 0},
+				}),
+			),
 		);
 		const processInstance = createProcessInstance({
 			processInstanceKey: PROCESS_INSTANCE_ID,
