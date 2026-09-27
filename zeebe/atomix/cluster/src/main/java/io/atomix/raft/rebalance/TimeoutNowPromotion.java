@@ -20,9 +20,11 @@ import io.atomix.raft.LeadershipTransferResult;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.impl.RaftContext;
+import io.atomix.raft.protocol.ExporterPosition;
 import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.TimeoutNowRequest;
 import io.atomix.utils.concurrent.Scheduled;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -147,6 +149,7 @@ final class TimeoutNowPromotion implements TransferPhase {
         TimeoutNowRequest.builder()
             .withTerm(raft.getTerm())
             .withLeader(raft.getCluster().getLocalMember().memberId())
+            .withExporterPositions(exporterPositions())
             .build();
     LOG.debug("Sending TimeoutNow to {} (attempt {})", target, attempts);
     raft.getProtocol()
@@ -165,6 +168,18 @@ final class TimeoutNowPromotion implements TransferPhase {
               }
             },
             raft.getThreadContext());
+  }
+
+  private List<ExporterPosition> exporterPositions() {
+    try {
+      return raft.getLeadershipTransferHandover().exporterPositions();
+    } catch (final Exception e) {
+      LOG.debug(
+          "Failed to collect the exporter positions for {}, sending TimeoutNow without them",
+          target,
+          e);
+      return List.of();
+    }
   }
 
   private void onTimeoutNowAccepted() {

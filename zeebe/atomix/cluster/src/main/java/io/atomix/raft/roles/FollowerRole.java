@@ -219,6 +219,7 @@ public final class FollowerRole extends ActiveRole {
                   "Received TimeoutNow from leader {} in term {}, starting election immediately",
                   request.leader(),
                   request.term());
+              receiveExporterPositions(request);
 
               future.complete(
                   logResponse(
@@ -237,6 +238,21 @@ public final class FollowerRole extends ActiveRole {
       onHeartbeatFromLeader();
     }
     return response;
+  }
+
+  private void receiveExporterPositions(final TimeoutNowRequest request) {
+    final var exporterPositions = request.exporterPositions();
+    if (exporterPositions.isEmpty()) {
+      return;
+    }
+    try {
+      raft.getLeadershipTransferHandover().receive(request.term(), exporterPositions);
+    } catch (final Exception e) {
+      log.debug(
+          "Failed to receive the exporter positions from TimeoutNow, starting election without "
+              + "them",
+          e);
+    }
   }
 
   /**
