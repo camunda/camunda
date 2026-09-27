@@ -17,6 +17,7 @@ package io.atomix.raft.roles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -26,12 +27,14 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.ElectionTimer;
 import io.atomix.raft.ElectionTimerFactory;
+import io.atomix.raft.LeadershipTransferHandover;
 import io.atomix.raft.RaftError.Type;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.impl.RaftContext;
+import io.atomix.raft.protocol.ExporterPosition;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.TimeoutNowRequest;
 import io.atomix.raft.protocol.TimeoutNowResponse;
@@ -40,6 +43,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AutoClose;
@@ -57,6 +61,7 @@ final class FollowerRoleTest {
   private RaftContext raft;
   private FollowerRole role;
   private ArgumentCaptor<Runnable> raftThreadTasks;
+  private LeadershipTransferHandover handover;
 
   @BeforeEach
   void setUp() {
@@ -65,6 +70,8 @@ final class FollowerRoleTest {
     when(raft.getMeterRegistry()).thenReturn(meterRegistry);
     when(raft.getTerm()).thenReturn(TERM);
     when(raft.getLeader()).thenReturn(member(LEADER));
+    handover = mock(LeadershipTransferHandover.class);
+    when(raft.getLeadershipTransferHandover()).thenReturn(handover);
 
     final var threadContext = mock(ThreadContext.class);
     raftThreadTasks = ArgumentCaptor.forClass(Runnable.class);
@@ -126,6 +133,50 @@ final class FollowerRoleTest {
       releaseTransition.countDown();
       transition.join();
     }
+  }
+
+  @Test
+  void shouldNotReceiveTheHandoverOfAStaleTimeoutNow() {
+    // given
+    final var request =
+        TimeoutNowRequest.builder()
+            .withTerm(TERM - 1)
+            .withLeader(LEADER)
+            .withExporterPositions(List.of(new ExporterPosition("exporter", 10, new byte[0])))
+            .build();
+
+    // when
+    final var response = role.onTimeoutNow(request);
+    runRaftThreadTask();
+
+    // then
+    assertThat(response)
+        .succeedsWithin(Duration.ofSeconds(5))
+        .extracting(TimeoutNowResponse::status)
+        .isEqualTo(Status.ERROR);
+    verify(handover, never()).receive(anyLong(), any());
+  }
+
+  @Test
+  void shouldNotReceiveTheHandoverOfATimeoutNowFromAnotherLeader() {
+    // given
+    final var request =
+        TimeoutNowRequest.builder()
+            .withTerm(TERM)
+            .withLeader(MemberId.from("2"))
+            .withExporterPositions(List.of(new ExporterPosition("exporter", 10, new byte[0])))
+            .build();
+
+    // when
+    final var response = role.onTimeoutNow(request);
+    runRaftThreadTask();
+
+    // then
+    assertThat(response)
+        .succeedsWithin(Duration.ofSeconds(5))
+        .extracting(TimeoutNowResponse::status)
+        .isEqualTo(Status.ERROR);
+    verify(handover, never()).receive(anyLong(), any());
   }
 
   private void runRaftThreadTask() {

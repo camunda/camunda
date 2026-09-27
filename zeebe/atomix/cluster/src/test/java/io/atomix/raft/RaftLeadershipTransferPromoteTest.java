@@ -17,6 +17,7 @@ package io.atomix.raft;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.atomix.raft.protocol.ExporterPosition;
 import io.atomix.raft.protocol.LeadershipTransferResultRequest;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.RaftResponse;
@@ -25,11 +26,14 @@ import io.atomix.raft.protocol.TimeoutNowRequest;
 import io.atomix.raft.protocol.TimeoutNowResponse;
 import io.atomix.raft.protocol.VoteRequest;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
@@ -263,6 +267,127 @@ public class RaftLeadershipTransferPromoteTest {
         .isEqualTo(RaftServer.Role.LEADER);
   }
 
+  @Test
+  public void shouldPassTheLeadersHandoverToTheTargetBeforeItsElection() throws Exception {
+    // given
+    raftRule.appendEntries(10);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var driver = new CoordinatedTransferDriver(raftRule, leader);
+    final var target = driver.followerOutsideCoordinator();
+    final var exporterPositions = List.of(new ExporterPosition("exporter", 10, new byte[] {1}));
+    final var leaderTerm = leader.getTerm();
+    final var received = new CompletableFuture<ReceivedHandover>();
+    leader.getContext().setLeadershipTransferHandover(handingOver(() -> exporterPositions));
+    target
+        .getContext()
+        .setLeadershipTransferHandover(
+            receiving(
+                (term, positions) ->
+                    received.complete(new ReceivedHandover(term, positions, target.getRole()))));
+
+    // when
+    final var ack = driver.initiate(target);
+
+    // then
+    assertThat(ack.accepted()).isTrue();
+    assertThat(driver.reportedResult())
+        .succeedsWithin(Duration.ofSeconds(15))
+        .extracting(LeadershipTransferResultRequest::result)
+        .isEqualTo(LeadershipTransferResult.TRANSFERRED);
+    assertThat(received)
+        .succeedsWithin(Duration.ofSeconds(15))
+        .satisfies(
+            receipt -> {
+              assertThat(receipt.exporterPositions()).isEqualTo(exporterPositions);
+              assertThat(receipt.term()).isEqualTo(leaderTerm);
+              assertThat(receipt.role()).isEqualTo(RaftServer.Role.FOLLOWER);
+            });
+  }
+
+  @Test
+  public void shouldTransferWhenTheLeadersHandoverFails() throws Exception {
+    // given
+    raftRule.appendEntries(10);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var driver = new CoordinatedTransferDriver(raftRule, leader);
+    final var target = driver.followerOutsideCoordinator();
+    leader
+        .getContext()
+        .setLeadershipTransferHandover(
+            handingOver(
+                () -> {
+                  throw new RuntimeException("failed in test");
+                }));
+
+    // when
+    final var ack = driver.initiate(target);
+
+    // then
+    assertThat(ack.accepted()).isTrue();
+    assertThat(driver.reportedResult())
+        .succeedsWithin(Duration.ofSeconds(15))
+        .extracting(LeadershipTransferResultRequest::result)
+        .isEqualTo(LeadershipTransferResult.TRANSFERRED);
+  }
+
+  @Test
+  public void shouldTransferWhenTheTargetFailsToReceiveTheHandover() throws Exception {
+    // given
+    raftRule.appendEntries(10);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var driver = new CoordinatedTransferDriver(raftRule, leader);
+    final var target = driver.followerOutsideCoordinator();
+    leader
+        .getContext()
+        .setLeadershipTransferHandover(
+            handingOver(() -> List.of(new ExporterPosition("exporter", 10, new byte[0]))));
+    target
+        .getContext()
+        .setLeadershipTransferHandover(
+            receiving(
+                (term, positions) -> {
+                  throw new RuntimeException("failed in test");
+                }));
+
+    // when
+    final var ack = driver.initiate(target);
+
+    // then
+    assertThat(ack.accepted()).isTrue();
+    assertThat(driver.reportedResult())
+        .succeedsWithin(Duration.ofSeconds(15))
+        .extracting(LeadershipTransferResultRequest::result)
+        .isEqualTo(LeadershipTransferResult.TRANSFERRED);
+  }
+
+  private static LeadershipTransferHandover handingOver(
+      final Supplier<List<ExporterPosition>> exporterPositions) {
+    return new LeadershipTransferHandover() {
+      @Override
+      public List<ExporterPosition> exporterPositions() {
+        return exporterPositions.get();
+      }
+
+      @Override
+      public void receive(final long term, final List<ExporterPosition> positions) {}
+    };
+  }
+
+  private static LeadershipTransferHandover receiving(
+      final BiConsumer<Long, List<ExporterPosition>> receiver) {
+    return new LeadershipTransferHandover() {
+      @Override
+      public List<ExporterPosition> exporterPositions() {
+        return List.of();
+      }
+
+      @Override
+      public void receive(final long term, final List<ExporterPosition> positions) {
+        receiver.accept(term, positions);
+      }
+    };
+  }
+
   private static void rejectTimeoutNow(final RaftServer member) {
     ((TestRaftServerProtocol) member.getContext().getProtocol())
         .registerTimeoutNowHandler(
@@ -364,4 +489,7 @@ public class RaftLeadershipTransferPromoteTest {
             });
     return sends;
   }
+
+  private record ReceivedHandover(
+      long term, List<ExporterPosition> exporterPositions, RaftServer.Role role) {}
 }
