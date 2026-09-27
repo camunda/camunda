@@ -116,7 +116,14 @@ public enum StarterLatencyMetricsDoc implements ExtendedMeterDocumentation {
       Duration.ofMillis(750),
       Duration.ofSeconds(1),
       Duration.ofMillis(2500),
-      Duration.ofSeconds(5)
+      Duration.ofSeconds(5),
+      Duration.ofMillis(7500),
+      Duration.ofSeconds(10),
+      Duration.ofSeconds(15),
+      Duration.ofSeconds(20),
+      Duration.ofSeconds(30),
+      Duration.ofSeconds(45),
+      Duration.ofSeconds(60)
     };
 
     @Override
