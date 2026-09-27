@@ -27,10 +27,15 @@ type Props<TabId extends string = string> = {
   eventName?: 'variables-panel-used';
   dataTestId?: string;
   /**
-   * Id of the tab that should be selected. Left unset (or pointing at a
-   * tab that no longer exists), defaults to the first tab.
+   * Id of the tab that should be selected. Only read when the caller also
+   * passes `onTabChange` (controlled mode); there, `undefined` or an id that
+   * no longer exists selects the first tab.
    */
   activeTabId?: TabId;
+  /**
+   * Passing this makes TabView controlled: the caller owns the selection
+   * through `activeTabId`. Without it, TabView tracks the selection itself.
+   */
   onTabChange?: (id: TabId) => void;
 };
 
@@ -41,12 +46,14 @@ function TabView<TabId extends string = string>({
   activeTabId,
   onTabChange,
 }: Props<TabId>) {
-  // Falls back to internal state so TabView still behaves as an
-  // uncontrolled component when the caller doesn't pass `activeTabId`.
+  // Internal state is only used when uncontrolled. A controlled caller that
+  // passes `activeTabId={undefined}` gets the first tab, never the last tab
+  // clicked.
+  const isControlled = onTabChange !== undefined;
   const [internalActiveTabId, setInternalActiveTabId] = useState<
     TabId | undefined
   >(undefined);
-  const effectiveActiveTabId = activeTabId ?? internalActiveTabId;
+  const effectiveActiveTabId = isControlled ? activeTabId : internalActiveTabId;
 
   const selectedIndex =
     effectiveActiveTabId === undefined
