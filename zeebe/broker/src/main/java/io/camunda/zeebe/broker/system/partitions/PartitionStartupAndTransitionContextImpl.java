@@ -22,6 +22,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
+import io.camunda.zeebe.broker.exporter.stream.ExporterStateHandover;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
@@ -97,6 +98,7 @@ public class PartitionStartupAndTransitionContextImpl
   private ActorControl actorControl;
   private ScheduledTimer metricsTimer;
   private ExporterDirector exporterDirector;
+  private final ExporterStateHandover exporterStateHandover = new ExporterStateHandover();
   private AtomixLogStorage logStorage;
   private QueryService queryService;
   private long currentTerm;
@@ -268,6 +270,11 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setExporterDirector(final ExporterDirector exporterDirector) {
     this.exporterDirector = exporterDirector;
+  }
+
+  @Override
+  public ExporterStateHandover getExporterStateHandover() {
+    return exporterStateHandover;
   }
 
   @Override

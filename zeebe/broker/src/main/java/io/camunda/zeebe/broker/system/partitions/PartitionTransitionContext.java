@@ -18,6 +18,7 @@ import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
+import io.camunda.zeebe.broker.exporter.stream.ExporterStateHandover;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -85,6 +86,9 @@ public interface PartitionTransitionContext extends PartitionContext {
   void setConcurrencyControl(ConcurrencyControl concurrencyControl);
 
   void setExporterDirector(ExporterDirector exporterDirector);
+
+  /** The exporter state handed over between leaders of this partition on TimeoutNow. */
+  ExporterStateHandover getExporterStateHandover();
 
   PartitionMessagingService getMessagingService();
 

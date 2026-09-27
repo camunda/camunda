@@ -18,6 +18,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.collections.LongArrayList;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.Nullable;
 
 public final class ExportersState {
 
@@ -28,10 +29,20 @@ public final class ExportersState {
   private final TransactionContext transactionContext;
   private final DbString exporterId;
   private final ColumnFamily<DbString, ExporterStateEntry> exporterPositionColumnFamily;
+  private final @Nullable ExporterStateHandover handover;
 
   public ExportersState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+    this(zeebeDb, transactionContext, null);
+  }
+
+  /** Mirrors every write to {@code handover}, so it can be handed over to the next leader. */
+  public ExportersState(
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final TransactionContext transactionContext,
+      final @Nullable ExporterStateHandover handover) {
     this.transactionContext = transactionContext;
+    this.handover = handover;
     exporterId = new DbString();
     exporterPositionColumnFamily =
         zeebeDb.createColumnFamily(
@@ -39,11 +50,22 @@ public final class ExportersState {
   }
 
   public void setPosition(final String exporterId, final long position) {
-    setExporterState(exporterId, position, null);
+    upsertExporterState(exporterId, position, null);
+    if (handover != null) {
+      handover.onPositionSet(exporterId, position);
+    }
   }
 
   public void setExporterState(
       final String exporterId, final long position, final DirectBuffer metadata) {
+    upsertExporterState(exporterId, position, metadata);
+    if (handover != null) {
+      handover.onStateSet(exporterId, position, metadata);
+    }
+  }
+
+  private void upsertExporterState(
+      final String exporterId, final long position, final @Nullable DirectBuffer metadata) {
     transactionContext.runInTransaction(
         () -> {
           final var exporterStateEntry =
@@ -68,6 +90,10 @@ public final class ExportersState {
       exporterStateEntry.setMetadata(metadata);
     }
     exporterPositionColumnFamily.upsert(this.exporterId, exporterStateEntry);
+    if (handover != null) {
+      // a fresh entry replaces the previous metadata, so no metadata means empty metadata here
+      handover.onStateSet(exporterId, position, metadata != null ? metadata : METADATA_NOT_FOUND);
+    }
   }
 
   public long getPosition(final String exporterId) {
@@ -138,6 +164,9 @@ public final class ExportersState {
   public void removeExporterState(final String exporterId) {
     this.exporterId.wrapString(exporterId);
     exporterPositionColumnFamily.deleteIfExists(this.exporterId);
+    if (handover != null) {
+      handover.onRemoved(exporterId);
+    }
   }
 
   public boolean hasExporters() {
