@@ -7,7 +7,7 @@
  */
 package io.camunda.search.schema.opensearch;
 
-import static io.camunda.search.schema.utils.SearchEngineClientUtils.convertValue;
+import static io.camunda.search.schema.utils.SearchEngineClientUtils.SETTINGS_FINGERPRINT_META_KEY;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,7 +26,6 @@ import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.exceptions.IndexSchemaValidationException;
 import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.search.schema.utils.SearchEngineClientUtils;
-import io.camunda.search.schema.utils.SearchEngineClientUtils.SchemaSettingsAppender;
 import io.camunda.search.schema.utils.SuppressLogger;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -39,7 +38,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -747,14 +745,13 @@ public class OpensearchEngineClient implements SearchEngineClient {
     try (final var templateFile =
         getClass().getResourceAsStream(indexTemplateDescriptor.getMappingsClasspathFilename())) {
 
+      final var templateSettings =
+          utils.new SchemaSettingsAppender(templateFile)
+              .withNumberOfShards(settings.getNumberOfShards())
+              .withNumberOfReplicas(settings.getNumberOfReplicas())
+              .withRefreshInterval(settings.getRefreshInterval());
       final var templateFields =
-          deserializeJson(
-              IndexTemplateMapping._DESERIALIZER,
-              utils.new SchemaSettingsAppender(templateFile)
-                  .withNumberOfShards(settings.getNumberOfShards())
-                  .withNumberOfReplicas(settings.getNumberOfReplicas())
-                  .withRefreshInterval(settings.getRefreshInterval())
-                  .build());
+          deserializeJson(IndexTemplateMapping._DESERIALIZER, templateSettings.build());
 
       return PutIndexTemplateRequest.of(
           b ->
@@ -766,6 +763,10 @@ public class OpensearchEngineClient implements SearchEngineClient {
                               .mappings(templateFields.mappings())
                               .settings(templateFields.settings()))
                   .priority(settings.getTemplatePriority())
+                  .meta(
+                      SETTINGS_FINGERPRINT_META_KEY,
+                      JsonData.of(
+                          templateSettings.settingsFingerprint(settings.getTemplatePriority())))
                   .composedOf(indexTemplateDescriptor.getComposedOf()));
     } catch (final IOException e) {
       throw new SearchEngineException(
@@ -788,8 +789,8 @@ public class OpensearchEngineClient implements SearchEngineClient {
               .withNumberOfReplicas(indexConfiguration.getNumberOfReplicas())
               .withRefreshInterval(indexConfiguration.getRefreshInterval());
       final var configuredPriority = indexConfiguration.getTemplatePriority();
-      if (areTemplateSettingsEqualToConfigured(
-          currentTemplate, configuredSettings, configuredPriority)) {
+      final var configuredFingerprint = configuredSettings.settingsFingerprint(configuredPriority);
+      if (configuredFingerprint.equals(storedSettingsFingerprint(currentTemplate))) {
         LOG.debug(
             "Index template settings for [{}] are already up to date",
             indexTemplateDescriptor.getTemplateName());
@@ -814,7 +815,8 @@ public class OpensearchEngineClient implements SearchEngineClient {
                                   .mappings(currentTemplate.template().mappings())
                                   .aliases(currentTemplate.template().aliases()))
                       .composedOf(currentTemplate.composedOf())
-                      .priority(configuredPriority)));
+                      .priority(configuredPriority)
+                      .meta(SETTINGS_FINGERPRINT_META_KEY, JsonData.of(configuredFingerprint))));
 
     } catch (final IOException e) {
       throw new SearchEngineException(
@@ -833,13 +835,9 @@ public class OpensearchEngineClient implements SearchEngineClient {
     return new PutMappingRequest.Builder().index(indexName).meta(jsonMeta).build();
   }
 
-  private boolean areTemplateSettingsEqualToConfigured(
-      final IndexTemplate currentTemplate,
-      final SchemaSettingsAppender configuredSettings,
-      final Integer configuredPriority) {
-    return Objects.equals(
-            convertValue(configuredPriority, Long::valueOf), currentTemplate.priority())
-        && configuredSettings.equalsSettings(serializeAsMap(currentTemplate.template().settings()));
+  private static String storedSettingsFingerprint(final IndexTemplate template) {
+    final var fingerprint = template.meta().get(SETTINGS_FINGERPRINT_META_KEY);
+    return fingerprint == null ? null : fingerprint.to(String.class);
   }
 
   private IndexTemplate getIndexTemplateState(
