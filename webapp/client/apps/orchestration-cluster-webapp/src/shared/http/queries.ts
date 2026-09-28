@@ -25,6 +25,8 @@ import type {
 	QueryUserTaskAuditLogsRequestBody,
 	QueryUserTaskAuditLogsResponseBody,
 	GetAuditLogResponseBody,
+	QueryAuditLogsRequestBody,
+	QueryAuditLogsResponseBody,
 	Variable,
 	QueryDecisionDefinitionsRequestBody,
 	QueryDecisionDefinitionsResponseBody,
@@ -71,6 +73,7 @@ const queryKeys = {
 		['getProcessDefinitionInstanceStatistics', body] as const,
 	getIncidentProcessInstanceStatisticsByError: (body: GetIncidentProcessInstanceStatisticsByErrorRequestBody) =>
 		['getIncidentProcessInstanceStatisticsByError', body] as const,
+	queryAuditLogs: (body: QueryAuditLogsRequestBody) => ['queryAuditLogs', body] as const,
 };
 
 const queries = {
@@ -422,6 +425,18 @@ const queries = {
 			queryKey: queryKeys.queryDecisionDefinitions(body),
 			queryFn: async (): Promise<QueryDecisionDefinitionsResponseBody> => {
 				const {response, error} = await request(endpoints.queryDecisionDefinitions(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryAuditLogs: (body: QueryAuditLogsRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryAuditLogs(body),
+			queryFn: async (): Promise<QueryAuditLogsResponseBody> => {
+				const {response, error} = await request(endpoints.queryAuditLogs(body));
 				if (error !== null) {
 					throw mapQueryError(error);
 				}
