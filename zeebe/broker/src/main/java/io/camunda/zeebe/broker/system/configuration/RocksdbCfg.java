@@ -28,8 +28,23 @@ public final class RocksdbCfg implements ConfigurationEntry {
   private static final Logger LOGGER = LoggerFactory.getLogger(RocksdbCfg.class);
 
   private Properties columnFamilyOptions;
+
+  /**
+   * Attaches a RocksDB {@code Statistics} object, which is what backs the {@code
+   * zeebe.rocksdb.histogram.*} and {@code zeebe.rocksdb.<ticker>.*} meters (e.g. reads/writes,
+   * compaction, cache, iterators). Those meters are absent from Prometheus entirely until this is
+   * {@code true}.
+   */
   private boolean enableStatistics = RocksDbConfiguration.DEFAULT_STATISTICS_ENABLED;
+
+  /**
+   * Set to {@link AccessMetricsConfiguration.Kind#FINE} to record the per-column-family,
+   * per-operation {@code zeebe.rocksdb.latency} timer. Left at {@link
+   * AccessMetricsConfiguration.Kind#NONE}, no samples are ever recorded and the meter is absent
+   * from Prometheus.
+   */
   private AccessMetricsConfiguration.Kind accessMetrics = AccessMetricsConfiguration.Kind.NONE;
+
   private DataSize memoryLimit = DataSize.ofBytes(RocksDbConfiguration.DEFAULT_MEMORY_LIMIT);
   private int maxOpenFiles = RocksDbConfiguration.DEFAULT_UNLIMITED_MAX_OPEN_FILES;
   private int maxWriteBufferNumber = RocksDbConfiguration.DEFAULT_MAX_WRITE_BUFFER_NUMBER;

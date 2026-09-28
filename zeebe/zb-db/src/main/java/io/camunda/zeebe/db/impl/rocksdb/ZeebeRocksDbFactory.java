@@ -134,7 +134,13 @@ public final class ZeebeRocksDbFactory<
     managedResources.add(columnFamilyOptions);
     final var dbOptions = createDefaultDbOptions(managedResources, avoidFlush);
     managedResources.add(dbOptions);
-    return new RocksDbOptions(dbOptions, columnFamilyOptions);
+    // hands back a fresh Java wrapper around a new shared_ptr copy, so it has to be closed
+    // independently of the statistics instance held by dbOptions. Null when statistics are off.
+    final var statistics = dbOptions.statistics();
+    if (statistics != null) {
+      managedResources.add(statistics);
+    }
+    return new RocksDbOptions(dbOptions, columnFamilyOptions, statistics);
   }
 
   private DBOptions createDefaultDbOptions(
@@ -182,7 +188,10 @@ public final class ZeebeRocksDbFactory<
     if (rocksDbConfiguration.isStatisticsEnabled()) {
       final var statistics = new Statistics();
       closeables.add(statistics);
-      statistics.setStatsLevel(StatsLevel.ALL);
+      // the tickers and histograms we export are all recorded at this level. ALL additionally
+      // instruments mutex wait and compression timing, which is measurable overhead on the write
+      // path - and this flag is meant to be usable during a performance run, not just a debug one.
+      statistics.setStatsLevel(StatsLevel.EXCEPT_DETAILED_TIMERS);
       dbOptions
           .setStatistics(statistics)
           // speeds up opening the DB

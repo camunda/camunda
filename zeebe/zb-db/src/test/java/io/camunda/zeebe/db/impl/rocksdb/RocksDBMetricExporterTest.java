@@ -10,13 +10,18 @@ package io.camunda.zeebe.db.impl.rocksdb;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDBMetricExporter;
+import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDbHistogramMetricsDoc;
+import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDbHistogramMetricsDoc.Statistic;
 import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDbIoStallMetricsDoc;
+import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDbTickerMetricsDoc;
+import io.micrometer.core.instrument.binder.BaseUnits;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
+import org.rocksdb.Statistics;
 
 final class RocksDBMetricExporterTest {
 
@@ -68,6 +73,142 @@ final class RocksDBMetricExporterTest {
                           "cfstats map contains key '%s' for gauge '%s'",
                           doc.propertyName(), doc.getName())
                       .containsKey(doc.propertyName()));
+    }
+  }
+
+  @Test
+  void shouldConvertStatisticsToMicrometerUnits() {
+    // then
+    assertThat(RocksDbHistogramMetricsDoc.DB_GET.convertToBaseUnit(1_000)).isEqualTo(1.0);
+    assertThat(RocksDbTickerMetricsDoc.STALL_MICROS.convertToBaseUnit(1_000)).isEqualTo(1.0);
+  }
+
+  @Test
+  void shouldRegisterAllStatisticsGaugesWhenStatisticsAreEnabled(@TempDir final File dir)
+      throws Exception {
+    // given
+    RocksDB.loadLibrary();
+    final var registry = new SimpleMeterRegistry();
+
+    try (final var statistics = new Statistics();
+        final var options = new Options().setCreateIfMissing(true).setStatistics(statistics);
+        final var db = RocksDB.open(options, dir.getAbsolutePath())) {
+      final var exporter = new RocksDBMetricExporter(registry, statistics);
+
+      // when
+      exporter.exportMetrics(db);
+
+      // then
+      assertThat(RocksDbTickerMetricsDoc.values())
+          .allSatisfy(
+              doc ->
+                  assertThat(registry.find(doc.getName()).gauge())
+                      .as("gauge '%s' is registered", doc.getName())
+                      .isNotNull());
+      assertThat(RocksDbHistogramMetricsDoc.values())
+          .allSatisfy(
+              doc -> {
+                for (final var statistic : Statistic.values()) {
+                  assertThat(registry.find(doc.nameFor(statistic)).gauge())
+                      .as("gauge '%s' is registered", doc.nameFor(statistic))
+                      .isNotNull();
+                }
+              });
+
+      assertThat(
+              registry
+                  .find(RocksDbHistogramMetricsDoc.DB_GET.nameFor(Statistic.SUM))
+                  .gauge()
+                  .getId()
+                  .getBaseUnit())
+          .isEqualTo(BaseUnits.MILLISECONDS);
+      assertThat(
+              registry
+                  .find(RocksDbHistogramMetricsDoc.DB_GET.nameFor(Statistic.COUNT))
+                  .gauge()
+                  .getId()
+                  .getBaseUnit())
+          .isNull();
+      assertThat(
+              registry
+                  .find(RocksDbTickerMetricsDoc.STALL_MICROS.getName())
+                  .gauge()
+                  .getId()
+                  .getName())
+          .isEqualTo("zeebe.rocksdb.writes.stall");
+      assertThat(
+              registry
+                  .find(RocksDbTickerMetricsDoc.STALL_MICROS.getName())
+                  .gauge()
+                  .getId()
+                  .getBaseUnit())
+          .isEqualTo(BaseUnits.MILLISECONDS);
+    }
+  }
+
+  @Test
+  void shouldNotRegisterStatisticsGaugesWhenStatisticsAreDisabled(@TempDir final File dir)
+      throws Exception {
+    // given
+    RocksDB.loadLibrary();
+    final var registry = new SimpleMeterRegistry();
+    final var exporter = new RocksDBMetricExporter(registry);
+
+    try (final var options = new Options().setCreateIfMissing(true);
+        final var db = RocksDB.open(options, dir.getAbsolutePath())) {
+
+      // when
+      exporter.exportMetrics(db);
+
+      // then
+      assertThat(RocksDbTickerMetricsDoc.values())
+          .allSatisfy(
+              doc ->
+                  assertThat(registry.find(doc.getName()).gauge())
+                      .as("gauge '%s' is not registered", doc.getName())
+                      .isNull());
+      assertThat(RocksDbHistogramMetricsDoc.values())
+          .allSatisfy(
+              doc -> {
+                for (final var statistic : Statistic.values()) {
+                  assertThat(registry.find(doc.nameFor(statistic)).gauge())
+                      .as("gauge '%s' is not registered", doc.nameFor(statistic))
+                      .isNull();
+                }
+              });
+    }
+  }
+
+  @Test
+  void shouldReflectRecordedTickerValues(@TempDir final File dir) throws Exception {
+    // given
+    RocksDB.loadLibrary();
+    final var registry = new SimpleMeterRegistry();
+
+    try (final var statistics = new Statistics();
+        final var options = new Options().setCreateIfMissing(true).setStatistics(statistics);
+        final var db = RocksDB.open(options, dir.getAbsolutePath())) {
+      final var exporter = new RocksDBMetricExporter(registry, statistics);
+      db.put("key".getBytes(), "value".getBytes());
+      db.get("key".getBytes());
+
+      // when
+      exporter.exportMetrics(db);
+
+      // then
+      final var keysRead =
+          registry.find(RocksDbTickerMetricsDoc.NUMBER_KEYS_READ.getName()).gauge();
+      assertThat(keysRead).isNotNull();
+      assertThat(keysRead.value()).isPositive();
+
+      final var dbGetCount =
+          registry.find(RocksDbHistogramMetricsDoc.DB_GET.nameFor(Statistic.COUNT)).gauge();
+      final var dbGetSum =
+          registry.find(RocksDbHistogramMetricsDoc.DB_GET.nameFor(Statistic.SUM)).gauge();
+      assertThat(dbGetCount).isNotNull();
+      assertThat(dbGetCount.value()).isPositive();
+      assertThat(dbGetSum).isNotNull();
+      assertThat(dbGetSum.value()).isPositive();
     }
   }
 }
