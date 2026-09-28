@@ -95,13 +95,13 @@ final class SecuredClusteredMessagingIT {
       new GenericContainer<>(OPERATE)
           .withNetworkAliases("operate")
           .withNetwork(NETWORK)
-          .withEnv("ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS", "zeebe:26502")
+          .withEnv("ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS", "zeebe.:26502")
           .withEnv("ZEEBE_GATEWAY_CLUSTER_ADVERTISEDHOST", "operate")
           .withEnv("ZEEBE_GATEWAY_CLUSTER_MEMBERID", "operate")
           .withEnv("ZEEBE_GATEWAY_CLUSTER_SECURITY_ENABLED", "true")
           .withEnv("ZEEBE_GATEWAY_CLUSTER_SECURITY_CERTIFICATECHAINPATH", "/tmp/certificate.pem")
           .withEnv("ZEEBE_GATEWAY_CLUSTER_SECURITY_PRIVATEKEYPATH", "/tmp/key.pem")
-          .withEnv("CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS", zeebe.getInternalGatewayAddress())
+          .withEnv("CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS", "zeebe.:26500")
           .withCopyToContainer(
               MountableFile.forHostPath(CERTIFICATE.certificate().toPath(), 0777),
               "/tmp/certificate.pem")
@@ -111,7 +111,7 @@ final class SecuredClusteredMessagingIT {
           .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", "http://elastic:9200")
           .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_INDEXPREFIX", testPrefix)
           .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", "http://elastic:9200")
-          .withEnv("CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS", zeebe.getInternalGatewayAddress())
+          .withEnv("CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS", "zeebe.:26500")
           .withEnv("CAMUNDA_LOG_LEVEL", "DEBUG")
           .withExposedPorts(8080, 9600, 26502)
           .waitingFor(
@@ -126,7 +126,7 @@ final class SecuredClusteredMessagingIT {
       new GenericContainer<>(TASKLIST)
           .withNetworkAliases("tasklist")
           .withNetwork(NETWORK)
-          .withEnv("ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS", "zeebe:26502")
+          .withEnv("ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS", "zeebe.:26502")
           .withEnv("ZEEBE_GATEWAY_CLUSTER_ADVERTISEDHOST", "tasklist")
           .withEnv("ZEEBE_GATEWAY_CLUSTER_MEMBERID", "tasklist")
           .withEnv("ZEEBE_GATEWAY_CLUSTER_SECURITY_ENABLED", "true")
@@ -141,9 +141,8 @@ final class SecuredClusteredMessagingIT {
           .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", "http://elastic:9200")
           .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_INDEXPREFIX", testPrefix)
           .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", "http://elastic:9200")
-          .withEnv("CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS", zeebe.getInternalGatewayAddress())
-          .withEnv(
-              "CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS", "http://" + zeebe.getInternalHost() + ":8080")
+          .withEnv("CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS", "zeebe.:26500")
+          .withEnv("CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS", "http://zeebe.:8080")
           .withEnv("CAMUNDA_LOG_LEVEL", "DEBUG")
           .withExposedPorts(8080, 9600, 26502)
           .waitingFor(

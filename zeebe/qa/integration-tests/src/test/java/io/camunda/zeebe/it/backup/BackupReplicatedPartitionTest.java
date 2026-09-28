@@ -18,7 +18,7 @@ import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.State;
 import io.camunda.zeebe.it.clustering.ClusteringRuleExtension;
 import io.camunda.zeebe.it.util.GrpcClientRule;
-import io.camunda.zeebe.qa.util.testcontainers.MinioContainer;
+import io.camunda.zeebe.test.testcontainers.S3MockTestContainer;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -35,7 +35,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 class BackupReplicatedPartitionTest {
-  @Container private static final MinioContainer S3 = new MinioContainer();
+  @Container private static final S3MockTestContainer S3 = new S3MockTestContainer();
   private static final String JOB_TYPE = "test";
   private String bucketName = null;
   private GrpcClientRule client;
