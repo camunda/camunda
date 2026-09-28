@@ -22,8 +22,13 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import jakarta.servlet.http.Part;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+<<<<<<< HEAD
 import java.util.concurrent.CompletionException;
+=======
+import org.springframework.http.HttpHeaders;
+>>>>>>> 15841e67 (fix: download unsafe document types instead of rendering them inline)
 import org.springframework.http.HttpStatus;
 import org.springframework.http.InvalidMediaTypeException;
 import org.springframework.http.MediaType;
@@ -40,7 +45,21 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 @RequestMapping("/v2/documents")
 public class DocumentController {
 
+<<<<<<< HEAD
   private final DocumentServices documentServices;
+=======
+  private static final String CONTENT_SECURITY_POLICY_HEADER = "Content-Security-Policy";
+  private static final String CONTENT_SECURITY_POLICY_SANDBOX = "sandbox; default-src 'none'";
+  // Types safe to render inline; everything else (HTML, SVG, ...) is forced to download
+  private static final Set<MediaType> INLINE_SAFE_MEDIA_TYPES =
+      Set.of(
+          MediaType.IMAGE_PNG,
+          MediaType.IMAGE_JPEG,
+          MediaType.IMAGE_GIF,
+          MediaType.parseMediaType("image/webp"),
+          MediaType.APPLICATION_PDF);
+  private final ServiceRegistry serviceRegistry;
+>>>>>>> 15841e67 (fix: download unsafe document types instead of rendering them inline)
   private final ObjectMapper objectMapper;
 
   public DocumentController(
@@ -122,6 +141,7 @@ public class DocumentController {
     }
   }
 
+<<<<<<< HEAD
   private MediaType resolveMediaType(final DocumentContentResponse contentResponse) {
     try {
       final var contentType = contentResponse.contentType();
@@ -151,6 +171,30 @@ public class DocumentController {
     return documentServices
         .withAuthentication(RequestMapper.getAuthentication())
         .getDocumentContent(documentId, storeId, contentHash);
+=======
+  private static ResponseEntity<StreamingResponseBody> toDocumentContentResponse(
+      final DocumentContentResponse response) {
+    final MediaType mediaType = ResponseMapper.resolveMediaType(response);
+    return ResponseEntity.ok()
+        .contentType(mediaType)
+        // Sandbox served content into an opaque origin so active types (HTML, SVG) can't run in the
+        // app origin. Per-endpoint header; does not touch the global web-app CSP.
+        .header(CONTENT_SECURITY_POLICY_HEADER, CONTENT_SECURITY_POLICY_SANDBOX)
+        // Renderable-but-unsafe types (HTML, SVG, ...) are served as a download
+        .header(HttpHeaders.CONTENT_DISPOSITION, resolveContentDisposition(mediaType))
+        .body(
+            bodyStream -> {
+              try (final var contentInputStream = response.content()) {
+                contentInputStream.transferTo(bodyStream);
+              }
+            });
+>>>>>>> 15841e67 (fix: download unsafe document types instead of rendering them inline)
+  }
+
+  private static String resolveContentDisposition(final MediaType mediaType) {
+    final boolean inlineSafe =
+        INLINE_SAFE_MEDIA_TYPES.stream().anyMatch(mediaType::equalsTypeAndSubtype);
+    return inlineSafe ? "inline" : "attachment";
   }
 
   @CamundaDeleteMapping(path = "/{documentId}")
