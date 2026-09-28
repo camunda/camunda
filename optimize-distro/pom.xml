@@ -16,6 +16,7 @@
   <properties>
     <exclude.from.config>OptimizeLicense.txt</exclude.from.config>
     <assembly.skipAssembly>false</assembly.skipAssembly>
+    <distro.zip.attach>true</distro.zip.attach>
   </properties>
 
   <dependencies>
@@ -59,10 +60,34 @@
                 <descriptor>assembly-distro-production.xml</descriptor>
               </descriptors>
               <attach>true</attach>
+              <formats>
+                <format>tar.gz</format>
+              </formats>
               <finalName>camunda-optimize-${project.version}</finalName>
               <appendAssemblyId>true</appendAssemblyId>
               <outputDirectory>target/</outputDirectory>
               <workDirectory>target/assembly/work</workDirectory>
+              <tarLongFileMode>gnu</tarLongFileMode>
+            </configuration>
+          </execution>
+          <execution>
+            <id>assemble-zip</id>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <descriptors>
+                <descriptor>assembly-distro-production.xml</descriptor>
+              </descriptors>
+              <attach>${distro.zip.attach}</attach>
+              <formats>
+                <format>zip</format>
+              </formats>
+              <finalName>camunda-optimize-${project.version}</finalName>
+              <appendAssemblyId>true</appendAssemblyId>
+              <outputDirectory>target/</outputDirectory>
+              <workDirectory>target/assembly/work-zip</workDirectory>
               <tarLongFileMode>gnu</tarLongFileMode>
             </configuration>
           </execution>
