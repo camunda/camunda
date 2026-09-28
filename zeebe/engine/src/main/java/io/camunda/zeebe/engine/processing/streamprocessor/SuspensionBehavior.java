@@ -28,7 +28,9 @@ import org.slf4j.Logger;
  * <p>Only processors that implement {@link SuspensionAware} are gated; every other command is
  * processed normally. An implementing processor's {@link SuspensionAware#onSuspended} classifies
  * the command as {@code PROCESS}, {@code REJECT}, or {@code BUFFER} while {@code SUSPENDED}. While
- * {@code RESUMING}, {@link SuspensionAware#onResuming} classifies instead.
+ * {@code RESUMING}, {@link SuspensionAware#onResuming} classifies instead. Commands targeting
+ * {@code SUSPENDING} instances use {@link SuspensionAware#onSuspending}, which processes them by
+ * default.
  */
 @NullMarked
 public final class SuspensionBehavior {
@@ -68,10 +70,10 @@ public final class SuspensionBehavior {
         switch (marker) {
           case SUSPENDED -> onSuspended(suspensionAware, command);
           case RESUMING -> onResuming(suspensionAware, command);
+          case SUSPENDING -> onSuspending(suspensionAware, command);
           case null -> SuspensionAction.PROCESS;
         };
 
-    // captures onSuspended and onResuming null return values
     if (action == null) {
       LOG.error(
           "Processor '{}' implements SuspensionAware but returned a null suspension behavior for"
@@ -157,6 +159,12 @@ public final class SuspensionBehavior {
   private static SuspensionAware.@Nullable SuspensionAction onSuspended(
       final SuspensionAware<?> suspensionAware, final TypedRecord<?> command) {
     return ((SuspensionAware) suspensionAware).onSuspended(command);
+  }
+
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  private static SuspensionAware.@Nullable SuspensionAction onSuspending(
+      final SuspensionAware<?> suspensionAware, final TypedRecord<?> command) {
+    return ((SuspensionAware) suspensionAware).onSuspending(command);
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})

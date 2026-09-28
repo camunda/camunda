@@ -30,6 +30,7 @@ public class SuspensionAppliersTest {
   private MutableProcessingState processingState;
 
   private MutableSuspensionState suspensionState;
+  private ProcessInstanceSuspendingApplier suspendingApplier;
   private ProcessInstanceSuspendedApplier suspendedApplier;
   private ProcessInstanceResumingApplier resumingApplier;
   private ProcessInstanceResumedApplier resumedApplier;
@@ -39,6 +40,7 @@ public class SuspensionAppliersTest {
   @BeforeEach
   public void setup() {
     suspensionState = processingState.getSuspensionState();
+    suspendingApplier = new ProcessInstanceSuspendingApplier(suspensionState);
     suspendedApplier = new ProcessInstanceSuspendedApplier(suspensionState);
     resumingApplier = new ProcessInstanceResumingApplier(suspensionState);
     resumedApplier = new ProcessInstanceResumedApplier(suspensionState);
@@ -47,10 +49,18 @@ public class SuspensionAppliersTest {
   }
 
   @Test
-  void shouldMarkProcessInstanceAsSuspended() {
+  void shouldTransitionProcessInstanceFromSuspendingToSuspended() {
     // given
     final long processInstanceKey = 1L;
     final var record = new ProcessInstanceRecord();
+
+    // when
+    suspendingApplier.applyState(processInstanceKey, record);
+
+    // then
+    assertThat(suspensionState.isSuspended(processInstanceKey)).isFalse();
+    assertThat(suspensionState.getSuspensionState(processInstanceKey))
+        .isEqualTo(SuspensionState.State.SUSPENDING);
 
     // when
     suspendedApplier.applyState(processInstanceKey, record);
