@@ -51,6 +51,7 @@ JMH: MsgpackBenchmark.serialize, DeduplicationCacheBenchmark
                 "HEAD_SHA": head,
                 "JMH_KIND": "head",
                 "JMH_REPORTED_MARKERS": str(reported),
+                "JMH_REPORT_FILE": str(workspace / "report.md"),
                 "GITHUB_WORKSPACE": directory,
                 "CHANGED_JAVA_FILES_JSON": json.dumps([benchmark_path]),
                 "GITHUB_OUTPUT": str(output_file),
@@ -58,7 +59,7 @@ JMH: MsgpackBenchmark.serialize, DeduplicationCacheBenchmark
             }
             current = head
 
-            def fake_command(args, _workspace, timeout=None, input_text=None):
+            def fake_command(args, _workspace, timeout=None):
                 if args[:3] == ["git", "rev-parse", "HEAD"]:
                     return subprocess.CompletedProcess(args, 0, current + "\n")
                 if args[:2] == ["git", "show"]:
@@ -120,10 +121,12 @@ class ExampleBenchmark {
         with tempfile.TemporaryDirectory() as directory:
             baseline, head = "a" * 40, "b" * 40
             reported = Path(directory) / "reported"
+            report_file = Path(directory) / "report.md"
             environment = {
                 "HEAD_SHA": head,
                 "GITHUB_WORKSPACE": directory,
                 "JMH_REPORTED_MARKERS": str(reported),
+                "JMH_REPORT_FILE": str(report_file),
                 "CHANGED_JAVA_FILES_JSON": json.dumps(["ChangedBenchmark.java"]),
                 "PR_BODY": "JMH: RequestedBenchmark, ChangedBenchmark.run, MissingBenchmark",
             }
@@ -131,7 +134,7 @@ class ExampleBenchmark {
             commands = []
             comments = []
 
-            def fake_command(args, _workspace, timeout=None, input_text=None):
+            def fake_command(args, _workspace, timeout=None):
                 commands.append(args)
                 if args[:3] == ["git", "rev-parse", "HEAD"]:
                     output = current + "\n"
@@ -153,18 +156,15 @@ class ExampleBenchmark {
             with (
                 patch.dict(os.environ, environment),
                 patch.object(runner, "run_command", side_effect=fake_command),
-                patch.object(
-                    runner,
-                    "post_pr_comment",
-                    side_effect=lambda _, body: comments.append(body),
-                ),
             ):
                 # when
                 os.environ["JMH_KIND"] = "baseline"
                 self.assertEqual(runner.main([]), 0)
+                comments.append(report_file.read_text())
                 current = head
                 os.environ["JMH_KIND"] = "head"
                 self.assertEqual(runner.main([]), 0)
+                comments.append(report_file.read_text())
 
                 # then
                 self.assertEqual(len(comments), 2)
@@ -189,10 +189,10 @@ class ExampleBenchmark {
                 reported.write_text(
                     "\n".join(body.splitlines()[0] for body in comments)
                 )
-                comments.clear()
+                previous_report = report_file.read_text()
                 commands.clear()
                 self.assertEqual(runner.main([]), 0)
-                self.assertEqual(comments, [])
+                self.assertEqual(report_file.read_text(), previous_report)
                 self.assertFalse(
                     any(args[0] in ("java", "./mvnw") for args in commands)
                 )
@@ -203,7 +203,7 @@ class ExampleBenchmark {
                 current = baseline
                 commands.clear()
                 self.assertEqual(runner.main([]), 0)
-                self.assertIn("execution was skipped", comments[0])
+                self.assertIn("execution was skipped", report_file.read_text())
                 self.assertFalse(
                     any(args[0] in ("java", "./mvnw") for args in commands)
                 )
@@ -217,15 +217,15 @@ class ExampleBenchmark {
                 "JMH_KIND": "head",
                 "GITHUB_WORKSPACE": directory,
                 "JMH_REPORTED_MARKERS": str(Path(directory) / "reported"),
+                "JMH_REPORT_FILE": str(Path(directory) / "report.md"),
                 "CHANGED_JAVA_FILES_JSON": "[]",
                 "PR_BODY": "JMH: RequestedBenchmark",
                 "MAVEN_BUILD_OUTCOME": "failure",
                 "GITHUB_RUN_URL": "https://github.com/camunda/camunda/actions/runs/123",
             }
             commands = []
-            comments = []
 
-            def fake_command(args, _workspace, timeout=None, input_text=None):
+            def fake_command(args, _workspace, timeout=None):
                 commands.append(args)
                 if args[:3] == ["git", "rev-parse", "HEAD"]:
                     return subprocess.CompletedProcess(args, 0, head + "\n")
@@ -240,19 +240,14 @@ class ExampleBenchmark {
             with (
                 patch.dict(os.environ, environment),
                 patch.object(runner, "run_command", side_effect=fake_command),
-                patch.object(
-                    runner,
-                    "post_pr_comment",
-                    side_effect=lambda _, body: comments.append(body),
-                ),
             ):
                 # when
                 self.assertEqual(runner.main([]), 1)
 
             # then
-            self.assertEqual(len(comments), 1)
-            self.assertIn("Maven benchmark build failed", comments[0])
-            self.assertIn("actions/runs/123", comments[0])
+            report = Path(environment["JMH_REPORT_FILE"]).read_text()
+            self.assertIn("Maven benchmark build failed", report)
+            self.assertIn("actions/runs/123", report)
             self.assertFalse(
                 any(
                     args[:3] == ["java", "-jar", runner.BENCHMARK_JAR]
@@ -269,11 +264,11 @@ class ExampleBenchmark {
                 "JMH_KIND": "head",
                 "GITHUB_WORKSPACE": directory,
                 "JMH_REPORTED_MARKERS": str(Path(directory) / "reported"),
+                "JMH_REPORT_FILE": str(Path(directory) / "report.md"),
                 "PR_BODY": "JMH: RequestedBenchmark.noSuchMethod",
             }
-            comments = []
 
-            def fake_command(args, _workspace, timeout=None, input_text=None):
+            def fake_command(args, _workspace, timeout=None):
                 if args[:3] == ["git", "rev-parse", "HEAD"]:
                     return subprocess.CompletedProcess(args, 0, head + "\n")
                 if args[:2] == ["git", "ls-tree"]:
@@ -289,19 +284,14 @@ class ExampleBenchmark {
             with (
                 patch.dict(os.environ, environment),
                 patch.object(runner, "run_command", side_effect=fake_command),
-                patch.object(
-                    runner,
-                    "post_pr_comment",
-                    side_effect=lambda _, body: comments.append(body),
-                ),
             ):
                 # when
                 self.assertEqual(runner.main([]), 1)
 
             # then
-            self.assertEqual(len(comments), 1)
-            self.assertIn("RequestedBenchmark.noSuchMethod", comments[0])
-            self.assertIn("JMH exited with status 1", comments[0])
+            report = Path(environment["JMH_REPORT_FILE"]).read_text()
+            self.assertIn("RequestedBenchmark.noSuchMethod", report)
+            self.assertIn("JMH exited with status 1", report)
 
 
 class RevisionDiscoveryTests(unittest.TestCase):

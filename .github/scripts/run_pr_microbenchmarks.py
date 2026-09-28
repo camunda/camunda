@@ -14,7 +14,7 @@
 # - The `--select` mode tells the workflow whether to build and whether to post a report.
 # - Use the workflow's run-maven action to build only when the checked-out revision has benchmarks.
 # - Run each selected JMH selector and continue after individual benchmark failures.
-# - Post a deduplicated, size-limited result comment before failing on build or benchmark errors.
+# - Write a deduplicated, size-limited result report before failing on build or benchmark errors.
 
 """Run changed and PR-requested JMH benchmarks at the checked-out revision.
 
@@ -22,12 +22,13 @@ The workflow invokes ``--select`` before building and invokes the default mode
 for reporting. ``--select`` writes ``has_benchmarks`` and ``should_report`` to
 ``GITHUB_OUTPUT``; it does not require GitHub credentials. Default mode assumes
 the workflow's ``run-maven`` action has built the benchmark JAR, runs JMH, and
-posts a PR comment. Running default mode manually can post a real comment.
+writes the report to ``JMH_REPORT_FILE``. Posting the report is handled by the
+workflow. Running default mode manually does not post a comment.
 
 The workflow supplies ``HEAD_SHA``, ``JMH_KIND``, ``JMH_REPORTED_MARKERS``,
-``CHANGED_JAVA_FILES_JSON``, ``PR_BODY``, ``GITHUB_REPOSITORY``, ``PR_NUMBER``,
-``MAVEN_BUILD_OUTCOME``, and ``GITHUB_RUN_URL``. ``GH_TOKEN`` is the workflow's
-built-in GitHub token, used only when posting a comment.
+``JMH_REPORT_FILE``, ``CHANGED_JAVA_FILES_JSON``, ``PR_BODY``,
+``MAVEN_BUILD_OUTCOME``, and ``GITHUB_RUN_URL``. The workflow posts the report
+separately so the GitHub token is never exposed to benchmark code.
 """
 
 import hashlib
@@ -90,14 +91,12 @@ def run_command(
     args: list[str],
     workspace: Path,
     timeout: int | None = None,
-    input_text: str | None = None,
 ) -> subprocess.CompletedProcess[str]:
     try:
         return subprocess.run(
             args,
             cwd=workspace,
             text=True,
-            input=input_text,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             timeout=timeout,
@@ -115,30 +114,13 @@ def run_command(
         return subprocess.CompletedProcess(args, 127, stdout=str(error))
 
 
-def post_pr_comment(workspace: Path, body: str) -> None:
-    repo = os.environ["GITHUB_REPOSITORY"]
-    pr_number = os.environ["PR_NUMBER"]
+def write_report(report_file: Path, body: str) -> None:
     if len(body) > COMMENT_MAX_LENGTH:
         body = (
             body[:COMMENT_MAX_LENGTH]
             + "\n\n[Output truncated to fit in a GitHub comment.]"
         )
-    result = run_command(
-        [
-            "gh",
-            "api",
-            "--method",
-            "POST",
-            f"repos/{repo}/issues/{pr_number}/comments",
-            "--input",
-            "-",
-        ],
-        workspace,
-        timeout=SHORT_TIMEOUT_SECONDS,
-        input_text=json.dumps({"body": body}),
-    )
-    if result.returncode:
-        raise RuntimeError(f"Failed to post PR comment:\n{result.stdout}")
+    report_file.write_text(body, encoding="utf-8")
 
 
 def write_selection_outputs(has_benchmarks: bool, should_report: bool) -> None:
@@ -288,6 +270,7 @@ def run_mode(
     kind: str,
     requested: list[str],
     reported_file: Path,
+    report_file: Path,
 ) -> int:
     if not selection.should_report:
         write_no_benchmarks_summary()
@@ -319,12 +302,8 @@ def run_mode(
             "No selected benchmark source exists at this revision; execution was skipped."
         )
 
-    try:
-        post_pr_comment(workspace, "\n".join(result).rstrip() + "\n")
-    except RuntimeError as error:
-        print(f"::error::{error}")
-        return 1
-    print(f"Posted result: {marker}")
+    write_report(report_file, "\n".join(result).rstrip() + "\n")
+    print(f"Wrote report: {marker}")
     return int(failed)
 
 
@@ -342,6 +321,7 @@ def main(args: list[str] | None = None) -> int:
         requested = parse_pr_selectors(os.environ.get("PR_BODY", ""))
         kind = os.environ["JMH_KIND"]
         reported_file = Path(os.environ["JMH_REPORTED_MARKERS"])
+        report_file = Path(os.environ["JMH_REPORT_FILE"])
     except (KeyError, ValueError) as error:
         print(f"::error::{error}")
         return 1
@@ -355,7 +335,7 @@ def main(args: list[str] | None = None) -> int:
 
     if arguments == ["--select"]:
         return select_mode(selection, kind, requested, reported_file)
-    return run_mode(selection, workspace, kind, requested, reported_file)
+    return run_mode(selection, workspace, kind, requested, reported_file, report_file)
 
 
 if __name__ == "__main__":
