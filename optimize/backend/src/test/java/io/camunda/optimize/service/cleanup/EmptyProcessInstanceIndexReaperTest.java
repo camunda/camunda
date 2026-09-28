@@ -110,4 +110,33 @@ class EmptyProcessInstanceIndexReaperTest {
     // then - a failed attempt must not leave the index rejecting imports
     verify(databaseClient).removeWriteBlock(INDEX);
   }
+
+  @Test
+  void shouldUnblockTheIndexWhenAddingTheBlockFails() throws IOException {
+    // given - e.g. a timeout after the block was already applied
+    when(databaseClient.countWithoutPrefix(INDEX)).thenReturn(0L);
+    doThrow(new OptimizeRuntimeException("timed out")).when(databaseClient).addWriteBlock(INDEX);
+
+    // when
+    assertThatNoException().isThrownBy(() -> reaper.deleteIfEmpty(KEY));
+
+    // then
+    verify(databaseClient, never()).deleteIndexByRawIndexNames(any());
+    verify(databaseClient).removeWriteBlock(INDEX);
+  }
+
+  @Test
+  void shouldUnblockTheIndexWhenTheRecountFails() throws IOException {
+    // given
+    when(databaseClient.countWithoutPrefix(INDEX))
+        .thenReturn(0L)
+        .thenThrow(new IOException("connection reset"));
+
+    // when
+    assertThatNoException().isThrownBy(() -> reaper.deleteIfEmpty(KEY));
+
+    // then
+    verify(databaseClient, never()).deleteIndexByRawIndexNames(any());
+    verify(databaseClient).removeWriteBlock(INDEX);
+  }
 }
