@@ -472,6 +472,8 @@
 			"dashboard": {
 				"title": "Panel de control",
 				"runningInstancesTotal": "{{count}} instancias de proceso en ejecución en total",
+				"runningInstancesTotalPending": "Instancias de proceso en ejecución en total",
+				"metricFetchError": "No se pudieron recuperar las estadísticas de proceso",
 				"instancesWithIncident": "Instancias de proceso con incidente",
 				"activeInstances": "Instancias de proceso activas",
 				"processesByNameTitle": "Instancias de proceso por nombre",

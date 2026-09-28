@@ -472,6 +472,8 @@
 			"dashboard": {
 				"title": "Dashboard",
 				"runningInstancesTotal": "{{count}} laufende Prozessinstanzen insgesamt",
+				"runningInstancesTotalPending": "Laufende Prozessinstanzen insgesamt",
+				"metricFetchError": "Prozessstatistiken konnten nicht abgerufen werden",
 				"instancesWithIncident": "Prozessinstanzen mit Vorfall",
 				"activeInstances": "Aktive Prozessinstanzen",
 				"processesByNameTitle": "Prozessinstanzen nach Name",

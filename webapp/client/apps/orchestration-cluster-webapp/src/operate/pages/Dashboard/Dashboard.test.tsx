@@ -8,7 +8,7 @@
 
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {afterEach, beforeEach, describe, expect} from 'vitest';
+import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
 import {
@@ -252,5 +252,105 @@ describe('<Dashboard />', () => {
 
 		await expect.element(screen.getByText('Process Instances by Name')).toBeVisible();
 		await expect.element(screen.getByText('Process Incidents by Error Message')).not.toBeInTheDocument();
+	});
+
+	it('should keep the incidents panel visible while process statistics are still loading', async ({worker}) => {
+		let statsRequests = 0;
+		worker.events.on('request:start', ({request}) => {
+			if (request.method === 'POST' && request.url.includes('/process-definitions/statistics/process-instances')) {
+				statsRequests++;
+			}
+		});
+		worker.use(
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+				successResponse: STATS_RESPONSE_WITH_INSTANCES,
+				delay: 'infinite',
+			}),
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+				schema: INCIDENTS_REQUEST_SCHEMA,
+				successResponse: INCIDENTS_RESPONSE_WITH_ERRORS,
+				failureResponse: FAILURE_RESPONSE,
+			}),
+		);
+
+		const screen = await renderWithRouter(Dashboard, {path: '/operate'});
+
+		await expect.element(screen.getByText('Connection timeout')).toBeVisible();
+		await expect.element(screen.getByText('No running process instances')).not.toBeInTheDocument();
+		await expect.poll(() => statsRequests).toBe(2);
+		worker.events.removeAllListeners('request:start');
+	});
+
+	it('should show a scoped error on the metric and process panels without hiding the incidents panel', async ({
+		worker,
+	}) => {
+		worker.use(
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({successResponse: FAILURE_RESPONSE}),
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+				schema: INCIDENTS_REQUEST_SCHEMA,
+				successResponse: INCIDENTS_RESPONSE_WITH_ERRORS,
+				failureResponse: FAILURE_RESPONSE,
+			}),
+		);
+
+		const screen = await renderWithRouter(Dashboard, {path: '/operate'});
+
+		await expect.element(screen.getByText('Connection timeout')).toBeVisible();
+		await expect.element(screen.getByText('Process statistics could not be fetched')).toBeVisible();
+		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
+		await expect.element(screen.getByText('No running process instances')).not.toBeInTheDocument();
+	});
+
+	it('should keep the metric and process panels visible when the incidents endpoint fails', async ({worker}) => {
+		worker.use(
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+				schema: PROCESS_STATS_REQUEST_SCHEMA,
+				successResponse: STATS_RESPONSE_WITH_INSTANCES,
+				failureResponse: FAILURE_RESPONSE,
+			}),
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({successResponse: FAILURE_RESPONSE}),
+		);
+
+		const screen = await renderWithRouter(Dashboard, {path: '/operate'});
+
+		await expect.element(screen.getByText('20 Running Process Instances in total')).toBeVisible();
+		await expect.element(screen.getByTestId('instances-by-process-list')).toBeVisible();
+		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
+	});
+
+	it('should switch from the empty layout to the process list once new instances are polled in', async ({worker}) => {
+		vi.useFakeTimers({shouldAdvanceTime: true});
+		worker.use(
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+				schema: PROCESS_STATS_REQUEST_SCHEMA,
+				successResponse: STATS_RESPONSE_EMPTY,
+				failureResponse: FAILURE_RESPONSE,
+			}),
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+				schema: INCIDENTS_REQUEST_SCHEMA,
+				successResponse: INCIDENTS_RESPONSE_EMPTY,
+				failureResponse: FAILURE_RESPONSE,
+			}),
+			mockCurrentUserEndpoint({successResponse: CURRENT_USER_RESPONSE}),
+		);
+
+		const screen = await renderWithRouter(Dashboard, {path: '/operate'});
+		await expect.element(screen.getByText('No running process instances')).toBeVisible();
+
+		worker.use(
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+				schema: PROCESS_STATS_REQUEST_SCHEMA,
+				successResponse: STATS_RESPONSE_WITH_INSTANCES,
+				failureResponse: FAILURE_RESPONSE,
+			}),
+		);
+		await vi.advanceTimersByTimeAsync(5000);
+
+		await expect.element(screen.getByTestId('instances-by-process-list')).toBeVisible();
+		await expect.element(screen.getByText('Process Incidents by Error Message')).toBeVisible();
 	});
 });

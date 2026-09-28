@@ -6,34 +6,38 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useQuery} from '@tanstack/react-query';
+import {SkeletonText} from '@carbon/react';
 import {useTranslation} from 'react-i18next';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
+import {ErrorMessage} from '#/operate/shared/ErrorMessage/ErrorMessage';
+import {runningInstancesCountQuery} from '../useRunningInstancesCount';
 import {runningOrAllInstancesFilter} from '../processesLinkFilters';
 import {Title, LabelContainer, Label} from './styled';
 
-type RunningInstancesCount = {
-	total: number;
-	withIncidents: number;
-	withoutIncidents: number;
-};
-
-type Props = {
-	count: RunningInstancesCount;
-};
-
-const MetricPanel: React.FC<Props> = ({count}) => {
+const MetricPanel: React.FC = () => {
 	const {t} = useTranslation();
+	const {data: count, isPending, isError} = useQuery({...runningInstancesCountQuery(), refetchInterval: 5000});
+
+	if (isError) {
+		return <ErrorMessage message={t('operate.dashboard.metricFetchError')} />;
+	}
 
 	return (
 		<>
 			<Title
 				data-testid="total-instances-link"
 				to="/operate/processes"
-				search={runningOrAllInstancesFilter(count.total)}
+				search={runningOrAllInstancesFilter(count?.total ?? 0)}
 			>
-				{t('operate.dashboard.runningInstancesTotal', {count: count.total})}
+				{count === undefined
+					? t('operate.dashboard.runningInstancesTotalPending')
+					: t('operate.dashboard.runningInstancesTotal', {count: count.total})}
 			</Title>
-			<InstancesBar incidentsCount={count.withIncidents} activeInstancesCount={count.withoutIncidents} size="large" />
+			{count !== undefined && (
+				<InstancesBar incidentsCount={count.withIncidents} activeInstancesCount={count.withoutIncidents} size="large" />
+			)}
+			{isPending && <SkeletonText data-testid="instances-bar-skeleton" />}
 			<LabelContainer>
 				<Label
 					data-testid="incident-instances-link"
