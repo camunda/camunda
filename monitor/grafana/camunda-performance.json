@@ -9337,7 +9337,7 @@
                     "hidden": false,
                     "query": {
                       "datasource": {
-                        "name": "prometheus"
+                        "name": "$DS_PROMETHEUS"
                       },
                       "group": "prometheus",
                       "kind": "DataQuery",
@@ -9363,7 +9363,7 @@
                     "hidden": false,
                     "query": {
                       "datasource": {
-                        "name": "prometheus"
+                        "name": "$DS_PROMETHEUS"
                       },
                       "group": "prometheus",
                       "kind": "DataQuery",
@@ -9486,7 +9486,7 @@
                     "hidden": false,
                     "query": {
                       "datasource": {
-                        "name": "prometheus"
+                        "name": "$DS_PROMETHEUS"
                       },
                       "group": "prometheus",
                       "kind": "DataQuery",
