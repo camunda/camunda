@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.rdbms;
 
+import io.camunda.application.commons.pt.PerTenantSchemaInitialization;
 import io.camunda.application.commons.search.SchemaInitializationRecoveryCheck;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.PerTenantSchemaConfig;
@@ -57,7 +58,7 @@ public class MyBatisConfiguration {
             physicalTenantSchemaConfigs(rdbmsDataSources, physicalTenantResolver),
             VersionUtil.getVersion()),
         physicalTenantId -> retryConfiguration(physicalTenantResolver, physicalTenantId),
-        io.camunda.application.commons.pt.PerTenantSchemaInitialization.DeferralCheck.of(
+        PerTenantSchemaInitialization.DeferralCheck.of(
             new SchemaInitializationRecoveryCheck(brokerTopologyManager)::shouldDefer));
   }
 
