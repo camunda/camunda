@@ -103,6 +103,7 @@ import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.InvalidMediaTypeException;
@@ -118,6 +119,14 @@ public final class ResponseMapper {
 
   private static final String CONTENT_SECURITY_POLICY_HEADER = "Content-Security-Policy";
   private static final String CONTENT_SECURITY_POLICY_SANDBOX = "sandbox; default-src 'none'";
+  // Types safe to render inline; everything else (HTML, SVG, ...) is forced to download
+  private static final Set<MediaType> INLINE_SAFE_MEDIA_TYPES =
+      Set.of(
+          MediaType.IMAGE_PNG,
+          MediaType.IMAGE_JPEG,
+          MediaType.IMAGE_GIF,
+          MediaType.parseMediaType("image/webp"),
+          MediaType.APPLICATION_PDF);
 
   private static final Logger LOG = LoggerFactory.getLogger(ResponseMapper.class);
 
@@ -277,12 +286,20 @@ public final class ResponseMapper {
         // Sandbox served content into an opaque origin so active types (HTML, SVG) can't run in the
         // app origin. Per-endpoint header; does not touch the global web-app CSP.
         .header(CONTENT_SECURITY_POLICY_HEADER, CONTENT_SECURITY_POLICY_SANDBOX)
+        // Renderable-but-unsafe types (HTML, SVG, ...) are served as a download
+        .header(HttpHeaders.CONTENT_DISPOSITION, resolveContentDisposition(mediaType))
         .body(
             bodyStream -> {
               try (final var contentInputStream = response.content()) {
                 contentInputStream.transferTo(bodyStream);
               }
             });
+  }
+
+  private static String resolveContentDisposition(final MediaType mediaType) {
+    final boolean inlineSafe =
+        INLINE_SAFE_MEDIA_TYPES.stream().anyMatch(mediaType::equalsTypeAndSubtype);
+    return inlineSafe ? "inline" : "attachment";
   }
 
   private static MediaType resolveMediaType(final DocumentContentResponse contentResponse) {
