@@ -11,7 +11,7 @@ import {Button, EmptyState, Table, TableBody, TableCell, TableHeader, TableRow} 
 import {Info} from '@camunda/design-system/icons';
 import {Link} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
-import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.11';
 import {formatHistoryDate} from '../formatHistoryDate';
 import {getOperationTypeTranslationKey} from '../getOperationTypeTranslationKey';
 import type {TaskDetailsHistorySearch, TaskDetailsHistorySortField} from '../sortUtils';

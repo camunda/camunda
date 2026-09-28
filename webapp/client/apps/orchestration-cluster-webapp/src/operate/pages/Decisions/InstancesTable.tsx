@@ -22,7 +22,7 @@ import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import {formatEvaluationDate} from '#/operate/shared/utils/formatEvaluationDate';
 import {Toolbar} from './Toolbar';
 import {Container, DecisionName, InstanceLink} from './styled';
-import type {DecisionInstance} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {DecisionInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 
 type Props = {
 	search: DecisionsSearch;

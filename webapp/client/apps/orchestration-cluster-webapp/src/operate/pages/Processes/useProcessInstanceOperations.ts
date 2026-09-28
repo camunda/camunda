@@ -8,7 +8,7 @@
 
 import {useMutation, useQueryClient, type QueryClient} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
-import type {BatchOperation, BatchOperationType, ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {BatchOperation, BatchOperationType, ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {ForbiddenError} from '#/shared/errors';
 import {request, requestErrorSchema} from '#/shared/http/request';
 import {mapQueryError} from '#/shared/http/mapQueryError';

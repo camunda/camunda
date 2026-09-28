@@ -45,7 +45,7 @@ import {
 	type DecisionInstance,
 	type Variable,
 	type ProcessInstance,
-} from '@camunda/camunda-api-zod-schemas/8.10';
+} from '@camunda/camunda-api-zod-schemas/8.11';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {mergePathname} from './mergePathname';
 

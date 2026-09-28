@@ -10,7 +10,7 @@ import {Suspense, useMemo} from 'react';
 import {useInfiniteQuery, useQuery} from '@tanstack/react-query';
 import {InlineLoading} from '@carbon/react';
 import {useTranslation} from 'react-i18next';
-import type {ProcessDefinitionInstanceStatistics} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {ProcessDefinitionInstanceStatistics} from '@camunda/camunda-api-zod-schemas/8.11';
 import {ErrorBoundary} from 'react-error-boundary';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
 import {ExpandableList} from '../ExpandableList';

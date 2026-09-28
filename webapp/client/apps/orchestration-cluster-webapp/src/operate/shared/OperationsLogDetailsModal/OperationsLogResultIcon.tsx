@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {AuditLogResult} from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
+import type {AuditLogResult} from '@camunda/camunda-api-zod-schemas/8.11/audit-log';
 import {ResultCheckmarkOutline, ResultErrorOutline} from './styled';
 
 const resultIconsMap = {

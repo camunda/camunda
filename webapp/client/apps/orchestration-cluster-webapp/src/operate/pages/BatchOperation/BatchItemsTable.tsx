@@ -9,7 +9,7 @@
 import {useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
 import {createLink} from '@tanstack/react-router';
-import type {BatchOperationItem, BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {BatchOperationItem, BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.11';
 import {PaginatedSortableTable} from '#/operate/shared/PaginatedSortableTable/PaginatedSortableTable';
 import {PanelHeader} from '#/operate/shared/PanelHeader/PanelHeader';
 import {EmptyMessage} from '#/operate/shared/EmptyMessage/EmptyMessage';

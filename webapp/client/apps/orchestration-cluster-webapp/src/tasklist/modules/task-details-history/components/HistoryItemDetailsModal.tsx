@@ -17,7 +17,7 @@ import {
 } from '@camunda/design-system';
 import {CalendarClock, CircleUser, X} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';
-import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.11';
 import {formatHistoryDate} from '#/tasklist/modules/task-details-history/formatHistoryDate';
 import {getOperationTypeTranslationKey} from '#/tasklist/modules/task-details-history/getOperationTypeTranslationKey';
 

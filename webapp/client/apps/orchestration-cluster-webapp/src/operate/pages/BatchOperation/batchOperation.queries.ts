@@ -7,7 +7,7 @@
  */
 
 import {queryOptions, useQuery} from '@tanstack/react-query';
-import type {BatchOperation} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {BatchOperation} from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from '#/shared/http/request';
 import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';

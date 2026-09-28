@@ -8,7 +8,7 @@
 
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {Separator} from '@camunda/design-system';
-import type {DocumentReference} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {DocumentReference} from '@camunda/camunda-api-zod-schemas/8.11';
 import set from 'lodash/set';
 import {useTranslation} from 'react-i18next';
 import {getClientConfig} from '#/shared/config/getClientConfig';

@@ -9,7 +9,7 @@
 import {IconButton} from '@carbon/react';
 import {Information} from '@carbon/react/icons';
 import {useTranslation} from 'react-i18next';
-import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
+import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.11/audit-log';
 import type {DetailsModalState} from '#/operate/shared/OperationsLogDetailsModal/OperationsLogDetailsModal';
 
 type Props = {

@@ -7,7 +7,7 @@
  */
 
 import {z} from 'zod';
-import type {AuditLogSortField} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {AuditLogSortField} from '@camunda/camunda-api-zod-schemas/8.11';
 
 const INITIAL_SORT_ORDER = 'desc';
 const DEFAULT_SORT_PARAMS = {

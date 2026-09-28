@@ -20,7 +20,7 @@ import {
 } from '@carbon/react/icons';
 import {Link as RouterLink, createLink} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
-import type {AuditLog, AuditLogEntityType} from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
+import type {AuditLog, AuditLogEntityType} from '@camunda/camunda-api-zod-schemas/8.11/audit-log';
 import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
 import {spaceAndCapitalize} from '#/operate/shared/utils/spaceAndCapitalize';
 import {ActorIcon} from './ActorIcon';

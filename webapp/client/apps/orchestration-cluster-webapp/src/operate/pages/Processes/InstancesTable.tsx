@@ -18,7 +18,7 @@ import type {
 	ProcessInstance,
 	ProcessInstanceState,
 	QueryBatchOperationItemsRequestBody,
-} from '@camunda/camunda-api-zod-schemas/8.10';
+} from '@camunda/camunda-api-zod-schemas/8.11';
 import {PanelHeader} from '#/operate/shared/PanelHeader/PanelHeader';
 import {PaginatedSortableTable} from '#/operate/shared/PaginatedSortableTable/PaginatedSortableTable';
 import {StateIcon} from '#/operate/shared/StateIcon/StateIcon';

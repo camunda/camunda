@@ -7,7 +7,7 @@
  */
 
 import {Api, User} from '@carbon/react/icons';
-import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
+import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.11/audit-log';
 
 type Props = React.SVGProps<SVGSVGElement> & {auditLog: AuditLog};
 

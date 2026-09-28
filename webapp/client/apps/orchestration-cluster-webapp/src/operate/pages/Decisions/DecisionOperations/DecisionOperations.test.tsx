@@ -9,7 +9,7 @@
 import {afterEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {HttpResponse} from 'msw';
-import {deleteResourceRequestBodySchema} from '@camunda/camunda-api-zod-schemas/8.10';
+import {deleteResourceRequestBodySchema} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {mockDeleteResourceEndpoint} from '#/shared-test-modules/mock-handlers';

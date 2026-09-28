@@ -7,7 +7,7 @@
  */
 
 import {useMemo} from 'react';
-import type {BatchOperationType, ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {BatchOperationType, ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {Operations} from '#/operate/shared/Operations/Operations';
 import type {OperationConfig} from '#/operate/shared/Operations/types';
 import {useProcessInstanceOperations, type OperationType} from './useProcessInstanceOperations';

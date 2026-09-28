@@ -10,7 +10,7 @@ import type {
 	GetProcessDefinitionResponseBody,
 	ProcessDefinition,
 	QueryProcessDefinitionsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.10';
+} from '@camunda/camunda-api-zod-schemas/8.11';
 
 const START_PROCESS_FORM_SCHEMA = JSON.stringify({
 	components: [

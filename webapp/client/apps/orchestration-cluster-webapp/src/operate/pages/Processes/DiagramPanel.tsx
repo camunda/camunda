@@ -8,7 +8,7 @@
 
 import {useContext} from 'react';
 import {useTranslation} from 'react-i18next';
-import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.11';
 import {Diagram} from '#/operate/shared/Diagram';
 import {DiagramShell} from '#/operate/shared/DiagramShell/DiagramShell';
 import {DiagramOverlayContext} from '#/operate/shared/Diagram/DiagramOverlayContext';

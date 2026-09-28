@@ -8,7 +8,7 @@
 
 import {WarningFilled, CheckmarkOutline, RadioButtonChecked, PauseOutlineFilled} from './styled';
 import {type CarbonIconType, Error, UnknownFilled} from '@carbon/react/icons';
-import type {DecisionInstanceState, ProcessInstanceState} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {DecisionInstanceState, ProcessInstanceState} from '@camunda/camunda-api-zod-schemas/8.11';
 
 const stateIconsMap = {
 	FAILED: WarningFilled,

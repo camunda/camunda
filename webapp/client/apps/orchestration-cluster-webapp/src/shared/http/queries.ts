@@ -7,7 +7,6 @@
  */
 
 import {infiniteQueryOptions, queryOptions} from '@tanstack/react-query';
-import type {GetSystemConfigurationResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
 import type {
 	CurrentUser,
 	License,
@@ -31,7 +30,8 @@ import type {
 	QueryDecisionDefinitionsResponseBody,
 	GetProcessDefinitionResponseBody,
 	GetProcessStartFormResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.10';
+	GetSystemConfigurationResponseBody,
+} from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from './request';
 import {endpoints} from './endpoints';
 import {mapQueryError} from './mapQueryError';

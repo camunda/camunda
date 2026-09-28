@@ -7,8 +7,8 @@
  */
 
 import type {TFunction} from 'i18next';
-import type {AuditLog, AuditLogOperationType} from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
-import type {BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {AuditLog, AuditLogOperationType} from '@camunda/camunda-api-zod-schemas/8.11/audit-log';
+import type {BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.11';
 import {spaceAndCapitalize} from '#/operate/shared/utils/spaceAndCapitalize';
 
 const INVALID_PROCESS_INSTANCE_KEY = '-1';

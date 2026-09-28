@@ -10,7 +10,7 @@ import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Modal, TableBatchAction, TableBatchActions, TableToolbar} from '@carbon/react';
 import {TrashCan} from '@carbon/react/icons';
-import type {CreateDecisionInstancesDeletionBatchOperationResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {CreateDecisionInstancesDeletionBatchOperationResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from '#/shared/http/request';
 import {endpoints} from '#/shared/http/endpoints';
 import {notificationsStore} from '#/shared/notifications/notifications.store';

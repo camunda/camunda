@@ -19,7 +19,7 @@ import {useNavigate} from '@tanstack/react-router';
 import {useEffect, useEffectEvent, useReducer} from 'react';
 import {Field, Form, type FormRenderProps} from 'react-final-form';
 import {useTranslation} from 'react-i18next';
-import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.11';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 
 const SUBMIT_DEBOUNCE = 500;

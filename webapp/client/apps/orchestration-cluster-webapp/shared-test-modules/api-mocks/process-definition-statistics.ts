@@ -11,7 +11,7 @@ import type {
 	ProcessDefinitionInstanceVersionStatistics,
 	ProcessDefinitionStatistic,
 	GetProcessDefinitionStatisticsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.10';
+} from '@camunda/camunda-api-zod-schemas/8.11';
 
 function createProcessDefinitionInstanceStatistics(
 	overrides?: Partial<ProcessDefinitionInstanceStatistics>,

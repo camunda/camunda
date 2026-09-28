@@ -8,7 +8,7 @@
 
 import {useState} from 'react';
 import {Button} from '@carbon/react';
-import type {BatchOperation} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {BatchOperation} from '@camunda/camunda-api-zod-schemas/8.11';
 import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {HttpResponse} from 'msw';

@@ -10,7 +10,7 @@ import type {
 	DecisionInstance,
 	GetDecisionInstanceResponseBody,
 	QueryDecisionInstancesResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.10';
+} from '@camunda/camunda-api-zod-schemas/8.11';
 
 function createDecisionInstance(overrides?: Partial<GetDecisionInstanceResponseBody>): GetDecisionInstanceResponseBody {
 	return {

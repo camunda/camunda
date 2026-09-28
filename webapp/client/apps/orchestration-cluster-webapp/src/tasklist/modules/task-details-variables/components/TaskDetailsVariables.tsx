@@ -21,7 +21,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from '@camunda/design-system';
-import type {QueryVariablesByUserTaskResponseBody, Variable} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {QueryVariablesByUserTaskResponseBody, Variable} from '@camunda/camunda-api-zod-schemas/8.11';
 import {type InfiniteData, useQueryClient} from '@tanstack/react-query';
 import arrayMutators from 'final-form-arrays';
 import get from 'lodash/get';

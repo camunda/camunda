@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {QueryUserTasksRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {QueryUserTasksRequestBody} from '@camunda/camunda-api-zod-schemas/8.11';
 import {getStateLocally} from '#/shared/browser-storage/local-storage';
 import {advancedStringFilterCodec} from '#/tasklist/modules/available-tasks/advancedStringFilter';
 import {isBuiltInFilter, type TasklistIndexSearch} from '#/tasklist/modules/available-tasks/searchSchema';

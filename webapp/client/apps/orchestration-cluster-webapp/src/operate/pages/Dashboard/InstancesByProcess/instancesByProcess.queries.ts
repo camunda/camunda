@@ -13,7 +13,7 @@ import type {
 	GetProcessDefinitionInstanceVersionStatisticsResponseBody,
 	ProcessDefinition,
 	QueryProcessDefinitionsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.10';
+} from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from '#/shared/http/request';
 import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';

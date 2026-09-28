@@ -9,7 +9,7 @@
 import {setup, assign, emit, fromPromise} from 'xstate';
 import {t} from 'i18next';
 import type {QueryClient} from '@tanstack/react-query';
-import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.11';
 import {toast} from '@camunda/design-system';
 import {endpoints} from '#/shared/http/endpoints';
 import {queries} from '#/shared/http/queries';

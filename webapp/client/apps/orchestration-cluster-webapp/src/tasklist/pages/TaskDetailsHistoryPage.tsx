@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.11';
 import type {TaskDetailsHistorySearch} from '#/tasklist/modules/task-details-history/sortUtils';
 import {HistoryTable} from '#/tasklist/modules/task-details-history/components/HistoryTable';
 

@@ -29,7 +29,7 @@ import {
 	Zap,
 } from '@camunda/design-system/icons';
 import {camundaAppIcons, type NavIcon, type SidebarNode} from '@camunda/design-system';
-import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.11';
 import {getAdminSectionConfig, isAdminSectionAvailable, type AdminSectionKey} from '#/admin/adminSections';
 import {hasComponentAccess} from '#/shared/componentAccess';
 import {useActiveComponentHomeRoute} from '#/shared/useActiveComponentHomeRoute';
