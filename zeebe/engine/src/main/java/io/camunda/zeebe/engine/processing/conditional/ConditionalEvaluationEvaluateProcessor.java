@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.exception.ForbiddenException;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -72,7 +73,8 @@ public class ConditionalEvaluationEvaluateProcessor
       final EventTriggerBehavior eventTriggerBehavior,
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
-      final ExpressionProcessor expressionProcessor) {
+      final ExpressionProcessor expressionProcessor,
+      final StorageOrdinalProvider storageOrdinalProvider) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
@@ -89,7 +91,8 @@ public class ConditionalEvaluationEvaluateProcessor
             writers,
             processState,
             eventTriggerBehavior,
-            stateBehavior);
+            stateBehavior,
+            storageOrdinalProvider);
   }
 
   @Override

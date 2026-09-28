@@ -98,6 +98,7 @@ public final class MessageEventProcessors {
                 bannedInstanceState,
                 businessIdUniquenessEnabled,
                 bpmnBehaviors.variableBehavior(),
+                bpmnBehaviors.storageOrdinalProvider(),
                 metrics))
         .onCommand(
             ValueType.MESSAGE_BATCH,
@@ -190,6 +191,7 @@ public final class MessageEventProcessors {
                 bpmnBehaviors.stateBehavior(),
                 subscriptionCommandSender,
                 keyGenerator,
+                bpmnBehaviors.storageOrdinalProvider(),
                 clock,
                 businessIdUniquenessEnabled,
                 writers,

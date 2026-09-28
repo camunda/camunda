@@ -82,7 +82,8 @@ public final class TimerTriggerProcessor
             writers,
             processState,
             bpmnBehaviors.eventTriggerBehavior(),
-            bpmnBehaviors.stateBehavior());
+            bpmnBehaviors.stateBehavior(),
+            bpmnBehaviors.storageOrdinalProvider());
   }
 
   @Override
