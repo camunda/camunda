@@ -113,7 +113,7 @@
     <!-- protoc makes the gencode. A runtime cannot load gencode that is newer than itself.
          Thus this version must stay less than or equal to the baseline above. -->
     <version.protoc>4.34.2</version.protoc>
-    <version.protobuf-common>2.76.0</version.protobuf-common>
+    <version.protobuf-common>2.77.0</version.protobuf-common>
     <version.micrometer>1.17.1</version.micrometer>
     <version.rocksdbjni>10.10.1.1</version.rocksdbjni>
     <version.sbe>1.40.2</version.sbe>
