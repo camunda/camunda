@@ -68,6 +68,9 @@ public final class BrokerStartupProcess {
     result.add(new JobStreamServiceStep());
     result.add(new PartitionGroupMigrationStep());
     result.add(new RocksDbResourcesStep());
+    if (config.getExperimental().getLeaderWarmup().isEnabled()) {
+      result.add(new LeaderWarmupStep());
+    }
     for (final String physicalTenantId : startupContext.getPhysicalTenantIds().known()) {
       result.add(new PartitionManagerStep(physicalTenantId));
     }

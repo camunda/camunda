@@ -44,6 +44,7 @@ public class ExperimentalCfg implements ConfigurationEntry {
   private ConsistencyCheckCfg consistencyChecks = new ConsistencyCheckCfg();
   private EngineCfg engine = new EngineCfg();
   private FeatureFlagsCfg features = new FeatureFlagsCfg();
+  private LeaderWarmupCfg leaderWarmup = new LeaderWarmupCfg();
 
   public boolean isContinuousBackups() {
     return continuousBackups;
@@ -163,6 +164,14 @@ public class ExperimentalCfg implements ConfigurationEntry {
     this.features = features;
   }
 
+  public LeaderWarmupCfg getLeaderWarmup() {
+    return leaderWarmup;
+  }
+
+  public void setLeaderWarmup(final LeaderWarmupCfg leaderWarmup) {
+    this.leaderWarmup = leaderWarmup;
+  }
+
   public boolean isReceiveOnLegacySubject() {
     return receiveOnLegacySubject;
   }
@@ -192,6 +201,8 @@ public class ExperimentalCfg implements ConfigurationEntry {
         + engine
         + ", features="
         + features
+        + ", leaderWarmup="
+        + leaderWarmup
         + ", receiveOnLegacySubject="
         + receiveOnLegacySubject
         + '}';
