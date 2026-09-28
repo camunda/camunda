@@ -761,6 +761,26 @@ public final class ProcessStateTest {
   }
 
   @Test
+  public void shouldRejectCachingProcessWithDifferentBpmnProcessId() {
+    // given
+    final var processRecord = creatingProcessRecord(processingState);
+    processState.putProcess(processRecord.getKey(), processRecord);
+    final var otherExecutableProcess = transform(creatingProcessRecord(processingState, "other"));
+
+    // when - then
+    assertThatThrownBy(
+            () ->
+                processState.cacheProcess(
+                    processRecord.getKey(), TENANT_ID, otherExecutableProcess))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("bpmnProcessId 'processId'")
+        .hasMessageContaining("has bpmnProcessId 'other'");
+    assertThat(
+            processState.getProcessByKeyAndTenant(processRecord.getKey(), TENANT_ID).getProcess())
+        .isNotSameAs(otherExecutableProcess);
+  }
+
+  @Test
   public void shouldGetProcessByProcessIdAndDeploymentKey() {
     // given
     final var process1Version1 =
