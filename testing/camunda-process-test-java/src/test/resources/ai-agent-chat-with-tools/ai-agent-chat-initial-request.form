@@ -1,0 +1,35 @@
+{
+  "components": [
+    {
+      "label": "How can I help you today?",
+      "type": "textarea",
+      "layout": {
+        "row": "Row_0aav7jn",
+        "columns": null
+      },
+      "id": "Field_12i4zil",
+      "key": "inputText"
+    },
+    {
+      "label": "Add Documents",
+      "type": "filepicker",
+      "layout": {
+        "row": "Row_03u75o8",
+        "columns": null
+      },
+      "id": "Field_027g5wu",
+      "key": "inputDocuments",
+      "multiple": "on",
+      "accept": "text/*,image/*,application/json,application/xml,application/yaml,application/pdf"
+    }
+  ],
+  "type": "default",
+  "id": "ai-agent-chat-initial-request",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.8.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.34.0"
+  },
+  "schemaVersion": 18
+}
