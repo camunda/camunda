@@ -45,6 +45,21 @@ final class UnifiedRecordValueTest {
     }
   }
 
+  @ParameterizedTest
+  @MethodSource("provideValueTypes")
+  void shouldReturnNewRecordValueOnEveryCall(final ValueType valueType) {
+    // given
+    final var first = UnifiedRecordValue.fromValueType(valueType);
+
+    // when
+    final var second = UnifiedRecordValue.fromValueType(valueType);
+
+    // then
+    if (first != null) {
+      assertThat(second).isNotSameAs(first);
+    }
+  }
+
   /**
    * Converts a SNAKE_CASE string to CamelCase.
    *

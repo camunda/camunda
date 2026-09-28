@@ -89,13 +89,20 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
+
+  // A factory per value type rather than one method constructing every type: the JIT inlines each
+  // constructor a switch reaches, which made that one method a very large compilation.
+  private static final List<Supplier<UnifiedRecordValue>> FACTORIES =
+      Arrays.stream(ValueType.values()).map(UnifiedRecordValue::factory).toList();
 
   /**
    * Creates a new {@link UnifiedRecordValue}.
@@ -156,85 +163,90 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
   }
 
   public static UnifiedRecordValue fromValueType(final ValueType valueType) {
+    final var factory = FACTORIES.get(valueType.ordinal());
+    return factory == null ? null : factory.get();
+  }
+
+  private static Supplier<UnifiedRecordValue> factory(final ValueType valueType) {
     return switch (valueType) {
-      case ValueType.DEPLOYMENT -> new DeploymentRecord();
-      case ValueType.JOB -> new JobRecord();
-      case ValueType.PROCESS_INSTANCE -> new ProcessInstanceRecord();
-      case ValueType.MESSAGE -> new MessageRecord();
-      case ValueType.MESSAGE_BATCH -> new MessageBatchRecord();
-      case ValueType.PROCESS_MESSAGE_SUBSCRIPTION -> new ProcessMessageSubscriptionRecord();
-      case ValueType.JOB_BATCH -> new JobBatchRecord();
-      case ValueType.INCIDENT -> new IncidentRecord();
-      case ValueType.TIMER -> new TimerRecord();
-      case ValueType.MESSAGE_START_EVENT_SUBSCRIPTION -> new MessageStartEventSubscriptionRecord();
+      case ValueType.DEPLOYMENT -> DeploymentRecord::new;
+      case ValueType.JOB -> JobRecord::new;
+      case ValueType.PROCESS_INSTANCE -> ProcessInstanceRecord::new;
+      case ValueType.MESSAGE -> MessageRecord::new;
+      case ValueType.MESSAGE_BATCH -> MessageBatchRecord::new;
+      case ValueType.PROCESS_MESSAGE_SUBSCRIPTION -> ProcessMessageSubscriptionRecord::new;
+      case ValueType.JOB_BATCH -> JobBatchRecord::new;
+      case ValueType.INCIDENT -> IncidentRecord::new;
+      case ValueType.TIMER -> TimerRecord::new;
+      case ValueType.MESSAGE_START_EVENT_SUBSCRIPTION -> MessageStartEventSubscriptionRecord::new;
       case ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST ->
-          new MessageStartProcessInstanceRequestRecord();
+          MessageStartProcessInstanceRequestRecord::new;
       case ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE ->
-          new MessageStartCorrelationKeyLockReleaseRecord();
-      case ValueType.VARIABLE -> new VariableRecord();
-      case ValueType.VARIABLE_DOCUMENT -> new VariableDocumentRecord();
-      case ValueType.CLUSTER_VARIABLE -> new ClusterVariableRecord();
-      case ValueType.PROCESS_INSTANCE_CREATION -> new ProcessInstanceCreationRecord();
-      case ValueType.ERROR -> new ErrorRecord();
-      case ValueType.PROCESS_INSTANCE_RESULT -> new ProcessInstanceResultRecord();
-      case ValueType.PROCESS -> new ProcessRecord();
-      case ValueType.DEPLOYMENT_DISTRIBUTION -> new DeploymentDistributionRecord();
-      case ValueType.PROCESS_EVENT -> new ProcessEventRecord();
-      case ValueType.DECISION -> new DecisionRecord();
-      case ValueType.DECISION_REQUIREMENTS -> new DecisionRequirementsRecord();
-      case ValueType.DECISION_EVALUATION -> new DecisionEvaluationRecord();
-      case ValueType.PROCESS_INSTANCE_MODIFICATION -> new ProcessInstanceModificationRecord();
-      case ValueType.ESCALATION -> new EscalationRecord();
-      case ValueType.SIGNAL_SUBSCRIPTION -> new SignalSubscriptionRecord();
-      case ValueType.SIGNAL -> new SignalRecord();
-      case ValueType.COMMAND_DISTRIBUTION -> new CommandDistributionRecord();
-      case ValueType.PROCESS_INSTANCE_BATCH -> new ProcessInstanceBatchRecord();
-      case ValueType.BUFFERED_COMMAND -> new BufferedCommandRecord();
-      case ValueType.PROCESS_INSTANCE_BUSINESS_ID -> new ProcessInstanceBusinessIdRecord();
-      case ValueType.RESOURCE_DELETION -> new ResourceDeletionRecord();
-      case ValueType.FORM -> new FormRecord();
-      case ValueType.USER_TASK -> new UserTaskRecord();
-      case ValueType.PROCESS_INSTANCE_MIGRATION -> new ProcessInstanceMigrationRecord();
-      case ValueType.BATCH_OPERATION_EXECUTION -> new BatchOperationExecutionRecord();
-      case ValueType.BATCH_OPERATION_CHUNK -> new BatchOperationChunkRecord();
-      case ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION -> new AdHocSubProcessInstructionRecord();
-      case ValueType.COMPENSATION_SUBSCRIPTION -> new CompensationSubscriptionRecord();
-      case ValueType.MESSAGE_CORRELATION -> new MessageCorrelationRecord();
-      case ValueType.USER -> new UserRecord();
-      case ValueType.CLOCK -> new ClockRecord();
-      case ValueType.AUTHORIZATION -> new AuthorizationRecord();
-      case ValueType.ROLE -> new RoleRecord();
-      case ValueType.TENANT -> new TenantRecord();
-      case ValueType.RESOURCE_REEXPORT -> new ResourceReexportRecord();
-      case ValueType.SCALE -> new ScaleRecord();
-      case ValueType.GROUP -> new GroupRecord();
-      case ValueType.MAPPING_RULE -> new MappingRuleRecord();
-      case ValueType.IDENTITY_SETUP -> new IdentitySetupRecord();
-      case ValueType.RESOURCE -> new ResourceRecord();
-      case ValueType.BATCH_OPERATION_CREATION -> new BatchOperationCreationRecord();
+          MessageStartCorrelationKeyLockReleaseRecord::new;
+      case ValueType.VARIABLE -> VariableRecord::new;
+      case ValueType.VARIABLE_DOCUMENT -> VariableDocumentRecord::new;
+      case ValueType.CLUSTER_VARIABLE -> ClusterVariableRecord::new;
+      case ValueType.PROCESS_INSTANCE_CREATION -> ProcessInstanceCreationRecord::new;
+      case ValueType.ERROR -> ErrorRecord::new;
+      case ValueType.PROCESS_INSTANCE_RESULT -> ProcessInstanceResultRecord::new;
+      case ValueType.PROCESS -> ProcessRecord::new;
+      case ValueType.DEPLOYMENT_DISTRIBUTION -> DeploymentDistributionRecord::new;
+      case ValueType.PROCESS_EVENT -> ProcessEventRecord::new;
+      case ValueType.DECISION -> DecisionRecord::new;
+      case ValueType.DECISION_REQUIREMENTS -> DecisionRequirementsRecord::new;
+      case ValueType.DECISION_EVALUATION -> DecisionEvaluationRecord::new;
+      case ValueType.PROCESS_INSTANCE_MODIFICATION -> ProcessInstanceModificationRecord::new;
+      case ValueType.ESCALATION -> EscalationRecord::new;
+      case ValueType.SIGNAL_SUBSCRIPTION -> SignalSubscriptionRecord::new;
+      case ValueType.SIGNAL -> SignalRecord::new;
+      case ValueType.COMMAND_DISTRIBUTION -> CommandDistributionRecord::new;
+      case ValueType.PROCESS_INSTANCE_BATCH -> ProcessInstanceBatchRecord::new;
+      case ValueType.BUFFERED_COMMAND -> BufferedCommandRecord::new;
+      case ValueType.PROCESS_INSTANCE_BUSINESS_ID -> ProcessInstanceBusinessIdRecord::new;
+      case ValueType.RESOURCE_DELETION -> ResourceDeletionRecord::new;
+      case ValueType.FORM -> FormRecord::new;
+      case ValueType.USER_TASK -> UserTaskRecord::new;
+      case ValueType.PROCESS_INSTANCE_MIGRATION -> ProcessInstanceMigrationRecord::new;
+      case ValueType.BATCH_OPERATION_EXECUTION -> BatchOperationExecutionRecord::new;
+      case ValueType.BATCH_OPERATION_CHUNK -> BatchOperationChunkRecord::new;
+      case ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION -> AdHocSubProcessInstructionRecord::new;
+      case ValueType.COMPENSATION_SUBSCRIPTION -> CompensationSubscriptionRecord::new;
+      case ValueType.MESSAGE_CORRELATION -> MessageCorrelationRecord::new;
+      case ValueType.USER -> UserRecord::new;
+      case ValueType.CLOCK -> ClockRecord::new;
+      case ValueType.AUTHORIZATION -> AuthorizationRecord::new;
+      case ValueType.ROLE -> RoleRecord::new;
+      case ValueType.TENANT -> TenantRecord::new;
+      case ValueType.RESOURCE_REEXPORT -> ResourceReexportRecord::new;
+      case ValueType.SCALE -> ScaleRecord::new;
+      case ValueType.GROUP -> GroupRecord::new;
+      case ValueType.MAPPING_RULE -> MappingRuleRecord::new;
+      case ValueType.IDENTITY_SETUP -> IdentitySetupRecord::new;
+      case ValueType.RESOURCE -> ResourceRecord::new;
+      case ValueType.BATCH_OPERATION_CREATION -> BatchOperationCreationRecord::new;
       case ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT ->
-          new BatchOperationLifecycleManagementRecord();
+          BatchOperationLifecycleManagementRecord::new;
       case ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE ->
-          new BatchOperationPartitionLifecycleRecord();
-      case ValueType.ASYNC_REQUEST -> new AsyncRequestRecord();
-      case ValueType.USAGE_METRIC -> new UsageMetricRecord();
-      case ValueType.HISTORY_DELETION -> new HistoryDeletionRecord();
-      case ValueType.CONDITIONAL_SUBSCRIPTION -> new ConditionalSubscriptionRecord();
-      case ValueType.CONDITIONAL_EVALUATION -> new ConditionalEvaluationRecord();
-      case ValueType.EXPRESSION -> new ExpressionRecord();
-      case ValueType.MULTI_INSTANCE -> new MultiInstanceRecord();
-      case ValueType.RUNTIME_INSTRUCTION -> new RuntimeInstructionRecord();
-      case ValueType.BATCH_OPERATION_INITIALIZATION -> new BatchOperationInitializationRecord();
-      case ValueType.CHECKPOINT -> new CheckpointRecord();
-      case ValueType.MESSAGE_SUBSCRIPTION -> new MessageSubscriptionRecord();
-      case ValueType.GLOBAL_LISTENER_BATCH -> new GlobalListenerBatchRecord();
-      case ValueType.JOB_METRICS_BATCH -> new JobMetricsBatchRecord();
-      case ValueType.GLOBAL_LISTENER -> new GlobalListenerRecord();
-      case ValueType.AGENT_HISTORY -> new AgentHistoryRecord();
-      case ValueType.AGENT_INSTANCE -> new AgentInstanceRecord();
-      case ValueType.AGENT_DEFINITION -> new AgentDefinitionRecord();
-      case ValueType.AGENT_HISTORY_BATCH -> new AgentHistoryBatchRecord();
-      case ValueType.SECRET_REFERENCE -> new SecretReferenceRecord();
+          BatchOperationPartitionLifecycleRecord::new;
+      case ValueType.ASYNC_REQUEST -> AsyncRequestRecord::new;
+      case ValueType.USAGE_METRIC -> UsageMetricRecord::new;
+      case ValueType.HISTORY_DELETION -> HistoryDeletionRecord::new;
+      case ValueType.CONDITIONAL_SUBSCRIPTION -> ConditionalSubscriptionRecord::new;
+      case ValueType.CONDITIONAL_EVALUATION -> ConditionalEvaluationRecord::new;
+      case ValueType.EXPRESSION -> ExpressionRecord::new;
+      case ValueType.MULTI_INSTANCE -> MultiInstanceRecord::new;
+      case ValueType.RUNTIME_INSTRUCTION -> RuntimeInstructionRecord::new;
+      case ValueType.BATCH_OPERATION_INITIALIZATION -> BatchOperationInitializationRecord::new;
+      case ValueType.CHECKPOINT -> CheckpointRecord::new;
+      case ValueType.MESSAGE_SUBSCRIPTION -> MessageSubscriptionRecord::new;
+      case ValueType.GLOBAL_LISTENER_BATCH -> GlobalListenerBatchRecord::new;
+      case ValueType.JOB_METRICS_BATCH -> JobMetricsBatchRecord::new;
+      case ValueType.GLOBAL_LISTENER -> GlobalListenerRecord::new;
+      case ValueType.AGENT_HISTORY -> AgentHistoryRecord::new;
+      case ValueType.AGENT_INSTANCE -> AgentInstanceRecord::new;
+      case ValueType.AGENT_DEFINITION -> AgentDefinitionRecord::new;
+      case ValueType.AGENT_HISTORY_BATCH -> AgentHistoryBatchRecord::new;
+      case ValueType.SECRET_REFERENCE -> SecretReferenceRecord::new;
       case ValueType.SBE_UNKNOWN -> null;
       case ValueType.NULL_VAL -> null;
     };
