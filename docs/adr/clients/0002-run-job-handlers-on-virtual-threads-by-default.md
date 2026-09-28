@@ -192,5 +192,5 @@ but it isn't needed for the default case any more.
 - camunda/camunda#41070, #42408 (virtual-threads Spring Boot starter module)
 - [JEP 444: Virtual Threads](https://openjdk.org/jeps/444),
   [JEP 491: Synchronize Virtual Threads without Pinning](https://openjdk.org/jeps/491)
-- [Guidance: Using Virtual Threads at Camunda](../../virtual_threads.md)
+- [Guidance: Using Virtual Threads at Camunda](https://github.com/camunda/camunda/blob/main/docs/virtual_threads.md)
 
