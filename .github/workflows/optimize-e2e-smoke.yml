@@ -135,15 +135,19 @@ jobs:
       - name: Wait for backend to start
         run: ./.github/optimize/scripts/wait-for.sh http://localhost:8090/api/readyz
 
-      # Playwright starts the frontend dev server, seeds the data and waits for the import itself.
+      # Playwright serves the frontend build, seeds the data and waits for the import itself.
       - name: Run E2E tests
         if: ${{ !inputs.update-snapshots }}
         working-directory: ./optimize/client
+        env:
+          FORCE_COLOR: '1'
         run: yarn e2e
 
       - name: Update visual baselines
         if: ${{ inputs.update-snapshots }}
         working-directory: ./optimize/client
+        env:
+          FORCE_COLOR: '1'
         run: yarn e2e:visual:update
 
       - name: Upload visual baselines
