@@ -6,6 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {config as loadDotenv} from 'dotenv';
+
+// Loaded here rather than in the config, because static imports run before the config body.
+if (!process.env.CI) {
+  loadDotenv({quiet: true});
+}
+
 export const env = {
   optimizeUrl: process.env.E2E_OPTIMIZE_URL ?? 'http://localhost:3000',
   camundaUrl: process.env.E2E_CAMUNDA_URL ?? 'http://localhost:8080',
