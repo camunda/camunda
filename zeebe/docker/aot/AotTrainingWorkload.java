@@ -18,8 +18,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.Writer;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Map;
@@ -83,6 +85,7 @@ public final class AotTrainingWorkload {
             "AOT training: completed %d process instances in %ds%n",
             instances, TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start));
       }
+      sendRequestShapes();
       elasticsearch.awaitExportDrained();
     } finally {
       elasticsearch.stop();
@@ -108,6 +111,39 @@ public final class AotTrainingWorkload {
         .withResult()
         .send()
         .toCompletableFuture();
+  }
+
+  /**
+   * Sends JSON requests framed in each way a client may frame them, because the client above only
+   * ever sends a body with a Content-Length. Spring's request mapping checks the framing of every
+   * request, and code compiled from a profile that never saw the other framings is thrown away the
+   * first time a production client uses one of them.
+   */
+  private static void sendRequestShapes() throws IOException {
+    final String request =
+        "POST /v2/process-instances/search HTTP/1.1\r\n"
+            + "Host: localhost\r\nContent-Type: application/json\r\nConnection: close\r\n";
+    final String[] shapes = {
+      request + "Transfer-Encoding: chunked\r\n\r\n2\r\n{}\r\n0\r\n\r\n",
+      request + "Content-Length: 0\r\n\r\n",
+      request + "\r\n",
+    };
+    for (int i = 0; i < 100; i++) {
+      for (final String shape : shapes) {
+        try (final var socket = new Socket(InetAddress.getLoopbackAddress(), 8080)) {
+          socket.getOutputStream().write(shape.getBytes(UTF_8));
+          final var response =
+              new BufferedReader(new InputStreamReader(socket.getInputStream(), UTF_8));
+          final String status = response.readLine();
+          if (status == null || !status.startsWith("HTTP/1.1 200")) {
+            throw new IllegalStateException(
+                "Unexpected response to a framed search request: " + status);
+          }
+          response.transferTo(Writer.nullWriter());
+        }
+      }
+    }
+    System.out.printf("AOT training: sent %d framed requests%n", 100 * shapes.length);
   }
 
   private static void createWithRetry(final CamundaClient client, final String key)
