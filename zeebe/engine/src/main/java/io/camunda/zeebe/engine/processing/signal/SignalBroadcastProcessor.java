@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.exception.ForbiddenException;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -71,7 +72,8 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
       final CommandDistributionBehavior commandDistributionBehavior,
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
-      final VariableBehavior variableBehavior) {
+      final VariableBehavior variableBehavior,
+      final StorageOrdinalProvider storageOrdinalProvider) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
@@ -91,7 +93,8 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
             writers,
             processState,
             eventTriggerBehavior,
-            stateBehavior);
+            stateBehavior,
+            storageOrdinalProvider);
   }
 
   @Override

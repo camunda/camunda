@@ -52,6 +52,24 @@ public final class TimerInstanceStateTest {
   }
 
   @Test
+  public void shouldPersistStorageOrdinal() {
+    // given
+    createElementInstance(1);
+    final TimerInstance timer = new TimerInstance();
+    timer.setElementInstanceKey(1);
+    timer.setKey(2);
+    timer.setDueDate(1000L);
+    timer.setStorageOrdinal(1234);
+    state.store(timer);
+
+    // when
+    final TimerInstance readTimer = state.get(1, 2);
+
+    // then
+    Assertions.assertThat(readTimer.getStorageOrdinal()).isEqualTo(1234);
+  }
+
+  @Test
   public void shouldRemoveTimer() {
     // given
     createTimerInstance(1, 0, 1000L);

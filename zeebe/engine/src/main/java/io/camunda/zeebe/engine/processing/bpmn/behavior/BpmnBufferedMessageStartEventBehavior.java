@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior;
 import io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior.MessageData;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -63,6 +64,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
       final KeyGenerator keyGenerator,
       final EventTriggerBehavior eventTriggerBehavior,
       final BpmnStateBehavior stateBehavior,
+      final StorageOrdinalProvider storageOrdinalProvider,
       final Writers writers,
       final SubscriptionCommandSender commandSender,
       final RoutingInfo routingInfo,
@@ -88,7 +90,8 @@ public final class BpmnBufferedMessageStartEventBehavior {
             writers,
             processState,
             eventTriggerBehavior,
-            stateBehavior);
+            stateBehavior,
+            storageOrdinalProvider);
 
     // Reuse the live-publish correlation logic for the buffered pick-up so a buffered message whose
     // businessId belongs to another partition is re-routed through the cross-partition handshake

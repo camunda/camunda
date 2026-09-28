@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSignal;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.storageordinals.TimerStorageOrdinals;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -463,6 +464,7 @@ public final class CatchEventBehavior {
                   event.getId(),
                   context.getTenantId(),
                   context.getRootProcessInstanceKey(),
+                  context.getStorageOrdinal(),
                   BufferUtil.bufferAsString(context.getBpmnProcessId()),
                   context.getBpmnElementType(),
                   timer);
@@ -476,6 +478,7 @@ public final class CatchEventBehavior {
       final DirectBuffer handlerNodeId,
       final String tenantId,
       final long rootProcessInstanceKey,
+      final int storageOrdinal,
       final String bpmnProcessId,
       final BpmnElementType elementType,
       final Timer timer) {
@@ -490,6 +493,7 @@ public final class CatchEventBehavior {
         .setProcessDefinitionKey(processDefinitionKey)
         .setTenantId(tenantId)
         .setRootProcessInstanceKey(rootProcessInstanceKey)
+        .setStorageOrdinal(storageOrdinal)
         .setBpmnProcessId(bpmnProcessId)
         .setElementType(elementType);
 
@@ -524,6 +528,7 @@ public final class CatchEventBehavior {
         .setTenantId(context.getTenantId())
         .setProcessInstanceKey(context.getProcessInstanceKey())
         .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
+        .setStorageOrdinal(context.getStorageOrdinal())
         .setBpmnElementType(event.getElementType());
 
     final var subscriptionKey = keyGenerator.nextKey();
@@ -569,6 +574,7 @@ public final class CatchEventBehavior {
         .setVariableEvents(conditional.getVariableEvents())
         .setTenantId(context.getTenantId())
         .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
+        .setStorageOrdinal(context.getStorageOrdinal())
         .setElementType(event.getElementType());
 
     final var subscriptionKey = keyGenerator.nextKey();
@@ -645,6 +651,7 @@ public final class CatchEventBehavior {
         .setProcessDefinitionKey(timer.getProcessDefinitionKey())
         .setTenantId(timer.getTenantId())
         .setRootProcessInstanceKey(timer.getRootProcessInstanceKey())
+        .setStorageOrdinal(TimerStorageOrdinals.of(timer))
         .setBpmnProcessId(timer.getBpmnProcessId())
         .setElementType(timer.getElementType());
 

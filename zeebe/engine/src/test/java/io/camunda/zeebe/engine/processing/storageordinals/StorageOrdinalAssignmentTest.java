@@ -16,20 +16,30 @@ import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProce
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
+import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
+import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.Duration;
 import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
@@ -78,6 +88,189 @@ public final class StorageOrdinalAssignmentTest {
         .isNotEmpty()
         .extracting(record -> record.getValue().getStorageOrdinal())
         .containsOnly(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToInstanceStartedByMessageStartEvent() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("message-start-process")
+                .startEvent()
+                .message("ordinal-start-message")
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    engine.message().withName("ordinal-start-message").withCorrelationKey("").publish();
+
+    // then
+    final long processInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withBpmnProcessId("message-start-process")
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .isNotEmpty()
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+
+    assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .withInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
+
+    assertProcessEventTriggeringCarriesOrdinal(processInstanceKey);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToInstanceStartedByTimerStartEvent() {
+    // given
+    final var deployedProcess =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("timer-start-process")
+                    .startEvent()
+                    .timerWithDuration("PT10S")
+                    .endEvent()
+                    .done())
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .get(0);
+    RecordingExporter.timerRecords(TimerIntent.CREATED)
+        .withProcessDefinitionKey(deployedProcess.getProcessDefinitionKey())
+        .getFirst();
+
+    // when
+    engine.increaseTime(Duration.ofSeconds(11));
+
+    // then
+    final long processInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withBpmnProcessId("timer-start-process")
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .isNotEmpty()
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+
+    assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .withInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
+
+    assertProcessEventTriggeringCarriesOrdinal(processInstanceKey);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToInstanceStartedBySignalStartEvent() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("signal-start-process")
+                .startEvent()
+                .signal("ordinal-start-signal")
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    engine.signal().withSignalName("ordinal-start-signal").broadcast();
+
+    // then
+    final long processInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withBpmnProcessId("signal-start-process")
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .isNotEmpty()
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+
+    assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .withInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
+
+    assertProcessEventTriggeringCarriesOrdinal(processInstanceKey);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToInstanceStartedByConditionalStartEvent() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("conditional-start-process")
+                .startEvent("conditional-start")
+                .condition(c -> c.condition("=x > 10"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    engine.conditionalEvaluation().withVariable("x", 11).evaluate();
+
+    // then
+    final long processInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withBpmnProcessId("conditional-start-process")
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .isNotEmpty()
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+
+    assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .withInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
+
+    assertProcessEventTriggeringCarriesOrdinal(processInstanceKey);
   }
 
   @Test
@@ -158,6 +351,367 @@ public final class StorageOrdinalAssignmentTest {
   }
 
   @Test
+  public void shouldAssignConfiguredOrdinalToUserTaskLifecycleAndListenerRecords() {
+    // given: a user task with a completing task listener, so completion runs through the
+    // intermediate-state path and creates a listener job
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("user-task-lifecycle-process")
+                .startEvent()
+                .userTask("user-task")
+                .zeebeUserTask()
+                .zeebeTaskListener(l -> l.completing().type("ordinal-task-listener"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("user-task-lifecycle-process").create();
+    final long userTaskKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getValue()
+            .getUserTaskKey();
+
+    // when
+    engine.userTask().withKey(userTaskKey).complete();
+    engine.job().ofInstance(processInstanceKey).withType("ordinal-task-listener").complete();
+
+    // then: the task listener job carries the ordinal
+    final var listenerJobCreated =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("ordinal-task-listener")
+            .getFirst();
+    assertThat(listenerJobCreated.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+
+    // and: every user task lifecycle record up to COMPLETED carries the ordinal
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.COMPLETED))
+        .isNotEmpty()
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToSignalSubscriptionRecords() {
+    // given: an instance waiting at an intermediate signal catch event
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("signal-subscription-process")
+                .startEvent()
+                .intermediateCatchEvent("signal-catch", c -> c.signal("ordinal-signal"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("signal-subscription-process").create();
+
+    // then: the subscription opened for the catch event carries the ordinal
+    final var subscriptionCreated =
+        RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.CREATED)
+            .withSignalName("ordinal-signal")
+            .getFirst();
+    assertThat(subscriptionCreated.getValue().getProcessInstanceKey())
+        .isEqualTo(processInstanceKey);
+    assertThat(subscriptionCreated.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+
+    // when: the signal is broadcast
+    engine.signal().withSignalName("ordinal-signal").broadcast();
+
+    // then: the DELETED event, appended from the stored subscription, inherits the ordinal
+    final var subscriptionDeleted =
+        RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.DELETED)
+            .withSignalName("ordinal-signal")
+            .getFirst();
+    assertThat(subscriptionDeleted.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToMessageSubscriptionRecords() {
+    // given: an instance waiting at an intermediate message catch event
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("message-subscription-process")
+                .startEvent()
+                .intermediateCatchEvent("message-catch")
+                .message(m -> m.name("ordinal-catch-message").zeebeCorrelationKeyExpression("key"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId("message-subscription-process")
+            .withVariable("key", "correlation-key-2")
+            .create();
+
+    // then: both the process-side and the message-partition-side subscriptions carry the ordinal
+    assertThat(
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
+
+    // when: the message is correlated
+    engine
+        .message()
+        .withName("ordinal-catch-message")
+        .withCorrelationKey("correlation-key-2")
+        .publish();
+
+    // then: every subscription EVENT up to correlation carries the ordinal on both sides; the
+    // inter-partition CREATE/CORRELATE commands are excluded, commands are not exported
+    assertThat(
+            RecordingExporter.processMessageSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("ordinal-catch-message")
+                .limit(r -> r.getIntent() == ProcessMessageSubscriptionIntent.CORRELATED)
+                .filter(r -> r.getRecordType() == RecordType.EVENT)
+                .asList())
+        .isNotEmpty()
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("ordinal-catch-message")
+                .limit(r -> r.getIntent() == MessageSubscriptionIntent.CORRELATED)
+                .filter(r -> r.getRecordType() == RecordType.EVENT)
+                .asList())
+        .isNotEmpty()
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToConditionalSubscriptionRecords() {
+    // given: a conditional boundary event whose condition is already fulfilled at subscription
+    // time, so the subscription is created and immediately triggered
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("conditional-subscription-process")
+                .startEvent()
+                .userTask("wait-task")
+                .zeebeUserTask()
+                .boundaryEvent("conditional-boundary")
+                .cancelActivity(true)
+                .condition(c -> c.condition("=x > 10").zeebeVariableEvents("create"))
+                .endEvent()
+                .moveToActivity("wait-task")
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId("conditional-subscription-process")
+            .withVariable("x", 11)
+            .create();
+
+    // then: the subscription CREATED event carries the ordinal, and the TRIGGERED event, appended
+    // from the TRIGGER command built off the subscription record, inherits it
+    final var subscriptionCreated =
+        RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(subscriptionCreated.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+
+    final var subscriptionTriggered =
+        RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.TRIGGERED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(subscriptionTriggered.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToSignalTriggeredEventSubProcessRecords() {
+    // given: an instance waiting in a user task, with an interrupting event sub-process started by
+    // a signal
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("signal-event-sub-process")
+                .eventSubProcess(
+                    "signal-event-sub",
+                    s ->
+                        s.startEvent("signal-event-start")
+                            .interrupting(true)
+                            .signal("ordinal-event-sub-signal")
+                            .endEvent())
+                .startEvent()
+                .userTask("wait-task")
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("signal-event-sub-process").create();
+    RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.CREATED)
+        .withSignalName("ordinal-event-sub-signal")
+        .getFirst();
+
+    // when
+    engine.signal().withSignalName("ordinal-event-sub-signal").broadcast();
+
+    // then: the event sub-process records, the interrupted task and the completing process all
+    // carry the ordinal
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .isNotEmpty()
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("signal-event-sub")
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
+
+    assertProcessEventTriggeringCarriesOrdinal(processInstanceKey);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToConditionalTriggeredEventSubProcessRecords() {
+    // given: an interrupting event sub-process whose conditional start is already fulfilled when
+    // the instance is created, so it triggers as soon as the subscription opens
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("conditional-event-sub-process")
+                .eventSubProcess(
+                    "conditional-event-sub",
+                    s ->
+                        s.startEvent("conditional-event-start")
+                            .interrupting(true)
+                            .condition(c -> c.condition("=x > 10"))
+                            .endEvent())
+                .startEvent()
+                .userTask("wait-task")
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId("conditional-event-sub-process")
+            .withVariable("x", 11)
+            .create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .isNotEmpty()
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("conditional-event-sub")
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
+
+    assertProcessEventTriggeringCarriesOrdinal(processInstanceKey);
+  }
+
+  @Test
+  public void shouldKeepDeploymentScopedStartEventSubscriptionsOnMainIndex() {
+    // given: a definition with a signal start event and a conditional start event
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("start-subscriptions-process")
+                    .startEvent("signal-start")
+                    .signal("ordinal-definition-signal")
+                    .endEvent()
+                    .moveToProcess("start-subscriptions-process")
+                    .startEvent("conditional-start")
+                    .condition(c -> c.condition("=x > 10"))
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long processDefinitionKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+
+    // then: the start-event subscriptions opened for the definition carry no instance ordinal
+    final var signalStartSubscription =
+        RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.CREATED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .withCatchEventId("signal-start")
+            .getFirst()
+            .getValue();
+    assertThat(signalStartSubscription.getCatchEventInstanceKey()).isEqualTo(-1L);
+    assertThat(signalStartSubscription.getStorageOrdinal()).isZero();
+
+    final var conditionalStartSubscription =
+        RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.CREATED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .withCatchEventId("conditional-start")
+            .getFirst()
+            .getValue();
+    assertThat(conditionalStartSubscription.getProcessInstanceKey()).isEqualTo(-1L);
+    assertThat(conditionalStartSubscription.getStorageOrdinal()).isZero();
+
+    // when: a new version replaces the definition, the old subscriptions are closed
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("start-subscriptions-process")
+                .startEvent()
+                .endEvent()
+                .done())
+        .deploy();
+
+    // then: the DELETED events, appended from the stored subscriptions, keep ordinal 0 as well
+    assertThat(
+            RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.DELETED)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isZero();
+    assertThat(
+            RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.DELETED)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isZero();
+  }
+
+  @Test
   public void shouldAssignConfiguredOrdinalToProcessEventRecords() {
     // given
     engine
@@ -190,6 +744,525 @@ public final class StorageOrdinalAssignmentTest {
     final var processEventTriggering = records.get(records.size() - 1);
     assertThat(((ProcessEventRecordValue) processEventTriggering.getValue()).getStorageOrdinal())
         .isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToProcessEventTriggeredByJobCompletion() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("job-completion-event-process")
+                .startEvent()
+                .serviceTask("service-task", t -> t.zeebeJobType("ordinal-completing-job"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("job-completion-event-process").create();
+
+    // when
+    engine
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("ordinal-completing-job")
+        .withVariable("result", "done")
+        .complete();
+
+    // then
+    assertProcessEventTriggeringCarriesOrdinal(processInstanceKey);
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .isNotEmpty()
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToProcessEventTriggeredByUserTaskCompletion() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("user-task-completion-event-process")
+                .startEvent()
+                .userTask("user-task")
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("user-task-completion-event-process").create();
+    final long userTaskKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getValue()
+            .getUserTaskKey();
+
+    // when
+    engine.userTask().withKey(userTaskKey).withVariable("result", "done").complete();
+
+    // then
+    assertProcessEventTriggeringCarriesOrdinal(processInstanceKey);
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .isNotEmpty()
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToNonInterruptingBoundaryEventRecords() {
+    // given: a user task with a non-interrupting signal boundary event, so the trigger activates
+    // the boundary event next to the still-running task
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("non-interrupting-boundary-process")
+                .startEvent()
+                .userTask("wait-task")
+                .zeebeUserTask()
+                .boundaryEvent("signal-boundary")
+                .cancelActivity(false)
+                .signal("ordinal-boundary-signal")
+                .endEvent("boundary-end")
+                .moveToActivity("wait-task")
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("non-interrupting-boundary-process").create();
+    RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.CREATED)
+        .withSignalName("ordinal-boundary-signal")
+        .await();
+
+    // when
+    engine.signal().withSignalName("ordinal-boundary-signal").broadcast();
+
+    // then
+    assertProcessEventTriggeringCarriesOrdinal(processInstanceKey);
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("boundary-end")
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(
+                    r ->
+                        "boundary-end".equals(r.getValue().getElementId())
+                            && r.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .isNotEmpty()
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToCaughtErrorEventRecords() {
+    // given: a service task with an error boundary event
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("caught-error-process")
+                .startEvent()
+                .serviceTask("service-task", t -> t.zeebeJobType("ordinal-erroring-job"))
+                .boundaryEvent("error-boundary", b -> b.error("ordinal-error"))
+                .endEvent("error-end")
+                .moveToActivity("service-task")
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("caught-error-process").create();
+
+    // when
+    engine
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("ordinal-erroring-job")
+        .withErrorCode("ordinal-error")
+        .throwError();
+
+    // then
+    assertProcessEventTriggeringCarriesOrdinal(processInstanceKey);
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .isNotEmpty()
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToTimerCatchEventRecords() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("timer-catch-process")
+                .startEvent()
+                .intermediateCatchEvent("timer-catch", c -> c.timerWithDuration("PT10S"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("timer-catch-process").create();
+    RecordingExporter.timerRecords(TimerIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    engine.increaseTime(Duration.ofSeconds(11));
+
+    // then
+    assertProcessEventTriggeringCarriesOrdinal(processInstanceKey);
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .isNotEmpty()
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToTimerRecordsOfACatchEvent() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("timer-records-process")
+                .startEvent()
+                .intermediateCatchEvent("timer-catch", c -> c.timerWithDuration("PT10S"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("timer-records-process").create();
+    final var timerCreated =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(timerCreated.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+
+    // when
+    engine.increaseTime(Duration.ofSeconds(11));
+
+    // then: the TRIGGER command rebuilt from state and the TRIGGERED event carry the ordinal
+    assertThat(
+            RecordingExporter.timerRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == TimerIntent.TRIGGERED))
+        .isNotEmpty()
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToCanceledTimerRecords() {
+    // given: a user task with a timer boundary event that is canceled when the task completes
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("timer-cancel-process")
+                .startEvent()
+                .userTask("wait-task")
+                .zeebeUserTask()
+                .boundaryEvent("timer-boundary", b -> b.timerWithDuration("PT1H"))
+                .endEvent("timer-end")
+                .moveToActivity("wait-task")
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("timer-cancel-process").create();
+    final long userTaskKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getValue()
+            .getUserTaskKey();
+
+    // when
+    engine.userTask().withKey(userTaskKey).complete();
+
+    // then: the CANCELED event rebuilt from state carries the ordinal
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.CANCELED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToMigratedTimerRecords() {
+    // given: an instance waiting in a task with a timer boundary event, and a target definition
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("timer-migration-source-process")
+                    .startEvent()
+                    .userTask("A")
+                    .boundaryEvent("boundary1")
+                    .timerWithDuration("PT1M")
+                    .endEvent()
+                    .moveToActivity("A")
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess("timer-migration-target-process")
+                    .startEvent()
+                    .userTask("B")
+                    .boundaryEvent("boundary2")
+                    .timerWithDuration("PT10M")
+                    .endEvent()
+                    .moveToActivity("B")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        deployment.getValue().getProcessesMetadata().stream()
+            .filter(p -> "timer-migration-target-process".equals(p.getBpmnProcessId()))
+            .findFirst()
+            .orElseThrow()
+            .getProcessDefinitionKey();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("timer-migration-source-process").create();
+    RecordingExporter.timerRecords(TimerIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .addMappingInstruction("boundary1", "boundary2")
+        .migrate();
+    engine.increaseTime(Duration.ofMinutes(2));
+
+    // then: the MIGRATED record rebuilt from state and the TRIGGERED record that follows carry the
+    // ordinal
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldRestoreConfiguredOrdinalFromStateWhenTriggerCommandCarriesNone() {
+    // given: a timer whose ordinal is persisted in state
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("timer-trigger-restore-process")
+                .startEvent()
+                .intermediateCatchEvent("timer-catch", c -> c.timerWithDuration("PT1H"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("timer-trigger-restore-process").create();
+    final var timerCreated =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    final var created = timerCreated.getValue();
+
+    // when: a TRIGGER command is written whose value carries no ordinal, as a command written
+    // before
+    // the ordinal existed would
+    final var trigger =
+        new TimerRecord()
+            .setElementInstanceKey(created.getElementInstanceKey())
+            .setProcessInstanceKey(created.getProcessInstanceKey())
+            .setProcessDefinitionKey(created.getProcessDefinitionKey())
+            .setTargetElementId(BufferUtil.wrapString(created.getTargetElementId()))
+            .setDueDate(created.getDueDate())
+            .setRepetitions(created.getRepetitions())
+            .setTenantId(created.getTenantId())
+            .setRootProcessInstanceKey(created.getRootProcessInstanceKey())
+            .setBpmnProcessId(created.getBpmnProcessId())
+            .setElementType(created.getElementType());
+    engine.writeRecords(
+        RecordToWrite.command().timer(TimerIntent.TRIGGER, trigger).key(timerCreated.getKey()));
+
+    // then: TRIGGERED carries the ordinal restored from state, not the command's 0
+    assertThat(trigger.getStorageOrdinal()).isZero();
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldRestoreConfiguredOrdinalFromStateWhenCancelCommandCarriesNone() {
+    // given: a timer whose ordinal is persisted in state
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("timer-cancel-restore-process")
+                .startEvent()
+                .intermediateCatchEvent("timer-catch", c -> c.timerWithDuration("PT1H"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("timer-cancel-restore-process").create();
+    final var timerCreated =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    final var created = timerCreated.getValue();
+
+    // when: a CANCEL command is written whose value carries no ordinal, as a command written before
+    // the ordinal existed would
+    final var cancel =
+        new TimerRecord()
+            .setElementInstanceKey(created.getElementInstanceKey())
+            .setProcessInstanceKey(created.getProcessInstanceKey())
+            .setProcessDefinitionKey(created.getProcessDefinitionKey())
+            .setTargetElementId(BufferUtil.wrapString(created.getTargetElementId()))
+            .setDueDate(created.getDueDate())
+            .setRepetitions(created.getRepetitions())
+            .setTenantId(created.getTenantId())
+            .setRootProcessInstanceKey(created.getRootProcessInstanceKey())
+            .setBpmnProcessId(created.getBpmnProcessId())
+            .setElementType(created.getElementType());
+    engine.writeRecords(
+        RecordToWrite.command().timer(TimerIntent.CANCEL, cancel).key(timerCreated.getKey()));
+
+    // then: CANCELED carries the ordinal restored from state, not the command's 0
+    assertThat(cancel.getStorageOrdinal()).isZero();
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.CANCELED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldMarkDeploymentScopedTimerStartEventAsNotOrdinalControlled() {
+    // given: a definition with a timer start event, which belongs to the definition, not an
+    // instance, so it is not ordinal-controlled
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("timer-start-subscription-process")
+                    .startEvent("timer-start")
+                    .timerWithCycle("R/PT1H")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long processDefinitionKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+
+    // then
+    final var startTimerCreated =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst()
+            .getValue();
+    assertThat(startTimerCreated.getProcessInstanceKey()).isEqualTo(-1L);
+    assertThat(startTimerCreated.getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+  }
+
+  @Test
+  public void shouldMarkLegacyStartEventTimerAsNotOrdinalControlledWhenTriggered() {
+    // given: a definition with a repeating timer start event
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("legacy-timer-start-process")
+                    .startEvent("timer-start")
+                    .timerWithCycle("R/PT1H")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long processDefinitionKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+    final var created =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst();
+
+    // and: a start timer row as the v1/v2 appliers left it, with the default ordinal 0 persisted
+    final var legacyTimerKey = created.getKey() + 100_000L;
+    final var legacyTimer =
+        new TimerRecord()
+            .setElementInstanceKey(created.getValue().getElementInstanceKey())
+            .setProcessInstanceKey(created.getValue().getProcessInstanceKey())
+            .setProcessDefinitionKey(processDefinitionKey)
+            .setTargetElementId(BufferUtil.wrapString("timer-start"))
+            .setDueDate(created.getValue().getDueDate() + 1)
+            .setRepetitions(created.getValue().getRepetitions())
+            .setTenantId(created.getValue().getTenantId())
+            .setRootProcessInstanceKey(created.getValue().getRootProcessInstanceKey())
+            .setBpmnProcessId(created.getValue().getBpmnProcessId())
+            .setElementType(BpmnElementType.START_EVENT)
+            .setStorageOrdinal(StorageOrdinalRelated.MAIN_INDEX);
+    // the engine only applies a written event to state on replay, so stop and restart it around
+    // the write, as the neighbouring concurrent-timer tests do
+    engine.stop();
+    engine.writeRecords(
+        RecordToWrite.event().timer(TimerIntent.CREATED, legacyTimer).key(legacyTimerKey));
+    // starting the engine re-exports the whole partition log, so clear the previously seen records
+    RecordingExporter.reset();
+    engine.start();
+
+    // when: the timer fires
+    engine.increaseTime(Duration.ofHours(2));
+
+    // then: TRIGGERED and the rescheduled CREATED derive -1 instead of the persisted 0
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .filter(r -> r.getKey() == legacyTimerKey)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.CREATED)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .filter(r -> r.getKey() != created.getKey() && r.getKey() != legacyTimerKey)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
   }
 
   @Test
@@ -292,6 +1365,49 @@ public final class StorageOrdinalAssignmentTest {
             .getFirst();
     assertThat(incidentCreated.getValue().getErrorType()).isEqualTo(ErrorType.JOB_NO_RETRIES);
     assertThat(incidentCreated.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToResolvedIncidentRecords() {
+    // given: an incident raised for a job without retries
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("incident-resolve-process")
+                .startEvent()
+                .serviceTask("service-task", t -> t.zeebeJobType("ordinal-resolvable-job"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("incident-resolve-process").create();
+    engine.jobs().withType("ordinal-resolvable-job").withMaxJobsToActivate(1).activate();
+    engine
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("ordinal-resolvable-job")
+        .withRetries(0)
+        .fail();
+    final var incidentCreated =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when
+    engine
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("ordinal-resolvable-job")
+        .withRetries(1)
+        .updateRetries();
+    engine.incident().ofInstance(processInstanceKey).withKey(incidentCreated.getKey()).resolve();
+
+    // then: the RESOLVED event carries the ordinal of the incident stored in state
+    final var incidentResolved =
+        RecordingExporter.incidentRecords(IncidentIntent.RESOLVED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(incidentResolved.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
   }
 
   @Test
@@ -488,6 +1604,21 @@ public final class StorageOrdinalAssignmentTest {
             .withIntent(AdHocSubProcessInstructionIntent.COMPLETED)
             .getFirst();
     assertThat(completed.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  private void assertProcessEventTriggeringCarriesOrdinal(final long processInstanceKey) {
+    final var records =
+        RecordingExporter.records()
+            .limit(
+                r ->
+                    r.getValueType() == ValueType.PROCESS_EVENT
+                        && r.getIntent() == ProcessEventIntent.TRIGGERING
+                        && ((ProcessEventRecordValue) r.getValue()).getProcessInstanceKey()
+                            == processInstanceKey)
+            .asList();
+    final var processEventTriggering = records.get(records.size() - 1);
+    assertThat(((ProcessEventRecordValue) processEventTriggering.getValue()).getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
   }
 
   private long adHocSubProcessInstanceKeyOf(final long processInstanceKey) {
