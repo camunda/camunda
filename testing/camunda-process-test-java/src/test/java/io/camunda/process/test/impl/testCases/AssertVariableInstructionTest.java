@@ -200,7 +200,7 @@ public class AssertVariableInstructionTest {
       verify(mockAssert).withJudgeConfig(judgeConfigCaptor.capture());
 
       final JudgeConfig updatedConfig =
-          judgeConfigCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null, false));
+          judgeConfigCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null, false, 1.0));
       assertThat(updatedConfig.getThreshold()).isEqualTo(0.8);
 
       verify(mockAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));
@@ -237,7 +237,7 @@ public class AssertVariableInstructionTest {
       verify(mockAssert).withJudgeConfig(judgeConfigCaptor.capture());
 
       final JudgeConfig updatedConfig =
-          judgeConfigCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null, false));
+          judgeConfigCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null, false, 1.0));
       assertThat(updatedConfig.getCustomPrompt()).hasValue("You are a financial data judge");
 
       verify(mockAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));
@@ -275,7 +275,7 @@ public class AssertVariableInstructionTest {
       verify(mockAssert).withJudgeConfig(judgeConfigCaptor.capture());
 
       final JudgeConfig updatedConfig =
-          judgeConfigCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null, false));
+          judgeConfigCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null, false, 1.0));
       assertThat(updatedConfig.getThreshold()).isEqualTo(0.9);
       assertThat(updatedConfig.getCustomPrompt()).hasValue("Custom evaluation criteria");
 
@@ -315,7 +315,7 @@ public class AssertVariableInstructionTest {
       verify(mockAssert).withJudgeConfig(judgeConfigCaptor.capture());
 
       final JudgeConfig updatedConfig =
-          judgeConfigCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null, false));
+          judgeConfigCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null, false, 1.0));
       assertThat(updatedConfig.getThreshold()).isEqualTo(0.7);
       assertThat(updatedConfig.getCustomPrompt()).hasValue("Local variable evaluation criteria");
 
@@ -358,7 +358,7 @@ public class AssertVariableInstructionTest {
       final JudgeConfig updatedConfig =
           judgeConfigCaptor
               .getValue()
-              .apply(new JudgeConfigImpl(s -> s, 0.0, null, !attachDocuments));
+              .apply(new JudgeConfigImpl(s -> s, 0.0, null, !attachDocuments, 1.0));
       assertThat(updatedConfig.isAttachDocuments()).isEqualTo(attachDocuments);
 
       verify(mockAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));

@@ -27,6 +27,7 @@ import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
 import io.camunda.process.test.api.assertions.VariableSelector;
 import io.camunda.process.test.api.assertions.VariableSelectors;
 import io.camunda.process.test.api.judge.JudgeConfig;
+import io.camunda.process.test.api.judge.WeightedExpectation;
 import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import java.time.Duration;
@@ -567,6 +568,55 @@ public class ProcessInstanceAssertj
       final String expectation) {
     variableAssertj.hasLocalVariableSatisfiesJudge(
         getProcessInstanceKey(), elementSelector, variableSelector, expectation);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasVariableSatisfiesJudge(
+      final String variableName, final List<WeightedExpectation> expectations) {
+    variableAssertj.hasVariableSatisfiesJudge(
+        getProcessInstanceKey(), VariableSelectors.byName(variableName), expectations);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasVariableSatisfiesJudge(
+      final VariableSelector variableSelector, final List<WeightedExpectation> expectations) {
+    variableAssertj.hasVariableSatisfiesJudge(
+        getProcessInstanceKey(), variableSelector, expectations);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasLocalVariableSatisfiesJudge(
+      final String elementId,
+      final String variableName,
+      final List<WeightedExpectation> expectations) {
+    variableAssertj.hasLocalVariableSatisfiesJudge(
+        getProcessInstanceKey(),
+        elementSelector.apply(elementId),
+        VariableSelectors.byName(variableName),
+        expectations);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasLocalVariableSatisfiesJudge(
+      final ElementSelector selector,
+      final String variableName,
+      final List<WeightedExpectation> expectations) {
+    variableAssertj.hasLocalVariableSatisfiesJudge(
+        getProcessInstanceKey(), selector, VariableSelectors.byName(variableName), expectations);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasLocalVariableSatisfiesJudge(
+      final ElementSelector elementSelector,
+      final VariableSelector variableSelector,
+      final List<WeightedExpectation> expectations) {
+    variableAssertj.hasLocalVariableSatisfiesJudge(
+        getProcessInstanceKey(), elementSelector, variableSelector, expectations);
     return this;
   }
 

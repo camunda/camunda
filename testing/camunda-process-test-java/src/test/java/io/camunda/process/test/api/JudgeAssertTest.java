@@ -24,8 +24,10 @@ import static org.mockito.Mockito.when;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.api.assertions.ElementSelectors;
+import io.camunda.process.test.api.judge.BatchExpectationChatModelAdapter;
 import io.camunda.process.test.api.judge.ChatModelAdapter;
 import io.camunda.process.test.api.judge.JudgeConfig;
+import io.camunda.process.test.api.judge.WeightedExpectation;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.utils.CamundaAssertExpectFailure;
 import io.camunda.process.test.utils.CamundaAssertExtension;
@@ -34,6 +36,9 @@ import io.camunda.process.test.utils.ProcessInstanceBuilder;
 import io.camunda.process.test.utils.VariableBuilder;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -76,6 +81,26 @@ public class JudgeAssertTest {
   @AfterEach
   void resetJudgeConfig() {
     CamundaAssert.setJudgeConfig(null);
+  }
+
+  private static BatchExpectationChatModelAdapter batchAdapterReturning(
+      final Map<String, Double> truthValuesByCriterionIndex) {
+    return new BatchExpectationChatModelAdapter() {
+      @Override
+      public String generate(final String prompt) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public Map<String, Double> evaluateExpectations(
+          final String actualValue, final Map<String, String> namedExpectations) {
+        final Map<String, Double> result = new LinkedHashMap<>();
+        namedExpectations
+            .keySet()
+            .forEach(name -> result.put(name, truthValuesByCriterionIndex.get(name)));
+        return result;
+      }
+    };
   }
 
   private static Variable newVariable(final String variableName, final String variableValue) {
@@ -332,6 +357,152 @@ public class JudgeAssertTest {
           .isInstanceOf(AssertionError.class)
           .hasMessageContaining("Score: 0.70")
           .hasMessageContaining("threshold: 0.80");
+    }
+  }
+
+  @Nested
+  class HasVariableSatisfiesJudgeWithWeightedExpectations {
+
+    @Test
+    void shouldPassWhenWeightedAverageAboveThreshold() {
+      // given - criterion_0 (weight 3, truth 0.9) and criterion_1 (weight 1, truth 0.3)
+      // weighted average = (3*0.9 + 1*0.3) / 4 = 0.7
+      final Map<String, Double> truthValues = new LinkedHashMap<>();
+      truthValues.put("criterion_0", 0.9);
+      truthValues.put("criterion_1", 0.3);
+      CamundaAssert.setJudgeConfig(JudgeConfig.of(batchAdapterReturning(truthValues)));
+
+      final Variable variable = newVariable("result", "\"Hello! Here is your refund.\"");
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      final List<WeightedExpectation> expectations =
+          Arrays.asList(
+              WeightedExpectation.of("should be a polite greeting", 3.0),
+              WeightedExpectation.of("should mention a refund", 1.0));
+
+      // when / then - should not throw (0.7 >= default threshold 0.5)
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasVariableSatisfiesJudge("result", expectations);
+    }
+
+    @Test
+    @CamundaAssertExpectFailure
+    void shouldFailWhenWeightedAverageBelowThresholdWithBreakdown() {
+      // given - weighted average = (1*0.9 + 3*0.1) / 4 = 0.3
+      final Map<String, Double> truthValues = new LinkedHashMap<>();
+      truthValues.put("criterion_0", 0.9);
+      truthValues.put("criterion_1", 0.1);
+      CamundaAssert.setJudgeConfig(JudgeConfig.of(batchAdapterReturning(truthValues)));
+
+      final Variable variable = newVariable("result", "\"some value\"");
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      final List<WeightedExpectation> expectations =
+          Arrays.asList(
+              WeightedExpectation.of("criterion A", 1.0),
+              WeightedExpectation.of("criterion B", 3.0));
+
+      // when / then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasVariableSatisfiesJudge("result", expectations))
+          .isInstanceOf(AssertionError.class)
+          .hasMessageContaining("did not satisfy expectations")
+          .hasMessageContaining("Weighted score: 0.30")
+          .hasMessageContaining("criterion A")
+          .hasMessageContaining("criterion B");
+    }
+
+    @Test
+    void shouldThrowWhenAdapterDoesNotSupportBatchExpectations() {
+      // given - a plain, non-batch ChatModelAdapter
+      final ChatModelAdapter mockModel = prompt -> "{\"score\": 1.0, \"reasoning\": \"ok\"}";
+      CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel));
+
+      final Variable variable = newVariable("result", "\"some value\"");
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when / then
+      assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasVariableSatisfiesJudge(
+                          "result",
+                          Collections.singletonList(WeightedExpectation.of("some criterion"))))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("BatchExpectationChatModelAdapter");
+    }
+
+    @Test
+    void shouldThrowWhenExpectationsListIsEmpty() {
+      // given
+      CamundaAssert.setJudgeConfig(JudgeConfig.of(batchAdapterReturning(Collections.emptyMap())));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when / then
+      assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasVariableSatisfiesJudge("result", Collections.emptyList()))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("expectations must not be null or empty");
+    }
+
+    @Test
+    @CamundaAssertExpectFailure
+    void shouldPunishABadlyFailingCriterionMoreWithAHigherPenaltyExponent() {
+      // given - a badly-failing criterion (weight 2, truth 0.1) and a clearly-passing one
+      // (weight 3, truth 0.9). Under a plain weighted average, the passing criterion's larger
+      // weight outvotes the failing one: (2*0.1 + 3*0.9) / 5 = 0.58, which clears the default 0.5
+      // threshold even though one criterion is nearly false.
+      final Map<String, Double> truthValues = new LinkedHashMap<>();
+      truthValues.put("criterion_0", 0.1);
+      truthValues.put("criterion_1", 0.9);
+
+      final Variable variable = newVariable("result", "\"some value\"");
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      final List<WeightedExpectation> expectations =
+          Arrays.asList(
+              WeightedExpectation.of("badly-failing criterion", 2.0),
+              WeightedExpectation.of("clearly-passing criterion", 3.0));
+
+      // when / then - default penalty exponent (1.0): plain weighted average passes
+      CamundaAssert.setJudgeConfig(JudgeConfig.of(batchAdapterReturning(truthValues)));
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasVariableSatisfiesJudge("result", expectations);
+
+      // and - squaring each truth value first (2*0.01 + 3*0.81) / 5 = 0.49 fails against the
+      // same default threshold, because the passing criterion is barely touched (0.9 -> 0.81)
+      // while the failing one is crushed (0.1 -> 0.01)
+      assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .withJudgeConfig(config -> config.withPenaltyExponent(2.0))
+                      .hasVariableSatisfiesJudge("result", expectations))
+          .isInstanceOf(AssertionError.class)
+          .hasMessageContaining("did not satisfy expectations")
+          .hasMessageContaining("Weighted score: 0.49");
+    }
+
+    @Test
+    void shouldRejectInvalidPenaltyExponent() {
+      // given
+      CamundaAssert.setJudgeConfig(JudgeConfig.of(batchAdapterReturning(Collections.emptyMap())));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when / then
+      assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .withJudgeConfig(config -> config.withPenaltyExponent(0.0)))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("penaltyExponent must be a positive, finite number");
     }
   }
 

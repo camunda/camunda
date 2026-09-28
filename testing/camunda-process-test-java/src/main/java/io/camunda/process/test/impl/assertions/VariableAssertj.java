@@ -27,6 +27,7 @@ import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.VariableSelector;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.judge.ResolvedDocument;
+import io.camunda.process.test.api.judge.WeightedExpectation;
 import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper.JsonMappingException;
@@ -431,6 +432,43 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     evaluateJudge(variableSelector, expectation, rawValue);
   }
 
+  public void hasVariableSatisfiesJudge(
+      final long processInstanceKey,
+      final VariableSelector variableSelector,
+      final List<WeightedExpectation> expectations) {
+
+    judgeAssertj.assertJudgeHasAllRequiredSettings();
+    assertExpectationsNotEmpty(expectations);
+
+    final String rawValue =
+        waitForVariable(
+            variableSelector,
+            () -> findGlobalVariablesBySelector(processInstanceKey, variableSelector));
+
+    judgeAssertj.evaluateExpectations(
+        expectations,
+        rawValue,
+        String.format(" for %s variable '%s'", actual, variableSelector.describe()));
+  }
+
+  public void hasLocalVariableSatisfiesJudge(
+      final long processInstanceKey,
+      final ElementSelector elementSelector,
+      final VariableSelector variableSelector,
+      final List<WeightedExpectation> expectations) {
+
+    judgeAssertj.assertJudgeHasAllRequiredSettings();
+    assertExpectationsNotEmpty(expectations);
+
+    final String rawValue =
+        waitForLocalVariable(processInstanceKey, elementSelector, variableSelector);
+
+    judgeAssertj.evaluateExpectations(
+        expectations,
+        rawValue,
+        String.format(" for %s variable '%s'", actual, variableSelector.describe()));
+  }
+
   private void evaluateJudge(
       final VariableSelector variableSelector, final String expectation, final String rawValue) {
     final List<ResolvedDocument> documents = resolveDocumentsIfEnabled(rawValue);
@@ -577,6 +615,12 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
   private static void assertExpectationNotEmpty(final String expectation) {
     if (expectation == null || expectation.trim().isEmpty()) {
       throw new IllegalArgumentException("expectation must not be null or empty");
+    }
+  }
+
+  private static void assertExpectationsNotEmpty(final List<WeightedExpectation> expectations) {
+    if (expectations == null || expectations.isEmpty()) {
+      throw new IllegalArgumentException("expectations must not be null or empty");
     }
   }
 

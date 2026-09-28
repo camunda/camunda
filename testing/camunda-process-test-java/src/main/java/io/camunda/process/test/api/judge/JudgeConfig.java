@@ -32,6 +32,9 @@ public interface JudgeConfig {
   /** The default value for {@link #isAttachDocuments()}. */
   boolean DEFAULT_ATTACH_DOCUMENTS = false;
 
+  /** The default value for {@link #getPenaltyExponent()}: a plain weighted arithmetic mean. */
+  double DEFAULT_PENALTY_EXPONENT = 1.0;
+
   /**
    * Creates a new JudgeConfig with default settings and no chat model. A chat model must be set via
    * {@link #withChatModelAdapter(ChatModelAdapter)} before using the config for judge evaluations.
@@ -41,7 +44,8 @@ public interface JudgeConfig {
    *     #withChatModelAdapter(ChatModelAdapter)} before the config is used for judge evaluations.
    */
   static JudgeConfig defaults() {
-    return new JudgeConfigImpl(null, DEFAULT_THRESHOLD, null, DEFAULT_ATTACH_DOCUMENTS);
+    return new JudgeConfigImpl(
+        null, DEFAULT_THRESHOLD, null, DEFAULT_ATTACH_DOCUMENTS, DEFAULT_PENALTY_EXPONENT);
   }
 
   /**
@@ -54,7 +58,8 @@ public interface JudgeConfig {
     if (chatModel == null) {
       throw new IllegalArgumentException("chatModel must not be null");
     }
-    return new JudgeConfigImpl(chatModel, DEFAULT_THRESHOLD, null, DEFAULT_ATTACH_DOCUMENTS);
+    return new JudgeConfigImpl(
+        chatModel, DEFAULT_THRESHOLD, null, DEFAULT_ATTACH_DOCUMENTS, DEFAULT_PENALTY_EXPONENT);
   }
 
   /**
@@ -130,6 +135,26 @@ public interface JudgeConfig {
   JudgeConfig withAttachDocuments(boolean attachDocuments);
 
   /**
+   * Returns a new JudgeConfig with the given penalty exponent, keeping all other settings. Only
+   * affects multi-criteria evaluations (see {@link WeightedExpectation}); a single free-form
+   * expectation has nothing to combine.
+   *
+   * <p>Per-criterion truth values are raised to this power before being combined into the weighted
+   * average: {@code sum(weight * truthValue^exponent) / sum(weight)}. The default, {@code 1.0}, is
+   * a plain weighted arithmetic mean, where a criterion that clearly failed can still be outvoted
+   * by several criteria that passed, once their combined weight exceeds the failing criterion's.
+   * Values above {@code 1.0} convexly punish low scores: they barely change a truth value near
+   * {@code 1.0} but shrink one near {@code 0.0} much faster, so a single badly-failing,
+   * correctness-critical criterion is far less likely to be diluted away by unrelated passing ones.
+   * {@code 2.0} (squaring) is a reasonable starting point.
+   *
+   * @param penaltyExponent the exponent applied to each truth value before weighting; must be
+   *     positive and finite
+   * @return a new JudgeConfig instance with the updated penalty exponent
+   */
+  JudgeConfig withPenaltyExponent(double penaltyExponent);
+
+  /**
    * Returns the chat model adapter, or {@code null} if not yet configured.
    *
    * @return the chat model adapter, or {@code null}
@@ -158,4 +183,13 @@ public interface JudgeConfig {
    * @see #withAttachDocuments(boolean)
    */
   boolean isAttachDocuments();
+
+  /**
+   * Returns the penalty exponent applied to each truth value before weighting in a multi-criteria
+   * evaluation.
+   *
+   * @return the penalty exponent (default {@value #DEFAULT_PENALTY_EXPONENT})
+   * @see #withPenaltyExponent(double)
+   */
+  double getPenaltyExponent();
 }

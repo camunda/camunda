@@ -17,10 +17,17 @@ package io.camunda.process.test.impl.assertions;
 
 import static org.assertj.core.api.Assertions.fail;
 
+import io.camunda.process.test.api.judge.BatchExpectationChatModelAdapter;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.judge.MultimodalChatModelAdapter;
 import io.camunda.process.test.api.judge.ResolvedDocument;
+import io.camunda.process.test.api.judge.WeightedExpectation;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.UnaryOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,6 +112,14 @@ class JudgeAssertj {
       final String context,
       final List<ResolvedDocument> documents) {
 
+    if (judgeConfig.getChatModel() instanceof BatchExpectationChatModelAdapter) {
+      // A batch-capable adapter (e.g. Jev) doesn't support free-form prompting; route a single
+      // expectation through the same batch evaluation as a one-entry list instead.
+      evaluateExpectations(
+          Collections.singletonList(WeightedExpectation.of(expectation)), actualValue, context);
+      return;
+    }
+
     final JudgeEvaluation evaluation =
         new JudgeEvaluation(judgeConfig.getChatModel(), expectation, judgeConfig.getCustomPrompt());
 
@@ -129,5 +144,81 @@ class JudgeAssertj {
               + "  Raw response: %s",
           context, e.getCause().getMessage(), e.getRawResponse());
     }
+  }
+
+  /**
+   * Evaluates several weighted criteria against the actual value in a single batch call, using the
+   * configured {@link BatchExpectationChatModelAdapter}. Combines the per-criterion truth values
+   * into one weighted average score: {@code sum(weight * truthValue^penaltyExponent) /
+   * sum(weight)}. See {@link JudgeConfig#withPenaltyExponent(double)} for what the exponent does.
+   *
+   * @throws IllegalStateException if the configured {@link JudgeConfig#getChatModel()} is not a
+   *     {@link BatchExpectationChatModelAdapter}
+   */
+  void evaluateExpectations(
+      final List<WeightedExpectation> expectations,
+      final String actualValue,
+      final String context) {
+
+    if (!(judgeConfig.getChatModel() instanceof BatchExpectationChatModelAdapter)) {
+      throw new IllegalStateException(
+          "Evaluating a list of WeightedExpectation requires a BatchExpectationChatModelAdapter "
+              + "(e.g. JevChatModelAdapter). The configured ChatModelAdapter does not support "
+              + "batched expectation evaluation.");
+    }
+    final BatchExpectationChatModelAdapter adapter =
+        (BatchExpectationChatModelAdapter) judgeConfig.getChatModel();
+
+    final Map<String, String> namedExpectations = new LinkedHashMap<>();
+    for (int i = 0; i < expectations.size(); i++) {
+      namedExpectations.put(criterionName(i), expectations.get(i).getCriterion());
+    }
+
+    Map<String, Double> truthValues = Collections.emptyMap();
+    try {
+      truthValues = adapter.evaluateExpectations(actualValue, namedExpectations);
+    } catch (final RuntimeException e) {
+      fail(
+          "Judge evaluation failed%s.\n  The batch expectation adapter call failed.\n  Cause: %s",
+          context, e.getMessage());
+    }
+
+    final double penaltyExponent = judgeConfig.getPenaltyExponent();
+    double weightedSum = 0;
+    double totalWeight = 0;
+    final StringBuilder breakdown = new StringBuilder();
+    for (int i = 0; i < expectations.size(); i++) {
+      final WeightedExpectation expectation = expectations.get(i);
+      final Double truthValue = truthValues.get(criterionName(i));
+      if (truthValue == null) {
+        fail(
+            "Judge evaluation failed%s.\n  No truth value was returned for criterion '%s'.",
+            context, expectation.getCriterion());
+        return;
+      }
+      weightedSum += expectation.getWeight() * Math.pow(truthValue, penaltyExponent);
+      totalWeight += expectation.getWeight();
+      breakdown.append(
+          String.format(
+              "\n  - [weight %.2f] %.2f — %s",
+              expectation.getWeight(), truthValue, expectation.getCriterion()));
+    }
+
+    final BigDecimal score =
+        BigDecimal.valueOf(weightedSum / totalWeight).setScale(2, RoundingMode.HALF_UP);
+    final BigDecimal threshold =
+        BigDecimal.valueOf(judgeConfig.getThreshold()).setScale(2, RoundingMode.HALF_UP);
+
+    if (score.compareTo(threshold) < 0) {
+      fail(
+          "Judge evaluation did not satisfy expectations%s.\n"
+              + "  Weighted score: %s (threshold: %s)\n"
+              + "  Breakdown:%s",
+          context, score, threshold, breakdown);
+    }
+  }
+
+  private static String criterionName(final int index) {
+    return "criterion_" + index;
   }
 }

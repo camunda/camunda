@@ -16,7 +16,9 @@
 package io.camunda.process.test.api.assertions;
 
 import io.camunda.process.test.api.judge.JudgeConfig;
+import io.camunda.process.test.api.judge.WeightedExpectation;
 import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
+import java.util.List;
 import java.util.function.UnaryOperator;
 
 /** The assertion object to evaluate raw string-based values. */
@@ -39,6 +41,20 @@ public interface ValueAssert {
    * @return this assertion object
    */
   ValueAssert satisfiesJudge(String expectation);
+
+  /**
+   * Verifies that the actual value satisfies several weighted criteria in a single judge call,
+   * using the configured {@link JudgeConfig}. Combines the per-criterion truth values into one
+   * weighted average score and fails if it is below the configured threshold.
+   *
+   * <p>Requires a {@link io.camunda.process.test.api.judge.BatchExpectationChatModelAdapter} (e.g.
+   * the Jev/TypeSafe adapter) to be configured; fails with an {@link IllegalStateException}
+   * otherwise.
+   *
+   * @param expectations the weighted criteria to evaluate
+   * @return this assertion object
+   */
+  ValueAssert satisfiesJudge(List<WeightedExpectation> expectations);
 
   /**
    * Modifies the {@link SemanticSimilarityConfig} for subsequent similarity assertions in this

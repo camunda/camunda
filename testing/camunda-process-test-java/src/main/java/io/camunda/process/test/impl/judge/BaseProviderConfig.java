@@ -28,6 +28,7 @@ public abstract class BaseProviderConfig implements ProviderConfig {
   public static final String PROVIDER_AMAZON_BEDROCK = "amazon-bedrock";
   public static final String PROVIDER_OPENAI_COMPATIBLE = "openai-compatible";
   public static final String PROVIDER_AZURE_OPENAI = "azure-openai";
+  public static final String PROVIDER_JEV = "jev";
 
   private final String provider;
   private final String model;
@@ -203,6 +204,30 @@ public abstract class BaseProviderConfig implements ProviderConfig {
 
     public String getApiKey() {
       return apiKey;
+    }
+  }
+
+  /**
+   * TypeSafe/Jev provider configuration. {@code baseUrl} is optional and defaults to Jev's public
+   * API endpoint when not set.
+   */
+  public static final class JevConfig extends BaseProviderConfig {
+
+    private final String apiKey;
+    private final String baseUrl;
+
+    public JevConfig(final String model, final String apiKey, final String baseUrl) {
+      super(PROVIDER_JEV, model);
+      this.apiKey = apiKey;
+      this.baseUrl = baseUrl;
+    }
+
+    public String getApiKey() {
+      return apiKey;
+    }
+
+    public String getBaseUrl() {
+      return baseUrl;
     }
   }
 }

@@ -17,8 +17,10 @@ package io.camunda.process.test.impl.assertions;
 
 import io.camunda.process.test.api.assertions.ValueAssert;
 import io.camunda.process.test.api.judge.JudgeConfig;
+import io.camunda.process.test.api.judge.WeightedExpectation;
 import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import java.util.Collections;
+import java.util.List;
 import java.util.function.UnaryOperator;
 import org.assertj.core.api.AbstractAssert;
 
@@ -55,6 +57,14 @@ public class ValueAssertj extends AbstractAssert<ValueAssertj, String> implement
   }
 
   @Override
+  public ValueAssert satisfiesJudge(final List<WeightedExpectation> expectations) {
+    judgeAssertj.assertJudgeHasAllRequiredSettings();
+    assertExpectationsNotEmpty(expectations);
+    judgeAssertj.evaluateExpectations(expectations, actual, "");
+    return this;
+  }
+
+  @Override
   public ValueAssert withSemanticSimilarityConfig(
       final UnaryOperator<SemanticSimilarityConfig> modifier) {
     similarityAssertj.withSemanticSimilarityConfig(modifier);
@@ -72,6 +82,12 @@ public class ValueAssertj extends AbstractAssert<ValueAssertj, String> implement
   private static void assertExpectationNotEmpty(final String expectation) {
     if (expectation == null || expectation.trim().isEmpty()) {
       throw new IllegalArgumentException("expectation must not be null or empty");
+    }
+  }
+
+  private static void assertExpectationsNotEmpty(final List<WeightedExpectation> expectations) {
+    if (expectations == null || expectations.isEmpty()) {
+      throw new IllegalArgumentException("expectations must not be null or empty");
     }
   }
 }

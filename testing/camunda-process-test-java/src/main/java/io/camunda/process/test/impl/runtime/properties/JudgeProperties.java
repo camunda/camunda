@@ -18,6 +18,7 @@ package io.camunda.process.test.impl.runtime.properties;
 import static io.camunda.process.test.impl.judge.BaseProviderConfig.PROVIDER_AMAZON_BEDROCK;
 import static io.camunda.process.test.impl.judge.BaseProviderConfig.PROVIDER_ANTHROPIC;
 import static io.camunda.process.test.impl.judge.BaseProviderConfig.PROVIDER_AZURE_OPENAI;
+import static io.camunda.process.test.impl.judge.BaseProviderConfig.PROVIDER_JEV;
 import static io.camunda.process.test.impl.judge.BaseProviderConfig.PROVIDER_OPENAI;
 import static io.camunda.process.test.impl.judge.BaseProviderConfig.PROVIDER_OPENAI_COMPATIBLE;
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyMapOrEmpty;
@@ -157,6 +158,10 @@ public class JudgeProperties {
         config =
             new BaseProviderConfig.AzureOpenAiConfig(
                 chatModelModel, chatModelEndpoint, chatModelApiKey);
+        break;
+      case PROVIDER_JEV:
+        config =
+            new BaseProviderConfig.JevConfig(chatModelModel, chatModelApiKey, chatModelBaseUrl);
         break;
       default:
         config =

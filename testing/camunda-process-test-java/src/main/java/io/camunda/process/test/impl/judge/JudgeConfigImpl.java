@@ -25,16 +25,19 @@ public final class JudgeConfigImpl implements JudgeConfig {
   private final double threshold;
   private final String customPrompt;
   private final boolean attachDocuments;
+  private final double penaltyExponent;
 
   public JudgeConfigImpl(
       final ChatModelAdapter chatModel,
       final double threshold,
       final String customPrompt,
-      final boolean attachDocuments) {
+      final boolean attachDocuments,
+      final double penaltyExponent) {
     this.chatModel = chatModel;
     this.threshold = threshold;
     this.customPrompt = customPrompt;
     this.attachDocuments = attachDocuments;
+    this.penaltyExponent = penaltyExponent;
   }
 
   @Override
@@ -42,7 +45,8 @@ public final class JudgeConfigImpl implements JudgeConfig {
     if (chatModel == null) {
       throw new IllegalArgumentException("chatModel must not be null");
     }
-    return new JudgeConfigImpl(chatModel, threshold, customPrompt, attachDocuments);
+    return new JudgeConfigImpl(
+        chatModel, threshold, customPrompt, attachDocuments, penaltyExponent);
   }
 
   @Override
@@ -51,17 +55,30 @@ public final class JudgeConfigImpl implements JudgeConfig {
       throw new IllegalArgumentException(
           "threshold must be between 0.0 and 1.0, was: " + threshold);
     }
-    return new JudgeConfigImpl(chatModel, threshold, customPrompt, attachDocuments);
+    return new JudgeConfigImpl(
+        chatModel, threshold, customPrompt, attachDocuments, penaltyExponent);
   }
 
   @Override
   public JudgeConfig withCustomPrompt(final String customPrompt) {
-    return new JudgeConfigImpl(chatModel, threshold, customPrompt, attachDocuments);
+    return new JudgeConfigImpl(
+        chatModel, threshold, customPrompt, attachDocuments, penaltyExponent);
   }
 
   @Override
   public JudgeConfig withAttachDocuments(final boolean attachDocuments) {
-    return new JudgeConfigImpl(chatModel, threshold, customPrompt, attachDocuments);
+    return new JudgeConfigImpl(
+        chatModel, threshold, customPrompt, attachDocuments, penaltyExponent);
+  }
+
+  @Override
+  public JudgeConfig withPenaltyExponent(final double penaltyExponent) {
+    if (!Double.isFinite(penaltyExponent) || penaltyExponent <= 0.0) {
+      throw new IllegalArgumentException(
+          "penaltyExponent must be a positive, finite number, was: " + penaltyExponent);
+    }
+    return new JudgeConfigImpl(
+        chatModel, threshold, customPrompt, attachDocuments, penaltyExponent);
   }
 
   @Override
@@ -82,5 +99,10 @@ public final class JudgeConfigImpl implements JudgeConfig {
   @Override
   public boolean isAttachDocuments() {
     return attachDocuments;
+  }
+
+  @Override
+  public double getPenaltyExponent() {
+    return penaltyExponent;
   }
 }

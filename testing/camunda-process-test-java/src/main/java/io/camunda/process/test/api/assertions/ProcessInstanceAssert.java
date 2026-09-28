@@ -16,7 +16,9 @@
 package io.camunda.process.test.api.assertions;
 
 import io.camunda.process.test.api.judge.JudgeConfig;
+import io.camunda.process.test.api.judge.WeightedExpectation;
 import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
+import java.util.List;
 import java.util.Map;
 import java.util.function.UnaryOperator;
 import org.assertj.core.api.ThrowingConsumer;
@@ -808,6 +810,95 @@ public interface ProcessInstanceAssert extends WithAssertionConfiguration<Proces
    */
   ProcessInstanceAssert hasLocalVariableSatisfiesJudge(
       ElementSelector elementSelector, VariableSelector variableSelector, String expectation);
+
+  /**
+   * Verifies that a process variable's value satisfies several weighted criteria in a single judge
+   * call. Combines the per-criterion truth values into one weighted average score, using the
+   * threshold from the configured {@link JudgeConfig}.
+   *
+   * <p>Requires a {@link io.camunda.process.test.api.judge.BatchExpectationChatModelAdapter} (e.g.
+   * the Jev/TypeSafe adapter) to be configured; fails with an {@link IllegalStateException}
+   * otherwise.
+   *
+   * @param variableName the variable name
+   * @param expectations the weighted criteria to evaluate
+   * @return the assertion object
+   */
+  ProcessInstanceAssert hasVariableSatisfiesJudge(
+      String variableName, List<WeightedExpectation> expectations);
+
+  /**
+   * Verifies that a process variable matching the selector satisfies several weighted criteria in a
+   * single judge call. Combines the per-criterion truth values into one weighted average score,
+   * using the threshold from the configured {@link JudgeConfig}.
+   *
+   * <p>Requires a {@link io.camunda.process.test.api.judge.BatchExpectationChatModelAdapter} (e.g.
+   * the Jev/TypeSafe adapter) to be configured; fails with an {@link IllegalStateException}
+   * otherwise.
+   *
+   * @param variableSelector the selector to identify the variable
+   * @param expectations the weighted criteria to evaluate
+   * @return the assertion object
+   * @see VariableSelectors
+   */
+  ProcessInstanceAssert hasVariableSatisfiesJudge(
+      VariableSelector variableSelector, List<WeightedExpectation> expectations);
+
+  /**
+   * Verifies that a local variable's value satisfies several weighted criteria in a single judge
+   * call. Combines the per-criterion truth values into one weighted average score, using the
+   * threshold from the configured {@link JudgeConfig}.
+   *
+   * <p>Requires a {@link io.camunda.process.test.api.judge.BatchExpectationChatModelAdapter} (e.g.
+   * the Jev/TypeSafe adapter) to be configured; fails with an {@link IllegalStateException}
+   * otherwise.
+   *
+   * @param elementId the BPMN element ID
+   * @param variableName the variable name
+   * @param expectations the weighted criteria to evaluate
+   * @return the assertion object
+   */
+  ProcessInstanceAssert hasLocalVariableSatisfiesJudge(
+      String elementId, String variableName, List<WeightedExpectation> expectations);
+
+  /**
+   * Verifies that a local variable's value satisfies several weighted criteria in a single judge
+   * call. Combines the per-criterion truth values into one weighted average score, using the
+   * threshold from the configured {@link JudgeConfig}.
+   *
+   * <p>Requires a {@link io.camunda.process.test.api.judge.BatchExpectationChatModelAdapter} (e.g.
+   * the Jev/TypeSafe adapter) to be configured; fails with an {@link IllegalStateException}
+   * otherwise.
+   *
+   * @param selector the selector for the BPMN element
+   * @param variableName the variable name
+   * @param expectations the weighted criteria to evaluate
+   * @return the assertion object
+   * @see ElementSelectors
+   */
+  ProcessInstanceAssert hasLocalVariableSatisfiesJudge(
+      ElementSelector selector, String variableName, List<WeightedExpectation> expectations);
+
+  /**
+   * Verifies that a local variable matching the variable selector satisfies several weighted
+   * criteria in a single judge call. Combines the per-criterion truth values into one weighted
+   * average score, using the threshold from the configured {@link JudgeConfig}.
+   *
+   * <p>Requires a {@link io.camunda.process.test.api.judge.BatchExpectationChatModelAdapter} (e.g.
+   * the Jev/TypeSafe adapter) to be configured; fails with an {@link IllegalStateException}
+   * otherwise.
+   *
+   * @param elementSelector the selector for the BPMN element
+   * @param variableSelector the selector to identify the variable
+   * @param expectations the weighted criteria to evaluate
+   * @return the assertion object
+   * @see ElementSelectors
+   * @see VariableSelectors
+   */
+  ProcessInstanceAssert hasLocalVariableSatisfiesJudge(
+      ElementSelector elementSelector,
+      VariableSelector variableSelector,
+      List<WeightedExpectation> expectations);
 
   /**
    * Modifies the {@link SemanticSimilarityConfig} for subsequent similarity assertions in this
