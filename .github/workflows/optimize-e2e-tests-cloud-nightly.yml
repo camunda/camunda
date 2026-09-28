@@ -9,8 +9,9 @@
 # request can influence. Gating every Optimize merge on that tenant's availability produced false
 # failures rather than signal.
 #
-# It does run on pull requests that change the cloud test or this workflow, since those are exactly
-# the changes it can invalidate - and without that the test would be unverifiable until after merge.
+# It does run on pull requests that change the e2e tests (the cloud test shares their page objects
+# and login helpers) or this workflow, since those are exactly the changes it can invalidate - and
+# without that the test would be unverifiable until after merge.
 name: Optimize E2E Cloud (Nightly)
 
 on:
@@ -20,7 +21,7 @@ on:
   pull_request:
     paths:
       - ".github/workflows/optimize-e2e-tests-cloud-nightly.yml"
-      - "optimize/client/e2e/cloud/**"
+      - "optimize/client/e2e/**"
       - "optimize/client/playwright.config.ts"
       - "optimize/client/scripts/start-backend.js"
 
