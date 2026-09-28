@@ -49,8 +49,8 @@ public class EmptyProcessInstanceIndexReaper {
 
       // the block makes the second count final: an instance imported after the first count is
       // either visible to it or rejected, and the rejected write is retried by the importer
-      databaseClient.addWriteBlock(index);
       try {
+        databaseClient.addWriteBlock(index);
         databaseClient.refresh(alias);
         if (databaseClient.countWithoutPrefix(index) > 0) {
           databaseClient.removeWriteBlock(index);
@@ -58,7 +58,8 @@ public class EmptyProcessInstanceIndexReaper {
         }
         databaseClient.deleteIndexByRawIndexNames(index);
         LOG.info("Deleted empty process instance index {} to release its shards.", index);
-      } catch (final RuntimeException e) {
+      } catch (final IOException | RuntimeException e) {
+        // a failed request may still have applied the block
         databaseClient.removeWriteBlock(index);
         throw e;
       }
