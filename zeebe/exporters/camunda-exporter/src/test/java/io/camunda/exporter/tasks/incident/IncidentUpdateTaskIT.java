@@ -337,7 +337,6 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
 
-          final var incidentKey = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity =
               newIncident()
                   .setProcessInstanceKey(processInstance.getKey())
@@ -410,7 +409,6 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
 
-          final var incidentKey = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity =
               newIncident()
                   .setProcessInstanceKey(processInstance.getKey())
@@ -599,7 +597,6 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           store(incidentTemplate, client, activeIncidentEntity);
 
-          final var resolvedIncidentKey = ID_GENERATOR.getAndIncrement();
           final IncidentEntity resolvedIncidentEntity =
               newIncident()
                   .setState(IncidentState.ACTIVE)
