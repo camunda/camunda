@@ -1407,6 +1407,7 @@ public final class SearchQueryResponseMapper {
         // `priority` is null when the user-task handler path did not propagate it (e.g. job-based
         // tasks before 8.8). Fall back to the Zeebe / BPMN default of 50.
         .priority(requireNonNullElse(t.priority(), 50))
+        .isSuspended(t.isSuspended())
         .tags(t.tags())
         .assignee(t.assignee())
         .completionDate(formatDateOrNull(t.completionDate()))

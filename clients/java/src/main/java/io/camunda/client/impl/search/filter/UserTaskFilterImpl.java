@@ -323,6 +323,12 @@ public class UserTaskFilterImpl
   }
 
   @Override
+  public UserTaskFilter isSuspended(final Boolean isSuspended) {
+    filter.setIsSuspended(isSuspended);
+    return this;
+  }
+
+  @Override
   public UserTaskFilterBase orFilters(final List<Consumer<UserTaskFilterBase>> fns) {
     for (final Consumer<UserTaskFilterBase> fn : fns) {
       final UserTaskFilterImpl orFilter = new UserTaskFilterImpl();
