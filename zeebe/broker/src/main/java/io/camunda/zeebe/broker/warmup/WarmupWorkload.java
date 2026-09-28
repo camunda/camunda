@@ -25,6 +25,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.HashMap;
@@ -41,8 +42,9 @@ import org.jspecify.annotations.NullMarked;
 /**
  * Drives the bundled warm-up process through a {@link ScratchEngine} the way clients would: every
  * command enters as an encoded gateway request, streamed jobs are completed as they are pushed,
- * polled jobs are activated and completed, and each instance is sent a correlating message. It runs
- * entirely on the calling thread, keeping at most a fixed number of instances in flight.
+ * polled jobs are activated and completed, each instance is sent a correlating message, and the
+ * process is redeployed as a new version every so often. It runs entirely on the calling thread,
+ * keeping at most a fixed number of instances in flight.
  */
 @NullMarked
 final class WarmupWorkload {
@@ -56,6 +58,9 @@ final class WarmupWorkload {
   private static final String MESSAGE_NAME = "leader-warmup-confirmation";
   private static final String FINAL_ELEMENT = "finish";
   private static final int WITH_RESULT_EVERY = 4;
+  private static final int REDEPLOY_EVERY = 100;
+  private static final String PROCESS_ELEMENT =
+      "<bpmn:process id=\"leader-warmup\" isExecutable=\"true\">";
   private static final Duration POLL_INTERVAL = Duration.ofMillis(50);
   private static final Duration BACK_OFF = Duration.ofSeconds(1);
   private static final Duration STALL_TIMEOUT = Duration.ofSeconds(30);
@@ -67,7 +72,7 @@ final class WarmupWorkload {
   private final Map<Long, Pending<?>> pendingRequests = new HashMap<>();
   private final Map<Long, String> orderIdByInstance = new HashMap<>();
   private final ArrayDeque<Retry> retries = new ArrayDeque<>();
-  private final byte[] resource;
+  private final String resource;
 
   private int started;
   private int inFlight;
@@ -107,9 +112,7 @@ final class WarmupWorkload {
       final BooleanSupplier shouldStop, final BooleanSupplier underPressure, final long deadline)
       throws InterruptedException {
     final var deployed = new boolean[1];
-    send(
-        new BrokerDeployResourceRequest().addResource("leader-warmup.bpmn", resource),
-        response -> deployed[0] = true);
+    deploy(0, response -> deployed[0] = true);
 
     long lastProgress = System.nanoTime();
     while (true) {
@@ -167,9 +170,28 @@ final class WarmupWorkload {
     return completed;
   }
 
+  /**
+   * Each revision is a new process version, which the engine and the exporters parse as a real
+   * deployment.
+   */
+  private void deploy(final int revision, final Consumer<Object> onDeployed) {
+    final var revised =
+        resource.replace(
+            PROCESS_ELEMENT,
+            PROCESS_ELEMENT.replace(
+                ">", " name=\"Leader warm-up revision %d\">".formatted(revision)));
+    send(
+        new BrokerDeployResourceRequest()
+            .addResource("leader-warmup.bpmn", revised.getBytes(StandardCharsets.UTF_8)),
+        onDeployed::accept);
+  }
+
   private void startInstance() {
     final var index = started++;
     inFlight++;
+    if (index > 0 && index % REDEPLOY_EVERY == 0) {
+      deploy(index / REDEPLOY_EVERY, response -> {});
+    }
     final var orderId = "order-" + index;
     final var variables = BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(payload(index)));
 
@@ -338,12 +360,16 @@ final class WarmupWorkload {
             "leader warm-up order ".repeat(8));
   }
 
-  private static byte[] readResource() {
+  private static String readResource() {
     try (final InputStream stream =
         Objects.requireNonNull(
             WarmupWorkload.class.getClassLoader().getResourceAsStream(RESOURCE),
             "Missing warm-up resource " + RESOURCE)) {
-      return stream.readAllBytes();
+      final var bpmn = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+      if (!bpmn.contains(PROCESS_ELEMENT)) {
+        throw new IllegalStateException("Warm-up resource has no process element to revise");
+      }
+      return bpmn;
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }

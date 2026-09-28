@@ -10,9 +10,14 @@ package io.camunda.zeebe.broker.warmup;
 import io.camunda.cluster.PartitionId;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.secretstore.SecretStoreRegistry;
+import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
+import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext;
+import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.ExporterMode;
+import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.QueryApiCfg;
+import io.camunda.zeebe.broker.system.partitions.PartitionMessagingService;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -31,10 +36,12 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.StreamClock;
+import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import io.camunda.zeebe.util.EnumCounters;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.InstantSource;
@@ -42,25 +49,32 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
  * A single-partition engine assembled from the same production classes as a leader partition —
  * command API request handler, log stream, stream processor, engine processors and RocksDB state —
- * but isolated from the broker: it has its own actor scheduler, meter registry, RocksDB memory and
- * directory, it has no exporters, and it never talks to the network or to other partitions.
+ * and the exporter director with copies of the broker's exporters — but isolated from the broker:
+ * it has its own actor scheduler, meter registry, RocksDB memory and directory, its exporters write
+ * to a {@link ScratchSearchEngine}, and it never talks to other brokers or partitions.
  */
 @NullMarked
 final class ScratchEngine implements AutoCloseable {
 
   static final int PARTITION_ID = 1;
+  private static final int EXPORTER_DIRECTOR_ID = 1003;
   private static final long ROCKSDB_MEMORY = 64L * 1024 * 1024;
   private static final Duration STEP_TIMEOUT = Duration.ofSeconds(30);
 
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final Deque<ThrowingRunnable> closers = new ArrayDeque<>();
+  private @Nullable ScratchSearchEngine searchEngine;
+  private int exporters;
 
   ScratchEngine(
       final Path directory,
@@ -90,7 +104,7 @@ final class ScratchEngine implements AutoCloseable {
     final var scheduler =
         ActorScheduler.newActorScheduler()
             .setSchedulerName("leader-warmup")
-            .setCpuBoundActorThreadCount(1)
+            .setCpuBoundActorThreadCount(2)
             .setIoBoundActorThreadCount(1)
             .build();
     scheduler.start();
@@ -166,6 +180,48 @@ final class ScratchEngine implements AutoCloseable {
     await(
         commandApi.registerHandlers(
             PARTITION_ID, logStream, new StateQueryService(zeebeDb, InstantSource.system())));
+
+    final var searchEngine = new ScratchSearchEngine();
+    this.searchEngine = searchEngine;
+    closers.push(searchEngine::close);
+    final var exporterDescriptors =
+        ScratchExporters.of(
+            tenantContext.exporterRepository().getExporters().values(), searchEngine.url());
+    exporters = exporterDescriptors.size();
+    if (exporterDescriptors.isEmpty()) {
+      return;
+    }
+    final var exporterDirector =
+        new ExporterDirector(
+            new ExporterDirectorContext()
+                .id(EXPORTER_DIRECTOR_ID)
+                .partitionId(partitionId)
+                .clock(clock)
+                .logStream(logStream)
+                .zeebeDb(zeebeDb)
+                .partitionMessagingService(new NoPartitionMessaging())
+                .descriptors(exporterDescriptors)
+                .exporterMode(ExporterMode.ACTIVE)
+                .positionsToSkipFilter(SkipPositionsFilter.of(Set.of()))
+                .meterRegistry(meterRegistry)
+                .licenseKey(brokerCfg.getLicenseKey())
+                .tenantName(partitionId.group())
+                .receiveOnLegacySubject(false),
+            ExporterPhase.EXPORTING);
+    closers.push(() -> await(exporterDirector.closeAsync()));
+    await(exporterDirector.startAsync(scheduler));
+  }
+
+  int exporters() {
+    return exporters;
+  }
+
+  long searchRequests() {
+    return searchEngine != null ? searchEngine.requests() : 0;
+  }
+
+  long unrecognisedSearchRequests() {
+    return searchEngine != null ? searchEngine.unrecognisedRequests() : 0;
   }
 
   /** Releases everything that was started, in reverse order. */
@@ -202,6 +258,19 @@ final class ScratchEngine implements AutoCloseable {
 
   private static <T> @Nullable T await(final ActorFuture<T> future) throws Exception {
     return future.get(STEP_TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+  }
+
+  /** Exporter positions stay within the scratch partition, which has no other members. */
+  private static final class NoPartitionMessaging implements PartitionMessagingService {
+    @Override
+    public void subscribe(
+        final String subject, final Consumer<ByteBuffer> consumer, final Executor executor) {}
+
+    @Override
+    public void broadcast(final String subject, final ByteBuffer payload) {}
+
+    @Override
+    public void unsubscribe(final String subject) {}
   }
 
   @FunctionalInterface

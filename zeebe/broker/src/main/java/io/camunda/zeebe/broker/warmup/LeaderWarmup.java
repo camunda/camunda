@@ -35,8 +35,8 @@ import org.slf4j.LoggerFactory;
  * Warms up leader-only code on a broker that has not led a partition since it started. Once all of
  * the broker's partitions are installed and healthy and a delay has passed, and only if it has
  * never become leader, a one-shot synthetic workload runs through an isolated {@link ScratchEngine}
- * on a dedicated thread, so that the JIT has compiled command processing before the broker has to
- * do it for real.
+ * on a dedicated thread, so that the JIT has compiled command processing and exporting before the
+ * broker has to do them for real.
  *
  * <p>Becoming leader of any partition stops the warm-up at the next event it handles. The listener
  * only raises a flag, so it never delays the role transition. Failures inside the warm-up are
@@ -143,7 +143,8 @@ public final class LeaderWarmup implements PartitionRaftListener {
     final var workload =
         new WarmupWorkload(cfg.getProcessInstances(), cfg.getMaxInFlightInstances());
     final Outcome outcome;
-    try (final var ignored =
+    final String exporting;
+    try (final var engine =
         new ScratchEngine(
             directory,
             brokerCfg,
@@ -156,6 +157,12 @@ public final class LeaderWarmup implements PartitionRaftListener {
               stopRequested::isDone,
               () -> !healthCheckService.isBrokerHealthy(),
               startNanos + cfg.getMaxDuration().toNanos());
+      metrics.setExporting(
+          engine.exporters(), engine.searchRequests(), engine.unrecognisedSearchRequests());
+      exporting =
+          "%d exporters, %d search requests (%d unrecognised)"
+              .formatted(
+                  engine.exporters(), engine.searchRequests(), engine.unrecognisedSearchRequests());
     } finally {
       FileUtil.deleteFolderIfExists(directory);
     }
@@ -167,19 +174,21 @@ public final class LeaderWarmup implements PartitionRaftListener {
       case COMPLETED -> {
         metrics.setState(State.COMPLETED);
         LOG.info(
-            "Completed leader warm-up in {}: {} process instances, {} commands sent, {} JIT compilation time",
+            "Completed leader warm-up in {}: {} process instances, {} commands sent, {}, {} JIT compilation time",
             elapsed,
             workload.completedInstances(),
             workload.commandsSent(),
+            exporting,
             compilation);
       }
       case TIMED_OUT -> {
         metrics.setState(State.TIMED_OUT);
         LOG.info(
-            "Stopped leader warm-up after reaching its maximum duration {}: {} process instances, {} commands sent, {} JIT compilation time",
+            "Stopped leader warm-up after reaching its maximum duration {}: {} process instances, {} commands sent, {}, {} JIT compilation time",
             elapsed,
             workload.completedInstances(),
             workload.commandsSent(),
+            exporting,
             compilation);
       }
       case CANCELLED -> {

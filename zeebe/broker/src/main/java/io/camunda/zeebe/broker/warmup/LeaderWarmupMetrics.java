@@ -24,6 +24,9 @@ final class LeaderWarmupMetrics {
 
   private final AtomicInteger state = new AtomicInteger(State.PENDING.code);
   private final AtomicLong durationMillis = new AtomicLong();
+  private final AtomicInteger exporters = new AtomicInteger();
+  private final AtomicLong searchRequests = new AtomicLong();
+  private final AtomicLong unrecognisedSearchRequests = new AtomicLong();
 
   LeaderWarmupMetrics(final MeterRegistry registry) {
     Gauge.builder(LeaderWarmupMetricsDoc.STATE.getName(), state, AtomicInteger::get)
@@ -36,6 +39,24 @@ final class LeaderWarmupMetrics {
             AtomicLong::get)
         .description(LeaderWarmupMetricsDoc.DURATION.getDescription())
         .register(registry);
+    Gauge.builder(LeaderWarmupMetricsDoc.EXPORTERS.getName(), exporters, AtomicInteger::get)
+        .description(LeaderWarmupMetricsDoc.EXPORTERS.getDescription())
+        .register(registry);
+    Gauge.builder(LeaderWarmupMetricsDoc.SEARCH_REQUESTS.getName(), searchRequests, AtomicLong::get)
+        .description(LeaderWarmupMetricsDoc.SEARCH_REQUESTS.getDescription())
+        .register(registry);
+    Gauge.builder(
+            LeaderWarmupMetricsDoc.UNRECOGNISED_SEARCH_REQUESTS.getName(),
+            unrecognisedSearchRequests,
+            AtomicLong::get)
+        .description(LeaderWarmupMetricsDoc.UNRECOGNISED_SEARCH_REQUESTS.getDescription())
+        .register(registry);
+  }
+
+  void setExporting(final int exporterCount, final long requests, final long unrecognised) {
+    exporters.set(exporterCount);
+    searchRequests.set(requests);
+    unrecognisedSearchRequests.set(unrecognised);
   }
 
   void setState(final State newState) {
@@ -97,6 +118,62 @@ final class LeaderWarmupMetrics {
       @Override
       public String getName() {
         return "zeebe.leader.warmup.duration";
+      }
+
+      @Override
+      public Type getType() {
+        return Meter.Type.GAUGE;
+      }
+    },
+
+    /** How many of the broker's exporters the leader warm-up ran. */
+    EXPORTERS {
+      @Override
+      public String getDescription() {
+        return "How many of the broker's exporters the leader warm-up ran, once it has ended";
+      }
+
+      @Override
+      public String getName() {
+        return "zeebe.leader.warmup.exporters";
+      }
+
+      @Override
+      public Type getType() {
+        return Meter.Type.GAUGE;
+      }
+    },
+
+    /** How many requests the leader warm-up's exporters sent to its stand-in search engine. */
+    SEARCH_REQUESTS {
+      @Override
+      public String getDescription() {
+        return "How many requests the leader warm-up's exporters sent to its stand-in search"
+            + " engine, once it has ended";
+      }
+
+      @Override
+      public String getName() {
+        return "zeebe.leader.warmup.search.requests";
+      }
+
+      @Override
+      public Type getType() {
+        return Meter.Type.GAUGE;
+      }
+    },
+
+    /** How many of those requests the stand-in search engine did not recognise. */
+    UNRECOGNISED_SEARCH_REQUESTS {
+      @Override
+      public String getDescription() {
+        return "How many requests the leader warm-up's stand-in search engine did not recognise,"
+            + " once it has ended";
+      }
+
+      @Override
+      public String getName() {
+        return "zeebe.leader.warmup.search.unrecognised";
       }
 
       @Override
