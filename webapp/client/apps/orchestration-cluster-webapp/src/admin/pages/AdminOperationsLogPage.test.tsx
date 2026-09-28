@@ -80,7 +80,23 @@ describe('<AdminOperationsLogPage />', () => {
 		// then
 		await expect.element(screen.getByRole('cell', {name: 'Create'})).toBeVisible();
 		await expect.element(screen.getByRole('cell', {name: 'User task'})).toBeVisible();
-		await expect.element(screen.getByRole('cell', {name: 'demo'})).toBeVisible();
+		await expect.element(screen.getByRole('cell', {name: 'User demo'})).toBeVisible();
+	});
+
+	it('should show an accessible label for the actor type icon', async () => {
+		// given
+		const {screen} = await renderPage({auditLogs: [createAuditLog({actorType: 'CLIENT'})]});
+
+		// then
+		await expect.element(screen.getByRole('cell', {name: 'Client demo'})).toBeVisible();
+	});
+
+	it('should indicate when an operation was performed by an AI agent', async () => {
+		// given
+		const {screen} = await renderPage({auditLogs: [createAuditLog({agentElementId: 'agent-1'})]});
+
+		// then
+		await expect.element(screen.getByRole('cell', {name: 'User AI agent demo'})).toBeVisible();
 	});
 
 	it('should render a success status icon for a successful operation', async () => {

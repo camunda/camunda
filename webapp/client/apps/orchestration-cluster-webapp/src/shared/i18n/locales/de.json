@@ -125,7 +125,10 @@
 				"errorCode": "Fehlercode",
 				"owner": "Eigentümer",
 				"assignee": "Zugewiesen an",
-				"noOperations": "Keine Vorgänge gefunden"
+				"noOperations": "Keine Vorgänge gefunden",
+				"actorTypeClient": "Client",
+				"actorTypeUser": "Benutzer",
+				"actorTypeAgent": "KI-Agent"
 			}
 		},
 		"tasklist": {

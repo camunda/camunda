@@ -125,7 +125,10 @@
 				"errorCode": "Código de error",
 				"owner": "Propietario",
 				"assignee": "Asignado a",
-				"noOperations": "No se encontraron operaciones"
+				"noOperations": "No se encontraron operaciones",
+				"actorTypeClient": "Cliente",
+				"actorTypeUser": "Usuario",
+				"actorTypeAgent": "Agente de IA"
 			}
 		},
 		"tasklist": {

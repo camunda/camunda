@@ -33,7 +33,7 @@ import {
 	type DateRange,
 	type SortingConfig,
 } from '@camunda/design-system';
-import {ExternalLink, Plug, User} from '@camunda/design-system/icons';
+import {AiIcon, ExternalLink, Plug, User} from '@camunda/design-system/icons';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10';
 import {formatEnumLabel} from '#/admin/modules/operations-log/auditLogs';
 import {
@@ -263,11 +263,18 @@ const AdminOperationsLogPage: React.FC<AdminOperationsLogPageProps> = ({
 						return EMPTY_CELL;
 					}
 
-					const ActorIcon = log.actorType === 'CLIENT' ? Plug : User;
+					const isClient = log.actorType === 'CLIENT';
+					const ActorIcon = isClient ? Plug : User;
+					const actorLabel = isClient
+						? t('admin.operationsLog.actorTypeClient')
+						: t('admin.operationsLog.actorTypeUser');
 
 					return (
 						<div className="flex items-center gap-1">
-							<ActorIcon aria-hidden className="h-4 w-4" />
+							<ActorIcon role="img" aria-label={actorLabel} className="h-4 w-4" />
+							{log.agentElementId && (
+								<AiIcon role="img" aria-label={t('admin.operationsLog.actorTypeAgent')} className="h-4 w-4" />
+							)}
 							{log.actorId}
 						</div>
 					);
