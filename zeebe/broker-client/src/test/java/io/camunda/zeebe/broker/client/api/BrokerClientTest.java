@@ -113,7 +113,8 @@ public final class BrokerClientTest {
                 broker.member().id(),
                 MemberState.initializeAsActive(Map.of(1, PartitionState.active(1, null))));
 
-    topologyManager.onClusterConfigurationUpdated(clusterTopology);
+    topologyManager.onClusterConfigurationUpdated(
+        CurrentClusterConfiguration.fromLegacy(clusterTopology));
     topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, broker.member()));
     Awaitility.await("Topology is updated")
         .untilAsserted(

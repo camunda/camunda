@@ -11,7 +11,6 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.InitializerError.PersistedConfigurationIsBroken;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationSerializer;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
@@ -226,21 +225,16 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
     private final Consumer<T> configurationGossiper;
     private final ActorFuture<T> initialized;
     private final ConcurrencyControl executor;
-    // Used only to discriminate, at runtime, which of the two onClusterConfigurationUpdated
-    // overloads carries a T (see SyncInitializer for the same pattern).
-    private final T uninitialized;
 
     public GossipInitializer(
         final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier,
         final Supplier<T> persistedConfigurationSupplier,
         final Consumer<T> configurationGossiper,
-        final ConcurrencyControl executor,
-        final T uninitialized) {
+        final ConcurrencyControl executor) {
       this.clusterConfigurationUpdateNotifier = clusterConfigurationUpdateNotifier;
       this.persistedConfigurationSupplier = persistedConfigurationSupplier;
       this.configurationGossiper = configurationGossiper;
       this.executor = executor;
-      this.uninitialized = uninitialized;
       initialized = new CompletableActorFuture<>();
     }
 
@@ -262,19 +256,9 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
 
     @Override
     @SuppressWarnings("unchecked")
-    public void onClusterConfigurationUpdated(final ClusterConfiguration clusterConfiguration) {
-      if (uninitialized instanceof ClusterConfiguration) {
-        configurationUpdated((T) clusterConfiguration);
-      }
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
     public void onClusterConfigurationUpdated(
         final CurrentClusterConfiguration clusterConfiguration) {
-      if (uninitialized instanceof CurrentClusterConfiguration) {
-        configurationUpdated((T) clusterConfiguration);
-      }
+      configurationUpdated((T) clusterConfiguration);
     }
 
     private void configurationUpdated(final T clusterConfiguration) {
@@ -450,19 +434,9 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
 
     @Override
     @SuppressWarnings("unchecked")
-    public void onClusterConfigurationUpdated(final ClusterConfiguration clusterConfiguration) {
-      if (uninitialized instanceof ClusterConfiguration) {
-        configurationUpdated((T) clusterConfiguration);
-      }
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
     public void onClusterConfigurationUpdated(
         final CurrentClusterConfiguration clusterConfiguration) {
-      if (uninitialized instanceof CurrentClusterConfiguration) {
-        configurationUpdated((T) clusterConfiguration);
-      }
+      configurationUpdated((T) clusterConfiguration);
     }
 
     private void configurationUpdated(final T clusterConfiguration) {
