@@ -22,7 +22,6 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.StaticIni
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.SyncInitializer;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -132,8 +131,7 @@ final class ClusterConfigurationInitializerTest {
             topologyNotifier,
             persistedClusterConfiguration::getConfiguration,
             ignore -> {},
-            new TestConcurrencyControl(),
-            CurrentClusterConfiguration.uninitialized());
+            new TestConcurrencyControl());
 
     // when
     final var initializeFuture = initializer.initialize();
@@ -144,28 +142,6 @@ final class ClusterConfigurationInitializerTest {
 
     // then
     assertThat(initializeFuture.join().isUninitialized()).isFalse();
-  }
-
-  @Test
-  void shouldIgnoreLegacyUpdatesWhileWaitingForGossip() {
-    // given — the notifier interface still carries the legacy overload (used for mixed-version
-    // gossip during rolling upgrades), which this initializer must not act on
-    final TestClusterConfigurationNotifier topologyNotifier =
-        new TestClusterConfigurationNotifier();
-    final var initializer =
-        new GossipInitializer<>(
-            topologyNotifier,
-            persistedClusterConfiguration::getConfiguration,
-            ignore -> {},
-            new TestConcurrencyControl(),
-            CurrentClusterConfiguration.uninitialized());
-
-    // when
-    final var initializeFuture = initializer.initialize();
-    topologyNotifier.updateTopology(ClusterConfiguration.init());
-
-    // then — the legacy overload is ignored; only a CurrentClusterConfiguration completes it
-    assertThat(initializeFuture.isDone()).isFalse();
   }
 
   @Test
@@ -505,10 +481,6 @@ final class ClusterConfigurationInitializerTest {
       this.listener = null;
     }
 
-    void updateTopology(final ClusterConfiguration topology) {
-      listener.onClusterConfigurationUpdated(topology);
-    }
-
     void updateCurrentClusterConfiguration(final CurrentClusterConfiguration configuration) {
       listener.onClusterConfigurationUpdated(configuration);
     }
@@ -526,8 +498,7 @@ final class ClusterConfigurationInitializerTest {
                       new TestClusterConfigurationNotifier(),
                       persistedClusterConfiguration::getConfiguration,
                       ignore -> {},
-                      new TestConcurrencyControl(),
-                      CurrentClusterConfiguration.uninitialized()));
+                      new TestConcurrencyControl()));
       // write initial configuration to the file
       persistedClusterConfiguration.update(initialClusterConfiguration);
       // when
@@ -551,8 +522,7 @@ final class ClusterConfigurationInitializerTest {
                       topologyUpdateNotifier,
                       persistedClusterConfiguration::getConfiguration,
                       gossipedConfiguration::set,
-                      new TestConcurrencyControl(),
-                      CurrentClusterConfiguration.uninitialized()));
+                      new TestConcurrencyControl()));
 
       // when
       final var initializeFuture = initializer.initialize();
@@ -582,8 +552,7 @@ final class ClusterConfigurationInitializerTest {
                       topologyUpdateNotifier,
                       persistedClusterConfiguration::getConfiguration,
                       gossipedConfiguration::set,
-                      new TestConcurrencyControl(),
-                      CurrentClusterConfiguration.uninitialized()));
+                      new TestConcurrencyControl()));
       // Corrupt file
       Files.write(
           topologyFile, "random".getBytes(), StandardOpenOption.WRITE, StandardOpenOption.CREATE);

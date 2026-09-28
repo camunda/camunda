@@ -89,40 +89,21 @@ final class CurrentClusterConfigurationSerializerTest {
   }
 
   @Test
-  void shouldRoundTripGossipStateWithBothFields() {
-    // given — a gossip state carrying both the legacy view (field 1) and the new model (field 2)
-    final var legacy =
-        ClusterConfiguration.init()
-            .addMember(MemberId.from("0"), MemberState.initializeAsActive(Map.of()));
+  void shouldRoundTripGossipState() {
+    // given
+    final var configuration =
+        CurrentClusterConfiguration.fromLegacy(
+            ClusterConfiguration.init()
+                .addMember(MemberId.from("0"), MemberState.initializeAsActive(Map.of())));
     final var state = new ClusterConfigurationGossipState();
-    state.setClusterConfiguration(legacy);
-    state.setCurrentClusterConfiguration(CurrentClusterConfiguration.fromLegacy(legacy));
-
-    // when
-    final var decoded = serializer.decode(serializer.encode(state));
-
-    // then — both fields survive the round-trip
-    assertThat(decoded).isEqualTo(state);
-    assertThat(decoded.getClusterConfiguration()).isEqualTo(legacy);
-    assertThat(decoded.getCurrentClusterConfiguration())
-        .isEqualTo(CurrentClusterConfiguration.fromLegacy(legacy));
-  }
-
-  @Test
-  void shouldRoundTripGossipStateWithOnlyLegacyField() {
-    // given — an old broker gossips only field 1
-    final var legacy =
-        ClusterConfiguration.init()
-            .addMember(MemberId.from("0"), MemberState.initializeAsActive(Map.of()));
-    final var state = new ClusterConfigurationGossipState();
-    state.setClusterConfiguration(legacy);
+    state.setCurrentClusterConfiguration(configuration);
 
     // when
     final var decoded = serializer.decode(serializer.encode(state));
 
     // then
-    assertThat(decoded.getClusterConfiguration()).isEqualTo(legacy);
-    assertThat(decoded.getCurrentClusterConfiguration()).isNull();
+    assertThat(decoded).isEqualTo(state);
+    assertThat(decoded.getCurrentClusterConfiguration()).isEqualTo(configuration);
   }
 
   @Test
