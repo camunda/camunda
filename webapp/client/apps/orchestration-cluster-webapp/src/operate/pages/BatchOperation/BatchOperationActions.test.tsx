@@ -19,7 +19,7 @@ import {
 import {HttpResponse, http} from 'msw';
 import {render} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
-import {endpoints, type BatchOperationState} from '@camunda/camunda-api-zod-schemas/8.10';
+import {endpoints, type BatchOperationState} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
 import {
 	mockGetBatchOperationEndpoint,

@@ -10,7 +10,7 @@ import type {
 	AuditLog,
 	QueryAuditLogsResponseBody,
 	QueryUserTaskAuditLogsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.10';
+} from '@camunda/camunda-api-zod-schemas/8.11';
 import {createPaginatedResponse} from './shared';
 
 function createAuditLog(overrides?: Partial<AuditLog>): AuditLog {

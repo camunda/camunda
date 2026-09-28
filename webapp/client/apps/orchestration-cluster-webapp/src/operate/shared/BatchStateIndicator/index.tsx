@@ -17,7 +17,7 @@ import {
 	SkipForwardFilled,
 	type CarbonIconType,
 } from '@carbon/react/icons';
-import type {BatchOperationItemState, BatchOperationState} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {BatchOperationItemState, BatchOperationState} from '@camunda/camunda-api-zod-schemas/8.11';
 import {Container} from './styled';
 
 type Config = {

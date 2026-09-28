@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {Variable} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {Variable} from '@camunda/camunda-api-zod-schemas/8.11';
 import {Card, CardContent, toast} from '@camunda/design-system';
 import {useCallback, useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';

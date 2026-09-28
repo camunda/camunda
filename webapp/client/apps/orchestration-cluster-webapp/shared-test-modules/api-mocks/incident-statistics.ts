@@ -9,7 +9,7 @@
 import type {
 	IncidentProcessInstanceStatisticsByError,
 	IncidentProcessInstanceStatisticsByDefinition,
-} from '@camunda/camunda-api-zod-schemas/8.10';
+} from '@camunda/camunda-api-zod-schemas/8.11';
 
 function createIncidentProcessInstanceStatisticsByError(
 	overrides?: Partial<IncidentProcessInstanceStatisticsByError>,

@@ -8,7 +8,7 @@
 
 import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
+import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {DangerButton} from '#/operate/shared/OperationItem/DangerButton';
 import {DeleteConfirmationModal} from './DeleteConfirmationModal';
 

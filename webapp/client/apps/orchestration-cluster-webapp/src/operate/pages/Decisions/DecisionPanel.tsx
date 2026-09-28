@@ -11,7 +11,7 @@ import {useTranslation} from 'react-i18next';
 import {ErrorBoundary} from 'react-error-boundary';
 import {QueryErrorResetBoundary} from '@tanstack/react-query';
 import {Button} from '@carbon/react';
-import type {DecisionDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {DecisionDefinition} from '@camunda/camunda-api-zod-schemas/8.11';
 import {DecisionViewer} from '#/operate/shared/DecisionViewer';
 import {DiagramShell} from '#/operate/shared/DiagramShell/DiagramShell';
 import {ErrorMessage} from '#/operate/shared/ErrorMessage/ErrorMessage';

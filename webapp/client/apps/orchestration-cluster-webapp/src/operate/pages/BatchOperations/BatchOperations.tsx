@@ -15,7 +15,7 @@ import {BatchStateIndicator} from '#/operate/shared/BatchStateIndicator';
 import {batchOperationsOptions} from './batchOperations.queries';
 import {formatOperationType, formatStartDate} from './utils';
 import {PageContainer, PanelHeader, Title, TableContainer, VisuallyHiddenH1, OperationLink} from './styled';
-import type {BatchOperation} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {BatchOperation} from '@camunda/camunda-api-zod-schemas/8.11';
 
 type Props = {
 	page: number;

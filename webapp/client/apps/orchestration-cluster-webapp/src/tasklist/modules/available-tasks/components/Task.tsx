@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.11';
 import {Text} from '@camunda/design-system';
 import {Link, useMatchRoute} from '@tanstack/react-router';
 import {Bell, Calendar, CircleCheck, TriangleAlert} from '@camunda/design-system/icons';

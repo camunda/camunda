@@ -10,7 +10,7 @@ import {t} from 'i18next';
 import {toast} from '@camunda/design-system';
 import {createFileRoute, redirect, stripSearchParams, useNavigate} from '@tanstack/react-router';
 import {useSuspenseQuery, type InfiniteData} from '@tanstack/react-query';
-import type {QueryUserTaskAuditLogsResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {QueryUserTaskAuditLogsResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
 import {queries} from '#/shared/http/queries';
 import {getAuditLogsRequestBody} from '#/tasklist/modules/task-details-history/getAuditLogsRequestBody';
 import {

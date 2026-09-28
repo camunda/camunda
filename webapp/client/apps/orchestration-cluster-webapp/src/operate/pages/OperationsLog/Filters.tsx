@@ -17,8 +17,8 @@ import type {
 	AuditLogOperationType,
 	AuditLogEntityType,
 	AuditLogResult,
-} from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
-import {auditLogResultSchema} from '@camunda/camunda-api-zod-schemas/8.10';
+} from '@camunda/camunda-api-zod-schemas/8.11/audit-log';
+import {auditLogResultSchema} from '@camunda/camunda-api-zod-schemas/8.11';
 import {queries} from '#/shared/http/queries';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';

@@ -7,7 +7,7 @@
  */
 
 import {HttpResponse, http} from 'msw';
-import {endpoints, queryDecisionDefinitionsRequestBodySchema} from '@camunda/camunda-api-zod-schemas/8.10';
+import {endpoints, queryDecisionDefinitionsRequestBodySchema} from '@camunda/camunda-api-zod-schemas/8.11';
 
 function mockQueryDecisionDefinitionsEndpointByFilter({
 	unfilteredResponse,

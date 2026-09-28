@@ -11,7 +11,7 @@ import {useTranslation} from 'react-i18next';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {useRouter} from '@tanstack/react-router';
 import {InlineLoading, Link, ListItem, Stack} from '@carbon/react';
-import type {DecisionDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {DecisionDefinition} from '@camunda/camunda-api-zod-schemas/8.11';
 import {DangerButton} from '#/operate/shared/OperationItem/DangerButton';
 import {OperationItems} from '#/operate/shared/OperationItems/OperationItems';
 import {DeleteButtonContainer} from '#/operate/shared/DeleteDefinition/styled';

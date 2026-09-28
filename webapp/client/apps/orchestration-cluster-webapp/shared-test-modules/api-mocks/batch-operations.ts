@@ -11,7 +11,7 @@ import type {
 	BatchOperationItem,
 	QueryBatchOperationItemsResponseBody,
 	QueryBatchOperationsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.10';
+} from '@camunda/camunda-api-zod-schemas/8.11';
 
 function createBatchOperation(overrides?: Partial<BatchOperation>): BatchOperation {
 	return {

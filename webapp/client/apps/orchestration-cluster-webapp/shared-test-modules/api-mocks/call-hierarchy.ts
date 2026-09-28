@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {CallHierarchy} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {CallHierarchy} from '@camunda/camunda-api-zod-schemas/8.11';
 
 function createCallHierarchy(overrides?: Partial<CallHierarchy>): CallHierarchy {
 	return {

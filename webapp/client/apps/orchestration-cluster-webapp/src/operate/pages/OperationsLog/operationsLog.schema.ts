@@ -11,7 +11,7 @@ import {
 	auditLogEntityTypeSchema,
 	auditLogOperationTypeSchema,
 	auditLogResultSchema,
-} from '@camunda/camunda-api-zod-schemas/8.10';
+} from '@camunda/camunda-api-zod-schemas/8.11';
 
 const operationsLogSearchSchema = z.object({
 	process: z.string().optional(),

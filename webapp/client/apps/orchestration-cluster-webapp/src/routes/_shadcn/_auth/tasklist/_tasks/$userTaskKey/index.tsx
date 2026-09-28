@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {Variable} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {Variable} from '@camunda/camunda-api-zod-schemas/8.11';
 import c4FormJsCss from '@bpmn-io/c4-theme/assets/form-js.css?url';
 import c4TokensCss from '@bpmn-io/c4-theme/assets/tokens.css?url';
 import formJsCss from '@bpmn-io/form-js-viewer/dist/assets/form-js.css?url';

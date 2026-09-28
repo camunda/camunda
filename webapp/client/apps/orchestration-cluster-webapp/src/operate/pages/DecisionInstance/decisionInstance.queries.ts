@@ -7,7 +7,7 @@
  */
 
 import {queryOptions, useQuery} from '@tanstack/react-query';
-import type {GetDecisionInstanceResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {GetDecisionInstanceResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
 import {request, requestErrorSchema} from '#/shared/http/request';
 import {ForbiddenError} from '#/shared/errors';
 import {mapQueryError} from '#/shared/http/mapQueryError';

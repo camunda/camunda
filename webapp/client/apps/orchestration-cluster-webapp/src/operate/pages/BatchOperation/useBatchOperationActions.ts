@@ -10,7 +10,7 @@ import {useEffect} from 'react';
 import {useMutation, useQuery, useQueryClient, type QueryClient} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from '@tanstack/react-router';
-import type {BatchOperation} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {BatchOperation} from '@camunda/camunda-api-zod-schemas/8.11';
 import {ForbiddenError} from '#/shared/errors';
 import {request, requestErrorSchema} from '#/shared/http/request';
 import {mapQueryError} from '#/shared/http/mapQueryError';

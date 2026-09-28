@@ -9,7 +9,7 @@
 import {BreadcrumbItem, OverflowMenu, OverflowMenuItem} from '@carbon/react';
 import {useNavigate} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
-import type {CallHierarchy, ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {CallHierarchy, ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {getProcessDefinitionName} from '#/operate/shared/utils/processInstance';
 import {ProcessInstanceLink, CarbonBreadcrumb} from './styled';
 

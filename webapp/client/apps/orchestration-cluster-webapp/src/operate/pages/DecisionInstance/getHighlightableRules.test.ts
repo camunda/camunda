@@ -7,7 +7,7 @@
  */
 
 import {describe, expect, it} from 'vitest';
-import type {GetDecisionInstanceResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {GetDecisionInstanceResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
 import {getHighlightableRules} from './getHighlightableRules';
 
 function createMatchedRules(ruleIndexes: Array<number | null>): GetDecisionInstanceResponseBody['matchedRules'] {

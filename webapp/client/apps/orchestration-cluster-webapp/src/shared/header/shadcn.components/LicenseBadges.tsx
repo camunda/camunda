@@ -7,7 +7,7 @@
  */
 
 import {Badge} from '@camunda/design-system';
-import type {License} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {License} from '@camunda/camunda-api-zod-schemas/8.11';
 import type {TFunction} from 'i18next';
 import {useTranslation} from 'react-i18next';
 import {useMemo} from 'react';

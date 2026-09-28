@@ -9,7 +9,7 @@
 import {useTranslation} from 'react-i18next';
 import {OverflowMenu, OverflowMenuItem, Button} from '@carbon/react';
 import {Pause, Play} from '@carbon/react/icons';
-import type {BatchOperationState} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {BatchOperationState} from '@camunda/camunda-api-zod-schemas/8.11';
 import {useBatchOperationActions} from './useBatchOperationActions';
 import {ActionsContainer} from './styled';
 

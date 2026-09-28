@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {AuditLogOperationType} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {AuditLogOperationType} from '@camunda/camunda-api-zod-schemas/8.11';
 
 const OPERATION_TYPE_TRANSLATION_KEY: Partial<Record<AuditLogOperationType, string>> = {
 	ASSIGN: 'tasklist.taskDetailsHistoryOperationAssign',

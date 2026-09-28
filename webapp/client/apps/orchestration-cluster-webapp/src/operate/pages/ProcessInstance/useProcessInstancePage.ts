@@ -7,7 +7,7 @@
  */
 
 import {createContext, useContext} from 'react';
-import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import type {ProcessInstanceSearch, ProcessInstanceSelection} from './processInstanceSearch';
 
 type ProcessInstancePageContext = {

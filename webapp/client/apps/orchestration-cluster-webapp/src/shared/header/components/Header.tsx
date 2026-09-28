@@ -12,7 +12,7 @@ import {t} from 'i18next';
 import {observer} from 'mobx-react-lite';
 import {ArrowRight} from '@carbon/react/icons';
 import {C3Navigation} from '@camunda/camunda-composite-components';
-import type {CurrentUser, License} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {CurrentUser, License} from '@camunda/camunda-api-zod-schemas/8.11';
 import {themeStore} from '#/shared/theme/theme';
 import {authenticationStore} from '#/shared/auth/authentication.store';
 import {notificationsStore} from '#/shared/notifications/notifications.store';

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {completeTaskRequestBodySchema} from '@camunda/camunda-api-zod-schemas/8.10';
+import {completeTaskRequestBodySchema} from '@camunda/camunda-api-zod-schemas/8.11';
 import {HttpResponse} from 'msw';
 import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';

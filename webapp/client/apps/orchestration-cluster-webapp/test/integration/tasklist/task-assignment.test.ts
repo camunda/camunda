@@ -9,7 +9,7 @@
 import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
-import {assignTaskRequestBodySchema} from '@camunda/camunda-api-zod-schemas/8.10';
+import {assignTaskRequestBodySchema} from '@camunda/camunda-api-zod-schemas/8.11';
 import {
 	mockCurrentUserEndpoint,
 	mockGetUserTaskEndpoint,

@@ -9,7 +9,7 @@
 import {Link} from '@carbon/react';
 import {Link as RouterLink, createLink} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
-import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
+import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.11/audit-log';
 import {mapToCellEntityKeyData} from '#/operate/shared/OperationsLogDetailsModal/operationsLogUtils';
 
 type Props = {

@@ -9,7 +9,7 @@
 import {createPortal} from 'react-dom';
 import {observer} from 'mobx-react-lite';
 import {CheckmarkOutline, Error, RadioButtonChecked, WarningFilled} from '@carbon/react/icons';
-import type {ProcessDefinitionStatistic, DecisionInstanceState} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {ProcessDefinitionStatistic, DecisionInstanceState} from '@camunda/camunda-api-zod-schemas/8.11';
 import {themeStore} from '#/shared/theme/theme';
 import {Container} from './styled';
 

@@ -7,7 +7,7 @@
  */
 
 import {useState} from 'react';
-import type {ProcessInstance, CreateCancellationBatchOperationRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {ProcessInstance, CreateCancellationBatchOperationRequestBody} from '@camunda/camunda-api-zod-schemas/8.11';
 import {mapProcessInstancesFilter, type ProcessesSearch} from './processesFilter';
 import {buildInstanceKeyCriterion} from '#/operate/shared/utils/buildInstanceKeyCriterion';
 import {useInstancesSelection} from '#/operate/shared/hooks/useInstancesSelection';

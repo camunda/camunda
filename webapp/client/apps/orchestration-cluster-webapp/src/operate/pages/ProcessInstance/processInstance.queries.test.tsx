@@ -13,7 +13,7 @@ import {afterEach, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
-import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
 import {ForbiddenError} from '#/shared/errors';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';

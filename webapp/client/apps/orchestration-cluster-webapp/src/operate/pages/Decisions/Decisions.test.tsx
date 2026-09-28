@@ -13,7 +13,7 @@ import {
 	endpoints,
 	queryDecisionInstancesRequestBodySchema,
 	type QueryDecisionInstancesRequestBody,
-} from '@camunda/camunda-api-zod-schemas/8.10';
+} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {

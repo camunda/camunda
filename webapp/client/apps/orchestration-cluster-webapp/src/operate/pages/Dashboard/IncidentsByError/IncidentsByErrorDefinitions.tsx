@@ -8,7 +8,7 @@
 
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
-import type {IncidentProcessInstanceStatisticsByDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {IncidentProcessInstanceStatisticsByDefinition} from '@camunda/camunda-api-zod-schemas/8.11';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
 import {incidentsByErrorDefinitionsQuery} from './incidentsByError.queries';
 import {Li, LinkWrapper} from '../styled';

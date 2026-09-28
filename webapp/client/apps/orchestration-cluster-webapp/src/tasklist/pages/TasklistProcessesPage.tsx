@@ -9,7 +9,7 @@
 import {useCallback} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Button, EmptyState, PageHeader, PageLayout} from '@camunda/design-system';
-import type {CurrentUser, ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {CurrentUser, ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.11';
 import {ProcessTile} from '#/tasklist/modules/processes/components/ProcessTile';
 import {ProcessesFilters} from '#/tasklist/modules/processes/components/ProcessesFilters';
 import {FirstTimeProcessWarning} from '#/tasklist/modules/processes/components/FirstTimeProcessWarning';

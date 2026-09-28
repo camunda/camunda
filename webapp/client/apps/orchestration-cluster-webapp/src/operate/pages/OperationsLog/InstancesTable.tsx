@@ -13,7 +13,7 @@ import {
 	auditLogSortFieldEnum,
 	type AuditLog,
 	type QueryAuditLogsRequestBody,
-} from '@camunda/camunda-api-zod-schemas/8.10';
+} from '@camunda/camunda-api-zod-schemas/8.11';
 import {queries} from '#/shared/http/queries';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {logger} from '#/operate/shared/utils/logger';

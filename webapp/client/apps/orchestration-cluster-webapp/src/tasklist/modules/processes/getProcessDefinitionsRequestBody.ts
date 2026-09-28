@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {CurrentUser, QueryProcessDefinitionsRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {CurrentUser, QueryProcessDefinitionsRequestBody} from '@camunda/camunda-api-zod-schemas/8.11';
 import type {ProcessesSearch} from '#/tasklist/modules/processes/searchSchema';
 
 const PROCESS_DEFINITIONS_PAGE_SIZE = 12;

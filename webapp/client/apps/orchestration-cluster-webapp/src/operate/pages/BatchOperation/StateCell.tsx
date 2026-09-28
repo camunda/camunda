@@ -8,7 +8,7 @@
 
 import {Tooltip} from '@carbon/react';
 import {useTranslation} from 'react-i18next';
-import type {BatchOperationItem} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {BatchOperationItem} from '@camunda/camunda-api-zod-schemas/8.11';
 import {BatchStateIndicator} from '#/operate/shared/BatchStateIndicator';
 
 type Props = {

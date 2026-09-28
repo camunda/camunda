@@ -17,7 +17,7 @@ import type {
 	CreateIncidentResolutionBatchOperationResponseBody,
 	SuspendProcessInstancesBatchOperationResponseBody,
 	ResumeProcessInstancesBatchOperationResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.10';
+} from '@camunda/camunda-api-zod-schemas/8.11';
 import {endpoints} from '#/shared/http/endpoints';
 import {request, requestErrorSchema} from '#/shared/http/request';
 import {notificationsStore} from '#/shared/notifications/notifications.store';

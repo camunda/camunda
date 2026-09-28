@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.11';
 import {Badge, Button, Card, CardContent, Heading} from '@camunda/design-system';
 import {ArrowRight, List} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';

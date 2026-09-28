@@ -8,7 +8,7 @@
 
 import {useTranslation} from 'react-i18next';
 import {InlineLoading, InlineNotification, Link, Modal} from '@carbon/react';
-import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
+import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {mergePathname} from '#/shared/http/mergePathname';
 import {useCallHierarchy} from './Operations.queries';

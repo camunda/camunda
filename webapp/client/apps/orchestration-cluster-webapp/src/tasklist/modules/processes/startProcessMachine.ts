@@ -15,7 +15,7 @@ import type {
 	ProcessDefinition,
 	QueryUserTasksResponseBody,
 	UserTask,
-} from '@camunda/camunda-api-zod-schemas/8.10';
+} from '@camunda/camunda-api-zod-schemas/8.11';
 import {endpoints} from '#/shared/http/endpoints';
 import {request, requestErrorSchema} from '#/shared/http/request';
 import {getClientConfig} from '#/shared/config/getClientConfig';

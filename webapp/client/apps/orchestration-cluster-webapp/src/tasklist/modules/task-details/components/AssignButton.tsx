@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.11';
 import {t as _t} from 'i18next';
 import {useMemo} from 'react';
 import {useTranslation} from 'react-i18next';

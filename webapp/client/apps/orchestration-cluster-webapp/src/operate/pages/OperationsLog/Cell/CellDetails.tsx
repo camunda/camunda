@@ -7,7 +7,7 @@
  */
 
 import {useTranslation} from 'react-i18next';
-import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
+import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.11/audit-log';
 import {mapToCellDetailsData} from '#/operate/shared/OperationsLogDetailsModal/operationsLogUtils';
 import {PropertyText} from '../styled';
 
