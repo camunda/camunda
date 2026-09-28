@@ -42,6 +42,7 @@
   </select>
 
   <sql id="searchFilter">
+<<<<<<< HEAD
     WHERE 1 = 1
     <!-- basic filters -->
     <if test="filter.incidentKeyOperations != null and !filter.incidentKeyOperations.isEmpty()">
@@ -92,6 +93,78 @@
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
+=======
+    <where>
+      <!-- authorization filters-->
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND i.PROCESS_DEFINITION_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+          close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+        AND i.TENANT_ID IN
+        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+          #{tenantId}
+        </foreach>
+      </if>
+      <!-- basic filters -->
+      <if test="filter.incidentKeyOperations != null and !filter.incidentKeyOperations.isEmpty()">
+        <foreach collection="filter.incidentKeyOperations" item="operation">
+          AND INCIDENT_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if
+        test="filter.processDefinitionKeyOperations != null and !filter.processDefinitionKeyOperations.isEmpty()">
+        <foreach collection="filter.processDefinitionKeyOperations" item="operation">
+          AND PROCESS_DEFINITION_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if
+        test="filter.processDefinitionIdOperations != null and !filter.processDefinitionIdOperations.isEmpty()">
+        <foreach collection="filter.processDefinitionIdOperations" item="operation">
+          AND PROCESS_DEFINITION_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if
+        test="filter.processInstanceKeyOperations != null and !filter.processInstanceKeyOperations.isEmpty()">
+        <foreach collection="filter.processInstanceKeyOperations" item="operation">
+          AND PROCESS_INSTANCE_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.errorTypeOperations != null and !filter.errorTypeOperations.isEmpty()">
+        <foreach collection="filter.errorTypeOperations" item="operation">
+          AND ERROR_TYPE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.errorMessageOperations != null and !filter.errorMessageOperations.isEmpty()">
+        <foreach collection="filter.errorMessageOperations" item="operation">
+          AND
+          <include refid="io.camunda.db.rdbms.sql.Commons.errorMessageOperationCondition">
+            <property name="column" value="ERROR_MESSAGE"/>
+          </include>
+        </foreach>
+      </if>
+      <if test="filter.flowNodeIdOperations != null and !filter.flowNodeIdOperations.isEmpty()">
+        <foreach collection="filter.flowNodeIdOperations" item="operation">
+          AND FLOW_NODE_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if
+        test="filter.flowNodeInstanceKeyOperations != null and !filter.flowNodeInstanceKeyOperations.isEmpty()">
+        <foreach collection="filter.flowNodeInstanceKeyOperations" item="operation">
+          AND FLOW_NODE_INSTANCE_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+>>>>>>> 8a71896d (fix: address review feedback on incident errorMessage filter fix)
 
     <if test="filter.stateOperations != null and !filter.stateOperations.isEmpty()">
       <foreach collection="filter.stateOperations" item="operation">

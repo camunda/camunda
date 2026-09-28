@@ -99,6 +99,14 @@ public class IncidentSpecificFilterIT {
         new IncidentFilter.Builder().flowNodeInstanceKeys(4000L).build(),
         new IncidentFilter.Builder().errorTypes(ErrorType.JOB_NO_RETRIES.name()).build(),
         new IncidentFilter.Builder().errorMessages("error-message-5000").build(),
+        // errorMessage matching must be case-insensitive on RDBMS to stay in parity with the
+        // ES/OS match_phrase query (see #64014) - LOWER(...) LIKE LOWER(...) on both sides.
+        new IncidentFilter.Builder()
+            .errorMessageOperations(Operation.eq("ERROR-MESSAGE-5000"))
+            .build(),
+        new IncidentFilter.Builder()
+            .errorMessageOperations(Operation.like("*MESSAGE-5000*"))
+            .build(),
         new IncidentFilter.Builder().states(IncidentState.ACTIVE.name()).build(),
         new IncidentFilter.Builder().jobKeys(6000L).build(),
         new IncidentFilter.Builder()
