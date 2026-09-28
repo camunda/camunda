@@ -765,7 +765,7 @@ public class WebSecurityConfig {
           oidcAccessTokenDecoderFactory,
           tokenClaimsConverter,
           request,
-          buildAdditionalJwkSetUrisByIssuer(oidcProviderRepository),
+          buildAdditionalJwkSetUrisByRegistrationId(oidcProviderRepository),
           buildPreferIdTokenClaimsByRegistrationId(oidcProviderRepository));
     }
 
@@ -918,6 +918,26 @@ public class WebSecurityConfig {
                     }
                     return a;
                   }));
+    }
+
+    /**
+     * Builds the additional-JWKS lookup for the interactive login flow, keyed by registration id.
+     * Unlike {@link #buildAdditionalJwkSetUrisByIssuer}, this does not require an {@code
+     * issuer-uri}: {@link OidcUserAuthenticationConverter#getJwtDecoder} already resolves its
+     * decoder per registration id, so keying this map the same way lets it find the additional URIs
+     * of a provider configured with explicit endpoints and no {@code issuer-uri}.
+     */
+    private Map<String, List<String>> buildAdditionalJwkSetUrisByRegistrationId(
+        final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
+      return oidcProviderRepository.getOidcAuthenticationConfigurations().entrySet().stream()
+          .filter(
+              entry ->
+                  entry.getValue().getAdditionalJwkSetUris() != null
+                      && !entry.getValue().getAdditionalJwkSetUris().isEmpty())
+          .collect(
+              toMap(
+                  Map.Entry::getKey,
+                  entry -> List.copyOf(entry.getValue().getAdditionalJwkSetUris())));
     }
 
     private Map<String, Boolean> buildPreferIdTokenClaimsByRegistrationId(
