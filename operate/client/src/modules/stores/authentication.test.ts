@@ -10,8 +10,14 @@ import {authenticationStore} from 'modules/stores/authentication';
 import {getStateLocally} from 'modules/utils/localStorage';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {createUser} from 'modules/testUtils';
-import {mockLogin} from 'modules/mocks/api/login';
+import {mockLogin, mockLoginCsrfToken} from 'modules/mocks/api/login';
 import {mockLogout} from 'modules/mocks/api/logout';
+<<<<<<< HEAD
+=======
+import * as clientConfig from 'modules/utils/getClientConfig';
+import {mockServer} from 'modules/mock-server/node';
+import {http, HttpResponse} from 'msw';
+>>>>>>> 6fb4bf99 (fix: send the CSRF token from the login page in Operate, Tasklist, Identity)
 
 const mockUserResponse = createUser();
 
@@ -25,6 +31,7 @@ describe('authentication store', () => {
   });
 
   it('should login', async () => {
+    mockLoginCsrfToken().withSuccess('');
     mockLogin().withSuccess({});
     mockMe().withSuccess(mockUserResponse);
 
@@ -37,7 +44,28 @@ describe('authentication store', () => {
     expect(authenticationStore.status).toBe('logged-in');
   });
 
+  it('should send the CSRF token from the login page with the login request', async () => {
+    const csrfToken = 'csrf-token-from-login-page';
+    let tokenSentWithLogin: string | null = null;
+
+    mockServer.use(
+      http.get('/login', () =>
+        HttpResponse.text('', {headers: {'X-CSRF-TOKEN': csrfToken}}),
+      ),
+      http.post('/login', ({request}) => {
+        tokenSentWithLogin = request.headers.get('X-CSRF-TOKEN');
+        return new HttpResponse(null, {status: 204});
+      }),
+    );
+    mockMe().withSuccess(mockUserResponse);
+
+    await authenticationStore.handleLogin('demo', 'demo');
+
+    expect(tokenSentWithLogin).toBe(csrfToken);
+  });
+
   it('should handle login failure', async () => {
+    mockLoginCsrfToken().withSuccess('');
     mockLogin().withServerError(401);
 
     const result = await authenticationStore.handleLogin('demo', 'demo');
@@ -55,6 +83,7 @@ describe('authentication store', () => {
       reload: mockReload,
     });
 
+    mockLoginCsrfToken().withSuccess('');
     mockLogin().withSuccess({});
     mockMe().withSuccess(mockUserResponse);
 
@@ -172,9 +201,15 @@ describe('authentication store', () => {
         isLoginDelegated,
       });
 
+      mockLoginCsrfToken().withSuccess('');
       mockLogin().withSuccess({});
       mockMe().withSuccess(mockUserResponse);
+<<<<<<< HEAD
       mockLogout().withSuccess({});
+=======
+      mockLogout().withSuccess({}, {statusCode: 204});
+      mockLoginCsrfToken().withSuccess('');
+>>>>>>> 6fb4bf99 (fix: send the CSRF token from the login page in Operate, Tasklist, Identity)
       mockLogin().withSuccess({});
       mockMe().withSuccess(mockUserResponse);
 
@@ -201,4 +236,46 @@ describe('authentication store', () => {
       });
     },
   );
+<<<<<<< HEAD
+=======
+
+  it('should redirect to logoutUrl returned by backend during logout', async () => {
+    const mockReload = vi.fn();
+    vi.spyOn(window, 'location', 'get').mockReturnValue({
+      ...window.location,
+      reload: mockReload,
+      href: mockHref,
+    });
+
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      canLogout: true,
+      isLoginDelegated: true,
+    });
+
+    const mockIdpLogoutUrl = 'http://example.com/idpLogout';
+
+    mockLoginCsrfToken().withSuccess('');
+    mockLogin().withSuccess({});
+    mockMe().withSuccess(mockUserResponse);
+    mockLogout().withSuccess({url: mockIdpLogoutUrl});
+    mockLoginCsrfToken().withSuccess('');
+    mockLogin().withSuccess({});
+    mockMe().withSuccess(mockUserResponse);
+
+    await authenticationStore.handleLogin('demo', 'demo');
+
+    expect(authenticationStore.status).toBe('logged-in');
+
+    await authenticationStore.handleLogout();
+
+    expect(authenticationStore.status).toBe('invalid-third-party-session');
+
+    expect(window.location.href).toBe(mockIdpLogoutUrl);
+    expect(mockReload).toHaveBeenCalledTimes(0);
+    expect(getStateLocally()).toEqual({
+      wasReloaded: true,
+    });
+  });
+>>>>>>> 6fb4bf99 (fix: send the CSRF token from the login page in Operate, Tasklist, Identity)
 });

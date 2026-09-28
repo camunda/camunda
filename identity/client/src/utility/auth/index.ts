@@ -22,13 +22,54 @@ export function isLoggedIn() {
   return loggedIn;
 }
 
+<<<<<<< HEAD
 export function login(
+=======
+const logoutResponseSchema = z.object({
+  url: z.url({ message: "No redirect URL provided" }),
+});
+
+async function parseRedirectUrl(response: Response): Promise<string> {
+  const json = await response.json();
+  const result = logoutResponseSchema.parse(json);
+  return result.url;
+}
+
+/**
+ * Gets a CSRF token from the login page and keeps it for the requests that follow. The login
+ * endpoint rejects a POST without a token, and a GET of the login page is where the server sends
+ * one.
+ */
+async function requestLoginCsrfToken(): Promise<string | null> {
+  try {
+    const response = await fetch(getLoginApiUrl(), {
+      method: "get",
+      headers: { Accept: "text/html" },
+    });
+    const csrfToken = response.headers.get("X-CSRF-TOKEN");
+
+    if (csrfToken !== null) {
+      sessionStorage.setItem("X-CSRF-TOKEN", csrfToken);
+    }
+
+    return csrfToken;
+  } catch (e) {
+    // The login request that follows reports the failure to the user as a rejected login. Log the
+    // cause so a missing CSRF token is distinguishable from bad credentials.
+    console.error("fetching a CSRF token failed", e);
+    return null;
+  }
+}
+
+export async function login(
+>>>>>>> 6fb4bf99 (fix: send the CSRF token from the login page in Operate, Tasklist, Identity)
   username: string,
   password: string,
 ): Promise<{ success: boolean; message: string }> {
   const data = new FormData();
   data.set("username", username);
   data.set("password", password);
+<<<<<<< HEAD
   return fetch(getLoginApiUrl(), {
     method: "post",
     body: data,
@@ -52,6 +93,14 @@ export function login(
         success: false,
         message: "An error occurred. Please try again.",
       };
+=======
+  try {
+    const csrfToken = await requestLoginCsrfToken();
+    let response = await fetch(getLoginApiUrl(), {
+      method: "post",
+      body: data,
+      headers: csrfToken === null ? undefined : { "X-CSRF-TOKEN": csrfToken },
+>>>>>>> 6fb4bf99 (fix: send the CSRF token from the login page in Operate, Tasklist, Identity)
     });
 }
 

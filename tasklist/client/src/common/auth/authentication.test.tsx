@@ -38,6 +38,7 @@ describe('authentication store', () => {
 
   it('should login', async () => {
     nodeMockServer.use(
+      http.get('/login', () => new HttpResponse(''), {once: true}),
       http.post('/login', () => new HttpResponse(''), {once: true}),
       http.get('/v2/authentication/me', () => HttpResponse.json(currentUser), {
         once: true,
@@ -55,6 +56,7 @@ describe('authentication store', () => {
 
   it('should handle login failure', async () => {
     nodeMockServer.use(
+      http.get('/login', () => new HttpResponse(''), {once: true}),
       http.post('/login', () => new HttpResponse('', {status: 401}), {
         once: true,
       }),
@@ -83,6 +85,7 @@ describe('authentication store', () => {
     });
 
     nodeMockServer.use(
+      http.get('/login', () => new HttpResponse(''), {once: true}),
       http.post('/login', () => new HttpResponse(''), {once: true}),
       http.get('/v2/authentication/me', () => HttpResponse.json(currentUser), {
         once: true,
@@ -99,6 +102,50 @@ describe('authentication store', () => {
     expect(authenticationStore.status).toBe('logged-out');
 
     expect(mockReload).toHaveBeenCalledTimes(0);
+<<<<<<< HEAD
+=======
+    expect(window.location.href).toBe(unchangedHref);
+    expect(getStateLocally('wasReloaded')).toBe(false);
+  });
+
+  it('should throw an error on logout with invalid JSON response', async () => {
+    const mockReload = vi.fn();
+    vi.spyOn(window, 'location', 'get').mockReturnValue({
+      ...window.location,
+      reload: mockReload,
+    });
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      canLogout: true,
+      isLoginDelegated: true,
+    });
+
+    nodeMockServer.use(
+      http.get('/login', () => new HttpResponse(''), {once: true}),
+      http.post('/login', () => new HttpResponse(''), {once: true}),
+      http.get('/v2/authentication/me', () => HttpResponse.json(currentUser), {
+        once: true,
+      }),
+      http.post(
+        '/logout',
+        () => new HttpResponse('{"invalid": "json response"}'),
+        {once: true},
+      ),
+    );
+
+    await authenticationStore.handleLogin('demo', 'demo');
+
+    expect(authenticationStore.status).toBe('logged-in');
+
+    const result = authenticationStore.handleLogout();
+
+    await expect(result).resolves.not.toBeUndefined();
+
+    expect(authenticationStore.status).toBe('logged-in');
+
+    expect(mockReload).toHaveBeenCalledTimes(0);
+    expect(window.location.href).toBe(unchangedHref);
+>>>>>>> 6fb4bf99 (fix: send the CSRF token from the login page in Operate, Tasklist, Identity)
     expect(getStateLocally('wasReloaded')).toBe(false);
   });
 
@@ -201,13 +248,21 @@ describe('authentication store', () => {
       });
 
       nodeMockServer.use(
+        http.get('/login', () => new HttpResponse(''), {once: true}),
         http.post('/login', () => new HttpResponse(''), {once: true}),
         http.get(
           '/v2/authentication/me',
           () => HttpResponse.json(currentUser),
           {once: true},
         ),
+<<<<<<< HEAD
         http.post('/logout', () => new HttpResponse(''), {once: true}),
+=======
+        http.post('/logout', () => new HttpResponse('', {status: 204}), {
+          once: true,
+        }),
+        http.get('/login', () => new HttpResponse(''), {once: true}),
+>>>>>>> 6fb4bf99 (fix: send the CSRF token from the login page in Operate, Tasklist, Identity)
         http.post('/login', () => new HttpResponse(''), {once: true}),
         http.get(
           '/v2/authentication/me',
@@ -235,4 +290,49 @@ describe('authentication store', () => {
       expect(getStateLocally('wasReloaded')).toBe(false);
     },
   );
+<<<<<<< HEAD
+=======
+
+  it('should redirect to logoutUrl returned by backend during logout', async () => {
+    const mockReload = vi.fn();
+    vi.spyOn(window, 'location', 'get').mockReturnValue({
+      ...window.location,
+      reload: mockReload,
+    });
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      canLogout: true,
+      isLoginDelegated: true,
+    });
+
+    const mockIdpLogoutUrl = 'http://example.com/idpLogout';
+
+    nodeMockServer.use(
+      http.get('/login', () => new HttpResponse(''), {once: true}),
+      http.post('/login', () => new HttpResponse(''), {once: true}),
+      http.get('/v2/authentication/me', () => HttpResponse.json(currentUser), {
+        once: true,
+      }),
+      http.post(
+        '/logout',
+        () => new HttpResponse(`{"url": "${mockIdpLogoutUrl}"}`),
+        {
+          once: true,
+        },
+      ),
+    );
+
+    await authenticationStore.handleLogin('demo', 'demo');
+
+    expect(authenticationStore.status).toBe('logged-in');
+
+    await authenticationStore.handleLogout();
+
+    expect(authenticationStore.status).toBe('invalid-third-party-session');
+
+    expect(window.location.href).toBe(mockIdpLogoutUrl);
+    expect(mockReload).toHaveBeenCalledTimes(0);
+    expect(getStateLocally('wasReloaded')).toBe(true);
+  });
+>>>>>>> 6fb4bf99 (fix: send the CSRF token from the login page in Operate, Tasklist, Identity)
 });

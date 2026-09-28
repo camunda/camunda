@@ -10,7 +10,13 @@ import {makeObservable, observable, action} from 'mobx';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {currentUserQueryOptions} from 'modules/queries/useCurrentUser';
 import {reactQueryClient} from 'modules/react-query/reactQueryClient';
+<<<<<<< HEAD
 import {request} from 'modules/request';
+=======
+import {request, requestCsrfToken} from 'modules/request';
+import {getClientConfig} from 'modules/utils/getClientConfig';
+import z from 'zod';
+>>>>>>> 6fb4bf99 (fix: send the CSRF token from the login page in Operate, Tasklist, Identity)
 
 type Status =
   | 'initial'
@@ -35,6 +41,10 @@ class Authentication {
 
   handleLogin = async (username: string, password: string) => {
     try {
+      // The login endpoint rejects a POST without a CSRF token, and a GET of the login page is
+      // where the server sends one.
+      await requestCsrfToken('/login');
+
       const response = await request(
         {
           url: '/login',
