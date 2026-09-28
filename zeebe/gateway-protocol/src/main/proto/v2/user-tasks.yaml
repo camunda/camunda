@@ -732,7 +732,7 @@ components:
         - propertyName: businessId
           addedInVersion: "8.10"
         - propertyName: isSuspended
-          addedInVersion: "8.11"
+          addedInVersion: "8.10"
 
     UserTaskSearchQueryResult:
       description: User task search query response.
@@ -946,7 +946,7 @@ components:
         - propertyName: formKey
           addedInVersion: "8.6"
         - propertyName: isSuspended
-          addedInVersion: "8.11"
+          addedInVersion: "8.10"
         - propertyName: tags
           addedInVersion: "8.9"
 
