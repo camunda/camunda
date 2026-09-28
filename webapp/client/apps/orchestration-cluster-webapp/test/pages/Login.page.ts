@@ -22,7 +22,7 @@ class LoginPage extends BasePage {
 	}
 
 	get passwordInput() {
-		return this.page.getByLabel(/^password$/i);
+		return this.page.getByLabel(/password/i);
 	}
 
 	get errorMessage() {
