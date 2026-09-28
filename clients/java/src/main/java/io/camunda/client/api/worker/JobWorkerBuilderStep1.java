@@ -113,6 +113,10 @@ public interface JobWorkerBuilderStep1 {
      * workers the chance to work on the jobs. The worker will try to activate new jobs again when
      * jobs are completed (or marked as failed).
      *
+     * <p>This is also the maximum number of this worker's jobs whose handlers run at the same time,
+     * unless the client is configured with fewer job handling threads (see {@link
+     * io.camunda.client.CamundaClientBuilder#numJobWorkerExecutionThreads(int)}).
+     *
      * <p>If no maximum is set then the default, from the {@link CamundaClientConfiguration}, is
      * used.
      *

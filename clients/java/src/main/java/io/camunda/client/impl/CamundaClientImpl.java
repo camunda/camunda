@@ -419,6 +419,7 @@ import io.camunda.client.impl.statistics.request.UsageMetricsStatisticsRequestIm
 import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.client.impl.util.JobWorkerExecutors;
 import io.camunda.client.impl.util.VersionUtil;
+import io.camunda.client.impl.util.VirtualThreads;
 import io.camunda.client.impl.worker.JobClientImpl;
 import io.camunda.client.impl.worker.JobWorkerBuilderImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
@@ -439,6 +440,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -648,7 +650,10 @@ public final class CamundaClientImpl implements CamundaClient {
     } else {
       final int threadCount = configuration.getNumJobWorkerExecutionThreads();
 
-      if (threadCount == 0) {
+      if (!CamundaClientBuilderImpl.isNumJobWorkerExecutionThreadsConfigured(configuration)) {
+        jobHandlingExecutor = newDefaultJobHandlingExecutor(threadCount);
+        ownsJobHandlingExecutor = true;
+      } else if (threadCount == 0) {
         // fallback to using the scheduled executor for both purposes
         // this ensures backward compatibility with the old behavior when 0 was accepted
         // as a valid value; this reuses the single-threaded scheduled executor for job handling
@@ -662,6 +667,19 @@ public final class CamundaClientImpl implements CamundaClient {
 
     return new JobWorkerExecutors(
         scheduledExecutor, ownsScheduledExecutor, jobHandlingExecutor, ownsJobHandlingExecutor);
+  }
+
+  private static ExecutorService newDefaultJobHandlingExecutor(final int fallbackThreadCount) {
+    final Optional<ExecutorService> virtualThreadExecutor =
+        VirtualThreads.newThreadPerTaskExecutor(VirtualThreads.JOB_WORKER_THREAD_NAME_PREFIX);
+    if (virtualThreadExecutor.isPresent()) {
+      return virtualThreadExecutor.get();
+    }
+    Loggers.LOGGER.debug(
+        "Virtual threads are not available on this JVM; running job handlers on {} platform"
+            + " thread(s)",
+        fallbackThreadCount);
+    return Executors.newFixedThreadPool(fallbackThreadCount);
   }
 
   @Override
