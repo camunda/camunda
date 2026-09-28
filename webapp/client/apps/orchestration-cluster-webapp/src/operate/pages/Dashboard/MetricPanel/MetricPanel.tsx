@@ -13,14 +13,18 @@ import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
 import {ErrorMessage} from '#/operate/shared/ErrorMessage/ErrorMessage';
 import {runningInstancesCountQuery} from '../useRunningInstancesCount';
 import {runningOrAllInstancesFilter} from '../processesLinkFilters';
-import {Title, LabelContainer, Label} from './styled';
+import {Title, LabelContainer, Label, ErrorContainer} from './styled';
 
 const MetricPanel: React.FC = () => {
 	const {t} = useTranslation();
 	const {data: count, isPending, isError} = useQuery({...runningInstancesCountQuery(), refetchInterval: 5000});
 
 	if (isError) {
-		return <ErrorMessage message={t('operate.dashboard.metricFetchError')} />;
+		return (
+			<ErrorContainer gap={5}>
+				<ErrorMessage message={t('operate.dashboard.metricFetchError')} />
+			</ErrorContainer>
+		);
 	}
 
 	return (

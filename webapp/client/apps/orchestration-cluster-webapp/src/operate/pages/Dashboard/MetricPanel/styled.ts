@@ -8,7 +8,14 @@
 
 import styled from 'styled-components';
 import {styles} from '@carbon/type';
+import {Stack} from '@carbon/react';
 import {Link} from '@tanstack/react-router';
+
+const ErrorContainer = styled(Stack)`
+	flex-grow: 1;
+	align-items: center;
+	justify-content: center;
+`;
 
 const Title = styled(Link)`
 	&& {
@@ -40,4 +47,4 @@ const Label = styled(Link)`
 	}
 ` as typeof Link;
 
-export {Title, LabelContainer, Label};
+export {Title, LabelContainer, Label, ErrorContainer};
