@@ -41,8 +41,7 @@ test.describe('mapping rules visibility on SaaS', () => {
     await expect(identityMappingRulesPage.mappingRulesNavItem).toBeHidden();
   });
 
-  // Skipped due to bug #63319: https://github.com/camunda/camunda/issues/63319
-  test.skip('shows mapping rules when an additional IdP is configured', async ({
+  test('shows mapping rules when an additional IdP is configured', async ({
     page,
     loginPage,
     identityMappingRulesPage,
