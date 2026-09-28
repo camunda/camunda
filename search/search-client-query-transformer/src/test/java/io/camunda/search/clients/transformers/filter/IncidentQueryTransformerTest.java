@@ -14,6 +14,7 @@ import io.camunda.search.clients.query.SearchMatchNoneQuery;
 import io.camunda.search.clients.query.SearchMatchPhraseQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.query.SearchTermsQuery;
+import io.camunda.search.clients.query.SearchWildcardQuery;
 import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
@@ -160,6 +161,28 @@ public final class IncidentQueryTransformerTest extends AbstractTransformerTest 
             t -> {
               assertThat(t.field()).isEqualTo("errorMessage");
               assertThat(t.query()).isEqualTo("Failed to send activated jobs to client");
+            });
+  }
+
+  @Test
+  public void shouldQueryByAdvancedErrorMessageLikeFilterCaseInsensitively() {
+    // stringMatchPhraseOperations lowercases the LIKE pattern before building the wildcard
+    // query, unlike stringOperations - switching errorMessage to it also made $like
+    // case-insensitive here, matching the field's lowercase-analyzed tokens.
+    final var filter =
+        FilterBuilders.incident(f -> f.errorMessageOperations(Operation.like("*Failed*")));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchWildcardQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("errorMessage");
+              assertThat(t.value()).isEqualTo("*failed*");
             });
   }
 
