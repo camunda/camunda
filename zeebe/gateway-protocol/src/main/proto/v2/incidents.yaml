@@ -260,7 +260,10 @@ components:
           allOf:
             - $ref: '#/components/schemas/IncidentErrorTypeFilterProperty'
         errorMessage:
-          description: The error message of this incident.
+          description: >
+            The error message of this incident. Matching is case-insensitive and matches
+            if the incident's error message contains the given value as a phrase, not
+            necessarily the entire error message.
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
         elementId:
