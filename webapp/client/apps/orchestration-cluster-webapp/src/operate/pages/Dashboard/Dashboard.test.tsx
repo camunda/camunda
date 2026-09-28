@@ -95,6 +95,7 @@ describe('<Dashboard />', () => {
 
 	afterEach(() => {
 		sessionStorage.clear();
+		vi.useRealTimers();
 	});
 
 	it('should render metric panel with running instance counts', async ({worker}) => {

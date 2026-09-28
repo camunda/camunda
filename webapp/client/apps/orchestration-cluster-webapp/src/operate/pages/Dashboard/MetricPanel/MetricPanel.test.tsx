@@ -8,7 +8,7 @@
 
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {describe, expect, vi} from 'vitest';
+import {afterEach, describe, expect, vi} from 'vitest';
 import {HttpResponse} from 'msw';
 import {mockGetProcessDefinitionInstanceStatisticsEndpoint} from '#/shared-test-modules/mock-handlers';
 import {createProcessDefinitionInstanceStatistics} from '#/shared-test-modules/api-mocks/process-definition-statistics';
@@ -33,6 +33,10 @@ const STATS_WITH_INSTANCES = HttpResponse.json(
 const STATS_EMPTY = HttpResponse.json(createPaginatedResponse());
 
 describe('<MetricPanel />', () => {
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
 	it('should render the running instances total and link it to running instances', async ({worker}) => {
 		worker.use(mockGetProcessDefinitionInstanceStatisticsEndpoint({successResponse: STATS_WITH_INSTANCES}));
 
