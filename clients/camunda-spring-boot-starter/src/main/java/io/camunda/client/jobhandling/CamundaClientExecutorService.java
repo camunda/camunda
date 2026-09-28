@@ -15,6 +15,7 @@
  */
 package io.camunda.client.jobhandling;
 
+import io.camunda.client.impl.util.VirtualThreads;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -78,5 +79,26 @@ public class CamundaClientExecutorService {
   public static CamundaClientExecutorService createDefault(final int threads) {
     final ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(threads);
     return new CamundaClientExecutorService(threadPool, true, threadPool, true);
+  }
+
+  /**
+   * Creates the executors for the configured {@code camunda.client.execution-threads}.
+   *
+   * <p>If set, this is {@link #createDefault(int)}. If not set, job handlers run on a new virtual
+   * thread each and scheduling runs on a single platform thread; on JVMs without virtual threads,
+   * this falls back to {@link #createDefault()}.
+   *
+   * @param executionThreads the configured number of execution threads, or {@code null} if not set
+   */
+  public static CamundaClientExecutorService create(final Integer executionThreads) {
+    if (executionThreads != null) {
+      return createDefault(executionThreads);
+    }
+    return VirtualThreads.newThreadPerTaskExecutor(VirtualThreads.JOB_WORKER_THREAD_NAME_PREFIX)
+        .map(
+            jobHandlingExecutor ->
+                new CamundaClientExecutorService(
+                    Executors.newScheduledThreadPool(1), true, jobHandlingExecutor, true))
+        .orElseGet(CamundaClientExecutorService::createDefault);
   }
 }
