@@ -16,6 +16,7 @@ import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Map;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
@@ -76,11 +77,72 @@ final class LeaderWarmupIT {
     }
   }
 
+  @Test
+  void shouldRunTheBrokersSearchExportersAgainstAStandInSearchEngine() {
+    // given
+    final var unreachable = "http://127.0.0.1:1";
+    cluster =
+        TestCluster.builder()
+            .withBrokersCount(2)
+            .withEmbeddedGateway(true)
+            .withPartitionsCount(1)
+            .withReplicationFactor(2)
+            .withBrokerConfig(
+                broker ->
+                    broker
+                        .withProperty("zeebe.broker.experimental.leaderWarmup.enabled", true)
+                        .withProperty("zeebe.broker.experimental.leaderWarmup.startDelay", "0s")
+                        .withProperty(
+                            "zeebe.broker.experimental.leaderWarmup.processInstances", 300)
+                        .withExporter(
+                            "camundaexporter",
+                            exporter -> {
+                              exporter.setClassName("io.camunda.exporter.CamundaExporter");
+                              exporter.setArgs(
+                                  Map.of(
+                                      "connect",
+                                      Map.of("url", unreachable),
+                                      "createSchema",
+                                      false));
+                            })
+                        .withExporter(
+                            "elasticsearch",
+                            exporter -> {
+                              exporter.setClassName(
+                                  "io.camunda.zeebe.exporter.ElasticsearchExporter");
+                              exporter.setArgs(
+                                  Map.of(
+                                      "url",
+                                      unreachable,
+                                      "index",
+                                      Map.of("createTemplate", false)));
+                            }))
+            .build();
+
+    // when
+    cluster.start().awaitCompleteTopology();
+
+    // then
+    final var leader = cluster.leaderForPartition(1);
+    final var follower =
+        cluster.brokers().values().stream().filter(b -> b != leader).findFirst().orElseThrow();
+    Awaitility.await("follower completes its warm-up")
+        .atMost(Duration.ofMinutes(3))
+        .until(() -> warmupState(follower) == COMPLETED);
+    assertThat(gauge(follower, "zeebe_leader_warmup_exporters")).isEqualTo(2);
+    assertThat(gauge(follower, "zeebe_leader_warmup_search_requests")).isPositive();
+    assertThat(gauge(follower, "zeebe_leader_warmup_search_unrecognised")).isZero();
+  }
+
   private static double warmupState(final TestStandaloneBroker broker) {
+    return gauge(broker, "zeebe_leader_warmup_state");
+  }
+
+  private static double gauge(final TestStandaloneBroker broker, final String name) {
     return PrometheusActuator.of(broker)
         .metrics()
         .lines()
-        .filter(line -> line.startsWith("zeebe_leader_warmup_state"))
+        .filter(line -> line.startsWith(name + " ") || line.startsWith(name + "{"))
         .map(line -> Double.parseDouble(line.substring(line.lastIndexOf(' ') + 1)))
         .findFirst()
         .orElse(-1.0);
