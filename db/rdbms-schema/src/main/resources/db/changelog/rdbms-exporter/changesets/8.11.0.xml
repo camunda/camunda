@@ -11,14 +11,14 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
-  <changeSet id="add_suspended_column_to_user_task" author="camunda">
+  <changeSet id="add_is_suspended_column_to_user_task" author="camunda">
     <preConditions onFail="MARK_RAN">
       <not>
-        <columnExists tableName="${prefix}USER_TASK" columnName="SUSPENDED"/>
+        <columnExists tableName="${prefix}USER_TASK" columnName="IS_SUSPENDED"/>
       </not>
     </preConditions>
     <addColumn tableName="${prefix}USER_TASK">
-      <column name="SUSPENDED" type="BOOLEAN"/>
+      <column name="IS_SUSPENDED" type="BOOLEAN"/>
     </addColumn>
   </changeSet>
 

@@ -133,7 +133,7 @@
       "businessId": {
         "type": "keyword"
       },
-      "suspended": {
+      "isSuspended": {
         "type": "boolean"
       }
     }

@@ -47,7 +47,7 @@ public record UserTaskEntity(
     Map<String, String> customHeaders,
     @Nullable Integer priority,
     Set<String> tags,
-    boolean suspended)
+    boolean isSuspended)
     implements TenantOwnedEntity {
 
   public UserTaskEntity {
@@ -97,7 +97,7 @@ public record UserTaskEntity(
         customHeaders,
         priority,
         tags,
-        suspended);
+        isSuspended);
   }
 
   public UserTaskEntity withProcessName(final String newProcessName) {
@@ -127,7 +127,7 @@ public record UserTaskEntity(
         customHeaders,
         priority,
         tags,
-        suspended);
+        isSuspended);
   }
 
   public boolean hasName() {

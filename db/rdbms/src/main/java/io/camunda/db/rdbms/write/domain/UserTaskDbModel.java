@@ -43,7 +43,7 @@ public record UserTaskDbModel(
     String serializedCustomHeaders,
     Integer priority,
     Set<String> tags,
-    boolean suspended,
+    boolean isSuspended,
     int partitionId)
     implements Copyable<UserTaskDbModel> {
 
@@ -80,7 +80,7 @@ public record UserTaskDbModel(
       final Integer processDefinitionVersion,
       final String serializedCustomHeaders,
       final Integer priority,
-      final boolean suspended) {
+      final boolean isSuspended) {
     this(
         userTaskKey,
         elementId,
@@ -106,7 +106,7 @@ public record UserTaskDbModel(
         serializedCustomHeaders,
         priority,
         null,
-        suspended,
+        isSuspended,
         0);
   }
 
@@ -145,7 +145,7 @@ public record UserTaskDbModel(
         .processDefinitionVersion(processDefinitionVersion)
         .priority(priority)
         .tags(tags)
-        .suspended(suspended)
+        .isSuspended(isSuspended)
         .partitionId(partitionId);
   }
 
@@ -175,7 +175,7 @@ public record UserTaskDbModel(
     private String serializedCustomHeaders;
     private Integer priority;
     private Set<String> tags;
-    private boolean suspended;
+    private boolean isSuspended;
     private int partitionId;
 
     // Public constructor to initialize the builder
@@ -316,8 +316,8 @@ public record UserTaskDbModel(
       return this;
     }
 
-    public Builder suspended(final boolean suspended) {
-      this.suspended = suspended;
+    public Builder isSuspended(final boolean isSuspended) {
+      this.isSuspended = isSuspended;
       return this;
     }
 
@@ -354,7 +354,7 @@ public record UserTaskDbModel(
           serializedCustomHeaders,
           priority,
           tags,
-          suspended,
+          isSuspended,
           partitionId);
     }
   }
