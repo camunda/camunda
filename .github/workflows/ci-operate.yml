@@ -89,7 +89,7 @@ jobs:
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
       TEST_TYPE: Build
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@85d64191cacae8224a79d623a4bdc0fae084da46 # main
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -144,7 +144,7 @@ jobs:
         id: shard-total
         working-directory: ${{ github.workspace }}
         run: echo "value=${{ matrix.shardTotal }}" >> "$GITHUB_OUTPUT"
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@85d64191cacae8224a79d623a4bdc0fae084da46 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -259,7 +259,7 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@85d64191cacae8224a79d623a4bdc0fae084da46 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -300,7 +300,7 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@85d64191cacae8224a79d623a4bdc0fae084da46 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -340,7 +340,7 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@85d64191cacae8224a79d623a4bdc0fae084da46 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -383,7 +383,7 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@85d64191cacae8224a79d623a4bdc0fae084da46 # main
       - name: Check out repository code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -450,7 +450,7 @@ jobs:
         id: shard-total
         working-directory: ${{ github.workspace }}
         run: echo "value=${{ matrix.shardTotal }}" >> "$GITHUB_OUTPUT"
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@85d64191cacae8224a79d623a4bdc0fae084da46 # main
       - name: Check out repository code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -502,7 +502,7 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@85d64191cacae8224a79d623a4bdc0fae084da46 # main
       - name: Check out repository code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -580,7 +580,7 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@85d64191cacae8224a79d623a4bdc0fae084da46 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
