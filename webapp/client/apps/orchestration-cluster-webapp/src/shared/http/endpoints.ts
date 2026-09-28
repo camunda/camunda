@@ -38,6 +38,7 @@ import {
 	type CreateProcessInstanceRequestBody as ApiCreateProcessInstanceRequestBody,
 	type QueryUserTaskAuditLogsRequestBody,
 	type QueryAuditLogsRequestBody,
+	type QueryMessageSubscriptionsRequestBody,
 	type UserTask,
 	type ProcessDefinition,
 	type DecisionDefinition,
@@ -185,6 +186,14 @@ const endpoints = {
 		new Request(getFullURL(unifiedAPIEndpoints.queryProcessDefinitions.getUrl()), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.queryProcessDefinitions.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryMessageSubscriptions: (body: QueryMessageSubscriptionsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryMessageSubscriptions.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryMessageSubscriptions.method,
 			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),
