@@ -43,6 +43,7 @@ public record UserTaskFilter(
     List<Operation<OffsetDateTime>> dueDateOperations,
     Set<String> tags,
     String type,
+    Boolean isSuspended,
     List<UserTaskFilter> orFilters)
     implements FilterBase {
 
@@ -70,6 +71,7 @@ public record UserTaskFilter(
     private List<Operation<OffsetDateTime>> dueDateOperations;
     private Set<String> tags;
     private String type;
+    private Boolean isSuspended;
     private List<UserTaskFilter> orFilters;
 
     public Builder userTaskKeys(final Long... values) {
@@ -332,6 +334,11 @@ public record UserTaskFilter(
       return this;
     }
 
+    public Builder isSuspended(final Boolean value) {
+      isSuspended = value;
+      return this;
+    }
+
     public Builder addOrOperation(final UserTaskFilter orOperation) {
       if (orFilters == null) {
         orFilters = new ArrayList<>();
@@ -370,6 +377,7 @@ public record UserTaskFilter(
           Objects.requireNonNullElse(dueDateOperations, Collections.emptyList()),
           tags,
           type,
+          isSuspended,
           orFilters);
     }
   }

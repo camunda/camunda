@@ -84,6 +84,7 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     queries.addAll(getBusinessIdQuery(filter.businessIdOperations()));
     queries.addAll(getPrioritiesQuery(filter.priorityOperations()));
     queries.addAll(getStatesQuery(filter.stateOperations()));
+    ofNullable(filter.isSuspended()).ifPresent(f -> queries.add(term(IS_SUSPENDED, f)));
     queries.addAll(getTenantQuery(filter.tenantIdOperations()));
     ofNullable(getElementInstanceKeyQuery(filter.elementInstanceKeys())).ifPresent(queries::add);
     queries.addAll(getCreationTimeQuery(filter.creationDateOperations()));

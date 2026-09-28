@@ -148,6 +148,9 @@ public interface UserTaskFilter extends UserTaskFilterBase {
   @Override
   UserTaskFilter dueDate(final Consumer<DateTimeProperty> dueDate);
 
+  @Override
+  UserTaskFilter isSuspended(final Boolean isSuspended);
+
   /** Filter by or conjunction using {@link UserTaskFilterBase} consumer. */
   UserTaskFilterBase orFilters(List<Consumer<UserTaskFilterBase>> filters);
 }
