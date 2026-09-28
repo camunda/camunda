@@ -11,6 +11,10 @@ import {keepPreviousData, useInfiniteQuery} from '@tanstack/react-query';
 import {searchVariables} from 'modules/api/v2/variables/searchVariables';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {useDisplayStatus, useVariableScopeKey} from 'modules/hooks/variables';
+import {useIsPlaceholderSelected} from 'modules/hooks/elementSelection';
+import {modificationsStore} from 'modules/stores/modifications';
+import {TOKEN_OPERATIONS} from 'modules/constants';
+import {useHasMultipleInstances} from 'modules/hooks/elementMetadata';
 import {queryKeys} from '../queryKeys';
 
 const MAX_VARIABLES_PER_REQUEST = 50;
@@ -25,6 +29,15 @@ function useVariables(options?: {
 }) {
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const scopeKey = useVariableScopeKey();
+  const isPlaceholderSelected = useIsPlaceholderSelected();
+  const hasMultipleInstances = useHasMultipleInstances();
+  const isPendingAddTokenScope = modificationsStore.elementModifications.some(
+    (modification) =>
+      modification.operation === TOKEN_OPERATIONS.ADD_TOKEN &&
+      modification.scopeId === scopeKey,
+  );
+  const isVariableSearchEnabled =
+    !isPlaceholderSelected && !isPendingAddTokenScope && !hasMultipleInstances;
   const {
     refetchInterval = false,
     documentsOnly = false,
@@ -44,6 +57,7 @@ function useVariables(options?: {
       value: valueFilter,
       name: nameFilter,
     }),
+    enabled: isVariableSearchEnabled,
     queryFn: async ({pageParam = 0}) => {
       const {response, error} = await searchVariables({
         filter: {
@@ -93,7 +107,7 @@ function useVariables(options?: {
     isLoading: result.isLoading,
     isFetching: result.isFetching,
     isFetched: result.isFetched,
-    isError: result.isError,
+    isError: isVariableSearchEnabled && result.isError,
     hasItems: (result.data?.pages?.[0]?.items?.length ?? 0) > 0,
   });
   return Object.assign(result, {displayStatus});
