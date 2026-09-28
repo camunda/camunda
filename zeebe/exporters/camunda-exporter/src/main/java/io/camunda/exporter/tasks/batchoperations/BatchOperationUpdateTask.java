@@ -176,9 +176,9 @@ public class BatchOperationUpdateTask implements BackgroundTask {
    */
   private final class Cycle {
     private final int pageSize;
-    private String afterId;
-    private boolean complete;
-    private int updatesCount;
+    private volatile String afterId;
+    private volatile boolean complete;
+    private volatile int updatesCount;
 
     private Cycle(final int pageSize) {
       this.pageSize = pageSize;
