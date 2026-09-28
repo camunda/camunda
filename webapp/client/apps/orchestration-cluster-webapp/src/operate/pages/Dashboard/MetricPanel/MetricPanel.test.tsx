@@ -107,6 +107,7 @@ describe('<MetricPanel />', () => {
 		const screen = await renderWithRouter(MetricPanel, {path: '/operate'});
 
 		await expect.element(screen.getByText('Running Process Instances in total')).toBeVisible();
+		await expect.element(screen.getByTestId('total-instances-link')).not.toBeInTheDocument();
 		await expect.element(screen.getByTestId('instances-bar-skeleton')).toBeVisible();
 		await expect.poll(() => statsRequests).toBe(1);
 		worker.events.removeAllListeners('request:start');

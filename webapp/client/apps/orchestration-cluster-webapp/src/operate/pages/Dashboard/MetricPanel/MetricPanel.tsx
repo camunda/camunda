@@ -13,7 +13,7 @@ import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
 import {ErrorMessage} from '#/operate/shared/ErrorMessage/ErrorMessage';
 import {runningInstancesCountQuery} from '../useRunningInstancesCount';
 import {runningOrAllInstancesFilter} from '../processesLinkFilters';
-import {Title, LabelContainer, Label, ErrorContainer} from './styled';
+import {Title, PendingTitle, LabelContainer, Label, ErrorContainer} from './styled';
 
 const MetricPanel: React.FC = () => {
 	const {t} = useTranslation();
@@ -29,15 +29,17 @@ const MetricPanel: React.FC = () => {
 
 	return (
 		<>
-			<Title
-				data-testid="total-instances-link"
-				to="/operate/processes"
-				search={runningOrAllInstancesFilter(count?.total ?? 0)}
-			>
-				{count === undefined
-					? t('operate.dashboard.runningInstancesTotalPending')
-					: t('operate.dashboard.runningInstancesTotal', {count: count.total})}
-			</Title>
+			{count === undefined ? (
+				<PendingTitle>{t('operate.dashboard.runningInstancesTotalPending')}</PendingTitle>
+			) : (
+				<Title
+					data-testid="total-instances-link"
+					to="/operate/processes"
+					search={runningOrAllInstancesFilter(count.total)}
+				>
+					{t('operate.dashboard.runningInstancesTotal', {count: count.total})}
+				</Title>
+			)}
 			{count !== undefined && (
 				<InstancesBar incidentsCount={count.withIncidents} activeInstancesCount={count.withoutIncidents} size="large" />
 			)}

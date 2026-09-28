@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 import {styles} from '@carbon/type';
 import {Stack} from '@carbon/react';
 import {Link} from '@tanstack/react-router';
@@ -17,18 +17,26 @@ const ErrorContainer = styled(Stack)`
 	justify-content: center;
 `;
 
-const Title = styled(Link)`
+const titleStyles = css`
 	&& {
 		${styles.productiveHeading04};
 		color: var(--cds-text-primary);
 		text-decoration: none;
 		display: inline-block;
 		margin-bottom: var(--cds-spacing-05);
-		&:hover {
-			text-decoration: underline;
-		}
+	}
+`;
+
+const Title = styled(Link)`
+	${titleStyles}
+	&:hover {
+		text-decoration: underline;
 	}
 ` as typeof Link;
+
+const PendingTitle = styled.span`
+	${titleStyles}
+`;
 
 const LabelContainer = styled.div`
 	width: 100%;
@@ -47,4 +55,4 @@ const Label = styled(Link)`
 	}
 ` as typeof Link;
 
-export {Title, LabelContainer, Label, ErrorContainer};
+export {Title, PendingTitle, LabelContainer, Label, ErrorContainer};
