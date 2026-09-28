@@ -116,6 +116,9 @@ public final class ResponseMapper {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
+  private static final String CONTENT_SECURITY_POLICY_HEADER = "Content-Security-Policy";
+  private static final String CONTENT_SECURITY_POLICY_SANDBOX = "sandbox; default-src 'none'";
+
   private static final Logger LOG = LoggerFactory.getLogger(ResponseMapper.class);
 
   /**
@@ -271,6 +274,9 @@ public final class ResponseMapper {
     final MediaType mediaType = resolveMediaType(response);
     return ResponseEntity.ok()
         .contentType(mediaType)
+        // Sandbox served content into an opaque origin so active types (HTML, SVG) can't run in the
+        // app origin. Per-endpoint header; does not touch the global web-app CSP.
+        .header(CONTENT_SECURITY_POLICY_HEADER, CONTENT_SECURITY_POLICY_SANDBOX)
         .body(
             bodyStream -> {
               try (final var contentInputStream = response.content()) {
