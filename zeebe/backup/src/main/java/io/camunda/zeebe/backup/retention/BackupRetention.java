@@ -8,7 +8,6 @@
 package io.camunda.zeebe.backup.retention;
 
 import static io.camunda.zeebe.util.Unit.unit;
-import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
@@ -34,6 +33,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
@@ -53,15 +53,21 @@ import org.slf4j.LoggerFactory;
  *
  * <h2>Retention Process</h2>
  *
- * The retention process is executed on a configurable schedule and performs the following steps for
- * each partition of the physical tenant:
+ * The retention process is executed on a configurable schedule and performs the following steps:
  *
  * <ol>
- *   <li><b>Find the anchor:</b> Reads backups newest first until the latest completed backup is
- *       found. Its timestamp minus the retention window is the window bound.
- *   <li><b>Sweep expired backups:</b> Reads backups oldest first, in batches. Every backup older
- *       than the window bound is deleted, except the anchor. The sweep stops at the first backup
- *       inside the window, so only the expired backups and one page at each end are ever read.
+ *   <li><b>Find the shared anchor:</b> The tenant can only be restored from a checkpoint that is
+ *       completed on every one of its partitions. Partitions can complete checkpoints at different
+ *       speeds, or fail them, so each partition's own latest completed backup is not necessarily
+ *       such a checkpoint. The anchor is therefore the newest checkpoint id completed on every
+ *       partition, found by reading each partition newest first. The earliest timestamp of the
+ *       anchor across partitions minus the retention window is the window bound, shared by all
+ *       partitions. If any partition cannot be read or no such checkpoint exists, nothing is
+ *       deleted on any partition.
+ *   <li><b>Sweep expired backups:</b> For each partition, reads backups oldest first, in batches.
+ *       Every backup older than the window bound and than the anchor is deleted. The sweep stops at
+ *       the first backup inside the window or at the anchor, so only the expired backups and one
+ *       page at each end are ever read.
  *   <li><b>Write Delete Commands:</b> For each batch, sends a {@code DELETE_BACKUP} request per
  *       deletable checkpoint to the partition leader via the {@link BrokerClient}, and waits for
  *       them before reading the next batch. The leader's stream processor handles the actual
@@ -189,11 +195,16 @@ public class BackupRetention extends Actor {
       return retentionFuture;
     }
 
-    final var partitionRetentions =
-        topologyManager.getTopology(physicalTenantId).getPartitions().stream()
-            .map(partitionId -> retainPartition(store, partitionId))
-            .toArray(CompletableFuture[]::new);
-    CompletableFuture.allOf(partitionRetentions)
+    final var partitions =
+        List.copyOf(topologyManager.getTopology(physicalTenantId).getPartitions());
+
+    findSharedAnchor(store, partitions)
+        .thenComposeAsync(
+            sharedAnchor ->
+                sharedAnchor
+                    .map(anchor -> sweepFutures(store, partitions, anchor))
+                    .orElse(CompletableFuture.completedFuture(null)),
+            actor)
         .whenCompleteAsync(
             (ignored, error) -> {
               if (error != null) {
@@ -207,26 +218,37 @@ public class BackupRetention extends Actor {
   }
 
   /**
-   * Deletes the expired backups of one partition. Finds the latest completed backup newest first,
-   * then sweeps oldest first until the first backup inside the retention window.
+   * Sweeps every partition using the given shared anchor, or does nothing when there is no anchor.
    */
-  private CompletableFuture<Void> retainPartition(final BackupStore store, final int partitionId) {
-    return findLatestCompletedBackup(store, partitionId, OptionalLong.empty())
-        .thenComposeAsync(
-            anchor -> {
-              if (anchor.isEmpty()) {
-                LOG.debug(
-                    "Unable to determine retention window for partition {}. No completed backup found.",
-                    partitionId);
-                return CompletableFuture.<Void>completedFuture(null);
-              }
-              final var windowBound = calculateWindowBound(anchor.get());
-              return sweep(
-                  store,
-                  new PartitionSweep(partitionId, anchor.get(), windowBound),
-                  OptionalLong.empty());
-            },
-            actor);
+  private CompletableFuture<Void> sweepFutures(
+      final BackupStore store, final List<Integer> partitions, final SharedAnchor anchor) {
+    return CompletableFuture.allOf(
+        partitions.stream()
+            .map(
+                partitionId ->
+                    sweep(store, new PartitionSweep(partitionId, anchor), OptionalLong.empty()))
+            .toArray(CompletableFuture[]::new));
+  }
+
+  /**
+   * Finds the newest checkpoint id that is completed on every given partition, or empty when there
+   * is none.
+   *
+   * <p>Visits the partitions one at a time, round robin, asking each for its latest completed
+   * backup at or below the current candidate. A lower answer becomes the new candidate. The
+   * candidate is the anchor once every partition in a row has answered with it; it is gone once a
+   * partition has no completed backup at or below it. The candidate only decreases, so the search
+   * ends. When the partitions already agree, each one is asked exactly once.
+   */
+  private CompletableFuture<Optional<SharedAnchor>> findSharedAnchor(
+      final BackupStore store, final List<Integer> partitions) {
+    final var search = new SharedAnchorSearch(store, partitions);
+    if (partitions.isEmpty()) {
+      search.result.complete(Optional.empty());
+    } else {
+      search.nextPartition();
+    }
+    return search.result;
   }
 
   /**
@@ -283,9 +305,10 @@ public class BackupRetention extends Actor {
   }
 
   /**
-   * Walks a batch in checkpoint id order. Every backup with a timestamp before the window bound is
-   * deletable, except the anchor; the first completed backup at or after the bound is the earliest
-   * backup of the new range. Backups without a timestamp are skipped.
+   * Walks a batch in checkpoint id order. Every backup with a timestamp before the window bound and
+   * a checkpoint id below the anchor is deletable; the first completed backup that is kept is the
+   * earliest backup of the new range. Backups without a timestamp are skipped. Checkpoints at or
+   * above the anchor are never deleted, so a skewed timestamp cannot remove a restorable one.
    *
    * <p>Every entry is classified independently — the loop never stops partway through a batch on
    * the first one found at or after the bound. Record timestamps are the writing leader's wall
@@ -304,26 +327,24 @@ public class BackupRetention extends Actor {
         continue;
       }
 
-      if (timestamp.isBefore(sweep.windowBound)) {
-        if (backup.id().checkpointId() != sweep.anchor.id().checkpointId()) {
-          deletableBackups.add(backup.id());
-        } else {
-          // If the backup is the latest completed backup it should not be deleted and the marker
-          // should be moved to that backup id.
-          earliestBackupInNewRange = backup.id().checkpointId();
-        }
+      if (timestamp.isBefore(sweep.anchor.windowBound)
+          && backup.id().checkpointId() < sweep.anchor.checkpointId) {
+        deletableBackups.add(backup.id());
       } else if (backup.statusCode() == BackupStatusCode.COMPLETED
-          // Only the first completed backup at or after the bound, in checkpoint id order, marks
-          // the start of the new range.
+          // Only the first completed backup that is kept, in checkpoint id order, marks the start
+          // of the new range.
           && earliestBackupInNewRange == -1L) {
         earliestBackupInNewRange = backup.id().checkpointId();
       }
     }
     // Paging has caught up to the retained range once the batch's newest entry (the batch is
-    // oldest-first) is itself at or after the bound — everything beyond it is even newer. A single
-    // skewed or corrupted timestamp earlier in the batch no longer decides this.
+    // oldest-first) is itself at or after the bound, or has reached the anchor — everything beyond
+    // it is kept. A single skewed or corrupted timestamp earlier in the batch no longer decides
+    // this.
     final var reachedWindow =
-        !batch.isEmpty() && isAtOrAfterWindow(batch.getLast(), sweep.windowBound);
+        !batch.isEmpty()
+            && (isAtOrAfterWindow(batch.getLast(), sweep.anchor.windowBound)
+                || batch.getLast().id().checkpointId() >= sweep.anchor.checkpointId);
     return new BatchResult(deletableBackups, earliestBackupInNewRange, reachedWindow);
   }
 
@@ -357,11 +378,20 @@ public class BackupRetention extends Actor {
         Optional.empty(), Optional.of(partitionId), CheckpointPattern.any());
   }
 
-  private Instant calculateWindowBound(final BackupStatus latestCompletedBackup) {
-    final var completedTimestamp =
-        requireNonNull(
-            backupTimestamp(latestCompletedBackup), "anchor backup must have a timestamp");
-    return completedTimestamp.minusSeconds(retentionWindow.toSeconds());
+  /**
+   * Each partition records its own timestamp for the anchor; the earliest one gives the most
+   * conservative bound, and using it on every partition keeps them deleting the same checkpoints.
+   */
+  private Instant calculateWindowBound(final List<BackupStatus> anchorBackups) {
+    final var earliestTimestamp =
+        anchorBackups.stream()
+            .map(
+                backup ->
+                    Objects.<Instant>requireNonNull(
+                        backupTimestamp(backup), "anchor backup must have a timestamp"))
+            .min(Comparator.naturalOrder())
+            .orElseThrow();
+    return earliestTimestamp.minusSeconds(retentionWindow.toSeconds());
   }
 
   /**
@@ -449,18 +479,18 @@ public class BackupRetention extends Actor {
             });
   }
 
-  /** The state of one partition's sweep: the anchor, the window it defines and what was deleted. */
+  /** The newest checkpoint completed on every partition and the window bound it defines. */
+  private record SharedAnchor(long checkpointId, Instant windowBound) {}
+
+  /** The state of one partition's sweep: the shared anchor and what was deleted. */
   private static final class PartitionSweep {
     private final int partitionId;
-    private final BackupStatus anchor;
-    private final Instant windowBound;
+    private final SharedAnchor anchor;
     private int deleted;
 
-    private PartitionSweep(
-        final int partitionId, final BackupStatus anchor, final Instant windowBound) {
+    private PartitionSweep(final int partitionId, final SharedAnchor anchor) {
       this.partitionId = partitionId;
       this.anchor = anchor;
-      this.windowBound = windowBound;
     }
   }
 
@@ -468,4 +498,74 @@ public class BackupRetention extends Actor {
       List<BackupIdentifier> deletableBackups,
       long earliestBackupInNewRange,
       boolean reachedWindow) {}
+
+  /** The state of one {@link #findSharedAnchor} run. Only accessed from the actor. */
+  private final class SharedAnchorSearch {
+    private final CompletableFuture<Optional<SharedAnchor>> result = new CompletableFuture<>();
+    private final BackupStore store;
+    private final List<Integer> partitions;
+    private final List<BackupStatus> candidateBackups = new ArrayList<>();
+    private int nextPartition;
+    private long candidate = Long.MAX_VALUE;
+
+    private SharedAnchorSearch(final BackupStore store, final List<Integer> partitions) {
+      this.store = store;
+      this.partitions = partitions;
+    }
+
+    private void nextPartition() {
+      final var partitionId = partitions.get(nextPartition);
+      final var before =
+          candidate == Long.MAX_VALUE ? OptionalLong.empty() : OptionalLong.of(candidate + 1);
+      findLatestCompletedBackup(store, partitionId, before)
+          .whenCompleteAsync(
+              (latestCompleted, error) -> {
+                if (error != null) {
+                  result.completeExceptionally(error);
+                } else {
+                  onAnswer(partitionId, latestCompleted);
+                }
+              },
+              actor);
+    }
+
+    private void onAnswer(final int partitionId, final Optional<BackupStatus> latestCompleted) {
+      if (latestCompleted.isEmpty()) {
+        logNoSharedAnchor(partitionId);
+        result.complete(Optional.empty());
+        return;
+      }
+
+      final var backup = latestCompleted.get();
+      if (backup.id().checkpointId() < candidate) {
+        candidate = backup.id().checkpointId();
+        candidateBackups.clear();
+      }
+      candidateBackups.add(backup);
+
+      if (candidateBackups.size() == partitions.size()) {
+        result.complete(
+            Optional.of(new SharedAnchor(candidate, calculateWindowBound(candidateBackups))));
+        return;
+      }
+      nextPartition = (nextPartition + 1) % partitions.size();
+      nextPartition();
+    }
+
+    private void logNoSharedAnchor(final int partitionId) {
+      if (candidate == Long.MAX_VALUE) {
+        LOG.debug(
+            "Skipping backup retention for physical tenant {}, partition {} has no completed backup",
+            physicalTenantId,
+            partitionId);
+      } else {
+        LOG.warn(
+            "Skipping backup retention for physical tenant {}, no checkpoint is completed on every"
+                + " partition: partition {} has no completed backup at or below checkpoint {}",
+            physicalTenantId,
+            partitionId,
+            candidate);
+      }
+    }
+  }
 }
