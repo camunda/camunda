@@ -61,8 +61,7 @@ public class CamundaClientAllAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public CamundaClientExecutorService camundaClientExecutorService() {
-    return CamundaClientExecutorService.createDefault(
-        camundaClientProperties.getExecutionThreads());
+    return CamundaClientExecutorService.create(camundaClientProperties.getExecutionThreads());
   }
 
   @Bean
