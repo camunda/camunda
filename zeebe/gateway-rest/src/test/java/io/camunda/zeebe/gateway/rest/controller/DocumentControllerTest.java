@@ -357,6 +357,27 @@ public class DocumentControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldSandboxDocumentContentViaContentSecurityPolicy() {
+    // given
+    final var content = new byte[] {1, 2, 3};
+
+    when(documentServices.getDocumentContent(eq("documentId"), isNull(), isNull(), any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new DocumentContentResponse(new ByteArrayInputStream(content), "text/html")));
+
+    // when/then
+    webClient
+        .get()
+        .uri(DOCUMENTS_BASE_URL + "/documentId")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .valueEquals("Content-Security-Policy", "sandbox; default-src 'none'");
+  }
+
+  @Test
   void testDeleteDocument() {
     // given
     when(documentServices.deleteDocument("documentId", null))
