@@ -30,8 +30,8 @@ import type {
 	QueryDecisionDefinitionsResponseBody,
 	GetProcessDefinitionResponseBody,
 	GetProcessStartFormResponseBody,
-    GetSystemConfigurationResponseBody,
-    QueryMessageSubscriptionsRequestBody,
+	GetSystemConfigurationResponseBody,
+	QueryMessageSubscriptionsRequestBody,
 	QueryMessageSubscriptionsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from './request';
