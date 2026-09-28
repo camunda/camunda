@@ -38,6 +38,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -378,6 +379,92 @@ public class DocumentControllerTest extends RestControllerTest {
         .exchange()
         .expectStatus()
         .isOk()
+        .expectHeader()
+        .valueEquals("Content-Security-Policy", "sandbox; default-src 'none'");
+  }
+
+  @Test
+  void shouldServeUnsafeContentTypeAsAttachment() {
+    // given - a renderable-but-unsafe content type that must not be rendered inline
+    final var content = new byte[] {1, 2, 3};
+
+    when(documentServices.getDocumentContent(eq("documentId"), isNull(), isNull(), any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new DocumentContentResponse(new ByteArrayInputStream(content), "text/html")));
+
+    // when/then
+    webClient
+        .get()
+        .uri(DOCUMENTS_BASE_URL + "/documentId")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .valueEquals(HttpHeaders.CONTENT_DISPOSITION, "attachment");
+  }
+
+  @Test
+  void shouldServeUnknownContentTypeAsAttachment() {
+    // given
+    final var content = new byte[] {1, 2, 3};
+
+    when(documentServices.getDocumentContent(eq("documentId"), isNull(), isNull(), any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new DocumentContentResponse(new ByteArrayInputStream(content), null)));
+
+    // when/then
+    webClient
+        .get()
+        .uri(DOCUMENTS_BASE_URL + "/documentId")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .valueEquals(HttpHeaders.CONTENT_DISPOSITION, "attachment");
+  }
+
+  @Test
+  void shouldServeAllowlistedContentTypeInline() {
+    // given - a safe content type on the inline allowlist keeps existing image/PDF previews working
+    final var content = new byte[] {1, 2, 3};
+
+    when(documentServices.getDocumentContent(eq("documentId"), isNull(), isNull(), any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new DocumentContentResponse(new ByteArrayInputStream(content), "application/pdf")));
+
+    // when/then
+    webClient
+        .get()
+        .uri(DOCUMENTS_BASE_URL + "/documentId")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .valueEquals(HttpHeaders.CONTENT_DISPOSITION, "inline");
+  }
+
+  @Test
+  void shouldServeAllowlistedImageInlineWithSandbox() {
+    // given - an allowlisted image stays inline and is still sandboxed
+    final var content = new byte[] {1, 2, 3};
+
+    when(documentServices.getDocumentContent(eq("documentId"), isNull(), isNull(), any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new DocumentContentResponse(new ByteArrayInputStream(content), "image/png")));
+
+    // when/then
+    webClient
+        .get()
+        .uri(DOCUMENTS_BASE_URL + "/documentId")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .valueEquals(HttpHeaders.CONTENT_DISPOSITION, "inline")
         .expectHeader()
         .valueEquals("Content-Security-Policy", "sandbox; default-src 'none'");
   }
