@@ -99,6 +99,20 @@ describe('mapResponseToTools', () => {
 		expect(tools.map(({id}) => id)).toEqual(['2']);
 	});
 
+	it('should drop subscriptions with a blank tool name', () => {
+		// given
+		const response = createResponse([
+			createSubscription({messageSubscriptionKey: '1', toolName: ''}),
+			createSubscription({messageSubscriptionKey: '2', toolName: 'place-order'}),
+		]);
+
+		// when
+		const tools = mapResponseToTools(response);
+
+		// then
+		expect(tools.map(({id}) => id)).toEqual(['2']);
+	});
+
 	it('should fall back to the process definition id when the process has no name', () => {
 		// given
 		const response = createResponse([

@@ -71,9 +71,10 @@ function getMcpProcessToolsRequestBody(search: McpProcessesSearch): QueryMessage
 }
 
 // A subscription without a `toolName` is not an MCP tool. The request filters them out
-// server-side, so this only guards against a response that ignores the filter.
+// server-side, so this only guards against a response that ignores the filter. `$exists: true`
+// also matches an empty string, so check falsiness rather than just `null`.
 function mapSubscriptionToTool(subscription: MessageSubscription): McpProcessTool | null {
-	if (subscription.toolName === null) {
+	if (!subscription.toolName) {
 		return null;
 	}
 
