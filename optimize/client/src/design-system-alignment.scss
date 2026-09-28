@@ -33,10 +33,10 @@
 }
 
 // Leaves the disabled styling Carbon already applies alone. `$carbon-btn-action` also spares the
-// modal close, which Carbon marks primary but then strips the fill from, so recolouring it paints
-// a black square.
+// modal close and the header's global actions (the SaaS notifications bell), which Carbon marks
+// primary but then strips the fill from, so recolouring them paints a black square.
 $carbon-btn: ':not(:disabled):not(.cds--btn--disabled)';
-$carbon-btn-action: ':not(:disabled):not(.cds--btn--disabled):not(.cds--modal-close)';
+$carbon-btn-action: ':not(:disabled):not(.cds--btn--disabled):not(.cds--modal-close):not(.cds--header__action)';
 
 .optimize-nav-v2 {
   --optimize-card-border-radius: 0.75rem;
