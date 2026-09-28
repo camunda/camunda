@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-adr docs-version-current docs-doc-page docs-doc-id-clients/run-job-handlers-on-virtual-threads-by-default" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.10.2">
+<title data-rh="true">Run Java client job handlers on virtual threads by default | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-64205/adr/clients/run-job-handlers-on-virtual-threads-by-default/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="Run Java client job handlers on virtual threads by default | Camunda Platform"><meta data-rh="true" name="description" content="DRI: Joshua Wulf"><meta data-rh="true" property="og:description" content="DRI: Joshua Wulf"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-64205/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-64205/adr/clients/run-job-handlers-on-virtual-threads-by-default/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-64205/adr/clients/run-job-handlers-on-virtual-threads-by-default/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-64205/adr/clients/run-job-handlers-on-virtual-threads-by-default/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-64205/assets/css/styles.44533d03.css">
+<script src="/camunda/pr-preview/pr-64205/assets/js/runtime~main.81655f13.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-64205/assets/js/main.51da92fd.js" defer="defer"></script>
+</head>
+<body>
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||"light"),document.documentElement.setAttribute("data-theme-choice",t||"light")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/camunda/pr-preview/pr-64205/img/black-C.png"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/camunda/pr-preview/pr-64205/"><div class="navbar__logo"><img src="/camunda/pr-preview/pr-64205/img/black-C.png" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/camunda/pr-preview/pr-64205/img/black-C.png" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">Camunda Platform</b></a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/camunda/camunda" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"><div class="navbar__search"><span aria-label="expand searchbar" role="button" class="search-icon" tabindex="0"></span><input id="search_input_react" type="search" placeholder="Loading..." aria-label="Search" class="navbar__search-input search-bar" disabled=""></div></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><main class="docMainContainer_TBSr docMainContainerEnhanced_lQrH"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>Run Java client job handlers on virtual threads by default</h1></header>
+<p><strong>DRI</strong>: Joshua Wulf</p>
+<p><strong>Status</strong>: Proposed</p>
+<p><strong>Deciders</strong></p>
+<ul>
+<li class="">Jonathan Lukas</li>
+</ul>
+<p><strong>Purpose</strong>: Decide how the Java client and the Spring Boot starter execute job handlers when
+the user has not configured any job handling threads or executor, and pin down the compatibility
+guarantees for users who have.</p>
+<p><strong>Audience</strong>: Engineers working on the Java client job worker and the Camunda Spring Boot
+starter, and the teams (Connectors, Camunda Process Test, docs) that build on them.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="context">Context<a href="#context" class="hash-link" aria-label="Direct link to Context" title="Direct link to Context" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="the-problem">The problem<a href="#the-problem" class="hash-link" aria-label="Direct link to The problem" title="Direct link to The problem" translate="no">​</a></h3>
+<p>Out of the box, the Java client runs every job handler of every job worker of a client on <strong>one
+platform thread</strong>:</p>
+<ul>
+<li class="">Plain client: <code>CamundaClientImpl.buildExecutorService()</code> creates
+<code>Executors.newFixedThreadPool(numJobWorkerExecutionThreads)</code>, and
+<code>DEFAULT_NUM_JOB_WORKER_EXECUTION_THREADS</code> is <code>1</code>.</li>
+<li class="">Spring Boot starter: <code>CamundaClientExecutorService.createDefault(execution-threads)</code> creates a
+single <code>ScheduledThreadPoolExecutor</code> of <code>execution-threads</code> (default <code>1</code>) and uses it for
+scheduling (polling, stream management, command retry back-off) <strong>and</strong> job handling.</li>
+</ul>
+<p>Each worker already bounds its in-flight jobs with <code>maxJobsActive</code> (default 32), and polling was
+decoupled from handling (#40058), so the worker keeps activating jobs up to that bound. But all
+those jobs queue behind the one handling thread. A single handler that blocks (a slow HTTP call, a
+missing timeout, a deadlock) stops every job of every worker of that client. Activated jobs sit in
+the queue until their job timeout expires, are re-activated, and queue again. From the outside
+this looks like the worker has stopped: the symptom reported in SUPPORT-34723. Users who try to
+fix it by raising <code>maxJobsActive</code> get more queued jobs, not more parallelism, which is the
+confusion in #14662.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="how-the-other-camunda-8-sdks-do-it">How the other Camunda 8 SDKs do it<a href="#how-the-other-camunda-8-sdks-do-it" class="hash-link" aria-label="Direct link to How the other Camunda 8 SDKs do it" title="Direct link to How the other Camunda 8 SDKs do it" translate="no">​</a></h3>
+<p>The C#, Go, Python, TypeScript/JavaScript and Rust SDKs expose one concurrency knob (a maximum
+number of concurrently active jobs per worker, typically defaulting to around 10) and size the
+execution substrate themselves: the .NET thread pool, goroutines, the tokio runtime, asyncio or a
+thread pool sized from the cap, Node&#x27;s event loop or worker threads. None of them asks the user for
+a thread count.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="why-the-java-client-has-a-thread-count">Why the Java client has a thread count<a href="#why-the-java-client-has-a-thread-count" class="hash-link" aria-label="Direct link to Why the Java client has a thread count" title="Direct link to Why the Java client has a thread count" translate="no">​</a></h3>
+<p>The setting dates from the 2017 &quot;job subscription&quot; design (the setter parameter was still named
+<code>numSubscriptionThreads</code>), when a fixed pool of platform threads was the idiomatic way to run
+blocking work on the JVM and a thread cost around a megabyte of stack. A default of one thread was
+a conservative choice for a pool that also did the polling. Neither constraint holds for the
+client in 2026:</p>
+<ul>
+<li class="">Virtual threads are final since JDK 21 (JEP 444). JDK 24 removed pinning on <code>synchronized</code>
+(JEP 491), and JDK 25 is the current LTS.</li>
+<li class="">Polling no longer shares the handling thread (#40058), and <code>maxJobsActive</code> already bounds how
+many jobs a worker holds, so a second bound in the form of a thread count is not needed for
+back-pressure.</li>
+<li class=""><code>camunda-spring-boot-starter-virtual-threads</code> (#41070, #42408) already offers a virtual-thread
+job handling executor as an opt-in module. It had to be a separate module because the client
+targets Java 8 and the starter Java 17.</li>
+</ul>
+<p>The client still compiles for Java 8, and the starter for Java 17, so both must keep working on
+JVMs without virtual threads.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision">Decision<a href="#decision" class="hash-link" aria-label="Direct link to Decision" title="Direct link to Decision" translate="no">​</a></h2>
+<p><strong>D1. <code>maxJobsActive</code> is the one knob for handler concurrency.</strong> It already bounds the jobs a
+worker holds. By default it now also bounds how many of that worker&#x27;s handlers run at the same
+time.</p>
+<p><strong>D2. When job handling is not configured, run each job handler on its own virtual thread.</strong>
+&quot;Not configured&quot; means none of <code>numJobWorkerExecutionThreads(int)</code>, the
+<code>camunda.client.worker.threads</code> property, or <code>jobHandlingExecutor(...)</code> was set on the builder;
+in the Spring Boot starter, <code>camunda.client.execution-threads</code> (or its legacy aliases, or the
+per-client <code>camunda.clients.&lt;name&gt;.execution-threads</code>) was not set and no
+<code>CamundaClientExecutorService</code> bean was provided. The client creates a thread-per-task executor
+of virtual threads named <code>job-worker-virtual-N</code> (the prefix used by the virtual-threads starter),
+owns it, and shuts it down, interrupting running handlers, when the client closes. In the starter,
+scheduling moves to its own single platform thread, the layout the virtual-threads starter already
+uses.</p>
+<p><strong>D3. Explicit configuration keeps its current behavior exactly.</strong></p>
+<table><thead><tr><th>Configuration</th><th>Job handlers run on</th></tr></thead><tbody><tr><td>nothing set, JDK 21+</td><td>a new virtual thread per job (new)</td></tr><tr><td>nothing set, JDK 8 to 20</td><td>one platform thread, as before</td></tr><tr><td>threads = <code>n</code> (n &gt;= 1)</td><td>fixed pool of <code>n</code> platform threads, as before</td></tr><tr><td>threads = <code>0</code></td><td>the scheduling executor, as before</td></tr><tr><td>custom <code>jobHandlingExecutor</code></td><td>the custom executor, as before, ownership as passed</td></tr><tr><td>Spring, <code>execution-threads</code> not set, JDK 21+</td><td>a new virtual thread per job (new); scheduling on one platform thread</td></tr><tr><td>Spring, <code>execution-threads</code> not set, JDK 17 to 20</td><td>one shared scheduled platform thread, as before</td></tr><tr><td>Spring, <code>execution-threads = n</code></td><td>one shared scheduled pool of <code>n</code> for scheduling and handling, as before</td></tr><tr><td>Spring, custom <code>CamundaClientExecutorService</code> bean, or <code>camunda-spring-boot-starter-virtual-threads</code></td><td>the bean&#x27;s executors, as before</td></tr></tbody></table>
+<p><strong>D4. Detect virtual threads at runtime; don&#x27;t raise the baseline.</strong> The client looks up
+<code>Thread.ofVirtual()</code> and <code>Executors.newThreadPerTaskExecutor(ThreadFactory)</code> reflectively
+(<code>io.camunda.client.impl.util.VirtualThreads</code>). If they&#x27;re missing, or they throw (JDK 19/20
+without <code>--enable-preview</code>), it falls back to today&#x27;s single platform thread and logs that at
+debug level.</p>
+<p><strong>D5. Distinguish &quot;not set&quot; from &quot;set to 1&quot; without changing public API.</strong>
+<code>CamundaClientConfiguration#getNumJobWorkerExecutionThreads()</code> still returns <code>int</code>, and still
+returns <code>1</code> when nothing is configured. <code>CamundaClientBuilderImpl</code> records internally whether the
+value was set, and <code>withConfiguration(...)</code> carries that over when copying from another builder. A
+third-party <code>CamundaClientConfiguration</code> passed to <code>CamundaClient.newClient(configuration)</code> or
+<code>newClientBuilder(configuration)</code> can&#x27;t express &quot;not set&quot;, so its value counts as set, and those
+integrations keep today&#x27;s behavior. In the starter, <code>CamundaClientProperties#executionThreads</code>
+defaults to <code>null</code> instead of <code>1</code>, so an unset property stays distinguishable from <code>1</code>.</p>
+<p><strong>D6. Keep <code>numJobWorkerExecutionThreads</code> / <code>execution-threads</code>, and give them a new purpose.</strong>
+They&#x27;re not deprecated. They become the way to get a fixed pool of platform threads, e.g. to cap
+CPU-bound parallelism across all workers of a client, and <code>1</code> restores one-at-a-time handling.</p>
+<p><strong>D7. Don&#x27;t couple to <code>spring.threads.virtual.enabled</code>.</strong> That Spring Boot property defaults to
+<code>false</code> and governs Spring&#x27;s own executors (web server, <code>@Async</code>, scheduling). Following it would
+leave the default (and the SUPPORT-34723 symptom) unchanged for almost every Spring user, and it
+would give Spring users an opt-out that plain-Java users don&#x27;t have. The starter follows the same
+rule as the client, and <code>execution-threads</code> is the opt-out in both. The virtual-threads starter
+module keeps working unchanged. It still forces virtual threads when <code>execution-threads</code> is set,
+but it isn&#x27;t needed for the default case any more.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="consequences">Consequences<a href="#consequences" class="hash-link" aria-label="Direct link to Consequences" title="Direct link to Consequences" translate="no">​</a></h2>
+<ul>
+<li class="">Out of the box on JDK 21+, a blocked or slow handler no longer stalls the other jobs of the
+client. Each worker handles up to <code>maxJobsActive</code> jobs concurrently, which is how the other
+SDKs behave.</li>
+<li class=""><strong>Behavior change for unconfigured applications on JDK 21+:</strong> handlers that used to run one at
+a time now run concurrently, up to <code>maxJobsActive</code> per worker. Handlers that share mutable
+state without synchronization, rely on ordering, or call a downstream system that tolerates
+only one caller will see new interleavings. Opt-out: set <code>numJobWorkerExecutionThreads(1)</code> /
+<code>camunda.client.execution-threads=1</code>.</li>
+<li class="">More concurrent handlers mean more concurrent job completions. Over REST these share the HTTP
+connection pool (<code>maxHttpConnections</code>, default 100). If the concurrent handlers of all workers
+exceed it, completions queue for a connection. They don&#x27;t fail.</li>
+<li class="">Handlers that do heavy CPU work, or that depend on <code>ThreadLocal</code> caching of expensive
+resources, are better served by a fixed pool (D6). On JDK 21 to 23, a handler that blocks
+inside <code>synchronized</code> pins its carrier thread. That limits throughput but is no worse than
+today&#x27;s single thread.</li>
+<li class="">The handling executor is now a thread-per-task executor, not a <code>ThreadPoolExecutor</code>, so
+thread-pool gauges from <code>ExecutorServiceMetrics</code> don&#x27;t apply to it. Task timings still do.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="alternatives-considered">Alternatives considered<a href="#alternatives-considered" class="hash-link" aria-label="Direct link to Alternatives considered" title="Direct link to Alternatives considered" translate="no">​</a></h2>
+<ul>
+<li class=""><strong>Raise the default thread count (e.g. to <code>maxJobsActive</code> or the CPU count).</strong> It reduces the
+symptom but keeps a second, confusing knob. The right number depends on each worker&#x27;s
+<code>maxJobsActive</code> and on how much of a handler&#x27;s time is spent blocked, which the client can&#x27;t
+know.</li>
+<li class=""><strong>Size a platform pool from the sum of <code>maxJobsActive</code> across workers.</strong> Workers are opened
+after the executor is built, so the pool would have to resize dynamically. Virtual threads make
+that unnecessary.</li>
+<li class=""><strong>Raise the client baseline to Java 21.</strong> It&#x27;s a breaking change for Java 8/11/17 users, and
+runtime detection gives the same result on 21+.</li>
+<li class=""><strong>Add a public <code>isNumJobWorkerExecutionThreadsSet()</code> or an <code>Optional</code>/<code>Integer</code> getter to
+<code>CamundaClientConfiguration</code>.</strong> It grows the public API for a distinction that only the
+client&#x27;s own builder and the starter need to make, and external implementations would still
+have to opt in.</li>
+<li class=""><strong>Make the new default opt-in (e.g. follow <code>spring.threads.virtual.enabled</code>).</strong> It&#x27;s
+non-breaking, but it leaves new users with the surprising default, which is the problem being
+fixed (D7).</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="backward-compatibility-guarantees">Backward-compatibility guarantees<a href="#backward-compatibility-guarantees" class="hash-link" aria-label="Direct link to Backward-compatibility guarantees" title="Direct link to Backward-compatibility guarantees" translate="no">​</a></h2>
+<ul>
+<li class="">No public API is removed or changes signature. <code>getNumJobWorkerExecutionThreads()</code> returns the
+same values as before.</li>
+<li class="">Any explicit thread count (<code>&gt;= 1</code> or <code>0</code>), property, legacy Spring alias, or custom executor
+or <code>CamundaClientExecutorService</code> bean behaves exactly as before.</li>
+<li class="">On JVMs without virtual threads, nothing changes.</li>
+<li class="">The only observable change is D2 for applications that configured nothing, on JDK 21+. The
+opt-out is a single property.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="follow-ups">Follow-ups<a href="#follow-ups" class="hash-link" aria-label="Direct link to Follow-ups" title="Direct link to Follow-ups" translate="no">​</a></h2>
+<ul>
+<li class="">Update the job worker and Spring Boot starter pages in camunda/camunda-docs (thread
+configuration, <code>execution-threads</code> default, the behavior change above).</li>
+<li class="">Camunda Process Test (<code>CamundaProcessTestDefaultConfiguration</code>) builds its own shared,
+non-owned executor and keeps today&#x27;s single-thread default. Consider aligning it separately.</li>
+<li class="">Consider deprecating <code>camunda-spring-boot-starter-virtual-threads</code> once the default has
+shipped.</li>
+<li class=""></li>
+</ul>
+<h1>59635 (job worker capacity leak) is a separate bug and not addressed here.</h1>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="references">References<a href="#references" class="hash-link" aria-label="Direct link to References" title="Direct link to References" translate="no">​</a></h2>
+<ul>
+<li class="">SUPPORT-34723 (stalled workers with the default single handling thread)</li>
+<li class="">camunda/camunda#14662 (thread setting has no effect on parallel job execution)</li>
+<li class="">camunda/camunda#40058 (separate job handling executor), #40903 (<code>0</code> = reuse scheduling executor)</li>
+<li class="">camunda/camunda#41070, #42408 (virtual-threads Spring Boot starter module)</li>
+<li class=""><a href="https://openjdk.org/jeps/444" target="_blank" rel="noopener noreferrer" class="">JEP 444: Virtual Threads</a>,
+<a href="https://openjdk.org/jeps/491" target="_blank" rel="noopener noreferrer" class="">JEP 491: Synchronize Virtual Threads without Pinning</a></li>
+<li class=""><a href="https://github.com/camunda/camunda/blob/main/docs/virtual_threads.md" target="_blank" rel="noopener noreferrer" class="">Guidance: Using Virtual Threads at Camunda</a></li>
+</ul></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/camunda/camunda/edit/main/docs/adr/clients/0002-run-job-handlers-on-virtual-threads-by-default.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#context" class="table-of-contents__link toc-highlight">Context</a><ul><li><a href="#the-problem" class="table-of-contents__link toc-highlight">The problem</a></li><li><a href="#how-the-other-camunda-8-sdks-do-it" class="table-of-contents__link toc-highlight">How the other Camunda 8 SDKs do it</a></li><li><a href="#why-the-java-client-has-a-thread-count" class="table-of-contents__link toc-highlight">Why the Java client has a thread count</a></li></ul></li><li><a href="#decision" class="table-of-contents__link toc-highlight">Decision</a></li><li><a href="#consequences" class="table-of-contents__link toc-highlight">Consequences</a></li><li><a href="#alternatives-considered" class="table-of-contents__link toc-highlight">Alternatives considered</a></li><li><a href="#backward-compatibility-guarantees" class="table-of-contents__link toc-highlight">Backward-compatibility guarantees</a></li><li><a href="#follow-ups" class="table-of-contents__link toc-highlight">Follow-ups</a></li><li><a href="#references" class="table-of-contents__link toc-highlight">References</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Camunda.</div></div></div></footer></div>
+</body>
+</html>
