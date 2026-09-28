@@ -40,6 +40,9 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 @RequestMapping("/v2/documents")
 public class DocumentController {
 
+  private static final String CONTENT_SECURITY_POLICY_HEADER = "Content-Security-Policy";
+  private static final String CONTENT_SECURITY_POLICY_SANDBOX = "sandbox; default-src 'none'";
+
   private final DocumentServices documentServices;
   private final ObjectMapper objectMapper;
 
@@ -105,6 +108,9 @@ public class DocumentController {
       final MediaType mediaType = resolveMediaType(contentResponse);
       return ResponseEntity.ok()
           .contentType(mediaType)
+          // Sandbox served content into an opaque origin so active types (HTML, SVG) can't run in the
+          // app origin. Per-endpoint header; does not touch the global web-app CSP.
+          .header(CONTENT_SECURITY_POLICY_HEADER, CONTENT_SECURITY_POLICY_SANDBOX)
           .body(
               bodyStream -> {
                 try (final var contentInputStream = contentResponse.content()) {
