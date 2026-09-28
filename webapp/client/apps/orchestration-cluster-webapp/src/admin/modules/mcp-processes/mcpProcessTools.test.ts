@@ -136,7 +136,7 @@ describe('getMcpProcessToolsRequestBody', () => {
 		expect(body.filter).toEqual({
 			messageSubscriptionType: 'START_EVENT',
 			messageSubscriptionState: {$neq: 'DELETED'},
-			toolName: {$exists: true},
+			toolName: {$exists: true, $neq: ''},
 		});
 	});
 
@@ -161,7 +161,7 @@ describe('getMcpProcessToolsRequestBody', () => {
 		const body = getMcpProcessToolsRequestBody({search: 'order'});
 
 		// then
-		expect(body.filter?.toolName).toEqual({$exists: true, $like: '*order*'});
+		expect(body.filter?.toolName).toEqual({$exists: true, $neq: '', $like: '*order*'});
 	});
 
 	it('should ignore a search term that is only whitespace', () => {
@@ -169,7 +169,7 @@ describe('getMcpProcessToolsRequestBody', () => {
 		const body = getMcpProcessToolsRequestBody({search: '   '});
 
 		// then
-		expect(body.filter?.toolName).toEqual({$exists: true});
+		expect(body.filter?.toolName).toEqual({$exists: true, $neq: ''});
 	});
 
 	it('should request the first page by default', () => {

@@ -99,6 +99,8 @@
 				"tenant": "Locataire",
 				"searchByToolName": "Rechercher par nom d'outil",
 				"noMcpProcesses": "Aucun processus MCP trouvé.",
+				"guideBody": "Pour plus d'informations, consultez le ",
+				"guideLinkLabel": "guide des processus MCP",
 				"informationMissing": "Aucune information fournie.",
 				"toolPurpose": "Objectif",
 				"toolResults": "Résultats",

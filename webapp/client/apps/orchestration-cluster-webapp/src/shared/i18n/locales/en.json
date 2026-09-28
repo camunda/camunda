@@ -99,6 +99,8 @@
 				"tenant": "Tenant",
 				"searchByToolName": "Search by tool name",
 				"noMcpProcesses": "No MCP processes found.",
+				"guideBody": "For more information, see the ",
+				"guideLinkLabel": "MCP processes guide",
 				"informationMissing": "No information provided.",
 				"toolPurpose": "Purpose",
 				"toolResults": "Results",

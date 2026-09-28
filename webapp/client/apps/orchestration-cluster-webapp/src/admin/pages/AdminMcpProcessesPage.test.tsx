@@ -52,6 +52,16 @@ async function renderPage(overrides: Partial<AdminMcpProcessesPageProps> = {}) {
 }
 
 describe('<AdminMcpProcessesPage />', () => {
+	it('should link to the MCP processes guide', async () => {
+		// when
+		const {screen} = await renderPage();
+
+		// then
+		await expect
+			.element(screen.getByRole('link', {name: 'MCP processes guide'}))
+			.toHaveAttribute('href', 'https://docs.camunda.io/docs/next/components/admin/mcp-processes/');
+	});
+
 	it('should list the tools a process exposes', async () => {
 		// when
 		const {screen} = await renderPage();

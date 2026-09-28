@@ -99,6 +99,8 @@
 				"tenant": "Mandant",
 				"searchByToolName": "Nach Werkzeugnamen suchen",
 				"noMcpProcesses": "Keine MCP-Prozesse gefunden.",
+				"guideBody": "Weitere Informationen finden Sie im ",
+				"guideLinkLabel": "Leitfaden zu MCP-Prozessen",
 				"informationMissing": "Keine Angaben vorhanden.",
 				"toolPurpose": "Zweck",
 				"toolResults": "Ergebnisse",

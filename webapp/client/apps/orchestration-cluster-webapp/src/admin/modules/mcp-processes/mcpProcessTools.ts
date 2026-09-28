@@ -61,7 +61,9 @@ function getMcpProcessToolsRequestBody(search: McpProcessesSearch): QueryMessage
 			messageSubscriptionType: 'START_EVENT',
 			messageSubscriptionState: {$neq: 'DELETED'},
 			toolName:
-				searchTerm === undefined || searchTerm === '' ? {$exists: true} : {$exists: true, $like: `*${searchTerm}*`},
+				searchTerm === undefined || searchTerm === ''
+					? {$exists: true, $neq: ''}
+					: {$exists: true, $neq: '', $like: `*${searchTerm}*`},
 		},
 		page: {
 			from: ((search.page ?? 1) - 1) * pageSize,

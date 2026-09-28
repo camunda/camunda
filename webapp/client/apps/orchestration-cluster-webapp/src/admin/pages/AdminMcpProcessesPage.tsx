@@ -9,6 +9,7 @@
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {
+	Button,
 	DataTable,
 	Label,
 	PageHeader,
@@ -26,6 +27,7 @@ type SortingState = NonNullable<SortingConfig['sortState']>;
 const SEARCH_DEBOUNCE = 500;
 const EMPTY_CELL = '-';
 const SORTED_COLUMN_ID = 'toolName';
+const MCP_PROCESSES_GUIDE_URL = 'https://docs.camunda.io/docs/next/components/admin/mcp-processes/';
 
 type AdminMcpProcessesPageProps = {
 	tools: McpProcessTool[];
@@ -142,7 +144,17 @@ const AdminMcpProcessesPage: React.FC<AdminMcpProcessesPageProps> = ({
 	return (
 		<PageLayout id="main-content" tabIndex={-1}>
 			<div className="flex flex-col gap-6">
-				<PageHeader title={title} />
+				<div className="flex flex-col gap-1">
+					<PageHeader title={title} />
+					<p className="text-sm leading-5 text-muted-foreground">
+						{t('admin.mcpProcesses.guideBody')}
+						<Button asChild variant="link" className="h-auto p-0 align-baseline font-normal">
+							<a href={MCP_PROCESSES_GUIDE_URL} target="_blank" rel="noopener noreferrer">
+								{t('admin.mcpProcesses.guideLinkLabel')}
+							</a>
+						</Button>
+					</p>
+				</div>
 
 				<div className="flex flex-col gap-4">
 					<Label htmlFor="mcp-processes-search" className="sr-only">
