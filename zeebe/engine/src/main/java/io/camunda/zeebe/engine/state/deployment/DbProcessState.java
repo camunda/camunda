@@ -665,6 +665,15 @@ public final class DbProcessState implements MutableProcessState {
           "Expected to cache process with key '%d' for tenant '%s', but it is not persisted"
               .formatted(processDefinitionKey, tenantId));
     }
+    if (!BufferUtil.equals(executableProcess.getId(), persistedProcess.getBpmnProcessId())) {
+      throw new IllegalStateException(
+          "Expected to cache process with key '%d' for tenant '%s' and bpmnProcessId '%s', but the given executable process has bpmnProcessId '%s'"
+              .formatted(
+                  processDefinitionKey,
+                  tenantId,
+                  bufferAsString(persistedProcess.getBpmnProcessId()),
+                  bufferAsString(executableProcess.getId())));
+    }
 
     addProcessToInMemoryState(new DeployedProcess(executableProcess, copy(persistedProcess)));
   }
