@@ -132,6 +132,9 @@
       },
       "businessId": {
         "type": "keyword"
+      },
+      "suspended": {
+        "type": "boolean"
       }
     }
   }

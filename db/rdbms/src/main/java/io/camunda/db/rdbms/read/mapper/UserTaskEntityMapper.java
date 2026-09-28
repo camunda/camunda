@@ -46,7 +46,8 @@ public class UserTaskEntityMapper {
         dbModel.processDefinitionVersion(),
         MapSerializer.deserialize(dbModel.serializedCustomHeaders()),
         dbModel.priority(),
-        dbModel.tags());
+        dbModel.tags(),
+        dbModel.suspended());
   }
 
   private static List<String> sortedList(final List<String> list) {
