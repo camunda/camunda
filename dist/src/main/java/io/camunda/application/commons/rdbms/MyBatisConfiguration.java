@@ -173,6 +173,10 @@ public class MyBatisConfiguration {
       throws Exception {
     final var configuration = new org.apache.ibatis.session.Configuration();
     configuration.setJdbcTypeForNull(JdbcType.NULL);
+    // Demote MyBatis's own per-statement DEBUG logging to TRACE so that enabling DEBUG logging
+    // does not flood the logs with SQL statements/parameters for every mapper call.
+    // See https://github.com/camunda/camunda/issues/63856
+    configuration.setLogImpl(RdbmsStatementTraceLog.class);
     configuration.getTypeHandlerRegistry().register(OffsetDateTimeTypeHandler.class);
     // Which vendor's mapper statements apply is already settled in the vendor properties, so it is
     // set here rather than handed to a DatabaseIdProvider that would look it up over a connection
