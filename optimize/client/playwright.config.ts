@@ -7,14 +7,10 @@
  */
 
 import {defineConfig, devices} from '@playwright/test';
-import {config as loadDotenv} from 'dotenv';
 
 import {env} from './e2e/env';
 
 const isCI = !!process.env.CI;
-if (!isCI) {
-  loadDotenv({quiet: true});
-}
 
 export default defineConfig({
   testDir: './e2e',
