@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.authentication.config.controllers.TestApiController;
+import io.camunda.authentication.config.controllers.TestUserDetailsService;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.headers.ContentSecurityPolicyConfig;
 import io.camunda.security.configuration.headers.PermissionsPolicyConfig;
@@ -32,6 +33,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
@@ -110,6 +112,46 @@ public class AbstractWebSecurityConfigTest {
                 PERMISSIONS_POLICY,
                 List.of(PermissionsPolicyConfig.DEFAULT_PERMISSIONS_POLICY_VALUE)))
         .doesNotContainKeys(CONTENT_SECURITY_POLICY_REPORT_ONLY);
+  }
+
+  /**
+   * Requests the login page and returns the CSRF token it issues. The login endpoint enforces CSRF
+   * unconditionally, so a token has to be fetched before a login POST can succeed — an anonymous
+   * GET on the login path is where it is issued.
+   *
+   * <p>Sets {@code servletPath} explicitly: this test's minimal {@code @SpringBootConfiguration}
+   * (no full {@code DispatcherServletAutoConfiguration}) leaves {@link
+   * jakarta.servlet.http.HttpServletRequest#getServletPath()} empty for a request dispatched
+   * through {@code MockMvcTester}, even though a real deployment's default-mapped servlet resolves
+   * it to the full path. Both {@code CsrfProtectionRequestMatcher} and {@code
+   * WebSecurityConfig#shouldAddCsrf} key their path matching on {@code getServletPath()} — exactly
+   * like {@code CsrfProtectionRequestMatcherTest}'s own unit tests, which set it the same way on a
+   * bare {@code MockHttpServletRequest}.
+   */
+  protected MvcTestResult requestCsrfTokenForLogin(final String loginUrl) {
+    final MvcTestResult result =
+        mockMvcTester.get().uri(loginUrl).servletPath(WebSecurityConfig.LOGIN_URL).exchange();
+    assertThat(result.getResponse().getHeader(EXPECTED_CSRF_HEADER_NAME))
+        .as("GET %s must issue a CSRF token for the login form to echo back", loginUrl)
+        .isNotNull();
+    return result;
+  }
+
+  /** Logs in as demo, echoing back the CSRF token the login page issued. */
+  protected MvcTestResult logInAsDemo(final String loginUrl) {
+    final MvcTestResult csrfResult = requestCsrfTokenForLogin(loginUrl);
+    return mockMvcTester
+        .post()
+        .uri(loginUrl)
+        .servletPath(WebSecurityConfig.LOGIN_URL)
+        .cookie(csrfResult.getResponse().getCookies())
+        .header(
+            EXPECTED_CSRF_HEADER_NAME,
+            csrfResult.getResponse().getHeader(EXPECTED_CSRF_HEADER_NAME))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+        .formField("username", TestUserDetailsService.DEMO_USERNAME)
+        .formField("password", TestUserDetailsService.DEMO_USERNAME)
+        .exchange();
   }
 
   protected void assertMissingCsrfToken(final MvcTestResult response) {
