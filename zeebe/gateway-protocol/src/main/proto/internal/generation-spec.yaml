@@ -9715,6 +9715,7 @@ components:
           type: integer
           format: int32
           default: 100
+          minimum: 0
         after:
           description: Use the `endCursor` value from the previous response to fetch the next page of results.
           type: string
