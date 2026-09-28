@@ -578,6 +578,16 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-cluster-config</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-broker-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>jakarta.annotation</groupId>
       <artifactId>jakarta.annotation-api</artifactId>
       <scope>test</scope>
