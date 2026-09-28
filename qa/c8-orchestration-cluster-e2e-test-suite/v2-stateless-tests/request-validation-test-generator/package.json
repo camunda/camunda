@@ -22,7 +22,7 @@
   },
   "devDependencies": {
     "@apidevtools/swagger-parser": "^13.0.0",
-    "@types/node": "^24.0.0",
+    "@types/node": "^26.0.0",
     "prettier": "^3.2.5",
     "eslint": "^9.9.0",
     "@eslint/js": "^9.9.0",
@@ -31,5 +31,6 @@
     "tsx": "^4.7.0",
     "typescript": "^5.5.4",
     "yaml": "^2.4.2"
-  }
+  },
+  "packageManager": "npm@12.1.0"
 }

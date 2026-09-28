@@ -19,7 +19,7 @@ repository instead.
 
 - **Framework**: `@playwright/test` ^1.51.0
 - **Language**: TypeScript 5.9
-- **Node.js**: 24.16.0 (pinned in `.nvmrc` / `.tool-versions` — use `nvm use` or `asdf install`)
+- **Node.js**: 26.10.0 (pinned in `.nvmrc` / `.tool-versions` — use `nvm use` or `asdf install`)
 - **Pattern**: Page Object Model (POM) with Playwright fixtures
 - **API client**: `@camunda8/sdk`
 - **Linting**: ESLint + Prettier (enforced via `npm run lint`)

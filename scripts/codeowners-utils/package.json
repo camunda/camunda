@@ -15,5 +15,6 @@
     "test-classification"
   ],
   "author": "Camunda",
-  "license": "PROPRIETARY"
+  "license": "PROPRIETARY",
+  "packageManager": "npm@12.1.0"
 }
