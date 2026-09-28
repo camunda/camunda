@@ -56,8 +56,11 @@ label. To include additional benchmarks, add a standalone line to the PR descrip
 JMH: MsgpackBenchmark.serialize, DeduplicationCacheBenchmark
 ```
 
-Selectors can name a benchmark class or an individual `ClassName.methodName`. The workflow runs
-the requested benchmarks at the merge-base baseline and at the PR tip. Editing the selector list
+Selectors can name a benchmark class or an individual `ClassName.methodName`. If the PR's
+first-parent history after its merge base contains a commit whose subject starts with `perf: `, the
+workflow compares the parent of the first such commit with the PR tip. Otherwise, it benchmarks
+only the PR tip. This lets benchmarks added before the first perf commit exist at the baseline. A
+benchmark is skipped at any revision where its Java source is absent. Editing the selector list
 triggers a new comparison for that list.
 
 ## Customizing Benchmark Execution
