@@ -469,7 +469,7 @@ public class TaskEntity extends AbstractExporterEntity<TaskEntity>
     return this;
   }
 
-  public boolean isSuspended() {
+  public boolean getIsSuspended() {
     return isSuspended;
   }
 

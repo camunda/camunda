@@ -44,7 +44,7 @@ public class UserTaskEntityTransformer implements ServiceTransformer<TaskEntity,
         source.getCustomHeaders(),
         source.getPriority(),
         source.getTags(),
-        source.isSuspended());
+        source.getIsSuspended());
   }
 
   private UserTaskState toUserTaskState(final TaskState source) {
