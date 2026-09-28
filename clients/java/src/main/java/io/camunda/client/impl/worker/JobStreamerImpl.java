@@ -46,6 +46,11 @@ import org.slf4j.Logger;
 final class JobStreamerImpl implements JobStreamer {
   private static final Logger LOGGER = Loggers.JOB_WORKER_LOGGER;
 
+  // If the server ends the stream faster than this after it was opened, treat it like any other
+  // failure (back off) instead of reopening immediately, otherwise a server that ends every
+  // stream right after opening it would make the worker spin in a tight reopen loop.
+  private static final Duration MIN_STREAM_LIFETIME_FOR_IMMEDIATE_REOPEN = Duration.ofSeconds(1);
+
   private final JobClient jobClient;
   private final String jobType;
   private final String workerName;
@@ -69,6 +74,9 @@ final class JobStreamerImpl implements JobStreamer {
 
   @GuardedBy("streamLock")
   private CamundaFuture<StreamJobsResponse> streamControl;
+
+  @GuardedBy("streamLock")
+  private long streamOpenedAtNanos;
 
   @GuardedBy("streamLock")
   private FinalCommandStep<StreamJobsResponse> command;
@@ -237,6 +245,7 @@ final class JobStreamerImpl implements JobStreamer {
     final CamundaFuture<StreamJobsResponse> control = command.send();
     control.whenCompleteAsync((ignored, error) -> handleStreamComplete(error), executor);
     streamControl = control;
+    streamOpenedAtNanos = nanoClock.getAsLong();
     LOGGER.debug("Opened job stream of type '{}' for worker '{}'", jobType, workerName);
 
     if (streamTimeout != null) {
@@ -362,13 +371,28 @@ final class JobStreamerImpl implements JobStreamer {
     }
 
     if (error == null) {
-      // A normal completion (e.g. a graceful drain by the gateway or a proxy) is not a failure, so
-      // reopen right away like the timeout paths do instead of backing off.
-      LOGGER.debug(
-          "Job stream of type '{}' for worker '{}' was completed by the server, recreating it",
+      final long streamLifetimeNanos = nanoClock.getAsLong() - streamOpenedAtNanos;
+      if (streamLifetimeNanos >= MIN_STREAM_LIFETIME_FOR_IMMEDIATE_REOPEN.toNanos()) {
+        // A normal completion (e.g. a graceful drain by the gateway or a proxy) is not a
+        // failure, so reopen right away like the timeout paths do instead of backing off.
+        LOGGER.debug(
+            "Job stream of type '{}' for worker '{}' was completed by the server, recreating it",
+            jobType,
+            workerName);
+        lockedOpen();
+        return;
+      }
+
+      // The server ended the stream almost immediately after it was opened. Treat this like any
+      // other failure and back off, otherwise a server that behaves this way on every stream
+      // would make the worker reopen in a tight loop.
+      retryDelay = backoffSupplier.supplyRetryDelay(retryDelay);
+      LOGGER.warn(
+          "Job stream of type '{}' for worker '{}' was completed by the server right after it was opened, recreating it in {}",
           jobType,
-          workerName);
-      lockedOpen();
+          workerName,
+          Duration.ofMillis(retryDelay));
+      executor.schedule(() -> open(command), retryDelay, TimeUnit.MILLISECONDS);
       return;
     }
 

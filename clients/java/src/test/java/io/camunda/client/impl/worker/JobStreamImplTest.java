@@ -248,7 +248,8 @@ final class JobStreamImplTest {
     final ServerCallStreamObserver<GatewayOuterClass.ActivatedJob> initialStream =
         service.lastStream();
 
-    // when - the server ends the stream normally; no time passes, so no backoff can elapse
+    // when - the server ends the stream normally, well after it was opened
+    advanceTime(1, TimeUnit.SECONDS);
     initialStream.onCompleted();
     scheduler.runUntilIdle();
 
@@ -259,6 +260,26 @@ final class JobStreamImplTest {
     service.pushJob();
     assertThat(jobs).hasSize(1);
     assertThat(eventsAt(Level.WARN)).isEmpty();
+  }
+
+  @Test
+  void shouldBackOffWhenServerCompletesStreamRightAfterOpeningIt() {
+    // given
+    jobStreamer.openStreamer(ignored -> {});
+    final ServerCallStreamObserver<GatewayOuterClass.ActivatedJob> initialStream =
+        service.lastStream();
+
+    // when - the server ends the stream as soon as it is opened
+    initialStream.onCompleted();
+    scheduler.runUntilIdle();
+
+    // then - the worker warns and reopens only after the backoff delay, instead of spinning
+    assertThat(service.requests).hasSize(1);
+    assertThat(eventsAt(Level.WARN)).hasSize(1);
+
+    advanceTime(10, TimeUnit.SECONDS);
+    scheduler.runUntilIdle();
+    assertThat(service.requests).hasSize(2);
   }
 
   @Test
