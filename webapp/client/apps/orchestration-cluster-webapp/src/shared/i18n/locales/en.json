@@ -688,6 +688,21 @@
 				"title": "Operate Decision Instance",
 				"pageTitle": "Operate: Decision Instance {{decisionInstanceId}} of {{name}}",
 				"notFoundNotificationTitle": "Couldn't find decision instance {{decisionInstanceId}}",
+				"variablesPanel": {
+					"tabsLabel": "Variable Panel Tabs",
+					"inputsAndOutputs": "Inputs and Outputs",
+					"result": "Result",
+					"inputs": "Inputs",
+					"outputs": "Outputs",
+					"inputVariables": "input variables",
+					"outputVariables": "output variables",
+					"name": "Name",
+					"value": "Value",
+					"rule": "Rule",
+					"noInput": "No input available because the evaluation failed",
+					"noOutput": "No output available because the evaluation failed",
+					"noResult": "No result available because the evaluation failed"
+				},
 				"header": {
 					"decisionInstanceKeyColumn": "Decision Instance Key",
 					"versionColumn": "Version",

@@ -16,10 +16,10 @@ import {
 	createRoute,
 	createRouter,
 } from '@tanstack/react-router';
-import {HttpResponse} from 'msw';
+import {HttpResponse, http} from 'msw';
 import {render} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
-import {type BatchOperationState} from '@camunda/camunda-api-zod-schemas/8.11';
+import {endpoints, type BatchOperationState} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
 import {
 	mockGetBatchOperationEndpoint,
@@ -68,6 +68,24 @@ function renderActions(batchOperationState: BatchOperationState) {
 	return renderWithSharedRouter(queryClient, batchOperationState);
 }
 
+function holdConvergedRead(state: BatchOperationState) {
+	let release!: () => void;
+	let requested = false;
+	const pending = new Promise<void>((resolve) => {
+		release = resolve;
+	});
+
+	return {
+		handler: http.get(endpoints.getBatchOperation.getUrl({batchOperationKey: ':batchOperationKey'}), async () => {
+			requested = true;
+			await pending;
+			return HttpResponse.json(createBatchOperation({state}));
+		}),
+		requested: () => requested,
+		release,
+	};
+}
+
 describe('<BatchOperationActions />', () => {
 	afterEach(() => {
 		vi.useRealTimers();
@@ -103,27 +121,23 @@ describe('<BatchOperationActions />', () => {
 	);
 
 	it('should suspend and disable the button while the mutation is in flight, then re-enable it', async ({worker}) => {
-		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout'], shouldAdvanceTime: true});
+		const convergedRead = holdConvergedRead('SUSPENDED');
 		worker.use(
 			mockSuspendBatchOperationEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-			mockGetBatchOperationEndpoint({
-				successResponse: HttpResponse.json(createBatchOperation({state: 'ACTIVE'})),
-				delay: 'infinite',
-			}),
+			convergedRead.handler,
 		);
 
 		const screen = await renderActions('ACTIVE');
 		const suspendButton = screen.getByRole('button', {name: 'Suspend'});
-		await userEvent.click(suspendButton);
 
-		await expect.element(suspendButton).toBeDisabled();
-
-		worker.use(
-			mockGetBatchOperationEndpoint({successResponse: HttpResponse.json(createBatchOperation({state: 'SUSPENDED'}))}),
-		);
-		await vi.advanceTimersByTimeAsync(11000);
-
-		await expect.element(suspendButton).not.toBeDisabled();
+		try {
+			await userEvent.click(suspendButton);
+			await expect.element(suspendButton).toBeDisabled();
+			await expect.poll(convergedRead.requested).toBe(true);
+		} finally {
+			convergedRead.release();
+			await expect.element(suspendButton).not.toBeDisabled();
+		}
 	});
 
 	it('should seed the display cache with the confirmed converged state, not a possibly-stale refetch', async ({
