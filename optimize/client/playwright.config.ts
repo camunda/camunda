@@ -40,7 +40,8 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   webServer: {
-    command: 'yarn start',
+    // CI serves the bundle from the build step instead of compiling the Sass and modules on demand.
+    command: isCI ? 'yarn vite preview --port 3000 --strictPort' : 'yarn start',
     url: env.optimizeUrl,
     reuseExistingServer: true,
     timeout: 120_000,
