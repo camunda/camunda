@@ -467,6 +467,9 @@ public final class EventAppliers implements EventApplier {
         ProcessInstanceIntent.RESUMED,
         new ProcessInstanceResumedApplier(state.getSuspensionState()));
     register(
+        ProcessInstanceIntent.SUSPENDING,
+        new ProcessInstanceSuspendingApplier(state.getSuspensionState()));
+    register(
         ProcessInstanceIntent.SUSPENDED,
         new ProcessInstanceSuspendedApplier(state.getSuspensionState()));
   }

@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Answers.CALLS_REAL_METHODS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
@@ -122,6 +123,24 @@ final class SuspensionBehaviorTest {
     // then
     assertThat(result.outcome()).isEqualTo(SuspensionAction.BUFFER);
     verifyOnSuspended(processor, command);
+  }
+
+  @ParameterizedTest
+  @EnumSource(SuspensionAction.class)
+  void shouldProcessByDefaultWhileSuspending(final SuspensionAction behavior) {
+    // given
+    markerIs(State.SUSPENDING);
+    final var command = command();
+    final var processor = overridingProcessor(behavior);
+
+    // when
+    final var result = suspensionBehavior.process(command, processor);
+
+    // then
+    assertThat(result.outcome()).isEqualTo(SuspensionAction.PROCESS);
+    assertThat(result.processInstanceKey()).isEqualTo(PROCESS_INSTANCE_KEY);
+    assertThat(result.rejectionReason()).isNull();
+    verifyOnSuspending(processor, command);
   }
 
   @Test
@@ -390,7 +409,11 @@ final class SuspensionBehaviorTest {
   private static TypedRecordProcessor<?> overridingProcessor(
       final SuspensionAware.@Nullable SuspensionAction behavior) {
     final var processor =
-        mock(TypedRecordProcessor.class, withSettings().extraInterfaces(SuspensionAware.class));
+        mock(
+            TypedRecordProcessor.class,
+            withSettings()
+                .extraInterfaces(SuspensionAware.class)
+                .defaultAnswer(CALLS_REAL_METHODS));
     // doReturn avoids counting stubbing as an invocation, so verify() only sees production calls
     doReturn(behavior).when((SuspensionAware) processor).onSuspended(any());
     doReturn(behavior).when((SuspensionAware) processor).onResuming(any());
@@ -401,6 +424,15 @@ final class SuspensionBehaviorTest {
   private static void verifyOnSuspended(
       final TypedRecordProcessor<?> processor, final TypedRecord<?> command) {
     verify((SuspensionAware) processor).onSuspended(command);
+    verify((SuspensionAware) processor, never()).onSuspending(any());
+    verify((SuspensionAware) processor, never()).onResuming(any());
+  }
+
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  private static void verifyOnSuspending(
+      final TypedRecordProcessor<?> processor, final TypedRecord<?> command) {
+    verify((SuspensionAware) processor).onSuspending(command);
+    verify((SuspensionAware) processor, never()).onSuspended(any());
     verify((SuspensionAware) processor, never()).onResuming(any());
   }
 
@@ -408,11 +440,13 @@ final class SuspensionBehaviorTest {
   private static void verifyOnResuming(
       final TypedRecordProcessor<?> processor, final TypedRecord<?> command) {
     verify((SuspensionAware) processor).onResuming(command);
+    verify((SuspensionAware) processor, never()).onSuspending(any());
     verify((SuspensionAware) processor, never()).onSuspended(any());
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
   private static void verifyNoClassification(final TypedRecordProcessor<?> processor) {
+    verify((SuspensionAware) processor, never()).onSuspending(any());
     verify((SuspensionAware) processor, never()).onSuspended(any());
     verify((SuspensionAware) processor, never()).onResuming(any());
   }
