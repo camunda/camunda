@@ -1,0 +1,23 @@
+[project]
+name = "load-test-extract-worker"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Christopher Kujawa", email = "ChrisKujawa@users.noreply.github.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "camunda-orchestration-sdk>=9.0.1",
+    "load-test-report",
+]
+
+[project.scripts]
+load-test-extract-worker = "load_test_extract_worker:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv.sources]
+load-test-report = { path = "../load_test_report" }
