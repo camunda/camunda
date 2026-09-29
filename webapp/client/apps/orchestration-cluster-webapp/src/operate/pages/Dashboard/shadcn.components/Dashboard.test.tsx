@@ -28,7 +28,13 @@ const PROCESS_STATS_REQUEST_SCHEMA = z.object({
 			order: z.literal('desc'),
 		}),
 	),
-	page: z.object({from: z.number(), limit: z.number()}).optional(),
+	page: z
+		.object({
+			limit: z.number(),
+			after: z.string().optional(),
+			before: z.string().optional(),
+		})
+		.optional(),
 });
 const INCIDENTS_REQUEST_SCHEMA = z.object({
 	page: z.object({from: z.literal(0), limit: z.literal(50)}),

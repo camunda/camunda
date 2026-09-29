@@ -17,11 +17,20 @@ type ExpandableListRow = {
 	incidentsCount: number;
 };
 
+type ExpandableListLoadingIndicator = {
+	testId: string;
+	label: string;
+};
+
 type ExpandableListVariantProps = {
 	header: string;
 	rows: ExpandableListRow[];
 	renderExpansion: (row: ExpandableListRow) => React.ReactNode;
 	isPending: boolean;
+	isFetchingNextPage: boolean;
+	isFetchingPreviousPage: boolean;
+	loadingNextPage: ExpandableListLoadingIndicator;
+	loadingPreviousPage: ExpandableListLoadingIndicator;
 };
 
 type ExpandableListVariantComponent = React.FC<ExpandableListVariantProps>;

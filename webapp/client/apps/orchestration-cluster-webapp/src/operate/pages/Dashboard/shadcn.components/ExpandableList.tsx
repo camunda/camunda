@@ -8,7 +8,6 @@
 
 import React, {useCallback, useEffect, useEffectEvent, useLayoutEffect, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Skeleton} from '@camunda/design-system';
 import SvgErrorRobot from '#/shared/svg/ErrorRobot';
 import {EmptyState} from '#/operate/components/EmptyState/shadcn.components/EmptyState';
 import type {ExpandableListRow} from './ExpandableList.types';
@@ -17,6 +16,40 @@ import {
 	EXPANDABLE_LIST_VARIANTS,
 	type ExpandableListVariant,
 } from './ExpandableList.variants';
+
+type RowHeightEntry = {isDetailRow: boolean; height: number};
+
+const readRowHeightEntries = (container: HTMLElement): RowHeightEntry[] => {
+	const tbodyRowElements = container.querySelectorAll<HTMLElement>(
+		'[data-slot="table-body"] [data-slot="table-row"], [data-slot="table-body"] [data-slot="data-table-expansion-row"]',
+	);
+
+	return Array.from(tbodyRowElements).map((rowElement) => ({
+		isDetailRow:
+			rowElement.getAttribute('data-slot') === 'data-table-expansion-row' ||
+			rowElement.querySelector('[data-row-kind="detail"]') !== null,
+		height: rowElement.getBoundingClientRect().height,
+	}));
+};
+
+const sumRealRowHeights = (entries: RowHeightEntry[], targetRealRowCount: number): number => {
+	let total = 0;
+	let realRowsSeen = 0;
+
+	for (const entry of entries) {
+		if (!entry.isDetailRow) {
+			if (realRowsSeen >= targetRealRowCount) {
+				break;
+			}
+
+			realRowsSeen += 1;
+		}
+
+		total += entry.height;
+	}
+
+	return total;
+};
 
 type Props = {
 	isPending: boolean;
@@ -32,6 +65,8 @@ type Props = {
 	hasPreviousPage: boolean;
 	isFetchingNextPage: boolean;
 	isFetchingPreviousPage: boolean;
+	isFetchNextPageError?: boolean;
+	isFetchPreviousPageError?: boolean;
 	onLoadNextPage: () => void;
 	onLoadPreviousPage: () => void;
 };
@@ -49,6 +84,8 @@ const ExpandableList: React.FC<Props> = ({
 	hasPreviousPage,
 	isFetchingNextPage,
 	isFetchingPreviousPage,
+	isFetchNextPageError = false,
+	isFetchPreviousPageError = false,
 	onLoadNextPage,
 	onLoadPreviousPage,
 	variant = DEFAULT_EXPANDABLE_LIST_VARIANT,
@@ -66,9 +103,16 @@ const ExpandableList: React.FC<Props> = ({
 	}, []);
 
 	const previousRowIdsBeforePrependRef = useRef<Set<string> | null>(null);
+	const previousSkeletonCompensationRef = useRef(0);
+	const loadingPreviousTestId = `${listTestId}-loading-previous`;
+
+	const rowIdsBeforeAppendRef = useRef<string[] | null>(null);
+	const rowHeightEntriesBeforeAppendRef = useRef<RowHeightEntry[] | null>(null);
+	const topSentinelIntersectingRef = useRef(false);
+	const bottomSentinelIntersectingRef = useRef(false);
 
 	const handleTopSentinelIntersect = useEffectEvent(() => {
-		if (isFetchingPreviousPage || isFetchingNextPage) {
+		if (!hasPreviousPage || isFetchingPreviousPage || isFetchingNextPage) {
 			return false;
 		}
 
@@ -78,13 +122,55 @@ const ExpandableList: React.FC<Props> = ({
 	});
 
 	const handleBottomSentinelIntersect = useEffectEvent(() => {
-		if (isFetchingNextPage || isFetchingPreviousPage) {
+		if (!hasNextPage || isFetchingNextPage || isFetchingPreviousPage) {
 			return false;
 		}
 
+		const container = scrollContainerElementRef.current;
+
+		if (container !== null) {
+			rowHeightEntriesBeforeAppendRef.current = readRowHeightEntries(container);
+		}
+
+		rowIdsBeforeAppendRef.current = rows.map((row) => row.id);
 		onLoadNextPage();
 		return true;
 	});
+
+	const tryLoadIntersectingSentinel = useEffectEvent(() => {
+		if (isFetchingNextPage || isFetchingPreviousPage) {
+			return;
+		}
+
+		if (topSentinelIntersectingRef.current && !isFetchPreviousPageError && handleTopSentinelIntersect()) {
+			return;
+		}
+
+		if (bottomSentinelIntersectingRef.current && !isFetchNextPageError) {
+			handleBottomSentinelIntersect();
+		}
+	});
+
+	useEffect(() => {
+		if (topSentinel === null) {
+			topSentinelIntersectingRef.current = false;
+		}
+
+		if (bottomSentinel === null) {
+			bottomSentinelIntersectingRef.current = false;
+		}
+
+		tryLoadIntersectingSentinel();
+	}, [
+		topSentinel,
+		bottomSentinel,
+		hasPreviousPage,
+		hasNextPage,
+		isFetchingPreviousPage,
+		isFetchingNextPage,
+		isFetchPreviousPageError,
+		isFetchNextPageError,
+	]);
 
 	useEffect(() => {
 		if (!topSentinel && !bottomSentinel) {
@@ -96,6 +182,12 @@ const ExpandableList: React.FC<Props> = ({
 				let hasTriggeredFetch = false;
 
 				for (const entry of entries) {
+					if (entry.target === topSentinel) {
+						topSentinelIntersectingRef.current = entry.isIntersecting;
+					} else if (entry.target === bottomSentinel) {
+						bottomSentinelIntersectingRef.current = entry.isIntersecting;
+					}
+
 					if (!entry.isIntersecting || hasTriggeredFetch) {
 						continue;
 					}
@@ -123,6 +215,24 @@ const ExpandableList: React.FC<Props> = ({
 
 	useLayoutEffect(() => {
 		const container = scrollContainerElementRef.current;
+
+		if (container === null || !isFetchingPreviousPage || previousSkeletonCompensationRef.current !== 0) {
+			return;
+		}
+
+		const skeletonRow = container.querySelector(`[data-testid="${loadingPreviousTestId}"]`);
+		const skeletonHeight = skeletonRow?.closest('[data-slot="table-row"]')?.getBoundingClientRect().height ?? 0;
+
+		if (skeletonHeight === 0) {
+			return;
+		}
+
+		container.scrollTop += skeletonHeight;
+		previousSkeletonCompensationRef.current = skeletonHeight;
+	}, [isFetchingPreviousPage, loadingPreviousTestId]);
+
+	useLayoutEffect(() => {
+		const container = scrollContainerElementRef.current;
 		const previousRowIds = previousRowIdsBeforePrependRef.current;
 
 		if (container === null || previousRowIds === null || isFetchingPreviousPage) {
@@ -139,41 +249,33 @@ const ExpandableList: React.FC<Props> = ({
 		// evicted at the other end.
 		const firstExistingRowIndex = rows.findIndex((row) => previousRowIds.has(row.id));
 		const prependedRowCount = firstExistingRowIndex === -1 ? rows.length : firstExistingRowIndex;
-		// Scoped to the table body (excludes the header row, which shares the
-		// same `data-slot`). Includes both real rows and any expansion/detail
-		// rows rendered alongside them: the DS `expansion` prop marks those
-		// with `data-table-expansion-row`, and the `nativeExpansion` variant
-		// marks its own detail rows with `data-row-kind="detail"` since it
-		// renders them through the same row primitive as real data rows.
-		// Walking in DOM order and stopping once the anchor row itself is
-		// reached (rather than a fixed slice) means a prepended row that is
-		// still expanded from before it was evicted contributes its detail
-		// row's height too, keeping the anchor row's own position accurate.
-		const tbodyRowElements = container.querySelectorAll<HTMLElement>(
-			'[data-slot="table-body"] [data-slot="table-row"], [data-slot="table-body"] [data-slot="data-table-expansion-row"]',
-		);
-		let prependedHeight = 0;
-		let realRowsSeen = 0;
+		const prependedHeight = sumRealRowHeights(readRowHeightEntries(container), prependedRowCount);
 
-		for (const rowElement of tbodyRowElements) {
-			const isDetailRow =
-				rowElement.getAttribute('data-slot') === 'data-table-expansion-row' ||
-				rowElement.querySelector('[data-row-kind="detail"]') !== null;
-
-			if (!isDetailRow) {
-				if (realRowsSeen >= prependedRowCount) {
-					break;
-				}
-
-				realRowsSeen += 1;
-			}
-
-			prependedHeight += rowElement.getBoundingClientRect().height;
-		}
-
-		container.scrollTop += prependedHeight;
+		container.scrollTop += prependedHeight - previousSkeletonCompensationRef.current;
+		previousSkeletonCompensationRef.current = 0;
 		previousRowIdsBeforePrependRef.current = null;
 	}, [rows, isFetchingPreviousPage, scrollContainer]);
+
+	useLayoutEffect(() => {
+		const container = scrollContainerElementRef.current;
+		const previousRowIds = rowIdsBeforeAppendRef.current;
+		const previousRowHeightEntries = rowHeightEntriesBeforeAppendRef.current;
+
+		if (container === null || previousRowIds === null || previousRowHeightEntries === null || isFetchingNextPage) {
+			return;
+		}
+
+		const newRowIds = new Set(rows.map((row) => row.id));
+		const firstSurvivingRowIndex = previousRowIds.findIndex((id) => newRowIds.has(id));
+		const evictedRowCount = firstSurvivingRowIndex === -1 ? previousRowIds.length : firstSurvivingRowIndex;
+
+		if (evictedRowCount > 0) {
+			container.scrollTop -= sumRealRowHeights(previousRowHeightEntries, evictedRowCount);
+		}
+
+		rowIdsBeforeAppendRef.current = null;
+		rowHeightEntriesBeforeAppendRef.current = null;
+	}, [rows, isFetchingNextPage, scrollContainer]);
 
 	if (!isPending) {
 		if (isError) {
@@ -199,33 +301,30 @@ const ExpandableList: React.FC<Props> = ({
 	const Variant = EXPANDABLE_LIST_VARIANTS[variant];
 
 	return (
-		<div className="flex flex-1 flex-col overflow-y-auto" ref={setScrollContainer} data-testid={listTestId}>
+		<div
+			className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto rounded-xl border bg-neutral-background-subtle shadow-sm [overflow-anchor:none]"
+			ref={setScrollContainer}
+			data-testid={listTestId}
+		>
 			{hasPreviousPage && <div ref={setTopSentinel} data-testid={`${listTestId}-top-sentinel`} />}
-			{isFetchingPreviousPage && (
-				<div
-					className="flex justify-center py-2"
-					data-testid={`${listTestId}-loading-previous`}
-					role="status"
-					aria-live="polite"
-				>
-					<span className="sr-only">{t('operate.dashboard.loadingPreviousRows', {header})}</span>
-					<Skeleton className="h-4 w-24" aria-hidden />
-				</div>
-			)}
 			<div data-testid={dataTestId}>
-				<Variant header={header} rows={rows} renderExpansion={renderExpansion} isPending={isPending} />
+				<Variant
+					header={header}
+					rows={rows}
+					renderExpansion={renderExpansion}
+					isPending={isPending}
+					isFetchingNextPage={isFetchingNextPage}
+					isFetchingPreviousPage={isFetchingPreviousPage}
+					loadingNextPage={{
+						testId: `${listTestId}-loading-next`,
+						label: t('operate.dashboard.loadingMoreRows', {header}),
+					}}
+					loadingPreviousPage={{
+						testId: loadingPreviousTestId,
+						label: t('operate.dashboard.loadingPreviousRows', {header}),
+					}}
+				/>
 			</div>
-			{isFetchingNextPage && (
-				<div
-					className="flex justify-center py-2"
-					data-testid={`${listTestId}-loading-next`}
-					role="status"
-					aria-live="polite"
-				>
-					<span className="sr-only">{t('operate.dashboard.loadingMoreRows', {header})}</span>
-					<Skeleton className="h-4 w-24" aria-hidden />
-				</div>
-			)}
 			{hasNextPage && <div ref={setBottomSentinel} data-testid={`${listTestId}-bottom-sentinel`} />}
 		</div>
 	);

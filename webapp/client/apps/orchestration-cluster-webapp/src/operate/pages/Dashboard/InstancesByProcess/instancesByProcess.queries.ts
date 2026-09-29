@@ -72,6 +72,8 @@ const DEFAULT_SORT: Pick<GetProcessDefinitionInstanceStatisticsRequestBody, 'sor
 	],
 };
 
+type PageRange = {from: number; limit: number};
+
 const instancesByProcessInfiniteQuery = () =>
 	infiniteQueryOptions({
 		queryKey: ['instancesByProcess'] as const,
@@ -79,7 +81,7 @@ const instancesByProcessInfiniteQuery = () =>
 			const {response, error} = await request(
 				endpoints.getProcessDefinitionInstanceStatistics({
 					...DEFAULT_SORT,
-					page: {from: pageParam, limit: PAGE_SIZE},
+					page: pageParam,
 				}),
 			);
 			if (error !== null) {
@@ -87,14 +89,22 @@ const instancesByProcessInfiniteQuery = () =>
 			}
 			return response.json();
 		},
-		initialPageParam: 0,
-		getNextPageParam: (lastPage, _, lastPageParam) => {
-			const next = lastPageParam + PAGE_SIZE;
-			return next >= lastPage.page.totalItems ? undefined : next;
+		initialPageParam: {from: 0, limit: PAGE_SIZE} as PageRange,
+		getNextPageParam: (lastPage, _allPages, lastPageParam): PageRange | undefined => {
+			const nextOffset = lastPageParam.from + lastPage.items.length;
+			if (nextOffset <= lastPageParam.from) {
+				return undefined;
+			}
+			return nextOffset < lastPage.page.totalItems || lastPage.page.hasMoreTotalItems
+				? {from: nextOffset, limit: PAGE_SIZE}
+				: undefined;
 		},
-		getPreviousPageParam: (_, __, firstPageParam) => {
-			const prev = firstPageParam - PAGE_SIZE;
-			return prev < 0 ? undefined : prev;
+		getPreviousPageParam: (_firstPage, _allPages, firstPageParam): PageRange | undefined => {
+			if (firstPageParam.from <= 0) {
+				return undefined;
+			}
+			const from = Math.max(0, firstPageParam.from - PAGE_SIZE);
+			return {from, limit: firstPageParam.from - from};
 		},
 		maxPages: MAX_PAGES,
 	});

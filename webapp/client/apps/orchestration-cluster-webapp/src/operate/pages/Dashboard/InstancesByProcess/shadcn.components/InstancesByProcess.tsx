@@ -37,6 +37,8 @@ const InstancesByProcess: React.FC = () => {
 		hasPreviousPage,
 		isFetchingNextPage,
 		isFetchingPreviousPage,
+		isFetchNextPageError,
+		isFetchPreviousPageError,
 	} = useInfiniteQuery({...instancesByProcessInfiniteQuery(), refetchInterval: 5000});
 
 	const {data: draining} = useQuery(drainingProcessDefinitionsQuery());
@@ -129,6 +131,8 @@ const InstancesByProcess: React.FC = () => {
 			hasPreviousPage={hasPreviousPage}
 			isFetchingNextPage={isFetchingNextPage}
 			isFetchingPreviousPage={isFetchingPreviousPage}
+			isFetchNextPageError={isFetchNextPageError}
+			isFetchPreviousPageError={isFetchPreviousPageError}
 			onLoadNextPage={fetchNextPage}
 			onLoadPreviousPage={fetchPreviousPage}
 		/>
