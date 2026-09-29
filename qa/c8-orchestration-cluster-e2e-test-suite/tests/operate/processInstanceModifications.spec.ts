@@ -570,9 +570,22 @@ test.describe('Process Instance Modifications', () => {
           'value',
         );
 
-        await operateProcessInstanceViewModificationModePage
-          .newVariableByIndex(0)
-          .readModeValue.click();
+        // A new variable's value editor is always rendered in write mode
+        // (an inline CodeMirror editor), never as a read-only display, so
+        // click the write-mode field and wait for it to take focus before
+        // typing — mirroring how addNewVariable enters a value.
+        const newVariableValueField =
+          operateProcessInstanceViewModificationModePage.newVariableByIndex(
+            0,
+          ).writeModeValue;
+        await newVariableValueField.click();
+        await expect(async () => {
+          expect(
+            await newVariableValueField.evaluate((el) =>
+              el.matches(':focus-within'),
+            ),
+          ).toBe(true);
+        }).toPass({timeout: 10_000});
         await page.keyboard.insertText('meow');
         await operateProcessInstanceViewModificationModePage.checkNewVariableErrorMessageText(
           0,
@@ -585,17 +598,18 @@ test.describe('Process Instance Modifications', () => {
           JSON.stringify(validJSONValue1),
         );
 
-        await waitForAssertion({
-          assertion: async () => {
-            await assertJsonEqual(
-              operateProcessInstanceViewModificationModePage.newVariableByIndex(
-                0,
-              ).writeModeValue,
-              validJSONValue1,
-            );
-          },
-          onFailure: async () => {},
-        });
+        // After the modal applies the JSON, the inline editor's rendered
+        // content updates asynchronously, so poll until it settles. Read the
+        // CodeMirror editable content directly: the write-mode wrapper's text
+        // also picks up the editor's visually-hidden label ("Value") and
+        // screen-reader announcements, which are not JSON.
+        await expect(async () => {
+          const text = await operateProcessInstanceViewModificationModePage
+            .newVariableByIndex(0)
+            .writeModeValue.locator('.cm-content')
+            .innerText();
+          expect(JSON.parse(text)).toEqual(validJSONValue1);
+        }).toPass({timeout: 15000});
 
         await expect(
           operateProcessInstanceViewModificationModePage.lastAddedModificationText,

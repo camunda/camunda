@@ -504,9 +504,14 @@ export class OperateProcessInstanceViewModificationModePage {
   };
 
   getEditVariableFieldSelector(variableName: string) {
+    // Target the CodeMirror editable content directly: it is both a valid
+    // click/focus target and holds only the variable value, whereas the
+    // wrapper's text also picks up the editor's visually-hidden label and
+    // screen-reader announcements (e.g. "Selection deleted").
     return this.page
       .getByTestId(`variable-${variableName}`)
-      .getByTestId('edit-variable-value');
+      .getByTestId('edit-variable-value')
+      .locator('.cm-content');
   }
 
   async undoModification() {
@@ -625,17 +630,27 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   async editNewVariableJSONInModal(variableIndex: number, json: string) {
-    await this.clearMonacoEditor();
-
     await this.newVariableByIndex(variableIndex).jsonEditorButton.click();
     const jsonEditorModal =
       this.newVariableByIndex(variableIndex).jsonEditorModal;
     await expect(jsonEditorModal.header).toBeVisible();
-    // await expect(jsonEditorModal.inputField).toBeVisible();
-    // await expect(jsonEditorModal.inputField).toBeEnabled();
     await expect(this.page.getByRole('dialog').getByRole('code')).toBeVisible();
+    // Focus and clear the modal editor before typing so the JSON lands in the
+    // (Monaco) modal rather than being appended to any pre-loaded value, then
+    // wait for the modal to close before reading the value back — mirroring
+    // editExistingVariableJSONInModal, which does the same reliably.
+    await jsonEditorModal.inputField.evaluate((el: HTMLElement) => el.focus());
+    await this.clearMonacoEditor();
     await this.fillMonacoEditor(jsonEditorModal.inputField, json);
-    await jsonEditorModal.applyButton.click();
+    // The modal only closes on Apply once its editor has (asynchronously)
+    // re-validated the freshly-typed JSON as valid; since the modal opens with
+    // the previous invalid value, a single early click can be a no-op. Retry
+    // the click until the modal actually closes.
+    await expect(async () => {
+      await jsonEditorModal.applyButton.click();
+      await expect(jsonEditorModal.header).toBeHidden({timeout: 2000});
+    }).toPass({timeout: 15000});
+    await this.newVariableByIndex(variableIndex).writeModeValue.click();
     await this.page.keyboard.press('Tab');
   }
 
