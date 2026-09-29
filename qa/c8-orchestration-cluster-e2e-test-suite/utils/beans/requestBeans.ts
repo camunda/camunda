@@ -526,16 +526,14 @@ export function CREATE_ON_FLY_DOCUMENT_REQUEST_BODY_WITH_METADATA(
 }
 
 /**
- * Uploads a document under a caller-chosen content type. The document content
- * endpoint decides `Content-Disposition` from the stored `metadata.contentType`
- * alone and never sniffs the bytes, so tests that cover that decision pass the
- * type they want to exercise and keep the payload incidental.
+ * The content endpoint decides from the stored `metadata.contentType` and never
+ * sniffs the bytes, so callers pass the type they want and the payload is
+ * incidental — except where a test renders the result.
  */
 export function CREATE_DOCUMENT_REQUEST_WITH_CONTENT_TYPE(
   fileName: string,
   contentType: string,
-  // Binary fixtures must arrive as bytes: a Buffer converted to a string is
-  // UTF-8 encoded again by File, which silently corrupts the upload.
+  // Bytes, not string: File re-encodes a string part as UTF-8.
   fileContent: string | Uint8Array<ArrayBuffer> = documentFileContent(fileName),
 ) {
   const form = new FormData();
@@ -549,11 +547,25 @@ export function CREATE_DOCUMENT_REQUEST_WITH_CONTENT_TYPE(
   return form;
 }
 
-/** Same as above, but stores no metadata part at all. */
-export function CREATE_DOCUMENT_REQUEST_WITHOUT_METADATA(fileName: string) {
-  const form = new FormData();
-  form.append('file', new File([documentFileContent(fileName)], fileName));
-  return form;
+/**
+ * File part with **no** `Content-Type` header, so the server stores a null
+ * content type. Hand-built because Playwright's serializer always labels a
+ * part, which stores the literal `application/octet-stream` instead.
+ */
+export function CREATE_RAW_MULTIPART_WITHOUT_PART_CONTENT_TYPE(
+  fileName: string,
+): {body: Buffer; contentType: string} {
+  const boundary = `----camundaNoPartContentType${Date.now()}`;
+  const body = Buffer.from(
+    `--${boundary}\r\n` +
+      `Content-Disposition: form-data; name="file"; filename="${fileName}"\r\n` +
+      `\r\n` +
+      `${documentFileContent(fileName)}\r\n` +
+      `--${boundary}--\r\n`,
+    'utf8',
+  );
+
+  return {body, contentType: `multipart/form-data; boundary=${boundary}`};
 }
 
 export function EVALUATE_DECISION_EXPECTED_BODY(
