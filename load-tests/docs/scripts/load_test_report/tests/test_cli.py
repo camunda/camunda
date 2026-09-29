@@ -194,7 +194,7 @@ def test_should_reject_too_long_namespace(capsys: pytest.CaptureFixture[str]) ->
     with pytest.raises(SystemExit):
         parse_args(
             [
-                "c8-ck-test-too-long-to-be-a-real-namespace-but-we-try-it-ABCDEFGHIJKLMN",
+                "a" * 64,
                 "--start",
                 "2026-08-14T10:00:00",
                 "--duration-seconds",
