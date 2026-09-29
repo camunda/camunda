@@ -9,6 +9,8 @@ package io.camunda.zeebe.engine.processing.secretreference;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.state.immutable.JobState;
+import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 
@@ -64,5 +66,21 @@ public final class SecretResolutionJobEvents {
     }
     stateWriter.appendFollowUpEvent(jobKey, intent, job);
     return true;
+  }
+
+  /**
+   * Appends {@link JobIntent#SECRET_RESOLUTION_PARKED} again for a job that is still parked, right
+   * after an event that rebuilds its wait state without the secret-wait mark, such as a retries
+   * update or a migration. Best-effort like {@link #appendIfBatchHasRoom(StateWriter, long,
+   * JobIntent, JobRecord)}; a job that is not parked is left alone.
+   */
+  public static void markParkedAgainIfWaiting(
+      final JobState jobState,
+      final StateWriter stateWriter,
+      final long jobKey,
+      final JobRecord job) {
+    if (jobState.getState(jobKey) == State.WAITING_FOR_SECRET_RESOLUTION) {
+      appendIfBatchHasRoom(stateWriter, jobKey, JobIntent.SECRET_RESOLUTION_PARKED, job);
+    }
   }
 }

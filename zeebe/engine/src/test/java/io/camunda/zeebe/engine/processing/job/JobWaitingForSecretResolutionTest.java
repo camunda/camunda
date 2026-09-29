@@ -43,6 +43,8 @@ public final class JobWaitingForSecretResolutionTest {
 
   private static final String PROCESS_ID = "process";
   private static final String TASK_ID = "task";
+  private static final String TARGET_PROCESS_ID = "target-process";
+  private static final String TARGET_TASK_ID = "target-task";
   private static final String JOB_TYPE = "task-type";
   private static final String SECRET_NAME = "token";
   private static final String SECOND_SECRET_NAME = "apikey";
@@ -269,6 +271,102 @@ public final class JobWaitingForSecretResolutionTest {
   }
 
   @Test
+  public void shouldMarkWaitingJobParkedAgainOnRetriesUpdate() {
+    // given
+    deploy();
+    final long jobKey = parkedJob();
+
+    // when
+    final Record<JobRecordValue> updated =
+        engine.job().withKey(jobKey).withRetries(5).updateRetries();
+
+    // then - the retries update rebuilds the job's wait state without the secret-wait mark, so a
+    // park event follows it for the still parked job, carrying the updated retries
+    assertThat(parkEventAfter(jobKey, updated.getPosition()).getValue().getRetries()).isEqualTo(5);
+  }
+
+  @Test
+  public void shouldMarkWaitingJobParkedAgainOnRetriesChangeOfJobUpdate() {
+    // given
+    deploy();
+    final long jobKey = parkedJob();
+
+    // when
+    engine.job().withKey(jobKey).withRetries(5).withChangeset(Set.of("retries")).update();
+
+    // then - the job update writes the same retries update, so the same park event follows it
+    final Record<JobRecordValue> retriesUpdated =
+        RecordingExporter.jobRecords(JobIntent.RETRIES_UPDATED).withRecordKey(jobKey).getFirst();
+    assertThat(parkEventAfter(jobKey, retriesUpdated.getPosition()).getValue().getRetries())
+        .isEqualTo(5);
+  }
+
+  @Test
+  public void shouldNotMarkJobParkedOnRetriesUpdateBeforeAnyActivation() {
+    // given - a job that references an uncached secret, but that no activation has parked yet
+    deploy();
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getKey();
+
+    // when - two retries updates, the second one bounding what the first one wrote
+    engine.job().withKey(jobKey).withRetries(5).updateRetries();
+    engine.job().withKey(jobKey).withRetries(6).updateRetries();
+
+    // then - the job is not parked, so no park event follows its retries update
+    assertThat(
+            RecordingExporter.jobRecords()
+                .withRecordKey(jobKey)
+                .limit(
+                    record ->
+                        record.getIntent() == JobIntent.RETRIES_UPDATED
+                            && record.getValue().getRetries() == 6)
+                .withIntent(JobIntent.SECRET_RESOLUTION_PARKED)
+                .exists())
+        .isFalse();
+  }
+
+  @Test
+  public void shouldMarkWaitingJobParkedAgainOnMigration() {
+    // given - a parked job, and a target process whose task references the same secret
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(processWithSecretTask(PROCESS_ID, TASK_ID))
+            .withXmlResource(processWithSecretTask(TARGET_PROCESS_ID, TARGET_TASK_ID))
+            .deploy();
+    final long targetProcessDefinitionKey =
+        deployment.getValue().getProcessesMetadata().stream()
+            .filter(process -> process.getBpmnProcessId().equals(TARGET_PROCESS_ID))
+            .findAny()
+            .orElseThrow()
+            .getProcessDefinitionKey();
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long jobKey = parkJobOf(processInstanceKey);
+
+    // when
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction(TASK_ID, TARGET_TASK_ID)
+        .migrate();
+
+    // then - the migration rebuilds the job's wait state without the secret-wait mark, so a park
+    // event follows it for the still parked job, carrying the migrated element
+    final Record<JobRecordValue> migrated =
+        RecordingExporter.jobRecords(JobIntent.MIGRATED).withRecordKey(jobKey).getFirst();
+    final Record<JobRecordValue> parkedAgain = parkEventAfter(jobKey, migrated.getPosition());
+    assertThat(parkedAgain.getValue().getElementId()).isEqualTo(TARGET_TASK_ID);
+    assertThat(parkedAgain.getValue().getProcessDefinitionKey())
+        .isEqualTo(targetProcessDefinitionKey);
+  }
+
+  @Test
   public void shouldCancelWaitingJobOnProcessInstanceTermination() {
     // given
     deploy();
@@ -323,19 +421,30 @@ public final class JobWaitingForSecretResolutionTest {
         .count();
   }
 
+  /** Returns the first park event of the job written after the record at {@code position}. */
+  private Record<JobRecordValue> parkEventAfter(final long jobKey, final long position) {
+    return RecordingExporter.jobRecords(JobIntent.SECRET_RESOLUTION_PARKED)
+        .withRecordKey(jobKey)
+        .filter(record -> record.getPosition() > position)
+        .getFirst();
+  }
+
   private void deploy() {
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .serviceTask(
-                TASK_ID,
-                t ->
-                    t.zeebeJobType(JOB_TYPE)
-                        .zeebeInputExpression(
-                            "\"Bearer \" + camunda.secrets." + SECRET_NAME, "authorization"))
-            .endEvent()
-            .done();
-    engine.deployment().withXmlResource(process).deploy();
+    engine.deployment().withXmlResource(processWithSecretTask(PROCESS_ID, TASK_ID)).deploy();
+  }
+
+  private static BpmnModelInstance processWithSecretTask(
+      final String processId, final String taskId) {
+    return Bpmn.createExecutableProcess(processId)
+        .startEvent()
+        .serviceTask(
+            taskId,
+            t ->
+                t.zeebeJobType(JOB_TYPE)
+                    .zeebeInputExpression(
+                        "\"Bearer \" + camunda.secrets." + SECRET_NAME, "authorization"))
+        .endEvent()
+        .done();
   }
 
   private void deployWithTwoSecrets() {

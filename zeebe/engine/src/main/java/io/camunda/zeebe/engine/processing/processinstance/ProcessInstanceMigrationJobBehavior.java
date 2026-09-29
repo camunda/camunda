@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCIDENT;
 
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationMigrateProcessor.SafetyCheckFailedException;
+import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionJobEvents;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
@@ -64,13 +65,16 @@ public class ProcessInstanceMigrationJobBehavior {
                 Please report this as a bug""",
                 processInstanceKey, elementInstance.getJobKey()));
       }
-      stateWriter.appendFollowUpEvent(
-          elementInstance.getJobKey(),
-          JobIntent.MIGRATED,
+      final var migratedJob =
           job.setProcessDefinitionKey(targetProcessDefinition.getKey())
               .setProcessDefinitionVersion(targetProcessDefinition.getVersion())
               .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
-              .setElementId(targetElementId));
+              .setElementId(targetElementId);
+      stateWriter.appendFollowUpEvent(elementInstance.getJobKey(), JobIntent.MIGRATED, migratedJob);
+      // the migration rebuilds the job's wait state without the secret-wait mark, so a job that is
+      // still parked on a secret gets the mark back from a park event right after it
+      SecretResolutionJobEvents.markParkedAgainIfWaiting(
+          jobState, stateWriter, elementInstance.getJobKey(), migratedJob);
     }
   }
 

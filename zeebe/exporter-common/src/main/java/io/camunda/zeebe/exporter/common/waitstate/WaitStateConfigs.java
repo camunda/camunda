@@ -32,6 +32,7 @@ public final class WaitStateConfigs {
               JobIntent.MIGRATED,
               JobIntent.FAILED,
               JobIntent.RETRIES_UPDATED,
+              JobIntent.SUSPENDED,
               JobIntent.SECRET_RESOLUTION_PARKED,
               JobIntent.SECRET_RESOLUTION_RESUMED)
           .withRemoveIntents(JobIntent.COMPLETED, JobIntent.CANCELED)

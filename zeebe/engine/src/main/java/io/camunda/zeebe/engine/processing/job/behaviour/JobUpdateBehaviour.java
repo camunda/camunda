@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizatio
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.job.JobCommandPreconditionValidator;
 import io.camunda.zeebe.engine.processing.job.JobLeaseFencingCheck;
+import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionJobEvents;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.JobState;
@@ -90,6 +91,9 @@ public class JobUpdateBehaviour {
   public void applyJobRetries(final long jobKey, final int retries, final JobRecord jobRecord) {
     jobRecord.setRetries(retries);
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.RETRIES_UPDATED, jobRecord);
+    // the retries update rebuilds the job's wait state without the secret-wait mark, so a job that
+    // is still parked on a secret gets the mark back from a park event right after it
+    SecretResolutionJobEvents.markParkedAgainIfWaiting(jobState, stateWriter, jobKey, jobRecord);
   }
 
   public Optional<String> updateJobRetries(
