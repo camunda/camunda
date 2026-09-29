@@ -190,9 +190,8 @@ Gradle check, fails on a Renovate pull request (a pull request with the `renovat
 reacts immediately instead of waiting for the regular rebase and assignment window.
 
 - **Gradle-only failures.** The alert is raised only when the Maven build succeeds and the Gradle
-  build does not. A failure that also affects Maven, for example an `openapi-generator` update that
-  requires mapping changes in the Maven build, is scoped to that pull request and needs the normal
-  human handling, not a global Gradle alert.
+  build does not. A failure that also affects Maven is scoped to that pull request and needs the
+  normal human handling, not a global Gradle alert.
 - **Signal.** As Gradle currently only compiles (D4), the signal is the Gradle distribution
   ("distball") creation job, which performs essentially the same work. An unrelated failing
   integration test must not raise the alert or hide a real Gradle breakage.
