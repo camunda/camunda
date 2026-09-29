@@ -861,8 +861,7 @@ class ScaleUpPartitionsBackupRestoreTest extends ScaleUpPartitionsTest {
         .withReplicationFactor(3)
         .withBrokerConfig(
             b -> {
-              b.withAuthenticationMethod(AuthenticationMethod.BASIC);
-              b.withAuthorizationsEnabled();
+              // No authentication (Basic Auth requires secondary storage)
               b.withUnifiedConfig(
                   cfg -> {
                     final var backup = cfg.getData().getPrimaryStorage().getBackup();
