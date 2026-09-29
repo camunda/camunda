@@ -22,6 +22,7 @@ type Props = {
 	incidentsCount: number;
 	isDraining?: boolean;
 	drainingDescription?: string;
+	isDrainingIndicatorFocusable?: boolean;
 	size: Size;
 	className?: string;
 };
@@ -49,9 +50,12 @@ const InstancesBar: React.FC<Props> = ({
 	incidentsCount,
 	isDraining = false,
 	drainingDescription,
+	isDrainingIndicatorFocusable = true,
 	size,
 	className,
 }) => {
+	const dangerBadgeClassName = 'text-danger-foreground-strong [.dark_&]:text-[var(--danger-foreground-subtle)]';
+	const successBadgeClassName = 'text-success-foreground-strong [.dark_&]:text-[var(--success-foreground-subtle)]';
 	const total = (activeInstancesCount ?? 0) + incidentsCount;
 	const incidentsBarRatio = total === 0 ? 0 : (100 * incidentsCount) / total;
 	const hasIncidents = incidentsCount > 0;
@@ -73,7 +77,7 @@ const InstancesBar: React.FC<Props> = ({
 					data-testid="incident-instances-badge"
 					className={cn(
 						'min-w-12 tabular-nums',
-						hasIncidents ? 'text-danger-foreground-strong' : 'text-neutral-foreground-subtle',
+						hasIncidents ? dangerBadgeClassName : 'text-neutral-foreground-subtle',
 					)}
 				>
 					{incidentsCount}
@@ -97,7 +101,7 @@ const InstancesBar: React.FC<Props> = ({
 								<TooltipTrigger asChild>
 									<div
 										data-testid="draining-indicator"
-										tabIndex={0}
+										tabIndex={isDrainingIndicatorFocusable ? 0 : undefined}
 										className="flex shrink-0 items-center text-danger-foreground-strong"
 									>
 										<Timer className="h-4 w-4" aria-hidden="true" />
@@ -115,7 +119,7 @@ const InstancesBar: React.FC<Props> = ({
 								<TooltipTrigger asChild>
 									<div
 										data-testid="draining-indicator"
-										tabIndex={0}
+										tabIndex={isDrainingIndicatorFocusable ? 0 : undefined}
 										className="flex items-center text-danger-foreground-strong"
 									>
 										<Timer className="h-4 w-4" aria-hidden="true" />
@@ -129,7 +133,7 @@ const InstancesBar: React.FC<Props> = ({
 								data-testid="active-instances-badge"
 								className={cn(
 									'ml-auto min-w-[6ch] text-right tabular-nums',
-									hasActiveInstances ? 'text-success-foreground-strong' : 'text-foreground',
+									hasActiveInstances ? successBadgeClassName : 'text-foreground',
 								)}
 							>
 								{activeInstancesCount}
@@ -142,7 +146,7 @@ const InstancesBar: React.FC<Props> = ({
 						data-testid="active-instances-badge"
 						className={cn(
 							'ml-auto min-w-[6ch] pl-4 text-right tabular-nums',
-							hasActiveInstances ? 'text-success-foreground-strong' : 'text-foreground',
+							hasActiveInstances ? successBadgeClassName : 'text-foreground',
 						)}
 					>
 						{activeInstancesCount}

@@ -501,7 +501,7 @@ describe('<ExpandableList /> composed variant', () => {
 		expect(screen.getByText('Unused name').elements()).toHaveLength(0);
 	});
 
-	it('should name the table for screen readers without a visible column header', async () => {
+	it('should show the header as a visible column header and name the table for screen readers', async () => {
 		// given / when
 		const screen = await renderList({
 			variant: 'composed',
@@ -509,6 +509,7 @@ describe('<ExpandableList /> composed variant', () => {
 		});
 
 		// then
+		await expect.element(screen.getByRole('row').nth(0).getByText('Process name')).toBeVisible();
 		await expect.element(screen.getByRole('table', {name: 'Process name'})).toBeVisible();
 	});
 

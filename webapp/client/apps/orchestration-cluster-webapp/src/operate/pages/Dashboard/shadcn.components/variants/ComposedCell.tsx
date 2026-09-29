@@ -13,7 +13,7 @@ const ComposedCell: React.FC<ExpandableListVariantProps> = ({header, rows, rende
 	const columns: DataTableColumn<ExpandableListRow>[] = [
 		{
 			id: 'content',
-			header: () => <span className="sr-only">{header}</span>,
+			header,
 			cell: ({row}) => <div data-expandable={renderExpansion(row.original) !== null}>{row.original.content}</div>,
 		},
 	];

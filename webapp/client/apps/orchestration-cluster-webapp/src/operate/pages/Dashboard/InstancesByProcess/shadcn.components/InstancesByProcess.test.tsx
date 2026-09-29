@@ -1,0 +1,218 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {it} from '#/vitest-modules/test-extend';
+import {renderWithRouter} from '#/vitest-modules/render-with-router';
+import {describe, expect} from 'vitest';
+import {HttpResponse} from 'msw';
+import {z} from 'zod';
+import {userEvent} from 'vitest/browser';
+import {
+	mockGetProcessDefinitionInstanceStatisticsEndpoint,
+	mockGetProcessDefinitionInstanceVersionStatisticsEndpoint,
+	mockQueryProcessDefinitionsEndpoint,
+} from '#/shared-test-modules/mock-handlers';
+import {
+	createProcessDefinitionInstanceStatistics,
+	createProcessDefinitionInstanceVersionStatistics,
+} from '#/shared-test-modules/api-mocks/process-definition-statistics';
+import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
+import {
+	createProcessDefinition,
+	createQueryProcessDefinitionsResponse,
+} from '#/shared-test-modules/api-mocks/process-definitions';
+import {InstancesByProcess} from './InstancesByProcess';
+
+const REQUEST_SCHEMA = z.object({
+	sort: z.array(
+		z.object({
+			field: z.enum(['activeInstancesWithIncidentCount', 'activeInstancesWithoutIncidentCount']),
+			order: z.literal('desc'),
+		}),
+	),
+	page: z.object({from: z.number(), limit: z.literal(50)}),
+});
+const FAILURE_RESPONSE = new HttpResponse(null, {status: 400});
+const ERROR_RESPONSE = new HttpResponse(null, {status: 500});
+const NO_DRAINING_RESPONSE = HttpResponse.json(createQueryProcessDefinitionsResponse());
+
+const PAGE_1_RESPONSE = HttpResponse.json(
+	createPaginatedResponse({
+		items: [
+			createProcessDefinitionInstanceStatistics({
+				processDefinitionId: 'p1',
+				latestProcessDefinitionName: 'Alpha Process',
+				activeInstancesWithoutIncidentCount: 5,
+				activeInstancesWithIncidentCount: 1,
+			}),
+			createProcessDefinitionInstanceStatistics({
+				processDefinitionId: 'p2',
+				latestProcessDefinitionName: 'Beta Process',
+				activeInstancesWithoutIncidentCount: 3,
+			}),
+		],
+		page: {totalItems: 2, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+	}),
+);
+
+describe('<InstancesByProcess />', () => {
+	it('should render the list of instances by process', async ({worker}) => {
+		worker.use(
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+				schema: REQUEST_SCHEMA,
+				successResponse: PAGE_1_RESPONSE,
+				failureResponse: FAILURE_RESPONSE,
+			}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
+		);
+
+		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate-preview'});
+
+		await expect.element(screen.getByText('Alpha Process')).toBeVisible();
+		await expect.element(screen.getByText('Beta Process')).toBeVisible();
+	});
+
+	it('should link each row to the processes page filtered by process', async ({worker}) => {
+		worker.use(
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+				schema: REQUEST_SCHEMA,
+				successResponse: PAGE_1_RESPONSE,
+				failureResponse: FAILURE_RESPONSE,
+			}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
+		);
+
+		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate-preview'});
+
+		await expect.element(screen.getByText('Alpha Process')).toBeVisible();
+		await expect
+			.element(screen.getByText('Alpha Process').element().closest('a')!)
+			.toHaveAttribute(
+				'href',
+				'/operate/processes?process=p1&active=true&incidents=true&completed=false&canceled=false&suspended=false',
+			);
+	});
+
+	it('should show an error state when the request fails', async ({worker}) => {
+		worker.use(
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+				successResponse: ERROR_RESPONSE,
+			}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
+		);
+
+		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate-preview'});
+
+		await expect.element(screen.getByText('Data could not be fetched')).toBeVisible();
+	});
+
+	it('should show a draining indicator for process definitions scheduled for deletion', async ({worker}) => {
+		worker.use(
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+				schema: REQUEST_SCHEMA,
+				successResponse: PAGE_1_RESPONSE,
+				failureResponse: FAILURE_RESPONSE,
+			}),
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: [createProcessDefinition({processDefinitionId: 'p2', state: 'DRAINING'})],
+					}),
+				),
+			}),
+		);
+
+		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate-preview'});
+
+		await expect.element(screen.getByText('Beta Process')).toBeVisible();
+
+		const betaRow = screen.getByText('Beta Process').element().closest('a') as HTMLElement;
+		await expect.element(betaRow.querySelector('[data-testid="draining-indicator"]') as HTMLElement).toBeVisible();
+
+		const alphaRow = screen.getByText('Alpha Process').element().closest('a') as HTMLElement;
+		await expect
+			.element(alphaRow.querySelector('[data-testid="draining-indicator"]') as HTMLElement | null)
+			.not.toBeInTheDocument();
+	});
+
+	it('should show a draining indicator for a specific draining version when expanded', async ({worker}) => {
+		worker.use(
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+				schema: REQUEST_SCHEMA,
+				successResponse: HttpResponse.json(
+					createPaginatedResponse({
+						items: [
+							createProcessDefinitionInstanceStatistics({
+								processDefinitionId: 'p1',
+								latestProcessDefinitionName: 'Alpha Process',
+								hasMultipleVersions: true,
+								activeInstancesWithoutIncidentCount: 4,
+							}),
+						],
+						page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+					}),
+				),
+				failureResponse: FAILURE_RESPONSE,
+			}),
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: [
+							createProcessDefinition({processDefinitionId: 'p1', processDefinitionKey: 'v2', state: 'DRAINING'}),
+						],
+					}),
+				),
+			}),
+			mockGetProcessDefinitionInstanceVersionStatisticsEndpoint({
+				successResponse: HttpResponse.json(
+					createPaginatedResponse({
+						items: [
+							createProcessDefinitionInstanceVersionStatistics({
+								processDefinitionId: 'p1',
+								processDefinitionKey: 'v2',
+								processDefinitionVersion: 2,
+								activeInstancesWithoutIncidentCount: 3,
+							}),
+							createProcessDefinitionInstanceVersionStatistics({
+								processDefinitionId: 'p1',
+								processDefinitionKey: 'v1',
+								processDefinitionVersion: 1,
+								activeInstancesWithoutIncidentCount: 1,
+							}),
+						],
+						page: {totalItems: 2, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+					}),
+				),
+			}),
+		);
+
+		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate-preview'});
+
+		await expect.element(screen.getByText(/Alpha Process/)).toBeVisible();
+		// DS DataTable's expansion toggle carries "Expand row"/"Collapse row" as its
+		// accessible name (see makeExpansionColumn in data-table.js) — Carbon's own
+		// label was "Expand current row"; not the same string.
+		await userEvent.click(screen.getByRole('button', {name: 'Expand row'}));
+
+		await expect.element(screen.getByText(/Version 2/)).toBeVisible();
+
+		const version2Row = screen
+			.getByText(/Version 2/)
+			.element()
+			.closest('a') as HTMLElement;
+		await expect.element(version2Row.querySelector('[data-testid="draining-indicator"]') as HTMLElement).toBeVisible();
+
+		const version1Row = screen
+			.getByText(/Version 1/)
+			.element()
+			.closest('a') as HTMLElement;
+		await expect
+			.element(version1Row.querySelector('[data-testid="draining-indicator"]') as HTMLElement | null)
+			.not.toBeInTheDocument();
+	});
+});

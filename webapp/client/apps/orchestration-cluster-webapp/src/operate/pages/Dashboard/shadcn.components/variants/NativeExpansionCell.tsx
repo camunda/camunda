@@ -48,7 +48,7 @@ const NativeExpansionCell: React.FC<ExpandableListVariantProps> = ({header, rows
 	const columns: DataTableColumn<DisplayRow>[] = [
 		{
 			id: 'content',
-			header: () => <span className="sr-only">{header}</span>,
+			header,
 			cell: ({row: displayRow}) => {
 				const data = displayRow.original;
 

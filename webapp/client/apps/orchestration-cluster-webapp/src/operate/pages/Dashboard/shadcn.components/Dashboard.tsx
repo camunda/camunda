@@ -12,16 +12,16 @@ import {cn} from '#/shared/cn';
 import {useRunningInstancesCount} from '../useRunningInstancesCount';
 import {NoInstancesEmptyState} from './NoInstancesEmptyState';
 import {MetricPanel} from '../MetricPanel/shadcn.components/MetricPanel';
+import {InstancesByProcess} from '../InstancesByProcess/shadcn.components/InstancesByProcess';
 
 type SnapshotOnlyRow = {id: string; name: string};
 
+// IncidentsByError lands in a later PR. These mock rows stand in until then, so the tile
+// shows realistic populated content rather than an indefinite loading skeleton. The column
+// header carries the tile's own title — an empty header fails the "table headers have
+// discernible text" accessibility check.
 const snapshotOnlyColumns = (header: string): DataTableColumn<SnapshotOnlyRow>[] => [
 	{id: 'name', header, cell: ({row}) => row.original.name},
-];
-const SNAPSHOT_ONLY_PROCESS_ROWS: SnapshotOnlyRow[] = [
-	{id: 'sample-process-1', name: 'Order process'},
-	{id: 'sample-process-2', name: 'Shipping process'},
-	{id: 'sample-process-3', name: 'Invoice process'},
 ];
 const SNAPSHOT_ONLY_INCIDENT_ROWS: SnapshotOnlyRow[] = [
 	{id: 'sample-incident-1', name: 'Connection timeout'},
@@ -41,15 +41,22 @@ const Dashboard: React.FC = () => {
 			</div>
 			<div className="h-4 shrink-0" aria-hidden="true" />
 			<div className={cn('grid flex-1 gap-4 overflow-hidden', !hasNoInstances && 'grid-cols-2')}>
-				<DataTable
-					aria-label={t('operate.dashboard.processesByNameTitle')}
-					columns={snapshotOnlyColumns(t('operate.dashboard.processesByNameTitle'))}
-					data={hasNoInstances ? [] : SNAPSHOT_ONLY_PROCESS_ROWS}
-					getRowId={(row) => row.id}
-					emptyState={hasNoInstances ? <NoInstancesEmptyState /> : undefined}
-					className="flex flex-col overflow-hidden"
-				/>
+				{hasNoInstances ? (
+					// InstancesByProcess fetches nothing when there are no instances, so the empty
+					// state replaces it outright rather than rendering an empty list.
+					<DataTable
+						aria-label={t('operate.dashboard.processesByNameTitle')}
+						columns={snapshotOnlyColumns(t('operate.dashboard.processesByNameTitle'))}
+						data={[]}
+						getRowId={(row) => row.id}
+						emptyState={<NoInstancesEmptyState />}
+						className="flex flex-col overflow-hidden"
+					/>
+				) : (
+					<InstancesByProcess />
+				)}
 				{!hasNoInstances && (
+					// Real columns/data for IncidentsByError — wired in a later PR
 					<DataTable
 						aria-label={t('operate.dashboard.incidentsByErrorTitle')}
 						columns={snapshotOnlyColumns(t('operate.dashboard.incidentsByErrorTitle'))}
