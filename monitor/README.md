@@ -9,6 +9,10 @@ documentation about the different Zeebe metrics
 
 ### Testing
 
+> [!NOTE]
+> This local setup tests that metrics are exported and scraped correctly. To edit dashboards, use the
+> method described in [Editing a dashboard through Grafana](#editing-a-dashboard-through-grafana).
+
 You can easily test metrics locally by using the standard provided [docker compose
 file](../docker/compose/docker-compose.yaml) in combination with the one [here](docker-compose.yml), e.g.:
 
@@ -50,7 +54,72 @@ extra_hosts:
 
 We use Grafana to visualize our metrics in dashboards for  monitoring and troubleshooting purposes. You can find general information about Grafana [here](https://grafana.com/docs/grafana/latest/fundamentals/).
 
+Dashboards are stored as JSON files in the [grafana](grafana) folder. There are several ways to edit them:
+
+1. Directly through Grafana in the benchmark environment, which creates a pull request automatically on your behalf (recommended, see below).
+2. By exporting a dashboard from a shared Grafana instance and committing the JSON file (see [Creating a new dashboard](#creating-a-new-dashboard-camunda-internal)).
+3. By editing the JSON files manually.
+
+### Editing a dashboard through Grafana
+
+Only [Grafana in the benchmark environment](https://dashboard.benchmark.camunda.cloud/dashboards) supports
+this. Its [Git Sync](https://grafana.com/docs/grafana/latest/as-code/observability-as-code/git-sync/)
+feature saves changes back into GitHub automatically:
+
+1. Open the list of dashboards at https://dashboard.benchmark.camunda.cloud/dashboards
+2. In the **`camunda/camunda`** folder, select the dashboard to edit.
+3. Edit the dashboard as needed.
+4. Click "Save":
+   1. Pick a branch name (for example `grafana/xxx`), add a comment that explains the change, and click
+      "Save" again.
+   2. Grafana commits the change to a new branch and displays a link to open a pull request.
+   3. Click the link to create the pull request. Adjust the title and description as needed.
+
+Grafana updates the pull request with links back to the dashboard and screenshots of the changes. This can
+take up to 1 minute. When the pull request is merged, the change is reflected in Grafana automatically.
+
+The dashboard can also be previewed with real cluster data in the benchmark environment before the pull
+request is created, so the steps in
+[Verifying a dashboard against an existing cluster](#verifying-a-dashboard-against-an-existing-cluster)
+are not needed in most cases.
+
+#### Adding more changes to an existing pull request
+
+To add more changes on top of an existing branch or pull request:
+
+1. Open the *Preview Changes* link that Grafana posted in the pull request.
+2. Make the changes in Grafana. The dashboard is already open in "edit mode",
+   so you can edit panels directly.
+3. When saving the changes, **enter the same branch name as the one originally
+   used on GitHub**. Otherwise, Grafana creates a new branch by default.
+
+#### Caveats
+
+> [!WARNING]
+> Grafana renders preview screenshots from the dashboard in its default state:
+>
+> 1. All variables have their default values.
+> 2. All panels are in their default state (expanded or collapsed) and the
+>    default tab is selected.
+>
+> The screenshots may not show your changes if the changes are not visible
+> with the default values.
+
+<!-- separates the two alerts -->
+
+> [!WARNING]
+> Git Sync changes the dashboard schema model of the JSON files that it saves.
+> If this is not desired, use the previous methods instead: export the
+> dashboard from a shared Grafana instance (see
+> [Creating a new dashboard](#creating-a-new-dashboard-camunda-internal)) or
+> edit the JSON files manually.
+
 ### Creating a new dashboard (Camunda internal)
+
+> [!WARNING]
+> This method is not recommended. Editing the dashboard through Grafana in the benchmark environment is
+> easier and creates the pull request for you (see
+> [Editing a dashboard through Grafana](#editing-a-dashboard-through-grafana)).
 
 This is a step-by-step guide for creating a new Grafana dashboard, but especially the deployment steps may also be relevant for modifying existing dashboards.
 
@@ -113,6 +182,13 @@ You can refer to existing dashboards in that repository for examples if you are 
 **Note**: The Zeebe team maintains an own Grafana deployment for [reliability testing](/docs/testing/reliability-testing.md). In case of dashboard deletion, check their deployment definition in the [zeebe-infra repository](https://github.com/camunda/zeebe-infra/blob/main/gcp/zeebe-io/zeebe-cluster/monitoring/kube-prometheus-stack.yml) to ensure it is not referenced there.
 
 ### Verifying a dashboard against an existing cluster
+
+> [!WARNING]
+> This method is not recommended. [Grafana in the benchmark
+> environment](https://dashboard.benchmark.camunda.cloud/dashboards) already has access to real cluster
+> data, and editing there is easier (see
+> [Editing a dashboard through Grafana](#editing-a-dashboard-through-grafana)). Use the steps below only
+> when that Grafana does not have the cluster you need as a datasource.
 
 Panels that render fine against a local broker can still be wrong against real workloads — a metric may not
 exist under the name you assumed, or a label you filter on may never be set. To check a panel before it is

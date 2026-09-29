@@ -341,6 +341,12 @@ Access metrics at: http://localhost:9600/actuator/prometheus
 
 #### Local Dashboard Development
 
+> [!WARNING]
+> This method is not recommended. It will be removed in a future release.
+> Editing the dashboard through Grafana in the benchmark environment is easier
+> and creates the pull request automatically. See
+> [monitor/README.md](../../monitor/README.md#editing-a-dashboard-through-grafana).
+
 To serve and test dashboards locally with [Grizzly](https://grafana.github.io/grizzly/):
 
 ```bash
