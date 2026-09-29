@@ -176,6 +176,30 @@ The scheduled workflow does not replace Maven's application-test path.
 A failure creates a CI incident that will be assigned to the following team/list of people:
 - TBD
 
+### D7. Alert on Gradle-only failures of Renovate pull requests
+
+The Renovate process attempts auto-merge for a few days, with rebases, and assigns the pull request
+to an engineer if it still fails. This handles individual dependencies that need attention. It does
+not handle a Gradle-specific breakage introduced by the focused checks of D4: as those checks are
+part of `check-results`, such a breakage could block auto-merge for most Renovate pull requests and
+only be noticed after a week. The resulting backlog can get out of control within 1-2 days if
+nobody notices.
+
+During the Gradle evaluation, a notification (Slack) is sent when the Gradle check, and only the
+Gradle check, fails on a Renovate pull request (a pull request with the `renovate` label). The team
+reacts immediately instead of waiting for the regular rebase and assignment window.
+
+- **Gradle-only failures.** The alert is raised only when the Maven build succeeds and the Gradle
+  build does not. A failure that also affects Maven, for example an `openapi-generator` update that
+  requires mapping changes in the Maven build, is scoped to that pull request and needs the normal
+  human handling, not a global Gradle alert.
+- **Signal.** As Gradle currently only compiles (D4), the signal is the Gradle distribution
+  ("distball") creation job, which performs essentially the same work. An unrelated failing
+  integration test must not raise the alert or hide a real Gradle breakage.
+
+This gives early signal and confidence while observing the experiment. The exact wiring of the
+notification is an implementation detail and can change without changing this decision.
+
 ## Deferred work
 
 The following work is intentionally excluded from this change:
@@ -213,6 +237,8 @@ The following work is intentionally excluded from this change:
 - Numeric patch differences in transitive dependency resolution are tolerated during the
   evaluation. Gradle must not publish external artifacts under this policy.
 - Scheduled validation needs an owning team and creates incident-response work when it fails.
+- Gradle-only failures on Renovate pull requests raise a notification, so that a systematic Gradle
+  breakage that blocks auto-merge is detected promptly instead of after a week.
 - Gradle changes require parity checks against Maven, and Maven build changes may require a matching
   Gradle update before they are complete.
 - Distribution parity catches differences in the versioned archive root and bundled JAR set, but it
