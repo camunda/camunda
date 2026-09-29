@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {z} from 'zod';
 import {API_VERSION, type Endpoint} from './common';
 import {formResultSchema} from './gen/zod/formResultSchema';
 import {userTaskAssignmentRequestSchema} from './gen/zod/userTaskAssignmentRequestSchema';
@@ -49,12 +48,6 @@ type UpdateUserTaskRequestBody = UserTaskUpdateRequest;
 
 const assignTaskRequestBodySchema = userTaskAssignmentRequestSchema;
 type AssignTaskRequestBody = UserTaskAssignmentRequest;
-
-// Kept manual: `DELETE /user-tasks/{userTaskKey}/assignee` has no request body in the spec.
-const unassignTaskRequestBodySchema = z.object({
-	action: z.string().optional(),
-});
-type UnassignTaskRequestBody = z.infer<typeof unassignTaskRequestBodySchema>;
 
 const completeTaskRequestBodySchema = userTaskCompletionRequestSchema;
 type CompleteTaskRequestBody = UserTaskCompletionRequest;
@@ -126,7 +119,6 @@ export {
 	queryUserTasksRequestBodySchema,
 	formSchema,
 	assignTaskRequestBodySchema,
-	unassignTaskRequestBodySchema,
 	completeTaskRequestBodySchema,
 	queryVariablesByUserTaskRequestBodySchema,
 	queryVariablesByUserTaskResponseBodySchema,
@@ -140,7 +132,6 @@ export type {
 	QueryUserTasksRequestBody,
 	Form,
 	AssignTaskRequestBody,
-	UnassignTaskRequestBody,
 	CompleteTaskRequestBody,
 	QueryVariablesByUserTaskRequestBody,
 	QueryVariablesByUserTaskResponseBody,

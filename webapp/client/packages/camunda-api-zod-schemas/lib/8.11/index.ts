@@ -475,15 +475,8 @@ export {
 	type QueryAgentInstanceHistoryResponseBody,
 } from './agent-instance';
 export {
-	activityTypeSchema,
-	queryActivatableActivitiesRequestBodySchema,
-	queryActivatableActivitiesResponseBodySchema,
 	activateActivityWithinAdHocSubProcessRequestBodySchema,
 	activateActivityWithinAdHocSubProcessResponseBodySchema,
-	type ActivityType,
-	type QueryActivatableActivitiesRequestBody,
-	type ActivatableActivity,
-	type QueryActivatableActivitiesResponseBody,
 	type ActivateActivityWithinAdHocSubProcessRequestBody,
 	type ActivateActivityWithinAdHocSubProcessResponseBody,
 } from './ad-hoc-sub-process';
@@ -846,7 +839,6 @@ export {
 	queryUserTasksRequestBodySchema,
 	formSchema,
 	assignTaskRequestBodySchema,
-	unassignTaskRequestBodySchema,
 	completeTaskRequestBodySchema,
 	queryVariablesByUserTaskRequestBodySchema,
 	queryVariablesByUserTaskResponseBodySchema,
@@ -856,7 +848,6 @@ export {
 	type QueryUserTasksRequestBody,
 	type Form,
 	type AssignTaskRequestBody,
-	type UnassignTaskRequestBody,
 	type CompleteTaskRequestBody,
 	type QueryVariablesByUserTaskRequestBody,
 	type QueryVariablesByUserTaskResponseBody,

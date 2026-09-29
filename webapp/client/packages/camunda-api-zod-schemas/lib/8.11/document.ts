@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {z} from 'zod';
 import {API_VERSION, type Endpoint} from './common';
 import {createDocumentsStatus201Schema} from './gen/zod/createDocumentsSchema';
 import {documentCreationFailureDetailSchema as genDocumentCreationFailureDetailSchema} from './gen/zod/documentCreationFailureDetailSchema';
@@ -14,12 +13,14 @@ import {documentLinkRequestSchema} from './gen/zod/documentLinkRequestSchema';
 import {documentLinkSchema as genDocumentLinkSchema} from './gen/zod/documentLinkSchema';
 import {documentMetadataResponseSchema} from './gen/zod/documentMetadataResponseSchema';
 import {documentReferenceSchema as genDocumentReferenceSchema} from './gen/zod/documentReferenceSchema';
+import {getDocumentStatus200Schema} from './gen/zod/getDocumentSchema';
 import type {CreateDocumentsStatus201} from './gen/types/CreateDocuments';
 import type {DocumentCreationFailureDetail as GenDocumentCreationFailureDetail} from './gen/types/DocumentCreationFailureDetail';
 import type {DocumentLink as GenDocumentLink} from './gen/types/DocumentLink';
 import type {DocumentLinkRequest} from './gen/types/DocumentLinkRequest';
 import type {DocumentMetadataResponse} from './gen/types/DocumentMetadataResponse';
 import type {DocumentReference as GenDocumentReference} from './gen/types/DocumentReference';
+import type {GetDocumentStatus200} from './gen/types/GetDocument';
 
 // Gen `documentMetadataSchema` is the request metadata. The response metadata is `documentMetadataResponseSchema`.
 const documentMetadataSchema = documentMetadataResponseSchema;
@@ -40,9 +41,8 @@ type DocumentLinkRequestBody = DocumentLinkRequest;
 const documentLinkSchema = genDocumentLinkSchema;
 type DocumentLink = GenDocumentLink;
 
-// Kept manual: the spec returns binary content (`File`/`Blob`), and the consumers read it as text.
-const getDocumentResponseBodySchema = z.string();
-type GetDocumentResponseBody = z.infer<typeof getDocumentResponseBodySchema>;
+const getDocumentResponseBodySchema = getDocumentStatus200Schema;
+type GetDocumentResponseBody = GetDocumentStatus200;
 
 const createDocument = {
 	method: 'POST',
