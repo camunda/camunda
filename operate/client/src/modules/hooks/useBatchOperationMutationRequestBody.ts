@@ -27,7 +27,7 @@ const getIncludeIds = (selectedIds: string[], checkedEligibleIds: string[]) => {
 
 const useProcessInstancesBatchOperationMutationRequestBody = (
   checkedEligibleIds: string[],
-  includeSuspended = false,
+  includeSuspended: boolean,
 ) => {
   const conditions = variableFilterStore.conditions;
   const [searchParams] = useSearchParams();
@@ -45,14 +45,29 @@ const useProcessInstancesBatchOperationMutationRequestBody = (
   });
 };
 
+/**
+ * Request body for retry (resolve incident) and batch modification. Both only
+ * apply to active instances, so suspended instances are never requested.
+ */
 const useBatchOperationMutationRequestBody = () =>
   useProcessInstancesBatchOperationMutationRequestBody(
     processInstancesSelectionStore.checkedRunningIds,
+    false,
+  );
+
+const useCancelProcessInstancesBatchOperationMutationRequestBody = () =>
+  useProcessInstancesBatchOperationMutationRequestBody(
+    [
+      ...processInstancesSelectionStore.checkedRunningIds,
+      ...processInstancesSelectionStore.checkedSuspendedIds,
+    ],
+    true,
   );
 
 const useSuspendProcessInstancesBatchOperationMutationRequestBody = () =>
   useProcessInstancesBatchOperationMutationRequestBody(
     processInstancesSelectionStore.checkedRunningIds,
+    false,
   );
 
 const useResumeProcessInstancesBatchOperationMutationRequestBody = () =>
@@ -103,6 +118,7 @@ const useDeleteDecisionInstancesBatchOperationRequestBody =
 
 export {
   useBatchOperationMutationRequestBody,
+  useCancelProcessInstancesBatchOperationMutationRequestBody,
   useSuspendProcessInstancesBatchOperationMutationRequestBody,
   useResumeProcessInstancesBatchOperationMutationRequestBody,
   useDeleteProcessInstancesBatchOperationMutationRequestBody,
