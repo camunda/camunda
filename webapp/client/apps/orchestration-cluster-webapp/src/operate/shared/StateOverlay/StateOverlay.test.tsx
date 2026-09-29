@@ -6,8 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {describe, it, expect} from 'vitest';
+import {describe, expect} from 'vitest';
 import {render} from 'vitest-browser-react';
+import {it} from '#/vitest-modules/test-extend';
 import {StateOverlay} from './StateOverlay';
 
 function getContainer() {
