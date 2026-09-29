@@ -179,6 +179,14 @@ async function hold(seconds: number) {
   await new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 }
 
+/** Waits until `instant` has passed, plus a margin. Returns immediately if it already has. */
+async function holdUntilPast(instant: number, marginSeconds = 5) {
+  const remainingMs = instant + marginSeconds * 1000 - Date.now();
+  if (remainingMs > 0) {
+    await new Promise((resolve) => setTimeout(resolve, remainingMs));
+  }
+}
+
 test.describe('Process Instance Suspend and Resume Timer API', () => {
   test.afterAll(async () => {
     for (const processInstanceKey of instancesToCancel) {
@@ -196,13 +204,17 @@ test.describe('Process Instance Suspend and Resume Timer API', () => {
   }) => {
     const processDefinitionId = uniquePrefixedId('sr-timer-due');
     await deployDurationTimerProcess(processDefinitionId);
-    // The clock starts at creation, but the suspension cannot be issued until
-    // the catch event is indexed. 30s leaves room for that lookup to be slow
-    // on a loaded cluster — at 15s the timer could fire first, completing the
-    // instance and making the suspend fail for the wrong reason.
+    // Two constraints pull in opposite directions. The timer starts running at
+    // creation but the suspension cannot be issued until the catch event is
+    // indexed, so the duration has to outlast that lookup — at 15s a slow one
+    // let the timer fire first, completing the instance and making the suspend
+    // fail for reasons that say nothing about suspension. The suspension then
+    // has to outlast the due date, or "still waiting" only means "not due yet".
+    const TIMER_SECONDS = 30;
     const instance = await createInstanceOnceDeployed(processDefinitionId, 1, {
-      duration: 'PT30S',
+      duration: `PT${TIMER_SECONDS}S`,
     });
+    const dueAt = Date.now() + TIMER_SECONDS * 1000;
     instancesToCancel.push(instance.processInstanceKey);
     await searchElementInstanceByElementIdAndState(
       request,
@@ -212,9 +224,11 @@ test.describe('Process Instance Suspend and Resume Timer API', () => {
     );
 
     await suspendAndExpectSuspended(request, instance.processInstanceKey);
-    await hold(40);
+    // Waits out whatever is left of the timer rather than a fixed span, so a
+    // slow index costs nothing and the two numbers cannot drift apart.
+    await holdUntilPast(dueAt);
 
-    // Still waiting, well past its due date.
+    // Still waiting, past its due date.
     await searchElementInstanceByElementIdAndState(
       request,
       instance.processInstanceKey,
