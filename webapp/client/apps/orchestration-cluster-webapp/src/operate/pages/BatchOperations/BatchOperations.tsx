@@ -40,6 +40,7 @@ const BatchOperations: React.FC<Props> = ({page, pageSize, sort}) => {
 		const updateTitle = () => {
 			document.title = i18n.t('operate.batchOperations.pageTitle');
 		};
+		updateTitle();
 		i18n.on('languageChanged', updateTitle);
 		return () => {
 			i18n.off('languageChanged', updateTitle);
@@ -120,12 +121,13 @@ const BatchOperations: React.FC<Props> = ({page, pageSize, sort}) => {
 				<Title>{t('operate.batchOperations.title')}</Title>
 			</PanelHeader>
 			{query.isError && (
-				<div role="alert">
+				<div>
 					<InlineNotification
 						kind="error"
 						title={t('operate.batchOperations.refreshError')}
 						hideCloseButton
 						lowContrast
+						role="alert"
 					/>
 					<Button kind="ghost" onClick={() => void query.refetch()}>
 						{t('errorGenericErrorPageButtonLabel')}
@@ -159,6 +161,7 @@ const BatchOperations: React.FC<Props> = ({page, pageSize, sort}) => {
 					backwardText={t('operate.batchOperations.previousPage')}
 					forwardText={t('operate.batchOperations.nextPage')}
 					itemRangeText={(min, max, total) => t('operate.batchOperations.itemRange', {min, max, count: total})}
+					itemText={(min, max) => t('operate.batchOperations.itemText', {min, max, count: max - min + 1})}
 					itemsPerPageText={t('operate.batchOperations.itemsPerPage')}
 					pageNumberText={t('operate.batchOperations.pageNumber')}
 					pageRangeText={(_, total) => t('operate.batchOperations.pageRange', {count: total})}

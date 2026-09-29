@@ -192,8 +192,10 @@ describe('<BatchOperations />', () => {
 
 	it('should update the document title when the language changes', async ({worker}) => {
 		worker.use(mockQueryBatchOperationsEndpoint({successResponse: EMPTY_RESPONSE}));
+		document.title = 'Stale title';
 		const screen = await renderRoute();
 		await expect.element(screen.getByText('No batch operations found')).toBeVisible();
+		expect(document.title).toBe('Operate: Batch Operations');
 
 		await i18n.changeLanguage('de');
 		await expect.element(screen.getByText('Keine Stapeloperationen gefunden')).toBeVisible();
