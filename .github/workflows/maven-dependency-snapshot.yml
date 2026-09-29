@@ -39,6 +39,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      # Restore ~/.m2 from the shared main/stable GHA cache (key "mvn-shared", the same cache the
+      # build jobs in setup-build keep warm) so dependency:go-offline resolves from a warm local repo
+      # instead of downloading the full tree cold from Nexus. Without this the resolve does not finish
+      # inside the pre-resolve step's 4m per-attempt cap and every attempt times out (INC-8372).
+      - name: Setup Maven cache
+        uses: ./.github/actions/setup-maven-cache
       # Scope to shipped modules only (mirrors JAVA_PROJECTS in zeebe-snyk.yml).
       # -am resolves the full transitive tree including BOM-pinned versions.
       # The Spring Boot starter was renamed between main and stable branches, so detect dynamically.
@@ -57,8 +63,12 @@ jobs:
       # The submission step below then resolves from the local repo instead of re-hitting Nexus.
       # -U forces each attempt to re-contact Nexus; without it Maven caches a transient failure in
       # *.lastUpdated and later attempts fail instantly with the same error until the update interval
-      # expires. Worst case (3 x 4m + 2 x 15s waits ~= 12.5m) stays within the 20m job timeout, so
-      # the cap can't kill the retry loop before it delivers the recovery; -T1C keeps each pass short.
+      # expires. -T1C keeps each pass short.
+      # On the warm mvn-shared cache restored above a single attempt resolves in well under the 4m
+      # cap, so the retries only absorb transient blips; they are not relied on to complete a cold
+      # resolve. The cache itself is seeded and kept warm by the build jobs (setup-build), not here.
+      # Worst case (3 x 4m + 2 x 15s waits ~= 12.5m) leaves ~7.5m for checkout/setup, the bounded
+      # cache restore, Vault/settings and the submission step, all within the 20m job timeout.
       - name: Pre-resolve Maven dependencies
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
