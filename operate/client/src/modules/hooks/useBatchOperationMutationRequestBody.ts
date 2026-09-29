@@ -50,6 +50,15 @@ const useBatchOperationMutationRequestBody = () =>
     processInstancesSelectionStore.checkedRunningIds,
   );
 
+const useCancelProcessInstancesBatchOperationMutationRequestBody = () =>
+  useProcessInstancesBatchOperationMutationRequestBody(
+    [
+      ...processInstancesSelectionStore.checkedRunningIds,
+      ...processInstancesSelectionStore.checkedSuspendedIds,
+    ],
+    true,
+  );
+
 const useSuspendProcessInstancesBatchOperationMutationRequestBody = () =>
   useProcessInstancesBatchOperationMutationRequestBody(
     processInstancesSelectionStore.checkedRunningIds,
@@ -103,6 +112,7 @@ const useDeleteDecisionInstancesBatchOperationRequestBody =
 
 export {
   useBatchOperationMutationRequestBody,
+  useCancelProcessInstancesBatchOperationMutationRequestBody,
   useSuspendProcessInstancesBatchOperationMutationRequestBody,
   useResumeProcessInstancesBatchOperationMutationRequestBody,
   useDeleteProcessInstancesBatchOperationMutationRequestBody,

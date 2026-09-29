@@ -15,6 +15,7 @@ import {panelStatesStore} from 'modules/stores/panelStates';
 import {notificationsStore} from 'modules/stores/notifications';
 import {variableFilterStore} from 'modules/stores/variableFilter';
 import {QueryClientProvider} from '@tanstack/react-query';
+import {waitFor} from '@testing-library/react';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockCancelProcessInstancesBatchOperation} from 'modules/mocks/api/v2/processes/cancelProcessInstancesBatchOperation';
 import {mockResolveProcessInstancesIncidentsBatchOperation} from 'modules/mocks/api/v2/processes/resolveProcessInstancesIncidentsBatchOperation';
@@ -216,6 +217,67 @@ describe('<ProcessOperations />', () => {
     render(<Toolbar selectedInstancesCount={2} />, {wrapper: Wrapper});
 
     expect(screen.getByRole('button', {name: 'Retry'})).toBeEnabled();
+  });
+
+  it('should allow cancel for a suspended-only selection without warning that it is finished', async () => {
+    const requestBodyResolverFn = vi.fn();
+    mockCancelProcessInstancesBatchOperation().withSuccess(
+      {
+        batchOperationKey: 'cancel-suspended-operation',
+        batchOperationType: 'CANCEL_PROCESS_INSTANCE',
+      },
+      {requestBodyResolverFn},
+    );
+
+    processInstancesSelectionStore.setRuntime({
+      totalCount: 3,
+      visibleIds: ['1', '2', '3'],
+      visibleRunningIds: ['1'],
+      visibleSuspendedIds: ['2'],
+      visibleFinishedIds: ['3'],
+    });
+    processInstancesSelectionStore.resetState();
+    processInstancesSelectionStore.select('2');
+
+    const {user} = render(<Toolbar selectedInstancesCount={1} />, {
+      wrapper: ({children}) => (
+        <Wrapper
+          initialEntries={[
+            '/processes?active=true&suspended=true&incidents=true',
+          ]}
+        >
+          {children}
+        </Wrapper>
+      ),
+    });
+
+    const cancelButton = screen.getByTestId('cancel-batch-operation');
+    expect(cancelButton).toBeEnabled();
+    expect(screen.getByRole('button', {name: 'Suspend'})).toBeDisabled();
+    await user.click(cancelButton);
+
+    expect(
+      screen.getByText(/1 instance selected for cancel operation/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        /Finished instances in your selection will be ignored/i,
+      ),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: /apply/i}));
+    await waitFor(() =>
+      expect(requestBodyResolverFn).toHaveBeenCalledWith({
+        filter: {
+          $or: [
+            {state: {$eq: 'ACTIVE'}, hasIncident: false},
+            {state: {$eq: 'SUSPENDED'}},
+            {hasIncident: true, state: {$neq: 'SUSPENDED'}},
+          ],
+          processInstanceKey: {$in: ['2']},
+        },
+      }),
+    );
   });
 
   it('should warn that instances without an incident will be ignored', async () => {

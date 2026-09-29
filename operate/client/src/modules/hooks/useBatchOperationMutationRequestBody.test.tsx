@@ -10,6 +10,7 @@ import {renderHook} from '@testing-library/react';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   useBatchOperationMutationRequestBody,
+  useCancelProcessInstancesBatchOperationMutationRequestBody,
   useDeleteProcessInstancesBatchOperationMutationRequestBody,
   useResumeProcessInstancesBatchOperationMutationRequestBody,
   useSuspendProcessInstancesBatchOperationMutationRequestBody,
@@ -34,9 +35,14 @@ const getWrapper = (initialSearchParams?: Record<string, string>) => {
 
 const processOperationHooks = [
   {
-    name: 'cancel and retry',
+    name: 'retry and batch modification',
     useRequestBody: useBatchOperationMutationRequestBody,
     eligibleIdsKey: 'visibleRunningIds',
+  },
+  {
+    name: 'cancel',
+    useRequestBody: useCancelProcessInstancesBatchOperationMutationRequestBody,
+    eligibleIdsKey: 'visibleSuspendedIds',
   },
   {
     name: 'suspend',
@@ -82,6 +88,74 @@ describe('useBatchOperationMutationRequestBody', () => {
     expect(result.current).toEqual({
       filter: {
         $or: [{state: {$in: ['ACTIVE']}}, {hasIncident: true}],
+      },
+    });
+  });
+
+  it('should include suspended instances in the cancel filter alongside active and incident instances', () => {
+    const {result} = renderHook(
+      () => useCancelProcessInstancesBatchOperationMutationRequestBody(),
+      {
+        wrapper: getWrapper({
+          active: 'true',
+          suspended: 'true',
+          incidents: 'true',
+        }),
+      },
+    );
+
+    expect(result.current).toEqual({
+      filter: {
+        $or: [
+          {state: {$eq: 'ACTIVE'}, hasIncident: false},
+          {state: {$eq: 'SUSPENDED'}},
+          {hasIncident: true, state: {$neq: 'SUSPENDED'}},
+        ],
+      },
+    });
+  });
+
+  it('should leave suspended instances out of retry filters', () => {
+    const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
+      wrapper: getWrapper({
+        active: 'true',
+        suspended: 'true',
+        incidents: 'true',
+      }),
+    });
+
+    expect(result.current).toEqual({
+      filter: {
+        $or: [{state: {$in: ['ACTIVE']}}, {hasIncident: true}],
+      },
+    });
+  });
+
+  it('should include selected active and suspended keys but exclude finished keys for cancel', () => {
+    processInstancesSelectionStore.state.selectionMode = 'INCLUDE';
+    processInstancesSelectionStore.state.selectedIds = ['1', '2', '3'];
+    processInstancesSelectionStore.setRuntime({
+      totalCount: 4,
+      visibleIds: ['1', '2', '3', '4'],
+      visibleRunningIds: ['1'],
+      visibleSuspendedIds: ['2'],
+      visibleFinishedIds: ['3'],
+    });
+
+    const {result} = renderHook(
+      () => useCancelProcessInstancesBatchOperationMutationRequestBody(),
+      {
+        wrapper: getWrapper({active: 'true', suspended: 'true'}),
+      },
+    );
+
+    expect(result.current).toEqual({
+      filter: {
+        $or: [
+          {state: {$eq: 'ACTIVE'}, hasIncident: false},
+          {state: {$eq: 'SUSPENDED'}},
+        ],
+        processInstanceKey: {$in: ['1', '2']},
       },
     });
   });
