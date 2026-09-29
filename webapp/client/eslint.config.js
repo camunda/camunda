@@ -19,7 +19,11 @@ import vitestPlugin from '@vitest/eslint-plugin';
 
 const files = {
 	browser: ['packages/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}', 'apps/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}'],
-	node: ['scripts/**/*.{js,mjs,cjs,ts,mts,cts}', 'prettier.config.js'],
+	node: [
+		'scripts/**/*.{js,mjs,cjs,ts,mts,cts}',
+		'prettier.config.js',
+		'packages/**/scripts/**/*.{js,mjs,cjs,ts,mts,cts}',
+	],
 };
 
 const ocPath = 'apps/orchestration-cluster-webapp';
@@ -31,6 +35,7 @@ const ocFiles = {
 export default defineConfig([
 	{
 		ignores: [
+			'**/gen/**/*.{js,mjs,cjs,ts,mts,cts}',
 			'packages/**/dist/**/*',
 			'apps/**/dist/**/*',
 			'target/**/*',
