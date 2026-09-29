@@ -67,10 +67,7 @@ test.describe('Process Instance', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test('Resolve an incident', async ({
-    page,
-    operateProcessInstancePage,
-  }) => {
+  test('Resolve an incident', async ({page, operateProcessInstancePage}) => {
     await test.step('Navigate to process instance with incident', async () => {
       await operateProcessInstancePage.gotoProcessInstancePage({
         id: instanceWithIncidentToResolve.processInstanceKey,
