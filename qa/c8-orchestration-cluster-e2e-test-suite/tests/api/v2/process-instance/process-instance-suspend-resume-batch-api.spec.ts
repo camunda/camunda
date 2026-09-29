@@ -32,15 +32,10 @@ import {
 } from '../../../../utils/constants';
 
 /**
- * Each test deploys its own definition and filters its batch on that id.
- * businessId cannot group instances — it is unique per instance and a second
- * create with the same value is rejected with 409.
- *
- * A batch resolves its items from secondary storage when it is created, and
- * each operation selects on state: suspend takes ACTIVE, resume takes
- * SUSPENDED, cancel takes either. So every batch here waits for its inputs to
- * be visible *in the state it selects on* first — otherwise it silently
- * resolves to nothing and still reports COMPLETED.
+ * A batch resolves its items from secondary storage at creation, selecting on
+ * state: suspend takes ACTIVE, resume SUSPENDED, cancel either. So every batch
+ * here first waits for its inputs to be visible *in the state it selects on* —
+ * otherwise it resolves to nothing and still reports COMPLETED.
  */
 
 const INSTANCE_COUNT = 3;

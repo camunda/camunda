@@ -168,11 +168,9 @@ export class OperateFiltersPanelPage {
     const menuItem = this.page.getByRole('menuitem', {
       name: filterName,
     });
-    // The dropdown is a Radix menu that mounts its items only while it is
-    // open, so a trigger click that lands before the menu is interactive
-    // leaves nothing to wait for and waiting longer cannot recover it. Open
-    // the menu until the item is there. Clicking the trigger while the menu
-    // is already open closes it, which is why this checks before it clicks.
+    // The item exists only while the menu is open, so retry opening it rather
+    // than waiting longer. Checked before each click: clicking the trigger on
+    // an open menu closes it again.
     await expect(async () => {
       if (!(await menuItem.isVisible())) {
         await this.moreFiltersButton.click();
@@ -412,13 +410,8 @@ export class OperateFiltersPanelPage {
     await this.activeInstancesCheckbox.click();
   }
 
-  /**
-   * Turns the Suspended filter on unless the URL already carries it. The list
-   * drops an instance once it is no longer ACTIVE, so the row comes back only
-   * with that filter on, and the filter lives in the URL. Clicking blindly
-   * would be worse than not clicking at all: a click on an already-checked box
-   * turns the filter back off.
-   */
+  /** Reads the URL rather than clicking blindly: a click on an already-checked
+   * box turns the filter off. */
   async applySuspendedFilter(): Promise<void> {
     if (new URL(this.page.url()).searchParams.get('suspended') !== 'true') {
       await this.clickSuspendedInstancesCheckbox();

@@ -29,14 +29,8 @@ import {
 
 /**
  * The catch-up contract from ADR 0009: a repeating timer that missed several
- * cycles while suspended fires once, rescheduled one interval past now.
- * Asserting "at least one fire" would pass straight through #62637, where the
- * reschedule snapped onto now and fired a second time immediately (fixed by
- * #63687, and present on 8.7 through 8.10).
- *
- * These tests wait on wall-clock timers, so they are slow by nature — the
- * developers' ProcessInstanceSuspendResumeTimerIT drives a controlled clock
- * instead. What it cannot cover is the wall-clock path a customer hits.
+ * cycles while suspended fires once, rescheduled one interval past now. Counts
+ * are exact on purpose — "at least one fire" passes straight through #62637.
  */
 
 const instancesToCancel: string[] = [];
@@ -49,11 +43,8 @@ async function deployDurationTimerProcess(processDefinitionId: string) {
   return deployment.processes[0];
 }
 
-/**
- * The child is substituted too and its job left unworked: the boundary timers
- * are attached to the call activity, so they stay armed only while the child
- * keeps running.
- */
+/** The child's job is left unworked: the boundary timers stay armed only while
+ * the call activity runs. */
 async function deployCycleTimerProcess(prefix: string) {
   const childId = `${prefix}-child`;
   const processDefinitionId = `${prefix}-timer`;
@@ -81,10 +72,7 @@ async function startCycleTimerInstance(prefix: string, amount = 10) {
     1,
     {
       dynamicProcessId: fixture.childId,
-      // Relative, not a literal: the event-based gateway's timer must stay
-      // pending for the whole test. A hardcoded date silently turns into an
-      // already-due timer once it passes, and the model would then run a
-      // different path for reasons unrelated to suspend and resume.
+      // Relative: a hardcoded date becomes an already-due timer once it passes.
       dueDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
       correlationKey: uniquePrefixedId(`${prefix}-corr`),
       amount,
@@ -95,12 +83,10 @@ async function startCycleTimerInstance(prefix: string, amount = 10) {
 }
 
 /**
- * Runs the work a boundary event spawned and waits for its branch to end.
- *
- * The model cannot reach a terminal state — one branch parks on an event-based
- * gateway whose timer is years out — so completing the branch the resume
- * revived is the strongest available evidence that the work is genuinely
- * runnable, rather than a job record that merely appeared.
+ * Runs the work a boundary event spawned and waits for its branch to end. The
+ * model cannot reach a terminal state — one branch parks on an event-based
+ * gateway a year out — so draining the revived branch is the available proof
+ * that the work runs, rather than a job record that merely appeared.
  */
 async function completeBoundaryWork(
   request: APIRequestContext,
@@ -119,9 +105,7 @@ async function completeBoundaryWork(
   for (const job of jobs) {
     await completeJob(request, job.jobKey);
   }
-  // One end event per job: a non-interrupting boundary spawns its own token
-  // each time it fires, so the branch is only fully drained when every one of
-  // them has reached the end.
+  // One end event per job — a non-interrupting boundary spawns a token per fire.
   await expect(async () => {
     const res = await request.post(buildUrl('/element-instances/search'), {
       headers: jsonHeaders(),
@@ -164,11 +148,8 @@ async function expectJobCount(
   }).toPass(assertionOptions);
 }
 
-/**
- * The cadence re-arms 20s after the catch-up fire, so a count that must equal
- * an exact value has only that window to be observed in. Poll it fast rather
- * than on the shared interval, which can first look after the next tick landed.
- */
+/** The cadence re-arms 20s after the catch-up fire, so an exact count has only
+ * that window to be seen in — poll faster than the shared interval. */
 const promptAssertionOptions = {
   intervals: [250, 250, 500, 1000, 2000],
   timeout: 15_000,
@@ -204,12 +185,9 @@ test.describe('Process Instance Suspend and Resume Timer API', () => {
   }) => {
     const processDefinitionId = uniquePrefixedId('sr-timer-due');
     await deployDurationTimerProcess(processDefinitionId);
-    // Two constraints pull in opposite directions. The timer starts running at
-    // creation but the suspension cannot be issued until the catch event is
-    // indexed, so the duration has to outlast that lookup — at 15s a slow one
-    // let the timer fire first, completing the instance and making the suspend
-    // fail for reasons that say nothing about suspension. The suspension then
-    // has to outlast the due date, or "still waiting" only means "not due yet".
+    // The duration must outlast the indexing wait below, or the timer fires
+    // before the suspend; the suspension must then outlast the due date, or
+    // "still waiting" only means "not due yet".
     const TIMER_SECONDS = 30;
     const instance = await createInstanceOnceDeployed(processDefinitionId, 1, {
       duration: `PT${TIMER_SECONDS}S`,
@@ -224,8 +202,6 @@ test.describe('Process Instance Suspend and Resume Timer API', () => {
     );
 
     await suspendAndExpectSuspended(request, instance.processInstanceKey);
-    // Waits out whatever is left of the timer rather than a fixed span, so a
-    // slow index costs nothing and the two numbers cannot drift apart.
     await holdUntilPast(dueAt);
 
     // Still waiting, past its due date.
@@ -286,8 +262,7 @@ test.describe('Process Instance Suspend and Resume Timer API', () => {
     test.setTimeout(8 * 60 * 1000);
     const fixture = await startCycleTimerInstance(uniquePrefixedId('sr-cycle'));
 
-    // One tick before the suspension, so the assertions below are about the gap
-    // rather than about the timer having never fired.
+    // One tick first, so what follows is about the gap, not a timer that never fired.
     await expectJobCount(
       request,
       fixture.processInstanceKey,
@@ -306,8 +281,7 @@ test.describe('Process Instance Suspend and Resume Timer API', () => {
       204,
     );
 
-    // Exactly one fire for three missed intervals, and it stays one: the
-    // reschedule anchors an interval past now rather than snapping onto now.
+    // One fire for three missed intervals, and it stays one.
     await expectJobCount(
       request,
       fixture.processInstanceKey,
@@ -340,10 +314,7 @@ test.describe('Process Instance Suspend and Resume Timer API', () => {
   }) => {
     test.setTimeout(6 * 60 * 1000);
     const fixture = await startCycleTimerInstance(uniquePrefixedId('sr-cond'));
-    // The conditional boundary is attached to the call activity, so it is only
-    // subscribed once that element is active. Suspending before then would
-    // leave the condition first observed after the resume, which is not the
-    // case under test.
+    // The boundary subscribes only once the call activity is active.
     await searchElementInstanceByElementIdAndState(
       request,
       fixture.processInstanceKey,

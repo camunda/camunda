@@ -53,11 +53,8 @@ const instancesToCancel: string[] = [];
 
 const MI_JOB_COUNT = 8;
 
-/**
- * One instance that holds many jobs and several message subscriptions at once.
- * Suspension closes subscriptions and parks jobs in a single processor, so a
- * model carrying only one of the two cannot show the order they run in.
- */
+/** Suspension closes subscriptions and parks jobs in one processor, so only a
+ * model holding both at once shows the order they run in. */
 async function deployJobsAndMessagesProcess(prefix: string) {
   const processDefinitionId = `${prefix}-jobs-msgs`;
   const jobType = `${prefix}-job`;
@@ -75,12 +72,8 @@ async function deployJobsAndMessagesProcess(prefix: string) {
   return {processDefinitionId, jobType, messageName, cancelMessageName};
 }
 
-/**
- * Activates and completes jobs until every one of them is done. A resume hands
- * the parked jobs back over several batches, so a single activation call can
- * return only some of them; a completed job is never handed out again, so
- * repeating the call cannot double-count.
- */
+/** A resume hands parked jobs back over several batches, so one activation can
+ * return only some. A completed job is never handed out again. */
 async function completeEveryJob(
   request: APIRequestContext,
   jobType: string,
@@ -115,12 +108,8 @@ function correlateMessage(
   });
 }
 
-/**
- * Reads the subscriptions of one instance out of secondary storage. Suspension
- * closes them in the engine but reopens them under the same keys, so what is
- * exported has to stay unchanged — a closure that leaked out would show here as
- * a DELETED row or a missing one.
- */
+/** The engine closes subscriptions on suspend and reopens them under the same
+ * keys, so the exported rows must stay unchanged throughout. */
 async function expectOpenSubscriptions(
   request: APIRequestContext,
   processInstanceKey: string,

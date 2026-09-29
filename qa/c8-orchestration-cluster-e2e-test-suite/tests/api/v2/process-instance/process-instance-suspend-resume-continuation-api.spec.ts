@@ -32,10 +32,9 @@ import {
 } from '../../../../utils/constants';
 
 /**
- * Gate assertions prove a command was refused; they do not prove the instance
- * can still finish. These drive each model through to a terminal state and
- * assert an exact count of every job and task involved, so work that resume
- * loses or duplicates shows up.
+ * A refusal proves a command was rejected, not that the instance can still
+ * finish. These drive each model to a terminal state with exact job and task
+ * counts, so work a resume loses or duplicates shows up.
  */
 
 const instancesToCancel: string[] = [];
@@ -92,11 +91,8 @@ function track(processInstanceKey: string) {
   return processInstanceKey;
 }
 
-/**
- * PT5M is shortened to PT40S. The fixture's value is the shape — a message
- * subscription and an overdue timer rejoining at a parallel join — not the
- * literal five minutes, which would only add wall-clock cost.
- */
+/** PT5M shortened to PT40S: the fixture's value is the shape — a subscription
+ * and an overdue timer rejoining at a parallel join — not the literal 5min. */
 async function deployLongSuspendProcess(prefix: string) {
   const processDefinitionId = `${prefix}-long`;
   const messageName = `${prefix}-msg`;
@@ -158,11 +154,9 @@ async function deployMultiInstanceProcess(prefix: string) {
 }
 
 /**
- * The customer-style order model: a message start event, an interrupting
- * CANCELED boundary on the multi-instance body, a non-interrupting
- * duplicate-ORDER event subprocess, and one subscription per item. It has no
- * job types — messages and PT1S timers drive it — so these tests assert element
- * states rather than job counts.
+ * The order model: message start event, interrupting CANCELED boundary on the
+ * MI body, non-interrupting duplicate-ORDER event subprocess, one subscription
+ * per item. No job types, so these tests assert element states.
  */
 async function deployOrderProcess(prefix: string) {
   const processDefinitionId = `${prefix}-order`;
@@ -258,10 +252,8 @@ async function expectElementInstanceCount(
   }).toPass(extendedAssertionOptions);
 }
 
-/**
- * The model races a PT1M timer against a signal on an event-based gateway, with
- * a second branch parked on a user task and an inclusive join after both.
- */
+/** A PT1M timer races a signal on an event-based gateway; a second branch
+ * parks on a user task, with an inclusive join after both. */
 async function deployEventGatewayProcess(prefix: string) {
   const processDefinitionId = `${prefix}-race`;
   const signalName = `${prefix}-Signal`;

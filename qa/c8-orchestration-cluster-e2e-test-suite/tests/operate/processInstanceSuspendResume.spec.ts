@@ -152,8 +152,7 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       suspendedActions.some((action) => pattern.test(action.trim()));
     expect(offers(/^(resume|resume-operation)$/i)).toBe(true);
     expect(offers(/^(cancel|cancel-operation)$/i)).toBe(true);
-    // Checked per action: joining them and matching a substring would accept a
-    // menu that still ends with "Suspend".
+    // Per action: a joined substring match would accept a menu still offering Suspend.
     expect(offers(/^(suspend|suspend-operation)$/i)).toBe(false);
     await resumeAndCompleteServiceTask(request, jobType, processInstanceKey);
   });
@@ -211,11 +210,8 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     await operateProcessInstancePage.gotoProcessInstancePage({
       id: instance.processInstanceKey,
     });
-    // The tab appears only once the incident has reached Operate's view, and
-    // the table renders only once the tab is open, so both waits share one
-    // retry budget. Waiting for the tab rather than probing it is what makes
-    // the budget usable: a probe that finds no tab yet leaves the table wait
-    // to time out against a table that cannot appear.
+    // The tab appears only once the incident reaches Operate's view, and the
+    // table only once the tab is open — so wait for the tab, don't probe it.
     await waitForAssertion({
       assertion: async () => {
         await expect(operateProcessInstancePage.incidentsTab).toBeVisible({
@@ -240,8 +236,7 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     await operateProcessInstancePage.reloadUntilSuspended(UI_REFRESH_TIMEOUT);
     await expect(retryButton).toBeDisabled({timeout: UI_REFRESH_TIMEOUT});
 
-    // The mirror of the assertion above: once resumed, the button works. The
-    // job needs its retries back first, or the retry only fails again.
+    // The mirror of the assertion above; the job needs its retries back first.
     await resumeProcessInstance(request, instance.processInstanceKey);
     await assertStatusCode(
       await request.patch(
@@ -284,9 +279,8 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       timeout: UI_REFRESH_TIMEOUT,
     });
 
-    // Editing an existing variable used to be blocked outright on a suspended
-    // instance (#60873, fixed by #62745), so the edit itself is the assertion —
-    // not merely that a control was enabled.
+    // #60873 blocked this outright (fixed by #62745), so the edit is the
+    // assertion, not merely an enabled control.
     await operateProcessInstancePage.clickEditVariableButton('approved');
     await operateProcessInstancePage.clickVariableValueInput();
     await operateProcessInstancePage.clearVariableValueInput();
@@ -327,8 +321,7 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       204,
     );
 
-    // Applied, not just stored: the job the resumed instance hands out carries
-    // the value the operator typed, not the one it was started with.
+    // Applied, not just stored: the job carries the edited value.
     const jobs = await activateJobsByType(
       request,
       jobType,
@@ -416,15 +409,13 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       subject.processInstanceKey,
     );
 
-    // Row actions carry no instance key in their accessible name, so they are
-    // located by test id inside the row the filter left listed.
+    // Row actions carry no key in their accessible name — locate by test id.
     const subjectRow = page
       .getByTestId('data-list')
       .getByRole('row')
       .filter({hasText: subject.processInstanceKey});
     const suspendRowAction = subjectRow.getByTestId('suspend-operation');
-    // The row appears only once the instance reaches secondary storage, so the
-    // action cannot be waited for directly — reload until the row is listed.
+    // The row appears only once the instance reaches secondary storage.
     await waitForAssertion({
       assertion: async () => {
         await expect(suspendRowAction).toBeVisible({
@@ -492,10 +483,8 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     await navigateToAppHome(page, 'operate');
     await expect(operateHomePage.operateBanner).toBeVisible();
     await operateHomePage.clickProcessesTab();
-    // Active and Incidents stay on, as the default view has them: the filter
-    // the client builds from that combination is the one that loses the
-    // suspended instances, and narrowing to Suspended alone would not
-    // reproduce it.
+    // Active and Incidents stay on: that combination builds the filter that
+    // loses suspended instances. Suspended alone would not reproduce it.
     await operateFiltersPanelPage.applySuspendedFilter();
     await operateFiltersPanelPage.displayOptionalFilter(
       'Process Instance Key(s)',
@@ -507,8 +496,7 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       page.getByText(subject.processInstanceKey, {exact: false}).first(),
     ).toBeVisible({timeout: UI_REFRESH_TIMEOUT});
 
-    // Read the key off the request the toolbar makes: picking the newest batch
-    // instead would pull in batches other specs create in parallel.
+    // Off the toolbar's own request: the newest batch could be another spec's.
     const cancellationResponse = page.waitForResponse(
       (response) =>
         response.url().includes('/process-instances/cancellation') &&
@@ -526,8 +514,7 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       extendedAssertionOptions,
     );
 
-    // A batch that matched nothing also reports Completed, so the state tile
-    // alone proves nothing — the instance has to be listed among the items.
+    // A batch that matched nothing also reports Completed.
     await operateOperationsDetailsPage.goto(batchOperationKey);
     await waitForAssertion({
       assertion: async () => {
@@ -541,7 +528,6 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
         await page.reload();
       },
     });
-    // Exact: a regex would also match a 1 inside a larger count.
     await expect(operateOperationsDetailsPage.summaryOfItems).toHaveText('1');
     await expect(
       operateOperationsDetailsPage.getProcessInstanceLink(
@@ -574,8 +560,7 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     await operateProcessInstancePage.gotoProcessInstancePage({id: childKey});
     await expect(operateProcessInstancePage.instanceHeader).toBeVisible();
 
-    // #60657 removed the root-only guard from these buttons, so a child offers
-    // them like any other instance.
+    // #60657 removed the root-only guard, so a child offers them too.
     await operateProcessInstancePage.suspendInstance(childKey);
     await expect(operateProcessInstancePage.suspendedStateIcon).toBeVisible({
       timeout: UI_REFRESH_TIMEOUT,
@@ -602,8 +587,7 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       extendedAssertionOptions,
     );
 
-    // The child's job is what both instances are waiting on, so running it
-    // shows the resumed child still carries its parent to the end.
+    // Both instances wait on the child's job.
     await resumeAndCompleteServiceTask(request, childJobType, childKey);
     await expectProcessState(
       request,
