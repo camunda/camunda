@@ -69,6 +69,8 @@ const BatchItemsTable: React.FC<Props> = ({batchOperationKey, batchOperationType
 		hasNextPage,
 		fetchNextPage,
 		isFetchingNextPage,
+		isFetchNextPageError,
+		isFetchPreviousPageError,
 		refetch,
 	} = useBatchOperationItems(batchOperationKey);
 
@@ -156,8 +158,9 @@ const BatchItemsTable: React.FC<Props> = ({batchOperationKey, batchOperationType
 	}, [batchOperationType, t]);
 
 	const isError = status === 'error';
+	const retry = isFetchNextPageError ? fetchNextPage : isFetchPreviousPageError ? fetchPreviousPage : refetch;
 	const retryButton = (
-		<Button kind="tertiary" size="sm" disabled={isFetching} onClick={() => void refetch()}>
+		<Button kind="tertiary" size="sm" disabled={isFetching} onClick={() => void retry()}>
 			{t('operate.batchOperation.itemsTable.retry')}
 		</Button>
 	);
