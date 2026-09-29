@@ -70,6 +70,11 @@ public final class ManifestManager {
   InProgressManifest createInitialManifest(final Backup backup) {
 
     final var manifest = Manifest.createInProgress(backup);
+    writeNewManifest(manifest);
+    return manifest;
+  }
+
+  private void writeNewManifest(final Manifest manifest) {
     final byte[] serializedManifest;
     final var path = manifestPath(manifest);
 
@@ -84,8 +89,6 @@ public final class ManifestManager {
       serializedManifest = MAPPER.writeValueAsBytes(manifest);
       Files.write(path, serializedManifest, StandardOpenOption.CREATE_NEW, StandardOpenOption.SYNC);
       FileUtil.flushDirectory(path.getParent());
-
-      return manifest;
     } catch (final FileAlreadyExistsException e) {
       throw new UnexpectedManifestState("Manifest already exists.");
     } catch (final IOException e) {
@@ -115,9 +118,10 @@ public final class ManifestManager {
   }
 
   void markAsFailed(final BackupIdentifier manifestId, final String failureReason) {
-    Manifest manifest = getManifest(manifestId);
+    final Manifest manifest = getManifest(manifestId);
     if (manifest == null) {
-      manifest = Manifest.createFailed(manifestId);
+      writeNewManifest(Manifest.createFailed(manifestId, failureReason));
+      return;
     }
 
     final var updatedManifest =
