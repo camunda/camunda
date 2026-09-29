@@ -7,8 +7,9 @@ description: Drive CI incident response in camunda/camunda. Use when asked to re
 
 Guides a responder through a CI incident in `camunda/camunda`. Pulls live state from incident.io,
 context from the incident's Slack channel, the matching runbook from
-[docs/monorepo-docs/ci-runbooks.md](../../../docs/monorepo-docs/ci-runbooks.md), and the process
-from [docs/monorepo-docs/processes.md](../../../docs/monorepo-docs/processes.md).
+[`ci-runbooks.md`](https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/ci-runbooks.md),
+and the process from
+[`processes.md`](https://github.com/camunda/camunda/blob/main/docs/monorepo-docs/processes.md).
 
 ## Prerequisites
 
@@ -19,6 +20,11 @@ from [docs/monorepo-docs/processes.md](../../../docs/monorepo-docs/processes.md)
 
 Throughout this skill, MCP tools are referenced by their short verb (`incident_show`,
 `slack_read_channel`); the actual identifier depends on which MCP server is configured.
+
+The CI runbooks and process documentation are maintained on `main` and may be absent from stable
+branches. For either document, read the local `docs/monorepo-docs/` file when it exists. Otherwise,
+read it with `git show origin/main:docs/monorepo-docs/<file>`. If `origin/main` is unavailable, fetch
+the canonical GitHub URL linked above. A missing local file alone is not a runbook gap.
 
 ## Scope
 
@@ -58,7 +64,7 @@ If the Slack MCP is not available, note this in the brief and continue.
 
 ### Step 4 — Match a runbook
 
-Read [docs/monorepo-docs/ci-runbooks.md](../../../docs/monorepo-docs/ci-runbooks.md).
+Resolve and read `docs/monorepo-docs/ci-runbooks.md` as described above.
 
 Match the incident title and active alert name(s) against the `###` headings under both
 **Alert Runbooks** and **Incident Runbooks** sections. Fuzzy match is fine (e.g. alert
@@ -72,7 +78,7 @@ Match the incident title and active alert name(s) against the `###` headings und
 ### Step 5 — Locate the current process step
 
 Read the **CI Incident Management** section of
-[docs/monorepo-docs/processes.md](../../../docs/monorepo-docs/processes.md).
+`docs/monorepo-docs/processes.md`, resolving the document as described above.
 
 Based on incident status + Slack history, determine which step the incident is in:
 
@@ -111,7 +117,7 @@ Work through the runbook with the responder. Prioritize mitigation (stopping the
 
 When the incident moves to resolved or closed:
 
-- Re-read the **Follow-Up** subsection of `processes.md`.
+- Re-read the **Follow-Up** subsection of `processes.md`, resolving the document as described above.
 - Prompt the responder to create follow-ups via `follow_up_create` for each action item raised
   during response (postmortem tasks, runbook updates, fixes deferred during the incident).
 - Offer to draft each follow-up's title and description from the Slack history and runbook gaps.
