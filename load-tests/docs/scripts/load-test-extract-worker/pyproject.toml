@@ -21,4 +21,4 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.uv.sources]
-load-test-report = { path = "../load_test_report" }
+load-test-report = { path = "../load_test_report", editable = true }
