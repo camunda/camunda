@@ -108,7 +108,8 @@
 				"toolWhenNotToUse": "Wann nicht zu verwenden"
 			},
 			"operationsLog": {
-				"learnMore": "Mehr über das Vorgangsprotokoll erfahren",
+				"guideBody": "Weitere Informationen finden Sie in der Dokumentation zum ",
+				"guideLinkLabel": "Vorgangsprotokoll",
 				"filter": "Filter",
 				"operationType": "Operationstyp",
 				"entityType": "Entitätstyp",

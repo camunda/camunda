@@ -108,7 +108,8 @@
 				"toolWhenNotToUse": "When not to use"
 			},
 			"operationsLog": {
-				"learnMore": "Learn more about the operations log",
+				"guideBody": "For more information, see documentation on ",
+				"guideLinkLabel": "operations log",
 				"filter": "Filter",
 				"operationType": "Operation type",
 				"entityType": "Entity type",

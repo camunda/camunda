@@ -328,17 +328,18 @@ const AdminOperationsLogPage: React.FC<AdminOperationsLogPageProps> = ({
 	return (
 		<PageLayout id="main-content" tabIndex={-1}>
 			<div className="flex flex-col gap-6">
-				<PageHeader
-					title={title}
-					actions={
+				<div className="flex flex-col gap-1">
+					<PageHeader title={title} />
+					<p className="text-sm leading-5 text-muted-foreground">
+						{t('admin.operationsLog.guideBody')}
 						<Button asChild variant="link" className="h-auto p-0 align-baseline font-normal">
 							<a href={DOCS_URL} target="_blank" rel="noopener noreferrer">
-								{t('admin.operationsLog.learnMore')}
+								{t('admin.operationsLog.guideLinkLabel')}
 								<ExternalLink aria-hidden />
 							</a>
 						</Button>
-					}
-				/>
+					</p>
+				</div>
 
 				<PageContentLayout
 					sidebarPosition="left"
