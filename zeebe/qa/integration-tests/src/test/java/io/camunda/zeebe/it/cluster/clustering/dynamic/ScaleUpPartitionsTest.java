@@ -846,47 +846,6 @@ public abstract class ScaleUpPartitionsTest {
   }
 }
 
-/** Backup/restore tests without RDBMS dependency. */
-class ScaleUpPartitionsBackupRestoreTest extends ScaleUpPartitionsTest {
-  ScaleUpPartitionsBackupRestoreTest(@TempDir final Path backupPath) {
-    super(backupPath);
-  }
-
-  @Override
-  protected TestCluster buildCluster(final Path backupPath) {
-    return TestCluster.builder()
-        .useRecordingExporter(true)
-        .withBrokersCount(3)
-        .withPartitionsCount(3)
-        .withReplicationFactor(3)
-        .withBrokerConfig(
-            b -> {
-              // No authentication (Basic Auth requires secondary storage)
-              b.withUnifiedConfig(
-                  cfg -> {
-                    final var backup = cfg.getData().getPrimaryStorage().getBackup();
-                    backup.setStore(PrimaryStorageBackup.BackupStoreType.FILESYSTEM);
-                    backup.getFilesystem().setBasePath(backupPath.toString());
-
-                    final var membership = cfg.getCluster().getMembership();
-                    membership.setSyncInterval(Duration.ofSeconds(1));
-                    membership.setGossipInterval(Duration.ofMillis(500));
-
-                    final var distribution = cfg.getProcessing().getEngine().getDistribution();
-                    distribution.setMaxBackoffDuration(Duration.ofSeconds(1));
-                    distribution.setRedistributionInterval(Duration.ofMillis(200));
-                  });
-            })
-        .build();
-  }
-
-  // Decision evaluation tests are auth-specific; skip for backup/restore
-  @Override
-  protected void verifyExistingDecisionCanBeEvaluatedOnPartition(final int partitionId) {
-    // no-op
-  }
-}
-
 /** Authorization and scaling tests with RDBMS exporter. */
 class ScaleUpPartitionsWithAuthTest extends ScaleUpPartitionsTest {
   ScaleUpPartitionsWithAuthTest(@TempDir final Path backupPath) {
