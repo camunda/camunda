@@ -23,6 +23,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.client.api.response.CreateBatchOperationResponse;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
+import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
@@ -145,6 +146,56 @@ public class BatchOperationMigrateProcessInstanceIT {
       processInstanceHasVariables(
           client, processInstanceKey, Map.of("foo", v -> v.getValue().equals("\"bar\"")));
     }
+  }
+
+  @Test
+  void shouldMigrateProcessInstanceWhenStateFilterIsIgnored(final TestInfo testInfo) {
+    // given
+    final String testScopeId =
+        testInfo.getTestMethod().map(Method::toString).orElse(UUID.randomUUID().toString());
+
+    final long sourceProcessDefinitionKey =
+        deployProcessAndWaitForIt(client, "process/migration-process_v1.bpmn")
+            .getProcessDefinitionKey();
+    final var targetProcessDefinitionKey =
+        deployProcessAndWaitForIt(client, "process/migration-process_v2.bpmn")
+            .getProcessDefinitionKey();
+
+    final long processInstanceKey =
+        startScopedProcessInstance(
+                client, sourceProcessDefinitionKey, testScopeId, Map.of("foo", "bar"))
+            .getProcessInstanceKey();
+
+    waitForScopedProcessInstancesToStart(client, testScopeId, 1);
+    waitForActiveScopedUserTasks(client, testScopeId, 1);
+
+    // when - state filter would match nothing if it were applied, since the instance is ACTIVE
+    final var batchCreated =
+        client
+            .newCreateBatchOperationCommand()
+            .migrateProcessInstance()
+            .migrationPlan(
+                MigrationPlan.newBuilder()
+                    .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+                    .addMappingInstruction("taskA", "taskA2")
+                    .addMappingInstruction("taskB", "taskB2")
+                    .addMappingInstruction("taskC", "taskC2")
+                    .build())
+            .filter(
+                new ProcessInstanceFilterImpl()
+                    .processDefinitionKey(sourceProcessDefinitionKey)
+                    .variables(getScopedVariables(testScopeId))
+                    .state(ProcessInstanceState.COMPLETED))
+            .send()
+            .join();
+
+    // then
+    waitForBatchOperationWithCorrectTotalCount(client, batchCreated.getBatchOperationKey(), 1);
+    waitForBatchOperationCompleted(client, batchCreated.getBatchOperationKey(), 1, 0);
+    processInstanceExistAndMatches(
+        client,
+        f -> f.processInstanceKey(processInstanceKey).processDefinitionId("migration-process_v2"),
+        f -> assertThat(f).hasSize(1));
   }
 
   @Test

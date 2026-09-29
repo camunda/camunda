@@ -23,6 +23,7 @@ import io.camunda.client.api.response.CreateBatchOperationResponse;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.IncidentState;
+import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
@@ -205,6 +206,40 @@ public class BatchOperationResolveIncidentIT {
     assertThat(itemKeys).containsExactlyInAnyOrderElementsOf(activeIncidentKeys);
     assertThat(itemsObj.items().stream().map(BatchOperationItem::getStatus).distinct().toList())
         .containsExactly(BatchOperationItemState.COMPLETED);
+  }
+
+  @Test
+  void shouldResolveIncidentsWhenStateFilterIsIgnored() {
+    // given
+    final var activeIncidentKeys =
+        camundaClient
+            .newIncidentSearchRequest()
+            .filter(f -> f.state(IncidentState.ACTIVE))
+            .send()
+            .join()
+            .items()
+            .stream()
+            .map(Incident::getIncidentKey)
+            .toList();
+
+    // when - state filter would match nothing if it were applied, since the instances are ACTIVE
+    final Future<CreateBatchOperationResponse> result =
+        camundaClient
+            .newCreateBatchOperationCommand()
+            .resolveIncident()
+            .filter(f -> f.hasIncident(true).state(ProcessInstanceState.COMPLETED))
+            .send();
+
+    // then
+    final var batchOperationKey =
+        assertThat(result)
+            .succeedsWithin(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
+            .actual()
+            .getBatchOperationKey();
+    waitForBatchOperationWithCorrectTotalCount(
+        camundaClient, batchOperationKey, AMOUNT_OF_INCIDENTS);
+    waitForBatchOperationCompleted(camundaClient, batchOperationKey, AMOUNT_OF_INCIDENTS, 0);
+    waitUntilIncidentsAreResolved(camundaClient, activeIncidentKeys);
   }
 
   @Test
