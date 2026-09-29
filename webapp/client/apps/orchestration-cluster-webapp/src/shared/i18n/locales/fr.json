@@ -905,7 +905,10 @@
 					"viewProcessInstance": "Voir l'instance de processus {{key}}",
 					"viewDecisionInstance": "Voir l'instance de décision {{key}}",
 					"failureReason": "Raison de l'échec : {{message}}",
-					"emptyMessage": "Aucun élément trouvé"
+					"emptyMessage": "Aucun élément trouvé",
+					"retryHint": "Les éléments ne sont peut-être plus à jour. Réessayez de les charger.",
+					"retry": "Réessayer",
+					"retrying": "Nouvelle tentative de chargement des éléments"
 				},
 				"actions": {
 					"suspend": "Suspendre",

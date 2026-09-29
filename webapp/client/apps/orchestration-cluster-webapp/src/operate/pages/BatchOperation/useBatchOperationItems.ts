@@ -52,6 +52,7 @@ function useBatchOperationItems(batchOperationKey: string) {
 		isFetchingNextPage,
 		hasNextPage,
 		fetchNextPage,
+		refetch,
 	} = query;
 
 	const items = data?.pages.flatMap((page) => page.items) ?? [];
@@ -67,6 +68,7 @@ function useBatchOperationItems(batchOperationKey: string) {
 		isFetchingNextPage,
 		hasNextPage,
 		fetchNextPage,
+		refetch,
 		items,
 		totalItems,
 		hasMoreTotalItems,

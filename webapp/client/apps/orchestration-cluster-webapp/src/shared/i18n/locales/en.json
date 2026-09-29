@@ -914,7 +914,10 @@
 					"viewProcessInstance": "View process instance {{key}}",
 					"viewDecisionInstance": "View decision instance {{key}}",
 					"failureReason": "Failure reason: {{message}}",
-					"emptyMessage": "No items found"
+					"emptyMessage": "No items found",
+					"retryHint": "The items may be out of date. Retry loading them.",
+					"retry": "Retry",
+					"retrying": "Retrying items"
 				},
 				"actions": {
 					"suspend": "Suspend",

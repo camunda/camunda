@@ -902,7 +902,10 @@
 					"viewProcessInstance": "Prozessinstanz {{key}} anzeigen",
 					"viewDecisionInstance": "Entscheidungsinstanz {{key}} anzeigen",
 					"failureReason": "Fehlerursache: {{message}}",
-					"emptyMessage": "Keine Elemente gefunden"
+					"emptyMessage": "Keine Elemente gefunden",
+					"retryHint": "Die Elemente sind möglicherweise nicht mehr aktuell. Versuchen Sie erneut, sie zu laden.",
+					"retry": "Erneut versuchen",
+					"retrying": "Elemente werden erneut geladen"
 				},
 				"actions": {
 					"suspend": "Pausieren",
