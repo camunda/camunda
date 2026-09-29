@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.usertask.UserTaskSuspensionBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
@@ -29,11 +30,14 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import java.util.List;
 import org.slf4j.Logger;
 
 public final class ProcessInstanceResumeProcessor
@@ -56,12 +60,14 @@ public final class ProcessInstanceResumeProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final CslAuthorizationCheck cslCheck;
   private final SuspensionState suspensionState;
+  private final UserTaskSuspensionBehavior userTaskSuspensionBehavior;
   private final SuspensionMetrics suspensionMetrics;
 
   public ProcessInstanceResumeProcessor(
       final ProcessingState processingState,
       final Writers writers,
       final CslAuthorizationCheck cslCheck,
+      final KeyGenerator keyGenerator,
       final SuspensionMetrics suspensionMetrics) {
     elementInstanceState = processingState.getElementInstanceState();
     responseWriter = writers.response();
@@ -70,6 +76,8 @@ public final class ProcessInstanceResumeProcessor
     rejectionWriter = writers.rejection();
     this.cslCheck = cslCheck;
     suspensionState = processingState.getSuspensionState();
+    userTaskSuspensionBehavior =
+        new UserTaskSuspensionBehavior(elementInstanceState, stateWriter, keyGenerator);
     this.suspensionMetrics = suspensionMetrics;
   }
 
@@ -156,12 +164,15 @@ public final class ProcessInstanceResumeProcessor
     final ProcessInstanceRecord value = elementInstance.getValue();
     final boolean isRestart =
         suspensionState.getSuspensionState(command.getKey()) == SuspensionState.State.RESUMING;
+    final List<Long> userTaskKeys =
+        isRestart ? List.of() : userTaskSuspensionBehavior.collectUserTaskKeys(elementInstance);
 
     if (!isRestart) {
       LOG.debug("Resuming process instance '{}': was suspended, starting drain", command.getKey());
       // switch the marker to RESUMING before the first DRAIN so the buffered commands it writes
       // back are let through by the suspension gate instead of being buffered again
       stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.RESUMING, value);
+      userTaskSuspensionBehavior.bufferEvents(value, userTaskKeys, UserTaskIntent.RESUMED);
     } else {
       LOG.debug(
           "Resuming process instance '{}': drain was already in progress, restarting it",

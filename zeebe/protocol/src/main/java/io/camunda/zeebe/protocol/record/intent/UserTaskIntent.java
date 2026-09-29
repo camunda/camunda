@@ -122,7 +122,22 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
    * @apiNote The engine manages this command internally. Writing this command directly won't
    *     trigger user task cancellation. It shouldn't be used via client APIs.
    */
-  CANCEL(23);
+  CANCEL(23),
+
+  /**
+   * Represents the intent indicating that the User Task is part of its process instance's
+   * suspension. The User Task keeps its lifecycle state. This event does not gate commands on the
+   * User Task: they are still processed while the process instance is {@code SUSPENDING}, and are
+   * rejected only once the process instance is {@code SUSPENDED}.
+   */
+  SUSPENDED(24),
+
+  /**
+   * Represents the intent indicating that the User Task is part of its process instance's resume.
+   * This event does not gate commands on the User Task: they stay rejected while the process
+   * instance is {@code RESUMING}, and are accepted again only once it is {@code RESUMED}.
+   */
+  RESUMED(25);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -190,6 +205,10 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
         return CREATE;
       case 23:
         return CANCEL;
+      case 24:
+        return SUSPENDED;
+      case 25:
+        return RESUMED;
       default:
         return UNKNOWN;
     }
@@ -219,6 +238,8 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
       case ASSIGNMENT_DENIED:
       case CLAIMING:
       case UPDATE_DENIED:
+      case SUSPENDED:
+      case RESUMED:
         return true;
       default:
         return false;

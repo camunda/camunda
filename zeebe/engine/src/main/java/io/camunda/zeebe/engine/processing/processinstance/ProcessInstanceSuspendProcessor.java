@@ -16,23 +16,29 @@ import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSen
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.usertask.UserTaskSuspensionBehavior;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.InstantSource;
 
 public final class ProcessInstanceSuspendProcessor
@@ -51,12 +57,14 @@ public final class ProcessInstanceSuspendProcessor
   private final ElementInstanceState elementInstanceState;
   private final TypedResponseWriter responseWriter;
   private final StateWriter stateWriter;
+  private final TypedCommandWriter commandWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final CslAuthorizationCheck cslCheck;
   private final AsyncRequestState asyncRequestState;
   private final SuspensionState suspensionState;
   private final ProcessInstanceSuspensionJobBehavior suspensionJobBehavior;
   private final ProcessInstanceSuspensionMessageSubscriptionBehavior suspensionSubscriptionBehavior;
+  private final UserTaskSuspensionBehavior userTaskSuspensionBehavior;
   private final SuspensionMetrics suspensionMetrics;
 
   public ProcessInstanceSuspendProcessor(
@@ -66,10 +74,12 @@ public final class ProcessInstanceSuspendProcessor
       final SubscriptionCommandSender subscriptionCommandSender,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final InstantSource clock,
+      final KeyGenerator keyGenerator,
       final SuspensionMetrics suspensionMetrics) {
     elementInstanceState = processingState.getElementInstanceState();
     responseWriter = writers.response();
     stateWriter = writers.state();
+    commandWriter = writers.command();
     rejectionWriter = writers.rejection();
     this.cslCheck = cslCheck;
     asyncRequestState = processingState.getAsyncRequestState();
@@ -86,6 +96,8 @@ public final class ProcessInstanceSuspendProcessor
             subscriptionCommandSender,
             transientProcessMessageSubscriptionState,
             clock);
+    userTaskSuspensionBehavior =
+        new UserTaskSuspensionBehavior(elementInstanceState, stateWriter, keyGenerator);
     this.suspensionMetrics = suspensionMetrics;
   }
 
@@ -100,12 +112,34 @@ public final class ProcessInstanceSuspendProcessor
     final ProcessInstanceRecord value = elementInstance.getValue();
     stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.SUSPENDING, value);
     final int suspendedJobCount = closeSubscriptionsAndSuspendJobs(command.getKey());
-    stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.SUSPENDED, value);
+
+    // buffer user task suspension events and drain them in a follow-up command to avoid writing
+    // too many events in a single transaction
+    bufferUserTasksSuspension(command, elementInstance, value);
     responseWriter.writeAcceptedResponseOnCommand(
-        command.getKey(), ProcessInstanceIntent.SUSPENDED, value, command);
-    suspensionMetrics.instanceSuspended();
+        command.getKey(), ProcessInstanceIntent.SUSPENDING, value, command);
     if (suspendedJobCount > 0) {
       suspensionMetrics.jobsSuspended(suspendedJobCount);
+    }
+  }
+
+  private void bufferUserTasksSuspension(
+      final TypedRecord<ProcessInstanceRecord> command,
+      final ElementInstance elementInstance,
+      final ProcessInstanceRecord value) {
+    final var userTaskKeys = userTaskSuspensionBehavior.collectUserTaskKeys(elementInstance);
+    if (userTaskKeys.isEmpty()) {
+      commandWriter.appendFollowUpCommand(
+          command.getKey(), ProcessInstanceIntent.COMPLETE_SUSPENDING, value);
+    } else {
+      userTaskSuspensionBehavior.bufferEvents(value, userTaskKeys, UserTaskIntent.SUSPENDED);
+      commandWriter.appendFollowUpCommand(
+          command.getKey(),
+          BufferedCommandIntent.DRAIN,
+          new BufferedCommandRecord()
+              .setProcessInstanceKey(command.getKey())
+              .setProcessDefinitionKey(value.getProcessDefinitionKey())
+              .setTenantId(value.getTenantId()));
     }
   }
 

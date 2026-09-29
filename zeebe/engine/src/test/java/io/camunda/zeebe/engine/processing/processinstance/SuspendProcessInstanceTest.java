@@ -11,7 +11,9 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.SUSP
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -130,5 +132,34 @@ public final class SuspendProcessInstanceTest {
     Assertions.assertThat(rejection)
         .hasIntent(ProcessInstanceIntent.SUSPEND)
         .hasRejectionType(RejectionType.NOT_FOUND);
+  }
+
+  @Test
+  public void shouldRejectCompleteSuspendingWhenProcessInstanceIsNotSuspending() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId).startEvent().userTask().endEvent().done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // when
+    ENGINE.writeRecords(
+        RecordToWrite.command()
+            .processInstance(
+                ProcessInstanceIntent.COMPLETE_SUSPENDING,
+                new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey))
+            .key(processInstanceKey));
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.COMPLETE_SUSPENDING)
+                .onlyCommandRejections()
+                .withRecordKey(processInstanceKey)
+                .getFirst()
+                .getRejectionType())
+        .isEqualTo(RejectionType.INVALID_STATE);
   }
 }

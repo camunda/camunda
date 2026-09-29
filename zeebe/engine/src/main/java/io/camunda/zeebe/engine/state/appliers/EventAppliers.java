@@ -902,6 +902,8 @@ public final class EventAppliers implements EventApplier {
     register(UserTaskIntent.COMPLETION_DENIED, new UserTaskCompletionDeniedApplier(state));
     register(UserTaskIntent.ASSIGNMENT_DENIED, new UserTaskAssignmentDeniedApplier(state));
     register(UserTaskIntent.UPDATE_DENIED, new UserTaskUpdateDeniedApplier(state));
+    register(UserTaskIntent.SUSPENDED, NOOP_EVENT_APPLIER);
+    register(UserTaskIntent.RESUMED, NOOP_EVENT_APPLIER);
   }
 
   private void registerCompensationSubscriptionApplier(

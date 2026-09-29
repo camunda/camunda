@@ -68,9 +68,9 @@ public final class SuspensionBehavior {
 
     final SuspensionAction action =
         switch (marker) {
+          case SUSPENDING -> onSuspending(suspensionAware, command);
           case SUSPENDED -> onSuspended(suspensionAware, command);
           case RESUMING -> onResuming(suspensionAware, command);
-          case SUSPENDING -> onSuspending(suspensionAware, command);
           case null -> SuspensionAction.PROCESS;
         };
 

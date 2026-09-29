@@ -60,10 +60,13 @@ migration. Cost is paid once per suspend, and once per resume cycle, not on ever
 
 - **Suspend:** `ProcessInstanceSuspendProcessor` validates the command, appends
   `ProcessInstance.SUSPENDING`, closes subscriptions, appends `Job.SUSPENDED` for every
-  `ACTIVATABLE` or `WAITING_FOR_SECRET_RESOLUTION` job, then appends
-  `ProcessInstance.SUSPENDED` and responds `SUSPENDED`. All work runs inline in the same record
-  batch; this change does not introduce a processor handoff or a second batch. A follow-up change
-  can add that handoff. Commands targeting the `SUSPENDING` marker process normally.
+  `ACTIVATABLE` or `WAITING_FOR_SECRET_RESOLUTION` job, and responds `SUSPENDING`. Job suspension
+  runs inline in that batch. `ProcessInstance.SUSPENDED` is written later by
+  `COMPLETE_SUSPENDING`, after the buffered command drain has written one `UserTask.SUSPENDED` per
+  user task ([#62657](https://github.com/camunda/camunda/issues/62657)). With no user tasks,
+  suspend appends `COMPLETE_SUSPENDING` directly. Commands targeting the `SUSPENDING` marker
+  process normally, so jobs created before `SUSPENDED` are not suspended
+  ([#64262](https://github.com/camunda/camunda/issues/64262)).
   `Job.SUSPENDED` carries the job's own record, including its variables, so it is not fixed-size,
   but it is the only record suspend writes per job — no activation record alongside it. The
   batch's size scales with the aggregate serialized size of every job the walk suspends, since
@@ -190,8 +193,8 @@ alongside the existing `State` enum — the same shape as `JOB_ACTIVATABLE_BY_PR
 
 ## Consequences
 
-- One `Job.SUSPENDED` event per affected job in the same batch as the `SUSPENDING` and `SUSPENDED`
-  instance markers. A very large instance can still hit the max record batch size on suspend (same
+- One `Job.SUSPENDED` event per affected job in the same batch as the `SUSPENDING` instance
+  marker. A very large instance can still hit the max record batch size on suspend (same
   limit as migration); suspend does not chunk. Resume does not share this limit: one job per
   `RESUME_JOBS` cycle keeps each cycle's batch bounded to that job's own activation cost.
 - Resume no longer re-walks the tree per cycle: `JOBS_BY_PROCESS_INSTANCE` (D5) lets each

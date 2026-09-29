@@ -15,18 +15,22 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.usertask.UserTaskSuspensionBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState.BufferedCommand;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.ArrayDeque;
 import java.util.function.Consumer;
@@ -43,6 +47,13 @@ import org.jspecify.annotations.NullMarked;
  * the default error handling rejects {@code DRAIN} without banning the instance, and it stays
  * {@code RESUMING} until a fresh {@code RESUME} restarts the drain (see {@link
  * ProcessInstanceResumeProcessor}).
+ *
+ * <p>User task entries buffered on suspend and resume (see {@link UserTaskSuspensionBehavior}) are
+ * not replayed as commands: the cycle writes their {@code SUSPENDED} or {@code RESUMED} event
+ * directly. While the instance is {@code SUSPENDING}, the drain handles only these user task
+ * entries, and hands off to {@code COMPLETE_SUSPENDING} once none are left. Other entries, such as
+ * subscription {@code REOPEN}s buffered by close acknowledgements, stay in the buffer for the
+ * resume drain.
  */
 @ExcludeAuthorizationCheck
 @NullMarked
@@ -60,6 +71,7 @@ public final class BufferedCommandDrainProcessor
   private final SuspensionState suspensionState;
   private final ElementInstanceState elementInstanceState;
   private final ProcessMessageSubscriptionState processMessageSubscriptionState;
+  private final UserTaskState userTaskState;
   private final SuspensionMetrics suspensionMetrics;
 
   public BufferedCommandDrainProcessor(
@@ -72,6 +84,7 @@ public final class BufferedCommandDrainProcessor
     suspensionState = processingState.getSuspensionState();
     elementInstanceState = processingState.getElementInstanceState();
     processMessageSubscriptionState = processingState.getProcessMessageSubscriptionState();
+    userTaskState = processingState.getUserTaskState();
     this.suspensionMetrics = suspensionMetrics;
   }
 
@@ -80,16 +93,67 @@ public final class BufferedCommandDrainProcessor
     final var drainValue = command.getValue();
     final long processInstanceKey = drainValue.getProcessInstanceKey();
 
+    if (suspensionState.getSuspensionState(processInstanceKey)
+        == SuspensionState.State.SUSPENDING) {
+      drainWhileSuspending(drainValue);
+      return;
+    }
+
     suspensionState
         .findNextBufferedCommand(processInstanceKey, drainValue.getCommandKey())
         .ifPresentOrElse(
             buffered -> {
-              appendBufferedCommand(buffered);
-              appendDrainedEvent(buffered);
-              appendNextDrainCommand(buffered.key(), buffered.command());
-              suspensionMetrics.commandDrained();
+              if (isUserTaskEvent(buffered.command())) {
+                drainUserTaskEvent(buffered);
+              } else {
+                drainBufferedCommand(buffered);
+              }
             },
             () -> advanceOrWait(command, drainValue));
+  }
+
+  /** Drains only user task entries; the others stay buffered for the resume drain. */
+  private void drainWhileSuspending(final BufferedCommandRecord drainValue) {
+    long afterCommandKey = drainValue.getCommandKey();
+    var next =
+        suspensionState.findNextBufferedCommand(
+            drainValue.getProcessInstanceKey(), afterCommandKey);
+    while (next.isPresent() && !isUserTaskEvent(next.get().command())) {
+      afterCommandKey = next.get().key();
+      next =
+          suspensionState.findNextBufferedCommand(
+              drainValue.getProcessInstanceKey(), afterCommandKey);
+    }
+    next.ifPresentOrElse(
+        this::drainUserTaskEvent,
+        () -> appendProcessInstanceCommand(drainValue, ProcessInstanceIntent.COMPLETE_SUSPENDING));
+  }
+
+  /** User task entries buffered on suspend or resume, see {@link UserTaskSuspensionBehavior}. */
+  private static boolean isUserTaskEvent(final BufferedCommandRecord buffered) {
+    return buffered.getValueType() == ValueType.USER_TASK
+        && (buffered.getIntent() == UserTaskIntent.SUSPENDED
+            || buffered.getIntent() == UserTaskIntent.RESUMED);
+  }
+
+  /** Writes the buffered user task event directly, instead of replaying a command. */
+  private void drainUserTaskEvent(final BufferedCommand buffered) {
+    final var value = buffered.command();
+    final long userTaskKey = value.getCommandKey();
+    final var userTask = userTaskState.getUserTask(userTaskKey);
+    // the user task may have ended since it was buffered; skip it
+    if (userTask != null && userTask.getProcessInstanceKey() == value.getProcessInstanceKey()) {
+      stateWriter.appendFollowUpEvent(userTaskKey, value.getIntent(), userTask);
+    }
+    appendDrainedEvent(buffered);
+    appendNextDrainCommand(buffered.key(), value);
+  }
+
+  private void drainBufferedCommand(final BufferedCommand buffered) {
+    appendBufferedCommand(buffered);
+    appendDrainedEvent(buffered);
+    appendNextDrainCommand(buffered.key(), buffered.command());
+    suspensionMetrics.commandDrained();
   }
 
   /**
@@ -114,7 +178,7 @@ public final class BufferedCommandDrainProcessor
           WAITING_CLOSE_ACKS_MESSAGE.formatted(drainValue.getProcessInstanceKey()));
       return;
     }
-    appendResumeJobs(drainValue);
+    appendProcessInstanceCommand(drainValue, ProcessInstanceIntent.RESUME_JOBS);
   }
 
   /** Read-only BFS over the element-instance tree: reports whether any subscription is CLOSING. */
@@ -197,10 +261,11 @@ public final class BufferedCommandDrainProcessor
             .setCommandKey(drainedCommandKey));
   }
 
-  private void appendResumeJobs(final BufferedCommandRecord drainValue) {
+  private void appendProcessInstanceCommand(
+      final BufferedCommandRecord drainValue, final ProcessInstanceIntent intent) {
     commandWriter.appendFollowUpCommand(
         drainValue.getProcessInstanceKey(),
-        ProcessInstanceIntent.RESUME_JOBS,
+        intent,
         new ProcessInstanceRecord()
             .setProcessInstanceKey(drainValue.getProcessInstanceKey())
             .setProcessDefinitionKey(drainValue.getProcessDefinitionKey())
