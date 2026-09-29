@@ -31,6 +31,7 @@ public final class OptimizeMetrics {
   // Report-related tags
   public static final String REPORT_NAME_TAG = "REPORT_NAME";
   public static final String REPORT_ID_TAG = "REPORT_ID";
+  public static final String EXECUTION_PLAN_TAG = "EXECUTION_PLAN";
   // Error-related tags
   public static final String ERROR_TYPE_TAG = "ERROR_TYPE";
   public static final String METRICS_ENDPOINT = "metrics";
