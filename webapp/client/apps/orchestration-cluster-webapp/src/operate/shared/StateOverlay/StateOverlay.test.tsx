@@ -46,7 +46,7 @@ describe('<StateOverlay />', () => {
 		await expect.element(screen.getByRole('img', {name: '3 finished instances'})).toBeVisible();
 	});
 
-	it('includes the count in the accessible name of a titled statistic', async () => {
+	it('should include the count in the accessible name of a titled statistic', async () => {
 		const screen = await render(
 			<StateOverlay state="completed" container={getContainer()} title="Execution Count" count={3} />,
 		);
