@@ -805,10 +805,12 @@ public final class S3BackupStore implements BackupStore {
                 request
                     .bucket(config.bucketName())
                     .key(
-                        derivePath(
-                                manifest.backupDescriptor().get(),
-                                manifest.id(),
-                                Directory.MANIFESTS)
+                        manifest
+                                .backupDescriptor()
+                                .map(
+                                    descriptor ->
+                                        derivePath(descriptor, manifest.id(), Directory.MANIFESTS))
+                                .orElseGet(() -> objectPrefix(manifest.id(), Directory.MANIFESTS))
                             + MANIFEST_OBJECT_KEY)
                     .build(),
             body)
