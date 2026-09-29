@@ -19,7 +19,7 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {expectInViewport} from 'utils/expectInViewport';
 import {sleep} from 'utils/sleep';
-import { waitForAssertion } from 'utils/waitForAssertion';
+import {waitForAssertion} from 'utils/waitForAssertion';
 
 const JSON_VARIABLE_NAME = 'jsonVar';
 const JSON_VARIABLE_VALUE = {name: 'Alice', age: 30};
@@ -369,8 +369,8 @@ test.describe('Process Instance Variables', () => {
           await expect(
             operateProcessInstancePage.variablesList.getByTestId(
               `variable-${JSON_VARIABLE_NAME}`,
-          ),
-      ).toContainText('Bob');
+            ),
+          ).toContainText('Bob');
         },
         onFailure: async () => {
           await page.reload();
@@ -575,7 +575,6 @@ test.describe('Process Instance Variables', () => {
         },
         maxRetries: 3,
       });
-      
     });
   });
 });
