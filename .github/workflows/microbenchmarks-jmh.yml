@@ -18,6 +18,8 @@ permissions: {}
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
   TEST_OWNER: '@camunda/reliability-testing'
+  TEST_PRODUCT: Zeebe
+  TEST_TYPE: Performance
 
 jobs:
   discover-jmh-revisions:
