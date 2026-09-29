@@ -603,7 +603,7 @@ class OperateProcessInstancePage {
 
   async clearVariableValueInput() {
     await expect(this.editor).toBeVisible();
-    await this.page.keyboard.press('Control+A');
+    await this.page.keyboard.press('ControlOrMeta+A');
     await this.page.keyboard.press('Backspace');
   }
 

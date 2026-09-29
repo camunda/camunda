@@ -126,8 +126,7 @@ test.describe('Process Instance Variables', () => {
     });
   });
 
-  // Skipped due to bug 60856: https://github.com/camunda/camunda/issues/60856
-  test.skip('Add variables', async ({
+  test('Add variables', async ({
     page,
     operateProcessInstancePage,
     operateHomePage,
