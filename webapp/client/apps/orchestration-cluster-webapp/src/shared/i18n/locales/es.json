@@ -869,7 +869,20 @@
 				}
 			},
 			"batchOperations": {
-				"title": "Operaciones en lote"
+				"title": "Operaciones en lote",
+				"pageTitle": "Operate: Operaciones en lote",
+				"operation": "Operación",
+				"state": "Estado del lote",
+				"items": "Elementos",
+				"actor": "Actor",
+				"startDate": "Fecha de inicio",
+				"emptyMessage": "No se encontraron operaciones en lote",
+				"emptyAdditionalInfo": "Ajusta los filtros o vuelve a intentarlo más tarde.",
+				"refreshError": "No se pudieron actualizar las operaciones en lote. Se muestran los resultados anteriores.",
+				"previousPage": "Página anterior",
+				"nextPage": "Página siguiente",
+				"itemsPerPage": "Elementos por página:",
+				"pageNumber": "Número de página"
 			},
 			"batchOperation": {
 				"title": "Operaciones en lote",
