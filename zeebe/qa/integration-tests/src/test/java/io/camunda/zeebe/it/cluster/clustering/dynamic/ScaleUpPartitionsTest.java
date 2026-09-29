@@ -94,7 +94,7 @@ import org.slf4j.LoggerFactory;
 // the failure is attributed with a stack trace, instead of the CI job timing out with no test
 // results at all (see https://github.com/camunda/camunda/issues/56666).
 @Timeout(value = 10, unit = TimeUnit.MINUTES)
-public class ScaleUpPartitionsTest {
+public abstract class ScaleUpPartitionsTest {
   private static final Logger LOG = LoggerFactory.getLogger(ScaleUpPartitionsTest.class);
 
   private static final int PARTITIONS_COUNT = 3;
@@ -104,51 +104,23 @@ public class ScaleUpPartitionsTest {
   // Restoring the three brokers takes seconds; keep the bound well inside the method timeout so a
   // broker that hangs is reported with a thread dump instead of the method timing out first.
   private static final Duration RESTORE_TIMEOUT = Duration.ofMinutes(2);
-  @AutoClose CamundaClient camundaClient;
-  private String decisionUsername;
-  private String decisionPassword;
-  private ClusterActuator clusterActuator;
-  private BackupActuator backupActuator;
+  @AutoClose protected CamundaClient camundaClient;
+  protected String decisionUsername;
+  protected String decisionPassword;
+  protected ClusterActuator clusterActuator;
+  protected BackupActuator backupActuator;
 
   @TestZeebe(autoStart = false, awaitCompleteTopology = false)
-  private final TestCluster cluster;
+  protected final TestCluster cluster;
 
-  ScaleUpPartitionsTest(@TempDir final Path backupPath) {
-    final var h2Url =
-        "jdbc:h2:mem:scale-up-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
-    cluster =
-        TestCluster.builder()
-            .useRecordingExporter(true)
-            .withEmbeddedGateway(true)
-            .withBrokersCount(3)
-            .withPartitionsCount(PARTITIONS_COUNT)
-            .withReplicationFactor(3)
-            .withBrokerConfig(
-                b -> {
-                  b.withSecondaryStorageType(SecondaryStorageType.rdbms);
-                  b.withAuthenticationMethod(AuthenticationMethod.BASIC);
-                  b.withAuthorizationsEnabled();
-                  b.withUnifiedConfig(
-                      cfg -> {
-                        final var rdbms = cfg.getData().getSecondaryStorage().getRdbms();
-                        rdbms.setUrl(h2Url);
-                        rdbms.setUsername("sa");
-                        rdbms.setPassword("");
+  protected ScaleUpPartitionsTest(@TempDir final Path backupPath) {
+    cluster = buildCluster(backupPath);
+  }
 
-                        final var backup = cfg.getData().getPrimaryStorage().getBackup();
-                        backup.setStore(PrimaryStorageBackup.BackupStoreType.FILESYSTEM);
-                        backup.getFilesystem().setBasePath(backupPath.toString());
+  protected abstract TestCluster buildCluster(Path backupPath);
 
-                        final var membership = cfg.getCluster().getMembership();
-                        membership.setSyncInterval(Duration.ofSeconds(1));
-                        membership.setGossipInterval(Duration.ofMillis(500));
-
-                        final var distribution = cfg.getProcessing().getEngine().getDistribution();
-                        distribution.setMaxBackoffDuration(Duration.ofSeconds(1));
-                        distribution.setRedistributionInterval(Duration.ofMillis(200));
-                      });
-                })
-            .build();
+  protected void setupAuth() {
+    // no-op by default; subclasses override if needed
   }
 
   @BeforeEach
@@ -159,59 +131,7 @@ public class ScaleUpPartitionsTest {
     camundaClient = cluster.newClientBuilder().build();
     clusterActuator = ClusterActuator.of(cluster.availableGateway());
     backupActuator = BackupActuator.of(cluster.availableGateway());
-    initializeIdentityState();
-  }
-
-  private void initializeIdentityState() {
-    cluster.awaitHealthyTopology();
-    decisionUsername = Strings.newRandomValidUsername();
-    decisionPassword = "password";
-
-    camundaClient
-        .newCreateUserCommand()
-        .username(decisionUsername)
-        .password(decisionPassword)
-        .name("Decision user")
-        .email("decision-user@example.com")
-        .send()
-        .join();
-    final var authorizationKey =
-        camundaClient
-            .newCreateAuthorizationCommand()
-            .ownerId(decisionUsername)
-            .ownerType(OwnerType.USER)
-            .resourceId("*")
-            .resourceType(ResourceType.DECISION_DEFINITION)
-            .permissionTypes(PermissionType.CREATE_DECISION_INSTANCE)
-            .send()
-            .join()
-            .getAuthorizationKey();
-    final var deploymentKey =
-        camundaClient
-            .newDeployResourceCommand()
-            .addResourceFromClasspath("dmn/decision-table.dmn")
-            .send()
-            .join()
-            .getKey();
-    new ZeebeResourcesHelper(camundaClient).waitUntilDeploymentIsDone(deploymentKey);
-
-    Awaitility.await("until identity state is distributed")
-        .atMost(Duration.ofMinutes(2))
-        .untilAsserted(
-            () -> {
-              assertThat(
-                      RecordingExporter.userRecords(UserIntent.CREATED)
-                          .withUsername(decisionUsername)
-                          .limit(PARTITIONS_COUNT)
-                          .count())
-                  .isEqualTo(PARTITIONS_COUNT);
-              assertThat(
-                      RecordingExporter.authorizationRecords(AuthorizationIntent.CREATED)
-                          .withAuthorizationKey(authorizationKey)
-                          .limit(PARTITIONS_COUNT)
-                          .count())
-                  .isEqualTo(PARTITIONS_COUNT);
-            });
+    setupAuth();
   }
 
   private Camunda getRestoreConfig(final Camunda brokerCfg, final Path workingDirectory) {
@@ -923,5 +843,143 @@ public class ScaleUpPartitionsTest {
         default -> throw new IllegalArgumentException("Invalid enum case " + this);
       }
     }
+  }
+}
+
+/** Backup/restore tests without RDBMS dependency. */
+class ScaleUpPartitionsBackupRestoreTest extends ScaleUpPartitionsTest {
+  ScaleUpPartitionsBackupRestoreTest(@TempDir final Path backupPath) {
+    super(backupPath);
+  }
+
+  @Override
+  protected TestCluster buildCluster(final Path backupPath) {
+    return TestCluster.builder()
+        .useRecordingExporter(true)
+        .withBrokersCount(3)
+        .withPartitionsCount(3)
+        .withReplicationFactor(3)
+        .withBrokerConfig(
+            b -> {
+              b.withAuthenticationMethod(AuthenticationMethod.BASIC);
+              b.withAuthorizationsEnabled();
+              b.withUnifiedConfig(
+                  cfg -> {
+                    final var backup = cfg.getData().getPrimaryStorage().getBackup();
+                    backup.setStore(PrimaryStorageBackup.BackupStoreType.FILESYSTEM);
+                    backup.getFilesystem().setBasePath(backupPath.toString());
+
+                    final var membership = cfg.getCluster().getMembership();
+                    membership.setSyncInterval(Duration.ofSeconds(1));
+                    membership.setGossipInterval(Duration.ofMillis(500));
+
+                    final var distribution = cfg.getProcessing().getEngine().getDistribution();
+                    distribution.setMaxBackoffDuration(Duration.ofSeconds(1));
+                    distribution.setRedistributionInterval(Duration.ofMillis(200));
+                  });
+            })
+        .build();
+  }
+}
+
+/** Authorization and scaling tests with RDBMS exporter. */
+class ScaleUpPartitionsWithAuthTest extends ScaleUpPartitionsTest {
+  ScaleUpPartitionsWithAuthTest(@TempDir final Path backupPath) {
+    super(backupPath);
+  }
+
+  @Override
+  protected TestCluster buildCluster(final Path backupPath) {
+    final var h2Url =
+        "jdbc:h2:mem:scale-up-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
+    return TestCluster.builder()
+        .useRecordingExporter(true)
+        .withEmbeddedGateway(true)
+        .withBrokersCount(3)
+        .withPartitionsCount(3)
+        .withReplicationFactor(3)
+        .withBrokerConfig(
+            b -> {
+              b.withSecondaryStorageType(SecondaryStorageType.rdbms);
+              b.withAuthenticationMethod(AuthenticationMethod.BASIC);
+              b.withAuthorizationsEnabled();
+              b.withUnifiedConfig(
+                  cfg -> {
+                    final var rdbms = cfg.getData().getSecondaryStorage().getRdbms();
+                    rdbms.setUrl(h2Url);
+                    rdbms.setUsername("sa");
+                    rdbms.setPassword("");
+
+                    final var backup = cfg.getData().getPrimaryStorage().getBackup();
+                    backup.setStore(PrimaryStorageBackup.BackupStoreType.FILESYSTEM);
+                    backup.getFilesystem().setBasePath(backupPath.toString());
+
+                    final var membership = cfg.getCluster().getMembership();
+                    membership.setSyncInterval(Duration.ofSeconds(1));
+                    membership.setGossipInterval(Duration.ofMillis(500));
+
+                    final var distribution = cfg.getProcessing().getEngine().getDistribution();
+                    distribution.setMaxBackoffDuration(Duration.ofSeconds(1));
+                    distribution.setRedistributionInterval(Duration.ofMillis(200));
+                  });
+            })
+        .build();
+  }
+
+  @Override
+  protected void setupAuth() {
+    initializeIdentityState();
+  }
+
+  private void initializeIdentityState() {
+    cluster.awaitHealthyTopology();
+    decisionUsername = Strings.newRandomValidUsername();
+    decisionPassword = "password";
+
+    camundaClient
+        .newCreateUserCommand()
+        .username(decisionUsername)
+        .password(decisionPassword)
+        .name("Decision user")
+        .email("decision-user@example.com")
+        .send()
+        .join();
+    final var authorizationKey =
+        camundaClient
+            .newCreateAuthorizationCommand()
+            .ownerId(decisionUsername)
+            .ownerType(OwnerType.USER)
+            .resourceId("*")
+            .resourceType(ResourceType.DECISION_DEFINITION)
+            .permissionTypes(PermissionType.CREATE_DECISION_INSTANCE)
+            .send()
+            .join()
+            .getAuthorizationKey();
+    final var deploymentKey =
+        camundaClient
+            .newDeployResourceCommand()
+            .addResourceFromClasspath("dmn/decision-table.dmn")
+            .send()
+            .join()
+            .getKey();
+    new ZeebeResourcesHelper(camundaClient).waitUntilDeploymentIsDone(deploymentKey);
+
+    Awaitility.await("until identity state is distributed")
+        .atMost(Duration.ofMinutes(2))
+        .untilAsserted(
+            () -> {
+              assertThat(
+                      RecordingExporter.userRecords(UserIntent.CREATED)
+                          .withUsername(decisionUsername)
+                          .limit(3)
+                          .count())
+                  .isEqualTo(3);
+              assertThat(
+                      RecordingExporter.authorizationRecords(AuthorizationIntent.CREATED)
+                          .withAuthorizationKey(authorizationKey)
+                          .limit(3)
+                          .count())
+                  .isEqualTo(3);
+            });
   }
 }
