@@ -29,7 +29,7 @@ orchestration:
 # Use the internal registry mirror to avoid Docker Hub rate limiting in the benchmark cluster
 image:
   registry: europe-west1-docker.pkg.dev
-  repository: camunda-benchmark/dockerhub/bitnamilegacy/mariadb
+  repository: camunda-benchmark/dockerhub/soldevelo/mariadb
   tag: "latest"
 
 auth:
