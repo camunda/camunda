@@ -17,6 +17,7 @@ import java.time.Duration;
 public final class LeaderWarmupCfg {
   private boolean enabled = false;
   private Duration startDelay = Duration.ofSeconds(30);
+  private Duration quietPeriod = Duration.ofSeconds(10);
   private Duration maxDuration = Duration.ofMinutes(15);
   private int processInstances = 5_000;
   private int maxInFlightInstances = 32;
@@ -36,6 +37,18 @@ public final class LeaderWarmupCfg {
 
   public void setStartDelay(final Duration startDelay) {
     this.startDelay = startDelay;
+  }
+
+  /**
+   * How long the broker's CPU load must stay within {@link #getMaxCpuLoad()} before the warm-up
+   * starts, so that it does not compete with the broker catching up after its own start.
+   */
+  public Duration getQuietPeriod() {
+    return quietPeriod;
+  }
+
+  public void setQuietPeriod(final Duration quietPeriod) {
+    this.quietPeriod = quietPeriod;
   }
 
   public Duration getMaxDuration() {
@@ -77,6 +90,8 @@ public final class LeaderWarmupCfg {
         + enabled
         + ", startDelay="
         + startDelay
+        + ", quietPeriod="
+        + quietPeriod
         + ", maxDuration="
         + maxDuration
         + ", processInstances="
