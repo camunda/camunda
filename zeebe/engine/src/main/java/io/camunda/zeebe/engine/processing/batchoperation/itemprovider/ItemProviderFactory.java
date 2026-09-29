@@ -81,8 +81,7 @@ public class ItemProviderFactory {
         metrics,
         filter.toBuilder()
             .partitionId(partitionId)
-            .replaceStates(
-                ProcessInstanceState.ACTIVE.name(), ProcessInstanceState.SUSPENDED.name())
+            .states(ProcessInstanceState.ACTIVE.name(), ProcessInstanceState.SUSPENDED.name())
             .replaceParentProcessInstanceKeyOperations(Operation.exists(false))
             .build(),
         authentication);

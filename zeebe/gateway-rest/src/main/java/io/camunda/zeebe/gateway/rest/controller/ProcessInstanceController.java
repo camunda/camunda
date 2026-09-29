@@ -302,7 +302,7 @@ public class ProcessInstanceController {
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody final ProcessInstanceCancellationBatchOperationRequest request) {
     return processInstanceMapper
-        .toRequiredProcessInstanceFilter(request.getFilter())
+        .toProcessInstanceCancellationFilter(request.getFilter())
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             filter -> batchOperationCancellation(physicalTenantId, filter));
