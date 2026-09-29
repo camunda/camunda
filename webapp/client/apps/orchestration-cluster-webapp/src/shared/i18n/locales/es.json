@@ -970,7 +970,10 @@
 					"viewProcessInstance": "Ver instancia de proceso {{key}}",
 					"viewDecisionInstance": "Ver instancia de decisión {{key}}",
 					"failureReason": "Motivo del fallo: {{message}}",
-					"emptyMessage": "No se encontraron elementos"
+					"emptyMessage": "No se encontraron elementos",
+					"retryHint": "Es posible que los elementos no estén actualizados. Vuelva a intentar cargarlos.",
+					"retry": "Reintentar",
+					"retrying": "Reintentando cargar los elementos"
 				},
 				"actions": {
 					"suspend": "Suspender",

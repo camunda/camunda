@@ -59,6 +59,13 @@ const TableContainer = styled.div`
 	overflow-y: hidden;
 `;
 
+const ItemsTableContainer = styled.div`
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-height: 0;
+`;
+
 const ItemLink = styled(Link)`
 	&& {
 		text-decoration: underline;
@@ -74,5 +81,6 @@ export {
 	Tile,
 	TileLabel,
 	TableContainer,
+	ItemsTableContainer,
 	ItemLink,
 };

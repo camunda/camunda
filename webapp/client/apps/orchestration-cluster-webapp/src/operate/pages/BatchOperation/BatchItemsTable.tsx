@@ -9,6 +9,7 @@
 import {useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
 import {createLink} from '@tanstack/react-router';
+import {Button, DataTableSkeleton, InlineLoading, InlineNotification} from '@carbon/react';
 import type {BatchOperationItem, BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.11';
 import {PaginatedSortableTable} from '#/operate/shared/PaginatedSortableTable/PaginatedSortableTable';
 import {PanelHeader} from '#/operate/shared/PanelHeader/PanelHeader';
@@ -18,7 +19,7 @@ import {formatDate} from './utils';
 import {ItemKeyCell} from './ItemKeyCell';
 import {StateCell} from './StateCell';
 import {useBatchOperationItems} from './useBatchOperationItems';
-import {ItemLink, TableContainer} from './styled';
+import {ItemLink, ItemsTableContainer, TableContainer} from './styled';
 
 type Props = {
 	batchOperationKey: string;
@@ -68,6 +69,7 @@ const BatchItemsTable: React.FC<Props> = ({batchOperationKey, batchOperationType
 		hasNextPage,
 		fetchNextPage,
 		isFetchingNextPage,
+		refetch,
 	} = useBatchOperationItems(batchOperationKey);
 
 	const columns = useMemo(() => {
@@ -153,13 +155,12 @@ const BatchItemsTable: React.FC<Props> = ({batchOperationKey, batchOperationType
 		return [processInstanceKey, state, processedDate];
 	}, [batchOperationType, t]);
 
-	const emptyState =
-		status === 'error' ? (
-			<ErrorMessage />
-		) : (
-			<EmptyMessage message={t('operate.batchOperation.itemsTable.emptyMessage')} />
-		);
-
+	const isError = status === 'error';
+	const retryButton = (
+		<Button kind="tertiary" size="sm" disabled={isFetching} onClick={() => void refetch()}>
+			{t('operate.batchOperation.itemsTable.retry')}
+		</Button>
+	);
 	return (
 		<TableContainer>
 			<PanelHeader
@@ -167,23 +168,50 @@ const BatchItemsTable: React.FC<Props> = ({batchOperationKey, batchOperationType
 				count={totalItems}
 				hasMoreTotalItems={hasMoreTotalItems}
 			/>
-			<PaginatedSortableTable<BatchOperationItem>
-				size="md"
-				columns={columns}
-				rows={items}
-				rowKey={(row) => row.itemKey}
-				isFetching={isFetching && !isFetchingPreviousPage && !isFetchingNextPage}
-				emptyState={emptyState}
-				pagination={{
-					hasPreviousPage,
-					hasNextPage,
-					isFetchingPreviousPage,
-					isFetchingNextPage,
-					fetchPreviousPage,
-					fetchNextPage,
-				}}
-				data-testid="batch-items-table"
-			/>
+			{isError && (
+				<div>
+					{items.length > 0 ? (
+						<InlineNotification
+							kind="error"
+							hideCloseButton
+							role="alert"
+							title={t('operate.shared.errorMessage.message')}
+							subtitle={t('operate.batchOperation.itemsTable.retryHint')}
+						/>
+					) : (
+						<div role="alert">
+							<ErrorMessage additionalInfo={t('operate.batchOperation.itemsTable.retryHint')} />
+						</div>
+					)}
+					{retryButton}
+					{isFetching && <InlineLoading description={t('operate.batchOperation.itemsTable.retrying')} />}
+				</div>
+			)}
+			{status === 'pending' ? (
+				<DataTableSkeleton columnCount={columns.length} rowCount={5} showHeader={false} showToolbar={false} />
+			) : status === 'success' || items.length > 0 ? (
+				<ItemsTableContainer>
+					<PaginatedSortableTable<BatchOperationItem>
+						size="md"
+						columns={columns}
+						rows={items}
+						rowKey={(row) => row.itemKey}
+						isFetching={isFetching && !isError && !isFetchingPreviousPage && !isFetchingNextPage}
+						emptyState={
+							isError ? undefined : <EmptyMessage message={t('operate.batchOperation.itemsTable.emptyMessage')} />
+						}
+						pagination={{
+							hasPreviousPage,
+							hasNextPage,
+							isFetchingPreviousPage,
+							isFetchingNextPage,
+							fetchPreviousPage,
+							fetchNextPage,
+						}}
+						data-testid="batch-items-table"
+					/>
+				</ItemsTableContainer>
+			) : null}
 		</TableContainer>
 	);
 };
