@@ -908,6 +908,7 @@ components:
         - jobKind
         - listenerEventType
         - retries
+        - waitingForSecretResolution
       allOf:
         - $ref: '#/components/schemas/BaseWaitStateDetails'
       properties:
@@ -932,12 +933,16 @@ components:
           nullable: true
           type: integer
           format: int32
-        secretResolutionPending:
+        waitingForSecretResolution:
           description: >-
-            Whether the job is parked while a referenced secret is being resolved. When true, the
-            job cannot proceed until resolution of an uncached secret completes, as opposed to
-            merely waiting to be claimed by a worker. The secret may exist and simply be in flight.
-          nullable: true
+            Whether the job is parked until a secret it references is resolved, rather than waiting
+            for a worker to claim it. Secrets are resolved on demand: the job is only parked once an
+            activation attempt finds a referenced secret that is not cached yet, so a job no worker
+            has tried to activate is `false`, even if its secret is missing. It stays true while the
+            resolution is in progress and after it failed. A failed resolution also raises a
+            `SECRET_RESOLUTION_ERROR` incident on the job, which tells a missing secret apart from
+            one that is still being resolved. Not every `SECRET_RESOLUTION_ERROR` incident sets this
+            flag.
           type: boolean
 
     MessageWaitStateDetails:

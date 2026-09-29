@@ -173,6 +173,7 @@ public class SearchElementInstanceWaitStatesTest extends ClientRestTest {
     jobDetails.setJobKind(JobKindEnum.BPMN_ELEMENT);
     jobDetails.setListenerEventType(null);
     jobDetails.setRetries(3);
+    jobDetails.setWaitingForSecretResolution(true);
 
     final io.camunda.client.protocol.rest.ElementInstanceWaitStateResult item =
         new io.camunda.client.protocol.rest.ElementInstanceWaitStateResult();
@@ -210,6 +211,7 @@ public class SearchElementInstanceWaitStatesTest extends ClientRestTest {
     assertThat(details.getJobKind()).isEqualTo(JobKind.BPMN_ELEMENT);
     assertThat(details.getListenerEventType()).isNull();
     assertThat(details.getRetries()).isEqualTo(3);
+    assertThat(details.isWaitingForSecretResolution()).isTrue();
   }
 
   @Test

@@ -63,7 +63,8 @@ public class ElementInstanceControllerTest extends RestControllerTest {
               "jobKey": "2251799813685252",
               "jobType": "payment-service",
               "jobKind": "EXECUTION_LISTENER",
-              "listenerEventType": "START"
+              "listenerEventType": "START",
+              "waitingForSecretResolution": true
             }
           },
           {
@@ -88,7 +89,8 @@ public class ElementInstanceControllerTest extends RestControllerTest {
               "waitStateType": "JOB",
               "jobKey": "2251799813685260",
               "jobType": "notification-service",
-              "jobKind": "BPMN_ELEMENT"
+              "jobKind": "BPMN_ELEMENT",
+              "waitingForSecretResolution": false
             }
           }
         ]
@@ -112,6 +114,7 @@ public class ElementInstanceControllerTest extends RestControllerTest {
                       .jobType("payment-service")
                       .jobKind(JobKind.EXECUTION_LISTENER)
                       .listenerEventType(ListenerEventType.START)
+                      .waitingForSecretResolution(true)
                       .build())
               .build(),
           new WaitStateEntity.Builder()

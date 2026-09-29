@@ -33,6 +33,8 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
@@ -102,6 +104,29 @@ class WaitStateAddUpdateHandlerTest {
     assertThat(model.waitStateKey()).isEqualTo(999L);
     assertThat(model.elementId()).isEqualTo("task-after-migration");
     assertThat(model.elementType()).isEqualTo(BpmnElementType.SERVICE_TASK.name());
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "SECRET_RESOLUTION_PARKED, true",
+    "SECRET_RESOLUTION_RESUMED, false",
+    "SUSPENDED, false"
+  })
+  void shouldUpdateSecretWaitMarkOnParkResumeAndSuspension(
+      final JobIntent intent, final boolean waitingForSecretResolution) {
+    // given
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r -> r.withKey(999L).withRecordType(RecordType.EVENT).withIntent(intent));
+
+    // when
+    handler.export(record);
+
+    // then - the existing row is updated, not inserted, and its details carry the mark
+    verify(waitStateWriter).update(modelCaptor.capture());
+    assertThat(modelCaptor.getValue().details())
+        .contains("\"waitingForSecretResolution\":" + waitingForSecretResolution);
   }
 
   @Test

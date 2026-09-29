@@ -26,9 +26,9 @@ public record JobWaitStateDetails(
     @Nullable JobListenerEventType listenerEventType,
     int retries,
     /**
-     * {@code true} while the job is parked awaiting resolution of a referenced secret that is not
-     * yet cached, so a reader can distinguish it from a plain job wait (an unclaimed job). Defaults
-     * to {@code false}.
+     * {@code true} while the job is parked until a secret it references is resolved, also after the
+     * resolution failed, so a reader can tell it apart from a job that waits for a worker. Set from
+     * the engine's park events, so a job no activation attempt has reached yet is not marked.
      */
-    boolean secretResolutionPending)
+    boolean waitingForSecretResolution)
     implements WaitStateDetails {}

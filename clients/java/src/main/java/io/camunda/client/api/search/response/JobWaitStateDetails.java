@@ -32,9 +32,10 @@ public interface JobWaitStateDetails extends WaitStateDetails {
   Integer getRetries();
 
   /**
-   * @return {@code true} if the job is parked while a referenced secret is being resolved, {@code
-   *     false} if it is a plain job wait; may be {@code null} for entities written before this
-   *     field existed.
+   * @return {@code true} if the job is parked until a secret it references is resolved rather than
+   *     waiting for a worker. It is set once an activation attempt finds the secret not cached, and
+   *     stays {@code true} after a failed resolution, which also raises a {@code
+   *     SECRET_RESOLUTION_ERROR} incident on the job.
    */
-  Boolean getSecretResolutionPending();
+  Boolean isWaitingForSecretResolution();
 }

@@ -20,7 +20,8 @@ public record WaitStateJobDetails(
     @Nullable JobKind jobKind,
     @Nullable ListenerEventType listenerEventType,
     @Nullable Integer retries,
-    @Nullable Boolean secretResolutionPending)
+    // absent on wait states exported before the field existed
+    @Nullable Boolean waitingForSecretResolution)
     implements WaitStateDetails {
 
   @Override
@@ -34,7 +35,7 @@ public record WaitStateJobDetails(
     private @Nullable JobKind jobKind;
     private @Nullable ListenerEventType listenerEventType;
     private @Nullable Integer retries;
-    private @Nullable Boolean secretResolutionPending;
+    private @Nullable Boolean waitingForSecretResolution;
 
     public Builder jobKey(final @Nullable Long jobKey) {
       this.jobKey = jobKey;
@@ -61,15 +62,15 @@ public record WaitStateJobDetails(
       return this;
     }
 
-    public Builder secretResolutionPending(final @Nullable Boolean secretResolutionPending) {
-      this.secretResolutionPending = secretResolutionPending;
+    public Builder waitingForSecretResolution(final @Nullable Boolean waitingForSecretResolution) {
+      this.waitingForSecretResolution = waitingForSecretResolution;
       return this;
     }
 
     @Override
     public WaitStateJobDetails build() {
       return new WaitStateJobDetails(
-          jobKey, jobType, jobKind, listenerEventType, retries, secretResolutionPending);
+          jobKey, jobType, jobKind, listenerEventType, retries, waitingForSecretResolution);
     }
   }
 }

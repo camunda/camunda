@@ -103,11 +103,11 @@ class JobBasedWaitStateTransformerTest {
     assertThat(details.jobKind()).isEqualTo(JobKind.BPMN_ELEMENT);
     assertThat(details.listenerEventType()).isNull();
     assertThat(details.retries()).isEqualTo(3);
-    assertThat(details.secretResolutionPending()).isFalse();
+    assertThat(details.waitingForSecretResolution()).isFalse();
   }
 
   @Test
-  void shouldSetSecretResolutionPendingOnParkedIntent() {
+  void shouldSetWaitingForSecretResolutionOnParkedIntent() {
     // given
     final JobRecordValue value =
         ImmutableJobRecordValue.builder()
@@ -136,7 +136,7 @@ class JobBasedWaitStateTransformerTest {
 
     // then
     final var details = (JobWaitStateDetails) entry.getDetails();
-    assertThat(details.secretResolutionPending()).isTrue();
+    assertThat(details.waitingForSecretResolution()).isTrue();
     assertThat(details.jobType()).isEqualTo("secret-consumer");
   }
 
@@ -162,7 +162,7 @@ class JobBasedWaitStateTransformerTest {
 
   @ParameterizedTest
   @MethodSource("updateIntentsOtherThanThePark")
-  void shouldClearSecretResolutionPendingOnOtherUpdateIntents(final JobIntent intent) {
+  void shouldClearWaitingForSecretResolutionOnOtherUpdateIntents(final JobIntent intent) {
     // given
     final JobRecordValue value =
         ImmutableJobRecordValue.builder()
@@ -190,12 +190,12 @@ class JobBasedWaitStateTransformerTest {
 
     // then
     final var details = (JobWaitStateDetails) entry.getDetails();
-    assertThat(details.secretResolutionPending()).isFalse();
+    assertThat(details.waitingForSecretResolution()).isFalse();
   }
 
   @Test
   @SuppressWarnings("unchecked")
-  void shouldClearSecretResolutionPendingWhenAParkedJobIsSuspended() {
+  void shouldClearWaitingForSecretResolutionWhenAParkedJobIsSuspended() {
     // given - suspending a process instance moves its secret-parked jobs out of the secret wait
     // without a SECRET_RESOLUTION_RESUMED event, and resuming it makes them activatable again
     final Record<JobRecordValue> record =
@@ -210,7 +210,7 @@ class JobBasedWaitStateTransformerTest {
 
     // then - the suspension rewrites the details, so the job stops reporting a secret wait
     assertThat(transformer.triggersUpdate(record)).isTrue();
-    assertThat(((JobWaitStateDetails) entry.getDetails()).secretResolutionPending()).isFalse();
+    assertThat(((JobWaitStateDetails) entry.getDetails()).waitingForSecretResolution()).isFalse();
   }
 
   @ParameterizedTest

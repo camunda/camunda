@@ -35,6 +35,8 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /**
  * End-to-end integration test for the job wait-state handler triple produced by {@link
@@ -277,6 +279,30 @@ class JobWaitStateHandlerTest {
     assertThat(updateHandler.handlesRecord(failed)).isTrue();
     assertThat(updateHandler.handlesRecord(retriesUpdated)).isTrue();
     assertThat(updateHandler.handlesRecord(created)).isFalse();
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "SECRET_RESOLUTION_PARKED, true",
+    "SECRET_RESOLUTION_RESUMED, false",
+    "SUSPENDED, false"
+  })
+  void shouldUpdateSecretWaitMarkOnParkResumeAndSuspension(
+      final JobIntent intent, final boolean waitingForSecretResolution) throws Exception {
+    // given
+    final var record = jobRecord(intent);
+    final var entity = updateHandler.createNewEntity(String.valueOf(JOB_KEY));
+
+    // when
+    updateHandler.updateEntity(record, entity);
+
+    // then - only the update handler takes the record, and the details it writes carry the mark
+    assertThat(updateHandler.handlesRecord(record)).isTrue();
+    assertThat(addHandler.handlesRecord(record)).isFalse();
+    assertThat(removeHandler.handlesRecord(record)).isFalse();
+    final var details = objectMapper.readTree(entity.getDetails());
+    assertThat(details.get("waitingForSecretResolution").booleanValue())
+        .isEqualTo(waitingForSecretResolution);
   }
 
   @Test

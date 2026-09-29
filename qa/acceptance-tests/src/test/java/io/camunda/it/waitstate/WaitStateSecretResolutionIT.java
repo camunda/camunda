@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
 /**
  * Verifies that a job parked while its secret cannot be resolved is distinguishable in the wait
  * state from an ordinary unclaimed job (#63191): its {@link JobWaitStateDetails} carries {@code
- * secretResolutionPending == true} while parked, and reverts to {@code false} once the job is
+ * waitingForSecretResolution == true} while parked, and reverts to {@code false} once the job is
  * un-parked.
  *
  * <p>The store is configured but the referenced secret is intentionally absent, so the first
@@ -120,7 +120,7 @@ public class WaitStateSecretResolutionIT {
               assertThat(items.getFirst().getDetails()).isInstanceOf(JobWaitStateDetails.class);
               assertThat(
                       ((JobWaitStateDetails) items.getFirst().getDetails())
-                          .getSecretResolutionPending())
+                          .isWaitingForSecretResolution())
                   .isTrue();
             });
 
@@ -151,7 +151,7 @@ public class WaitStateSecretResolutionIT {
               assertThat(items.getFirst().getDetails()).isInstanceOf(JobWaitStateDetails.class);
               assertThat(
                       ((JobWaitStateDetails) items.getFirst().getDetails())
-                          .getSecretResolutionPending())
+                          .isWaitingForSecretResolution())
                   .isFalse();
             });
 

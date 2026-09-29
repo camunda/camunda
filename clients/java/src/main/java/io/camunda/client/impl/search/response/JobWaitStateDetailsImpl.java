@@ -28,7 +28,7 @@ public class JobWaitStateDetailsImpl implements JobWaitStateDetails {
   private final JobKind jobKind;
   private final ListenerEventType listenerEventType;
   private final Integer retries;
-  private final Boolean secretResolutionPending;
+  private final Boolean waitingForSecretResolution;
 
   public JobWaitStateDetailsImpl(
       final io.camunda.client.protocol.rest.JobWaitStateDetails details) {
@@ -37,7 +37,7 @@ public class JobWaitStateDetailsImpl implements JobWaitStateDetails {
     jobKind = EnumUtil.convert(details.getJobKind(), JobKind.class);
     listenerEventType = EnumUtil.convert(details.getListenerEventType(), ListenerEventType.class);
     retries = details.getRetries();
-    secretResolutionPending = details.getSecretResolutionPending();
+    waitingForSecretResolution = details.getWaitingForSecretResolution();
   }
 
   @Override
@@ -71,7 +71,7 @@ public class JobWaitStateDetailsImpl implements JobWaitStateDetails {
   }
 
   @Override
-  public Boolean getSecretResolutionPending() {
-    return secretResolutionPending;
+  public Boolean isWaitingForSecretResolution() {
+    return waitingForSecretResolution;
   }
 }

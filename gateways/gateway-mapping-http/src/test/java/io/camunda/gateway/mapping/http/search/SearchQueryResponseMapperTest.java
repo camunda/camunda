@@ -86,6 +86,8 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class SearchQueryResponseMapperTest {
 
@@ -1355,7 +1357,7 @@ class SearchQueryResponseMapperTest {
             JobKind.BPMN_ELEMENT, // jobKind
             ListenerEventType.UNSPECIFIED, // listenerEventType — sentinel for non-listener jobs
             3, // retries
-            false); // secretResolutionPending
+            false); // waitingForSecretResolution
     final var entity =
         new WaitStateEntity.Builder()
             .waitStateKey(111L)
@@ -1377,6 +1379,38 @@ class SearchQueryResponseMapperTest {
     // then
     final var responseDetails = (JobWaitStateDetails) result.getItems().getFirst().getDetails();
     assertThat(responseDetails.getListenerEventType()).isNull();
+  }
+
+  @ParameterizedTest
+  @CsvSource(
+      value = {"true, true", "false, false", "null, false"},
+      nullValues = "null")
+  void shouldMapWaitingForSecretResolutionInWaitStateJobDetails(
+      final Boolean stored, final boolean expected) {
+    // given - a wait state exported before the field existed has no value for it
+    final var jobDetails =
+        new WaitStateJobDetails(111L, "secret-consumer", JobKind.BPMN_ELEMENT, null, 3, stored);
+    final var entity =
+        new WaitStateEntity.Builder()
+            .waitStateKey(111L)
+            .processInstanceKey(789L)
+            .elementInstanceKey(111L)
+            .elementId("serviceTask")
+            .elementType(FlowNodeType.SERVICE_TASK)
+            .rootProcessInstanceKey(999L)
+            .bpmnProcessId("process1")
+            .details(jobDetails)
+            .tenantId("default")
+            .build();
+
+    // when
+    final var result =
+        SearchQueryResponseMapper.toElementInstanceWaitStateQueryResult(
+            new SearchQueryResult<>(1, false, List.of(entity), null, null));
+
+    // then - the API field is required, so a missing value reads as no secret wait
+    final var responseDetails = (JobWaitStateDetails) result.getItems().getFirst().getDetails();
+    assertThat(responseDetails.getWaitingForSecretResolution()).isEqualTo(expected);
   }
 
   @Test
