@@ -44,12 +44,16 @@ import {CONFIG, getAvailableVersions} from './supported-versions.js';
  * Parsed command line arguments.
  * @typedef {Object} ParsedArgs
  * @property {string[] | null} versions - Requested versions to download, or null for all
+ * @property {boolean} local - Whether to copy the spec from the local repository instead of downloading it
  * @property {boolean} help - Whether help flag was passed
  */
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const SPECS_DIR = path.join(PACKAGE_ROOT, 'specs');
+/** The `webapp/client` workspace root. Its `package.json` version follows the release line of the repository. */
+const WORKSPACE_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
+const REPO_ROOT = path.resolve(WORKSPACE_ROOT, '..', '..');
 
 const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/camunda/camunda';
 const GITHUB_API_BASE = 'https://api.github.com/repos/camunda/camunda';
@@ -173,19 +177,74 @@ async function downloadSpec(version, config) {
 }
 
 /**
+ * Reads the release line (for example `8.11`) from the version in the workspace `package.json`
+ * (for example `8.11.0-SNAPSHOT`).
+ * @returns {Promise<string>} The release line of the local repository
+ */
+async function getLocalVersion() {
+	const packageJsonPath = path.join(WORKSPACE_ROOT, 'package.json');
+	const {version} = JSON.parse(await fs.readFile(packageJsonPath, 'utf-8'));
+	const match = typeof version === 'string' ? version.match(/^(\d+)\.(\d+)\./) : null;
+
+	if (match === null) {
+		throw new Error(`Cannot read the release line from version "${version}" in ${packageJsonPath}`);
+	}
+
+	return `${match[1]}.${match[2]}`;
+}
+
+/**
+ * Copies the spec of a version from the local repository.
+ * @param {string} version - The API version
+ * @param {DownloadConfig} config - The configuration for this version
+ * @returns {Promise<void>}
+ */
+async function copyLocalSpec(version, config) {
+	const outputDir = path.join(SPECS_DIR, version);
+	await fs.mkdir(outputDir, {recursive: true});
+
+	if ('file' in config && config.file) {
+		const source = path.join(REPO_ROOT, config.file);
+		console.log(`Copying ${version} spec from ${path.relative(REPO_ROOT, source)}...`);
+		await fs.copyFile(source, path.join(outputDir, 'rest-api.yaml'));
+		console.log(`  Saved to ${path.relative(PACKAGE_ROOT, path.join(outputDir, 'rest-api.yaml'))}`);
+		return;
+	}
+
+	if (!('directory' in config) || !config.directory) {
+		throw new Error(`Invalid config for version ${version}: must have 'file' or 'directory'`);
+	}
+
+	const sourceDir = path.join(REPO_ROOT, config.directory);
+	console.log(`Copying ${version} spec from ${path.relative(REPO_ROOT, sourceDir)}...`);
+
+	const fileNames = (await fs.readdir(sourceDir)).filter((name) => name.endsWith('.yaml'));
+	console.log(`  Found ${fileNames.length} YAML files`);
+
+	await Promise.all(
+		fileNames.map(async (fileName) => {
+			await fs.copyFile(path.join(sourceDir, fileName), path.join(outputDir, fileName));
+			console.log(`  Saved ${fileName}`);
+		}),
+	);
+}
+
+/**
  * Parses command line arguments.
  * @returns {ParsedArgs} Parsed arguments
  */
 function parseArgs() {
 	const args = process.argv.slice(2);
 	/** @type {ParsedArgs} */
-	const result = {versions: null, help: false};
+	const result = {versions: null, local: false, help: false};
 
 	for (let index = 0; index < args.length; index++) {
 		const arg = args[index];
 
 		if (arg === '--help' || arg === '-h') {
 			result.help = true;
+		} else if (arg === '--local' || arg === '-l') {
+			result.local = true;
 		} else if (arg === '--version' || arg === '-v') {
 			const value = args[++index];
 			if (!value) {
@@ -212,12 +271,17 @@ function printHelp() {
 	console.log(`Usage: node download-specs.js [options]
 Options:
   -v, --version <version>  Download only the specified version (can be used multiple times)
+  -l, --local              Copy the spec of the local repository version from the local repository instead of
+                           downloading it. The version comes from the webapp/client package.json
+                           (for example 8.11.0-SNAPSHOT -> 8.11). The other versions are still downloaded.
   -h, --help               Show this help message
 Available versions: ${availableVersions}
 Examples:
   node download-specs.js                    # Download all versions
   node download-specs.js --version 8.9      # Download only 8.9
   node download-specs.js -v 8.9 -v 8.10      # Download 8.9 and 8.10
+  node download-specs.js --local            # Copy the local version, download all other versions
+  node download-specs.js --local -v 8.11    # Copy only the local version (8.11)
 `);
 }
 
@@ -226,7 +290,7 @@ Examples:
  * @returns {Promise<void>}
  */
 async function main() {
-	const {versions: requestedVersions, help} = parseArgs();
+	const {versions: requestedVersions, local, help} = parseArgs();
 
 	if (help) {
 		printHelp();
@@ -234,18 +298,34 @@ async function main() {
 	}
 
 	const availableVersions = getAvailableVersions();
-	const versionsToDownload = requestedVersions || availableVersions;
+	const versionsToProcess = requestedVersions || availableVersions;
 
-	for (const version of versionsToDownload) {
+	for (const version of versionsToProcess) {
 		if (!CONFIG[version]) {
 			throw new Error(`Unknown version: ${version}. Available versions: ${availableVersions.join(', ')}`);
 		}
 	}
 
-	console.log('Downloading OpenAPI specs...\n');
+	const localVersion = local ? await getLocalVersion() : null;
 
-	for (const version of versionsToDownload) {
-		await downloadSpec(version, CONFIG[version].download);
+	if (localVersion !== null && !CONFIG[localVersion]) {
+		throw new Error(
+			`The local repository version ${localVersion} is not supported. Available versions: ${availableVersions.join(', ')}`,
+		);
+	}
+
+	console.log(
+		localVersion === null
+			? 'Downloading OpenAPI specs...\n'
+			: `Getting OpenAPI specs (${localVersion} from the local repository, others from GitHub)...\n`,
+	);
+
+	for (const version of versionsToProcess) {
+		if (version === localVersion) {
+			await copyLocalSpec(version, CONFIG[version].download);
+		} else {
+			await downloadSpec(version, CONFIG[version].download);
+		}
 	}
 
 	console.log('\nAll specs downloaded successfully.');
