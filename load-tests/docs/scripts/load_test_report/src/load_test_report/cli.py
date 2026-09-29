@@ -84,6 +84,7 @@ def parse_epoch(value: str) -> datetime:
             return datetime.fromtimestamp(epoch, UTC)
         except (OSError, OverflowError, ValueError) as error:
             raise ValueError(f"could not represent timestamp '{value}'") from error
+
     try:
         normalized = value.replace("Z", "+00:00")
         parsed = datetime.fromisoformat(normalized)
@@ -91,8 +92,9 @@ def parse_epoch(value: str) -> datetime:
         raise ValueError(f"could not parse timestamp '{value}'") from error
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=UTC)
-    if parsed.microsecond:
-        raise ValueError(f"fractional timestamp '{value}' is not supported")
+    # if parsed.microsecond:
+        # raise ValueError(f"fractional timestamp '{value}' is not supported")
+    parsed = parsed.replace(microsecond=0)
     return parsed
 
 
