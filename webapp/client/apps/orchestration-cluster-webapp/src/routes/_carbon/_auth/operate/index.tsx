@@ -14,6 +14,7 @@ import {Dashboard} from '#/operate/pages/Dashboard/Dashboard';
 
 export const Route = createFileRoute('/_carbon/_auth/operate/')({
 	loader: ({context: {queryClient}}) => {
+		// Keep prefetches non-blocking so a failed panel cannot blank the Dashboard.
 		queryClient.prefetchQuery(runningInstancesCountQuery());
 		queryClient.prefetchInfiniteQuery(instancesByProcessInfiniteQuery());
 		queryClient.prefetchInfiniteQuery(incidentsByErrorInfiniteQuery());
