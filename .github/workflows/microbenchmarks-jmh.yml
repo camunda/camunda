@@ -28,7 +28,7 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository &&
       ((github.event.action == 'labeled' && github.event.label.name == 'jmh-run') ||
        (github.event.action != 'labeled' && contains(github.event.pull_request.labels.*.name, 'jmh-run')))
-    runs-on: ubuntu-latest
+    runs-on: gcp-perf-core-8-default
     timeout-minutes: 10
     permissions:
       contents: read
