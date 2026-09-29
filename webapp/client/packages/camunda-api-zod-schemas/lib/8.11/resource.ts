@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {z} from 'zod';
 import {API_VERSION, type Endpoint} from '../common';
 import {batchOperationCreatedResultSchema} from './gen/zod/batchOperationCreatedResultSchema';
 import {deleteResourceBodySchema} from './gen/zod/deleteResourceSchema';
@@ -18,6 +17,7 @@ import {deploymentMetadataResultSchema} from './gen/zod/deploymentMetadataResult
 import {deploymentProcessResultSchema} from './gen/zod/deploymentProcessResultSchema';
 import {deploymentResourceResultSchema} from './gen/zod/deploymentResourceResultSchema';
 import {deploymentResultSchema} from './gen/zod/deploymentResultSchema';
+import {getResourceContentStatus200Schema} from './gen/zod/getResourceContentSchema';
 import {resourceResultSchema} from './gen/zod/resourceResultSchema';
 import type {BatchOperationCreatedResult} from './gen/types/BatchOperationCreatedResult';
 import type {DeleteResourceBody} from './gen/types/DeleteResource';
@@ -29,6 +29,7 @@ import type {DeploymentMetadataResult} from './gen/types/DeploymentMetadataResul
 import type {DeploymentProcessResult} from './gen/types/DeploymentProcessResult';
 import type {DeploymentResourceResult} from './gen/types/DeploymentResourceResult';
 import type {DeploymentResult} from './gen/types/DeploymentResult';
+import type {GetResourceContentStatus200} from './gen/types/GetResourceContent';
 import type {ResourceResult} from './gen/types/ResourceResult';
 
 const processDeploymentSchema = deploymentProcessResultSchema;
@@ -62,9 +63,8 @@ type DeleteResourceResponseBody = DeleteResourceResponse;
 const resourceSchema = resourceResultSchema;
 type Resource = ResourceResult;
 
-// Kept manual: the spec marks this endpoint as deprecated and JSON-only, and the consumers read it as text.
-const getResourceContentResponseBodySchema = z.string();
-type GetResourceContentResponseBody = z.infer<typeof getResourceContentResponseBodySchema>;
+const getResourceContentResponseBodySchema = getResourceContentStatus200Schema;
+type GetResourceContentResponseBody = GetResourceContentStatus200;
 
 const createDeployment = {
 	method: 'POST',
