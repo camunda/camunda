@@ -157,7 +157,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--start",
-        default=None,
+        default=datetime.now(UTC),
         type=parse_epoch,
         help="Start of the reporting window. Prometheus query time anchor, RFC3339 or Unix timestamp.",
     )
@@ -174,18 +174,16 @@ def build_parser() -> argparse.ArgumentParser:
 def parse_args(argv: Sequence[str]) -> Options:
     args = build_parser().parse_args(argv)
     duration_seconds = args.duration_seconds
-    start: datetime | None = args.start
+    start = args.start
     time_anchor = ""
     start_label = ""
     end_label = ""
-    if start is not None:
-        start_label = format_epoch(start)
-        try:
-            end_label = format_epoch(start + timedelta(seconds=duration_seconds))
-
-        except OverflowError as error:
-            raise ReportError("reporting window is outside the supported timestamp range") from error
-        time_anchor = end_label
+    start_label = format_epoch(start)
+    try:
+        end_label = format_epoch(start + timedelta(seconds=duration_seconds))
+    except OverflowError as error:
+        raise ReportError("reporting window is outside the supported timestamp range") from error
+    time_anchor = end_label
 
     return Options(
         namespace=args.namespace,

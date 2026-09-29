@@ -78,6 +78,22 @@ def test_should_derive_end_from_start_and_duration(tmp_path: Path) -> None:
     assert options.end_label == "2026-08-14T10:30:00Z"
 
 
+def test_should_derive_defaults(tmp_path: Path) -> None:
+    queries_file = tmp_path / "queries.yaml"
+    queries_file.write_text("queries: []", encoding="utf-8")
+
+    options = parse_args(
+        [
+            "c8-ck-test",
+        ]
+    )
+
+    assert options.duration_seconds == 600
+    assert options.time_anchor == ""
+    assert options.start_label == ""
+    assert options.end_label == ""
+
+
 def test_should_normalize_timezone_less_time_window() -> None:
     options = parse_args(
         [
