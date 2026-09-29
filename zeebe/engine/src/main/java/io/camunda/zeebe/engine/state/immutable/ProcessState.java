@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess;
 import java.util.List;
@@ -79,6 +80,20 @@ public interface ProcessState {
 
   /** TODO: Remove the cache entirely from the immutable state */
   void clearCache();
+
+  /**
+   * Caches the given executable process for a process that was just persisted, so the next lookup
+   * does not need to parse and transform the resource again.
+   *
+   * <p>The executable process must be the result of transforming the persisted resource with the
+   * persisted transformer versions, i.e. exactly what a cache miss would produce.
+   *
+   * @param processDefinitionKey the key of the persisted process
+   * @param tenantId the tenant of the persisted process
+   * @param executableProcess the transformed process for the persisted resource
+   */
+  void cacheProcess(
+      long processDefinitionKey, String tenantId, ExecutableProcess executableProcess);
 
   /**
    * Iterates over all persisted processes until the visitor returns false or all processes have
