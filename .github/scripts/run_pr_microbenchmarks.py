@@ -180,8 +180,16 @@ def requested_at(revision: str, requested: list[str], workspace: Path) -> list[s
     ]
 
 
+def split_jmh_output(lines: list[str]) -> tuple[list[str], list[str]]:
+    """Split JMH output into (progress log, final result table)."""
+    for index in range(len(lines) - 1, -1, -1):
+        if lines[index].startswith("Benchmark ") and lines[index].endswith("Units"):
+            return lines[:index], lines[index:]
+    return lines, []
+
+
 def benchmark_results(selectors: list[str], workspace: Path) -> tuple[list[str], bool]:
-    result = [f"Benchmarks: `{', '.join(selectors)}`", "", "```text"]
+    result = [f"Benchmarks: `{', '.join(selectors)}`"]
     failed = False
     for selector in selectors:
         print(f"Running JMH selector: {selector}")
@@ -190,11 +198,24 @@ def benchmark_results(selectors: list[str], workspace: Path) -> tuple[list[str],
             workspace,
             timeout=BENCHMARK_TIMEOUT_SECONDS,
         )
-        result.extend(run.stdout.rstrip().splitlines())
+        log, table = split_jmh_output(run.stdout.rstrip().splitlines())
         if run.returncode:
             failed = True
-            result.append(f"JMH exited with status {run.returncode} for `{selector}`.")
-    result.append("```")
+            log.append(f"JMH exited with status {run.returncode} for `{selector}`.")
+        result.extend(["", f"### `{selector}`", ""])
+        if table:
+            result.extend(["```text", *table, "```", ""])
+        result.extend(
+            [
+                "<details>",
+                f"<summary>JMH log for <code>{selector}</code></summary>",
+                "",
+                "```text",
+                *log,
+                "```",
+                "</details>",
+            ]
+        )
     return result, failed
 
 

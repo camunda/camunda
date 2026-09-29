@@ -293,6 +293,23 @@ class ExampleBenchmark {
             self.assertIn("RequestedBenchmark.noSuchMethod", report)
             self.assertIn("JMH exited with status 1", report)
 
+    def test_posts_result_table_and_folds_the_jmh_log(self):
+        # given
+        output = [
+            "# Warmup Iteration   1: 0.5 us/op",
+            "Result: 0.4 us/op",
+            "Benchmark            (batchSize)  Mode  Cnt  Score  Units",
+            "Example.run                 1000  avgt    2  0.400  us/op",
+        ]
+
+        # when
+        log, table = runner.split_jmh_output(output)
+
+        # then
+        self.assertEqual(log, output[:2])
+        self.assertEqual(table, output[2:])
+        self.assertEqual(runner.split_jmh_output(["boom"]), (["boom"], []))
+
 
 class RevisionDiscoveryTests(unittest.TestCase):
     SCRIPT = Path(__file__).with_name("find_pr_microbenchmark_revisions.sh").resolve()
