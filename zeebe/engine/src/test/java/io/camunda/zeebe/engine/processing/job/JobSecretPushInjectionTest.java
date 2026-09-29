@@ -36,6 +36,7 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ResolutionState;
 import io.camunda.zeebe.protocol.record.value.SecretReferenceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -453,12 +454,38 @@ public final class JobSecretPushInjectionTest {
         .isZero();
     assertThat(jobStream.getActivatedJobs()).isEmpty();
 
-    // and - once the second reference resolves the job leaves the wait state and is handed out; on
-    // the push path the hand-out itself clears the mark, so no separate resume event is needed
+    // and - once the second reference resolves the job leaves the wait state, is resumed once and
+    // is handed out
     CACHED_SECRETS.put("apiKey", "resolved-api-key");
     completeResolution("apiKey");
     final ActivatedJob pushedJob = awaitPushedJob();
     assertThat(pushedJob.jobKey()).isEqualTo(jobKey);
+    assertThat(resumedEventCount(jobKey)).isOne();
+  }
+
+  @Test
+  public void shouldResumeJobBeforePushingItOnceItsSecretResolves() {
+    // given - a job parked on the push path for an uncached reference
+    deploy(t -> t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization"));
+    final long jobKey = jobKeyOf(engine.processInstance().ofBpmnProcessId(PROCESS_ID).create());
+    awaitResolutionRequests(1);
+
+    // when - the reference resolves and the reactivation pushes the job to the stream
+    CACHED_SECRETS.put(SECRET_NAME, SECRET_VALUE);
+    completeResolution();
+    awaitPushedJob();
+
+    // then - the job is resumed before its activation: the wait-state exporter reads no activation
+    // records, so without the resume event a pushed job would stay marked as waiting on a secret
+    final Record<JobRecordValue> resumed =
+        RecordingExporter.jobRecords(JobIntent.SECRET_RESOLUTION_RESUMED)
+            .withRecordKey(jobKey)
+            .getFirst();
+    final Record<JobBatchRecordValue> activated =
+        RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATED).withType(JOB_TYPE).getFirst();
+    assertThat(activated.getValue().getJobKeys()).containsExactly(jobKey);
+    assertThat(resumed.getPosition()).isLessThan(activated.getPosition());
+    assertThat(resumedEventCount(jobKey)).isOne();
   }
 
   @Test
@@ -622,6 +649,11 @@ public final class JobSecretPushInjectionTest {
     assertThat(exportedCountOf(SecretReferenceIntent.BATCH_JOBS_REACTIVATED))
         .describedAs("the padded jobs do not fit one batch, so the chain runs several cycles")
         .isGreaterThan(1);
+
+    // and - every pushed job was resumed once, none of the resume events dropped by the size cut
+    assertThat(jobStream.getActivatedJobs())
+        .extracting(ActivatedJob::jobKey)
+        .allSatisfy(jobKey -> assertThat(resumedEventCount(jobKey)).isOne());
   }
 
   /**
@@ -670,6 +702,16 @@ public final class JobSecretPushInjectionTest {
         .allSatisfy(
             jobKey ->
                 assertThat(jobState(jobKey)).isNotEqualTo(State.WAITING_FOR_SECRET_RESOLUTION));
+
+    // and - every reactivated job was resumed, whether it was pushed or left for a long poll: the
+    // resume events go first on room the selection reserved, so hand-outs outgrowing their share
+    // cannot crowd them out
+    Awaitility.await("until every reactivated job is resumed")
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(
+            () ->
+                assertThat(jobKeys)
+                    .allSatisfy(jobKey -> assertThat(resumedEventCount(jobKey)).isOne()));
   }
 
   /** Counts the record batches rejected for exceeding the maximum fragment size. */

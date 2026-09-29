@@ -164,7 +164,7 @@ public final class IncidentResolveProcessor
       // RESOLVED made the job activatable again; mirror that on the JOB record stream so the
       // wait-state exporter reverts the secret-wait mark to a plain job wait. Best-effort: if the
       // batch cannot fit the extra event it is skipped rather than failing the resolution, and the
-      // mark is cleared later when the job is next activated or completed.
+      // mark stays until the exporter sees a later JOB event, which an activation is not.
       final JobRecord parkedJob = jobState.getJob(jobKey);
       if (parkedJob != null) {
         SecretResolutionJobEvents.appendIfBatchHasRoom(

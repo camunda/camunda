@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.secretreference;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -27,11 +28,13 @@ import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -236,6 +239,10 @@ public final class SecretReferenceBatchReactivateJobsProcessorTest {
     // types across the batch; verifying the single-job one would pass without publishing anything
     verify(jobActivationBehavior, never())
         .publishWork(org.mockito.ArgumentMatchers.anyLong(), any(), any());
+
+    // and - the job keeps its secret-wait mark, since it still waits on another reference
+    verify(stateWriter, never())
+        .appendFollowUpEvent(eq(1L), eq(JobIntent.SECRET_RESOLUTION_RESUMED), any());
   }
 
   @Test
@@ -245,7 +252,7 @@ public final class SecretReferenceBatchReactivateJobsProcessorTest {
     activatableJob(2L);
     waitingJob(2L);
     // the first check is the selection sizing the second job, which does not fit; the checks after
-    // it guard the hand-outs of what was selected, and those still have room
+    // it guard the resume event and the hand-out of what was selected, and those still have room
     when(stateWriter.canWriteEventOfLength(org.mockito.ArgumentMatchers.anyInt()))
         .thenReturn(false, true);
     final var value =
@@ -281,10 +288,18 @@ public final class SecretReferenceBatchReactivateJobsProcessorTest {
     // them has been handed out
     activatableJob(1L);
     activatableJob(2L);
-    // the selection sizes the second job (fits), then each hand-out checks that the records
-    // written after it still fit: they do for the first job and no longer for the second
+    // each hand-out checks that the records written after it still fit: they do before the first
+    // job is handed out and no longer once it is
+    final var firstJobHandedOut = new AtomicBoolean(false);
     when(stateWriter.canWriteEventOfLength(org.mockito.ArgumentMatchers.anyInt()))
-        .thenReturn(true, true, false);
+        .thenAnswer(invocation -> !firstJobHandedOut.get());
+    doAnswer(
+            invocation -> {
+              firstJobHandedOut.set(true);
+              return true;
+            })
+        .when(jobActivationBehavior)
+        .publishWork(eq(1L), any(), any());
     final var value =
         new SecretReferenceRecord()
             .setStoreId(STORE_ID)
@@ -351,6 +366,137 @@ public final class SecretReferenceBatchReactivateJobsProcessorTest {
     // then - resolving the incident is what hands the job out, not this chain
     verify(jobActivationBehavior, never())
         .publishWork(org.mockito.ArgumentMatchers.anyLong(), any(), any());
+
+    // and - resolving the incident is what clears the secret-wait mark too
+    verify(stateWriter, never())
+        .appendFollowUpEvent(eq(1L), eq(JobIntent.SECRET_RESOLUTION_RESUMED), any());
+  }
+
+  @Test
+  void shouldResumeAJobBeforeTheHandOutActivatesIt() {
+    // given - an activatable job that the hand-out pushes to a worker, which activates it
+    activatableJob(1L);
+    doAnswer(
+            invocation -> {
+              final long jobKey = invocation.getArgument(0);
+              jobState.activate(jobKey, jobState.getJob(jobKey).setDeadline(30_000L));
+              return true;
+            })
+        .when(jobActivationBehavior)
+        .publishWork(eq(1L), any(), any());
+    final var value =
+        new SecretReferenceRecord()
+            .setStoreId(STORE_ID)
+            .setSecretReference(SECRET_REF)
+            .addJobKey(1L);
+
+    // when
+    processor.processRecord(command(value));
+
+    // then - the secret-wait mark is cleared before the hand-out, since a pushed job is activated
+    // by it and a hand-out that parks the job again must write its park event after this one
+    final var inOrder = inOrder(stateWriter, jobActivationBehavior);
+    inOrder
+        .verify(stateWriter)
+        .appendFollowUpEvent(eq(1L), eq(JobIntent.SECRET_RESOLUTION_RESUMED), any());
+    inOrder.verify(jobActivationBehavior).publishWork(eq(1L), any(), any());
+  }
+
+  @Test
+  void shouldResumeEveryReactivatedJobWhenTheHandOutsFillTheBatch() {
+    // given - two jobs the selection took, and a first hand-out that finds the batch full, e.g.
+    // because the worker name of its stream outgrew what the selection reserved for it
+    activatableJob(1L);
+    activatableJob(2L);
+    final var batchFull = new AtomicBoolean(false);
+    when(stateWriter.canWriteEventOfLength(org.mockito.ArgumentMatchers.anyInt()))
+        .thenAnswer(invocation -> !batchFull.get());
+    doAnswer(
+            invocation -> {
+              batchFull.set(true);
+              return false;
+            })
+        .when(jobActivationBehavior)
+        .publishWork(eq(1L), any(), any());
+    final var value =
+        new SecretReferenceRecord()
+            .setStoreId(STORE_ID)
+            .setSecretReference(SECRET_REF)
+            .addJobKey(1L)
+            .addJobKey(2L);
+
+    // when
+    processor.processRecord(command(value));
+
+    // then - both jobs got their resume event on the room the selection reserved for it, so the
+    // hand-outs running out of room cannot leave a reactivated job marked as waiting on a secret
+    verify(stateWriter).appendFollowUpEvent(eq(1L), eq(JobIntent.SECRET_RESOLUTION_RESUMED), any());
+    verify(stateWriter).appendFollowUpEvent(eq(2L), eq(JobIntent.SECRET_RESOLUTION_RESUMED), any());
+  }
+
+  @Test
+  void shouldReserveRoomForTheResumeEventOfEverySelectedJob() {
+    // given - three activatable jobs, and a record batch that fits the resume events and hand-outs
+    // of two of them next to the follow-up records, but that would take the third job too if only
+    // the hand-outs were counted
+    activatableJob(1L);
+    activatableJob(2L);
+    activatableJob(3L);
+    final var value =
+        new SecretReferenceRecord()
+            .setStoreId(STORE_ID)
+            .setSecretReference(SECRET_REF)
+            .addJobKey(1L)
+            .addJobKey(2L)
+            .addJobKey(3L);
+    final var job = jobState.getJob(3L);
+    final int jobLength =
+        SecretResolutionJobEvents.eventLength(job)
+            + BpmnJobActivationBehavior.maxHandOutLength(job);
+    final int batchRoom =
+        SecretReferenceBatchReactivateJobsProcessor.followUpRecordsReserve(value) + 2 * jobLength;
+    when(stateWriter.canWriteEventOfLength(org.mockito.ArgumentMatchers.anyInt()))
+        .thenAnswer(invocation -> (int) invocation.getArgument(0) <= batchRoom);
+
+    // when
+    processor.processRecord(command(value));
+
+    // then - the selection sizes each job by its resume event and its hand-out, so it takes two
+    // jobs and the resume events of the jobs it takes cannot be crowded out of the batch
+    final var eventCaptor = ArgumentCaptor.forClass(SecretReferenceRecord.class);
+    verify(stateWriter)
+        .appendFollowUpEvent(
+            eq(500L), eq(SecretReferenceIntent.BATCH_JOBS_REACTIVATED), eventCaptor.capture());
+    Assertions.assertThat(eventCaptor.getValue().getJobKeys()).containsExactly(1L, 2L);
+  }
+
+  @Test
+  void shouldNotLetAResumeEventTakeTheRoomOfTheFollowUpRecords() {
+    // given - a job too large for its resume event to fit next to the follow-up records, which the
+    // selection takes anyway since it always takes the first job of the cycle
+    final var job = activatableJob(1L);
+    waitingJob(2L);
+    final int resumeEventLength = SecretResolutionJobEvents.eventLength(job);
+    when(stateWriter.canWriteEventOfLength(org.mockito.ArgumentMatchers.anyInt()))
+        .thenAnswer(invocation -> (int) invocation.getArgument(0) <= resumeEventLength);
+    final var value =
+        new SecretReferenceRecord()
+            .setStoreId(STORE_ID)
+            .setSecretReference(SECRET_REF)
+            .addJobKey(1L);
+
+    // when
+    processor.processRecord(command(value));
+
+    // then - the resume event is skipped rather than taking the room the follow-up command is
+    // appended into unchecked, which would fail the whole cycle
+    verify(stateWriter, never())
+        .appendFollowUpEvent(eq(1L), eq(JobIntent.SECRET_RESOLUTION_RESUMED), any());
+    verify(commandWriter)
+        .appendFollowUpCommand(
+            eq(999L),
+            eq(SecretReferenceIntent.BATCH_REACTIVATE_JOBS),
+            any(SecretReferenceRecord.class));
   }
 
   @Test

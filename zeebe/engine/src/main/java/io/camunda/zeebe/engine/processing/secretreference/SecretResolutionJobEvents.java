@@ -23,23 +23,43 @@ public final class SecretResolutionJobEvents {
   private SecretResolutionJobEvents() {}
 
   /**
+   * Returns the record batch room one of these events for {@code job} takes, sized the same way the
+   * batch collector sizes the job records it hands out.
+   */
+  public static int eventLength(final JobRecord job) {
+    return job.getLength() + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER;
+  }
+
+  /**
    * Appends {@code intent} for {@code job} on the JOB record stream, but only if the current record
-   * batch can still fit the event, sized the same way the batch collector sizes the job records it
-   * hands out.
+   * batch can still fit the event.
    *
    * <p>Returns whether the event was appended. A {@code false} result means the batch is full: the
    * job's parked/reactivated state already lives in the job state regardless, so the only
-   * consequence is that its wait-state mark is corrected a cycle later or on completion. Callers
-   * emitting for several jobs in a loop should stop on {@code false}, since a full batch does not
-   * regain room within the same cycle.
+   * consequence is that its wait-state mark stays stale until the wait-state exporter sees a later
+   * event of the job. Callers emitting for several jobs in a loop should stop on {@code false},
+   * since a full batch does not regain room within the same cycle.
    */
   public static boolean appendIfBatchHasRoom(
       final StateWriter stateWriter,
       final long jobKey,
       final JobIntent intent,
       final JobRecord job) {
-    if (!stateWriter.canWriteEventOfLength(
-        job.getLength() + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER)) {
+    return appendIfBatchHasRoom(stateWriter, jobKey, intent, job, 0);
+  }
+
+  /**
+   * Like {@link #appendIfBatchHasRoom(StateWriter, long, JobIntent, JobRecord)}, but keeps {@code
+   * lengthToKeepFree} of the batch free for records the caller appends afterwards without a check
+   * of their own.
+   */
+  public static boolean appendIfBatchHasRoom(
+      final StateWriter stateWriter,
+      final long jobKey,
+      final JobIntent intent,
+      final JobRecord job,
+      final int lengthToKeepFree) {
+    if (!stateWriter.canWriteEventOfLength(eventLength(job) + lengthToKeepFree)) {
       return false;
     }
     stateWriter.appendFollowUpEvent(jobKey, intent, job);

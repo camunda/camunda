@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -77,10 +78,19 @@ public final class SecretReferenceBatchReactivateJobsProcessor
     // got, leaving it parked with nothing left to reactivate it
     final List<Long> nextBatch = buildNextBatch(storeId, secretReference);
 
+    final int followUpRecordsReserve = followUpRecordsReserve(value);
+
+    // clear the secret-wait mark on the JOB record stream for the jobs the event above made
+    // activatable again, before they are handed out: the wait-state exporter reads no activation
+    // records, so a job pushed to a worker would otherwise keep the mark. A hand-out that parks the
+    // job again appends its park event after this one, so that job is marked again unless the
+    // batch has no room left for that best-effort event
+    appendSecretResolutionResumedEvents(processedBatch, followUpRecordsReserve);
+
     // the event above reactivated the eligible jobs, so they can be handed to a worker again. A
     // pushing worker only ever receives jobs that are pushed to it, so the reactivation must push
     // them; publishWork checks their references again and parks a job whose value is gone already
-    publishReactivatedJobs(processedBatch, followUpRecordsReserve(value));
+    publishReactivatedJobs(processedBatch, followUpRecordsReserve);
 
     // a hand-out that found the value gone from the cache requested the resolution again, which
     // makes the reference pending again. This chain stops there: the jobs it has not drained yet
@@ -93,12 +103,6 @@ public final class SecretReferenceBatchReactivateJobsProcessor
       commandWriter.appendFollowUpCommand(
           keyGenerator.nextKey(), SecretReferenceIntent.BATCH_REACTIVATE_JOBS, nextRecord);
     }
-
-    // clear the secret-wait mark on the JOB record stream for the jobs this batch made activatable
-    // again, so the wait-state exporter reverts them to a plain job wait. Emitted last, on whatever
-    // budget the hand-outs and the follow-up command leave, so it never competes with them: a job
-    // whose mark is not cleared this cycle keeps it until a later cycle or until it completes.
-    appendSecretResolutionResumedEvents(processedBatch);
   }
 
   /**
@@ -115,24 +119,28 @@ public final class SecretReferenceBatchReactivateJobsProcessor
 
   /**
    * Returns the jobs of the command this cycle reactivates: as many as the record batch is expected
-   * to take, since handing a job out writes into the same batch. What that costs is {@link
-   * BpmnJobActivationBehavior#maxHandOutLength(JobRecord)}, so the estimate stays with the hand-out
-   * that spends it rather than being restated here. The first job is always taken, so a cycle
+   * to take, since resuming a job and handing it out write into the same batch. What that costs is
+   * {@link SecretResolutionJobEvents#eventLength(JobRecord)} plus {@link
+   * BpmnJobActivationBehavior#maxHandOutLength(JobRecord)}, so the estimates stay with the code
+   * that spends them rather than being restated here. The first job is always taken, so a cycle
    * always drains at least one waiting entry and the chain cannot spin on a job whose record alone
    * exceeds the budget.
    *
-   * <p>Only an expectation: a hand-out can cost more than the stored job record predicts, because
-   * the worker name of the stream that takes the job is not on that record. Selecting a job the
-   * batch turns out not to fit is not a failure, it just leaves the job activatable for a long poll
-   * (see {@link #publishReactivatedJobs}); what keeps the batch intact is the hand-out's own check.
+   * <p>Only an expectation for the hand-outs: a hand-out can cost more than the stored job record
+   * predicts, because the worker name of the stream that takes the job is not on that record.
+   * Selecting a job the batch turns out not to fit is not a failure, it just leaves the job
+   * activatable for a long poll (see {@link #publishReactivatedJobs}); what keeps the batch intact
+   * is the hand-out's own check. The resume events are appended before any hand-out, so the room
+   * reserved for them here is still there when they are.
    */
   private SecretReferenceRecord selectJobsToReactivate(final SecretReferenceRecord value) {
     final var storeId = value.getStoreId();
     final var secretReference = value.getSecretReference();
     final var selected = newBatch(storeId, secretReference);
     final int followUpRecordsReserve = followUpRecordsReserve(value);
-    // the hand-outs of the selected jobs share one record batch, so their lengths accumulate
-    var selectedHandOutsLength = 0;
+    // the resume events and hand-outs of the selected jobs share one record batch, so their
+    // lengths accumulate
+    var selectedJobsLength = 0;
     var jobSelected = false;
     for (final long jobKey : value.getJobKeys()) {
       final JobRecord job = jobState.getJob(jobKey);
@@ -142,14 +150,16 @@ public final class SecretReferenceBatchReactivateJobsProcessor
         selected.addJobKey(jobKey);
         continue;
       }
-      final int handOutLength = BpmnJobActivationBehavior.maxHandOutLength(job);
+      final int jobLength =
+          SecretResolutionJobEvents.eventLength(job)
+              + BpmnJobActivationBehavior.maxHandOutLength(job);
       if (jobSelected
           && !stateWriter.canWriteEventOfLength(
-              selectedHandOutsLength + handOutLength + followUpRecordsReserve)) {
+              selectedJobsLength + jobLength + followUpRecordsReserve)) {
         break;
       }
       selected.addJobKey(jobKey);
-      selectedHandOutsLength += handOutLength;
+      selectedJobsLength += jobLength;
       jobSelected = true;
     }
     return selected;
@@ -203,17 +213,21 @@ public final class SecretReferenceBatchReactivateJobsProcessor
   /**
    * Emits a {@link JobIntent#SECRET_RESOLUTION_RESUMED} event for each job the {@code
    * BATCH_JOBS_REACTIVATED} applier just made activatable again, so the wait-state exporter clears
-   * the secret-wait mark it set when the job was parked. A job that is no longer activatable (still
+   * the secret-wait mark it set when the job was parked. A job that is not activatable (still
    * parked on another pending reference, or carrying an incident) or that no longer exists is
    * skipped, so its mark stays as-is.
    *
-   * <p>Called last in the cycle, so it spends only the budget the hand-outs and the follow-up
-   * command left. Appending stops once the batch can no longer fit an event: the jobs it does not
-   * reach were reactivated all the same, so the only consequence is that their mark is cleared a
-   * cycle later or on completion rather than now. The state transition itself is owned by the batch
-   * applier; these events only make it observable on the JOB record stream.
+   * <p>Called before the hand-outs, on room {@link #selectJobsToReactivate} reserved for these
+   * events, so every job the cycle reactivates is resumed even when the hand-outs outgrow their
+   * share. Only the follow-up records are kept free, since they are appended without a check of
+   * their own. That leaves a job whose record alone exceeds the budget, which the selection takes
+   * anyway as the first job of a cycle: its event is skipped rather than failing the cycle, and its
+   * mark stays stale until the wait-state exporter sees a later event of the job. The state
+   * transition itself is owned by the batch applier; these events only make it observable on the
+   * JOB record stream.
    */
-  private void appendSecretResolutionResumedEvents(final SecretReferenceRecord processedBatch) {
+  private void appendSecretResolutionResumedEvents(
+      final SecretReferenceRecord processedBatch, final int followUpRecordsReserve) {
     for (final long jobKey : processedBatch.getJobKeys()) {
       if (jobState.getState(jobKey) != State.ACTIVATABLE || hasIncident(jobKey)) {
         continue;
@@ -223,7 +237,7 @@ public final class SecretReferenceBatchReactivateJobsProcessor
         continue;
       }
       if (!SecretResolutionJobEvents.appendIfBatchHasRoom(
-          stateWriter, jobKey, JobIntent.SECRET_RESOLUTION_RESUMED, job)) {
+          stateWriter, jobKey, JobIntent.SECRET_RESOLUTION_RESUMED, job, followUpRecordsReserve)) {
         break;
       }
     }
@@ -235,7 +249,8 @@ public final class SecretReferenceBatchReactivateJobsProcessor
    * follow-up {@code BATCH_REACTIVATE_JOBS} command. The buffer absorbs the record metadata that
    * the value lengths do not include.
    */
-  private static int followUpRecordsReserve(final SecretReferenceRecord value) {
+  @VisibleForTesting
+  static int followUpRecordsReserve(final SecretReferenceRecord value) {
     return value.getLength()
         + maxNextCommandLength(value.getStoreId(), value.getSecretReference())
         + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER;
