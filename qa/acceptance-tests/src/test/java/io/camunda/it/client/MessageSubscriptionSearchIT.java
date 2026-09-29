@@ -160,11 +160,17 @@ public class MessageSubscriptionSearchIT {
   void shouldPaginateWithLimitAndCursor() {
     // Given
     final var response1 =
-        camundaClient.newMessageSubscriptionSearchRequest().page(p -> p.limit(1)).send().join();
+        camundaClient
+            .newMessageSubscriptionSearchRequest()
+            .page(p -> p.limit(1))
+            .sort(s -> s.messageSubscriptionKey().asc())
+            .send()
+            .join();
     final var response2 =
         camundaClient
             .newMessageSubscriptionSearchRequest()
             .page(p -> p.after(response1.page().endCursor()))
+            .sort(s -> s.messageSubscriptionKey().asc())
             .send()
             .join();
 
