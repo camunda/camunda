@@ -154,9 +154,9 @@ public class RequestMapper {
 
     return toUserTaskAssignmentRequest(
         UserTaskAssignmentRequest.Builder.create()
-            .action(assignmentRequest.getAction())
-            .allowOverride(assignmentRequest.getAllowOverride())
             .assignee(assignmentRequest.getAssignee())
+            .allowOverride(assignmentRequest.getAllowOverride())
+            .action(assignmentRequest.getAction())
             .build(),
         userTaskKey);
   }
