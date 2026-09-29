@@ -129,6 +129,48 @@ describe('useBatchOperationMutationRequestBody', () => {
       });
     });
 
+    it('should leave finished states out of the filter', () => {
+      const {result} = renderHook(
+        () => useCancelProcessInstancesBatchOperationMutationRequestBody(),
+        {
+          wrapper: getWrapper({
+            active: 'true',
+            completed: 'true',
+            canceled: 'true',
+          }),
+        },
+      );
+
+      expect(result.current).toEqual({
+        filter: {
+          state: {$eq: 'ACTIVE'},
+          hasIncident: false,
+        },
+      });
+    });
+
+    it('should leave finished states out of the filter when filtering by element', () => {
+      const {result} = renderHook(
+        () => useCancelProcessInstancesBatchOperationMutationRequestBody(),
+        {
+          wrapper: getWrapper({
+            active: 'true',
+            completed: 'true',
+            elementId: 'task-1',
+          }),
+        },
+      );
+
+      expect(result.current).toEqual({
+        filter: {
+          state: {$eq: 'ACTIVE'},
+          hasIncident: false,
+          elementId: {$eq: 'task-1'},
+          elementInstanceState: {$eq: 'ACTIVE'},
+        },
+      });
+    });
+
     it('should include selected suspended instances alongside running ones', () => {
       processInstancesSelectionStore.state.selectionMode = 'INCLUDE';
       processInstancesSelectionStore.state.selectedIds = ['1', '2'];
