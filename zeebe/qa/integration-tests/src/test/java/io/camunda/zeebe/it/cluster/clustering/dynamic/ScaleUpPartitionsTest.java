@@ -702,7 +702,7 @@ public abstract class ScaleUpPartitionsTest {
     verifyExistingDecisionCanBeEvaluatedOnPartition(desiredPartitionCount);
   }
 
-  private void verifyExistingDecisionCanBeEvaluatedOnPartition(final int partitionId) {
+  protected void verifyExistingDecisionCanBeEvaluatedOnPartition(final int partitionId) {
     try (final var decisionClient =
         AuthorizationsUtil.createClient(
             cluster.availableGateway(), decisionUsername, decisionPassword)) {
@@ -878,6 +878,12 @@ class ScaleUpPartitionsBackupRestoreTest extends ScaleUpPartitionsTest {
                   });
             })
         .build();
+  }
+
+  // Decision evaluation tests are auth-specific; skip for backup/restore
+  @Override
+  protected void verifyExistingDecisionCanBeEvaluatedOnPartition(final int partitionId) {
+    // no-op
   }
 }
 
