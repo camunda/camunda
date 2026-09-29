@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Keep Maven authoritative while evaluating a parallel Gradle build | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-63133/adr/gradle/gradle-experimental-ci-integration/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="Keep Maven authoritative while evaluating a parallel Gradle build | Camunda Platform"><meta data-rh="true" name="description" content="DRI: Carlo Sana"><meta data-rh="true" property="og:description" content="DRI: Carlo Sana"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-63133/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-63133/adr/gradle/gradle-experimental-ci-integration/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-63133/adr/gradle/gradle-experimental-ci-integration/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-63133/adr/gradle/gradle-experimental-ci-integration/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-63133/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-63133/assets/js/runtime~main.0d8078c8.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-63133/assets/js/main.2df13405.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-63133/assets/js/runtime~main.07b39bf2.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-63133/assets/js/main.ac6d89db.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -126,6 +126,10 @@ test path and the minimal Maven <code>build-distball</code> producer needed for 
 not run Maven application tests. A complete Gradle path subsumes the focused Gradle checks for that
 same run, so compilation and packaging are not run twice. Focused checks remain enabled for runs
 that do not select the complete Gradle path.</p>
+<p>A user can select the <code>build-tool</code> via a label in a PR. The label <code>gradle-build</code> can be used for this purpose.
+The label cannot run gradle as build tool if there are maven or java code changes, to not break D1.
+The purpose of the label is to select <code>gradle</code> when performing gradle only changes, or changes to the CI
+that are only relevant for gradle. This is hard to enforce generally, so this is left to the user to decide.</p>
 <p>Maven is the default build path. Automatic Gradle selection is allowed only when every changed file
 matches only the explicit Gradle build-input allowlist above or a dedicated allowlist for Gradle-only CI
 wiring. A shared or unknown CI file is not Gradle-only and defaults to Maven. A human may explicitly
@@ -137,12 +141,14 @@ while mixed changes continue to use Maven.</p>
 <p>Unified CI exposes a reusable entry point for the <code>build-tool</code> selection, with Maven as its default.
 Pull requests use the change detector and the human override described in D5; merge groups and
 protected-branch pushes default to Maven; and manually dispatched runs default to Maven unless a
-human explicitly selects Gradle. A scheduled wrapper invokes this reusable entry point with
-<code>build-tool: gradle</code> and runs the complete Gradle unit and integration test path against the default
+human explicitly selects Gradle. We will start by first scheduling the gradle CI run at a different time
+and we will detect that when selecting the build tool, as there are currently some unknowns in doing it differently.
+We will modify this setup later on when we will be confident in the consequences of usin a &quot;wrapper&quot; workflow.</p>
+<p>When scheduled, it runs the complete Gradle unit and integration test path against the default
 branch, beyond the focused compilation and packaging checks. This reuses the same selectable build
 path that engineers use to validate fixes to Gradle build or CI files. The exact cadence is an
-operational setting and can be adjusted without changing this decision.
-The scheduled workflow does not replace Maven&#x27;s application-test path.</p>
+operational setting and can be adjusted without changing this decision.</p>
+<p>The scheduled workflow does not replace Maven&#x27;s application-test path.</p>
 <p>A failure creates a CI incident that will be assigned to the following team/list of people:</p>
 <ul>
 <li class="">TBD</li>
