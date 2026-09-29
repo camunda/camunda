@@ -10,6 +10,7 @@ package io.camunda.gateway.mapping.http.validator;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_ALL_REQUIRED_FIELD;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_AT_LEAST_ONE_FIELD;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_ONLY_ONE_FIELD;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateBusinessId;
@@ -35,19 +36,27 @@ import io.camunda.gateway.protocol.model.ProcessInstanceModificationMoveInstruct
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateByIdInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateByKeyInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceStateEnum;
 import io.camunda.gateway.protocol.model.ResumeProcessInstanceRequest;
 import io.camunda.gateway.protocol.model.SourceElementIdInstruction;
 import io.camunda.gateway.protocol.model.SourceElementInstanceKeyInstruction;
 import io.camunda.gateway.protocol.model.SuspendProcessInstanceRequest;
+import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.search.filter.Operator;
+import io.camunda.search.filter.ProcessInstanceFilter;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.ProblemDetail;
 
 public class ProcessInstanceRequestValidator {
+
+  private static final List<String> CANCELLABLE_PROCESS_INSTANCE_STATES =
+      List.of(ProcessInstanceState.ACTIVE.name(), ProcessInstanceState.SUSPENDED.name());
 
   public static Optional<ProblemDetail> validateCreateProcessInstanceRequest(
       final ProcessInstanceCreationInstruction request) {
@@ -138,6 +147,38 @@ public class ProcessInstanceRequestValidator {
             validateOperationReference(request.getOperationReference(), violations);
           }
         });
+  }
+
+  /** Rejects explicitly named states that can't be cancelled. */
+  public static Optional<ProblemDetail> validateCancelProcessInstanceBatchOperationFilter(
+      final ProcessInstanceFilter filter) {
+    return validate(
+        violations ->
+            Stream.concat(
+                    Stream.of(filter),
+                    Optional.ofNullable(filter.orFilters()).stream().flatMap(List::stream))
+                .flatMap(f -> f.stateOperations().stream())
+                .filter(
+                    operation ->
+                        operation.operator() == Operator.EQUALS
+                            || operation.operator() == Operator.IN)
+                .flatMap(operation -> operation.values().stream())
+                .filter(state -> !CANCELLABLE_PROCESS_INSTANCE_STATES.contains(state))
+                .distinct()
+                .forEach(
+                    state ->
+                        violations.add(
+                            ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
+                                "state",
+                                toProtocolStateName(state),
+                                "one of " + CANCELLABLE_PROCESS_INSTANCE_STATES))));
+  }
+
+  // The API calls CANCELED instances TERMINATED; report the value the caller actually sent.
+  private static String toProtocolStateName(final String state) {
+    return ProcessInstanceState.CANCELED.name().equals(state)
+        ? ProcessInstanceStateEnum.TERMINATED.getValue()
+        : state;
   }
 
   public static Optional<ProblemDetail> validateSuspendProcessInstanceRequest(
