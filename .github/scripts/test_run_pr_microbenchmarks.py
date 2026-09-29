@@ -8,13 +8,74 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
 
 import run_pr_microbenchmarks as runner
+from run_pr_microbenchmarks import BenchmarkRun, Config
+
+SOURCE_ROOT = runner.BENCHMARK_SOURCE_ROOT
+BENCHMARK_SOURCE = "package io.example;\n@Benchmark public void run() {}"
+
+
+class FakeToolchain(runner.Toolchain):
+    """In-memory stand-in for git and JMH at one checked-out revision.
+
+    head: SHA that ``head_revision`` reports as checked out.
+    sources: file content per ``(revision, path)``; absent files return None.
+    files: benchmark source paths per revision.
+    benchmark_runs: result per selector; unlisted selectors succeed.
+    executed: selectors passed to ``run_benchmark``, in order.
+    """
+
+    def __init__(self, head, sources=None, files=None, benchmark_runs=None):
+        self.head = head
+        self.sources = sources or {}  # (revision, path) -> content
+        self.files = files or {}  # revision -> paths
+        self.benchmark_runs = benchmark_runs or {}  # selector -> BenchmarkRun
+        self.executed: list[str] = []
+
+    def head_revision(self):
+        return self.head
+
+    def show_file(self, revision, path):
+        return self.sources.get((revision, path))
+
+    def list_files(self, revision, root):
+        return self.files.get(revision, [])
+
+    def run_benchmark(self, selector):
+        self.executed.append(selector)
+        return self.benchmark_runs.get(selector, BenchmarkRun(0, "score\n"))
+
+
+def make_config(directory: str, **overrides) -> Config:
+    """A head-run Config with all files inside ``directory``."""
+    values = {
+        "head_sha": "b" * 40,
+        "kind": "head",
+        "changed_files": [],
+        "requested": [],
+        "reported_markers_file": Path(directory) / "reported",
+        "report_file": Path(directory) / "report.md",
+        "github_output": Path(directory) / "github-output",
+    }
+    values.update(overrides)
+    return Config(**values)
+
+
+def select(config: Config, toolchain: FakeToolchain) -> int:
+    """Run the ``--select`` mode."""
+    return runner.select_mode(config, runner.discover_selection(config, toolchain))
+
+
+def run(config: Config, toolchain: FakeToolchain) -> int:
+    """Run the default mode that executes JMH and writes the report."""
+    selection = runner.discover_selection(config, toolchain)
+    return runner.run_mode(config, selection, toolchain)
 
 
 class JmhScriptTests(unittest.TestCase):
     def test_parses_pr_selectors_and_ignores_html_comments(self):
+        """Only ``JMH:`` lines outside HTML comments count, sorted and comma-split."""
         body = """
 <!-- JMH: IgnoredBenchmark -->
 JMH: MsgpackBenchmark.serialize, DeduplicationCacheBenchmark
@@ -25,12 +86,14 @@ JMH: MsgpackBenchmark.serialize, DeduplicationCacheBenchmark
         )
 
     def test_passes_selector_syntax_to_jmh(self):
+        """JMH patterns such as ``.*`` reach the runner unchanged."""
         self.assertEqual(
             runner.parse_pr_selectors("JMH: MsgpackBenchmark.*"),
             ["MsgpackBenchmark.*"],
         )
 
     def test_fingerprints_selector_sets_independent_of_order(self):
+        """The dedup marker depends on the selector set, not its order."""
         selectors = ["MsgpackBenchmark.serialize", "DeduplicationCacheBenchmark"]
         self.assertEqual(
             runner.selector_marker_suffix(selectors),
@@ -38,64 +101,68 @@ JMH: MsgpackBenchmark.serialize, DeduplicationCacheBenchmark
         )
         self.assertEqual(runner.selector_marker_suffix([]), "")
 
-    def test_selection_mode_tells_the_workflow_whether_to_build_and_report(self):
-        with tempfile.TemporaryDirectory() as directory:
-            workspace = Path(directory)
-            head, baseline = "b" * 40, "a" * 40
-            benchmark_path = (
-                "microbenchmarks/src/main/java/io/example/ChangedBenchmark.java"
-            )
-            output_file = workspace / "github-output"
-            reported = workspace / "reported"
-            environment = {
-                "HEAD_SHA": head,
-                "JMH_KIND": "head",
-                "JMH_REPORTED_MARKERS": str(reported),
-                "JMH_REPORT_FILE": str(workspace / "report.md"),
-                "GITHUB_WORKSPACE": directory,
-                "CHANGED_JAVA_FILES_JSON": json.dumps([benchmark_path]),
-                "GITHUB_OUTPUT": str(output_file),
-                "PR_BODY": "",
+    def test_builds_config_from_workflow_environment(self):
+        """Parses the variables and defaults the optional ones."""
+        # when
+        config = Config.from_env(
+            {
+                "HEAD_SHA": "abc",
+                "JMH_KIND": "baseline",
+                "JMH_REPORTED_MARKERS": "reported",
+                "JMH_REPORT_FILE": "report.md",
+                "CHANGED_JAVA_FILES_JSON": json.dumps(["A.java"]),
+                "PR_BODY": "JMH: B",
+                "GITHUB_OUTPUT": "",
             }
-            current = head
+        )
 
-            def fake_command(args, _workspace, timeout=None):
-                if args[:3] == ["git", "rev-parse", "HEAD"]:
-                    return subprocess.CompletedProcess(args, 0, current + "\n")
-                if args[:2] == ["git", "show"]:
-                    if args[2].startswith(f"{head}:"):
-                        return subprocess.CompletedProcess(
-                            args,
-                            0,
-                            "package io.example;\n@Benchmark public void run() {}",
-                        )
-                    return subprocess.CompletedProcess(args, 1, "source is absent")
-                return subprocess.CompletedProcess(args, 0, "")
+        # then
+        self.assertEqual(config.changed_files, ["A.java"])
+        self.assertEqual(config.requested, ["B"])
+        self.assertEqual(config.maven_build_outcome, "success")
+        self.assertIsNone(config.github_output)
 
-            with (
-                patch.dict(os.environ, environment),
-                patch.object(runner, "run_command", side_effect=fake_command),
-            ):
-                # then: build at the tip, skip a duplicate, and report a baseline with no source
-                self.assertEqual(runner.main(["--select"]), 0)
-                marker = (
-                    f"<!-- jmh-run:head:{head}"
-                    f"{runner.selector_marker_suffix(['io.example.ChangedBenchmark'])} -->"
-                )
-                reported.write_text(marker + "\n")
-                self.assertEqual(runner.main(["--select"]), 0)
-                current = baseline
-                os.environ["JMH_KIND"] = "baseline"
-                self.assertEqual(runner.main(["--select"]), 0)
+    def test_rejects_environment_without_required_variables(self):
+        """A missing required variable is reported by name."""
+        with self.assertRaisesRegex(ValueError, "HEAD_SHA"):
+            Config.from_env({})
 
+    def test_selection_mode_tells_the_workflow_whether_to_build_and_report(self):
+        """``--select`` writes ``has_benchmarks`` and ``should_report`` outputs.
+
+        Three cases: the tip builds and reports, an already-reported marker is
+        skipped, and a baseline without the benchmark source reports only.
+        """
+        with tempfile.TemporaryDirectory() as directory:
+            # given
+            head, baseline = "b" * 40, "a" * 40
+            path = SOURCE_ROOT + "io/example/ChangedBenchmark.java"
+            sources = {(head, path): BENCHMARK_SOURCE}
+            config = make_config(directory, changed_files=[path])
+
+            # when
+            self.assertEqual(select(config, FakeToolchain(head, sources)), 0)
+            marker = (
+                f"<!-- jmh-run:head:{head}"
+                f"{runner.selector_marker_suffix(['io.example.ChangedBenchmark'])} -->"
+            )
+            config.reported_markers_file.write_text(marker + "\n")
+            self.assertEqual(select(config, FakeToolchain(head, sources)), 0)
+            baseline_config = make_config(
+                directory, changed_files=[path], kind="baseline"
+            )
+            self.assertEqual(select(baseline_config, FakeToolchain(baseline, sources)), 0)
+
+            # then: build at the tip, skip a duplicate, and report a baseline with no source
             self.assertEqual(
-                output_file.read_text(),
+                config.github_output.read_text(),
                 "has_benchmarks=true\nshould_report=true\n"
                 "has_benchmarks=false\nshould_report=false\n"
                 "has_benchmarks=false\nshould_report=true\n",
             )
 
     def test_detects_benchmark_annotations_and_extracts_class_selector(self):
+        """Only a real ``@Benchmark`` annotation counts; the selector is package-qualified."""
         source = """
 package io.example;
 class ExampleBenchmark {
@@ -117,183 +184,131 @@ class ExampleBenchmark {
         )
 
     def test_runs_each_checked_out_revision_and_skips_reported_markers(self):
-        # given
+        """Baseline and tip run different selectors, and reported markers are not rerun.
+
+        Selectors come from the PR-changed benchmark and the ``JMH:`` requests
+        that exist at the checked-out revision. A benchmark added by the PR is
+        absent at the baseline, so nothing runs there.
+        """
         with tempfile.TemporaryDirectory() as directory:
+            # given
             baseline, head = "a" * 40, "b" * 40
-            reported = Path(directory) / "reported"
-            report_file = Path(directory) / "report.md"
-            environment = {
-                "HEAD_SHA": head,
-                "GITHUB_WORKSPACE": directory,
-                "JMH_REPORTED_MARKERS": str(reported),
-                "JMH_REPORT_FILE": str(report_file),
-                "CHANGED_JAVA_FILES_JSON": json.dumps(["ChangedBenchmark.java"]),
-                "PR_BODY": "JMH: RequestedBenchmark, ChangedBenchmark.run, MissingBenchmark",
+            sources = {
+                (head, "ChangedBenchmark.java"): BENCHMARK_SOURCE,
+                (baseline, "ChangedBenchmark.java"): "class ChangedBenchmark {}",
             }
-            current = baseline
-            commands = []
-            comments = []
+            requested_file = SOURCE_ROOT + "io/example/RequestedBenchmark.java"
+            changed_file = SOURCE_ROOT + "io/example/ChangedBenchmark.java"
+            files = {baseline: [requested_file], head: [requested_file, changed_file]}
+            config = make_config(
+                directory,
+                changed_files=["ChangedBenchmark.java"],
+                requested=[
+                    "ChangedBenchmark.run",
+                    "MissingBenchmark",
+                    "RequestedBenchmark",
+                ],
+                kind="baseline",
+            )
+            head_config = make_config(
+                directory,
+                changed_files=config.changed_files,
+                requested=config.requested,
+            )
+            at_baseline = FakeToolchain(baseline, sources, files)
+            at_head = FakeToolchain(head, sources, files)
 
-            def fake_command(args, _workspace, timeout=None):
-                commands.append(args)
-                if args[:3] == ["git", "rev-parse", "HEAD"]:
-                    output = current + "\n"
-                elif args[:2] == ["git", "show"]:
-                    revision = args[2].split(":")[0]
-                    output = (
-                        "package io.example;\n@Benchmark public void run() {}"
-                        if revision == head
-                        else "package io.example;\nclass ChangedBenchmark {}"
-                    )
-                elif args[:2] == ["git", "ls-tree"]:
-                    output = "microbenchmarks/src/main/java/io/example/RequestedBenchmark.java\n"
-                    if args[4] == head:
-                        output += "microbenchmarks/src/main/java/io/example/ChangedBenchmark.java\n"
-                else:
-                    output = "score\n"
-                return subprocess.CompletedProcess(args, 0, output)
-
-            with (
-                patch.dict(os.environ, environment),
-                patch.object(runner, "run_command", side_effect=fake_command),
-            ):
-                # when
-                os.environ["JMH_KIND"] = "baseline"
-                self.assertEqual(runner.main([]), 0)
-                comments.append(report_file.read_text())
-                current = head
-                os.environ["JMH_KIND"] = "head"
-                self.assertEqual(runner.main([]), 0)
-                comments.append(report_file.read_text())
-
-                # then
-                self.assertEqual(len(comments), 2)
-                self.assertIn("## JMH baseline results", comments[0])
-                self.assertIn("## JMH head results", comments[1])
-                self.assertEqual(
-                    [
-                        args[-1]
-                        for args in commands
-                        if args[:3] == ["java", "-jar", runner.BENCHMARK_JAR]
-                    ],
-                    [
-                        "RequestedBenchmark",
-                        "io.example.ChangedBenchmark",
-                        "ChangedBenchmark.run",
-                        "RequestedBenchmark",
-                    ],
-                )
-                self.assertFalse(
-                    any(args[:2] == ["git", "checkout"] for args in commands)
-                )
-                reported.write_text(
-                    "\n".join(body.splitlines()[0] for body in comments)
-                )
-                previous_report = report_file.read_text()
-                commands.clear()
-                self.assertEqual(runner.main([]), 0)
-                self.assertEqual(report_file.read_text(), previous_report)
-                self.assertFalse(
-                    any(args[0] in ("java", "./mvnw") for args in commands)
-                )
-
-                # A newly added benchmark does not exist at the baseline.
-                os.environ["PR_BODY"] = ""
-                os.environ["JMH_KIND"] = "baseline"
-                current = baseline
-                commands.clear()
-                self.assertEqual(runner.main([]), 0)
-                self.assertIn("execution was skipped", report_file.read_text())
-                self.assertFalse(
-                    any(args[0] in ("java", "./mvnw") for args in commands)
-                )
-
-    def test_reports_a_failed_maven_action_without_running_jmh(self):
-        # given
-        with tempfile.TemporaryDirectory() as directory:
-            head = "b" * 40
-            environment = {
-                "HEAD_SHA": head,
-                "JMH_KIND": "head",
-                "GITHUB_WORKSPACE": directory,
-                "JMH_REPORTED_MARKERS": str(Path(directory) / "reported"),
-                "JMH_REPORT_FILE": str(Path(directory) / "report.md"),
-                "CHANGED_JAVA_FILES_JSON": "[]",
-                "PR_BODY": "JMH: RequestedBenchmark",
-                "MAVEN_BUILD_OUTCOME": "failure",
-                "GITHUB_RUN_URL": "https://github.com/camunda/camunda/actions/runs/123",
-            }
-            commands = []
-
-            def fake_command(args, _workspace, timeout=None):
-                commands.append(args)
-                if args[:3] == ["git", "rev-parse", "HEAD"]:
-                    return subprocess.CompletedProcess(args, 0, head + "\n")
-                if args[:2] == ["git", "ls-tree"]:
-                    return subprocess.CompletedProcess(
-                        args,
-                        0,
-                        "microbenchmarks/src/main/java/io/example/RequestedBenchmark.java\n",
-                    )
-                return subprocess.CompletedProcess(args, 0, "")
-
-            with (
-                patch.dict(os.environ, environment),
-                patch.object(runner, "run_command", side_effect=fake_command),
-            ):
-                # when
-                self.assertEqual(runner.main([]), 1)
+            # when
+            self.assertEqual(run(config, at_baseline), 0)
+            baseline_report = config.report_file.read_text()
+            self.assertEqual(run(head_config, at_head), 0)
+            head_report = head_config.report_file.read_text()
 
             # then
-            report = Path(environment["JMH_REPORT_FILE"]).read_text()
-            self.assertIn("Maven benchmark build failed", report)
-            self.assertIn("actions/runs/123", report)
-            self.assertFalse(
-                any(
-                    args[:3] == ["java", "-jar", runner.BENCHMARK_JAR]
-                    for args in commands
-                )
+            self.assertIn("## JMH baseline results", baseline_report)
+            self.assertIn("## JMH head results", head_report)
+            self.assertEqual(at_baseline.executed, ["RequestedBenchmark"])
+            self.assertEqual(
+                at_head.executed,
+                [
+                    "io.example.ChangedBenchmark",
+                    "ChangedBenchmark.run",
+                    "RequestedBenchmark",
+                ],
             )
 
-    def test_fails_job_after_reporting_failed_benchmark(self):
-        # given
-        with tempfile.TemporaryDirectory() as directory:
-            head = "b" * 40
-            environment = {
-                "HEAD_SHA": head,
-                "JMH_KIND": "head",
-                "GITHUB_WORKSPACE": directory,
-                "JMH_REPORTED_MARKERS": str(Path(directory) / "reported"),
-                "JMH_REPORT_FILE": str(Path(directory) / "report.md"),
-                "PR_BODY": "JMH: RequestedBenchmark.noSuchMethod",
-            }
-
-            def fake_command(args, _workspace, timeout=None):
-                if args[:3] == ["git", "rev-parse", "HEAD"]:
-                    return subprocess.CompletedProcess(args, 0, head + "\n")
-                if args[:2] == ["git", "ls-tree"]:
-                    return subprocess.CompletedProcess(
-                        args,
-                        0,
-                        "microbenchmarks/src/main/java/io/example/RequestedBenchmark.java\n",
-                    )
-                if args[:3] == ["java", "-jar", runner.BENCHMARK_JAR]:
-                    return subprocess.CompletedProcess(args, 1, "benchmark failed\n")
-                return subprocess.CompletedProcess(args, 0, "")
-
-            with (
-                patch.dict(os.environ, environment),
-                patch.object(runner, "run_command", side_effect=fake_command),
-            ):
-                # when
-                self.assertEqual(runner.main([]), 1)
+            # when: both markers are already reported
+            config.reported_markers_file.write_text(
+                "\n".join(r.splitlines()[0] for r in (baseline_report, head_report))
+            )
+            rerun = FakeToolchain(head, sources, files)
+            self.assertEqual(run(head_config, rerun), 0)
 
             # then
-            report = Path(environment["JMH_REPORT_FILE"]).read_text()
+            self.assertEqual(head_config.report_file.read_text(), head_report)
+            self.assertEqual(rerun.executed, [])
+
+            # when: a newly added benchmark does not exist at the baseline
+            no_requests = make_config(
+                directory, changed_files=config.changed_files, kind="baseline"
+            )
+            skipped = FakeToolchain(baseline, sources, files)
+            self.assertEqual(run(no_requests, skipped), 0)
+
+            # then
+            self.assertIn("execution was skipped", no_requests.report_file.read_text())
+            self.assertEqual(skipped.executed, [])
+
+    def test_reports_a_failed_maven_action_without_running_jmh(self):
+        """A failed build is reported with the run link and fails the job."""
+        with tempfile.TemporaryDirectory() as directory:
+            # given
+            head = "b" * 40
+            config = make_config(
+                directory,
+                requested=["RequestedBenchmark"],
+                maven_build_outcome="failure",
+                run_url="https://github.com/camunda/camunda/actions/runs/123",
+            )
+            toolchain = FakeToolchain(
+                head, files={head: [SOURCE_ROOT + "io/example/RequestedBenchmark.java"]}
+            )
+
+            # when
+            self.assertEqual(run(config, toolchain), 1)
+
+            # then
+            report = config.report_file.read_text()
+            self.assertIn("Maven benchmark build failed", report)
+            self.assertIn("actions/runs/123", report)
+            self.assertEqual(toolchain.executed, [])
+
+    def test_fails_job_after_reporting_failed_benchmark(self):
+        """The report is written before a failing benchmark fails the job."""
+        with tempfile.TemporaryDirectory() as directory:
+            # given
+            head = "b" * 40
+            config = make_config(directory, requested=["RequestedBenchmark.noSuchMethod"])
+            toolchain = FakeToolchain(
+                head,
+                files={head: [SOURCE_ROOT + "io/example/RequestedBenchmark.java"]},
+                benchmark_runs={
+                    "RequestedBenchmark.noSuchMethod": BenchmarkRun(
+                        1, "benchmark failed\n"
+                    )
+                },
+            )
+
+            # when
+            self.assertEqual(run(config, toolchain), 1)
+
+            # then
+            report = config.report_file.read_text()
             self.assertIn("RequestedBenchmark.noSuchMethod", report)
             self.assertIn("JMH exited with status 1", report)
 
     def test_posts_result_table_and_folds_the_jmh_log(self):
+        """The final result table is split from the progress log."""
         # given
         output = [
             "# Warmup Iteration   1: 0.5 us/op",
