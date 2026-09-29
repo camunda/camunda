@@ -54,6 +54,7 @@ public final class LeaderWarmup implements PartitionRaftListener {
   private final PhysicalTenantContext tenantContext;
   private final BrokerHealthCheckService healthCheckService;
   private final DoubleSupplier processCpuLoad;
+  private final DoubleSupplier throttledShare;
   private final LeaderWarmupMetrics metrics;
   private final CompletableFuture<Void> stopRequested = new CompletableFuture<>();
   private final CompletableFuture<Void> terminated = new CompletableFuture<>();
@@ -73,7 +74,8 @@ public final class LeaderWarmup implements PartitionRaftListener {
         tenantContext,
         healthCheckService,
         meterRegistry,
-        CpuBudget.processCpuLoad());
+        CpuBudget.processCpuLoad(),
+        CpuBudget.throttledShare());
   }
 
   LeaderWarmup(
@@ -82,12 +84,14 @@ public final class LeaderWarmup implements PartitionRaftListener {
       final PhysicalTenantContext tenantContext,
       final BrokerHealthCheckService healthCheckService,
       final MeterRegistry meterRegistry,
-      final DoubleSupplier processCpuLoad) {
+      final DoubleSupplier processCpuLoad,
+      final DoubleSupplier throttledShare) {
     this.cfg = cfg;
     this.brokerCfg = brokerCfg;
     this.tenantContext = tenantContext;
     this.healthCheckService = healthCheckService;
     this.processCpuLoad = processCpuLoad;
+    this.throttledShare = throttledShare;
     metrics = new LeaderWarmupMetrics(meterRegistry);
     thread = new Thread(this::run, "zeebe-leader-warmup");
     thread.setDaemon(true);
@@ -141,8 +145,15 @@ public final class LeaderWarmup implements PartitionRaftListener {
       skip(stopReason);
       return;
     }
+    final var cpuBudget =
+        new CpuBudget(
+            processCpuLoad,
+            throttledShare,
+            cfg.getMaxCpuLoad(),
+            cfg.getMaxInFlightInstances(),
+            System.nanoTime());
     final var quietWaitStartNanos = System.nanoTime();
-    if (!waitUntilQuiet()) {
+    if (!waitUntilQuiet(cpuBudget)) {
       return;
     }
     final var quietWait = Duration.ofNanos(System.nanoTime() - quietWaitStartNanos);
@@ -166,9 +177,6 @@ public final class LeaderWarmup implements PartitionRaftListener {
     final var startNanos = System.nanoTime();
     final var compilationMillisBefore = compilationMillis();
 
-    final var cpuBudget =
-        new CpuBudget(
-            processCpuLoad, cfg.getMaxCpuLoad(), cfg.getMaxInFlightInstances(), startNanos);
     final var workload =
         new WarmupWorkload(cfg.getProcessInstances(), cfg.getMaxInFlightInstances(), cpuBudget);
     final Outcome outcome;
@@ -245,11 +253,11 @@ public final class LeaderWarmup implements PartitionRaftListener {
    * Waits until the process's CPU load has stayed within budget for the quiet period, or gives up
    * after the maximum duration; returns false if the warm-up was skipped instead.
    */
-  private boolean waitUntilQuiet() throws InterruptedException {
+  private boolean waitUntilQuiet(final CpuBudget cpuBudget) throws InterruptedException {
     final var requiredSamples =
         cfg.getQuietPeriod().toNanos() / CpuBudget.SAMPLE_INTERVAL.toNanos();
     final var deadlineNanos = System.nanoTime() + cfg.getMaxDuration().toNanos();
-    processCpuLoad.getAsDouble();
+    cpuBudget.isWithinBudget();
     for (long quietSamples = 0; quietSamples < requiredSamples; ) {
       if (waitForStop(CpuBudget.SAMPLE_INTERVAL)) {
         skip(stopReason);
@@ -257,11 +265,11 @@ public final class LeaderWarmup implements PartitionRaftListener {
       }
       if (System.nanoTime() - deadlineNanos >= 0) {
         skip(
-            "the broker's CPU load did not stay within %s for %s during %s"
+            "the broker did not stay within its CPU budget of %s for %s during %s"
                 .formatted(cfg.getMaxCpuLoad(), cfg.getQuietPeriod(), cfg.getMaxDuration()));
         return false;
       }
-      quietSamples = processCpuLoad.getAsDouble() <= cfg.getMaxCpuLoad() ? quietSamples + 1 : 0;
+      quietSamples = cpuBudget.isWithinBudget() ? quietSamples + 1 : 0;
     }
     return true;
   }

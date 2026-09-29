@@ -189,7 +189,13 @@ final class LeaderWarmupTest {
             new ExporterRepository(),
             new SecretStoreRegistry(Map.of()));
     return new LeaderWarmup(
-        cfg, brokerCfg, tenantContext, healthCheckService, meterRegistry, () -> processCpuLoad);
+        cfg,
+        brokerCfg,
+        tenantContext,
+        healthCheckService,
+        meterRegistry,
+        () -> processCpuLoad,
+        () -> -1);
   }
 
   private BrokerCfg brokerCfg() {

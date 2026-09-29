@@ -18,13 +18,14 @@ final class CpuBudgetTest {
   private static final long INTERVAL = CpuBudget.SAMPLE_INTERVAL.toNanos();
 
   private double load;
+  private double throttled = -1;
   private int samples;
 
   @Test
   void shouldAllowOneMoreInstancePerIntervalWithinBudget() {
     // given
     load = 0.5;
-    final var budget = new CpuBudget(this::sample, 0.7, 3, 0);
+    final var budget = new CpuBudget(this::sample, this::throttled, 0.7, 3, 0);
 
     // when
     final var limits = limitsOverIntervals(budget, 4);
@@ -37,7 +38,7 @@ final class CpuBudgetTest {
   void shouldHalveUntilPausedWhileOverBudget() {
     // given
     load = 0.5;
-    final var budget = new CpuBudget(this::sample, 0.7, 32, 0);
+    final var budget = new CpuBudget(this::sample, this::throttled, 0.7, 32, 0);
     limitsOverIntervals(budget, 7);
 
     // when
@@ -53,7 +54,7 @@ final class CpuBudgetTest {
   void shouldSampleOncePerInterval() {
     // given
     load = 0.5;
-    final var budget = new CpuBudget(this::sample, 0.7, 32, 0);
+    final var budget = new CpuBudget(this::sample, this::throttled, 0.7, 32, 0);
 
     // when
     for (long now = 0; now < 3 * INTERVAL; now += INTERVAL / 10) {
@@ -68,7 +69,7 @@ final class CpuBudgetTest {
   void shouldKeepTheLimitWhileTheLoadIsUnknown() {
     // given
     load = 0.5;
-    final var budget = new CpuBudget(this::sample, 0.7, 32, 0);
+    final var budget = new CpuBudget(this::sample, this::throttled, 0.7, 32, 0);
     limitsOverIntervals(budget, 2);
 
     // when
@@ -77,6 +78,39 @@ final class CpuBudgetTest {
 
     // then
     assertThat(limits).containsExactly(3, 3, 3);
+  }
+
+  @Test
+  void shouldHalveWhileTheContainerIsThrottledWithinTheLoadBudget() {
+    // given
+    load = 0.5;
+    final var budget = new CpuBudget(this::sample, this::throttled, 0.7, 32, 0);
+    limitsOverIntervals(budget, 7);
+
+    // when
+    throttled = 0.1;
+    final var limits = limitsOverIntervals(budget, 2, 8);
+
+    // then
+    assertThat(limits).containsExactly(4, 2);
+  }
+
+  @Test
+  void shouldGrowWhileNotThrottledEvenIfTheLoadIsUnknown() {
+    // given
+    load = -1;
+    throttled = 0;
+    final var budget = new CpuBudget(this::sample, this::throttled, 0.7, 32, 0);
+
+    // when
+    final var limits = limitsOverIntervals(budget, 3);
+
+    // then
+    assertThat(limits).containsExactly(2, 3, 4);
+  }
+
+  private double throttled() {
+    return throttled;
   }
 
   private double sample() {
