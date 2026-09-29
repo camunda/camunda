@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.application.commons.pt.EveryTenantTerminallyFailedException;
 import io.camunda.application.commons.pt.PerTenantSchemaInitialization.Deferral;
 import io.camunda.application.commons.pt.PerTenantSchemaInitialization.DeferralCheck;
 import io.camunda.application.commons.rdbms.RdbmsDataSources;
@@ -133,11 +132,10 @@ class RdbmsSchemaInitializerH2IT {
       seedSchemaVersion(tenants.dataSourceFor(TENANT_A), UNMIGRATABLE_SCHEMA_VERSION);
       final var initializer = initializerFor(tenants);
       try {
-        // when / then - there is no healthy tenant that would allow startup to proceed
+        // when / then - there is no healthy tenant that would allow startup to proceed, and the
+        // operator reads the schema manager's own failure rather than an aggregate of one
         assertThatThrownBy(initializer::afterPropertiesSet)
-            .isInstanceOf(EveryTenantTerminallyFailedException.class)
-            .hasCauseInstanceOf(RdbmsSchemaVersionIncompatibleException.class)
-            .cause()
+            .isInstanceOf(RdbmsSchemaVersionIncompatibleException.class)
             .hasMessageContaining(UNMIGRATABLE_SCHEMA_VERSION);
         assertThat(initializer.isInitialized(TENANT_A)).isFalse();
       } finally {

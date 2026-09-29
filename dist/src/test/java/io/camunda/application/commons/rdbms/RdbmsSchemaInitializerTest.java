@@ -38,8 +38,9 @@ import org.junit.jupiter.api.Timeout;
 
 /**
  * Covers the storage-specific half of RDBMS schema initialization — which failures are terminal,
- * what one attempt does, and which of the two shapes a node takes for its tenant count. The gate
- * rule itself and the retry loop belong to {@code PerTenantSchemaInitializationTest}.
+ * what one attempt does, which of the two shapes a node takes for its tenant count, and how both
+ * leave a recovering tenant alone. The gate rule itself and the retry loop belong to {@code
+ * PerTenantSchemaInitializationTest}.
  *
  * <p>No database is involved: every schema manager here is a fake, because what is under test is
  * what the initializer does with an attempt's outcome, not what an attempt does.
@@ -62,10 +63,10 @@ final class RdbmsSchemaInitializerTest {
     }
   }
 
-  // ---- single-tenant broker behavior ----
+  // ---- the single-tenant shape: synchronous, fail-fast, as before this class existed ----
 
   @Test
-  void shouldInitializeASingleTenantBeforeReleasingStartup() throws Exception {
+  void shouldInitializeASingleTenantSynchronously() throws Exception {
     // given
     final var manager = new FakeSchemaManager();
     initializer = initializer(Map.of(TENANT_A, manager));
@@ -73,38 +74,41 @@ final class RdbmsSchemaInitializerTest {
     // when
     initializer.afterPropertiesSet();
 
-    // then
-    assertThat(manager.attempts()).isEqualTo(1);
+    // then - applied during the context refresh, not in the background
+    assertThat(manager.attempts()).isOne();
     assertThat(initializer.isInitialized(TENANT_A)).isTrue();
   }
 
   @Test
-  void shouldAbortStartupWhenTheSingleTenantFailsTerminally() {
-    // given
-    final var manager =
-        FakeSchemaManager.alwaysFailingWith(
-            new RdbmsSchemaVersionIncompatibleException("8.9.0", "8.11.0"));
+  void shouldFailStartupWhenTheSingleTenantCannotBeInitialized() {
+    // given - the case a one-shot job such as RestoreApp depends on: it has to exit non-zero in
+    // seconds rather than hold at a gate no second tenant can ever release
+    final var manager = FakeSchemaManager.alwaysFailingWith(new SQLException("no DDL grant"));
     initializer = initializer(Map.of(TENANT_A, manager));
 
-    // when / then
+    // when / then - and unwrapped, so what an operator reads has not changed
     assertThatThrownBy(() -> initializer.afterPropertiesSet())
-        .isInstanceOf(EveryTenantTerminallyFailedException.class)
-        .hasMessageContaining(TENANT_A);
+        .isInstanceOf(SQLException.class)
+        .hasMessage("no DDL grant");
     assertThat(initializer.isInitialized(TENANT_A)).isFalse();
   }
 
   @Test
-  void shouldRetryASingleTenantUntilItCanInitialize() throws Exception {
+  void shouldNotRetryASingleTenantInTheBackground() {
     // given
-    final var manager = FakeSchemaManager.failingTimes(2, new SQLException("no DDL grant"));
+    final var manager = FakeSchemaManager.alwaysFailingWith(new SQLException("no DDL grant"));
     initializer = initializer(Map.of(TENANT_A, manager));
 
     // when
-    initializer.afterPropertiesSet();
+    assertThatThrownBy(() -> initializer.afterPropertiesSet()).isNotNull();
 
-    // then
-    assertThat(manager.attempts()).isEqualTo(3);
-    assertThat(initializer.isInitialized(TENANT_A)).isTrue();
+    // then - exactly one attempt was made and no task outlives the failure; a job that kept
+    // retrying would never terminate against an unbounded budget
+    assertThat(manager.attempts()).isOne();
+    Awaitility.await()
+        .during(Duration.ofMillis(200))
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(() -> assertThat(manager.attempts()).isOne());
   }
 
   @Test
@@ -129,9 +133,80 @@ final class RdbmsSchemaInitializerTest {
     assertThat(manager.attempts()).isOne();
   }
 
+  // ---- recovery deferral ----
+
   @Test
-  void shouldDeferSingleTenantStartupDuringRecoveryAndAllowImmediateRestoreInitialization()
-      throws Exception {
+  void shouldNotTouchASingleTenantsSchemaWhileItIsRecovering() throws Exception {
+    // given - the node restarted while its tenant was in recovery mode
+    final var manager = new FakeSchemaManager();
+    initializer =
+        initializer(Map.of(TENANT_A, manager), DeferralCheck.of(ignored -> Deferral.DEFERRED));
+
+    // when
+    initializer.afterPropertiesSet();
+
+    // then - startup proceeds, and the schema is left for the restore to apply
+    assertThat(manager.attempts()).isZero();
+    assertThat(initializer.isInitialized(TENANT_A)).isFalse();
+  }
+
+  @Test
+  void shouldApplyADeferredSingleTenantsSchemaOnceWhenRestored() throws Exception {
+    // given
+    final var manager = new FakeSchemaManager();
+    initializer =
+        initializer(Map.of(TENANT_A, manager), DeferralCheck.of(ignored -> Deferral.DEFERRED));
+    initializer.afterPropertiesSet();
+
+    // when - the restore's explicit invocation
+    initializer.initializeNow(TENANT_A);
+
+    // then
+    assertThat(manager.attempts()).isOne();
+    assertThat(initializer.isInitialized(TENANT_A)).isTrue();
+  }
+
+  @Test
+  void shouldReapplyASingleTenantsSchemaWhenRestoredAfterStartup() throws Exception {
+    // given - the schema was applied at startup, then the storage was replaced by a restore
+    final var manager = new FakeSchemaManager();
+    initializer = initializer(Map.of(TENANT_A, manager));
+    initializer.afterPropertiesSet();
+
+    // when - the restore's explicit invocation
+    initializer.initializeNow(TENANT_A);
+
+    // then - the schema pass runs against the restored storage rather than trusting the startup one
+    assertThat(manager.attempts()).isEqualTo(2);
+    assertThat(initializer.isInitialized(TENANT_A)).isTrue();
+  }
+
+  @Test
+  void shouldApplyASingleTenantsSchemaOnceItLeavesRecovery() throws Exception {
+    // given - the node started while its tenant was recovering
+    final var recovering = new AtomicBoolean(true);
+    final var manager = new FakeSchemaManager();
+    initializer =
+        initializer(
+            Map.of(TENANT_A, manager),
+            DeferralCheck.of(ignored -> recovering.get() ? Deferral.DEFERRED : Deferral.NONE));
+    initializer.afterPropertiesSet();
+
+    // when - recovery ends without a restore
+    recovering.set(false);
+
+    // then - the schema is applied in the background, exactly once
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(() -> assertThat(initializer.isInitialized(TENANT_A)).isTrue());
+    Awaitility.await()
+        .during(Duration.ofMillis(700))
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(() -> assertThat(manager.attempts()).isOne());
+  }
+
+  @Test
+  void shouldNotReapplyASingleTenantsSchemaRestoredBeforeItLeavesRecovery() throws Exception {
     // given
     final var recovering = new AtomicBoolean(true);
     final var manager = new FakeSchemaManager();
@@ -139,24 +214,58 @@ final class RdbmsSchemaInitializerTest {
         initializer(
             Map.of(TENANT_A, manager),
             DeferralCheck.of(ignored -> recovering.get() ? Deferral.DEFERRED : Deferral.NONE));
-
-    // when - startup discovers the tenant is recovering
     initializer.afterPropertiesSet();
 
-    // then - startup is released without touching its schema
-    assertThat(manager.attempts()).isZero();
-    assertThat(initializer.isInitialized(TENANT_A)).isFalse();
-
-    // when - the restore graph explicitly initializes the schema
+    // when - the restore applies it, and then the tenant leaves recovery
     initializer.initializeNow(TENANT_A);
     recovering.set(false);
 
-    // then - the tenant is ready, and the background task does not apply the schema again
+    // then
     Awaitility.await()
-        .during(Duration.ofMillis(200))
+        .during(Duration.ofMillis(700))
         .atMost(Duration.ofSeconds(5))
         .untilAsserted(() -> assertThat(manager.attempts()).isOne());
     assertThat(initializer.isInitialized(TENANT_A)).isTrue();
+  }
+
+  @Test
+  void shouldWaitForAPendingRecoveryDecisionBeforeInitializingASingleTenant() throws Exception {
+    // given - discovery has not yet told whether the tenant is recovering
+    final var checks = new AtomicInteger();
+    final var manager = new FakeSchemaManager();
+    initializer =
+        initializer(
+            Map.of(TENANT_A, manager),
+            DeferralCheck.of(
+                ignored -> checks.incrementAndGet() < 3 ? Deferral.PENDING : Deferral.NONE));
+
+    // when
+    initializer.afterPropertiesSet();
+
+    // then - applied only once the decision resolved
+    assertThat(checks).hasValue(3);
+    assertThat(manager.attempts()).isOne();
+    assertThat(initializer.isInitialized(TENANT_A)).isTrue();
+  }
+
+  @Test
+  void shouldNotTouchARecoveringTenantsSchemaOnAMultiTenantNode() throws Exception {
+    // given - tenant B is recovering, tenant A is not
+    final var healthy = new FakeSchemaManager();
+    final var recovering = new FakeSchemaManager();
+    initializer =
+        initializer(
+            tenants(healthy, recovering),
+            DeferralCheck.of(
+                tenantId -> TENANT_B.equals(tenantId) ? Deferral.DEFERRED : Deferral.NONE));
+
+    // when
+    initializer.afterPropertiesSet();
+
+    // then
+    assertThat(initializer.isInitialized(TENANT_A)).isTrue();
+    assertThat(recovering.attempts()).isZero();
+    assertThat(initializer.isInitialized(TENANT_B)).isFalse();
   }
 
   // ---- the multi-tenant shape: isolated, retried in the background, gated ----
