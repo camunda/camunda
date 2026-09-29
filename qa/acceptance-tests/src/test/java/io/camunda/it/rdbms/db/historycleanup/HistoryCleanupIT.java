@@ -67,7 +67,7 @@ public class HistoryCleanupIT extends ProcessInstanceHistory {
   }
 
   @TestTemplate
-  public void shouldExitEarlyIfDependentChildrenNotFullyDeleted(
+  public void shouldDeleteRootProcessInstanceAfterDrainingChildrenOverBatchSize(
       final CamundaRdbmsTestApplication testApplication) {
     // given
     final var rdbmsService = testApplication.getRdbmsService();
@@ -96,13 +96,7 @@ public class HistoryCleanupIT extends ProcessInstanceHistory {
     historyCleanupService.cleanupHistory(0, OffsetDateTime.now());
 
     // then
-    assertThat(processInstanceCount(rdbmsService, rootProcessInstanceKey)).isEqualTo(1L);
-    assertThat(flowNodeInstanceCount(rdbmsService, rootProcessInstanceKey)).isEqualTo(10L);
-    assertThat(userTaskCount(rdbmsService, rootProcessInstanceKey)).isEqualTo(10L);
-    assertThat(variableCount(rdbmsService, rootProcessInstanceKey)).isEqualTo(10L);
-    assertThat(incidentCount(rdbmsService, rootProcessInstanceKey)).isEqualTo(10L);
-    assertThat(decisionInstanceCount(rdbmsService, rootProcessInstanceKey)).isEqualTo(10L);
-    assertThat(auditLogCount(rdbmsService, rootProcessInstanceKey)).isEqualTo(10L);
+    processInstanceAndRelatedRecordsHaveBeenDeleted(rdbmsService, rootProcessInstanceKey);
   }
 
   @TestTemplate
@@ -142,7 +136,7 @@ public class HistoryCleanupIT extends ProcessInstanceHistory {
   }
 
   @TestTemplate
-  public void shouldExitEarlyIfDependentProcessesNotFullyDeleted(
+  public void shouldDeleteRootProcessInstanceAfterDrainingDependentProcessesOverBatchSize(
       final CamundaRdbmsTestApplication testApplication) {
     // given
     final var rdbmsService = testApplication.getRdbmsService();
@@ -180,7 +174,7 @@ public class HistoryCleanupIT extends ProcessInstanceHistory {
     historyCleanupService.cleanupHistory(0, OffsetDateTime.now());
 
     // then
-    assertThat(processInstanceCount(rdbmsService, rootProcessInstanceKey)).isEqualTo(1L);
+    assertThat(processInstanceCount(rdbmsService, rootProcessInstanceKey)).isEqualTo(0L);
     assertThat(processInstanceCount(rdbmsService, dependentProcessInstanceIds)).isEqualTo(0L);
   }
 

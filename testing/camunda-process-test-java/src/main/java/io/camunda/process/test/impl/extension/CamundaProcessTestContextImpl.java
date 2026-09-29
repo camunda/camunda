@@ -80,6 +80,14 @@ import org.slf4j.LoggerFactory;
 
 public class CamundaProcessTestContextImpl implements CamundaProcessTestContext {
 
+  /**
+   * The name given to every mocked child process. A mock has to keep the ID of the process it
+   * stands in for, because that is what the call activity binds to, which leaves the name as the
+   * only thing that tells a mock apart from a real process once it reaches the engine. The coverage
+   * report relies on it to leave mocks out.
+   */
+  public static final String MOCK_PROCESS_NAME = "cpt-mock";
+
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaProcessTestContextImpl.class);
 
   // We can complete only created user tasks. Ignore other states.
@@ -239,6 +247,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     final CamundaClient client = createClient();
     final BpmnModelInstance processModel =
         Bpmn.createExecutableProcess(childProcessId)
+            .name(MOCK_PROCESS_NAME)
             .startEvent()
             .endEvent(
                 "child-end",
@@ -264,6 +273,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     final String variableSupplierJobType = "variableSupplier_" + childProcessId;
     final BpmnModelInstance processModel =
         Bpmn.createExecutableProcess(childProcessId)
+            .name(MOCK_PROCESS_NAME)
             .startEvent()
             .serviceTask("variableSupplier", t -> t.zeebeJobType(variableSupplierJobType))
             .endEvent()
