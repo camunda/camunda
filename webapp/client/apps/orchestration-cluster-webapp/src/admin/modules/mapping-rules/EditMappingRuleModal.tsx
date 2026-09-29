@@ -56,9 +56,8 @@ const EditMappingRuleModal: React.FC<Props> = ({mappingRule, onClose}) => {
 							claimName: mappingRule.claimName,
 							claimValue: mappingRule.claimValue,
 						}}
-						onSubmit={async (values) => {
-							await update.mutateAsync({mappingRuleId: mappingRule.mappingRuleId, ...values});
-							onClose();
+						onSubmit={(values) => {
+							update.mutate({mappingRuleId: mappingRule.mappingRuleId, ...values}, {onSuccess: onClose});
 						}}
 						validate={({name, claimName, claimValue}) => ({
 							name: name ? undefined : t('admin.mappingRules.mappingRuleNameRequiredError'),

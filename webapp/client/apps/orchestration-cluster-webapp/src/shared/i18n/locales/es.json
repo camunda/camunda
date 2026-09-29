@@ -152,6 +152,7 @@
 				"mappingRuleIdFieldLabel": "ID de regla de mapeo",
 				"mappingRuleIdFieldPlaceholder": "Introduce un ID único",
 				"mappingRuleIdRequiredError": "El ID de la regla de mapeo es obligatorio",
+				"mappingRuleIdInvalidError": "El ID debe tener 256 caracteres o menos y contener solo letras, números y _ ~ @ . + -",
 				"mappingRuleIdAlreadyExistsError": "Ya existe una regla de mapeo con este ID",
 				"mappingRuleNameFieldLabel": "Nombre",
 				"mappingRuleNameFieldPlaceholder": "Introduce un nombre",

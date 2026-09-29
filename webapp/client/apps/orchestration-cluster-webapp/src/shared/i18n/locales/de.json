@@ -152,6 +152,7 @@
 				"mappingRuleIdFieldLabel": "Zuordnungsregel-ID",
 				"mappingRuleIdFieldPlaceholder": "Eindeutige ID eingeben",
 				"mappingRuleIdRequiredError": "Zuordnungsregel-ID ist erforderlich",
+				"mappingRuleIdInvalidError": "Die ID darf höchstens 256 Zeichen lang sein und nur Buchstaben, Zahlen sowie _ ~ @ . + - enthalten",
 				"mappingRuleIdAlreadyExistsError": "Eine Zuordnungsregel mit dieser ID existiert bereits",
 				"mappingRuleNameFieldLabel": "Name",
 				"mappingRuleNameFieldPlaceholder": "Namen eingeben",

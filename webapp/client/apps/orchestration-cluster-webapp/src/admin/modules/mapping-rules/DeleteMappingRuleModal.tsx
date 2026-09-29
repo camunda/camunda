@@ -42,13 +42,12 @@ const DeleteMappingRuleModal: React.FC<Props> = ({mappingRule, onClose}) => {
 	);
 
 	const handleDelete = useCallback(
-		async (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+		(event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
 			event.preventDefault();
 			if (mappingRule === null) {
 				return;
 			}
-			await remove.mutateAsync({mappingRuleId: mappingRule.mappingRuleId});
-			onClose();
+			remove.mutate({mappingRuleId: mappingRule.mappingRuleId}, {onSuccess: onClose});
 		},
 		[mappingRule, onClose, remove],
 	);

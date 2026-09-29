@@ -53,10 +53,14 @@ const AdminMappingRulesPage: React.FC<AdminMappingRulesPageProps> = ({
 	const [lastAppliedSearchTerm, setLastAppliedSearchTerm] = useState(appliedSearchTerm);
 
 	// Back/forward navigation changes the applied term without touching the draft, which
-	// would otherwise leave the input showing a term the table is no longer filtered by.
+	// would otherwise leave the input showing a term the table is no longer filtered by. Only
+	// sync the draft in that case (draft still matches what was last applied) — otherwise a
+	// slow round-trip for an earlier debounce would clobber input typed in the meantime.
 	if (lastAppliedSearchTerm !== appliedSearchTerm) {
+		if (searchDraft === lastAppliedSearchTerm) {
+			setSearchDraft(appliedSearchTerm);
+		}
 		setLastAppliedSearchTerm(appliedSearchTerm);
-		setSearchDraft(appliedSearchTerm);
 	}
 
 	useEffect(() => {

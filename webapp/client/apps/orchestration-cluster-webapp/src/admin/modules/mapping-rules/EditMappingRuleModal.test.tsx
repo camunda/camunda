@@ -78,6 +78,28 @@ describe('<EditMappingRuleModal />', () => {
 		await vi.waitFor(() => expect(mockOnClose).toHaveBeenCalledOnce());
 	});
 
+	it('should keep the dialog open when the update fails', async ({worker}) => {
+		const mockOnClose = vi.fn();
+		const mappingRule = createMappingRule({mappingRuleId: 'my-rule'});
+		worker.use(
+			mockUpdateMappingRuleEndpoint({
+				schema: z.object({name: z.literal('will-not-match')}),
+				successResponse: HttpResponse.json({}),
+				failureResponse: new HttpResponse(null, {status: 500}),
+			}),
+		);
+
+		const screen = await render(<EditMappingRuleModal mappingRule={mappingRule} onClose={mockOnClose} />, {
+			wrapper: getWrapper(),
+		});
+
+		await userEvent.fill(screen.getByRole('textbox', {name: 'Name'}), 'Updated name');
+		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
+
+		await expect.element(screen.getByText('Failed to update mapping rule')).toBeVisible();
+		expect(mockOnClose).not.toHaveBeenCalled();
+	});
+
 	it('should call onClose when cancelled', async () => {
 		const mockOnClose = vi.fn();
 		const mappingRule = createMappingRule();

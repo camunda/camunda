@@ -82,6 +82,26 @@ describe('<AdminMappingRulesPage />', () => {
 		);
 	});
 
+	it('should not overwrite newer input when a stale search term is applied', async () => {
+		const {screen} = await renderPage();
+		const searchBox = screen.getByRole('searchbox');
+
+		await userEvent.fill(searchBox, 'a');
+		await userEvent.fill(searchBox, 'ab');
+
+		// Simulates the route applying the debounced "a" navigation while the reader kept typing.
+		await screen.rerender(
+			<AdminMappingRulesPage
+				mappingRules={[createMappingRule()]}
+				totalItems={1}
+				search={{search: 'a'}}
+				onSearchChange={() => {}}
+			/>,
+		);
+
+		await expect.element(searchBox).toHaveValue('ab');
+	});
+
 	it('should clear the mapping rule ID filter', async () => {
 		const {screen, onSearchChange} = await renderPage({search: {search: 'my-rule'}});
 

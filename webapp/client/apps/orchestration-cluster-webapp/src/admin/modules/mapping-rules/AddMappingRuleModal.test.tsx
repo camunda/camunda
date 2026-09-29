@@ -75,6 +75,20 @@ describe('<AddMappingRuleModal />', () => {
 		await expect.element(screen.getByRole('textbox', {name: 'Claim value'})).toHaveAttribute('aria-invalid', 'true');
 	});
 
+	it('should show a validation error for an invalid mapping rule ID', async () => {
+		const screen = await render(<AddMappingRuleModal isOpen onClose={() => {}} />, {wrapper: getWrapper()});
+
+		await userEvent.fill(screen.getByRole('textbox', {name: 'Mapping rule ID'}), 'invalid id!');
+		await userEvent.fill(screen.getByRole('textbox', {name: 'Name'}), 'My rule');
+		await userEvent.fill(screen.getByRole('textbox', {name: 'Claim name'}), 'email');
+		await userEvent.fill(screen.getByRole('textbox', {name: 'Claim value'}), 'demo@example.com');
+		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
+
+		await expect
+			.element(screen.getByText('ID must be 256 characters or fewer, using only letters, numbers, and _ ~ @ . + -'))
+			.toBeVisible();
+	});
+
 	it('should show an inline error when the mapping rule ID already exists', async ({worker}) => {
 		worker.use(
 			mockCreateMappingRuleEndpoint({

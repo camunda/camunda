@@ -152,6 +152,7 @@
 				"mappingRuleIdFieldLabel": "ID de règle de mappage",
 				"mappingRuleIdFieldPlaceholder": "Saisissez un ID unique",
 				"mappingRuleIdRequiredError": "L'ID de la règle de mappage est requis",
+				"mappingRuleIdInvalidError": "L'ID doit comporter au maximum 256 caractères et ne contenir que des lettres, des chiffres et _ ~ @ . + -",
 				"mappingRuleIdAlreadyExistsError": "Une règle de mappage avec cet ID existe déjà",
 				"mappingRuleNameFieldLabel": "Nom",
 				"mappingRuleNameFieldPlaceholder": "Saisissez un nom",
