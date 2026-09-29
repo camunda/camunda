@@ -369,6 +369,14 @@ describe('batch operations URL search', () => {
 		},
 	);
 
+	it.for([
+		{label: 'number', value: 123},
+		{label: 'boolean', value: true},
+		{label: 'repeated parameter array', value: ['state+asc', 'actorId+desc']},
+	] as const)('should replace malformed $label sort with the legacy default', ({value}) => {
+		expect(batchOperationsSearchSchema.parse({sort: value}).sort).toBe('endDate+desc');
+	});
+
 	it('should accept every API sort field and valid order', () => {
 		for (const field of ['batchOperationKey', 'operationType', 'state', 'startDate', 'endDate', 'actorId']) {
 			for (const order of ['asc', 'desc']) {

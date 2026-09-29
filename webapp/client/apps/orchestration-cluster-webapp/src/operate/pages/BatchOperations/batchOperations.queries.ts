@@ -38,10 +38,10 @@ const batchOperationsSearchSchema = z.object({
 	page: z.number().int().positive().default(1),
 	pageSize: z.number().int().positive().default(20),
 	sort: z
-		.string()
+		.unknown()
 		.optional()
 		.transform((value) => {
-			const {field, order} = parseBatchOperationsSort(value);
+			const {field, order} = parseBatchOperationsSort(typeof value === 'string' ? value : undefined);
 			return `${field}+${order}`;
 		}),
 });
