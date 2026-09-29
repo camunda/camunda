@@ -68,9 +68,14 @@ class MyBatisConfigurationUnreachableDatabaseTest {
         configuration.rdbmsDataSources(resolver, new SimpleMeterRegistry())) {
       final var sqlSessionFactories = configuration.sqlSessionFactories(dataSources, resolver);
       final var mapperBundles = configuration.rdbmsMapperBundles(sqlSessionFactories, dataSources);
-      final var schemaManagerRegistry =
-          configuration.rdbmsSchemaManagerRegistry(
-              dataSources, resolver, mock(BrokerTopologyManager.class));
+      final var schemaManagerRegistry = configuration.rdbmsSchemaManagerRegistry();
+      final var schemaInitializer =
+          configuration.rdbmsSchemaInitializer(
+              dataSources,
+              resolver,
+              mock(BrokerTopologyManager.class),
+              schemaManagerRegistry,
+              null);
       final var migrationStatusProvider =
           configuration.rdbmsSchemaMigrationStatusProvider(dataSources, resolver);
 
@@ -81,6 +86,7 @@ class MyBatisConfigurationUnreachableDatabaseTest {
       assertThat(dataSources.vendorPropertiesFor(TENANT_A).databaseId()).isEqualTo("postgresql");
       assertThat(dataSources.vendorPropertiesFor(TENANT_B).databaseId()).isEqualTo("mariadb");
       assertThat(migrationStatusProvider).isNotNull();
+      assertThat(schemaInitializer).isNotNull();
 
       // and - no tenant is claimed ready, since nothing has migrated
       assertThat(schemaManagerRegistry.isInitialized(TENANT_A)).isFalse();

@@ -325,7 +325,7 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
               stopTrying(state);
               recoveryDeferred = true;
             }
-            if (!sleep(deferralPollMillis)) {
+            if (shouldShutdown(deferralPollMillis)) {
               return;
             }
             continue;
@@ -339,7 +339,7 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
               startTrying(state);
               recoveryDeferred = false;
             }
-            if (!sleep(deferralPollMillis)) {
+            if (shouldShutdown(deferralPollMillis)) {
               return;
             }
             continue;
@@ -412,7 +412,7 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
         }
 
         attemptNumber++;
-        if (!sleep(retryDelayMillis)) {
+        if (shouldShutdown(retryDelayMillis)) {
           return;
         }
       }
@@ -572,14 +572,14 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
   }
 
   /** Returns false when the wait was cut short and this tenant's task should stop. */
-  private boolean sleep(final long millis) {
+  private boolean shouldShutdown(final long millis) {
     try {
       Thread.sleep(millis);
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
-      return false;
+      return true;
     }
-    return !shutdown.get();
+    return shutdown.get();
   }
 
   private boolean isTerminal(final Throwable failure) {
@@ -605,7 +605,7 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
       return new DeferralCheck(check);
     }
 
-    private Deferral check(final String physicalTenantId) {
+    public Deferral check(final String physicalTenantId) {
       return check.apply(physicalTenantId);
     }
   }
