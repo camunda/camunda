@@ -225,6 +225,63 @@ describe('<AdminOperationsLogPage />', () => {
 		});
 	});
 
+	it('should clear the operation type filter when All is selected', async () => {
+		// given
+		const {screen, onSearchChange} = await renderPage({search: {operationType: 'CREATE'}});
+
+		// when
+		await userEvent.click(screen.getByLabelText('Operation type'));
+		await userEvent.click(screen.getByRole('option', {name: 'All'}));
+
+		// then
+		expect(onSearchChange).toHaveBeenCalledWith({operationType: undefined, page: undefined});
+	});
+
+	it('should clear the entity type and owner filters when All is selected', async () => {
+		// given
+		const {screen, onSearchChange} = await renderPage({
+			search: {entityType: 'AUTHORIZATION', relatedEntityType: 'USER', relatedEntityKey: 'demo'},
+		});
+
+		// when
+		await userEvent.click(screen.getByLabelText('Entity type'));
+		await userEvent.click(screen.getByRole('option', {name: 'All'}));
+
+		// then
+		expect(onSearchChange).toHaveBeenCalledWith({
+			entityType: undefined,
+			relatedEntityType: undefined,
+			relatedEntityKey: undefined,
+			page: undefined,
+		});
+	});
+
+	it('should clear the owner type filter when All is selected', async () => {
+		// given
+		const {screen, onSearchChange} = await renderPage({
+			search: {entityType: 'AUTHORIZATION', relatedEntityType: 'USER'},
+		});
+
+		// when
+		await userEvent.click(screen.getByLabelText('Owner type'));
+		await userEvent.click(screen.getByRole('option', {name: 'All'}));
+
+		// then
+		expect(onSearchChange).toHaveBeenCalledWith({relatedEntityType: undefined, page: undefined});
+	});
+
+	it('should clear the status filter when All is selected', async () => {
+		// given
+		const {screen, onSearchChange} = await renderPage({search: {result: 'FAIL'}});
+
+		// when
+		await userEvent.click(screen.getByLabelText('Status'));
+		await userEvent.click(screen.getByRole('option', {name: 'All'}));
+
+		// then
+		expect(onSearchChange).toHaveBeenCalledWith({result: undefined, page: undefined});
+	});
+
 	it('should filter by actor once the reader stops typing', async () => {
 		// given
 		const {screen, onSearchChange} = await renderPage();

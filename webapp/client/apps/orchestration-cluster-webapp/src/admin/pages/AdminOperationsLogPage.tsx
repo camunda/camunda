@@ -9,6 +9,7 @@
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {TFunction} from 'i18next';
+import {endOfDay} from 'date-fns';
 import {
 	Button,
 	Card,
@@ -51,6 +52,7 @@ type SortingState = NonNullable<SortingConfig['sortState']>;
 
 const FILTER_DEBOUNCE = 500;
 const EMPTY_CELL = '-';
+const ALL_OPTION = 'all';
 
 const FILTER_FIELDS = [
 	'operationType',
@@ -156,7 +158,7 @@ const AdminOperationsLogPage: React.FC<AdminOperationsLogPageProps> = ({
 
 	const handleEntityTypeChange = useCallback(
 		(value: string) => {
-			const entityType = value as NonNullable<OperationsLogSearch['entityType']>;
+			const entityType = value === ALL_OPTION ? undefined : (value as OperationsLogSearch['entityType']);
 			const staysAuthorization = entityType === 'AUTHORIZATION';
 
 			onSearchChange({
@@ -188,7 +190,9 @@ const AdminOperationsLogPage: React.FC<AdminOperationsLogPageProps> = ({
 		(range: DateRange | undefined) => {
 			onSearchChange({
 				timestampFrom: range?.from?.toISOString(),
-				timestampTo: range?.to?.toISOString(),
+				// The picker returns midnight for the selected end date; use the end of that
+				// day so the range includes logs recorded later on the same date.
+				timestampTo: range?.to === undefined ? undefined : endOfDay(range.to).toISOString(),
 				page: undefined,
 			});
 		},
@@ -353,10 +357,11 @@ const AdminOperationsLogPage: React.FC<AdminOperationsLogPageProps> = ({
 								<div className="flex flex-col gap-1">
 									<Label htmlFor="operations-log-operation-type">{t('admin.operationsLog.operationType')}</Label>
 									<Select
-										value={search.operationType ?? ''}
+										value={search.operationType ?? ALL_OPTION}
 										onValueChange={(value) =>
 											onSearchChange({
-												operationType: value as OperationsLogSearch['operationType'],
+												operationType:
+													value === ALL_OPTION ? undefined : (value as OperationsLogSearch['operationType']),
 												page: undefined,
 											})
 										}
@@ -365,6 +370,7 @@ const AdminOperationsLogPage: React.FC<AdminOperationsLogPageProps> = ({
 											<SelectValue placeholder={t('admin.operationsLog.operationType')} />
 										</SelectTrigger>
 										<SelectContent>
+											<SelectItem value={ALL_OPTION}>{t('admin.operationsLog.all')}</SelectItem>
 											{ALLOWED_OPERATION_TYPES.map((operationType) => (
 												<SelectItem key={operationType} value={operationType}>
 													{formatEnumLabel(operationType)}
@@ -376,11 +382,12 @@ const AdminOperationsLogPage: React.FC<AdminOperationsLogPageProps> = ({
 
 								<div className="flex flex-col gap-1">
 									<Label htmlFor="operations-log-entity-type">{t('admin.operationsLog.entityType')}</Label>
-									<Select value={search.entityType ?? ''} onValueChange={handleEntityTypeChange}>
+									<Select value={search.entityType ?? ALL_OPTION} onValueChange={handleEntityTypeChange}>
 										<SelectTrigger id="operations-log-entity-type" className="w-full">
 											<SelectValue placeholder={t('admin.operationsLog.entityType')} />
 										</SelectTrigger>
 										<SelectContent>
+											<SelectItem value={ALL_OPTION}>{t('admin.operationsLog.all')}</SelectItem>
 											{ALLOWED_ENTITY_TYPES.map((entityType) => (
 												<SelectItem key={entityType} value={entityType}>
 													{formatEnumLabel(entityType)}
@@ -395,10 +402,11 @@ const AdminOperationsLogPage: React.FC<AdminOperationsLogPageProps> = ({
 										<div className="flex flex-col gap-1">
 											<Label htmlFor="operations-log-related-entity-type">{t('admin.operationsLog.ownerType')}</Label>
 											<Select
-												value={search.relatedEntityType ?? ''}
+												value={search.relatedEntityType ?? ALL_OPTION}
 												onValueChange={(value) =>
 													onSearchChange({
-														relatedEntityType: value as OperationsLogSearch['relatedEntityType'],
+														relatedEntityType:
+															value === ALL_OPTION ? undefined : (value as OperationsLogSearch['relatedEntityType']),
 														page: undefined,
 													})
 												}
@@ -407,6 +415,7 @@ const AdminOperationsLogPage: React.FC<AdminOperationsLogPageProps> = ({
 													<SelectValue placeholder={t('admin.operationsLog.ownerType')} />
 												</SelectTrigger>
 												<SelectContent>
+													<SelectItem value={ALL_OPTION}>{t('admin.operationsLog.all')}</SelectItem>
 													{ALLOWED_ENTITY_TYPES.map((entityType) => (
 														<SelectItem key={entityType} value={entityType}>
 															{formatEnumLabel(entityType)}
@@ -432,15 +441,19 @@ const AdminOperationsLogPage: React.FC<AdminOperationsLogPageProps> = ({
 								<div className="flex flex-col gap-1">
 									<Label htmlFor="operations-log-result">{t('admin.operationsLog.status')}</Label>
 									<Select
-										value={search.result ?? ''}
+										value={search.result ?? ALL_OPTION}
 										onValueChange={(value) =>
-											onSearchChange({result: value as OperationsLogSearch['result'], page: undefined})
+											onSearchChange({
+												result: value === ALL_OPTION ? undefined : (value as OperationsLogSearch['result']),
+												page: undefined,
+											})
 										}
 									>
 										<SelectTrigger id="operations-log-result" className="w-full">
 											<SelectValue placeholder={t('admin.operationsLog.status')} />
 										</SelectTrigger>
 										<SelectContent>
+											<SelectItem value={ALL_OPTION}>{t('admin.operationsLog.all')}</SelectItem>
 											{ALLOWED_RESULT_TYPES.map((result) => (
 												<SelectItem key={result} value={result}>
 													{formatEnumLabel(result)}

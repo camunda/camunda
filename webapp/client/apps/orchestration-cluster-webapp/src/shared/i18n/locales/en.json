@@ -111,6 +111,7 @@
 				"guideBody": "For more information, see documentation on ",
 				"guideLinkLabel": "operations log",
 				"filter": "Filter",
+				"all": "All",
 				"operationType": "Operation type",
 				"entityType": "Entity type",
 				"ownerType": "Owner type",

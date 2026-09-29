@@ -111,6 +111,7 @@
 				"guideBody": "Pour plus d'informations, consultez la documentation sur le ",
 				"guideLinkLabel": "journal des opérations",
 				"filter": "Filtres",
+				"all": "Tous",
 				"operationType": "Type d'opération",
 				"entityType": "Type d'entité",
 				"ownerType": "Type de propriétaire",
