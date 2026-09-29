@@ -6,7 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute, Outlet, redirect, useMatchRoute, type RegisteredRouter} from '@tanstack/react-router';
+import {
+	createFileRoute,
+	Outlet,
+	redirect,
+	useMatches,
+	useMatchRoute,
+	type RegisteredRouter,
+} from '@tanstack/react-router';
 import {useSessionHeartbeat} from '@camunda/session-heartbeat/react';
 import {SessionWatcher} from '#/shared/auth/shadcn.components/SessionWatcher';
 import {authenticationStore} from '#/shared/auth/authentication.store';
@@ -70,6 +77,9 @@ export const Route = createFileRoute('/_shadcn/_auth')({
 		const {initialSaasToken} = Route.useLoaderData();
 		const matchRoute = useMatchRoute();
 		const currentApp = APP_ROUTES.find(({to}) => matchRoute({to, fuzzy: true}) !== false)?.app;
+		const hideAppChrome = useMatches({
+			select: (matches) => matches.some(({staticData}) => staticData.hideAppChrome === true),
+		});
 
 		useSessionHeartbeat({
 			url: endpoints.sessionHeartbeatUrl(),
@@ -83,9 +93,13 @@ export const Route = createFileRoute('/_shadcn/_auth')({
 		return (
 			<>
 				<SessionWatcher />
-				<Header currentApp={currentApp} initialSaasToken={initialSaasToken}>
+				{hideAppChrome ? (
 					<Outlet />
-				</Header>
+				) : (
+					<Header currentApp={currentApp} initialSaasToken={initialSaasToken}>
+						<Outlet />
+					</Header>
+				)}
 			</>
 		);
 	},

@@ -1,0 +1,99 @@
+/*
+ * Test overrides for Tasklist custom styling.
+ * Palette chosen to be clearly different from the design system defaults
+ * (zinc neutrals, near-black primary, indigo accent, 0.5rem radius).
+ *
+ * Light: "Sand & teal" - warm sand surfaces, teal primary, coral accent.
+ * Dark:  "Midnight plum" - deep plum surfaces, aqua primary, rose accent.
+ */
+
+/* Light theme customization */
+html .c4-ui {
+  /* Page-level */
+  --background: #f6f1e9;
+  --foreground: #1f2a37;
+  --border: #e2d6c3;
+  --popover: #fffaf2;
+  --popover-foreground: #1f2a37;
+  --input: #cdbba2;
+  --input-background: #fffdf8;
+  --switch-background: #d9cbb5;
+
+  /* Applies to both themes (only defined in the light block) */
+  --radius: 0.875rem;
+  --ring: #f06449;
+
+  /* Primary: teal */
+  --primary-action-default: #0f766e;
+  --primary-action-hover: #115e59;
+  --primary-action-active: #134e4a;
+  --primary-action-disabled: rgb(15 118 110 / 38%);
+  --primary-action-foreground: #ffffff;
+
+  /* Accent: coral */
+  --accent-action-default: #e0533d;
+  --accent-action-hover: #c2412d;
+  --accent-action-active: #9f3322;
+  --accent-action-foreground: #ffffff;
+  --accent-foreground-subtle: #c2412d;
+  --accent-foreground-strong: #7c2a1c;
+  --accent-background-subtle: #fdebe6;
+  --accent-background-strong: #fad3c9;
+  --accent-border-subtle: #f6b9aa;
+
+  /* Neutral: warm sand */
+  --neutral-action-default: #5b4d40;
+  --neutral-action-hover: #483c31;
+  --neutral-action-active: #352c24;
+  --neutral-background-subtle: #fffaf2;
+  --neutral-background-medium: #f3e9da;
+  --neutral-background-strong: #efe4d2;
+  --neutral-foreground-subtle: #6b5d4f;
+  --neutral-foreground-strong: #3d3229;
+  --neutral-border-subtle: #e6dac8;
+  --neutral-border-strong: #cdbba2;
+}
+
+/* Dark theme customization */
+html .c4-ui.dark,
+html .dark .c4-ui {
+  /* Page-level */
+  --background: #14121f;
+  --foreground: #f3eefc;
+  --border: rgb(196 181 253 / 16%);
+  --popover: #221d33;
+  --popover-foreground: #f3eefc;
+  --input: #6b6190;
+  --input-background: #1a1728;
+  --switch-background: #3a3354;
+
+  /* Primary: aqua */
+  --primary-action-default: #2dd4bf;
+  --primary-action-hover: #5eead4;
+  --primary-action-active: #99f6e4;
+  --primary-action-disabled: rgb(45 212 191 / 38%);
+  --primary-action-foreground: #042f2e;
+
+  /* Accent: rose */
+  --accent-action-default: #fb7185;
+  --accent-action-hover: #f43f5e;
+  --accent-action-active: #e11d48;
+  --accent-action-foreground: #2a0a12;
+  --accent-foreground-subtle: #fda4af;
+  --accent-foreground-strong: #ffe4e6;
+  --accent-background-subtle: #3b1d2c;
+  --accent-background-strong: #4f2438;
+  --accent-border-subtle: #7a2e4a;
+
+  /* Neutral: plum */
+  --neutral-action-default: #3a3354;
+  --neutral-action-hover: #4a4268;
+  --neutral-action-active: #5a517c;
+  --neutral-background-subtle: #1d1a2c;
+  --neutral-background-medium: #252038;
+  --neutral-background-strong: #2c2742;
+  --neutral-foreground-subtle: #b8b0d0;
+  --neutral-foreground-strong: #f3eefc;
+  --neutral-border-subtle: #342e4d;
+  --neutral-border-strong: #4c4470;
+}

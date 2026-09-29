@@ -8,7 +8,8 @@
 
 import {useTranslation} from 'react-i18next';
 import {observer} from 'mobx-react-lite';
-import {LogOut} from '@camunda/design-system/icons';
+import {LogOut, Palette} from '@camunda/design-system/icons';
+import {Link} from '@tanstack/react-router';
 import {
 	Avatar,
 	Button,
@@ -39,10 +40,11 @@ type Props = {
 	onLogout: () => void;
 	onOpenCookiePreferences?: () => void;
 	onThemeChange?: (theme: (typeof themeOptions)[number][0]) => void;
+	showThemeEditorLink?: boolean;
 };
 
 const AccountMenu: React.FC<Props> = observer(
-	({displayName, canLogout, onLogout, onOpenCookiePreferences, onThemeChange}) => {
+	({displayName, canLogout, onLogout, onOpenCookiePreferences, onThemeChange, showThemeEditorLink = false}) => {
 		const {t, i18n} = useTranslation();
 		const {selectedTheme, changeTheme} = themeStore;
 		const selectedLanguage = i18n.language.split('-')[0];
@@ -98,6 +100,14 @@ const AccountMenu: React.FC<Props> = observer(
 							))}
 						</RadioGroup>
 					</div>
+					{showThemeEditorLink ? (
+						<DropdownMenuItem asChild>
+							<Link to="/tasklist/theme-editor">
+								<Palette aria-hidden />
+								{t('tasklist.themeEditorMenuItem')}
+							</Link>
+						</DropdownMenuItem>
+					) : null}
 
 					<DropdownMenuSeparator />
 					<div className="px-2 py-1.5">
