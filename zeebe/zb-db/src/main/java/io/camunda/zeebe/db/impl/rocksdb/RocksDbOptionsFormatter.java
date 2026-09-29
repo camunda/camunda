@@ -7,11 +7,10 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb;
 
+import java.nio.charset.StandardCharsets;
 import jnr.ffi.LibraryLoader;
 import jnr.ffi.Platform;
 import jnr.ffi.Platform.OS;
-import jnr.ffi.Pointer;
-import jnr.ffi.Runtime;
 import jnr.ffi.annotations.In;
 import jnr.ffi.annotations.Out;
 import org.slf4j.Logger;
@@ -21,7 +20,6 @@ import org.slf4j.LoggerFactory;
 final class RocksDbOptionsFormatter {
   private static final Logger LOG = LoggerFactory.getLogger(RocksDbOptionsFormatter.class);
   private static LibC libC;
-  private static Runtime runtime;
   private static boolean libCUnavailable = false;
 
   static String format(final boolean value) {
@@ -46,14 +44,12 @@ final class RocksDbOptionsFormatter {
   static String format(final double value) {
     if (ensureLibCIsAvailable()) {
       try {
-        // Allocate a buffer for the formatted string
-        // 64 bytes should be more than enough for any reasonable double formatting
-        final var buffer = runtime.getMemoryManager().allocateDirect(64);
+        // fits the longest "%f" output, -Double.MAX_VALUE (317 chars), plus the terminator
+        final var buffer = new byte[320];
         final var bytesWritten = libC.sprintf(buffer, "%f", value);
 
         if (bytesWritten >= 0) {
-          // Convert the C string to Java String
-          return buffer.getString(0);
+          return new String(buffer, 0, bytesWritten, StandardCharsets.US_ASCII);
         } else {
           LOG.warn(
               "sprintf failed to format double value: {}, falling back to String.format", value);
@@ -71,7 +67,7 @@ final class RocksDbOptionsFormatter {
   }
 
   private static boolean ensureLibCIsAvailable() {
-    if (libC != null && runtime != null) {
+    if (libC != null) {
       return true;
     }
     if (libCUnavailable) {
@@ -83,7 +79,6 @@ final class RocksDbOptionsFormatter {
       } else {
         libC = LibraryLoader.create(LibC.class).load("c");
       }
-      runtime = Runtime.getRuntime(libC);
     } catch (final Throwable e) {
       libCUnavailable = true;
       LOG.warn("Failed to load libc for sprintf formatting, will fall back to String.format", e);
@@ -101,6 +96,6 @@ final class RocksDbOptionsFormatter {
      * @param value the double value to format
      * @return number of characters written (excluding null terminator)
      */
-    int sprintf(@Out Pointer str, @In String format, double value);
+    int sprintf(@Out byte[] str, @In String format, double value);
   }
 }
