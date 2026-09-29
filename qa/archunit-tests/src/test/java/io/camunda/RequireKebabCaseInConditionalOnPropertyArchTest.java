@@ -20,8 +20,8 @@ import com.tngtech.archunit.lang.ConditionEvent;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
+import io.camunda.archunit.KebabCasePropertyKeys;
 import java.util.Collection;
-import java.util.regex.Pattern;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 /**
@@ -32,15 +32,16 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
  * <p>ConditionalOnProperty attributes require kebab-case to ensure relaxed binding can be applied.
  * If camelCase is used in the attributes of ConditionalOnProperty, kebab-case configured properties
  * won't match the conditional's attributes. Vice versa that is not a problem, therefore spring-boot
- * is clear about requiring kebab-case in the ConditionalOnProperty javadoc. These rules ensure that
- * we do not accidentally use camelCase in this annotation's property-key attributes ({@code
- * prefix}, {@code name}, {@code value}).
+ * is clear about requiring kebab-case in the ConditionalOnProperty javadoc. Special characters
+ * (e.g. {@code !} or {@code @}) are worse still: a malformed {@code name}/{@code value} is silently
+ * treated as an absent property, so {@code matchIfMissing} decides the outcome with no error or
+ * warning, hiding a misconfigured key. These rules ensure that we do not accidentally use camelCase
+ * or special characters in this annotation's property-key attributes ({@code prefix}, {@code name},
+ * {@code value}), allowing only lowercase letters, digits, dots, and hyphens (see {@link
+ * KebabCasePropertyKeys}).
  */
 @AnalyzeClasses(packages = "io.camunda", importOptions = ImportOption.DoNotIncludeTests.class)
 public final class RequireKebabCaseInConditionalOnPropertyArchTest {
-
-  /** Matches any string that contains at least one uppercase character. */
-  static final Pattern FORBIDDEN_CHARS = Pattern.compile(".*([A-Z]).*");
 
   @ArchTest
   static final ArchRule REQUIRE_KEBAB_CASE_IN_CONDITIONAL_ON_PROPERTY_ON_TYPES =
@@ -70,8 +71,8 @@ public final class RequireKebabCaseInConditionalOnPropertyArchTest {
 
   /**
    * Validates that the property-key attributes ({@code prefix}, {@code name}, {@code value}) of
-   * {@link ConditionalOnProperty} annotations do not contain forbidden characters (uppercase).
-   * ConditionalOnProperty requires all lower case.
+   * {@link ConditionalOnProperty} annotations are valid per {@link
+   * KebabCasePropertyKeys#isValid(String)}.
    *
    * @param annotations the annotations to validate, e.g. from a class or method
    * @param owner the element that owns the annotations, e.g. a class or method
@@ -88,30 +89,26 @@ public final class RequireKebabCaseInConditionalOnPropertyArchTest {
 
       final ConditionalOnProperty cop = ann.as(ConditionalOnProperty.class);
 
-      // prefix
+      // prefix defaults to "" when not set, so only validate it once it is actually used
       final String prefix = cop.prefix();
-      if (valueContainsForbiddenCharacters(prefix)) {
+      if (!prefix.isEmpty() && !KebabCasePropertyKeys.isValid(prefix)) {
         events.add(addViolation(owner, "prefix", prefix));
       }
 
       // name
       for (final String name : cop.name()) {
-        if (valueContainsForbiddenCharacters(name)) {
+        if (!KebabCasePropertyKeys.isValid(name)) {
           events.add(addViolation(owner, "name", name));
         }
       }
 
       // value
       for (final String value : cop.value()) {
-        if (valueContainsForbiddenCharacters(value)) {
+        if (!KebabCasePropertyKeys.isValid(value)) {
           events.add(addViolation(owner, "value", value));
         }
       }
     }
-  }
-
-  private static boolean valueContainsForbiddenCharacters(final String value) {
-    return value != null && FORBIDDEN_CHARS.matcher(value).matches();
   }
 
   private static ConditionEvent addViolation(
@@ -119,8 +116,8 @@ public final class RequireKebabCaseInConditionalOnPropertyArchTest {
     final String message =
         String.format(
             """
-            @ConditionalOnProperty on '%s' has invalid %s: '%s' (contains uppercase). \
-            Please use kebab-case instead.""",
+            @ConditionalOnProperty on '%s' has invalid %s: '%s' (must contain only lowercase \
+            letters, digits, dots, and hyphens). Please use kebab-case instead.""",
             element.getFullName(), attribute, rawValue);
     return SimpleConditionEvent.violated(element, message);
   }
