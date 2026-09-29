@@ -189,12 +189,12 @@ During the Gradle evaluation, a notification (Slack) is sent when the Gradle che
 Gradle check, fails on a Renovate pull request (a pull request with the `renovate` label). The team
 reacts immediately instead of waiting for the regular rebase and assignment window.
 
-- **Gradle-only failures.** The alert is raised only when the Maven build succeeds and the Gradle
-  build does not. A failure that also affects Maven is scoped to that pull request and needs the
-  normal human handling, not a global Gradle alert.
-- **Signal.** As Gradle currently only compiles (D4), the signal is the Gradle distribution
-  ("distball") creation job, which performs essentially the same work. An unrelated failing
-  integration test must not raise the alert or hide a real Gradle breakage.
+- **Gradle-only failures.** The alert is raised only when the Gradle check fails while the Maven
+  `build-distball` job passes. A failure that also affects Maven is scoped to that pull request and
+  needs the normal human handling, not a global Gradle alert.
+- **Signal.** `build-distball` builds the project with Maven without running any tests, and as
+  Gradle currently only compiles (D4), it is the Maven baseline for the Gradle check. An unrelated
+  failing integration test therefore neither triggers the alert nor hides a real Gradle breakage.
 
 This gives early signal and confidence while observing the experiment. The exact wiring of the
 notification is an implementation detail and can change without changing this decision.
