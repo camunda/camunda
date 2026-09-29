@@ -8,19 +8,13 @@
 
 import {test} from 'fixtures';
 import {expect} from '@playwright/test';
-import {buildUrl, credentials, defaultHeaders} from 'utils/http';
-import {CREATE_DOCUMENT_REQUEST_WITH_CONTENT_TYPE} from 'utils/beans/requestBeans';
-import {generateUniqueId} from 'utils/constants';
-import {openDocumentUrl} from 'utils/documentBrowserOutcome';
+import {uploadDocument, type StoredDocument} from 'utils/documentFixtures';
+import {openDocumentUrl, decodedImageWidth} from '@pages/DocumentContentPage';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 
-/**
- * A document that announces itself if a browser ever interprets it: the title
- * is rewritten from the markup and again from script. Asserting the title never
- * takes either value is what distinguishes "the browser saved the file" from
- * "the browser rendered attacker-supplied markup in the application origin".
- */
+// Markers a rendered document would put on the tab. Asserted against every
+// title seen while opening, so they fail independently of the download check.
 const RENDERED_TITLE_MARKER = 'DOCUMENT-RENDERED';
 const SCRIPT_TITLE_MARKER = 'DOCUMENT-SCRIPT-RAN';
 const ACTIVE_DOCUMENT_CONTENT =
@@ -28,9 +22,8 @@ const ACTIVE_DOCUMENT_CONTENT =
   `<script>document.title = '${SCRIPT_TITLE_MARKER}';</script>` +
   `<h1>active content</h1>`;
 
-// 8x8 PNG, kept as bytes: the endpoint decides from the stored content type and
-// never sniffs the payload, but the test asserts the browser decoded a real
-// image, which a corrupted upload would not satisfy.
+// Kept as bytes: a string part is UTF-8 re-encoded and uploads a corrupt PNG.
+// 8x8 rather than 1x1, which all three engines report as naturalWidth 0.
 const PNG_WIDTH = 8;
 const PNG_BYTES = new Uint8Array(
   Buffer.from(
@@ -41,41 +34,19 @@ const PNG_BYTES = new Uint8Array(
   ),
 );
 
-type StoredDocument = {url: string; fileName: string};
-
 const documents: Record<string, StoredDocument> = {};
 
 test.beforeAll(async ({request}) => {
-  async function store(
-    contentType: string,
-    content: string | Uint8Array<ArrayBuffer>,
-    extension: string,
-  ): Promise<StoredDocument> {
-    const fileName = `${generateUniqueId()}.${extension}`;
-    const response = await request.post(buildUrl('/documents'), {
-      headers: defaultHeaders(),
-      multipart: CREATE_DOCUMENT_REQUEST_WITH_CONTENT_TYPE(
-        fileName,
-        contentType,
-        content,
-      ),
-    });
-    expect(response.status()).toBe(201);
-    const document = await response.json();
-    return {
-      fileName,
-      url: `${credentials.baseUrl}/v2/documents/${document.documentId}?contentHash=${document.contentHash}`,
-    };
-  }
-
-  documents.active = await store('text/html', ACTIVE_DOCUMENT_CONTENT, 'html');
-  documents.image = await store('image/png', PNG_BYTES, 'png');
+  const [active, image] = await Promise.all([
+    uploadDocument(request, 'text/html', ACTIVE_DOCUMENT_CONTENT),
+    uploadDocument(request, 'image/png', PNG_BYTES),
+  ]);
+  documents.active = active;
+  documents.image = image;
 });
 
 test.describe('Document Content Browser Rendering', () => {
   test.beforeEach(async ({page}) => {
-    // Start from an application page so a document that is saved rather than
-    // rendered leaves the tab somewhere recognisable.
     await navigateToAppHome(page, 'operate');
   });
 
@@ -87,8 +58,6 @@ test.describe('Document Content Browser Rendering', () => {
   test('Active content is downloaded instead of rendered in the application origin', async ({
     page,
   }) => {
-    const appUrlBeforeOpening = page.url();
-
     const outcome = await openDocumentUrl(page, documents.active.url);
 
     await test.step('the browser saves the document', async () => {
@@ -96,10 +65,13 @@ test.describe('Document Content Browser Rendering', () => {
       expect(outcome.rendered).toBe(false);
     });
 
-    await test.step('nothing from the document is interpreted', async () => {
-      expect(outcome.title).not.toBe(RENDERED_TITLE_MARKER);
-      expect(outcome.title).not.toBe(SCRIPT_TITLE_MARKER);
-      expect(page.url()).toBe(appUrlBeforeOpening);
+    await test.step('the tab never navigates to the document', async () => {
+      expect(new URL(page.url()).pathname).not.toContain('/v2/documents/');
+    });
+
+    await test.step('nothing from the document is ever interpreted', async () => {
+      expect(outcome.titlesSeen).not.toContain(RENDERED_TITLE_MARKER);
+      expect(outcome.titlesSeen).not.toContain(SCRIPT_TITLE_MARKER);
     });
   });
 
@@ -110,11 +82,7 @@ test.describe('Document Content Browser Rendering', () => {
     expect(outcome.rendered).toBe(true);
     expect(outcome.contentType).toBe('image/png');
 
-    // A broken image still produces an image document, so assert the bytes
-    // decoded to the intrinsic size rather than trusting the content type.
-    const decodedWidth = await page.evaluate(
-      () => document.images[0]?.naturalWidth ?? 0,
-    );
-    expect(decodedWidth).toBe(PNG_WIDTH);
+    // A broken image still produces an image document, so check the pixels.
+    expect(await decodedImageWidth(page)).toBe(PNG_WIDTH);
   });
 });
