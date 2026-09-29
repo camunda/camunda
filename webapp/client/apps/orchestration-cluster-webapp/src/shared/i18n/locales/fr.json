@@ -530,6 +530,8 @@
 				"versionWithTenant": "{{name}} – Version {{version}} ({{tenant}})",
 				"fetchErrorHeading": "Les données n'ont pas pu être récupérées",
 				"fetchErrorDescription": "Actualisez la page pour réessayer",
+				"loadingPreviousRows": "Chargement des {{header}} précédents",
+				"loadingMoreRows": "Chargement d'autres {{header}}",
 				"versionDetailsFetchError": "Impossible de charger les détails des versions",
 				"incidentDetailsFetchError": "Impossible de charger les détails des incidents",
 				"draining": "Purge en cours",

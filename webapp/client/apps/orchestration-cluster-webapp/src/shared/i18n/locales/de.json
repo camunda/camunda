@@ -527,6 +527,8 @@
 				"versionWithTenant": "{{name}} ({{tenant}}) – Version {{version}}",
 				"fetchErrorHeading": "Daten konnten nicht abgerufen werden",
 				"fetchErrorDescription": "Laden Sie die Seite neu, um es erneut zu versuchen",
+				"loadingPreviousRows": "Vorherige {{header}} werden geladen",
+				"loadingMoreRows": "Weitere {{header}} werden geladen",
 				"versionDetailsFetchError": "Versionsdetails konnten nicht geladen werden",
 				"incidentDetailsFetchError": "Vorfallsdetails konnten nicht geladen werden",
 				"draining": "Wird geleert",

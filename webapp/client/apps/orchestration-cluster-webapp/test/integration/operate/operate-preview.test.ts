@@ -114,7 +114,7 @@ test.describe('Operate Dashboard DS preview (/operate-preview)', () => {
 		await expect(operatePreviewPage.noInstancesModelerButton).toHaveAttribute('href', 'https://modeler.example.com');
 	});
 
-	test('should keep the list tiles as loading placeholders, since no content tile has landed yet', async ({
+	test('should show sample rows in the list tiles, since real data has not landed yet', async ({
 		network,
 		page,
 		operatePreviewPage,
@@ -130,7 +130,8 @@ test.describe('Operate Dashboard DS preview (/operate-preview)', () => {
 
 		await operatePreviewPage.goto();
 
-		await expect(operatePreviewPage.listTileSkeletonRows.first()).toBeVisible();
+		await expect(operatePreviewPage.processesByNameSampleRow).toBeVisible();
+		await expect(operatePreviewPage.incidentsByErrorSampleRow).toBeVisible();
 		await expect(page.getByText('Process One')).not.toBeAttached();
 	});
 });

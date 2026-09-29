@@ -19,6 +19,7 @@ import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
+import {createProcessDefinitionInstanceStatistics} from '#/shared-test-modules/api-mocks/process-definition-statistics';
 
 test('should have no accessibility violations in the no-instances empty state', async ({
 	network,
@@ -52,5 +53,48 @@ test('should have no accessibility violations in the no-instances empty state', 
 	// unbuilt placeholder tiles (MetricPanel, InstancesByProcess/IncidentsByError land in
 	// later PRs) that a full-page scan would flag for content this PR doesn't touch.
 	const results = await makeAxeBuilder().include('[data-slot="empty-state"]').analyze();
+	expect(results.violations).toEqual([]);
+});
+
+test('should have no accessibility violations in the list tiles with sample rows', async ({
+	network,
+	operatePreviewPage,
+	makeAxeBuilder,
+}) => {
+	network.use(
+		mockCurrentUserEndpoint({
+			successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['operate']})),
+		}),
+		mockSystemConfigurationEndpoint({
+			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
+		}),
+		mockLicenseEndpoint({
+			successResponse: HttpResponse.json(createLicense()),
+		}),
+		mockGetProcessDefinitionInstanceStatisticsEndpoint({
+			successResponse: HttpResponse.json(
+				createPaginatedResponse({
+					items: [
+						createProcessDefinitionInstanceStatistics({
+							processDefinitionId: 'process-1',
+							activeInstancesWithoutIncidentCount: 10,
+							activeInstancesWithIncidentCount: 3,
+						}),
+					],
+					page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+				}),
+			),
+		}),
+		mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+			successResponse: HttpResponse.json(createPaginatedResponse()),
+		}),
+	);
+
+	await operatePreviewPage.goto();
+	await expect(operatePreviewPage.processesByNameSampleRow).toBeVisible();
+
+	// Scoped to the list tiles: MetricPanel is still an unbuilt placeholder (lands in a
+	// later PR) that a full-page scan would flag for content this PR doesn't touch.
+	const results = await makeAxeBuilder().include('[data-slot="data-table"]').analyze();
 	expect(results.violations).toEqual([]);
 });
