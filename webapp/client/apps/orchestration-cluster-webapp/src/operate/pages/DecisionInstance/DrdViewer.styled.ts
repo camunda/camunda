@@ -16,7 +16,8 @@ const ViewerCanvas = styled.div`
 	.ope-selectable {
 		cursor: pointer;
 
-		&.hover .djs-outline {
+		&.hover .djs-outline,
+		&:focus-visible .djs-outline {
 			stroke: var(--cds-link-inverse);
 			stroke-width: 2px;
 		}

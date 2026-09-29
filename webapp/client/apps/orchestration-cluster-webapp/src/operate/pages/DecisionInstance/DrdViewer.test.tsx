@@ -52,6 +52,8 @@ describe('<DrdViewer />', () => {
 		await expect.element(screen.getByTestId('drd-viewer').getByText('invoiceClassification')).toBeVisible();
 		await expect.element(screen.getByTestId('state-overlay-EVALUATED')).toBeVisible();
 		await expect.element(screen.getByTestId('state-overlay-FAILED')).toBeVisible();
+		await expect.element(screen.getByRole('img', {name: 'invoiceClassification: Evaluated'})).toBeVisible();
+		await expect.element(screen.getByRole('img', {name: 'calc-key-figures: Failed'})).toBeVisible();
 		await expect.element(screen.getByTitle('Powered by bpmn.io')).toBeVisible();
 		const container = screen.getByTestId('drd-viewer').element();
 		expect(decisionShape(container, 'invoiceClassification')).toHaveClass('ope-selectable', 'ope-selected');
@@ -76,6 +78,88 @@ describe('<DrdViewer />', () => {
 		await expect.element(screen.getByTestId('state-overlay-FAILED')).toBeVisible();
 		await userEvent.click(screen.getByTestId('drd-viewer').getByText('Calculate Credit History Key Figures'));
 		expect(onDecisionSelection).toHaveBeenCalledWith('instance-2');
+	});
+
+	it('should let keyboard users focus and select evaluated decisions only', async () => {
+		const onDecisionSelection = vi.fn();
+		const screen = await render(
+			<DrdViewer
+				xml={XML}
+				data={{'calc-key-figures': DATA['calc-key-figures']!}}
+				selectedDecisionEvaluationInstanceKey="instance-2"
+				onDecisionSelection={onDecisionSelection}
+			/>,
+		);
+
+		const decision = screen.getByRole('button', {name: 'Calculate Credit History Key Figures'});
+		await expect.element(decision).toBeVisible();
+		await expect.element(decision).toHaveAttribute('tabindex', '0');
+		await expect.element(decision).toHaveAttribute('aria-current', 'true');
+		expect(decisionShape(screen.getByTestId('drd-viewer').element(), 'invoiceClassification')).not.toHaveAttribute(
+			'tabindex',
+		);
+		decision.element().focus();
+		await expect.element(decision).toHaveFocus();
+		await userEvent.keyboard('{Enter}');
+		await userEvent.keyboard(' ');
+		expect(onDecisionSelection).toHaveBeenCalledTimes(2);
+		expect(onDecisionSelection).toHaveBeenCalledWith('instance-2');
+	});
+
+	it('should replace keyboard targets when the evaluation data changes', async () => {
+		const onDecisionSelection = vi.fn();
+		const screen = await render(
+			<DrdViewer
+				xml={XML}
+				data={DATA}
+				selectedDecisionEvaluationInstanceKey="instance-1"
+				onDecisionSelection={onDecisionSelection}
+			/>,
+		);
+		const firstDecision = screen.getByRole('button', {name: 'invoiceClassification'});
+		await expect.element(firstDecision).toBeVisible();
+
+		await screen.rerender(
+			<DrdViewer
+				xml={XML}
+				data={{'calc-key-figures': DATA['calc-key-figures']!}}
+				selectedDecisionEvaluationInstanceKey="instance-2"
+				onDecisionSelection={onDecisionSelection}
+			/>,
+		);
+
+		await expect.element(firstDecision).not.toBeInTheDocument();
+		await expect
+			.element(screen.getByRole('button', {name: 'Calculate Credit History Key Figures'}))
+			.toHaveAttribute('aria-current', 'true');
+		expect(decisionShape(screen.getByTestId('drd-viewer').element(), 'invoiceClassification')).not.toHaveAttribute(
+			'tabindex',
+		);
+	});
+
+	it('should retain the selected decision for assistive technology when other evaluations change', async () => {
+		const screen = await render(
+			<DrdViewer
+				xml={XML}
+				data={DATA}
+				selectedDecisionEvaluationInstanceKey="instance-1"
+				onDecisionSelection={() => {}}
+			/>,
+		);
+		const decision = screen.getByRole('button', {name: 'invoiceClassification'});
+		await expect.element(decision).toHaveAttribute('aria-current', 'true');
+
+		await screen.rerender(
+			<DrdViewer
+				xml={XML}
+				data={{invoiceClassification: DATA.invoiceClassification!}}
+				selectedDecisionEvaluationInstanceKey="instance-1"
+				onDecisionSelection={() => {}}
+			/>,
+		);
+
+		await expect.element(decision).toHaveAttribute('aria-current', 'true');
+		await expect.element(decision).toHaveAttribute('tabindex', '0');
 	});
 
 	it('should render the DMN drill-down icon for a decision table', async () => {
@@ -120,6 +204,11 @@ describe('<DrdViewer />', () => {
 		await expect.element(screen.getByTestId('state-overlay-EVALUATED')).toBeVisible();
 		await userEvent.click(screen.getByTestId('drd-viewer').getByText('invoiceClassification'));
 		expect(onDecisionSelection).toHaveBeenCalledExactlyOnceWith('instance-1');
+		const decision = screen.getByRole('button', {name: 'invoiceClassification'});
+		decision.element().focus();
+		await userEvent.keyboard('{Enter}');
+		expect(onDecisionSelection).toHaveBeenCalledTimes(2);
+		expect(onDecisionSelection).toHaveBeenLastCalledWith('instance-1');
 	});
 
 	it('should refresh overlays and selection when the evaluation data changes without reimporting XML', async () => {
@@ -152,6 +241,7 @@ describe('<DrdViewer />', () => {
 
 		await expect.element(screen.getByTestId('state-overlay-FAILED')).not.toBeInTheDocument();
 		await expect.element(screen.getByTestId('state-overlay-EVALUATED')).toBeVisible();
+		await expect.element(screen.getByRole('img', {name: 'calc-key-figures: Evaluated'})).toBeVisible();
 		const container = screen.getByTestId('drd-viewer').element();
 		expect(decisionShape(container, 'invoiceClassification')).not.toHaveClass('ope-selectable', 'ope-selected');
 		expect(decisionShape(container, 'calc-key-figures')).toHaveClass('ope-selectable', 'ope-selected');

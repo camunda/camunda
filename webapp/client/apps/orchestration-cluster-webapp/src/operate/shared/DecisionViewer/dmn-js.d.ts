@@ -25,7 +25,8 @@ declare module 'dmn-js-shared/lib/base/Manager' {
 	};
 
 	type DrdElementRegistry = {
-		get(elementId: string): {id: string} | undefined;
+		get(elementId: string): {id: string; businessObject?: {name?: string}} | undefined;
+		getGraphics(elementId: string): SVGElement | undefined;
 	};
 
 	type ActiveDrdViewer = {

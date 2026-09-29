@@ -62,6 +62,7 @@ class DrdJS {
 	#generation = 0;
 	#renderVersion = 0;
 	#importPromise: Promise<void> | null = null;
+	#keyboardDecisions: SVGElement[] = [];
 
 	onDecisionSelection?: (decisionEvaluationInstanceKey: string) => void;
 	onDefinitionsChange?: (definitions: {id: string; name: string} | undefined) => void;
@@ -71,6 +72,27 @@ class DrdJS {
 		if (Object.hasOwn(this.#data, element.id)) {
 			this.onDecisionSelection?.(this.#data[element.id]!.decisionEvaluationInstanceKey);
 		}
+	};
+
+	#handleDecisionKeyDown = (event: KeyboardEvent) => {
+		if (event.key !== 'Enter' && event.key !== ' ') {
+			return;
+		}
+		const id = (event.currentTarget as SVGElement).getAttribute('data-element-id');
+		if (id !== null && Object.hasOwn(this.#data, id)) {
+			event.preventDefault();
+			this.onDecisionSelection?.(this.#data[id]!.decisionEvaluationInstanceKey);
+		}
+	};
+
+	#clearKeyboardDecisions = () => {
+		for (const decision of this.#keyboardDecisions) {
+			decision.removeEventListener('keydown', this.#handleDecisionKeyDown);
+			decision.removeAttribute('role');
+			decision.removeAttribute('tabindex');
+			decision.removeAttribute('aria-label');
+		}
+		this.#keyboardDecisions = [];
 	};
 
 	render = async (
@@ -84,6 +106,7 @@ class DrdJS {
 		if (this.#xml !== xml || this.#manager === null) {
 			const generation = ++this.#generation;
 			this.#activeViewer?.off('element.click', this.#handleDecisionSelection);
+			this.#clearKeyboardDecisions();
 			this.#activeViewer = undefined;
 			this.#manager?.destroy();
 			this.#manager = new DrdManager({
@@ -129,6 +152,7 @@ class DrdJS {
 				return;
 			}
 			this.#activeViewer?.off('element.click', this.#handleDecisionSelection);
+			this.#clearKeyboardDecisions();
 			this.#activeViewer = undefined;
 			this.#manager?.destroy();
 			this.#manager = null;
@@ -151,7 +175,19 @@ class DrdJS {
 		const nextIds = Object.keys(data).filter(isVisible).sort();
 		if (!isEqual(previousIds, nextIds)) {
 			previousIds.forEach((id) => canvas.removeMarker(id, 'ope-selectable'));
+			this.#clearKeyboardDecisions();
 			nextIds.forEach((id) => canvas.addMarker(id, 'ope-selectable'));
+			nextIds.forEach((id) => {
+				const decision = registry.getGraphics(id);
+				if (decision === undefined) {
+					return;
+				}
+				decision.setAttribute('role', 'button');
+				decision.setAttribute('tabindex', '0');
+				decision.setAttribute('aria-label', registry.get(id)?.businessObject?.name || id);
+				decision.addEventListener('keydown', this.#handleDecisionKeyDown);
+				this.#keyboardDecisions.push(decision);
+			});
 		}
 
 		const selectedDecisionIdFromData =
@@ -163,9 +199,11 @@ class DrdJS {
 		if (this.#selectedDecisionId !== selectedDecisionId) {
 			if (this.#selectedDecisionId !== null) {
 				canvas.removeMarker(this.#selectedDecisionId, 'ope-selected');
+				registry.getGraphics(this.#selectedDecisionId)?.removeAttribute('aria-current');
 			}
 			if (selectedDecisionId !== null) {
 				canvas.addMarker(selectedDecisionId, 'ope-selected');
+				registry.getGraphics(selectedDecisionId)?.setAttribute('aria-current', 'true');
 			}
 			this.#selectedDecisionId = selectedDecisionId;
 		}
@@ -202,6 +240,7 @@ class DrdJS {
 		this.#data = {};
 		this.#selectedDecisionId = null;
 		this.#activeViewer?.off('element.click', this.#handleDecisionSelection);
+		this.#clearKeyboardDecisions();
 		this.#activeViewer = undefined;
 		this.#manager?.destroy();
 		this.#manager = null;

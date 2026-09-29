@@ -10,6 +10,7 @@ import 'dmn-js-shared/assets/css/dmn-js-shared.css';
 import 'dmn-js-drd/assets/css/dmn-js-drd.css';
 import 'dmn-js/dist/assets/dmn-font/css/dmn.css';
 import {useEffect, useMemo, useRef, useState} from 'react';
+import {useTranslation} from 'react-i18next';
 import {StateOverlay} from '#/operate/shared/StateOverlay/StateOverlay';
 import {DrdJS, type DecisionStateOverlay} from './DrdJS';
 import type {DrdData} from './drdData.queries';
@@ -34,6 +35,7 @@ function DrdViewer({
 	onDefinitionsChange,
 	onError,
 }: Props) {
+	const {t} = useTranslation();
 	const canvasRef = useRef<HTMLDivElement>(null);
 	const viewerRef = useRef<DrdJS>(null);
 	const onErrorRef = useRef(onError);
@@ -114,7 +116,18 @@ function DrdViewer({
 	return (
 		<ViewerCanvas data-testid="drd-viewer" ref={canvasRef}>
 			{overlays.map(({decisionDefinitionId, state, container}) => (
-				<StateOverlay key={decisionDefinitionId} state={state} container={container} />
+				<StateOverlay
+					key={decisionDefinitionId}
+					state={state}
+					container={container}
+					title={`${decisionDefinitionId}: ${
+						state === 'EVALUATED'
+							? t('operate.decisions.filters.evaluated')
+							: state === 'FAILED'
+								? t('operate.decisions.filters.failed')
+								: state
+					}`}
+				/>
 			))}
 		</ViewerCanvas>
 	);
