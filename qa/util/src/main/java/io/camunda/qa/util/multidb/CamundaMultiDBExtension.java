@@ -15,6 +15,7 @@ import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
+import io.camunda.configuration.Camunda;
 import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
@@ -242,6 +243,8 @@ public class CamundaMultiDBExtension
       "test.integration.camunda.physical-tenant.elasticsearch.url";
   public static final String TEST_INTEGRATION_PHYSICAL_TENANT_OPENSEARCH_URL =
       "test.integration.camunda.physical-tenant.opensearch.url";
+  public static final String TEST_ARCHIVERLESS_ENABLED =
+      "test.integration.camunda.archiverless.enabled";
   public static final String PROP_TEST_INTEGRATION_APP_STARTUP_TIMEOUT =
       "test.integration.camunda.app.startup.timeout.seconds";
   public static final Duration TIMEOUT_DATA_AVAILABILITY =
@@ -984,6 +987,16 @@ public class CamundaMultiDBExtension
               applyPhysicalTenant(applicationUnderTest.application.newClientBuilder()),
               tenantRestAddress(applicationUnderTest.application.restAddress()),
               applicationUnderTest.application.grpcAddress());
+    }
+
+    final var archiverlessEnabled = System.getProperty(TEST_ARCHIVERLESS_ENABLED, "false");
+    if (archiverlessEnabled.equalsIgnoreCase("true")) {
+      applicationUnderTest.application.withUnifiedConfig(
+          camunda -> {
+            final var ordinalsConfig = camunda.getProcessing().getEngine().getStorageOrdinals();
+            ordinalsConfig.setEnableArchiverless(true);
+            ordinalsConfig.setFixedStorageOrdinal(1);
+          });
     }
 
     final TestEntityCollection testEntities = new TestEntityCollector().collect(testClass);
