@@ -106,6 +106,26 @@
 				"toolResults": "Ergebnisse",
 				"toolWhenToUse": "Wann zu verwenden",
 				"toolWhenNotToUse": "Wann nicht zu verwenden"
+			},
+			"operationsLog": {
+				"learnMore": "Mehr über das Vorgangsprotokoll erfahren",
+				"filter": "Filter",
+				"operationType": "Operationstyp",
+				"entityType": "Entitätstyp",
+				"ownerType": "Eigentümertyp",
+				"ownerKey": "Eigentümer-ID",
+				"ownerKeyPlaceholder": "Eigentümer-ID eingeben",
+				"status": "Status",
+				"reference": "Referenz zur Entität",
+				"property": "Eigenschaft",
+				"actor": "Akteur",
+				"actorPlaceholder": "Benutzername oder Client-ID",
+				"date": "Datum",
+				"reset": "Filter zurücksetzen",
+				"errorCode": "Fehlercode",
+				"owner": "Eigentümer",
+				"assignee": "Zugewiesen an",
+				"noOperations": "Keine Vorgänge gefunden"
 			}
 		},
 		"tasklist": {

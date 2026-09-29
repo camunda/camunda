@@ -106,6 +106,26 @@
 				"toolResults": "Results",
 				"toolWhenToUse": "When to use",
 				"toolWhenNotToUse": "When not to use"
+			},
+			"operationsLog": {
+				"learnMore": "Learn more about the operations log",
+				"filter": "Filter",
+				"operationType": "Operation type",
+				"entityType": "Entity type",
+				"ownerType": "Owner type",
+				"ownerKey": "Owner ID",
+				"ownerKeyPlaceholder": "Enter owner ID",
+				"status": "Status",
+				"reference": "Reference to entity",
+				"property": "Property",
+				"actor": "Actor",
+				"actorPlaceholder": "Username or client ID",
+				"date": "Date",
+				"reset": "Reset filters",
+				"errorCode": "Error code",
+				"owner": "Owner",
+				"assignee": "Assignee",
+				"noOperations": "No operations found"
 			}
 		},
 		"tasklist": {

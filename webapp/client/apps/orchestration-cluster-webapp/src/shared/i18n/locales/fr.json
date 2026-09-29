@@ -106,6 +106,26 @@
 				"toolResults": "Résultats",
 				"toolWhenToUse": "Quand l'utiliser",
 				"toolWhenNotToUse": "Quand ne pas l'utiliser"
+			},
+			"operationsLog": {
+				"learnMore": "En savoir plus sur le journal des opérations",
+				"filter": "Filtres",
+				"operationType": "Type d'opération",
+				"entityType": "Type d'entité",
+				"ownerType": "Type de propriétaire",
+				"ownerKey": "ID du propriétaire",
+				"ownerKeyPlaceholder": "Saisir l'ID du propriétaire",
+				"status": "Statut",
+				"reference": "Référence à l'entité",
+				"property": "Propriété",
+				"actor": "Acteur",
+				"actorPlaceholder": "Nom d'utilisateur ou ID client",
+				"date": "Date",
+				"reset": "Réinitialiser les filtres",
+				"errorCode": "Code d'erreur",
+				"owner": "Propriétaire",
+				"assignee": "Assigné à",
+				"noOperations": "Aucune opération trouvée"
 			}
 		},
 		"tasklist": {
