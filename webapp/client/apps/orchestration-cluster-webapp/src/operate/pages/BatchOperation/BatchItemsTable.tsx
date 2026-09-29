@@ -9,7 +9,7 @@
 import {useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
 import {createLink} from '@tanstack/react-router';
-import {Button, DataTableSkeleton, InlineLoading, InlineNotification} from '@carbon/react';
+import {ActionableNotification, Button, DataTableSkeleton, InlineLoading} from '@carbon/react';
 import type {BatchOperationItem, BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.11';
 import {PaginatedSortableTable} from '#/operate/shared/PaginatedSortableTable/PaginatedSortableTable';
 import {PanelHeader} from '#/operate/shared/PanelHeader/PanelHeader';
@@ -159,6 +159,11 @@ const BatchItemsTable: React.FC<Props> = ({batchOperationKey, batchOperationType
 
 	const isError = status === 'error';
 	const retry = isFetchNextPageError ? fetchNextPage : isFetchPreviousPageError ? fetchPreviousPage : refetch;
+	const onRetryClick = () => {
+		if (!isFetching) {
+			void retry();
+		}
+	};
 	const retryButton = (
 		<Button kind="tertiary" size="sm" disabled={isFetching} onClick={() => void retry()}>
 			{t('operate.batchOperation.itemsTable.retry')}
@@ -174,19 +179,22 @@ const BatchItemsTable: React.FC<Props> = ({batchOperationKey, batchOperationType
 			{isError && (
 				<div>
 					{items.length > 0 ? (
-						<InlineNotification
+						<ActionableNotification
 							kind="error"
+							inline
 							hideCloseButton
 							role="alert"
 							title={t('operate.shared.errorMessage.message')}
 							subtitle={t('operate.batchOperation.itemsTable.retryHint')}
+							actionButtonLabel={t('operate.batchOperation.itemsTable.retry')}
+							onActionButtonClick={onRetryClick}
 						/>
 					) : (
 						<div role="alert">
 							<ErrorMessage additionalInfo={t('operate.batchOperation.itemsTable.retryHint')} />
+							{retryButton}
 						</div>
 					)}
-					{retryButton}
 					{isFetching && <InlineLoading description={t('operate.batchOperation.itemsTable.retrying')} />}
 				</div>
 			)}
