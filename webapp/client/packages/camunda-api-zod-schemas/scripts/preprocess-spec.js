@@ -19,7 +19,8 @@
  * 2. `copyInheritedRequiredProperties`: when a schema lists a property in `required` that it only
  *    inherits through `allOf`, Kubb emits it as optional. The property is copied into the local
  *    `properties`, so that the generated intersection makes it required.
- * 3. `PATCHES`: targeted fixes for single schemas. Each patch explains why it is necessary.
+ * 3. `PATCHES`: targeted fixes for Kubb output issues in single schemas. Each patch explains why it is
+ *    necessary. Spec errors are fixed in the spec yaml itself, not here.
  */
 
 import fs from 'node:fs/promises';
@@ -201,22 +202,6 @@ function copyInheritedRequiredProperties(files) {
  * @type {Array<{file: string, schema: string, reason: string, apply: (schema: SchemaNode) => void}>}
  */
 const PATCHES = [
-	{
-		file: 'cluster-variables.yaml',
-		schema: 'CreateClusterVariableRequest',
-		reason: '`value` can be any JSON value, but the spec declares `type: object`.',
-		apply: (schema) => {
-			delete schema.properties.value.type;
-		},
-	},
-	{
-		file: 'cluster-variables.yaml',
-		schema: 'UpdateClusterVariableRequest',
-		reason: '`value` can be any JSON value, but the spec declares `type: object`.',
-		apply: (schema) => {
-			delete schema.properties.value.type;
-		},
-	},
 	{
 		file: 'problem-detail.yaml',
 		schema: 'ProblemDetail',
