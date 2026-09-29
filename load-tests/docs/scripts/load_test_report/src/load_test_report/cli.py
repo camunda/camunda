@@ -159,6 +159,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--start",
         default=None,
         type=parse_epoch,
+        required=True,
         help="Start of the reporting window. Prometheus query time anchor, RFC3339 or Unix timestamp.",
     )
     parser.add_argument("--endpoint", default="http://localhost:9090", help="Prometheus base URL.")
