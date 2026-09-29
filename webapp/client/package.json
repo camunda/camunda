@@ -32,7 +32,7 @@
 	"packageManager": "npm@12.1.0",
 	"devDependencies": {
 		"@eslint/js": "10.0.1",
-		"@tanstack/eslint-plugin-query": "5.103.2",
+		"@tanstack/eslint-plugin-query": "5.103.3",
 		"@vitest/eslint-plugin": "1.6.27",
 		"eslint": "10.11.0",
 		"eslint-plugin-import-x": "4.17.1",
