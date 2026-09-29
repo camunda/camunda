@@ -10,7 +10,8 @@ import { FC, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useNotifications } from "src/components/notifications";
 import useTranslate from "src/utility/localization";
-import { isLoggedIn } from "src/utility/auth";
+import { isLoggedIn, recoverThirdPartySession } from "src/utility/auth";
+import { isOIDC } from "src/configuration";
 import { ErrorNotifier, setErrorNotifier } from "./errorNotification";
 import { isDetailedError } from "./request";
 
@@ -24,12 +25,18 @@ const ErrorNotificationBridge: FC = () => {
       const { status, body } = error;
 
       // Session-recovery navigation is independent of toast suppression: any
-      // 401 (including the initial auth probe) should bounce to the login
-      // screen, matching the legacy addHandler behavior.
+      // 401 (including the initial auth probe) should recover the session.
+      // In OIDC mode there is no in-app login form to send the user to — the
+      // IdP owns the session, so reload and let the server-side auth filter
+      // chain re-establish it (or bounce to the IdP's own login page).
       if (status === 401 && !window.location.pathname.includes("/login")) {
-        void navigate(`/login?next=${window.location.pathname}`, {
-          replace: true,
-        });
+        if (isOIDC) {
+          recoverThirdPartySession();
+        } else {
+          void navigate(`/login?next=${window.location.pathname}`, {
+            replace: true,
+          });
+        }
       }
 
       if (skipToast) return;
