@@ -12,16 +12,17 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
+import io.camunda.zeebe.scheduler.testing.ActorSchedulerExtension;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutionException;
 import org.awaitility.Awaitility;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public final class CallableExecutionTest {
-  @Rule public final ActorSchedulerRule schedulerRule = new ActorSchedulerRule(3);
+  @RegisterExtension
+  public final ActorSchedulerExtension actorScheduler = new ActorSchedulerExtension(3);
 
   @Test
   public void shouldCompleteFutureExceptionallyWhenSubmittedDuringActorClosedJob()
@@ -41,7 +42,7 @@ public final class CallableExecutionTest {
           }
         };
 
-    schedulerRule.submitActor(actor);
+    actorScheduler.submitActor(actor);
     actor.closeAsync();
     barrier.await(); // wait for actor to reach onActorClosed callback
 
