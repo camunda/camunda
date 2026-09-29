@@ -82,12 +82,8 @@ async function startCycleTimerInstance(prefix: string, amount = 10) {
   return {...fixture, processInstanceKey: instance.processInstanceKey};
 }
 
-/**
- * Runs the work a boundary event spawned and waits for its branch to end. The
- * model cannot reach a terminal state — one branch parks on an event-based
- * gateway a year out — so draining the revived branch is the available proof
- * that the work runs, rather than a job record that merely appeared.
- */
+/** The model cannot reach a terminal state — a branch parks on an event-based
+ * gateway a year out — so draining the revived branch is the proof available. */
 async function completeBoundaryWork(
   request: APIRequestContext,
   processInstanceKey: string,
@@ -136,14 +132,9 @@ async function countJobs(
   return ((await res.json()).items ?? []).length;
 }
 
-/**
- * The start times of every tick the boundary timer has produced, oldest first.
- *
- * Timestamps rather than counts: the export into secondary storage lags by an
- * unknown amount, so a count read at an arbitrary moment cannot tell a
- * double-fire from a legitimate tick that arrived while the reader was behind.
- * The recorded times say which it was no matter when they are read.
- */
+/** Tick start times, oldest first. Timestamps rather than counts: the export
+ * lag is unbounded, so a count read at some moment cannot tell a double-fire
+ * from a tick that landed while the reader was behind. */
 async function tickStartTimes(
   request: APIRequestContext,
   processInstanceKey: string,
@@ -162,7 +153,6 @@ async function tickStartTimes(
     .sort((a, b) => a - b);
 }
 
-/** Waits until the timer has produced `expected` ticks. */
 async function expectTickCount(
   request: APIRequestContext,
   processInstanceKey: string,
@@ -238,7 +228,6 @@ test.describe('Process Instance Suspend and Resume Timer API', () => {
     await suspendAndExpectSuspended(request, instance.processInstanceKey);
     await holdUntilPast(dueAt);
 
-    // Still waiting, past its due date.
     await searchElementInstanceByElementIdAndState(
       request,
       instance.processInstanceKey,
@@ -310,15 +299,10 @@ test.describe('Process Instance Suspend and Resume Timer API', () => {
       204,
     );
 
-    // Three intervals were missed, and the cadence re-arms afterwards, so the
-    // contract allows exactly two more ticks: the catch-up and the next one.
     const times = await expectTickCount(request, fixture.processInstanceKey, 3);
 
-    // The whole point of #62637: the reschedule anchored on now instead of one
-    // interval past it, so the catch-up was followed immediately by a second
-    // fire. A gap of a full interval is what says it did not happen — and
-    // because this reads recorded times, a slow export cannot fake it either
-    // way.
+    // #62637 anchored the reschedule on now, so the catch-up was followed
+    // immediately by a second fire. A full interval says it was not.
     expect(times[2]! - times[1]!).toBeGreaterThan(15_000);
     await completeBoundaryWork(
       request,
