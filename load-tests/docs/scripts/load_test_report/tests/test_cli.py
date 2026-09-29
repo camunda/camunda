@@ -1,5 +1,8 @@
 import io
 import sys
+from datetime import UTC
+from datetime import datetime
+from datetime import timedelta
 from pathlib import Path
 from unittest import mock
 
@@ -76,6 +79,25 @@ def test_should_derive_end_from_start_and_duration(tmp_path: Path) -> None:
     assert options.time_anchor == "2026-08-14T10:30:00Z"
     assert options.start_label == "2026-08-14T10:00:00Z"
     assert options.end_label == "2026-08-14T10:30:00Z"
+
+
+def test_should_default_to_window_ending_now() -> None:
+    before = datetime.now(UTC).replace(microsecond=0)
+
+    options = parse_args(["c8-ck-test", "--duration-seconds", "1800"])
+
+    after = datetime.now(UTC)
+    start = datetime.strptime(options.start_label, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
+    end = datetime.strptime(options.end_label, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
+    assert options.duration_seconds == 1800
+    assert end - start == timedelta(seconds=1800)
+    assert before <= end <= after
+    assert options.time_anchor == options.end_label
+
+
+def test_should_reject_window_ending_in_the_future() -> None:
+    with pytest.raises(ReportError, match="must not end in the future"):
+        parse_args(["c8-ck-test", "--start", "2999-01-01T00:00:00Z"])
 
 
 def test_should_normalize_timezone_less_time_window() -> None:
@@ -160,6 +182,17 @@ def test_should_build_basic_auth_header() -> None:
 def test_should_reject_incomplete_basic_auth() -> None:
     with pytest.raises(ReportError, match="--user and --password"):
         auth_headers("user", "")
+
+
+def test_should_reject_unrepresentable_reporting_window_with_no_start() -> None:
+    with pytest.raises(ReportError, match="reporting window is outside the supported timestamp range"):
+        parse_args(
+            [
+                "c8-ck-test",
+                "--duration-seconds",
+                "999999999999999999999",
+            ]
+        )
 
 
 def test_should_reject_unrepresentable_reporting_window() -> None:
