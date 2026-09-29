@@ -15,8 +15,12 @@ import {
 
 let loggedIn = false;
 
+const THIRD_PARTY_SESSION_RELOAD_KEY =
+  "identity.thirdPartySessionReloadAttempted";
+
 export function activateSession() {
   loggedIn = true;
+  sessionStorage.removeItem(THIRD_PARTY_SESSION_RELOAD_KEY);
 }
 
 export function disableSession() {
@@ -25,6 +29,22 @@ export function disableSession() {
 
 export function isLoggedIn() {
   return loggedIn;
+}
+
+/**
+ * In OIDC mode there is no in-app login form to fall back to on session expiry — unlike
+ * disableSession() + a navigate to /login, this reloads the page so the browser re-enters the
+ * server's OIDC auth filter chain. If the IdP session is still valid this resolves silently;
+ * otherwise the browser ends up on the IdP's own login page. Guarded by a one-shot flag (cleared
+ * on the next successful activateSession()) so a reload that doesn't fix anything doesn't loop.
+ */
+export function recoverThirdPartySession() {
+  disableSession();
+  if (sessionStorage.getItem(THIRD_PARTY_SESSION_RELOAD_KEY) === "true") {
+    return;
+  }
+  sessionStorage.setItem(THIRD_PARTY_SESSION_RELOAD_KEY, "true");
+  window.location.reload();
 }
 
 const logoutResponseSchema = z.object({
