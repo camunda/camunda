@@ -10,6 +10,7 @@ import {useState} from 'react';
 import {describe, expect} from 'vitest';
 import {HttpResponse} from 'msw';
 import {userEvent} from 'vitest/browser';
+import {z} from 'zod';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {mockQueryBatchOperationItemsEndpoint} from '#/shared-test-modules/mock-handlers';
@@ -19,6 +20,7 @@ import {
 } from '#/shared-test-modules/api-mocks/batch-operations';
 import {createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 import {BatchItemsTable} from './BatchItemsTable';
+import {useBatchOperationItems} from './useBatchOperationItems';
 
 const BATCH_OPERATION_KEY = 'migrate-operation-123';
 const BATCH_OPERATION_LIST_PATH = '/operate/batch-operations';
@@ -39,6 +41,39 @@ function renderBatchItemsTable(
 			basepath,
 			initialEntry: `${basepath}${BATCH_OPERATION_LIST_PATH}`,
 		},
+	);
+}
+
+function renderPaginationHarness() {
+	function Harness() {
+		const {fetchNextPage, fetchPreviousPage} = useBatchOperationItems(BATCH_OPERATION_KEY);
+		return (
+			<div style={{height: '100vh', display: 'flex', flexDirection: 'column'}}>
+				<button type="button" onClick={() => void fetchNextPage()}>
+					Load next page
+				</button>
+				<button type="button" onClick={() => void fetchPreviousPage()}>
+					Load previous page
+				</button>
+				<BatchItemsTable batchOperationKey={BATCH_OPERATION_KEY} batchOperationType="MIGRATE_PROCESS_INSTANCE" />
+			</div>
+		);
+	}
+
+	return renderWithRouter(Harness, {path: BATCH_OPERATION_LIST_PATH});
+}
+
+function paginatedItemsResponse(offset: number) {
+	return HttpResponse.json(
+		createQueryBatchOperationItemsResponse({
+			items: [
+				createBatchOperationItem({
+					itemKey: `item-${offset}`,
+					processInstanceKey: `2251799813685${offset}`,
+				}),
+			],
+			page: {totalItems: 150, hasMoreTotalItems: true},
+		}),
 	);
 }
 
@@ -153,6 +188,66 @@ describe('<BatchItemsTable />', () => {
 		await expect.element(screen.getByText('Retrying items')).toBeVisible();
 		await expect.element(screen.getByRole('link', {name: 'View process instance 2251799813685251'})).toBeVisible();
 		await expect.element(screen.getByText('Retrying items')).not.toBeInTheDocument();
+		await expect.element(screen.getByText("Couldn't fetch data")).not.toBeInTheDocument();
+	});
+
+	it('should retry the failed next-page offset instead of reloading only cached pages', async ({worker}) => {
+		worker.use(mockQueryBatchOperationItemsEndpoint({successResponse: paginatedItemsResponse(0), once: true}));
+
+		const screen = await renderPaginationHarness();
+		const firstLink = screen.getByRole('link', {name: 'View process instance 22517998136850'});
+		await expect.element(firstLink).toBeVisible();
+		worker.use(mockQueryBatchOperationItemsEndpoint({successResponse: ITEMS_LOAD_ERROR, once: true}));
+		await userEvent.click(screen.getByRole('button', {name: 'Load next page'}));
+
+		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
+		await expect.element(firstLink).toBeVisible();
+		worker.use(
+			mockQueryBatchOperationItemsEndpoint({
+				schema: z.object({page: z.object({from: z.literal(50), limit: z.literal(50)})}),
+				successResponse: paginatedItemsResponse(50),
+				failureResponse: ITEMS_LOAD_ERROR,
+			}),
+		);
+		await userEvent.click(screen.getByRole('button', {name: 'Retry'}));
+
+		await expect.element(screen.getByRole('link', {name: 'View process instance 225179981368550'})).toBeVisible();
+		await expect.element(firstLink).toBeVisible();
+		await expect.element(screen.getByText("Couldn't fetch data")).not.toBeInTheDocument();
+	});
+
+	it('should retry the failed previous-page offset and retain only the two-page window', async ({worker}) => {
+		worker.use(mockQueryBatchOperationItemsEndpoint({successResponse: paginatedItemsResponse(0), once: true}));
+
+		const screen = await renderPaginationHarness();
+		const firstLink = screen.getByRole('link', {name: 'View process instance 22517998136850'});
+		await expect.element(firstLink).toBeVisible();
+		worker.use(mockQueryBatchOperationItemsEndpoint({successResponse: paginatedItemsResponse(50), once: true}));
+		await userEvent.click(screen.getByRole('button', {name: 'Load next page'}));
+		const secondLink = screen.getByRole('link', {name: 'View process instance 225179981368550'});
+		await expect.element(secondLink).toBeVisible();
+		worker.use(mockQueryBatchOperationItemsEndpoint({successResponse: paginatedItemsResponse(100), once: true}));
+		await userEvent.click(screen.getByRole('button', {name: 'Load next page'}));
+		const thirdLink = screen.getByRole('link', {name: 'View process instance 2251799813685100'});
+		await expect.element(thirdLink).toBeVisible();
+		await expect.element(firstLink).not.toBeInTheDocument();
+
+		worker.use(mockQueryBatchOperationItemsEndpoint({successResponse: ITEMS_LOAD_ERROR, once: true}));
+		await userEvent.click(screen.getByRole('button', {name: 'Load previous page'}));
+		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
+		await expect.element(thirdLink).toBeVisible();
+		worker.use(
+			mockQueryBatchOperationItemsEndpoint({
+				schema: z.object({page: z.object({from: z.literal(0), limit: z.literal(50)})}),
+				successResponse: paginatedItemsResponse(0),
+				failureResponse: ITEMS_LOAD_ERROR,
+			}),
+		);
+		await userEvent.click(screen.getByRole('button', {name: 'Retry'}));
+
+		await expect.element(firstLink).toBeVisible();
+		await expect.element(secondLink).toBeVisible();
+		await expect.element(thirdLink).not.toBeInTheDocument();
 		await expect.element(screen.getByText("Couldn't fetch data")).not.toBeInTheDocument();
 	});
 
