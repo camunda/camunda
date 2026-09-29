@@ -17,6 +17,7 @@
 
   <properties>
     <spring-boot.run.jvmArguments>--add-opens=java.base/java.io=ALL-UNNAMED</spring-boot.run.jvmArguments>
+    <distro.zip.attach>true</distro.zip.attach>
   </properties>
 
   <dependencies>
@@ -918,6 +919,26 @@
             <configuration>
               <appendAssemblyId>false</appendAssemblyId>
               <attach>true</attach>
+              <formats>
+                <format>tar.gz</format>
+              </formats>
+              <descriptors>
+                <descriptor>src/main/assembly.xml</descriptor>
+              </descriptors>
+            </configuration>
+          </execution>
+          <execution>
+            <id>assemble-zip</id>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <appendAssemblyId>false</appendAssemblyId>
+              <attach>${distro.zip.attach}</attach>
+              <formats>
+                <format>zip</format>
+              </formats>
               <descriptors>
                 <descriptor>src/main/assembly.xml</descriptor>
               </descriptors>
