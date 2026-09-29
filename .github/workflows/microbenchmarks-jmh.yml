@@ -166,6 +166,7 @@ jobs:
           CHANGED_JAVA_FILES_JSON: ${{ steps.changed-microbenchmarks.outputs.microbenchmark_java_files }}
           PR_BODY: ${{ github.event.pull_request.body || '' }}
           MAVEN_BUILD_OUTCOME: ${{ steps.build-jmh.outcome }}
+          JAVA_TOOL_OPTIONS: --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED --enable-native-access=ALL-UNNAMED
           GITHUB_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: python3 "$RUNNER_TEMP/run_pr_microbenchmarks.py"
 
