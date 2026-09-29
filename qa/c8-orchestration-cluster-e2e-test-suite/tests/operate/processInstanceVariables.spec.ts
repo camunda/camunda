@@ -19,6 +19,7 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {expectInViewport} from 'utils/expectInViewport';
 import {sleep} from 'utils/sleep';
+import { waitForAssertion } from 'utils/waitForAssertion';
 
 const JSON_VARIABLE_NAME = 'jsonVar';
 const JSON_VARIABLE_VALUE = {name: 'Alice', age: 30};
@@ -121,13 +122,19 @@ test.describe('Process Instance Variables', () => {
     });
 
     await test.step('Refresh the page and verify the variable is still there', async () => {
-      await page.reload();
-      await expect(page.getByText('editedtestvalue')).toBeVisible();
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('editedtestvalue')).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 3,
+      });
     });
   });
 
-  // Skipped due to bug 60856: https://github.com/camunda/camunda/issues/60856
-  test.skip('Add variables', async ({
+  test('Add variables', async ({
     page,
     operateProcessInstancePage,
     operateHomePage,
@@ -357,12 +364,19 @@ test.describe('Process Instance Variables', () => {
     });
 
     await test.step('Reload and verify the updated value is persisted', async () => {
-      await page.reload();
-      await expect(
-        operateProcessInstancePage.variablesList.getByTestId(
-          `variable-${JSON_VARIABLE_NAME}`,
-        ),
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessInstancePage.variablesList.getByTestId(
+              `variable-${JSON_VARIABLE_NAME}`,
+          ),
       ).toContainText('Bob');
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 3,
+      });
     });
   });
 
@@ -552,8 +566,16 @@ test.describe('Process Instance Variables', () => {
     });
 
     await test.step('Reload and verify the updated value is visible', async () => {
-      await page.reload();
-      await expect(variable.value).toContainText('Charlie');
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(variable.value).toContainText('Charlie');
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 3,
+      });
+      
     });
   });
 });
