@@ -12,7 +12,7 @@ import {cleanup, render} from 'vitest-browser-react';
 import {describe, expect, vi, afterEach} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
 import {userEvent} from 'vitest/browser';
-import type {MappingRule} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {MappingRule} from '@camunda/camunda-api-zod-schemas/8.11';
 import {createMappingRule} from '#/shared-test-modules/api-mocks/mapping-rules';
 import {AdminMappingRulesPage, type AdminMappingRulesPageProps} from './AdminMappingRulesPage';
 

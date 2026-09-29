@@ -19,7 +19,7 @@ import {
 	AlertDialogTitle,
 	buttonVariants,
 } from '@camunda/design-system';
-import type {MappingRule} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {MappingRule} from '@camunda/camunda-api-zod-schemas/8.11';
 import {useMappingRuleMutations} from './useMappingRuleMutations';
 
 type Props = {

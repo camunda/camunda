@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {QueryMappingRulesRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {QueryMappingRulesRequestBody} from '@camunda/camunda-api-zod-schemas/8.11';
 import {DEFAULT_PAGE_SIZE, type MappingRulesSearch} from './searchSchema';
 
 function getMappingRulesRequestBody(search: MappingRulesSearch): QueryMappingRulesRequestBody {

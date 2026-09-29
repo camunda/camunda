@@ -9,7 +9,7 @@
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import {toast} from '@camunda/design-system';
-import type {MappingRule, UpdateMappingRuleRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {MappingRule, UpdateMappingRuleRequestBody} from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from '#/shared/http/request';
 import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';

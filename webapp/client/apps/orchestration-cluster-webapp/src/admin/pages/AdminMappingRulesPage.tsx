@@ -19,7 +19,7 @@ import {
 	type DataTableColumn,
 	type SortingConfig,
 } from '@camunda/design-system';
-import type {MappingRule} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {MappingRule} from '@camunda/camunda-api-zod-schemas/8.11';
 import {AddMappingRuleModal} from '#/admin/modules/mapping-rules/AddMappingRuleModal';
 import {EditMappingRuleModal} from '#/admin/modules/mapping-rules/EditMappingRuleModal';
 import {DeleteMappingRuleModal} from '#/admin/modules/mapping-rules/DeleteMappingRuleModal';
