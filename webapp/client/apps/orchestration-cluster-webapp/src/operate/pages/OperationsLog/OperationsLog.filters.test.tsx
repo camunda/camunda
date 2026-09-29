@@ -171,6 +171,19 @@ describe('Operations Log saved filters', () => {
 		},
 	);
 
+	it.for(['?version=2', '?allVersions=true', '?processDefinitionVersion=2', '?processDefinitionVersion=all'])(
+		'should reject orphaned %s without querying audit logs',
+		async (query, {worker}) => {
+			const auditRequests = vi.fn(() => EMPTY_AUDIT.clone());
+			worker.use(http.post(endpoints.queryAuditLogs.getUrl(), auditRequests));
+
+			const screen = await renderPage(query);
+
+			await expect.element(screen.getByText(/A process is required for a version filter/)).toBeVisible();
+			expect(auditRequests).not.toHaveBeenCalled();
+		},
+	);
+
 	it('should preserve numeric-looking process IDs from legacy and canonical links', () => {
 		expect(operationsLogSearchSchema.parse({processDefinitionId: 123, tenantId: TENANT_A}).process).toBe('123');
 		expect(operationsLogSearchSchema.parse({process: 123, tenantId: TENANT_A}).process).toBe('123');
@@ -326,14 +339,16 @@ describe('Operations Log saved filters', () => {
 			]),
 		);
 		expect(requests.filter((body) => body.filter?.processDefinitionId)).toHaveLength(3);
-		expect(auditFilters).toMatchObject([
-			{
-				processDefinitionKey: 'key-B-2',
-				tenantId: TENANT_B,
-				operationType: {$in: ['CREATE', 'UPDATE']},
-				entityType: {$in: ['JOB', 'VARIABLE']},
-			},
-		]);
+		await expect
+			.poll(() => auditFilters)
+			.toMatchObject([
+				{
+					processDefinitionKey: 'key-B-2',
+					tenantId: TENANT_B,
+					operationType: {$in: ['CREATE', 'UPDATE']},
+					entityType: {$in: ['JOB', 'VARIABLE']},
+				},
+			]);
 	});
 
 	it('should resolve historical process names by key without loading every definition', async ({worker}) => {
@@ -620,7 +635,7 @@ describe('Operations Log saved filters', () => {
 		const screen = await renderPage('?processDefinitionId=invoice&processDefinitionVersion=2');
 
 		await expect.element(screen.getByText('No operations log found')).toBeVisible();
-		expect(auditFilters).toMatchObject([{tenantId: TENANT_B, processDefinitionKey: 'key-B-2'}]);
+		await expect.poll(() => auditFilters).toMatchObject([{tenantId: TENANT_B, processDefinitionKey: 'key-B-2'}]);
 	});
 
 	it('should not pick a tenant when the requested version exists in multiple tenants', async ({worker}) => {
@@ -687,7 +702,7 @@ describe('Operations Log saved filters', () => {
 		);
 
 		await expect.element(screen.getByText('No operations log found')).toBeVisible();
-		expect(auditFilters).toMatchObject([{tenantId: TENANT_B, processDefinitionId: 'invoice'}]);
+		await expect.poll(() => auditFilters).toMatchObject([{tenantId: TENANT_B, processDefinitionId: 'invoice'}]);
 		expect(auditFilters[0]).not.toHaveProperty('processDefinitionKey');
 	});
 
@@ -716,7 +731,7 @@ describe('Operations Log saved filters', () => {
 
 		await expect.element(screen.getByText('No operations log found')).toBeVisible();
 		await expect.element(screen.getByText("Couldn't load process definitions")).toBeVisible();
-		expect(auditFilters).toMatchObject([{tenantId: TENANT_B, processDefinitionId: 'invoice'}]);
+		await expect.poll(() => auditFilters).toMatchObject([{tenantId: TENANT_B, processDefinitionId: 'invoice'}]);
 		expect(auditFilters[0]).not.toHaveProperty('processDefinitionKey');
 	});
 
@@ -742,7 +757,7 @@ describe('Operations Log saved filters', () => {
 		const screen = await renderPage('?processDefinitionId=invoice&processDefinitionVersion=all');
 
 		await expect.element(screen.getByText('No operations log found')).toBeVisible();
-		expect(auditFilters).toMatchObject([{processDefinitionId: 'invoice'}]);
+		await expect.poll(() => auditFilters).toMatchObject([{processDefinitionId: 'invoice'}]);
 		expect(auditFilters[0]).not.toHaveProperty('tenantId');
 		expect(auditFilters[0]).not.toHaveProperty('processDefinitionKey');
 	});
@@ -772,7 +787,7 @@ describe('Operations Log saved filters', () => {
 
 		await expect.element(screen.getByText('No operations log found')).toBeVisible();
 		await expect.element(screen.getByText("Couldn't load process definitions")).toBeVisible();
-		expect(auditFilters).toMatchObject([{tenantId: TENANT_B, processDefinitionId: 'invoice'}]);
+		await expect.poll(() => auditFilters).toMatchObject([{tenantId: TENANT_B, processDefinitionId: 'invoice'}]);
 	});
 
 	it('should display an explicitly saved All versions selection on a single-version process', async ({worker}) => {
