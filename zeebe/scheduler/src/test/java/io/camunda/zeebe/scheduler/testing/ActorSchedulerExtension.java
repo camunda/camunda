@@ -70,14 +70,18 @@ public final class ActorSchedulerExtension implements BeforeEachCallback, AfterE
   @Override
   public void afterEach(final ExtensionContext extensionContext) {
     try {
-      actorScheduler.close();
+      if (actorScheduler != null) {
+        actorScheduler.close();
+      }
     } catch (final Exception e) {
       LangUtil.rethrowUnchecked(e);
+    } finally {
+      actorScheduler = null;
+      builder = null;
+      if (meterRegistry != null) {
+        MicrometerUtil.close(meterRegistry);
+      }
     }
-
-    actorScheduler = null;
-    builder = null;
-    MicrometerUtil.close(meterRegistry);
   }
 
   public ActorFuture<Void> submitActor(final Actor actor) {
