@@ -44,7 +44,7 @@ import org.jspecify.annotations.NullMarked;
  * command enters as an encoded gateway request, streamed jobs are completed as they are pushed,
  * polled jobs are activated and completed, each instance is sent a correlating message, and the
  * process is redeployed as a new version every so often. It runs entirely on the calling thread,
- * keeping at most a fixed number of instances in flight.
+ * keeping as many instances in flight as its {@link CpuBudget} allows, up to a fixed maximum.
  */
 @NullMarked
 final class WarmupWorkload {
@@ -68,6 +68,7 @@ final class WarmupWorkload {
   private final ScratchServerTransport transport;
   private final int processInstances;
   private final int maxInFlight;
+  private final CpuBudget cpuBudget;
   private final LinkedBlockingQueue<Runnable> events = new LinkedBlockingQueue<>();
   private final Map<Long, Pending<?>> pendingRequests = new HashMap<>();
   private final Map<Long, String> orderIdByInstance = new HashMap<>();
@@ -83,10 +84,11 @@ final class WarmupWorkload {
   private boolean activationInFlight;
   private long nextActivationNanos;
 
-  WarmupWorkload(final int processInstances, final int maxInFlight) {
+  WarmupWorkload(final int processInstances, final int maxInFlight, final CpuBudget cpuBudget) {
     transport = new ScratchServerTransport(this::onResponse);
     this.processInstances = processInstances;
     this.maxInFlight = maxInFlight;
+    this.cpuBudget = cpuBudget;
     resource = readResource();
   }
 
@@ -105,8 +107,8 @@ final class WarmupWorkload {
 
   /**
    * Runs the workload until the configured number of instances has completed, {@code shouldStop}
-   * returns true, or {@code deadline} passes. While {@code underPressure} returns true, no new
-   * instances are started.
+   * returns true, or {@code deadline} passes. While {@code underPressure} returns true or the CPU
+   * budget allows none, no new instances are started.
    */
   Outcome run(
       final BooleanSupplier shouldStop, final BooleanSupplier underPressure, final long deadline)
@@ -136,9 +138,9 @@ final class WarmupWorkload {
         retries.poll().send().run();
       }
 
-      final var pressure = underPressure.getAsBoolean();
+      final var pressure = underPressure.getAsBoolean() || cpuBudget.inFlightLimit(now) == 0;
       if (deployed[0] && !pressure) {
-        while (inFlight < maxInFlight && started < processInstances) {
+        while (inFlight < cpuBudget.inFlightLimit(now) && started < processInstances) {
           startInstance();
         }
         if (!activationInFlight && inFlight > 0 && now - nextActivationNanos > 0) {

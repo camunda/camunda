@@ -104,7 +104,7 @@ final class ScratchEngine implements AutoCloseable {
     final var scheduler =
         ActorScheduler.newActorScheduler()
             .setSchedulerName("leader-warmup")
-            .setCpuBoundActorThreadCount(2)
+            .setCpuBoundActorThreadCount(1)
             .setIoBoundActorThreadCount(1)
             .build();
     scheduler.start();

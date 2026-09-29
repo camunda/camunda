@@ -132,16 +132,23 @@ public final class LeaderWarmup implements PartitionRaftListener {
     Files.createDirectories(directory);
 
     LOG.info(
-        "Starting leader warm-up: {} process instances, at most {} in flight, for at most {}",
+        "Starting leader warm-up: {} process instances, at most {} in flight, within {} of the CPU, for at most {}",
         cfg.getProcessInstances(),
         cfg.getMaxInFlightInstances(),
+        cfg.getMaxCpuLoad(),
         cfg.getMaxDuration());
     metrics.setState(State.RUNNING);
     final var startNanos = System.nanoTime();
     final var compilationMillisBefore = compilationMillis();
 
+    final var cpuBudget =
+        new CpuBudget(
+            CpuBudget.processCpuLoad(),
+            cfg.getMaxCpuLoad(),
+            cfg.getMaxInFlightInstances(),
+            startNanos);
     final var workload =
-        new WarmupWorkload(cfg.getProcessInstances(), cfg.getMaxInFlightInstances());
+        new WarmupWorkload(cfg.getProcessInstances(), cfg.getMaxInFlightInstances(), cpuBudget);
     final Outcome outcome;
     final String exporting;
     try (final var engine =
@@ -160,9 +167,12 @@ public final class LeaderWarmup implements PartitionRaftListener {
       metrics.setExporting(
           engine.exporters(), engine.searchRequests(), engine.unrecognisedSearchRequests());
       exporting =
-          "%d exporters, %d search requests (%d unrecognised)"
+          "%d exporters, %d search requests (%d unrecognised), backed off for CPU %d times"
               .formatted(
-                  engine.exporters(), engine.searchRequests(), engine.unrecognisedSearchRequests());
+                  engine.exporters(),
+                  engine.searchRequests(),
+                  engine.unrecognisedSearchRequests(),
+                  cpuBudget.backOffs());
     } finally {
       FileUtil.deleteFolderIfExists(directory);
     }
