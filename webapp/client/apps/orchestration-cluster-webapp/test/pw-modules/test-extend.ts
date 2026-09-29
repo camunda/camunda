@@ -105,7 +105,7 @@ const test = base.extend<Fixtures>({
 		await use(new AdminLoginPage(page));
 	},
 	adminMcpProcessesPage: async ({page}, use) => {
-        await use(new AdminMcpProcessesPage(page));
+		await use(new AdminMcpProcessesPage(page));
 	},
 	adminMappingRulesPage: async ({page}, use) => {
 		await use(new AdminMappingRulesPage(page));
