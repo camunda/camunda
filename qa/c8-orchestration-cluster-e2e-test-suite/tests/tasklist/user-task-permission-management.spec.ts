@@ -527,7 +527,17 @@ test.describe
     await loginPage.login(aliceUser.username, aliceUser.password);
     await expect(page).toHaveURL('/tasklist');
 
-    await taskPanelPage.goToTaskDetails(bobUserTaskKey);
+    // Bob's assignment reaches the read model but the endpoint the details
+    // toggle reads oscillates between Bob and null for a while after the
+    // command, and the panel renders whichever it last saw. Re-open the task
+    // until it renders Bob's assignment (the "Unassign" button) rather than
+    // acting on a stale "Assign to me" state caught mid-oscillation.
+    await expect(async () => {
+      await taskPanelPage.goToTaskDetails(bobUserTaskKey);
+      await expect(taskDetailsPage.unassignButton).toBeVisible({
+        timeout: 15_000,
+      });
+    }).toPass({timeout: 90_000, intervals: [1_000, 2_000, 5_000]});
 
     await taskDetailsPage.clickUnassignButton();
 

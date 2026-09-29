@@ -585,17 +585,17 @@ test.describe('Process Instance Modifications', () => {
           JSON.stringify(validJSONValue1),
         );
 
-        await waitForAssertion({
-          assertion: async () => {
-            await assertJsonEqual(
-              operateProcessInstanceViewModificationModePage.newVariableByIndex(
-                0,
-              ).writeModeValue,
-              validJSONValue1,
-            );
-          },
-          onFailure: async () => {},
-        });
+        // The value applied in the modal lands in the inline CodeMirror a beat
+        // after Apply; until it does, the editor still shows its "Value"
+        // placeholder. Poll with backoff so the read waits for the value to
+        // reflect instead of parsing the placeholder as JSON.
+        await expect(async () => {
+          await assertJsonEqual(
+            operateProcessInstanceViewModificationModePage.newVariableByIndex(0)
+              .writeModeValue,
+            validJSONValue1,
+          );
+        }).toPass({timeout: 15_000, intervals: [250, 500, 1000, 2000]});
 
         await expect(
           operateProcessInstanceViewModificationModePage.lastAddedModificationText,
