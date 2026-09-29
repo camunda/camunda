@@ -72,7 +72,7 @@ def test_should_derive_end_from_start_and_duration(tmp_path: Path) -> None:
         ]
     )
 
-    assert options.duration_seconds.seconds == 1800
+    assert options.duration_seconds == 1800
     assert options.time_anchor == "2026-08-14T10:30:00Z"
     assert options.start_label == "2026-08-14T10:00:00Z"
     assert options.end_label == "2026-08-14T10:30:00Z"

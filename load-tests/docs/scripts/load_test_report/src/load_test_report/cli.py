@@ -181,8 +181,7 @@ def parse_args(argv: Sequence[str]) -> Options:
     if start is not None:
         start_label = format_epoch(start)
         try:
-            duration_seconds = timedelta(seconds=duration_seconds)
-            end_label = format_epoch(start + duration_seconds)
+            end_label = format_epoch(start + timedelta(seconds=duration_seconds))
 
         except OverflowError as error:
             raise ReportError("reporting window is outside the supported timestamp range") from error
