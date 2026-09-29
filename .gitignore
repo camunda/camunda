@@ -108,3 +108,6 @@ load-tests/setup/c8-*
 # Used by agents to persist session state
 /.agent-sessions/
 /STATE.md
+
+# Broker data written by `spring-boot:run` in dist/ (e.g. webapp `make env-up`)
+/dist/data/
