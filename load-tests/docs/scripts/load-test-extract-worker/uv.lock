@@ -121,18 +121,20 @@ source = { editable = "." }
 dependencies = [
     { name = "camunda-orchestration-sdk" },
     { name = "load-test-report" },
+    { name = "pydantic" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "camunda-orchestration-sdk", specifier = ">=9.0.1" },
-    { name = "load-test-report", directory = "../load_test_report" },
+    { name = "load-test-report", editable = "../load_test_report" },
+    { name = "pydantic", specifier = ">=2.13.5" },
 ]
 
 [[package]]
 name = "load-test-report"
 version = "0.1.0"
-source = { directory = "../load_test_report" }
+source = { editable = "../load_test_report" }
 dependencies = [
     { name = "pydantic" },
     { name = "pyyaml" },
