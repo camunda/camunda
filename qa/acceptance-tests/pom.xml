@@ -1026,7 +1026,7 @@
             <configuration>
               <failIfNoTests>false</failIfNoTests>
               <groups>multi-db-test</groups>
-              <!-- TODO remove archiverless-wip once archiverless support is fully implemented -->
+              <!-- TODO remove archiverless-wip once archiverless support is fully implemented https://github.com/camunda/camunda/issues/64376 -->
               <excludedGroups>rdbms, history, archiverless-wip</excludedGroups>
               <excludes>
                 <exclude>${identity-packages}</exclude>

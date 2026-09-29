@@ -61,6 +61,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 // TODO remove this once archiverless support for batch operations is fully implemented
+// in https://github.com/camunda/camunda/issues/57006
 @Tag("archiverless-wip")
 public class BatchOperationSearchIT {
 
