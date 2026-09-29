@@ -6,114 +6,65 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {z} from 'zod';
-import {
-	API_VERSION,
-	basicStringFilterSchema,
-	getEnumFilterSchema,
-	getQueryRequestBodySchema,
-	getQueryResponseBodySchema,
-	type Endpoint,
-} from './common';
+import {API_VERSION, type Endpoint} from './common';
+import {batchOperationErrorSchema as genBatchOperationErrorSchema} from './gen/zod/batchOperationErrorSchema';
+import {batchOperationItemResponseSchema} from './gen/zod/batchOperationItemResponseSchema';
+import {batchOperationItemSearchQueryResultSchema} from './gen/zod/batchOperationItemSearchQueryResultSchema';
+import {batchOperationItemSearchQuerySchema} from './gen/zod/batchOperationItemSearchQuerySchema';
+import {batchOperationResponseSchema} from './gen/zod/batchOperationResponseSchema';
+import {batchOperationSearchQueryResultSchema} from './gen/zod/batchOperationSearchQueryResultSchema';
+import {batchOperationSearchQuerySchema} from './gen/zod/batchOperationSearchQuerySchema';
+import {batchOperationStateEnumSchema} from './gen/zod/batchOperationStateEnumSchema';
+import {batchOperationTypeEnumSchema} from './gen/zod/batchOperationTypeEnumSchema';
+import type {
+	BatchOperationError as GenBatchOperationError,
+	BatchOperationErrorTypeEnumKey,
+} from './gen/types/BatchOperationError';
+import type {
+	BatchOperationItemResponse,
+	BatchOperationItemResponseStateEnumKey,
+} from './gen/types/BatchOperationItemResponse';
+import type {BatchOperationItemSearchQuery} from './gen/types/BatchOperationItemSearchQuery';
+import type {BatchOperationItemSearchQueryResult} from './gen/types/BatchOperationItemSearchQueryResult';
+import type {BatchOperationResponse} from './gen/types/BatchOperationResponse';
+import type {BatchOperationSearchQuery} from './gen/types/BatchOperationSearchQuery';
+import type {BatchOperationSearchQueryResult} from './gen/types/BatchOperationSearchQueryResult';
+import type {BatchOperationStateEnumKey} from './gen/types/BatchOperationStateEnum';
+import type {BatchOperationTypeEnumKey} from './gen/types/BatchOperationTypeEnum';
 
-const batchOperationTypeSchema = z.enum([
-	'CANCEL_PROCESS_INSTANCE',
-	'RESOLVE_INCIDENT',
-	'MIGRATE_PROCESS_INSTANCE',
-	'MODIFY_PROCESS_INSTANCE',
-	'DELETE_DECISION_DEFINITION',
-	'DELETE_DECISION_INSTANCE',
-	'DELETE_PROCESS_DEFINITION',
-	'DELETE_PROCESS_INSTANCE',
-	'ADD_VARIABLE',
-	'UPDATE_VARIABLE',
-	'SUSPEND_PROCESS_INSTANCE',
-	'RESUME_PROCESS_INSTANCE',
-]);
-type BatchOperationType = z.infer<typeof batchOperationTypeSchema>;
+const batchOperationTypeSchema = batchOperationTypeEnumSchema;
+type BatchOperationType = BatchOperationTypeEnumKey;
 
-const batchOperationStateSchema = z.enum([
-	'CREATED',
-	'ACTIVE',
-	'SUSPENDED',
-	'COMPLETED',
-	'PARTIALLY_COMPLETED',
-	'CANCELED',
-	'FAILED',
-]);
-type BatchOperationState = z.infer<typeof batchOperationStateSchema>;
+const batchOperationStateSchema = batchOperationStateEnumSchema;
+type BatchOperationState = BatchOperationStateEnumKey;
 
-const batchOperationItemStateSchema = z.enum(['ACTIVE', 'COMPLETED', 'SKIPPED', 'CANCELED', 'FAILED']);
-type BatchOperationItemState = z.infer<typeof batchOperationItemStateSchema>;
+// The standalone gen `batchOperationItemStateEnumSchema` has no `SKIPPED`. The item response inlines the full enum.
+const batchOperationItemStateSchema = batchOperationItemResponseSchema.shape.state;
+type BatchOperationItemState = BatchOperationItemResponseStateEnumKey;
 
-const batchOperationErrorTypeSchema = z.enum(['QUERY_FAILED', 'RESULT_BUFFER_SIZE_EXCEEDED']);
-type BatchOperationErrorType = z.infer<typeof batchOperationErrorTypeSchema>;
+const batchOperationErrorTypeSchema = genBatchOperationErrorSchema.shape.type;
+type BatchOperationErrorType = BatchOperationErrorTypeEnumKey;
 
-const batchOperationErrorSchema = z.object({
-	partitionId: z.number().int(),
-	type: batchOperationErrorTypeSchema,
-	message: z.string(),
-});
-type BatchOperationError = z.infer<typeof batchOperationErrorSchema>;
+const batchOperationErrorSchema = genBatchOperationErrorSchema;
+type BatchOperationError = GenBatchOperationError;
 
-const batchOperationSchema = z.object({
-	batchOperationKey: z.string(),
-	state: batchOperationStateSchema,
-	batchOperationType: batchOperationTypeSchema.nullable(),
-	startDate: z.string(),
-	endDate: z.string().nullable(),
-	actorType: z.string().nullable(),
-	actorId: z.string().nullable(),
-	operationsTotalCount: z.number().int(),
-	operationsFailedCount: z.number().int(),
-	operationsCompletedCount: z.number().int(),
-	errors: z.array(batchOperationErrorSchema),
-});
-type BatchOperation = z.infer<typeof batchOperationSchema>;
+const batchOperationSchema = batchOperationResponseSchema;
+type BatchOperation = BatchOperationResponse;
 
-const batchOperationItemSchema = z.object({
-	batchOperationKey: z.string(),
-	itemKey: z.string(),
-	processInstanceKey: z.string(),
-	rootProcessInstanceKey: z.string().nullable(),
-	state: batchOperationItemStateSchema,
-	processedDate: z.string().nullable(),
-	errorMessage: z.string().nullable(),
-	operationType: batchOperationTypeSchema,
-});
-type BatchOperationItem = z.infer<typeof batchOperationItemSchema>;
+const batchOperationItemSchema = batchOperationItemResponseSchema;
+type BatchOperationItem = BatchOperationItemResponse;
 
-const queryBatchOperationsRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['batchOperationKey', 'operationType', 'state', 'startDate', 'endDate', 'actorId'] as const,
-	filter: z
-		.object({
-			batchOperationKey: basicStringFilterSchema,
-			operationType: getEnumFilterSchema(batchOperationTypeSchema),
-			state: getEnumFilterSchema(batchOperationStateSchema),
-		})
-		.partial(),
-});
-type QueryBatchOperationsRequestBody = z.infer<typeof queryBatchOperationsRequestBodySchema>;
+const queryBatchOperationsRequestBodySchema = batchOperationSearchQuerySchema;
+type QueryBatchOperationsRequestBody = BatchOperationSearchQuery;
 
-const queryBatchOperationsResponseBodySchema = getQueryResponseBodySchema(batchOperationSchema);
-type QueryBatchOperationsResponseBody = z.infer<typeof queryBatchOperationsResponseBodySchema>;
+const queryBatchOperationsResponseBodySchema = batchOperationSearchQueryResultSchema;
+type QueryBatchOperationsResponseBody = BatchOperationSearchQueryResult;
 
-const queryBatchOperationItemsRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['batchOperationKey', 'itemKey', 'processedDate', 'processInstanceKey', 'state'] as const,
-	filter: z
-		.object({
-			batchOperationKey: basicStringFilterSchema,
-			itemKey: basicStringFilterSchema,
-			processInstanceKey: basicStringFilterSchema,
-			state: getEnumFilterSchema(batchOperationItemStateSchema),
-			operationType: getEnumFilterSchema(batchOperationTypeSchema),
-		})
-		.partial(),
-});
-type QueryBatchOperationItemsRequestBody = z.infer<typeof queryBatchOperationItemsRequestBodySchema>;
+const queryBatchOperationItemsRequestBodySchema = batchOperationItemSearchQuerySchema;
+type QueryBatchOperationItemsRequestBody = BatchOperationItemSearchQuery;
 
-const queryBatchOperationItemsResponseBodySchema = getQueryResponseBodySchema(batchOperationItemSchema);
-type QueryBatchOperationItemsResponseBody = z.infer<typeof queryBatchOperationItemsResponseBodySchema>;
+const queryBatchOperationItemsResponseBodySchema = batchOperationItemSearchQueryResultSchema;
+type QueryBatchOperationItemsResponseBody = BatchOperationItemSearchQueryResult;
 
 const getBatchOperation = {
 	method: 'GET',

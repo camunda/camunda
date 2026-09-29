@@ -6,21 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {z} from 'zod';
 import {API_VERSION, type Endpoint} from './common';
+import {signalBroadcastRequestSchema} from './gen/zod/signalBroadcastRequestSchema';
+import {signalBroadcastResultSchema} from './gen/zod/signalBroadcastResultSchema';
+import type {SignalBroadcastRequest} from './gen/types/SignalBroadcastRequest';
+import type {SignalBroadcastResult} from './gen/types/SignalBroadcastResult';
 
-const broadcastSignalRequestBodySchema = z.object({
-	signalName: z.string(),
-	variables: z.record(z.string(), z.unknown()).optional(),
-	tenantId: z.string().optional(),
-});
-type BroadcastSignalRequestBody = z.infer<typeof broadcastSignalRequestBodySchema>;
+const broadcastSignalRequestBodySchema = signalBroadcastRequestSchema;
+type BroadcastSignalRequestBody = SignalBroadcastRequest;
 
-const broadcastSignalResponseBodySchema = z.object({
-	tenantId: z.string(),
-	signalKey: z.string(),
-});
-type BroadcastSignalResponseBody = z.infer<typeof broadcastSignalResponseBodySchema>;
+const broadcastSignalResponseBodySchema = signalBroadcastResultSchema;
+type BroadcastSignalResponseBody = SignalBroadcastResult;
 
 const broadcastSignal = {
 	method: 'POST',

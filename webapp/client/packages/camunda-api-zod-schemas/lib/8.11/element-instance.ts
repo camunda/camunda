@@ -6,111 +6,54 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {z} from 'zod';
-import {
-	API_VERSION,
-	getOrFilterSchema,
-	getQueryRequestBodySchema,
-	getQueryResponseBodySchema,
-	getEnumFilterSchema,
-	type Endpoint,
-	advancedDateTimeFilterSchema,
-	advancedStringFilterSchema,
-} from './common';
-import {queryIncidentsRequestBodySchema, queryIncidentsResponseBodySchema} from './incident';
+import {API_VERSION, type Endpoint} from './common';
+import {elementInstanceFilterFieldsSchema} from './gen/zod/elementInstanceFilterFieldsSchema';
+import {elementInstanceResultSchema} from './gen/zod/elementInstanceResultSchema';
+import {elementInstanceSearchQueryResultSchema} from './gen/zod/elementInstanceSearchQueryResultSchema';
+import {elementInstanceSearchQuerySchema} from './gen/zod/elementInstanceSearchQuerySchema';
+import {elementInstanceStateEnumSchema} from './gen/zod/elementInstanceStateEnumSchema';
+import {getElementInstanceStatus200Schema} from './gen/zod/getElementInstanceSchema';
+import {incidentSearchQueryResultSchema} from './gen/zod/incidentSearchQueryResultSchema';
+import {incidentSearchQuerySchema} from './gen/zod/incidentSearchQuerySchema';
+import {setVariableRequestSchema} from './gen/zod/setVariableRequestSchema';
+import type {ElementInstanceResult, ElementInstanceResultTypeEnumKey} from './gen/types/ElementInstanceResult';
+import type {ElementInstanceSearchQuery} from './gen/types/ElementInstanceSearchQuery';
+import type {ElementInstanceSearchQueryResult} from './gen/types/ElementInstanceSearchQueryResult';
+import type {ElementInstanceStateEnumKey} from './gen/types/ElementInstanceStateEnum';
+import type {GetElementInstanceStatus200} from './gen/types/GetElementInstance';
+import type {IncidentSearchQuery} from './gen/types/IncidentSearchQuery';
+import type {IncidentSearchQueryResult} from './gen/types/IncidentSearchQueryResult';
+import type {SetVariableRequest} from './gen/types/SetVariableRequest';
 
-const elementInstanceStateSchema = z.enum(['ACTIVE', 'COMPLETED', 'TERMINATED']);
-type ElementInstanceState = z.infer<typeof elementInstanceStateSchema>;
+const elementInstanceStateSchema = elementInstanceStateEnumSchema;
+type ElementInstanceState = ElementInstanceStateEnumKey;
 
-const elementInstanceTypeSchema = z.enum([
-	'UNSPECIFIED',
-	'PROCESS',
-	'SUB_PROCESS',
-	'EVENT_SUB_PROCESS',
-	'AD_HOC_SUB_PROCESS',
-	'AD_HOC_SUB_PROCESS_INNER_INSTANCE',
-	'START_EVENT',
-	'INTERMEDIATE_CATCH_EVENT',
-	'INTERMEDIATE_THROW_EVENT',
-	'BOUNDARY_EVENT',
-	'END_EVENT',
-	'SERVICE_TASK',
-	'RECEIVE_TASK',
-	'USER_TASK',
-	'MANUAL_TASK',
-	'TASK',
-	'EXCLUSIVE_GATEWAY',
-	'INCLUSIVE_GATEWAY',
-	'PARALLEL_GATEWAY',
-	'EVENT_BASED_GATEWAY',
-	'SEQUENCE_FLOW',
-	'MULTI_INSTANCE_BODY',
-	'CALL_ACTIVITY',
-	'BUSINESS_RULE_TASK',
-	'SCRIPT_TASK',
-	'SEND_TASK',
-	'UNKNOWN',
-]);
-type ElementInstanceType = z.infer<typeof elementInstanceTypeSchema>;
+const elementInstanceTypeSchema = elementInstanceResultSchema.shape.type;
+type ElementInstanceType = ElementInstanceResultTypeEnumKey;
 
-const elementInstanceSchema = z.object({
-	processDefinitionId: z.string(),
-	startDate: z.string(),
-	endDate: z.string().nullable(),
-	elementId: z.string(),
-	elementName: z.string().nullable(),
-	type: elementInstanceTypeSchema,
-	state: elementInstanceStateSchema,
-	hasIncident: z.boolean(),
-	tenantId: z.string(),
-	elementInstanceKey: z.string(),
-	processInstanceKey: z.string(),
-	rootProcessInstanceKey: z.string().nullable(),
-	processDefinitionKey: z.string(),
-	incidentKey: z.string().nullable(),
-});
-type ElementInstance = z.infer<typeof elementInstanceSchema>;
+const elementInstanceSchema = elementInstanceResultSchema;
+type ElementInstance = ElementInstanceResult;
 
-const elementInstanceFilterSchema = z
-	.object({
-		processDefinitionId: z.string(),
-		state: z.union([elementInstanceStateSchema, getEnumFilterSchema(elementInstanceStateSchema)]),
-		type: elementInstanceTypeSchema,
-		elementId: advancedStringFilterSchema,
-		elementName: advancedStringFilterSchema,
-		hasIncident: z.boolean(),
-		tenantId: z.string(),
-		elementInstanceKey: z.string(),
-		processInstanceKey: z.string(),
-		processDefinitionKey: z.string(),
-		incidentKey: z.string(),
-		startDate: advancedDateTimeFilterSchema,
-		endDate: advancedDateTimeFilterSchema,
-		elementInstanceScopeKey: z.string(),
-	})
-	.partial();
+// Gen `elementInstanceFilterSchema` includes `$or`. The fields-only filter keeps the meaning of this export.
+const elementInstanceFilterSchema = elementInstanceFilterFieldsSchema;
 
-const queryElementInstancesRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: [
-		'elementInstanceKey',
-		'processInstanceKey',
-		'processDefinitionKey',
-		'processDefinitionId',
-		'startDate',
-		'endDate',
-		'elementId',
-		'elementName',
-		'type',
-		'state',
-		'incidentKey',
-		'tenantId',
-	] as const,
-	filter: getOrFilterSchema(elementInstanceFilterSchema),
-});
-type QueryElementInstancesRequestBody = z.infer<typeof queryElementInstancesRequestBodySchema>;
+const queryElementInstancesRequestBodySchema = elementInstanceSearchQuerySchema;
+type QueryElementInstancesRequestBody = ElementInstanceSearchQuery;
 
-const queryElementInstancesResponseBodySchema = getQueryResponseBodySchema(elementInstanceSchema);
-type QueryElementInstancesResponseBody = z.infer<typeof queryElementInstancesResponseBodySchema>;
+const queryElementInstancesResponseBodySchema = elementInstanceSearchQueryResultSchema;
+type QueryElementInstancesResponseBody = ElementInstanceSearchQueryResult;
+
+const getElementInstanceResponseBodySchema = getElementInstanceStatus200Schema;
+type GetElementInstanceResponseBody = GetElementInstanceStatus200;
+
+const updateElementInstanceVariablesRequestBodySchema = setVariableRequestSchema;
+type UpdateElementInstanceVariablesRequestBody = SetVariableRequest;
+
+const queryElementInstanceIncidentsRequestBodySchema = incidentSearchQuerySchema;
+type QueryElementInstanceIncidentsRequestBody = IncidentSearchQuery;
+
+const queryElementInstanceIncidentsResponseBodySchema = incidentSearchQueryResultSchema;
+type QueryElementInstanceIncidentsResponseBody = IncidentSearchQueryResult;
 
 const queryElementInstances = {
 	method: 'POST',
@@ -127,15 +70,6 @@ const getElementInstance = {
 	},
 } as const satisfies Endpoint<Pick<ElementInstance, 'elementInstanceKey'>>;
 
-const getElementInstanceResponseBodySchema = elementInstanceSchema;
-type GetElementInstanceResponseBody = z.infer<typeof getElementInstanceResponseBodySchema>;
-
-const updateElementInstanceVariablesRequestBodySchema = z.object({
-	variables: z.record(z.string(), z.unknown()),
-	local: z.boolean().optional(),
-});
-type UpdateElementInstanceVariablesRequestBody = z.infer<typeof updateElementInstanceVariablesRequestBodySchema>;
-
 const updateElementInstanceVariables = {
 	method: 'PUT',
 	getUrl(params) {
@@ -143,12 +77,6 @@ const updateElementInstanceVariables = {
 		return `/${API_VERSION}/element-instances/${elementInstanceKey}/variables` as const;
 	},
 } as const satisfies Endpoint<Pick<ElementInstance, 'elementInstanceKey'>>;
-
-const queryElementInstanceIncidentsRequestBodySchema = queryIncidentsRequestBodySchema;
-type QueryElementInstanceIncidentsRequestBody = z.infer<typeof queryElementInstanceIncidentsRequestBodySchema>;
-
-const queryElementInstanceIncidentsResponseBodySchema = queryIncidentsResponseBodySchema;
-type QueryElementInstanceIncidentsResponseBody = z.infer<typeof queryElementInstanceIncidentsResponseBodySchema>;
 
 const queryElementInstanceIncidents = {
 	method: 'POST',
@@ -171,6 +99,7 @@ export {
 	queryElementInstanceIncidentsResponseBodySchema,
 	queryElementInstanceIncidents,
 };
+
 export type {
 	ElementInstanceState,
 	ElementInstanceType,
