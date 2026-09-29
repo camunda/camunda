@@ -106,6 +106,31 @@
 				"toolResults": "Resultados",
 				"toolWhenToUse": "Cuándo usarla",
 				"toolWhenNotToUse": "Cuándo no usarla"
+			},
+			"operationsLog": {
+				"guideBody": "Para más información, consulte la documentación sobre el ",
+				"guideLinkLabel": "registro de operaciones",
+				"filter": "Filtros",
+				"all": "Todos",
+				"operationType": "Tipo de operación",
+				"entityType": "Tipo de entidad",
+				"ownerType": "Tipo de propietario",
+				"ownerKey": "ID del propietario",
+				"ownerKeyPlaceholder": "Introduzca el ID del propietario",
+				"status": "Estado",
+				"reference": "Referencia a la entidad",
+				"property": "Propiedad",
+				"actor": "Actor",
+				"actorPlaceholder": "Nombre de usuario o ID de cliente",
+				"date": "Fecha",
+				"reset": "Restablecer filtros",
+				"errorCode": "Código de error",
+				"owner": "Propietario",
+				"assignee": "Asignado a",
+				"noOperations": "No se encontraron operaciones",
+				"actorTypeClient": "Cliente",
+				"actorTypeUser": "Usuario",
+				"actorTypeAgent": "Agente de IA"
 			}
 		},
 		"tasklist": {
