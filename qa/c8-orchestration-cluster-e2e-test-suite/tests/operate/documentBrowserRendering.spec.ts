@@ -28,12 +28,18 @@ const ACTIVE_DOCUMENT_CONTENT =
   `<script>document.title = '${SCRIPT_TITLE_MARKER}';</script>` +
   `<h1>active content</h1>`;
 
-// 1x1 PNG. The endpoint decides from the stored content type and never sniffs
-// the bytes, but a real image keeps the rendered-document assertions honest.
-const PNG_BYTES = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAABzenr0AAAADUlEQVR42mP8z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==',
-  'base64',
-).toString('binary');
+// 8x8 PNG, kept as bytes: the endpoint decides from the stored content type and
+// never sniffs the payload, but the test asserts the browser decoded a real
+// image, which a corrupted upload would not satisfy.
+const PNG_WIDTH = 8;
+const PNG_BYTES = new Uint8Array(
+  Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAbElEQVR4nA3JQQEAMAgDMZzgpE7q' +
+      'hMf5wAlO6mbLN1VFFypcTLHFFSmqmm7UuJlmm2vSP0QLCYsRK05EP0wbGZsxa87EP4YeNHiYYYcb' +
+      'Mj+WXrR4mWWXW7I/jj50+JhjjztyP0IHBYcJGy4kPDtbVkGLfGO6AAAAAElFTkSuQmCC',
+    'base64',
+  ),
+);
 
 type StoredDocument = {url: string; fileName: string};
 
@@ -42,7 +48,7 @@ const documents: Record<string, StoredDocument> = {};
 test.beforeAll(async ({request}) => {
   async function store(
     contentType: string,
-    content: string,
+    content: string | Uint8Array<ArrayBuffer>,
     extension: string,
   ): Promise<StoredDocument> {
     const fileName = `${generateUniqueId()}.${extension}`;
@@ -103,5 +109,12 @@ test.describe('Document Content Browser Rendering', () => {
     expect(outcome.downloadedAs).toBeNull();
     expect(outcome.rendered).toBe(true);
     expect(outcome.contentType).toBe('image/png');
+
+    // A broken image still produces an image document, so assert the bytes
+    // decoded to the intrinsic size rather than trusting the content type.
+    const decodedWidth = await page.evaluate(
+      () => document.images[0]?.naturalWidth ?? 0,
+    );
+    expect(decodedWidth).toBe(PNG_WIDTH);
   });
 });

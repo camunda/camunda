@@ -534,7 +534,9 @@ export function CREATE_ON_FLY_DOCUMENT_REQUEST_BODY_WITH_METADATA(
 export function CREATE_DOCUMENT_REQUEST_WITH_CONTENT_TYPE(
   fileName: string,
   contentType: string,
-  fileContent: string = documentFileContent(fileName),
+  // Binary fixtures must arrive as bytes: a Buffer converted to a string is
+  // UTF-8 encoded again by File, which silently corrupts the upload.
+  fileContent: string | Uint8Array<ArrayBuffer> = documentFileContent(fileName),
 ) {
   const form = new FormData();
   form.append('file', new File([fileContent], fileName, {type: contentType}));

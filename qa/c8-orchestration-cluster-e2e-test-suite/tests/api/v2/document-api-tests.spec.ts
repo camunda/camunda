@@ -600,6 +600,7 @@ test.describe.parallel('Document API Tests', () => {
         'application/octet-stream',
       );
       expect(res.headers()['content-disposition']).toBe('attachment');
+      expect(res.headers()['content-security-policy']).toBe(SANDBOX_CSP);
     });
 
     await test.step('a document stored without metadata is neutralised', async () => {
@@ -620,6 +621,7 @@ test.describe.parallel('Document API Tests', () => {
         'application/octet-stream',
       );
       expect(res.headers()['content-disposition']).toBe('attachment');
+      expect(res.headers()['content-security-policy']).toBe(SANDBOX_CSP);
     });
   });
 
@@ -658,7 +660,11 @@ test.describe.parallel('Document API Tests', () => {
 
       await assertStatusCode(res, 404);
       expect(res.headers()['content-disposition']).toBeUndefined();
-      expect(res.headers()['content-security-policy']).not.toBe(SANDBOX_CSP);
+      // The app's own policy still applies to a problem detail; what must not
+      // appear is the document endpoint's sandbox, in any form.
+      expect(res.headers()['content-security-policy'] ?? '').not.toContain(
+        'sandbox',
+      );
     });
 
     await test.step('400 when the content hash is missing', async () => {
@@ -672,7 +678,11 @@ test.describe.parallel('Document API Tests', () => {
 
       await assertStatusCode(res, 400);
       expect(res.headers()['content-disposition']).toBeUndefined();
-      expect(res.headers()['content-security-policy']).not.toBe(SANDBOX_CSP);
+      // The app's own policy still applies to a problem detail; what must not
+      // appear is the document endpoint's sandbox, in any form.
+      expect(res.headers()['content-security-policy'] ?? '').not.toContain(
+        'sandbox',
+      );
     });
   });
 });
