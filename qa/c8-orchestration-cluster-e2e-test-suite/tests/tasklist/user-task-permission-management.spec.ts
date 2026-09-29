@@ -18,6 +18,7 @@ import {
   createComponentAuthorization,
   cleanupAuthorizations,
   findUserTask,
+  expectUserTaskAssigned,
 } from '@requestHelpers';
 import {cleanupUsers} from 'utils/usersCleanup';
 import {
@@ -497,7 +498,13 @@ test.describe
     );
     expect(assignRes.status()).toBe(204);
 
-    await sleep(3000);
+    // Gate on the read model actually reflecting Bob's assignment before the UI
+    // flow runs. The assignment command is accepted synchronously (204) but the
+    // task-details toggle reads the assignee from GET /user-tasks/{key}, which
+    // lags and briefly flips between null and Bob while the change propagates. A
+    // fixed sleep raced that window, so Alice opened the task while it still
+    // read as unassigned and the "Unassign" button never appeared.
+    await expectUserTaskAssigned(request, bobUserTaskKey, bobUser.username);
   });
 
   test.afterAll(async ({request}) => {
