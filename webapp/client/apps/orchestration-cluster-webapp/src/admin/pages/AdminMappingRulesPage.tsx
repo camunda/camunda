@@ -31,6 +31,7 @@ type ModalState = {type: 'add'} | {type: 'edit'; mappingRule: MappingRule} | {ty
 
 const SEARCH_DEBOUNCE = 500;
 const SORTED_COLUMN_ID = 'mappingRuleId';
+const MAPPING_RULES_GUIDE_URL = 'https://docs.camunda.io/docs/next/components/admin/mapping-rules/';
 
 type AdminMappingRulesPageProps = {
 	mappingRules: MappingRule[];
@@ -130,27 +131,37 @@ const AdminMappingRulesPage: React.FC<AdminMappingRulesPageProps> = ({
 	return (
 		<PageLayout id="main-content" tabIndex={-1}>
 			<div className="flex flex-col gap-6">
-				<PageHeader
-					title={title}
-					actions={
+				<div className="flex flex-col gap-1">
+					<PageHeader title={title} />
+					<p className="text-sm leading-5 text-muted-foreground">
+						{t('admin.mappingRules.guideBody')}
+						<Button asChild variant="link" className="h-auto p-0 align-baseline font-normal">
+							<a href={MAPPING_RULES_GUIDE_URL} target="_blank" rel="noopener noreferrer">
+								{t('admin.mappingRules.guideLinkLabel')}
+							</a>
+						</Button>
+					</p>
+				</div>
+				<div className="flex flex-col gap-4">
+					<div className="flex items-end justify-between gap-4">
+						<div className="flex flex-1 flex-col gap-2">
+							<Label htmlFor="mapping-rules-search" className="sr-only">
+								{t('admin.mappingRules.searchByMappingRuleId')}
+							</Label>
+							<SearchInput
+								id="mapping-rules-search"
+								className="max-w-sm min-w-48"
+								placeholder={t('admin.mappingRules.searchByMappingRuleId')}
+								value={searchDraft}
+								onChange={(event) => setSearchDraft(event.target.value)}
+								onClear={() => setSearchDraft('')}
+							/>
+						</div>
 						<Button onClick={() => setModal({type: 'add'})}>
 							<Plus aria-hidden />
 							{t('admin.mappingRules.addMappingRule')}
 						</Button>
-					}
-				/>
-				<div className="flex flex-col gap-4">
-					<Label htmlFor="mapping-rules-search" className="sr-only">
-						{t('admin.mappingRules.searchByMappingRuleId')}
-					</Label>
-					<SearchInput
-						id="mapping-rules-search"
-						className="max-w-sm min-w-48"
-						placeholder={t('admin.mappingRules.searchByMappingRuleId')}
-						value={searchDraft}
-						onChange={(event) => setSearchDraft(event.target.value)}
-						onClear={() => setSearchDraft('')}
-					/>
+					</div>
 					<DataTable
 						aria-label={title}
 						columns={columns}

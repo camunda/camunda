@@ -134,6 +134,8 @@
 				"actorTypeAgent": "Agent IA"
 			},
 			"mappingRules": {
+				"guideBody": "Pour plus d'informations, consultez le ",
+				"guideLinkLabel": "guide des règles de mappage",
 				"mappingRuleIdColumn": "ID de règle de mappage",
 				"mappingRuleNameColumn": "Nom",
 				"claimNameColumn": "Nom de la revendication",

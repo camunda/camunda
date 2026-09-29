@@ -134,6 +134,8 @@
 				"actorTypeAgent": "Agente de IA"
 			},
 			"mappingRules": {
+				"guideBody": "Para más información, consulte la ",
+				"guideLinkLabel": "guía de reglas de mapeo",
 				"mappingRuleIdColumn": "ID de regla de mapeo",
 				"mappingRuleNameColumn": "Nombre",
 				"claimNameColumn": "Nombre del claim",

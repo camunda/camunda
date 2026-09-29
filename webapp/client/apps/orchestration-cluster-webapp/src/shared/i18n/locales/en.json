@@ -134,6 +134,8 @@
 				"actorTypeAgent": "AI agent"
 			},
 			"mappingRules": {
+				"guideBody": "For more information, see the ",
+				"guideLinkLabel": "mapping rules guide",
 				"mappingRuleIdColumn": "Mapping rule ID",
 				"mappingRuleNameColumn": "Name",
 				"claimNameColumn": "Claim name",

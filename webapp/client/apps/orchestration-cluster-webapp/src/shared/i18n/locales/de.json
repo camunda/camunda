@@ -134,6 +134,8 @@
 				"actorTypeAgent": "KI-Agent"
 			},
 			"mappingRules": {
+				"guideBody": "Weitere Informationen finden Sie im ",
+				"guideLinkLabel": "Leitfaden zu Zuordnungsregeln",
 				"mappingRuleIdColumn": "Zuordnungsregel-ID",
 				"mappingRuleNameColumn": "Name",
 				"claimNameColumn": "Claim-Name",
