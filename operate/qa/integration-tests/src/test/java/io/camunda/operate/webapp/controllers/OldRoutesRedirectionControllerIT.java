@@ -20,6 +20,9 @@ import org.springframework.boot.http.client.ClientHttpRequestFactorySettings.Red
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -56,13 +59,23 @@ public class OldRoutesRedirectionControllerIT {
   @ParameterizedTest
   @MethodSource("redirectionTestDataProvider")
   public void testRedirections(final String path) {
+    // A real browser's top-level navigation to an old bookmark sends Sec-Fetch-Mode: navigate;
+    // IndexController#login uses that header to tell such a navigation apart from a CSRF-token
+    // pre-flight GET, which gets a 204 instead of the redirect this test asserts (see ADR /
+    // camunda/security-testing-findings#281).
+    final var headers = new HttpHeaders();
+    headers.add("Sec-Fetch-Mode", "navigate");
     final ResponseEntity<String> response =
         restTemplate
             .withRedirects(Redirects.DONT_FOLLOW)
-            .getForEntity(baseUrl() + path, String.class);
+            .exchange(baseUrl() + path, HttpMethod.GET, new HttpEntity<>(headers), String.class);
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FOUND);
-    assertThat(response.getHeaders().getLocation().toString())
-        .isEqualTo(baseUrl() + "/operate" + path);
+    // /login redirects with a relative Location (IndexController#login builds the ResponseEntity
+    // itself instead of going through the "redirect:" view mechanism, which is what fully qualifies
+    // the other old routes below via HttpServletResponse#sendRedirect); see IndexControllerTest.
+    final String expectedLocation =
+        "/login".equals(path) ? "/operate" + path : baseUrl() + "/operate" + path;
+    assertThat(response.getHeaders().getLocation().toString()).isEqualTo(expectedLocation);
   }
 
   static Stream<String> notFoundTestDataProvider() {
