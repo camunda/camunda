@@ -144,6 +144,11 @@ not run Maven application tests. A complete Gradle path subsumes the focused Gra
 same run, so compilation and packaging are not run twice. Focused checks remain enabled for runs
 that do not select the complete Gradle path.
 
+A user can select the `build-tool` via a label in a PR. The label `gradle-build` can be used for this purpose.
+The label cannot run gradle as build tool if there are maven or java code changes, to not break D1.
+The purpose of the label is to select `gradle` when performing gradle only changes, or changes to the CI
+that are only relevant for gradle. This is hard to enforce generally, so this is left to the user to decide.
+
 Maven is the default build path. Automatic Gradle selection is allowed only when every changed file
 matches only the explicit Gradle build-input allowlist above or a dedicated allowlist for Gradle-only CI
 wiring. A shared or unknown CI file is not Gradle-only and defaults to Maven. A human may explicitly
@@ -157,11 +162,15 @@ while mixed changes continue to use Maven.
 Unified CI exposes a reusable entry point for the `build-tool` selection, with Maven as its default.
 Pull requests use the change detector and the human override described in D5; merge groups and
 protected-branch pushes default to Maven; and manually dispatched runs default to Maven unless a
-human explicitly selects Gradle. A scheduled wrapper invokes this reusable entry point with
-`build-tool: gradle` and runs the complete Gradle unit and integration test path against the default
+human explicitly selects Gradle. We will start by first scheduling the gradle CI run at a different time
+and we will detect that when selecting the build tool, as there are currently some unknowns in doing it differently.
+We will modify this setup later on when we will be confident in the consequences of usin a "wrapper" workflow.
+
+When scheduled, it runs the complete Gradle unit and integration test path against the default
 branch, beyond the focused compilation and packaging checks. This reuses the same selectable build
 path that engineers use to validate fixes to Gradle build or CI files. The exact cadence is an
 operational setting and can be adjusted without changing this decision.
+
 The scheduled workflow does not replace Maven's application-test path.
 
 A failure creates a CI incident that will be assigned to the following team/list of people:
