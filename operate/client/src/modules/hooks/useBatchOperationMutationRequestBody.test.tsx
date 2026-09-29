@@ -10,6 +10,7 @@ import {renderHook} from '@testing-library/react';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   useBatchOperationMutationRequestBody,
+  useCancelProcessInstancesBatchOperationMutationRequestBody,
   useDeleteProcessInstancesBatchOperationMutationRequestBody,
   useResumeProcessInstancesBatchOperationMutationRequestBody,
   useSuspendProcessInstancesBatchOperationMutationRequestBody,
@@ -34,8 +35,13 @@ const getWrapper = (initialSearchParams?: Record<string, string>) => {
 
 const processOperationHooks = [
   {
-    name: 'cancel and retry',
+    name: 'retry',
     useRequestBody: useBatchOperationMutationRequestBody,
+    eligibleIdsKey: 'visibleRunningIds',
+  },
+  {
+    name: 'cancel',
+    useRequestBody: useCancelProcessInstancesBatchOperationMutationRequestBody,
     eligibleIdsKey: 'visibleRunningIds',
   },
   {
@@ -83,6 +89,110 @@ describe('useBatchOperationMutationRequestBody', () => {
       filter: {
         $or: [{state: {$in: ['ACTIVE']}}, {hasIncident: true}],
       },
+    });
+  });
+
+  describe('cancel', () => {
+    it('should request suspended instances when the suspended filter is set', () => {
+      const {result} = renderHook(
+        () => useCancelProcessInstancesBatchOperationMutationRequestBody(),
+        {wrapper: getWrapper({suspended: 'true'})},
+      );
+
+      expect(result.current).toEqual({
+        filter: {
+          state: {$eq: 'SUSPENDED'},
+        },
+      });
+    });
+
+    it('should keep suspended instances when active, suspended and incident filters are combined', () => {
+      const {result} = renderHook(
+        () => useCancelProcessInstancesBatchOperationMutationRequestBody(),
+        {
+          wrapper: getWrapper({
+            active: 'true',
+            suspended: 'true',
+            incidents: 'true',
+          }),
+        },
+      );
+
+      expect(result.current).toEqual({
+        filter: {
+          $or: [
+            {state: {$eq: 'ACTIVE'}, hasIncident: false},
+            {state: {$eq: 'SUSPENDED'}},
+            {hasIncident: true, state: {$neq: 'SUSPENDED'}},
+          ],
+        },
+      });
+    });
+
+    it('should include selected suspended instances alongside running ones', () => {
+      processInstancesSelectionStore.state.selectionMode = 'INCLUDE';
+      processInstancesSelectionStore.state.selectedIds = ['1', '2'];
+      processInstancesSelectionStore.setRuntime({
+        totalCount: 3,
+        visibleIds: ['1', '2', '3'],
+        visibleRunningIds: ['1'],
+        visibleSuspendedIds: ['2'],
+      });
+
+      const {result} = renderHook(
+        () => useCancelProcessInstancesBatchOperationMutationRequestBody(),
+        {wrapper: getWrapper()},
+      );
+
+      expect(result.current).toEqual({
+        filter: {
+          processInstanceKey: {$in: ['1', '2']},
+        },
+      });
+    });
+  });
+
+  describe('retry', () => {
+    it('should ignore the suspended filter', () => {
+      const {result} = renderHook(
+        () => useBatchOperationMutationRequestBody(),
+        {
+          wrapper: getWrapper({
+            active: 'true',
+            suspended: 'true',
+            incidents: 'true',
+          }),
+        },
+      );
+
+      expect(result.current).toEqual({
+        filter: {
+          $or: [{state: {$in: ['ACTIVE']}}, {hasIncident: true}],
+        },
+      });
+    });
+
+    it('should drop selected suspended instances from the request', () => {
+      processInstancesSelectionStore.state.selectionMode = 'INCLUDE';
+      processInstancesSelectionStore.state.selectedIds = ['1', '2'];
+      processInstancesSelectionStore.setRuntime({
+        totalCount: 3,
+        visibleIds: ['1', '2', '3'],
+        visibleRunningIds: ['1'],
+        visibleSuspendedIds: ['2'],
+        visibleIncidentIds: ['1'],
+      });
+
+      const {result} = renderHook(
+        () => useBatchOperationMutationRequestBody(),
+        {wrapper: getWrapper()},
+      );
+
+      expect(result.current).toEqual({
+        filter: {
+          processInstanceKey: {$in: ['1']},
+        },
+      });
     });
   });
 
