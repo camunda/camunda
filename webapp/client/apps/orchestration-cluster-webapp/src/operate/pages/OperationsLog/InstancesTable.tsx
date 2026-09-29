@@ -9,17 +9,18 @@
 import {useEffect, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useSuspenseQuery} from '@tanstack/react-query';
+import {Button, DataTableSkeleton, Stack} from '@carbon/react';
 import {
 	auditLogSortFieldEnum,
 	type AuditLog,
 	type QueryAuditLogsRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {queries} from '#/shared/http/queries';
-import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {logger} from '#/operate/shared/utils/logger';
 import {PanelHeader} from '#/operate/shared/PanelHeader/PanelHeader';
 import {PaginatedSortableTable} from '#/operate/shared/PaginatedSortableTable/PaginatedSortableTable';
 import {EmptyMessage} from '#/operate/shared/EmptyMessage/EmptyMessage';
+import {ErrorMessage} from '#/operate/shared/ErrorMessage/ErrorMessage';
 import {
 	OperationsLogDetailsModal,
 	type DetailsModalState,
@@ -95,6 +96,10 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 	const {
 		data,
 		error,
+		status,
+		isFetching,
+		isPlaceholderData,
+		refetch,
 		isFetchingPreviousPage,
 		hasPreviousPage,
 		fetchPreviousPage,
@@ -105,17 +110,13 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 
 	useEffect(() => {
 		if (error) {
-			notificationsStore.displayNotification({
-				isDismissable: true,
-				kind: 'error',
-				title: t('operate.operationsLog.notifications.fetchFailed'),
-			});
 			logger.error(error);
 		}
-	}, [error, t]);
+	}, [error]);
 
 	const auditLogs = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
 	const totalCount = data?.pages.at(0)?.page.totalItems ?? 0;
+	const hasMoreTotalItems = data?.pages.at(0)?.page.hasMoreTotalItems ?? false;
 
 	const hasAnyFilter =
 		search.tenantId !== undefined ||
@@ -129,17 +130,25 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 		search.timestampAfter !== undefined ||
 		search.timestampBefore !== undefined;
 
-	const emptyState = hasAnyFilter ? (
-		<EmptyMessage
-			message={t('operate.operationsLog.emptyState.noResultsTitle')}
-			additionalInfo={t('operate.operationsLog.emptyState.noResultsDescription')}
-		/>
-	) : (
-		<EmptyMessage
-			message={t('operate.operationsLog.emptyState.noItemsTitle')}
-			additionalInfo={t('operate.operationsLog.emptyState.noItemsDescription')}
-		/>
-	);
+	const emptyState =
+		status === 'error' ? (
+			<Stack gap={4} role="alert">
+				<ErrorMessage message={t('operate.operationsLog.notifications.fetchFailed')} additionalInfo="" />
+				<Button kind="ghost" size="sm" disabled={isFetching} onClick={() => void refetch()}>
+					{t('errorGenericErrorPageButtonLabel')}
+				</Button>
+			</Stack>
+		) : hasAnyFilter ? (
+			<EmptyMessage
+				message={t('operate.operationsLog.emptyState.noResultsTitle')}
+				additionalInfo={t('operate.operationsLog.emptyState.noResultsDescription')}
+			/>
+		) : (
+			<EmptyMessage
+				message={t('operate.operationsLog.emptyState.noItemsTitle')}
+				additionalInfo={t('operate.operationsLog.emptyState.noItemsDescription')}
+			/>
+		);
 
 	const columns = [
 		{key: 'result', label: '', render: (row: AuditLog) => <CellResult item={row} />},
@@ -211,23 +220,32 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 
 	return (
 		<TableContainer>
-			<PanelHeader title={t('operate.operationsLog.title')} count={totalCount} />
-			<PaginatedSortableTable
-				columns={columns}
-				rows={auditLogs}
-				rowKey={(row) => row.auditLogKey}
-				emptyState={emptyState}
-				hideHeaderWhenEmpty
-				pagination={{
-					hasPreviousPage,
-					hasNextPage,
-					isFetchingPreviousPage,
-					isFetchingNextPage,
-					fetchPreviousPage,
-					fetchNextPage,
-				}}
-				data-testid="operations-log-table"
+			<PanelHeader
+				title={t('operate.operationsLog.title')}
+				count={status === 'success' && !isPlaceholderData ? totalCount : undefined}
+				hasMoreTotalItems={status === 'success' && !isPlaceholderData && hasMoreTotalItems}
 			/>
+			{status === 'pending' || (isPlaceholderData && isFetching && auditLogs.length === 0) ? (
+				<DataTableSkeleton columnCount={columns.length} rowCount={5} showHeader={false} showToolbar={false} />
+			) : (
+				<PaginatedSortableTable
+					columns={columns}
+					rows={status === 'error' ? [] : auditLogs}
+					rowKey={(row) => row.auditLogKey}
+					isFetching={status === 'success' && isFetching && isPlaceholderData}
+					emptyState={emptyState}
+					hideHeaderWhenEmpty
+					pagination={{
+						hasPreviousPage: status === 'success' && !isPlaceholderData && hasPreviousPage,
+						hasNextPage: status === 'success' && !isPlaceholderData && hasNextPage,
+						isFetchingPreviousPage,
+						isFetchingNextPage,
+						fetchPreviousPage,
+						fetchNextPage,
+					}}
+					data-testid="operations-log-table"
+				/>
+			)}
 			{detailsModal.auditLog && (
 				<OperationsLogDetailsModal
 					isOpen={detailsModal.isOpen}
