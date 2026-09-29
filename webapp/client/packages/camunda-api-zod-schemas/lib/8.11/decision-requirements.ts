@@ -6,36 +6,27 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {z} from 'zod';
-import {API_VERSION, getQueryRequestBodySchema, getQueryResponseBodySchema, type Endpoint} from './common';
+import {API_VERSION, type Endpoint} from './common';
+import {decisionRequirementsResultSchema} from './gen/zod/decisionRequirementsResultSchema';
+import {decisionRequirementsSearchQueryResultSchema} from './gen/zod/decisionRequirementsSearchQueryResultSchema';
+import {decisionRequirementsSearchQuerySchema} from './gen/zod/decisionRequirementsSearchQuerySchema';
+import {getDecisionRequirementsXMLStatus200Schema} from './gen/zod/getDecisionRequirementsXMLSchema';
+import type {DecisionRequirementsResult} from './gen/types/DecisionRequirementsResult';
+import type {DecisionRequirementsSearchQuery} from './gen/types/DecisionRequirementsSearchQuery';
+import type {DecisionRequirementsSearchQueryResult} from './gen/types/DecisionRequirementsSearchQueryResult';
+import type {GetDecisionRequirementsXMLStatus200} from './gen/types/GetDecisionRequirementsXML';
 
-const decisionRequirementsSchema = z.object({
-	decisionRequirementsName: z.string(),
-	version: z.number(),
-	decisionRequirementsId: z.string(),
-	resourceName: z.string(),
-	tenantId: z.string(),
-	decisionRequirementsKey: z.string(),
-});
-type DecisionRequirements = z.infer<typeof decisionRequirementsSchema>;
+const decisionRequirementsSchema = decisionRequirementsResultSchema;
+type DecisionRequirements = DecisionRequirementsResult;
 
-const queryDecisionRequirementsRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: [
-		'decisionRequirementsKey',
-		'decisionRequirementsName',
-		'version',
-		'decisionRequirementsId',
-		'tenantId',
-	] as const,
-	filter: decisionRequirementsSchema.partial(),
-});
-type QueryDecisionRequirementsRequestBody = z.infer<typeof queryDecisionRequirementsRequestBodySchema>;
+const queryDecisionRequirementsRequestBodySchema = decisionRequirementsSearchQuerySchema;
+type QueryDecisionRequirementsRequestBody = DecisionRequirementsSearchQuery;
 
-const queryDecisionRequirementsResponseBodySchema = getQueryResponseBodySchema(decisionRequirementsSchema);
-type QueryDecisionRequirementsResponseBody = z.infer<typeof queryDecisionRequirementsResponseBodySchema>;
+const queryDecisionRequirementsResponseBodySchema = decisionRequirementsSearchQueryResultSchema;
+type QueryDecisionRequirementsResponseBody = DecisionRequirementsSearchQueryResult;
 
-const getDecisionRequirementsXmlResponseBodySchema = z.string();
-type GetDecisionRequirementsXmlResponseBody = z.infer<typeof getDecisionRequirementsXmlResponseBodySchema>;
+const getDecisionRequirementsXmlResponseBodySchema = getDecisionRequirementsXMLStatus200Schema;
+type GetDecisionRequirementsXmlResponseBody = GetDecisionRequirementsXMLStatus200;
 
 const queryDecisionRequirements = {
 	method: 'POST',

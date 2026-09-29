@@ -8,101 +8,61 @@
 
 import {z} from 'zod';
 import {API_VERSION, type Endpoint} from '../common';
+import {batchOperationCreatedResultSchema} from './gen/zod/batchOperationCreatedResultSchema';
+import {deleteResourceBodySchema} from './gen/zod/deleteResourceSchema';
+import {deleteResourceResponseSchema} from './gen/zod/deleteResourceResponseSchema';
+import {deploymentDecisionRequirementsResultSchema} from './gen/zod/deploymentDecisionRequirementsResultSchema';
+import {deploymentDecisionResultSchema} from './gen/zod/deploymentDecisionResultSchema';
+import {deploymentFormResultSchema} from './gen/zod/deploymentFormResultSchema';
+import {deploymentMetadataResultSchema} from './gen/zod/deploymentMetadataResultSchema';
+import {deploymentProcessResultSchema} from './gen/zod/deploymentProcessResultSchema';
+import {deploymentResourceResultSchema} from './gen/zod/deploymentResourceResultSchema';
+import {deploymentResultSchema} from './gen/zod/deploymentResultSchema';
+import {resourceResultSchema} from './gen/zod/resourceResultSchema';
+import type {BatchOperationCreatedResult} from './gen/types/BatchOperationCreatedResult';
+import type {DeleteResourceBody} from './gen/types/DeleteResource';
+import type {DeleteResourceResponse} from './gen/types/DeleteResourceResponse';
+import type {DeploymentDecisionRequirementsResult} from './gen/types/DeploymentDecisionRequirementsResult';
+import type {DeploymentDecisionResult} from './gen/types/DeploymentDecisionResult';
+import type {DeploymentFormResult} from './gen/types/DeploymentFormResult';
+import type {DeploymentMetadataResult} from './gen/types/DeploymentMetadataResult';
+import type {DeploymentProcessResult} from './gen/types/DeploymentProcessResult';
+import type {DeploymentResourceResult} from './gen/types/DeploymentResourceResult';
+import type {DeploymentResult} from './gen/types/DeploymentResult';
+import type {ResourceResult} from './gen/types/ResourceResult';
 
-const processDeploymentSchema = z.object({
-	processDefinitionId: z.string(),
-	processDefinitionVersion: z.number().int(),
-	resourceName: z.string(),
-	tenantId: z.string(),
-	processDefinitionKey: z.string(),
-});
-type ProcessDeployment = z.infer<typeof processDeploymentSchema>;
+const processDeploymentSchema = deploymentProcessResultSchema;
+type ProcessDeployment = DeploymentProcessResult;
 
-const decisionDeploymentSchema = z.object({
-	decisionDefinitionId: z.string(),
-	version: z.number().int(),
-	name: z.string(),
-	tenantId: z.string(),
-	decisionRequirementsId: z.string(),
-	decisionDefinitionKey: z.string(),
-	decisionRequirementsKey: z.string(),
-});
-type DecisionDeployment = z.infer<typeof decisionDeploymentSchema>;
+const decisionDeploymentSchema = deploymentDecisionResultSchema;
+type DecisionDeployment = DeploymentDecisionResult;
 
-const decisionRequirementsDeploymentSchema = z.object({
-	decisionRequirementsId: z.string(),
-	version: z.number().int(),
-	decisionRequirementsName: z.string(),
-	tenantId: z.string(),
-	resourceName: z.string(),
-	decisionRequirementsKey: z.string(),
-});
-type DecisionRequirementsDeployment = z.infer<typeof decisionRequirementsDeploymentSchema>;
+const decisionRequirementsDeploymentSchema = deploymentDecisionRequirementsResultSchema;
+type DecisionRequirementsDeployment = DeploymentDecisionRequirementsResult;
 
-const formDeploymentSchema = z.object({
-	formId: z.string(),
-	version: z.number().int(),
-	resourceName: z.string(),
-	tenantId: z.string(),
-	formKey: z.string(),
-});
-type FormDeployment = z.infer<typeof formDeploymentSchema>;
+const formDeploymentSchema = deploymentFormResultSchema;
+type FormDeployment = DeploymentFormResult;
 
-const resourceDeploymentSchema = z.object({
-	resourceId: z.string(),
-	version: z.number().int(),
-	resourceName: z.string(),
-	tenantId: z.string(),
-	resourceKey: z.string(),
-});
-type ResourceDeployment = z.infer<typeof resourceDeploymentSchema>;
+const resourceDeploymentSchema = deploymentResourceResultSchema;
+type ResourceDeployment = DeploymentResourceResult;
 
-const deploymentSchema = z.object({
-	processDefinition: processDeploymentSchema.nullable(),
-	decisionDefinition: decisionDeploymentSchema.nullable(),
-	decisionRequirements: decisionRequirementsDeploymentSchema.nullable(),
-	form: formDeploymentSchema.nullable(),
-	resource: resourceDeploymentSchema.nullable(),
-});
-type Deployment = z.infer<typeof deploymentSchema>;
+const deploymentSchema = deploymentMetadataResultSchema;
+type Deployment = DeploymentMetadataResult;
 
-const createDeploymentResponseBodySchema = z.object({
-	tenantId: z.string(),
-	deploymentKey: z.string(),
-	deployments: z.array(deploymentSchema),
-});
-type CreateDeploymentResponseBody = z.infer<typeof createDeploymentResponseBodySchema>;
+const createDeploymentResponseBodySchema = deploymentResultSchema;
+type CreateDeploymentResponseBody = DeploymentResult;
 
-const deleteResourceRequestBodySchema = z
-	.object({
-		operationReference: z.number().int().min(1).optional(),
-		deleteHistory: z.boolean().optional().default(false),
-	})
-	.optional();
-type DeleteResourceRequestBody = z.infer<typeof deleteResourceRequestBodySchema>;
+// The request body is optional in the spec, so the op body schema (nullish) is used here.
+const deleteResourceRequestBodySchema = deleteResourceBodySchema;
+type DeleteResourceRequestBody = DeleteResourceBody;
 
-const batchOperationCreatedResultSchema = z.object({
-	batchOperationKey: z.string(),
-	batchOperationType: z.string(),
-});
-type BatchOperationCreatedResult = z.infer<typeof batchOperationCreatedResultSchema>;
+const deleteResourceResponseBodySchema = deleteResourceResponseSchema;
+type DeleteResourceResponseBody = DeleteResourceResponse;
 
-const deleteResourceResponseBodySchema = z.object({
-	resourceKey: z.string(),
-	batchOperation: batchOperationCreatedResultSchema.nullable(),
-});
-type DeleteResourceResponseBody = z.infer<typeof deleteResourceResponseBodySchema>;
+const resourceSchema = resourceResultSchema;
+type Resource = ResourceResult;
 
-const resourceSchema = z.object({
-	resourceName: z.string(),
-	version: z.number().int(),
-	versionTag: z.string(),
-	resourceId: z.string(),
-	tenantId: z.string(),
-	resourceKey: z.string(),
-});
-type Resource = z.infer<typeof resourceSchema>;
-
+// Kept manual: the spec marks this endpoint as deprecated and JSON-only, and the consumers read it as text.
 const getResourceContentResponseBodySchema = z.string();
 type GetResourceContentResponseBody = z.infer<typeof getResourceContentResponseBodySchema>;
 
@@ -158,6 +118,7 @@ export {
 	resourceDeploymentSchema,
 	deploymentSchema,
 };
+
 export type {
 	CreateDeploymentResponseBody,
 	DeleteResourceRequestBody,
