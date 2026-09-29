@@ -246,6 +246,36 @@ public class BatchOperationUpdateTaskTest {
   }
 
   @Test
+  void shouldKeepHalvingWhenALaterPageOfTheCycleIsRefused() {
+    // given - two pages at the reduced read, of which only the second is refused
+    final var task = new BatchOperationUpdateTask(repository, 4, LOGGER, Runnable::run);
+    for (final var id : List.of("1", "2", "3", "4")) {
+      repository.batchOperations.add(
+          new NotFinishedBatchOperation(id, BatchOperationState.ACTIVE, 5));
+      repository.finishedOperationsCount.add(new OperationsAggData(id, Map.of("COMPLETED", 5L)));
+    }
+    final var refused =
+        CompletableFuture.<Integer>failedFuture(
+            new BulkRequestTooLargeException("circuit_breaking"));
+    Mockito.doReturn(refused)
+        .doCallRealMethod()
+        .doReturn(refused)
+        .doCallRealMethod()
+        .when(repository)
+        .bulkUpdate(Mockito.any());
+    assertThat(task.execute().toCompletableFuture()).failsWithin(REQUEST_TIMEOUT);
+
+    // when - the cycle at the reduced read gets its first page through, then is refused again
+    assertThat(task.execute().toCompletableFuture()).failsWithin(REQUEST_TIMEOUT);
+    task.execute().toCompletableFuture().join();
+
+    // then - an accepted page does not restore the read the refused page was sized from
+    Mockito.verify(repository).getNotFinishedBatchOperations(4, null);
+    Mockito.verify(repository).getNotFinishedBatchOperations(2, null);
+    Mockito.verify(repository).getNotFinishedBatchOperations(1, null);
+  }
+
+  @Test
   void shouldNotRestoreTheReadOnACycleWithNothingToWrite() {
     // given - one refused cycle, so the read is reduced
     final var task = new BatchOperationUpdateTask(repository, 100, LOGGER, Runnable::run);
