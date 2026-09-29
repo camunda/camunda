@@ -127,7 +127,7 @@ def build_parser() -> argparse.ArgumentParser:
   # Historical window, spreadsheet-friendly TSV:
   uv run load-test-report c8-ck-baseline-20260814 \\
     --start 2026-08-14T10:00:00Z \\
-    --end 2026-08-14T10:30:00Z \\
+    --duration-seconds 1800 \\
     --format tsv --no-header
 
   # CI monitor ingress with basic auth:
