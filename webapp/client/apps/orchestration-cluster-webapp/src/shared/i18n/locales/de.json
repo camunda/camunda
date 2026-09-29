@@ -838,6 +838,11 @@
 				"filters": {
 					"tenant": "Mandant",
 					"processSection": "Prozess",
+					"resolvingDefinition": "Ausgewählte Prozessdefinition wird geladen",
+					"definitionLookupFailed": "Die ausgewählte Prozessdefinition konnte nicht geladen werden",
+					"definitionsListFailed": "Prozessdefinitionen konnten nicht geladen werden",
+					"definitionUnavailable": "Die ausgewählte Prozessdefinition oder der Mandant wurde nicht gefunden",
+					"deletedVersion": "{{version}} (Gelöscht)",
 					"processInstanceKey": "Prozessinstanzschlüssel",
 					"processInstanceKeyPlaceholder": "Prozessinstanzschlüssel",
 					"operationSection": "Vorgang",

@@ -841,6 +841,11 @@
 				"filters": {
 					"tenant": "Tenant",
 					"processSection": "Processus",
+					"resolvingDefinition": "Chargement de la définition de processus sélectionnée",
+					"definitionLookupFailed": "Impossible de charger la définition de processus sélectionnée",
+					"definitionsListFailed": "Impossible de charger les définitions de processus",
+					"definitionUnavailable": "La définition de processus ou le tenant sélectionné est introuvable",
+					"deletedVersion": "{{version}} (Supprimée)",
 					"processInstanceKey": "Clé d'instance de processus",
 					"processInstanceKeyPlaceholder": "Clé d'instance de processus",
 					"operationSection": "Opération",

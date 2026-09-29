@@ -838,6 +838,11 @@
 				"filters": {
 					"tenant": "Inquilino",
 					"processSection": "Proceso",
+					"resolvingDefinition": "Cargando la definición de proceso seleccionada",
+					"definitionLookupFailed": "No se pudo cargar la definición de proceso seleccionada",
+					"definitionsListFailed": "No se pudieron cargar las definiciones de proceso",
+					"definitionUnavailable": "No se encontró la definición de proceso o el inquilino seleccionado",
+					"deletedVersion": "{{version}} (Eliminada)",
 					"processInstanceKey": "Clave de instancia de proceso",
 					"processInstanceKeyPlaceholder": "Clave de instancia de proceso",
 					"operationSection": "Operación",

@@ -37,40 +37,34 @@ import {useAuditLogs} from './operationsLog.queries';
 import {TableContainer} from './styled';
 import {formatToISO} from './utils';
 import type {OperationsLogSearch} from './operationsLog.schema';
+import {operationsLogDefinitionsQuery} from './definitions.queries';
 
 const DEFAULT_SORT = 'timestamp+desc';
 
 type Props = {
 	search: OperationsLogSearch;
+	selectedTenantId?: string;
+	selectedDefinitionKey?: string;
 };
 
-const InstancesTable: React.FC<Props> = ({search}) => {
+const InstancesTable: React.FC<Props> = ({search, selectedTenantId, selectedDefinitionKey}) => {
 	const {t} = useTranslation();
 	const [detailsModal, setDetailsModal] = useState<DetailsModalState>({isOpen: false});
 
-	const selectedTenantId = search.tenantId === 'all' ? undefined : search.tenantId;
-
-	const {data: processDefinitions} = useSuspenseQuery(queries.queryProcessDefinitions({page: {limit: 1000}}));
+	const {data: processDefinitions} = useSuspenseQuery(operationsLogDefinitionsQuery({}));
 	const {data: decisionDefinitions} = useSuspenseQuery(queries.queryDecisionDefinitions({page: {limit: 1000}}));
 
 	const processDefinitionNameMap = useMemo(
-		() => Object.fromEntries(processDefinitions.items.map((def) => [def.processDefinitionKey, def.name])),
+		() =>
+			Object.fromEntries(
+				processDefinitions.map((def) => [def.processDefinitionKey, def.name ?? def.processDefinitionId]),
+			),
 		[processDefinitions],
 	);
 	const decisionDefinitionNameMap = useMemo(
 		() => Object.fromEntries(decisionDefinitions.items.map((def) => [def.decisionDefinitionKey, def.name])),
 		[decisionDefinitions],
 	);
-
-	const selectedProcessDefinition =
-		search.process && search.version !== undefined
-			? processDefinitions.items.find(
-					(def) =>
-						def.processDefinitionId === search.process &&
-						def.version === search.version &&
-						(selectedTenantId === undefined || def.tenantId === selectedTenantId),
-				)
-			: undefined;
 
 	const [rawSortField, rawSortOrder] = (search.sort ?? DEFAULT_SORT).split('+');
 	const parsedSortField = auditLogSortFieldEnum.safeParse(rawSortField);
@@ -79,7 +73,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 
 	const requestFilter: NonNullable<QueryAuditLogsRequestBody['filter']> = {
 		category: {$neq: 'ADMIN'},
-		processDefinitionKey: selectedProcessDefinition?.processDefinitionKey,
+		processDefinitionKey: selectedDefinitionKey,
 		processDefinitionId: search.process && search.version === undefined ? search.process : undefined,
 		processInstanceKey: search.processInstanceKey,
 		tenantId: selectedTenantId,
