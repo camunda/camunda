@@ -530,6 +530,14 @@ for (const isMultiTenancyEnabled of [false, true]) {
 			await expect(operateDecisionInstancePage.loadingSpinner).toBeVisible();
 			await expect(page.getByTestId('inputs-skeleton')).toBeVisible();
 			await expect(page.getByTestId('outputs-skeleton')).toBeVisible();
+			const viewport = page.viewportSize();
+			if (viewport === null) {
+				throw new Error('Missing browser viewport');
+			}
+			const panelBottom = await page.getByTestId('decision-instance-variables-panel').evaluate((panel) => {
+				return panel.getBoundingClientRect().bottom;
+			});
+			expect(Math.abs(viewport.height - panelBottom)).toBeLessThan(1);
 			await page.getByRole('tab', {name: 'Result'}).click();
 			await expect(page.getByTestId('result-loading-spinner').getByRole('img', {name: 'loading'})).toBeVisible();
 		} finally {
