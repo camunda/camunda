@@ -136,9 +136,10 @@ type ShellProps = {
 	topPanel?: React.ReactNode;
 	bottomPanel?: React.ReactNode;
 	rightPanel?: React.ReactNode;
+	isPending?: boolean;
 };
 
-const DecisionInstanceShell: React.FC<ShellProps> = ({header, topPanel, bottomPanel, rightPanel}) => {
+const DecisionInstanceShell: React.FC<ShellProps> = ({header, topPanel, bottomPanel, rightPanel, isPending}) => {
 	const {t} = useTranslation();
 	const pendingTopPanel = (
 		<Section aria-label={t('operate.decisionInstance.panel.label')} tabIndex={0}>
@@ -151,7 +152,7 @@ const DecisionInstanceShell: React.FC<ShellProps> = ({header, topPanel, bottomPa
 			<VisuallyHiddenH1 id="operate-decision-instance-heading" tabIndex={-1}>
 				{t('operate.decisionInstance.title')}
 			</VisuallyHiddenH1>
-			<Container>
+			<Container $isPending={isPending}>
 				<InstanceDetail
 					type="decision"
 					header={header}

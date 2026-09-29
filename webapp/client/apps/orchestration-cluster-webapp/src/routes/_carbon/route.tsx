@@ -12,31 +12,36 @@ import {NotFoundPage} from '#/shared/pages/NotFoundPage';
 import {GenericErrorPage} from '#/shared/pages/GenericErrorPage';
 import {Notifications} from '#/shared/notifications/components/Notifications';
 import {NetworkStatusWatcher} from '#/shared/notifications/components/NetworkStatusWatcher';
-import appCss from './index.scss?url';
+import {CarbonStylesheet} from './-CarbonStylesheet';
 
 const Route = createFileRoute('/_carbon')({
 	notFoundComponent: () => (
-		<ThemeProvider>
-			<NotFoundPage />
-		</ThemeProvider>
+		<CarbonStylesheet>
+			<ThemeProvider>
+				<NotFoundPage />
+			</ThemeProvider>
+		</CarbonStylesheet>
 	),
 	errorComponent: ({reset}) => (
-		<ThemeProvider>
-			<GenericErrorPage reset={reset} />
-		</ThemeProvider>
+		<CarbonStylesheet>
+			<ThemeProvider>
+				<GenericErrorPage reset={reset} />
+			</ThemeProvider>
+		</CarbonStylesheet>
 	),
 	component: function CarbonLayout() {
 		return (
-			<ThemeProvider>
-				<Notifications />
-				<NetworkStatusWatcher />
-				<Outlet />
-			</ThemeProvider>
+			<CarbonStylesheet>
+				<ThemeProvider>
+					<Notifications />
+					<NetworkStatusWatcher />
+					<Outlet />
+				</ThemeProvider>
+			</CarbonStylesheet>
 		);
 	},
 	head: () => ({
 		meta: [],
-		links: [{rel: 'stylesheet', href: appCss}],
 	}),
 });
 

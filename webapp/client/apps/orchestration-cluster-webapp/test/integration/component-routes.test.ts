@@ -21,7 +21,7 @@ import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createQueryUserTasksResponse} from '#/shared-test-modules/api-mocks/user-tasks';
-import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
+import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 
 test.describe('component routes', () => {
 	test('should render Operate when component is active', async ({network, page}) => {
@@ -241,7 +241,82 @@ test.describe('component routes', () => {
 		await expect(notFoundPage.heading).toBeVisible();
 	});
 
-	test('should show 404 page for unknown operate route', async ({network, page, notFoundPage}) => {
+	test('should style the Operate 404 page and release Carbon styles after returning to Tasklist', async ({
+		network,
+		page,
+		notFoundPage,
+		tasklistIndexPage,
+	}) => {
+		network.use(
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
+			mockSystemConfigurationEndpoint({
+				successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate', 'tasklist']}})),
+			}),
+			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
+			mockQueryUserTasksEndpoint({
+				successResponse: HttpResponse.json(createQueryUserTasksResponse()),
+			}),
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+				successResponse: HttpResponse.json(createPaginatedResponse()),
+			}),
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+				successResponse: HttpResponse.json(createPaginatedResponse()),
+			}),
+		);
+
+		await page.goto('/operate/nonexistent');
+
+		await expect(notFoundPage.heading).toBeVisible();
+		await expect(notFoundPage.goToHomeButton).toHaveCSS('background-color', 'rgb(15, 98, 254)');
+		const carbonStylesheet = page.locator('head link[rel="stylesheet"][href*="assets/index-"]');
+		await expect(carbonStylesheet).toHaveCount(1);
+
+		await notFoundPage.goToHomeButton.click();
+
+		await expect(page).toHaveURL('/tasklist');
+		await expect(tasklistIndexPage.filterSelect).toBeVisible();
+		await expect(carbonStylesheet).toHaveCount(0);
+	});
+
+	test('should style the Carbon error fallback when an Operate loader fails', async ({network, page}) => {
+		network.use(
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
+			mockSystemConfigurationEndpoint({
+				successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
+			}),
+			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+				successResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
+			}),
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+				successResponse: HttpResponse.json(createPaginatedResponse()),
+			}),
+		);
+
+		await page.goto('/operate');
+
+		await expect(page.getByRole('heading', {name: 'Something went wrong'})).toBeVisible({timeout: 15000});
+		await expect(page.getByRole('button', {name: 'Try again'})).toHaveCSS('background-color', 'rgb(15, 98, 254)');
+		await expect(page.locator('head link[rel="stylesheet"][href*="assets/index-"]')).toHaveCount(1);
+	});
+
+	test('should surface a Carbon stylesheet loading failure instead of leaving the app blank', async ({
+		network,
+		page,
+	}) => {
+		let releaseStylesheet!: () => void;
+		const heldStylesheet = new Promise<void>((resolve) => {
+			releaseStylesheet = resolve;
+		});
+		let shouldFail = true;
+		await page.route('**/assets/index-*.css', async (route) => {
+			await heldStylesheet;
+			if (shouldFail) {
+				await route.abort();
+			} else {
+				await route.continue();
+			}
+		});
 		network.use(
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 			mockSystemConfigurationEndpoint({
@@ -256,9 +331,18 @@ test.describe('component routes', () => {
 			}),
 		);
 
-		await page.goto('/operate/nonexistent');
+		try {
+			await page.goto('/operate', {waitUntil: 'domcontentloaded'});
+			await expect(page.getByRole('status')).toHaveText('Loading...');
+		} finally {
+			releaseStylesheet();
+		}
 
-		await expect(notFoundPage.heading).toBeVisible();
+		await expect(page.getByRole('heading', {name: 'Something went wrong'})).toBeVisible();
+		await expect(page.getByRole('button', {name: 'Try again'})).toBeVisible();
+		shouldFail = false;
+		await page.getByRole('button', {name: 'Try again'}).click();
+		await expect(page.getByRole('heading', {name: 'Dashboard'})).toBeVisible();
 	});
 
 	test('should show 404 page for unknown admin route', async ({network, page, notFoundPage}) => {

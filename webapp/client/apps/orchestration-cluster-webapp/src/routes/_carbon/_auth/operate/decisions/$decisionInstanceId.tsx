@@ -6,12 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute} from '@tanstack/react-router';
+import {useEffect, useRef} from 'react';
+import {createFileRoute, useRouter} from '@tanstack/react-router';
 import {t} from 'i18next';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {DecisionInstance, DecisionInstanceShell} from '#/operate/pages/DecisionInstance/DecisionInstance';
 import {getHeaderColumns} from '#/operate/pages/DecisionInstance/headerColumns';
-import {decisionInstanceQuery} from '#/operate/pages/DecisionInstance/decisionInstance.queries';
+import {decisionInstanceQuery, useDecisionInstance} from '#/operate/pages/DecisionInstance/decisionInstance.queries';
 import {InstanceHeaderSkeleton} from '#/operate/shared/InstanceHeader/InstanceHeaderSkeleton';
 
 export const Route = createFileRoute('/_carbon/_auth/operate/decisions/$decisionInstanceId')({
@@ -40,6 +41,7 @@ export const Route = createFileRoute('/_carbon/_auth/operate/decisions/$decision
 	// navigation shows the same loading row legacy did, instead of a blank page while the loader awaits.
 	pendingComponent: () => (
 		<DecisionInstanceShell
+			isPending
 			header={
 				<InstanceHeaderSkeleton
 					headerColumns={getHeaderColumns(t, {
@@ -51,6 +53,22 @@ export const Route = createFileRoute('/_carbon/_auth/operate/decisions/$decision
 	),
 	component: function DecisionInstanceRoute() {
 		const {decisionInstanceId} = Route.useParams();
+		const loaderData = Route.useLoaderData();
+		const router = useRouter();
+		const {query} = useDecisionInstance(decisionInstanceId);
+		const recoveredDecisionInstanceId = useRef<string | null>(null);
+
+		useEffect(() => {
+			if (
+				loaderData === undefined &&
+				query.data != null &&
+				recoveredDecisionInstanceId.current !== decisionInstanceId
+			) {
+				recoveredDecisionInstanceId.current = decisionInstanceId;
+				void router.invalidate({filter: (match) => match.routeId === Route.id});
+			}
+		}, [decisionInstanceId, loaderData, query.data, router]);
+
 		return <DecisionInstance decisionInstanceId={decisionInstanceId} />;
 	},
 });
