@@ -6,8 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {describe, it, expect} from 'vitest';
+import {describe, expect} from 'vitest';
 import {render} from 'vitest-browser-react';
+import {it} from '#/vitest-modules/test-extend';
 import {StateOverlay} from './StateOverlay';
 
 function getContainer() {
@@ -43,5 +44,14 @@ describe('<StateOverlay />', () => {
 		);
 
 		await expect.element(screen.getByTitle('3 finished instances')).toBeVisible();
+		await expect.element(screen.getByRole('img', {name: '3 finished instances'})).toBeVisible();
+	});
+
+	it('should include the count in the accessible name of a titled statistic', async () => {
+		const screen = await render(
+			<StateOverlay state="completed" container={getContainer()} title="Execution Count" count={3} />,
+		);
+
+		await expect.element(screen.getByRole('img', {name: 'Execution Count: 3'})).toBeVisible();
 	});
 });

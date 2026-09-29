@@ -32,6 +32,8 @@ const StateOverlay: React.FC<Props> = observer(
 			<Container
 				data-testid={testId}
 				title={title}
+				role={title === undefined ? undefined : 'img'}
+				aria-label={title === undefined ? undefined : showStatistic ? `${title}: ${count}` : title}
 				$theme={themeStore.actualTheme}
 				$state={state}
 				$isFaded={isFaded}
