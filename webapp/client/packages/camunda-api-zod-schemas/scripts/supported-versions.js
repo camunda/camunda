@@ -59,12 +59,22 @@ export const CONFIG = {
 	},
 	'8.10': {
 		download: {
-			branch: 'main',
+			branch: 'stable/8.10',
 			directory: 'zeebe/gateway-protocol/src/main/proto/v2',
 		},
 		generate: {
 			input: 'specs/8.10/rest-api.yaml',
 			output: 'lib/8.10/gen',
+		},
+	},
+	'8.11': {
+		download: {
+			branch: 'main',
+			directory: 'zeebe/gateway-protocol/src/main/proto/v2',
+		},
+		generate: {
+			input: 'specs/8.11/rest-api.yaml',
+			output: 'lib/8.11/gen',
 		},
 	},
 };

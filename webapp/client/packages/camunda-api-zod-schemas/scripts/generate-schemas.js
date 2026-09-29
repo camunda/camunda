@@ -8,10 +8,11 @@
 
 // @ts-check
 
-import {build} from '@kubb/core';
-import {pluginOas} from '@kubb/plugin-oas';
+import {createKubb} from '@kubb/core';
+import {parserTs} from '@kubb/parser-ts';
 import {pluginTs} from '@kubb/plugin-ts';
 import {pluginZod} from '@kubb/plugin-zod';
+import {defineConfig} from 'kubb/config';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -52,20 +53,16 @@ async function generateSchemas(version, config) {
 
 	await fs.rm(outputPath, {recursive: true, force: true});
 
-	const {error, files} = await build({
-		config: {
+	const {files} = await createKubb(
+		defineConfig({
 			root: PACKAGE_ROOT,
-			input: {
-				path: inputPath,
-			},
+			input: inputPath,
 			output: {
 				path: outputPath,
-				extension: {
-					'.ts': '.js',
-				},
+				barrel: {type: 'named'},
 			},
+			parsers: [parserTs({extension: {'.ts': '.js'}})],
 			plugins: [
-				pluginOas(),
 				pluginTs({
 					output: {
 						path: './types',
@@ -79,12 +76,8 @@ async function generateSchemas(version, config) {
 					},
 				}),
 			],
-		},
-	});
-
-	if (error) {
-		throw error;
-	}
+		}),
+	).build();
 
 	console.log(`  Generated ${files.length} files`);
 }
