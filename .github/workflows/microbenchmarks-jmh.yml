@@ -79,8 +79,7 @@ jobs:
         revision: ${{ fromJSON(needs.discover-jmh-revisions.outputs.revisions) }}
     permissions:
       contents: read
-      issues: write
-      pull-requests: read
+      pull-requests: write
     defaults:
       run:
         shell: bash
