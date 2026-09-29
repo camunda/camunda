@@ -25,15 +25,6 @@ type QuerySortOrder = SortOrderEnumKey;
 const queryPageSchema = searchQueryPageRequestSchema;
 type QueryPage = SearchQueryPageRequest;
 
-// Only used by the activatable activities schemas, which have no equivalent in the REST API spec.
-function getCollectionResponseBodySchema<ItemSchema extends z.ZodTypeAny>(
-	itemSchema: ItemSchema,
-): z.ZodType<{items: z.infer<ItemSchema>[]}> {
-	return z.object({
-		items: z.array(itemSchema),
-	});
-}
-
 interface Endpoint<URLParams extends object | undefined = undefined> {
 	getUrl: URLParams extends undefined
 		? () => string
@@ -46,12 +37,5 @@ interface Endpoint<URLParams extends object | undefined = undefined> {
 const problemDetailResponseSchema = problemDetailSchema;
 type ProblemDetailsResponse = ProblemDetail;
 
-export {
-	API_VERSION,
-	problemDetailsSchema,
-	querySortOrderSchema,
-	queryPageSchema,
-	getCollectionResponseBodySchema,
-	problemDetailResponseSchema,
-};
+export {API_VERSION, problemDetailsSchema, querySortOrderSchema, queryPageSchema, problemDetailResponseSchema};
 export type {ProblemDetails, QuerySortOrder, QueryPage, Endpoint, ProblemDetailsResponse};
