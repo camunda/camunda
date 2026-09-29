@@ -53,4 +53,11 @@ const selectedDefinitionsQuery = (process: string, tenantId?: string) =>
 		...(tenantId && tenantId !== 'all' ? {tenantId} : {}),
 	});
 
-export {operationsLogDefinitionsQuery, selectedDefinitionsQuery};
+const resolvedDefinitionQuery = (process: string, tenantId: string | undefined, version: number) =>
+	operationsLogDefinitionsQuery({
+		processDefinitionId: {$eq: process},
+		...(tenantId && tenantId !== 'all' ? {tenantId} : {}),
+		version,
+	});
+
+export {operationsLogDefinitionsQuery, selectedDefinitionsQuery, resolvedDefinitionQuery};

@@ -67,7 +67,11 @@ const Filters: React.FC<Props> = ({search}) => {
 		isPending: isProcessListPending,
 		isError: isProcessListError,
 	} = useQuery({
-		...operationsLogDefinitionsQuery({isLatestVersion: true}),
+		...operationsLogDefinitionsQuery({
+			isLatestVersion: true,
+			...(isSpecificTenant(search.tenantId) ? {tenantId: search.tenantId} : {}),
+		}),
+		enabled: !isMultiTenancyEnabled || search.tenantId !== undefined,
 		retry: false,
 	});
 	const {data: currentUser} = useQuery({...queries.getCurrentUser(), enabled: isMultiTenancyEnabled});
@@ -117,11 +121,7 @@ const Filters: React.FC<Props> = ({search}) => {
 	};
 
 	return (
-		<Form<FormValues>
-			key={`${search.tenantId ?? ''}:${search.process ?? ''}:${search.version ?? ''}:${search.allVersions ?? ''}`}
-			onSubmit={handleFiltersSubmit}
-			initialValues={filterValues}
-		>
+		<Form<FormValues> onSubmit={handleFiltersSubmit} initialValues={filterValues}>
 			{({handleSubmit, form, values}) => (
 				<StyledForm onSubmit={handleSubmit}>
 					<AutoSubmit
@@ -302,7 +302,11 @@ const ProcessVersionDropdown: React.FC<{
 	onChange: (value?: number) => void;
 }> = ({process, tenantId, value, isAllVersionsSelected, onChange}) => {
 	const {t} = useTranslation();
-	const {data: definitions, isPending} = useQuery({
+	const {
+		data: definitions,
+		isPending,
+		isError,
+	} = useQuery({
 		...selectedDefinitionsQuery(process ?? '', tenantId),
 		enabled: Boolean(process),
 		retry: false,
@@ -321,31 +325,34 @@ const ProcessVersionDropdown: React.FC<{
 			? [{version: undefined, state: undefined}, ...distinctVersions]
 			: distinctVersions;
 	return (
-		<Dropdown
-			id="process-version-filter"
-			titleText={t('operate.processes.filters.version')}
-			label={t('operate.processes.filters.selectVersion')}
-			items={
-				value !== undefined && !versions.some((item) => item.version === value)
-					? [...versions, {version: value, state: undefined}]
-					: versions
-			}
-			itemToString={(item) =>
-				item?.version === undefined
-					? t('operate.processes.filters.allVersions')
-					: item.state === 'DELETED'
-						? t('operate.operationsLog.filters.deletedVersion', {version: item.version})
-						: String(item.version)
-			}
-			selectedItem={
-				value === undefined && !isAllVersionsSelected
-					? null
-					: (versions.find((item) => item.version === value) ?? {version: value, state: undefined})
-			}
-			disabled={!process || isPending || !matchingDefinitions?.length || !isUnambiguous}
-			size="sm"
-			onChange={({selectedItem}) => onChange(selectedItem?.version)}
-		/>
+		<>
+			<Dropdown
+				id="process-version-filter"
+				titleText={t('operate.processes.filters.version')}
+				label={t('operate.processes.filters.selectVersion')}
+				items={
+					value !== undefined && !versions.some((item) => item.version === value)
+						? [...versions, {version: value, state: undefined}]
+						: versions
+				}
+				itemToString={(item) =>
+					item?.version === undefined
+						? t('operate.processes.filters.allVersions')
+						: item.state === 'DELETED'
+							? t('operate.operationsLog.filters.deletedVersion', {version: item.version})
+							: String(item.version)
+				}
+				selectedItem={
+					value === undefined && !isAllVersionsSelected
+						? null
+						: (versions.find((item) => item.version === value) ?? {version: value, state: undefined})
+				}
+				disabled={!process || isPending || !matchingDefinitions?.length || !isUnambiguous}
+				size="sm"
+				onChange={({selectedItem}) => onChange(selectedItem?.version)}
+			/>
+			{isError && <InlineNotification kind="error" title={t('operate.operationsLog.filters.definitionsListFailed')} />}
+		</>
 	);
 };
 

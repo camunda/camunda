@@ -12,7 +12,7 @@ import {useTranslation} from 'react-i18next';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import type {OperationsLogSearch} from './operationsLog.schema';
-import {selectedDefinitionsQuery} from './definitions.queries';
+import {resolvedDefinitionQuery, selectedDefinitionsQuery} from './definitions.queries';
 import {Filters} from './Filters';
 import {InstancesTable} from './InstancesTable';
 import {PageContainer} from './styled';
@@ -29,7 +29,9 @@ const OperationsLog: React.FC<OperationsLogSearch> = (search) => {
 		isPending,
 		isError,
 	} = useQuery({
-		...selectedDefinitionsQuery(search.process ?? '', search.tenantId),
+		...(search.version === undefined
+			? selectedDefinitionsQuery(search.process ?? '', search.tenantId)
+			: resolvedDefinitionQuery(search.process ?? '', search.tenantId, search.version)),
 		enabled: needsLookup,
 		retry: false,
 	});

@@ -8,11 +8,12 @@
 
 import {useEffect, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useSuspenseQuery} from '@tanstack/react-query';
+import {useQueries, useSuspenseQuery, type UseQueryResult} from '@tanstack/react-query';
 import {Button, DataTableSkeleton, Stack} from '@carbon/react';
 import {
 	auditLogSortFieldEnum,
 	type AuditLog,
+	type GetProcessDefinitionResponseBody,
 	type QueryAuditLogsRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {queries} from '#/shared/http/queries';
@@ -37,9 +38,17 @@ import {useAuditLogs} from './operationsLog.queries';
 import {TableContainer} from './styled';
 import {formatToISO} from './utils';
 import type {OperationsLogSearch} from './operationsLog.schema';
-import {operationsLogDefinitionsQuery} from './definitions.queries';
 
 const DEFAULT_SORT = 'timestamp+desc';
+
+const combineDefinitionResults = (results: UseQueryResult<GetProcessDefinitionResponseBody>[]) => ({
+	names: Object.fromEntries(
+		results.flatMap(({data: definition}) =>
+			definition ? [[definition.processDefinitionKey, definition.name ?? definition.processDefinitionId]] : [],
+		),
+	),
+	error: results.find(({error}) => error)?.error,
+});
 
 type Props = {
 	search: OperationsLogSearch;
@@ -51,16 +60,7 @@ const InstancesTable: React.FC<Props> = ({search, selectedTenantId, selectedDefi
 	const {t} = useTranslation();
 	const [detailsModal, setDetailsModal] = useState<DetailsModalState>({isOpen: false});
 
-	const {data: processDefinitions} = useSuspenseQuery(operationsLogDefinitionsQuery({}));
 	const {data: decisionDefinitions} = useSuspenseQuery(queries.queryDecisionDefinitions({page: {limit: 1000}}));
-
-	const processDefinitionNameMap = useMemo(
-		() =>
-			Object.fromEntries(
-				processDefinitions.map((def) => [def.processDefinitionKey, def.name ?? def.processDefinitionId]),
-			),
-		[processDefinitions],
-	);
 	const decisionDefinitionNameMap = useMemo(
 		() => Object.fromEntries(decisionDefinitions.items.map((def) => [def.decisionDefinitionKey, def.name])),
 		[decisionDefinitions],
@@ -109,6 +109,23 @@ const InstancesTable: React.FC<Props> = ({search, selectedTenantId, selectedDefi
 	}, [error]);
 
 	const auditLogs = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
+	const processDefinitionKeys = useMemo(
+		() => [...new Set(auditLogs.map((log) => log.processDefinitionKey).filter((key): key is string => Boolean(key)))],
+		[auditLogs],
+	);
+	const {names: processDefinitionNameMap, error: definitionError} = useQueries({
+		queries: processDefinitionKeys.map((key) => ({...queries.getProcessDefinition(key), retry: false})),
+		combine: combineDefinitionResults,
+	});
+	useEffect(() => {
+		if (definitionError) {
+			logger.error(definitionError);
+		}
+	}, [definitionError]);
+	const processName = (row: AuditLog) =>
+		row.processDefinitionKey
+			? (processDefinitionNameMap[row.processDefinitionKey] ?? row.processDefinitionId ?? row.processDefinitionKey)
+			: undefined;
 	const totalCount = data?.pages.at(0)?.page.totalItems ?? 0;
 	const hasMoreTotalItems = data?.pages.at(0)?.page.hasMoreTotalItems ?? false;
 
@@ -165,9 +182,7 @@ const InstancesTable: React.FC<Props> = ({search, selectedTenantId, selectedDefi
 			render: (row: AuditLog) => (
 				<CellEntityKey
 					item={row}
-					processDefinitionName={
-						row.processDefinitionKey ? processDefinitionNameMap[row.processDefinitionKey] : undefined
-					}
+					processDefinitionName={processName(row)}
 					decisionDefinitionName={
 						row.decisionDefinitionKey ? decisionDefinitionNameMap[row.decisionDefinitionKey] : undefined
 					}
@@ -177,14 +192,7 @@ const InstancesTable: React.FC<Props> = ({search, selectedTenantId, selectedDefi
 		{
 			key: 'parentEntity',
 			label: t('operate.operationsLog.table.parentEntity'),
-			render: (row: AuditLog) => (
-				<CellParentEntity
-					item={row}
-					processDefinitionName={
-						row.processDefinitionKey ? processDefinitionNameMap[row.processDefinitionKey] : undefined
-					}
-				/>
-			),
+			render: (row: AuditLog) => <CellParentEntity item={row} processDefinitionName={processName(row)} />,
 		},
 		{
 			key: 'details',
