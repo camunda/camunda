@@ -630,3 +630,45 @@ test('should recover the real route from a network failure without losing the UR
 	await expect(page).toHaveTitle(`Operate: Decision Instance ${DECISION_INSTANCE_ID} of Invoice Classification`);
 	await expect(page).toHaveURL(`/operate/decisions/${DECISION_INSTANCE_ID}`);
 });
+
+test('should replace a stale title after a failed in-app decision navigation recovers', async ({
+	network,
+	page,
+	operateDecisionInstancePage,
+}) => {
+	const relatedInstance = createDecisionInstance({
+		...DECISION_INSTANCE,
+		decisionEvaluationInstanceKey: RELATED_DECISION_INSTANCE_ID,
+		decisionDefinitionId: 'calc-key-figures',
+		decisionDefinitionName: 'Credit History',
+	});
+	network.use(
+		mockQueryDecisionInstancesEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryDecisionInstancesResponse({items: [DECISION_INSTANCE, relatedInstance]}),
+			),
+		}),
+		http.get(endpoints.getDecisionInstance.getUrl({decisionEvaluationInstanceKey: RELATED_DECISION_INSTANCE_ID}), () =>
+			HttpResponse.error(),
+		),
+	);
+
+	await operateDecisionInstancePage.goto(DECISION_INSTANCE_ID);
+	await expect(page).toHaveTitle(`Operate: Decision Instance ${DECISION_INSTANCE_ID} of Invoice Classification`);
+	await operateDecisionInstancePage.drdPanel
+		.getByRole('button', {name: 'Calculate Credit History Key Figures'})
+		.click();
+
+	await expect(page).toHaveURL(`/operate/decisions/${RELATED_DECISION_INSTANCE_ID}`);
+	await expect(operateDecisionInstancePage.pageErrorHeading).toBeVisible({timeout: 15000});
+	await expect(page).not.toHaveTitle(`Operate: Decision Instance ${DECISION_INSTANCE_ID} of Invoice Classification`);
+
+	network.use(
+		http.get(endpoints.getDecisionInstance.getUrl({decisionEvaluationInstanceKey: RELATED_DECISION_INSTANCE_ID}), () =>
+			HttpResponse.json(relatedInstance),
+		),
+	);
+	await operateDecisionInstancePage.pageErrorRetryButton.click();
+	await expect(page).toHaveTitle(`Operate: Decision Instance ${RELATED_DECISION_INSTANCE_ID} of Credit History`);
+	await expect(page).toHaveURL(`/operate/decisions/${RELATED_DECISION_INSTANCE_ID}`);
+});
