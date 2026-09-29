@@ -136,6 +136,47 @@ async function countJobs(
   return ((await res.json()).items ?? []).length;
 }
 
+/**
+ * The start times of every tick the boundary timer has produced, oldest first.
+ *
+ * Timestamps rather than counts: the export into secondary storage lags by an
+ * unknown amount, so a count read at an arbitrary moment cannot tell a
+ * double-fire from a legitimate tick that arrived while the reader was behind.
+ * The recorded times say which it was no matter when they are read.
+ */
+async function tickStartTimes(
+  request: APIRequestContext,
+  processInstanceKey: string,
+): Promise<number[]> {
+  const res = await request.post(buildUrl('/element-instances/search'), {
+    headers: jsonHeaders(),
+    data: {
+      filter: {processInstanceKey, elementId: 'Activity_tick'},
+      page: {limit: 50},
+    },
+  });
+  await assertStatusCode(res, 200);
+  const items: Array<{startDate: string}> = (await res.json()).items ?? [];
+  return items
+    .map((item) => new Date(item.startDate).getTime())
+    .sort((a, b) => a - b);
+}
+
+/** Waits until the timer has produced `expected` ticks. */
+async function expectTickCount(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  expected: number,
+  assertionOptions = extendedAssertionOptions,
+): Promise<number[]> {
+  let times: number[] = [];
+  await expect(async () => {
+    times = await tickStartTimes(request, processInstanceKey);
+    expect(times).toHaveLength(expected);
+  }).toPass(assertionOptions);
+  return times;
+}
+
 async function expectJobCount(
   request: APIRequestContext,
   processInstanceKey: string,
@@ -147,13 +188,6 @@ async function expectJobCount(
     expect(await countJobs(request, processInstanceKey, type)).toBe(expected);
   }).toPass(assertionOptions);
 }
-
-/** The cadence re-arms 20s after the catch-up fire, so an exact count has only
- * that window to be seen in — poll faster than the shared interval. */
-const promptAssertionOptions = {
-  intervals: [250, 250, 500, 1000, 2000],
-  timeout: 15_000,
-};
 
 /** Holds for a fixed stretch. Absences cannot be polled for. */
 async function hold(seconds: number) {
@@ -263,44 +297,29 @@ test.describe('Process Instance Suspend and Resume Timer API', () => {
     const fixture = await startCycleTimerInstance(uniquePrefixedId('sr-cycle'));
 
     // One tick first, so what follows is about the gap, not a timer that never fired.
-    await expectJobCount(
-      request,
-      fixture.processInstanceKey,
-      fixture.tickJobType,
-      1,
-    );
+    await expectTickCount(request, fixture.processInstanceKey, 1);
 
     await suspendAndExpectSuspended(request, fixture.processInstanceKey);
     await hold(70);
     expect(
-      await countJobs(request, fixture.processInstanceKey, fixture.tickJobType),
-    ).toBe(1);
+      await tickStartTimes(request, fixture.processInstanceKey),
+    ).toHaveLength(1);
 
     await assertStatusCode(
       await resumeProcessInstance(request, fixture.processInstanceKey),
       204,
     );
 
-    // One fire for three missed intervals, and it stays one.
-    await expectJobCount(
-      request,
-      fixture.processInstanceKey,
-      fixture.tickJobType,
-      2,
-      promptAssertionOptions,
-    );
-    await hold(10);
-    expect(
-      await countJobs(request, fixture.processInstanceKey, fixture.tickJobType),
-    ).toBe(2);
+    // Three intervals were missed, and the cadence re-arms afterwards, so the
+    // contract allows exactly two more ticks: the catch-up and the next one.
+    const times = await expectTickCount(request, fixture.processInstanceKey, 3);
 
-    // A catch-up that fires once and then stalls would satisfy everything above.
-    await expectJobCount(
-      request,
-      fixture.processInstanceKey,
-      fixture.tickJobType,
-      3,
-    );
+    // The whole point of #62637: the reschedule anchored on now instead of one
+    // interval past it, so the catch-up was followed immediately by a second
+    // fire. A gap of a full interval is what says it did not happen — and
+    // because this reads recorded times, a slow export cannot fake it either
+    // way.
+    expect(times[2]! - times[1]!).toBeGreaterThan(15_000);
     await completeBoundaryWork(
       request,
       fixture.processInstanceKey,
