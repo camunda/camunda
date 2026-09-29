@@ -7,29 +7,48 @@
  */
 
 import {queryOptions} from '@tanstack/react-query';
-import type {
-	QueryBatchOperationsRequestBody,
-	QueryBatchOperationsResponseBody,
+import {z} from 'zod';
+import {
+	queryBatchOperationsRequestBodySchema,
+	type QueryBatchOperationsRequestBody,
+	type QueryBatchOperationsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from '#/shared/http/request';
 import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
 
-type SortField = NonNullable<QueryBatchOperationsRequestBody['sort']>[number]['field'];
-
 type BatchOperationsSearch = {
 	page: number;
 	pageSize: number;
-	sort?: string;
+	sort: string;
 };
 
 const DEFAULT_SORT = 'endDate+desc';
+const SORT_SCHEMA = queryBatchOperationsRequestBodySchema.shape.sort.unwrap().element;
+
+function parseBatchOperationsSort(value: string | undefined) {
+	const [field, order, ...remaining] = (value ?? DEFAULT_SORT).split('+');
+	const result = SORT_SCHEMA.safeParse({field, order});
+	return remaining.length === 0 && order !== undefined && result.success
+		? result.data
+		: SORT_SCHEMA.parse({field: 'endDate', order: 'desc'});
+}
+
+const batchOperationsSearchSchema = z.object({
+	page: z.number().int().positive().default(1),
+	pageSize: z.number().int().positive().default(20),
+	sort: z
+		.unknown()
+		.optional()
+		.transform((value) => {
+			const {field, order} = parseBatchOperationsSort(typeof value === 'string' ? value : undefined);
+			return `${field}+${order}`;
+		}),
+});
 
 function getRequestBody({page, pageSize, sort}: BatchOperationsSearch): QueryBatchOperationsRequestBody {
-	const [sortField, sortOrder] = (sort ?? DEFAULT_SORT).split('+');
-
 	return {
-		sort: [{field: sortField as SortField, order: (sortOrder ?? 'desc') as 'asc' | 'desc'}],
+		sort: [parseBatchOperationsSort(sort)],
 		page: {from: (page - 1) * pageSize, limit: pageSize},
 	};
 }
@@ -49,4 +68,4 @@ function batchOperationsOptions(search: BatchOperationsSearch) {
 	});
 }
 
-export {batchOperationsOptions};
+export {batchOperationsOptions, batchOperationsSearchSchema};
