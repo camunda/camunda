@@ -173,10 +173,10 @@ operational setting and can be adjusted without changing this decision.
 
 The scheduled workflow does not replace Maven's application-test path.
 
-A failure creates a CI incident that will be assigned to the following team/list of people:
-- TBD
+A failure creates a CI incident will send a notification to a dedicated slack channel.
+The name is not included in the ADR as it might be subject to change.
 
-### D7. Alert on Gradle-only failures of Renovate pull requests
+### D8. Alert on Gradle-only failures of Renovate pull requests
 
 The Renovate process attempts auto-merge for a few days, with rebases, and assigns the pull request
 to an engineer if it still fails. This handles individual dependencies that need attention. It does
