@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.scheduler.testing;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
@@ -15,27 +17,30 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.agrona.LangUtil;
+import org.jspecify.annotations.Nullable;
+import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 /** JUnit 5 counterpart of {@link ActorSchedulerRule}. */
+@NullMarked
 public final class ActorSchedulerExtension implements BeforeEachCallback, AfterEachCallback {
 
   private final int numOfIoThreads;
   private final int numOfThreads;
-  private final ActorClock clock;
+  private final @Nullable ActorClock clock;
 
-  private ActorSchedulerBuilder builder;
-  private ActorScheduler actorScheduler;
-  private SimpleMeterRegistry meterRegistry;
+  private @Nullable ActorSchedulerBuilder builder;
+  private @Nullable ActorScheduler actorScheduler;
+  private @Nullable SimpleMeterRegistry meterRegistry;
 
-  public ActorSchedulerExtension(final int numOfThreads, final ActorClock clock) {
+  public ActorSchedulerExtension(final int numOfThreads, final @Nullable ActorClock clock) {
     this(numOfThreads, 2, clock);
   }
 
   public ActorSchedulerExtension(
-      final int numOfThreads, final int numOfIoThreads, final ActorClock clock) {
+      final int numOfThreads, final int numOfIoThreads, final @Nullable ActorClock clock) {
     this.numOfIoThreads = numOfIoThreads;
     this.numOfThreads = numOfThreads;
     this.clock = clock;
@@ -45,7 +50,7 @@ public final class ActorSchedulerExtension implements BeforeEachCallback, AfterE
     this(numOfThreads, null);
   }
 
-  public ActorSchedulerExtension(final ActorClock clock) {
+  public ActorSchedulerExtension(final @Nullable ActorClock clock) {
     this(Math.max(1, Runtime.getRuntime().availableProcessors() - 2), clock);
   }
 
@@ -85,14 +90,15 @@ public final class ActorSchedulerExtension implements BeforeEachCallback, AfterE
   }
 
   public ActorFuture<Void> submitActor(final Actor actor) {
-    return actorScheduler.submitActor(actor);
+    return get().submitActor(actor);
   }
 
   public ActorScheduler get() {
-    return actorScheduler;
+    return requireNonNull(
+        actorScheduler, "scheduler is only available between beforeEach and afterEach");
   }
 
   public ActorSchedulerBuilder getBuilder() {
-    return builder;
+    return requireNonNull(builder, "builder is only available between beforeEach and afterEach");
   }
 }
