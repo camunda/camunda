@@ -132,7 +132,7 @@ const BatchOperations: React.FC<Props> = ({page, pageSize, sort}) => {
 					</Button>
 				</div>
 			)}
-			<TableContainer>
+			<TableContainer $isEmpty={data.items.length === 0 && !query.isFetching && !query.isError}>
 				<SortableTable
 					columns={columns}
 					rows={data.items}
@@ -158,8 +158,12 @@ const BatchOperations: React.FC<Props> = ({page, pageSize, sort}) => {
 					page={page}
 					backwardText={t('operate.batchOperations.previousPage')}
 					forwardText={t('operate.batchOperations.nextPage')}
+					itemRangeText={(min, max, total) => t('operate.batchOperations.itemRange', {min, max, count: total})}
 					itemsPerPageText={t('operate.batchOperations.itemsPerPage')}
 					pageNumberText={t('operate.batchOperations.pageNumber')}
+					pageRangeText={(_, total) => t('operate.batchOperations.pageRange', {count: total})}
+					pageSelectLabelText={(total) => t('operate.batchOperations.pageSelectLabel', {count: total})}
+					pageText={(current) => t('operate.batchOperations.pageText', {page: current})}
 					onChange={({page: newPage, pageSize: newPageSize}) => {
 						void navigate({
 							to: '.',

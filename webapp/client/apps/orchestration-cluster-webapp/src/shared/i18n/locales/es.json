@@ -882,7 +882,17 @@
 				"previousPage": "Página anterior",
 				"nextPage": "Página siguiente",
 				"itemsPerPage": "Elementos por página:",
-				"pageNumber": "Número de página"
+				"pageNumber": "Número de página",
+				"itemRange": "{{min}}–{{max}} de {{count}} elementos",
+				"itemRange_one": "{{min}}–{{max}} de {{count}} elemento",
+				"itemRange_other": "{{min}}–{{max}} de {{count}} elementos",
+				"pageRange": "de {{count}} páginas",
+				"pageRange_one": "de {{count}} página",
+				"pageRange_other": "de {{count}} páginas",
+				"pageSelectLabel": "Página de {{count}} páginas",
+				"pageSelectLabel_one": "Página de {{count}} página",
+				"pageSelectLabel_other": "Página de {{count}} páginas",
+				"pageText": "página {{page}}"
 			},
 			"batchOperation": {
 				"title": "Operaciones en lote",

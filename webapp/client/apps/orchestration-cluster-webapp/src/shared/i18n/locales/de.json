@@ -882,7 +882,17 @@
 				"previousPage": "Vorherige Seite",
 				"nextPage": "Nächste Seite",
 				"itemsPerPage": "Elemente pro Seite:",
-				"pageNumber": "Seitennummer"
+				"pageNumber": "Seitennummer",
+				"itemRange": "{{min}}–{{max}} von {{count}} Elementen",
+				"itemRange_one": "{{min}}–{{max}} von {{count}} Element",
+				"itemRange_other": "{{min}}–{{max}} von {{count}} Elementen",
+				"pageRange": "von {{count}} Seiten",
+				"pageRange_one": "von {{count}} Seite",
+				"pageRange_other": "von {{count}} Seiten",
+				"pageSelectLabel": "Seite von {{count}} Seiten",
+				"pageSelectLabel_one": "Seite von {{count}} Seite",
+				"pageSelectLabel_other": "Seite von {{count}} Seiten",
+				"pageText": "Seite {{page}}"
 			},
 			"batchOperation": {
 				"title": "Stapeloperationen",

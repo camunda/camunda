@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 import {styles} from '@carbon/type';
 import {Link} from '@carbon/react';
 
@@ -29,10 +29,18 @@ const Title = styled.h3`
 	margin: 0 0 var(--cds-spacing-05);
 `;
 
-const TableContainer = styled.div`
+const TableContainer = styled.div<{$isEmpty: boolean}>`
 	flex: 1;
 	overflow: auto;
 	padding: 0 var(--cds-spacing-05);
+
+	${({$isEmpty}) =>
+		$isEmpty &&
+		css`
+			> .cds--data-table-container {
+				height: 100%;
+			}
+		`}
 `;
 
 const VisuallyHiddenH1 = styled.h1`

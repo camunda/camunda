@@ -164,6 +164,22 @@ describe('<BatchOperations />', () => {
 		await expect.element(screen.getByText('1–20 of 25 items')).toBeVisible();
 	});
 
+	it('should translate all visible pagination controls when the language changes', async ({worker}) => {
+		worker.use(mockQueryBatchOperationsEndpoint({successResponse: RESPONSE_EXCEEDING_PAGE_SIZE}));
+		const screen = await renderRoute();
+		await expect.element(screen.getByText('1–20 of 25 items')).toBeVisible();
+		await expect.element(screen.getByRole('columnheader', {name: 'Batch state'})).toBeVisible();
+
+		await i18n.changeLanguage('de');
+
+		await expect.element(screen.getByText('1–20 von 25 Elementen')).toBeVisible();
+		await expect.element(screen.getByRole('columnheader', {name: 'Stapelstatus'})).toBeVisible();
+		await expect.element(screen.getByText('von 2 Seiten')).toBeVisible();
+		await expect.element(screen.getByRole('combobox', {name: 'Elemente pro Seite:'})).toBeVisible();
+		await expect.element(screen.getByRole('combobox', {name: 'Seite von 2 Seiten'})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Nächste Seite'})).toBeVisible();
+	});
+
 	it('should show loading before a successful empty response', async ({worker}) => {
 		worker.use(mockQueryBatchOperationsEndpoint({successResponse: EMPTY_RESPONSE, delay: 250}));
 

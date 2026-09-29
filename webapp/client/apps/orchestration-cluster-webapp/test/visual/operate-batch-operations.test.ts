@@ -88,5 +88,14 @@ test('should match the batch operations page snapshot with empty state', async (
 	await operateBatchOperationsPage.goto();
 	await expect(operateBatchOperationsPage.emptyState).toBeVisible();
 
+	const table = await operateBatchOperationsPage.table.boundingBox();
+	const message = await operateBatchOperationsPage.emptyState.boundingBox();
+	expect(table).not.toBeNull();
+	expect(message).not.toBeNull();
+	if (table !== null && message !== null) {
+		expect(table.height).toBeGreaterThan(400);
+		expect(Math.abs(message.y + message.height / 2 - (table.y + table.height / 2))).toBeLessThan(48);
+	}
+
 	await expect(page).toHaveScreenshot();
 });
