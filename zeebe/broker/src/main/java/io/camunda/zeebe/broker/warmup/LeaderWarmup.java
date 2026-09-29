@@ -26,6 +26,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.DoubleSupplier;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -52,6 +53,7 @@ public final class LeaderWarmup implements PartitionRaftListener {
   private final BrokerCfg brokerCfg;
   private final PhysicalTenantContext tenantContext;
   private final BrokerHealthCheckService healthCheckService;
+  private final DoubleSupplier processCpuLoad;
   private final LeaderWarmupMetrics metrics;
   private final CompletableFuture<Void> stopRequested = new CompletableFuture<>();
   private final CompletableFuture<Void> terminated = new CompletableFuture<>();
@@ -65,10 +67,27 @@ public final class LeaderWarmup implements PartitionRaftListener {
       final PhysicalTenantContext tenantContext,
       final BrokerHealthCheckService healthCheckService,
       final MeterRegistry meterRegistry) {
+    this(
+        cfg,
+        brokerCfg,
+        tenantContext,
+        healthCheckService,
+        meterRegistry,
+        CpuBudget.processCpuLoad());
+  }
+
+  LeaderWarmup(
+      final LeaderWarmupCfg cfg,
+      final BrokerCfg brokerCfg,
+      final PhysicalTenantContext tenantContext,
+      final BrokerHealthCheckService healthCheckService,
+      final MeterRegistry meterRegistry,
+      final DoubleSupplier processCpuLoad) {
     this.cfg = cfg;
     this.brokerCfg = brokerCfg;
     this.tenantContext = tenantContext;
     this.healthCheckService = healthCheckService;
+    this.processCpuLoad = processCpuLoad;
     metrics = new LeaderWarmupMetrics(meterRegistry);
     thread = new Thread(this::run, "zeebe-leader-warmup");
     thread.setDaemon(true);
@@ -122,6 +141,11 @@ public final class LeaderWarmup implements PartitionRaftListener {
       skip(stopReason);
       return;
     }
+    final var quietWaitStartNanos = System.nanoTime();
+    if (!waitUntilQuiet()) {
+      return;
+    }
+    final var quietWait = Duration.ofNanos(System.nanoTime() - quietWaitStartNanos);
     if (hasBeenLeader) {
       skip("this broker has already been leader");
       return;
@@ -132,7 +156,8 @@ public final class LeaderWarmup implements PartitionRaftListener {
     Files.createDirectories(directory);
 
     LOG.info(
-        "Starting leader warm-up: {} process instances, at most {} in flight, within {} of the CPU, for at most {}",
+        "Starting leader warm-up after waiting {} for the broker to be quiet: {} process instances, at most {} in flight, within {} of the CPU, for at most {}",
+        quietWait,
         cfg.getProcessInstances(),
         cfg.getMaxInFlightInstances(),
         cfg.getMaxCpuLoad(),
@@ -143,10 +168,7 @@ public final class LeaderWarmup implements PartitionRaftListener {
 
     final var cpuBudget =
         new CpuBudget(
-            CpuBudget.processCpuLoad(),
-            cfg.getMaxCpuLoad(),
-            cfg.getMaxInFlightInstances(),
-            startNanos);
+            processCpuLoad, cfg.getMaxCpuLoad(), cfg.getMaxInFlightInstances(), startNanos);
     final var workload =
         new WarmupWorkload(cfg.getProcessInstances(), cfg.getMaxInFlightInstances(), cpuBudget);
     final Outcome outcome;
@@ -217,6 +239,31 @@ public final class LeaderWarmup implements PartitionRaftListener {
   private void skip(final String reason) {
     metrics.setState(State.SKIPPED);
     LOG.info("Skipping leader warm-up because {}", reason);
+  }
+
+  /**
+   * Waits until the process's CPU load has stayed within budget for the quiet period, or gives up
+   * after the maximum duration; returns false if the warm-up was skipped instead.
+   */
+  private boolean waitUntilQuiet() throws InterruptedException {
+    final var requiredSamples =
+        cfg.getQuietPeriod().toNanos() / CpuBudget.SAMPLE_INTERVAL.toNanos();
+    final var deadlineNanos = System.nanoTime() + cfg.getMaxDuration().toNanos();
+    processCpuLoad.getAsDouble();
+    for (long quietSamples = 0; quietSamples < requiredSamples; ) {
+      if (waitForStop(CpuBudget.SAMPLE_INTERVAL)) {
+        skip(stopReason);
+        return false;
+      }
+      if (System.nanoTime() - deadlineNanos >= 0) {
+        skip(
+            "the broker's CPU load did not stay within %s for %s during %s"
+                .formatted(cfg.getMaxCpuLoad(), cfg.getQuietPeriod(), cfg.getMaxDuration()));
+        return false;
+      }
+      quietSamples = processCpuLoad.getAsDouble() <= cfg.getMaxCpuLoad() ? quietSamples + 1 : 0;
+    }
+    return true;
   }
 
   /** Returns true if a stop was requested before the timeout elapsed. */
