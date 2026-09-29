@@ -7,29 +7,59 @@
  */
 
 import {z} from 'zod';
+import type {SearchMiddleware} from '@tanstack/react-router';
 import {
 	auditLogEntityTypeSchema,
 	auditLogOperationTypeSchema,
 	auditLogResultSchema,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 
-const operationsLogSearchSchema = z.object({
-	process: z.string().optional(),
-	version: z.number().int().positive().optional(),
-	processInstanceKey: z.coerce.string().optional(),
-	operationType: z.array(auditLogOperationTypeSchema).optional(),
-	entityType: z.array(auditLogEntityTypeSchema).optional(),
-	result: auditLogResultSchema.optional(),
-	// coerce: small (safe-range) numeric-looking values still arrive typed as a JS number from the
-	// router's search parser — normalize to string either way, matching the Processes route schema.
-	actorId: z.coerce.string().optional(),
-	timestampAfter: z.string().optional(),
-	timestampBefore: z.string().optional(),
-	tenantId: z.coerce.string().optional(),
-	sort: z.string().optional(),
-});
+const commaSeparated = <T extends z.ZodType>(item: T) =>
+	z.preprocess((value) => (typeof value === 'string' ? value.split(',') : value), z.array(item).optional());
+
+const versionSchema = z.union([
+	z.number().int().positive(),
+	z.string().regex(/^\d+$/).transform(Number).pipe(z.number().int().positive()),
+]);
+
+const operationsLogSearchSchema = z
+	.object({
+		process: z.coerce.string().optional(),
+		version: versionSchema.optional(),
+		allVersions: z.boolean().optional(),
+		processDefinitionId: z.coerce.string().optional(),
+		processDefinitionVersion: z.union([versionSchema, z.literal('all')]).optional(),
+		processInstanceKey: z.coerce.string().optional(),
+		operationType: commaSeparated(auditLogOperationTypeSchema),
+		entityType: commaSeparated(auditLogEntityTypeSchema),
+		result: auditLogResultSchema.optional(),
+		// coerce: small (safe-range) numeric-looking values still arrive typed as a JS number from the
+		// router's search parser — normalize to string either way, matching the Processes route schema.
+		actorId: z.coerce.string().optional(),
+		timestampAfter: z.string().optional(),
+		timestampBefore: z.string().optional(),
+		tenantId: z.coerce.string().optional(),
+		sort: z.string().optional(),
+	})
+	.transform(({processDefinitionId, processDefinitionVersion, ...search}) => ({
+		...search,
+		...(search.process === undefined && processDefinitionId !== undefined ? {process: processDefinitionId} : {}),
+		...(search.version === undefined && typeof processDefinitionVersion === 'number'
+			? {version: processDefinitionVersion}
+			: {}),
+		...(search.version === undefined && processDefinitionVersion === 'all' ? {allVersions: true} : {}),
+	}))
+	.refine(
+		(search) => (search.version === undefined && search.allVersions !== true) || Boolean(search.process),
+		'A process is required for a version filter',
+	);
 
 type OperationsLogSearch = z.infer<typeof operationsLogSearchSchema>;
 
-export {operationsLogSearchSchema};
+const stripLegacyFilters: SearchMiddleware<OperationsLogSearch> = ({search, next}) => {
+	const withoutAliases = {...search, processDefinitionId: undefined, processDefinitionVersion: undefined};
+	return next(withoutAliases);
+};
+
+export {operationsLogSearchSchema, stripLegacyFilters};
 export type {OperationsLogSearch};

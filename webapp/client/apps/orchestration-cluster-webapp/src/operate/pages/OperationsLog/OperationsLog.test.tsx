@@ -15,12 +15,14 @@ import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {
+	mockGetProcessDefinitionEndpoint,
 	mockQueryAuditLogsEndpoint,
 	mockQueryDecisionDefinitionsEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createAuditLog, createQueryAuditLogsResponse} from '#/shared-test-modules/api-mocks/audit-logs';
 import {
+	createGetProcessDefinitionResponse,
 	createProcessDefinition,
 	createQueryProcessDefinitionsResponse,
 } from '#/shared-test-modules/api-mocks/process-definitions';
@@ -367,6 +369,9 @@ describe('<OperationsLog />', () => {
 		'should render a process instance entity link with the correct basepath "$basepath"',
 		async ({basepath, expectedPathPrefix}, {worker}) => {
 			worker.use(
+				mockGetProcessDefinitionEndpoint({
+					successResponse: HttpResponse.json(createGetProcessDefinitionResponse()),
+				}),
 				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
 				mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
 				mockQueryAuditLogsEndpoint({
@@ -402,6 +407,9 @@ describe('<OperationsLog />', () => {
 		'should render a parent process instance link with the correct basepath "$basepath"',
 		async ({basepath, expectedPathPrefix}, {worker}) => {
 			worker.use(
+				mockGetProcessDefinitionEndpoint({
+					successResponse: HttpResponse.json(createGetProcessDefinitionResponse()),
+				}),
 				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
 				mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
 				mockQueryAuditLogsEndpoint({

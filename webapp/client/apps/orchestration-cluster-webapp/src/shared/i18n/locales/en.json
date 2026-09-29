@@ -852,6 +852,11 @@
 				"filters": {
 					"tenant": "Tenant",
 					"processSection": "Process",
+					"resolvingDefinition": "Loading selected process definition",
+					"definitionLookupFailed": "Couldn't load the selected process definition",
+					"definitionsListFailed": "Couldn't load process definitions",
+					"definitionUnavailable": "The selected process definition or tenant could not be found",
+					"deletedVersion": "{{version}} (Deleted)",
 					"processInstanceKey": "Process instance key",
 					"processInstanceKeyPlaceholder": "Process instance key",
 					"operationSection": "Operation",
