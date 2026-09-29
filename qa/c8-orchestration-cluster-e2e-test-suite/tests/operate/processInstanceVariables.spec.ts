@@ -122,6 +122,7 @@ test.describe('Process Instance Variables', () => {
     });
 
     await test.step('Refresh the page and verify the variable is still there', async () => {
+      await page.reload();
       await waitForAssertion({
         assertion: async () => {
           await expect(page.getByText('editedtestvalue')).toBeVisible();
@@ -364,6 +365,7 @@ test.describe('Process Instance Variables', () => {
     });
 
     await test.step('Reload and verify the updated value is persisted', async () => {
+      await page.reload();
       await waitForAssertion({
         assertion: async () => {
           await expect(
@@ -566,6 +568,7 @@ test.describe('Process Instance Variables', () => {
     });
 
     await test.step('Reload and verify the updated value is visible', async () => {
+      await page.reload();
       await waitForAssertion({
         assertion: async () => {
           await expect(variable.value).toContainText('Charlie');
