@@ -120,6 +120,13 @@ export default defineConfig(({mode}) => ({
         test: {
           name: 'unit',
           environment: 'jsdom',
+          // Node 25+ exposes its own `localStorage` global, which stops Vitest 4 from
+          // installing jsdom's (vitest-dev/vitest#10867, fixed in Vitest 5). Node 24
+          // rejects the flag, hence the guard. Remove once Operate is on Vitest 5.
+          execArgv:
+            Number(process.versions.node.split('.')[0]) >= 25
+              ? ['--no-webstorage']
+              : [],
           include: ['./src/**/*.{test,spec}.?(c|m)[jt]s?(x)'],
           exclude: [
             ...configDefaults.exclude,

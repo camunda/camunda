@@ -1,6 +1,6 @@
 {
   "name": "camunda-operate",
-  "version": "8.10.0-SNAPSHOT",
+  "version": "8.11.0-SNAPSHOT",
   "private": true,
   "type": "module",
   "dependencies": {
@@ -85,7 +85,7 @@
     "@testing-library/user-event": "14.6.1",
     "@types/carbon__elements": "11.10.3",
     "@types/lodash": "4.17.24",
-    "@types/node": "24.13.2",
+    "@types/node": "26.6.2",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@types/react-transition-group": "4.4.12",

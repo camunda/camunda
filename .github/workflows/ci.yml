@@ -2227,7 +2227,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24
+          node-version: 26
           cache: 'npm'
           cache-dependency-path: '${{ env.CLIENT_DIR }}/package-lock.json'
       - name: Install dependencies
@@ -2443,7 +2443,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24
+          node-version: 26
       - name: Install dependencies
         uses: ./.github/actions/npm-ci-with-retry
         with:
@@ -2531,7 +2531,7 @@ jobs:
       - name: Setup Node.js for Spectral
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24
+          node-version: 26
       - name: Install Spectral CLI
         # We use our own maintained fork of Spectral CLI (@camunda8/spectral-cli)
         # to fix upstream issues that are unresolved in @stoplight/spectral-cli:
@@ -2606,7 +2606,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '24'
+          node-version: '26'
       - name: Install verifier dependencies
         uses: ./.github/actions/npm-ci-with-retry
         with:
@@ -2669,7 +2669,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24
+          node-version: 26
       # Retry to absorb transient npm-registry slowness when npx resolves renovate
       # and its transitive deps on a fresh run (see INC-6869, INC-7810).
       - name: Validate Renovate config
