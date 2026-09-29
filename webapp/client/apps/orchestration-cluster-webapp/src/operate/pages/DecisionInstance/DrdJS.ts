@@ -232,6 +232,10 @@ class DrdJS {
 		this.#data = data;
 	};
 
+	resize = () => {
+		this.#activeViewer?.get('canvas').resized();
+	};
+
 	reset = () => {
 		++this.#generation;
 		++this.#renderVersion;

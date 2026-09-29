@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useState} from 'react';
+import {useCallback, useEffect, useRef} from 'react';
 import {useNavigate} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
@@ -18,9 +18,12 @@ import {EmptyState} from '#/operate/components/EmptyState/EmptyState';
 import permissionDeniedIconUrl from '#/operate/assets/permission-denied.svg';
 import {Header} from './Header';
 import {DecisionPanel} from './DecisionPanel';
+import {Drd} from './Drd';
+import {DrdPanel} from './DrdPanel';
 import {VariablesPanel, VariablesPanelPending} from './VariablesPanel';
 import {useDecisionInstance} from './decisionInstance.queries';
 import {Container, Section} from './styled';
+import {useDrdPanelState} from './useDrdPanelState';
 
 type Props = {
 	decisionInstanceId: string;
@@ -29,8 +32,34 @@ type Props = {
 const DecisionInstance: React.FC<Props> = ({decisionInstanceId}) => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
-	const [drdPanelState, setDrdPanelState] = useState<'minimized' | 'closed'>('minimized');
+	const [drdPanelState, setDrdPanelState] = useDrdPanelState();
+	const shouldRestoreFocus = useRef(false);
 	const {isUnauthorized, isNotFound, isGenericError, query} = useDecisionInstance(decisionInstanceId);
+
+	const changeDrdPanelState = (state: typeof drdPanelState) => {
+		shouldRestoreFocus.current = state !== drdPanelState;
+		setDrdPanelState(state);
+	};
+
+	const openDrdButtonRef = useCallback(
+		(button: HTMLButtonElement | null) => {
+			if (button !== null && drdPanelState === 'closed' && shouldRestoreFocus.current) {
+				button.focus();
+				shouldRestoreFocus.current = false;
+			}
+		},
+		[drdPanelState],
+	);
+
+	const drdModeButtonRef = useCallback(
+		(button: HTMLButtonElement | null) => {
+			if (button !== null && drdPanelState !== 'closed' && shouldRestoreFocus.current) {
+				button.focus();
+				shouldRestoreFocus.current = false;
+			}
+		},
+		[drdPanelState],
+	);
 
 	useEffect(() => {
 		if (isNotFound) {
@@ -61,14 +90,43 @@ const DecisionInstance: React.FC<Props> = ({decisionInstanceId}) => {
 		return <GenericErrorPage reset={() => void query.refetch()} />;
 	}
 
+	const drd =
+		drdPanelState !== 'closed' ? (
+			<Drd
+				key={decisionInstanceId}
+				decisionEvaluationInstanceKey={decisionInstanceId}
+				decisionEvaluationKey={query.data?.decisionEvaluationKey}
+				decisionDefinitionKey={query.data?.decisionDefinitionKey}
+				decisionDefinitionId={query.data?.decisionDefinitionId}
+				drdPanelState={drdPanelState}
+				onChangeDrdPanelState={changeDrdPanelState}
+				modeButtonRef={drdModeButtonRef}
+			/>
+		) : null;
+
+	if (drdPanelState === 'maximized') {
+		return (
+			<>
+				<VisuallyHiddenH1 id="operate-decision-instance-heading" tabIndex={-1}>
+					{t('operate.decisionInstance.title')}
+				</VisuallyHiddenH1>
+				<Container>{drd}</Container>
+			</>
+		);
+	}
+
 	return (
 		<DecisionInstanceShell
 			header={
-				<Header decisionEvaluationInstanceKey={decisionInstanceId} onOpenDrd={() => setDrdPanelState('minimized')} />
+				<Header
+					decisionEvaluationInstanceKey={decisionInstanceId}
+					onOpenDrd={() => changeDrdPanelState('minimized')}
+					openDrdButtonRef={openDrdButtonRef}
+				/>
 			}
 			topPanel={<DecisionPanel decisionEvaluationInstanceKey={decisionInstanceId} />}
 			bottomPanel={<VariablesPanel decisionEvaluationInstanceKey={decisionInstanceId} />}
-			rightPanel={drdPanelState === 'minimized' ? <div /> : null}
+			rightPanel={drdPanelState === 'minimized' ? <DrdPanel>{drd}</DrdPanel> : null}
 		/>
 	);
 };
@@ -90,7 +148,9 @@ const DecisionInstanceShell: React.FC<ShellProps> = ({header, topPanel, bottomPa
 
 	return (
 		<>
-			<VisuallyHiddenH1>{t('operate.decisionInstance.title')}</VisuallyHiddenH1>
+			<VisuallyHiddenH1 id="operate-decision-instance-heading" tabIndex={-1}>
+				{t('operate.decisionInstance.title')}
+			</VisuallyHiddenH1>
 			<Container>
 				<InstanceDetail
 					type="decision"

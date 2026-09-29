@@ -17,6 +17,38 @@ class OperateDecisionInstancePage extends BasePage {
 		return this.page.getByRole('region', {name: 'decision panel'});
 	}
 
+	get drdPanel() {
+		return this.page.getByRole('region', {name: 'DRD panel'});
+	}
+
+	get drdResizeHandle() {
+		return this.page.getByRole('separator', {name: 'Resize DRD Panel'});
+	}
+
+	get maximizeDrd() {
+		return this.page.getByRole('button', {name: 'Maximize DRD Panel'});
+	}
+
+	get minimizeDrd() {
+		return this.page.getByRole('button', {name: 'Minimize DRD Panel'});
+	}
+
+	get closeDrd() {
+		return this.page.getByRole('button', {name: 'Close DRD Panel'});
+	}
+
+	async resizeDrdBy(delta: number) {
+		const bounds = await this.drdResizeHandle.boundingBox();
+		if (bounds === null) {
+			throw new Error('Missing DRD resize handle bounds');
+		}
+		const x = bounds.x + bounds.width / 2;
+		await this.page.mouse.move(x, bounds.y + bounds.height / 2);
+		await this.page.mouse.down();
+		await this.page.mouse.move(x - delta, bounds.y + bounds.height / 2, {steps: 4});
+		await this.page.mouse.up();
+	}
+
 	get loadingSpinner() {
 		return this.decisionPanel.getByRole('img', {name: 'loading'});
 	}

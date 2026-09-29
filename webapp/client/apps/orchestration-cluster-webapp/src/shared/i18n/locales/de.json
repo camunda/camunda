@@ -728,6 +728,14 @@
 				"title": "Operate Entscheidungsinstanz",
 				"pageTitle": "Operate: Entscheidungsinstanz {{decisionInstanceId}} von {{name}}",
 				"notFoundNotificationTitle": "Entscheidungsinstanz {{decisionInstanceId}} konnte nicht gefunden werden",
+				"drd": {
+					"title": "Entscheidungsanforderungsdiagramm",
+					"panelLabel": "DRD-Bereich",
+					"resize": "Größe des DRD-Bereichs ändern",
+					"maximize": "DRD-Bereich maximieren",
+					"minimize": "DRD-Bereich minimieren",
+					"close": "DRD-Bereich schließen"
+				},
 				"variablesPanel": {
 					"tabsLabel": "Registerkarten des Variablenbereichs",
 					"inputsAndOutputs": "Eingaben und Ausgaben",

@@ -107,6 +107,16 @@ function DrdViewer({
 	}, [data, inputSignature, selectedDecisionDefinitionId, selectedDecisionEvaluationInstanceKey, xml]);
 
 	useEffect(() => {
+		const canvas = canvasRef.current;
+		if (canvas === null) {
+			return;
+		}
+		const observer = new ResizeObserver(() => viewerRef.current?.resize());
+		observer.observe(canvas);
+		return () => observer.disconnect();
+	}, []);
+
+	useEffect(() => {
 		return () => {
 			viewerRef.current!.onOverlayChange = undefined;
 			viewerRef.current!.reset();
