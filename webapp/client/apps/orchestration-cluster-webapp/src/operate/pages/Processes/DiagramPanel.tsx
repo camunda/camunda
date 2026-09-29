@@ -103,7 +103,7 @@ const DiagramPanel: React.FC<Props> = ({
 		if (isXmlError) {
 			return 'error';
 		}
-		if (processDefinitionSelection.kind !== 'single-version') {
+		if (processDefinitionSelection.kind !== 'single-version' || diagramData?.xml === '') {
 			return 'empty';
 		}
 		return 'content';
@@ -120,13 +120,15 @@ const DiagramPanel: React.FC<Props> = ({
 								message: t('operate.processes.diagramPanel.multipleVersionsSelected', {name: selectedDefinitionName}),
 								additionalInfo: t('operate.processes.diagramPanel.selectSingleVersion'),
 							}
-						: {
-								message: t('operate.processes.diagramPanel.noProcessSelected'),
-								additionalInfo: t('operate.processes.diagramPanel.selectProcessInFilters'),
-							}
+						: processDefinitionSelection.kind === 'single-version'
+							? {message: t('operate.processInstance.diagram.noDiagram')}
+							: {
+									message: t('operate.processes.diagramPanel.noProcessSelected'),
+									additionalInfo: t('operate.processes.diagramPanel.selectProcessInFilters'),
+								}
 				}
 			>
-				{diagramData?.xml !== undefined && (
+				{diagramData?.xml && (
 					<Diagram
 						key={selectedDefinitionKey}
 						xml={diagramData.xml}
