@@ -92,7 +92,7 @@ test('should maximize, persist, minimize, close and reopen the DRD on the decisi
 	await expect(operateDecisionInstancePage.maximizeDrd).toBeFocused();
 });
 
-test('should clamp DRD panel resizing and restore its width after a reload', async ({
+test('should clamp DRD panel resizing and restore its preferred width after viewport changes and a reload', async ({
 	page,
 	operateDecisionInstancePage,
 }) => {
@@ -125,12 +125,120 @@ test('should clamp DRD panel resizing and restore its width after a reload', asy
 	await page.reload();
 	await expect.poll(async () => (await operateDecisionInstancePage.drdPanel.boundingBox())?.width).toBe(width);
 
+	const initialHandleBounds = await resizeHandle.boundingBox();
+	if (initialHandleBounds === null) {
+		throw new Error('Missing DRD resize handle bounds');
+	}
+	await page.mouse.move(initialHandleBounds.x + initialHandleBounds.width / 2, initialHandleBounds.y + 5);
+	await page.mouse.down();
+	await page.setViewportSize({width: 1000, height: 720});
+	await expect.poll(async () => (await operateDecisionInstancePage.drdPanel.boundingBox())?.width).toBe(600);
+	await page.mouse.up();
+	await page.setViewportSize(viewport);
+	await expect.poll(async () => (await operateDecisionInstancePage.drdPanel.boundingBox())?.width).toBe(width);
+
+	await page.setViewportSize({width: 1000, height: 720});
+	await expect.poll(async () => (await operateDecisionInstancePage.drdPanel.boundingBox())?.width).toBe(600);
+	const handleBounds = await resizeHandle.boundingBox();
+	if (handleBounds === null) {
+		throw new Error('Missing DRD resize handle bounds');
+	}
+	const handleX = handleBounds.x + handleBounds.width / 2;
+	const handleY = handleBounds.y + handleBounds.height / 2;
+	await page.mouse.move(handleX, handleY);
+	await page.mouse.down();
+	await page.mouse.move(handleX + 10, handleY);
+	await expect.poll(async () => (await operateDecisionInstancePage.drdPanel.boundingBox())?.width).toBe(590);
+	await page.mouse.move(handleX, handleY);
+	await page.mouse.up();
+	await expect.poll(async () => (await operateDecisionInstancePage.drdPanel.boundingBox())?.width).toBe(600);
+	await page.mouse.move(handleX, handleY);
+	await page.mouse.down();
+	await page.mouse.move(handleX + 10, handleY);
+	await page.mouse.move(handleX - 10, handleY);
+	await page.mouse.up();
+	await expect.poll(async () => (await operateDecisionInstancePage.drdPanel.boundingBox())?.width).toBe(600);
+	await page.setViewportSize(viewport);
+	await expect.poll(async () => (await operateDecisionInstancePage.drdPanel.boundingBox())?.width).toBe(width);
+
+	await page.setViewportSize({width: 800, height: 720});
+	await expect.poll(async () => (await operateDecisionInstancePage.drdPanel.boundingBox())?.width).toBe(480);
+	await operateDecisionInstancePage.resizeDrdBy(0);
+	await resizeHandle.press('End');
+	await page.setViewportSize(viewport);
+	await expect.poll(async () => (await operateDecisionInstancePage.drdPanel.boundingBox())?.width).toBe(width);
+
 	await page.setViewportSize({width: 800, height: 720});
 	await expect.poll(async () => (await operateDecisionInstancePage.drdPanel.boundingBox())?.width).toBe(480);
 	await page.reload();
 	await expect(page.getByRole('separator', {name: 'Resize DRD Panel'})).toHaveAttribute('aria-valuemin', '480');
 	await expect(page.getByRole('separator', {name: 'Resize DRD Panel'})).toHaveAttribute('aria-valuemax', '480');
 	await expect(page.getByRole('separator', {name: 'Resize DRD Panel'})).toHaveAttribute('aria-valuenow', '480');
+	await page.setViewportSize(viewport);
+	await expect.poll(async () => (await operateDecisionInstancePage.drdPanel.boundingBox())?.width).toBe(width);
+});
+
+test('should preserve a drag adjustment when the viewport changes before releasing the handle', async ({
+	page,
+	operateDecisionInstancePage,
+}) => {
+	const viewport = {width: 1300, height: 720};
+	await page.setViewportSize(viewport);
+	await operateDecisionInstancePage.goto(DECISION_INSTANCE_ID);
+	await expect(operateDecisionInstancePage.drdPanel).toBeVisible();
+	await operateDecisionInstancePage.resizeDrdBy(100);
+	await expect.poll(async () => (await operateDecisionInstancePage.drdPanel.boundingBox())?.width).toBe(640);
+
+	const handleBounds = await operateDecisionInstancePage.drdResizeHandle.boundingBox();
+	if (handleBounds === null) {
+		throw new Error('Missing DRD resize handle bounds');
+	}
+	const handleX = handleBounds.x + handleBounds.width / 2;
+	const handleY = handleBounds.y + handleBounds.height / 2;
+	await page.mouse.move(handleX, handleY);
+	await page.mouse.down();
+	await page.mouse.move(handleX + 20, handleY);
+	await expect.poll(async () => (await operateDecisionInstancePage.drdPanel.boundingBox())?.width).toBe(620);
+	await page.setViewportSize({width: 1000, height: 720});
+	await expect.poll(async () => (await operateDecisionInstancePage.drdPanel.boundingBox())?.width).toBe(600);
+	await page.mouse.move(handleX + 20, handleY + 10);
+	await page.mouse.up();
+
+	await page.setViewportSize(viewport);
+	await expect.poll(async () => (await operateDecisionInstancePage.drdPanel.boundingBox())?.width).toBe(620);
+	await page.reload();
+	await expect.poll(async () => (await operateDecisionInstancePage.drdPanel.boundingBox())?.width).toBe(620);
+});
+
+test('should ignore non-primary mouse buttons on the DRD resize handle', async ({
+	page,
+	operateDecisionInstancePage,
+}) => {
+	await operateDecisionInstancePage.goto(DECISION_INSTANCE_ID);
+	await expect(operateDecisionInstancePage.drdPanel).toBeVisible();
+	const handleBounds = await operateDecisionInstancePage.drdResizeHandle.boundingBox();
+	if (handleBounds === null) {
+		throw new Error('Missing DRD resize handle bounds');
+	}
+	const handleX = handleBounds.x + handleBounds.width / 2;
+	const handleY = handleBounds.y + handleBounds.height / 2;
+
+	await page.mouse.move(handleX, handleY);
+	await page.mouse.down({button: 'right'});
+	await page.mouse.move(handleX - 100, handleY);
+	await expect(page.locator('body')).not.toHaveCSS('cursor', 'ew-resize');
+	await expect.poll(async () => (await operateDecisionInstancePage.drdPanel.boundingBox())?.width).toBe(540);
+	await page.mouse.up({button: 'right'});
+
+	await page.mouse.move(handleX, handleY);
+	await page.mouse.down();
+	await page.mouse.down({button: 'right'});
+	await page.mouse.up({button: 'right'});
+	await page.mouse.move(handleX - 100, handleY);
+	await expect(page.locator('body')).toHaveCSS('cursor', 'ew-resize');
+	await expect.poll(async () => (await operateDecisionInstancePage.drdPanel.boundingBox())?.width).toBe(640);
+	await page.mouse.up();
+	await expect(page.locator('body')).not.toHaveCSS('cursor', 'ew-resize');
 });
 
 test('should release the drag cursor if the DRD panel unmounts during a resize', async ({

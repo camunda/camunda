@@ -32,28 +32,54 @@ const DrdPanel: React.FC<Props> = ({children}) => {
 			return;
 		}
 
+		let preferredWidth = getDrdPanelWidth() ?? MIN_WIDTH;
 		const setWidth = (width: number) => {
 			const nextMaxWidth = Math.floor(document.body.clientWidth * MAX_WIDTH_RATIO);
 			const nextWidth = Math.min(Math.max(width, MIN_WIDTH), nextMaxWidth);
 			panel.style.width = `${nextWidth}px`;
 			setMaxWidth(nextMaxWidth);
 			setCurrentWidth(nextWidth);
+			return nextWidth;
+		};
+		const updatePreferredWidth = (width: number) => {
+			const currentWidth = panel.getBoundingClientRect().width;
+			const nextWidth = setWidth(width);
+			if (nextWidth === currentWidth) {
+				return false;
+			}
+			preferredWidth = nextWidth;
+			return true;
 		};
 		const persistWidth = () => {
-			persistDrdPanelWidth(panel.getBoundingClientRect().width);
+			persistDrdPanelWidth(preferredWidth);
 		};
-		setWidth(getDrdPanelWidth() ?? MIN_WIDTH);
+		setWidth(preferredWidth);
 
 		let startX = 0;
 		let startWidth = 0;
+		let lastX = 0;
+		let maxDragWidth = 0;
 		let previousCursor = '';
 		let isResizing = false;
+		let draggedWidth: number | null = null;
 
 		const onMouseMove = (event: MouseEvent) => {
-			setWidth(startWidth - (event.clientX - startX));
+			if (event.clientX === lastX) {
+				return;
+			}
+			lastX = event.clientX;
+			const previousWidth = panel.getBoundingClientRect().width;
+			const requestedWidth = startWidth - (event.clientX - startX);
+			const nextWidth = setWidth(requestedWidth);
+			maxDragWidth = Math.max(maxDragWidth, Math.floor(document.body.clientWidth * MAX_WIDTH_RATIO));
+			if (event.clientX === startX) {
+				draggedWidth = null;
+			} else if (nextWidth !== previousWidth || draggedWidth !== null) {
+				draggedWidth = Math.min(Math.max(requestedWidth, MIN_WIDTH), maxDragWidth);
+			}
 		};
-		const stopResize = () => {
-			if (!isResizing) {
+		const stopResize = (event: MouseEvent) => {
+			if (!isResizing || event.button !== 0) {
 				return;
 			}
 			isResizing = false;
@@ -61,37 +87,50 @@ const DrdPanel: React.FC<Props> = ({children}) => {
 			window.removeEventListener('mouseup', stopResize);
 			panel.classList.remove('resizing');
 			document.body.style.cursor = previousCursor;
-			persistWidth();
+			if (draggedWidth !== null && draggedWidth !== startWidth) {
+				preferredWidth = draggedWidth;
+				persistWidth();
+			}
+			draggedWidth = null;
 		};
 		const startResize = (event: MouseEvent) => {
+			if (event.button !== 0) {
+				return;
+			}
 			event.preventDefault();
 			startX = event.clientX;
+			lastX = startX;
 			startWidth = panel.getBoundingClientRect().width;
+			maxDragWidth = Math.floor(document.body.clientWidth * MAX_WIDTH_RATIO);
 			previousCursor = document.body.style.cursor;
 			isResizing = true;
+			draggedWidth = null;
 			document.body.style.cursor = 'ew-resize';
 			panel.classList.add('resizing');
 			window.addEventListener('mousemove', onMouseMove);
 			window.addEventListener('mouseup', stopResize);
 		};
 		const onWindowResize = () => {
-			setWidth(panel.getBoundingClientRect().width);
+			setWidth(draggedWidth ?? preferredWidth);
 		};
 		const onKeyDown = (event: KeyboardEvent) => {
 			const currentWidth = panel.getBoundingClientRect().width;
+			let nextWidth: number;
 			if (event.key === 'ArrowLeft') {
-				setWidth(currentWidth + 10);
+				nextWidth = currentWidth + 10;
 			} else if (event.key === 'ArrowRight') {
-				setWidth(currentWidth - 10);
+				nextWidth = currentWidth - 10;
 			} else if (event.key === 'Home') {
-				setWidth(MIN_WIDTH);
+				nextWidth = MIN_WIDTH;
 			} else if (event.key === 'End') {
-				setWidth(document.body.clientWidth);
+				nextWidth = document.body.clientWidth;
 			} else {
 				return;
 			}
 			event.preventDefault();
-			persistWidth();
+			if (updatePreferredWidth(nextWidth)) {
+				persistWidth();
+			}
 		};
 
 		handle.addEventListener('mousedown', startResize);
