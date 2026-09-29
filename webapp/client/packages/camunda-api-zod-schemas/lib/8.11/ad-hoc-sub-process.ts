@@ -8,6 +8,12 @@
 
 import {z} from 'zod';
 import {API_VERSION, getCollectionResponseBodySchema, type Endpoint} from './common';
+import {activateAdHocSubProcessActivitiesStatus204Schema} from './gen/zod/activateAdHocSubProcessActivitiesSchema';
+import {adHocSubProcessActivateActivitiesInstructionSchema} from './gen/zod/adHocSubProcessActivateActivitiesInstructionSchema';
+import type {ActivateAdHocSubProcessActivitiesStatus204} from './gen/types/ActivateAdHocSubProcessActivities';
+import type {AdHocSubProcessActivateActivitiesInstruction} from './gen/types/AdHocSubProcessActivateActivitiesInstruction';
+
+// The activatable activities schemas below have no equivalent in the REST API spec. They stay manual.
 
 const activityTypeSchema = z.enum([
 	'UNSPECIFIED',
@@ -56,17 +62,11 @@ type ActivatableActivity = z.infer<typeof activatableActivitySchema>;
 const queryActivatableActivitiesResponseBodySchema = getCollectionResponseBodySchema(activatableActivitySchema);
 type QueryActivatableActivitiesResponseBody = z.infer<typeof queryActivatableActivitiesResponseBodySchema>;
 
-const activateActivityWithinAdHocSubProcessRequestBodySchema = z.object({
-	elementId: z.string(),
-});
-type ActivateActivityWithinAdHocSubProcessRequestBody = z.infer<
-	typeof activateActivityWithinAdHocSubProcessRequestBodySchema
->;
+const activateActivityWithinAdHocSubProcessRequestBodySchema = adHocSubProcessActivateActivitiesInstructionSchema;
+type ActivateActivityWithinAdHocSubProcessRequestBody = AdHocSubProcessActivateActivitiesInstruction;
 
-const activateActivityWithinAdHocSubProcessResponseBodySchema = z.void();
-type ActivateActivityWithinAdHocSubProcessResponseBody = z.infer<
-	typeof activateActivityWithinAdHocSubProcessResponseBodySchema
->;
+const activateActivityWithinAdHocSubProcessResponseBodySchema = activateAdHocSubProcessActivitiesStatus204Schema;
+type ActivateActivityWithinAdHocSubProcessResponseBody = ActivateAdHocSubProcessActivitiesStatus204;
 
 const activateAdHocSubProcessActivities = {
 	method: 'POST',

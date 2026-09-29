@@ -6,54 +6,42 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {z} from 'zod';
 import {API_VERSION, type Endpoint} from './common';
+import {authenticationConfigurationResponseSchema} from './gen/zod/authenticationConfigurationResponseSchema';
+import {cloudConfigurationResponseSchema} from './gen/zod/cloudConfigurationResponseSchema';
+import {componentsConfigurationResponseSchema} from './gen/zod/componentsConfigurationResponseSchema';
+import {deploymentConfigurationResponseSchema} from './gen/zod/deploymentConfigurationResponseSchema';
+import {getSystemConfigurationStatus200Schema} from './gen/zod/getSystemConfigurationSchema';
+import {jobMetricsConfigurationResponseSchema} from './gen/zod/jobMetricsConfigurationResponseSchema';
+import {systemConfigurationResponseSchema} from './gen/zod/systemConfigurationResponseSchema';
+import type {AuthenticationConfigurationResponse} from './gen/types/AuthenticationConfigurationResponse';
+import type {CloudConfigurationResponse} from './gen/types/CloudConfigurationResponse';
+import type {ComponentsConfigurationResponse} from './gen/types/ComponentsConfigurationResponse';
+import type {DeploymentConfigurationResponse} from './gen/types/DeploymentConfigurationResponse';
+import type {GetSystemConfigurationStatus200} from './gen/types/GetSystemConfiguration';
+import type {JobMetricsConfigurationResponse} from './gen/types/JobMetricsConfigurationResponse';
+import type {SystemConfigurationResponse} from './gen/types/SystemConfigurationResponse';
 
-const jobMetricsConfigurationSchema = z.object({
-	enabled: z.boolean(),
-	exportInterval: z.string(),
-	maxWorkerNameLength: z.number().int(),
-	maxJobTypeLength: z.number().int(),
-	maxTenantIdLength: z.number().int(),
-	maxUniqueKeys: z.number().int(),
-});
-type JobMetricsConfiguration = z.infer<typeof jobMetricsConfigurationSchema>;
+const jobMetricsConfigurationSchema = jobMetricsConfigurationResponseSchema;
+type JobMetricsConfiguration = JobMetricsConfigurationResponse;
 
-const componentsConfigurationSchema = z.object({
-	active: z.array(z.string()),
-});
-type ComponentsConfiguration = z.infer<typeof componentsConfigurationSchema>;
+const componentsConfigurationSchema = componentsConfigurationResponseSchema;
+type ComponentsConfiguration = ComponentsConfigurationResponse;
 
-const deploymentConfigurationSchema = z.object({
-	isMultiTenancyEnabled: z.boolean(),
-	isTenantsApiEnabled: z.boolean(),
-	maxRequestSize: z.number(),
-});
-type DeploymentConfiguration = z.infer<typeof deploymentConfigurationSchema>;
+const deploymentConfigurationSchema = deploymentConfigurationResponseSchema;
+type DeploymentConfiguration = DeploymentConfigurationResponse;
 
-const authenticationConfigurationSchema = z.object({
-	canLogout: z.boolean(),
-	isLoginDelegated: z.boolean(),
-	isCamundaGroupsEnabled: z.boolean(),
-});
-type AuthenticationConfiguration = z.infer<typeof authenticationConfigurationSchema>;
+const authenticationConfigurationSchema = authenticationConfigurationResponseSchema;
+type AuthenticationConfiguration = AuthenticationConfigurationResponse;
 
-const cloudConfigurationSchema = z.object({
-	stage: z.string().nullable(),
-});
-type CloudConfiguration = z.infer<typeof cloudConfigurationSchema>;
+const cloudConfigurationSchema = cloudConfigurationResponseSchema;
+type CloudConfiguration = CloudConfigurationResponse;
 
-const systemConfigurationSchema = z.object({
-	jobMetrics: jobMetricsConfigurationSchema,
-	components: componentsConfigurationSchema,
-	deployment: deploymentConfigurationSchema,
-	authentication: authenticationConfigurationSchema,
-	cloud: cloudConfigurationSchema,
-});
-type SystemConfiguration = z.infer<typeof systemConfigurationSchema>;
+const systemConfigurationSchema = systemConfigurationResponseSchema;
+type SystemConfiguration = SystemConfigurationResponse;
 
-const getSystemConfigurationResponseBodySchema = systemConfigurationSchema;
-type GetSystemConfigurationResponseBody = z.infer<typeof getSystemConfigurationResponseBodySchema>;
+const getSystemConfigurationResponseBodySchema = getSystemConfigurationStatus200Schema;
+type GetSystemConfigurationResponseBody = GetSystemConfigurationStatus200;
 
 const getSystemConfiguration = {
 	method: 'GET',
@@ -70,6 +58,7 @@ export {
 	getSystemConfigurationResponseBodySchema,
 	getSystemConfiguration,
 };
+
 export type {
 	JobMetricsConfiguration,
 	ComponentsConfiguration,

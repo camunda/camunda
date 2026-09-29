@@ -10,21 +10,16 @@
  * This file exists only to avoid circular dependencies. Do not export it directly.
  */
 
-import {z} from 'zod';
+import {groupResultSchema} from './gen/zod/groupResultSchema';
+import {roleResultSchema} from './gen/zod/roleResultSchema';
+import type {GroupResult} from './gen/types/GroupResult';
+import type {RoleResult} from './gen/types/RoleResult';
 
-const groupSchema = z.object({
-	groupId: z.string(),
-	name: z.string(),
-	description: z.string(),
-});
-type Group = z.infer<typeof groupSchema>;
+const groupSchema = groupResultSchema;
+type Group = GroupResult;
 
-const roleSchema = z.object({
-	roleId: z.string(),
-	name: z.string(),
-	description: z.string().nullable(),
-});
-type Role = z.infer<typeof roleSchema>;
+const roleSchema = roleResultSchema;
+type Role = RoleResult;
 
 export {groupSchema, roleSchema};
 export type {Group, Role};

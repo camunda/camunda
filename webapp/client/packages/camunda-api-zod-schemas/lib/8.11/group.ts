@@ -6,24 +6,84 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {z} from 'zod';
-import {
-	API_VERSION,
-	advancedStringFilterSchema,
-	getOrFilterSchema,
-	getQueryResponseBodySchema,
-	getQueryRequestBodySchema,
-	type Endpoint,
-} from './common';
-import {mappingRuleSchema, type MappingRule} from './mapping-rule';
-import {userSchema} from './user';
-import {groupSchema, type Group, roleSchema} from './group-role';
+import {API_VERSION, type Endpoint} from './common';
+import {getGroupStatus200Schema} from './gen/zod/getGroupSchema';
+import {groupClientSearchQueryRequestSchema} from './gen/zod/groupClientSearchQueryRequestSchema';
+import {groupClientSearchResultSchema} from './gen/zod/groupClientSearchResultSchema';
+import {groupCreateRequestSchema} from './gen/zod/groupCreateRequestSchema';
+import {groupCreateResultSchema} from './gen/zod/groupCreateResultSchema';
+import {groupMappingRuleSearchResultSchema} from './gen/zod/groupMappingRuleSearchResultSchema';
+import {groupRoleSearchResultSchema} from './gen/zod/groupRoleSearchResultSchema';
+import {groupSearchQueryRequestSchema} from './gen/zod/groupSearchQueryRequestSchema';
+import {groupSearchQueryResultSchema} from './gen/zod/groupSearchQueryResultSchema';
+import {groupUpdateRequestSchema} from './gen/zod/groupUpdateRequestSchema';
+import {groupUpdateResultSchema} from './gen/zod/groupUpdateResultSchema';
+import {groupUserSearchQueryRequestSchema} from './gen/zod/groupUserSearchQueryRequestSchema';
+import {groupUserSearchResultSchema} from './gen/zod/groupUserSearchResultSchema';
+import {mappingRuleSearchQueryRequestSchema} from './gen/zod/mappingRuleSearchQueryRequestSchema';
+import {roleSearchQueryRequestSchema} from './gen/zod/roleSearchQueryRequestSchema';
+import type {GetGroupStatus200} from './gen/types/GetGroup';
+import type {GroupClientSearchQueryRequest} from './gen/types/GroupClientSearchQueryRequest';
+import type {GroupClientSearchResult} from './gen/types/GroupClientSearchResult';
+import type {GroupCreateRequest} from './gen/types/GroupCreateRequest';
+import type {GroupCreateResult} from './gen/types/GroupCreateResult';
+import type {GroupMappingRuleSearchResult} from './gen/types/GroupMappingRuleSearchResult';
+import type {GroupRoleSearchResult} from './gen/types/GroupRoleSearchResult';
+import type {GroupSearchQueryRequest} from './gen/types/GroupSearchQueryRequest';
+import type {GroupSearchQueryResult} from './gen/types/GroupSearchQueryResult';
+import type {GroupUpdateRequest} from './gen/types/GroupUpdateRequest';
+import type {GroupUpdateResult} from './gen/types/GroupUpdateResult';
+import type {GroupUserSearchQueryRequest} from './gen/types/GroupUserSearchQueryRequest';
+import type {GroupUserSearchResult} from './gen/types/GroupUserSearchResult';
+import type {MappingRuleSearchQueryRequest} from './gen/types/MappingRuleSearchQueryRequest';
+import type {RoleSearchQueryRequest} from './gen/types/RoleSearchQueryRequest';
+import {groupSchema, type Group} from './group-role';
+import type {MappingRule} from './mapping-rule';
 
-const createGroupRequestBodySchema = groupSchema;
-type CreateGroupRequestBody = z.infer<typeof createGroupRequestBodySchema>;
+const createGroupRequestBodySchema = groupCreateRequestSchema;
+type CreateGroupRequestBody = GroupCreateRequest;
 
-const createGroupResponseBodySchema = groupSchema;
-type CreateGroupResponseBody = z.infer<typeof createGroupResponseBodySchema>;
+const createGroupResponseBodySchema = groupCreateResultSchema;
+type CreateGroupResponseBody = GroupCreateResult;
+
+const getGroupResponseBodySchema = getGroupStatus200Schema;
+type GetGroupResponseBody = GetGroupStatus200;
+
+const updateGroupRequestBodySchema = groupUpdateRequestSchema;
+type UpdateGroupRequestBody = GroupUpdateRequest;
+
+const updateGroupResponseBodySchema = groupUpdateResultSchema;
+type UpdateGroupResponseBody = GroupUpdateResult;
+
+const queryGroupsRequestBodySchema = groupSearchQueryRequestSchema;
+type QueryGroupsRequestBody = GroupSearchQueryRequest;
+
+const queryGroupsResponseBodySchema = groupSearchQueryResultSchema;
+type QueryGroupsResponseBody = GroupSearchQueryResult;
+
+const queryUsersByGroupRequestBodySchema = groupUserSearchQueryRequestSchema;
+type QueryUsersByGroupRequestBody = GroupUserSearchQueryRequest;
+
+const queryUsersByGroupResponseBodySchema = groupUserSearchResultSchema;
+type QueryUsersByGroupResponseBody = GroupUserSearchResult;
+
+const queryClientsByGroupRequestBodySchema = groupClientSearchQueryRequestSchema;
+type QueryClientsByGroupRequestBody = GroupClientSearchQueryRequest;
+
+const queryClientsByGroupResponseBodySchema = groupClientSearchResultSchema;
+type QueryClientsByGroupResponseBody = GroupClientSearchResult;
+
+const queryRolesByGroupRequestBodySchema = roleSearchQueryRequestSchema;
+type QueryRolesByGroupRequestBody = RoleSearchQueryRequest;
+
+const queryRolesByGroupResponseBodySchema = groupRoleSearchResultSchema;
+type QueryRolesByGroupResponseBody = GroupRoleSearchResult;
+
+const queryMappingRulesByGroupRequestBodySchema = mappingRuleSearchQueryRequestSchema;
+type QueryMappingRulesByGroupRequestBody = MappingRuleSearchQueryRequest;
+
+const queryMappingRulesByGroupResponseBodySchema = groupMappingRuleSearchResultSchema;
+type QueryMappingRulesByGroupResponseBody = GroupMappingRuleSearchResult;
 
 const createGroup = {
 	method: 'POST',
@@ -40,18 +100,6 @@ const getGroup = {
 		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}` as const;
 	},
 } as const satisfies Endpoint<Pick<Group, 'groupId'>>;
-
-const getGroupResponseBodySchema = groupSchema;
-type GetGroupResponseBody = z.infer<typeof getGroupResponseBodySchema>;
-
-const updateGroupRequestBodySchema = groupSchema.pick({
-	name: true,
-	description: true,
-});
-type UpdateGroupRequestBody = z.infer<typeof updateGroupRequestBodySchema>;
-
-const updateGroupResponseBodySchema = groupSchema;
-type UpdateGroupResponseBody = z.infer<typeof updateGroupResponseBodySchema>;
 
 const updateGroup = {
 	method: 'PUT',
@@ -71,35 +119,12 @@ const deleteGroup = {
 	},
 } as const satisfies Endpoint<Pick<Group, 'groupId'>>;
 
-const queryGroupsRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['name', 'groupId'] as const,
-	filter: getOrFilterSchema(
-		z.object({
-			groupId: advancedStringFilterSchema.optional(),
-			name: advancedStringFilterSchema.optional(),
-		}),
-	),
-});
-type QueryGroupsRequestBody = z.infer<typeof queryGroupsRequestBodySchema>;
-
-const queryGroupsResponseBodySchema = getQueryResponseBodySchema(groupSchema);
-type QueryGroupsResponseBody = z.infer<typeof queryGroupsResponseBodySchema>;
-
 const queryGroups = {
 	method: 'POST',
 	getUrl() {
 		return `/${API_VERSION}/groups/search` as const;
 	},
 } as const satisfies Endpoint;
-
-const queryUsersByGroupRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['username'] as const,
-	filter: z.never(),
-});
-type QueryUsersByGroupRequestBody = z.infer<typeof queryUsersByGroupRequestBodySchema>;
-
-const queryUsersByGroupResponseBodySchema = getQueryResponseBodySchema(userSchema.pick({username: true}));
-type QueryUsersByGroupResponseBody = z.infer<typeof queryUsersByGroupResponseBodySchema>;
 
 const queryUsersByGroup = {
 	method: 'POST',
@@ -110,19 +135,6 @@ const queryUsersByGroup = {
 	},
 } as const satisfies Endpoint<Pick<Group, 'groupId'>>;
 
-const queryClientsByGroupRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['clientId'] as const,
-	filter: z.never(),
-});
-type QueryClientsByGroupRequestBody = z.infer<typeof queryClientsByGroupRequestBodySchema>;
-
-const queryClientsByGroupResponseBodySchema = getQueryResponseBodySchema(
-	z.object({
-		clientId: z.string(),
-	}),
-);
-type QueryClientsByGroupResponseBody = z.infer<typeof queryClientsByGroupResponseBodySchema>;
-
 const queryClientsByGroup = {
 	method: 'POST',
 	getUrl(params) {
@@ -132,20 +144,6 @@ const queryClientsByGroup = {
 	},
 } as const satisfies Endpoint<Pick<Group, 'groupId'>>;
 
-const queryRolesByGroupRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['name', 'roleId'] as const,
-	filter: z
-		.object({
-			roleId: z.string(),
-			name: z.string(),
-		})
-		.partial(),
-});
-type QueryRolesByGroupRequestBody = z.infer<typeof queryRolesByGroupRequestBodySchema>;
-
-const queryRolesByGroupResponseBodySchema = getQueryResponseBodySchema(roleSchema);
-type QueryRolesByGroupResponseBody = z.infer<typeof queryRolesByGroupResponseBodySchema>;
-
 const queryRolesByGroup = {
 	method: 'POST',
 	getUrl(params) {
@@ -154,21 +152,6 @@ const queryRolesByGroup = {
 		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/roles/search` as const;
 	},
 } as const satisfies Endpoint<Pick<Group, 'groupId'>>;
-
-const queryMappingRulesByGroupRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['claimName', 'claimValue', 'name'] as const,
-	filter: mappingRuleSchema
-		.pick({
-			claimName: true,
-			claimValue: true,
-			name: true,
-		})
-		.partial(),
-});
-type QueryMappingRulesByGroupRequestBody = z.infer<typeof queryMappingRulesByGroupRequestBodySchema>;
-
-const queryMappingRulesByGroupResponseBodySchema = getQueryResponseBodySchema(mappingRuleSchema);
-type QueryMappingRulesByGroupResponseBody = z.infer<typeof queryMappingRulesByGroupResponseBodySchema>;
 
 const queryMappingRulesByGroup = {
 	method: 'POST',
@@ -266,6 +249,7 @@ export {
 	queryMappingRulesByGroupResponseBodySchema,
 	groupSchema,
 };
+
 export type {
 	Group,
 	CreateGroupRequestBody,

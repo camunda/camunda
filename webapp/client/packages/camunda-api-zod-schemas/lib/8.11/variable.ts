@@ -6,53 +6,28 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {z} from 'zod';
-import {
-	advancedStringFilterSchema,
-	API_VERSION,
-	getQueryRequestBodySchema,
-	getQueryResponseBodySchema,
-	type Endpoint,
-} from './common';
+import {API_VERSION, type Endpoint} from './common';
+import {variableSearchQueryResultSchema} from './gen/zod/variableSearchQueryResultSchema';
+import {variableSearchQuerySchema} from './gen/zod/variableSearchQuerySchema';
+import {variableSearchResultSchema} from './gen/zod/variableSearchResultSchema';
+import type {VariableSearchQuery} from './gen/types/VariableSearchQuery';
+import type {VariableSearchQueryResult} from './gen/types/VariableSearchQueryResult';
+import type {VariableSearchResult} from './gen/types/VariableSearchResult';
 
-const variableSchema = z.object({
-	name: z.string(),
-	value: z.string(),
-	tenantId: z.string(),
-	isTruncated: z.boolean().nullable(),
-	variableKey: z.string(),
-	scopeKey: z.string(),
-	processInstanceKey: z.string(),
-	rootProcessInstanceKey: z.string().nullable(),
-});
+// The search result is used because it includes `isTruncated`. `GET /variables/{key}` returns `VariableResult`, which has no `isTruncated`.
+const variableSchema = variableSearchResultSchema;
+type Variable = VariableSearchResult;
 
-type Variable = z.infer<typeof variableSchema>;
+const queryVariablesRequestBodySchema = variableSearchQuerySchema;
+type QueryVariablesRequestBody = VariableSearchQuery;
+
+const queryVariablesResponseBodySchema = variableSearchQueryResultSchema;
+type QueryVariablesResponseBody = VariableSearchQueryResult;
 
 const getVariable = {
 	method: 'GET',
 	getUrl: ({variableKey}) => `/${API_VERSION}/variables/${variableKey}` as const,
 } as const satisfies Endpoint<Pick<Variable, 'variableKey'>>;
-
-const queryVariablesRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['name', 'value', 'fullValue', 'tenantId', 'variableKey', 'scopeKey', 'processInstanceKey'] as const,
-	filter: z
-		.object({
-			name: advancedStringFilterSchema,
-			value: advancedStringFilterSchema,
-			variableKey: advancedStringFilterSchema,
-			scopeKey: advancedStringFilterSchema,
-			processInstanceKey: advancedStringFilterSchema,
-			...variableSchema.pick({
-				tenantId: true,
-				isTruncated: true,
-			}).shape,
-		})
-		.partial(),
-});
-type QueryVariablesRequestBody = z.infer<typeof queryVariablesRequestBodySchema>;
-
-const queryVariablesResponseBodySchema = getQueryResponseBodySchema(variableSchema);
-type QueryVariablesResponseBody = z.infer<typeof queryVariablesResponseBodySchema>;
 
 const queryVariables = {
 	method: 'POST',
@@ -61,4 +36,5 @@ const queryVariables = {
 } as const satisfies Endpoint<{truncateValues?: boolean}>;
 
 export {getVariable, queryVariables, variableSchema, queryVariablesRequestBodySchema, queryVariablesResponseBodySchema};
+
 export type {Variable, QueryVariablesRequestBody, QueryVariablesResponseBody};

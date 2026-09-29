@@ -6,13 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {z} from 'zod';
 import {API_VERSION, type Endpoint} from './common';
+import {clockPinRequestSchema} from './gen/zod/clockPinRequestSchema';
+import type {ClockPinRequest} from './gen/types/ClockPinRequest';
 
-const pinClockRequestBodySchema = z.object({
-	timestamp: z.number().int(),
-});
-type PinClockRequestBody = z.infer<typeof pinClockRequestBodySchema>;
+const pinClockRequestBodySchema = clockPinRequestSchema;
+type PinClockRequestBody = ClockPinRequest;
 
 const pinClock = {
 	method: 'PUT',

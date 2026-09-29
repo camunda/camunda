@@ -6,58 +6,47 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {z} from 'zod';
-import {
-	API_VERSION,
-	advancedStringFilterSchema,
-	getOrFilterSchema,
-	getQueryRequestBodySchema,
-	getQueryResponseBodySchema,
-	type Endpoint,
-} from './common';
+import {API_VERSION, type Endpoint} from './common';
+import {getMappingRuleStatus200Schema} from './gen/zod/getMappingRuleSchema';
+import {mappingRuleCreateRequestSchema} from './gen/zod/mappingRuleCreateRequestSchema';
+import {mappingRuleCreateResultSchema} from './gen/zod/mappingRuleCreateResultSchema';
+import {mappingRuleResultSchema} from './gen/zod/mappingRuleResultSchema';
+import {mappingRuleSearchQueryRequestSchema} from './gen/zod/mappingRuleSearchQueryRequestSchema';
+import {mappingRuleSearchQueryResultSchema} from './gen/zod/mappingRuleSearchQueryResultSchema';
+import {mappingRuleUpdateRequestSchema} from './gen/zod/mappingRuleUpdateRequestSchema';
+import {mappingRuleUpdateResultSchema} from './gen/zod/mappingRuleUpdateResultSchema';
+import type {GetMappingRuleStatus200} from './gen/types/GetMappingRule';
+import type {MappingRuleCreateRequest} from './gen/types/MappingRuleCreateRequest';
+import type {MappingRuleCreateResult} from './gen/types/MappingRuleCreateResult';
+import type {MappingRuleResult} from './gen/types/MappingRuleResult';
+import type {MappingRuleSearchQueryRequest} from './gen/types/MappingRuleSearchQueryRequest';
+import type {MappingRuleSearchQueryResult} from './gen/types/MappingRuleSearchQueryResult';
+import type {MappingRuleUpdateRequest} from './gen/types/MappingRuleUpdateRequest';
+import type {MappingRuleUpdateResult} from './gen/types/MappingRuleUpdateResult';
 
-const mappingRuleSchema = z.object({
-	mappingRuleId: z.string(),
-	claimName: z.string(),
-	claimValue: z.string(),
-	name: z.string(),
-});
-type MappingRule = z.infer<typeof mappingRuleSchema>;
+const mappingRuleSchema = mappingRuleResultSchema;
+type MappingRule = MappingRuleResult;
 
-const createMappingRuleRequestBodySchema = mappingRuleSchema;
-type CreateMappingRuleRequestBody = z.infer<typeof createMappingRuleRequestBodySchema>;
+const createMappingRuleRequestBodySchema = mappingRuleCreateRequestSchema;
+type CreateMappingRuleRequestBody = MappingRuleCreateRequest;
 
-const createMappingRuleResponseBodySchema = mappingRuleSchema;
-type CreateMappingRuleResponseBody = z.infer<typeof createMappingRuleResponseBodySchema>;
+const createMappingRuleResponseBodySchema = mappingRuleCreateResultSchema;
+type CreateMappingRuleResponseBody = MappingRuleCreateResult;
 
-const updateMappingRuleRequestBodySchema = mappingRuleSchema.pick({
-	claimName: true,
-	claimValue: true,
-	name: true,
-});
-type UpdateMappingRuleRequestBody = z.infer<typeof updateMappingRuleRequestBodySchema>;
+const updateMappingRuleRequestBodySchema = mappingRuleUpdateRequestSchema;
+type UpdateMappingRuleRequestBody = MappingRuleUpdateRequest;
 
-const updateMappingRuleResponseBodySchema = mappingRuleSchema;
-type UpdateMappingRuleResponseBody = z.infer<typeof updateMappingRuleResponseBodySchema>;
+const updateMappingRuleResponseBodySchema = mappingRuleUpdateResultSchema;
+type UpdateMappingRuleResponseBody = MappingRuleUpdateResult;
 
-const queryMappingRulesRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['mappingRuleId', 'claimName', 'claimValue', 'name'] as const,
-	filter: getOrFilterSchema(
-		z.object({
-			mappingRuleId: advancedStringFilterSchema.optional(),
-			claimName: z.string().optional(),
-			claimValue: z.string().optional(),
-			name: advancedStringFilterSchema.optional(),
-		}),
-	),
-});
-type QueryMappingRulesRequestBody = z.infer<typeof queryMappingRulesRequestBodySchema>;
+const queryMappingRulesRequestBodySchema = mappingRuleSearchQueryRequestSchema;
+type QueryMappingRulesRequestBody = MappingRuleSearchQueryRequest;
 
-const queryMappingRulesResponseBodySchema = getQueryResponseBodySchema(mappingRuleSchema);
-type QueryMappingRulesResponseBody = z.infer<typeof queryMappingRulesResponseBodySchema>;
+const queryMappingRulesResponseBodySchema = mappingRuleSearchQueryResultSchema;
+type QueryMappingRulesResponseBody = MappingRuleSearchQueryResult;
 
-const getMappingRuleResponseBodySchema = mappingRuleSchema;
-type GetMappingRuleResponseBody = z.infer<typeof getMappingRuleResponseBodySchema>;
+const getMappingRuleResponseBodySchema = getMappingRuleStatus200Schema;
+type GetMappingRuleResponseBody = GetMappingRuleStatus200;
 
 const createMappingRule = {
 	method: 'POST',
