@@ -71,7 +71,7 @@ final class AzureBackupStoreDeleteTest {
   @Test
   void shouldNotDeleteManifestWhenContentsDeletionFails() {
     // given
-    final Manifest deletedManifest = Manifest.createFailed(id).delete();
+    final Manifest deletedManifest = Manifest.createFailed(id, "error").delete();
     when(manifestManager.getManifest(id)).thenReturn(deletedManifest);
     when(fileSetManager.collectBlobUrls(eq(id), any()))
         .thenReturn(List.of("https://test.blob.core.windows.net/container/contents/file1"));
@@ -88,7 +88,7 @@ final class AzureBackupStoreDeleteTest {
   @Test
   void shouldBoundConcurrentDeletions() throws Exception {
     // given - twice as many deletions as may run at once, each blocked until all are submitted
-    final Manifest deletedManifest = Manifest.createFailed(id).delete();
+    final Manifest deletedManifest = Manifest.createFailed(id, "error").delete();
     final var running = new AtomicInteger();
     final var maxRunning = new AtomicInteger();
     final var permittedStarted = new CountDownLatch(AzureBackupStore.DELETE_PARALLELISM);
