@@ -70,7 +70,7 @@ class AdminOperationsLogPage extends BasePage {
 	}
 
 	cell(text: string) {
-		return this.table.getByRole('cell', {name: text, exact: true});
+		return this.table.getByRole('cell', {name: text});
 	}
 
 	get loadFailureHeading() {
