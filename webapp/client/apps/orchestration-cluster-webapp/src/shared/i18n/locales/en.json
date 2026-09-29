@@ -881,7 +881,20 @@
 				}
 			},
 			"batchOperations": {
-				"title": "Batch Operations"
+				"title": "Batch Operations",
+				"pageTitle": "Operate: Batch Operations",
+				"operation": "Operation",
+				"state": "Batch state",
+				"items": "Items",
+				"actor": "Actor",
+				"startDate": "Start date",
+				"emptyMessage": "No batch operations found",
+				"emptyAdditionalInfo": "Try adjusting your filters or check back later.",
+				"refreshError": "Failed to refresh batch operations. Showing previously loaded results.",
+				"previousPage": "Previous page",
+				"nextPage": "Next page",
+				"itemsPerPage": "Items per page:",
+				"pageNumber": "Page Number"
 			},
 			"batchOperation": {
 				"title": "Batch Operations",

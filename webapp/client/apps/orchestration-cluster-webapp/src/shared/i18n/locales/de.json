@@ -869,7 +869,20 @@
 				}
 			},
 			"batchOperations": {
-				"title": "Stapeloperationen"
+				"title": "Stapeloperationen",
+				"pageTitle": "Operate: Stapeloperationen",
+				"operation": "Operation",
+				"state": "Stapelstatus",
+				"items": "Elemente",
+				"actor": "Akteur",
+				"startDate": "Startdatum",
+				"emptyMessage": "Keine Stapeloperationen gefunden",
+				"emptyAdditionalInfo": "Passen Sie Ihre Filter an oder versuchen Sie es später erneut.",
+				"refreshError": "Stapeloperationen konnten nicht aktualisiert werden. Zuvor geladene Ergebnisse werden angezeigt.",
+				"previousPage": "Vorherige Seite",
+				"nextPage": "Nächste Seite",
+				"itemsPerPage": "Elemente pro Seite:",
+				"pageNumber": "Seitennummer"
 			},
 			"batchOperation": {
 				"title": "Stapeloperationen",

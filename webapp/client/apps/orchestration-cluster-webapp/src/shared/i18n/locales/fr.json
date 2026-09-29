@@ -872,7 +872,20 @@
 				}
 			},
 			"batchOperations": {
-				"title": "Opérations par lots"
+				"title": "Opérations par lots",
+				"pageTitle": "Operate : Opérations par lots",
+				"operation": "Opération",
+				"state": "État du lot",
+				"items": "Éléments",
+				"actor": "Auteur",
+				"startDate": "Date de début",
+				"emptyMessage": "Aucune opération par lot trouvée",
+				"emptyAdditionalInfo": "Modifiez vos filtres ou réessayez plus tard.",
+				"refreshError": "Impossible d'actualiser les opérations par lots. Les résultats précédents sont affichés.",
+				"previousPage": "Page précédente",
+				"nextPage": "Page suivante",
+				"itemsPerPage": "Éléments par page :",
+				"pageNumber": "Numéro de page"
 			},
 			"batchOperation": {
 				"title": "Opérations par lots",
