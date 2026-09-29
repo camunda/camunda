@@ -63,6 +63,22 @@ describe('Optional Filters', () => {
 		sessionStorage.clear();
 	});
 
+	it('should allow clearing an incident-hash-only bookmark with Reset filters', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+		);
+
+		const screen = await renderProcessesPage({incidentErrorHashCode: '0'});
+		const reset = screen.getByRole('button', {name: 'Reset filters'});
+		await expect.element(reset).toBeEnabled();
+		await userEvent.click(reset);
+
+		await expect
+			.poll(() => (screen.router.state.location.search as Record<string, unknown>).incidentErrorHashCode)
+			.toBeUndefined();
+	});
+
 	it('should initially hide optional filters', async ({worker}) => {
 		worker.use(
 			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),

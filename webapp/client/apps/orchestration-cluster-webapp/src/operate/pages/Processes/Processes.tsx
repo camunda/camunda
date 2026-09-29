@@ -37,6 +37,7 @@ type Props = {
 	process?: string;
 	version?: number;
 	elementId?: string;
+	incidentErrorHashCode?: number;
 	active: boolean;
 	incidents: boolean;
 	completed: boolean;
@@ -62,6 +63,7 @@ const Processes: React.FC<Props> = ({
 	businessId,
 	batchOperationKey,
 	errorMessage,
+	incidentErrorHashCode,
 	hasRetriesLeft,
 	startDateFrom,
 	startDateTo,
@@ -156,7 +158,9 @@ const Processes: React.FC<Props> = ({
 	const finishedIndeterminate = !finishedChecked && (completed || canceled);
 
 	const hasOptionalFilters =
-		tenantId !== undefined || Object.values(optionalFilterValues).some((value) => value !== undefined);
+		tenantId !== undefined ||
+		incidentErrorHashCode !== undefined ||
+		Object.values(optionalFilterValues).some((value) => value !== undefined);
 
 	const isResetDisabled =
 		active &&
@@ -184,6 +188,7 @@ const Processes: React.FC<Props> = ({
 				businessId: values.businessId || undefined,
 				batchOperationKey: values.batchOperationKey || undefined,
 				errorMessage: values.errorMessage || undefined,
+				incidentErrorHashCode: values.errorMessage === prev.errorMessage ? prev.incidentErrorHashCode : undefined,
 				hasRetriesLeft: values.hasRetriesLeft || undefined,
 				startDateFrom: values.startDateFrom || undefined,
 				startDateTo: values.startDateTo || undefined,
@@ -415,6 +420,7 @@ const Processes: React.FC<Props> = ({
 						businessId,
 						batchOperationKey,
 						errorMessage,
+						incidentErrorHashCode,
 						hasRetriesLeft,
 						startDateFrom,
 						startDateTo,

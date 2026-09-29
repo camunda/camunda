@@ -16,7 +16,7 @@ import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
 import {ExpandableList} from '../ExpandableList';
 import {ExpandedRowErrorFallback} from '../ExpandedRowErrorFallback';
 import {useDashboardScrollPagination} from '../useDashboardScrollPagination';
-import {runningOrAllInstancesFilter} from '../processesLinkFilters';
+import {dashboardTenantId, runningOrAllInstancesFilter, useDashboardTenants} from '../processesLinkFilters';
 import {LinkWrapper, LoadingRow} from '../styled';
 import {
 	drainingByIdKey,
@@ -28,6 +28,7 @@ import {InstancesByProcessVersions} from './InstancesByProcessVersions';
 
 const InstancesByProcess: React.FC = () => {
 	const {t} = useTranslation();
+	const {isMultiTenancyEnabled, tenantsById} = useDashboardTenants();
 	const {
 		data,
 		isPending,
@@ -61,14 +62,28 @@ const InstancesByProcess: React.FC = () => {
 				const versionKey = item.hasMultipleVersions
 					? 'operate.dashboard.instancesInMultipleVersions'
 					: 'operate.dashboard.instancesInOneVersion';
-				const labelText = `${item.latestProcessDefinitionName || item.processDefinitionId} – ${t(versionKey, {count: total})}`;
+				const tenantId = dashboardTenantId(item.tenantId, isMultiTenancyEnabled);
+				const tenantName = tenantId ? (tenantsById[tenantId] ?? tenantId) : undefined;
+				const name = item.latestProcessDefinitionName || item.processDefinitionId;
+				const labelText = tenantName
+					? t(
+							item.hasMultipleVersions
+								? 'operate.dashboard.instancesInMultipleVersionsWithTenant'
+								: 'operate.dashboard.instancesInOneVersionWithTenant',
+							{name, count: total, tenant: tenantName},
+						)
+					: `${name} – ${t(versionKey, {count: total})}`;
 
 				return {
 					id: `${item.processDefinitionId}:${item.tenantId}`,
 					instance: (
 						<LinkWrapper
 							to="/operate/processes"
-							search={{process: item.processDefinitionId, ...runningOrAllInstancesFilter(total)}}
+							search={{
+								process: item.processDefinitionId,
+								tenantId,
+								...runningOrAllInstancesFilter(total),
+							}}
 							title={labelText}
 						>
 							<InstancesBar
@@ -83,7 +98,7 @@ const InstancesByProcess: React.FC = () => {
 					),
 				};
 			}),
-		[items, t, draining],
+		[items, t, draining, isMultiTenancyEnabled, tenantsById],
 	);
 
 	const expandedContents = useMemo(
@@ -105,6 +120,8 @@ const InstancesByProcess: React.FC = () => {
 									processDefinitionId={item.processDefinitionId}
 									tenantId={item.tenantId}
 									drainingDefinitionKeys={draining?.byKey}
+									isMultiTenancyEnabled={isMultiTenancyEnabled}
+									tenantsById={tenantsById}
 								/>
 							</Suspense>
 						</ErrorBoundary>
@@ -112,7 +129,7 @@ const InstancesByProcess: React.FC = () => {
 				}
 				return accumulator;
 			}, {}),
-		[items, t, draining?.byKey],
+		[items, t, draining?.byKey, isMultiTenancyEnabled, tenantsById],
 	);
 
 	return (
