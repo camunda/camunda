@@ -44,8 +44,8 @@ final class RocksDbOptionsFormatter {
   static String format(final double value) {
     if (ensureLibCIsAvailable()) {
       try {
-        // 64 bytes should be more than enough for any reasonable double formatting
-        final var buffer = new byte[64];
+        // fits the longest "%f" output, -Double.MAX_VALUE (317 chars), plus the terminator
+        final var buffer = new byte[320];
         final var bytesWritten = libC.sprintf(buffer, "%f", value);
 
         if (bytesWritten >= 0) {
