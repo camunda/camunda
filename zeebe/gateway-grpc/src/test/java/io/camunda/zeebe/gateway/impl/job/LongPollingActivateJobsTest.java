@@ -87,7 +87,7 @@ final class LongPollingActivateJobsTest {
   private final ControlledActorClock actorClock = new ControlledActorClock();
 
   @RegisterExtension
-  final ActorSchedulerExtension actorSchedulerRule = new ActorSchedulerExtension(actorClock);
+  final ActorSchedulerExtension actorScheduler = new ActorSchedulerExtension(actorClock);
 
   private LongPollingActivateJobsHandler<ActivateJobsResponse> handler;
   private ActivateJobsStub activateJobsStub;
@@ -1146,7 +1146,7 @@ final class LongPollingActivateJobsTest {
             .name("LongPollingHandler-Test")
             .actorStartedHandler(handler.andThen(future::complete))
             .build();
-    actorSchedulerRule.submitActor(actor);
+    actorScheduler.submitActor(actor);
     future.join();
   }
 
