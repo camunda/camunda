@@ -525,6 +525,35 @@ export function CREATE_ON_FLY_DOCUMENT_REQUEST_BODY_WITH_METADATA(
   return form;
 }
 
+/**
+ * Uploads a document under a caller-chosen content type. The document content
+ * endpoint decides `Content-Disposition` from the stored `metadata.contentType`
+ * alone and never sniffs the bytes, so tests that cover that decision pass the
+ * type they want to exercise and keep the payload incidental.
+ */
+export function CREATE_DOCUMENT_REQUEST_WITH_CONTENT_TYPE(
+  fileName: string,
+  contentType: string,
+  fileContent: string = documentFileContent(fileName),
+) {
+  const form = new FormData();
+  form.append('file', new File([fileContent], fileName, {type: contentType}));
+  form.append(
+    'metadata',
+    new Blob([JSON.stringify({contentType, fileName})], {
+      type: 'application/json',
+    }),
+  );
+  return form;
+}
+
+/** Same as above, but stores no metadata part at all. */
+export function CREATE_DOCUMENT_REQUEST_WITHOUT_METADATA(fileName: string) {
+  const form = new FormData();
+  form.append('file', new File([documentFileContent(fileName)], fileName));
+  return form;
+}
+
 export function EVALUATE_DECISION_EXPECTED_BODY(
   decision: DecisionDeployment,
   output: string,
