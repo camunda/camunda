@@ -93,7 +93,13 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
    * again until none are left, then handing off to {@link #COMPLETE_RESUMING}. The drain processor
    * writes the first cycle when the buffered-command drain is complete.
    */
-  RESUME_JOBS((short) 23, false);
+  RESUME_JOBS((short) 23, false),
+
+  /**
+   * Marks the instance as suspending while its subscriptions are closed and jobs are suspended,
+   * before {@link #SUSPENDED} is written in the same processing batch.
+   */
+  SUSPENDING((short) 24);
 
   private static final Set<ProcessInstanceIntent> PROCESS_INSTANCE_COMMANDS =
       EnumSet.of(CANCEL, SUSPEND, RESUME, COMPLETE_RESUMING, RESUME_JOBS);
@@ -171,6 +177,8 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
         return COMPLETE_RESUMING;
       case 23:
         return RESUME_JOBS;
+      case 24:
+        return SUSPENDING;
       default:
         return Intent.UNKNOWN;
     }
@@ -195,6 +203,7 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
       case ANCESTOR_MIGRATED:
       case SEQUENCE_FLOW_DELETED:
       case CANCELING:
+      case SUSPENDING:
       case SUSPENDED:
       case RESUMING:
       case RESUMED:

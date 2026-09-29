@@ -7,18 +7,14 @@
  */
 
 import {createFileRoute} from '@tanstack/react-router';
-import {useSuspenseInfiniteQuery, useSuspenseQuery} from '@tanstack/react-query';
+import {useSuspenseInfiniteQuery} from '@tanstack/react-query';
 import {NoTaskSelectedPage} from '#/tasklist/pages/NoTaskSelectedPage';
 import {queries} from '#/shared/http/queries';
-import {getTasksRequestBody} from '#/tasklist/modules/available-tasks/getTasksRequestBody';
 
 export const Route = createFileRoute('/_shadcn/_auth/tasklist/_tasks/')({
 	component: function NoTaskSelectedRoute() {
-		const search = Route.useSearch();
-		const {data: currentUser} = useSuspenseQuery(queries.getCurrentUser());
-		const {data} = useSuspenseInfiniteQuery(
-			queries.queryUserTasks(getTasksRequestBody(search, {currentUsername: currentUser.username})),
-		);
+		const tasksRequestBody = Route.useRouteContext({select: ({tasksRequestBody}) => tasksRequestBody});
+		const {data} = useSuspenseInfiniteQuery(queries.queryUserTasks(tasksRequestBody));
 		const hasNoTasks = data.pages[0]?.items.length === 0;
 
 		return <NoTaskSelectedPage hasNoTasks={hasNoTasks} />;

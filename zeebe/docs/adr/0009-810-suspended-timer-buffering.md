@@ -31,9 +31,9 @@ timer still exists, so an already indexed fresh trigger is unchanged and a dupli
 recreate an index entry after the timer was removed. This side-effect is currently accepted.
 
 **D3. The gate exposes two classification callbacks, `onSuspended` and `onResuming`, both returning
-`SuspensionAction`.** The gate checks the marker and calls `onSuspended` while `SUSPENDED` and
-`onResuming` while `RESUMING`. Events that accompany buffering belong in `onSuspended`; events that
-accompany resume belong in `onResuming`.
+`SuspensionAction`.** The gate checks the marker and passes commands through while `SUSPENDING`,
+calls `onSuspended` while `SUSPENDED`, and calls `onResuming` while `RESUMING`. Events that accompany
+buffering belong in `onSuspended`; events that accompany resume belong in `onResuming`.
 
 - Processors must ensure that the commands returned are compatible between `onSuspended` and
   `onResuming`. For instance, a command that always gets processed on suspend should always get
@@ -90,9 +90,9 @@ a suspension marker for them.
 - A duplicate `TRIGGER` that arrives while suspended is also buffered; drain rejects the extra as
   `NOT_FOUND`. Suspension is not deduplicating.
 - A timer that becomes due after resume is neither suspended nor resumed — the normal path.
-- Every processor implementing `SuspensionAware` must explicitly classify commands for both
-  `SUSPENDED` and `RESUMING`. The compiler prevents omissions, while the classifications still need
-  to be reviewed together for consistency.
+- Every processor implementing `SuspensionAware` must explicitly classify commands for `SUSPENDED`
+  (via `onSuspended`) and for `RESUMING` (via `onResuming`). Commands pass through while
+  `SUSPENDING`. The classifications still need to be reviewed together for consistency.
 - No downgrade once a timer is suspended: older brokers do not know `TimerIntent` values 6 and 7.
 
 ## Testing

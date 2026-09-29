@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="leader-warmup-definitions"
+  targetNamespace="http://camunda.org/examples">
+  <bpmn:message id="confirmation-message" name="leader-warmup-confirmation">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=orderId" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:process id="leader-warmup" isExecutable="true">
+    <bpmn:startEvent id="start">
+      <bpmn:outgoing>to-prepare</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="prepare">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="leader-warmup-streamed" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=customer.name" target="customerName" />
+          <zeebe:input source="=upper case(customer.address.city)" target="city" />
+          <zeebe:output source="=prepared" target="prepared" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>to-prepare</bpmn:incoming>
+      <bpmn:outgoing>to-route</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="route" default="to-approve">
+      <bpmn:incoming>to-route</bpmn:incoming>
+      <bpmn:outgoing>to-review</bpmn:outgoing>
+      <bpmn:outgoing>to-approve</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="review">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="leader-warmup-polled" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>to-review</bpmn:incoming>
+      <bpmn:outgoing>review-to-join</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="approve">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="leader-warmup-streamed" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>to-approve</bpmn:incoming>
+      <bpmn:outgoing>approve-to-join</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="route-join">
+      <bpmn:incoming>review-to-join</bpmn:incoming>
+      <bpmn:incoming>approve-to-join</bpmn:incoming>
+      <bpmn:outgoing>to-fork</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:parallelGateway id="fork">
+      <bpmn:incoming>to-fork</bpmn:incoming>
+      <bpmn:outgoing>to-confirmation</bpmn:outgoing>
+      <bpmn:outgoing>to-delay</bpmn:outgoing>
+      <bpmn:outgoing>to-summarise</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:intermediateCatchEvent id="confirmation">
+      <bpmn:incoming>to-confirmation</bpmn:incoming>
+      <bpmn:outgoing>confirmation-to-join</bpmn:outgoing>
+      <bpmn:messageEventDefinition messageRef="confirmation-message" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="delay">
+      <bpmn:incoming>to-delay</bpmn:incoming>
+      <bpmn:outgoing>delay-to-join</bpmn:outgoing>
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">=if amount &gt; 900 then "PT0.2S" else "PT0S"</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:scriptTask id="summarise">
+      <bpmn:extensionElements>
+        <zeebe:script expression="={total: sum(items.price), count: count(items), skus: for item in items return item.sku}" resultVariable="summary" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>to-summarise</bpmn:incoming>
+      <bpmn:outgoing>summarise-to-join</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:parallelGateway id="join">
+      <bpmn:incoming>confirmation-to-join</bpmn:incoming>
+      <bpmn:incoming>delay-to-join</bpmn:incoming>
+      <bpmn:incoming>summarise-to-join</bpmn:incoming>
+      <bpmn:outgoing>to-finish</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:serviceTask id="finish">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="leader-warmup-streamed" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=summary.total" target="total" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>to-finish</bpmn:incoming>
+      <bpmn:outgoing>to-end</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="end">
+      <bpmn:incoming>to-end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="to-prepare" sourceRef="start" targetRef="prepare" />
+    <bpmn:sequenceFlow id="to-route" sourceRef="prepare" targetRef="route" />
+    <bpmn:sequenceFlow id="to-review" sourceRef="route" targetRef="review">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=amount &gt; 500</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="to-approve" sourceRef="route" targetRef="approve" />
+    <bpmn:sequenceFlow id="review-to-join" sourceRef="review" targetRef="route-join" />
+    <bpmn:sequenceFlow id="approve-to-join" sourceRef="approve" targetRef="route-join" />
+    <bpmn:sequenceFlow id="to-fork" sourceRef="route-join" targetRef="fork" />
+    <bpmn:sequenceFlow id="to-confirmation" sourceRef="fork" targetRef="confirmation" />
+    <bpmn:sequenceFlow id="to-delay" sourceRef="fork" targetRef="delay" />
+    <bpmn:sequenceFlow id="to-summarise" sourceRef="fork" targetRef="summarise" />
+    <bpmn:sequenceFlow id="confirmation-to-join" sourceRef="confirmation" targetRef="join" />
+    <bpmn:sequenceFlow id="delay-to-join" sourceRef="delay" targetRef="join" />
+    <bpmn:sequenceFlow id="summarise-to-join" sourceRef="summarise" targetRef="join" />
+    <bpmn:sequenceFlow id="to-finish" sourceRef="join" targetRef="finish" />
+    <bpmn:sequenceFlow id="to-end" sourceRef="finish" targetRef="end" />
+  </bpmn:process>
+</bpmn:definitions>

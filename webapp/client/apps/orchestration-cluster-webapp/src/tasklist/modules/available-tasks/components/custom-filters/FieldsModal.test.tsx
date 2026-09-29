@@ -561,8 +561,7 @@ describe('<FieldsModal />', () => {
 		await userEvent.click(screen.getByText('Unassigned'));
 		await userEvent.click(screen.getByRole('button', {name: /^apply$/i}));
 
-		expect(mockOnApply).toHaveBeenCalledOnce();
-		expect(mockOnApply.mock.calls[0]![0]).toMatchObject({assignee: 'unassigned'});
+		expect(mockOnApply).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({assignee: 'unassigned'}));
 	});
 
 	it('should call onSave with values when Save is clicked', async ({worker}) => {
@@ -588,8 +587,7 @@ describe('<FieldsModal />', () => {
 		await userEvent.click(screen.getByText('Completed'));
 		await userEvent.click(screen.getByRole('button', {name: /^save$/i}));
 
-		expect(mockOnSave).toHaveBeenCalledOnce();
-		expect(mockOnSave.mock.calls[0]![0]).toMatchObject({status: 'completed'});
+		expect(mockOnSave).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({status: 'completed'}));
 	});
 
 	it('should call onEdit with values when Save and apply is clicked for a named filter', async ({worker}) => {
@@ -615,8 +613,7 @@ describe('<FieldsModal />', () => {
 		await userEvent.click(screen.getByText('Open'));
 		await userEvent.click(screen.getByRole('button', {name: /save and apply/i}));
 
-		expect(mockOnEdit).toHaveBeenCalledOnce();
-		expect(mockOnEdit.mock.calls[0]![0]).toMatchObject({status: 'open', name: 'My filter'});
+		expect(mockOnEdit).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({status: 'open', name: 'My filter'}));
 	});
 
 	it('should call onDelete when Delete is clicked for a named filter', async ({worker}) => {
@@ -694,5 +691,128 @@ describe('<FieldsModal />', () => {
 		await userEvent.click(screen.getByRole('button', {name: /reset/i}));
 
 		await expect.element(screen.getByRole('radio', {name: /completed/i})).not.toBeChecked();
+	});
+
+	it('should omit advanced filters on Save and apply after the advanced toggle is turned off', async ({worker}) => {
+		worker.use(...getMocks());
+		const mockOnEdit = vi.fn();
+		const screen = await renderWithRouter(
+			() => (
+				<FieldsModal
+					isOpen
+					initialValues={{
+						name: 'My filter',
+						assignee: 'me',
+						status: 'open',
+						dueDateFrom: new Date('2022-01-01'),
+						taskId: 'task-0',
+						businessId: 'eq_order-0',
+						variables: [{name: 'variable-0', value: '"value-0"'}],
+					}}
+					onClose={() => {}}
+					onApply={() => {}}
+					onSave={() => {}}
+					onEdit={mockOnEdit}
+					onDelete={() => {}}
+				/>
+			),
+			{path: '/tasklist'},
+		);
+
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
+		await expect.element(screen.getByRole('textbox', {name: /task id/i})).toHaveValue('task-0');
+
+		await userEvent.click(screen.getByRole('switch', {name: 'Advanced filters', checked: true}), {force: true});
+		await expect.element(screen.getByRole('switch', {name: 'Advanced filters', checked: false})).toBeVisible();
+		await userEvent.click(screen.getByRole('button', {name: /save and apply/i}));
+
+		expect(mockOnEdit).toHaveBeenCalledExactlyOnceWith({name: 'My filter', assignee: 'me', status: 'open'});
+	});
+
+	it('should omit advanced filters on Apply after the advanced toggle is turned off', async ({worker}) => {
+		worker.use(...getMocks());
+		const mockOnApply = vi.fn();
+		const screen = await renderWithRouter(
+			() => (
+				<FieldsModal
+					isOpen
+					initialValues={DEFAULT_VALUES}
+					onClose={() => {}}
+					onApply={mockOnApply}
+					onSave={() => {}}
+					onEdit={() => {}}
+					onDelete={() => {}}
+				/>
+			),
+			{path: '/tasklist'},
+		);
+
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
+
+		await userEvent.click(screen.getByRole('switch', {name: 'Advanced filters', checked: false}), {force: true});
+		await userEvent.fill(screen.getByRole('textbox', {name: /task id/i}), 'task-0');
+		await userEvent.click(screen.getByRole('switch', {name: 'Advanced filters', checked: true}), {force: true});
+		await expect.element(screen.getByRole('textbox', {name: /task id/i})).not.toBeInTheDocument();
+		await userEvent.click(screen.getByRole('button', {name: /^apply$/i}));
+
+		expect(mockOnApply).toHaveBeenCalledExactlyOnceWith({assignee: 'all', status: 'all'});
+	});
+
+	it('should clear advanced field values when the advanced toggle is turned off', async ({worker}) => {
+		worker.use(...getMocks());
+		const screen = await renderWithRouter(
+			() => (
+				<FieldsModal
+					isOpen
+					initialValues={{
+						...DEFAULT_VALUES,
+						taskId: 'task-0',
+						businessId: 'eq_order-0',
+						variables: [{name: 'variable-0', value: '"value-0"'}],
+					}}
+					onClose={() => {}}
+					onApply={() => {}}
+					onSave={() => {}}
+					onEdit={() => {}}
+					onDelete={() => {}}
+				/>
+			),
+			{path: '/tasklist'},
+		);
+
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
+		await expect.element(screen.getByRole('textbox', {name: /task id/i})).toHaveValue('task-0');
+
+		await userEvent.click(screen.getByRole('switch', {name: 'Advanced filters', checked: true}), {force: true});
+		await userEvent.click(screen.getByRole('switch', {name: 'Advanced filters', checked: false}), {force: true});
+
+		await expect.element(screen.getByRole('textbox', {name: /task id/i})).toHaveValue('');
+		await expect.element(screen.getByRole('textbox', {name: /business id/i})).toHaveValue('');
+		await expect.element(screen.getByRole('button', {name: /add variable/i})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: /remove variable/i})).not.toBeInTheDocument();
+	});
+
+	it('should keep the advanced toggle off when the only advanced filter is an empty variables list', async ({
+		worker,
+	}) => {
+		worker.use(...getMocks());
+		const screen = await renderWithRouter(
+			() => (
+				<FieldsModal
+					isOpen
+					initialValues={{...DEFAULT_VALUES, variables: []}}
+					onClose={() => {}}
+					onApply={() => {}}
+					onSave={() => {}}
+					onEdit={() => {}}
+					onDelete={() => {}}
+				/>
+			),
+			{path: '/tasklist'},
+		);
+
+		await expect.element(screen.getByRole('dialog', {name: /apply filters/i})).toBeVisible();
+		await expect.element(screen.getByRole('switch', {name: 'Advanced filters'})).not.toBeChecked();
+		await expect.element(screen.getByRole('textbox', {name: /task id/i})).not.toBeInTheDocument();
 	});
 });
