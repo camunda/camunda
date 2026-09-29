@@ -173,3 +173,48 @@ def test_should_reject_unrepresentable_reporting_window() -> None:
                 "999999999999999999999",
             ]
         )
+
+
+def test_should_reject_negative_duration(capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit):
+        parse_args(
+            [
+                "c8-ck-test",
+                "--start",
+                "2026-08-14T10:00:00",
+                "--duration-seconds",
+                "-1",
+            ]
+        )
+
+    assert "'-1' must be a positive integer" in capsys.readouterr().err
+
+
+def test_should_reject_too_long_namespace(capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit):
+        parse_args(
+            [
+                "c8-ck-test-too-long-to-be-a-real-namespace-but-we-try-it-ABCDEFGHIJKLMN",
+                "--start",
+                "2026-08-14T10:00:00",
+                "--duration-seconds",
+                "123",
+            ]
+        )
+
+    assert "(max 63 characters; lowercase alphanumeric or '-', and must start and end " in capsys.readouterr().err
+
+
+def test_should_reject_invalid_namespace(capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit):
+        parse_args(
+            [
+                "Invalid_Namespace",
+                "--start",
+                "2026-08-14T10:00:00",
+                "--duration-seconds",
+                "123",
+            ]
+        )
+
+    assert "(max 63 characters; lowercase alphanumeric or '-', and must start and end " in capsys.readouterr().err
