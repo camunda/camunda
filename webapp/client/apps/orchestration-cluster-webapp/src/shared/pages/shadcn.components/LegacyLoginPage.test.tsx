@@ -10,13 +10,13 @@ import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
-import {LoginPage} from './LoginPage';
+import {LegacyLoginPage} from './LegacyLoginPage';
 
-const TestLoginPage: React.FC = () => <LoginPage title="Test App" />;
+const TestLoginPage: React.FC = () => <LegacyLoginPage title="Test App" />;
 
-describe('<LoginPage />', () => {
+describe('<LegacyLoginPage />', () => {
 	it('should render the given title as the page heading', async () => {
-		const screen = await renderWithRouter(TestLoginPage, {path: '/tasklist/login'});
+		const screen = await renderWithRouter(TestLoginPage, {path: '/login'});
 
 		await expect.element(screen.getByRole('heading', {name: 'Test App'})).toBeVisible();
 	});
@@ -26,7 +26,7 @@ describe('<LoginPage />', () => {
 		const mockYear = 1984;
 		vi.setSystemTime(new Date(mockYear, 0));
 
-		const screen = await renderWithRouter(TestLoginPage, {path: '/tasklist/login'});
+		const screen = await renderWithRouter(TestLoginPage, {path: '/login'});
 
 		await expect
 			.element(screen.getByText(`© Camunda Services GmbH ${mockYear}. All rights reserved. | 0.0.0`))
@@ -35,13 +35,10 @@ describe('<LoginPage />', () => {
 	});
 
 	it('should not allow the form to be submitted with empty fields', async () => {
-		const screen = await renderWithRouter(TestLoginPage, {path: '/tasklist/login'});
+		const screen = await renderWithRouter(TestLoginPage, {path: '/login'});
 
 		const usernameField = screen.getByLabelText(/username/i);
-		// getByLabelText(/password/i) would also match the show/hide password toggle
-		// button (its aria-label contains "password"); scope to the textbox role so
-		// only the input itself is selected.
-		const passwordField = screen.getByRole('textbox', {name: /password/i});
+		const passwordField = screen.getByLabelText(/password/i);
 
 		await userEvent.click(screen.getByRole('button', {name: /login/i}));
 
@@ -66,20 +63,5 @@ describe('<LoginPage />', () => {
 		await expect.element(passwordField).toBeValid();
 		await expect.element(usernameField).toHaveAccessibleDescription(/username is required/i);
 		await expect.element(usernameField).toBeInvalid();
-	});
-
-	it('should toggle password visibility', async () => {
-		const screen = await renderWithRouter(TestLoginPage, {path: '/tasklist/login'});
-		const passwordField = screen.getByRole('textbox', {name: /password/i});
-
-		await expect.element(passwordField).toHaveAttribute('type', 'password');
-
-		await userEvent.click(screen.getByRole('button', {name: /show password/i}));
-
-		await expect.element(passwordField).toHaveAttribute('type', 'text');
-
-		await userEvent.click(screen.getByRole('button', {name: /hide password/i}));
-
-		await expect.element(passwordField).toHaveAttribute('type', 'password');
 	});
 });
