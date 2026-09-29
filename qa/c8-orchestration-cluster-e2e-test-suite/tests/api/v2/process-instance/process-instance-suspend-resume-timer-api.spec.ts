@@ -81,7 +81,11 @@ async function startCycleTimerInstance(prefix: string, amount = 10) {
     1,
     {
       dynamicProcessId: fixture.childId,
-      dueDate: '2027-01-01T00:00:00Z',
+      // Relative, not a literal: the event-based gateway's timer must stay
+      // pending for the whole test. A hardcoded date silently turns into an
+      // already-due timer once it passes, and the model would then run a
+      // different path for reasons unrelated to suspend and resume.
+      dueDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
       correlationKey: uniquePrefixedId(`${prefix}-corr`),
       amount,
     },
@@ -192,8 +196,12 @@ test.describe('Process Instance Suspend and Resume Timer API', () => {
   }) => {
     const processDefinitionId = uniquePrefixedId('sr-timer-due');
     await deployDurationTimerProcess(processDefinitionId);
+    // The clock starts at creation, but the suspension cannot be issued until
+    // the catch event is indexed. 30s leaves room for that lookup to be slow
+    // on a loaded cluster — at 15s the timer could fire first, completing the
+    // instance and making the suspend fail for the wrong reason.
     const instance = await createInstanceOnceDeployed(processDefinitionId, 1, {
-      duration: 'PT15S',
+      duration: 'PT30S',
     });
     instancesToCancel.push(instance.processInstanceKey);
     await searchElementInstanceByElementIdAndState(
@@ -204,9 +212,9 @@ test.describe('Process Instance Suspend and Resume Timer API', () => {
     );
 
     await suspendAndExpectSuspended(request, instance.processInstanceKey);
-    await hold(25);
+    await hold(40);
 
-    // Still waiting, 10s past its due date.
+    // Still waiting, well past its due date.
     await searchElementInstanceByElementIdAndState(
       request,
       instance.processInstanceKey,

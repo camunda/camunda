@@ -27,13 +27,19 @@ const INCIDENT_SEARCH_ENDPOINT = '/incidents/search';
 export async function expectNoIncidents(
   request: APIRequestContext,
   processInstanceKey: string,
+  assertionOptions = defaultAssertionOptions,
 ): Promise<void> {
-  const res = await request.post(buildUrl(INCIDENT_SEARCH_ENDPOINT), {
-    headers: jsonHeaders(),
-    data: {filter: {processInstanceKey, state: 'ACTIVE'}},
-  });
-  await assertStatusCode(res, 200);
-  expect((await res.json()).items ?? []).toHaveLength(0);
+  // Retried, not read once: callers reach here straight after the instance
+  // finished, and an incident resolved moments earlier can still be indexed as
+  // ACTIVE. A single read would fail on that lag.
+  await expect(async () => {
+    const res = await request.post(buildUrl(INCIDENT_SEARCH_ENDPOINT), {
+      headers: jsonHeaders(),
+      data: {filter: {processInstanceKey, state: 'ACTIVE'}},
+    });
+    await assertStatusCode(res, 200);
+    expect((await res.json()).items ?? []).toHaveLength(0);
+  }).toPass(assertionOptions);
 }
 
 export async function searchIncidentByPIK(

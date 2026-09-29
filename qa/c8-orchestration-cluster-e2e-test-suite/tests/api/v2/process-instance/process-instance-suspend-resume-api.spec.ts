@@ -182,7 +182,7 @@ async function startInstance(prefix: string) {
 }
 
 test.describe('Process Instance Suspend and Resume API', () => {
-  test.afterAll(async ({request}) => {
+  test.afterAll(async () => {
     for (const processInstanceKey of instancesToCancel) {
       try {
         await cancelProcessInstance(processInstanceKey);
@@ -191,7 +191,6 @@ test.describe('Process Instance Suspend and Resume API', () => {
       }
     }
     instancesToCancel.length = 0;
-    void request;
   });
 
   test('A suspended instance completes as if it had never been suspended', async ({
