@@ -75,3 +75,4 @@ function useRunningInstancesCount() {
 }
 
 export {useRunningInstancesCount, runningInstancesCountQuery};
+export type {RunningInstancesCount};
