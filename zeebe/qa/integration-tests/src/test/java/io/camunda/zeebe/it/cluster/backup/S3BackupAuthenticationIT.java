@@ -14,6 +14,7 @@ import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
+import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.testcontainers.S3MockTestContainer;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
@@ -83,6 +84,14 @@ final class S3BackupAuthenticationIT {
 
     // then
     Assertions.assertThat(zeebe.isStarted()).isTrue();
+
+    final var partitionsActuator = PartitionsActuator.of(zeebe);
+    Awaitility.await("partition has taken its first snapshot")
+        .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                Assertions.assertThat(partitionsActuator.query().get(1).snapshotId()).isNotNull());
 
     final var backupActuator = BackupActuator.of(zeebe);
     final var backupId = 1L;
