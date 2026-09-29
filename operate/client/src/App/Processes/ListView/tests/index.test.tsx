@@ -396,7 +396,7 @@ describe('Instances', () => {
     });
   });
 
-  it('should only offer resume when all suspended instances are selected', async () => {
+  it('should offer cancel and resume when all suspended instances are selected', async () => {
     const suspendedInstance = createProcessInstance({
       processInstanceKey: 'suspended-instance',
       processDefinitionName: 'Suspended Process',
@@ -429,12 +429,7 @@ describe('Instances', () => {
 
     expect(screen.getByRole('button', {name: 'Resume'})).toBeEnabled();
     expect(screen.getByRole('button', {name: 'Suspend'})).toBeDisabled();
-    expect(
-      screen.getByRole('button', {
-        name: 'Cancel',
-        description: /no running process instances selected/i,
-      }),
-    ).toBeDisabled();
+    expect(screen.getByTestId('cancel-batch-operation')).toBeEnabled();
     expect(
       screen.getByRole('button', {
         name: 'Retry',
