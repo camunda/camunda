@@ -120,6 +120,21 @@ other PRs e.g. from Renovate to be automatically merged even though they fail CI
    [unified-ci-merges-*-branch ruleset for the desired branch](https://github.com/camunda/camunda/settings/rules)
    to remove you from the `Bypass list` and save.
 
+### Silencing While You Fix It
+
+**When:** You are medic for an incident and _are working a fix_ for a job that keeps re-alerting — typically a nightly or otherwise infrequent job that fails every few days, so each failure arrives long after incident.io's grouping window (48h) thus raising a fresh, duplicate incident.
+
+**What:**
+
+Run the [ci-silence-incident workflow](https://github.com/camunda/camunda/actions/workflows/ci-silence-incident.yml) with the `workflow_job` value copied verbatim from the alert/incident and your incident INC-???? reference.
+
+The rules it enforces:
+
+- **Unified CI can never be silenced.** It gates every merge, so muting it hides breakage for the whole repository — find a mitigation instead.
+- **Seven days maximum**, 3 by default. If the fix needs longer, silence it again and say why — a silence that renews itself unnoticed is how a job quietly stops being watched.
+- **An incident reference is required**, and lands in the silence comment so an active silence can always be traced back to the work that justified it.
+
+
 ## Alert Runbooks
 
 > **Note:** Don't change the heading names below — they are required as stable links!
@@ -234,10 +249,12 @@ You can leverage [incident.io MCP](https://docs.incident.io/ai/remote-mcp) toget
 - For flaky tests, refer to the [Flaky Test Gate documentation](./flaky-test-gate.md) on how to fix or mark them.
 - For timeouts or performance issues, optimize the job (parallelization, caching, reducing scope).
 - For infrastructure issues, coordinate with the Infra team.
+- Consider [silencing](#silencing-while-you-fix-it) CI incidents for nightly jobs that take longer to fix, to avoid noise.
 
 **Validation**:
 - Monitor the [Job Trends dashboard](https://dashboard.int.camunda.com/d/ch6qgkj/ci-job-trends-camunda-camunda) to confirm the fix reduces the failure rate.
 - Ensure the job remains stable across multiple successful runs before closing the incident.
+- Remove any silences for the job.
 
 #### Known Problems
 
