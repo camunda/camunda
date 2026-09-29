@@ -239,6 +239,29 @@ You can leverage [incident.io MCP](https://docs.incident.io/ai/remote-mcp) toget
 - Monitor the [Job Trends dashboard](https://dashboard.int.camunda.com/d/ch6qgkj/ci-job-trends-camunda-camunda) to confirm the fix reduces the failure rate.
 - Ensure the job remains stable across multiple successful runs before closing the incident.
 
+#### Known Problems
+
+##### Duplicate push event cancels runs on the same commit
+
+**Symptom:** several workflows on one base branch show `cancelled` at the same time with
+`Error: The operation was canceled.`, a few minutes after a merge. Each has a twin run for the
+**same commit** that started later and usually succeeds.
+
+**Cause:** a known GitHub bug publishes one push event twice. Our `concurrency` group keys on
+`github.sha` for base branches, so the second set of runs cancels the first. GitHub Support
+confirmed it and is tracking a fix. They advise keeping `cancel-in-progress: true`, since it
+limits the cost of the duplicate.
+
+**How to confirm:** the branch's ref activity lists the same `before -> after` update twice:
+
+```bash
+gh api "/repos/camunda/camunda/activity?ref=refs/heads/<branch>&per_page=20" \
+  --jq '.[] | [.timestamp, .activity_type, .before[0:8], .after[0:8]] | @tsv'
+```
+
+**What to do:** check that the later same-commit runs succeeded, then close the incident as L2.
+No workflow change is needed.
+
 ---
 
 ### Selfhosted Runner High Disconnect Rate

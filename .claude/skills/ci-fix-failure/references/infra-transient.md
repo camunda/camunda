@@ -65,6 +65,26 @@ Only propose hardening if:
   (a slow/hung test or step is the root cause), **not** D.
 - **Merge-queue dequeue or cancellation** → blocks merges and costs a re-queue. Still a real
   failure on a strict-bar context.
+- **Duplicate push event** → the one known exception, see below.
+
+## Known problem: duplicate push event
+
+A known GitHub bug publishes one push event twice. On a base branch the second set of runs
+shares the `concurrency` group (it keys on `github.sha`) and cancels the first.
+
+Signals, all of which must hold:
+
+- `event: push` on `main` / `stable/*`, job `cancelled` with only `The operation was canceled.`
+- Several workflows for the same commit cancelled at the same moment.
+- A later run of the same workflow for the **same `headSha`**:
+  `gh run list --repo camunda/camunda --branch <branch> --limit 30 --json databaseId,workflowName,headSha,createdAt,conclusion`
+- The ref update appears twice:
+  `gh api "/repos/camunda/camunda/activity?ref=refs/heads/<branch>&per_page=20" --jq '.[] | [.timestamp, .before[0:8], .after[0:8]] | @tsv'`
+
+Disposition: Category D, suggest L2. This overrides the strict-bar hardening rule — **propose no
+workflow change**. GitHub Support advised keeping `cancel-in-progress: true`. Report whether the
+later same-commit runs passed; if one failed, triage that run instead. Details: the runbook's
+[Known Problems](../../../../docs/monorepo-docs/ci-runbooks.md#known-problems).
 
 ## Genuine Category D shapes
 

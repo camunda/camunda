@@ -113,6 +113,7 @@ Decide by Step 6 annotations:
 - timeout + names a test/step → A
 - timeout + step is non-deterministic by history → B
 - runner/image/infra signal, no test in picture → D
+- `cancelled` on a base-branch `push`, with a later run of the same workflow for the same `headSha` → D, known duplicate push event (see `references/infra-transient.md`)
 - nothing useful → default A/B over D on `push`/`merge_group`. Prefer A over B without evidence.
 
 Suggest to lower severity to L2 for category **B** and **D**.
