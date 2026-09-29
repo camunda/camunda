@@ -624,7 +624,7 @@ class OperateProcessInstancePage {
       ? scope.getByTestId('code-mirror-editor')
       : this.editor;
     await expect(editor).toBeVisible();
-    await this.page.keyboard.press('Control+A');
+    await this.page.keyboard.press('ControlOrMeta+A');
     await this.page.keyboard.press('Backspace');
   }
 
