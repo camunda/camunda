@@ -17,9 +17,10 @@ import java.time.Duration;
 public final class LeaderWarmupCfg {
   private boolean enabled = false;
   private Duration startDelay = Duration.ofSeconds(30);
-  private Duration maxDuration = Duration.ofMinutes(5);
+  private Duration maxDuration = Duration.ofMinutes(15);
   private int processInstances = 5_000;
   private int maxInFlightInstances = 32;
+  private double maxCpuLoad = 0.7;
 
   public boolean isEnabled() {
     return enabled;
@@ -61,6 +62,14 @@ public final class LeaderWarmupCfg {
     this.maxInFlightInstances = maxInFlightInstances;
   }
 
+  public double getMaxCpuLoad() {
+    return maxCpuLoad;
+  }
+
+  public void setMaxCpuLoad(final double maxCpuLoad) {
+    this.maxCpuLoad = maxCpuLoad;
+  }
+
   @Override
   public String toString() {
     return "LeaderWarmupCfg{"
@@ -74,6 +83,8 @@ public final class LeaderWarmupCfg {
         + processInstances
         + ", maxInFlightInstances="
         + maxInFlightInstances
+        + ", maxCpuLoad="
+        + maxCpuLoad
         + '}';
   }
 }
