@@ -354,4 +354,32 @@ describe('<Dashboard />', () => {
 		await expect.element(screen.getByTestId('instances-by-process-list')).toBeVisible();
 		await expect.element(screen.getByText('Process Incidents by Error Message')).toBeVisible();
 	});
+
+	it('should show a scoped error instead of a stale empty layout when polling fails', async ({worker}) => {
+		vi.useFakeTimers({shouldAdvanceTime: true});
+		worker.use(
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+				schema: PROCESS_STATS_REQUEST_SCHEMA,
+				successResponse: STATS_RESPONSE_EMPTY,
+				failureResponse: FAILURE_RESPONSE,
+			}),
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+				schema: INCIDENTS_REQUEST_SCHEMA,
+				successResponse: INCIDENTS_RESPONSE_EMPTY,
+				failureResponse: FAILURE_RESPONSE,
+			}),
+			mockCurrentUserEndpoint({successResponse: CURRENT_USER_RESPONSE}),
+		);
+
+		const screen = await renderWithRouter(Dashboard, {path: '/operate'});
+		await expect.element(screen.getByText('No running process instances')).toBeVisible();
+
+		worker.use(mockGetProcessDefinitionInstanceStatisticsEndpoint({successResponse: FAILURE_RESPONSE}));
+		await vi.advanceTimersByTimeAsync(5000);
+
+		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
+		await expect.element(screen.getByText('No running process instances')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('Process Incidents by Error Message')).toBeVisible();
+	});
 });
