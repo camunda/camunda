@@ -33,7 +33,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
  * If camelCase is used in the attributes of ConditionalOnProperty, kebab-case configured properties
  * won't match the conditional's attributes. Vice versa that is not a problem, therefore spring-boot
  * is clear about requiring kebab-case in the ConditionalOnProperty javadoc. These rules ensure that
- * we do not accidentally use camelCase in the attributes of this annotation.
+ * we do not accidentally use camelCase in this annotation's property-key attributes ({@code
+ * prefix}, {@code name}, {@code value}).
  */
 @AnalyzeClasses(packages = "io.camunda", importOptions = ImportOption.DoNotIncludeTests.class)
 public final class RequireKebabCaseInConditionalOnPropertyArchTest {
@@ -68,8 +69,9 @@ public final class RequireKebabCaseInConditionalOnPropertyArchTest {
               });
 
   /**
-   * Validates that the attributes of {@link ConditionalOnProperty} annotations do not contain
-   * forbidden characters (uppercase). ConditionalOnProperty requires all lower case.
+   * Validates that the property-key attributes ({@code prefix}, {@code name}, {@code value}) of
+   * {@link ConditionalOnProperty} annotations do not contain forbidden characters (uppercase).
+   * ConditionalOnProperty requires all lower case.
    *
    * @param annotations the annotations to validate, e.g. from a class or method
    * @param owner the element that owns the annotations, e.g. a class or method
@@ -97,12 +99,6 @@ public final class RequireKebabCaseInConditionalOnPropertyArchTest {
         if (valueContainsForbiddenCharacters(name)) {
           events.add(addViolation(owner, "name", name));
         }
-      }
-
-      // havingValue
-      final String havingValue = cop.havingValue();
-      if (valueContainsForbiddenCharacters(havingValue)) {
-        events.add(addViolation(owner, "havingValue", havingValue));
       }
 
       // value
