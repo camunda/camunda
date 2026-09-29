@@ -475,6 +475,8 @@
 			"dashboard": {
 				"title": "Tableau de bord",
 				"runningInstancesTotal": "{{count}} instances de processus en cours au total",
+				"runningInstancesTotalPending": "Instances de processus en cours au total",
+				"metricFetchError": "Impossible de récupérer les statistiques de processus",
 				"instancesWithIncident": "Instances de processus avec incident",
 				"activeInstances": "Instances de processus actives",
 				"processesByNameTitle": "Instances de processus par nom",

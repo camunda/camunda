@@ -484,6 +484,8 @@
 			"dashboard": {
 				"title": "Dashboard",
 				"runningInstancesTotal": "{{count}} Running Process Instances in total",
+				"runningInstancesTotalPending": "Running Process Instances in total",
+				"metricFetchError": "Process statistics could not be fetched",
 				"instancesWithIncident": "Process Instances with Incident",
 				"activeInstances": "Active Process Instances",
 				"processesByNameTitle": "Process Instances by Name",
