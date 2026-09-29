@@ -540,7 +540,7 @@ test.describe
     }).toPass({timeout: 90_000, intervals: [1_000, 2_000, 5_000]});
 
     await taskDetailsPage.clickUnassignButton();
-
+    await page.reload();
     await taskDetailsPage.clickAssignToMeButton();
     await expect(taskDetailsPage.assignee).toContainText('Assigned to me');
   });

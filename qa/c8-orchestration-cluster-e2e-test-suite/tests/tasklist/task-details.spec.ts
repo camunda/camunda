@@ -174,6 +174,9 @@ test.describe('task details page', () => {
     // here, so the details URL carries it.
     const userTaskKey = new URL(page.url()).pathname.split('/').pop() as string;
 
+    await page.reload();
+    await expect(taskDetailsPage.unassignButton).toBeVisible({timeout: 60_000});
+
     // Unassign through the retry-with-reload helper, not a single raw click.
     // A bare click issues the unassign command exactly once; if the engine
     // rejects it because the task is still settling from the assign we just
