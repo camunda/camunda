@@ -14,16 +14,12 @@
  * limitations under the License.
  */
 
-'use strict';
+import { defineConfig } from 'vitest/config';
 
-module.exports = {
-  presets: [
-    [
-      '@babel/preset-env',
-      {
-        targets: { node: 'current' },
-        modules: 'commonjs',
-      },
-    ],
-  ],
-};
+export default defineConfig({
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    include: ['src/test/frontend/**/*.test.js'],
+  },
+});
