@@ -55,7 +55,7 @@ import org.slf4j.LoggerFactory;
  * explicit {@link #initializeNow(String)} call succeeds.
  */
 @NullMarked
-public final class PerTenantSchemaInitialization implements SchemaInitialization {
+public final class PerTenantSchemaInitialization implements AutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger(PerTenantSchemaInitialization.class);
 
@@ -151,7 +151,6 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
    * Starts one background task per physical tenant and returns as soon as they are running. A
    * storage failure degrades its own tenant and nothing else.
    */
-  @Override
   public void start() {
     tenants.forEach(
         (tenantId, state) -> {
@@ -194,7 +193,6 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
    * @throws EveryTenantTerminallyFailedException if the gate opened with no serviceable tenant and
    *     every tenant terminal, which aborts the caller's startup
    */
-  @Override
   public void awaitGate() {
     gateLock.lock();
     try {
@@ -217,7 +215,6 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
   }
 
   /** Whether the physical tenant's schema has been applied. An unknown tenant is never ready. */
-  @Override
   public boolean isInitialized(final String physicalTenantId) {
     final TenantState state = tenants.get(physicalTenantId);
     return state != null && state.ready.get();
@@ -325,7 +322,7 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
               stopTrying(state);
               recoveryDeferred = true;
             }
-            if (!sleep(deferralPollMillis)) {
+            if (awaitAndCheckShutdown(deferralPollMillis)) {
               return;
             }
             continue;
@@ -339,7 +336,7 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
               startTrying(state);
               recoveryDeferred = false;
             }
-            if (!sleep(deferralPollMillis)) {
+            if (awaitAndCheckShutdown(deferralPollMillis)) {
               return;
             }
             continue;
@@ -412,7 +409,7 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
         }
 
         attemptNumber++;
-        if (!sleep(retryDelayMillis)) {
+        if (awaitAndCheckShutdown(retryDelayMillis)) {
           return;
         }
       }
@@ -571,15 +568,18 @@ public final class PerTenantSchemaInitialization implements SchemaInitialization
     }
   }
 
-  /** Returns false when the wait was cut short and this tenant's task should stop. */
-  private boolean sleep(final long millis) {
+  /**
+   * Waits for the given time, then reports whether this tenant's task should stop: true if the wait
+   * was interrupted or the node is shutting down.
+   */
+  private boolean awaitAndCheckShutdown(final long millis) {
     try {
       Thread.sleep(millis);
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
-      return false;
+      return true;
     }
-    return !shutdown.get();
+    return shutdown.get();
   }
 
   private boolean isTerminal(final Throwable failure) {

@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.application.commons.pt.PerTenantSchemaInitialization.Deferral;
+import io.camunda.application.commons.pt.PerTenantSchemaInitialization.DeferralCheck;
 import io.camunda.application.commons.rdbms.RdbmsDataSources;
 import io.camunda.application.commons.rdbms.RdbmsSchemaInitializer;
 import io.camunda.cluster.PhysicalTenantIds;
@@ -125,12 +127,13 @@ class RdbmsSchemaInitializerH2IT {
 
   @Test
   void shouldFailStartupWhenTheOnlyTenantCannotBeMigrated() throws Exception {
-    // given - the same failure on a single-tenant node, which stays on the synchronous path
+    // given - the same failure on a single-tenant node
     try (final var tenants = wireTenants(TENANT_A)) {
       seedSchemaVersion(tenants.dataSourceFor(TENANT_A), UNMIGRATABLE_SCHEMA_VERSION);
       final var initializer = initializerFor(tenants);
       try {
-        // when / then - there is nothing to isolate it from, so it still aborts, as it always has
+        // when / then - there is no healthy tenant that would allow startup to proceed, and the
+        // operator reads the schema manager's own failure rather than an aggregate of one
         assertThatThrownBy(initializer::afterPropertiesSet)
             .isInstanceOf(RdbmsSchemaVersionIncompatibleException.class)
             .hasMessageContaining(UNMIGRATABLE_SCHEMA_VERSION);
@@ -149,7 +152,10 @@ class RdbmsSchemaInitializerH2IT {
     converted.setMaxRetries(retry.getMaxRetries());
     converted.setMinRetryDelay(retry.getMinRetryDelay());
     converted.setMaxRetryDelay(retry.getMaxRetryDelay());
-    return new RdbmsSchemaInitializer(schemaManagersFor(tenants), physicalTenantId -> converted);
+    return new RdbmsSchemaInitializer(
+        schemaManagersFor(tenants),
+        physicalTenantId -> converted,
+        DeferralCheck.of(ignored -> Deferral.NONE));
   }
 
   private static Map<String, RdbmsSchemaManager> schemaManagersFor(final RdbmsDataSources tenants) {

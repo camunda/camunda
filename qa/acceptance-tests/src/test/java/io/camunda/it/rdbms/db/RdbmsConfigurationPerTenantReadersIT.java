@@ -20,6 +20,7 @@ import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel.ProcessInstanceDbModelBuilder;
+import io.camunda.it.rdbms.db.util.RdbmsTestTopology;
 import io.camunda.search.clients.CamundaSearchClients;
 import io.camunda.search.clients.auth.AnonymousResourceAccessController;
 import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
@@ -29,6 +30,7 @@ import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.core.auth.SecurityContext;
 import io.camunda.security.core.authz.ResourceAccessController;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.OffsetDateTime;
@@ -153,6 +155,11 @@ class RdbmsConfigurationPerTenantReadersIT {
     @Bean
     MeterRegistry meterRegistry() {
       return new SimpleMeterRegistry();
+    }
+
+    @Bean
+    BrokerTopologyManager brokerTopologyManager() {
+      return RdbmsTestTopology.processingTopologyManager();
     }
 
     /**
