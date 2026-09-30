@@ -179,6 +179,56 @@ public class CommandApiRequestHandlerTest {
   }
 
   @Test
+  public void shouldReturnPartitionLeaderMismatchWhileFrozenForTransfer() {
+    // given
+    handler.addPartition(0, mock(LogStreamWriter.class));
+    handler.onRecovered(0);
+    handler.onTransferFreeze(true);
+    handler.onPaused(0);
+    scheduler.workUntilDone();
+
+    final var request =
+        new BrokerPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
+    request.serializeValue();
+
+    // when
+    final var responseFuture = handleRequest(request);
+
+    // then
+    assertThat(responseFuture)
+        .succeedsWithin(Duration.ofSeconds(5))
+        .matches(Either::isLeft)
+        .extracting(Either::getLeft)
+        .extracting(ErrorResponse::getErrorCode)
+        .isEqualTo(ErrorCode.PARTITION_LEADER_MISMATCH);
+  }
+
+  @Test
+  public void shouldReturnPartitionLeaderMismatchWhenNoLongerLeaderWhilePaused() {
+    // given
+    handler.addPartition(0, mock(LogStreamWriter.class));
+    handler.onRecovered(0);
+    handler.onPaused(0);
+    handler.removePartition(0);
+    scheduler.workUntilDone();
+
+    final var request =
+        new BrokerPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
+    request.serializeValue();
+
+    // when
+    final var responseFuture = handleRequest(request);
+
+    // then
+    assertThat(responseFuture)
+        .succeedsWithin(Duration.ofSeconds(5))
+        .matches(Either::isLeft)
+        .extracting(Either::getLeft)
+        .extracting(ErrorResponse::getErrorCode)
+        .isEqualTo(ErrorCode.PARTITION_LEADER_MISMATCH);
+  }
+
+  @Test
   public void shouldReturnPartitionLeaderMismatchWhenWriterClosed() {
     // given
     final var logWriter = mock(LogStreamWriter.class);

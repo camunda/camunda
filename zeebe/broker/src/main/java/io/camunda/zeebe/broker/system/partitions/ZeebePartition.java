@@ -581,6 +581,7 @@ public final class ZeebePartition extends Actor
           // Make the transfer pause visible to shouldProcess(), so a disk/admin resume mid-transfer
           // cannot silently un-pause the partition.
           context.setPausedForTransfer(true);
+          context.getCommandApiService().onTransferFreeze(context.getPartitionId(), true);
           // If the freeze does not complete within the timeout, roll back and fail so a stalled
           // processor pause cannot leave the partition half-frozen. This bounds arming the freeze
           // only; how long the partition may then stay frozen is the Raft watchdog's budget.
@@ -636,6 +637,7 @@ public final class ZeebePartition extends Actor
    */
   private void rollbackTransferPause() {
     context.setPausedForTransfer(false);
+    context.getCommandApiService().onTransferFreeze(context.getPartitionId(), false);
     context.getLogStream().resumeWrites();
     final var streamProcessor = context.getStreamProcessor();
     if (streamProcessor != null && context.shouldProcess()) {
@@ -667,6 +669,7 @@ public final class ZeebePartition extends Actor
   private void reopen(final CompletableActorFuture<Void> result) {
     context.getLogStream().resumeWrites();
     context.setPausedForTransfer(false);
+    context.getCommandApiService().onTransferFreeze(context.getPartitionId(), false);
     final ActorFuture<Void> processorResume;
     if (context.getStreamProcessor() != null && context.shouldProcess()) {
       processorResume = context.getStreamProcessor().resumeProcessing();
