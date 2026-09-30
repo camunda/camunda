@@ -15,11 +15,15 @@ import {
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockLicenseEndpoint,
+	mockQueryDecisionInstancesEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {DMN_XML_WITH_LITERAL_EXPRESSION_AND_HIGHLIGHTABLE_TABLE} from '#/shared-test-modules/api-mocks/decision-definition-xmls';
-import {createDecisionInstance} from '#/shared-test-modules/api-mocks/decision-instances';
+import {
+	createDecisionInstance,
+	createQueryDecisionInstancesResponse,
+} from '#/shared-test-modules/api-mocks/decision-instances';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
@@ -50,7 +54,30 @@ test.beforeEach(({network}) => {
 		mockGetDecisionDefinitionXmlEndpoint({
 			successResponse: HttpResponse.text(DMN_XML_WITH_LITERAL_EXPRESSION_AND_HIGHLIGHTABLE_TABLE),
 		}),
+		mockQueryDecisionInstancesEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryDecisionInstancesResponse({
+					items: [
+						createDecisionInstance({
+							decisionEvaluationInstanceKey: DECISION_INSTANCE_ID,
+							decisionDefinitionId: 'invoiceClassification',
+						}),
+					],
+				}),
+			),
+		}),
 	);
+});
+
+test('should have no accessibility violations in the interactive DRD panel', async ({
+	makeAxeBuilder,
+	operateDecisionInstancePage,
+}) => {
+	await operateDecisionInstancePage.goto(DECISION_INSTANCE_ID);
+	await expect(operateDecisionInstancePage.drdPanel.getByTestId('state-overlay-EVALUATED')).toBeVisible();
+
+	const accessibilityScanResults = await makeAxeBuilder().include('[aria-label="DRD panel"]').analyze();
+	expect(accessibilityScanResults.violations).toEqual([]);
 });
 
 test('should have no accessibility violations for a loaded decision instance panel', async ({

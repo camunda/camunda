@@ -730,6 +730,14 @@
 				"title": "Instancia de decisión de Operate",
 				"pageTitle": "Operate: Instancia de decisión {{decisionInstanceId}} de {{name}}",
 				"notFoundNotificationTitle": "No se pudo encontrar la instancia de decisión {{decisionInstanceId}}",
+				"drd": {
+					"title": "Diagrama de requisitos de decisión",
+					"panelLabel": "Panel DRD",
+					"resize": "Cambiar tamaño del panel DRD",
+					"maximize": "Maximizar panel DRD",
+					"minimize": "Minimizar panel DRD",
+					"close": "Cerrar panel DRD"
+				},
 				"variablesPanel": {
 					"tabsLabel": "Pestañas del panel de variables",
 					"inputsAndOutputs": "Entradas y salidas",

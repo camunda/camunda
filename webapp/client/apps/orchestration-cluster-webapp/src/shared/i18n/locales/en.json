@@ -742,6 +742,14 @@
 				"title": "Operate Decision Instance",
 				"pageTitle": "Operate: Decision Instance {{decisionInstanceId}} of {{name}}",
 				"notFoundNotificationTitle": "Couldn't find decision instance {{decisionInstanceId}}",
+				"drd": {
+					"title": "Decision Requirements Diagram",
+					"panelLabel": "DRD panel",
+					"resize": "Resize DRD Panel",
+					"maximize": "Maximize DRD Panel",
+					"minimize": "Minimize DRD Panel",
+					"close": "Close DRD Panel"
+				},
 				"variablesPanel": {
 					"tabsLabel": "Variable Panel Tabs",
 					"inputsAndOutputs": "Inputs and Outputs",
