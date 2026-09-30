@@ -17,6 +17,7 @@ import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.client.impl.CamundaClientImpl;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
@@ -114,6 +115,7 @@ public class Starter implements CommandLineRunner {
     this.webClientBuilder = webClientBuilder;
     this.objectMapper = objectMapper;
 
+    ((CamundaClientImpl) client).setMeterRegistry(registry);
     // Expose the client information early: these are only static values which are not supposed to
     // be affected by the current state of the client (whether it successfully connects to the
     // brokers, etc.)
@@ -281,7 +283,7 @@ public class Starter implements CommandLineRunner {
             vars.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
 
             // TODO: we should move this down - to when complete
-            processInstancesStartedCounter.increment();   // <--- to early
+            processInstancesStartedCounter.increment(); // <--- to early
 
             final var startTime = System.nanoTime();
             final CompletionStage<?> requestFuture;
@@ -292,8 +294,9 @@ public class Starter implements CommandLineRunner {
             } else {
               requestFuture = startInstance(startTime, starterCfg.getProcessId(), vars);
             }
-            requestFuture.whenComplete((noop, error) -> {
-              // TODO: we should record the response success/failure for monitoring purposes
+            requestFuture.whenComplete(
+                (noop, error) -> {
+                  // TODO: we should record the response success/failure for monitoring purposes
                   final long durationNanos = System.nanoTime() - startTime;
                   responseLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
                   if (error instanceof final StatusRuntimeException statusRuntimeException) {
