@@ -38,15 +38,29 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
 
   private final IdGenerator requestIdGenerator;
   private final List<TopicSupplier> topicSuppliers;
+  private final UnmatchedResponseHandler unmatchedResponseHandler;
 
   public AtomixServerTransport(
       final MessagingService messagingService,
       final IdGenerator requestIdGenerator,
       final List<TopicSupplier> topicSuppliers) {
+    this(
+        messagingService,
+        requestIdGenerator,
+        topicSuppliers,
+        (requestId, partitionId, response) -> {});
+  }
+
+  public AtomixServerTransport(
+      final MessagingService messagingService,
+      final IdGenerator requestIdGenerator,
+      final List<TopicSupplier> topicSuppliers,
+      final UnmatchedResponseHandler unmatchedResponseHandler) {
     this.messagingService = messagingService;
     this.requestIdGenerator = requestIdGenerator;
     partitionsRequestMap = new Int2ObjectHashMap<>();
     this.topicSuppliers = topicSuppliers;
+    this.unmatchedResponseHandler = unmatchedResponseHandler;
   }
 
   @Override
@@ -175,23 +189,41 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
     actor.run(
         () -> {
           final var requestMap = partitionsRequestMap.get(partitionId);
-          if (requestMap == null) {
-            LOG.warn(
-                "Node is no longer leader for partition {}, tried to respond on request with id {}",
-                partitionId,
-                requestId);
-            return;
-          }
-
-          final var completableFuture = requestMap.remove(requestId);
+          final var completableFuture = requestMap == null ? null : requestMap.remove(requestId);
           if (completableFuture != null) {
             if (LOG.isTraceEnabled()) {
               LOG.trace("Send response to request {}", requestId);
             }
 
             completableFuture.complete(bytes);
-          } else if (LOG.isTraceEnabled()) {
-            LOG.trace("Wasn't able to send response to request {}", requestId);
+          } else {
+            if (LOG.isTraceEnabled()) {
+              LOG.trace(
+                  "Wasn't able to send response to request {} of partition {}",
+                  requestId,
+                  partitionId);
+            }
+            unmatchedResponseHandler.onUnmatchedResponse(requestId, partitionId, bytes);
+          }
+        });
+  }
+
+  /**
+   * Completes a request that this transport received with a response that another broker produced,
+   * e.g. because leadership of the request's partition moved before the response was ready.
+   */
+  public void completeForwardedResponse(final long requestId, final byte[] response) {
+    actor.run(
+        () -> {
+          for (final var requestMap : partitionsRequestMap.values()) {
+            final var completableFuture = requestMap.remove(requestId);
+            if (completableFuture != null) {
+              completableFuture.complete(response);
+              return;
+            }
+          }
+          if (LOG.isTraceEnabled()) {
+            LOG.trace("Dropping forwarded response to unknown request {}", requestId);
           }
         });
   }
@@ -216,5 +248,11 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
     static TopicSupplier withPrefix(final String prefix) {
       return (p, r) -> topicName(prefix, p, r);
     }
+  }
+
+  /** Receives responses to requests that are not pending on this transport. */
+  @FunctionalInterface
+  public interface UnmatchedResponseHandler {
+    void onUnmatchedResponse(long requestId, int partitionId, byte[] response);
   }
 }

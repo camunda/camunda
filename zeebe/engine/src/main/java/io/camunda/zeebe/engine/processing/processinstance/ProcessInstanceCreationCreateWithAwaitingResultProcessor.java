@@ -118,8 +118,7 @@ public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
     final var entityKey = commandKey < 0 ? keyGenerator.nextKey() : commandKey;
 
     // recorded as an event, so that whichever broker leads when the instance completes can respond
-    asyncRequestBehavior.writeAsyncRequestReceived(
-        record.getProcessInstanceKey(), command);
+    asyncRequestBehavior.writeAsyncRequestReceived(record.getProcessInstanceKey(), command);
 
     // Variables are already persisted via setVariablesFromDocument(); clear them to save batch
     // space.
