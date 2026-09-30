@@ -52,6 +52,23 @@ final class CpuBudgetTest {
   }
 
   @Test
+  void shouldGrowSlowlyAfterBackingOff() {
+    // given
+    load = 0.5;
+    final var budget = new CpuBudget(this::sample, this::throttled, this::backlog, 0.7, 250, 32, 0);
+    limitsOverIntervals(budget, 7);
+    load = 0.9;
+    limitsOverIntervals(budget, 1, 8);
+
+    // when
+    load = 0.5;
+    final var limits = limitsOverIntervals(budget, 2 * CpuBudget.REGROWTH_SAMPLES, 9);
+
+    // then
+    assertThat(limits).containsExactly(4, 4, 4, 4, 5, 5, 5, 5, 5, 6);
+  }
+
+  @Test
   void shouldSampleOncePerInterval() {
     // given
     load = 0.5;
