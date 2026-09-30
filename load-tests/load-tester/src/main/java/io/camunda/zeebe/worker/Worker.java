@@ -14,8 +14,11 @@ import io.camunda.client.api.worker.JobClient;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.WorkerProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
+import io.camunda.zeebe.metrics.RequestOutcomeRecorder;
+import io.camunda.zeebe.starter.Starter;
 import io.camunda.zeebe.util.PayloadReader;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;
@@ -35,6 +38,8 @@ public class Worker {
   private static final Logger LOGGER = LoggerFactory.getLogger(Worker.class);
   private static final Logger THROTTLED_LOGGER = new ThrottledLogger(LOGGER, Duration.ofSeconds(5));
   private static final int REQUEST_FUTURES_CAPACITY = 10_000;
+  static final String COMPLETE_JOB = "complete_job";
+  private static final String PUBLISH_MESSAGE = "publish_message";
 
   private final CamundaClient client;
   private final WorkerProperties workerCfg;
@@ -43,16 +48,19 @@ public class Worker {
       new ArrayBlockingQueue<>(REQUEST_FUTURES_CAPACITY);
   private final ResponseChecker responseChecker;
   private final ConnectionMonitor connectionMonitor;
+  private final RequestOutcomeRecorder requestOutcomeRecorder;
 
   public Worker(
       final CamundaClient client,
       final LoadTesterProperties properties,
       final PayloadReader payloadReader,
-      final ConnectionMonitor connectionMonitor) {
+      final ConnectionMonitor connectionMonitor,
+      final MeterRegistry registry) {
     this.client = client;
     workerCfg = properties.getWorker();
     variables = payloadReader.readPayload(workerCfg.getPayloadPath());
-    responseChecker = new ResponseChecker(requestFutures);
+    requestOutcomeRecorder = new RequestOutcomeRecorder(registry);
+    responseChecker = new ResponseChecker(requestFutures, requestOutcomeRecorder);
     this.connectionMonitor = connectionMonitor;
   }
 
@@ -86,6 +94,8 @@ public class Worker {
   @JobWorker(autoComplete = false)
   public void handleJob(final JobClient jobClient, final ActivatedJob job) {
     final long startHandlingTime = System.currentTimeMillis();
+    final long receivedNanos = System.nanoTime();
+    recordReceivedDelay(job, startHandlingTime);
 
     if (workerCfg.isSendMessage()) {
       final var correlationKey =
@@ -117,7 +127,15 @@ public class Worker {
 
     final var command = jobClient.newCompleteCommand(job.getKey()).variables(variables);
     addDelayToCompletion(workerCfg.getCompletionDelay().toMillis(), startHandlingTime);
-    if (!requestFutures.offer(command.send())) {
+    final long sentNanos = System.nanoTime();
+    final var completion = command.send();
+    completion.whenComplete(
+        (ignored, error) -> {
+          final long now = System.nanoTime();
+          requestOutcomeRecorder.recordLatency(COMPLETE_JOB, error, now - sentNanos);
+          requestOutcomeRecorder.recordJobLifetime(error, now - receivedNanos);
+        });
+    if (!requestFutures.offer(completion)) {
       // Non-blocking: if the response-check queue is saturated, drop tracking for this
       // completion rather than stalling the job handler thread (which would cascade into
       // broker timeouts). We lose visibility into its eventual result — log throttled so
@@ -125,6 +143,16 @@ public class Worker {
       THROTTLED_LOGGER.warn(
           "Completion-response queue full (capacity: {}); dropping future tracking",
           REQUEST_FUTURES_CAPACITY);
+    }
+  }
+
+  private void recordReceivedDelay(final ActivatedJob job, final long receivedAtMillis) {
+    if (job.getVariablesAsMap().get(Starter.CREATED_AT_VARIABLE)
+        instanceof final Number createdAt) {
+      final long delay = receivedAtMillis - createdAt.longValue();
+      if (delay >= 0) {
+        requestOutcomeRecorder.recordJobReceivedDelay(delay);
+      }
     }
   }
 
@@ -141,8 +169,10 @@ public class Worker {
 
     try {
       messageSendFuture.get(10, TimeUnit.SECONDS);
+      requestOutcomeRecorder.record(PUBLISH_MESSAGE, null);
       return true;
     } catch (final Exception ex) {
+      requestOutcomeRecorder.record(PUBLISH_MESSAGE, ex);
       THROTTLED_LOGGER.error(
           "Exception on publishing a message with name {} and correlationKey {}",
           messageName,
