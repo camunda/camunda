@@ -18,6 +18,7 @@ import {
   createInstanceOnceDeployed,
   expectNoIncidents,
   expectProcessState,
+  getProcessInstance,
   resumeProcessInstance,
   searchElementInstanceByElementIdAndState,
   suspendAndExpectSuspended,
@@ -153,7 +154,9 @@ async function tickStartTimes(
     .sort((a, b) => a - b);
 }
 
-async function expectTickCount(
+/** At least, never exactly: the cadence keeps firing, so an exact count can be
+ * skipped over entirely when the export falls a whole interval behind. */
+async function expectAtLeastTicks(
   request: APIRequestContext,
   processInstanceKey: string,
   expected: number,
@@ -162,7 +165,7 @@ async function expectTickCount(
   let times: number[] = [];
   await expect(async () => {
     times = await tickStartTimes(request, processInstanceKey);
-    expect(times).toHaveLength(expected);
+    expect(times.length).toBeGreaterThanOrEqual(expected);
   }).toPass(assertionOptions);
   return times;
 }
@@ -286,20 +289,35 @@ test.describe('Process Instance Suspend and Resume Timer API', () => {
     const fixture = await startCycleTimerInstance(uniquePrefixedId('sr-cycle'));
 
     // One tick first, so what follows is about the gap, not a timer that never fired.
-    await expectTickCount(request, fixture.processInstanceKey, 1);
+    await expectAtLeastTicks(request, fixture.processInstanceKey, 1);
 
     await suspendAndExpectSuspended(request, fixture.processInstanceKey);
+    const suspendedAt = new Date(
+      String(
+        (await getProcessInstance(request, fixture.processInstanceKey))
+          .suspendedDate,
+      ),
+    ).getTime();
     await hold(70);
+    // Compared against the engine's own suspension timestamp, so a tick that
+    // fired earlier but exported late cannot be mistaken for one that fired
+    // while the instance was suspended.
     expect(
-      await tickStartTimes(request, fixture.processInstanceKey),
-    ).toHaveLength(1);
+      (await tickStartTimes(request, fixture.processInstanceKey)).filter(
+        (startedAt) => startedAt > suspendedAt,
+      ),
+    ).toHaveLength(0);
 
     await assertStatusCode(
       await resumeProcessInstance(request, fixture.processInstanceKey),
       204,
     );
 
-    const times = await expectTickCount(request, fixture.processInstanceKey, 3);
+    const times = await expectAtLeastTicks(
+      request,
+      fixture.processInstanceKey,
+      3,
+    );
 
     // #62637 anchored the reschedule on now, so the catch-up was followed
     // immediately by a second fire. A full interval says it was not.
