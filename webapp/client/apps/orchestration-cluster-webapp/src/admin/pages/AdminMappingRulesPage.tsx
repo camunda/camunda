@@ -6,12 +6,183 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
+import {Pencil, Plus, Trash2} from '@camunda/design-system/icons';
+import {
+	Button,
+	DataTable,
+	Label,
+	PageHeader,
+	PageLayout,
+	SearchInput,
+	type DataTableColumn,
+	type SortingConfig,
+} from '@camunda/design-system';
+import type {MappingRule} from '@camunda/camunda-api-zod-schemas/8.10';
+import {AddMappingRuleModal} from '#/admin/modules/mapping-rules/AddMappingRuleModal';
+import {EditMappingRuleModal} from '#/admin/modules/mapping-rules/EditMappingRuleModal';
+import {DeleteMappingRuleModal} from '#/admin/modules/mapping-rules/DeleteMappingRuleModal';
+import {DEFAULT_PAGE_SIZE, PAGE_SIZES, type MappingRulesSearch} from '#/admin/modules/mapping-rules/searchSchema';
 
-const AdminMappingRulesPage: React.FC = () => {
+type SortingState = NonNullable<SortingConfig['sortState']>;
+
+type ModalState = {type: 'add'} | {type: 'edit'; mappingRule: MappingRule} | {type: 'delete'; mappingRule: MappingRule};
+
+const SEARCH_DEBOUNCE = 500;
+const SORTED_COLUMN_ID = 'mappingRuleId';
+
+type AdminMappingRulesPageProps = {
+	mappingRules: MappingRule[];
+	totalItems: number;
+	search: MappingRulesSearch;
+	onSearchChange: (next: Partial<MappingRulesSearch>) => void;
+};
+
+const AdminMappingRulesPage: React.FC<AdminMappingRulesPageProps> = ({
+	mappingRules,
+	totalItems,
+	search,
+	onSearchChange,
+}) => {
 	const {t} = useTranslation();
+	const [modal, setModal] = useState<ModalState | null>(null);
+	const appliedSearchTerm = search.search ?? '';
+	const [searchDraft, setSearchDraft] = useState(appliedSearchTerm);
+	const [lastAppliedSearchTerm, setLastAppliedSearchTerm] = useState(appliedSearchTerm);
 
-	return <h1>{t('admin.headerNavItemMappingRules')}</h1>;
+	// Back/forward navigation changes the applied term without touching the draft, which
+	// would otherwise leave the input showing a term the table is no longer filtered by.
+	if (lastAppliedSearchTerm !== appliedSearchTerm) {
+		setLastAppliedSearchTerm(appliedSearchTerm);
+		setSearchDraft(appliedSearchTerm);
+	}
+
+	useEffect(() => {
+		if (searchDraft === appliedSearchTerm) {
+			return;
+		}
+		const timeoutId = setTimeout(() => {
+			onSearchChange({search: searchDraft === '' ? undefined : searchDraft, page: undefined});
+		}, SEARCH_DEBOUNCE);
+		return () => clearTimeout(timeoutId);
+	}, [appliedSearchTerm, onSearchChange, searchDraft]);
+
+	const columns = useMemo<DataTableColumn<MappingRule>[]>(
+		() => [
+			{accessorKey: SORTED_COLUMN_ID, header: t('admin.mappingRules.mappingRuleIdColumn')},
+			{accessorKey: 'name', header: t('admin.mappingRules.mappingRuleNameColumn'), enableSorting: false},
+			{accessorKey: 'claimName', header: t('admin.mappingRules.claimNameColumn'), enableSorting: false},
+			{accessorKey: 'claimValue', header: t('admin.mappingRules.claimValueColumn'), enableSorting: false},
+		],
+		[t],
+	);
+
+	const sortState = useMemo<SortingState>(
+		() => [{id: SORTED_COLUMN_ID, desc: search.sortOrder === 'desc'}],
+		[search.sortOrder],
+	);
+
+	const handleSortingChange = useCallback(
+		(state: SortingState) => {
+			const sortedColumn = state.find(({id}) => id === SORTED_COLUMN_ID);
+			onSearchChange({
+				sortOrder: sortedColumn === undefined || !sortedColumn.desc ? undefined : 'desc',
+				page: undefined,
+			});
+		},
+		[onSearchChange],
+	);
+
+	const handlePaginationChange = useCallback(
+		({pageIndex, pageSize}: {pageIndex: number; pageSize: number}) => {
+			const nextPageSize = pageSize === DEFAULT_PAGE_SIZE ? undefined : (pageSize as MappingRulesSearch['pageSize']);
+			const hasPageSizeChanged = pageSize !== (search.pageSize ?? DEFAULT_PAGE_SIZE);
+			onSearchChange({
+				pageSize: nextPageSize,
+				page: hasPageSizeChanged || pageIndex === 0 ? undefined : pageIndex + 1,
+			});
+		},
+		[onSearchChange, search.pageSize],
+	);
+
+	const rowActions = useMemo(
+		() => [
+			{
+				id: 'edit',
+				label: t('admin.mappingRules.editMappingRule'),
+				icon: <Pencil aria-hidden />,
+				onClick: (mappingRule: MappingRule) => setModal({type: 'edit', mappingRule}),
+			},
+			{
+				id: 'delete',
+				label: t('admin.mappingRules.deleteMappingRule'),
+				icon: <Trash2 aria-hidden />,
+				variant: 'destructive' as const,
+				onClick: (mappingRule: MappingRule) => setModal({type: 'delete', mappingRule}),
+			},
+		],
+		[t],
+	);
+
+	const title = t('admin.headerNavItemMappingRules');
+
+	return (
+		<PageLayout id="main-content" tabIndex={-1}>
+			<div className="flex flex-col gap-6">
+				<PageHeader
+					title={title}
+					actions={
+						<Button onClick={() => setModal({type: 'add'})}>
+							<Plus aria-hidden />
+							{t('admin.mappingRules.addMappingRule')}
+						</Button>
+					}
+				/>
+				<div className="flex flex-col gap-4">
+					<Label htmlFor="mapping-rules-search" className="sr-only">
+						{t('admin.mappingRules.searchByMappingRuleId')}
+					</Label>
+					<SearchInput
+						id="mapping-rules-search"
+						className="max-w-sm min-w-48"
+						placeholder={t('admin.mappingRules.searchByMappingRuleId')}
+						value={searchDraft}
+						onChange={(event) => setSearchDraft(event.target.value)}
+						onClear={() => setSearchDraft('')}
+					/>
+					<DataTable
+						aria-label={title}
+						columns={columns}
+						data={mappingRules}
+						getRowId={(mappingRule) => mappingRule.mappingRuleId}
+						rowActions={rowActions}
+						sorting={{manual: true, sortState, onSortingChange: handleSortingChange}}
+						pagination={{
+							manual: true,
+							pageSizes: [...PAGE_SIZES],
+							defaultPageSize: DEFAULT_PAGE_SIZE,
+							pageSize: search.pageSize ?? DEFAULT_PAGE_SIZE,
+							pageIndex: (search.page ?? 1) - 1,
+							rowCount: totalItems,
+							onPaginationChange: handlePaginationChange,
+						}}
+						emptyState={t('admin.mappingRules.noMappingRules')}
+					/>
+				</div>
+			</div>
+			<AddMappingRuleModal isOpen={modal?.type === 'add'} onClose={() => setModal(null)} />
+			<EditMappingRuleModal
+				mappingRule={modal?.type === 'edit' ? modal.mappingRule : null}
+				onClose={() => setModal(null)}
+			/>
+			<DeleteMappingRuleModal
+				mappingRule={modal?.type === 'delete' ? modal.mappingRule : null}
+				onClose={() => setModal(null)}
+			/>
+		</PageLayout>
+	);
 };
 
 export {AdminMappingRulesPage};
+export type {AdminMappingRulesPageProps};

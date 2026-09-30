@@ -11,11 +11,13 @@ import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
 	mockLicenseEndpoint,
+	mockQueryMappingRulesEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createQueryMappingRulesResponse} from '#/shared-test-modules/api-mocks/mapping-rules';
 
 test.beforeEach(({network}) => {
 	network.use(
@@ -96,6 +98,7 @@ test.describe('Admin section access', () => {
 					}),
 				),
 			}),
+			mockQueryMappingRulesEndpoint({successResponse: HttpResponse.json(createQueryMappingRulesResponse())}),
 		);
 
 		await adminIndexPage.gotoSection('mapping-rules');
