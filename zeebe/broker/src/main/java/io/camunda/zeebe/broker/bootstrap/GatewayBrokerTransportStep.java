@@ -7,12 +7,15 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
+import io.camunda.zeebe.broker.transport.commandapi.ResponseForwarder;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 
 /** Starts the server transport which can receive commands from the gateway * */
 final class GatewayBrokerTransportStep extends AbstractBrokerStartupStep {
+
+  private ResponseForwarder responseForwarder;
 
   @Override
   public String getName() {
@@ -45,14 +48,20 @@ final class GatewayBrokerTransportStep extends AbstractBrokerStartupStep {
     final var requestIdGenerator = brokerStartupContext.getRequestIdGenerator();
 
     final var config = brokerStartupContext.getBrokerConfiguration().getExperimental();
+    final var forwarder =
+        new ResponseForwarder(
+            brokerStartupContext.getClusterServices().getCommunicationService(),
+            brokerStartupContext.getBrokerInfo().getNodeId());
     final var atomixServerTransport =
         new AtomixServerTransport(
-            messagingService, requestIdGenerator, config.isReceiveOnLegacySubject());
+            messagingService, requestIdGenerator, config.isReceiveOnLegacySubject(), forwarder);
 
     concurrencyControl.runOnCompletion(
         schedulingService.submitActor(atomixServerTransport),
         proceed(
             () -> {
+              forwarder.startReceiving(atomixServerTransport);
+              responseForwarder = forwarder;
               brokerStartupContext.setGatewayBrokerTransport(atomixServerTransport);
               startupFuture.complete(brokerStartupContext);
             },
@@ -67,6 +76,11 @@ final class GatewayBrokerTransportStep extends AbstractBrokerStartupStep {
 
     if (serverTransport == null) {
       return;
+    }
+
+    if (responseForwarder != null) {
+      responseForwarder.stopReceiving();
+      responseForwarder = null;
     }
 
     concurrencyControl.runOnCompletion(

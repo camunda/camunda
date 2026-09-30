@@ -14,10 +14,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.CamundaFuture;
+import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.PartitionInfo;
+import io.camunda.client.api.response.ProcessInstanceResult;
 import io.camunda.gateway.protocol.model.ClusterBalanceResponse;
 import io.camunda.gateway.protocol.model.ClusterCompletedRebalance;
 import io.camunda.gateway.protocol.model.ClusterRebalanceOperationPartition;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -27,6 +32,11 @@ import io.camunda.zeebe.qa.util.restapi.ClusterRebalanceRestClient.TypedResponse
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import java.net.HttpURLConnection;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -75,6 +85,71 @@ final class ClusterRebalanceIT {
     awaitCompletedRebalance();
     awaitBalancedTopology();
     assertThatAllJobsCanBeCompleted(processInstanceKeys, client, JOB_TYPE);
+  }
+
+  @Test
+  void shouldRespondToAwaitedResultsOfInstancesWhosePartitionMoved() {
+    // given
+    forceBadLeaderDistribution();
+    final var processId = "await-result";
+    final var jobType = "await-result-job";
+    client
+        .newDeployResourceCommand()
+        .addProcessModel(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType(jobType))
+                .endEvent()
+                .done(),
+            "await-result.bpmn")
+        .send()
+        .join();
+    final List<CamundaFuture<ProcessInstanceResult>> results = new ArrayList<>();
+    final Map<Long, ActivatedJob> jobs = new HashMap<>();
+    Awaitility.await("an instance awaiting its result on every partition")
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () -> {
+              results.add(
+                  client
+                      .newCreateInstanceCommand()
+                      .bpmnProcessId(processId)
+                      .latestVersion()
+                      .withResult()
+                      .requestTimeout(Duration.ofMinutes(1))
+                      .send());
+              activateJobs(jobType, jobs);
+              return jobs.keySet().stream().map(Protocol::decodePartitionId).distinct().count()
+                  == PARTITION_COUNT;
+            });
+    Awaitility.await("a job for every awaited instance")
+        .atMost(Duration.ofSeconds(30))
+        .until(() -> activateJobs(jobType, jobs) == results.size());
+
+    // when
+    assertAccepted(triggerRebalance());
+    awaitCompletedRebalance();
+    jobs.values().forEach(job -> client.newCompleteCommand(job).send().join());
+
+    // then
+    assertThat(results)
+        .allSatisfy(
+            result ->
+                assertThat(result.join(10, TimeUnit.SECONDS).getBpmnProcessId())
+                    .isEqualTo(processId));
+  }
+
+  private int activateJobs(final String jobType, final Map<Long, ActivatedJob> jobs) {
+    client
+        .newActivateJobsCommand()
+        .jobType(jobType)
+        .maxJobsToActivate(10)
+        .timeout(Duration.ofMinutes(5))
+        .send()
+        .join()
+        .getJobs()
+        .forEach(job -> jobs.put(job.getKey(), job));
+    return jobs.size();
   }
 
   private void assertAccepted(final TypedResponse<ClusterBalanceResponse> response) {
