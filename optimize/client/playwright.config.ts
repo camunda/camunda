@@ -9,6 +9,7 @@
 import {defineConfig, devices} from '@playwright/test';
 
 import {env} from './e2e/env';
+import {LOGIN_TIMEOUT} from './e2e/setup/login';
 
 const isCI = !!process.env.CI;
 
@@ -66,6 +67,8 @@ export default defineConfig({
       name: 'cloud',
       testMatch: 'cloud/**/*.spec.ts',
       workers: 1,
+      // The Auth0 login alone may take up to LOGIN_TIMEOUT.
+      timeout: 3 * LOGIN_TIMEOUT,
     },
   ],
 });

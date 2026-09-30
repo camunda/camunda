@@ -8,6 +8,7 @@
 
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {isDeepStrictEqual} from 'node:util';
 import {createCamundaClient, ProcessDefinitionId} from '@camunda8/orchestration-cluster-api';
 
 import {env} from '../env';
@@ -32,19 +33,56 @@ export function createCamunda(): Camunda {
   });
 }
 
-async function isSeeded(camunda: Camunda): Promise<boolean> {
-  const {items} = await camunda.searchProcessDefinitions(
-    {filter: {processDefinitionId: ProcessDefinitionId.assumeExists(INCIDENT_PROCESS.key)}},
-    {consistency: {waitUpToMs: 0}}
-  );
-  return items.length > 0;
+const FINAL_STATES = {
+  completed: 'COMPLETED',
+  running: 'ACTIVE',
+  canceled: 'TERMINATED',
+  open: 'ACTIVE',
+  resolved: 'COMPLETED',
+} as const;
+
+function expectedInstanceStates(): Record<string, number> {
+  return tally([
+    ...ORDER_PROCESS.instances.map(({outcome}) => `${ORDER_PROCESS.key}:${FINAL_STATES[outcome]}`),
+    ...INCIDENT_PROCESS.instances.map(
+      ({incident}) => `${INCIDENT_PROCESS.key}:${FINAL_STATES[incident]}`
+    ),
+  ]);
+}
+
+async function readInstanceStates(camunda: Camunda): Promise<Record<string, number>> {
+  const states: string[] = [];
+  for (const key of [ORDER_PROCESS.key, INCIDENT_PROCESS.key]) {
+    const {items} = await camunda.searchProcessInstances(
+      {filter: {processDefinitionId: ProcessDefinitionId.assumeExists(key)}, page: {limit: 100}},
+      {consistency: {waitUpToMs: 0}}
+    );
+    states.push(...items.map(({state}) => `${key}:${state}`));
+  }
+  return tally(states);
+}
+
+function tally(values: string[]): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const value of values) {
+    counts[value] = (counts[value] ?? 0) + 1;
+  }
+  return counts;
 }
 
 export async function ensureSeeded(camunda: Camunda): Promise<void> {
-  if (await isSeeded(camunda)) {
+  const actual = await readInstanceStates(camunda);
+  if (Object.keys(actual).length === 0) {
+    await seed(camunda);
     return;
   }
-  await seed(camunda);
+  // Seeding again on top of partial data would duplicate instances, so ask for a clean stack.
+  if (!isDeepStrictEqual(actual, expectedInstanceStates())) {
+    throw new Error(
+      `The stack holds incomplete seed data (${JSON.stringify(actual)}), e.g. from an ` +
+        'interrupted run. Reset it with `docker compose down -v` and run again.'
+    );
+  }
 }
 
 async function seed(camunda: Camunda): Promise<void> {
