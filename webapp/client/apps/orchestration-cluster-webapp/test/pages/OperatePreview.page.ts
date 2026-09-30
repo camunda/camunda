@@ -53,6 +53,18 @@ class OperatePreviewPage extends BasePage {
 	get noInstancesModelerButton() {
 		return this.page.getByRole('link', {name: 'Go to Modeler'});
 	}
+
+	get healthyProcessesEmptyState() {
+		return this.page.getByText('Your processes are healthy');
+	}
+
+	get expandIncidentRowButton() {
+		return this.page.getByTestId('incidents-by-error-list').getByRole('button', {name: 'Expand row'});
+	}
+
+	get expandedRowDetail() {
+		return this.page.locator('[data-row-kind="detail"]');
+	}
 }
 
 export {OperatePreviewPage};

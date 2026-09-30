@@ -23,7 +23,6 @@ import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {createQueryProcessDefinitionsResponse} from '#/shared-test-modules/api-mocks/process-definitions';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {Dashboard} from './Dashboard';
-import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 
 const PROCESS_STATS_REQUEST_SCHEMA = z.object({
 	sort: z.array(

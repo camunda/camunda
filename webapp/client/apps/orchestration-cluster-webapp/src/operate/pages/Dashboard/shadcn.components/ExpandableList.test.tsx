@@ -58,6 +58,8 @@ function renderList(overrides: RenderOverrides = {}) {
 			hasPreviousPage={false}
 			isFetchingNextPage={false}
 			isFetchingPreviousPage={false}
+			isFetchNextPageError={false}
+			isFetchPreviousPageError={false}
 			onLoadNextPage={noop}
 			onLoadPreviousPage={noop}
 			{...overrides}
@@ -82,6 +84,7 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 		const screen = await renderList({variant, isError: true});
 
 		// then
+		await expect.element(screen.getByRole('heading', {name: 'Process name'})).toBeVisible();
 		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
 		await expect.element(screen.getByText('Refresh the page to try again')).toBeVisible();
 		expect(screen.getByTestId('table').elements()).toHaveLength(0);
@@ -95,6 +98,7 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 		});
 
 		// then
+		await expect.element(screen.getByRole('heading', {name: 'Process name'})).toBeVisible();
 		await expect.element(screen.getByTestId('custom-empty-state')).toBeVisible();
 		expect(screen.getByTestId('table').elements()).toHaveLength(0);
 	});
@@ -276,6 +280,8 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 				hasPreviousPage={false}
 				isFetchingNextPage={false}
 				isFetchingPreviousPage={false}
+				isFetchNextPageError={false}
+				isFetchPreviousPageError={false}
 				onLoadNextPage={onLoadNextPage}
 				onLoadPreviousPage={noop}
 			/>,
@@ -351,6 +357,8 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 				hasPreviousPage={true}
 				isFetchingNextPage={false}
 				isFetchingPreviousPage={false}
+				isFetchNextPageError={false}
+				isFetchPreviousPageError={false}
 				onLoadNextPage={noop}
 				onLoadPreviousPage={onLoadPreviousPage}
 			/>,
@@ -404,6 +412,8 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 				hasPreviousPage={false}
 				isFetchingNextPage={false}
 				isFetchingPreviousPage={false}
+				isFetchNextPageError={false}
+				isFetchPreviousPageError={false}
 				onLoadNextPage={onLoadNextPage}
 				onLoadPreviousPage={noop}
 			/>,
@@ -424,6 +434,8 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 				hasPreviousPage={false}
 				isFetchingNextPage={false}
 				isFetchingPreviousPage={false}
+				isFetchNextPageError={false}
+				isFetchPreviousPageError={false}
 				onLoadNextPage={onLoadNextPage}
 				onLoadPreviousPage={noop}
 			/>,
@@ -466,6 +478,8 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 				hasPreviousPage={true}
 				isFetchingNextPage={false}
 				isFetchingPreviousPage={false}
+				isFetchNextPageError={false}
+				isFetchPreviousPageError={false}
 				onLoadNextPage={noop}
 				onLoadPreviousPage={noop}
 			/>,
@@ -515,6 +529,8 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 				hasPreviousPage={true}
 				isFetchingNextPage={false}
 				isFetchingPreviousPage={false}
+				isFetchNextPageError={false}
+				isFetchPreviousPageError={false}
 				onLoadNextPage={noop}
 				onLoadPreviousPage={noop}
 			/>,
@@ -702,6 +718,8 @@ describe('<ExpandableList /> nativeExpansion variant', () => {
 				hasPreviousPage={true}
 				isFetchingNextPage={false}
 				isFetchingPreviousPage={false}
+				isFetchNextPageError={false}
+				isFetchPreviousPageError={false}
 				onLoadNextPage={noop}
 				onLoadPreviousPage={noop}
 			/>,
@@ -738,6 +756,8 @@ describe('<ExpandableList /> nativeExpansion variant', () => {
 				hasPreviousPage={true}
 				isFetchingNextPage={false}
 				isFetchingPreviousPage={false}
+				isFetchNextPageError={false}
+				isFetchPreviousPageError={false}
 				onLoadNextPage={noop}
 				onLoadPreviousPage={noop}
 			/>,

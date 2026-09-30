@@ -10,6 +10,7 @@ import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
+	mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint,
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockLicenseEndpoint,
@@ -21,7 +22,10 @@ import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {createProcessDefinitionInstanceStatistics} from '#/shared-test-modules/api-mocks/process-definition-statistics';
-import {createIncidentProcessInstanceStatisticsByError} from '#/shared-test-modules/api-mocks/incident-statistics';
+import {
+	createIncidentProcessInstanceStatisticsByDefinition,
+	createIncidentProcessInstanceStatisticsByError,
+} from '#/shared-test-modules/api-mocks/incident-statistics';
 import {createQueryProcessDefinitionsResponse} from '#/shared-test-modules/api-mocks/process-definitions';
 
 test.beforeEach(({network}) => {
@@ -116,6 +120,96 @@ test('should match the list tiles snapshot with real process rows and real incid
 	await operatePreviewPage.goto();
 	await expect(operatePreviewPage.processesByNameRow('My Process')).toBeVisible();
 	await expect(operatePreviewPage.incidentsByErrorRow('Payment gateway request timed out')).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});
+
+test('should match the incidents by error definitions drill-down snapshot', async ({
+	network,
+	operatePreviewPage,
+	page,
+}) => {
+	network.use(
+		mockCurrentUserEndpoint({
+			successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['operate']})),
+		}),
+		mockGetProcessDefinitionInstanceStatisticsEndpoint({
+			successResponse: HttpResponse.json(
+				createPaginatedResponse({
+					items: [
+						createProcessDefinitionInstanceStatistics({
+							processDefinitionId: 'process-1',
+							activeInstancesWithoutIncidentCount: 10,
+							activeInstancesWithIncidentCount: 3,
+						}),
+					],
+					page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+				}),
+			),
+		}),
+		mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+			successResponse: HttpResponse.json(
+				createPaginatedResponse({
+					items: [
+						createIncidentProcessInstanceStatisticsByError({
+							errorHashCode: 1,
+							errorMessage: 'Payment gateway request timed out',
+							activeInstancesWithErrorCount: 5,
+						}),
+					],
+					page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+				}),
+			),
+		}),
+		mockQueryProcessDefinitionsEndpoint({successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse())}),
+		mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint({
+			successResponse: HttpResponse.json(
+				createPaginatedResponse({
+					items: [
+						createIncidentProcessInstanceStatisticsByDefinition({
+							processDefinitionId: 'process-1',
+							processDefinitionName: 'My Process',
+						}),
+					],
+					page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+				}),
+			),
+		}),
+	);
+
+	await operatePreviewPage.goto();
+	await expect(operatePreviewPage.incidentsByErrorRow('Payment gateway request timed out')).toBeVisible();
+
+	await operatePreviewPage.expandIncidentRowButton.click();
+	await expect(operatePreviewPage.expandedRowDetail.getByText('My Process', {exact: false})).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});
+
+test('should match the healthy processes empty state snapshot', async ({network, operatePreviewPage, page}) => {
+	network.use(
+		mockCurrentUserEndpoint({
+			successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['operate']})),
+		}),
+		mockGetProcessDefinitionInstanceStatisticsEndpoint({
+			successResponse: HttpResponse.json(
+				createPaginatedResponse({
+					items: [
+						createProcessDefinitionInstanceStatistics({
+							processDefinitionId: 'process-1',
+							activeInstancesWithoutIncidentCount: 10,
+							activeInstancesWithIncidentCount: 0,
+						}),
+					],
+					page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+				}),
+			),
+		}),
+		mockQueryProcessDefinitionsEndpoint({successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse())}),
+	);
+
+	await operatePreviewPage.goto();
+	await expect(operatePreviewPage.healthyProcessesEmptyState).toBeVisible();
 
 	await expect(page).toHaveScreenshot();
 });

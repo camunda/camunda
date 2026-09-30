@@ -29,7 +29,6 @@ import {
 } from '#/shared-test-modules/api-mocks/process-definitions';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {InstancesByProcess} from './InstancesByProcess';
-import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 
 const REQUEST_SCHEMA = z.object({
 	sort: z.array(
@@ -123,6 +122,7 @@ describe('<InstancesByProcess />', () => {
 
 		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate-preview'});
 
+		await expect.element(screen.getByRole('heading', {name: 'Process instances by name'})).toBeVisible();
 		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
 	});
 
