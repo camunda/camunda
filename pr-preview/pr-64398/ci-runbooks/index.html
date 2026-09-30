@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">CI Runbooks | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-64398/ci-runbooks/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="CI Runbooks | Camunda Platform"><meta data-rh="true" name="description" content="This page collects information on CI incident runbooks and alerts that affect"><meta data-rh="true" property="og:description" content="This page collects information on CI incident runbooks and alerts that affect"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-64398/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-64398/ci-runbooks/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-64398/ci-runbooks/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-64398/ci-runbooks/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"CI","item":"https://camunda.github.io/camunda/pr-preview/pr-64398/ci"},{"@type":"ListItem","position":2,"name":"CI Runbooks","item":"https://camunda.github.io/camunda/pr-preview/pr-64398/ci-runbooks"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-64398/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-64398/assets/js/runtime~main.59db7530.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-64398/assets/js/main.fe38c998.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-64398/assets/js/runtime~main.73829c23.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-64398/assets/js/main.ec5479aa.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -122,21 +122,15 @@ to add your group (<code>Engineering Operations Team</code>) to the <code>Bypass
 to remove you from the <code>Bypass list</code> and save.</li>
 </ol>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="silencing-while-you-fix-it">Silencing While You Fix It<a href="#silencing-while-you-fix-it" class="hash-link" aria-label="Direct link to Silencing While You Fix It" title="Direct link to Silencing While You Fix It" translate="no">​</a></h3>
-<p><strong>When:</strong> You are working an incident whose job keeps re-alerting — typically a nightly or
-otherwise infrequent job that fails every few days, so each failure arrives long after
-incident.io&#x27;s grouping window and opens a fresh incident to merge by hand. Only silence a job you
-are actively fixing; a job nobody is working on should keep alerting.</p>
+<p><strong>When:</strong> You are medic for an incident and <em>are working a fix</em> for a job that keeps re-alerting — typically a nightly or otherwise infrequent job that fails every few days, so each failure arrives long after incident.io&#x27;s grouping window (48h) thus raising a fresh, duplicate incident.</p>
 <p><strong>What:</strong></p>
-<p>Run the <a href="https://github.com/camunda/camunda/actions/workflows/ci-silence-incident.yml" target="_blank" rel="noopener noreferrer" class="">ci-silence-incident workflow</a>
-with the <code>workflow_job</code> value copied verbatim from the alert and your incident reference. It
-authenticates as a machine account, so you do not need any Grafana permissions yourself.</p>
+<p>Run the <a href="https://github.com/camunda/camunda/actions/workflows/ci-silence-incident.yml" target="_blank" rel="noopener noreferrer" class="">ci-silence-incident workflow</a> with the <code>workflow_job</code> value copied verbatim from the alert/incident and your incident INC-???? reference.</p>
 <p>The rules it enforces:</p>
 <ul>
-<li class=""><strong>Unified CI can never be silenced.</strong> It gates every merge, so muting it hides breakage for the whole repository. Fix the job, or disable it explicitly in its workflow file where the change is visible in review.</li>
-<li class=""><strong>Seven days maximum</strong>, three by default. If the fix needs longer, silence it again and say why — a silence that renews itself unnoticed is how a job quietly stops being watched.</li>
+<li class=""><strong>Unified CI can never be silenced.</strong> It gates every merge, so muting it hides breakage for the whole repository — find a mitigation instead.</li>
+<li class=""><strong>Seven days maximum</strong>, 3 by default. If the fix needs longer, silence it again and say why — a silence that renews itself unnoticed is how a job quietly stops being watched.</li>
 <li class=""><strong>An incident reference is required</strong>, and lands in the silence comment so an active silence can always be traced back to the work that justified it.</li>
 </ul>
-<p>A silence suppresses <em>delivery</em> only. The job keeps running, every failure is still recorded, and the <a href="https://dashboard.int.camunda.com/d/ch6qgkj/ci-job-trends-camunda-camunda" target="_blank" rel="noopener noreferrer" class="">Job Trends dashboard</a> stays complete — so you can still tell whether your fix worked. Expire the silence as soon as it lands; the workflow posts a link to it in Slack for that purpose.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="alert-runbooks">Alert Runbooks<a href="#alert-runbooks" class="hash-link" aria-label="Direct link to Alert Runbooks" title="Direct link to Alert Runbooks" translate="no">​</a></h2>
 <blockquote>
 <p><strong>Note:</strong> Don&#x27;t change the heading names below — they are required as stable links!</p>
