@@ -52,8 +52,10 @@ Tests live under `webapp/client/` and `operate/client/`. Tasklist tests are part
 
 - Vitest unit test: invoke the `frontend-unit-test` skill for conventions.
 - Playwright: invoke the `frontend-integration-test` skill.
-- Migrated Operate code in the OC webapp: invoke `frontend-operate-migrator` for migration fidelity
-  and `operate-frontend` for current conventions.
+- Migrated Operate code in the OC webapp: compare the affected behavior with legacy and run
+  `node .claude/skills/frontend-operate-migrator/scripts/fidelity.mjs --ported <component-dir>` from
+  the repo root; follow `operate-frontend` conventions.
+  Do not start another ticket-to-PR execution loop while diagnosing CI.
 
 ### GHA per-job timeout (cancelled job)
 
