@@ -139,7 +139,8 @@ public final class BatchOperationExecutionExecuteProcessor
           batchKey,
           command.getPartitionId());
 
-      appendBatchOperationExecutionExecutedEvent(batchOperation, Collections.emptySet());
+      appendBatchOperationExecutionExecutedEvent(
+          batchOperation, Collections.emptySet(), command.getPartitionId());
       appendBatchOperationExecutionCompletedEvent(command);
 
       metrics.stopTotalExecutionLatencyMeasure(batchKey);
@@ -157,7 +158,8 @@ public final class BatchOperationExecutionExecuteProcessor
     entityKeys.forEach(entityKey -> handler.execute(entityKey, batchOperation));
 
     // schedule the next EXECUTE command to continue processing the next batch of items
-    appendBatchOperationExecutionExecutedEvent(batchOperation, Set.copyOf(entityKeys));
+    appendBatchOperationExecutionExecutedEvent(
+        batchOperation, Set.copyOf(entityKeys), command.getPartitionId());
     appendBatchOperationExecuteCommand(command, batchKey, batchOperation);
 
     metrics.startExecuteCycleLatencyMeasure(batchKey, batchOperation.getBatchOperationType());
@@ -205,15 +207,16 @@ public final class BatchOperationExecutionExecuteProcessor
   }
 
   private void appendBatchOperationExecutionExecutedEvent(
-      final PersistedBatchOperation batchOperation, final Set<Long> keys) {
+      final PersistedBatchOperation batchOperation, final Set<Long> keys, final int partitionId) {
     final var batchExecute = new BatchOperationExecutionRecord();
 
     // Occasionally log a heartbeat
     // This modulo only works good if batch size is a divider of HEARTBEAT_INTERVAL
     if (batchOperation.getNumExecutedItems() % HEARTBEAT_INTERVAL == 0) {
       LOGGER.debug(
-          "Batch operation {} on has executed {} of {} items.",
+          "Batch operation {} on partition {} has executed {} of {} items.",
           batchOperation.getKey(),
+          partitionId,
           batchOperation.getNumExecutedItems(),
           batchOperation.getNumTotalItems());
     }
