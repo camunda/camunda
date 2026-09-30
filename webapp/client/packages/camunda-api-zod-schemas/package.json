@@ -23,7 +23,7 @@
 		"build": "vite build",
 		"format": "prettier --write .",
 		"typecheck": "tsc",
-		"prepare": "npm run build",
+		"prepare": "npm run download-specs -- --local -v current && npm run generate-schemas -- -v current && npm run build",
 		"download-specs": "node scripts/download-specs.js",
 		"generate-schemas": "node scripts/generate-schemas.js",
 		"clean": "node scripts/clean.js"

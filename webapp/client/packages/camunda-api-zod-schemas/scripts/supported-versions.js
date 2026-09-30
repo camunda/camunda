@@ -8,6 +8,11 @@
 
 // @ts-check
 
+import fs from 'node:fs/promises';
+import path from 'node:path';
+
+import {WORKSPACE_ROOT} from './paths.js';
+
 /**
  * Configuration for downloading specs - single file mode.
  * @typedef {Object} SingleFileDownloadConfig
@@ -79,24 +84,63 @@ const CONFIG = {
 	},
 };
 
+/** Version name that stands for the release line of the current branch (see `getCurrentVersion`). */
+const CURRENT_VERSION = 'current';
+
 function getAvailableVersions() {
 	return Object.keys(CONFIG);
 }
 
 /**
- * Returns the requested versions, or every available version when none is requested.
- * @param {string[] | undefined} requestedVersions
- * @returns {string[]}
+ * Reads the release line of the current branch (for example `8.11`) from the version in the workspace
+ * `package.json` (for example `8.11.0-SNAPSHOT`).
+ * @returns {Promise<string>} The release line, which is always a supported version
  */
-function resolveVersions(requestedVersions) {
-	const availableVersions = getAvailableVersions();
-	const unknownVersion = requestedVersions?.find((version) => !CONFIG[version]);
+async function getCurrentVersion() {
+	const packageJsonPath = path.join(WORKSPACE_ROOT, 'package.json');
+	const {version} = JSON.parse(await fs.readFile(packageJsonPath, 'utf-8'));
+	const match = typeof version === 'string' ? version.match(/^(\d+)\.(\d+)\./) : null;
 
-	if (unknownVersion !== undefined) {
-		throw new Error(`Unknown version: ${unknownVersion}. Available versions: ${availableVersions.join(', ')}`);
+	if (match === null) {
+		throw new Error(`Cannot read the release line from version "${version}" in ${packageJsonPath}`);
 	}
 
-	return requestedVersions ?? availableVersions;
+	const currentVersion = `${match[1]}.${match[2]}`;
+
+	if (!CONFIG[currentVersion]) {
+		throw new Error(
+			`The current version ${currentVersion} is not supported. Available versions: ${getAvailableVersions().join(', ')}`,
+		);
+	}
+
+	return currentVersion;
 }
 
-export {getAvailableVersions, resolveVersions, CONFIG};
+/**
+ * Returns the requested versions, or every available version when none is requested.
+ * `current` is replaced with the release line of the current branch. Duplicates are removed.
+ * @param {string[] | undefined} requestedVersions
+ * @returns {Promise<string[]>}
+ */
+async function resolveVersions(requestedVersions) {
+	if (requestedVersions === undefined) {
+		return getAvailableVersions();
+	}
+
+	const versions = new Set();
+	for (const requestedVersion of requestedVersions) {
+		const version = requestedVersion === CURRENT_VERSION ? await getCurrentVersion() : requestedVersion;
+
+		if (!CONFIG[version]) {
+			throw new Error(
+				`Unknown version: ${version}. Available versions: ${[...getAvailableVersions(), CURRENT_VERSION].join(', ')}`,
+			);
+		}
+
+		versions.add(version);
+	}
+
+	return [...versions];
+}
+
+export {CURRENT_VERSION, getAvailableVersions, getCurrentVersion, resolveVersions, CONFIG};
