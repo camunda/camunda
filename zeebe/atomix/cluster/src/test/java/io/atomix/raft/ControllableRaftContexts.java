@@ -35,9 +35,12 @@ import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
+import io.atomix.raft.storage.log.RaftLogFlusher;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
 import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
+import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.snapshots.testing.TestFileBasedSnapshotStore;
@@ -67,6 +70,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -102,6 +106,7 @@ public final class ControllableRaftContexts {
   private final Map<MemberId, RaftContext> raftServers = new HashMap<>();
   private final Map<MemberId, TestFileBasedSnapshotStore> snapshotStores = new HashMap<>();
   private final Map<MemberId, MeterRegistry> meterRegistries = new HashMap<>();
+  private final Map<MemberId, AtomicBoolean> failNextFlush = new HashMap<>();
   private Duration electionTimeout;
   private Duration heartbeatTimeout;
   private int nextEntry = 0;
@@ -246,7 +251,13 @@ public final class ControllableRaftContexts {
     snapshotStores.put(memberId, snapshotStore);
     final RaftContext raftContext =
         createRaftContext(
-            memberId, random, createStorage(memberId, cfg -> cfg.withSnapshotStore(snapshotStore)));
+            memberId,
+            random,
+            createStorage(
+                memberId,
+                cfg ->
+                    cfg.withSnapshotStore(snapshotStore)
+                        .withFlusherFactory(ignored -> failableDirectFlusher(memberId))));
     raftServers.put(memberId, raftContext);
     return raftContext;
   }
@@ -407,6 +418,39 @@ public final class ControllableRaftContexts {
       if (leader != null) {
         clientAppend(leader);
       }
+    }
+  }
+
+  /** Makes the next flush of the given member's log fail, like a transient I/O error. */
+  public void failNextFlush(final MemberId memberId) {
+    failNextFlush.get(memberId).set(true);
+  }
+
+  private RaftLogFlusher failableDirectFlusher(final MemberId memberId) {
+    final var failNext = failNextFlush.computeIfAbsent(memberId, m -> new AtomicBoolean());
+    return new RaftLogFlusher() {
+      @Override
+      public void flush(final Journal journal) throws FlushException {
+        if (failNext.getAndSet(false)) {
+          throw new FlushException(new IOException("Injected flush failure"));
+        }
+        journal.flush();
+      }
+
+      @Override
+      public boolean isDirect() {
+        return true;
+      }
+    };
+  }
+
+  /** Takes a snapshot at exactly the given committed index, without compacting the log. */
+  public void takeSnapshot(final MemberId memberId, final long snapshotIndex) {
+    final RaftContext raftContext = raftServers.get(memberId);
+    try (final RaftLogReader reader = raftContext.getLog().openCommittedReader()) {
+      reader.seek(snapshotIndex);
+      final long term = reader.next().term();
+      snapshotStores.get(memberId).newSnapshot(snapshotIndex, term, 1, random);
     }
   }
 
