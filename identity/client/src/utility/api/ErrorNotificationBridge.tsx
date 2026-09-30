@@ -23,6 +23,8 @@ const ErrorNotificationBridge: FC = () => {
   useEffect(() => {
     const notifier: ErrorNotifier = (error, { skipToast }) => {
       const { status, body } = error;
+      // recoverThirdPartySession() disables the session, so capture this first.
+      const wasLoggedIn = isLoggedIn();
 
       // Session-recovery navigation is independent of toast suppression: any
       // 401 (including the initial auth probe) should recover the session.
@@ -43,7 +45,7 @@ const ErrorNotificationBridge: FC = () => {
 
       switch (status) {
         case 401:
-          if (isLoggedIn()) {
+          if (wasLoggedIn) {
             enqueueNotification({
               kind: "error",
               title: t("unauthorized"),
