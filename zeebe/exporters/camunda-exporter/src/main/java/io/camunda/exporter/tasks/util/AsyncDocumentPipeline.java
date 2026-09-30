@@ -1,0 +1,271 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.exporter.tasks.util;
+
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import com.google.common.base.Stopwatch;
+import java.net.SocketTimeoutException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
+  private static final Logger DEFAULT_LOGGER = LoggerFactory.getLogger(AsyncDocumentPipeline.class);
+
+  private static final double BATCH_SIZE_REDUCTION_FACTOR = 0.5;
+  private static final List<Class<? extends Throwable>> DEFAULT_RETRYABLE_EXCEPTIONS =
+      List.of(
+          SocketTimeoutException.class, ElasticsearchException.class, OpenSearchException.class);
+
+  private final BatchSupplier<DocType, SearchAfterFieldType> batchSupplier;
+  private final BatchProcessor<DocType, SearchAfterFieldType> batchProcessor;
+  private final Executor executor;
+  private final Logger logger;
+  private final int minBatchSize;
+  private final int maxRetryAttempts;
+  private final int retryDelayMs;
+  private final List<Class<? extends Throwable>> retryableExceptions;
+  private final Runnable retryRecorder;
+
+  private final AtomicReference<DocumentBatch<DocType, SearchAfterFieldType>> lastSearchResponse =
+      new AtomicReference<>(null);
+  private final AtomicBoolean finished = new AtomicBoolean(false);
+  private final AtomicLong totalRead = new AtomicLong(0L);
+  private final AtomicInteger retryCount = new AtomicInteger(0);
+  private final AtomicInteger currentBatchSize;
+  private final AtomicLong totalTimeTakenMs = new AtomicLong(0);
+
+  private AsyncDocumentPipeline(final Builder<DocType, SearchAfterFieldType> builder) {
+    batchSupplier = builder.batchSupplier;
+    batchProcessor = builder.batchProcessor;
+    executor = builder.executor;
+    logger = builder.logger;
+    minBatchSize = builder.minBatchSize;
+    maxRetryAttempts = builder.maxRetryAttempts;
+    retryDelayMs = builder.retryDelayMs;
+    retryableExceptions = builder.retryableExceptions;
+    retryRecorder = builder.retryRecorder;
+    currentBatchSize = new AtomicInteger(builder.batchSize);
+  }
+
+  public CompletableFuture<Void> execute() {
+    // TODO report on total time taken etc
+    return AsyncRepeatUntil.repeatUntil(this::processNextBatch, ignored -> finished.get());
+  }
+
+  CompletableFuture<Void> processNextBatch() {
+    final Stopwatch stopwatch = Stopwatch.createStarted();
+    return batchSupplier
+        .supply(getLastSearchPosition(), currentBatchSize.get())
+        .thenComposeAsync(
+            batch -> {
+              if (batch.isEmpty()) {
+                finished.set(true);
+                return CompletableFuture.completedFuture(null);
+              }
+
+              totalRead.accumulateAndGet(batch.documents.size(), Long::sum);
+
+              return processBatch(batch)
+                  .thenRun(() -> batchCompleted(batch))
+                  .exceptionallyCompose(this::batchFailed);
+            },
+            executor)
+        .whenCompleteAsync(
+            (val, err) ->
+                totalTimeTakenMs.accumulateAndGet(
+                    stopwatch.stop().elapsed(TimeUnit.MILLISECONDS), Long::sum),
+            executor);
+  }
+
+  private CompletableFuture<Void> processBatch(
+      final DocumentBatch<DocType, SearchAfterFieldType> batch) {
+    try {
+      return batchProcessor.process(batch);
+    } catch (final RuntimeException ex) {
+      return CompletableFuture.failedFuture(ex);
+    }
+  }
+
+  private void batchCompleted(final DocumentBatch<DocType, SearchAfterFieldType> batch) {
+    // advance search position only after batch processed successfully
+    // so we can retry the batch if we want
+    lastSearchResponse.set(batch);
+
+    retryCount.set(0);
+  }
+
+  private CompletableFuture<Void> batchFailed(final Throwable ex) {
+    if (isRetryableError(ex) && retryCount.incrementAndGet() <= maxRetryAttempts) {
+
+      retryRecorder.run();
+      adjustBatchSize(ex);
+
+      logger.trace(
+          "Encountered retryable error when running doc pipeline, "
+              + "retrying the batch (attempt {}/{}). Next batch size {}. Error: {}",
+          retryCount.get(),
+          maxRetryAttempts,
+          currentBatchSize.get(),
+          ex.getMessage());
+
+      // Whilst this is crude, we exploit the fact the ES/OS visibility is
+      // around 2 second, and incrementing delay (default=1000ms) should give a
+      // fighting chance to complete in the next attempt. If not will fail and
+      // the next retry should take this over the full 2-second refresh interval
+      final int retryDelayMs = this.retryDelayMs * retryCount.get();
+      return CompletableFuture.supplyAsync(
+          () -> null,
+          CompletableFuture.delayedExecutor(retryDelayMs, TimeUnit.MILLISECONDS, executor));
+    }
+    // reset retry count so the next batch starts with fresh retries
+    retryCount.set(0);
+    // re-throw unexpected exceptions
+    throw ex instanceof final RuntimeException re ? re : new RuntimeException(ex);
+  }
+
+  private SearchAfterFieldType getLastSearchPosition() {
+    final var lstResponse = lastSearchResponse.get();
+    return lstResponse == null ? null : lstResponse.searchAfter();
+  }
+
+  private void adjustBatchSize(final Throwable ex) {
+    if (currentBatchSize.get() <= minBatchSize) {
+      return;
+    }
+
+    if (shouldReduceBatchSize(ex)) {
+      currentBatchSize.set(
+          (int) Math.max(minBatchSize, currentBatchSize.get() * BATCH_SIZE_REDUCTION_FACTOR));
+    }
+  }
+
+  private boolean shouldReduceBatchSize(final Throwable thr) {
+    return matchesThrowableOrCause(thr, SocketTimeoutException.class);
+  }
+
+  private boolean isRetryableError(final Throwable thr) {
+    return retryableExceptions.stream().anyMatch(clazz -> matchesThrowableOrCause(thr, clazz));
+  }
+
+  private boolean matchesThrowableOrCause(
+      final Throwable thr, final Class<? extends Throwable> throwableClass) {
+    return thr != null
+        && (throwableClass.isInstance(thr) || throwableClass.isInstance(thr.getCause()));
+  }
+
+  public record DocumentBatch<D, T>(List<D> documents, T searchAfter) {
+    static <D, T> DocumentBatch<D, T> empty() {
+      return new DocumentBatch<>(List.of(), null);
+    }
+
+    static <D, T> DocumentBatch<D, T> from(final List<D> documents, final T searchAfter) {
+      return new DocumentBatch<>(documents, searchAfter);
+    }
+
+    public boolean isEmpty() {
+      return documents.isEmpty();
+    }
+  }
+
+  public static class Builder<DocType, SearchAfterFieldType> {
+    private final BatchSupplier<DocType, SearchAfterFieldType> batchSupplier;
+    private final BatchProcessor<DocType, SearchAfterFieldType> batchProcessor;
+    // TODO review defaults
+    private Executor executor = ForkJoinPool.commonPool();
+    private Logger logger = DEFAULT_LOGGER;
+    private int batchSize = 1000;
+    private int minBatchSize = 50;
+    private int maxRetryAttempts = 0;
+    private int retryDelayMs = 1_000;
+    private final List<Class<? extends Throwable>> retryableExceptions =
+        new ArrayList<>(DEFAULT_RETRYABLE_EXCEPTIONS);
+    private Runnable retryRecorder =
+        () -> {
+          /* no-op */
+        };
+
+    private Builder(
+        final BatchSupplier<DocType, SearchAfterFieldType> batchSupplier,
+        final BatchProcessor<DocType, SearchAfterFieldType> batchProcessor) {
+      this.batchSupplier = batchSupplier;
+      this.batchProcessor = batchProcessor;
+    }
+
+    public static <DocType, SearchAfterFieldType> Builder<DocType, SearchAfterFieldType> builder(
+        final BatchSupplier<DocType, SearchAfterFieldType> batchSupplier,
+        final BatchProcessor<DocType, SearchAfterFieldType> batchProcessor) {
+      return new Builder<>(batchSupplier, batchProcessor);
+    }
+
+    public Builder<DocType, SearchAfterFieldType> executor(final Executor executor) {
+      this.executor = executor;
+      return this;
+    }
+
+    public Builder<DocType, SearchAfterFieldType> logger(final Logger logger) {
+      this.logger = logger;
+      return this;
+    }
+
+    public Builder<DocType, SearchAfterFieldType> minBatchSize(final int minBatchSize) {
+      this.minBatchSize = minBatchSize;
+      return this;
+    }
+
+    public Builder<DocType, SearchAfterFieldType> batchSize(final int batchSize) {
+      this.batchSize = batchSize;
+      return this;
+    }
+
+    public Builder<DocType, SearchAfterFieldType> maxRetryAttempts(final int maxRetryAttempts) {
+      this.maxRetryAttempts = maxRetryAttempts;
+      return this;
+    }
+
+    public Builder<DocType, SearchAfterFieldType> retryDelayMs(final int retryDelayMs) {
+      this.retryDelayMs = retryDelayMs;
+      return this;
+    }
+
+    public Builder<DocType, SearchAfterFieldType> addRetryableException(
+        final Class<? extends Throwable> exceptionClass) {
+      retryableExceptions.add(exceptionClass);
+      return this;
+    }
+
+    public Builder<DocType, SearchAfterFieldType> retryRecorder(final Runnable retryRecorder) {
+      this.retryRecorder = retryRecorder;
+      return this;
+    }
+
+    public CompletableFuture<Void> buildAndExecute() {
+      final var pipeline = new AsyncDocumentPipeline<>(this);
+      return pipeline.execute();
+    }
+  }
+
+  public interface BatchSupplier<DocType, SearchAfterFieldType> {
+    CompletableFuture<DocumentBatch<DocType, SearchAfterFieldType>> supply(
+        SearchAfterFieldType searchAfter, int batchSize);
+  }
+
+  public interface BatchProcessor<DocType, SearchAfterFieldType> {
+    CompletableFuture<Void> process(DocumentBatch<DocType, SearchAfterFieldType> batch);
+  }
+}
