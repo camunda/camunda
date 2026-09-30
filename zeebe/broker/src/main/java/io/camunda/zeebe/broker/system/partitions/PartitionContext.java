@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
+import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -56,6 +57,8 @@ public interface PartitionContext {
   HealthMonitor getComponentHealthMonitor();
 
   StreamProcessor getStreamProcessor();
+
+  CommandApiService getCommandApiService();
 
   LogStream getLogStream();
 

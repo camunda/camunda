@@ -9,6 +9,8 @@ package io.camunda.zeebe.broker.system.partitions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.atLeast;
@@ -31,6 +33,7 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
+import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -65,6 +68,7 @@ public class ZeebePartitionTest {
   private PartitionTransition transition;
   private CriticalComponentsHealthMonitor healthMonitor;
   private RaftPartition raft;
+  private CommandApiService commandApiService;
   private ZeebePartition partition;
 
   @Before
@@ -95,6 +99,8 @@ public class ZeebePartitionTest {
     when(ctx.brokerHealthCheckService()).thenReturn(brokerCheckMock);
     when(ctx.getComponentTreeListener()).thenReturn(ComponentTreeListener.noop());
     when(ctx.getPartitionStartupMeterRegistry()).thenReturn(new SimpleMeterRegistry());
+    commandApiService = mock(CommandApiService.class);
+    when(ctx.getCommandApiService()).thenReturn(commandApiService);
 
     partition = new ZeebePartition(ctx, transition, List.of(new NoopStartupStep()));
   }
@@ -196,6 +202,19 @@ public class ZeebePartitionTest {
   }
 
   @Test
+  public void shouldKeepCommandApiFrozenForTransferOnRoleChange() {
+    // given
+    schedulerRule.submitActor(partition);
+
+    // when
+    partition.onNewRole(Role.FOLLOWER, 1);
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(commandApiService, never()).onTransferFreeze(anyInt(), anyBoolean());
+  }
+
+  @Test
   public void shouldResumeLogStreamWritesOnRoleChange() {
     // given
     final var logStream = mock(LogStream.class);
@@ -240,8 +259,9 @@ public class ZeebePartitionTest {
     schedulerRule.workUntilDone();
 
     // then
-    final InOrder inOrder = inOrder(logStream, ctx, streamProcessor);
+    final InOrder inOrder = inOrder(logStream, ctx, commandApiService, streamProcessor);
     inOrder.verify(ctx).setPausedForTransfer(true);
+    inOrder.verify(commandApiService).onTransferFreeze(0, true);
     inOrder.verify(streamProcessor).pauseProcessing();
     inOrder.verify(logStream).pauseWrites();
     assertThat(frozenSince)
@@ -268,6 +288,7 @@ public class ZeebePartitionTest {
     // then
     verify(logStream).resumeWrites();
     verify(ctx).setPausedForTransfer(false);
+    verify(commandApiService).onTransferFreeze(0, false);
     verify(streamProcessor).resumeProcessing();
   }
 
@@ -300,6 +321,140 @@ public class ZeebePartitionTest {
   }
 
   @Test
+  public void shouldUnfreezeCommandApiOnlyAfterStreamProcessorResumes() {
+    // given
+    final var logStream = mock(LogStream.class);
+    when(ctx.getLogStream()).thenReturn(logStream);
+    final var streamProcessor = mock(StreamProcessor.class);
+    final CompletableActorFuture<Void> processorResume = new CompletableActorFuture<>();
+    when(streamProcessor.resumeProcessing()).thenReturn(processorResume);
+    when(ctx.getStreamProcessor()).thenReturn(streamProcessor);
+    when(ctx.shouldProcess()).thenReturn(true);
+    schedulerRule.submitActor(partition);
+    schedulerRule.workUntilDone();
+
+    // when
+    partition.unfreezeAfterTransfer();
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(commandApiService, never()).onTransferFreeze(anyInt(), anyBoolean());
+
+    // when
+    processorResume.complete(null);
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(commandApiService).onTransferFreeze(0, false);
+  }
+
+  @Test
+  public void shouldUnfreezeCommandApiOnlyAfterStreamProcessorResumesOnRollback() {
+    // given
+    final var logStream = mock(LogStream.class);
+    when(ctx.getLogStream()).thenReturn(logStream);
+    final var streamProcessor = mock(StreamProcessor.class);
+    when(ctx.getStreamProcessor()).thenReturn(streamProcessor);
+    when(streamProcessor.pauseProcessing())
+        .thenReturn(CompletableActorFuture.completedExceptionally(new RuntimeException("boom")));
+    final CompletableActorFuture<Void> processorResume = new CompletableActorFuture<>();
+    when(streamProcessor.resumeProcessing()).thenReturn(processorResume);
+    when(ctx.shouldProcess()).thenReturn(true);
+    schedulerRule.submitActor(partition);
+    schedulerRule.workUntilDone();
+
+    // when
+    partition.freezeForTransfer(Duration.ofSeconds(5));
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(commandApiService, never()).onTransferFreeze(0, false);
+
+    // when
+    processorResume.complete(null);
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(commandApiService).onTransferFreeze(0, false);
+  }
+
+  @Test
+  public void shouldKeepNewerTransferFreezeWhenEarlierResumeCompletesLate() {
+    // given
+    final var logStream = mock(LogStream.class);
+    when(ctx.getLogStream()).thenReturn(logStream);
+    final var streamProcessor = mock(StreamProcessor.class);
+    final CompletableActorFuture<Void> processorResume = new CompletableActorFuture<>();
+    when(streamProcessor.resumeProcessing()).thenReturn(processorResume);
+    when(streamProcessor.pauseProcessing()).thenReturn(new CompletableActorFuture<>());
+    when(ctx.getStreamProcessor()).thenReturn(streamProcessor);
+    when(ctx.shouldProcess()).thenReturn(true);
+    schedulerRule.submitActor(partition);
+    schedulerRule.workUntilDone();
+    partition.unfreezeAfterTransfer();
+    schedulerRule.workUntilDone();
+    partition.freezeForTransfer(Duration.ofSeconds(5));
+    schedulerRule.workUntilDone();
+
+    // when
+    processorResume.complete(null);
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(commandApiService, never()).onTransferFreeze(0, false);
+  }
+
+  @Test
+  public void shouldKeepNewerTransferFreezeWhenRollbackResumeCompletesLate() {
+    // given
+    final var logStream = mock(LogStream.class);
+    when(ctx.getLogStream()).thenReturn(logStream);
+    final var streamProcessor = mock(StreamProcessor.class);
+    when(streamProcessor.pauseProcessing())
+        .thenReturn(CompletableActorFuture.completedExceptionally(new RuntimeException("boom")))
+        .thenReturn(new CompletableActorFuture<>());
+    final CompletableActorFuture<Void> processorResume = new CompletableActorFuture<>();
+    when(streamProcessor.resumeProcessing()).thenReturn(processorResume);
+    when(ctx.getStreamProcessor()).thenReturn(streamProcessor);
+    when(ctx.shouldProcess()).thenReturn(true);
+    schedulerRule.submitActor(partition);
+    schedulerRule.workUntilDone();
+    partition.freezeForTransfer(Duration.ofSeconds(5));
+    schedulerRule.workUntilDone();
+    partition.freezeForTransfer(Duration.ofSeconds(5));
+    schedulerRule.workUntilDone();
+
+    // when
+    processorResume.complete(null);
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(commandApiService, never()).onTransferFreeze(0, false);
+  }
+
+  @Test
+  public void shouldUnfreezeCommandApiOnRollbackWhenNotProcessing() {
+    // given
+    final var logStream = mock(LogStream.class);
+    when(ctx.getLogStream()).thenReturn(logStream);
+    final var streamProcessor = mock(StreamProcessor.class);
+    when(ctx.getStreamProcessor()).thenReturn(streamProcessor);
+    when(streamProcessor.pauseProcessing())
+        .thenReturn(CompletableActorFuture.completedExceptionally(new RuntimeException("boom")));
+    when(ctx.shouldProcess()).thenReturn(false);
+    schedulerRule.submitActor(partition);
+    schedulerRule.workUntilDone();
+
+    // when
+    partition.freezeForTransfer(Duration.ofSeconds(5));
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(streamProcessor, never()).resumeProcessing();
+    verify(commandApiService).onTransferFreeze(0, false);
+  }
+
+  @Test
   public void shouldRollBackWriteFreezeWhenProcessorPauseFails() {
     // given
     final var logStream = mock(LogStream.class);
@@ -321,6 +476,7 @@ public class ZeebePartitionTest {
     assertThat(result).failsWithin(Duration.ofSeconds(5));
     verify(logStream).resumeWrites();
     verify(ctx).setPausedForTransfer(false);
+    verify(commandApiService).onTransferFreeze(0, false);
   }
 
   @Test
@@ -346,6 +502,7 @@ public class ZeebePartitionTest {
     assertThat(result).failsWithin(Duration.ofSeconds(5));
     verify(logStream).resumeWrites();
     verify(ctx).setPausedForTransfer(false);
+    verify(commandApiService).onTransferFreeze(0, false);
   }
 
   @Test
