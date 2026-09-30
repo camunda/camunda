@@ -158,6 +158,7 @@ const BatchItemsTable: React.FC<Props> = ({batchOperationKey, batchOperationType
 	}, [batchOperationType, t]);
 
 	const isError = status === 'error';
+	const showItemsTable = status !== 'pending' && (status === 'success' || items.length > 0);
 	const retry = isFetchNextPageError ? fetchNextPage : isFetchPreviousPageError ? fetchPreviousPage : refetch;
 	const onRetryClick = () => {
 		if (!isFetching) {
@@ -198,9 +199,10 @@ const BatchItemsTable: React.FC<Props> = ({batchOperationKey, batchOperationType
 					{isFetching && <InlineLoading description={t('operate.batchOperation.itemsTable.retrying')} />}
 				</div>
 			)}
-			{status === 'pending' ? (
+			{status === 'pending' && (
 				<DataTableSkeleton columnCount={columns.length} rowCount={5} showHeader={false} showToolbar={false} />
-			) : status === 'success' || items.length > 0 ? (
+			)}
+			{showItemsTable && (
 				<ItemsTableContainer>
 					<PaginatedSortableTable<BatchOperationItem>
 						size="md"
@@ -222,7 +224,7 @@ const BatchItemsTable: React.FC<Props> = ({batchOperationKey, batchOperationType
 						data-testid="batch-items-table"
 					/>
 				</ItemsTableContainer>
-			) : null}
+			)}
 		</TableContainer>
 	);
 };
