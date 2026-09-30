@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 
 final class LazyInitializedRdbmsSchemaRegistryTest {
 
-  private static final String TENANT = "tenant-a";
+  private static final String TENANT = "tenanta";
 
   @Test
   void shouldReportNoTenantAsInitializedBeforeTheInitializerIsBound() {
@@ -46,7 +46,7 @@ final class LazyInitializedRdbmsSchemaRegistryTest {
 
       // then
       assertThat(registry.isInitialized(TENANT)).isTrue();
-      assertThat(registry.isInitialized("no-such-tenant")).isFalse();
+      assertThat(registry.isInitialized("nosuchtenant")).isFalse();
     } finally {
       initializer.destroy();
     }
