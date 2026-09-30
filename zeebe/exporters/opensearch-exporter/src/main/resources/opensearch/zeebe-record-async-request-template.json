@@ -47,6 +47,9 @@
             },
             "batchOperationReference": {
               "type": "long"
+            },
+            "receiverId": {
+              "type": "keyword"
             }
           }
         }

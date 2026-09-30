@@ -50,5 +50,9 @@ public interface AsyncRequestState {
     public long batchOperationReference() {
       return record.getBatchOperationReference();
     }
+
+    public String receiverId() {
+      return record.getReceiverId();
+    }
   }
 }

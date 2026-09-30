@@ -58,6 +58,36 @@ public interface ProcessingResultBuilder extends ProcessingSession {
    *
    * @return returns itself for method chaining
    */
+  default ProcessingResultBuilder withResponse(
+      final RecordType type,
+      final long key,
+      final Intent intent,
+      final UnpackedObject value,
+      final ValueType valueType,
+      final RejectionType rejectionType,
+      final String rejectionReason,
+      final long requestId,
+      final int requestStreamId) {
+    return withResponse(
+        type,
+        key,
+        intent,
+        value,
+        valueType,
+        rejectionType,
+        rejectionReason,
+        requestId,
+        requestStreamId,
+        "");
+  }
+
+  /**
+   * Sets the response for the result; will be overwritten if called more than once
+   *
+   * @param receiverId the ID of the cluster member that received the request, or an empty string if
+   *     it's this member or isn't known
+   * @return returns itself for method chaining
+   */
   ProcessingResultBuilder withResponse(
       final RecordType type,
       final long key,
@@ -67,7 +97,8 @@ public interface ProcessingResultBuilder extends ProcessingSession {
       final RejectionType rejectionType,
       final String rejectionReason,
       final long requestId,
-      final int requestStreamId);
+      final int requestStreamId,
+      final String receiverId);
 
   /**
    * Appends a task to be executed after a successful commit ProcessingResultBuilder (replacement

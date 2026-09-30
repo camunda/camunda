@@ -116,7 +116,8 @@ public final class ProbeBehavior {
                   response,
                   ValueType.PROBE,
                   request.requestId(),
-                  request.requestStreamId());
+                  request.requestStreamId(),
+                  request.receiverId());
               stateWriter.appendFollowUpEvent(
                   request.key(), AsyncRequestIntent.PROCESSED, request.record());
             });

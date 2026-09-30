@@ -50,7 +50,8 @@ public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
       final Writers writers,
       final ProcessEngineMetrics metrics,
       final ProcessInstanceCreationHelper processInstanceCreationHelper,
-      final CaseBehavior caseBehavior) {
+      final CaseBehavior caseBehavior,
+      final AsyncRequestBehavior asyncRequestBehavior) {
     this.keyGenerator = keyGenerator;
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
@@ -59,7 +60,7 @@ public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
     this.metrics = metrics;
     helper = processInstanceCreationHelper;
     this.caseBehavior = caseBehavior;
-    asyncRequestBehavior = new AsyncRequestBehavior(keyGenerator, stateWriter);
+    this.asyncRequestBehavior = asyncRequestBehavior;
   }
 
   @Override
@@ -135,7 +136,8 @@ public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
 
     final var entityKey = commandKey < 0 ? keyGenerator.nextKey() : commandKey;
 
-    // recorded as an event, so that whichever broker leads when the instance completes can respond
+    // recorded as an event, so that whichever broker leads when the instance completes can send the
+    // result to this one, which holds the request open
     asyncRequestBehavior.writeAsyncRequestReceived(
         record.getProcessInstanceKey(), record.getStorageOrdinal(), command);
 

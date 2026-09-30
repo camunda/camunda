@@ -41,15 +41,29 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
 
   private final IdGenerator requestIdGenerator;
   private final boolean receiveOnLegacySubject;
+  private final RemoteResponseHandler remoteResponseHandler;
 
   public AtomixServerTransport(
       final MessagingService messagingService,
       final IdGenerator requestIdGenerator,
       final boolean receiveOnLegacySubject) {
+    this(
+        messagingService,
+        requestIdGenerator,
+        receiveOnLegacySubject,
+        (requestId, receiverId, response) -> false);
+  }
+
+  public AtomixServerTransport(
+      final MessagingService messagingService,
+      final IdGenerator requestIdGenerator,
+      final boolean receiveOnLegacySubject,
+      final RemoteResponseHandler remoteResponseHandler) {
     super("ServerTransport");
     this.messagingService = messagingService;
     this.requestIdGenerator = requestIdGenerator;
     this.receiveOnLegacySubject = receiveOnLegacySubject;
+    this.remoteResponseHandler = remoteResponseHandler;
     pendingRequests = new Long2ObjectHashMap<>();
     subscribedTopics = new HashMap<>();
   }
@@ -165,6 +179,7 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
   @Override
   public void sendResponse(final ServerResponse response) {
     final var requestId = response.getRequestId();
+    final var receiverId = response.getReceiverId();
     final var length = response.getLength();
     final var bytes = new byte[length];
 
@@ -174,6 +189,12 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
 
     actor.run(
         () -> {
+          // request ids are only unique per member, so a request another member received must not
+          // be looked up here
+          if (remoteResponseHandler.forwardToReceiver(requestId, receiverId, bytes)) {
+            return;
+          }
+
           final var completableFuture = pendingRequests.remove(requestId);
           if (completableFuture != null) {
             if (LOG.isTraceEnabled()) {
@@ -181,11 +202,29 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
             }
 
             completableFuture.complete(bytes);
+          } else {
+            if (LOG.isTraceEnabled()) {
+              LOG.trace(
+                  "Wasn't able to send response to request {} of partition {}",
+                  requestId,
+                  response.getPartitionId());
+            }
+          }
+        });
+  }
+
+  /**
+   * Completes a request that this transport received with a response that another broker produced,
+   * e.g. because leadership of the request's partition moved before the response was ready.
+   */
+  public void completeForwardedResponse(final long requestId, final byte[] response) {
+    actor.run(
+        () -> {
+          final var completableFuture = pendingRequests.remove(requestId);
+          if (completableFuture != null) {
+            completableFuture.complete(response);
           } else if (LOG.isTraceEnabled()) {
-            LOG.trace(
-                "Wasn't able to send response to request {} of partition {}",
-                requestId,
-                response.getPartitionId());
+            LOG.trace("Dropping forwarded response to unknown request {}", requestId);
           }
         });
   }
@@ -197,5 +236,17 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
 
   static String legacyTopicName(final int partitionId, final RequestType requestType) {
     return String.format(LEGACY_API_TOPIC_FORMAT, requestType.getId(), partitionId);
+  }
+
+  /** Hands over responses to requests that another cluster member received. */
+  @FunctionalInterface
+  public interface RemoteResponseHandler {
+
+    /**
+     * @param receiverId the ID of the member that received the request, or an empty string if it
+     *     isn't known
+     * @return true if another member received the request and the response was sent there
+     */
+    boolean forwardToReceiver(long requestId, String receiverId, byte[] response);
   }
 }

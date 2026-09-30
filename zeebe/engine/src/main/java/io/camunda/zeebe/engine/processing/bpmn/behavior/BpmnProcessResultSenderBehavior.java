@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
+import io.camunda.zeebe.engine.state.immutable.AsyncRequestState.AsyncRequest;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceResultIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import org.agrona.DirectBuffer;
 
@@ -60,27 +62,34 @@ public final class BpmnProcessResultSenderBehavior {
     final AwaitProcessInstanceResultMetadata requestMetadata =
         elementInstanceState.getAwaitResultRequestMetadata(context.getProcessInstanceKey());
 
+    final var awaitingRequest = findAwaitingRequest(context);
     if (requestMetadata != null) {
-      sendResult(context, requestMetadata);
+      final var receiverId = awaitingRequest.map(AsyncRequest::receiverId).orElse("");
+      sendResult(context, requestMetadata, receiverId);
     }
-    closeAwaitingRequest(context);
+    awaitingRequest.ifPresent(this::close);
   }
 
   /** Forgets the request awaiting the result of the process instance, if there is one. */
   public void closeAwaitingRequest(final BpmnElementContext context) {
-    asyncRequestState
-        .findRequest(
-            context.getProcessInstanceKey(),
-            ValueType.PROCESS_INSTANCE_CREATION,
-            ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT)
-        .ifPresent(
-            request ->
-                stateWriter.appendFollowUpEvent(
-                    request.key(), AsyncRequestIntent.PROCESSED, request.record()));
+    findAwaitingRequest(context).ifPresent(this::close);
+  }
+
+  private Optional<AsyncRequest> findAwaitingRequest(final BpmnElementContext context) {
+    return asyncRequestState.findRequest(
+        context.getProcessInstanceKey(),
+        ValueType.PROCESS_INSTANCE_CREATION,
+        ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT);
+  }
+
+  private void close(final AsyncRequest request) {
+    stateWriter.appendFollowUpEvent(request.key(), AsyncRequestIntent.PROCESSED, request.record());
   }
 
   private void sendResult(
-      final BpmnElementContext context, final AwaitProcessInstanceResultMetadata requestMetadata) {
+      final BpmnElementContext context,
+      final AwaitProcessInstanceResultMetadata requestMetadata,
+      final String receiverId) {
 
     final DirectBuffer variablesAsDocument = collectVariables(context, requestMetadata);
 
@@ -100,7 +109,8 @@ public final class BpmnProcessResultSenderBehavior {
         resultRecord,
         ValueType.PROCESS_INSTANCE_RESULT,
         requestMetadata.getRequestId(),
-        requestMetadata.getRequestStreamId());
+        requestMetadata.getRequestStreamId(),
+        receiverId);
   }
 
   private DirectBuffer collectVariables(

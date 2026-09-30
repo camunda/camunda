@@ -117,7 +117,8 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
         userTaskRecord,
         ValueType.USER_TASK,
         request.requestId(),
-        request.requestStreamId());
+        request.requestStreamId(),
+        request.receiverId());
     stateWriter.appendFollowUpEvent(request.key(), AsyncRequestIntent.PROCESSED, request.record());
   }
 

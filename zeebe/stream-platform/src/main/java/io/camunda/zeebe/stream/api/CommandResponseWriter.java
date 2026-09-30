@@ -32,5 +32,11 @@ public interface CommandResponseWriter {
 
   CommandResponseWriter valueWriter(BufferWriter value);
 
+  /**
+   * @param receiverId the ID of the cluster member that received the request, or an empty string if
+   *     it's this member or isn't known
+   */
+  CommandResponseWriter receiverId(String receiverId);
+
   void tryWriteResponse(int requestStreamId, long requestId);
 }

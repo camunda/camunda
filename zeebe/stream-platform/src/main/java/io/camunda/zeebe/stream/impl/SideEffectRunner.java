@@ -200,6 +200,7 @@ final class SideEffectRunner implements CommittedPositionListener {
             .partitionId(partitionId)
             .valueType(recordMetadata.getValueType())
             .valueWriter(responseValue.recordValue())
+            .receiverId(processingResponse.receiverId())
             .tryWriteResponse(processingResponse.requestStreamId(), processingResponse.requestId());
       } catch (final Exception e) {
         LOG.error(

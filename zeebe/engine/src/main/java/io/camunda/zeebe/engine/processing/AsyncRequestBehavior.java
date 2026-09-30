@@ -18,16 +18,24 @@ public class AsyncRequestBehavior {
 
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
+  private final String localMemberId;
 
-  public AsyncRequestBehavior(final KeyGenerator keyGenerator, final StateWriter stateWriter) {
+  /**
+   * @param localMemberId the ID of this cluster member, recorded as the request's receiver so that
+   *     a response sent after leadership moved can still reach it
+   */
+  public AsyncRequestBehavior(
+      final KeyGenerator keyGenerator, final StateWriter stateWriter, final String localMemberId) {
     this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
+    this.localMemberId = localMemberId;
   }
 
   public AsyncRequest writeAsyncRequestReceived(
       final long scopeKey, final int storageOrdinal, final TypedRecord<?> command) {
     final var key = keyGenerator.nextKey();
-    final var record = toAsyncRequestRecord(scopeKey, storageOrdinal, command);
+    final var record =
+        toAsyncRequestRecord(scopeKey, storageOrdinal, command).setReceiverId(localMemberId);
     stateWriter.appendFollowUpEvent(key, AsyncRequestIntent.RECEIVED, record);
     return new AsyncRequest(key, record);
   }

@@ -511,7 +511,8 @@ public final class BpmnUserTaskBehavior {
                         RejectionType.INVALID_STATE,
                         "user task was canceled during ongoing transition",
                         request.requestId(),
-                        request.requestStreamId());
+                        request.requestStreamId(),
+                        request.receiverId());
                 case VARIABLE_DOCUMENT ->
                     variableState
                         .findVariableDocumentState(userTaskElementInstanceKey)
@@ -525,7 +526,8 @@ public final class BpmnUserTaskBehavior {
                                   RejectionType.INVALID_STATE,
                                   "user task was canceled during handling task variables update",
                                   request.requestId(),
-                                  request.requestStreamId());
+                                  request.requestStreamId(),
+                                  request.receiverId());
                             });
                 default ->
                     LOGGER.debug(

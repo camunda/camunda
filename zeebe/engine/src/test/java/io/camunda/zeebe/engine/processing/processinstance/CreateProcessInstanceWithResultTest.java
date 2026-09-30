@@ -38,7 +38,12 @@ import org.mockito.stubbing.Answer;
 
 public final class CreateProcessInstanceWithResultTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  private static final String LOCAL_MEMBER_ID = "zone-a_0";
+
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition().withEngineConfig(c -> c.setLocalMemberId(LOCAL_MEMBER_ID));
+
   private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess("PROCESS").startEvent().endEvent().done();
   private static ProcessInstanceResultRecord response;
@@ -210,6 +215,29 @@ public final class CreateProcessInstanceWithResultTest {
     verify(mockCommandResponseWriter, timeout(1000).times(1))
         .intent(ProcessInstanceResultIntent.COMPLETED);
     verify(mockCommandResponseWriter, timeout(1000).times(1)).tryWriteResponse(4, 4L);
+  }
+
+  @Test
+  public void shouldAddressResultToTheBrokerThatReceivedTheRequest() {
+    // given
+    ENGINE.deployment().withXmlResource(processWithServiceTask("ADDRESSED")).deploy();
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("ADDRESSED")
+            .withResult()
+            .withRequestId(6L)
+            .withRequestStreamId(6)
+            .create();
+    ENGINE.replay();
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType("ADDRESSED").complete();
+
+    // then
+    final var inOrder = Mockito.inOrder(mockCommandResponseWriter);
+    inOrder.verify(mockCommandResponseWriter, timeout(1000)).receiverId(LOCAL_MEMBER_ID);
+    inOrder.verify(mockCommandResponseWriter, timeout(1000)).tryWriteResponse(6, 6L);
   }
 
   @Test

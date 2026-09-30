@@ -30,4 +30,10 @@ public interface ProcessingResponse {
    * @return the value of the response which should be sent as answer of the request
    */
   RecordBatchEntry responseValue();
+
+  /**
+   * @return the ID of the cluster member that received the request, or an empty string if it's this
+   *     member or isn't known
+   */
+  String receiverId();
 }

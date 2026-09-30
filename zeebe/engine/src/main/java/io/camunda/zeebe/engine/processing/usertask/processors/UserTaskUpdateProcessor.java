@@ -132,7 +132,8 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
             userTaskRecord,
             ValueType.USER_TASK,
             request.requestId(),
-            request.requestStreamId());
+            request.requestStreamId(),
+            request.receiverId());
       }
       case VARIABLE_DOCUMENT -> {
         // Update triggered by a VariableDocument command.
@@ -177,7 +178,8 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
             variableDocumentRecord,
             ValueType.VARIABLE_DOCUMENT,
             request.requestId(),
-            request.requestStreamId());
+            request.requestStreamId(),
+            request.receiverId());
       }
       default ->
           throw new IllegalArgumentException(

@@ -62,6 +62,21 @@ public class ResultBuilderBackedTypedResponseWriter extends AbstractResultBuilde
       final String reason,
       final long requestId,
       final int requestStreamId) {
+    writeRejectedResponse(
+        key, intent, value, valueType, type, reason, requestId, requestStreamId, "");
+  }
+
+  @Override
+  public void writeRejectedResponse(
+      final long key,
+      final Intent intent,
+      final UnifiedRecordValue value,
+      final ValueType valueType,
+      final RejectionType type,
+      final String reason,
+      final long requestId,
+      final int requestStreamId,
+      final String receiverId) {
     resultBuilder()
         .withResponse(
             RecordType.COMMAND_REJECTION,
@@ -72,7 +87,8 @@ public class ResultBuilderBackedTypedResponseWriter extends AbstractResultBuilde
             type,
             reason,
             requestId,
-            requestStreamId);
+            requestStreamId,
+            receiverId);
   }
 
   @Override
@@ -109,7 +125,19 @@ public class ResultBuilderBackedTypedResponseWriter extends AbstractResultBuilde
       final ValueType valueType,
       final long requestId,
       final int requestStreamId) {
+    writeAcceptedResponse(
+        eventKey, eventState, eventValue, valueType, requestId, requestStreamId, "");
+  }
 
+  @Override
+  public void writeAcceptedResponse(
+      final long eventKey,
+      final Intent eventState,
+      final UnpackedObject eventValue,
+      final ValueType valueType,
+      final long requestId,
+      final int requestStreamId,
+      final String receiverId) {
     resultBuilder()
         .withResponse(
             RecordType.EVENT,
@@ -120,6 +148,7 @@ public class ResultBuilderBackedTypedResponseWriter extends AbstractResultBuilde
             RejectionType.NULL_VAL,
             "",
             requestId,
-            requestStreamId);
+            requestStreamId,
+            receiverId);
   }
 }

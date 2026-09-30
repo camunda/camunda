@@ -18,6 +18,7 @@ public final class ServerResponseImpl implements ServerResponse {
   private @Nullable BufferWriter writer;
   private int partitionId;
   private long requestId;
+  private String receiverId = "";
 
   public ServerResponseImpl writer(final BufferWriter writer) {
     this.writer = writer;
@@ -28,6 +29,7 @@ public final class ServerResponseImpl implements ServerResponse {
     partitionId = -1;
     writer = null;
     requestId = -1;
+    receiverId = "";
 
     return this;
   }
@@ -63,6 +65,16 @@ public final class ServerResponseImpl implements ServerResponse {
 
   public ServerResponseImpl setRequestId(final long requestId) {
     this.requestId = requestId;
+    return this;
+  }
+
+  @Override
+  public String getReceiverId() {
+    return receiverId;
+  }
+
+  public ServerResponseImpl setReceiverId(final String receiverId) {
+    this.receiverId = receiverId;
     return this;
   }
 }

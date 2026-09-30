@@ -67,4 +67,13 @@ public interface AsyncRequestRecordValue extends RecordValue, StorageOrdinalRela
    * instance) can be correlated back to the batch operation that triggered them.
    */
   long getBatchOperationReference();
+
+  /**
+   * The ID of the cluster member that received the request and holds it open, or an empty string if
+   * it isn't known.
+   *
+   * <p>The member that sends the response forwards it there when the two differ, for example
+   * because leadership of the partition moved while the request was waiting.
+   */
+  String getReceiverId();
 }

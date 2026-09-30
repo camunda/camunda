@@ -41,6 +41,7 @@ public final class CommandResponseWriterImpl implements CommandResponseWriter, B
   private ValueType valueType = ValueType.NULL_VAL;
   private short intent = Intent.NULL_VAL;
   private RejectionType rejectionType = RejectionType.NULL_VAL;
+  private String receiverId = "";
 
   public CommandResponseWriterImpl(final ServerOutput output) {
     this.output = output;
@@ -95,11 +96,22 @@ public final class CommandResponseWriterImpl implements CommandResponseWriter, B
   }
 
   @Override
+  public CommandResponseWriterImpl receiverId(final String receiverId) {
+    this.receiverId = receiverId;
+    return this;
+  }
+
+  @Override
   public void tryWriteResponse(final int remoteStreamId, final long requestId) {
     Objects.requireNonNull(valueWriter);
 
     try {
-      response.reset().setPartitionId(remoteStreamId).setRequestId(requestId).writer(this);
+      response
+          .reset()
+          .setPartitionId(remoteStreamId)
+          .setRequestId(requestId)
+          .setReceiverId(receiverId)
+          .writer(this);
 
       output.sendResponse(response);
     } finally {
@@ -164,5 +176,6 @@ public final class CommandResponseWriterImpl implements CommandResponseWriter, B
     valueType = ValueType.NULL_VAL;
     rejectionType = RejectionType.NULL_VAL;
     rejectionReason.wrap(0, 0);
+    receiverId = "";
   }
 }

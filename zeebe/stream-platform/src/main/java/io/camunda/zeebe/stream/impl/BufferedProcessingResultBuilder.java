@@ -91,7 +91,8 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
       final RejectionType rejectionType,
       final String rejectionReason,
       final long requestId,
-      final int requestStreamId) {
+      final int requestStreamId,
+      final String receiverId) {
     if (requestId == RecordMetadataEncoder.requestIdNullValue()) {
       return this;
     }
@@ -107,7 +108,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
     metadata.authorization(AuthInfo.EMPTY); // don't expose the authorization data in the response
 
     final var entry = RecordBatchEntry.createEntry(key, metadata, -1, value);
-    processingResponse = new ProcessingResponseImpl(entry, requestId, requestStreamId);
+    processingResponse = new ProcessingResponseImpl(entry, requestId, requestStreamId, receiverId);
     return this;
   }
 
@@ -145,6 +146,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
     metadataDecorators.add(decorator);
   }
 
-  record ProcessingResponseImpl(RecordBatchEntry responseValue, long requestId, int requestStreamId)
+  record ProcessingResponseImpl(
+      RecordBatchEntry responseValue, long requestId, int requestStreamId, String receiverId)
       implements ProcessingResponse {}
 }

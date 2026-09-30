@@ -209,6 +209,8 @@ public final class EngineConfiguration {
   /** Controls whether the archiverless mode is enabled. */
   private boolean archiverlessEnabled = DEFAULT_ENGINE_STORAGE_ORDINALS_ENABLE_ARCHIVERLESS;
 
+  private String localMemberId = "";
+
   /**
    * Override default storage ordinal with a fixed set of values, mainly used during initial
    * testing. When more than one value is given, one is chosen in a round-robin fashion for each new
@@ -378,6 +380,16 @@ public final class EngineConfiguration {
 
   public EngineConfiguration setMaxResponseMessageSize(final int maxResponseMessageSize) {
     this.maxResponseMessageSize = maxResponseMessageSize;
+    return this;
+  }
+
+  /** The ID of the cluster member that runs this engine, or an empty string if it isn't known. */
+  public String getLocalMemberId() {
+    return localMemberId;
+  }
+
+  public EngineConfiguration setLocalMemberId(final String localMemberId) {
+    this.localMemberId = localMemberId;
     return this;
   }
 

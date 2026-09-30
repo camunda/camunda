@@ -20,4 +20,10 @@ public interface ServerResponse extends BufferWriter {
    * @return the partition id on which the requests was received and should be send back
    */
   int getPartitionId();
+
+  /**
+   * @return the ID of the cluster member that received the request, or an empty string if it's this
+   *     member or isn't known
+   */
+  String getReceiverId();
 }

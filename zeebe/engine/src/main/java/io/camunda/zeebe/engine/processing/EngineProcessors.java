@@ -209,7 +209,8 @@ public final class EngineProcessors {
         new DecisionBehavior(
             DecisionEngineFactory.createDecisionEngine(), processingState, processEngineMetrics);
     final var asyncRequestBehavior =
-        new AsyncRequestBehavior(processingState.getKeyGenerator(), writers.state());
+        new AsyncRequestBehavior(
+            processingState.getKeyGenerator(), writers.state(), config.getLocalMemberId());
     final var transientProcessMessageSubscriptionState =
         typedRecordProcessorContext.getTransientProcessMessageSubscriptionState();
 

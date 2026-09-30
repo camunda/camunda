@@ -142,7 +142,9 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
     final StreamProcessorMode streamProcessorMode =
         targetRole == Role.LEADER ? StreamProcessorMode.PROCESSING : StreamProcessorMode.REPLAY;
 
-    final var engineCfg = createEngineConfiguration(context.getBrokerCfg());
+    final var engineCfg =
+        createEngineConfiguration(context.getBrokerCfg())
+            .setLocalMemberId(context.getMemberId().id());
 
     final var engine =
         context
