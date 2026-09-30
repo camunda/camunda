@@ -32,6 +32,7 @@ import {
 	mockCurrentUserEndpoint,
 	mockQueryAuditLogsEndpoint,
 	mockQueryDecisionDefinitionsEndpoint,
+	mockQueryProcessDefinitionsEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {
@@ -589,6 +590,25 @@ describe('Operations Log saved filters', () => {
 		expect(resolutionRequests).toEqual([
 			expect.objectContaining({filter: {processDefinitionId: {$eq: 'invoice'}, tenantId: TENANT_A, version: 42}}),
 		]);
+		expect(auditRequests).not.toHaveBeenCalled();
+	});
+
+	it('should block a selected version when process resolution fails even if decision names fail', async ({worker}) => {
+		const auditRequests = vi.fn();
+		worker.use(
+			mockQueryProcessDefinitionsEndpoint({successResponse: new HttpResponse(null, {status: 503})}),
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
+			mockQueryDecisionDefinitionsEndpoint({successResponse: new HttpResponse(null, {status: 503})}),
+			http.post(endpoints.queryAuditLogs.getUrl(), () => {
+				auditRequests();
+				return EMPTY_AUDIT.clone();
+			}),
+		);
+
+		const screen = await renderPage('?tenantId=%3Ctenant-A%3E&process=invoice&version=1');
+
+		await expect.element(screen.getByText("Couldn't load the selected process definition")).toBeVisible();
+		await expect.element(screen.getByText('Operations Log', {exact: true})).not.toBeInTheDocument();
 		expect(auditRequests).not.toHaveBeenCalled();
 	});
 

@@ -834,6 +834,8 @@
 			},
 			"operationsLog": {
 				"title": "Journal des opérations",
+				"decisionDefinitionsLookupFailed": "Impossible de charger les noms des décisions. Le journal des opérations reste disponible.",
+				"decisionDefinitionsRetry": "Réessayer de charger les noms des décisions",
 				"table": {
 					"operationType": "Type d'opération",
 					"entityType": "Type d'entité",

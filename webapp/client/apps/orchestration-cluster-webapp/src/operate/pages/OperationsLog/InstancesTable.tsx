@@ -8,8 +8,8 @@
 
 import {useEffect, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useQueries, useSuspenseQuery, type UseQueryResult} from '@tanstack/react-query';
-import {Button, DataTableSkeleton, Stack} from '@carbon/react';
+import {useQueries, useQuery, type UseQueryResult} from '@tanstack/react-query';
+import {Button, DataTableSkeleton, InlineNotification, Stack} from '@carbon/react';
 import {
 	auditLogSortFieldEnum,
 	type AuditLog,
@@ -60,9 +60,14 @@ const InstancesTable: React.FC<Props> = ({search, selectedTenantId, selectedDefi
 	const {t} = useTranslation();
 	const [detailsModal, setDetailsModal] = useState<DetailsModalState>({isOpen: false});
 
-	const {data: decisionDefinitions} = useSuspenseQuery(queries.queryDecisionDefinitions({page: {limit: 1000}}));
+	const {
+		data: decisionDefinitions,
+		isError: isDecisionDefinitionError,
+		isFetching: isFetchingDecisionDefinitions,
+		refetch: refetchDecisionDefinitions,
+	} = useQuery({...queries.queryDecisionDefinitions({page: {limit: 1000}}), retry: false});
 	const decisionDefinitionNameMap = useMemo(
-		() => Object.fromEntries(decisionDefinitions.items.map((def) => [def.decisionDefinitionKey, def.name])),
+		() => Object.fromEntries(decisionDefinitions?.items.map((def) => [def.decisionDefinitionKey, def.name]) ?? []),
 		[decisionDefinitions],
 	);
 
@@ -227,6 +232,25 @@ const InstancesTable: React.FC<Props> = ({search, selectedTenantId, selectedDefi
 				count={status === 'success' && !isPlaceholderData ? totalCount : undefined}
 				hasMoreTotalItems={status === 'success' && !isPlaceholderData && hasMoreTotalItems}
 			/>
+			{isDecisionDefinitionError && status === 'success' && !isPlaceholderData && (
+				<Stack gap={2}>
+					<InlineNotification
+						kind="error"
+						title={t('operate.operationsLog.decisionDefinitionsLookupFailed')}
+						hideCloseButton
+						lowContrast
+						role="alert"
+					/>
+					<Button
+						kind="ghost"
+						size="sm"
+						disabled={isFetchingDecisionDefinitions}
+						onClick={() => void refetchDecisionDefinitions()}
+					>
+						{t('operate.operationsLog.decisionDefinitionsRetry')}
+					</Button>
+				</Stack>
+			)}
 			{status === 'pending' || (isPlaceholderData && isFetching && auditLogs.length === 0) ? (
 				<DataTableSkeleton columnCount={columns.length} rowCount={5} showHeader={false} showToolbar={false} />
 			) : (

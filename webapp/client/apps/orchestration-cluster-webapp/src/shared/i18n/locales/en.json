@@ -843,6 +843,8 @@
 			},
 			"operationsLog": {
 				"title": "Operations Log",
+				"decisionDefinitionsLookupFailed": "Couldn't load decision names. Audit logs are still available.",
+				"decisionDefinitionsRetry": "Retry decision names",
 				"table": {
 					"operationType": "Operation type",
 					"entityType": "Entity type",

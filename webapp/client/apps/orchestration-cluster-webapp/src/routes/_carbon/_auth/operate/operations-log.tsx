@@ -8,15 +8,12 @@
 
 import {DataTableSkeleton} from '@carbon/react';
 import {createFileRoute} from '@tanstack/react-router';
-import {queries} from '#/shared/http/queries';
 import {OperationsLog} from '#/operate/pages/OperationsLog/OperationsLog';
 import {operationsLogSearchSchema, stripLegacyFilters} from '#/operate/pages/OperationsLog/operationsLog.schema';
 
 export const Route = createFileRoute('/_carbon/_auth/operate/operations-log')({
 	validateSearch: operationsLogSearchSchema,
 	search: {middlewares: [stripLegacyFilters]},
-	loader: ({context: {queryClient}}) =>
-		queryClient.ensureQueryData(queries.queryDecisionDefinitions({page: {limit: 1000}})),
 	pendingComponent: () => <DataTableSkeleton columnCount={7} rowCount={5} showHeader={false} showToolbar={false} />,
 	component: function OperationsLogRoute() {
 		return <OperationsLog {...Route.useSearch()} />;

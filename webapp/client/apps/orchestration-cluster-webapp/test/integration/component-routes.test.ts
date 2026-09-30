@@ -14,7 +14,7 @@ import {
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockGetUserTaskEndpoint,
 	mockLicenseEndpoint,
-	mockQueryDecisionDefinitionsEndpoint,
+	mockQueryProcessDefinitionsEndpoint,
 	mockQueryUserTasksEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
@@ -286,7 +286,7 @@ test.describe('component routes', () => {
 				successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
 			}),
 			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
-			mockQueryDecisionDefinitionsEndpoint({
+			mockQueryProcessDefinitionsEndpoint({
 				successResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
 			}),
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({
@@ -297,7 +297,7 @@ test.describe('component routes', () => {
 			}),
 		);
 
-		await page.goto('/operate/operations-log');
+		await page.goto('/operate/processes');
 
 		await expect(page.getByRole('heading', {name: 'Something went wrong'})).toBeVisible({timeout: 15000});
 		await expect(page.getByRole('button', {name: 'Try again'})).toHaveCSS('background-color', 'rgb(15, 98, 254)');
