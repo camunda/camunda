@@ -8,13 +8,24 @@
 
 import {expect, type Page} from '@playwright/test';
 
-import {setToggle} from './toggle';
+import {setCheckbox, setToggle} from './toggle';
 
 // Enables public sharing of the currently viewed report or dashboard and returns the share link.
-export async function enableSharing(page: Page): Promise<string> {
+export async function enableSharing(
+  page: Page,
+  {includeFilters = false}: {includeFilters?: boolean} = {}
+): Promise<string> {
   await page.getByRole('main').getByRole('button', {name: 'Share', exact: true}).click();
   await setToggle(page.getByRole('switch', {name: 'Enable sharing'}), true);
+  if (includeFilters) {
+    await setCheckbox(
+      page.getByRole('checkbox', {name: 'Share with current filters applied'}),
+      true
+    );
+  }
   const link = page.getByRole('textbox', {name: 'Link'});
-  await expect(link).toHaveValue(/\/external\/#\/share\//);
+  await expect(link).toHaveValue(
+    includeFilters ? /\/external\/#\/share\/.*filter=/ : /\/external\/#\/share\//
+  );
   return link.inputValue();
 }

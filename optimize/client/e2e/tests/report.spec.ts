@@ -76,6 +76,14 @@ test.describe('report setup', () => {
     }
   });
 
+  test('list raw data', async ({reportPage}) => {
+    await reportPage.selectView('Raw data');
+
+    await expect(reportPage.resultTable.getByRole('row', {name: ORDER_PROCESS.key})).toHaveCount(
+      countOrders()
+    );
+  });
+
   test('count user tasks by assignee', async ({reportPage}) => {
     await reportPage.selectView('User task', 'Count');
     await reportPage.selectGroupBy('Assignee');

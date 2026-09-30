@@ -65,3 +65,31 @@ test('share a dashboard publicly', async ({
   await expect(anonymousPage.getByRole('heading', {name: dashboardName})).toBeVisible();
   await expect(anonymousPage.getByTestId('report-number')).toHaveText(String(countOrders()));
 });
+
+test('share a dashboard with its current filters', async ({
+  page,
+  anonymousPage,
+  api,
+  collection,
+  dashboardPage,
+  uniqueName,
+}) => {
+  const reportName = uniqueName('Filtered tile');
+  const reportId = await api.createReport(reportName, collection.id);
+  const dashboardId = await api.createDashboard(uniqueName('Filtered share'), collection.id, [
+    {type: 'optimize_report', reportId},
+  ]);
+  const runningOrders = String(countOrders((order) => order.outcome === 'running'));
+
+  await dashboardPage.goto(collection, dashboardId);
+  await dashboardPage.edit();
+  await dashboardPage.addFilter('Instance state');
+  await dashboardPage.save();
+  await dashboardPage.applyInstanceStateFilter('Running');
+  await expect(dashboardPage.tileNumber(reportName)).toHaveText(runningOrders);
+
+  const shareUrl = await enableSharing(page, {includeFilters: true});
+
+  await anonymousPage.goto(shareUrl);
+  await expect(anonymousPage.getByTestId('report-number')).toHaveText(runningOrders);
+});
