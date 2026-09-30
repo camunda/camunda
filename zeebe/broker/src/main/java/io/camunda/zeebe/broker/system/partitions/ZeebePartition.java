@@ -68,6 +68,9 @@ public final class ZeebePartition extends Actor
   private CompletableActorFuture<Void> closeFuture;
   private boolean closing = false;
 
+  /** Counts transfer freezes, so a resume that completes late cannot clear a newer freeze. */
+  private long transferFreezes;
+
   /** Tells the leader which node may ask it to transfer leadership. */
   private final ClusterConfigurationCoordinatorCheck coordinatorCheck;
 
@@ -562,6 +565,8 @@ public final class ZeebePartition extends Actor
           // Make the transfer pause visible to shouldProcess(), so a disk/admin resume mid-transfer
           // cannot silently un-pause the partition.
           context.setPausedForTransfer(true);
+          transferFreezes++;
+          context.getCommandApiService().onTransferFreeze(context.getPartitionId(), true);
           // If the freeze does not complete within the timeout, roll back and fail so a stalled
           // processor pause cannot leave the partition half-frozen. This bounds arming the freeze
           // only; how long the partition may then stay frozen is the Raft watchdog's budget.
@@ -618,9 +623,25 @@ public final class ZeebePartition extends Actor
   private void rollbackTransferPause() {
     context.setPausedForTransfer(false);
     context.getLogStream().resumeWrites();
+    final long freeze = transferFreezes;
     final var streamProcessor = context.getStreamProcessor();
     if (streamProcessor != null && context.shouldProcess()) {
-      streamProcessor.resumeProcessing();
+      streamProcessor
+          .resumeProcessing()
+          .onComplete((resumed, error) -> clearCommandApiTransferFreeze(freeze));
+    } else {
+      clearCommandApiTransferFreeze(freeze);
+    }
+  }
+
+  /**
+   * Only called after the stream processor has resumed (if it resumes at all), so the command API
+   * never sees the partition paused without the transfer freeze. Skipped if another freeze started
+   * in the meantime, since that freeze still holds.
+   */
+  private void clearCommandApiTransferFreeze(final long freeze) {
+    if (freeze == transferFreezes) {
+      context.getCommandApiService().onTransferFreeze(context.getPartitionId(), false);
     }
   }
 
@@ -648,6 +669,7 @@ public final class ZeebePartition extends Actor
   private void reopen(final CompletableActorFuture<Void> result) {
     context.getLogStream().resumeWrites();
     context.setPausedForTransfer(false);
+    final long freeze = transferFreezes;
     final ActorFuture<Void> processorResume;
     if (context.getStreamProcessor() != null && context.shouldProcess()) {
       processorResume = context.getStreamProcessor().resumeProcessing();
@@ -667,6 +689,7 @@ public final class ZeebePartition extends Actor
             }
             result.completeExceptionally(processorError);
           } else {
+            clearCommandApiTransferFreeze(freeze);
             result.complete(null);
           }
         });
