@@ -289,6 +289,12 @@ test.describe('component routes', () => {
 			mockQueryDecisionDefinitionsEndpoint({
 				successResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
 			}),
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+				successResponse: HttpResponse.json(createPaginatedResponse()),
+			}),
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+				successResponse: HttpResponse.json(createPaginatedResponse()),
+			}),
 		);
 
 		await page.goto('/operate/operations-log');
