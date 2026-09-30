@@ -862,10 +862,12 @@ describe('<BottomPanelTabs />', () => {
 
     await user.click(screen.getByRole('button', {name: 'Select element'}));
 
-    expect(await screen.findByTestId('pathname')).toHaveTextContent(
-      Paths.processInstanceDetails({
-        processInstanceId: PROCESS_INSTANCE_ID,
-      }),
+    await waitFor(() =>
+      expect(screen.getByTestId('pathname')).toHaveTextContent(
+        Paths.processInstanceDetails({
+          processInstanceId: PROCESS_INSTANCE_ID,
+        }),
+      ),
     );
   });
 
