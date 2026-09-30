@@ -622,6 +622,9 @@ public final class ProcessInstanceCommandRejectionTest {
             .withProcessInstanceKey(processInstanceKey)
             .withElementType(BpmnElementType.PROCESS)
             .getFirst();
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
 
     // when
     engine.writeRecords(
@@ -636,10 +639,50 @@ public final class ProcessInstanceCommandRejectionTest {
             .getFirst();
 
     Assertions.assertThat(rejectedCommand)
-        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
             String.format(
-                "Expected to suspend a process instance with key '%d', but no such process was found",
+                "Expected to suspend a process instance with key '%d', but it is already being terminated",
+                processInstanceKey));
+  }
+
+  @Test
+  public void shouldRejectResumeIfProcessInstanceIsTerminating() {
+    // given (synthetic situation - is not expected in regular processing)
+    final var processInstanceKey =
+        createProcessInstance(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask("a", t -> t.zeebeJobType("a"))
+                .endEvent()
+                .done());
+
+    final var processInstanceActivated =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst();
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    engine.writeRecords(
+        terminateElementCommand(processInstanceActivated),
+        resumeProcessInstanceCommand(processInstanceKey));
+
+    // then
+    final var rejectedCommand =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.RESUME)
+            .onlyCommandRejections()
+            .withRecordKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(rejectedCommand)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            String.format(
+                "Expected to resume a process instance with key '%d', but it is already being terminated",
                 processInstanceKey));
   }
 
@@ -700,6 +743,12 @@ public final class ProcessInstanceCommandRejectionTest {
   private RecordToWrite suspendProcessInstanceCommand(final long processInstanceKey) {
     return RecordToWrite.command()
         .processInstance(ProcessInstanceIntent.SUSPEND, new ProcessInstanceRecord())
+        .key(processInstanceKey);
+  }
+
+  private RecordToWrite resumeProcessInstanceCommand(final long processInstanceKey) {
+    return RecordToWrite.command()
+        .processInstance(ProcessInstanceIntent.RESUME, new ProcessInstanceRecord())
         .key(processInstanceKey);
   }
 
