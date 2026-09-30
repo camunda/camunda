@@ -29,7 +29,7 @@ function createUserTask(overrides?: Partial<UserTask>): UserTask {
 		followUpDate: null,
 		creationDate: '2024-01-01T10:00:00.000Z',
 		completionDate: null,
-		customHeaders: null,
+		customHeaders: {},
 		formKey: null,
 		externalFormReference: null,
 		businessId: null,

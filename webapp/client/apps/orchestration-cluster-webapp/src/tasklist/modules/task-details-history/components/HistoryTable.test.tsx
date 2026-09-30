@@ -34,7 +34,7 @@ const userTaskKey = '2251799813685281';
 describe('<HistoryTable />', () => {
 	it('should show the task history entries', async () => {
 		const screen = await renderWithRouter(
-			() => <HistoryTable userTaskKey={userTaskKey} auditLogs={auditLogs} search={{sort: 'timestamp+desc'}} />,
+			() => <HistoryTable userTaskKey={userTaskKey} auditLogs={auditLogs} search={{sort: 'timestamp+DESC'}} />,
 			{path: '/tasklist/$userTaskKey/history', initialEntry: '/tasklist/2251799813685281/history'},
 		);
 
@@ -49,7 +49,7 @@ describe('<HistoryTable />', () => {
 
 	it('should show assignee details for assignment entries', async () => {
 		const screen = await renderWithRouter(
-			() => <HistoryTable userTaskKey={userTaskKey} auditLogs={auditLogs} search={{sort: 'timestamp+desc'}} />,
+			() => <HistoryTable userTaskKey={userTaskKey} auditLogs={auditLogs} search={{sort: 'timestamp+DESC'}} />,
 			{path: '/tasklist/$userTaskKey/history', initialEntry: '/tasklist/2251799813685281/history'},
 		);
 
@@ -59,7 +59,7 @@ describe('<HistoryTable />', () => {
 
 	it('should show sortable columns for history entries', async () => {
 		const screen = await renderWithRouter(
-			() => <HistoryTable userTaskKey={userTaskKey} auditLogs={auditLogs} search={{sort: 'timestamp+desc'}} />,
+			() => <HistoryTable userTaskKey={userTaskKey} auditLogs={auditLogs} search={{sort: 'timestamp+DESC'}} />,
 			{path: '/tasklist/$userTaskKey/history', initialEntry: '/tasklist/2251799813685281/history'},
 		);
 
@@ -71,7 +71,7 @@ describe('<HistoryTable />', () => {
 
 	it('should open a history entry from the details action', async () => {
 		const {router, ...screen} = await renderWithRouter(
-			() => <HistoryTable userTaskKey={userTaskKey} auditLogs={auditLogs} search={{sort: 'timestamp+desc'}} />,
+			() => <HistoryTable userTaskKey={userTaskKey} auditLogs={auditLogs} search={{sort: 'timestamp+DESC'}} />,
 			{path: '/tasklist/$userTaskKey/history', initialEntry: '/tasklist/2251799813685281/history'},
 		);
 
@@ -82,52 +82,52 @@ describe('<HistoryTable />', () => {
 
 	it('should preserve the history search params when opening details', async () => {
 		const {router, ...screen} = await renderWithRouter(
-			() => <HistoryTable userTaskKey={userTaskKey} auditLogs={auditLogs} search={{sort: 'actorId+asc'}} />,
+			() => <HistoryTable userTaskKey={userTaskKey} auditLogs={auditLogs} search={{sort: 'actorId+ASC'}} />,
 			{
 				path: '/tasklist/$userTaskKey/history',
-				initialEntry: '/tasklist/2251799813685281/history?sort=actorId+asc',
+				initialEntry: '/tasklist/2251799813685281/history?sort=actorId+ASC',
 			},
 		);
 
 		await userEvent.click(screen.getByRole('link', {name: 'Open details'}).first());
 
 		await expect.poll(() => router.state.location.pathname).toBe('/tasklist/2251799813685281/history/create-log');
-		expect(router.state.location.search).toEqual({sort: 'actorId+asc'});
+		expect(router.state.location.search).toEqual({sort: 'actorId+ASC'});
 	});
 
 	it('should sort by operation type when the user selects the operation column', async () => {
 		const {router, ...screen} = await renderWithRouter(
-			() => <HistoryTable userTaskKey={userTaskKey} auditLogs={auditLogs} search={{sort: 'timestamp+desc'}} />,
+			() => <HistoryTable userTaskKey={userTaskKey} auditLogs={auditLogs} search={{sort: 'timestamp+DESC'}} />,
 			{path: '/tasklist/$userTaskKey/history', initialEntry: '/tasklist/2251799813685281/history'},
 		);
 
 		await userEvent.click(screen.getByRole('button', {name: /sort by operation type/i}));
 
-		await expect.poll(() => router.state.location.search).toEqual({sort: 'operationType+asc'});
+		await expect.poll(() => router.state.location.search).toEqual({sort: 'operationType+ASC'});
 	});
 
 	it('should sort by actor when the user selects the actor column', async () => {
 		const {router, ...screen} = await renderWithRouter(
-			() => <HistoryTable userTaskKey={userTaskKey} auditLogs={auditLogs} search={{sort: 'timestamp+desc'}} />,
+			() => <HistoryTable userTaskKey={userTaskKey} auditLogs={auditLogs} search={{sort: 'timestamp+DESC'}} />,
 			{path: '/tasklist/$userTaskKey/history', initialEntry: '/tasklist/2251799813685281/history'},
 		);
 
 		await userEvent.click(screen.getByRole('button', {name: /sort by actor/i}));
 
-		await expect.poll(() => router.state.location.search).toEqual({sort: 'actorId+asc'});
+		await expect.poll(() => router.state.location.search).toEqual({sort: 'actorId+ASC'});
 	});
 
 	it('should sort by date when the user selects the date column', async () => {
 		const {router, ...screen} = await renderWithRouter(
-			() => <HistoryTable userTaskKey={userTaskKey} auditLogs={auditLogs} search={{sort: 'timestamp+asc'}} />,
+			() => <HistoryTable userTaskKey={userTaskKey} auditLogs={auditLogs} search={{sort: 'timestamp+ASC'}} />,
 			{
 				path: '/tasklist/$userTaskKey/history',
-				initialEntry: '/tasklist/2251799813685281/history?sort=timestamp+asc',
+				initialEntry: '/tasklist/2251799813685281/history?sort=timestamp+ASC',
 			},
 		);
 
 		await userEvent.click(screen.getByRole('button', {name: /sort by date/i}));
 
-		await expect.poll(() => router.state.location.search).toEqual({sort: 'timestamp+desc'});
+		await expect.poll(() => router.state.location.search).toEqual({sort: 'timestamp+DESC'});
 	});
 });

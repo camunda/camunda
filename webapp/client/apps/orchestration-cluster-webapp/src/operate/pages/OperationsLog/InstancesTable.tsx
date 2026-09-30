@@ -40,7 +40,7 @@ import {TableContainer} from './styled';
 import {formatToISO} from './utils';
 import type {OperationsLogSearch} from './operationsLog.schema';
 
-const DEFAULT_SORT = 'timestamp+desc';
+const DEFAULT_SORT = 'timestamp+DESC';
 
 const combineDefinitionResults = (results: UseQueryResult<GetProcessDefinitionResponseBody>[]) => ({
 	names: Object.fromEntries(
@@ -75,7 +75,7 @@ const InstancesTable: React.FC<Props> = ({search, selectedTenantId, selectedDefi
 	const [rawSortField, rawSortOrder] = (search.sort ?? DEFAULT_SORT).split('+');
 	const parsedSortField = auditLogSortFieldEnum.safeParse(rawSortField);
 	const sortField = parsedSortField.success ? parsedSortField.data : 'timestamp';
-	const sortOrder = rawSortOrder === 'asc' ? 'asc' : 'desc';
+	const sortOrder = rawSortOrder === 'ASC' ? 'ASC' : 'DESC';
 
 	const requestFilter: NonNullable<QueryAuditLogsRequestBody['filter']> = {
 		category: {$neq: 'ADMIN'},
@@ -231,7 +231,7 @@ const InstancesTable: React.FC<Props> = ({search, selectedTenantId, selectedDefi
 			label: t('operate.operationsLog.table.date'),
 			sortKey: 'timestamp',
 			isDefault: true,
-			defaultOrder: 'desc' as const,
+			defaultOrder: 'DESC' as const,
 			render: (row: AuditLog) => formatTimestamp(row.timestamp),
 		},
 		{

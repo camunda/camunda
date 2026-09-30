@@ -59,11 +59,7 @@ const InputsAndOutputs: React.FC<Props> = ({query}) => {
 			matchedRules?.flatMap((rule, rulePosition) =>
 				rule.evaluatedOutputs.map((output, outputPosition) => ({
 					key: `${output.outputId}--${rulePosition}--${outputPosition}`,
-					columns: [
-						{cellContent: rule.ruleIndex ?? '--'},
-						{cellContent: output.outputName},
-						{cellContent: output.outputValue},
-					],
+					columns: [{cellContent: rule.ruleIndex}, {cellContent: output.outputName}, {cellContent: output.outputValue}],
 				})),
 			) ?? [],
 		[matchedRules],

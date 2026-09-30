@@ -67,8 +67,8 @@ const drainingProcessDefinitionsQuery = () =>
 
 const DEFAULT_SORT: Pick<GetProcessDefinitionInstanceStatisticsRequestBody, 'sort'> = {
 	sort: [
-		{field: 'activeInstancesWithIncidentCount', order: 'desc'},
-		{field: 'activeInstancesWithoutIncidentCount', order: 'desc'},
+		{field: 'activeInstancesWithIncidentCount', order: 'DESC'},
+		{field: 'activeInstancesWithoutIncidentCount', order: 'DESC'},
 	],
 };
 
@@ -129,8 +129,8 @@ const instancesByProcessVersionsQuery = (processDefinitionId: string, tenantId: 
 		queryFn: async (): Promise<GetProcessDefinitionInstanceVersionStatisticsResponseBody> => {
 			const {response, error} = await request(
 				endpoints.getProcessDefinitionInstanceVersionStatistics({
-					filter: {processDefinitionId, tenantId},
-					sort: [{field: 'processDefinitionVersion', order: 'desc'}],
+					filter: {processDefinitionId, tenantId: tenantId ?? undefined},
+					sort: [{field: 'processDefinitionVersion', order: 'DESC'}],
 				}),
 			);
 			if (error !== null) {

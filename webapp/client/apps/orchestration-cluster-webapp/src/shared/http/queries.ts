@@ -63,6 +63,9 @@ import {parseAdminClientConfig, type AdminClientConfig} from './adminClientConfi
 
 const DEFAULT_MAX_ITEM_PER_PAGE = 50;
 
+type OffsetPage = {from?: number; limit?: number; after?: never; before?: never};
+type OffsetPagedRequestBody<T extends {page?: unknown}> = Omit<T, 'page'> & {page?: OffsetPage};
+
 type ProcessStartFormResponse = Omit<GetProcessStartFormResponseBody, 'schema'> & {
 	schema: string;
 };
@@ -154,7 +157,7 @@ const queries = {
 			staleTime: Infinity,
 			gcTime: Infinity,
 		}),
-	queryUserTasks: (body: QueryUserTasksRequestBody) => {
+	queryUserTasks: (body: OffsetPagedRequestBody<QueryUserTasksRequestBody>) => {
 		const MAX_TASKS_PER_REQUEST = body.page?.limit ?? DEFAULT_MAX_ITEM_PER_PAGE;
 		const enhancedBody = {
 			...body,
@@ -284,7 +287,7 @@ const queries = {
 			retry: false,
 		}),
 
-	queryUserTaskAuditLogs: (userTaskKey: string, body: QueryUserTaskAuditLogsRequestBody) => {
+	queryUserTaskAuditLogs: (userTaskKey: string, body: OffsetPagedRequestBody<QueryUserTaskAuditLogsRequestBody>) => {
 		const MAX_AUDIT_LOGS_PER_REQUEST = body.page?.limit ?? DEFAULT_MAX_ITEM_PER_PAGE;
 		const enhancedBody = {
 			...body,
@@ -639,3 +642,4 @@ const queries = {
 } as const;
 
 export {queries};
+export type {OffsetPagedRequestBody};

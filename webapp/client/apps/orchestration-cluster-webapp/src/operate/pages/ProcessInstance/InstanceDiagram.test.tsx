@@ -24,7 +24,7 @@ import {TooltipProvider} from '@camunda/design-system';
 import {HttpResponse, http, delay} from 'msw';
 import i18n from 'i18next';
 import {z} from 'zod';
-import type {ProcessInstance as ProcessInstanceData} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {ProcessInstance as ProcessInstanceData} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';

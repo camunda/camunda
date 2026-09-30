@@ -8,8 +8,7 @@
 
 import {TableHeader} from '@carbon/react';
 import {useNavigate, useSearch} from '@tanstack/react-router';
-
-type SortOrder = 'asc' | 'desc';
+import type {QuerySortOrder as SortOrder} from '@camunda/camunda-api-zod-schemas/8.11';
 
 type Props = {
 	sortKey: string;
@@ -19,7 +18,7 @@ type Props = {
 	onSort?: (sortKey: string, order: SortOrder) => void;
 };
 
-const ColumnHeader: React.FC<Props> = ({sortKey, label, isDefault = false, defaultOrder = 'desc', onSort}) => {
+const ColumnHeader: React.FC<Props> = ({sortKey, label, isDefault = false, defaultOrder = 'DESC', onSort}) => {
 	const navigate = useNavigate();
 	const search = useSearch({strict: false}) as {sort?: string};
 
@@ -30,7 +29,7 @@ const ColumnHeader: React.FC<Props> = ({sortKey, label, isDefault = false, defau
 
 	const handleSort = () => {
 		const newOrder: SortOrder =
-			isActive && activeOrder === 'asc' ? 'desc' : isActive && activeOrder === 'desc' ? 'asc' : defaultOrder;
+			isActive && activeOrder === 'ASC' ? 'DESC' : isActive && activeOrder === 'DESC' ? 'ASC' : defaultOrder;
 		onSort?.(sortKey, newOrder);
 		void navigate({to: '.', search: (prev) => ({...prev, sort: `${sortKey}+${newOrder}`})});
 	};
@@ -39,7 +38,7 @@ const ColumnHeader: React.FC<Props> = ({sortKey, label, isDefault = false, defau
 		<TableHeader
 			isSortable
 			isSortHeader={isActive}
-			sortDirection={isActive ? (activeOrder === 'asc' ? 'ASC' : 'DESC') : 'NONE'}
+			sortDirection={isActive ? activeOrder : 'NONE'}
 			onClick={handleSort}
 		>
 			{label}
