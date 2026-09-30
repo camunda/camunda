@@ -152,14 +152,14 @@ public class MappingRuleServicesTest {
 
     final var mappingRuleRecord = new MappingRuleRecord();
     mappingRuleRecord.setMappingRuleId("id");
-    when(mockBrokerClient.sendRequest(any()))
+    when(mockBrokerClient.sendRequestWithRetry(any()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(mappingRuleRecord)));
 
     //  when
     testMappingRuleServices.deleteMappingRule("id", testAuthentication);
 
     // then
-    verify(mockBrokerClient).sendRequest(mappingRuleDeleteRequestArgumentCaptor.capture());
+    verify(mockBrokerClient).sendRequestWithRetry(mappingRuleDeleteRequestArgumentCaptor.capture());
     assertThat(mappingRuleDeleteRequestArgumentCaptor.getValue().getPartitionGroup())
         .isEqualTo(PHYSICAL_TENANT_ID);
     final var request = mappingRuleDeleteRequestArgumentCaptor.getValue();
@@ -183,7 +183,7 @@ public class MappingRuleServicesTest {
 
     final var mappingRuleRecord = new MappingRuleRecord();
     mappingRuleRecord.setMappingRuleId("id");
-    when(mockBrokerClient.sendRequest(any()))
+    when(mockBrokerClient.sendRequestWithRetry(any()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(mappingRuleRecord)));
 
     final var mappingRuleDTO =
@@ -197,7 +197,7 @@ public class MappingRuleServicesTest {
     testMappingRuleServices.updateMappingRule(mappingRuleDTO, testAuthentication);
 
     // then
-    verify(mockBrokerClient).sendRequest(mappingRuleUpdateRequestArgumentCaptor.capture());
+    verify(mockBrokerClient).sendRequestWithRetry(mappingRuleUpdateRequestArgumentCaptor.capture());
     assertThat(mappingRuleUpdateRequestArgumentCaptor.getValue().getPartitionGroup())
         .isEqualTo(PHYSICAL_TENANT_ID);
     final var request = mappingRuleUpdateRequestArgumentCaptor.getValue();
