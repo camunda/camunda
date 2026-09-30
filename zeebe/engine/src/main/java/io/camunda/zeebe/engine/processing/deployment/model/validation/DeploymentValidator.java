@@ -14,11 +14,6 @@ import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentResourc
 import io.camunda.zeebe.engine.processing.deployment.transform.ValidationConfig;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
-import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
-import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
-import io.camunda.zeebe.protocol.record.value.deployment.FormMetadataValue;
-import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
-import io.camunda.zeebe.protocol.record.value.deployment.ResourceMetadataValue;
 import io.camunda.zeebe.util.Either;
 import java.util.HashMap;
 import java.util.List;
@@ -106,40 +101,40 @@ public final class DeploymentValidator {
     final var errors = new DeploymentErrorCollector();
 
     checkForDuplicateIds(
-        deployment.processesMetadata(),
-        ProcessMetadataValue::getBpmnProcessId,
-        ProcessMetadataValue::getResourceName,
-        "Duplicated process id '%s' in resources '%s' and '%s'",
+        deployment.getProcessesMetadata(),
+        metadata -> metadata.getBpmnProcessId(),
+        metadata -> metadata.getResourceName(),
+        "Duplicated process id in resources '%2$s' and '%3$s'",
         errors);
 
     checkForDuplicateIds(
-        deployment.decisionRequirementsMetadata(),
-        DecisionRequirementsMetadataValue::getDecisionRequirementsId,
-        DecisionRequirementsMetadataValue::getResourceName,
+        deployment.getDecisionRequirementsMetadata(),
+        metadata -> metadata.getDecisionRequirementsId(),
+        metadata -> metadata.getResourceName(),
         "Expected the decision requirements ids to be unique within a deployment"
             + " but found a duplicated id '%s' in the resources '%s' and '%s'",
         errors);
 
     checkForDuplicateIds(
-        deployment.decisionsMetadata(),
-        DecisionRecordValue::getDecisionId,
+        deployment.getDecisionsMetadata(),
+        metadata -> metadata.getDecisionId(),
         metadata -> deployment.getResourceNameForDecision(metadata),
         "Expected the decision ids to be unique within a deployment"
             + " but found a duplicated id '%s' in the resources '%s' and '%s'",
         errors);
 
     checkForDuplicateIds(
-        deployment.formMetadata(),
-        FormMetadataValue::getFormId,
-        FormMetadataValue::getResourceName,
+        deployment.getFormMetadata(),
+        metadata -> metadata.getFormId(),
+        metadata -> metadata.getResourceName(),
         "Expected the form ids to be unique within a deployment"
             + " but found a duplicated id '%s' in the resources '%s' and '%s'.",
         errors);
 
     checkForDuplicateIds(
-        deployment.resourceMetadata(),
-        ResourceMetadataValue::getResourceId,
-        ResourceMetadataValue::getResourceName,
+        deployment.getResourceMetadata(),
+        metadata -> metadata.getResourceId(),
+        metadata -> metadata.getResourceName(),
         "Expected the resource ids to be unique within a deployment"
             + " but found a duplicated id '%s' in the resources '%s' and '%s'.",
         errors);
