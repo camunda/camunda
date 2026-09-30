@@ -410,6 +410,14 @@ export class OperateFiltersPanelPage {
     await this.activeInstancesCheckbox.click();
   }
 
+  /** Reads the URL rather than clicking blindly: a click on an already-checked
+   * box turns the filter off. */
+  async applySuspendedFilter(): Promise<void> {
+    if (new URL(this.page.url()).searchParams.get('suspended') !== 'true') {
+      await this.clickSuspendedInstancesCheckbox();
+    }
+  }
+
   async clickSuspendedInstancesCheckbox(): Promise<void> {
     await this.suspendedInstancesCheckbox.click({timeout: 60000});
   }
