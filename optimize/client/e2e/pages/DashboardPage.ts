@@ -53,7 +53,11 @@ export class DashboardPage {
   }
 
   async edit(): Promise<void> {
-    await this.editLink.click();
+    // Edit mode loads the variable names once and then resets the filter list, dropping filters added earlier.
+    await Promise.all([
+      this.page.waitForResponse((response) => response.url().endsWith('/api/variables/reports')),
+      this.editLink.click(),
+    ]);
     await expect(this.nameInput).toBeVisible();
   }
 

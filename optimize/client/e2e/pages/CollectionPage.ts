@@ -93,13 +93,14 @@ export class CollectionPage {
     const dialog = this.page.getByRole('dialog', {name: 'Add user'});
     // The user search only reacts to typed input, and each keystroke re-renders the results.
     const search = dialog.getByRole('combobox', {name: /Users/});
-    const searchDone = this.page.waitForResponse(
-      (response) =>
-        response.url().includes('/api/identity/search') &&
-        response.url().includes(`terms=${username}`)
-    );
-    await search.pressSequentially(username);
-    await searchDone;
+    await Promise.all([
+      this.page.waitForResponse(
+        (response) =>
+          response.url().includes('/api/identity/search') &&
+          response.url().includes(`terms=${username}`)
+      ),
+      search.pressSequentially(username),
+    ]);
     // The first option only echoes the typed text; the search result carries the user id.
     await this.page.getByRole('option', {name: new RegExp(`^${username}.*USER:`)}).click();
     await expect(search).toHaveAccessibleName(/Total items selected: 1/);
