@@ -16,22 +16,19 @@ import {pluginZod} from '@kubb/plugin-zod';
 import {defineConfig} from 'kubb/config';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import {fileURLToPath} from 'node:url';
 
+import {parseCliArgs, runCli} from './cli.js';
+import {PACKAGE_ROOT, SPECS_DIR} from './paths.js';
 import {preprocessSpec} from './preprocess-spec.js';
-import {CONFIG, getAvailableVersions} from './supported-versions.js';
+import {CONFIG, getAvailableVersions, resolveVersions} from './supported-versions.js';
 
 /** @typedef {import('./supported-versions.js').GenerateConfig} GenerateConfig */
 
 /**
- * Parsed command line arguments.
- * @typedef {Object} ParsedArgs
- * @property {string[] | null} versions - Requested versions to generate, or null for all
- * @property {boolean} help - Whether help flag was passed
+ * Output options of a Kubb plugin. The generated files are not type-checked.
+ * @param {string} outputPath - Output directory, relative to the version output directory
  */
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PACKAGE_ROOT = path.resolve(__dirname, '..');
+const pluginOutput = (outputPath) => ({output: {path: outputPath, banner: '// @ts-nocheck'}});
 
 /**
  * Generates Zod schemas and TypeScript types for a specific version.
@@ -53,7 +50,7 @@ async function generateSchemas(version, config) {
 	console.log(`  Input: ${config.input}`);
 	console.log(`  Output: ${config.output}`);
 
-	const preprocessedDir = path.join(PACKAGE_ROOT, 'specs', '.preprocessed', version);
+	const preprocessedDir = path.join(SPECS_DIR, '.preprocessed', version);
 	await preprocessSpec(path.dirname(inputPath), preprocessedDir);
 
 	await fs.rm(outputPath, {recursive: true, force: true});
@@ -68,55 +65,11 @@ async function generateSchemas(version, config) {
 				barrel: {type: 'named'},
 			},
 			parsers: [parserTs({extension: {'.ts': '.js'}})],
-			plugins: [
-				pluginTs({
-					output: {
-						path: './types',
-						banner: '// @ts-nocheck',
-					},
-				}),
-				pluginZod({
-					output: {
-						path: './zod',
-						banner: '// @ts-nocheck',
-					},
-				}),
-			],
+			plugins: [pluginTs(pluginOutput('./types')), pluginZod(pluginOutput('./zod'))],
 		}),
 	).build();
 
 	console.log(`  Generated ${files.length} files`);
-}
-
-/**
- * Parses command line arguments.
- * @returns {ParsedArgs} Parsed arguments
- */
-function parseArgs() {
-	const args = process.argv.slice(2);
-	/** @type {ParsedArgs} */
-	const result = {versions: null, help: false};
-
-	for (let index = 0; index < args.length; index++) {
-		const arg = args[index];
-
-		if (arg === '--help' || arg === '-h') {
-			result.help = true;
-		} else if (arg === '--version' || arg === '-v') {
-			const value = args[++index];
-			if (!value) {
-				throw new Error('--version requires a value');
-			}
-			if (result.versions === null) {
-				result.versions = [];
-			}
-			result.versions.push(value);
-		} else {
-			throw new Error(`Unknown argument: ${arg}`);
-		}
-	}
-
-	return result;
 }
 
 function printHelp() {
@@ -135,21 +88,14 @@ Note: Run 'npm run download-specs' first to download the OpenAPI specs.
 }
 
 async function main() {
-	const {versions: requestedVersions, help} = parseArgs();
+	const {version: requestedVersions, help} = parseCliArgs();
 
 	if (help) {
 		printHelp();
 		return;
 	}
 
-	const availableVersions = getAvailableVersions();
-	const versionsToGenerate = requestedVersions || availableVersions;
-
-	for (const version of versionsToGenerate) {
-		if (!CONFIG[version]) {
-			throw new Error(`Unknown version: ${version}. Available versions: ${availableVersions.join(', ')}`);
-		}
-	}
+	const versionsToGenerate = resolveVersions(requestedVersions);
 
 	console.log('Generating Zod schemas and TypeScript types...\n');
 
@@ -160,7 +106,4 @@ async function main() {
 	console.log('\nAll schemas generated successfully.');
 }
 
-main().catch((error) => {
-	console.error('\nError:', error.message);
-	process.exit(1);
-});
+runCli(main);
