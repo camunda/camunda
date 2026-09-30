@@ -37,7 +37,10 @@ class AsyncDocumentPipelineTest {
             .maxRetryAttempts(2);
 
     final var future = builder.buildAndExecute();
-    assertThat(future).succeedsWithin(Duration.ofSeconds(5));
+    assertThat(future)
+        .succeedsWithin(Duration.ofSeconds(5))
+        .extracting("totalDocumentsRead", "totalDocumentsProcessed")
+        .containsExactly(10L, 10L);
 
     final var inOrder = Mockito.inOrder(batchProcessor);
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(1, 2, 3), 3));
@@ -94,7 +97,10 @@ class AsyncDocumentPipelineTest {
             .retryRecorder(retryRecorder);
 
     final var future = builder.buildAndExecute();
-    assertThat(future).succeedsWithin(Duration.ofSeconds(5));
+    assertThat(future)
+        .succeedsWithin(Duration.ofSeconds(5))
+        .extracting("totalDocumentsRead", "totalDocumentsProcessed")
+        .containsExactly(16L, 10L);
 
     final var inOrder = Mockito.inOrder(batchProcessor, retryRecorder);
     // first retry
@@ -179,7 +185,10 @@ class AsyncDocumentPipelineTest {
             .retryRecorder(retryRecorder);
 
     final var future = builder.buildAndExecute();
-    assertThat(future).succeedsWithin(Duration.ofSeconds(5));
+    assertThat(future)
+        .succeedsWithin(Duration.ofSeconds(5))
+        .extracting("totalDocumentsRead", "totalDocumentsProcessed")
+        .containsExactly(16L, 10L);
 
     final var inOrder = Mockito.inOrder(batchProcessor, retryRecorder);
     // first retry
