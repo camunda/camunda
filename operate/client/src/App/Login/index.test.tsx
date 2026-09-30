@@ -18,7 +18,7 @@ import {Login} from './index';
 import {LOGIN_ERROR, GENERIC_ERROR} from './constants';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {authenticationStore} from 'modules/stores/authentication';
-import {mockLogin} from 'modules/mocks/api/login';
+import {mockLogin, mockLoginCsrfToken} from 'modules/mocks/api/login';
 import {Paths} from 'modules/Routes';
 import {createUser} from 'modules/testUtils';
 import {mockMe} from 'modules/mocks/api/v2/me';
@@ -53,6 +53,7 @@ describe('<Login />', () => {
   });
 
   it('should login', async () => {
+    mockLoginCsrfToken().withSuccess('');
     mockLogin().withSuccess(null);
     mockMe().withSuccess(createUser());
 
@@ -70,6 +71,7 @@ describe('<Login />', () => {
   });
 
   it('should show a loading spinner', async () => {
+    mockLoginCsrfToken().withSuccess('');
     mockLogin().withServerError();
 
     const {user} = render(<Login />, {
@@ -83,6 +85,7 @@ describe('<Login />', () => {
     expect(screen.getByTestId('spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.queryByTestId('spinner'));
 
+    mockLoginCsrfToken().withSuccess('');
     mockLogin().withSuccess(null);
     mockMe().withSuccess(createUser());
 
@@ -93,6 +96,7 @@ describe('<Login />', () => {
   });
 
   it('should redirect to the previous page', async () => {
+    mockLoginCsrfToken().withSuccess('');
     mockLogin().withSuccess(null);
     mockMe().withSuccess(createUser());
 
@@ -112,6 +116,7 @@ describe('<Login />', () => {
   });
 
   it('should not allow the form to be submitted with empty fields', async () => {
+    mockLoginCsrfToken().withSuccess('');
     mockLogin().withSuccess(null);
     mockMe().withSuccess(createUser());
     const {user} = render(<Login />, {
@@ -167,6 +172,7 @@ describe('<Login />', () => {
   });
 
   it('should handle wrong credentials', async () => {
+    mockLoginCsrfToken().withSuccess('');
     mockLogin().withServerError(401);
 
     const {user} = render(<Login />, {
@@ -181,6 +187,7 @@ describe('<Login />', () => {
   });
 
   it('should handle generic errors', async () => {
+    mockLoginCsrfToken().withSuccess('');
     mockLogin().withServerError();
 
     const {user} = render(<Login />, {
@@ -195,6 +202,7 @@ describe('<Login />', () => {
   });
 
   it('should handle request failures', async () => {
+    mockLoginCsrfToken().withSuccess('');
     mockLogin().withNetworkError();
 
     const {user} = render(<Login />, {

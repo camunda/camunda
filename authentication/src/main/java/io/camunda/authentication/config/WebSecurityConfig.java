@@ -452,13 +452,41 @@ public class WebSecurityConfig {
     return response;
   }
 
+  /**
+   * Whether to write the CSRF token onto the response: on every authenticated GET, and on any
+   * request to the login endpoint regardless of authentication state.
+   *
+   * <p>The login endpoint is special-cased: both webapp chains call {@code
+   * .anonymous(AbstractHttpConfigurer::disable)}, so an unauthenticated visitor has no {@link
+   * Authentication} at all (not even an anonymous one) to gate on. Since {@code POST /login} now
+   * requires a valid CSRF token unconditionally (see {@link CsrfProtectionRequestMatcher}), a
+   * first-time, anonymous {@code GET} of the login page must still be able to obtain one —
+   * otherwise no login, forged or legitimate, could ever succeed. Handing an anonymous visitor a
+   * CSRF token is safe: the token has no meaning on its own, and revealing it to whoever will
+   * submit the login form next is the intended behaviour of the double-submit pattern this class
+   * implements.
+   *
+   * <p>Uses {@link HttpServletRequest#getServletPath()} and exact equality, not {@link
+   * HttpServletRequest#getRequestURI()}/{@code contains}: the latter includes any configured
+   * context path (breaking exact equality) and would also match a path that merely contains
+   * "/login"/"/logout" as an inner segment (e.g. "/api/users/login-history").
+   */
   private static boolean shouldAddCsrf(final HttpServletRequest request) {
-    final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    final String path = request.getRequestURI();
+    final String path = request.getServletPath();
+    final boolean isLogout = path != null && path.equals(LOGOUT_URL);
+    if (isLogout) {
+      return false;
+    }
+    final boolean isLogin = path != null && path.equals(LOGIN_URL);
     final String method = request.getMethod();
-    return (auth != null && auth.isAuthenticated())
-        && (path == null || !path.contains(LOGOUT_URL))
-        && ("GET".equalsIgnoreCase(method) || (path != null && (path.contains(LOGIN_URL))));
+    if (!("GET".equalsIgnoreCase(method) || isLogin)) {
+      return false;
+    }
+    if (isLogin) {
+      return true;
+    }
+    final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    return auth != null && auth.isAuthenticated();
   }
 
   private static void applyCsrfConfiguration(

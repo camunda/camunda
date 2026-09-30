@@ -33,23 +33,45 @@ public class TestWebappClient {
 
     final var cookieManager = new CookieManager();
     final var httpClient = HttpClient.newBuilder().cookieHandler(cookieManager).build();
-    final var loginUri = endpoint.resolve("login");
-
-    final var loginRequest =
-        HttpRequest.newBuilder()
-            .uri(loginUri)
-            .header("Content-Type", "application/x-www-form-urlencoded")
-            .POST(
-                HttpRequest.BodyPublishers.ofString(
-                    "username=" + username + "&password=" + password))
-            .build();
+    final var loginCsrfToken = requestLoginCsrfToken(httpClient);
+    final var loginRequest = buildLoginRequest(username, password, loginCsrfToken);
 
     final var loginResponse = sendRequestAndThrowExceptionOnFailure(httpClient, loginRequest);
 
+    // The login response only re-issues a token when it rotated one; otherwise the token fetched
+    // for the login POST stays valid for the session this client hands back.
     final var csrfToken =
-        loginResponse.headers().firstValue(WebSecurityConfig.X_CSRF_TOKEN).orElse(null);
+        loginResponse.headers().firstValue(WebSecurityConfig.X_CSRF_TOKEN).orElse(loginCsrfToken);
 
     return new TestLoggedInWebappClient(httpClient, cookieManager, csrfToken);
+  }
+
+  /**
+   * Fetches the CSRF token the login endpoint issues on a GET, which the login POST has to echo
+   * back: the login path enforces CSRF unconditionally, so a POST without a token is rejected even
+   * before a session exists. Returns {@code null} when the deployment issues no token (CSRF
+   * disabled), leaving the login POST unchanged for that shape.
+   */
+  private String requestLoginCsrfToken(final HttpClient httpClient) {
+    final var tokenRequest = HttpRequest.newBuilder().uri(endpoint.resolve("login")).GET().build();
+    return sendRequest(httpClient, tokenRequest)
+        .map(response -> response.headers().firstValue(WebSecurityConfig.X_CSRF_TOKEN).orElse(null))
+        .getOrElse(null);
+  }
+
+  private HttpRequest buildLoginRequest(
+      final String username, final String password, final String csrfToken) {
+    final var request =
+        HttpRequest.newBuilder()
+            .uri(endpoint.resolve("login"))
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .POST(
+                HttpRequest.BodyPublishers.ofString(
+                    "username=" + username + "&password=" + password));
+    if (csrfToken != null) {
+      request.header(WebSecurityConfig.X_CSRF_TOKEN, csrfToken);
+    }
+    return request.build();
   }
 
   private static Either<Exception, HttpResponse<String>> sendRequest(
