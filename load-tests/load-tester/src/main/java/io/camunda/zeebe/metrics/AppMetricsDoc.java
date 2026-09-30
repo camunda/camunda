@@ -10,6 +10,8 @@ package io.camunda.zeebe.metrics;
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
+import java.time.Duration;
+import java.util.stream.Stream;
 
 /** Metrics shared across all app types (Starter and Worker). */
 public enum AppMetricsDoc implements ExtendedMeterDocumentation {
@@ -62,7 +64,111 @@ public enum AppMetricsDoc implements ExtendedMeterDocumentation {
     public KeyName[] getKeyNames() {
       return KEY_NAMES;
     }
+  },
+
+  /**
+   * Time from sending a client request to its response, as the client observed it, by command and
+   * outcome. It includes any retries the client makes on its own, such as an HTTP retry of a 503,
+   * and failed requests, which the gateway-side request latency leaves out.
+   */
+  REQUEST_LATENCY {
+    private static final KeyName[] KEY_NAMES = {RequestKeyNames.COMMAND, RequestKeyNames.STATUS};
+
+    @Override
+    public String getDescription() {
+      return "Latency of completed client requests, by command and outcome.";
+    }
+
+    @Override
+    public String getName() {
+      return "app.request.latency";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.TIMER;
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return KEY_NAMES;
+    }
+
+    @Override
+    public Duration[] getTimerSLOs() {
+      return LatencyBuckets.BUCKETS;
+    }
+  },
+
+  /**
+   * Time from the starter sending the create request to the worker receiving the instance's job,
+   * the client-side counterpart of job activation. Only recorded for instances whose variables
+   * carry the starter's creation timestamp; starter and worker clocks may differ by a few ms.
+   */
+  JOB_RECEIVED_DELAY {
+    @Override
+    public String getDescription() {
+      return "Time from the create request to the worker receiving the instance's job.";
+    }
+
+    @Override
+    public String getName() {
+      return "app.job.received.delay";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.TIMER;
+    }
+
+    @Override
+    public Duration[] getTimerSLOs() {
+      return LatencyBuckets.BUCKETS;
+    }
+  },
+
+  /**
+   * Time from the worker receiving a job to its completion being acknowledged, the client-side
+   * counterpart of job lifetime, by completion outcome.
+   */
+  JOB_LIFETIME {
+    private static final KeyName[] KEY_NAMES = {RequestKeyNames.STATUS};
+
+    @Override
+    public String getDescription() {
+      return "Time from the worker receiving a job to its completion being acknowledged.";
+    }
+
+    @Override
+    public String getName() {
+      return "app.job.lifetime";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.TIMER;
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return KEY_NAMES;
+    }
+
+    @Override
+    public Duration[] getTimerSLOs() {
+      return LatencyBuckets.BUCKETS;
+    }
   };
+
+  private static final class LatencyBuckets {
+    private static final Duration[] BUCKETS =
+        Stream.of(
+                10, 25, 50, 75, 100, 150, 200, 300, 400, 500, 650, 800, 1000, 1250, 1500, 1750,
+                2000, 2500, 3000, 4000, 5000, 6000, 7500, 10_000, 15_000, 20_000, 30_000, 45_000,
+                60_000)
+            .map(Duration::ofMillis)
+            .toArray(Duration[]::new);
+  }
 
   public enum RequestKeyNames implements KeyName {
     /** The command that was sent, e.g. {@code create_instance} */

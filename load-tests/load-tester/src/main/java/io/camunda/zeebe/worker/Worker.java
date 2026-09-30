@@ -15,6 +15,7 @@ import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.WorkerProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.metrics.RequestOutcomeRecorder;
+import io.camunda.zeebe.starter.Starter;
 import io.camunda.zeebe.util.PayloadReader;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -93,6 +94,8 @@ public class Worker {
   @JobWorker(autoComplete = false)
   public void handleJob(final JobClient jobClient, final ActivatedJob job) {
     final long startHandlingTime = System.currentTimeMillis();
+    final long receivedNanos = System.nanoTime();
+    recordReceivedDelay(job, startHandlingTime);
 
     if (workerCfg.isSendMessage()) {
       final var correlationKey =
@@ -124,7 +127,15 @@ public class Worker {
 
     final var command = jobClient.newCompleteCommand(job.getKey()).variables(variables);
     addDelayToCompletion(workerCfg.getCompletionDelay().toMillis(), startHandlingTime);
-    if (!requestFutures.offer(command.send())) {
+    final long sentNanos = System.nanoTime();
+    final var completion = command.send();
+    completion.whenComplete(
+        (ignored, error) -> {
+          final long now = System.nanoTime();
+          requestOutcomeRecorder.recordLatency(COMPLETE_JOB, error, now - sentNanos);
+          requestOutcomeRecorder.recordJobLifetime(error, now - receivedNanos);
+        });
+    if (!requestFutures.offer(completion)) {
       // Non-blocking: if the response-check queue is saturated, drop tracking for this
       // completion rather than stalling the job handler thread (which would cascade into
       // broker timeouts). We lose visibility into its eventual result — log throttled so
@@ -132,6 +143,16 @@ public class Worker {
       THROTTLED_LOGGER.warn(
           "Completion-response queue full (capacity: {}); dropping future tracking",
           REQUEST_FUTURES_CAPACITY);
+    }
+  }
+
+  private void recordReceivedDelay(final ActivatedJob job, final long receivedAtMillis) {
+    if (job.getVariablesAsMap().get(Starter.CREATED_AT_VARIABLE)
+        instanceof final Number createdAt) {
+      final long delay = receivedAtMillis - createdAt.longValue();
+      if (delay >= 0) {
+        requestOutcomeRecorder.recordJobReceivedDelay(delay);
+      }
     }
   }
 
