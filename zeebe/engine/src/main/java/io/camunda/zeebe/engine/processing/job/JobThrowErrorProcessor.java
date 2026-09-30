@@ -260,6 +260,7 @@ public class JobThrowErrorProcessor
         .setElementInstancePath(treePathProperties.elementInstancePath())
         .setProcessDefinitionPath(treePathProperties.processDefinitionPath())
         .setCallingElementPath(treePathProperties.callingElementPath());
+    variableBehavior.protectErrorMessage(incidentEvent, job.getElementInstanceKey());
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
     incidentMetrics.incidentCreated();

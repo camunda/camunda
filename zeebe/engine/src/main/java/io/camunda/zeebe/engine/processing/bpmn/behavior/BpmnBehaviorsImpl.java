@@ -130,7 +130,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             expressionLanguage,
             config.getExpressionEvaluationTimeout(),
             processingState.getVariableState(),
-            referencedSecretCollector);
+            referencedSecretCollector,
+            config.getSensitiveVariablePatterns().stream().map(Pattern::compile).toList());
 
     conditionalBehavior =
         new BpmnConditionalBehavior(
@@ -199,7 +200,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
     incidentBehavior =
         new BpmnIncidentBehavior(
-            processingState, processingState.getKeyGenerator(), writers.state(), incidentMetrics);
+            processingState,
+            processingState.getKeyGenerator(),
+            writers.state(),
+            incidentMetrics,
+            variableBehavior);
 
     eventPublicationBehavior =
         new BpmnEventPublicationBehavior(

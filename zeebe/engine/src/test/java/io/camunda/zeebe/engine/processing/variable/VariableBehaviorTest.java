@@ -924,6 +924,40 @@ final class VariableBehaviorTest {
   }
 
   @Test
+  void shouldMarkVariableSensitiveWhenANestedKeyMatchesThePattern()
+      throws VariableValidationException {
+    // given -- the variable names do not match; only keys inside their values do
+    final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
+    final Map<String, Object> document =
+        Map.of(
+            "test", Map.of("sensitive_test", 123),
+            "deep", Map.of("a", List.of(Map.of("b", Map.of("sensitive_ssn", "x")))),
+            "plain", Map.of("name", "C-42", "tags", List.of("a", "b")),
+            "scalar", 42);
+    state.createScope(1, VariableState.NO_PARENT);
+
+    // when
+    behavior.mergeLocalDocument(
+        1,
+        1,
+        1,
+        1,
+        1,
+        bpmnProcessId,
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        MsgPackUtil.asMsgPack(document));
+
+    // then
+    final var modesByName = new java.util.HashMap<String, java.util.Set<ProtectionMode>>();
+    getFollowUpEvents()
+        .forEach(event -> modesByName.put(event.value.getName(), event.value.getProtectionModes()));
+    assertThat(modesByName.get("test")).containsExactly(ProtectionMode.REDACT);
+    assertThat(modesByName.get("deep")).containsExactly(ProtectionMode.REDACT);
+    assertThat(modesByName.get("plain")).isEmpty();
+    assertThat(modesByName.get("scalar")).isEmpty();
+  }
+
+  @Test
   void shouldMarkDirectlySetVariableSensitiveWhenNameMatchesThePattern() {
     // given
     final int processDefinitionKey = 1;

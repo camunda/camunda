@@ -18,7 +18,9 @@ package io.camunda.zeebe.protocol.record.value;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import org.immutables.value.Value;
 
 /**
@@ -120,4 +122,26 @@ public interface IncidentRecordValue
    * @return the key of the root process instance, or {@code -1} if not set
    */
   long getRootProcessInstanceKey();
+
+  /**
+   * Returns the protection modes declared for this incident, decided by the engine when the
+   * incident is created: the incident carries the configured modes if its error message may reveal
+   * a variable whose name matches a configured sensitive-variable pattern.
+   *
+   * @return the declared protection modes, or an empty set if the incident is not protected
+   */
+  @Value.Default
+  default Set<ProtectionMode> getProtectionModes() {
+    return Collections.emptySet();
+  }
+
+  /**
+   * Derived from {@link #getProtectionModes()}. Implementations should annotate this override with
+   * {@code @JsonIgnore}, so it is not serialized next to the modes it is derived from.
+   *
+   * @return {@code true} if the error message must be redacted before it leaves the engine
+   */
+  default boolean shouldBeRedacted() {
+    return getProtectionModes().contains(ProtectionMode.REDACT);
+  }
 }

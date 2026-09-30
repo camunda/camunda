@@ -26,6 +26,9 @@ import org.junit.jupiter.api.Test;
 
 final class VariableRedactionTest {
 
+  private static final java.util.List<java.util.regex.Pattern> PATTERNS =
+      java.util.List.of(java.util.regex.Pattern.compile("sensitive_.*"));
+
   @Test
   void shouldReplaceValueOfVariableDeclaredSensitive() {
     // given -- the protection-modes declaration is decided upstream, in VariableBehavior, and
@@ -33,7 +36,7 @@ final class VariableRedactionTest {
     final var record = variable("sensitive_ssn", "\"123-45-6789\"", true);
 
     // when
-    VariableRedaction.apply(ValueType.VARIABLE, record);
+    VariableRedaction.apply(ValueType.VARIABLE, record, PATTERNS);
 
     // then
     assertThat(record.getValue()).isEqualTo("null");
@@ -49,7 +52,7 @@ final class VariableRedactionTest {
     final var record = variable("customerId", "\"C-42\"", false);
 
     // when
-    VariableRedaction.apply(ValueType.VARIABLE, record);
+    VariableRedaction.apply(ValueType.VARIABLE, record, PATTERNS);
 
     // then
     assertThat(record.getValue()).isEqualTo("\"C-42\"");
@@ -61,7 +64,7 @@ final class VariableRedactionTest {
     final var record = variable("sensitive_payload", "{\"pan\":\"4111111111111111\"}", true);
 
     // when
-    VariableRedaction.apply(ValueType.VARIABLE, record);
+    VariableRedaction.apply(ValueType.VARIABLE, record, PATTERNS);
 
     // then
     assertThat(record.getValue()).isEqualTo("null");
@@ -73,8 +76,8 @@ final class VariableRedactionTest {
     final var record = variable("sensitive_ssn", "\"123-45-6789\"", true);
 
     // when
-    VariableRedaction.apply(ValueType.VARIABLE, record);
-    VariableRedaction.apply(ValueType.VARIABLE, record);
+    VariableRedaction.apply(ValueType.VARIABLE, record, PATTERNS);
+    VariableRedaction.apply(ValueType.VARIABLE, record, PATTERNS);
 
     // then
     assertThat(record.getValue()).isEqualTo("null");
@@ -89,7 +92,7 @@ final class VariableRedactionTest {
         new UnsafeBuffer(MsgPackConverter.convertToMsgPack("{\"sensitive_ssn\":\"x\"}")));
 
     // when
-    VariableRedaction.apply(ValueType.JOB, record);
+    VariableRedaction.apply(ValueType.JOB, record, PATTERNS);
 
     // then
     assertThat(record.getVariables()).containsEntry("sensitive_ssn", "x");
@@ -109,7 +112,7 @@ final class VariableRedactionTest {
     decision.evaluatedInputs().add().setInputId("plainInput").setInputValue(msgPack("true"));
 
     // when
-    VariableRedaction.apply(ValueType.DECISION_EVALUATION, record);
+    VariableRedaction.apply(ValueType.DECISION_EVALUATION, record, PATTERNS);
 
     // then
     assertThat(decision.evaluatedInputs())
@@ -142,7 +145,7 @@ final class VariableRedactionTest {
         .setProtectionModes(Set.of(ProtectionMode.REDACT));
 
     // when
-    VariableRedaction.apply(ValueType.DECISION_EVALUATION, record);
+    VariableRedaction.apply(ValueType.DECISION_EVALUATION, record, PATTERNS);
 
     // then
     final List<String> inputValues = new ArrayList<>();
@@ -150,6 +153,37 @@ final class VariableRedactionTest {
         .evaluatedDecisions()
         .forEach(d -> d.evaluatedInputs().forEach(i -> inputValues.add(i.getInputValue())));
     assertThat(inputValues).containsExactly("null", "null");
+  }
+
+  @Test
+  void shouldRedactOnlyTheSensitiveKeysNestedInAVariable() {
+    // given -- the variable name is plain, only keys inside the value are sensitive
+    final var record =
+        variable(
+            "test",
+            "{\"sensitive_test\": 123, \"name\": \"C-42\", \"list\": [{\"sensitive_ssn\": \"x\", \"id\": 1}]}",
+            true);
+
+    // when
+    VariableRedaction.apply(ValueType.VARIABLE, record, PATTERNS);
+
+    // then -- structure is kept, the sensitive keys are null
+    assertThat(MsgPackConverter.convertToJson(record.getValueBuffer()))
+        .isEqualTo(
+            "{\"sensitive_test\":null,\"name\":\"C-42\",\"list\":[{\"sensitive_ssn\":null,\"id\":1}]}");
+    assertThat(record.getProtectionModes()).containsExactly(ProtectionMode.REDACT);
+  }
+
+  @Test
+  void shouldRedactTheWholeValueWhenTheVariableNameIsSensitive() {
+    // given
+    final var record = variable("sensitive_ssn", "{\"sensitive_x\": 1, \"name\": \"C-42\"}", true);
+
+    // when
+    VariableRedaction.apply(ValueType.VARIABLE, record, PATTERNS);
+
+    // then
+    assertThat(record.getValue()).isEqualTo("null");
   }
 
   private static UnsafeBuffer msgPack(final String json) {

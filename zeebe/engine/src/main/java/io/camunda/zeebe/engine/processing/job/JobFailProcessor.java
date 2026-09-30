@@ -212,6 +212,7 @@ public final class JobFailProcessor
         .setElementInstancePath(treePathProperties.elementInstancePath())
         .setProcessDefinitionPath(treePathProperties.processDefinitionPath())
         .setCallingElementPath(treePathProperties.callingElementPath());
+    variableBehavior.protectErrorMessage(incidentEvent, value.getElementInstanceKey());
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
     incidentMetrics.incidentCreated();

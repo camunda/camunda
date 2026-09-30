@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.variable;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnConditionalBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnConditionalBehavior.VariableEvent;
@@ -17,6 +20,8 @@ import io.camunda.zeebe.engine.state.variable.DocumentEntry;
 import io.camunda.zeebe.engine.state.variable.IndexedDocument;
 import io.camunda.zeebe.engine.state.variable.VariableInstance;
 import io.camunda.zeebe.engine.util.validation.NestingDepthValidator;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -26,12 +31,17 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * A behavior which allows processors to mutate the variable state. Use this anywhere where you
@@ -41,6 +51,10 @@ import org.agrona.DirectBuffer;
  * mutable state directly.
  */
 public final class VariableBehavior {
+
+  private static final String REDACTED_MARKER = "\"[REDACTED]\"";
+  private static final Pattern IDENTIFIER = Pattern.compile("[\\p{L}_][\\p{L}\\p{N}_]*");
+  private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
   private final VariableState variableState;
   private final StateWriter stateWriter;
@@ -273,7 +287,8 @@ public final class VariableBehavior {
         .setTenantId(tenantId)
         .setName(name)
         .setValue(value, valueOffset, valueLength)
-        .setProtectionModes(resolveProtectionModes(name));
+        .setProtectionModes(
+            resolveProtectionModes(name, new UnsafeBuffer(value, valueOffset, valueLength)));
 
     final Optional<VariableEvent> variableEvent = setLocalVariable(variableRecord);
     final var variableEvents = variableEvent.map(List::of).orElseGet(List::of);
@@ -307,14 +322,149 @@ public final class VariableBehavior {
     variableRecord
         .setName(entry.getName())
         .setValue(entry.getValue())
-        .setProtectionModes(resolveProtectionModes(entry.getName()));
+        .setProtectionModes(resolveProtectionModes(entry.getName(), entry.getValue()));
   }
 
-  private Set<ProtectionMode> resolveProtectionModes(final DirectBuffer name) {
-    final String value = BufferUtil.bufferAsString(name);
-    final boolean matches =
-        sensitiveVariablePatterns.stream().anyMatch(pattern -> pattern.matcher(value).matches());
-    return matches ? configuredProtectionModes : Set.of();
+  /**
+   * A variable is protected if its name matches a sensitive pattern, or if the name of any key
+   * nested in its value does: {@code test = {"sensitive_ssn": 1}} is protected as a whole, even
+   * though the variable is called {@code test}.
+   */
+  private Set<ProtectionMode> resolveProtectionModes(
+      final DirectBuffer name, final DirectBuffer value) {
+    return isSensitive(BufferUtil.bufferAsString(name)) || hasSensitiveKey(value)
+        ? configuredProtectionModes
+        : Set.of();
+  }
+
+  private boolean hasSensitiveKey(final DirectBuffer value) {
+    if (!isMapOrArray(value)) {
+      return false;
+    }
+    try {
+      return hasSensitiveKey(JSON_MAPPER.readTree(MsgPackConverter.convertToJson(value)));
+    } catch (final JsonProcessingException e) {
+      return false;
+    }
+  }
+
+  private boolean hasSensitiveKey(final JsonNode node) {
+    for (final var keys = node.fieldNames(); keys.hasNext(); ) {
+      if (isSensitive(keys.next())) {
+        return true;
+      }
+    }
+    for (final JsonNode child : node) {
+      if (hasSensitiveKey(child)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // scalars cannot have keys, so they skip the JSON round trip
+  private static boolean isMapOrArray(final DirectBuffer value) {
+    if (value.capacity() == 0) {
+      return false;
+    }
+    final int type = value.getByte(0) & 0xff;
+    return (type & 0xe0) == 0x80 // fixmap 0x80-0x8f and fixarray 0x90-0x9f
+        || (type >= 0xdc && type <= 0xdf); // array16/32, map16/32
+  }
+
+  private boolean isSensitive(final String name) {
+    return sensitiveVariablePatterns.stream().anyMatch(pattern -> pattern.matcher(name).matches());
+  }
+
+  /**
+   * Protects the error message of an incident the engine is about to persist, which it cannot
+   * redact field by field. The message is protected if it names a sensitive variable -- a message
+   * about an expression that reads one may show a value derived from it -- or if it contains the
+   * value of a sensitive variable visible from {@code scopeKey}. The value check is what covers
+   * messages the engine did not write itself, like a job worker's error message.
+   *
+   * <p>A protected incident carries the configured modes, and its message is rewritten in place
+   * with those values replaced, so it reads as it did minus the values. A message that only names
+   * the variable, without a value the engine can locate, is left as it is.
+   *
+   * <p>Both checks err towards protecting: a short value such as {@code true} matches more text
+   * than the variable it came from.
+   */
+  public void protectErrorMessage(final IncidentRecord incident, final long scopeKey) {
+    final String message = incident.getErrorMessage();
+    if (message.isEmpty()) {
+      return;
+    }
+    final var valueTokens = sensitiveValueTokens(scopeKey);
+    if (!namesSensitiveVariable(message) && valueTokens.stream().noneMatch(message::contains)) {
+      return;
+    }
+    incident
+        .setProtectionModes(configuredProtectionModes)
+        .setErrorMessage(maskValues(message, valueTokens));
+  }
+
+  private boolean namesSensitiveVariable(final String text) {
+    final var identifiers = IDENTIFIER.matcher(text);
+    while (identifiers.find()) {
+      if (isSensitive(identifiers.group())) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * The texts a sensitive variable visible from {@code scopeKey} can show up as in a message: its
+   * JSON form and, since messages quote values in their own format (FEEL prints {@code
+   * {pan:"4111"}}), every scalar it is made of. Walks up to the process instance, the same scopes
+   * an expression at {@code scopeKey} can read.
+   */
+  private Set<String> sensitiveValueTokens(final long scopeKey) {
+    final var tokens = new LinkedHashSet<String>();
+    for (long scope = scopeKey; scope > 0; scope = variableState.getParentScopeKey(scope)) {
+      for (final var variable : variableState.getVariablesLocal(scope)) {
+        if (isSensitive(BufferUtil.bufferAsString(variable.name()))) {
+          final String json = MsgPackConverter.convertToJson(variable.value());
+          tokens.add(json);
+          try {
+            final var scalars = new ArrayList<JsonNode>();
+            collectScalars(JSON_MAPPER.readTree(json), scalars);
+            scalars.stream().map(JsonNode::asText).filter(t -> !t.isEmpty()).forEach(tokens::add);
+          } catch (final JsonProcessingException e) {
+            // only the JSON form is matched
+          }
+        }
+      }
+    }
+    return tokens;
+  }
+
+  /**
+   * Replaces each token, together with the quotes around it, by {@code "[REDACTED]"}. A token only
+   * matches as a whole word, so the value {@code 1} does not damage {@code 100000}.
+   */
+  private static String maskValues(final String text, final Set<String> tokens) {
+    if (tokens.isEmpty()) {
+      return text;
+    }
+    // longest first, so a value is not cut short by a shorter one that is part of it
+    final String alternatives =
+        tokens.stream()
+            .sorted(Comparator.comparingInt(String::length).reversed())
+            .map(Pattern::quote)
+            .collect(Collectors.joining("|"));
+    return Pattern.compile("(?<![\\w.])\"?(?:" + alternatives + ")\"?(?!\\w|\\.\\d)")
+        .matcher(text)
+        .replaceAll(Matcher.quoteReplacement(REDACTED_MARKER));
+  }
+
+  private static void collectScalars(final JsonNode node, final List<JsonNode> scalars) {
+    if (node.isContainerNode()) {
+      node.forEach(child -> collectScalars(child, scalars));
+    } else if (!node.isNull()) {
+      scalars.add(node);
+    }
   }
 
   private VariableRecord getVariableRecordCopy(final VariableRecord variableRecord) {

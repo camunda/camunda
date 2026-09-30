@@ -15,6 +15,7 @@ import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.camunda.zeebe.stream.impl.records.TypedRecordImpl;
 import java.time.InstantSource;
 import java.util.List;
+import java.util.regex.Pattern;
 
 class RecordExporter {
 
@@ -27,12 +28,15 @@ class RecordExporter {
   private boolean shouldExport;
   private int exporterIndex;
   private final InstantSource clock;
+  private final List<Pattern> sensitiveVariablePatterns;
 
   RecordExporter(
       final ExporterMetrics exporterMetrics,
       final List<ExporterContainer> containers,
       final int partitionId,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final List<Pattern> sensitiveVariablePatterns) {
+    this.sensitiveVariablePatterns = sensitiveVariablePatterns;
     this.containers = containers;
     typedEvent = new TypedRecordImpl(partitionId);
     this.exporterMetrics = exporterMetrics;
@@ -51,7 +55,7 @@ class RecordExporter {
       // an already-redacted record. export() is retried per record, wrap() runs once, so the
       // rewrite belongs here. The sensitivity verdict itself was already decided upstream, in
       // VariableBehavior, and travels as metadata on the record.
-      VariableRedaction.apply(rawMetadata.getValueType(), recordValue);
+      VariableRedaction.apply(rawMetadata.getValueType(), recordValue, sensitiveVariablePatterns);
       typedEvent.wrap(rawEvent, rawMetadata, recordValue);
       exporterIndex = 0;
     }

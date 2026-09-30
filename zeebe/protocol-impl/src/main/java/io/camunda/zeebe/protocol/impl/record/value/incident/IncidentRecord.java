@@ -20,10 +20,13 @@ import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public final class IncidentRecord extends UnifiedRecordValue implements IncidentRecordValue {
@@ -45,6 +48,7 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
       new StringValue("processDefinitionPath");
   private static final StringValue CALLING_ELEMENT_PATH_KEY = new StringValue("callingElementPath");
   private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
+  private static final StringValue PROTECTION_MODES_KEY = new StringValue("protectionModes");
 
   private final EnumProperty<ErrorType> errorTypeProp =
       new EnumProperty<>(ERROR_TYPE_KEY, ErrorType.class, ErrorType.UNKNOWN);
@@ -68,9 +72,11 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
       new ArrayProperty<>(PROCESS_DEFINITION_PATH_KEY, LongValue::new);
   private final ArrayProperty<IntegerValue> callingElementPathProp =
       new ArrayProperty<>(CALLING_ELEMENT_PATH_KEY, IntegerValue::new);
+  private final ArrayProperty<StringValue> protectionModesProp =
+      new ArrayProperty<>(PROTECTION_MODES_KEY, StringValue::new);
 
   public IncidentRecord() {
-    super(14);
+    super(15);
     declareProperty(errorTypeProp)
         .declareProperty(errorMessageProp)
         .declareProperty(bpmnProcessIdProp)
@@ -84,7 +90,8 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
         .declareProperty(tenantIdProp)
         .declareProperty(elementInstancePathProp)
         .declareProperty(processDefinitionPathProp)
-        .declareProperty(callingElementPathProp);
+        .declareProperty(callingElementPathProp)
+        .declareProperty(protectionModesProp);
   }
 
   public void wrap(final IncidentRecord record) {
@@ -102,6 +109,7 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     setElementInstancePath(record.getElementInstancePath());
     setProcessDefinitionPath(record.getProcessDefinitionPath());
     setCallingElementPath(record.getCallingElementPath());
+    setProtectionModes(record.getProtectionModes());
   }
 
   @JsonIgnore
@@ -295,5 +303,28 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
   public IncidentRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProp.setValue(storageOrdinal);
     return this;
+  }
+
+  @Override
+  public Set<ProtectionMode> getProtectionModes() {
+    return protectionModesProp.stream()
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .map(ProtectionMode::valueOf)
+        .collect(Collectors.toSet());
+  }
+
+  public IncidentRecord setProtectionModes(final Set<ProtectionMode> protectionModes) {
+    protectionModesProp.reset();
+    protectionModes.forEach(
+        mode -> protectionModesProp.add().wrap(BufferUtil.wrapString(mode.name())));
+    return this;
+  }
+
+  // Derived from getProtectionModes(); excluded from JSON to avoid duplicating that field.
+  @JsonIgnore
+  @Override
+  public boolean shouldBeRedacted() {
+    return IncidentRecordValue.super.shouldBeRedacted();
   }
 }
