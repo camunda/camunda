@@ -26,7 +26,7 @@ import {
 // The mock rejects a request that does not match, so the rows only render when the route
 // asked for exactly the first page of undeleted start events that carry a tool.
 const EXPECTED_INITIAL_REQUEST = z.object({
-	sort: z.tuple([z.object({field: z.literal('toolName'), order: z.literal('asc')})]),
+	sort: z.tuple([z.object({field: z.literal('toolName'), order: z.literal('ASC')})]),
 	filter: z.object({
 		messageSubscriptionType: z.literal('START_EVENT'),
 		messageSubscriptionState: z.object({$neq: z.literal('DELETED')}),

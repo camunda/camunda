@@ -78,6 +78,9 @@ const ACTIVE_ITEMS_REFETCH_INTERVAL_MS = 5000;
 function getOperationStatesByInstance(items: BatchOperationItem[]) {
 	const statesByInstance = new Map<string, Set<BatchOperationItemState>>();
 	for (const item of items) {
+		if (item.processInstanceKey === null) {
+			continue;
+		}
 		const states = statesByInstance.get(item.processInstanceKey) ?? new Set<BatchOperationItemState>();
 		states.add(item.state);
 		statesByInstance.set(item.processInstanceKey, states);
@@ -93,6 +96,9 @@ function getOperationStatesByInstance(items: BatchOperationItem[]) {
 
 function getActiveOperationsByInstance(items: BatchOperationItem[]) {
 	return items.reduce((operationsByInstance, item) => {
+		if (item.processInstanceKey === null) {
+			return operationsByInstance;
+		}
 		const operations = operationsByInstance.get(item.processInstanceKey) ?? [];
 		operationsByInstance.set(item.processInstanceKey, [...operations, item.operationType]);
 		return operationsByInstance;
@@ -314,7 +320,7 @@ const InstancesTable: React.FC<Props> = ({
 			key: 'startDate',
 			sortKey: 'startDate',
 			isDefault: true,
-			defaultOrder: 'desc' as const,
+			defaultOrder: 'DESC' as const,
 			label: t('operate.processes.instancesTable.startDate'),
 			render: (row: ProcessInstance) => formatTimestamp(row.startDate),
 		},

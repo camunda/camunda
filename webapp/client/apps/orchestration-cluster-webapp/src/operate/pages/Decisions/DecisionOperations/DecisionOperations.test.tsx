@@ -67,7 +67,7 @@ describe('<DecisionOperations />', () => {
 	});
 
 	it('should use the DRD ID when its name is unavailable', async () => {
-		const screen = await renderOperations(createDecisionDefinition({decisionRequirementsName: null}));
+		const screen = await renderOperations(createDecisionDefinition({decisionRequirementsName: ''}));
 		await userEvent.click(screen.getByRole('button', {name: ACTION_NAME}));
 		await expect.element(screen.getByText('my-drd', {exact: true})).toBeVisible();
 	});

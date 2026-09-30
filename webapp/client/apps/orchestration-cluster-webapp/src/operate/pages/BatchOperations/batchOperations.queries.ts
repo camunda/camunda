@@ -9,7 +9,7 @@
 import {queryOptions} from '@tanstack/react-query';
 import {z} from 'zod';
 import {
-	queryBatchOperationsRequestBodySchema,
+	batchOperationSortFieldEnum,
 	type QueryBatchOperationsRequestBody,
 	type QueryBatchOperationsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
@@ -23,15 +23,15 @@ type BatchOperationsSearch = {
 	sort: string;
 };
 
-const DEFAULT_SORT = 'endDate+desc';
-const SORT_SCHEMA = queryBatchOperationsRequestBodySchema.shape.sort.unwrap().element;
+const DEFAULT_SORT = 'endDate+DESC';
+const SORT_SCHEMA = z.object({field: batchOperationSortFieldEnum, order: z.enum(['ASC', 'DESC'])});
 
 function parseBatchOperationsSort(value: string | undefined) {
 	const [field, order, ...remaining] = (value ?? DEFAULT_SORT).split('+');
 	const result = SORT_SCHEMA.safeParse({field, order});
 	return remaining.length === 0 && order !== undefined && result.success
 		? result.data
-		: SORT_SCHEMA.parse({field: 'endDate', order: 'desc'});
+		: SORT_SCHEMA.parse({field: 'endDate', order: 'DESC'});
 }
 
 const batchOperationsSearchSchema = z.object({

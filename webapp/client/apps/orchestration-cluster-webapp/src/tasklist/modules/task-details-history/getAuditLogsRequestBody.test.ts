@@ -12,20 +12,20 @@ import {getAuditLogsRequestBody} from './getAuditLogsRequestBody';
 
 describe('getAuditLogsRequestBody', () => {
 	it('should request successful task history entries', () => {
-		const result = getAuditLogsRequestBody({field: 'timestamp', order: 'desc'});
+		const result = getAuditLogsRequestBody({field: 'timestamp', order: 'DESC'});
 
 		expect(result.filter).toEqual({result: 'SUCCESS'});
 	});
 
 	it('should request the first page of task history entries', () => {
-		const result = getAuditLogsRequestBody({field: 'timestamp', order: 'desc'});
+		const result = getAuditLogsRequestBody({field: 'timestamp', order: 'DESC'});
 
 		expect(result.page).toEqual({from: 0, limit: 50});
 	});
 
 	it('should request task history entries in the selected order', () => {
-		const result = getAuditLogsRequestBody({field: 'actorId', order: 'asc'});
+		const result = getAuditLogsRequestBody({field: 'actorId', order: 'ASC'});
 
-		expect(result.sort).toEqual([{field: 'actorId', order: 'asc'}]);
+		expect(result.sort).toEqual([{field: 'actorId', order: 'ASC'}]);
 	});
 });

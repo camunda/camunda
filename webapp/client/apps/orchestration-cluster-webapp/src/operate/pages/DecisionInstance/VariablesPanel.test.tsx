@@ -10,7 +10,7 @@ import {describe, expect, vi} from 'vitest';
 import {useParams} from '@tanstack/react-router';
 import {userEvent} from 'vitest/browser';
 import {HttpResponse, http} from 'msw';
-import {endpoints} from '@camunda/camunda-api-zod-schemas/8.10';
+import {endpoints} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {mockGetDecisionInstanceEndpoint} from '#/shared-test-modules/mock-handlers';
@@ -119,8 +119,8 @@ describe('<VariablesPanel />', () => {
 								],
 							},
 							{
-								ruleId: null,
-								ruleIndex: null,
+								ruleId: 'rule-1',
+								ruleIndex: 1,
 								evaluatedOutputs: [
 									{
 										outputId: 'out-2',
@@ -152,7 +152,7 @@ describe('<VariablesPanel />', () => {
 		await expect.element(outputs.getByText('3', {exact: true})).toBeVisible();
 		await expect.element(outputs.getByText('Classification')).toBeVisible();
 		await expect.element(outputs.getByText('"preferred"')).toBeVisible();
-		await expect.element(outputs.getByText('--')).toBeVisible();
+		await expect.element(outputs.getByText('1', {exact: true})).toBeVisible();
 		await expect.element(outputs.getByText('Review')).toBeVisible();
 		await expect.element(screen.getByTestId('results-json-viewer')).not.toBeInTheDocument();
 		expect(screen.getByRole('tabpanel').element().getBoundingClientRect().bottom).toBeLessThanOrEqual(
@@ -176,8 +176,8 @@ describe('<VariablesPanel />', () => {
 						evaluatedInputs: [{inputId: 'input', inputName: 'First input', inputValue: '1'}],
 						matchedRules: [
 							{
-								ruleId: null,
-								ruleIndex: null,
+								ruleId: 'rule-1',
+								ruleIndex: 1,
 								evaluatedOutputs: [
 									{outputId: 'output', outputName: 'First output', outputValue: '"one"', ruleId: null, ruleIndex: null},
 								],
@@ -202,8 +202,8 @@ describe('<VariablesPanel />', () => {
 						evaluatedInputs: [{inputId: 'input', inputName: 'Next input', inputValue: '2'}],
 						matchedRules: [
 							{
-								ruleId: null,
-								ruleIndex: null,
+								ruleId: 'rule-1',
+								ruleIndex: 1,
 								evaluatedOutputs: [
 									{outputId: 'output', outputName: 'Next output', outputValue: '"two"', ruleId: null, ruleIndex: null},
 								],
@@ -229,8 +229,8 @@ describe('<VariablesPanel />', () => {
 						decisionEvaluationInstanceKey: TABLE_ID,
 						matchedRules: [
 							{
-								ruleId: null,
-								ruleIndex: null,
+								ruleId: 'rule-1',
+								ruleIndex: 1,
 								evaluatedOutputs: [
 									{
 										outputId: 'shared-output',
@@ -242,8 +242,8 @@ describe('<VariablesPanel />', () => {
 								],
 							},
 							{
-								ruleId: null,
-								ruleIndex: null,
+								ruleId: 'rule-1',
+								ruleIndex: 1,
 								evaluatedOutputs: [
 									{
 										outputId: 'shared-output',

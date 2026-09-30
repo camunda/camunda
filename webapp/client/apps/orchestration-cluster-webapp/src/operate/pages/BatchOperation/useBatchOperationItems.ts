@@ -21,7 +21,7 @@ function useBatchOperationItems(batchOperationKey: string) {
 			const {response, error} = await request(
 				endpoints.queryBatchOperationItems({
 					filter: {batchOperationKey},
-					sort: [{field: 'processedDate', order: 'desc'}],
+					sort: [{field: 'processedDate', order: 'DESC'}],
 					page: {from: pageParam, limit: PAGE_LIMIT},
 				}),
 			);

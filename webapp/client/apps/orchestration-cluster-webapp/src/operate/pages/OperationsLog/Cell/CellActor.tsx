@@ -26,7 +26,7 @@ const CellActor: React.FC<Props> = ({item}) => {
 	const getTooltipActorContent = (actor: AuditLogActorType | 'AGENT') => {
 		const label =
 			actor === 'AGENT'
-				? t('operate.operationsLog.actorTooltip.aiAgentOnBehalfOf', {actorType: item.actorType.toLowerCase()})
+				? t('operate.operationsLog.actorTooltip.aiAgentOnBehalfOf', {actorType: item.actorType?.toLowerCase() ?? ''})
 				: spaceAndCapitalize(actor);
 		return (
 			<AuthorTooltip>

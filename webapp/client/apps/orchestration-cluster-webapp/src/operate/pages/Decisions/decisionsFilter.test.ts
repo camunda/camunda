@@ -11,22 +11,22 @@ import {mapDecisionInstancesSort} from './decisionsFilter';
 
 describe('mapDecisionInstancesSort', () => {
 	it('defaults to evaluation date descending when no sort param is given', () => {
-		expect(mapDecisionInstancesSort(undefined)).toEqual([{field: 'evaluationDate', order: 'desc'}]);
+		expect(mapDecisionInstancesSort(undefined)).toEqual([{field: 'evaluationDate', order: 'DESC'}]);
 	});
 
 	it('parses a valid field and order', () => {
-		expect(mapDecisionInstancesSort('businessId+asc')).toEqual([{field: 'businessId', order: 'asc'}]);
+		expect(mapDecisionInstancesSort('businessId+ASC')).toEqual([{field: 'businessId', order: 'ASC'}]);
 	});
 
 	it('falls back to the default for an unrecognized field', () => {
-		expect(mapDecisionInstancesSort('foo+asc')).toEqual([{field: 'evaluationDate', order: 'desc'}]);
+		expect(mapDecisionInstancesSort('foo+ASC')).toEqual([{field: 'evaluationDate', order: 'DESC'}]);
 	});
 
 	it('falls back to the default for an unrecognized order', () => {
-		expect(mapDecisionInstancesSort('businessId+bar')).toEqual([{field: 'evaluationDate', order: 'desc'}]);
+		expect(mapDecisionInstancesSort('businessId+bar')).toEqual([{field: 'evaluationDate', order: 'DESC'}]);
 	});
 
 	it('falls back to the default when the order is missing', () => {
-		expect(mapDecisionInstancesSort('businessId')).toEqual([{field: 'evaluationDate', order: 'desc'}]);
+		expect(mapDecisionInstancesSort('businessId')).toEqual([{field: 'evaluationDate', order: 'DESC'}]);
 	});
 });

@@ -126,7 +126,7 @@ const DecisionOperations: React.FC<Props> = ({definition}) => {
 						rows={[
 							{
 								key: definition.decisionRequirementsKey,
-								columns: [{cellContent: definition.decisionRequirementsName ?? definition.decisionRequirementsId}],
+								columns: [{cellContent: definition.decisionRequirementsName || definition.decisionRequirementsId}],
 							},
 						]}
 					/>

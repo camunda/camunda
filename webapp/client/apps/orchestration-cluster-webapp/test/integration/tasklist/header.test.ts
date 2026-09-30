@@ -104,7 +104,7 @@ test.describe('user sidebar', () => {
 		await test.step('display user details in the sidebar', async () => {
 			await tasklistIndexPage.header.openUserSidebar();
 
-			await expect(page.getByText(currentUserMock.displayName)).toBeVisible();
+			await expect(page.getByText(currentUserMock.displayName ?? currentUserMock.username)).toBeVisible();
 			await expect(tasklistIndexPage.header.languageSelector).toBeVisible();
 			await expect(page.getByRole('radio', {name: 'System'})).toBeChecked();
 		});

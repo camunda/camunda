@@ -35,7 +35,7 @@ import {
 	type SortingConfig,
 } from '@camunda/design-system';
 import {AiIcon, ExternalLink, Plug, User} from '@camunda/design-system/icons';
-import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.11';
 import {formatEnumLabel} from '#/admin/modules/operations-log/auditLogs';
 import {
 	ALLOWED_ENTITY_TYPES,
@@ -297,7 +297,7 @@ const AdminOperationsLogPage: React.FC<AdminOperationsLogPageProps> = ({
 		() =>
 			search.sortField === undefined
 				? [{id: 'timestamp', desc: true}]
-				: [{id: search.sortField, desc: search.sortOrder === 'desc'}],
+				: [{id: search.sortField, desc: search.sortOrder === 'DESC'}],
 		[search.sortField, search.sortOrder],
 	);
 
@@ -307,7 +307,7 @@ const AdminOperationsLogPage: React.FC<AdminOperationsLogPageProps> = ({
 
 			onSearchChange({
 				sortField: sorted?.id as OperationsLogSearch['sortField'],
-				sortOrder: sorted === undefined ? undefined : sorted.desc ? 'desc' : 'asc',
+				sortOrder: sorted === undefined ? undefined : sorted.desc ? 'DESC' : 'ASC',
 				page: undefined,
 			});
 		},

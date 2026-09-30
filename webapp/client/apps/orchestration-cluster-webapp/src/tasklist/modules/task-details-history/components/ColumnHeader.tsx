@@ -7,6 +7,7 @@
  */
 
 import {Button, TableHead} from '@camunda/design-system';
+import type {QuerySortOrder} from '@camunda/camunda-api-zod-schemas/8.11';
 import {ArrowDown, ArrowUp, ArrowUpDown} from '@camunda/design-system/icons';
 import {useNavigate} from '@tanstack/react-router';
 import {
@@ -16,12 +17,12 @@ import {
 	type TaskDetailsHistorySortField,
 } from '../sortUtils';
 
-const OrderIcon: React.FC<{sortOrder: 'asc' | 'desc'; isActive: boolean}> = ({sortOrder, isActive}) => {
+const OrderIcon: React.FC<{sortOrder: QuerySortOrder; isActive: boolean}> = ({sortOrder, isActive}) => {
 	if (!isActive) {
 		return <ArrowUpDown className="size-3.5 opacity-50" aria-hidden />;
 	}
 
-	return sortOrder === 'asc' ? (
+	return sortOrder === 'ASC' ? (
 		<ArrowUp className="size-3.5" aria-hidden />
 	) : (
 		<ArrowDown className="size-3.5" aria-hidden />
@@ -48,7 +49,7 @@ const ColumnHeader: React.FC<Props> = ({sortKey, label, search, isDisabled, chil
 	const currentSortOrder = isActive ? sort.sortOrder : undefined;
 
 	return (
-		<TableHead aria-sort={isActive ? (currentSortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}>
+		<TableHead aria-sort={isActive ? (currentSortOrder === 'ASC' ? 'ascending' : 'descending') : 'none'}>
 			<Button
 				variant="ghost"
 				size="sm"
@@ -63,7 +64,7 @@ const ColumnHeader: React.FC<Props> = ({sortKey, label, search, isDisabled, chil
 				aria-label={`Sort by ${label}`}
 			>
 				{children}
-				<OrderIcon sortOrder={currentSortOrder ?? 'asc'} isActive={isActive} />
+				<OrderIcon sortOrder={currentSortOrder ?? 'ASC'} isActive={isActive} />
 			</Button>
 		</TableHead>
 	);

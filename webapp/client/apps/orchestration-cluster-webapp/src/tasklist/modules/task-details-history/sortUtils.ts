@@ -7,9 +7,9 @@
  */
 
 import {z} from 'zod';
-import type {AuditLogSortField} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {AuditLogSortField, QuerySortOrder} from '@camunda/camunda-api-zod-schemas/8.11';
 
-const INITIAL_SORT_ORDER = 'desc';
+const INITIAL_SORT_ORDER = 'DESC';
 const DEFAULT_SORT_PARAMS = {
 	sortBy: 'timestamp',
 	sortOrder: INITIAL_SORT_ORDER,
@@ -21,7 +21,7 @@ const taskDetailsHistorySearchDefaults = {
 
 const sortSchema = z.object({
 	sortBy: z.enum(['timestamp', 'operationType', 'actorId']),
-	sortOrder: z.enum(['asc', 'desc']),
+	sortOrder: z.enum(['ASC', 'DESC']),
 });
 
 type TaskDetailsHistorySortParams = z.infer<typeof sortSchema>;
@@ -62,7 +62,7 @@ const taskDetailsHistorySearchSchema = z.object({
 
 type TaskDetailsHistorySort = {
 	field: AuditLogSortField;
-	order: 'asc' | 'desc';
+	order: QuerySortOrder;
 };
 type TaskDetailsHistorySearch = z.infer<typeof taskDetailsHistorySearchSchema>;
 
@@ -80,8 +80,8 @@ function getAuditLogSort(search: TaskDetailsHistorySearch): TaskDetailsHistorySo
 	};
 }
 
-function getNextSortSearchValue(sortBy: TaskDetailsHistorySortField, currentSortOrder?: 'asc' | 'desc') {
-	return sortSearchValueCodec.encode({sortBy, sortOrder: currentSortOrder === 'asc' ? 'desc' : 'asc'});
+function getNextSortSearchValue(sortBy: TaskDetailsHistorySortField, currentSortOrder?: QuerySortOrder) {
+	return sortSearchValueCodec.encode({sortBy, sortOrder: currentSortOrder === 'ASC' ? 'DESC' : 'ASC'});
 }
 
 export {

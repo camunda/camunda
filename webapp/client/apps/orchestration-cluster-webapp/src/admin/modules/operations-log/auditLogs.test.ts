@@ -23,7 +23,7 @@ describe('getAuditLogsRequestBody', () => {
 		const body = getAuditLogsRequestBody({});
 
 		// then
-		expect(body.sort).toEqual([{field: 'timestamp', order: 'desc'}]);
+		expect(body.sort).toEqual([{field: 'timestamp', order: 'DESC'}]);
 	});
 
 	it('should sort ascending by the requested field when no order is given', () => {
@@ -31,15 +31,15 @@ describe('getAuditLogsRequestBody', () => {
 		const body = getAuditLogsRequestBody({sortField: 'actorId'});
 
 		// then
-		expect(body.sort).toEqual([{field: 'actorId', order: 'asc'}]);
+		expect(body.sort).toEqual([{field: 'actorId', order: 'ASC'}]);
 	});
 
 	it('should honor a descending sort on a non-default field', () => {
 		// when
-		const body = getAuditLogsRequestBody({sortField: 'operationType', sortOrder: 'desc'});
+		const body = getAuditLogsRequestBody({sortField: 'operationType', sortOrder: 'DESC'});
 
 		// then
-		expect(body.sort).toEqual([{field: 'operationType', order: 'desc'}]);
+		expect(body.sort).toEqual([{field: 'operationType', order: 'DESC'}]);
 	});
 
 	it('should request the first page by default', () => {

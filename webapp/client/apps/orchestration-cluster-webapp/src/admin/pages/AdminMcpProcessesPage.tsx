@@ -105,7 +105,7 @@ const AdminMcpProcessesPage: React.FC<AdminMcpProcessesPageProps> = ({
 	}, [isTenantsApiEnabled, t]);
 
 	const sortState = useMemo<SortingState>(
-		() => [{id: SORTED_COLUMN_ID, desc: search.sortOrder === 'desc'}],
+		() => [{id: SORTED_COLUMN_ID, desc: search.sortOrder === 'DESC'}],
 		[search.sortOrder],
 	);
 
@@ -114,7 +114,7 @@ const AdminMcpProcessesPage: React.FC<AdminMcpProcessesPageProps> = ({
 			const sortedColumn = state.find(({id}) => id === SORTED_COLUMN_ID);
 
 			onSearchChange({
-				sortOrder: sortedColumn === undefined || !sortedColumn.desc ? undefined : 'desc',
+				sortOrder: sortedColumn === undefined || !sortedColumn.desc ? undefined : 'DESC',
 				page: undefined,
 			});
 		},
