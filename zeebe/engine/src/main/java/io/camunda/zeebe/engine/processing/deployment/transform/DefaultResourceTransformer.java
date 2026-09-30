@@ -93,19 +93,26 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
   }
 
   @Override
-  public final Either<Failure, DeploymentResourceContext> createMetadata(
-      final DeploymentResource deploymentResource, final DeploymentRecord deployment) {
+  public Either<Failure, Void> createMetadata(
+      final DeploymentResource deploymentResource,
+      final DeploymentRecord deployment,
+      final DeploymentResourceContext context) {
     return parseResourceInfo(deploymentResource)
-        .map(
-            resourceInfo -> {
-              addResourceMetadata(resourceInfo, deploymentResource, deployment);
-              return DeploymentResourceContext.NONE;
-            });
+        .flatMap(
+            resourceInfo ->
+                checkForDuplicateResourceId(resourceInfo.id(), deploymentResource, deployment)
+                    .map(
+                        noDuplicates -> {
+                          addResourceMetadata(resourceInfo, deploymentResource, deployment);
+                          return null;
+                        }));
   }
 
   @Override
-  public final void writeRecords(
-      final DeploymentResource resource, final DeploymentRecord deployment) {
+  public void writeRecords(final DeploymentResource resource, final DeploymentRecord deployment) {
+    if (deployment.hasDuplicatesOnly()) {
+      return;
+    }
     final var checksum = checksumGenerator.checksum(resource.getResourceBuffer());
     deployment.resourceMetadata().stream()
         .filter(
@@ -177,6 +184,23 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
                     .setResourceKey(keyGenerator.nextKey())
                     .setVersion(INITIAL_VERSION)
                     .setDeploymentKey(deploymentRecord.getDeploymentKey()));
+  }
+
+  private Either<Failure, ?> checkForDuplicateResourceId(
+      final String resourceId, final DeploymentResource resource, final DeploymentRecord record) {
+    return record.getResourceMetadata().stream()
+        .filter(metadata -> metadata.getResourceId().equals(resourceId))
+        .findFirst()
+        .map(
+            dupeResource -> {
+              final var failureMessage =
+                  String.format(
+                      "Expected the resource ids to be unique within a deployment"
+                          + " but found a duplicated id '%s' in the resources '%s' and '%s'.",
+                      resourceId, dupeResource.getResourceName(), resource.getResourceName());
+              return Either.left(new Failure(failureMessage));
+            })
+        .orElse(Either.right(null));
   }
 
   /**

@@ -28,15 +28,6 @@ public class BpmnElementsWithDeploymentBinding implements DeploymentResourceCont
   private final List<ZeebeCalledDecision> calledDecisions = new ArrayList<>();
   private final List<ZeebeFormDefinition> formDefinitions = new ArrayList<>();
   private final List<ZeebeLinkedResource> linkedResources = new ArrayList<>();
-  private final String resourceName;
-
-  public BpmnElementsWithDeploymentBinding(final String resourceName) {
-    this.resourceName = resourceName;
-  }
-
-  public String getResourceName() {
-    return resourceName;
-  }
 
   public void addFromProcess(final Process process) {
     process
