@@ -52,17 +52,22 @@ import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
+import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.context.request.async.DeferredResult;
 
 @CamundaRestController
 @RequestMapping("/v2/process-instances")
 public class ProcessInstanceController {
+
+  private static final Duration ASYNC_TIMEOUT_MARGIN = Duration.ofMillis(500);
 
   private final ServiceRegistry serviceRegistry;
   private final MultiTenancyConfiguration multiTenancyCfg;
@@ -80,14 +85,17 @@ public class ProcessInstanceController {
   }
 
   @CamundaPostMapping
-  public CompletableFuture<ResponseEntity<Object>> createProcessInstance(
+  public DeferredResult<ResponseEntity<Object>> createProcessInstance(
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody final ProcessInstanceCreationInstruction request) {
     return processInstanceMapper
         .toCreateProcessInstance(request, multiTenancyCfg.isChecksEnabled())
         .fold(
-            RestErrorMapper::mapProblemToCompletedResponse,
-            mapped -> createProcessInstance(physicalTenantId, mapped));
+            problem ->
+                outlastingTimeout(null, RestErrorMapper.mapProblemToCompletedResponse(problem)),
+            mapped ->
+                outlastingTimeout(
+                    mapped.requestTimeout(), createProcessInstance(physicalTenantId, mapped)));
   }
 
   @CamundaPostMapping(path = "/{processInstanceKey}/cancellation")
@@ -512,6 +520,32 @@ public class ProcessInstanceController {
                 request, authenticationProvider.getCamundaAuthentication()),
         ResponseMapper::toCreateProcessInstanceResponse,
         HttpStatus.OK);
+  }
+
+  /**
+   * Waits past the request's own timeout, so that the gateway answers an expired request itself
+   * (504) rather than the servlet container's async timeout (30 s by default) cutting it off with a
+   * 503, which clients retry by creating the instance again.
+   */
+  private static DeferredResult<ResponseEntity<Object>> outlastingTimeout(
+      final Long requestTimeout, final CompletableFuture<ResponseEntity<Object>> response) {
+    final var result =
+        new DeferredResult<ResponseEntity<Object>>(
+            requestTimeout != null && requestTimeout > 0
+                ? requestTimeout + ASYNC_TIMEOUT_MARGIN.toMillis()
+                : null);
+    response.whenComplete(
+        (value, error) -> {
+          if (error != null) {
+            result.setErrorResult(
+                error instanceof CompletionException && error.getCause() != null
+                    ? error.getCause()
+                    : error);
+          } else {
+            result.setResult(value);
+          }
+        });
+    return result;
   }
 
   private CompletableFuture<ResponseEntity<Object>> cancelProcessInstance(
