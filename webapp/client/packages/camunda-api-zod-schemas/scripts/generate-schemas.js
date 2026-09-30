@@ -20,7 +20,7 @@ import path from 'node:path';
 import {parseCliArgs, runCli} from './cli.js';
 import {PACKAGE_ROOT, SPECS_DIR} from './paths.js';
 import {preprocessSpec} from './preprocess-spec.js';
-import {CONFIG, getAvailableVersions, resolveVersions} from './supported-versions.js';
+import {CONFIG, CURRENT_VERSION, getAvailableVersions, resolveVersions} from './supported-versions.js';
 
 /** @typedef {import('./supported-versions.js').GenerateConfig} GenerateConfig */
 
@@ -76,13 +76,16 @@ function printHelp() {
 	const availableVersions = getAvailableVersions().join(', ');
 	console.log(`Usage: node generate-schemas.js [options]
 Options:
-  -v, --version <version>  Generate only the specified version (can be used multiple times)
+  -v, --version <version>  Generate only the specified version (can be used multiple times).
+                           '${CURRENT_VERSION}' is the version of the current branch, read from the webapp/client
+                           package.json (for example 8.11.0-SNAPSHOT -> 8.11).
   -h, --help               Show this help message
-Available versions: ${availableVersions}
+Available versions: ${availableVersions}, ${CURRENT_VERSION}
 Examples:
   node generate-schemas.js                    # Generate all versions
   node generate-schemas.js --version 8.9      # Generate only 8.9
-  node generate-schemas.js -v 8.9 -v 8.10      # Generate 8.9 and 8.10
+  node generate-schemas.js -v 8.9 -v 8.10     # Generate 8.9 and 8.10
+  node generate-schemas.js -v ${CURRENT_VERSION}          # Generate only the current version
 Note: Run 'npm run download-specs' first to download the OpenAPI specs.
 `);
 }
@@ -95,7 +98,7 @@ async function main() {
 		return;
 	}
 
-	const versionsToGenerate = resolveVersions(requestedVersions);
+	const versionsToGenerate = await resolveVersions(requestedVersions);
 
 	console.log('Generating Zod schemas and TypeScript types...\n');
 
