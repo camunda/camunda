@@ -12,8 +12,14 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import {parseCliArgs, runCli} from './cli.js';
-import {REPO_ROOT, SPECS_DIR, WORKSPACE_ROOT} from './paths.js';
-import {CONFIG, getAvailableVersions, resolveVersions} from './supported-versions.js';
+import {REPO_ROOT, SPECS_DIR} from './paths.js';
+import {
+	CONFIG,
+	CURRENT_VERSION,
+	getAvailableVersions,
+	getCurrentVersion,
+	resolveVersions,
+} from './supported-versions.js';
 
 /** @typedef {import('./supported-versions.js').DownloadConfig} DownloadConfig */
 
@@ -156,23 +162,6 @@ async function getSpec(version, config, source) {
 }
 
 /**
- * Reads the release line (for example `8.11`) from the version in the workspace `package.json`
- * (for example `8.11.0-SNAPSHOT`).
- * @returns {Promise<string>} The release line of the local repository
- */
-async function getLocalVersion() {
-	const packageJsonPath = path.join(WORKSPACE_ROOT, 'package.json');
-	const {version} = JSON.parse(await fs.readFile(packageJsonPath, 'utf-8'));
-	const match = typeof version === 'string' ? version.match(/^(\d+)\.(\d+)\./) : null;
-
-	if (match === null) {
-		throw new Error(`Cannot read the release line from version "${version}" in ${packageJsonPath}`);
-	}
-
-	return `${match[1]}.${match[2]}`;
-}
-
-/**
  * Prints usage information.
  * @returns {void}
  */
@@ -180,18 +169,20 @@ function printHelp() {
 	const availableVersions = getAvailableVersions().join(', ');
 	console.log(`Usage: node download-specs.js [options]
 Options:
-  -v, --version <version>  Download only the specified version (can be used multiple times)
-  -l, --local              Copy the spec of the local repository version from the local repository instead of
-                           downloading it. The version comes from the webapp/client package.json
-                           (for example 8.11.0-SNAPSHOT -> 8.11). The other versions are still downloaded.
+  -v, --version <version>  Download only the specified version (can be used multiple times).
+                           '${CURRENT_VERSION}' is the version of the current branch, read from the webapp/client
+                           package.json (for example 8.11.0-SNAPSHOT -> 8.11).
+  -l, --local              Copy the spec of the current version from the local repository instead of
+                           downloading it. The other versions are still downloaded.
   -h, --help               Show this help message
-Available versions: ${availableVersions}
+Available versions: ${availableVersions}, ${CURRENT_VERSION}
 Examples:
-  node download-specs.js                    # Download all versions
-  node download-specs.js --version 8.9      # Download only 8.9
-  node download-specs.js -v 8.9 -v 8.10      # Download 8.9 and 8.10
-  node download-specs.js --local            # Copy the local version, download all other versions
-  node download-specs.js --local -v 8.11    # Copy only the local version (8.11)
+  node download-specs.js                       # Download all versions
+  node download-specs.js --version 8.9         # Download only 8.9
+  node download-specs.js -v 8.9 -v 8.10        # Download 8.9 and 8.10
+  node download-specs.js -v ${CURRENT_VERSION}            # Download only the current version
+  node download-specs.js --local               # Copy the current version, download all other versions
+  node download-specs.js --local -v ${CURRENT_VERSION}    # Copy only the current version
 `);
 }
 
@@ -211,14 +202,8 @@ async function main() {
 		return;
 	}
 
-	const versionsToProcess = resolveVersions(requestedVersions);
-	const localVersion = local ? await getLocalVersion() : null;
-
-	if (localVersion !== null && !CONFIG[localVersion]) {
-		throw new Error(
-			`The local repository version ${localVersion} is not supported. Available versions: ${getAvailableVersions().join(', ')}`,
-		);
-	}
+	const versionsToProcess = await resolveVersions(requestedVersions);
+	const localVersion = local ? await getCurrentVersion() : null;
 
 	console.log(
 		localVersion === null
