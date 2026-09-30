@@ -180,6 +180,15 @@ outputs:
         steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-common.outputs.openapi-change == 'true'
       }}
+  openapi-webapp-client-typecheck:
+    description: >-
+      Output whether the Webapp Client types must be checked against a changed C8 OpenAPI spec.
+      Only file changes trigger it: push, schedule and CI config changes are already covered by the
+      Webapp Client type check, which regenerates the schemas from the spec in every `npm ci`.
+    value: >-
+      ${{
+        steps.filter-common.outputs.openapi-change == 'true'
+      }}
   stable-branch-changes:
     description: Output whether the change is occurring on a stable/X.Y branch or not
     value: >-
