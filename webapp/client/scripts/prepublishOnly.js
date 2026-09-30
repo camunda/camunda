@@ -60,6 +60,12 @@ try {
 	const __dirname = path.dirname(fileURLToPath(import.meta.url));
 	const repoRoot = path.resolve(__dirname, '..');
 
+	console.log('🗑️  Removing downloaded specs and generated schemas...');
+	execSync('npm run clean -w @camunda/camunda-api-zod-schemas', {
+		stdio: 'inherit',
+		cwd: repoRoot,
+	});
+
 	console.log('🗑️  Removing node_modules directories...');
 	deleteDirectoriesRecursively(repoRoot, 'node_modules');
 
