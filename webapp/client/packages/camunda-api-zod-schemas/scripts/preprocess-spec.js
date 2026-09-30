@@ -19,7 +19,7 @@
  * 2. `copyInheritedRequiredProperties`: when a schema lists a property in `required` that it only
  *    inherits through `allOf`, Kubb emits it as optional. The property is copied into the local
  *    `properties`, so that the generated intersection makes it required.
- * 3. `removePatterns`: drops the `pattern` keyword of string schemas. The frontend types only describe
+ * 3. `removePattern`: drops the `pattern` keyword of string schemas. The frontend types only describe
  *    the shape of the API; format validation is the backend's job. Kubb would emit `.regex(...)` checks,
  *    some of them with Unicode property escapes that do not work without the `u` flag.
  * 4. `PATCHES`: targeted fixes for Kubb output issues in single schemas. Each patch explains why it is
@@ -61,52 +61,60 @@ function walk(node, visit) {
 }
 
 /**
+ * Applies `rule` to every object node of `document`, children first.
+ * @param {SchemaNode} document
+ * @param {(node: SchemaNode) => boolean} rule - Rewrites the node in place and returns `true` when it changed it
+ * @returns {number} The number of changed nodes
+ */
+function rewrite(document, rule) {
+	let count = 0;
+	walk(document, (node) => {
+		if (rule(node)) {
+			count++;
+		}
+	});
+	return count;
+}
+
+/**
  * Rule 1: `{allOf: [{$ref}], description}` becomes `{$ref, description}`.
  * Only nodes that carry nothing but annotations next to the `allOf` are collapsed. Nodes with
  * `nullable`, `properties`, `required`, etc. keep the `allOf`, because Kubb handles them.
  * @param {SchemaNode} node
- * @returns {number}
+ * @returns {boolean}
  */
 function collapseSingleRefAllOf(node) {
-	let count = 0;
-	walk(node, (current) => {
-		const {allOf} = current;
-		if (!Array.isArray(allOf) || allOf.length !== 1) {
-			return;
-		}
-		const [member] = allOf;
-		if (!isObject(member) || typeof member.$ref !== 'string' || Object.keys(member).length !== 1) {
-			return;
-		}
-		const otherKeys = Object.keys(current).filter((key) => key !== 'allOf');
-		if (!otherKeys.every((key) => ANNOTATION_KEYS.has(key))) {
-			return;
-		}
+	const {allOf} = node;
+	if (!Array.isArray(allOf) || allOf.length !== 1) {
+		return false;
+	}
+	const [member] = allOf;
+	if (!isObject(member) || typeof member.$ref !== 'string' || Object.keys(member).length !== 1) {
+		return false;
+	}
+	if (!Object.keys(node).every((key) => key === 'allOf' || ANNOTATION_KEYS.has(key))) {
+		return false;
+	}
 
-		delete current.allOf;
-		delete current.type;
-		delete current.title;
-		current.$ref = member.$ref;
-		count++;
-	});
-	return count;
+	delete node.allOf;
+	delete node.type;
+	delete node.title;
+	node.$ref = member.$ref;
+	return true;
 }
 
 /**
  * Rule 3: removes `pattern` from string schemas. Only string values are removed, so a property that is
  * itself named `pattern` (an object under `properties`) is left alone.
  * @param {SchemaNode} node
- * @returns {number}
+ * @returns {boolean}
  */
-function removePatterns(node) {
-	let count = 0;
-	walk(node, (current) => {
-		if (typeof current.pattern === 'string') {
-			delete current.pattern;
-			count++;
-		}
-	});
-	return count;
+function removePattern(node) {
+	if (typeof node.pattern !== 'string') {
+		return false;
+	}
+	delete node.pattern;
+	return true;
 }
 
 /**
@@ -271,8 +279,8 @@ async function preprocessSpec(inputDir, outputDir) {
 	let collapsed = 0;
 	let patterns = 0;
 	for (const document of files.values()) {
-		collapsed += collapseSingleRefAllOf(document);
-		patterns += removePatterns(document);
+		collapsed += rewrite(document, collapseSingleRefAllOf);
+		patterns += rewrite(document, removePattern);
 	}
 	const patched = applyPatches(files);
 
