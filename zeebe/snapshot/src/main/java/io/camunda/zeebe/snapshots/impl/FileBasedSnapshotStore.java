@@ -45,10 +45,30 @@ public final class FileBasedSnapshotStore extends Actor
       final Path root,
       final SnapshotFileInfoProvider fileInfoProvider,
       final MeterRegistry meterRegistry) {
+    this(brokerId, partitionId, root, fileInfoProvider, meterRegistry, false);
+  }
+
+  /**
+   * @param retainSnapshotForNextCheckpoint whether committing a snapshot keeps the newest older
+   *     snapshot that a backup of the next checkpoint could still need; only useful when backups
+   *     are taken, as the retained snapshot also holds back log compaction
+   */
+  public FileBasedSnapshotStore(
+      final int brokerId,
+      final PartitionId partitionId,
+      final Path root,
+      final SnapshotFileInfoProvider fileInfoProvider,
+      final MeterRegistry meterRegistry,
+      final boolean retainSnapshotForNextCheckpoint) {
     super("SnapshotStore", partitionId);
     snapshotStore =
         new FileBasedSnapshotStoreImpl(
-            brokerId, root, fileInfoProvider, actor, new SnapshotMetrics(meterRegistry));
+            brokerId,
+            root,
+            fileInfoProvider,
+            actor,
+            new SnapshotMetrics(meterRegistry),
+            retainSnapshotForNextCheckpoint);
   }
 
   /**

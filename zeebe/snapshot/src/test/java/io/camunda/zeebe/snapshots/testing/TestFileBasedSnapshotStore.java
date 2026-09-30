@@ -51,7 +51,8 @@ public class TestFileBasedSnapshotStore implements ReceivableSnapshotStore {
             root,
             snapshotPath -> SnapshotFilesInfo.none(),
             concurrencyControl,
-            new SnapshotMetrics(meterRegistry));
+            new SnapshotMetrics(meterRegistry),
+            false);
     snapshotStore.start();
   }
 

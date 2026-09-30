@@ -228,8 +228,7 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
     final var backupResult = backupService.takeBackup(checkpointId, descriptor);
 
     // when
-    // a snapshot past the checkpoint is committed before the backup reserves a snapshot; it is
-    // before any later checkpoint, so only the pending backup still needs the older snapshot
+    // a snapshot past the checkpoint is committed while the backup waits on the backup store
     appendRecord(4L, "4");
     takeSnapshot(4L, 4L, 4L);
     backupStore.unblockList();

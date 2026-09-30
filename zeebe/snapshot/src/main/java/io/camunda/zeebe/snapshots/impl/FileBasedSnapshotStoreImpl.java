@@ -70,6 +70,8 @@ public final class FileBasedSnapshotStoreImpl {
   private final SnapshotMetrics metrics;
   private final SnapshotFileInfoProvider fileInfoProvider;
   private final ConcurrencyControl actor;
+  // only needed when backups are taken; otherwise it would needlessly hold back log compaction
+  private final boolean retainSnapshotForNextCheckpoint;
 
   // Use AtomicReference so that getting latest snapshot doesn't have to go through the actor
   private final AtomicReference<@Nullable FileBasedSnapshot> currentSnapshot =
@@ -85,8 +87,10 @@ public final class FileBasedSnapshotStoreImpl {
       final Path root,
       final SnapshotFileInfoProvider fileInfoProvider,
       final ConcurrencyControl actor,
-      final SnapshotMetrics metrics) {
+      final SnapshotMetrics metrics,
+      final boolean retainSnapshotForNextCheckpoint) {
     this.brokerId = brokerId;
+    this.retainSnapshotForNextCheckpoint = retainSnapshotForNextCheckpoint;
     this.actor = Objects.requireNonNull(actor);
     this.metrics = Objects.requireNonNull(metrics);
     this.fileInfoProvider = Objects.requireNonNull(fileInfoProvider);
@@ -581,6 +585,9 @@ public final class FileBasedSnapshotStoreImpl {
    */
   private Optional<FileBasedSnapshot> snapshotRetainedForNextCheckpoint(
       final FileBasedSnapshot newPersistedSnapshot) {
+    if (!retainSnapshotForNextCheckpoint) {
+      return Optional.empty();
+    }
     final var nextCheckpointPosition = newPersistedSnapshot.getMetadata().processedPosition() + 1;
     final var retained =
         newestSnapshotStrictlyBefore(nextCheckpointPosition)

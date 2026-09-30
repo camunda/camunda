@@ -11,6 +11,8 @@ import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReservedSnapshot;
@@ -509,33 +511,50 @@ public class FileBasedSnapshotStoreTest {
   }
 
   @Test
-  public void shouldRetainPreviousSnapshotWhileNewSnapshotIsNotBeforeNextCheckpoint() {
+  public void shouldRetainPreviousSnapshotWhileNewSnapshotIsNotBeforeNextCheckpoint()
+      throws IOException {
     // given
-    final var previousSnapshot = persistSnapshot(1, 10, 12, 11);
+    final var store = createStoreRetainingSnapshotForNextCheckpoint();
+    final var previousSnapshot = persistSnapshot(store, 1, 10, 12, 11);
 
     // when
     // a checkpoint at 21 could still be processed, but follow-up events of the new snapshot are
     // after it, so only the previous snapshot can be backed up for that checkpoint
-    final var newSnapshot = persistSnapshot(2, 20, 25, 22);
+    final var newSnapshot = persistSnapshot(store, 2, 20, 25, 22);
 
     // then
-    assertThat(snapshotStore.getAvailableSnapshots().join())
+    assertThat(store.getAvailableSnapshots().join())
         .containsExactlyInAnyOrder(previousSnapshot, newSnapshot);
   }
 
   @Test
-  public void shouldDeletePreviousSnapshotOnceNewerSnapshotIsBeforeNextCheckpoint() {
+  public void shouldDeletePreviousSnapshotOnceNewerSnapshotIsBeforeNextCheckpoint()
+      throws IOException {
     // given
-    final var oldestSnapshot = persistSnapshot(1, 10, 12, 11);
-    final var previousSnapshot = persistSnapshot(2, 20, 25, 22);
+    final var store = createStoreRetainingSnapshotForNextCheckpoint();
+    final var oldestSnapshot = persistSnapshot(store, 1, 10, 12, 11);
+    final var previousSnapshot = persistSnapshot(store, 2, 20, 25, 22);
 
     // when
-    final var newSnapshot = persistSnapshot(3, 30, 35, 31);
+    final var newSnapshot = persistSnapshot(store, 3, 30, 35, 31);
 
     // then
-    assertThat(snapshotStore.getAvailableSnapshots().join())
+    assertThat(store.getAvailableSnapshots().join())
         .containsExactlyInAnyOrder(previousSnapshot, newSnapshot);
     assertThat(oldestSnapshot.getPath()).doesNotExist();
+  }
+
+  @Test
+  public void shouldNotRetainPreviousSnapshotForNextCheckpointByDefault() {
+    // given
+    final var previousSnapshot = persistSnapshot(1, 10, 12, 11);
+
+    // when
+    final var newSnapshot = persistSnapshot(2, 20, 25, 22);
+
+    // then
+    assertThat(snapshotStore.getAvailableSnapshots().join()).containsExactly(newSnapshot);
+    assertThat(previousSnapshot.getPath()).doesNotExist();
   }
 
   @Test
@@ -575,12 +594,11 @@ public class FileBasedSnapshotStoreTest {
 
     // when
     persistSnapshot(2, 20, 22, 21);
-    final var previousSnapshot = persistSnapshot(3, 30, 32, 31);
-    final var newSnapshot = persistSnapshot(4, 40, 42, 41);
+    final var newSnapshot = persistSnapshot(3, 30, 32, 31);
 
     // then
     assertThat(snapshotStore.getAvailableSnapshots().join())
-        .containsExactlyInAnyOrder(snapshotBeforeCheckpoint, previousSnapshot, newSnapshot);
+        .containsExactlyInAnyOrder(snapshotBeforeCheckpoint, newSnapshot);
   }
 
   @Test
@@ -794,14 +812,9 @@ public class FileBasedSnapshotStoreTest {
     snapshotStore.restore(copiedSnapshot).join();
 
     // when
-    // we take another snapshot, which is before any checkpoint that can still be processed
+    // we take another snapshot
     final var newTransientSnapshot = takeTransientSnapshotWithFiles(1000L);
-    final var newPersistedSnapshot =
-        newTransientSnapshot
-            .withLastFollowupEventPosition(123L)
-            .withMaxExportedPosition(123L)
-            .persist()
-            .join();
+    final var newPersistedSnapshot = newTransientSnapshot.persist().join();
 
     // then
     assertThat(snapshotStore.getCompactionBound())
@@ -871,14 +884,38 @@ public class FileBasedSnapshotStoreTest {
       final long processedPosition,
       final long lastFollowupEventPosition,
       final long maxExportedPosition) {
+    return persistSnapshot(
+        snapshotStore, index, processedPosition, lastFollowupEventPosition, maxExportedPosition);
+  }
+
+  private PersistedSnapshot persistSnapshot(
+      final FileBasedSnapshotStore store,
+      final long index,
+      final long processedPosition,
+      final long lastFollowupEventPosition,
+      final long maxExportedPosition) {
     final var transientSnapshot =
-        snapshotStore.newTransientSnapshot(index, 1, processedPosition, 0, false).get();
+        store.newTransientSnapshot(index, 1, processedPosition, 0, false).get();
     transientSnapshot.take(this::createSnapshotDir);
     return transientSnapshot
         .withLastFollowupEventPosition(lastFollowupEventPosition)
         .withMaxExportedPosition(maxExportedPosition)
         .persist()
         .join();
+  }
+
+  private FileBasedSnapshotStore createStoreRetainingSnapshotForNextCheckpoint()
+      throws IOException {
+    final var store =
+        new FileBasedSnapshotStore(
+            0,
+            new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, PARTITION_ID),
+            temporaryFolder.newFolder("retaining").toPath(),
+            snapshotPath -> SnapshotFilesInfo.none(),
+            meterRegistry,
+            true);
+    scheduler.submitActor(store).join();
+    return store;
   }
 
   private FileBasedSnapshotStore createStore(final Path root) {

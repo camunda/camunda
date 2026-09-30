@@ -12,6 +12,7 @@ import static io.camunda.zeebe.scheduler.AsyncClosable.closeHelper;
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotTransferServiceClient;
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
 import io.camunda.zeebe.broker.partitioning.startup.SnapshotInitializationUtil;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotFileInfoProvider;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -40,7 +41,8 @@ public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
             context.partitionMetadata().id(),
             context.partitionDirectory(),
             new RocksDBSnapshotFileInfoProvider(),
-            context.partitionMeterRegistry());
+            context.partitionMeterRegistry(),
+            isBackupStoreConfigured(context));
 
     var result =
         context
@@ -90,5 +92,9 @@ public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
     return closeHelper(context.snapshotTransfer())
         .andThen(ignore -> closeHelper(context.snapshotStore()), context.concurrencyControl())
         .thenApply(ignored -> context.snapshotStore(null), context.concurrencyControl());
+  }
+
+  private static boolean isBackupStoreConfigured(final PartitionStartupContext context) {
+    return context.brokerConfig().getData().getBackup().getStore() != BackupStoreType.NONE;
   }
 }
