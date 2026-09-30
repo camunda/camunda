@@ -425,8 +425,7 @@ public final class BpmnProcessors {
             writers,
             metrics,
             processInstanceCreationHelper,
-            bpmnBehaviors.caseBehavior(),
-            elementInstanceState));
+            bpmnBehaviors.caseBehavior()));
   }
 
   private static void addProcessInstanceModificationStreamProcessors(
