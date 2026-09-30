@@ -46,6 +46,7 @@ public class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
       new AtomicReference<>(null);
   private final AtomicBoolean finished = new AtomicBoolean(false);
   private final AtomicLong totalRead = new AtomicLong(0L);
+  private final AtomicLong totalProcessed = new AtomicLong(0L);
   private final AtomicInteger retryCount = new AtomicInteger(0);
   private final AtomicInteger currentBatchSize;
   private final AtomicLong totalTimeTakenMs = new AtomicLong(0);
@@ -63,9 +64,11 @@ public class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
     currentBatchSize = new AtomicInteger(builder.batchSize);
   }
 
-  public CompletableFuture<Void> execute() {
-    // TODO report on total time taken etc
-    return AsyncRepeatUntil.repeatUntil(this::processNextBatch, ignored -> finished.get());
+  public CompletableFuture<PipelineStats> execute() {
+    return AsyncRepeatUntil.repeatUntil(this::processNextBatch, ignored -> finished.get())
+        .thenApply(
+            ignore ->
+                new PipelineStats(totalRead.get(), totalProcessed.get(), totalTimeTakenMs.get()));
   }
 
   CompletableFuture<Void> processNextBatch() {
@@ -103,6 +106,8 @@ public class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
   }
 
   private void batchCompleted(final DocumentBatch<DocType, SearchAfterFieldType> batch) {
+    totalProcessed.addAndGet(batch.documents.size());
+
     // advance search position only after batch processed successfully
     // so we can retry the batch if we want
     lastSearchResponse.set(batch);
@@ -254,11 +259,14 @@ public class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
       return this;
     }
 
-    public CompletableFuture<Void> buildAndExecute() {
+    public CompletableFuture<PipelineStats> buildAndExecute() {
       final var pipeline = new AsyncDocumentPipeline<>(this);
       return pipeline.execute();
     }
   }
+
+  public record PipelineStats(
+      long totalDocumentsRead, long totalDocumentsProcessed, long totalTimeTakenMs) {}
 
   public interface BatchSupplier<DocType, SearchAfterFieldType> {
     CompletableFuture<DocumentBatch<DocType, SearchAfterFieldType>> supply(
