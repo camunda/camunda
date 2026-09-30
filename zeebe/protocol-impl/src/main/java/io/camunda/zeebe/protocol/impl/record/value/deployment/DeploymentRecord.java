@@ -246,11 +246,34 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
         .anyMatch(x -> x.endsWith(".rpa"));
   }
 
+  /**
+   * Returns {@code true} if every metadata entry in this deployment record has its {@code
+   * duplicate} flag set, {@code false} if at least one entry is marked as new or changed. The
+   * duplicate flag is set during metadata creation by the individual resource transformers.
+   */
   public boolean hasDuplicatesOnly() {
     return processesMetadata().stream().allMatch(ProcessMetadata::isDuplicate)
         && decisionRequirementsMetadata().stream()
             .allMatch(DecisionRequirementsMetadataValue::isDuplicate)
         && formMetadata().stream().allMatch(FormMetadataValue::isDuplicate)
         && resourceMetadata().stream().allMatch(ResourceMetadataValue::isDuplicate);
+  }
+
+  /**
+   * Returns the resource name (filename) of the DRG that contains the given decision. Decisions
+   * don't carry their own resource name — they belong to a decision requirements graph (DRG), and
+   * the DRG carries the resource name.
+   *
+   * @param decision the decision metadata to look up
+   * @return the resource name of the parent DRG, or {@code null} if not found
+   */
+  @JsonIgnore
+  public String getResourceNameForDecision(final DecisionRecordValue decision) {
+    for (final var drg : decisionRequirementsMetadataProp) {
+      if (drg.getDecisionRequirementsKey() == decision.getDecisionRequirementsKey()) {
+        return drg.getResourceName();
+      }
+    }
+    return null;
   }
 }
