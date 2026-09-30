@@ -337,7 +337,9 @@ test.describe('component routes', () => {
 		}
 
 		await expect(page.getByRole('heading', {name: 'Something went wrong'})).toBeVisible();
-		await expect(page.getByRole('button', {name: 'Try again'})).toBeVisible();
+		await expect(page.getByRole('main')).toHaveCSS('display', 'grid');
+		await expect(page.getByRole('button', {name: 'Try again'})).toHaveCSS('cursor', 'pointer');
+		await expect(page.getByRole('button', {name: 'Try again'})).toHaveCSS('border-top-style', 'solid');
 		shouldFail = false;
 		await page.getByRole('button', {name: 'Try again'}).click();
 		await expect(page.getByRole('heading', {name: 'Dashboard'})).toBeVisible();

@@ -64,6 +64,10 @@ const DrdPanel: React.FC<Props> = ({children}) => {
 		let draggedWidth: number | null = null;
 
 		const onMouseMove = (event: MouseEvent) => {
+			if ((event.buttons & 1) === 0) {
+				endResize();
+				return;
+			}
 			if (event.clientX === lastX) {
 				return;
 			}
@@ -78,13 +82,14 @@ const DrdPanel: React.FC<Props> = ({children}) => {
 				draggedWidth = Math.min(Math.max(requestedWidth, MIN_WIDTH), maxDragWidth);
 			}
 		};
-		const stopResize = (event: MouseEvent) => {
-			if (!isResizing || event.button !== 0) {
+		const endResize = () => {
+			if (!isResizing) {
 				return;
 			}
 			isResizing = false;
 			window.removeEventListener('mousemove', onMouseMove);
 			window.removeEventListener('mouseup', stopResize);
+			window.removeEventListener('blur', endResize);
 			panel.classList.remove('resizing');
 			document.body.style.cursor = previousCursor;
 			if (draggedWidth !== null && draggedWidth !== startWidth) {
@@ -92,6 +97,11 @@ const DrdPanel: React.FC<Props> = ({children}) => {
 				persistWidth();
 			}
 			draggedWidth = null;
+		};
+		const stopResize = (event: MouseEvent) => {
+			if (event.button === 0) {
+				endResize();
+			}
 		};
 		const startResize = (event: MouseEvent) => {
 			if (event.button !== 0) {
@@ -109,6 +119,7 @@ const DrdPanel: React.FC<Props> = ({children}) => {
 			panel.classList.add('resizing');
 			window.addEventListener('mousemove', onMouseMove);
 			window.addEventListener('mouseup', stopResize);
+			window.addEventListener('blur', endResize);
 		};
 		const onWindowResize = () => {
 			setWidth(draggedWidth ?? preferredWidth);
@@ -142,6 +153,7 @@ const DrdPanel: React.FC<Props> = ({children}) => {
 			window.removeEventListener('resize', onWindowResize);
 			window.removeEventListener('mousemove', onMouseMove);
 			window.removeEventListener('mouseup', stopResize);
+			window.removeEventListener('blur', endResize);
 			if (isResizing) {
 				document.body.style.cursor = previousCursor;
 			}

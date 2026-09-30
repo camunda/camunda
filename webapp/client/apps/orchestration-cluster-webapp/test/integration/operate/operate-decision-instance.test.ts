@@ -265,6 +265,49 @@ test('should release the drag cursor if the DRD panel unmounts during a resize',
 	await page.mouse.up();
 });
 
+test('should end and persist a DRD drag when the window loses focus', async ({page, operateDecisionInstancePage}) => {
+	await operateDecisionInstancePage.goto(DECISION_INSTANCE_ID);
+	await expect(operateDecisionInstancePage.drdPanel).toBeVisible();
+	const bounds = await operateDecisionInstancePage.drdResizeHandle.boundingBox();
+	if (bounds === null) {
+		throw new Error('Missing DRD resize handle bounds');
+	}
+	const handleX = bounds.x + bounds.width / 2;
+	const handleY = bounds.y + bounds.height / 2;
+	await page.mouse.move(handleX, handleY);
+	await page.mouse.down();
+	await page.mouse.move(handleX - 40, handleY);
+	await expect.poll(async () => (await operateDecisionInstancePage.drdPanel.boundingBox())?.width).toBe(580);
+
+	await page.evaluate('window.dispatchEvent(new Event("blur"))');
+
+	await expect(page.locator('body')).not.toHaveCSS('cursor', 'ew-resize');
+	await page.mouse.move(handleX - 90, handleY);
+	await expect.poll(async () => (await operateDecisionInstancePage.drdPanel.boundingBox())?.width).toBe(580);
+	await page.mouse.up();
+	await page.reload();
+	await expect.poll(async () => (await operateDecisionInstancePage.drdPanel.boundingBox())?.width).toBe(580);
+});
+
+test('should end a DRD drag when a move has no primary button held', async ({page, operateDecisionInstancePage}) => {
+	await operateDecisionInstancePage.goto(DECISION_INSTANCE_ID);
+	await expect(operateDecisionInstancePage.drdPanel).toBeVisible();
+	const bounds = await operateDecisionInstancePage.drdResizeHandle.boundingBox();
+	if (bounds === null) {
+		throw new Error('Missing DRD resize handle bounds');
+	}
+	const handleX = bounds.x + bounds.width / 2;
+	const handleY = bounds.y + bounds.height / 2;
+	await page.mouse.move(handleX, handleY);
+	await page.mouse.down();
+	await page.dispatchEvent('body', 'mousemove', {clientX: handleX - 50, clientY: handleY, buttons: 0});
+
+	await expect(page.locator('body')).not.toHaveCSS('cursor', 'ew-resize');
+	await page.mouse.move(handleX - 90, handleY);
+	await expect.poll(async () => (await operateDecisionInstancePage.drdPanel.boundingBox())?.width).toBe(540);
+	await page.mouse.up();
+});
+
 test('should navigate to the related evaluated decision selected in the DRD', async ({
 	network,
 	page,
@@ -603,14 +646,56 @@ test('should notify and redirect when an evaluation is not found without retaini
 			HttpResponse.json(createProblemDetails({status: 404}), {status: 404}),
 		),
 	);
-	await operateDecisionInstancePage.drdPanel
-		.getByRole('button', {name: 'Calculate Credit History Key Figures'})
-		.click();
+	const relatedDecision = operateDecisionInstancePage.drdPanel.getByRole('button', {
+		name: 'Calculate Credit History Key Figures',
+	});
+	await relatedDecision.focus();
+	await relatedDecision.press('Enter');
 	await expect(page).toHaveURL((url) => url.pathname === '/operate/decisions' && url.searchParams.has('evaluated'), {
 		timeout: 15000,
 	});
-	await expect(page.getByText(`Couldn't find decision instance ${RELATED_DECISION_INSTANCE_ID}`)).toBeVisible();
+	await expect(page.getByText(`Couldn't find decision instance ${RELATED_DECISION_INSTANCE_ID}`)).toHaveCount(1);
+	await expect(page.getByRole('heading', {name: 'Decisions'})).toBeFocused();
 	await expect(page).not.toHaveTitle(`Operate: Decision Instance ${DECISION_INSTANCE_ID} of Invoice Classification`);
+});
+
+test('should focus the forbidden heading after navigating to an inaccessible related evaluation', async ({
+	network,
+	page,
+	operateDecisionInstancePage,
+}) => {
+	network.use(
+		mockQueryDecisionInstancesEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryDecisionInstancesResponse({
+					items: [
+						DECISION_INSTANCE,
+						createDecisionInstance({
+							...DECISION_INSTANCE,
+							decisionDefinitionId: 'calc-key-figures',
+							decisionEvaluationInstanceKey: RELATED_DECISION_INSTANCE_ID,
+						}),
+					],
+				}),
+			),
+		}),
+		http.get(endpoints.getDecisionInstance.getUrl({decisionEvaluationInstanceKey: RELATED_DECISION_INSTANCE_ID}), () =>
+			HttpResponse.json(createProblemDetails({status: 403}), {status: 403}),
+		),
+	);
+	await operateDecisionInstancePage.goto(DECISION_INSTANCE_ID);
+	const relatedDecision = operateDecisionInstancePage.drdPanel.getByRole('button', {
+		name: 'Calculate Credit History Key Figures',
+	});
+	await relatedDecision.focus();
+	await relatedDecision.press('Enter');
+
+	await expect(page).toHaveURL(`/operate/decisions/${RELATED_DECISION_INSTANCE_ID}`);
+	await expect(
+		page.getByRole('heading', {name: '403 - You do not have permission to view this information'}),
+	).toBeFocused({
+		timeout: 15000,
+	});
 });
 
 test('should recover the real route from a network failure without losing the URL', async ({
@@ -655,12 +740,15 @@ test('should replace a stale title after a failed in-app decision navigation rec
 
 	await operateDecisionInstancePage.goto(DECISION_INSTANCE_ID);
 	await expect(page).toHaveTitle(`Operate: Decision Instance ${DECISION_INSTANCE_ID} of Invoice Classification`);
-	await operateDecisionInstancePage.drdPanel
-		.getByRole('button', {name: 'Calculate Credit History Key Figures'})
-		.click();
+	const relatedDecision = operateDecisionInstancePage.drdPanel.getByRole('button', {
+		name: 'Calculate Credit History Key Figures',
+	});
+	await relatedDecision.focus();
+	await relatedDecision.press('Enter');
 
 	await expect(page).toHaveURL(`/operate/decisions/${RELATED_DECISION_INSTANCE_ID}`);
 	await expect(operateDecisionInstancePage.pageErrorHeading).toBeVisible({timeout: 15000});
+	await expect(operateDecisionInstancePage.pageErrorHeading).toBeFocused();
 	await expect(page).not.toHaveTitle(`Operate: Decision Instance ${DECISION_INSTANCE_ID} of Invoice Classification`);
 
 	network.use(
@@ -670,5 +758,6 @@ test('should replace a stale title after a failed in-app decision navigation rec
 	);
 	await operateDecisionInstancePage.pageErrorRetryButton.click();
 	await expect(page).toHaveTitle(`Operate: Decision Instance ${RELATED_DECISION_INSTANCE_ID} of Credit History`);
+	await expect(operateDecisionInstancePage.maximizeDrd).toBeFocused();
 	await expect(page).toHaveURL(`/operate/decisions/${RELATED_DECISION_INSTANCE_ID}`);
 });

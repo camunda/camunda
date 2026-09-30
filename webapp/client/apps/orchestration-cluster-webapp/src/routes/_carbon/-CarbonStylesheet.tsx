@@ -9,7 +9,6 @@
 import {useState, type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
 import {useTranslation} from 'react-i18next';
-import {GenericErrorPage} from '#/shared/pages/GenericErrorPage';
 import appCss from './index.scss?url';
 
 const CarbonStylesheet = ({children}: {children: ReactNode}) => {
@@ -19,12 +18,39 @@ const CarbonStylesheet = ({children}: {children: ReactNode}) => {
 
 	if (isError) {
 		return (
-			<GenericErrorPage
-				reset={() => {
-					setIsLoaded(false);
-					setIsError(false);
+			<main
+				style={{
+					minHeight: '100dvh',
+					display: 'grid',
+					placeItems: 'center',
+					padding: '1.5rem',
+					backgroundColor: 'Canvas',
+					color: 'CanvasText',
+					fontFamily: 'system-ui, sans-serif',
 				}}
-			/>
+			>
+				<div>
+					<h1>{t('errorGenericErrorPageTitle')}</h1>
+					<p>{t('errorGenericErrorPageMessage')}</p>
+					<button
+						type="button"
+						style={{
+							padding: '0.75rem 1rem',
+							border: '1px solid ButtonBorder',
+							backgroundColor: 'ButtonFace',
+							color: 'ButtonText',
+							font: 'inherit',
+							cursor: 'pointer',
+						}}
+						onClick={() => {
+							setIsLoaded(false);
+							setIsError(false);
+						}}
+					>
+						{t('errorGenericErrorPageButtonLabel')}
+					</button>
+				</div>
+			</main>
 		);
 	}
 
