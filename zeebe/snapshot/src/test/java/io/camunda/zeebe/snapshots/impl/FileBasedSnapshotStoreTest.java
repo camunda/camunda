@@ -12,6 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.ReservedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotCopyUtil;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.SnapshotFileInfoProvider;
@@ -507,6 +509,81 @@ public class FileBasedSnapshotStoreTest {
   }
 
   @Test
+  public void shouldRetainPreviousSnapshotWhileNewSnapshotIsNotBeforeNextCheckpoint() {
+    // given
+    final var previousSnapshot = persistSnapshot(1, 10, 12, 11);
+
+    // when
+    // a checkpoint at 21 could still be processed, but follow-up events of the new snapshot are
+    // after it, so only the previous snapshot can be backed up for that checkpoint
+    final var newSnapshot = persistSnapshot(2, 20, 25, 22);
+
+    // then
+    assertThat(snapshotStore.getAvailableSnapshots().join())
+        .containsExactlyInAnyOrder(previousSnapshot, newSnapshot);
+  }
+
+  @Test
+  public void shouldDeletePreviousSnapshotOnceNewerSnapshotIsBeforeNextCheckpoint() {
+    // given
+    final var oldestSnapshot = persistSnapshot(1, 10, 12, 11);
+    final var previousSnapshot = persistSnapshot(2, 20, 25, 22);
+
+    // when
+    final var newSnapshot = persistSnapshot(3, 30, 35, 31);
+
+    // then
+    assertThat(snapshotStore.getAvailableSnapshots().join())
+        .containsExactlyInAnyOrder(previousSnapshot, newSnapshot);
+    assertThat(oldestSnapshot.getPath()).doesNotExist();
+  }
+
+  @Test
+  public void shouldReserveNewestSnapshotBeforePosition() {
+    // given
+    final var olderSnapshot = persistSnapshot(1, 10, 12, 11);
+    final var newerSnapshot = persistSnapshot(2, 20, 22, 21);
+
+    // when
+    final var reserved = snapshotStore.reserveSnapshotBefore(30).join();
+
+    // then
+    assertThat(reserved).map(ReservedSnapshot::snapshot).hasValue(newerSnapshot);
+    assertThat(newerSnapshot.isReserved()).isTrue();
+    assertThat(olderSnapshot.isReserved()).isFalse();
+  }
+
+  @Test
+  public void shouldNotReserveSnapshotWhenNoneIsBeforePosition() {
+    // given
+    final var snapshot = persistSnapshot(1, 10, 12, 11);
+
+    // when
+    // the follow-up events of the snapshot are at the position
+    final var reserved = snapshotStore.reserveSnapshotBefore(12).join();
+
+    // then
+    assertThat(reserved).isEmpty();
+    assertThat(snapshot.isReserved()).isFalse();
+  }
+
+  @Test
+  public void shouldNotDeleteSnapshotReservedBeforePosition() {
+    // given
+    final var snapshotBeforeCheckpoint = persistSnapshot(1, 10, 12, 11);
+    snapshotStore.reserveSnapshotBefore(15).join();
+
+    // when
+    persistSnapshot(2, 20, 22, 21);
+    final var previousSnapshot = persistSnapshot(3, 30, 32, 31);
+    final var newSnapshot = persistSnapshot(4, 40, 42, 41);
+
+    // then
+    assertThat(snapshotStore.getAvailableSnapshots().join())
+        .containsExactlyInAnyOrder(snapshotBeforeCheckpoint, previousSnapshot, newSnapshot);
+  }
+
+  @Test
   public void shouldRestartWithAReceivedSnapshot() throws IOException {
     // given
     final Map<String, Long> fileChecksums = new HashMap<>();
@@ -717,9 +794,14 @@ public class FileBasedSnapshotStoreTest {
     snapshotStore.restore(copiedSnapshot).join();
 
     // when
-    // we take another snapshot
+    // we take another snapshot, which is before any checkpoint that can still be processed
     final var newTransientSnapshot = takeTransientSnapshotWithFiles(1000L);
-    final var newPersistedSnapshot = newTransientSnapshot.persist().join();
+    final var newPersistedSnapshot =
+        newTransientSnapshot
+            .withLastFollowupEventPosition(123L)
+            .withMaxExportedPosition(123L)
+            .persist()
+            .join();
 
     // then
     assertThat(snapshotStore.getCompactionBound())
@@ -782,6 +864,21 @@ public class FileBasedSnapshotStoreTest {
     final var transientSnapshot = store.newTransientSnapshot(index, 1, 1, 0, false).get();
     transientSnapshot.take(this::createSnapshotDir);
     return transientSnapshot;
+  }
+
+  private PersistedSnapshot persistSnapshot(
+      final long index,
+      final long processedPosition,
+      final long lastFollowupEventPosition,
+      final long maxExportedPosition) {
+    final var transientSnapshot =
+        snapshotStore.newTransientSnapshot(index, 1, processedPosition, 0, false).get();
+    transientSnapshot.take(this::createSnapshotDir);
+    return transientSnapshot
+        .withLastFollowupEventPosition(lastFollowupEventPosition)
+        .withMaxExportedPosition(maxExportedPosition)
+        .persist()
+        .join();
   }
 
   private FileBasedSnapshotStore createStore(final Path root) {

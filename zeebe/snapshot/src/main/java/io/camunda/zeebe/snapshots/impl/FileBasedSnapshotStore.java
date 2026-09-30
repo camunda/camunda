@@ -17,6 +17,7 @@ import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
+import io.camunda.zeebe.snapshots.ReservedSnapshot;
 import io.camunda.zeebe.snapshots.RestorableSnapshotStore;
 import io.camunda.zeebe.snapshots.SnapshotException;
 import io.camunda.zeebe.snapshots.SnapshotFileInfoProvider;
@@ -96,6 +97,11 @@ public final class FileBasedSnapshotStore extends Actor
   @Override
   public ActorFuture<Long> getCompactionBound() {
     return snapshotStore.getCompactionBound();
+  }
+
+  @Override
+  public ActorFuture<Optional<ReservedSnapshot>> reserveSnapshotBefore(final long position) {
+    return snapshotStore.reserveLatestSnapshotBefore(position);
   }
 
   @Override

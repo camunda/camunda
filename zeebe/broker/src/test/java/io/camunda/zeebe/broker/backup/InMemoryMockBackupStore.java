@@ -33,9 +33,23 @@ public class InMemoryMockBackupStore implements BackupStore, AutoCloseable {
   private final ConcurrentHashMap<BackupIdentifier, BackupStatus> backupStatusMap =
       new ConcurrentHashMap<>();
   private final ConcurrentHashMap<BackupIdentifier, Backup> backupMap = new ConcurrentHashMap<>();
+  private volatile CompletableFuture<Void> listBlocker = CompletableFuture.completedFuture(null);
 
   public Set<BackupIdentifier> backupInProgress() {
     return backupMap.keySet();
+  }
+
+  public Optional<Backup> getBackup(final BackupIdentifier id) {
+    return Optional.ofNullable(backupMap.get(id));
+  }
+
+  /** Makes {@link #list} hang until {@link #unblockList()} is called. */
+  public void blockList() {
+    listBlocker = new CompletableFuture<>();
+  }
+
+  public void unblockList() {
+    listBlocker.complete(null);
   }
 
   @Override
@@ -54,12 +68,15 @@ public class InMemoryMockBackupStore implements BackupStore, AutoCloseable {
   @Override
   public CompletableFuture<List<BackupStatus>> list(
       final BackupIdentifierWildcard wildcard, final ListOptions options) {
-    final var matching =
-        backupStatusMap.entrySet().stream()
-            .filter(e -> wildcard.matches(e.getKey()))
-            .map(Entry::getValue)
-            .toList();
-    return CompletableFuture.completedFuture(options.select(matching, BackupStatus::id));
+    return listBlocker.thenApply(
+        ignore -> {
+          final var matching =
+              backupStatusMap.entrySet().stream()
+                  .filter(e -> wildcard.matches(e.getKey()))
+                  .map(Entry::getValue)
+                  .toList();
+          return options.select(matching, BackupStatus::id);
+        });
   }
 
   @Override

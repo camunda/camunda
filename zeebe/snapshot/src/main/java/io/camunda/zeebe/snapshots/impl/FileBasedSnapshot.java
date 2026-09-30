@@ -144,9 +144,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
     actor.run(
         () -> {
           if (!deleted) {
-            final FileBasedSnapshotReservation reservation = new FileBasedSnapshotReservation(this);
-            reservations.add(reservation);
-            snapshotLocked.complete(reservation);
+            snapshotLocked.complete(reserveOnActor());
           } else {
             snapshotLocked.completeExceptionally(
                 new SnapshotNotFoundException(
@@ -155,6 +153,13 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
           }
         });
     return snapshotLocked;
+  }
+
+  /** Reserves this snapshot immediately; must be called on the snapshot store's actor. */
+  FileBasedSnapshotReservation reserveOnActor() {
+    final var reservation = new FileBasedSnapshotReservation(this);
+    reservations.add(reservation);
+    return reservation;
   }
 
   @Override

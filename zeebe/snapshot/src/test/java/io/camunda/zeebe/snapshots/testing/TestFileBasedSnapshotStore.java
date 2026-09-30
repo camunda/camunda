@@ -15,6 +15,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
+import io.camunda.zeebe.snapshots.ReservedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.snapshots.impl.FileBasedReceivedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
@@ -72,6 +73,11 @@ public class TestFileBasedSnapshotStore implements ReceivableSnapshotStore {
   @Override
   public ActorFuture<Long> getCompactionBound() {
     return snapshotStore.getCompactionBound();
+  }
+
+  @Override
+  public ActorFuture<Optional<ReservedSnapshot>> reserveSnapshotBefore(final long position) {
+    return snapshotStore.reserveLatestSnapshotBefore(position);
   }
 
   @Override

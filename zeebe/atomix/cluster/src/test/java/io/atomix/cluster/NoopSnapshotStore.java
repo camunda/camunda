@@ -22,6 +22,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
+import io.camunda.zeebe.snapshots.ReservedSnapshot;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Set;
@@ -46,6 +47,11 @@ public class NoopSnapshotStore implements ReceivableSnapshotStore {
 
   @Override
   public ActorFuture<Long> getCompactionBound() {
+    return null;
+  }
+
+  @Override
+  public ActorFuture<Optional<ReservedSnapshot>> reserveSnapshotBefore(final long position) {
     return null;
   }
 
