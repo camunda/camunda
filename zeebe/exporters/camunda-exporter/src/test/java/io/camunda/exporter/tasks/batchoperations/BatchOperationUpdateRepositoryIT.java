@@ -169,7 +169,7 @@ abstract class BatchOperationUpdateRepositoryIT {
       final var repository = createRepository();
 
       // when
-      final var documents = repository.getNotFinishedBatchOperations();
+      final var documents = repository.getNotFinishedBatchOperations(100, null);
 
       // then
       assertThat(documents)
@@ -187,7 +187,7 @@ abstract class BatchOperationUpdateRepositoryIT {
       createBatchOperationEntity("3", null, BatchOperationState.ACTIVE, 5);
 
       // when
-      final var documents = repository.getNotFinishedBatchOperations();
+      final var documents = repository.getNotFinishedBatchOperations(100, null);
 
       // then the update task can tell how many items the batch operation has, and whether it is
       // finished, without a second request
@@ -204,13 +204,58 @@ abstract class BatchOperationUpdateRepositoryIT {
       createBatchOperationEntity("1", null, BatchOperationState.COMPLETED, 0);
 
       // when
-      final var documents = repository.getNotFinishedBatchOperations();
+      final var documents = repository.getNotFinishedBatchOperations(100, null);
 
       // then
       assertThat(documents)
           .succeedsWithin(REQUEST_TIMEOUT)
           .asInstanceOf(InstanceOfAssertFactories.list(NotFinishedBatchOperation.class))
           .containsExactly(new NotFinishedBatchOperation("1", BatchOperationState.COMPLETED, 0));
+    }
+
+    @Test
+    void shouldReturnNoMoreThanTheRequestedBatchSize() throws PersistenceException {
+      // given - more unfinished batch operations than a cycle is allowed to read. Unbounded, every
+      // one of them went into a single operations-count aggregation and a single bulk update, which
+      // is how a support cluster built a request the circuit breaker refused.
+      final var repository = createRepository();
+      for (int i = 0; i < 25; i++) {
+        createBatchOperationEntity(String.valueOf(i), null, BatchOperationState.ACTIVE, 5);
+      }
+
+      // when
+      final var documents = repository.getNotFinishedBatchOperations(10, null);
+
+      // then - the read is capped, and with it both requests derived from what it returns
+      assertThat(documents)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.collection(NotFinishedBatchOperation.class))
+          .hasSize(10);
+    }
+
+    @Test
+    void shouldReturnTheNextPageAfterTheGivenId() throws PersistenceException {
+      // given - three unfinished operations, indexed out of id order
+      final var repository = createRepository();
+      createBatchOperationEntity("c", null, BatchOperationState.ACTIVE, 5);
+      createBatchOperationEntity("a", null, BatchOperationState.ACTIVE, 5);
+      createBatchOperationEntity("b", null, BatchOperationState.ACTIVE, 5);
+
+      // when - read in pages of two
+      final var firstPage = repository.getNotFinishedBatchOperations(2, null);
+      final var nextPage = repository.getNotFinishedBatchOperations(2, "b");
+
+      // then - pages follow the id order, so paging on the last id reaches every operation once
+      assertThat(firstPage)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.list(NotFinishedBatchOperation.class))
+          .extracting(NotFinishedBatchOperation::id)
+          .containsExactly("a", "b");
+      assertThat(nextPage)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.list(NotFinishedBatchOperation.class))
+          .extracting(NotFinishedBatchOperation::id)
+          .containsExactly("c");
     }
 
     private void createBatchOperationEntity(

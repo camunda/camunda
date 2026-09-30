@@ -42,7 +42,7 @@ function useTaskAssignment({
 	assignee,
 }: {
 	userTaskKey: string;
-	currentUser: string;
+	currentUser: string | null;
 	taskState: UserTask['state'];
 	assignee: string | null;
 }) {

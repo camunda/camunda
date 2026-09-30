@@ -6,15 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {cleanup, render} from 'vitest-browser-react';
+import {render} from 'vitest-browser-react';
 import {afterEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {HelpMenu} from './HelpMenu';
 
 describe('Info bar', () => {
-	afterEach(async () => {
-		await cleanup();
+	afterEach(() => {
 		vi.unstubAllGlobals();
 	});
 

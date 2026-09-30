@@ -310,6 +310,7 @@ class BackupMultiPartitionTest {
 
     // then
     waitUntilBackupIsCompleted(backupId);
+    waitUntilCheckpointStateIsAvailableOnAllPartitions();
 
     final var state = getCheckpointState();
     assertThat(state).isNotNull();
@@ -401,6 +402,18 @@ class BackupMultiPartitionTest {
         .get(30, TimeUnit.SECONDS);
   }
 
+  private void waitUntilCheckpointStateIsAvailableOnAllPartitions() {
+    Awaitility.await("Checkpoint state is available on all partitions.")
+        .timeout(Duration.ofMinutes(1))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var state = getCheckpointState();
+              assertThat(state.getCheckpointStates()).hasSize(cluster.partitionsCount());
+              assertThat(state.getBackupStates()).hasSize(cluster.partitionsCount());
+            });
+  }
+
   private void takeBackupOnPartition(final long backupId, final int partitionId) {
     final BrokerBackupRequest backupRequest = new BrokerBackupRequest();
     backupRequest.setBackupId(backupId);
@@ -422,11 +435,12 @@ class BackupMultiPartitionTest {
     Awaitility.await()
         .ignoreExceptions()
         .untilAsserted(
-            () ->
-                assertThat(brokerClient.sendRequest(backupStatusRequest).join())
-                    .matches(
-                        response ->
-                            response.getResponse().getStatus() == BackupStatusCode.COMPLETED));
+            () -> {
+              final var response = brokerClient.sendRequest(backupStatusRequest).join();
+              assertThat(response.getResponse().getStatus())
+                  .as("backup %d status on partition %d", backupId, partitionId)
+                  .isEqualTo(BackupStatusCode.COMPLETED);
+            });
   }
 
   private void publishMessageAndWaitUntilCorrelated() {

@@ -48,16 +48,16 @@
 	},
 	"packageManager": "npm@12.0.2",
 	"devDependencies": {
-		"@playwright/test": "1.62.1",
+		"@playwright/test": "1.63.0",
 		"@types/react": "19.3.0",
 		"@types/react-dom": "19.3.0",
-		"@vitest/browser-playwright": "5.0.1",
+		"@vitest/browser-playwright": "5.0.2",
 		"react": "19.3.0",
 		"react-dom": "19.3.0",
 		"typescript": "7.0.2",
-		"vite": "8.3.0",
-		"vite-plugin-dts": "5.1.0",
-		"vitest": "5.0.1",
+		"vite": "8.3.1",
+		"vite-plugin-dts": "5.1.1",
+		"vitest": "5.0.2",
 		"vitest-browser-react": "2.3.0"
 	},
 	"peerDependencies": {

@@ -8,6 +8,7 @@
 package io.camunda.exporter.tasks.batchoperations;
 
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.END_DATE;
+import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.ID;
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_COMPLETED_COUNT;
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_FAILED_COUNT;
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_FINISHED_COUNT;
@@ -32,6 +33,7 @@ import org.opensearch.client.opensearch._types.BuiltinScriptLanguage;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.ScriptLanguage;
+import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.MultiBucketBase;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
@@ -66,15 +68,31 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
   }
 
   @Override
-  public CompletionStage<Collection<NotFinishedBatchOperation>> getNotFinishedBatchOperations() {
-    final var request =
+  public CompletionStage<List<NotFinishedBatchOperation>> getNotFinishedBatchOperations(
+      final int batchSize, final String afterId) {
+    final var requestBuilder =
         new SearchRequest.Builder()
             .index(batchOperationIndex)
-            .query(q -> q.bool(b -> b.mustNot(m -> m.exists(e -> e.field(END_DATE)))));
-    return fetchUnboundedDocumentCollection(
-        request,
-        BatchOperationEntity.class,
-        OpensearchBatchOperationUpdateRepository::toNotFinishedBatchOperation);
+            .query(q -> q.bool(b -> b.mustNot(m -> m.exists(e -> e.field(END_DATE)))))
+            .sort(so -> so.field(f -> f.field(ID).order(SortOrder.Asc)))
+            .size(batchSize);
+    if (afterId != null) {
+      requestBuilder.searchAfter(List.of(FieldValue.of(afterId)));
+    }
+    final var request = requestBuilder.build();
+
+    try {
+      return client
+          .search(request, BatchOperationEntity.class)
+          .thenApplyAsync(
+              response ->
+                  response.hits().hits().stream()
+                      .map(OpensearchBatchOperationUpdateRepository::toNotFinishedBatchOperation)
+                      .toList(),
+              executor);
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override

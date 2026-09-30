@@ -12,7 +12,6 @@ import {deploy, cancelProcessInstance} from 'utils/zeebeClient';
 import {jsonHeaders} from 'utils/http';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
-import {waitForAssertion} from 'utils/waitForAssertion';
 import {uniqueBusinessId} from 'utils/constants';
 
 const USER_TASK_PROCESS_ID = 'user_task_api_test_process';
@@ -68,41 +67,28 @@ test.describe('Tasklist - Business ID', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test('Task list shows the Business ID', async ({page, taskPanelPage}) => {
+  // The assertion is encapsulated in the page object's virtual-list traversal.
+  // eslint-disable-next-line playwright/expect-expect
+  test('Task list shows the Business ID', async ({taskPanelPage}) => {
     await test.step('Verify the task card shows the Business ID', async () => {
-      await waitForAssertion({
-        assertion: async () => {
-          await expect(
-            taskPanelPage.taskCards.filter({hasText: BUSINESS_ID}),
-          ).toBeVisible();
-        },
-        onFailure: async () => {
-          await page.reload();
-        },
+      await taskPanelPage.assertTaskCardVisible(BUSINESS_ID, {
+        timeout: 20000,
       });
     });
   });
 
   test('Task detail shows the Business ID', async ({
-    page,
     taskPanelPage,
     taskDetailsPage,
   }) => {
-    const taskCard = taskPanelPage.taskCards.filter({hasText: BUSINESS_ID});
-
     await test.step('Locate the task card by Business ID', async () => {
-      await waitForAssertion({
-        assertion: async () => {
-          await expect(taskCard).toBeVisible();
-        },
-        onFailure: async () => {
-          await page.reload();
-        },
+      await taskPanelPage.assertTaskCardVisible(BUSINESS_ID, {
+        timeout: 20000,
       });
     });
 
     await test.step('Open the task detail', async () => {
-      await taskCard.click();
+      await taskPanelPage.openTask(BUSINESS_ID, {timeout: 20000});
     });
 
     await test.step('Verify the detail panel shows the Business ID label and value', async () => {

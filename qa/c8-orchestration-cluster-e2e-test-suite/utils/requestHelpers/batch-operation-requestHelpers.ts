@@ -119,6 +119,33 @@ export async function createCompletedBatchOperation(
   return key;
 }
 
+export async function getBatchOperationState(
+  request: APIRequestContext,
+  batchOperationKey: string,
+): Promise<string> {
+  const result: {state?: string} = {};
+  await expect(async () => {
+    const res = await request.get(
+      buildUrl('/batch-operations/{batchOperationKey}', {batchOperationKey}),
+      {headers: jsonHeaders()},
+    );
+    // A freshly created batch operation can briefly 404 before the read
+    // model catches up with the write it was created from; retry through
+    // that instead of failing the caller on a transient gap.
+    await assertStatusCode(res, 200);
+    result.state = (await res.json()).state;
+  }).toPass({
+    // A 1000-instance cancellation batch loads the write path enough that the
+    // batch-operation read model can take well over 15s to materialize on a
+    // nightly RDBMS shard, producing a permanent 404 within the old budget.
+    // Keep the fast early retries but extend the ceiling to the 60s the other
+    // batch-operation polling in this file already tolerates.
+    intervals: [1_000, 2_000, 3_000, 5_000, 10_000, 15_000],
+    timeout: 60_000,
+  });
+  return result.state as string;
+}
+
 export async function expectBatchState(
   request: APIRequestContext,
   batchOperationKey: string,

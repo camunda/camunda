@@ -8,7 +8,11 @@
 
 import {publicTest as test} from 'fixtures';
 import {expect} from '@playwright/test';
-import {deploy, createSingleInstance} from 'utils/zeebeClient';
+import {
+  cancelProcessInstance,
+  createSingleInstance,
+  deploy,
+} from 'utils/zeebeClient';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {findUserTask} from '@requestHelpers';
@@ -18,11 +22,10 @@ type ProcessInstance = {
 };
 
 test.describe('Task History Audit Log', () => {
-  let processInstance: ProcessInstance;
+  let processInstanceKey: string;
 
   test.beforeAll(async () => {
-    await deploy(['./resources/usertask_to_be_completed.bpmn']);
-    processInstance = await createSingleInstance('usertask_to_be_completed', 1);
+    await deploy(['./resources/usertask_for_task_history.bpmn']);
   });
 
   test.beforeEach(
@@ -31,6 +34,11 @@ test.describe('Task History Audit Log', () => {
       await loginPage.login('demo', 'demo');
       await expect(page).toHaveURL('/tasklist');
 
+      const processInstance: ProcessInstance = await createSingleInstance(
+        'usertask_for_task_history',
+        1,
+      );
+      processInstanceKey = processInstance.processInstanceKey;
       const taskKey = await findUserTask(
         request,
         processInstance.processInstanceKey,
@@ -44,10 +52,8 @@ test.describe('Task History Audit Log', () => {
     },
   );
 
-  test.afterEach(async ({page, taskDetailsPage}, testInfo) => {
-    await taskDetailsPage.clickUnassignButton();
-    await expect(taskDetailsPage.assignToMeButton).toBeVisible();
-
+  test.afterEach(async ({page}, testInfo) => {
+    await cancelProcessInstance(processInstanceKey);
     await captureScreenshot(page, testInfo);
     await captureFailureVideo(page, testInfo);
   });

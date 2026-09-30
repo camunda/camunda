@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.IntStream;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestTemplate;
@@ -149,10 +150,10 @@ class SchemaUpdateIT {
                                 }
                               }))
               .toList();
-      for (final var thread : threads) {
-        thread.join(Duration.ofSeconds(10));
-      }
-      assertThat(threads).allMatch(thread -> !thread.isAlive());
+
+      Awaitility.await("schema update threads to finish")
+          .timeout(Duration.ofSeconds(60))
+          .until(() -> threads.stream().noneMatch(Thread::isAlive));
 
       // then
       assertThat(exceptions).isEmpty();

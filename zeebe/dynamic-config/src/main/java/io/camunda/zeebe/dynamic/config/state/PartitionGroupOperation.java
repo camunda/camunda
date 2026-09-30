@@ -21,8 +21,7 @@ public sealed interface PartitionGroupOperation extends ClusterConfigurationChan
    *
    * @param memberId the member id of the member that will apply this operation
    */
-  record DeleteHistoryOperation(MemberId memberId)
-      implements io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation {}
+  record DeleteHistoryOperation(MemberId memberId) implements PartitionGroupOperation {}
 
   /**
    * Represents an operation to update the routing state of a member in the cluster configuration.
@@ -33,15 +32,14 @@ public sealed interface PartitionGroupOperation extends ClusterConfigurationChan
    *     io.camunda.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION} leader
    */
   record UpdateRoutingState(MemberId memberId, Optional<RoutingState> routingState)
-      implements io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation {}
+      implements PartitionGroupOperation {}
 
   /**
    * Represents an operation to update the incarnation number in the cluster configuration.
    *
    * @param memberId the identifier of the member who will update the incarnation number
    */
-  record UpdateIncarnationNumberOperation(MemberId memberId)
-      implements io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation {}
+  record UpdateIncarnationNumberOperation(MemberId memberId) implements PartitionGroupOperation {}
 
   /**
    * Records that an operator has explicitly discarded this physical tenant, allowing a broker
@@ -50,11 +48,9 @@ public sealed interface PartitionGroupOperation extends ClusterConfigurationChan
    * @param memberId the broker applying this operation — usually the coordinator, but a forced
    *     request names whichever broker received it, since the coordinator may be unreachable
    */
-  record RemovePhysicalTenantOperation(MemberId memberId)
-      implements io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation {}
+  record RemovePhysicalTenantOperation(MemberId memberId) implements PartitionGroupOperation {}
 
-  record ModeChangeOperation(MemberId memberId, Mode mode)
-      implements io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation {}
+  record ModeChangeOperation(MemberId memberId, Mode mode) implements PartitionGroupOperation {}
 
   /**
    * Operation to change the exporting state of every partition replica owned by the given member.
@@ -65,7 +61,7 @@ public sealed interface PartitionGroupOperation extends ClusterConfigurationChan
    * @param state the exporting state to apply to all of the member's partitions
    */
   record ExportingStateChangeOperation(MemberId memberId, ExportingState state)
-      implements io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation {}
+      implements PartitionGroupOperation {}
 
   /**
    * Verifies that a member's partition manager has finished starting in the target mode. Emitted
@@ -77,10 +73,12 @@ public sealed interface PartitionGroupOperation extends ClusterConfigurationChan
    * @param mode the mode the member is expected to have transitioned into
    */
   record AwaitModeChangeOperation(MemberId memberId, Mode mode)
-      implements io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation {}
+      implements PartitionGroupOperation {}
 
-  sealed interface ScaleUpOperation
-      extends io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation {
+  /** Applies this partition group's schema before any local data is dropped for restore. */
+  record SchemaInitializationOperation(MemberId memberId) implements PartitionGroupOperation {}
+
+  sealed interface ScaleUpOperation extends PartitionGroupOperation {
     /**
      * Operation to initiate partition scale up. This instructs the cluster to redistribute
      * resources and relocate data.
@@ -118,8 +116,7 @@ public sealed interface PartitionGroupOperation extends ClusterConfigurationChan
     }
   }
 
-  sealed interface PartitionChangeOperation
-      extends io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation {
+  sealed interface PartitionChangeOperation extends PartitionGroupOperation {
     int partitionId();
 
     /**

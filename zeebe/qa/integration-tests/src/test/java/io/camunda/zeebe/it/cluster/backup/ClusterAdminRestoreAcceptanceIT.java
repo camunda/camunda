@@ -152,6 +152,8 @@ final class ClusterAdminRestoreAcceptanceIT {
       // the scoping narrows the tenant axis without serialising the other two
       assertPlanCovers(response, Set.of(TENANT_B));
 
+      awaitRestoreCompleted(defaultClient, response, Set.of(TENANT_B));
+
       // and — tenant-b processes commands again once its restore completes, and the baseline jobs
       // of
       // every partition are still there, proving partition data (not just topology/mode) came back
@@ -199,6 +201,8 @@ final class ClusterAdminRestoreAcceptanceIT {
       // every
       // partition: 3 × 3 × 3 of partition work in a single change
       assertPlanCovers(response, ALL_TENANTS);
+
+      awaitRestoreCompleted(defaultClient, response, ALL_TENANTS);
 
       // and — every tenant processes commands again once its restore completes
       awaitCommandsAccepted(defaultClient, probeProcessId);
@@ -265,6 +269,8 @@ final class ClusterAdminRestoreAcceptanceIT {
       // then — the override changes which backup a tenant reads, not the shape of the plan: all
       // three tenants are still planned across every broker and every partition
       assertPlanCovers(response, ALL_TENANTS);
+
+      awaitRestoreCompleted(defaultClient, response, ALL_TENANTS);
 
       // and — every tenant processes commands again once its restore completes
       awaitCommandsAccepted(defaultClient, probeProcessId);
@@ -495,6 +501,29 @@ final class ClusterAdminRestoreAcceptanceIT {
               accepted.add(response);
             });
     return accepted.getLast();
+  }
+
+  private static void awaitRestoreCompleted(
+      final CamundaClient client,
+      final HttpResponse<String> response,
+      final Set<String> physicalTenants) {
+    final var changeId = readJson(response.body()).path("changeId").asLong();
+    Awaitility.await("cluster-admin restore change completes")
+        .atMost(Duration.ofMinutes(3))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              for (final var physicalTenant : physicalTenants) {
+                final var topology =
+                    InProcessRestoreTestUtil.sendTopologyRequest(client, physicalTenant);
+                assertThat(topology.statusCode())
+                    .describedAs("topology response for tenant '%s'", physicalTenant)
+                    .isEqualTo(200);
+                assertThat(readJson(topology.body()).path("lastCompletedChangeId").asText())
+                    .describedAs("last completed change for tenant '%s'", physicalTenant)
+                    .isEqualTo(String.valueOf(changeId));
+              }
+            });
   }
 
   private static ClusterRestoreRequest restoreBody(final long backupId) {

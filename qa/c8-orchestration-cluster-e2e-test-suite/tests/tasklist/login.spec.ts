@@ -26,7 +26,9 @@ test.describe.parallel('Login Tests', () => {
     await expect(taskPanelPage.taskListPageBanner).toBeVisible();
   });
 
-  test('have no a11y violations', async ({makeAxeBuilder}) => {
+  test('have no a11y violations', async ({loginPage, makeAxeBuilder}) => {
+    await expect(loginPage.tasklistHeading).toBeVisible();
+
     const results = await makeAxeBuilder().analyze();
 
     expect(results.violations).toHaveLength(0);

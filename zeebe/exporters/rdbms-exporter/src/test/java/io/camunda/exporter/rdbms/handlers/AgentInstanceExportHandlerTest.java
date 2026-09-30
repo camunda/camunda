@@ -318,6 +318,7 @@ class AgentInstanceExportHandlerTest {
             .from(buildRecordValue(agentKey))
             .withProcessDefinitionVersionTag("") // process has no version tag
             .withTools(List.of(tool))
+            .withChangedAttributes(List.of("tools")) // tools changed, so it's included on UPDATED
             .build();
     final Record<AgentInstanceRecordValue> record =
         factory.generateRecord(
@@ -335,6 +336,65 @@ class AgentInstanceExportHandlerTest {
     assertThat(model.toolValues()).hasSize(1);
     assertThat(model.toolValues().getFirst().description()).isNull();
     assertThat(model.toolValues().getFirst().elementId()).isNull();
+  }
+
+  @Test
+  void shouldNotPopulateSystemPromptOrToolsWhenOmittedFromChangedAttributesOnUpdated() {
+    // given — UPDATED record whose changedAttributes doesn't mention systemPrompt/tools, i.e.
+    // neither field actually changed
+    final long agentKey = 47L;
+    final var recordValue = buildRecordValue(agentKey);
+    final Record<AgentInstanceRecordValue> record =
+        factory.generateRecord(
+            ValueType.AGENT_INSTANCE,
+            r ->
+                r.withIntent(AgentInstanceIntent.UPDATED).withKey(agentKey).withValue(recordValue));
+
+    // when
+    handler.export(record);
+
+    // then — the raw serialized fields stay null, so AgentInstanceWriter's merge doesn't overwrite
+    // the previously stored value with nothing
+    verify(writer).update(modelCaptor.capture());
+    final AgentInstanceDbModel model = modelCaptor.getValue();
+    assertThat(model.systemPrompt()).isNull();
+    assertThat(model.tools()).isNull();
+  }
+
+  @Test
+  void shouldPopulateEmptySystemPromptAndToolsWhenExplicitlyClearedViaChangedAttributes() {
+    // given — UPDATED record that explicitly clears systemPrompt/tools to empty, with both
+    // attributes named in changedAttributes
+    final long agentKey = 48L;
+    final var recordValue =
+        ImmutableAgentInstanceRecordValue.builder()
+            .from(buildRecordValue(agentKey))
+            .withDefinition(
+                ImmutableAgentInstanceDefinitionValue.builder()
+                    .withModel("gpt-4o")
+                    .withProvider("openai")
+                    .withSystemPrompt(List.of())
+                    .build())
+            .withTools(List.of())
+            .withChangedAttributes(
+                List.of(
+                    AgentInstanceRecordValue.ATTR_SYSTEM_PROMPT,
+                    AgentInstanceRecordValue.ATTR_TOOLS))
+            .build();
+    final Record<AgentInstanceRecordValue> record =
+        factory.generateRecord(
+            ValueType.AGENT_INSTANCE,
+            r ->
+                r.withIntent(AgentInstanceIntent.UPDATED).withKey(agentKey).withValue(recordValue));
+
+    // when
+    handler.export(record);
+
+    // then — the raw fields are non-null "[]", distinguishing an explicit clear from an omission
+    verify(writer).update(modelCaptor.capture());
+    final AgentInstanceDbModel model = modelCaptor.getValue();
+    assertThat(model.systemPrompt()).isEqualTo("[]");
+    assertThat(model.tools()).isEqualTo("[]");
   }
 
   private AgentInstanceRecordValue buildRecordValue(final long agentInstanceKey) {

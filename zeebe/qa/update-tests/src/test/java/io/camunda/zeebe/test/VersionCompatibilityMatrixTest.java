@@ -599,6 +599,29 @@ class VersionCompatibilityMatrixTest {
 
       assertThat(discoveredVersions).containsExactlyInAnyOrder(releasedVersion.asLatest());
     }
+
+    @Test
+    void shouldFilterUnreleasedNonLatestVersion() {
+      final var api = mock(GithubAPI.class);
+      final var baseProvider = mock(VersionProvider.class);
+      final var provider = new ReleaseVerifiedGithubVersionProvider(baseProvider, api);
+
+      // a tag that was pushed but whose release got skipped/aborted, and a later, actually
+      // released tag on the same minor
+      final var unreleasedVersion = VersionInfo.of("8.7.40");
+      final var releasedVersion = VersionInfo.of("8.7.41").asLatest();
+
+      when(baseProvider.discoverVersions())
+          .thenReturn(Stream.of(unreleasedVersion, releasedVersion));
+      when(api.fetchRelease(unreleasedVersion.version())).thenReturn(Optional.empty());
+      when(api.fetchRelease(releasedVersion.version()))
+          .thenReturn(Optional.of(new GithubAPI.Release(releasedVersion.version().toString())));
+
+      final var discoveredVersions = provider.discoverVersions();
+
+      verify(api).fetchRelease(unreleasedVersion.version());
+      assertThat(discoveredVersions).containsExactlyInAnyOrder(releasedVersion);
+    }
   }
 
   @Nested

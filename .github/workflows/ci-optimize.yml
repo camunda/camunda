@@ -96,6 +96,7 @@ jobs:
     permissions: { }  # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: IT
+      TEST_OWNER: '@camunda/data-layer'
     strategy:
       fail-fast: false
       matrix:
@@ -207,6 +208,7 @@ jobs:
     permissions: { }  # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: IT
+      TEST_OWNER: '@camunda/data-layer'
     strategy:
       fail-fast: false
       matrix:
@@ -318,8 +320,9 @@ jobs:
     env:
       LIMITS_CPU: 4
       TEST_TYPE: Unit
+      TEST_OWNER: '@camunda/optimize-frontend'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -346,7 +349,7 @@ jobs:
         run: yarn test:ci
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: optimize-unit-tests-frontend-junit
           path: |
@@ -379,7 +382,7 @@ jobs:
             "optimize.Dockerfile",
           ]
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -416,7 +419,7 @@ jobs:
             "optimize.Dockerfile",
           ]
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false

@@ -23,6 +23,7 @@ import io.camunda.db.rdbms.sql.AgentInstanceMapper;
 import io.camunda.db.rdbms.sql.AgentInstanceMapper.AgentInstanceElementInstanceKeysDto;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel;
+import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel.AgentInstanceToolDbValue;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.DefaultExecutionQueue;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
@@ -30,6 +31,8 @@ import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import io.camunda.search.entities.AgentInstanceEntity;
 import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceStatus;
+import io.camunda.search.entities.ContentItem;
+import io.camunda.search.entities.ContentItem.ContentType;
 import java.sql.Connection;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -306,6 +309,137 @@ class AgentInstanceWriterTest {
     assertThat(mergedRow.maxTokens()).isEqualTo(1000L);
     assertThat(mergedRow.maxModelCalls()).isEqualTo(10);
     assertThat(mergedRow.maxToolCalls()).isEqualTo(5);
+    verify(session, never())
+        .update(eq("io.camunda.db.rdbms.sql.AgentInstanceMapper.update"), any());
+  }
+
+  @Test
+  void shouldNotOverwritePendingSystemPromptAndToolsWhenMergedUpdateOmitsThem() throws Exception {
+    // given: create() carries a real systemPrompt/tools payload onto the still-pending row INSERT.
+    // A later, not-yet-flushed update() that only touches metrics leaves the raw systemPrompt/tools
+    // fields on its AgentInstanceDbModel null (see AgentInstanceExportHandler#mapToDbModel) -- the
+    // merge must not let that null overwrite the payload already carried on the pending row.
+    final var session = mock(SqlSession.class);
+    final var sqlSessionFactory = mock(SqlSessionFactory.class);
+    final var metrics = mock(RdbmsWriterMetrics.class);
+    when(sqlSessionFactory.openSession(
+            ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED))
+        .thenReturn(session);
+    final var connection = mock(Connection.class);
+    when(connection.getAutoCommit()).thenReturn(false);
+    when(session.getConnection()).thenReturn(connection);
+
+    final var realExecutionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 0, 0, metrics);
+    final var realWriter =
+        new AgentInstanceWriter(realExecutionQueue, mapper, vendorDatabaseProperties);
+
+    final var created =
+        new AgentInstanceDbModel.Builder()
+            .agentInstanceKey(6L)
+            .status(AgentInstanceStatus.IDLE)
+            .inputTokens(0L)
+            .outputTokens(0L)
+            .modelCalls(0)
+            .toolCalls(0)
+            .lastUpdatedDate(OffsetDateTime.now())
+            .systemPrompt("be helpful")
+            .toolValues(List.of(new AgentInstanceToolDbValue("search", "Search the web", "el-1")))
+            .elementInstanceKeys(List.of(400L))
+            .build();
+    final var metricsOnlyUpdate =
+        new AgentInstanceDbModel.Builder()
+            .agentInstanceKey(6L)
+            .status(AgentInstanceStatus.THINKING)
+            .inputTokens(10L)
+            .outputTokens(5L)
+            .modelCalls(1)
+            .toolCalls(1)
+            .lastUpdatedDate(OffsetDateTime.now())
+            .elementInstanceKeys(List.of(400L))
+            .build();
+
+    // when
+    realWriter.create(created);
+    realWriter.update(metricsOnlyUpdate);
+    realExecutionQueue.flush();
+
+    // then: the merged row INSERT keeps the systemPrompt/tools from create(), the metrics-only
+    // update did not null them out
+    final var rowInsertParam = ArgumentCaptor.forClass(Object.class);
+    verify(session)
+        .update(eq("io.camunda.db.rdbms.sql.AgentInstanceMapper.insert"), rowInsertParam.capture());
+    final var mergedRow = (AgentInstanceDbModel) rowInsertParam.getValue();
+    assertThat(mergedRow.systemPrompt()).isEqualTo("be helpful");
+    assertThat(mergedRow.toolValues())
+        .containsExactly(new AgentInstanceToolDbValue("search", "Search the web", "el-1"));
+    assertThat(mergedRow.status()).isEqualTo(AgentInstanceStatus.THINKING);
+    assertThat(mergedRow.inputTokens()).isEqualTo(10L);
+    verify(session, never())
+        .update(eq("io.camunda.db.rdbms.sql.AgentInstanceMapper.update"), any());
+  }
+
+  @Test
+  void shouldOverwritePendingSystemPromptAndToolsWhenMergedUpdateExplicitlyClearsThem()
+      throws Exception {
+    // given: create() carries a real systemPrompt/tools payload onto the still-pending row INSERT.
+    // A later, not-yet-flushed update() that explicitly clears both (e.g. a CONFIGURATION change
+    // removing all tools) must still overwrite the pending row -- unlike the metrics-only update in
+    // shouldNotOverwritePendingSystemPromptAndToolsWhenMergedUpdateOmitsThem, this update's raw
+    // fields are non-null "[]"/"" (see AgentInstanceDbModel#serializeTools), not null, so the merge
+    // must not mistake "explicitly cleared" for "untouched".
+    final var session = mock(SqlSession.class);
+    final var sqlSessionFactory = mock(SqlSessionFactory.class);
+    final var metrics = mock(RdbmsWriterMetrics.class);
+    when(sqlSessionFactory.openSession(
+            ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED))
+        .thenReturn(session);
+    final var connection = mock(Connection.class);
+    when(connection.getAutoCommit()).thenReturn(false);
+    when(session.getConnection()).thenReturn(connection);
+
+    final var realExecutionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 0, 0, metrics);
+    final var realWriter =
+        new AgentInstanceWriter(realExecutionQueue, mapper, vendorDatabaseProperties);
+
+    final var created =
+        new AgentInstanceDbModel.Builder()
+            .agentInstanceKey(7L)
+            .status(AgentInstanceStatus.IDLE)
+            .inputTokens(0L)
+            .outputTokens(0L)
+            .modelCalls(0)
+            .toolCalls(0)
+            .lastUpdatedDate(OffsetDateTime.now())
+            .systemPromptItems(List.of(new ContentItem(ContentType.TEXT, "be helpful", null, null)))
+            .toolValues(List.of(new AgentInstanceToolDbValue("search", "Search the web", "el-1")))
+            .elementInstanceKeys(List.of(700L))
+            .build();
+    final var clearingUpdate =
+        new AgentInstanceDbModel.Builder()
+            .agentInstanceKey(7L)
+            .status(AgentInstanceStatus.THINKING)
+            .inputTokens(0L)
+            .outputTokens(0L)
+            .modelCalls(0)
+            .toolCalls(0)
+            .lastUpdatedDate(OffsetDateTime.now())
+            .systemPromptItems(List.of())
+            .toolValues(List.of())
+            .elementInstanceKeys(List.of(700L))
+            .build();
+
+    // when
+    realWriter.create(created);
+    realWriter.update(clearingUpdate);
+    realExecutionQueue.flush();
+
+    // then: the merged row INSERT reflects the clear, not the original create() payload
+    final var rowInsertParam = ArgumentCaptor.forClass(Object.class);
+    verify(session)
+        .update(eq("io.camunda.db.rdbms.sql.AgentInstanceMapper.insert"), rowInsertParam.capture());
+    final var mergedRow = (AgentInstanceDbModel) rowInsertParam.getValue();
+    assertThat(mergedRow.toolValues()).isEmpty();
+    assertThat(mergedRow.systemPromptItems()).isEmpty();
     verify(session, never())
         .update(eq("io.camunda.db.rdbms.sql.AgentInstanceMapper.update"), any());
   }

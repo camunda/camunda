@@ -36,7 +36,7 @@ jobs:
       contents: read
       id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -82,7 +82,7 @@ jobs:
       # docker-checks (GitHub-hosted, ci.yml only) consumes these via the artifact API.
       - name: Upload distball (artifact)
         if: ${{ !inputs.skip-artifact-upload }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: distball-${{ github.run_id }}
           path: ${{ steps.build-zeebe.outputs.distball }}
@@ -91,7 +91,7 @@ jobs:
           if-no-files-found: error
       - name: Upload local Maven SNAPSHOT artifacts (artifact)
         if: ${{ !inputs.skip-artifact-upload }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: m2-installed-${{ github.run_id }}
           path: m2-installed.tar

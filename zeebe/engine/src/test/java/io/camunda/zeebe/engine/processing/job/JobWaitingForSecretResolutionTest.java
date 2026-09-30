@@ -15,14 +15,17 @@ import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.ResolutionState;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.HashMap;
@@ -42,6 +45,7 @@ public final class JobWaitingForSecretResolutionTest {
   private static final String TASK_ID = "task";
   private static final String JOB_TYPE = "task-type";
   private static final String SECRET_NAME = "token";
+  private static final String SECOND_SECRET_NAME = "apikey";
 
   @Rule
   public final EngineRule engine =
@@ -70,6 +74,77 @@ public final class JobWaitingForSecretResolutionTest {
                 .getValue()
                 .getJobKeys())
         .contains(jobKey);
+  }
+
+  @Test
+  public void shouldEmitParkedForSecretResolutionEvent() {
+    // given
+    deploy();
+    final long jobKey = parkedJob();
+
+    // then - the park is observable on the JOB record stream so the wait-state exporter can mark it
+    final Record<JobRecordValue> parked =
+        RecordingExporter.jobRecords(JobIntent.SECRET_RESOLUTION_PARKED)
+            .withRecordKey(jobKey)
+            .getFirst();
+    assertThat(parked.getValue().getType()).isEqualTo(JOB_TYPE);
+  }
+
+  @Test
+  public void shouldEmitParkedForSecretResolutionEventOncePerJobWithMultipleReferences() {
+    // given - a job whose two input mappings each reference a distinct uncached secret
+    deployWithTwoSecrets();
+
+    // when - the activation parks the job and requests the resolution of both references
+    final long jobKey = parkedJob();
+
+    // then - both references are requested, which bounds the window the park events are appended in
+    RecordingExporter.secretReferenceRecords(SecretReferenceIntent.RESOLUTION_REQUESTED)
+        .limit(2)
+        .await();
+
+    // and - the park transition is emitted once for the job rather than once per reference, so the
+    // exporter marks it a single time and the duplicate does not eat into the record batch budget
+    final long parkedEvents =
+        RecordingExporter.getRecords().stream()
+            .filter(record -> record.getIntent() == JobIntent.SECRET_RESOLUTION_PARKED)
+            .filter(record -> record.getKey() == jobKey)
+            .count();
+    assertThat(parkedEvents).isOne();
+  }
+
+  @Test
+  public void shouldResumeJobOnlyOnceEveryReferenceIsResolved() {
+    // given - a job parked on two uncached references
+    deployWithTwoSecrets();
+    final long jobKey = parkedJob();
+    RecordingExporter.secretReferenceRecords(SecretReferenceIntent.RESOLUTION_REQUESTED)
+        .limit(2)
+        .await();
+
+    // when - only the first reference resolves
+    cachedSecrets.put(SECRET_NAME, "resolved-token");
+    completeResolution(SECRET_NAME);
+
+    // then - the reactivation cycle for that reference ran, but the job stays parked on the second
+    // reference and is not resumed: the exporter must keep the secret-wait mark
+    RecordingExporter.secretReferenceRecords(SecretReferenceIntent.BATCH_JOBS_REACTIVATED)
+        .withSecretReference(SECRET_NAME)
+        .await();
+    assertThat(jobState(jobKey)).isEqualTo(State.WAITING_FOR_SECRET_RESOLUTION);
+    assertThat(resumedEventCount(jobKey))
+        .describedAs("the job is still parked on the second reference, so it is not resumed yet")
+        .isZero();
+
+    // and - once the second reference resolves the job becomes activatable; with no worker taking
+    // it in the same cycle the un-park is emitted exactly once, reverting the secret-wait mark
+    cachedSecrets.put(SECOND_SECRET_NAME, "resolved-apikey");
+    completeResolution(SECOND_SECRET_NAME);
+    RecordingExporter.jobRecords(JobIntent.SECRET_RESOLUTION_RESUMED).withRecordKey(jobKey).await();
+    assertThat(jobState(jobKey)).isEqualTo(State.ACTIVATABLE);
+    assertThat(resumedEventCount(jobKey))
+        .describedAs("the un-park is emitted a single time, when the job becomes activatable")
+        .isOne();
   }
 
   @Test
@@ -226,6 +301,28 @@ public final class JobWaitingForSecretResolutionTest {
     return jobKey;
   }
 
+  /** Writes the command the resolution scheduler writes once it cached the reference's value. */
+  private void completeResolution(final String secretReference) {
+    engine.writeRecords(
+        RecordToWrite.command()
+            .secretReference(
+                SecretReferenceIntent.RESOLUTION_COMPLETE,
+                new SecretReferenceRecord()
+                    .setSecretReference(secretReference)
+                    .setResolutionState(ResolutionState.SUCCESS)));
+  }
+
+  private State jobState(final long jobKey) {
+    return engine.getProcessingState().getJobState().getState(jobKey);
+  }
+
+  private long resumedEventCount(final long jobKey) {
+    return RecordingExporter.getRecords().stream()
+        .filter(record -> record.getIntent() == JobIntent.SECRET_RESOLUTION_RESUMED)
+        .filter(record -> record.getKey() == jobKey)
+        .count();
+  }
+
   private void deploy() {
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess(PROCESS_ID)
@@ -236,6 +333,23 @@ public final class JobWaitingForSecretResolutionTest {
                     t.zeebeJobType(JOB_TYPE)
                         .zeebeInputExpression(
                             "\"Bearer \" + camunda.secrets." + SECRET_NAME, "authorization"))
+            .endEvent()
+            .done();
+    engine.deployment().withXmlResource(process).deploy();
+  }
+
+  private void deployWithTwoSecrets() {
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                TASK_ID,
+                t ->
+                    t.zeebeJobType(JOB_TYPE)
+                        .zeebeInputExpression(
+                            "\"Bearer \" + camunda.secrets." + SECRET_NAME, "authorization")
+                        .zeebeInputExpression(
+                            "\"Bearer \" + camunda.secrets." + SECOND_SECRET_NAME, "apiKey"))
             .endEvent()
             .done();
     engine.deployment().withXmlResource(process).deploy();
