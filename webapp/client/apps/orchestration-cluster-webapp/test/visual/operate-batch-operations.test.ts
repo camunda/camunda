@@ -24,6 +24,7 @@ import {
 	createQueryBatchOperationsResponse,
 } from '#/shared-test-modules/api-mocks/batch-operations';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
+import {movePointerAwayFromNavigation} from './movePointerAwayFromNavigation';
 
 test.beforeEach(({network}) => {
 	network.use(
@@ -71,6 +72,7 @@ test('should match the batch operations page snapshot with items', async ({
 	await operateBatchOperationsPage.goto();
 	await expect(operateBatchOperationsPage.table).toBeVisible();
 
+	await movePointerAwayFromNavigation(page);
 	await expect(page).toHaveScreenshot();
 });
 
@@ -97,5 +99,6 @@ test('should match the batch operations page snapshot with empty state', async (
 		expect(Math.abs(message.y + message.height / 2 - (table.y + table.height / 2))).toBeLessThan(48);
 	}
 
+	await movePointerAwayFromNavigation(page);
 	await expect(page).toHaveScreenshot();
 });
