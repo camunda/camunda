@@ -573,6 +573,46 @@ public final class ProcessInstanceCommandRejectionTest {
   }
 
   @Test
+  public void shouldRejectCancelIfProcessInstanceIsTerminating() {
+    // given (synthetic situation - is not expected in regular processing)
+    final var processInstanceKey =
+        createProcessInstance(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask("a", t -> t.zeebeJobType("a"))
+                .endEvent()
+                .done());
+
+    final var processInstanceActivated =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst();
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    engine.writeRecords(
+        terminateElementCommand(processInstanceActivated),
+        cancelProcessInstanceCommand(processInstanceKey));
+
+    // then
+    final var rejectedCommand =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.CANCEL)
+            .onlyCommandRejections()
+            .withRecordKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(rejectedCommand)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            String.format(
+                "Expected to cancel a process instance with key '%d', but it is already being terminated",
+                processInstanceKey));
+  }
+
+  @Test
   public void shouldRejectSuspendIfProcessInstanceIsAlreadyCanceling() {
     // given
     final var processInstanceKey =
