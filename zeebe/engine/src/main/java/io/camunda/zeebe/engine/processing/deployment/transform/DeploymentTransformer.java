@@ -8,32 +8,41 @@
 package io.camunda.zeebe.engine.processing.deployment.transform;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
+import static java.util.Map.entry;
 
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
+import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
-import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
-import io.camunda.zeebe.engine.processing.deployment.model.validation.DeploymentValidator;
+import io.camunda.zeebe.engine.processing.deployment.model.validation.BpmnDeploymentBindingValidator;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.time.InstantSource;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
 import org.agrona.DirectBuffer;
+import org.slf4j.Logger;
 
 public final class DeploymentTransformer {
 
-  private final DeploymentValidator validator;
-  private final List<DeploymentResourceTransformer> resourceTransformers;
-  private final ChecksumGenerator checksumGenerator = new ChecksumGenerator();
-  private final BpmnResourceTransformer bpmnResourceTransformer;
+  private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
+  private static final DeploymentResourceTransformer UNKNOWN_RESOURCE =
+      new UnknownResourceTransformer();
   private final ValidationConfig config;
+  private final Map<String, DeploymentResourceTransformer> resourceTransformers;
+  private final ChecksumGenerator checksumGenerator = new ChecksumGenerator();
+  // internal changes during processing
+  private RejectionType rejectionType;
+  private String rejectionReason;
 
   public DeploymentTransformer(
       final StateWriter stateWriter,
@@ -44,15 +53,10 @@ public final class DeploymentTransformer {
       final ValidationConfig config,
       final InstantSource clock,
       final ExpressionLanguageMetrics expressionLanguageMetrics) {
-    validator = new DeploymentValidator(config);
     this.config = config;
 
-    final var bpmnTransformer =
-        BpmnFactory.createTransformer(
-            clock, expressionLanguageMetrics, config.maxNameFieldLength());
-    bpmnResourceTransformer =
+    final var bpmnResourceTransformer =
         new BpmnResourceTransformer(
-            bpmnTransformer,
             keyGenerator,
             stateWriter,
             checksumGenerator,
@@ -62,7 +66,6 @@ public final class DeploymentTransformer {
             config,
             clock,
             expressionLanguageMetrics);
-
     final var dmnResourceTransformer =
         new DmnResourceTransformer(
             keyGenerator,
@@ -75,23 +78,17 @@ public final class DeploymentTransformer {
         new FormResourceTransformer(
             keyGenerator, stateWriter, checksumGenerator, processingState.getFormState(), config);
 
-    final var rpaTransformer =
+    final var resourceTransformer =
         new RpaTransformer(
             keyGenerator, stateWriter, checksumGenerator, processingState.getResourceState());
 
-    final var defaultResourceTransformer =
-        new DefaultResourceTransformer(
-            keyGenerator, stateWriter, checksumGenerator, processingState.getResourceState());
-
-    // Order matters: transformers are checked in order, and the first that can handle the resource
-    // will be used. DefaultResourceTransformer should be last as it accepts any file.
     resourceTransformers =
-        List.of(
-            bpmnResourceTransformer,
-            dmnResourceTransformer,
-            formResourceTransformer,
-            rpaTransformer,
-            defaultResourceTransformer);
+        Map.ofEntries(
+            entry(".bpmn", bpmnResourceTransformer),
+            entry(".xml", bpmnResourceTransformer),
+            entry(".dmn", dmnResourceTransformer),
+            entry(".form", formResourceTransformer),
+            entry(".rpa", resourceTransformer));
   }
 
   public DirectBuffer getChecksum(final byte[] resource) {
@@ -99,101 +96,161 @@ public final class DeploymentTransformer {
   }
 
   public Either<Failure, Void> transform(final DeploymentRecord deploymentEvent) {
-    resourceTransformers.forEach(DeploymentResourceTransformer::reset);
+    final StringBuilder errors = new StringBuilder();
+    boolean success = true;
 
-    return validator
-        .validateResources(deploymentEvent)
-        .map(ok -> resolveTransformers(deploymentEvent))
-        .flatMap(
-            rwt ->
-                buildMetadata(deploymentEvent, rwt)
-                    .flatMap(contexts -> validator.validateMetadata(deploymentEvent, contexts))
-                    .flatMap(ok -> writeResourceRecords(deploymentEvent, rwt)));
-  }
+    final Iterator<DeploymentResource> resourceIterator = deploymentEvent.resources().iterator();
+    if (!resourceIterator.hasNext()) {
+      rejectionType = RejectionType.INVALID_ARGUMENT;
+      rejectionReason = "Expected to deploy at least one resource, but none given";
 
-  private List<ResourceWithTransformer> resolveTransformers(
-      final DeploymentRecord deploymentEvent) {
-    final List<ResourceWithTransformer> result = new ArrayList<>();
-    for (final DeploymentResource deploymentResource : deploymentEvent.resources()) {
-      final var transformer = getResourceTransformer(deploymentResource);
-      result.add(new ResourceWithTransformer(deploymentResource, transformer));
+      return Either.left(new Failure(rejectionReason));
     }
-    return result;
-  }
 
-  /**
-   * Iterates over all resources and builds metadata for each. Validates each resource individually
-   * and adds its metadata to the deployment record.
-   *
-   * @param deploymentEvent the deployment record
-   * @param resourcesWithTransformers resources paired with their resolved transformers
-   * @return Either.right with the list of contexts produced by each transformer, or Either.left
-   *     with error details
-   */
-  private Either<Failure, List<DeploymentResourceContext>> buildMetadata(
-      final DeploymentRecord deploymentEvent,
-      final List<ResourceWithTransformer> resourcesWithTransformers) {
-    final var errors = new DeploymentErrorCollector(config.validatorResultsOutputMaxSize());
-    final List<DeploymentResourceContext> contexts = new ArrayList<>();
+    // step 1: only validate the resources and add their metadata to the deployment record (no event
+    // records are being written yet)
+    final var bpmnResources = new ArrayList<BpmnResource>();
+    while (resourceIterator.hasNext()) {
+      final DeploymentResource deploymentResource = resourceIterator.next();
+      if (isBpmnResource(deploymentResource)) {
+        final var context = new BpmnElementsWithDeploymentBinding();
+        bpmnResources.add(new BpmnResource(deploymentResource, context));
+        success &= createMetadata(deploymentResource, deploymentEvent, context, errors);
+      } else {
+        success &=
+            createMetadata(
+                deploymentResource, deploymentEvent, new DeploymentResourceContext() {}, errors);
+      }
+    }
 
-    for (final ResourceWithTransformer resourceWithTransformer : resourcesWithTransformers) {
-      final var deploymentResource = resourceWithTransformer.resource;
-      final var transformer = resourceWithTransformer.transformer;
-      try {
-        final var result = transformer.createMetadata(deploymentResource, deploymentEvent);
-
-        if (result.isRight()) {
-          contexts.add(result.get());
-        } else {
-          errors.add(result.getLeft().getMessage());
+    // intermediate step (for BPMN resources only): validate process elements that use deployment
+    // binding (all linked resources must be part of the current deployment)
+    if (success && !bpmnResources.isEmpty()) {
+      final var validator = new BpmnDeploymentBindingValidator(deploymentEvent);
+      for (final var bpmnResource : bpmnResources) {
+        final var validationError = validator.validate(bpmnResource.elements);
+        if (validationError != null) {
+          success = false;
+          errors
+              .append("\n'")
+              .append(bpmnResource.resource.getResourceName())
+              .append("':\n")
+              .append(validationError);
         }
-      } catch (final RuntimeException e) {
-        errors.add("'%s': %s", deploymentResource.getResourceName(), e.getMessage());
       }
     }
 
-    return errors.toEither(contexts);
+    // step 2: update metadata (optionally) and write actual event records
+    if (success) {
+      for (final DeploymentResource deploymentResource : deploymentEvent.resources()) {
+        success &= writeRecords(deploymentResource, deploymentEvent, errors);
+      }
+    }
+
+    if (!success) {
+      rejectionType = RejectionType.INVALID_ARGUMENT;
+      rejectionReason =
+          String.format(
+              "Expected to deploy new resources, but encountered the following errors:%s", errors);
+
+      return Either.left(new Failure(rejectionReason));
+    }
+
+    return Either.right(null);
   }
 
-  /**
-   * Writes the actual resource records to state. This is called after all validation has passed.
-   * Skips writing if the deployment contains only duplicates (versioning invariant).
-   *
-   * @param deploymentEvent the deployment record
-   * @param resourcesWithTransformers resources paired with their resolved transformers
-   */
-  private Either<Failure, Void> writeResourceRecords(
+  private boolean isBpmnResource(final DeploymentResource resource) {
+    return resource.getResourceName().endsWith(".bpmn")
+        || resource.getResourceName().endsWith(".xml");
+  }
+
+  private boolean createMetadata(
+      final DeploymentResource deploymentResource,
       final DeploymentRecord deploymentEvent,
-      final List<ResourceWithTransformer> resourcesWithTransformers) {
-    if (deploymentEvent.hasDuplicatesOnly()) {
-      return Either.right(null);
+      final DeploymentResourceContext context,
+      final StringBuilder errors) {
+    final var resourceName = deploymentResource.getResourceName();
+    final var transformer = getResourceTransformer(resourceName);
+
+    if (resourceName.length() > config.maxNameFieldLength()) {
+      errors.append(
+          String.format(
+              "\n- Resource name '%s' exceeds maximum length of %d characters as it has a length of %d characters",
+              resourceName, config.maxNameFieldLength(), resourceName.length()));
+      return false;
     }
 
-    final var errors = new DeploymentErrorCollector(config.validatorResultsOutputMaxSize());
+    try {
+      final var result = transformer.createMetadata(deploymentResource, deploymentEvent, context);
 
-    for (final ResourceWithTransformer resourceWithTransformer : resourcesWithTransformers) {
-      final var deploymentResource = resourceWithTransformer.resource;
-      final var transformer = resourceWithTransformer.transformer;
-      try {
-        transformer.writeRecords(deploymentResource, deploymentEvent);
-      } catch (final RuntimeException e) {
-        errors.add("'%s': %s", deploymentResource.getResourceName(), e.getMessage());
+      if (result.isRight()) {
+        return true;
+      } else {
+        final var failureMessage = result.getLeft().getMessage();
+        errors.append("\n").append(failureMessage);
+        return false;
       }
+
+    } catch (final RuntimeException e) {
+      handleUnexpectedError(resourceName, e, errors);
+    }
+    return false;
+  }
+
+  private boolean writeRecords(
+      final DeploymentResource deploymentResource,
+      final DeploymentRecord deploymentEvent,
+      final StringBuilder errors) {
+    final var resourceName = deploymentResource.getResourceName();
+    final var transformer = getResourceTransformer(resourceName);
+    try {
+      transformer.writeRecords(deploymentResource, deploymentEvent);
+      return true;
+    } catch (final RuntimeException e) {
+      handleUnexpectedError(resourceName, e, errors);
+    }
+    return false;
+  }
+
+  public RejectionType getRejectionType() {
+    return rejectionType;
+  }
+
+  public String getRejectionReason() {
+    return rejectionReason;
+  }
+
+  private DeploymentResourceTransformer getResourceTransformer(final String resourceName) {
+    return resourceTransformers.entrySet().stream()
+        .filter(entry -> resourceName.endsWith(entry.getKey()))
+        .map(Entry::getValue)
+        .findFirst()
+        .orElse(UNKNOWN_RESOURCE);
+  }
+
+  private static void handleUnexpectedError(
+      final String resourceName, final RuntimeException exception, final StringBuilder errors) {
+    LOG.error("Unexpected error while processing resource '{}'", resourceName, exception);
+    errors.append("\n'").append(resourceName).append("': ").append(exception.getMessage());
+  }
+
+  private static final class UnknownResourceTransformer implements DeploymentResourceTransformer {
+
+    @Override
+    public Either<Failure, Void> createMetadata(
+        final DeploymentResource resource,
+        final DeploymentRecord deployment,
+        final DeploymentResourceContext context) {
+      final var failureMessage =
+          String.format("%n'%s': unknown resource type", resource.getResourceName());
+      return Either.left(new Failure(failureMessage));
     }
 
-    return errors.toEither();
+    @Override
+    public void writeRecords(
+        final DeploymentResource resource, final DeploymentRecord deployment) {}
   }
 
-  private DeploymentResourceTransformer getResourceTransformer(final DeploymentResource resource) {
-    return resourceTransformers.stream()
-        .filter(transformer -> transformer.canTransform(resource))
-        .findFirst()
-        .orElseThrow(
-            () ->
-                new IllegalStateException(
-                    "No transformer found for resource: " + resource.getResourceName()));
-  }
-
-  private record ResourceWithTransformer(
-      DeploymentResource resource, DeploymentResourceTransformer transformer) {}
+  private record BpmnResource(
+      DeploymentResource resource, BpmnElementsWithDeploymentBinding elements) {}
 }

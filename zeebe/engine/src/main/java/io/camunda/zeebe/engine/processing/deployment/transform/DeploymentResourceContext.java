@@ -7,9 +7,4 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.transform;
 
-@SuppressWarnings("checkstyle:InterfaceIsType")
-public interface DeploymentResourceContext {
-
-  /** A no-op context for resource types that don't produce additional metadata. */
-  DeploymentResourceContext NONE = new DeploymentResourceContext() {};
-}
+public interface DeploymentResourceContext {}
