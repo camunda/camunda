@@ -12,7 +12,7 @@
   ],
   commitMessagePrefix: "deps:",
   baseBranchPatterns: [
-    "/^stable\\/8\\.([7-9]|[1-9][0-9])/",
+    "/^stable\\/8\\.([8-9]|[1-9][0-9])/",
     "main",
   ],
   dependencyDashboard: true,
@@ -357,7 +357,7 @@
     {
       description: "Skip lucene minor and patch in stable branches to avoid breaking changes.",
       matchBaseBranches: [
-        "/^stable\\/8\\.[6-8]/",
+        "/^stable\\/8\\.8/",
       ],
       matchManagers: [
         "maven",
