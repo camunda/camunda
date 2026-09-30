@@ -279,7 +279,9 @@ public class Starter implements CommandLineRunner {
           try {
             final var vars = new HashMap<>(baseVariables);
             vars.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
-            processInstancesStartedCounter.increment();
+
+            // TODO: we should move this down - to when complete
+            processInstancesStartedCounter.increment();   // <--- to early
 
             final var startTime = System.nanoTime();
             final CompletionStage<?> requestFuture;
@@ -290,8 +292,8 @@ public class Starter implements CommandLineRunner {
             } else {
               requestFuture = startInstance(startTime, starterCfg.getProcessId(), vars);
             }
-            requestFuture.whenComplete(
-                (noop, error) -> {
+            requestFuture.whenComplete((noop, error) -> {
+              // TODO: we should record the response success/failure for monitoring purposes
                   final long durationNanos = System.nanoTime() - startTime;
                   responseLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
                   if (error instanceof final StatusRuntimeException statusRuntimeException) {
@@ -303,7 +305,7 @@ public class Starter implements CommandLineRunner {
                     }
                   }
                 });
-          } catch (final Exception e) {
+          } catch (final Exception e) { // TODO there is no way that we raise an except/catch here
             THROTTLED_LOGGER.error("Error on creating new process instance", e);
           }
         },
