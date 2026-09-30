@@ -23,16 +23,19 @@ import org.jspecify.annotations.NullMarked;
  * includes the broker's own work and the JIT compiler, and whether the container's CPU quota
  * throttled it. While the load is within budget and nothing was throttled, the warm-up may keep one
  * more instance in flight; otherwise that number halves, down to zero, which pauses the warm-up.
- * Throttling counts on its own because the quota is enforced over periods much shorter than the
- * sample interval: a process within its average budget can still exhaust the quota in bursts, and
- * every thread in the container then waits for the next period. A processing backlog on any
- * partition the broker follows counts too: the cluster is then working off requests that queued up,
- * and that is when the broker's headroom matters most.
+ * Once it has backed off, it grows again only after several samples in a row within budget, so that
+ * it settles below the point where it gets in the broker's way instead of returning to it every few
+ * seconds. Throttling counts on its own because the quota is enforced over periods much shorter
+ * than the sample interval: a process within its average budget can still exhaust the quota in
+ * bursts, and every thread in the container then waits for the next period. A processing backlog on
+ * any partition the broker follows counts too: the cluster is then working off requests that queued
+ * up, and that is when the broker's headroom matters most.
  */
 @NullMarked
 final class CpuBudget {
 
   static final Duration SAMPLE_INTERVAL = Duration.ofSeconds(1);
+  static final int REGROWTH_SAMPLES = 5;
 
   private final DoubleSupplier processCpuLoad;
   private final DoubleSupplier throttledShare;
@@ -43,6 +46,7 @@ final class CpuBudget {
   private int limit = 1;
   private long nextSampleNanos;
   private long backOffs;
+  private int samplesWithinSinceGrowth;
 
   /**
    * @param processCpuLoad the process's CPU load since it was last called, as a fraction of the
@@ -77,8 +81,14 @@ final class CpuBudget {
         case OVER -> {
           limit /= 2;
           backOffs++;
+          samplesWithinSinceGrowth = 0;
         }
-        case WITHIN -> limit = Math.min(maxInFlight, limit + 1);
+        case WITHIN -> {
+          if (backOffs == 0 || ++samplesWithinSinceGrowth >= REGROWTH_SAMPLES) {
+            limit = Math.min(maxInFlight, limit + 1);
+            samplesWithinSinceGrowth = 0;
+          }
+        }
         case UNKNOWN -> {}
       }
     }
