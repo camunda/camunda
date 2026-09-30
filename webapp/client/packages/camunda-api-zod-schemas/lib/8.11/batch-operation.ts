@@ -14,6 +14,7 @@ import {batchOperationItemSearchQuerySchema} from './gen/zod/batchOperationItemS
 import {batchOperationResponseSchema} from './gen/zod/batchOperationResponseSchema';
 import {batchOperationSearchQueryResultSchema} from './gen/zod/batchOperationSearchQueryResultSchema';
 import {batchOperationSearchQuerySchema} from './gen/zod/batchOperationSearchQuerySchema';
+import {batchOperationSearchQuerySortRequestSchema} from './gen/zod/batchOperationSearchQuerySortRequestSchema';
 import {batchOperationStateEnumSchema} from './gen/zod/batchOperationStateEnumSchema';
 import {batchOperationTypeEnumSchema} from './gen/zod/batchOperationTypeEnumSchema';
 import type {
@@ -29,6 +30,7 @@ import type {BatchOperationItemSearchQueryResult} from './gen/types/BatchOperati
 import type {BatchOperationResponse} from './gen/types/BatchOperationResponse';
 import type {BatchOperationSearchQuery} from './gen/types/BatchOperationSearchQuery';
 import type {BatchOperationSearchQueryResult} from './gen/types/BatchOperationSearchQueryResult';
+import type {BatchOperationSearchQuerySortRequestFieldEnumKey} from './gen/types/BatchOperationSearchQuerySortRequest';
 import type {BatchOperationStateEnumKey} from './gen/types/BatchOperationStateEnum';
 import type {BatchOperationTypeEnumKey} from './gen/types/BatchOperationTypeEnum';
 
@@ -53,6 +55,10 @@ type BatchOperation = BatchOperationResponse;
 
 const batchOperationItemSchema = batchOperationItemResponseSchema;
 type BatchOperationItem = BatchOperationItemResponse;
+
+// The search query schema is an intersection, which has no `.shape`. Expose the sort field enum directly.
+const batchOperationSortFieldEnum = batchOperationSearchQuerySortRequestSchema.shape.field;
+type BatchOperationSortField = BatchOperationSearchQuerySortRequestFieldEnumKey;
 
 const queryBatchOperationsRequestBodySchema = batchOperationSearchQuerySchema;
 type QueryBatchOperationsRequestBody = BatchOperationSearchQuery;
@@ -104,6 +110,7 @@ export {
 	batchOperationErrorSchema,
 	batchOperationSchema,
 	batchOperationItemSchema,
+	batchOperationSortFieldEnum,
 	queryBatchOperationsRequestBodySchema,
 	queryBatchOperationsResponseBodySchema,
 	queryBatchOperationItemsRequestBodySchema,
@@ -124,6 +131,7 @@ export type {
 	BatchOperationError,
 	BatchOperation,
 	BatchOperationItem,
+	BatchOperationSortField,
 	QueryBatchOperationsRequestBody,
 	QueryBatchOperationsResponseBody,
 	QueryBatchOperationItemsRequestBody,
