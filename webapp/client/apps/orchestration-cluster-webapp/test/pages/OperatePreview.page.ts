@@ -34,12 +34,12 @@ class OperatePreviewPage extends BasePage {
 		return this.page.getByText('Process incidents by error message');
 	}
 
-	get incidentsByErrorSampleRow() {
-		return this.page.getByText('Connection timeout');
-	}
-
 	processesByNameRow(name: string) {
 		return this.page.getByText(name, {exact: false});
+	}
+
+	incidentsByErrorRow(errorMessage: string) {
+		return this.page.getByText(errorMessage, {exact: false});
 	}
 
 	get noInstancesEmptyState() {

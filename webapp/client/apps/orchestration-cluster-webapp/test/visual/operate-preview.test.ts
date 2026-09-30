@@ -21,6 +21,7 @@ import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {createProcessDefinitionInstanceStatistics} from '#/shared-test-modules/api-mocks/process-definition-statistics';
+import {createIncidentProcessInstanceStatisticsByError} from '#/shared-test-modules/api-mocks/incident-statistics';
 import {createQueryProcessDefinitionsResponse} from '#/shared-test-modules/api-mocks/process-definitions';
 
 test.beforeEach(({network}) => {
@@ -72,7 +73,7 @@ test('should match the no-instances empty state snapshot with a modeler link', a
 	await expect(page).toHaveScreenshot();
 });
 
-test('should match the list tiles snapshot with real process rows and sample incident rows', async ({
+test('should match the list tiles snapshot with real process rows and real incident rows', async ({
 	network,
 	operatePreviewPage,
 	page,
@@ -95,12 +96,26 @@ test('should match the list tiles snapshot with real process rows and sample inc
 				}),
 			),
 		}),
+		mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+			successResponse: HttpResponse.json(
+				createPaginatedResponse({
+					items: [
+						createIncidentProcessInstanceStatisticsByError({
+							errorHashCode: 1,
+							errorMessage: 'Payment gateway request timed out',
+							activeInstancesWithErrorCount: 5,
+						}),
+					],
+					page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+				}),
+			),
+		}),
 		mockQueryProcessDefinitionsEndpoint({successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse())}),
 	);
 
 	await operatePreviewPage.goto();
 	await expect(operatePreviewPage.processesByNameRow('My Process')).toBeVisible();
-	await expect(operatePreviewPage.incidentsByErrorSampleRow).toBeVisible();
+	await expect(operatePreviewPage.incidentsByErrorRow('Payment gateway request timed out')).toBeVisible();
 
 	await expect(page).toHaveScreenshot();
 });

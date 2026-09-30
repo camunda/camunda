@@ -27,6 +27,7 @@ import {
 	createProcessDefinition,
 	createQueryProcessDefinitionsResponse,
 } from '#/shared-test-modules/api-mocks/process-definitions';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {InstancesByProcess} from './InstancesByProcess';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 
@@ -239,6 +240,14 @@ describe('<InstancesByProcess /> pagination', () => {
 	});
 
 	const {getObserver} = setUpFakeIntersectionObserver();
+
+	beforeEach(() => {
+		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
+	});
+
+	afterEach(() => {
+		sessionStorage.clear();
+	});
 
 	const buildPage = (processDefinitionId: string, name: string) =>
 		HttpResponse.json(

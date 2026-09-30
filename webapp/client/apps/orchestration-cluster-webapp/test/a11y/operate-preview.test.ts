@@ -10,6 +10,7 @@ import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
+	mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint,
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockLicenseEndpoint,
@@ -22,17 +23,13 @@ import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {createProcessDefinitionInstanceStatistics} from '#/shared-test-modules/api-mocks/process-definition-statistics';
 import {
+	createIncidentProcessInstanceStatisticsByDefinition,
+	createIncidentProcessInstanceStatisticsByError,
+} from '#/shared-test-modules/api-mocks/incident-statistics';
+import {
 	createProcessDefinition,
 	createQueryProcessDefinitionsResponse,
 } from '#/shared-test-modules/api-mocks/process-definitions';
-
-// TEMPORARY: the design system's DataTable injects the expand-toggle column with
-// `header: () => null`, so its `<th>` has no discernible text and axe flags every table
-// that uses `expansion` — InstancesByProcess's rows are expandable to their versions.
-// There is no prop to name that column, so this cannot be fixed here — remove the
-// exclusion once the design system names it. Every other rule, and every other element,
-// is still scanned.
-const DS_EXPAND_COLUMN_HEADER_RULE = 'empty-table-header';
 
 test('should have no accessibility violations in the no-instances empty state', async ({
 	network,
@@ -69,7 +66,7 @@ test('should have no accessibility violations in the no-instances empty state', 
 	expect(results.violations).toEqual([]);
 });
 
-test('should have no accessibility violations in the list tiles with real process rows and sample incident rows', async ({
+test('should have no accessibility violations in the list tiles with real process rows and real incident rows', async ({
 	network,
 	operatePreviewPage,
 	makeAxeBuilder,
@@ -99,7 +96,18 @@ test('should have no accessibility violations in the list tiles with real proces
 			),
 		}),
 		mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
-			successResponse: HttpResponse.json(createPaginatedResponse()),
+			successResponse: HttpResponse.json(
+				createPaginatedResponse({
+					items: [
+						createIncidentProcessInstanceStatisticsByError({
+							errorHashCode: 1,
+							errorMessage: 'Payment gateway request timed out',
+							activeInstancesWithErrorCount: 5,
+						}),
+					],
+					page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+				}),
+			),
 		}),
 		mockQueryProcessDefinitionsEndpoint({
 			successResponse: HttpResponse.json(
@@ -108,17 +116,30 @@ test('should have no accessibility violations in the list tiles with real proces
 				}),
 			),
 		}),
+		mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint({
+			successResponse: HttpResponse.json(
+				createPaginatedResponse({
+					items: [
+						createIncidentProcessInstanceStatisticsByDefinition({
+							processDefinitionId: 'process-1',
+							processDefinitionName: 'My Process',
+						}),
+					],
+					page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+				}),
+			),
+		}),
 	);
 
 	await operatePreviewPage.goto();
 	await expect(operatePreviewPage.processesByNameRow('My Process')).toBeVisible();
+	await expect(operatePreviewPage.incidentsByErrorRow('Payment gateway request timed out')).toBeVisible();
 
-	// Scoped to the list tiles: MetricPanel is still an unbuilt placeholder (lands in a
-	// later PR) that a full-page scan would flag for content this PR doesn't touch.
-	const results = await makeAxeBuilder()
-		.include('[data-slot="data-table"]')
-		.disableRules([DS_EXPAND_COLUMN_HEADER_RULE])
-		.analyze();
+	// Expand the incident row so the definitions drill-down it reveals is part of
+	// the scanned DOM too, not just the collapsed error-message row.
+	await operatePreviewPage.expandIncidentRowButton.click();
+
+	const results = await makeAxeBuilder().include('[data-slot="data-table"]').analyze();
 	expect(results.violations).toEqual([]);
 });
 
