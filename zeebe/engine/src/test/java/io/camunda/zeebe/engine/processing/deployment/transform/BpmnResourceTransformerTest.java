@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
-import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -42,8 +41,7 @@ final class BpmnResourceTransformerTest {
             false,
             ValidationConfig.builder().build(),
             InstantSource.system(),
-            ExpressionLanguageMetrics.noop(),
-            mock(ProcessDefinitionMetrics.class));
+            ExpressionLanguageMetrics.noop());
   }
 
   @Test

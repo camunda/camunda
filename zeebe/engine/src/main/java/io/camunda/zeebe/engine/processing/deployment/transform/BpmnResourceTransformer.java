@@ -76,6 +76,27 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
   }
 
+  public BpmnResourceTransformer(
+      final BpmnTransformer bpmnTransformer,
+      final KeyGenerator keyGenerator,
+      final StateWriter stateWriter,
+      final ChecksumGenerator checksumGenerator,
+      final ProcessState processState,
+      final ExpressionProcessor expressionProcessor,
+      final boolean enableStraightThroughProcessingLoopDetector,
+      final ValidationConfig config,
+      final InstantSource clock,
+      final ExpressionLanguageMetrics expressionLanguageMetrics) {
+    this.bpmnTransformer = bpmnTransformer;
+    this.keyGenerator = keyGenerator;
+    this.stateWriter = stateWriter;
+    this.checksumGenerator = checksumGenerator;
+    this.processState = processState;
+    validator =
+        BpmnFactory.createValidator(clock, expressionProcessor, config, expressionLanguageMetrics);
+    this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
+  }
+
   @Override
   public boolean canTransform(final DeploymentResource resource) {
     final var resourceName = resource.getResourceName();
