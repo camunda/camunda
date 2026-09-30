@@ -196,7 +196,7 @@ class DecisionInstanceServiceTest {
             .setDecisionDefinitionId(DECISION_DEFINITION_ID)
             .setTenantId(tenantId);
     final var captor = ArgumentCaptor.forClass(BrokerDeleteHistoryRequest.class);
-    when(brokerClient.sendRequest(captor.capture()))
+    when(brokerClient.sendRequestWithRetry(captor.capture()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
 
     // when
@@ -263,7 +263,7 @@ class DecisionInstanceServiceTest {
             .setResourceType(HistoryDeletionType.DECISION_INSTANCE)
             .setDecisionDefinitionId(DECISION_DEFINITION_ID)
             .setTenantId(tenantId);
-    when(brokerClient.sendRequest(any(BrokerDeleteHistoryRequest.class)))
+    when(brokerClient.sendRequestWithRetry(any(BrokerDeleteHistoryRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
 
     // when
@@ -294,7 +294,7 @@ class DecisionInstanceServiceTest {
     record.setBatchOperationType(BatchOperationType.DELETE_DECISION_INSTANCE);
 
     final var captor = ArgumentCaptor.forClass(BrokerCreateBatchOperationRequest.class);
-    when(brokerClient.sendRequest(captor.capture()))
+    when(brokerClient.sendRequestWithRetry(captor.capture()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
 
     // when
