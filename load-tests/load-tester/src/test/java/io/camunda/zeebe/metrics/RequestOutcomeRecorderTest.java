@@ -14,9 +14,12 @@ import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.client.api.command.ProblemException;
 import io.grpc.Status;
+import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Duration;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.Test;
 
@@ -71,6 +74,45 @@ class RequestOutcomeRecorderTest {
 
     // then
     assertThat(count("create_instance", "TimeoutException", "none")).isEqualTo(1);
+  }
+
+  @Test
+  void shouldRecordLatencyByCommandAndStatus() {
+    // given
+    final var problem = new ProblemDetail().setStatus(503).setTitle("UNAVAILABLE");
+    final var error =
+        new CompletionException(new ProblemException(503, "Service Unavailable", problem));
+
+    // when
+    recorder.recordLatency("complete_job", null, Duration.ofMillis(20).toNanos());
+    recorder.recordLatency("complete_job", error, Duration.ofSeconds(1).toNanos());
+
+    // then
+    assertThat(latency("complete_job", "ok").totalTime(TimeUnit.MILLISECONDS)).isEqualTo(20);
+    assertThat(latency("complete_job", "503").totalTime(TimeUnit.MILLISECONDS)).isEqualTo(1000);
+  }
+
+  @Test
+  void shouldRecordJobLifetimeByCompletionOutcome() {
+    // when
+    recorder.recordJobLifetime(null, Duration.ofMillis(70).toNanos());
+
+    // then
+    assertThat(
+            registry
+                .get(AppMetricsDoc.JOB_LIFETIME.getName())
+                .tag("status", "ok")
+                .timer()
+                .totalTime(TimeUnit.MILLISECONDS))
+        .isEqualTo(70);
+  }
+
+  private Timer latency(final String command, final String status) {
+    return registry
+        .get(AppMetricsDoc.REQUEST_LATENCY.getName())
+        .tag("command", command)
+        .tag("status", status)
+        .timer();
   }
 
   private double count(final String command, final String status, final String reason) {

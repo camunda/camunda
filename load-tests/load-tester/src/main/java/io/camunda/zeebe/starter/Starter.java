@@ -69,6 +69,12 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Profile("starter")
 public class Starter implements CommandLineRunner {
 
+  /**
+   * Instance variable holding the epoch millis at which the starter sent the create request; the
+   * worker uses it for the client-side time from creation to receiving the job.
+   */
+  public static final String CREATED_AT_VARIABLE = "loadTesterCreatedAtMs";
+
   private static final Logger THROTTLED_LOGGER =
       new ThrottledLogger(LoggerFactory.getLogger(Starter.class), Duration.ofSeconds(5));
   private static final Logger LOG = LoggerFactory.getLogger(Starter.class);
@@ -282,6 +288,7 @@ public class Starter implements CommandLineRunner {
           try {
             final var vars = new HashMap<>(baseVariables);
             vars.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
+            vars.put(CREATED_AT_VARIABLE, System.currentTimeMillis());
             processInstancesStartedCounter.increment();
 
             final var startTime = System.nanoTime();
@@ -302,6 +309,7 @@ public class Starter implements CommandLineRunner {
                   final long durationNanos = System.nanoTime() - startTime;
                   responseLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
                   requestOutcomeRecorder.record(command, error);
+                  requestOutcomeRecorder.recordLatency(command, error, durationNanos);
                   if (error instanceof final StatusRuntimeException statusRuntimeException) {
                     if (statusRuntimeException.getStatus().getCode() != Code.RESOURCE_EXHAUSTED) {
                       THROTTLED_LOGGER.warn(
