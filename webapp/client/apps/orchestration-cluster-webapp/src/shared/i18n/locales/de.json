@@ -831,6 +831,8 @@
 			},
 			"operationsLog": {
 				"title": "Operationsprotokoll",
+				"decisionDefinitionsLookupFailed": "Entscheidungsnamen konnten nicht geladen werden. Das Operationsprotokoll ist weiterhin verfügbar.",
+				"decisionDefinitionsRetry": "Entscheidungsnamen erneut laden",
 				"table": {
 					"operationType": "Vorgangstyp",
 					"entityType": "Entitätstyp",

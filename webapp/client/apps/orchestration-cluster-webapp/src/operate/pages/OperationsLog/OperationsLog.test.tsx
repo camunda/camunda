@@ -43,6 +43,19 @@ const PROCESS_DEFINITIONS = HttpResponse.json(
 const NO_DECISION_DEFINITIONS = HttpResponse.json(createQueryDecisionDefinitionsResponse());
 const OPERATIONS_LOG_PATH = '/operate/operations-log';
 const AUDIT_LOG_ERROR = new HttpResponse(null, {status: 500});
+const DECISION_LOOKUP_ERROR = new HttpResponse(null, {status: 503});
+const DECISION_LOG = createAuditLog({
+	auditLogKey: 'decision-log',
+	entityKey: '888',
+	entityType: 'DECISION',
+	operationType: 'EVALUATE',
+	decisionDefinitionKey: '888',
+});
+const DECISION_DEFINITIONS = HttpResponse.json(
+	createQueryDecisionDefinitionsResponse({
+		items: [createDecisionDefinition({decisionDefinitionKey: '888', name: 'Invoice Decision'})],
+	}),
+);
 
 function renderPage({
 	search,
@@ -69,6 +82,112 @@ describe('<OperationsLog />', () => {
 	});
 
 	describe('audit log read states', () => {
+		it('should keep audit rows and links available when decision names fail on first load, then recover', async ({
+			worker,
+		}) => {
+			worker.use(
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+				mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_LOOKUP_ERROR}),
+				mockQueryAuditLogsEndpoint({
+					successResponse: HttpResponse.json(
+						createQueryAuditLogsResponse({
+							items: [DECISION_LOG],
+							page: {totalItems: 51, hasMoreTotalItems: true},
+						}),
+					),
+				}),
+			);
+
+			const screen = await renderPage();
+
+			await expect
+				.element(screen.getByText("Couldn't load decision names. Audit logs are still available."))
+				.toBeVisible();
+			await expect.element(screen.getByRole('heading', {name: 'Operations Log - 51+ results'})).toBeVisible();
+			await expect
+				.element(screen.getByRole('link', {name: 'View decision instance 888'}))
+				.toHaveAttribute('href', '/operate/decisions/888');
+			await expect.element(screen.getByText('888', {exact: true})).toBeVisible();
+			await expect.element(screen.getByText("Couldn't fetch audit logs")).not.toBeInTheDocument();
+			await expect.element(screen.getByRole('button', {name: 'Retry decision names'})).toBeVisible();
+
+			worker.use(mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}));
+			await userEvent.click(screen.getByRole('button', {name: 'Retry decision names'}));
+
+			await expect.element(screen.getByText('Invoice Decision')).toBeVisible();
+			await expect
+				.element(screen.getByText("Couldn't load decision names. Audit logs are still available."))
+				.not.toBeInTheDocument();
+		});
+
+		it('should expose a cached decision-name refetch failure without hiding audit rows and recover', async ({
+			worker,
+		}) => {
+			worker.use(
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+				mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
+				mockQueryAuditLogsEndpoint({
+					successResponse: HttpResponse.json(createQueryAuditLogsResponse({items: [DECISION_LOG]})),
+				}),
+			);
+
+			const screen = await renderPage();
+			await expect.element(screen.getByText('Invoice Decision')).toBeVisible();
+
+			worker.use(mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_LOOKUP_ERROR}));
+			await screen.queryClient.invalidateQueries({queryKey: ['queryDecisionDefinitions']});
+
+			await expect
+				.element(screen.getByText("Couldn't load decision names. Audit logs are still available."))
+				.toBeVisible();
+			await expect.element(screen.getByRole('heading', {name: 'Operations Log - 1 result'})).toBeVisible();
+			await expect.element(screen.getByRole('link', {name: 'View decision instance 888'})).toBeVisible();
+			await expect.element(screen.getByText("Couldn't fetch audit logs")).not.toBeInTheDocument();
+
+			worker.use(
+				mockQueryDecisionDefinitionsEndpoint({
+					successResponse: HttpResponse.json(createQueryDecisionDefinitionsResponse()),
+				}),
+			);
+			await userEvent.click(screen.getByRole('button', {name: 'Retry decision names'}));
+
+			await expect
+				.element(screen.getByText("Couldn't load decision names. Audit logs are still available."))
+				.not.toBeInTheDocument();
+			await expect.element(screen.getByText('Invoice Decision')).not.toBeInTheDocument();
+			await expect.element(screen.getByRole('link', {name: 'View decision instance 888'})).toBeVisible();
+		});
+
+		it('should not claim audit logs are available when both searches fail', async ({worker}) => {
+			worker.use(
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+				mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_LOOKUP_ERROR}),
+				mockQueryAuditLogsEndpoint({successResponse: AUDIT_LOG_ERROR}),
+			);
+
+			const screen = await renderPage();
+
+			await expect.element(screen.getByText("Couldn't fetch audit logs")).toBeVisible();
+			await expect
+				.element(screen.getByText("Couldn't load decision names. Audit logs are still available."))
+				.not.toBeInTheDocument();
+			await expect.element(screen.getByRole('button', {name: 'Try again'})).toBeVisible();
+			await expect.element(screen.getByRole('button', {name: 'Retry decision names'})).not.toBeInTheDocument();
+
+			worker.use(
+				mockQueryAuditLogsEndpoint({
+					successResponse: HttpResponse.json(createQueryAuditLogsResponse({items: [DECISION_LOG]})),
+				}),
+			);
+			await userEvent.click(screen.getByRole('button', {name: 'Try again'}));
+
+			await expect.element(screen.getByRole('link', {name: 'View decision instance 888'})).toBeVisible();
+			await expect
+				.element(screen.getByText("Couldn't load decision names. Audit logs are still available."))
+				.toBeVisible();
+			await expect.element(screen.getByRole('button', {name: 'Retry decision names'})).toBeVisible();
+		});
+
 		it('should show loading rather than empty until the first audit response succeeds', async ({worker}) => {
 			worker.use(
 				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),

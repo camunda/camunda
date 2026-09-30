@@ -831,6 +831,8 @@
 			},
 			"operationsLog": {
 				"title": "Registro de operaciones",
+				"decisionDefinitionsLookupFailed": "No se pudieron cargar los nombres de las decisiones. El registro de operaciones sigue disponible.",
+				"decisionDefinitionsRetry": "Volver a cargar los nombres de las decisiones",
 				"table": {
 					"operationType": "Tipo de operación",
 					"entityType": "Tipo de entidad",
