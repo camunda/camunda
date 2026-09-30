@@ -138,8 +138,8 @@ describe('<Dashboard />', () => {
 
 		const screen = await renderWithRouter(Dashboard, {path: '/operate-preview'});
 
-		await expect.element(screen.getByText('Process Instances by Name')).toBeVisible();
-		await expect.element(screen.getByText('Process Incidents by Error Message')).toBeVisible();
+		await expect.element(screen.getByText('Process instances by name')).toBeVisible();
+		await expect.element(screen.getByText('Process incidents by error message')).toBeVisible();
 	});
 
 	it('should render real process rows and sample incident rows, pending real incident data', async ({worker}) => {
@@ -206,8 +206,8 @@ describe('<Dashboard />', () => {
 
 		const screen = await renderWithRouter(Dashboard, {path: '/operate-preview'});
 
-		await expect.element(screen.getByText('Process Instances by Name')).toBeVisible();
-		await expect.element(screen.getByText('Process Incidents by Error Message')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('Process instances by name')).toBeVisible();
+		await expect.element(screen.getByText('Process incidents by error message')).not.toBeInTheDocument();
 	});
 
 	it('should render the go-to-modeler button when the current user has a modeler link', async ({worker}) => {

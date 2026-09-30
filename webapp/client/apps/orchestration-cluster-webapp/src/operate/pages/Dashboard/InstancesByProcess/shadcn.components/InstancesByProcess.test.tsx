@@ -45,8 +45,8 @@ const REQUEST_SCHEMA = z.object({
 const FAILURE_RESPONSE = new HttpResponse(null, {status: 400});
 const ERROR_RESPONSE = new HttpResponse(null, {status: 500});
 const NO_DRAINING_RESPONSE = HttpResponse.json(createQueryProcessDefinitionsResponse());
-const ALPHA_PROCESS_LINK_NAME = '1 Alpha Process – 6 Instances in 1 Version 5';
-const BETA_PROCESS_LINK_NAME = '0 Beta Process – 3 Instances in 1 Version 3';
+const ALPHA_PROCESS_LINK_NAME = '1 Alpha Process – 6 instances in 1 version 5';
+const BETA_PROCESS_LINK_NAME = '0 Beta Process – 3 instances in 1 version 3';
 
 const PAGE_1_RESPONSE = HttpResponse.json(
 	createPaginatedResponse({
@@ -211,16 +211,16 @@ describe('<InstancesByProcess />', () => {
 		await expect.element(screen.getByText(/Alpha Process/)).toBeVisible();
 		await userEvent.click(screen.getByRole('button', {name: 'Expand row'}));
 
-		await expect.element(screen.getByText(/Version 2/)).toBeVisible();
+		await expect.element(screen.getByText(/version 2/)).toBeVisible();
 
 		const version2Row = screen
-			.getByText(/Version 2/)
+			.getByText(/version 2/)
 			.element()
 			.closest('a') as HTMLElement;
 		await expect.element(version2Row.querySelector('[data-testid="draining-indicator"]') as HTMLElement).toBeVisible();
 
 		const version1Row = screen
-			.getByText(/Version 1/)
+			.getByText(/version 1/)
 			.element()
 			.closest('a') as HTMLElement;
 		await expect

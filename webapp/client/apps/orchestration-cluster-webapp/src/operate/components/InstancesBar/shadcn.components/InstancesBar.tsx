@@ -54,7 +54,6 @@ const InstancesBar: React.FC<Props> = ({
 	size,
 	className,
 }) => {
-	const dangerBadgeClassName = 'text-danger-foreground-strong [.dark_&]:text-[var(--danger-foreground-subtle)]';
 	const successBadgeClassName = 'text-success-foreground-strong [.dark_&]:text-[var(--success-foreground-subtle)]';
 	const total = (activeInstancesCount ?? 0) + incidentsCount;
 	const incidentsBarRatio = total === 0 ? 0 : (100 * incidentsCount) / total;
@@ -65,7 +64,7 @@ const InstancesBar: React.FC<Props> = ({
 	const showDrainingIndicator = isDraining && drainingDescription !== undefined;
 	const isLabelRed = label !== undefined && label.type === 'incident' && size === 'medium';
 	const labelTextColorClassName = isLabelRed
-		? 'text-danger-foreground-strong'
+		? 'text-danger-foreground-subtle'
 		: label?.size === 'medium'
 			? 'text-foreground'
 			: 'text-neutral-foreground-subtle';
@@ -77,7 +76,7 @@ const InstancesBar: React.FC<Props> = ({
 					data-testid="incident-instances-badge"
 					className={cn(
 						'min-w-12 tabular-nums',
-						hasIncidents ? dangerBadgeClassName : 'text-neutral-foreground-subtle',
+						hasIncidents ? 'text-danger-foreground-subtle' : 'text-neutral-foreground-subtle',
 					)}
 				>
 					{incidentsCount}

@@ -66,7 +66,7 @@ describe('<InstancesByProcess /> refetch error', () => {
 		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate-preview'});
 
 		await expect
-			.element(screen.getByRole('link', {name: '1 Alpha Process – 6 Instances in 1 Version 5'}))
+			.element(screen.getByRole('link', {name: '1 Alpha Process – 6 instances in 1 version 5'}))
 			.toBeVisible();
 		await vi.advanceTimersByTimeAsync(5500);
 		await vi.waitFor(() => {
@@ -75,7 +75,7 @@ describe('<InstancesByProcess /> refetch error', () => {
 			).toHaveLength(2);
 		});
 		await expect
-			.element(screen.getByRole('link', {name: '1 Alpha Process – 6 Instances in 1 Version 5'}))
+			.element(screen.getByRole('link', {name: '1 Alpha Process – 6 instances in 1 version 5'}))
 			.toBeVisible();
 		await expect.element(screen.getByText("Couldn't fetch data")).not.toBeInTheDocument();
 	});

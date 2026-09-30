@@ -249,10 +249,10 @@ describe('<IncidentsByError />', () => {
 	});
 
 	it.for([
-		{language: 'en', label: 'Orders – Version 2 – Tenant A'},
+		{language: 'en', label: 'Orders – version 2 – Tenant A'},
 		{language: 'de', label: 'Orders (Tenant A) – Version 2'},
-		{language: 'fr', label: 'Orders – Version 2 (Tenant A)'},
-		{language: 'es', label: 'Orders – Versión 2 – Tenant A'},
+		{language: 'fr', label: 'Orders – version 2 (Tenant A)'},
+		{language: 'es', label: 'Orders – versión 2 – Tenant A'},
 	] as const)(
 		'should localize the complete tenant-scoped incident link in $language',
 		async ({language, label}, {worker}) => {

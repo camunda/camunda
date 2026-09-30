@@ -27,11 +27,11 @@ class OperatePreviewPage extends BasePage {
 	}
 
 	get processesByNameTile() {
-		return this.page.getByText('Process Instances by Name');
+		return this.page.getByText('Process instances by name');
 	}
 
 	get incidentsByErrorTile() {
-		return this.page.getByText('Process Incidents by Error Message');
+		return this.page.getByText('Process incidents by error message');
 	}
 
 	get incidentsByErrorSampleRow() {
