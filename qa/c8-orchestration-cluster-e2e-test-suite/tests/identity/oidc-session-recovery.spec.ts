@@ -35,7 +35,7 @@ test.describe('OIDC session recovery', () => {
       LOGIN_CREDENTIALS.username,
       LOGIN_CREDENTIALS.password,
     );
-    await expect(page).toHaveURL(relativizePath(Paths.users()));
+    await expect(page).toHaveURL(relativizePath(Paths.mappingRules()));
 
     await page.waitForLoadState('load');
 
