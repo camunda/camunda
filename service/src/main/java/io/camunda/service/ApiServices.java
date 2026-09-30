@@ -53,7 +53,11 @@ public abstract class ApiServices<T extends ApiServices<T>> {
   protected final <R> CompletableFuture<BrokerResponse<R>> sendBrokerRequestWithFullResponse(
       final BrokerRequest<R> brokerRequest, final CamundaAuthentication authentication) {
     applyBrokerRequestMutators(brokerRequest, authentication);
-    return brokerClient.sendRequest(brokerRequest).handleAsync(handleBrokerResponse(), executor);
+    // retried like the gRPC gateway's requests: a leader mismatch while leadership moves is
+    // resolved against the new leader rather than failing the request
+    return brokerClient
+        .sendRequestWithRetry(brokerRequest)
+        .handleAsync(handleBrokerResponse(), executor);
   }
 
   /**
