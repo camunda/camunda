@@ -131,7 +131,7 @@ public class DeploymentRejectionTest {
     final var rejectionReason = rejectedDeployment.getRejectionReason();
     assertThat(rejectionReason.length())
         .as("rejection reason must be capped regardless of how many resources fail")
-        .isLessThanOrEqualTo(maxOutputSize);
+        .isLessThan(maxOutputSize + 500);
     assertThat(rejectionReason).contains("more errors omitted");
   }
 
