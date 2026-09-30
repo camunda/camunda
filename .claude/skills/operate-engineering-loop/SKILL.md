@@ -1,189 +1,73 @@
 ---
 name: operate-engineering-loop
-description: Drive a tracked Operate change in the orchestration cluster webapp (src/operate/) end to end — issue branch, implementation, gated validation, independent review, a draft PR, and repeated Copilot review resolution. Use when asked for the engineering loop, an end-to-end implementation loop, or branch -> implement -> review -> draft PR -> Copilot review. For a migration, frontend-operate-migrator drives this loop and adds the fidelity gate.
+description: Independently deliver a tracked Operate change in the unified webapp from issue to reviewed draft PR. Use for the end-to-end implementation, validation, local review, CI, and Copilot review loop.
 disable-model-invocation: true
 ---
 
 # Operate Engineering Loop
 
-Own a tracked Operate change from issue to a review-ready draft PR. Return to the engineer only
-after the implementation, independent reviews, required PR checks, and Copilot review loop are
-complete.
+Own a `camunda/camunda` issue through a review-ready draft PR in `webapp/client/apps/orchestration-cluster-webapp/src/operate/`.
+Read [operate-frontend](../operate-frontend/SKILL.md) for code conventions, [frontend-unit-test](../frontend-unit-test/SKILL.md) and [frontend-integration-test](../frontend-integration-test/SKILL.md) for browser tests.
 
-Scope is the Operate pod at `webapp/client/apps/orchestration-cluster-webapp/src/operate/`, plus
-the route files in `src/routes/` and cross-pod primitives in `src/shared/` that the change requires.
+## Authorization and scope
 
-Read [frontend-unit-test](../frontend-unit-test/SKILL.md) for browser-mode unit tests and
-[frontend-integration-test](../frontend-integration-test/SKILL.md) for Playwright tests. For the
-app's directory layout, pod areas and shared-code boundaries, see
-`docs/monorepo-docs/frontend/orchestration-cluster-webapp.md`. Operate's own conventions — routing,
-data fetching, state, styling, testing — are in
-[operate-frontend](../operate-frontend/SKILL.md).
+An explicit invocation authorizes in-scope edits, commits, pushes, a draft PR, independent reviews, Copilot review requests, and review-thread replies.
+It does not authorize merging, marking ready, other repositories, CI/shared-action changes, issue closure, or tracker-body edits.
+An analysis-only or planning request does not authorize writes.
+Honor a user's local-only, no-push, no-comment, or user-owned PR boundary; if it prevents completion, ask.
+Do not assign human reviewers.
+For bugs, ask about backports before opening the PR.
 
-## Execution authorization
+## Workflow
 
-An explicit engineering-loop invocation, directly or through
-[frontend-operate-migrator](../frontend-operate-migrator/SKILL.md), authorizes local edits, branch
-creation, commits, pushes, draft PR creation, independent agent reviews, Copilot review requests,
-and handling review threads. This applies to execution, not analysis or planning. It does **not**
-authorize marking the PR ready, merging it, or changing unrelated code. Later user instructions
-replace the relevant permission; never carry permissions over from another invocation.
+1. **Prepare.** Read the live issue, hierarchy/`blockedBy`, linked PRs, worktree, and recent `main` CI.
+   A private-issue 404 may be the active `GH_TOKEN`: try the existing keyring credential without printing tokens.
+   If scope is unclear, ask once.
+   Reuse an existing PR's worktree and branch; for new work, create `<issue-number>-<short-scope>` from `origin/main`.
+   For a stack, verify the exact pushed parent SHA and PR base.
+   One owner per issue/PR; never create a duplicate branch or mutate another owner's branch.
+   Preserve unrelated worktree changes and never implement or push on `main`.
+   Establish an untouched-branch component baseline.
+2. **Implement.** Build an acceptance matrix from the issue and surrounding code: behavior, API, URL/tenant state, permissions, pagination, polling, initial/cached loading and errors, recovery, and accessibility.
+   Test optional lookup failure while primary data succeeds where applicable.
+   Test real-route pending/error/title and cross-layout CSS behavior when touching routes or styles.
+   Record intentional omissions; fix the smallest complete scope, not unrelated code.
+3. **Validate** from `webapp/client`.
+   Retry only with new evidence; do not weaken tests, suppress warnings, or regenerate visual snapshots to hide a failure.
 
-Human/team PR reviewer and assignee selection belongs to the user. Do not request or assign them
-unless the user explicitly names them.
+   | Tier | Commands | Max rounds |
+   | --- | --- | --- |
+   | Edit | `npm run lint:prettier`; `npm run lint:eslint`; `npm run typecheck -w @camunda/orchestration-cluster-webapp` | 5 |
+   | Component | Edit tier; `npm run test:unit -w @camunda/orchestration-cluster-webapp`; `npm run build -w @camunda/orchestration-cluster-webapp`; `npm run lint:knip` | 5 |
+   | PR | Rebuild current source; `npm run test:integration -w @camunda/orchestration-cluster-webapp`; `npm run test:a11y -w @camunda/orchestration-cluster-webapp`; visual CI | 3 |
 
-This skill stops at a review-ready **draft PR** by default. When updating an existing PR, preserve
-its current state unless the user instructs otherwise. Send progress only at the end.
+   Run the cheapest affected checks first, then the full applicable **local** tier before publication; the PR tier and visual CI follow draft creation.
+   Coordinate and release exclusive browser preview ports when other sessions run Playwright.
+4. **Review locally before pushing.** Use two independent perspectives: Operate frontend fidelity and high-confidence code correctness.
+   Give reviewers the issue, acceptance matrix, exact diff, and check results; respect the user's agent-type restrictions.
+   Verify findings, fix valid ones, and rerun affected checks/reviews; max 3 rounds per perspective.
+   Genuine IDE review, if available, adds evidence but **cannot guarantee** GitHub Copilot approval.
+   If the user demands green PR CI or Copilot approval before any push, explain that these require a published head and agree on a publication rule first.
+5. **Publish.** Before the first push, fetch and rebase onto the verified PR base (normally `origin/main`, never merge); protect unrelated worktree changes.
+   After publication, add commits and push fast-forward; rebase only if necessary to resolve base divergence, never discarding unrelated changes.
+   If an authorized rewrite of your own published branch is unavoidable, use `--force-with-lease=refs/heads/<branch>:<expected-sha>`; never rewrite another owner's branch.
+   Rerun affected checks after code-changing rebases.
+   Do not rewrite a reviewed stack just for an empty upstream commit.
+   Commit only in-scope files with the engineer as sole author and no AI co-author trailer.
+   Push using `git push -u origin HEAD:refs/heads/<branch-name>`.
+   For new work, open a **draft** PR using `.github/pull_request_template.md`, a conventional-commit title, concise description, and `## Related issues` (`closes` only for a complete issue).
+   For an existing PR, update it rather than opening another.
+   Verify the published head and base.
+6. **Converge on the current head.** Follow [Copilot review procedure](references/copilot-review.md): request through GraphQL with `union: true`, inspect the new review and inline threads, verify findings, reply under each thread and resolve only after the reply succeeds.
+   Do not comment if forbidden by the user; report the resulting blocker.
+   Refresh CI and Copilot review **after every push**; old-head approval is not approval.
+   Diagnose failures with `ci-fix-failure`, inspect visual diffs, rerun only verified transient failures, and never bypass a fail-closed security gate or launch other-repository remediation without authorization.
+   A current-head "Needs a closer look" with no findings is a blocker, not approval; do not push cosmetic changes solely to retrigger review.
+   The PR tier's 3 rounds cover both CI and Copilot, not three rounds each.
 
-## Inputs
+## Done
 
-Required:
-
-- A `camunda/camunda` issue number or URL.
-
-Optional:
-
-- A concrete implementation objective.
-- Backport targets.
-- Validation constraints.
-
-If the issue does not define the implementation scope, ask once before proceeding. For bug fixes,
-use provided backport targets or ask before opening the PR.
-
-## Operating Rules
-
-- Follow scoped instructions, module docs, and applicable skills.
-- Track branch creation, implementation, validation, independent review, publication, and Copilot
-  review in todos.
-- Keep an internal convergence ledger for the acceptance matrix, review findings, Copilot threads,
-  gate results, and Git/PR state. This is task state, not a repository artifact: never commit it.
-- Never cache issue or PR state in a file. Query GitHub live every time it matters.
-- Preserve unrelated worktree changes. Never implement or push on `main`.
-- Rebase onto `origin/main`; never create a merge commit.
-- Treat review findings as claims to verify. Fix valid findings at their root and rebut invalid
-  findings with evidence.
-- Never count an inaccessible or failed review as approval.
-- Follow repository commit and PR conventions and keep the engineer as the sole commit author.
-
-## Validation loop
-
-Run from `webapp/client`. Loop on the cheapest failing tier and graduate only when it is green.
-`npm run lint` combines Prettier, ESLint, and Knip; `npm run prettier:format` fixes formatting.
-
-| Tier          | Required gates                                                                                                                                         | When                         | Max |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------- | --- |
-| **edit**      | `npm run lint:prettier`; `npm run lint:eslint`; `npm run typecheck -w @camunda/orchestration-cluster-webapp`                                           | After meaningful edits       | 5   |
-| **component** | Edit tier; `npm run test:unit -w @camunda/orchestration-cluster-webapp`; `npm run build -w @camunda/orchestration-cluster-webapp`; `npm run lint:knip` | When a component is complete | 5   |
-| **PR**        | `npm run test:integration -w @camunda/orchestration-cluster-webapp`; `npm run test:a11y -w @camunda/orchestration-cluster-webapp`; visual CI           | After opening the draft PR   | 3   |
-
-Never regenerate visual snapshots locally. Stop at a tier's limit and report the exact blocker; an
-iteration that repeats the same failure and fix without progress counts double.
-
-## Phase 1: Prepare
-
-Inspect GitHub authentication, issue hierarchy (including paginated subissues and `blockedBy`
-prerequisites), linked work, branch, worktree, and recent `main` CI. Select an unblocked
-implementation issue if given a tracker. Create `<issue-number>-<short-scope>` from `origin/main`,
-then run the component tier on the untouched branch.
-
-## Phase 2: Implement and Validate
-
-Read the surrounding code and history, then build an acceptance matrix covering observable
-behavior, API calls, URL state, loading/empty/error/forbidden states, permissions, tenancy, and
-accessibility. Record intentional omissions. Make the smallest complete change, add behavior-level
-coverage, and when practical prove the regression test fails without the fix. Run the edit tier
-after meaningful edits and the component tier when a component is complete.
-
-Do not suppress failures, weaken assertions without rationale, or update snapshots without
-inspecting the result. Do not call a failure pre-existing without evidence.
-
-## Phase 3: Independent Review
-
-Once the component tier is green, run at least two independent review agents with different
-perspectives:
-
-1. A frontend domain specialist, reviewing the change against Operate's conventions in
-   [operate-frontend](../operate-frontend/SKILL.md).
-2. A separate high-confidence code reviewer, such as the `code-review` agent.
-
-These are review perspectives, not skills under `.claude/skills/`. Select whichever independent
-review agents the harness provides and give them these two briefs; do not invoke a nonexistent
-skill.
-
-Provide the issue, acceptance matrix, exact diff, rationale, and validation evidence. If a reviewer
-cannot access the worktree, provide the patch or replace that review.
-
-Verify every finding, address valid issues, strengthen coverage where needed, and rerun the cheapest
-affected tier. Re-review the final diff until no actionable findings remain. Do not implement
-speculative suggestions or expand the issue's scope. Each review has a maximum of 3 iterations; an
-iteration repeating the same finding with no new evidence counts double.
-
-## Phase 4: Publish the Draft PR
-
-Immediately before committing:
-
-```bash
-git fetch origin main
-git rebase --autostash origin/main
-```
-
-Rerun the edit and component tiers after rebasing, commit only in-scope files, and do not add AI
-co-author trailers.
-
-Push with an explicit refspec so a branch initially configured from `origin/main` cannot target
-`main`:
-
-```bash
-git push -u origin HEAD:refs/heads/<branch-name>
-```
-
-For new work, open a draft PR with `gh pr create --draft`, a conventional-commit title, and the
-completed [repository PR template](../../../.github/pull_request_template.md). For an existing PR,
-update it rather than creating another.
-
-Keep the body concise: a short **why** and **what** under `## Description`, the template's
-`## Checklist` with its applicable wording (delete irrelevant options as instructed), and
-`## Related issues` with the correct issue reference or checked no-issue opt-out. Do not invent
-replacement checklists or repeat scope sections. Include only brief genuine blockers or intentional
-behavior differences that matter to reviewers; keep detailed diagnostics in check logs or the
-session ledger, not long test inventories, exhaustive gate evidence, internal ledgers, or agent
-narration in the PR body.
-
-Use `closes #<issue>` only when fully resolving it; use `relates to #<issue>` when the PR is one of
-several for that issue. A partial PR must not close an issue whose remaining work is deferred.
-
-Confirm the PR contains the latest pushed commit.
-
-## Phase 5: Copilot Review Loop
-
-Read and follow [references/copilot-review.md](references/copilot-review.md). Repeat until the latest
-review satisfies the completion gate below. Stop only for an external blocker or repeated invalid
-feedback already answered with evidence.
-
-## Phase 6: CI Convergence
-
-Run the PR tier once the draft PR is open. Diagnose a failing check with `ci-fix-failure`; this
-skill owns applying the valid fix, validating it locally, and pushing it. Rerun only verified
-transient failures. Refresh CI after every push; the Copilot reference owns review-thread handling.
-
-The PR tier's 3-iteration budget in the tiered validation loop covers this Copilot/CI
-convergence — it is one budget, not an additional one. At the cap, report the exact blocker instead
-of retrying blindly or claiming completion.
-
-## Completion Gate
-
-Before returning to the engineer, verify:
-
-- the worktree is clean and the latest local commit is pushed to the PR
-- all gates in all three tiers are green on the latest pushed SHA
-- all independent review findings are addressed
-- the latest Copilot review recommends approval and adds no comments, with no Copilot review pending
-- no review threads or workflow todos remain unresolved
-- the commit has the engineer as sole author, and the PR is correctly linked and in the state
-  required by the execution authorization
-
-Lead the final response with the PR number, then concisely state the delivered behavior,
-number of review iterations, and any blocker. Routine green checks and test counts are implicit.
-
-Every recurring failure mode becomes a rule, not a one-off fix: encode it in this skill so it
-cannot recur.
+Return only when the clean worktree's latest sole-author commit is pushed, all required gates are green on that SHA, independent findings are addressed, the latest Copilot review recommends approval with no pending review, and no threads/todos remain.
+Otherwise state the exact blocker, not a success claim.
+Lead with the draft PR number and delivered behavior.
+Post-merge issue reconciliation is a separate, explicitly authorized task; a merged PR or closed child count alone does not prove page completion.

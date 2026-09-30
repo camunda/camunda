@@ -1,7 +1,7 @@
 # Copilot Review Loop
 
-Record existing Copilot review IDs before requesting a new review. Use GraphQL: the REST reviewer
-endpoint accepts the request but silently ignores Copilot.
+Record the published head SHA and existing Copilot review IDs before requesting a new review.
+Use GraphQL: the REST reviewer endpoint accepts the request but silently ignores Copilot.
 
 ```bash
 pr_node=$(gh api repos/camunda/camunda/pulls/<pr> --jq .node_id)
@@ -23,15 +23,17 @@ Copilot reviews appear asynchronously in `reviews`, not as persistent review req
 new summary and inline comments:
 
 ```bash
-gh api repos/camunda/camunda/pulls/<pr>/reviews
-gh api repos/camunda/camunda/pulls/<pr>/comments
+gh api --paginate repos/camunda/camunda/pulls/<pr>/reviews
+gh api --paginate repos/camunda/camunda/pulls/<pr>/comments
 ```
+
+Use only new review IDs on the recorded head SHA; a previous-head review cannot approve new edits.
 
 For every new comment:
 
 1. Classify it as valid, invalid, already handled, or out of scope.
 2. Fix valid findings, validate and publish through the
-   [engineering loop](../SKILL.md#validation-loop), without amending.
+   [engineering loop](../SKILL.md#workflow), without amending.
 3. Reply with the fix or concrete evidence that the finding is invalid.
 4. Resolve the thread through `resolveReviewThread`.
 

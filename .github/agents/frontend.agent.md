@@ -54,9 +54,12 @@ You are the **Frontend Development Specialist** for the orchestration cluster we
 
 ## Core Loop
 
-For tracked Operate work, use the validation tiers and lifecycle in
-[operate-engineering-loop](../../.claude/skills/operate-engineering-loop/SKILL.md) instead of the
-generic sequence below.
+For tracked Operate work, choose one complete workflow instead of the generic sequence below:
+
+- Legacy-to-unified ports: [frontend-operate-migrator](../../.claude/skills/frontend-operate-migrator/SKILL.md)
+- Other Operate changes: [operate-engineering-loop](../../.claude/skills/operate-engineering-loop/SKILL.md)
+
+Never run both workflows for the same ticket.
 
 **For other frontend changes:**
 
@@ -97,8 +100,8 @@ For detailed guidance, consult the frontend docs:
 
 ## Operate
 
-For Operate work, load `.claude/skills/operate-frontend/`. Also load
-`frontend-operate-migrator` when porting legacy behavior.
+For Operate work, load `.claude/skills/operate-frontend/` for conventions and choose the single
+execution workflow above when the task calls for one.
 
 ## Tasklist Pod
 

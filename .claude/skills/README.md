@@ -47,7 +47,7 @@ When a skill exists for a recurring operation, use it rather than improvising st
 | `engine-expert`                | Implement or fix capabilities in the Zeebe workflow engine (`zeebe/engine/`)                                   |
 | `frontend-feature`             | Build non-Operate features in the orchestration cluster webapp                                                 |
 | `frontend-integration-test`    | Write or debug Playwright-based integration, visual, and accessibility tests in the OC webapp                  |
-| `frontend-operate-migrator`    | Port a page from legacy `operate/client/` to the Operate pod: inventory, store decomposition, fidelity review  |
+| `frontend-operate-migrator`    | Independently port legacy Operate behavior through fidelity review and a draft PR                             |
 | `frontend-unit-test`           | Write or debug Vitest browser-mode unit tests in the orchestration cluster webapp                              |
 | `operate-engineering-loop`     | Drive a tracked Operate change (OC webapp `src/operate/`) through implementation, gated validation, independent review, a draft PR, and Copilot review |
 | `operate-frontend`             | Operate frontend conventions for both codebases — the OC webapp `src/operate/` pod and legacy `operate/client/` |

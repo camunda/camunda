@@ -1,124 +1,90 @@
 ---
 name: frontend-operate-migrator
-description: Use when porting an Operate page or component from the legacy client at operate/client/ to the Operate pod in the orchestration cluster webapp, including end-to-end execution from a migration ticket number. Covers the page inventory, MobX decomposition, behavior fidelity, and the ticket-to-draft-PR loop.
+description: Independently migrate an Operate page or component from the legacy client to the unified webapp, from an implementation issue through fidelity checks, reviewed draft PR, CI, and Copilot review.
 disable-model-invocation: true
 ---
 
-# Operate Migration
+# Operate Frontend Migration
 
-The entry point for porting a page from `operate/client/` to
-`webapp/client/apps/orchestration-cluster-webapp/src/operate/`.
+Own a ticket from `operate/client/` to `webapp/client/apps/orchestration-cluster-webapp/src/operate/` through a review-ready draft PR.
+Read [operate-frontend](../operate-frontend/SKILL.md) for both codebases' conventions, [frontend-unit-test](../frontend-unit-test/SKILL.md) and [frontend-integration-test](../frontend-integration-test/SKILL.md) for tests.
+This is a standalone execution workflow.
 
-**Conventions for both codebases — routing, data fetching, state, styling, testing, forms — live in
-[operate-frontend](../operate-frontend/SKILL.md). Read it first.** This skill covers only what is
-specific to the act of migrating: the page inventory, store decomposition, fidelity proof, and the
-ticket-driven loop. It is deleted when the migration completes.
+## Authorization and ticket
 
-## Pages to migrate
+An explicit invocation authorizes in-scope edits, commits, pushes, a draft PR, reviews, Copilot review requests, and review-thread replies.
+It does not authorize merging, marking ready, other repositories, CI/shared-action changes, issue closure, or tracker-body edits.
+An analysis-only or planning request does not authorize writes.
+Respect local-only, no-push, no-comment, user-owned PR, and reviewer-type restrictions; ask if they block completion.
+Do not assign human reviewers.
+For bug fixes, ask about backports before opening the PR.
 
-Page list, status, and per-PR breakdown live in GitHub:
-[camunda/experience-pdp#32](https://github.com/camunda/experience-pdp/issues/32) → page → coherent
-implementation issue. Maximum depth is **2 below the epic** (epic = 0, page = 1, implementation = 2).
-Cross-cutting implementation issues may sit directly under the epic. Do not add intermediate feature
-trackers or children beneath an implementation issue.
-[#51305](https://github.com/camunda/camunda/issues/51305) tracks broader cross-component
-dependencies. Source path, target route, and fidelity scope live in the tickets — query live rather
-than caching status here.
+The live inventory is [epic #32](https://github.com/camunda/experience-pdp/issues/32) -> page bucket -> implementation leaf (no deeper nesting); broader deployment work is in [camunda/camunda#51305](https://github.com/camunda/camunda/issues/51305).
+Start from an unblocked implementation ticket.
+If given a tracker, inspect every level and select a leaf.
+Query each child in its own repository; a private-epic 404 may require the existing keyring credential rather than the active `GH_TOKEN`.
+`blockedBy` must reflect a required contract, not chronology or an already-delivered/superseded prerequisite.
+A closed/not-planned child, merged PR, or stale body is not proof that behavior shipped.
+Ask once if the surviving ticket's scope is unclear.
 
-What already exists is whatever is in
-`webapp/client/apps/orchestration-cluster-webapp/src/operate/pages/` and
-`src/routes/_carbon/_auth/operate/` — read those directories before adding or splitting routes, and
-do not recreate a shell from a historical ticket.
+## Workflow
 
-## MobX store decomposition
+1. **Prepare.** Inspect current `main`, the legacy source, unified pages/routes, linked PRs (including open legacy-client changes), `blockedBy`, and worktree.
+   One owner per issue/PR: reuse an existing PR branch; for new work use `<issue-number>-<short-scope>` from `origin/main`, or from a verified pushed parent SHA for a stack.
+   Never create a duplicate PR, mutate another owner's branch, discard unrelated worktree changes, or implement/push on `main`.
+   Keep one coherent behavior per PR under **1,500 added + deleted lines**, including tests/locales.
+   Establish an untouched-branch component baseline.
+2. **Prove fidelity.** Derive a matrix from **both** the ticket and legacy branches/effects: API shape, offset/cursor pagination, polling, URL and tenant context, permissions, navigation, initial/cached loading and errors, recovery, accessibility.
+   Compare legacy routes and redirects with unified routes; a page folder or catch-all redirect is not route parity.
+   Separate unchanged legacy behavior, approved improvements, and explicitly deferred design-system preview work; preserve legacy UX by default.
+   Map omissions to existing leaves before proposing new ones.
+   Reuse shared auth, theme, notifications, viewers and editors; keep shareable state in validated URLs, server data in Query, and ephemeral state local.
+   Only use a reducer/MobX when warranted.
+3. **Implement and validate** from `webapp/client`.
+   Test the assembled route for direct entry, pending/errors/retry, title, tenant variants and cross-layout CSS cleanup when applicable.
+   Check that optional enrichment failures do not hide healthy primary data and failed filter resolution cannot broaden a query.
+   Coordinate exclusive browser ports; release them after Playwright.
 
-Operate has ~20 legacy stores. Most are transient UI state and do not need porting. Map each one:
+   | Tier | Commands | Max rounds |
+   | --- | --- | --- |
+   | Edit | `npm run lint:prettier`; `npm run lint:eslint`; `npm run typecheck -w @camunda/orchestration-cluster-webapp` | 5 |
+   | Component | Edit tier; `npm run test:unit -w @camunda/orchestration-cluster-webapp`; `npm run build -w @camunda/orchestration-cluster-webapp`; `npm run lint:knip`; scoped locale gate below | 5 |
+   | PR | Rebuild current source; `npm run test:integration -w @camunda/orchestration-cluster-webapp`; `npm run test:a11y -w @camunda/orchestration-cluster-webapp`; visual CI | 3 |
 
-| Store                           | What it holds                  | Target                                                         |
-| ------------------------------- | ------------------------------ | -------------------------------------------------------------- |
-| `authentication.ts`             | Session                        | Already in `#/shared/auth/` — reuse                            |
-| `currentTheme.ts`               | Theme preference               | Already in `#/shared/theme/` — reuse                           |
-| `notifications.tsx`             | Toast queue                    | `#/shared/notifications/notifications.store` — reuse           |
-| `variableFilter.ts`             | Filter inputs on Processes     | URL search params via `validateSearch`                         |
-| `incidentsPanelFiltersStore.ts` | Filter inputs on Incidents tab | URL search params                                              |
-| `instancesSelection.ts`         | Selected rows                  | `useState` in the page component                               |
-| `panelStates.ts`                | Panel open/collapsed           | `useState`                                                     |
-| `dateRangePopover.ts`           | Calendar open/close            | `useState`                                                     |
-| `executionCountToggle.ts`       | Toggle state                   | `useState`                                                     |
-| `batchModification.ts`          | Batch operation in progress    | `useState`                                                     |
-| `diagramOverlays.ts`            | Diagram overlay data           | `useState` in the BPMN component                               |
-| `processInstanceMigration.ts`   | Migration wizard state         | `useState` + URL params for the step                           |
-| `modifications.ts`              | Pending variable modifications | `useState` + local reducer — or keep MobX if genuinely complex |
-| `networkReconnectionHandler.ts` | Connectivity polling           | Standalone hook with `useEffect`                               |
+   Run the cheapest affected checks first, then the full applicable **local** tier before publication; the PR tier and visual CI follow draft creation.
+   Never suppress warnings, weaken tests, or regenerate visual snapshots to hide a regression.
+   From the repo root, run `node .claude/skills/frontend-operate-migrator/scripts/fidelity.mjs --ported <component-dir>` after the edit tier; all `operate.*` keys must exist in en/de/fr/es.
+   Omit this scoped gate from the untouched-branch baseline if the component does not exist yet.
+4. **Review locally before pushing.** Get independent Operate/frontend and high-confidence code reviews, plus a read-only **legacy -> migrated** branch/effect review (including shared logic not copied per consumer).
+   These are briefs, not prescribed agent types.
+   Provide the ticket, matrix, exact sources/diff and checks.
+   Verify findings, fix valid ones, rerun affected checks and reviews; max 3 rounds per perspective.
+   An IDE review, if available, helps but cannot guarantee GitHub Copilot's later verdict.
+   If the user demands approval/green PR CI before pushing, explain that both require a published head and agree on a publication rule first.
+5. **Publish.** Before the first push, fetch and rebase onto the verified base (normally `origin/main`; exact pushed parent for a stack), never merge or rewrite an upstream owner's branch.
+   Later, add commits and push fast-forward; rebase only when required by base divergence.
+   If an authorized rewrite of your own published branch is unavoidable, use `--force-with-lease=refs/heads/<branch>:<expected-sha>`; never rewrite another owner's branch.
+   Rerun affected checks after code-changing rebases.
+   Commit only the ticket with the engineer as sole author and no AI co-author trailer; use `feat: migrate Operate <PageName> page to unified app` when applicable.
+   Protect unrelated changes before rebasing.
+   Push via `git push -u origin HEAD:refs/heads/<branch-name>`.
+   For new work, open a **draft** PR with a conventional-commit title and `.github/pull_request_template.md`: brief `## Description`, applicable `## Checklist`, and `## Related issues` (`closes` only if the implementation issue is complete).
+   Note intentional differences and genuine blockers briefly.
+   For an existing PR, preserve its branch/state; verify its published head and base.
+6. **Converge on the current head.** Record the PR head SHA and existing review IDs **before** requesting a Copilot review.
+   Request via GraphQL `requestReviews` with `botIds` (resolve `copilot-pull-request-reviewer[bot]` to its node ID) and `union: true`; REST reviewer requests can silently fail.
+   Check every 30 seconds for up to 10 minutes for a *new* review on that head, paginate reviews/comments, inspect inline findings, reply within each thread, and resolve only after the reply succeeds.
+   Do not substitute `gh pr edit --add-reviewer`; it can fail on deprecated Projects Classic fields.
+   If comments are forbidden, stop and report the unresolved-thread blocker.
+   Refresh CI and Copilot on every new pushed SHA; old-head approval is not approval.
+   Diagnose failures with `ci-fix-failure`, inspect visual diffs, rerun verified transient failures only.
+   Never bypass a fail-closed gate or start off-scope remediation.
+   A current-head "Needs a closer look" with no findings is a blocker, not approval; do not push cosmetic changes solely to retrigger review.
+   The PR tier's 3 rounds cover both CI and Copilot.
 
-## Ticket-driven execution contract
+## Done
 
-An explicit `/frontend-operate-migrator <ticket-number>` request runs
-[operate-engineering-loop](../operate-engineering-loop/SKILL.md). Its execution authorization,
-preparation, validation, publication, review budgets, and completion gate apply. This skill adds only
-the migration-specific requirements below.
-
-During preparation and implementation:
-
-1. Traverse every level of the migration hierarchy, selecting an implementation issue directly
-   beneath the page when given a tracker. Check explicit product or deployment approval gates.
-   Follow the surviving issue's complete scope, not an obsolete split plan — superseded
-   specifications are archived through links, not child relationships.
-2. Derive the acceptance matrix from the ticket **and the legacy implementation**, not the ticket
-   alone. Tracking is an intentional omission.
-3. Plan one coherent behavior change per PR, up to **1500 total additions + deletions** including
-   tests and locales. Keep tightly coupled UI, data loading, mutations, recovery and coverage
-   together. The limit is a ceiling, not a target: don't pad small changes or bundle unrelated work.
-   Split only when the complete change exceeds the cap or has an independently useful boundary, and
-   record sibling implementation issues directly under the page.
-
-Dependency edges describe real required contracts or acceptance gates, not chronology. Don't block on
-already-delivered prerequisites, superseded trackers, ancestors, or redundant transitive
-prerequisites. Keep independent work parallel, and give shared state/selection/host contracts one
-explicit owner.
-
-For migration hierarchy queries, use:
-`gh issue view 32 --repo camunda/experience-pdp --json title,body,state`,
-`gh api --paginate repos/camunda/experience-pdp/issues/32/sub_issues`,
-`gh issue view <n> --repo <owner/repo> --json title,body,state`,
-`gh api --paginate repos/<owner/repo>/issues/<n>/sub_issues`,
-`gh pr list --repo camunda/camunda --search "<page>"`. Follow each child's own repository URL rather
-than assuming the parent's. GitHub's child-completion percentage counts closed issues including
-not-planned ones; it is not evidence that implementation shipped.
-
-## Fidelity checks (the 1:1 oracle)
-
-Run **after the engineering loop's edit tier and before its component tier, scoped to the
-just-ported component** — not across the whole `operate/` directory, or you will flag not-yet-ported
-features.
-
-**Deterministic (script, always trusted).** Run from the **repo root** — the script and its default
-locales path are repo-root relative, not `webapp/client`:
-
-```bash
-node .claude/skills/frontend-operate-migrator/scripts/fidelity.mjs --ported <ported-component-dir>
-```
-
-It checks locale coverage: every `t('operate.*')` key exists in en/de/fr/es. Non-zero exit is a gate
-failure — fix before continuing.
-
-**Independent behavior-fidelity review (LLM flagger — flag, never approve).** Spawn a fresh read-only
-frontend review agent. Give it the ticket, acceptance matrix, exact legacy source, migrated source,
-and diff. Its only task is an evidence-backed `legacy → migrated` list covering:
-
-1. **No inlined shared logic.** For each shared hook/util/type the legacy component imports, find the
-   target shared equivalent and reuse it. If none exists, port it once to the appropriate shared
-   owner rather than making per-consumer copies.
-2. **1:1 behavior.** Walk the legacy component's branches and effects and list any observable
-   behavior the port adds, drops or alters. Ignore tracking-only differences.
-
-A script saying "key X missing from de.json" is trusted; an LLM saying "looks faithful" is not. The
-implementing agent adjudicates findings using the engineering loop's independent-review rules and
-3-iteration budget. Repeat until no unexplained observable difference remains, or report the exact
-blocker at the cap. Escalate genuine product ambiguity; never invent behavior to make the review
-pass. This fidelity review supplements, rather than replaces, the engineering loop's two reviews.
-
-## PR conventions
-
-- Note in the description any feature still being built in legacy Operate that must be mirrored.
-- Commit message: `feat: migrate Operate <PageName> page to unified app`.
+Return only when the clean worktree's latest sole-author commit is pushed, all required gates are green on that SHA, reviews have no actionable findings, the latest Copilot review recommends approval, and no thread/todo remains.
+Otherwise give the exact blocker.
+Lead with the draft PR number and delivered behavior.
+Issue/page/epic closure is separate post-merge work: verify the latest `main` and acceptance first; do not rewrite tracker bodies without authorization.

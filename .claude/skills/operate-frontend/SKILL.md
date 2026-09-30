@@ -143,9 +143,10 @@ Follow `docs/monorepo-docs/frontend/development-process/working-on-large-feature
 
 ## Validation
 
-For target validation commands and tracked end-to-end delivery, follow
-[operate-engineering-loop](../operate-engineering-loop/SKILL.md). This skill owns coding conventions,
-not a separate execution or PR-review loop.
+For tracked non-migration work, follow
+[operate-engineering-loop](../operate-engineering-loop/SKILL.md). For legacy-to-unified migrations,
+follow the independent [frontend-operate-migrator](../frontend-operate-migrator/SKILL.md) workflow.
+Both include their own validation and PR-review loop; this skill owns coding conventions only.
 
 ## Boundaries
 
