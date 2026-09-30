@@ -290,12 +290,24 @@ class VersionCompatibilityMatrixTest {
     void shouldShardCompletely(final int size, final int totalShards) {
       final var input = IntStream.range(0, size).boxed().toList();
       final var sharded = new LinkedList<Integer>();
+      final var shardSizes = new LinkedList<Integer>();
       for (int i = 0; i < totalShards; i++) {
         final var shard = VersionCompatibilityMatrix.shard(input, i, totalShards).toList();
         assertThat(shard).isNotEmpty();
+        shardSizes.add(shard.size());
         sharded.addAll(shard);
       }
-      assertThat(sharded).isEqualTo(input);
+      assertThat(sharded).containsExactlyInAnyOrderElementsOf(input);
+      assertThat(Collections.max(shardSizes) - Collections.min(shardSizes)).isLessThanOrEqualTo(1);
+    }
+
+    @Test
+    void shouldDistributeAdjacentElementsAcrossShards() {
+      final var input = IntStream.range(0, 10).boxed().toList();
+
+      assertThat(VersionCompatibilityMatrix.shard(input, 0, 3)).containsExactly(0, 3, 6, 9);
+      assertThat(VersionCompatibilityMatrix.shard(input, 1, 3)).containsExactly(1, 4, 7);
+      assertThat(VersionCompatibilityMatrix.shard(input, 2, 3)).containsExactly(2, 5, 8);
     }
 
     static Stream<Arguments> sizeAndShards() {

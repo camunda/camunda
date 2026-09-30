@@ -31,10 +31,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.SequencedCollection;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -348,17 +348,14 @@ final class VersionCompatibilityMatrix {
   }
 
   @VisibleForTesting
-  static <T> Stream<T> shard(final SequencedCollection<T> list, final int index, final int total) {
+  static <T> Stream<T> shard(final List<T> list, final int index, final int total) {
     if (list.size() < total) {
       throw new IllegalArgumentException(
           "Can't shard a list of size %d into %d shards".formatted(list.size(), total));
     }
-    final var shardSize = Math.floorDiv(list.size(), total);
-    final var shardStart = index * shardSize;
-    // The last shard includes the remaining elements. At max, it will have `total` more elements
-    // than a regular shard.
-    final var shardLimit = index == total - 1 ? shardSize + total : shardSize;
-    return list.stream().skip(shardStart).limit(shardLimit);
+    return IntStream.iterate(
+            index, position -> position < list.size(), position -> position + total)
+        .mapToObj(list::get);
   }
 
   /**
