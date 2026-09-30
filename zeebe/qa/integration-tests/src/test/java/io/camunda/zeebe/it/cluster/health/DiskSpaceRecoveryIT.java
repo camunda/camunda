@@ -17,6 +17,8 @@ import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientStatusException;
+import io.camunda.configuration.Filesystem;
+import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.container.CamundaContainer.BrokerContainer;
 import io.camunda.container.volume.CamundaVolume;
@@ -40,9 +42,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 /**
  * Validates that a broker can recover from running out of disk space after compaction.
  *
- * <p>NOTE: this test is split into two nested classes, as the container configuration changes
- * across both tests, and we use the Testcontainers extension to manage its lifecycle. This is an
- * unfortunate limitation until <a
+ * <p>NOTE: this test is split into nested classes, as the container configuration changes across
+ * tests, and we use the Testcontainers extension to manage its lifecycle. This is an unfortunate
+ * limitation until <a
  * href="https://github.com/camunda-community-hub/zeebe-test-container/issues/322">this issue</a> is
  * complete.
  */
@@ -72,38 +74,79 @@ final class DiskSpaceRecoveryIT {
         .join();
   }
 
+  private BrokerContainer newBroker(
+      final DataSize processingFreeSpace, final DataSize replicationFreeSpace) {
+    return new BrokerContainer(ZeebeTestContainerDefaults.defaultTestImage())
+        .withCamundaData(volume)
+        .withUnifiedConfig(
+            cfg -> {
+              final var primaryStorage = cfg.getData().getPrimaryStorage();
+              primaryStorage.getDisk().getFreeSpace().setProcessing(processingFreeSpace);
+              primaryStorage.getDisk().getFreeSpace().setReplication(replicationFreeSpace);
+              primaryStorage.getLogStream().setLogSegmentSize(DataSize.ofMegabytes(1));
+              cfg.getCluster().getRaft().setPreferSnapshotReplicationThreshold(0);
+              cfg.getCluster().getNetwork().setMaxMessageSize(DataSize.ofMegabytes(1));
+              cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
+            })
+        .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
+        .withEnv(UNPROTECTED_API_ENV_VAR, "true");
+  }
+
+  private BrokerContainer newRecoveringBroker() {
+    return newBroker(DataSize.ofMegabytes(8), DataSize.ofMegabytes(1))
+        .withRecordingExporter()
+        // Increase startup timeout to reduce CI slow-start flakes; see #55457.
+        .withStartupTimeout(Duration.ofSeconds(90))
+        .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false");
+  }
+
+  private void shouldRecoverAfterOutOfDiskSpace(final BrokerContainer broker) {
+    // given
+    final var partitionsClient = PartitionsActuator.of(broker);
+    final var exportingClient = ExportingActuator.of(broker);
+    exportingClient.pause();
+
+    // fill out the disk as fast as possible
+    await("until the disk is full")
+        .atMost(Duration.ofMinutes(3))
+        .pollInterval(1, TimeUnit.MICROSECONDS)
+        .untilAsserted(
+            () -> {
+              // Ensure at least one snapshot with a compactable processed position before going
+              // out of disk space
+              partitionsClient.takeSnapshot();
+              assertThatThrownBy(DiskSpaceRecoveryIT.this::publishMessage)
+                  .hasRootCauseMessage(
+                      "RESOURCE_EXHAUSTED: Cannot accept requests for partition 1. Broker is out of disk space");
+            });
+
+    // when
+    exportingClient.resume();
+    // wait until all records are exported
+    Awaitility.await()
+        .atMost(Duration.ofMinutes(3))
+        .until(
+            () -> {
+              final var partitionStatus = partitionsClient.query();
+              final var processedPosition = partitionStatus.get(1).processedPosition();
+              final var exportedPosition = partitionStatus.get(1).exportedPosition();
+              return exportedPosition >= processedPosition;
+            });
+
+    // trigger a snapshot
+    partitionsClient.takeSnapshot();
+    // then
+    await("until the disk is not full anymore")
+        .atMost(Duration.ofMinutes(3))
+        .pollDelay(Duration.ZERO)
+        .pollInterval(Duration.ofSeconds(1))
+        .untilAsserted(
+            () -> assertThatNoException().isThrownBy(DiskSpaceRecoveryIT.this::publishMessage));
+  }
+
   @Nested
   final class WithStandardContainerTest {
-    @Container
-    private final BrokerContainer broker =
-        new BrokerContainer(ZeebeTestContainerDefaults.defaultTestImage())
-            .withCamundaData(volume)
-            .withRecordingExporter()
-            .withUnifiedConfig(
-                cfg -> {
-                  cfg.getCluster().getRaft().setPreferSnapshotReplicationThreshold(0);
-                  cfg.getData()
-                      .getPrimaryStorage()
-                      .getDisk()
-                      .getFreeSpace()
-                      .setProcessing(DataSize.ofMegabytes(8));
-                  cfg.getData()
-                      .getPrimaryStorage()
-                      .getDisk()
-                      .getFreeSpace()
-                      .setReplication(DataSize.ofMegabytes(1));
-                  cfg.getData()
-                      .getPrimaryStorage()
-                      .getLogStream()
-                      .setLogSegmentSize(DataSize.ofMegabytes(1));
-                  cfg.getCluster().getNetwork().setMaxMessageSize(DataSize.ofMegabytes(1));
-                  cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
-                })
-            // Increase startup timeout to reduce CI slow-start flakes; see #55457.
-            .withStartupTimeout(Duration.ofSeconds(90))
-            .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
-            .withEnv(UNPROTECTED_API_ENV_VAR, "true")
-            .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false");
+    @Container private final BrokerContainer broker = newRecoveringBroker();
 
     @BeforeEach
     void beforeEach() {
@@ -111,48 +154,35 @@ final class DiskSpaceRecoveryIT {
     }
 
     @Test
-    void shouldRecoverAfterOutOfDiskSpaceAfterExporting() throws InterruptedException {
-      // given
-      final var partitionsClient = PartitionsActuator.of(broker);
-      final var exportingClient = ExportingActuator.of(broker);
-      exportingClient.pause();
+    void shouldRecoverAfterOutOfDiskSpaceAfterExporting() {
+      shouldRecoverAfterOutOfDiskSpace(broker);
+    }
+  }
 
-      // fill out the disk as fast as possible
-      await("until the disk is full")
-          .atMost(Duration.ofMinutes(3))
-          .pollInterval(1, TimeUnit.MICROSECONDS)
-          .untilAsserted(
-              () -> {
-                // Ensure at least one snapshot with a compactable processed position before going
-                // out of disk space
-                partitionsClient.takeSnapshot();
-                assertThatThrownBy(DiskSpaceRecoveryIT.this::publishMessage)
-                    .hasRootCauseMessage(
-                        "RESOURCE_EXHAUSTED: Cannot accept requests for partition 1. Broker is out of disk space");
-              });
+  @Nested
+  final class WithBackupStoreTest {
+    @Container
+    private final BrokerContainer broker =
+        newRecoveringBroker()
+            .withUnifiedConfig(
+                cfg -> {
+                  // with a backup store, the broker retains an older snapshot for the next
+                  // checkpoint, which must not prevent it from freeing disk space
+                  final var backup = cfg.getData().getPrimaryStorage().getBackup();
+                  backup.setStore(PrimaryStorageBackup.BackupStoreType.FILESYSTEM);
+                  final var filesystem = new Filesystem();
+                  filesystem.setBasePath("/tmp/backups");
+                  backup.setFilesystem(filesystem);
+                });
 
-      // when
-      exportingClient.resume();
-      // wait until all records are exported
-      Awaitility.await()
-          .atMost(Duration.ofMinutes(3))
-          .until(
-              () -> {
-                final var partitionStatus = partitionsClient.query();
-                final var processedPosition = partitionStatus.get(1).processedPosition();
-                final var exportedPosition = partitionStatus.get(1).exportedPosition();
-                return exportedPosition >= processedPosition;
-              });
+    @BeforeEach
+    void beforeEach() {
+      client = newClientBuilder(broker).build();
+    }
 
-      // trigger a snapshot
-      partitionsClient.takeSnapshot();
-      // then
-      await("until the disk is not full anymore")
-          .atMost(Duration.ofMinutes(3))
-          .pollDelay(Duration.ZERO)
-          .pollInterval(Duration.ofSeconds(1))
-          .untilAsserted(
-              () -> assertThatNoException().isThrownBy(DiskSpaceRecoveryIT.this::publishMessage));
+    @Test
+    void shouldRecoverAfterOutOfDiskSpaceAfterExporting() {
+      shouldRecoverAfterOutOfDiskSpace(broker);
     }
   }
 
@@ -160,30 +190,7 @@ final class DiskSpaceRecoveryIT {
   final class WithAlreadyDiskFullTest {
     @Container
     private final BrokerContainer broker =
-        new BrokerContainer(ZeebeTestContainerDefaults.defaultTestImage())
-            .withCamundaData(volume)
-            .withUnifiedConfig(
-                cfg -> {
-                  cfg.getData()
-                      .getPrimaryStorage()
-                      .getDisk()
-                      .getFreeSpace()
-                      .setProcessing(DataSize.ofMegabytes(16));
-                  cfg.getData()
-                      .getPrimaryStorage()
-                      .getDisk()
-                      .getFreeSpace()
-                      .setReplication(DataSize.ofMegabytes(10));
-                  cfg.getCluster().getRaft().setPreferSnapshotReplicationThreshold(0);
-                  cfg.getData()
-                      .getPrimaryStorage()
-                      .getLogStream()
-                      .setLogSegmentSize(DataSize.ofMegabytes(1));
-                  cfg.getCluster().getNetwork().setMaxMessageSize(DataSize.ofMegabytes(1));
-                  cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
-                })
-            .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
-            .withEnv(UNPROTECTED_API_ENV_VAR, "true");
+        newBroker(DataSize.ofMegabytes(16), DataSize.ofMegabytes(10));
 
     @BeforeEach
     void beforeEach() {

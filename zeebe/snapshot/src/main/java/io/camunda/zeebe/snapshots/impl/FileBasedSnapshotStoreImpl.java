@@ -72,6 +72,8 @@ public final class FileBasedSnapshotStoreImpl {
   private final ConcurrencyControl actor;
   // only needed when backups are taken; otherwise it would needlessly hold back log compaction
   private final boolean retainSnapshotForNextCheckpoint;
+  // the retained snapshot holds back log compaction, which is what frees disk space
+  private boolean diskSpaceAvailable = true;
 
   // Use AtomicReference so that getting latest snapshot doesn't have to go through the actor
   private final AtomicReference<@Nullable FileBasedSnapshot> currentSnapshot =
@@ -554,7 +556,34 @@ public final class FileBasedSnapshotStoreImpl {
     }
   }
 
+  public ActorFuture<Void> onDiskSpaceNotAvailable() {
+    return actor.call(
+        () -> {
+          diskSpaceAvailable = false;
+          final var latestSnapshot = currentSnapshot.get();
+          if (latestSnapshot != null && deleteSnapshotsOlderThan(latestSnapshot) > 0) {
+            // No new snapshot may be committed while the disk is full, e.g. when exporters are
+            // up to date, so trigger compaction of the log the deleted snapshots held back now.
+            listeners.forEach(listener -> listener.onNewSnapshot(latestSnapshot));
+          }
+          return null;
+        });
+  }
+
+  public ActorFuture<Void> onDiskSpaceAvailable() {
+    return actor.call(
+        () -> {
+          diskSpaceAvailable = true;
+          return null;
+        });
+  }
+
   private void deleteOlderSnapshots(final FileBasedSnapshot newPersistedSnapshot) {
+    deleteSnapshotsOlderThan(newPersistedSnapshot);
+    abortPendingSnapshots(newPersistedSnapshot.getSnapshotId());
+  }
+
+  private int deleteSnapshotsOlderThan(final FileBasedSnapshot newPersistedSnapshot) {
     LOGGER.trace(
         "Purging snapshots older than {}",
         newPersistedSnapshot.getSnapshotId().getSnapshotIdAsString());
@@ -570,7 +599,7 @@ public final class FileBasedSnapshotStoreImpl {
           LOGGER.debug("Deleting previous snapshot {}", previousSnapshot.getId());
           previousSnapshot.delete();
         });
-    abortPendingSnapshots(newPersistedSnapshot.getSnapshotId());
+    return snapshotsToDelete.size();
   }
 
   /**
@@ -585,7 +614,7 @@ public final class FileBasedSnapshotStoreImpl {
    */
   private Optional<FileBasedSnapshot> snapshotRetainedForNextCheckpoint(
       final FileBasedSnapshot newPersistedSnapshot) {
-    if (!retainSnapshotForNextCheckpoint) {
+    if (!retainSnapshotForNextCheckpoint || !diskSpaceAvailable) {
       return Optional.empty();
     }
     final var nextCheckpointPosition = newPersistedSnapshot.getMetadata().processedPosition() + 1;

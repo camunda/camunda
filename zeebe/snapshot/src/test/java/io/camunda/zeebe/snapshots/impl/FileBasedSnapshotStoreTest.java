@@ -38,6 +38,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.zip.CRC32C;
 import org.junit.Before;
 import org.junit.Rule;
@@ -542,6 +543,60 @@ public class FileBasedSnapshotStoreTest {
     assertThat(store.getAvailableSnapshots().join())
         .containsExactlyInAnyOrder(previousSnapshot, newSnapshot);
     assertThat(oldestSnapshot.getPath()).doesNotExist();
+  }
+
+  @Test
+  public void shouldDeleteSnapshotRetainedForNextCheckpointWhenDiskSpaceIsNotAvailable()
+      throws IOException {
+    // given
+    final var store = createStoreRetainingSnapshotForNextCheckpoint();
+    final var retainedSnapshot = persistSnapshot(store, 1, 10, 12, 11);
+    final var latestSnapshot = persistSnapshot(store, 2, 20, 25, 22);
+    final var notifiedSnapshots = new CopyOnWriteArrayList<PersistedSnapshot>();
+    store.addSnapshotListener(notifiedSnapshots::add).join();
+
+    // when
+    store.onDiskSpaceNotAvailable().join();
+
+    // then
+    assertThat(store.getAvailableSnapshots().join()).containsExactly(latestSnapshot);
+    assertThat(retainedSnapshot.getPath()).doesNotExist();
+    // compaction is triggered even if no new snapshot is committed while the disk is full
+    assertThat(notifiedSnapshots).containsExactly(latestSnapshot);
+  }
+
+  @Test
+  public void shouldRetainSnapshotForNextCheckpointAgainWhenDiskSpaceIsAvailable()
+      throws IOException {
+    // given
+    final var store = createStoreRetainingSnapshotForNextCheckpoint();
+    store.onDiskSpaceNotAvailable().join();
+    persistSnapshot(store, 1, 10, 12, 11);
+    final var previousSnapshot = persistSnapshot(store, 2, 20, 25, 22);
+
+    // when
+    store.onDiskSpaceAvailable().join();
+    final var newSnapshot = persistSnapshot(store, 3, 30, 35, 36);
+
+    // then
+    assertThat(store.getAvailableSnapshots().join())
+        .containsExactlyInAnyOrder(previousSnapshot, newSnapshot);
+  }
+
+  @Test
+  public void shouldKeepReservedSnapshotWhenDiskSpaceIsNotAvailable() throws IOException {
+    // given
+    final var store = createStoreRetainingSnapshotForNextCheckpoint();
+    final var reservedSnapshot = persistSnapshot(store, 1, 10, 12, 11);
+    reservedSnapshot.reserve().join();
+    final var latestSnapshot = persistSnapshot(store, 2, 20, 25, 22);
+
+    // when
+    store.onDiskSpaceNotAvailable().join();
+
+    // then
+    assertThat(store.getAvailableSnapshots().join())
+        .containsExactlyInAnyOrder(reservedSnapshot, latestSnapshot);
   }
 
   @Test

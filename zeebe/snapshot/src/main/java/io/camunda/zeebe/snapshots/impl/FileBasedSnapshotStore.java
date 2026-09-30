@@ -119,6 +119,19 @@ public final class FileBasedSnapshotStore extends Actor
     return snapshotStore.getCompactionBound();
   }
 
+  /**
+   * Stops retaining a snapshot for the next checkpoint and deletes a snapshot retained for it, so
+   * that log compaction can free disk space. Snapshots reserved by in-flight backups are kept.
+   */
+  public ActorFuture<Void> onDiskSpaceNotAvailable() {
+    return snapshotStore.onDiskSpaceNotAvailable();
+  }
+
+  /** Resumes retaining a snapshot for the next checkpoint, if configured. */
+  public ActorFuture<Void> onDiskSpaceAvailable() {
+    return snapshotStore.onDiskSpaceAvailable();
+  }
+
   @Override
   public ActorFuture<Optional<ReservedSnapshot>> reserveSnapshotBefore(final long position) {
     return snapshotStore.reserveLatestSnapshotBefore(position);
