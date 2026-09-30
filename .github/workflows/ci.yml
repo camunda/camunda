@@ -65,6 +65,7 @@ jobs:
       process-test-coverage-frontend-changes: ${{ steps.filter.outputs.process-test-coverage-frontend-changes }}
       protobuf-changes: ${{ steps.filter.outputs.protobuf-changes }}
       openapi-changes: ${{ steps.filter.outputs.openapi-changes }}
+      openapi-webapp-client-typecheck: ${{ steps.filter.outputs.openapi-webapp-client-typecheck }}
       stable-branch-changes: ${{ steps.filter.outputs.stable-branch-changes }}
       rdbms-integration-tests: ${{steps.filter.outputs.rdbms-integration-tests}}
       async-replication-tests: ${{ steps.filter.outputs.async-replication-tests }}
@@ -2709,6 +2710,75 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  openapi-webapp-client-typecheck:
+    # Checks that a change to the C8 REST OpenAPI spec does not break the Webapp Client types.
+    # `npm ci` runs the `prepare` script of @camunda/camunda-api-zod-schemas, which regenerates the
+    # Zod schemas and types from the spec in this checkout, then the whole npm workspace is type-checked.
+    # Changes to webapp/client itself are covered by the blocking "Webapp Client / Type check" job.
+    name: "Check / C8 REST OpenAPI / Webapp Client types"
+    if: needs.detect-changes.outputs.openapi-webapp-client-typecheck == 'true'
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Non-blocking until the signal is trustworthy (see docs/monorepo-docs/ci.md): a failure is
+    # visible on the PR but does not fail check-results. Remove this line to make the check blocking.
+    continue-on-error: true
+    permissions: {}  # GITHUB_TOKEN unused in this job
+    env:
+      TEST_OWNER: '@camunda/employee-engagement-tasklist'
+      TEST_PRODUCT: Orchestration Cluster Webapp
+      TEST_TYPE: Build
+      CLIENT_DIR: webapp/client
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          persist-credentials: false
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 26
+      - name: Install dependencies and generate the schemas from the spec
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "10"
+      - name: Type check
+        working-directory: ${{ env.CLIENT_DIR }}
+        run: npm run typecheck
+      - name: Explain the failure
+        if: failure()
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
+          ### The OpenAPI spec change breaks the Webapp Client
+
+          The Zod schemas and TypeScript types of `@camunda/camunda-api-zod-schemas` are generated from
+          `zeebe/gateway-protocol/src/main/proto/v2`. With the spec of this PR, the frontend no longer
+          builds or type-checks. See the logs of the failed step for the errors.
+
+          Reproduce locally:
+
+          ```sh
+          cd webapp/client
+          npm ci             # regenerates the schemas from the local spec
+          npm run typecheck
+          ```
+
+          If the change is intended, coordinate the frontend update with the relevant pod.
+          EOF
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   renovatelint:
     if: needs.detect-changes.outputs.renovate-config-changes == 'true'
     name: "Lint / Renovate Config Validator"
@@ -2860,6 +2930,7 @@ jobs:
       - load-test-k6-prettier
       - maven-spotless-linter
       - openapi-lint
+      - openapi-webapp-client-typecheck
       - openapi-x-added-in-version-check
       - operate-ci
       - optimize-ci
