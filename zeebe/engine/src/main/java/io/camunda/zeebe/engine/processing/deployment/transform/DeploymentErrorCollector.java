@@ -19,9 +19,6 @@ public final class DeploymentErrorCollector {
   private static final String DEFAULT_PREFIX =
       "Expected to deploy new resources, but encountered the following errors:";
   private static final String OMITTED_SUFFIX_FORMAT = "\n... (%d more errors omitted)";
-  // StringUtil.limitString appends this literal "..." after truncating, so the length passed to
-  // it must leave room for it - otherwise a stored entry could exceed maxOutputSize by itself.
-  private static final int ELLIPSIS_LENGTH = 3;
 
   private final int maxOutputSize;
   private final List<String> errors = new ArrayList<>();
@@ -34,8 +31,7 @@ public final class DeploymentErrorCollector {
   }
 
   public void add(final String message) {
-    final var perMessageLimit = Math.max(maxOutputSize - ELLIPSIS_LENGTH, 0);
-    errors.add(StringUtil.limitString(message, perMessageLimit));
+    errors.add(StringUtil.limitString(message, maxOutputSize));
   }
 
   public void add(final String format, final Object... args) {

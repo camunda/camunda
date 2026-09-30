@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.deployment;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
