@@ -23,9 +23,9 @@
   <properties>
     <version.maven-surefire-junit5-tree-reporter>1.5.1</version.maven-surefire-junit5-tree-reporter>
     <identity-packages>io/camunda/it/auth/*,io/camunda/it/identity/*,io/camunda/it/csrf/*,io/camunda/it/logout/*,io/camunda/it/oidc/*</identity-packages>
-    <!-- Timeout for forked processes in seconds. The default value is suitable for long-running tests.
-     For short running tests, you may want to decrease this value using -D failsafe.timeout=<seconds> -->
-    <failsafe.timeout>10800</failsafe.timeout>
+    <!-- Timeout for forked processes in seconds. Sized for the default CI job budget (20 minutes);
+     long-running callers must raise this via -D failsafe.timeout=<seconds> to match their own job timeout. -->
+    <failsafe.timeout>960</failsafe.timeout>
   </properties>
 
   <dependencies>

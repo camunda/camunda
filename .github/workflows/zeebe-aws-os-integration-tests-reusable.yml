@@ -227,6 +227,7 @@ jobs:
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
           -D flaky.test.reportDir=failsafe-reports
+          -D failsafe.timeout=10800
           -D test.integration.opensearch.aws.url="${{ env.OPENSEARCH_URL }}"
           -D test.integration.camunda.database.type=AWS_OS
           -D test.integration.opensearch.aws.timeout.seconds=180

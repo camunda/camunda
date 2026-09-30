@@ -110,9 +110,9 @@ on:
         description: >-
           Overrides the pom's default -D failsafe.timeout (max seconds a single Maven fork
           may run before it's killed as hung), letting a wedged fork fail with a real report
-          instead of the job's timeout-minutes cancelling it. Leave 0 to use
-          the pom's safe default; set explicitly only for callers whose worst-case fork
-          runtime has been measured against this job's timeout-minutes.
+          instead of the job's timeout-minutes cancelling it. Leave 0 to use the pom's
+          default. Override only for callers whose worst-case fork runtime has been measured
+          against a different timeout-minutes.
     outputs:
       flakyTests:
         description: "Flaky tests detected during database integration tests"

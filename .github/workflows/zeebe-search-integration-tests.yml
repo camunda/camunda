@@ -151,7 +151,6 @@ jobs:
       runs-on: "gcp-perf-core-8-default"
       notify-slack-on-failure: ${{ github.event_name == 'schedule' }}
       use-shared-distball: true
-      failsafe-timeout-seconds: 780
 
   search-identity-tests:
     name: "Search Identity Tests / ${{ matrix.database-name }}"
@@ -176,4 +175,3 @@ jobs:
       test-type-label: "Identity"
       notify-slack-on-failure: ${{ github.event_name == 'schedule' }}
       use-shared-distball: true
-      failsafe-timeout-seconds: 780
