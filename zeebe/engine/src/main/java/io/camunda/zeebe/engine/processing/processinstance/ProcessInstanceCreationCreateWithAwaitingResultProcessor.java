@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
+import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.EventSubscriptionException;
@@ -21,8 +22,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableValidationException;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
-import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
-import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -42,14 +41,13 @@ public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
   private final StateWriter stateWriter;
   private final ProcessEngineMetrics metrics;
   private final ProcessInstanceCreationHelper helper;
-  private final MutableElementInstanceState elementInstanceState;
+  private final AsyncRequestBehavior asyncRequestBehavior;
 
   public ProcessInstanceCreationCreateWithAwaitingResultProcessor(
       final KeyGenerator keyGenerator,
       final Writers writers,
       final ProcessEngineMetrics metrics,
-      final ProcessInstanceCreationHelper processInstanceCreationHelper,
-      final MutableElementInstanceState elementInstanceState) {
+      final ProcessInstanceCreationHelper processInstanceCreationHelper) {
     this.keyGenerator = keyGenerator;
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
@@ -57,7 +55,7 @@ public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
     stateWriter = writers.state();
     this.metrics = metrics;
     helper = processInstanceCreationHelper;
-    this.elementInstanceState = elementInstanceState;
+    asyncRequestBehavior = new AsyncRequestBehavior(keyGenerator, stateWriter);
   }
 
   @Override
@@ -129,13 +127,8 @@ public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
 
     final var entityKey = commandKey < 0 ? keyGenerator.nextKey() : commandKey;
 
-    final var awaitResultMetadata =
-        new AwaitProcessInstanceResultMetadata()
-            .setRequestId(command.getRequestId())
-            .setRequestStreamId(command.getRequestStreamId())
-            .setFetchVariables(record.fetchVariables());
-    elementInstanceState.setAwaitResultRequestMetadata(
-        record.getProcessInstanceKey(), awaitResultMetadata);
+    // recorded as an event, so that whichever broker leads when the instance completes can respond
+    asyncRequestBehavior.writeAsyncRequestReceived(record.getProcessInstanceKey(), command);
 
     // Variables are already persisted via setVariablesFromDocument(); clear them to save batch
     // space.

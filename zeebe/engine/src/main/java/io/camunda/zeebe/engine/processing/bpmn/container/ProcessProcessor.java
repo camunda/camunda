@@ -141,6 +141,7 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
     final int droppedCommands = wasSuspended ? suspensionState.countBufferedCommands(piKey) : 0;
 
     agentInstanceBehavior.completeAgentInstancesOfProcessInstance(element, terminationContext);
+    processResultSenderBehavior.closeAwaitingRequest(terminationContext);
     transitionTo(
         element,
         terminationContext,
