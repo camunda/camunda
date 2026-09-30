@@ -1,4 +1,4 @@
-COMMAND_STUB_ZEEBE := docker-compose --project-directory ./ -f docker-compose.yml -f ../docker/compose/docker-compose.yaml
+COMMAND_STUB_ZEEBE := docker-compose --project-directory ./ -f docker-compose.yml -f ../../docker/compose/docker-compose.yaml
 COMMAND_STUB_OPE := docker-compose --project-directory ./ -f docker-compose.yml -f docker-compose.ope-ztl.yml
 
 .DEFAULT_GOAL := up
@@ -26,8 +26,3 @@ clean:
 .PHONY: clean-ope
 clean-ope:
 	$(COMMAND_STUB_OPE) down -v
-
-.PHONY: grizzly
-grizzly:
-	@set -o allexport && source .env && \
-	grr serve ./grafana/dashboards --port 8093 --watch
