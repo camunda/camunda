@@ -417,6 +417,7 @@ public final class Gateway implements CloseableSilently {
         .setLongPollingTimeout(gatewayCfg.getLongPolling().getTimeout())
         .setProbeTimeoutMillis(gatewayCfg.getLongPolling().getProbeTimeout())
         .setMinEmptyResponses(gatewayCfg.getLongPolling().getMinEmptyResponses())
+        .setNotificationBatchWindow(gatewayCfg.getLongPolling().getNotificationBatchWindow())
         .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
         .setResourceExhaustedExceptionProvider(RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
         .setRequestCanceledExceptionProvider(REQUEST_CANCELED_EXCEPTION_PROVIDER)

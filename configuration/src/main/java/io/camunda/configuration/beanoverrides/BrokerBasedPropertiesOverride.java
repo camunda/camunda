@@ -619,6 +619,7 @@ public class BrokerBasedPropertiesOverride {
     longPollingCfg.setTimeout(longPolling.getTimeout());
     longPollingCfg.setProbeTimeout(longPolling.getProbeTimeout());
     longPollingCfg.setMinEmptyResponses(longPolling.getMinEmptyResponses());
+    longPollingCfg.setNotificationBatchWindow(longPolling.getNotificationBatchWindow());
   }
 
   private static void populateFromMembership(

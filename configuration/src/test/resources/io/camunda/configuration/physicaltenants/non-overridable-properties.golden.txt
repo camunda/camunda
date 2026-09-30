@@ -17,6 +17,7 @@ api.grpc.port
 api.grpc.ssl
 api.long-polling.enabled
 api.long-polling.min-empty-responses
+api.long-polling.notification-batch-window
 api.long-polling.probe-timeout
 api.long-polling.timeout
 api.rest.executor.core-pool-size-multiplier
