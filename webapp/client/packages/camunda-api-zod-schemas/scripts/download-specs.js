@@ -10,50 +10,36 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import {fileURLToPath} from 'node:url';
 
-import {CONFIG, getAvailableVersions} from './supported-versions.js';
+import {parseCliArgs, runCli} from './cli.js';
+import {REPO_ROOT, SPECS_DIR, WORKSPACE_ROOT} from './paths.js';
+import {CONFIG, getAvailableVersions, resolveVersions} from './supported-versions.js';
 
 /** @typedef {import('./supported-versions.js').DownloadConfig} DownloadConfig */
-/** @typedef {import('./supported-versions.js').SingleFileDownloadConfig} SingleFileDownloadConfig */
-/** @typedef {import('./supported-versions.js').DirectoryDownloadConfig} DirectoryDownloadConfig */
 
 /**
- * Entry returned from GitHub Contents API for a file.
- * @typedef {Object} GitHubFileEntry
- * @property {string} name - File name
- * @property {string} downloadUrl - URL to download the raw file
- */
-
-/**
- * Raw file entry from GitHub Contents API.
+ * Raw file entry from GitHub Contents API (only the fields used here).
  * @see https://docs.github.com/en/rest/repos/contents#get-repository-content
  * @typedef {Object} GitHubContentsEntry
  * @property {string} name - File name
- * @property {string} path - Full path in repository
- * @property {string} sha - Git blob SHA
- * @property {number} size - File size in bytes
- * @property {string} url - API URL for this content
- * @property {string} html_url - GitHub web URL
- * @property {string} git_url - Git blob URL
- * @property {string | null} download_url - Raw download URL (null for directories)
  * @property {'file' | 'dir' | 'symlink' | 'submodule'} type - Entry type
+ * @property {string | null} download_url - Raw download URL (null for directories)
  */
 
 /**
- * Parsed command line arguments.
- * @typedef {Object} ParsedArgs
- * @property {string[] | null} versions - Requested versions to download, or null for all
- * @property {boolean} local - Whether to copy the spec from the local repository instead of downloading it
- * @property {boolean} help - Whether help flag was passed
+ * A spec file to save in `specs/<version>`.
+ * @typedef {Object} SpecFile
+ * @property {string} name - File name in the output directory
+ * @property {() => Promise<string | Buffer>} read - Reads the file contents
  */
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PACKAGE_ROOT = path.resolve(__dirname, '..');
-const SPECS_DIR = path.join(PACKAGE_ROOT, 'specs');
-/** The `webapp/client` workspace root. Its `package.json` version follows the release line of the repository. */
-const WORKSPACE_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
-const REPO_ROOT = path.resolve(WORKSPACE_ROOT, '..', '..');
+/**
+ * Where the spec files come from: GitHub or the local repository.
+ * @typedef {Object} SpecSource
+ * @property {string} name - Description of the source, used in log messages
+ * @property {(filePath: string) => SpecFile['read']} file - Returns the reader of a file (path relative to the repository root)
+ * @property {(directoryPath: string) => Promise<SpecFile[]>} yamlFiles - Lists the YAML files of a directory (path relative to the repository root)
+ */
 
 const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/camunda/camunda';
 const GITHUB_API_BASE = 'https://api.github.com/repos/camunda/camunda';
@@ -77,9 +63,9 @@ async function downloadFile(url) {
  * Lists all YAML files in a GitHub directory using the Contents API.
  * @param {string} branch - The branch name
  * @param {string} directoryPath - The path to the directory
- * @returns {Promise<GitHubFileEntry[]>} List of YAML files with their download URLs
+ * @returns {Promise<SpecFile[]>} List of YAML files
  */
-async function listYamlFiles(branch, directoryPath) {
+async function listGitHubYamlFiles(branch, directoryPath) {
 	const url = `${GITHUB_API_BASE}/contents/${directoryPath}?ref=${branch}`;
 
 	const response = await fetch(url, {
@@ -90,90 +76,83 @@ async function listYamlFiles(branch, directoryPath) {
 	});
 
 	if (!response.ok) {
-		if (response.status === 403) {
-			const rateLimitRemaining = response.headers.get('x-ratelimit-remaining');
-			if (rateLimitRemaining === '0') {
-				const resetTime = response.headers.get('x-ratelimit-reset');
-				const resetDate = resetTime ? new Date(parseInt(resetTime, 10) * 1000) : null;
-				throw new Error(
-					`GitHub API rate limit exceeded. ${resetDate ? `Resets at ${resetDate.toLocaleTimeString()}.` : ''}`,
-				);
-			}
+		if (response.status === 403 && response.headers.get('x-ratelimit-remaining') === '0') {
+			const resetTime = response.headers.get('x-ratelimit-reset');
+			const resetDate = resetTime ? new Date(parseInt(resetTime, 10) * 1000) : null;
+			throw new Error(
+				`GitHub API rate limit exceeded. ${resetDate ? `Resets at ${resetDate.toLocaleTimeString()}.` : ''}`,
+			);
 		}
 		throw new Error(`Failed to list directory ${directoryPath}: ${response.status} ${response.statusText}`);
 	}
 
 	/** @type {GitHubContentsEntry[]} */
-	const files = await response.json();
+	const entries = await response.json();
 
-	return files
-		.filter((file) => file.type === 'file' && file.name.endsWith('.yaml') && file.download_url !== null)
-		.map((file) => ({
-			name: file.name,
-			downloadUrl: /** @type {string} */ (file.download_url),
-		}));
+	return entries.flatMap(({name, type, download_url: downloadUrl}) =>
+		type === 'file' && name.endsWith('.yaml') && downloadUrl !== null
+			? [{name, read: () => downloadFile(downloadUrl)}]
+			: [],
+	);
 }
 
 /**
- * Downloads a single file spec (8.8 style).
- * @param {string} version - The API version
- * @param {SingleFileDownloadConfig} config - The configuration for this version
- * @returns {Promise<void>}
+ * @param {string} branch - The branch to download from
+ * @returns {SpecSource}
  */
-async function downloadSingleFileSpec(version, config) {
-	const url = `${GITHUB_RAW_BASE}/${config.branch}/${config.file}`;
-	const outputDir = path.join(SPECS_DIR, version);
-	const outputFile = path.join(outputDir, 'rest-api.yaml');
-
-	console.log(`Downloading ${version} spec from ${url}...`);
-
-	const content = await downloadFile(url);
-
-	await fs.mkdir(outputDir, {recursive: true});
-	await fs.writeFile(outputFile, content, 'utf-8');
-
-	console.log(`  Saved to ${path.relative(PACKAGE_ROOT, outputFile)}`);
+function gitHubSource(branch) {
+	return {
+		name: `${branch} on GitHub`,
+		file: (filePath) => () => downloadFile(`${GITHUB_RAW_BASE}/${branch}/${filePath}`),
+		yamlFiles: (directoryPath) => listGitHubYamlFiles(branch, directoryPath),
+	};
 }
 
+/** @type {SpecSource} */
+const localSource = {
+	name: 'the local repository',
+	file: (filePath) => () => fs.readFile(path.join(REPO_ROOT, filePath)),
+	yamlFiles: async (directoryPath) => {
+		const fileNames = (await fs.readdir(path.join(REPO_ROOT, directoryPath))).filter((name) => name.endsWith('.yaml'));
+		return fileNames.map((name) => ({name, read: localSource.file(path.join(directoryPath, name))}));
+	},
+};
+
 /**
- * Downloads a directory of spec files (8.9 style).
- * @param {string} version - The API version
- * @param {DirectoryDownloadConfig} config - The configuration for this version
+ * Gets the spec of a version from the given source and saves it to `specs/<version>`.
+ * A single file spec (8.8 style) is saved as `rest-api.yaml`; a directory spec (8.9 style) keeps its file names.
+ * @param {string} version - The API version (e.g., '8.9')
+ * @param {DownloadConfig} config - The configuration for this version
+ * @param {SpecSource} source - Where to get the spec from
  * @returns {Promise<void>}
  */
-async function downloadDirectorySpec(version, config) {
-	console.log(`Fetching file list for ${version} from ${config.directory}...`);
+async function getSpec(version, config, source) {
+	const location = config.file || config.directory;
 
-	const files = await listYamlFiles(config.branch, config.directory);
-	console.log(`  Found ${files.length} YAML files`);
+	if (!location) {
+		throw new Error(`Invalid config for version ${version}: must have 'file' or 'directory'`);
+	}
+
+	console.log(`Getting ${version} spec from ${location} (${source.name})...`);
+
+	/** @type {SpecFile[]} */
+	let files;
+	if (config.file) {
+		files = [{name: 'rest-api.yaml', read: source.file(config.file)}];
+	} else {
+		files = await source.yamlFiles(location);
+		console.log(`  Found ${files.length} YAML files`);
+	}
 
 	const outputDir = path.join(SPECS_DIR, version);
 	await fs.mkdir(outputDir, {recursive: true});
 
 	await Promise.all(
-		files.map(async (file) => {
-			const content = await downloadFile(file.downloadUrl);
-			const outputFile = path.join(outputDir, file.name);
-			await fs.writeFile(outputFile, content, 'utf-8');
-			console.log(`  Saved ${file.name}`);
+		files.map(async ({name, read}) => {
+			await fs.writeFile(path.join(outputDir, name), await read());
+			console.log(`  Saved ${name}`);
 		}),
 	);
-}
-
-/**
- * Downloads the OpenAPI spec for a specific version.
- * @param {string} version - The API version (e.g., '8.9')
- * @param {DownloadConfig} config - The configuration for this version
- * @returns {Promise<void>}
- */
-async function downloadSpec(version, config) {
-	if ('file' in config && config.file) {
-		await downloadSingleFileSpec(version, /** @type {SingleFileDownloadConfig} */ (config));
-	} else if ('directory' in config && config.directory) {
-		await downloadDirectorySpec(version, /** @type {DirectoryDownloadConfig} */ (config));
-	} else {
-		throw new Error(`Invalid config for version ${version}: must have 'file' or 'directory'`);
-	}
 }
 
 /**
@@ -191,75 +170,6 @@ async function getLocalVersion() {
 	}
 
 	return `${match[1]}.${match[2]}`;
-}
-
-/**
- * Copies the spec of a version from the local repository.
- * @param {string} version - The API version
- * @param {DownloadConfig} config - The configuration for this version
- * @returns {Promise<void>}
- */
-async function copyLocalSpec(version, config) {
-	const outputDir = path.join(SPECS_DIR, version);
-	await fs.mkdir(outputDir, {recursive: true});
-
-	if ('file' in config && config.file) {
-		const source = path.join(REPO_ROOT, config.file);
-		console.log(`Copying ${version} spec from ${path.relative(REPO_ROOT, source)}...`);
-		await fs.copyFile(source, path.join(outputDir, 'rest-api.yaml'));
-		console.log(`  Saved to ${path.relative(PACKAGE_ROOT, path.join(outputDir, 'rest-api.yaml'))}`);
-		return;
-	}
-
-	if (!('directory' in config) || !config.directory) {
-		throw new Error(`Invalid config for version ${version}: must have 'file' or 'directory'`);
-	}
-
-	const sourceDir = path.join(REPO_ROOT, config.directory);
-	console.log(`Copying ${version} spec from ${path.relative(REPO_ROOT, sourceDir)}...`);
-
-	const fileNames = (await fs.readdir(sourceDir)).filter((name) => name.endsWith('.yaml'));
-	console.log(`  Found ${fileNames.length} YAML files`);
-
-	await Promise.all(
-		fileNames.map(async (fileName) => {
-			await fs.copyFile(path.join(sourceDir, fileName), path.join(outputDir, fileName));
-			console.log(`  Saved ${fileName}`);
-		}),
-	);
-}
-
-/**
- * Parses command line arguments.
- * @returns {ParsedArgs} Parsed arguments
- */
-function parseArgs() {
-	const args = process.argv.slice(2);
-	/** @type {ParsedArgs} */
-	const result = {versions: null, local: false, help: false};
-
-	for (let index = 0; index < args.length; index++) {
-		const arg = args[index];
-
-		if (arg === '--help' || arg === '-h') {
-			result.help = true;
-		} else if (arg === '--local' || arg === '-l') {
-			result.local = true;
-		} else if (arg === '--version' || arg === '-v') {
-			const value = args[++index];
-			if (!value) {
-				throw new Error('--version requires a value');
-			}
-			if (result.versions === null) {
-				result.versions = [];
-			}
-			result.versions.push(value);
-		} else {
-			throw new Error(`Unknown argument: ${arg}`);
-		}
-	}
-
-	return result;
 }
 
 /**
@@ -290,27 +200,23 @@ Examples:
  * @returns {Promise<void>}
  */
 async function main() {
-	const {versions: requestedVersions, local, help} = parseArgs();
+	const {
+		version: requestedVersions,
+		local,
+		help,
+	} = parseCliArgs({local: {type: 'boolean', short: 'l', default: false}});
 
 	if (help) {
 		printHelp();
 		return;
 	}
 
-	const availableVersions = getAvailableVersions();
-	const versionsToProcess = requestedVersions || availableVersions;
-
-	for (const version of versionsToProcess) {
-		if (!CONFIG[version]) {
-			throw new Error(`Unknown version: ${version}. Available versions: ${availableVersions.join(', ')}`);
-		}
-	}
-
+	const versionsToProcess = resolveVersions(requestedVersions);
 	const localVersion = local ? await getLocalVersion() : null;
 
 	if (localVersion !== null && !CONFIG[localVersion]) {
 		throw new Error(
-			`The local repository version ${localVersion} is not supported. Available versions: ${availableVersions.join(', ')}`,
+			`The local repository version ${localVersion} is not supported. Available versions: ${getAvailableVersions().join(', ')}`,
 		);
 	}
 
@@ -321,17 +227,11 @@ async function main() {
 	);
 
 	for (const version of versionsToProcess) {
-		if (version === localVersion) {
-			await copyLocalSpec(version, CONFIG[version].download);
-		} else {
-			await downloadSpec(version, CONFIG[version].download);
-		}
+		const {download} = CONFIG[version];
+		await getSpec(version, download, version === localVersion ? localSource : gitHubSource(download.branch));
 	}
 
 	console.log('\nAll specs downloaded successfully.');
 }
 
-main().catch((error) => {
-	console.error('\nError:', error.message);
-	process.exit(1);
-});
+runCli(main);

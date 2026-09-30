@@ -83,4 +83,20 @@ function getAvailableVersions() {
 	return Object.keys(CONFIG);
 }
 
-export {getAvailableVersions, CONFIG};
+/**
+ * Returns the requested versions, or every available version when none is requested.
+ * @param {string[] | undefined} requestedVersions
+ * @returns {string[]}
+ */
+function resolveVersions(requestedVersions) {
+	const availableVersions = getAvailableVersions();
+	const unknownVersion = requestedVersions?.find((version) => !CONFIG[version]);
+
+	if (unknownVersion !== undefined) {
+		throw new Error(`Unknown version: ${unknownVersion}. Available versions: ${availableVersions.join(', ')}`);
+	}
+
+	return requestedVersions ?? availableVersions;
+}
+
+export {getAvailableVersions, resolveVersions, CONFIG};
