@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.impl.RaftContext;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -76,6 +77,23 @@ final class SnapshotInstallDataLossTest {
         .isEqualTo(base + 2);
     assertThat(context(FOLLOWER).getCurrentSnapshotIndex()).isZero();
     assertThat(snapshotReplicationsStarted).hasValue(0);
+  }
+
+  @Test
+  void shouldStopSendingSnapshotAfterFollowerSkippedFirstChunk() {
+    // given
+    commitEntryWithFollowerThenSendOlderSnapshotToIt();
+    assertThat(chunkCount(context(LEADER).getCurrentSnapshot())).isGreaterThan(1);
+
+    // when
+    for (int i = 0; i < 10; i++) {
+      raft.tickHeartbeatTimeout(LEADER);
+      deliverAll(FOLLOWER);
+      deliverAll(LEADER);
+    }
+
+    // then
+    assertThat(raft.getServerProtocol(FOLLOWER).getReceivedInstallRequests()).isOne();
   }
 
   @Test
@@ -162,14 +180,18 @@ final class SnapshotInstallDataLossTest {
 
     // the follower handles the snapshot, i.e. it either installs it, or skips it and gets the
     // commit index with the next append; the leader crashes before it replicates anything else
-    for (int i = 0; i < 20; i++) {
+    boolean handled = false;
+    for (int i = 0; i < 20 && !handled; i++) {
       deliverAll(FOLLOWER);
-      if (context(FOLLOWER).getCurrentSnapshotIndex() >= base + 1
-          || context(FOLLOWER).getCommitIndex() >= base + 2) {
-        break;
+      handled =
+          context(FOLLOWER).getCurrentSnapshotIndex() >= base + 1
+              || context(FOLLOWER).getCommitIndex() >= base + 2;
+      if (!handled) {
+        deliverAll(LEADER);
       }
-      deliverAll(LEADER);
     }
+    assertThat(handled).describedAs("the follower handled the snapshot").isTrue();
+    assertThat(raft.getServerProtocol(FOLLOWER).getReceivedInstallRequests()).isPositive();
     return base;
   }
 
@@ -218,6 +240,19 @@ final class SnapshotInstallDataLossTest {
       }
       raft.tickHeartbeatTimeout(LEADER);
     }
+    assertThat(List.of(LEADER, FOLLOWER, SLOW_FOLLOWER))
+        .allSatisfy(
+            m -> assertThat(context(m).getCommitIndex()).isEqualTo(leader.getLog().getLastIndex()));
+  }
+
+  private static int chunkCount(final PersistedSnapshot snapshot) {
+    int count = 0;
+    try (final var reader = snapshot.newChunkReader()) {
+      for (; reader.hasNext(); reader.next()) {
+        count++;
+      }
+    }
+    return count;
   }
 
   private void deliverAll(final MemberId member) {
