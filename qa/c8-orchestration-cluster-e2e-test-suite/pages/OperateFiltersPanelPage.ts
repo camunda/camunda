@@ -164,17 +164,19 @@ export class OperateFiltersPanelPage {
     if (await this.isOptionalFilterDisplayed(filterName)) {
       return;
     }
-    // The dropdown is a Radix menu that mounts its items asynchronously, so
-    // clicking the trigger and immediately clicking the item can race the
-    // menu's open animation under CI load. Wait for the trigger and then the
-    // item to actually be visible, mirroring TaskPanelPage.filterBy()'s
-    // handling of the equivalent Tasklist dropdown.
     await expect(this.moreFiltersButton).toBeVisible({timeout: 10000});
-    await this.moreFiltersButton.click();
     const menuItem = this.page.getByRole('menuitem', {
       name: filterName,
     });
-    await expect(menuItem).toBeVisible({timeout: 10000});
+    // The item exists only while the menu is open, so retry opening it rather
+    // than waiting longer. Checked before each click: clicking the trigger on
+    // an open menu closes it again.
+    await expect(async () => {
+      if (!(await menuItem.isVisible())) {
+        await this.moreFiltersButton.click();
+      }
+      await expect(menuItem).toBeVisible({timeout: 5000});
+    }).toPass({timeout: 30000});
     await menuItem.click();
   }
 
@@ -406,6 +408,14 @@ export class OperateFiltersPanelPage {
 
   async clickActiveInstancesCheckbox(): Promise<void> {
     await this.activeInstancesCheckbox.click();
+  }
+
+  /** Reads the URL rather than clicking blindly: a click on an already-checked
+   * box turns the filter off. */
+  async applySuspendedFilter(): Promise<void> {
+    if (new URL(this.page.url()).searchParams.get('suspended') !== 'true') {
+      await this.clickSuspendedInstancesCheckbox();
+    }
   }
 
   async clickSuspendedInstancesCheckbox(): Promise<void> {

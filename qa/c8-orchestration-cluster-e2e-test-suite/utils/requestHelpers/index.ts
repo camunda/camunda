@@ -87,6 +87,7 @@ export {
 } from './cluster-variable-requestHelpers';
 export {
   searchIncidentByPIK,
+  expectNoIncidents,
   createProcessInstanceWithAJob,
   createSingleIncidentProcessInstance,
   createTwoIncidentsInOneProcess,
