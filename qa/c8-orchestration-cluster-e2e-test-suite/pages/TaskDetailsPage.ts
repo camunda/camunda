@@ -8,7 +8,6 @@
 
 import {Page, Locator, expect} from '@playwright/test';
 import {sleep} from 'utils/sleep';
-import {waitForAssertion} from 'utils/waitForAssertion';
 
 function cardinalToOrdinal(numberValue: number): string {
   const realOrderIndex = numberValue.toString();
@@ -113,15 +112,17 @@ class TaskDetailsPage {
     this.detailsInfo = page.getByTestId('details-info');
     this.taskCompletedBanner = this.page.getByText('Task completed');
     this.addDynamicListRowButton = page.getByRole('button', {name: 'add new'});
-    this.processTab = page.getByRole('link', {
-      name: 'show associated bpmn process',
+    this.processTab = page.getByRole('tab', {
+      name: 'Show associated BPMN process',
+      exact: true,
     });
     this.bpmnDiagram = page.getByTestId('diagram');
     this.assignedToMeText = page
       .getByTestId('assignee')
       .getByText('Assigned to me');
-    this.historyTabButton = page.getByRole('link', {
+    this.historyTabButton = page.getByRole('tab', {
       name: 'Show task history',
+      exact: true,
     });
     this.historyTable = page
       .getByTestId('history-tab-content')
@@ -136,7 +137,11 @@ class TaskDetailsPage {
     this.historyTableDetailsHeader = this.historyTable.getByRole(
       'columnheader',
       {
+        // Without `exact`, this also matches the "Open details" action
+        // column header (substring match), so the locator resolves to two
+        // elements and toBeVisible() throws a strict-mode violation.
         name: 'Details',
+        exact: true,
       },
     );
     this.historyTableActorHeader = this.historyTable.getByRole('columnheader', {
@@ -151,23 +156,25 @@ class TaskDetailsPage {
   }
 
   async clickAssignToMeButton() {
-    if (!(await this.assignedToMeText.isVisible())) {
-      await expect(this.assignToMeButton).toBeVisible({timeout: 60000});
-      await this.assignToMeButton.click({timeout: 60000});
-      await expect(this.unassignButton).toBeVisible({timeout: 30000});
+    if (await this.assignedToMeText.isVisible()) {
+      return;
     }
+    await expect(this.assignToMeButton).toBeVisible({timeout: 60000});
+    await this.assignToMeButton.click();
+    await expect(this.unassignButton).toBeVisible({timeout: 60000});
   }
 
   async clickUnassignButton() {
     await expect(this.unassignButton).toBeVisible({timeout: 30000});
     await this.unassignButton.click();
-    // Unassigning is processed asynchronously; the Assign-to-me button can take
-    // a while to reappear under load, so match the assign path's 60s budget.
     await expect(this.assignToMeButton).toBeVisible({timeout: 60000});
   }
 
   async clickCompleteTaskButton() {
     await this.completeTaskButton.click({timeout: 60000});
+    await expect(this.page).toHaveURL(/\/tasklist(?:\?.*)?$/, {
+      timeout: 120000,
+    });
   }
 
   async clickAddVariableButton() {
@@ -176,8 +183,9 @@ class TaskDetailsPage {
 
   async replaceExistingVariableValue(values: {name: string; value: string}) {
     const {name, value} = values;
-    await this.page.getByTitle(name).clear();
-    await this.page.getByTitle(name).fill(value);
+    const valueField = this.page.getByLabel(name);
+    await valueField.clear();
+    await valueField.fill(value);
   }
 
   getNthVariableNameInput(nth: number) {
@@ -423,7 +431,7 @@ class TaskDetailsPage {
     variableName: string,
     variableValue: string,
   ): Promise<void> {
-    await expect(this.page.getByTitle(variableName + ' Value')).toHaveValue(
+    await expect(this.page.getByLabel(variableName + ' Value')).toHaveValue(
       variableValue,
     );
   }
@@ -485,18 +493,7 @@ class TaskDetailsPage {
 
   async assertFieldValue(label: string, expectedValue: string): Promise<void> {
     const input = this.page.getByLabel(label, {exact: true});
-    await waitForAssertion({
-      assertion: async () => {
-        await expect(input).toHaveValue(expectedValue);
-      },
-      onFailure: async () => {
-        console.log(
-          `Assertion for field "${label}" failed, reloading page and retrying...`,
-        );
-        await this.page.reload();
-        await expect(this.form).toBeVisible({timeout: 30000});
-      },
-    });
+    await expect(input).toHaveValue(expectedValue, {timeout: 30000});
   }
 
   async assertItemChecked(

@@ -207,106 +207,43 @@ class HistoryCleanupServiceTest {
   }
 
   @Test
-  void testCleanupHistoryWithRemainingDependents() {
-    // given - PIs with remaining child entities (won't be deleted in this cycle)
-    final List<Long> expiredProcessInstanceKeys = java.util.List.of(1L, 2L, 3L);
+  void shouldDeleteRootProcessInstancesAfterDrainingChildEntitiesOverBatchLimit() {
+    // given
+    final var expiredProcessInstanceKeys = java.util.List.of(1L, 2L, 3L);
     when(processInstanceReader.selectExpiredRootProcessInstances(anyInt(), any(), anyInt()))
         .thenReturn(expiredProcessInstanceKeys);
-    // Some child entities might still exist as the batch size was hit
-    when(flowNodeInstanceWriter.deleteRootProcessInstanceRelatedData(any(), anyInt()))
-        .thenReturn(10);
-    when(incidentWriter.deleteRootProcessInstanceRelatedData(any(), anyInt())).thenReturn(5);
+    // one child entity holds more rows than a single delete statement can remove
     when(variableInstanceWriter.deleteRootProcessInstanceRelatedData(any(), anyInt()))
-        .thenReturn(CHILD_ENTITY_BATCH_SIZE);
-
-    when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(1);
+        .thenReturn(CHILD_ENTITY_BATCH_SIZE, CHILD_ENTITY_BATCH_SIZE, 7);
 
     // when
-    final Duration nextCleanupInterval =
-        historyCleanupService.cleanupHistory(PARTITION_ID, CLEANUP_DATE);
+    historyCleanupService.cleanupHistory(PARTITION_ID, CLEANUP_DATE);
 
     // then
-    assertThat(nextCleanupInterval).isEqualTo(Duration.ofHours(1));
-    verify(processInstanceReader)
-        .selectExpiredRootProcessInstances(PARTITION_ID, CLEANUP_DATE, PROCESS_INSTANCE_BATCH_SIZE);
-    // Each writer called once
-    verify(flowNodeInstanceWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
-    verify(incidentWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
-    verify(userTaskWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
-    verify(variableInstanceWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
-    verify(decisionInstanceWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
-    verify(jobWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
-    verify(sequenceFlowWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
-    verify(messageSubscriptionWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
-    verify(correlatedMessageSubscriptionWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
-    verify(auditLogWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
-    // PIs NOT deleted because child entities were found
-    verify(processInstanceWriter, Mockito.never())
-        .deleteChildrenByRootProcessInstances(any(), anyInt());
-    verify(processInstanceWriter, Mockito.never()).deleteByKeys(any());
-    verify(batchOperationWriter).cleanupHistory(CLEANUP_DATE, CHILD_ENTITY_BATCH_SIZE);
-  }
-
-  @Test
-  void testCleanupHistoryWithRemainingDependentProcesses() {
-    // given - PIs with remaining child entities (won't be deleted in this cycle)
-    final List<Long> expiredProcessInstanceKeys = java.util.List.of(1L, 2L, 3L);
-    when(processInstanceReader.selectExpiredRootProcessInstances(anyInt(), any(), anyInt()))
-        .thenReturn(expiredProcessInstanceKeys);
-    // All non-process child entities were deleted this time
-    when(flowNodeInstanceWriter.deleteRootProcessInstanceRelatedData(any(), anyInt()))
-        .thenReturn(1);
-
-    when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(1);
-
-    // but dependent processes were not fully deleted (as batch size was hit)
-    when(processInstanceWriter.deleteChildrenByRootProcessInstances(any(), anyInt()))
-        .thenReturn(CHILD_ENTITY_BATCH_SIZE);
-
-    // when
-    final Duration nextCleanupInterval =
-        historyCleanupService.cleanupHistory(PARTITION_ID, CLEANUP_DATE);
-
-    // then
-    assertThat(nextCleanupInterval).isEqualTo(Duration.ofHours(1));
-    verify(processInstanceReader)
-        .selectExpiredRootProcessInstances(PARTITION_ID, CLEANUP_DATE, PROCESS_INSTANCE_BATCH_SIZE);
-    // Each writer called once
-    verify(flowNodeInstanceWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
-    verify(incidentWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
-    verify(userTaskWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
-    verify(variableInstanceWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
-    verify(decisionInstanceWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
-    verify(jobWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
-    verify(sequenceFlowWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
-    verify(messageSubscriptionWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
-    verify(correlatedMessageSubscriptionWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
-    verify(auditLogWriter)
+    verify(variableInstanceWriter, Mockito.times(3))
         .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
     verify(processInstanceWriter)
         .deleteChildrenByRootProcessInstances(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
-    // Root PIs NOT deleted because dependent process instance entities were found
-    verify(processInstanceWriter, Mockito.never()).deleteByKeys(any());
-    verify(batchOperationWriter).cleanupHistory(CLEANUP_DATE, CHILD_ENTITY_BATCH_SIZE);
+    verify(processInstanceWriter).deleteByKeys(expiredProcessInstanceKeys);
+  }
+
+  @Test
+  void shouldDeleteRootProcessInstancesAfterDrainingChildProcessInstancesOverBatchLimit() {
+    // given
+    final var expiredProcessInstanceKeys = java.util.List.of(1L, 2L, 3L);
+    when(processInstanceReader.selectExpiredRootProcessInstances(anyInt(), any(), anyInt()))
+        .thenReturn(expiredProcessInstanceKeys);
+    // the expired roots have more child process instances than one delete statement can remove
+    when(processInstanceWriter.deleteChildrenByRootProcessInstances(any(), anyInt()))
+        .thenReturn(CHILD_ENTITY_BATCH_SIZE, 5);
+
+    // when
+    historyCleanupService.cleanupHistory(PARTITION_ID, CLEANUP_DATE);
+
+    // then
+    verify(processInstanceWriter, Mockito.times(2))
+        .deleteChildrenByRootProcessInstances(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
+    verify(processInstanceWriter).deleteByKeys(expiredProcessInstanceKeys);
   }
 
   @Test

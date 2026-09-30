@@ -60,12 +60,28 @@ class CustomFiltersModal extends View {
 		return this.dialog.getByRole('textbox', {name: /business id/i});
 	}
 
+	get addVariableButton() {
+		return this.dialog.getByRole('button', {name: 'Add variable', exact: true});
+	}
+
+	get variableNameField() {
+		return this.dialog.getByRole('textbox', {name: 'Name', exact: true});
+	}
+
+	get variableValueField() {
+		return this.dialog.getByRole('textbox', {name: 'Value', exact: true});
+	}
+
 	get applyButton() {
 		return this.dialog.getByRole('button', {name: /^apply$/i});
 	}
 
 	get saveButton() {
 		return this.dialog.getByRole('button', {name: /^save$/i});
+	}
+
+	get saveAndApplyButton() {
+		return this.dialog.getByRole('button', {name: /save and apply/i});
 	}
 }
 

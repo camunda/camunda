@@ -43,7 +43,7 @@ type Props = CommonProps & {
 	onFileUpload: (files: Map<string, File[]>) => Promise<Map<string, DocumentReference[]>>;
 };
 
-type ErrorVariant = 'not-found' | 'forbidden' | 'load-failed' | 'schema-import-failed';
+type ErrorVariant = 'not-found' | 'form-not-deployed' | 'forbidden' | 'load-failed' | 'schema-import-failed';
 
 type ErrorProps = CommonProps & {
 	variant: ErrorVariant;
@@ -58,6 +58,10 @@ type ShellProps = CommonProps & {
 function getErrorSubtitleKey(variant: ErrorVariant) {
 	if (variant === 'not-found') {
 		return 'tasklist.processesProcessNoFormOrNotExistError';
+	}
+
+	if (variant === 'form-not-deployed') {
+		return 'tasklist.processesStartProcessWithModalFormNotDeployed';
 	}
 
 	if (variant === 'schema-import-failed') {

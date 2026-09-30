@@ -102,6 +102,11 @@ public final class SecretReferenceResolutionFailTest {
         .extracting(record -> record.getValue().getJobKey())
         .containsExactlyInAnyOrderElementsOf(jobKeys);
 
+    // and - a failed resolution parks the jobs on an incident, it does not un-park them, so no
+    // resume marker is emitted: the exporter keeps the secret-wait mark until the incident resolves
+    assertThat(RecordingExporter.getRecords())
+        .noneMatch(record -> record.getIntent() == JobIntent.SECRET_RESOLUTION_RESUMED);
+
     // and - the failure is recorded once even though the drain spans several commands
     final var secretRecords =
         RecordingExporter.secretReferenceRecords()
@@ -123,6 +128,65 @@ public final class SecretReferenceResolutionFailTest {
         .containsExactlyElementsOf(jobKeys.subList(0, BATCH_SIZE));
     assertThat(batchEvents.get(1).getValue().getJobKeys())
         .containsExactlyElementsOf(jobKeys.subList(BATCH_SIZE, JOB_COUNT));
+  }
+
+  @Test
+  public void shouldEmitSecretResolutionResumedWhenSecretIncidentResolved() {
+    // given - a job parked on a secret whose resolution then fails, raising an incident on it
+    final var processId = Strings.newRandomValidBpmnId();
+    final var jobType = Strings.newRandomValidBpmnId();
+    final var storeId = "store-" + Strings.newRandomValidBpmnId();
+    final var secretReference = "secret-" + Strings.newRandomValidBpmnId();
+
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType(jobType))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    final long jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getKey();
+
+    final var requestedRecord =
+        new SecretReferenceRecord().setStoreId(storeId).setSecretReference(secretReference);
+    requestedRecord.addJobKey(jobKey);
+    final var resolutionFailRecord =
+        new SecretReferenceRecord().setStoreId(storeId).setSecretReference(secretReference);
+
+    // the parking event and the failure are seeded on replay, which parks the job and raises its
+    // secret-resolution incident
+    ENGINE.stop();
+    ENGINE.writeRecords(
+        RecordToWrite.event()
+            .secretReference(SecretReferenceIntent.RESOLUTION_REQUESTED, requestedRecord),
+        RecordToWrite.command()
+            .secretReference(SecretReferenceIntent.RESOLUTION_FAIL, resolutionFailRecord));
+    RecordingExporter.reset();
+    ENGINE.start();
+
+    final var incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withErrorType(ErrorType.SECRET_RESOLUTION_ERROR)
+            .withJobKey(jobKey)
+            .getFirst();
+
+    // when - the incident is resolved, which un-parks the job
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then - the un-park is observable on the JOB record stream so the wait-state exporter reverts
+    // the secret-wait mark to a plain job wait
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.SECRET_RESOLUTION_RESUMED)
+                .withRecordKey(jobKey)
+                .exists())
+        .isTrue();
   }
 
   @Test

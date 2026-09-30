@@ -63,7 +63,6 @@ public class AgentInstanceWriter extends ProcessInstanceDependant implements Rdb
                   .status(agentInstance.status())
                   .model(agentInstance.model())
                   .provider(agentInstance.provider())
-                  .systemPrompt(agentInstance.systemPrompt())
                   .maxTokens(agentInstance.maxTokens())
                   .maxModelCalls(agentInstance.maxModelCalls())
                   .maxToolCalls(agentInstance.maxToolCalls())
@@ -74,8 +73,17 @@ public class AgentInstanceWriter extends ProcessInstanceDependant implements Rdb
                   .cacheReadTokenCount(agentInstance.cacheReadTokenCount())
                   .modelCalls(agentInstance.modelCalls())
                   .toolCalls(agentInstance.toolCalls())
-                  .toolValues(agentInstance.toolValues())
                   .lastUpdatedDate(agentInstance.lastUpdatedDate());
+              // `systemPrompt`/`tools`: null on the raw field means this record's handler chose
+              // not to populate it (unchanged since the last write) -- see
+              // AgentInstanceExportHandler#mapToDbModel. Guarded on the raw field, not the
+              // derived accessor, to keep this check aligned with that decision.
+              if (agentInstance.systemPrompt() != null) {
+                b.systemPrompt(agentInstance.systemPrompt());
+              }
+              if (agentInstance.tools() != null) {
+                b.toolValues(agentInstance.toolValues());
+              }
               if (agentInstance.completionDate() != null) {
                 b.completionDate(agentInstance.completionDate());
               }

@@ -8,6 +8,7 @@
 package io.camunda.exporter.tasks.batchoperations;
 
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.END_DATE;
+import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.ID;
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_COMPLETED_COUNT;
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_FAILED_COUNT;
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_FINISHED_COUNT;
@@ -16,6 +17,7 @@ import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.B
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.Script;
+import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.MultiBucketBase;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
@@ -62,15 +64,27 @@ public class ElasticsearchBatchOperationUpdateRepository extends ElasticsearchRe
   }
 
   @Override
-  public CompletionStage<Collection<NotFinishedBatchOperation>> getNotFinishedBatchOperations() {
-    final var request =
+  public CompletionStage<List<NotFinishedBatchOperation>> getNotFinishedBatchOperations(
+      final int batchSize, final String afterId) {
+    final var requestBuilder =
         new SearchRequest.Builder()
             .index(batchOperationIndex)
-            .query(q -> q.bool(b -> b.mustNot(m -> m.exists(e -> e.field(END_DATE)))));
-    return fetchUnboundedDocumentCollection(
-        request,
-        BatchOperationEntity.class,
-        ElasticsearchBatchOperationUpdateRepository::toNotFinishedBatchOperation);
+            .query(q -> q.bool(b -> b.mustNot(m -> m.exists(e -> e.field(END_DATE)))))
+            .sort(so -> so.field(f -> f.field(ID).order(SortOrder.Asc)))
+            .size(batchSize);
+    if (afterId != null) {
+      requestBuilder.searchAfter(List.of(FieldValue.of(afterId)));
+    }
+    final var request = requestBuilder.build();
+
+    return client
+        .search(request, BatchOperationEntity.class)
+        .thenApplyAsync(
+            response ->
+                response.hits().hits().stream()
+                    .map(ElasticsearchBatchOperationUpdateRepository::toNotFinishedBatchOperation)
+                    .toList(),
+            executor);
   }
 
   @Override
@@ -130,7 +144,8 @@ public class ElasticsearchBatchOperationUpdateRepository extends ElasticsearchRe
                 return CompletableFuture.failedFuture(collectBulkErrors(r.items()));
               }
               return CompletableFuture.completedFuture(r.items().size());
-            });
+            })
+        .exceptionallyCompose(error -> CompletableFuture.failedFuture(translateBulkFailure(error)));
   }
 
   private static NotFinishedBatchOperation toNotFinishedBatchOperation(

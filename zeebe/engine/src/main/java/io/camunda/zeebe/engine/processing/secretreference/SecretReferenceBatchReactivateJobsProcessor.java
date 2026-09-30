@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SecretReferenceState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -92,6 +93,12 @@ public final class SecretReferenceBatchReactivateJobsProcessor
       commandWriter.appendFollowUpCommand(
           keyGenerator.nextKey(), SecretReferenceIntent.BATCH_REACTIVATE_JOBS, nextRecord);
     }
+
+    // clear the secret-wait mark on the JOB record stream for the jobs this batch made activatable
+    // again, so the wait-state exporter reverts them to a plain job wait. Emitted last, on whatever
+    // budget the hand-outs and the follow-up command leave, so it never competes with them: a job
+    // whose mark is not cleared this cycle keeps it until a later cycle or until it completes.
+    appendSecretResolutionResumedEvents(processedBatch);
   }
 
   /**
@@ -191,6 +198,35 @@ public final class SecretReferenceBatchReactivateJobsProcessor
 
   private boolean hasIncident(final long jobKey) {
     return incidentState.getJobIncidentKey(jobKey) != IncidentState.MISSING_INCIDENT;
+  }
+
+  /**
+   * Emits a {@link JobIntent#SECRET_RESOLUTION_RESUMED} event for each job the {@code
+   * BATCH_JOBS_REACTIVATED} applier just made activatable again, so the wait-state exporter clears
+   * the secret-wait mark it set when the job was parked. A job that is no longer activatable (still
+   * parked on another pending reference, or carrying an incident) or that no longer exists is
+   * skipped, so its mark stays as-is.
+   *
+   * <p>Called last in the cycle, so it spends only the budget the hand-outs and the follow-up
+   * command left. Appending stops once the batch can no longer fit an event: the jobs it does not
+   * reach were reactivated all the same, so the only consequence is that their mark is cleared a
+   * cycle later or on completion rather than now. The state transition itself is owned by the batch
+   * applier; these events only make it observable on the JOB record stream.
+   */
+  private void appendSecretResolutionResumedEvents(final SecretReferenceRecord processedBatch) {
+    for (final long jobKey : processedBatch.getJobKeys()) {
+      if (jobState.getState(jobKey) != State.ACTIVATABLE || hasIncident(jobKey)) {
+        continue;
+      }
+      final JobRecord job = jobState.getJob(jobKey);
+      if (job == null) {
+        continue;
+      }
+      if (!SecretResolutionJobEvents.appendIfBatchHasRoom(
+          stateWriter, jobKey, JobIntent.SECRET_RESOLUTION_RESUMED, job)) {
+        break;
+      }
+    }
   }
 
   /**

@@ -23,7 +23,12 @@ import {
 } from '#/tasklist/modules/processes/components/StartProcessFormModal';
 import {useUploadDocuments} from '#/tasklist/modules/form-js/useUploadDocuments';
 import {tryParseJSON} from '#/tasklist/modules/json/tryParseJSON';
-import {ForbiddenError, ProcessStartFormImportError, ProcessStartFormNotFoundError} from '#/shared/errors';
+import {
+	ForbiddenError,
+	ProcessStartFormImportError,
+	ProcessStartFormNotDeployedError,
+	ProcessStartFormNotFoundError,
+} from '#/shared/errors';
 import {useStartProcess} from '#/tasklist/modules/processes/useStartProcess';
 
 const HTTP_STATUS_NOT_FOUND = 404;
@@ -35,18 +40,47 @@ function useCloseStartProcessForm() {
 	return useCallback(() => navigate({to: '/tasklist/processes', search}), [navigate, search]);
 }
 
+function getErrorStatus(error: unknown): number | undefined {
+	const parsed = requestErrorSchema.safeParse(error);
+	if (parsed.success) {
+		return parsed.data.response?.status;
+	}
+
+	if (typeof error === 'object' && error !== null && 'response' in error) {
+		const status = (error as {response?: {status?: number}}).response?.status;
+		if (typeof status === 'number') {
+			return status;
+		}
+	}
+
+	return undefined;
+}
+
+function isNotFound(error: unknown) {
+	return getErrorStatus(error) === HTTP_STATUS_NOT_FOUND;
+}
+
+function isProcessStartFormNotDeployedError(error: unknown) {
+	return (
+		error instanceof ProcessStartFormNotDeployedError ||
+		(error instanceof Error && error.name === 'ProcessStartFormNotDeployedError')
+	);
+}
+
 function getErrorVariant(error: unknown): StartProcessFormModalErrorVariant {
 	if (error instanceof ProcessStartFormImportError) {
 		return 'schema-import-failed';
+	}
+
+	if (isProcessStartFormNotDeployedError(error)) {
+		return 'form-not-deployed';
 	}
 
 	if (error instanceof ProcessStartFormNotFoundError) {
 		return 'not-found';
 	}
 
-	const result = requestErrorSchema.safeParse(error);
-
-	if (result.success && result.data.response?.status === HTTP_STATUS_NOT_FOUND) {
+	if (isNotFound(error)) {
 		return 'not-found';
 	}
 
@@ -72,7 +106,15 @@ export const Route = createFileRoute('/_shadcn/_auth/tasklist/processes/$process
 			throw new ProcessStartFormNotFoundError();
 		}
 
-		await queryClient.ensureQueryData(queries.getProcessStartForm(processDefinitionKey));
+		try {
+			await queryClient.ensureQueryData(queries.getProcessStartForm(processDefinitionKey));
+		} catch (error) {
+			if (isNotFound(error)) {
+				throw new ProcessStartFormNotDeployedError();
+			}
+
+			throw error;
+		}
 	},
 	pendingComponent: function StartProcessFormPending() {
 		const {processDefinitionKey} = Route.useParams();

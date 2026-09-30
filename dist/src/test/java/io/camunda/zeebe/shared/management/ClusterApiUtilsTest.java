@@ -66,6 +66,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.RemovePhysi
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRedistributionCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.StartPartitionScaleUp;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.SchemaInitializationOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
@@ -1267,6 +1268,7 @@ final class ClusterApiUtilsTest {
         new ExportingStateChangeOperation(memberId1, ExportingState.PAUSED),
         new PartitionPreRestoreOperation(memberId1, 1),
         new PartitionRestoreOperation(memberId1, 1, new TreeSet<>(Set.of(1L, 2L))),
+        new SchemaInitializationOperation(memberId1),
 
         // PartitionDistributorConfig
         new UpdatePartitionDistributorConfigOperation(memberId1, new RoundRobinConfig()),

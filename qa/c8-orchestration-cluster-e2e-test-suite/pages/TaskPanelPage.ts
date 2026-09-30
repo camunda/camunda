@@ -8,6 +8,7 @@
 
 import {Page, Locator, expect} from '@playwright/test';
 import {waitForAssertion} from 'utils/waitForAssertion';
+import {sleep} from 'utils/sleep';
 
 export type TaskCard = {
   readonly name: string;
@@ -17,40 +18,127 @@ export type TaskCard = {
 class TaskPanelPage {
   readonly availableTasks: Locator;
   readonly taskCards: Locator;
-  readonly collapseSidePanelButton: Locator;
-  readonly expandSidePanelButton: Locator;
+  readonly scrollableList: Locator;
+  readonly filterSelectButton: Locator;
   private page: Page;
   readonly taskListPageBanner: Locator;
-  readonly collapseFilter: Locator;
   readonly completedHeading: Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.availableTasks = page.getByTitle('Available tasks');
     this.taskCards = this.availableTasks.locator('article');
-    this.collapseSidePanelButton = page.locator(
-      'button[aria-controls="task-nav-bar"][aria-expanded="true"]',
-    );
-    this.expandSidePanelButton = page
-      .locator('[aria-label="Filter controls"] li')
-      .filter({hasText: 'Expand to show filters'});
-    this.taskListPageBanner = page.getByRole('link', {
-      name: 'Camunda logo Tasklist',
+    this.scrollableList = this.availableTasks.getByTestId('scrollable-list');
+    this.filterSelectButton = page.getByRole('button', {
+      name: 'Filters',
+      exact: true,
     });
-    this.collapseFilter = page.locator(
-      'button[aria-controls="task-nav-bar"][aria-expanded="true"]',
-    );
-    this.completedHeading = page.getByRole('heading', {
-      name: 'completed',
+    this.taskListPageBanner = page
+      .getByRole('navigation', {name: 'Camunda context'})
+      .getByRole('link', {name: 'Tasklist', exact: true});
+    this.completedHeading = this.filterSelectButton.getByText('Completed', {
+      exact: true,
     });
   }
 
   async openTask(name: string, options: {timeout?: number} = {}) {
     const timeout = options.timeout ?? 10000;
-    await this.availableTasks
-      .getByText(name, {exact: true})
-      .nth(0)
-      .click({timeout});
+    const task = this.taskCardByText(name);
+
+    await waitForAssertion({
+      assertion: async () => {
+        await this.scrollListToTop();
+        await this.walkListFor(task, timeout);
+        await task.getByRole('link').click({timeout});
+        await expect(this.page).toHaveURL(/\/tasklist\/[^/?]+/);
+      },
+      onFailure: async () => {
+        await this.reloadPage();
+      },
+    });
+  }
+
+  async assertTaskCardVisible(
+    name: string,
+    options: {timeout?: number} = {},
+  ): Promise<void> {
+    const card = this.taskCardByText(name);
+    await this.waitForTaskCard(card, name, options.timeout ?? 10000);
+  }
+
+  private taskCardByText(text: string): Locator {
+    return this.taskCards
+      .filter({has: this.page.getByText(text, {exact: true})})
+      .first();
+  }
+
+  private async waitForTaskCard(
+    task: Locator,
+    name: string,
+    timeout: number,
+  ): Promise<void> {
+    // Only the current task-list viewport exists in the DOM. Walk the actual
+    // scroll container so older pages load before falling back to a reload.
+    await waitForAssertion({
+      assertion: async () => {
+        await this.scrollListToTop();
+        await this.walkListFor(task, timeout);
+        await expect(task).toBeVisible({timeout: 5000});
+      },
+      onFailure: async () => {
+        console.log(
+          `Task "${name}" not visible yet, reloading and retrying...`,
+        );
+        await this.reloadPage();
+      },
+    });
+  }
+
+  private async walkListFor(task: Locator, timeout: number): Promise<void> {
+    const deadline = Date.now() + timeout;
+    let idleRounds = 0;
+
+    while (Date.now() < deadline) {
+      if ((await task.count()) > 0) {
+        return;
+      }
+      if ((await this.taskCards.count()) === 0) {
+        await sleep(500);
+        continue;
+      }
+
+      const offsetBefore = await this.listScrollOffset();
+      await this.taskCards
+        .last()
+        .scrollIntoViewIfNeeded()
+        .catch(() => {});
+
+      if ((await this.listScrollOffset()) > offsetBefore) {
+        idleRounds = 0;
+        continue;
+      }
+
+      idleRounds++;
+      if (idleRounds > 3) {
+        await this.scrollListToTop();
+        idleRounds = 0;
+      }
+      await sleep(500);
+    }
+  }
+
+  private async scrollListToTop(): Promise<void> {
+    await this.scrollableList
+      .evaluate((list) => {
+        list.scrollTop = 0;
+      })
+      .catch(() => {});
+  }
+
+  private async listScrollOffset(): Promise<number> {
+    return await this.scrollableList
+      .evaluate((list) => list.scrollTop)
+      .catch(() => 0);
   }
 
   async filterBy(
@@ -65,13 +153,16 @@ class TaskPanelPage {
     const maxRetries = 5;
     while (retryCount < maxRetries) {
       try {
-        const link = this.page.getByRole('link', {name: option, exact: true});
-        if (!(await link.isVisible())) {
-          await expect(this.expandSidePanelButton).toBeVisible();
-          await this.expandSidePanelButton.click();
-        }
-        await expect(link).toBeVisible({timeout: 10000});
-        await link.click();
+        await expect(this.filterSelectButton).toBeVisible({timeout: 10000});
+        await this.filterSelectButton.click();
+
+        const menuItem = this.page.getByRole('menuitem', {
+          name: option,
+          exact: true,
+        });
+        await expect(menuItem).toBeVisible({timeout: 10000});
+        await menuItem.click();
+        await expect(menuItem).toBeHidden({timeout: 10000});
 
         if (option === 'All open tasks') {
           // "All open tasks" is the default filter, so the router omits it
@@ -91,7 +182,6 @@ class TaskPanelPage {
           const filterRegex = new RegExp(`filter=${expectedSegment}(?:&|$)`);
           await expect(this.page).toHaveURL(filterRegex, {timeout: 15000});
         }
-        await this.collapseSidePanelButton.click();
         return;
       } catch (error) {
         retryCount++;
@@ -103,18 +193,16 @@ class TaskPanelPage {
     );
   }
 
-  async clickCollapseFilter(): Promise<void> {
-    await this.collapseFilter.click({timeout: 45000});
-  }
-
   async assertCompletedHeadingVisible() {
     await waitForAssertion({
       assertion: async () => {
         await expect(this.completedHeading).toBeVisible();
       },
       onFailure: async () => {
-        console.log('Filter not applied, retrying...');
-        await this.filterBy('Completed'); // Reapply the filter if necessary
+        console.log(
+          'Completed filter not reflected yet, reloading and retrying...',
+        );
+        await this.reloadPage();
       },
     });
   }

@@ -193,4 +193,18 @@ export default defineConfig([
 		plugins: {'@tanstack/query': tanstackPlugin},
 		rules: {...tanstackPlugin.configs.recommended.rules},
 	},
+
+	{
+		files: [`${ocPath}/src/routes/**/*.{test,spec}.{js,jsx,ts,tsx}`],
+		rules: {
+			'no-restricted-syntax': [
+				'error',
+				{
+					selector: 'Program',
+					message:
+						'Tests must not live in src/routes/. Route files should be thin wrappers without much logic: move any logic into the pod folder (src/{operate,tasklist,admin,shared}/...) and unit test it there. Routes themselves must be covered by the Playwright integration tests in test/integration/.',
+				},
+			],
+		},
+	},
 ]);

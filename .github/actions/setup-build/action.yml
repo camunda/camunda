@@ -238,35 +238,17 @@ runs:
       githubServer: false
       servers: ${{ steps.maven.outputs.servers }}
       mirrors: ${{ steps.maven.outputs.mirrors }}
-  - uses: ./.github/actions/apt-fast-mirror-failover
-    if: inputs.time-zone != '' && runner.os == 'Linux'
-  # tzdata may be missing on self-hosted runners. `timeout` runs inside the sudo'd
-  # root process tree so it can self-terminate a hung apt-get without nick-fields/retry
-  # having to kill across the privilege boundary -- doing that externally throws
-  # `kill EPERM` and crashes instead of retrying, see
-  # https://github.com/nick-fields/retry/issues/124.
+  # tzdata may be missing on self-hosted runners. skip-if-exists checks the exact
+  # zone file Set Time Zone symlinks -- not just /usr/share/zoneinfo, since a
+  # partial zoneinfo would leave /etc/localtime dangling, which `ln -s` reports as
+  # success -- so a mirror outage cannot fail an otherwise-ready runner.
   - name: Install tzdata
     if: inputs.time-zone != '' && runner.os == 'Linux'
-    uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
-    env:
-      TZ_IDENTIFIER: ${{ inputs.time-zone }}
+    uses: ./.github/actions/apt-install
     with:
-      max_attempts: 3
-      retry_wait_seconds: 10
-      timeout_minutes: 2
-      shell: bash
-      # Skip the install when the zone file Set Time Zone symlinks already exists,
-      # so a mirror outage cannot fail an otherwise-ready runner. Check that exact
-      # file, not just /usr/share/zoneinfo -- a partial zoneinfo would leave
-      # /etc/localtime dangling, which `ln -s` reports as success.
-      #
-      # `apt-get update` exits 100 if *any* configured repository fails, so don't gate on
-      # it (INC-7943) -- a partial refresh still lands and `apt-get install` is the gate.
-      command: |
-        [ -e "/usr/share/zoneinfo/${TZ_IDENTIFIER}" ] && exit 0
-        sudo timeout 115 bash -c "apt-get update \
-          || echo '::warning::apt-get update could not refresh every repository, continuing with the index as-is'; \
-          apt-get install -y tzdata"
+      packages: tzdata
+      no-install-recommends: "false"
+      skip-if-exists: /usr/share/zoneinfo/${{ inputs.time-zone }}
   - name: Set Time Zone
     if: inputs.time-zone != '' && runner.os == 'Linux'
     env:

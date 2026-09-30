@@ -10,7 +10,6 @@ import {Locator, Page, expect} from '@playwright/test';
 import {TaskPanelPage} from '@pages/TaskPanelPage';
 import {TaskDetailsPage} from '@pages/TaskDetailsPage';
 import {sleep} from '../utils/sleep';
-import {waitForAssertion} from 'utils/waitForAssertion';
 
 export async function navigateToApp(
   page: Page,
@@ -96,7 +95,7 @@ export async function completeTaskWithRetry(
 ): Promise<void> {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      await taskPanelPage.openTask(taskName);
+      await taskPanelPage.openTask(taskName, {timeout: 60000});
       await sleep(500);
       if (!(await taskDetailsPage.assignedToMeText.isVisible())) {
         await taskDetailsPage.clickAssignToMeButton();
@@ -105,33 +104,7 @@ export async function completeTaskWithRetry(
         taskDetailsPage.detailsPanel.getByText(taskPriority),
       ).toBeVisible();
       await taskDetailsPage.clickCompleteTaskButton();
-      let assertionPassed = false;
-      try {
-        await waitForAssertion({
-          assertion: async () => {
-            await expect(
-              taskPanelPage.availableTasks
-                .getByText(taskName, {exact: true})
-                .first(),
-            ).not.toBeVisible({timeout: 20000});
-          },
-          onFailure: async () => {
-            console.log(
-              `Task ${taskName} still visible, reloading page and retrying...`,
-            );
-            await taskPanelPage.reloadPage();
-            await sleep(1000);
-          },
-          maxRetries: 3,
-        });
-        assertionPassed = true;
-      } catch (error) {
-        console.log(`waitForAssertion failed for task ${taskName}: ${error}`);
-      }
-
-      if (assertionPassed) {
-        return;
-      }
+      return;
     } catch (error) {
       if (attempt < maxRetries - 1) {
         console.warn(

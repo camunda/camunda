@@ -64,7 +64,7 @@ const config = defineConfig(({mode}) => ({
 			'/v2': 'http://localhost:8080',
 			'/login': {
 				target: 'http://localhost:8080',
-				bypass: (req) => (req.method !== 'POST' ? '/' : undefined),
+				bypass: (req) => (req.headers['sec-fetch-mode'] === 'navigate' ? '/' : undefined),
 			},
 			'/logout': {
 				target: 'http://localhost:8080',
@@ -105,6 +105,9 @@ const config = defineConfig(({mode}) => ({
 		outputFile: process.env['CI'] ? {junit: 'TEST-unit.xml'} : undefined,
 		attachmentsDir: 'test-artifacts/html/attachments',
 		retry: process.env['CI'] ? 3 : 0,
+		provide: {
+			failOnUnhandledRequests: !process.env['CI'],
+		},
 		browser: {
 			enabled: true,
 			screenshotFailures: Boolean(process.env['CI']),

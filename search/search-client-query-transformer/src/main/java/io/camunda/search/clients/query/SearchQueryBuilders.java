@@ -533,6 +533,12 @@ public final class SearchQueryBuilders {
                   case NOT_EXISTS -> mustNot(exists(field));
                   case IN ->
                       or(op.values().stream().map(value -> matchPhrase(field, value)).toList());
+                  case NOT_IN ->
+                      mustNot(
+                          or(
+                              op.values().stream()
+                                  .map(value -> matchPhrase(field, value))
+                                  .toList()));
                   case LIKE ->
                       wildcardQuery(field, Objects.requireNonNull(op.value()).toLowerCase());
                   default -> throw unexpectedOperation("String", op.operator());

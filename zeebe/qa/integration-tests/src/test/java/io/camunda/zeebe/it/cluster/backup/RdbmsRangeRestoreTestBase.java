@@ -199,7 +199,7 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
    * ahead of that partition's last exported (to RDBMS) position - for every partition. Only then
    * does a time-range restore have a backup that covers the exported data on all partitions.
    */
-  private void awaitBackupCoversExportedPositionsOnEveryPartition() {
+  protected final void awaitBackupCoversExportedPositionsOnEveryPartition() {
     Awaitility.await("backup covers the exported position on every partition")
         .pollDelay(Duration.ofSeconds(2))
         .atMost(Duration.ofSeconds(300))
@@ -247,7 +247,7 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
     }
   }
 
-  private static long deployTestProcess(final CamundaClient client) {
+  protected static final long deployTestProcess(final CamundaClient client) {
     return client
         .newDeployResourceCommand()
         .addProcessModel(
@@ -264,7 +264,7 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
         .getProcessDefinitionKey();
   }
 
-  private Interval createProcessInstancesAndTakeBackups(
+  protected final Interval createProcessInstancesAndTakeBackups(
       final CamundaClient client, final long processKey) {
 
     // Create some process instances to have data to verify after restore
@@ -291,7 +291,7 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
     return new Interval(from, to);
   }
 
-  private BackupInfo takeAndAwaitBackup() {
+  protected final BackupInfo takeAndAwaitBackup() {
     progressClock(broker, 2000);
     final var res = backupActuator.take();
     final long backupId = Optional.ofNullable(res.getBackupId()).orElseThrow();

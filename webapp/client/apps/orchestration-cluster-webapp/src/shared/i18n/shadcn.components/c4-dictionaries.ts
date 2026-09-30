@@ -12,7 +12,6 @@ type ShadcnDictionaryKey =
 	| 'appHeader.skipToContent'
 	| 'appSidebar.closeNavigation'
 	| 'appSidebar.collapse'
-	| 'appSidebar.collapseText'
 	| 'appSidebar.expand'
 	| 'dialog.close'
 	| 'navBreadcrumb.actionsLabel'
@@ -38,7 +37,6 @@ const C4_DICTIONARIES: Record<TranslatedLocale, ShadcnDictionary> = {
 		'appHeader.skipToContent': 'Zum Hauptinhalt springen',
 		'appSidebar.closeNavigation': 'Navigation schließen',
 		'appSidebar.collapse': 'Seitenleiste einklappen',
-		'appSidebar.collapseText': 'Einklappen',
 		'appSidebar.expand': 'Seitenleiste erweitern',
 		'dialog.close': 'Schließen',
 		'navBreadcrumb.actionsLabel': 'Aktionen für {label}',
@@ -62,7 +60,6 @@ const C4_DICTIONARIES: Record<TranslatedLocale, ShadcnDictionary> = {
 		'appHeader.skipToContent': 'Ir al contenido principal',
 		'appSidebar.closeNavigation': 'Cerrar navegación',
 		'appSidebar.collapse': 'Contraer barra lateral',
-		'appSidebar.collapseText': 'Contraer',
 		'appSidebar.expand': 'Expandir barra lateral',
 		'dialog.close': 'Cerrar',
 		'navBreadcrumb.actionsLabel': 'Acciones de {label}',
@@ -84,7 +81,6 @@ const C4_DICTIONARIES: Record<TranslatedLocale, ShadcnDictionary> = {
 		'appHeader.skipToContent': 'Aller au contenu principal',
 		'appSidebar.closeNavigation': 'Fermer la navigation',
 		'appSidebar.collapse': 'Réduire la barre latérale',
-		'appSidebar.collapseText': 'Réduire',
 		'appSidebar.expand': 'Développer la barre latérale',
 		'dialog.close': 'Fermer',
 		'navBreadcrumb.actionsLabel': 'Actions pour {label}',

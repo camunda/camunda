@@ -9,9 +9,11 @@ package io.camunda.application.commons.rdbms;
 
 import io.camunda.application.commons.pt.PerTenantSchemaInitialization;
 import io.camunda.application.commons.pt.SchemaInitialization;
+import io.camunda.application.commons.pt.SchemaInitializer;
 import io.camunda.application.commons.pt.SingleTenantSchemaInitialization;
 import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
+import io.camunda.db.rdbms.exception.RdbmsSchemaMigrationFailedException;
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIncompatibleException;
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIndeterminateException;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -60,7 +62,7 @@ import org.springframework.beans.factory.InitializingBean;
  */
 @NullMarked
 public class RdbmsSchemaInitializer
-    implements InitializingBean, DisposableBean, RdbmsSchemaManagerRegistry {
+    implements InitializingBean, DisposableBean, RdbmsSchemaManagerRegistry, SchemaInitializer {
 
   static final Duration MIN_RETRY_DELAY = Duration.ofMillis(500);
   static final Duration MAX_RETRY_DELAY = Duration.ofSeconds(10);
@@ -143,6 +145,21 @@ public class RdbmsSchemaInitializer
         && initialization.isInitialized(physicalTenantId);
   }
 
+  /** Applies one tenant's schema immediately for an in-process restore. */
+  @Override
+  public void initializeNow(final String physicalTenantId) {
+    schemaManagerOf(physicalTenantId);
+    if (isIsolated()) {
+      ((PerTenantSchemaInitialization) initialization).initializeNow(physicalTenantId);
+    } else {
+      try {
+        initializeSynchronously();
+      } catch (final Exception e) {
+        throw new SchemaInitializationFailedException(physicalTenantId, e);
+      }
+    }
+  }
+
   /** Whether one tenant's failure has anyone else's startup to spare. */
   private boolean isIsolated() {
     return schemaManagers.size() > 1;
@@ -193,14 +210,15 @@ public class RdbmsSchemaInitializer
   /**
    * A schema whose recorded version the running code cannot migrate from stays that way however
    * often it is retried, and so does a version that cannot be determined at all — an absent data
-   * source, or a stored value that is not a semantic version. Everything else is retried, including
-   * a missing DDL grant: a grant can be added while the node runs, so retrying genuinely repairs
-   * it.
+   * source, or a stored value that is not a semantic version — and so does a changelog that cannot
+   * be applied to the schema as recorded. Everything else is retried, including a missing DDL
+   * grant: a grant can be added while the node runs, so retrying genuinely repairs it.
    */
   @VisibleForTesting
   static boolean isTerminal(final Throwable failure) {
     return failure instanceof RdbmsSchemaVersionIncompatibleException
         || failure instanceof RdbmsSchemaVersionIndeterminateException
+        || failure instanceof RdbmsSchemaMigrationFailedException
         || failure instanceof TerminalSchemaInitializationException;
   }
 

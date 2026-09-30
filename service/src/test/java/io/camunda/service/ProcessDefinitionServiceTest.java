@@ -8,13 +8,19 @@
 package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
+import io.camunda.search.entities.FormEntity;
+import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
 import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
@@ -24,15 +30,21 @@ import io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.service.exception.ServiceException;
+import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class ProcessDefinitionServiceTest {
 
   private static final String PHYSICAL_TENANT_ID = "test-tenant";
+  private static final long PROCESS_DEFINITION_KEY = 123L;
+  private static final String TENANT_ID = "<default>";
+  private static final String FORM_ID = "invoice-start-form";
   private ProcessDefinitionServices services;
   private ProcessDefinitionSearchClient processDefinitionSearchClient;
   private SecurityContextProvider securityContextProvider;
@@ -147,5 +159,72 @@ public class ProcessDefinitionServiceTest {
     // then
     assertThat(result).isEqualTo(statistics);
     verify(processDefinitionSearchClient).processDefinitionFlowNodeStatistics(filter);
+  }
+
+  @Test
+  public void shouldReturnEmptyWhenProcessHasNoStartForm() {
+    // given
+    when(processDefinitionSearchClient.getProcessDefinition(PROCESS_DEFINITION_KEY))
+        .thenReturn(processDefinition(null));
+
+    // when
+    final var result =
+        services.getProcessDefinitionStartForm(PROCESS_DEFINITION_KEY, authentication);
+
+    // then
+    assertThat(result).isEmpty();
+    verify(formServices, never()).getLatestVersionByFormIdAndTenantId(any(), any(), any());
+  }
+
+  @Test
+  public void shouldReturnStartFormWhenLinkedFormExists() {
+    // given
+    final var form = new FormEntity(1L, TENANT_ID, FORM_ID, "{}", 1L);
+    when(processDefinitionSearchClient.getProcessDefinition(PROCESS_DEFINITION_KEY))
+        .thenReturn(processDefinition(FORM_ID));
+    when(formServices.getLatestVersionByFormIdAndTenantId(
+            eq(FORM_ID), eq(TENANT_ID), eq(CamundaAuthentication.anonymous())))
+        .thenReturn(Optional.of(form));
+
+    // when
+    final var result =
+        services.getProcessDefinitionStartForm(PROCESS_DEFINITION_KEY, authentication);
+
+    // then
+    assertThat(result).contains(form);
+  }
+
+  @Test
+  public void shouldRejectWhenLinkedStartFormIsMissing() {
+    // given
+    when(processDefinitionSearchClient.getProcessDefinition(PROCESS_DEFINITION_KEY))
+        .thenReturn(processDefinition(FORM_ID));
+    when(formServices.getLatestVersionByFormIdAndTenantId(
+            eq(FORM_ID), eq(TENANT_ID), eq(CamundaAuthentication.anonymous())))
+        .thenReturn(Optional.empty());
+
+    // when / then
+    assertThatThrownBy(
+            () -> services.getProcessDefinitionStartForm(PROCESS_DEFINITION_KEY, authentication))
+        .isInstanceOf(ServiceException.class)
+        .hasMessage(
+            "Start form '%s' not found for process definition key '%d'"
+                .formatted(FORM_ID, PROCESS_DEFINITION_KEY))
+        .extracting(e -> ((ServiceException) e).getStatus())
+        .isEqualTo(Status.NOT_FOUND);
+  }
+
+  private static ProcessDefinitionEntity processDefinition(final String formId) {
+    return new ProcessDefinitionEntity(
+        PROCESS_DEFINITION_KEY,
+        "Invoice review",
+        "invoice-review",
+        "<xml/>",
+        "invoice-review.bpmn",
+        1,
+        null,
+        TENANT_ID,
+        formId,
+        ProcessDefinitionState.ACTIVE);
   }
 }

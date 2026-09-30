@@ -602,6 +602,7 @@ schemas:
           - REMOVE_PHYSICAL_TENANT
           - PARTITION_PROMOTE
           - PARTITION_DEMOTE
+          - INITIALIZE_SCHEMA
       brokerId:
         $ref: "components.yaml#/schemas/BrokerId"
       partitionId:

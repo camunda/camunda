@@ -30,6 +30,13 @@ import org.slf4j.LoggerFactory;
 
 public class MockChildProcessBuilderImpl implements MockChildProcessBuilder {
 
+  /**
+   * The name given to every mocked child process. A mock has to keep the ID of the process it
+   * stands in for, because that is what the call activity binds to, which leaves the name as the
+   * only thing that tells a mock apart from a real process once it reaches the engine.
+   */
+  public static final String MOCK_PROCESS_NAME = "cpt-mock";
+
   private static final Logger LOGGER = LoggerFactory.getLogger(MockChildProcessBuilderImpl.class);
 
   private final CamundaClient client;
@@ -62,6 +69,7 @@ public class MockChildProcessBuilderImpl implements MockChildProcessBuilder {
     validateProcessId();
 
     final ProcessBuilder processBuilder = Bpmn.createExecutableProcess(childProcessId);
+    processBuilder.name(MOCK_PROCESS_NAME);
 
     if (versionTag != null) {
       processBuilder.versionTag(versionTag);
@@ -95,6 +103,7 @@ public class MockChildProcessBuilderImpl implements MockChildProcessBuilder {
 
     final String variableSupplierJobType = "variableSupplier_" + childProcessId;
     final ProcessBuilder processBuilder = Bpmn.createExecutableProcess(childProcessId);
+    processBuilder.name(MOCK_PROCESS_NAME);
 
     if (versionTag != null) {
       processBuilder.versionTag(versionTag);

@@ -50,17 +50,18 @@ test.describe('task panel page', () => {
 
   test('filter selection', async ({taskPanelPage}) => {
     test.slow();
+    // The redesigned list is virtualized, so only the visible rows are in the DOM.
     await expect(
-      taskPanelPage.availableTasks.getByText('Some user activity'),
-    ).toHaveCount(50);
+      taskPanelPage.availableTasks.getByText('Some user activity').first(),
+    ).toBeVisible();
 
     await taskPanelPage.filterBy('Assigned to me');
     await expect(taskPanelPage.availableTasks).toContainText('No tasks found');
 
     await taskPanelPage.filterBy('All open tasks');
     await expect(
-      taskPanelPage.availableTasks.getByText('Some user activity'),
-    ).toHaveCount(50);
+      taskPanelPage.availableTasks.getByText('Some user activity').first(),
+    ).toBeVisible();
     await expect(
       taskPanelPage.availableTasks.getByText('No tasks found'),
     ).toHaveCount(0);

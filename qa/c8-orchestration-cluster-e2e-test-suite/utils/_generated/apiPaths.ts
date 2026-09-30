@@ -61,6 +61,7 @@ export type ApiPath =
   | '/cluster/v2/rebalance'
   | '/cluster/v2/restore'
   | '/cluster/v2/status'
+  | '/cluster/v2/status/upgrade'
   | '/cluster/v2/topology'
   | '/conditionals/evaluation'
   | '/correlated-message-subscriptions/search'

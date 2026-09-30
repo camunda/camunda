@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.common.BannedInstanceCommandCheck;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
+import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionJobEvents;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -34,6 +35,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
@@ -148,8 +150,30 @@ public final class IncidentResolveProcessor
       return;
     }
 
+    // captured before RESOLVED unparks the job: a job parked on a missing secret carries a
+    // secret-wait mark on its wait-state that must be cleared once its incident is resolved
+    final boolean wasParkedForSecretResolution =
+        isJobRelatedIncident(jobKey)
+            && incident.getErrorType() == ErrorType.SECRET_RESOLUTION_ERROR
+            && jobState.getState(jobKey) == JobState.State.WAITING_FOR_SECRET_RESOLUTION;
+
     stateWriter.appendFollowUpEvent(key, IncidentIntent.RESOLVED, incident);
     responseWriter.writeAcceptedResponseOnCommand(key, IncidentIntent.RESOLVED, incident, command);
+
+    if (wasParkedForSecretResolution) {
+      // RESOLVED made the job activatable again; mirror that on the JOB record stream so the
+      // wait-state exporter reverts the secret-wait mark to a plain job wait. Best-effort: if the
+      // batch cannot fit the extra event it is skipped rather than failing the resolution, and the
+      // mark is cleared later when the job is next activated or completed.
+      final JobRecord parkedJob = jobState.getJob(jobKey);
+      if (parkedJob != null) {
+        SecretResolutionJobEvents.appendIfBatchHasRoom(
+            stateWriter, jobKey, JobIntent.SECRET_RESOLUTION_RESUMED, parkedJob);
+      }
+    }
+
+    // incremented only after the follow-up event above: were that append to roll the command back,
+    // leaving it here keeps the resolved counter and the pending-incidents gauge in step with state
     incidentMetrics.incidentResolved();
 
     publishIncidentRelatedJob(jobKey);

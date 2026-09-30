@@ -9,6 +9,7 @@
 import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {HttpResponse} from 'msw';
+import {z} from 'zod';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
@@ -21,7 +22,10 @@ import {
 	createQueryDecisionDefinitionsResponse,
 } from '#/shared-test-modules/api-mocks/decision-definitions';
 import {DMN_XML} from '#/shared-test-modules/api-mocks/decision-definition-xmls';
-import {createQueryDecisionInstancesResponse} from '#/shared-test-modules/api-mocks/decision-instances';
+import {
+	createDecisionInstance,
+	createQueryDecisionInstancesResponse,
+} from '#/shared-test-modules/api-mocks/decision-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {DecisionsHarness} from './DecisionsHarness';
 import {mockQueryDecisionDefinitionsEndpointByFilter} from './mockQueryDecisionDefinitionsEndpointByFilter';
@@ -37,6 +41,10 @@ const DECISION_DEFINITIONS = HttpResponse.json(
 );
 
 const EMPTY_DECISION_INSTANCES = HttpResponse.json(createQueryDecisionInstancesResponse());
+
+const INVOICE_APPROVAL_ALL_VERSIONS_REQUEST_SCHEMA = z.object({
+	filter: z.strictObject({decisionDefinitionId: z.literal('invoice-approval'), state: z.unknown()}),
+});
 
 function renderDecisionsPage(searchParams?: Record<string, string>) {
 	const query = searchParams ? `?${new URLSearchParams(searchParams).toString()}` : '';
@@ -94,7 +102,21 @@ describe('<Decisions />', () => {
 	it('should navigate resetting version when a decision is selected', async ({worker}) => {
 		worker.use(
 			mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
-			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
+			mockQueryDecisionInstancesEndpoint({
+				schema: INVOICE_APPROVAL_ALL_VERSIONS_REQUEST_SCHEMA,
+				successResponse: HttpResponse.json(
+					createQueryDecisionInstancesResponse({
+						items: [
+							createDecisionInstance({
+								decisionEvaluationInstanceKey: '2251799813690001',
+								decisionDefinitionId: 'invoice-approval',
+								decisionDefinitionName: 'Invoice Approval',
+							}),
+						],
+					}),
+				),
+				failureResponse: EMPTY_DECISION_INSTANCES,
+			}),
 			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
 		);
 
@@ -108,6 +130,8 @@ describe('<Decisions />', () => {
 		const getSearch = () => screen.router.state.location.search as Record<string, unknown>;
 		await expect.poll(getSearch).toMatchObject({decisionDefinitionId: 'invoice-approval'});
 		expect(getSearch().decisionDefinitionVersion).toBeUndefined();
+		await expect.element(screen.getByRole('combobox', {name: 'Version'})).toMatchTextContent('All versions');
+		await expect.element(screen.getByTitle('View decision instance 2251799813690001')).toBeVisible();
 	});
 
 	it('should resolve a selected decision outside the loaded definitions page', async ({worker}) => {

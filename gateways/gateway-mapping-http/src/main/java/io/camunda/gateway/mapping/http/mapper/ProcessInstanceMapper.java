@@ -14,6 +14,7 @@ import static io.camunda.gateway.mapping.http.RequestMapper.getStringOrEmpty;
 import static io.camunda.gateway.mapping.http.util.KeyUtil.keyToLong;
 import static io.camunda.gateway.mapping.http.validator.MultiTenancyValidator.validateTenantId;
 import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateAssignProcessInstanceBusinessIdRequest;
+import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateCancelProcessInstanceBatchOperationFilter;
 import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateCancelProcessInstanceRequest;
 import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest;
 import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateMigrateProcessInstanceBatchOperationRequest;
@@ -243,6 +244,15 @@ public class ProcessInstanceMapper {
     }
 
     return Either.right(filter.get());
+  }
+
+  public Either<ProblemDetail, ProcessInstanceFilter> toProcessInstanceCancellationFilter(
+      final io.camunda.gateway.protocol.model.ProcessInstanceFilter request) {
+    return toRequiredProcessInstanceFilter(request)
+        .flatMap(
+            filter ->
+                RequestMapper.getResult(
+                    validateCancelProcessInstanceBatchOperationFilter(filter), () -> filter));
   }
 
   public Either<ProblemDetail, ProcessInstanceMigrateBatchOperationRequest>

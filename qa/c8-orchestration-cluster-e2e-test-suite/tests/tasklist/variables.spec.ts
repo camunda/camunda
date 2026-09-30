@@ -88,7 +88,7 @@ test.describe('variables page', () => {
     await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
     await expect(taskDetailsPage.assignee).toHaveText('Assigned to me');
     await expect(
-      taskDetailsPage.variablesTable.getByTitle('testData value'),
+      taskDetailsPage.variablesTable.getByLabel('testData value'),
     ).toHaveValue('"something"');
     await taskDetailsPage.replaceExistingVariableValue({
       name: 'testData value',
@@ -127,10 +127,10 @@ test.describe('variables page', () => {
     await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
     await expect(taskDetailsPage.assignee).toHaveText('Assigned to me');
     await expect(
-      taskDetailsPage.variablesTable.getByTitle('testData value'),
+      taskDetailsPage.variablesTable.getByLabel('testData value'),
     ).toBeVisible();
     await expect(
-      taskDetailsPage.variablesTable.getByTitle('testData value'),
+      taskDetailsPage.variablesTable.getByLabel('testData value'),
     ).toHaveValue('"something"');
 
     await taskDetailsPage.replaceExistingVariableValue({
@@ -139,10 +139,10 @@ test.describe('variables page', () => {
     });
     await page.reload();
     await expect(
-      taskDetailsPage.variablesTable.getByTitle('testData value'),
+      taskDetailsPage.variablesTable.getByLabel('testData value'),
     ).toHaveValue('"something"');
     await expect(
-      taskDetailsPage.variablesTable.getByTitle('testData value'),
+      taskDetailsPage.variablesTable.getByLabel('testData value'),
     ).not.toHaveValue('"updatedValue"');
   });
 
@@ -178,14 +178,9 @@ test.describe('variables page', () => {
     taskDetailsPage,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
-    await expect(async () => {
-      await expect(
-        taskPanelPage.availableTasks
-          .getByText('usertask_with_many_variables')
-          .first(),
-      ).toBeVisible();
-    }).toPass();
-    await taskPanelPage.openTask('usertask_with_many_variables');
+    await taskPanelPage.openTask('usertask_with_many_variables', {
+      timeout: 60000,
+    });
 
     await expect(
       taskDetailsPage.variablesTable
@@ -239,7 +234,7 @@ test.describe('variables page', () => {
       value: '"newVariableValue"',
     });
 
-    await taskDetailsPage.completeTaskButton.click();
+    await taskDetailsPage.clickCompleteTaskButton();
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
     await expect(taskDetailsPage.pickATaskHeader).toBeVisible();
 

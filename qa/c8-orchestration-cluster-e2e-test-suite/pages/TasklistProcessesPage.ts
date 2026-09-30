@@ -60,8 +60,8 @@ class TasklistProcessesPage {
   }
 
   requiresFormInputTagFor(name: string): Locator {
-    return this.processTileByName(name).locator('.cds--tag__label', {
-      hasText: 'Requires form input',
+    return this.processTileByName(name).getByText('Requires form input', {
+      exact: true,
     });
   }
 

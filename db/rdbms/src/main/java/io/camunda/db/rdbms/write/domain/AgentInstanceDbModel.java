@@ -181,11 +181,11 @@ public record AgentInstanceDbModel(
 
   /**
    * Returns the structured tool list, deserializing the JSON form on every call. Returns null, not
-   * an empty list, when no JSON is stored -- covers both the never-set and the explicit-empty-list
-   * case (an empty list also serializes to a null {@code tools}), as well as the Oracle
-   * empty-string-treated-as-null edge case. Unlike the pre-record class, this implementation cannot
-   * distinguish "never set" from "explicitly set to an empty list", since both collapse to the same
-   * null string; no current caller depends on that distinction.
+   * an empty list, when no JSON is stored -- covers the never-set case and the Oracle
+   * empty-string-treated-as-null edge case. An explicitly-set empty list serializes to the literal
+   * {@code "[]"}, not null (see {@link #serializeTools}) -- {@code AgentInstanceWriter} relies on
+   * that distinction to tell "this write never touched tools" (raw field null, skip) apart from
+   * "tools was changed to empty" (raw field {@code "[]"}, write it).
    */
   public List<AgentInstanceToolDbValue> toolValues() {
     if (tools == null || tools.isEmpty()) {
@@ -198,6 +198,9 @@ public record AgentInstanceDbModel(
    * Returns the structured system-prompt content list, deserializing the JSON form on every call.
    * Returns an empty list, not null, when no JSON is stored.
    */
+  // Raw `systemPrompt` field: null means never written; "[]" means explicitly cleared. See
+  // toolValues() above for why that distinction matters and serializeContentItems() below for how
+  // it's produced.
   public List<ContentItem> systemPromptItems() {
     if (systemPrompt == null || systemPrompt.isEmpty()) {
       return List.of();
@@ -215,7 +218,10 @@ public record AgentInstanceDbModel(
   }
 
   private static String serializeTools(final List<AgentInstanceToolDbValue> toolValues) {
-    if (toolValues == null || toolValues.isEmpty()) {
+    // Deliberately does NOT collapse an empty (but non-null) list to null: null is the sentinel
+    // AgentInstanceWriter uses to mean "this write never touched tools" (see toolValues() above),
+    // so an explicit empty list must serialize to a non-null "[]" to stay distinguishable.
+    if (toolValues == null) {
       return null;
     }
 
@@ -237,7 +243,9 @@ public record AgentInstanceDbModel(
   }
 
   private static String serializeContentItems(final List<ContentItem> items) {
-    if (items == null || items.isEmpty()) {
+    // Same reasoning as serializeTools() above: an empty list must serialize to "[]", not null,
+    // so it stays distinguishable from "never touched".
+    if (items == null) {
       return null;
     }
 

@@ -26,15 +26,16 @@ gated on the previous attempt's `outcome`. See [Notes](#notes) before editing th
 
 ### Inputs
 
-|        Input         |                         Description                          | Required | Default |
-|----------------------|--------------------------------------------------------------|----------|---------|
-| name                 | Artifact name                                                | true     |         |
-| path                 | File, directory or wildcard pattern to upload                | true     |         |
-| retention-days       | Days to keep the artifact; empty uses the repository default | false    | `""`    |
-| include-hidden-files | Whether to include hidden files under `path`                 | false    | `false` |
-| if-no-files-found    | `warn`, `error` or `ignore`                                  | false    | `warn`  |
-| retry-delay-seconds  | Base seconds to wait before each retry; `0` retries at once  | false    | `10`    |
-| retry-jitter-seconds | Inclusive upper bound on a random wait added to the delay    | false    | `10`    |
+|        Input         |                             Description                             | Required | Default |
+|----------------------|---------------------------------------------------------------------|----------|---------|
+| name                 | Artifact name                                                       | true     |         |
+| path                 | File, directory or wildcard pattern to upload                       | true     |         |
+| retention-days       | Days to keep the artifact; empty uses the repository default        | false    | `""`    |
+| include-hidden-files | Whether to include hidden files under `path`                        | false    | `false` |
+| if-no-files-found    | `warn`, `error` or `ignore`                                         | false    | `warn`  |
+| compression-level    | Zlib level 0-9; `0` skips compression, for already-compressed input | false    | `6`     |
+| retry-delay-seconds  | Base seconds to wait before each retry; `0` retries at once         | false    | `10`    |
+| retry-jitter-seconds | Inclusive upper bound on a random wait added to the delay           | false    | `10`    |
 
 ### Outputs
 

@@ -168,7 +168,8 @@ final class PartitionModeHandlerRecoveryRoundTripTest {
             transport,
             (ignored) -> 0L,
             topologyManager,
-            healthCheckService);
+            healthCheckService,
+            () -> null);
 
     // exit manager: a lightweight fake standing in for a real Raft-based PartitionManagerImpl -
     // it just marks both local partitions LEADER on start, matching what PartitionModeHandlerTest
