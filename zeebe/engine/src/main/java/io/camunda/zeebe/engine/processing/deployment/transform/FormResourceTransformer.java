@@ -52,11 +52,6 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
   }
 
   @Override
-  public boolean canTransform(final DeploymentResource resource) {
-    return resource.getResourceName().endsWith(".form");
-  }
-
-  @Override
   public Either<Failure, Void> createMetadata(
       final DeploymentResource resource,
       final DeploymentRecord deployment,
