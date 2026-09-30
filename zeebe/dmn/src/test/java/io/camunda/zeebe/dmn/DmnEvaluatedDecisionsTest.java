@@ -76,6 +76,7 @@ class DmnEvaluatedDecisionsTest {
     assertThat(evaluatedInput.inputId()).isEqualTo("Input_1");
     assertThat(evaluatedInput.inputName()).isEqualTo("Lightsaber color");
     assertEquality(evaluatedInput.inputValue(), "'blue'");
+    assertThat(evaluatedInput.referencedVariableNames()).containsExactly("lightsaberColor");
 
     assertThat(evaluatedDecision.matchedRules()).hasSize(1);
 

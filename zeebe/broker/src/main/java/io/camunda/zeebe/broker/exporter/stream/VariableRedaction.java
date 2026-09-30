@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.exporter.stream;
 
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import org.agrona.DirectBuffer;
@@ -36,33 +37,53 @@ import org.agrona.concurrent.UnsafeBuffer;
  * a declared set instead of re-parsing the name. {@code MASK}/{@code ENCRYPT} are declarable today
  * but not yet enforced anywhere -- a known gap until masking/encryption behavior is built.
  *
- * <p>PoC limitations, deliberate: only {@link ValueType#VARIABLE} records are covered -- job
- * payloads, process instance creation payloads, DMN decision-instance inputs and message
- * correlation keys carry variable values on other record types and are untouched.
+ * <p>{@link ValueType#DECISION_EVALUATION} records are covered the same way: the engine flags each
+ * evaluated input whose expression references a sensitive variable, and its input value is redacted
+ * here.
+ *
+ * <p>PoC limitations, deliberate: job payloads, process instance creation payloads, decision
+ * outputs and message correlation keys carry variable values on other record types or fields and
+ * are untouched.
  */
 final class VariableRedaction {
 
-  /** The value every redacted variable is replaced with, as a JSON string. */
-  static final String REDACTION_MARKER = "[REDACTED]";
-
+  /**
+   * The value every redacted value is replaced with: JSON {@code null}. The record keeps its
+   * protection modes, so consumers tell a redacted value apart from a genuine {@code null} by
+   * reading them rather than by recognizing a marker string.
+   */
   private static final DirectBuffer REDACTED_VALUE =
-      new UnsafeBuffer(MsgPackConverter.convertToMsgPack("\"" + REDACTION_MARKER + "\""));
+      new UnsafeBuffer(MsgPackConverter.convertToMsgPack("null"));
 
   private VariableRedaction() {}
 
   /**
-   * Replaces the value of {@code recordValue} with the redaction marker if it is a variable record
-   * declared with {@link io.camunda.zeebe.protocol.record.value.ProtectionMode#REDACT}. Any other
-   * record is left untouched.
+   * Replaces every value in {@code recordValue} declared with {@link
+   * io.camunda.zeebe.protocol.record.value.ProtectionMode#REDACT} with {@code null}: the value of a
+   * variable record, or the input values of a decision evaluation record. Any other record is left
+   * untouched.
    */
   static void apply(final ValueType valueType, final UnifiedRecordValue recordValue) {
-    if (valueType != ValueType.VARIABLE) {
-      return;
+    switch (valueType) {
+      case VARIABLE -> redactVariable((VariableRecord) recordValue);
+      case DECISION_EVALUATION -> redactDecisionInputs((DecisionEvaluationRecord) recordValue);
+      default -> {}
     }
+  }
 
-    final var variableRecord = (VariableRecord) recordValue;
+  private static void redactVariable(final VariableRecord variableRecord) {
     if (variableRecord.shouldBeRedacted()) {
       variableRecord.setValue(REDACTED_VALUE);
+    }
+  }
+
+  private static void redactDecisionInputs(final DecisionEvaluationRecord decisionRecord) {
+    for (final var evaluatedDecision : decisionRecord.evaluatedDecisions()) {
+      for (final var evaluatedInput : evaluatedDecision.evaluatedInputs()) {
+        if (evaluatedInput.shouldBeRedacted()) {
+          evaluatedInput.setInputValue(REDACTED_VALUE);
+        }
+      }
     }
   }
 }

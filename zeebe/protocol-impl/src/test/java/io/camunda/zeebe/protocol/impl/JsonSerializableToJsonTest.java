@@ -2344,7 +2344,8 @@ final class JsonSerializableToJsonTest {
                         {
                           "inputId":"input-id",
                           "inputName":"input-name",
-                          "inputValue":'"input-value"'
+                          "inputValue":'"input-value"',
+                          "protectionModes":[]
                         }
                       ],
                       "matchedRules":[
@@ -2461,7 +2462,8 @@ final class JsonSerializableToJsonTest {
                         {
                           "inputId":"input-id",
                           "inputName":"input-name",
-                          "inputValue":'"input-value"'
+                          "inputValue":'"input-value"',
+                          "protectionModes":[]
                         }
                       ],
                       "matchedRules":[

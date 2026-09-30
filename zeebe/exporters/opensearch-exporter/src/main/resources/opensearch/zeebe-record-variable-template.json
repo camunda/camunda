@@ -55,6 +55,9 @@
             },
             "source": {
               "enabled": false
+            },
+            "protectionModes": {
+              "type": "keyword"
             }
           }
         }

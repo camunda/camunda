@@ -49,7 +49,7 @@ public class VariableRedactionIT {
   private static final String PUBLIC_NAME = "customerId";
   private static final String PUBLIC_VALUE = "C-42";
 
-  private static final String REDACTION_MARKER = "\"[REDACTED]\"";
+  private static final String REDACTION_MARKER = "null";
 
   private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)

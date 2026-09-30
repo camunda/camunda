@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dmn.impl;
 
 import io.camunda.zeebe.dmn.EvaluatedInput;
+import java.util.Set;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.camunda.dmn.Audit;
@@ -15,7 +16,8 @@ import org.camunda.dmn.parser.FeelExpression;
 import org.camunda.dmn.parser.ParsedInput;
 import org.camunda.feel.syntaxtree.Val;
 
-public record EvaluatedDmnScalaInput(String inputId, String inputName, DirectBuffer inputValue)
+public record EvaluatedDmnScalaInput(
+    String inputId, String inputName, DirectBuffer inputValue, Set<String> referencedVariableNames)
     implements EvaluatedInput {
 
   private static final String MAX_EXPRESSION_LENGTH = "30";
@@ -26,7 +28,15 @@ public record EvaluatedDmnScalaInput(String inputId, String inputName, DirectBuf
     final var input = evaluatedInput.input();
     final var inputValue = evaluatedInput.value();
     final var inputName = determineInputName(input);
-    return new EvaluatedDmnScalaInput(input.id(), inputName, converter.apply(inputValue));
+    return new EvaluatedDmnScalaInput(
+        input.id(), inputName, converter.apply(inputValue), referencedVariableNames(input));
+  }
+
+  private static Set<String> referencedVariableNames(final ParsedInput input) {
+    if (input.expression() instanceof final FeelExpression feelExpression) {
+      return Set.copyOf(feelExpression.expression().getVariableNames());
+    }
+    return Set.of();
   }
 
   private static String determineInputName(final ParsedInput input) {

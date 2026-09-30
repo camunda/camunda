@@ -60,6 +60,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
               "scopeKey": "2",
               "processInstanceKey": "3",
               "rootProcessInstanceKey": "4",
+              "protectionModes": [],
               "tenantId": "<default>"
           }""";
   private static final String EXPECT_SINGLE_TRUNCATED_VARIABLE_RESPONSE =
@@ -71,6 +72,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
               "scopeKey": "2",
               "processInstanceKey": "3",
               "rootProcessInstanceKey": "4",
+              "protectionModes": [],
               "tenantId": "<default>"
           }""";
   private static final String EXPECTED_SEARCH_RESPONSE =
@@ -84,6 +86,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                         "scopeKey": "2",
                         "processInstanceKey": "3",
                         "rootProcessInstanceKey": "4",
+                        "protectionModes": [],
                         "tenantId": "<default>",
                         "isTruncated": false
                   },
@@ -94,6 +97,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                         "scopeKey": "2",
                         "processInstanceKey": "3",
                         "rootProcessInstanceKey": "4",
+                        "protectionModes": [],
                         "tenantId": "<default>",
                         "isTruncated": true
                   }
@@ -117,6 +121,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                         "scopeKey": "2",
                         "processInstanceKey": "3",
                         "rootProcessInstanceKey": "4",
+                        "protectionModes": [],
                         "tenantId": "<default>",
                         "isTruncated": false
                   },
@@ -127,6 +132,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                         "scopeKey": "2",
                         "processInstanceKey": "3",
                         "rootProcessInstanceKey": "4",
+                        "protectionModes": [],
                         "tenantId": "<default>",
                         "isTruncated": false
                   }
@@ -450,6 +456,49 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         .json(EXPECT_SINGLE_VARIABLE_RESPONSE, JsonCompareMode.STRICT);
 
     verify(variableServices).getByKey(eq(VALID_VARIABLE_KEY), any());
+  }
+
+  @Test
+  void shouldReturnProtectionModesOfRedactedVariable() {
+    // given -- the broker replaced the value with null before export and kept the modes, so a
+    // client can tell a redacted value from a genuine null
+    final long redactedVariableKey = 2L;
+    when(variableServices.getByKey(eq(redactedVariableKey), any()))
+        .thenReturn(
+            new VariableEntity(
+                redactedVariableKey,
+                "sensitive_ssn",
+                "null",
+                null,
+                false,
+                2L,
+                3L,
+                4L,
+                "bpid",
+                "<default>",
+                List.of("REDACT")));
+
+    // when / then
+    webClient
+        .get()
+        .uri("/v2/variables/" + redactedVariableKey)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            {
+                "variableKey": "2",
+                "name": "sensitive_ssn",
+                "value": "null",
+                "scopeKey": "2",
+                "processInstanceKey": "3",
+                "rootProcessInstanceKey": "4",
+                "protectionModes": ["REDACT"],
+                "tenantId": "<default>"
+            }""",
+            JsonCompareMode.STRICT);
   }
 
   @Test

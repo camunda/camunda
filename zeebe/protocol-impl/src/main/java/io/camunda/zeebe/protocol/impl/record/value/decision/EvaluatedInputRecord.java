@@ -10,22 +10,35 @@ package io.camunda.zeebe.protocol.impl.record.value.decision;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedInputValue;
+import io.camunda.zeebe.protocol.record.value.ProtectionMode;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public final class EvaluatedInputRecord extends UnifiedRecordValue implements EvaluatedInputValue {
 
+  private static final StringValue PROTECTION_MODES_KEY = new StringValue("protectionModes");
+
   private final StringProperty inputIdProp = new StringProperty("inputId");
   private final StringProperty inputNameProp = new StringProperty("inputName", "");
   private final BinaryProperty inputValueProp = new BinaryProperty("inputValue");
+  private final ArrayProperty<StringValue> protectionModesProp =
+      new ArrayProperty<>(PROTECTION_MODES_KEY, StringValue::new);
 
   public EvaluatedInputRecord() {
-    super(3);
-    declareProperty(inputIdProp).declareProperty(inputNameProp).declareProperty(inputValueProp);
+    super(4);
+    declareProperty(inputIdProp)
+        .declareProperty(inputNameProp)
+        .declareProperty(inputValueProp)
+        .declareProperty(protectionModesProp);
   }
 
   @Override
@@ -56,6 +69,29 @@ public final class EvaluatedInputRecord extends UnifiedRecordValue implements Ev
   public EvaluatedInputRecord setInputValue(final DirectBuffer inputValue) {
     inputValueProp.setValue(inputValue);
     return this;
+  }
+
+  @Override
+  public Set<ProtectionMode> getProtectionModes() {
+    return protectionModesProp.stream()
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .map(ProtectionMode::valueOf)
+        .collect(Collectors.toSet());
+  }
+
+  public EvaluatedInputRecord setProtectionModes(final Set<ProtectionMode> protectionModes) {
+    protectionModesProp.reset();
+    protectionModes.forEach(
+        mode -> protectionModesProp.add().wrap(BufferUtil.wrapString(mode.name())));
+    return this;
+  }
+
+  // Derived from getProtectionModes(); excluded from JSON to avoid duplicating that field.
+  @JsonIgnore
+  @Override
+  public boolean shouldBeRedacted() {
+    return EvaluatedInputValue.super.shouldBeRedacted();
   }
 
   @JsonIgnore

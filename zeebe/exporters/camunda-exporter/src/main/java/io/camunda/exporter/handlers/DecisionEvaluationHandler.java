@@ -187,7 +187,9 @@ public class DecisionEvaluationHandler
                 new DecisionInstanceInputEntity()
                     .setId(input.getInputId())
                     .setName(input.getInputName())
-                    .setValue(input.getInputValue()))
+                    .setValue(input.getInputValue())
+                    .setProtectionModes(
+                        input.getProtectionModes().stream().map(Enum::name).sorted().toList()))
         .collect(Collectors.toList());
   }
 

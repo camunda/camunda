@@ -8,6 +8,8 @@
 package io.camunda.webapps.schema.entities.dmn;
 
 import io.camunda.webapps.schema.entities.BeforeVersion880;
+import io.camunda.webapps.schema.entities.SinceVersion;
+import java.util.List;
 import java.util.Objects;
 
 public class DecisionInstanceInputEntity {
@@ -15,6 +17,10 @@ public class DecisionInstanceInputEntity {
   @BeforeVersion880 private String id;
   @BeforeVersion880 private String name;
   @BeforeVersion880 private String value;
+
+  /** Attention! This field will be filled in only for data imported after v. 8.11.0. */
+  @SinceVersion(value = "8.11.0", requireDefault = false)
+  private List<String> protectionModes;
 
   public String getId() {
     return id;
@@ -43,9 +49,18 @@ public class DecisionInstanceInputEntity {
     return this;
   }
 
+  public List<String> getProtectionModes() {
+    return protectionModes;
+  }
+
+  public DecisionInstanceInputEntity setProtectionModes(final List<String> protectionModes) {
+    this.protectionModes = protectionModes;
+    return this;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(id, name, value);
+    return Objects.hash(id, name, value, protectionModes);
   }
 
   @Override
@@ -59,6 +74,7 @@ public class DecisionInstanceInputEntity {
     final DecisionInstanceInputEntity that = (DecisionInstanceInputEntity) o;
     return Objects.equals(id, that.id)
         && Objects.equals(name, that.name)
-        && Objects.equals(value, that.value);
+        && Objects.equals(value, that.value)
+        && Objects.equals(protectionModes, that.protectionModes);
   }
 }
