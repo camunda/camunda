@@ -157,13 +157,11 @@ public class HealthConfigurationInitializer
       if (isWebappProfile) {
         healthIndicators.add(INDICATOR_SPRING_READINESS_STATE);
       }
-      if (DatabaseTypeUtils.isRdbmsDisabled(env)) {
-        if (isAnyHttpGatewayEnabled(env)
-            && (isWebappProfile
-                || activeProfiles.contains(Profile.GATEWAY.getId())
-                || activeProfiles.contains(Profile.BROKER.getId()))) {
-          healthIndicators.add(SchemaReadinessCheck.SCHEMA_READINESS_CHECK);
-        }
+      if (isAnyHttpGatewayEnabled(env)
+          && (isWebappProfile
+              || activeProfiles.contains(Profile.GATEWAY.getId())
+              || activeProfiles.contains(Profile.BROKER.getId()))) {
+        healthIndicators.add(SchemaReadinessCheck.SCHEMA_READINESS_CHECK);
       }
     }
 
