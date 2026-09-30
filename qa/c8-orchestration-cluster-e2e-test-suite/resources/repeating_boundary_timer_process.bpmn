@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="c9056f5" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.10.0" camunda:diagramRelationId="0c405a93-c27d-4ede-8d2c-e08c810fcad0">
+  <bpmn:error id="Error_0pdylwv" name="Error_1hsblsu" errorCode="foo" />
+  <bpmn:message id="Message_0k1s3rn" name="updateTimerValue">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=correlationKey" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:escalation id="Escalation_0j0bss8" name="Timer Triggered" escalationCode="timer_triggered" />
+  <bpmn:error id="Error_1utjcvh" name="Error_2tdv811" errorCode="abc" />
+  <bpmn:process id="updatable_boundary_timer_process" name="Updatable boundary timer process" isExecutable="true">
+    <bpmn:parallelGateway id="Gateway_1hclzaj">
+      <bpmn:incoming>Flow_start_merge</bpmn:incoming>
+      <bpmn:outgoing>Flow_03o9f2t</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0c14nsh</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:exclusiveGateway id="Gateway_01aner5">
+      <bpmn:incoming>Flow_0c14nsh</bpmn:incoming>
+      <bpmn:incoming>Flow_080mhs0</bpmn:incoming>
+      <bpmn:outgoing>Flow_0pmbe2r</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:eventBasedGateway id="Gateway_1ubwn3i">
+      <bpmn:incoming>Flow_0pmbe2r</bpmn:incoming>
+      <bpmn:outgoing>Flow_09794tg</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1rzvwnv</bpmn:outgoing>
+    </bpmn:eventBasedGateway>
+    <bpmn:intermediateCatchEvent id="Event_18l3nm7" name="Date reached">
+      <bpmn:incoming>Flow_09794tg</bpmn:incoming>
+      <bpmn:outgoing>Flow_0ud9rhe</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_0sceenh">
+        <bpmn:timeDate xsi:type="bpmn:tFormalExpression">=dueDate</bpmn:timeDate>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Event_1cdcj65" name="Date updated">
+      <bpmn:incoming>Flow_1rzvwnv</bpmn:incoming>
+      <bpmn:outgoing>Flow_080mhs0</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0s7vmic" messageRef="Message_0k1s3rn" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="Event_1r9kbu9" name="Due date reached">
+      <bpmn:incoming>Flow_0ud9rhe</bpmn:incoming>
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_1uuonyb" escalationRef="Escalation_0j0bss8" />
+    </bpmn:endEvent>
+    <bpmn:endEvent id="Event_1at5ppy" name="Updatable timer process completed">
+      <bpmn:incoming>Flow_0f3cmx5</bpmn:incoming>
+      <bpmn:terminateEventDefinition id="TerminateEventDefinition_1omwmg4" />
+    </bpmn:endEvent>
+    <bpmn:callActivity id="Activity_1dpj0f1" name="Dynamic call to original task or subprocess">
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="=dynamicProcessId" propagateAllChildVariables="true" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_03o9f2t</bpmn:incoming>
+      <bpmn:outgoing>Flow_0f3cmx5</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:sequenceFlow id="Flow_1h3x0pg" sourceRef="Event_19zxm4h" targetRef="Gateway_start_merge" />
+    <bpmn:sequenceFlow id="Flow_03o9f2t" sourceRef="Gateway_1hclzaj" targetRef="Activity_1dpj0f1" />
+    <bpmn:sequenceFlow id="Flow_0c14nsh" sourceRef="Gateway_1hclzaj" targetRef="Gateway_01aner5" />
+    <bpmn:sequenceFlow id="Flow_080mhs0" sourceRef="Event_1cdcj65" targetRef="Gateway_01aner5" />
+    <bpmn:sequenceFlow id="Flow_0pmbe2r" sourceRef="Gateway_01aner5" targetRef="Gateway_1ubwn3i" />
+    <bpmn:sequenceFlow id="Flow_09794tg" sourceRef="Gateway_1ubwn3i" targetRef="Event_18l3nm7" />
+    <bpmn:sequenceFlow id="Flow_1rzvwnv" sourceRef="Gateway_1ubwn3i" targetRef="Event_1cdcj65" />
+    <bpmn:sequenceFlow id="Flow_0ud9rhe" sourceRef="Event_18l3nm7" targetRef="Event_1r9kbu9" />
+    <bpmn:sequenceFlow id="Flow_0f3cmx5" sourceRef="Activity_1dpj0f1" targetRef="Event_1at5ppy" />
+    <bpmn:startEvent id="Event_19zxm4h" name="Updatable timer process started">
+      <bpmn:extensionElements>
+        <zeebe:properties>
+          <zeebe:property name="camundaModeler:exampleOutputJson" value="{&#10;  &#34;dynamicProcessId&#34;: &#34;original_process&#34;,&#10;  &#34;dueDate&#34;: &#34;2024-04-23T08:00:00Z&#34;,&#10;  &#34;correlationKey&#34;: &#34;aCorrelationKey&#34;&#10;}" />
+        </zeebe:properties>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_1h3x0pg</bpmn:outgoing>
+      <bpmn:conditionalEventDefinition id="ConditionalEventDefinition_04b2ftw">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">=orderAmount &gt; 500</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:startEvent>
+    <bpmn:startEvent id="StartEvent_none" name="Started via API">
+      <bpmn:outgoing>Flow_none_start</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_none_start" sourceRef="StartEvent_none" targetRef="Gateway_start_merge" />
+    <bpmn:exclusiveGateway id="Gateway_start_merge">
+      <bpmn:incoming>Flow_1h3x0pg</bpmn:incoming>
+      <bpmn:incoming>Flow_none_start</bpmn:incoming>
+      <bpmn:outgoing>Flow_start_merge</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_start_merge" sourceRef="Gateway_start_merge" targetRef="Gateway_1hclzaj" />
+    <bpmn:boundaryEvent id="Event_tick_timer" name="Every 20s, 4 times" cancelActivity="false" attachedToRef="Activity_1dpj0f1">
+      <bpmn:outgoing>Flow_tick</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_tick">
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R4/PT20S</bpmn:timeCycle>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="Flow_tick" sourceRef="Event_tick_timer" targetRef="Activity_tick" />
+    <bpmn:serviceTask id="Activity_tick" name="Record tick">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="sr-tick" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_tick</bpmn:incoming>
+      <bpmn:outgoing>Flow_tick_end</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_tick_end" sourceRef="Activity_tick" targetRef="Event_tick_end" />
+    <bpmn:endEvent id="Event_tick_end" name="Tick recorded">
+      <bpmn:incoming>Flow_tick_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:boundaryEvent id="Event_threshold" name="amount &gt; 100" cancelActivity="false" attachedToRef="Activity_1dpj0f1">
+      <bpmn:outgoing>Flow_threshold</bpmn:outgoing>
+      <bpmn:conditionalEventDefinition id="ConditionalEventDefinition_threshold">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">=amount &gt; 100</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="Flow_threshold" sourceRef="Event_threshold" targetRef="Activity_threshold" />
+    <bpmn:serviceTask id="Activity_threshold" name="Handle threshold breach">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="sr-threshold" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_threshold</bpmn:incoming>
+      <bpmn:outgoing>Flow_threshold_end</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_threshold_end" sourceRef="Activity_threshold" targetRef="Event_threshold_end" />
+    <bpmn:endEvent id="Event_threshold_end" name="Threshold handled">
+      <bpmn:incoming>Flow_threshold_end</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="updatable_boundary_timer_process">
+      <bpmndi:BPMNShape id="BPMNShape_0wjo8tl" bpmnElement="Gateway_1hclzaj">
+        <dc:Bounds x="247" y="95" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1q2zxlj" bpmnElement="Gateway_01aner5" isMarkerVisible="true">
+        <dc:Bounds x="247" y="205" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1qkz4nn" bpmnElement="Gateway_1ubwn3i">
+        <dc:Bounds x="337" y="205" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_17sft8r" bpmnElement="Event_18l3nm7">
+        <dc:Bounds x="424" y="212" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="409" y="255" width="67" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0mto8gl" bpmnElement="Event_1cdcj65">
+        <dc:Bounds x="424" y="292" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="409" y="335" width="67" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0ngc38t" bpmnElement="Event_1r9kbu9">
+        <dc:Bounds x="524" y="212" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="498" y="255" width="88" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_05ld1i3" bpmnElement="Event_1at5ppy">
+        <dc:Bounds x="482" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="461" y="145" width="79" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0jszh3d" bpmnElement="Activity_1dpj0f1">
+        <dc:Bounds x="340" y="80" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_18r5zdu_di" bpmnElement="Event_19zxm4h">
+        <dc:Bounds x="172" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="152" y="145" width="78" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_0gn3kuk" bpmnElement="Flow_1h3x0pg">
+        <di:waypoint x="190" y="138" />
+        <di:waypoint x="190" y="170" />
+        <di:waypoint x="170" y="170" />
+        <di:waypoint x="170" y="185" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_0u8cqyk" bpmnElement="Flow_03o9f2t">
+        <di:waypoint x="297" y="120" />
+        <di:waypoint x="340" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_1r2dega" bpmnElement="Flow_0c14nsh">
+        <di:waypoint x="272" y="145" />
+        <di:waypoint x="272" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_0t03nm3" bpmnElement="Flow_080mhs0">
+        <di:waypoint x="460" y="310" />
+        <di:waypoint x="482" y="310" />
+        <di:waypoint x="482" y="360" />
+        <di:waypoint x="272" y="360" />
+        <di:waypoint x="272" y="255" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_1wfzui9" bpmnElement="Flow_0pmbe2r">
+        <di:waypoint x="297" y="230" />
+        <di:waypoint x="337" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_0alcj61" bpmnElement="Flow_09794tg">
+        <di:waypoint x="387" y="230" />
+        <di:waypoint x="424" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_01kabq5" bpmnElement="Flow_1rzvwnv">
+        <di:waypoint x="362" y="255" />
+        <di:waypoint x="362" y="310" />
+        <di:waypoint x="424" y="310" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_02c41nm" bpmnElement="Flow_0ud9rhe">
+        <di:waypoint x="460" y="230" />
+        <di:waypoint x="524" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_1cbdtzz" bpmnElement="Flow_0f3cmx5">
+        <di:waypoint x="440" y="120" />
+        <di:waypoint x="482" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StartEvent_none_di" bpmnElement="StartEvent_none">
+        <dc:Bounds x="62" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="47" y="145" width="68" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_start_merge_di" bpmnElement="Gateway_start_merge" isMarkerVisible="true">
+        <dc:Bounds x="145" y="185" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_tick_timer_di" bpmnElement="Event_tick_timer">
+        <dc:Bounds x="352" y="142" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="330" y="185" width="81" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_tick_di" bpmnElement="Activity_tick">
+        <dc:Bounds x="620" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_tick_end_di" bpmnElement="Event_tick_end">
+        <dc:Bounds x="772" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="757" y="145" width="67" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_threshold_di" bpmnElement="Event_threshold">
+        <dc:Bounds x="412" y="142" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="398" y="185" width="66" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_threshold_di" bpmnElement="Activity_threshold">
+        <dc:Bounds x="620" y="-40" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_threshold_end_di" bpmnElement="Event_threshold_end">
+        <dc:Bounds x="772" y="-18" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="753" y="25" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_none_start_di" bpmnElement="Flow_none_start">
+        <di:waypoint x="98" y="120" />
+        <di:waypoint x="120" y="120" />
+        <di:waypoint x="120" y="210" />
+        <di:waypoint x="145" y="210" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_start_merge_di" bpmnElement="Flow_start_merge">
+        <di:waypoint x="195" y="210" />
+        <di:waypoint x="272" y="210" />
+        <di:waypoint x="272" y="145" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_tick_di" bpmnElement="Flow_tick">
+        <di:waypoint x="370" y="142" />
+        <di:waypoint x="370" y="120" />
+        <di:waypoint x="620" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_tick_end_di" bpmnElement="Flow_tick_end">
+        <di:waypoint x="720" y="120" />
+        <di:waypoint x="772" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_threshold_di" bpmnElement="Flow_threshold">
+        <di:waypoint x="430" y="142" />
+        <di:waypoint x="430" y="0" />
+        <di:waypoint x="620" y="0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_threshold_end_di" bpmnElement="Flow_threshold_end">
+        <di:waypoint x="720" y="0" />
+        <di:waypoint x="772" y="0" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
