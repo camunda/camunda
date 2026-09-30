@@ -1021,8 +1021,11 @@ final class LeaderAppender {
       return false;
     }
     // If the member continues right after the snapshot, the snapshot is the previous entry of the
-    // next append, even if the log starts after it.
-    final var continuesAfterSnapshot = member.getNextIndex() == persistedSnapshot.getIndex() + 1;
+    // next append, even if the log starts right after it.
+    final var afterSnapshotIndex = persistedSnapshot.getIndex() + 1;
+    final var continuesAfterSnapshot =
+        member.getNextIndex() == afterSnapshotIndex
+            && raft.getLog().getFirstIndex() <= afterSnapshotIndex;
     if (raft.getLog().getFirstIndex() > member.getCurrentIndex() && !continuesAfterSnapshot) {
       // Necessary events are not available anymore, we have to use the snapshot
       return true;

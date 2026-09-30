@@ -173,6 +173,9 @@ public final class RaftMemberContext {
     if (reader.hasNext()) {
       currentEntry = reader.next();
       nextIndex = currentEntry.index() + 1;
+    } else {
+      currentEntry = null;
+      nextIndex = 0;
     }
   }
 
