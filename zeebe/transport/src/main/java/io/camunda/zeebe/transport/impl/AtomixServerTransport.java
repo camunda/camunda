@@ -41,15 +41,29 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
 
   private final IdGenerator requestIdGenerator;
   private final boolean receiveOnLegacySubject;
+  private final UnmatchedResponseHandler unmatchedResponseHandler;
 
   public AtomixServerTransport(
       final MessagingService messagingService,
       final IdGenerator requestIdGenerator,
       final boolean receiveOnLegacySubject) {
+    this(
+        messagingService,
+        requestIdGenerator,
+        receiveOnLegacySubject,
+        (requestId, partitionId, response) -> {});
+  }
+
+  public AtomixServerTransport(
+      final MessagingService messagingService,
+      final IdGenerator requestIdGenerator,
+      final boolean receiveOnLegacySubject,
+      final UnmatchedResponseHandler unmatchedResponseHandler) {
     super("ServerTransport");
     this.messagingService = messagingService;
     this.requestIdGenerator = requestIdGenerator;
     this.receiveOnLegacySubject = receiveOnLegacySubject;
+    this.unmatchedResponseHandler = unmatchedResponseHandler;
     pendingRequests = new Long2ObjectHashMap<>();
     subscribedTopics = new HashMap<>();
   }
@@ -181,13 +195,39 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
             }
 
             completableFuture.complete(bytes);
-          } else if (LOG.isTraceEnabled()) {
-            LOG.trace(
-                "Wasn't able to send response to request {} of partition {}",
-                requestId,
-                response.getPartitionId());
+          } else {
+            if (LOG.isTraceEnabled()) {
+              LOG.trace(
+                  "Wasn't able to send response to request {} of partition {}",
+                  requestId,
+                  response.getPartitionId());
+            }
+            unmatchedResponseHandler.onUnmatchedResponse(
+                requestId, response.getPartitionId(), bytes);
           }
         });
+  }
+
+  /**
+   * Completes a request that this transport received with a response that another broker produced,
+   * e.g. because leadership of the request's partition moved before the response was ready.
+   */
+  public void completeForwardedResponse(final long requestId, final byte[] response) {
+    actor.run(
+        () -> {
+          final var completableFuture = pendingRequests.remove(requestId);
+          if (completableFuture != null) {
+            completableFuture.complete(response);
+          } else if (LOG.isTraceEnabled()) {
+            LOG.trace("Dropping forwarded response to unknown request {}", requestId);
+          }
+        });
+  }
+
+  /** Receives responses to requests that are not pending on this transport. */
+  @FunctionalInterface
+  public interface UnmatchedResponseHandler {
+    void onUnmatchedResponse(long requestId, int partitionId, byte[] response);
   }
 
   static String topicName(
