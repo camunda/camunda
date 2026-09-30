@@ -505,9 +505,17 @@ final class LeaderAppender {
     if (response.preferredChunkSize() > 0) {
       member.getSnapshotChunkReader().setMaximumChunkSize(response.preferredChunkSize());
     }
+    if (response.snapshotNotNeeded()) {
+      // The member's log or its own snapshot covers the snapshot's index. Continue with the entries
+      // after it. The member kept its log, so its match index stays. Its snapshot index stays too,
+      // as the member may only have log entries up to the snapshot's index.
+      member.setNextSnapshotIndex(0);
+      member.setNextSnapshotChunkId(null);
+      resetNextIndex(member, request.index() + 1);
+    }
     // If the install request was completed successfully, set the member's snapshotIndex and reset
     // the next snapshot index/offset.
-    if (request.complete()) {
+    else if (request.complete()) {
       member.setNextSnapshotIndex(0);
       member.setNextSnapshotChunkId(null);
       member.setSnapshotIndex(request.index());
@@ -896,13 +904,14 @@ final class LeaderAppender {
       // https://github.com/camunda/camunda/issues/9820 for context.
       return false;
     }
-    if (raft.getLog().getFirstIndex() > member.getCurrentIndex()) {
+
+    if (raft.getLog().getFirstIndex() > member.getNextIndex()) {
       // Necessary events are not available anymore, we have to use the snapshot
       return true;
     }
     // Only use the snapshot if the number of events that would have to be replicated
     // is above the threshold
-    final var memberLag = persistedSnapshot.getIndex() - member.getCurrentIndex();
+    final var memberLag = persistedSnapshot.getIndex() - (member.getNextIndex() - 1);
     return memberLag > raft.getPreferSnapshotReplicationThreshold();
   }
 
