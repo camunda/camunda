@@ -31,7 +31,7 @@ For every new comment:
 
 1. Classify it as valid, invalid, already handled, or out of scope.
 2. Fix valid findings, validate and publish through the
-   [engineering loop](../SKILL.md#validation-loop), without amending.
+   [engineering loop](../SKILL.md#workflow), without amending.
 3. Reply with the fix or concrete evidence that the finding is invalid.
 4. Resolve the thread through `resolveReviewThread`.
 
