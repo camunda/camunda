@@ -386,7 +386,7 @@ public final class BpmnProcessors {
         ValueType.PROCESS_INSTANCE_CREATION,
         ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT,
         new ProcessInstanceCreationCreateWithAwaitingResultProcessor(
-            keyGenerator, writers, metrics, processInstanceCreationHelper, elementInstanceState));
+            keyGenerator, writers, metrics, processInstanceCreationHelper));
   }
 
   private static void addProcessInstanceModificationStreamProcessors(
