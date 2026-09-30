@@ -188,7 +188,7 @@
     <version.roaster>2.31.1.Final</version.roaster>
     <version.surefire-extensions-api>3.5.6</version.surefire-extensions-api>
     <version.postgresql>42.7.13</version.postgresql>
-    <version.h2>2.5.250</version.h2>
+    <version.h2>2.5.252</version.h2>
     <version.aws-advanced-jdbc-wrapper>4.4.0</version.aws-advanced-jdbc-wrapper>
     <version.aws-signing>4.0.1</version.aws-signing>
     <version.tc-keycloak>4.3.1</version.tc-keycloak>
