@@ -7,6 +7,7 @@
  */
 
 import type {QueryUserTasksRequestBody} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {OffsetPagedRequestBody} from '#/shared/http/queries';
 import {getStateLocally} from '#/shared/browser-storage/local-storage';
 import {advancedStringFilterCodec} from '#/tasklist/modules/available-tasks/advancedStringFilter';
 import {isBuiltInFilter, type TasklistIndexSearch} from '#/tasklist/modules/available-tasks/searchSchema';
@@ -25,7 +26,7 @@ const SORT_BY_FIELD: Record<
 function getTasksRequestBody(
 	search: TasklistIndexSearch,
 	{currentUsername}: {currentUsername: string},
-): QueryUserTasksRequestBody {
+): OffsetPagedRequestBody<QueryUserTasksRequestBody> {
 	const {
 		filter,
 		sortBy,
