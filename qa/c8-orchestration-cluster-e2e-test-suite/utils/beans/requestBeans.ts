@@ -525,6 +525,49 @@ export function CREATE_ON_FLY_DOCUMENT_REQUEST_BODY_WITH_METADATA(
   return form;
 }
 
+/**
+ * The content endpoint decides from the stored `metadata.contentType` and never
+ * sniffs the bytes, so callers pass the type they want and the payload is
+ * incidental — except where a test renders the result.
+ */
+export function CREATE_DOCUMENT_REQUEST_WITH_CONTENT_TYPE(
+  fileName: string,
+  contentType: string,
+  // Bytes, not string: File re-encodes a string part as UTF-8.
+  fileContent: string | Uint8Array<ArrayBuffer> = documentFileContent(fileName),
+) {
+  const form = new FormData();
+  form.append('file', new File([fileContent], fileName, {type: contentType}));
+  form.append(
+    'metadata',
+    new Blob([JSON.stringify({contentType, fileName})], {
+      type: 'application/json',
+    }),
+  );
+  return form;
+}
+
+/**
+ * File part with **no** `Content-Type` header, so the server stores a null
+ * content type. Hand-built because Playwright's serializer always labels a
+ * part, which stores the literal `application/octet-stream` instead.
+ */
+export function CREATE_RAW_MULTIPART_WITHOUT_PART_CONTENT_TYPE(
+  fileName: string,
+): {body: Buffer; contentType: string} {
+  const boundary = `----camundaNoPartContentType${Date.now()}`;
+  const body = Buffer.from(
+    `--${boundary}\r\n` +
+      `Content-Disposition: form-data; name="file"; filename="${fileName}"\r\n` +
+      `\r\n` +
+      `${documentFileContent(fileName)}\r\n` +
+      `--${boundary}--\r\n`,
+    'utf8',
+  );
+
+  return {body, contentType: `multipart/form-data; boundary=${boundary}`};
+}
+
 export function EVALUATE_DECISION_EXPECTED_BODY(
   decision: DecisionDeployment,
   output: string,
