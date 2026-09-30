@@ -43,6 +43,7 @@ final class LeaderWarmupIT {
                     broker
                         .withProperty("zeebe.broker.experimental.leaderWarmup.enabled", true)
                         .withProperty("zeebe.broker.experimental.leaderWarmup.startDelay", "0s")
+                        .withProperty("zeebe.broker.experimental.leaderWarmup.quietPeriod", "0s")
                         .withProperty(
                             "zeebe.broker.experimental.leaderWarmup.processInstances", 300))
             .build();
@@ -92,6 +93,7 @@ final class LeaderWarmupIT {
                     broker
                         .withProperty("zeebe.broker.experimental.leaderWarmup.enabled", true)
                         .withProperty("zeebe.broker.experimental.leaderWarmup.startDelay", "0s")
+                        .withProperty("zeebe.broker.experimental.leaderWarmup.quietPeriod", "0s")
                         .withProperty(
                             "zeebe.broker.experimental.leaderWarmup.processInstances", 300)
                         .withExporter(
