@@ -462,6 +462,15 @@ test.describe('Process Instance Suspend and Resume Continuation API', () => {
       await resumeProcessInstance(request, instance.processInstanceKey),
       204,
     );
+    // The 204 comes at RESUMING, before the buffered subscription reopens
+    // finish. Signals are not buffered, so broadcasting on the response can be
+    // dropped into a closed subscription; ACTIVE is written from RESUMED.
+    await expectProcessState(
+      request,
+      instance.processInstanceKey,
+      'ACTIVE',
+      extendedAssertionOptions,
+    );
 
     // Without this, a dropped broadcast and a dead subscription look the same.
     await assertStatusCode(
