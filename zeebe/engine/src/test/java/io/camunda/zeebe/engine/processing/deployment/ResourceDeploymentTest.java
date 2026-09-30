@@ -529,6 +529,33 @@ public class ResourceDeploymentTest {
   }
 
   @Test
+  public void shouldDeployGenericTxtResource() {
+    assertGenericResourceDeployment("my-script.txt", "echo 'Hello World'");
+  }
+
+  @Test
+  public void shouldDeployGenericMdResource() {
+    assertGenericResourceDeployment("runbook.md", "# Runbook\n\n## Steps\n\n1. Check logs");
+  }
+
+  @Test
+  public void shouldDeployGenericYmlResource() {
+    assertGenericResourceDeployment("config.yml", "server:\n  port: 8080\n  host: localhost");
+  }
+
+  @Test
+  public void shouldDeployGenericYamlResource() {
+    assertGenericResourceDeployment(
+        "pipeline.yaml", "stages:\n  - name: build\n    script: mvn package");
+  }
+
+  @Test
+  public void shouldDeployGenericJsonResource() {
+    assertGenericResourceDeployment(
+        "settings.json", "{\"timeout\": 30, \"retries\": 3, \"mode\": \"production\"}");
+  }
+
+  @Test
   public void shouldWriteResourceRecordForGenericResource() {
     // when
     final var deployment =
@@ -560,7 +587,7 @@ public class ResourceDeploymentTest {
     final var deploymentEvent =
         engine.deployment().withXmlClasspathResource(TEST_GENERIC_XML_CONFIG).deploy();
 
-    // then
+    // then - it should be deployed as a generic resource, not fail as invalid BPMN
     Assertions.assertThat(deploymentEvent)
         .hasIntent(DeploymentIntent.CREATED)
         .hasValueType(ValueType.DEPLOYMENT)
@@ -578,6 +605,7 @@ public class ResourceDeploymentTest {
                     .isNotDuplicate()
                     .hasDeploymentKey(deploymentEvent.getKey()));
 
+    // Verify resource record was created
     final Record<Resource> record = RecordingExporter.resourceRecords().getFirst();
     Assertions.assertThat(record)
         .hasIntent(ResourceIntent.CREATED)
@@ -591,7 +619,7 @@ public class ResourceDeploymentTest {
   }
 
   @Test
-  public void shouldDetectGenericResourceDuplicateInSeparateCommand() {
+  public void shouldDeployGenericResourceDuplicateInSeparateCommand() {
     // given
     final var firstDeployment =
         engine.deployment().withJsonClasspathResource(TEST_GENERIC_RESOURCE_1).deploy();
@@ -625,6 +653,7 @@ public class ResourceDeploymentTest {
     // then
     assertThat(secondDeployment.getValue().getResourceMetadata())
         .extracting(ResourceMetadataValue::getVersion)
+        .describedAs("Expect that the resource version is increased")
         .containsExactly(2);
   }
 
@@ -635,7 +664,7 @@ public class ResourceDeploymentTest {
         engine.deployment().withJsonClasspathResource(TEST_GENERIC_RESOURCE_1).deploy();
     final var resourceV1 = firstDeployment.getValue().getResourceMetadata().get(0);
 
-    // when
+    // when - same content deployed under a different filename
     final var secondDeployment =
         engine
             .deployment()
@@ -643,7 +672,7 @@ public class ResourceDeploymentTest {
                 readResource(TEST_GENERIC_RESOURCE_1), "/resource/renamed-generic-1.txt")
             .deploy();
 
-    // then - filename is the resource ID for generic resources, so rename = new resource
+    // then - a new, separate resource is created because the filename (= resource ID) changed
     assertThat(secondDeployment.getValue().getResourceMetadata())
         .singleElement()
         .satisfies(
@@ -696,7 +725,7 @@ public class ResourceDeploymentTest {
     final var resource1 = readResource(TEST_GENERIC_RESOURCE_1);
     final var resource2 = readResource(TEST_GENERIC_RESOURCE_2);
 
-    // when
+    // when - two different files deployed under the same name
     final var deploymentEvent =
         engine
             .deployment()
@@ -717,6 +746,32 @@ public class ResourceDeploymentTest {
                 "Expected the resource ids to be unique within a deployment"
                     + " but found a duplicated id '%s' in the resources '%s' and '%s'.",
                 TEST_GENERIC_RESOURCE_1, TEST_GENERIC_RESOURCE_1, TEST_GENERIC_RESOURCE_1));
+  }
+
+  private void assertGenericResourceDeployment(final String resourceName, final String content) {
+
+    // when
+    final var deploymentEvent =
+        engine
+            .deployment()
+            .withJsonResource(content.getBytes(StandardCharsets.UTF_8), resourceName)
+            .deploy();
+
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATED)
+        .hasValueType(ValueType.DEPLOYMENT)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(deploymentEvent.getValue().getResourceMetadata())
+        .singleElement()
+        .satisfies(
+            resourceMetadata ->
+                Assertions.assertThat(resourceMetadata)
+                    .hasResourceId(resourceName)
+                    .hasVersion(1)
+                    .hasResourceName(resourceName)
+                    .isNotDuplicate()
+                    .hasDeploymentKey(deploymentEvent.getKey()));
   }
 
   private byte[] readResource(final String resourceName) {
