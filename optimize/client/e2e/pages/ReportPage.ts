@@ -192,11 +192,12 @@ export class ReportPage {
     }
     await button.click();
     // A late evaluation response overwrites newer changes, so let each change settle first.
-    const evaluated = this.page.waitForResponse(
-      (response) => response.request().method() === 'POST' && response.url().includes('/evaluate')
-    );
-    await this.pickMenuItem(option, subOption);
-    await evaluated;
+    await Promise.all([
+      this.page.waitForResponse(
+        (response) => response.request().method() === 'POST' && response.url().includes('/evaluate')
+      ),
+      this.pickMenuItem(option, subOption),
+    ]);
   }
 
   private async pickMenuItem(option: string, subOption?: string): Promise<void> {
