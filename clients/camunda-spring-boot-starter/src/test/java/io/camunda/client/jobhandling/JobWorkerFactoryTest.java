@@ -23,6 +23,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.annotation.value.JobWorkerValue;
 import io.camunda.client.annotation.value.SourceAware.FromAnnotation;
 import io.camunda.client.api.worker.BackoffSupplier;
@@ -33,13 +34,15 @@ import io.camunda.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep2;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import io.camunda.client.api.worker.JobWorkerMetrics;
+import io.camunda.client.event.CamundaClientCreatedEvent;
 import io.camunda.client.metrics.JobWorkerMetricsFactory;
+import io.camunda.client.metrics.JobWorkerMetricsFactory.JobWorkerMetricsFactoryContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
  * Covers how {@link JobWorkerFactory} resolves the {@code withLease} property onto the worker
- * builder. Scoped only to {@code withLease}.
+ * builder, and which context it hands to the {@link JobWorkerMetricsFactory}.
  */
 public class JobWorkerFactoryTest {
 
@@ -48,6 +51,7 @@ public class JobWorkerFactoryTest {
   private JobWorkerValue jobWorkerValue;
   private JobWorkerFactory jobWorkerFactory;
   private JobHandlerFactory jobHandlerFactory;
+  private JobWorkerMetricsFactory jobWorkerMetricsFactory;
 
   @BeforeEach
   void setUp() {
@@ -75,7 +79,7 @@ public class JobWorkerFactoryTest {
     when(jobExceptionHandlerSupplier.getJobExceptionHandler(any()))
         .thenReturn(mock(JobExceptionHandler.class));
 
-    final JobWorkerMetricsFactory jobWorkerMetricsFactory = mock(JobWorkerMetricsFactory.class);
+    jobWorkerMetricsFactory = mock(JobWorkerMetricsFactory.class);
     when(jobWorkerMetricsFactory.createJobWorkerMetrics(any()))
         .thenReturn(mock(JobWorkerMetrics.class));
 
@@ -128,5 +132,51 @@ public class JobWorkerFactoryTest {
 
     // then
     verify(step3).withLease(false);
+  }
+
+  @Test
+  void shouldPassConfiguredPhysicalTenantIdToTheMetricsFactory() {
+    // given
+    final CamundaClientConfiguration configuration = mock(CamundaClientConfiguration.class);
+    when(configuration.getPhysicalTenantId()).thenReturn("tenant-a");
+    when(camundaClient.getConfiguration()).thenReturn(configuration);
+
+    // when
+    jobWorkerFactory.createJobWorker(
+        camundaClient, jobWorkerValue, jobHandlerFactory, "client-name");
+
+    // then
+    verify(jobWorkerMetricsFactory)
+        .createJobWorkerMetrics(new JobWorkerMetricsFactoryContext("test", "tenant-a"));
+  }
+
+  @Test
+  void shouldFallBackToTheClientNameWhenNoPhysicalTenantIdIsConfigured() {
+    // given
+    final CamundaClientConfiguration configuration = mock(CamundaClientConfiguration.class);
+    when(camundaClient.getConfiguration()).thenReturn(configuration);
+
+    // when
+    jobWorkerFactory.createJobWorker(
+        camundaClient, jobWorkerValue, jobHandlerFactory, "client-name");
+
+    // then
+    verify(jobWorkerMetricsFactory)
+        .createJobWorkerMetrics(new JobWorkerMetricsFactoryContext("test", "client-name"));
+  }
+
+  @Test
+  void shouldFallBackToTheDefaultClientNameWhenNeitherIsKnown() {
+    // given
+    // the client mock returns no configuration at all, and no client name is given
+
+    // when
+    jobWorkerFactory.createJobWorker(camundaClient, jobWorkerValue, jobHandlerFactory);
+
+    // then
+    verify(jobWorkerMetricsFactory)
+        .createJobWorkerMetrics(
+            new JobWorkerMetricsFactoryContext(
+                "test", CamundaClientCreatedEvent.DEFAULT_CLIENT_NAME));
   }
 }

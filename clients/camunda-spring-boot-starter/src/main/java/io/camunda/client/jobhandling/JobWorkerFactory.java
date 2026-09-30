@@ -16,6 +16,7 @@
 package io.camunda.client.jobhandling;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.annotation.value.JobWorkerValue;
 import io.camunda.client.annotation.value.SourceAware;
 import io.camunda.client.annotation.value.SourceAware.*;
@@ -23,6 +24,7 @@ import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
+import io.camunda.client.event.CamundaClientCreatedEvent;
 import io.camunda.client.jobhandling.JobExceptionHandlerSupplier.JobExceptionHandlerSupplierContext;
 import io.camunda.client.jobhandling.JobHandlerFactory.JobHandlerFactoryContext;
 import io.camunda.client.metrics.JobWorkerMetricsFactory;
@@ -52,6 +54,18 @@ public class JobWorkerFactory {
       final CamundaClient camundaClient,
       final JobWorkerValue jobWorkerValue,
       final JobHandlerFactory jobHandlerFactory) {
+    return createJobWorker(camundaClient, jobWorkerValue, jobHandlerFactory, null);
+  }
+
+  /**
+   * @param clientName the name of the client in multi-client mode; used to attribute the worker's
+   *     metrics when the client has no physical tenant ID configured
+   */
+  public JobWorker createJobWorker(
+      final CamundaClient camundaClient,
+      final JobWorkerValue jobWorkerValue,
+      final JobHandlerFactory jobHandlerFactory,
+      final String clientName) {
     final JobHandler jobHandler =
         jobHandlerFactory.getJobHandler(
             new JobHandlerFactoryContext(jobWorkerValue, camundaClient));
@@ -70,7 +84,9 @@ public class JobWorkerFactory {
                         jobWorkerValue.getMaxRetries().value())))
             .metrics(
                 jobWorkerMetricsFactory.createJobWorkerMetrics(
-                    new JobWorkerMetricsFactoryContext(jobWorkerValue.getType().value())));
+                    new JobWorkerMetricsFactoryContext(
+                        jobWorkerValue.getType().value(),
+                        physicalTenantId(camundaClient, clientName))));
 
     if (canBeSetToBuilder(jobWorkerValue.getMaxJobsActive(), this::isValidInteger)) {
       builder.maxJobsActive(jobWorkerValue.getMaxJobsActive().value());
@@ -115,6 +131,23 @@ public class JobWorkerFactory {
       builder.streamInactivityTimeout(jobWorkerValue.getStreamInactivityTimeout().value());
     }
     return builder.open();
+  }
+
+  /**
+   * The configured physical tenant ID, else the client name, else the default client name: never
+   * {@code null}, so that every worker metric carries a value for the physical tenant tag.
+   */
+  private static String physicalTenantId(
+      final CamundaClient camundaClient, final String clientName) {
+    final CamundaClientConfiguration configuration = camundaClient.getConfiguration();
+    final String configured = configuration == null ? null : configuration.getPhysicalTenantId();
+    if (configured != null && !configured.isBlank()) {
+      return configured;
+    }
+    if (clientName != null && !clientName.isBlank()) {
+      return clientName;
+    }
+    return CamundaClientCreatedEvent.DEFAULT_CLIENT_NAME;
   }
 
   private <T> boolean canBeSetToBuilder(final SourceAware<T> value) {
