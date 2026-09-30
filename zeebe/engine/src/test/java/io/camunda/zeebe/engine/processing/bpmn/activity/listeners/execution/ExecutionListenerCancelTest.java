@@ -1659,7 +1659,8 @@ public class ExecutionListenerCancelTest {
         ENGINE.processInstance().withInstanceKey(processInstanceKey).expectRejection().cancel();
 
     // then: the second cancel is rejected (the process is already terminating)
-    assertThat(rejectedCancel.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(rejectedCancel.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejectedCancel.getRejectionReason()).contains("already in progress");
 
     // cleanup: complete the cancel-EL job so the process terminates
     ENGINE.job().ofInstance(processInstanceKey).withType(CANCEL_EL_TYPE).complete();
