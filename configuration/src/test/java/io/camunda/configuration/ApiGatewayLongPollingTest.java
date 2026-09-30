@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
 import io.camunda.configuration.beans.GatewayBasedProperties;
 import io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults;
+import java.time.Duration;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +31,8 @@ public class ApiGatewayLongPollingTest {
         "camunda.api.long-polling.enabled=true",
         "camunda.api.long-polling.timeout=20000",
         "camunda.api.long-polling.probe-timeout=30000",
-        "camunda.api.long-polling.min-empty-responses=5"
+        "camunda.api.long-polling.min-empty-responses=5",
+        "camunda.api.long-polling.notification-batch-window=200"
       })
   class WithOnlyUnifiedConfigSet {
     final GatewayBasedProperties gatewayCfg;
@@ -57,6 +59,27 @@ public class ApiGatewayLongPollingTest {
     @Test
     void shouldSetMinEmptyResponses() {
       assertThat(gatewayCfg.getLongPolling().getMinEmptyResponses()).isEqualTo(5);
+    }
+
+    @Test
+    void shouldSetNotificationBatchWindow() {
+      assertThat(gatewayCfg.getLongPolling().getNotificationBatchWindow())
+          .isEqualTo(Duration.ofMillis(200));
+    }
+  }
+
+  @Nested
+  class WithNothingSet {
+    final GatewayBasedProperties gatewayCfg;
+
+    WithNothingSet(@Autowired final GatewayBasedProperties gatewayCfg) {
+      this.gatewayCfg = gatewayCfg;
+    }
+
+    @Test
+    void shouldSetNotificationBatchWindowToDefault() {
+      assertThat(gatewayCfg.getLongPolling().getNotificationBatchWindow())
+          .isEqualTo(ConfigurationDefaults.DEFAULT_NOTIFICATION_BATCH_WINDOW);
     }
   }
 
