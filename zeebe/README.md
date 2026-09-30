@@ -28,6 +28,7 @@ This is a small overview of the contents of the different modules:
 * `exporters/opensearch-exporter` OpenSearch exporter implementation
 * `exporters/rdbms-exporter` RDBMS exporter implementation
 * `exporters/app-integrations-exporter` App Integrations exporter implementation
+* `exporters/file-exporter` writes every record as NDJSON to local files, for offline analysis
 * `exporter-common` common utilities for exporter implementations
 * `exporter-test` thread-safe exporter test controller
 * `expression-language` engine core expression evaluation

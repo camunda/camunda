@@ -45,6 +45,7 @@
     <module>exporters/analytics-exporter</module>
     <module>exporters/app-integrations-exporter</module>
     <module>exporters/camunda-exporter</module>
+    <module>exporters/file-exporter</module>
     <module>exporters/elasticsearch-exporter</module>
     <module>exporters/opensearch-exporter</module>
     <module>exporters/rdbms-exporter</module>
