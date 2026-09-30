@@ -7,7 +7,7 @@
  */
 
 import {useCallback, useEffect, useRef} from 'react';
-import {useNavigate} from '@tanstack/react-router';
+import {useLocation, useNavigate} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {GenericErrorPage} from '#/shared/pages/GenericErrorPage';
@@ -32,9 +32,17 @@ type Props = {
 const DecisionInstance: React.FC<Props> = ({decisionInstanceId}) => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
+	const {state} = useLocation();
 	const [drdPanelState, setDrdPanelState] = useDrdPanelState();
 	const shouldRestoreFocus = useRef(false);
+	const errorHeadingRef = useRef<HTMLHeadingElement>(null);
+	const forbiddenHeadingRef = useRef<HTMLHeadingElement>(null);
+	const lastFocusedDestination = useRef<{key: string; status: 'success' | 'error' | 'forbidden'} | null>(null);
+	const redirectedNotFoundId = useRef<string | null>(null);
 	const {isUnauthorized, isNotFound, isGenericError, query} = useDecisionInstance(decisionInstanceId);
+	const focusFromDrd =
+		typeof state.operateDecisionFocus === 'object' &&
+		state.operateDecisionFocus.decisionInstanceKey === decisionInstanceId;
 
 	const changeDrdPanelState = (state: typeof drdPanelState) => {
 		shouldRestoreFocus.current = state !== drdPanelState;
@@ -62,19 +70,53 @@ const DecisionInstance: React.FC<Props> = ({decisionInstanceId}) => {
 	);
 
 	useEffect(() => {
-		if (isNotFound) {
+		if (isNotFound && redirectedNotFoundId.current !== decisionInstanceId) {
+			redirectedNotFoundId.current = decisionInstanceId;
 			notificationsStore.displayNotification({
 				kind: 'error',
 				title: t('operate.decisionInstance.notFoundNotificationTitle', {decisionInstanceId}),
 				isDismissable: true,
 			});
-			void navigate({to: '/operate/decisions', search: {evaluated: true, failed: true}, replace: true});
+			void navigate({
+				to: '/operate/decisions',
+				search: {evaluated: true, failed: true},
+				replace: true,
+				state: (state) => ({
+					...state,
+					operateDecisionFocus: focusFromDrd ? 'list' : undefined,
+				}),
+			});
 		}
-	}, [isNotFound, decisionInstanceId, navigate, t]);
+	}, [isNotFound, decisionInstanceId, focusFromDrd, navigate, t]);
+
+	useEffect(() => {
+		if (!focusFromDrd || isNotFound) {
+			return;
+		}
+		const status = isGenericError ? 'error' : isUnauthorized ? 'forbidden' : query.isSuccess ? 'success' : null;
+		if (
+			status === null ||
+			(lastFocusedDestination.current?.key === decisionInstanceId && lastFocusedDestination.current.status === status)
+		) {
+			return;
+		}
+		const target =
+			status === 'error'
+				? errorHeadingRef.current
+				: status === 'forbidden'
+					? forbiddenHeadingRef.current
+					: (document.getElementById('operate-decision-drd-mode-button') ??
+						document.getElementById('operate-decision-instance-heading'));
+		if (target !== null) {
+			target.focus();
+			lastFocusedDestination.current = {key: decisionInstanceId, status};
+		}
+	}, [decisionInstanceId, focusFromDrd, isGenericError, isNotFound, isUnauthorized, query.isSuccess]);
 
 	if (isUnauthorized) {
 		return (
 			<EmptyState
+				headingRef={forbiddenHeadingRef}
 				icon={<img src={permissionDeniedIconUrl} alt="" />}
 				heading={t('operate.decisionInstance.forbidden.heading')}
 				description={t('operate.decisionInstance.forbidden.description')}
@@ -87,7 +129,7 @@ const DecisionInstance: React.FC<Props> = ({decisionInstanceId}) => {
 	}
 
 	if (isGenericError) {
-		return <GenericErrorPage reset={() => void query.refetch()} />;
+		return <GenericErrorPage headingRef={errorHeadingRef} reset={() => void query.refetch()} />;
 	}
 
 	const drd =
@@ -136,9 +178,10 @@ type ShellProps = {
 	topPanel?: React.ReactNode;
 	bottomPanel?: React.ReactNode;
 	rightPanel?: React.ReactNode;
+	isPending?: boolean;
 };
 
-const DecisionInstanceShell: React.FC<ShellProps> = ({header, topPanel, bottomPanel, rightPanel}) => {
+const DecisionInstanceShell: React.FC<ShellProps> = ({header, topPanel, bottomPanel, rightPanel, isPending}) => {
 	const {t} = useTranslation();
 	const pendingTopPanel = (
 		<Section aria-label={t('operate.decisionInstance.panel.label')} tabIndex={0}>
@@ -151,7 +194,7 @@ const DecisionInstanceShell: React.FC<ShellProps> = ({header, topPanel, bottomPa
 			<VisuallyHiddenH1 id="operate-decision-instance-heading" tabIndex={-1}>
 				{t('operate.decisionInstance.title')}
 			</VisuallyHiddenH1>
-			<Container>
+			<Container $isPending={isPending}>
 				<InstanceDetail
 					type="decision"
 					header={header}

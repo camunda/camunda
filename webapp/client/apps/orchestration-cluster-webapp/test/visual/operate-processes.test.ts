@@ -31,6 +31,7 @@ import {
 } from '#/shared-test-modules/api-mocks/process-instances';
 import {createQueryBatchOperationItemsResponse} from '#/shared-test-modules/api-mocks/batch-operations';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
+import {movePointerAwayFromNavigation} from './movePointerAwayFromNavigation';
 
 test.beforeEach(({network}) => {
 	network.use(
@@ -82,5 +83,6 @@ test('should match the processes page filters panel snapshot', async ({operatePr
 	await expect(operateProcessesPage.filtersPanel).toBeVisible();
 	await expect(operateProcessesPage.instancesTable).toBeVisible();
 
+	await movePointerAwayFromNavigation(page);
 	await expect(page).toHaveScreenshot();
 });

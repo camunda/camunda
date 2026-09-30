@@ -19,6 +19,7 @@ import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
+import {movePointerAwayFromNavigation} from './movePointerAwayFromNavigation';
 
 test.beforeEach(({network}) => {
 	network.use(
@@ -44,6 +45,7 @@ test('should match the operate index page snapshot', async ({operateIndexPage, p
 	await operateIndexPage.goto();
 	await expect(operateIndexPage.heading).toBeVisible();
 
+	await movePointerAwayFromNavigation(page);
 	await expect(page).toHaveScreenshot();
 });
 
@@ -51,5 +53,6 @@ test('should match the operate 404 page snapshot', async ({notFoundPage, page}) 
 	await page.goto('/operate/nonexistent');
 	await expect(notFoundPage.heading).toBeVisible();
 
+	await movePointerAwayFromNavigation(page);
 	await expect(page).toHaveScreenshot();
 });

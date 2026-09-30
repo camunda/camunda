@@ -16,11 +16,13 @@ import {
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {movePointerAwayFromNavigation} from './movePointerAwayFromNavigation';
 
 test('should match the 404 page snapshot', async ({page, notFoundPage}) => {
 	await page.goto('/nonexistent-path');
 	await expect(notFoundPage.heading).toBeVisible();
 
+	await movePointerAwayFromNavigation(page);
 	await expect(page).toHaveScreenshot();
 });
 
@@ -36,6 +38,7 @@ test('should match the forbidden page snapshot', async ({network, page, forbidde
 	await page.goto('/operate');
 	await expect(forbiddenPage.heading).toBeVisible();
 
+	await movePointerAwayFromNavigation(page);
 	await expect(page).toHaveScreenshot();
 });
 
@@ -53,6 +56,7 @@ test('should match the component access-denied page snapshot', async ({network, 
 	await page.goto('/operate');
 	await expect(componentAccessDeniedPage.heading).toBeVisible();
 
+	await movePointerAwayFromNavigation(page);
 	await expect(page).toHaveScreenshot();
 });
 
@@ -62,5 +66,6 @@ test('should match the generic error page snapshot', async ({network, page}) => 
 	await page.goto('/login?redirect=http://evil.com');
 	await expect(page.getByRole('heading', {name: 'Something went wrong'})).toBeVisible();
 
+	await movePointerAwayFromNavigation(page);
 	await expect(page).toHaveScreenshot();
 });

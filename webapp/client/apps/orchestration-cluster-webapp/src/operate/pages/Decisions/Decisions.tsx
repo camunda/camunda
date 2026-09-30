@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useQuery, useSuspenseQuery} from '@tanstack/react-query';
-import {useNavigate} from '@tanstack/react-router';
+import {useLocation, useNavigate} from '@tanstack/react-router';
 import {Form} from 'react-final-form';
 import {Checkbox, ComboBox, Dropdown, Stack} from '@carbon/react';
 import {decisionDefinitionSelectionOptions, decisionDefinitionsOptions} from './decisions.queries';
@@ -56,6 +56,15 @@ const Decisions: React.FC<Props> = ({
 }) => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
+	const {state} = useLocation();
+	const headingRef = useRef<HTMLHeadingElement>(null);
+	const didFocusFromDrd = useRef(false);
+	useEffect(() => {
+		if (state.operateDecisionFocus === 'list' && !didFocusFromDrd.current) {
+			headingRef.current?.focus();
+			didFocusFromDrd.current = true;
+		}
+	}, [state.operateDecisionFocus]);
 	const specificTenantId = isSpecificTenant(tenantId) ? tenantId : undefined;
 	const {data} = useSuspenseQuery(decisionDefinitionsOptions(specificTenantId));
 	const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
@@ -195,7 +204,9 @@ const Decisions: React.FC<Props> = ({
 
 	return (
 		<>
-			<VisuallyHiddenH1>{t('operate.decisions.title')}</VisuallyHiddenH1>
+			<VisuallyHiddenH1 ref={headingRef} tabIndex={-1}>
+				{t('operate.decisions.title')}
+			</VisuallyHiddenH1>
 			<InstancesList
 				type="decision"
 				leftPanel={

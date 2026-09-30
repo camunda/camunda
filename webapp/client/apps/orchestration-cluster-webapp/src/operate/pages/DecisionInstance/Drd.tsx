@@ -111,11 +111,10 @@ const Drd: React.FC<Props> = ({
 								void navigate({
 									to: '/operate/decisions/$decisionInstanceId',
 									params: {decisionInstanceId: selectedKey},
-								}).then(() => {
-									(
-										document.getElementById('operate-decision-drd-mode-button') ??
-										document.getElementById('operate-decision-instance-heading')
-									)?.focus();
+									state: (state) => ({
+										...state,
+										operateDecisionFocus: {decisionInstanceKey: selectedKey},
+									}),
 								});
 							}}
 							onDefinitionsChange={(definitions) => setDefinitionsName(definitions?.name ?? '')}

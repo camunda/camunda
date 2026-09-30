@@ -13,6 +13,7 @@ type Props = {
 	heading: string;
 	description: string;
 	icon: React.ReactNode;
+	headingRef?: React.Ref<HTMLHeadingElement>;
 	button?: {
 		label: string;
 		href?: string;
@@ -26,12 +27,14 @@ type Props = {
 	className?: string;
 };
 
-const EmptyState: React.FC<Props> = ({heading, description, icon, button, link, className}) => {
+const EmptyState: React.FC<Props> = ({heading, description, icon, headingRef, button, link, className}) => {
 	return (
 		<Grid className={className}>
 			<div>{icon}</div>
 			<Stack gap={3}>
-				<Title>{heading}</Title>
+				<Title ref={headingRef} tabIndex={headingRef ? -1 : undefined}>
+					{heading}
+				</Title>
 				<Description>{description}</Description>
 				{button !== undefined && (
 					<Link href={button.href} target="_blank" rel="noreferrer">

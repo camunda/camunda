@@ -1,5 +1,6 @@
 {
 	"translation": {
+		"appStylesLoading": "Loading...",
 		"globalDatePlaceholder": "mm/dd/yyyy",
 		"globalWrittenCalendarDateFormat": "m/d/Y",
 		"headerSidebarDocumentationLink": "Documentation",

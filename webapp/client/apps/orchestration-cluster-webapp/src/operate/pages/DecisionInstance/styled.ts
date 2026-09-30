@@ -10,8 +10,8 @@ import styled from 'styled-components';
 import {Stack} from '@carbon/react';
 import {styles} from '@carbon/type';
 
-const Container = styled.div`
-	height: 100%;
+const Container = styled.div<{$isPending?: boolean}>`
+	height: ${({$isPending}) => ($isPending ? '100dvh' : '100%')};
 	position: relative;
 	padding-top: var(--cds-spacing-09);
 `;
