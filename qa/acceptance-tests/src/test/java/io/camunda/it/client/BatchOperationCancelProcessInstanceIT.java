@@ -204,16 +204,7 @@ public class BatchOperationCancelProcessInstanceIT {
     waitForBatchOperationCompleted(camundaClient, batchOperationKey, 1, 0);
     waitForProcessInstanceToBeTerminated(camundaClient, suspendedKey);
 
-    final var itemKeys =
-        camundaClient
-            .newBatchOperationItemsSearchRequest()
-            .filter(f -> f.batchOperationKey(batchOperationKey))
-            .send()
-            .join()
-            .items()
-            .stream()
-            .map(BatchOperationItem::getItemKey)
-            .toList();
+    final var itemKeys = getBatchItemKeys(batchOperationKey);
     assertThat(itemKeys).containsExactly(suspendedKey);
     assertThat(camundaClient.newProcessInstanceGetRequest(activeKey).send().join().getState())
         .isEqualTo(ProcessInstanceState.ACTIVE);
@@ -244,16 +235,7 @@ public class BatchOperationCancelProcessInstanceIT {
     waitForBatchOperationCompleted(camundaClient, batchOperationKey, 1, 0);
     waitForProcessInstanceToBeTerminated(camundaClient, activeKey);
 
-    final var itemKeys =
-        camundaClient
-            .newBatchOperationItemsSearchRequest()
-            .filter(f -> f.batchOperationKey(batchOperationKey))
-            .send()
-            .join()
-            .items()
-            .stream()
-            .map(BatchOperationItem::getItemKey)
-            .toList();
+    final var itemKeys = getBatchItemKeys(batchOperationKey);
     assertThat(itemKeys).containsExactly(activeKey);
     assertThat(camundaClient.newProcessInstanceGetRequest(suspendedKey).send().join().getState())
         .isEqualTo(ProcessInstanceState.SUSPENDED);
@@ -275,5 +257,17 @@ public class BatchOperationCancelProcessInstanceIT {
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("The value for state is 'COMPLETED' but must be one of");
+  }
+
+  private List<Long> getBatchItemKeys(final String batchOperationKey) {
+    return camundaClient
+        .newBatchOperationItemsSearchRequest()
+        .filter(f -> f.batchOperationKey(batchOperationKey))
+        .send()
+        .join()
+        .items()
+        .stream()
+        .map(BatchOperationItem::getItemKey)
+        .toList();
   }
 }

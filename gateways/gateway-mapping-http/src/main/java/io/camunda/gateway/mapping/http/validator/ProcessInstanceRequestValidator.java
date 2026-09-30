@@ -155,8 +155,7 @@ public class ProcessInstanceRequestValidator {
     return validate(
         violations ->
             Stream.concat(
-                    Stream.of(filter),
-                    Optional.ofNullable(filter.orFilters()).stream().flatMap(List::stream))
+                    Stream.of(filter), Stream.ofNullable(filter.orFilters()).flatMap(List::stream))
                 .flatMap(f -> f.stateOperations().stream())
                 .filter(
                     operation ->
