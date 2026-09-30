@@ -286,6 +286,7 @@ jobs:
         id: probe-git-remote
         if: failure() && steps.maven-perform-release.outcome == 'failure'
         continue-on-error: true
+        timeout-minutes: 3
         env:
           APP_TOKEN: ${{ steps.github-token.outputs.token }}
           PROBE_LOG: ${{ runner.temp }}/git-remote-probe.log
@@ -341,30 +342,39 @@ jobs:
       # GIT_TRACE_CURL records request headers, Authorization included. Scrub before
       # the traces leave the runner.
       - name: Redact git traces
+        id: redact-git-traces
         if: failure() && steps.maven-perform-release.outcome == 'failure'
         continue-on-error: true
+        env:
+          DIAGNOSTICS_DIR: ${{ runner.temp }}/git-remote-diagnostics
         run: |
-          set +e
-          for f in "${{ runner.temp }}"/git-trace.log "${{ runner.temp }}"/git-trace-curl.log; do
-            [ -f "$f" ] || continue
-            sed -E -i \
+          set -euo pipefail
+          umask 077
+          mkdir -p "${DIAGNOSTICS_DIR}"
+
+          for source in \
+            "${{ runner.temp }}/git-trace.log" \
+            "${{ runner.temp }}/git-trace-curl.log" \
+            "${{ runner.temp }}/git-remote-probe.log"; do
+            [ -f "${source}" ] || continue
+            destination="${DIAGNOSTICS_DIR}/$(basename "${source}")"
+            sed -E \
               -e 's#//[^@/[:space:]]*@#//***@#g' \
               -e 's#(authorization|AUTHORIZATION): .*#\1: ***#gI' \
               -e 's#(x-access-token|ghs_|github_pat_)[A-Za-z0-9_]*#\1***#g' \
-              "$f"
+              "${source}" > "${destination}"
           done
-          exit 0
 
       - name: Upload git remote diagnostics
-        if: failure() && steps.maven-perform-release.outcome == 'failure'
+        if: >-
+          failure() &&
+          steps.maven-perform-release.outcome == 'failure' &&
+          steps.redact-git-traces.outcome == 'success'
         continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: git-remote-diagnostics-${{ env.RELEASE_VERSION }}
-          path: |
-            ${{ runner.temp }}/git-trace.log
-            ${{ runner.temp }}/git-trace-curl.log
-            ${{ runner.temp }}/git-remote-probe.log
+          path: ${{ runner.temp }}/git-remote-diagnostics/
           if-no-files-found: warn
           retention-days: 14
 
@@ -1617,5 +1627,4 @@ jobs:
                 }
               ]
             }
-
 
