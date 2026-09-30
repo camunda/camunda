@@ -489,14 +489,11 @@ public final class EventAppliers implements EventApplier {
         ProcessInstanceCreationIntent.CREATED,
         1,
         new ProcessInstanceCreationCreatedV1Applier(processState, elementInstanceState));
+    // BENCHMARK ONLY: the v3 behaviour under version 2, so that this build and main can replay
+    // each other's logs when a benchmark switches a namespace between them
     register(
         ProcessInstanceCreationIntent.CREATED,
         2,
-        new ProcessInstanceCreationCreatedV2Applier(
-            processState, elementInstanceState, usageMetricState));
-    register(
-        ProcessInstanceCreationIntent.CREATED,
-        3,
         new ProcessInstanceCreationCreatedV3Applier(
             processState, elementInstanceState, usageMetricState, state.getAsyncRequestState()));
   }
