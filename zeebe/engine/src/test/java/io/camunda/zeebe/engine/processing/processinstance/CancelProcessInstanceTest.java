@@ -488,6 +488,45 @@ public final class CancelProcessInstanceTest {
   }
 
   @Test
+  public void shouldRejectCancelIfCancelingTaskListenerIsPending() {
+    // given
+    final var processId = "shouldRejectCancelIfCancelingTaskListenerIsPending";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask(
+                    "task",
+                    t -> t.zeebeUserTask().zeebeTaskListener(l -> l.canceling().type(processId)))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).expectTerminating().cancel();
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType(processId)
+        .await();
+
+    // when
+    final Record<ProcessInstanceRecordValue> rejectedCancel =
+        ENGINE.processInstance().withInstanceKey(processInstanceKey).expectRejection().cancel();
+
+    // then
+    assertThat(rejectedCancel.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejectedCancel.getRejectionReason())
+        .isEqualTo(
+            "Expected to cancel a process instance with key '"
+                + processInstanceKey
+                + "', but a cancel request is already in progress");
+  }
+
+  @Test
   public void shouldWriteEntireEventOnCancel() {
     // given
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("PROCESS").create();
