@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.LeaderWarmupCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
+import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.broker.warmup.LeaderWarmupMetrics.State;
 import io.camunda.zeebe.broker.warmup.WarmupWorkload.Outcome;
 import io.camunda.zeebe.util.FileUtil;
@@ -22,11 +23,14 @@ import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.DoubleSupplier;
+import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -55,6 +59,7 @@ public final class LeaderWarmup implements PartitionRaftListener {
   private final BrokerHealthCheckService healthCheckService;
   private final DoubleSupplier processCpuLoad;
   private final DoubleSupplier throttledShare;
+  private final LongSupplier processingBacklog;
   private final LeaderWarmupMetrics metrics;
   private final CompletableFuture<Void> stopRequested = new CompletableFuture<>();
   private final CompletableFuture<Void> terminated = new CompletableFuture<>();
@@ -67,7 +72,8 @@ public final class LeaderWarmup implements PartitionRaftListener {
       final BrokerCfg brokerCfg,
       final PhysicalTenantContext tenantContext,
       final BrokerHealthCheckService healthCheckService,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final Supplier<Collection<ZeebePartition>> partitions) {
     this(
         cfg,
         brokerCfg,
@@ -75,7 +81,8 @@ public final class LeaderWarmup implements PartitionRaftListener {
         healthCheckService,
         meterRegistry,
         CpuBudget.processCpuLoad(),
-        CpuBudget.throttledShare());
+        CpuBudget.throttledShare(),
+        new ProcessingBacklog(partitions));
   }
 
   LeaderWarmup(
@@ -85,13 +92,15 @@ public final class LeaderWarmup implements PartitionRaftListener {
       final BrokerHealthCheckService healthCheckService,
       final MeterRegistry meterRegistry,
       final DoubleSupplier processCpuLoad,
-      final DoubleSupplier throttledShare) {
+      final DoubleSupplier throttledShare,
+      final LongSupplier processingBacklog) {
     this.cfg = cfg;
     this.brokerCfg = brokerCfg;
     this.tenantContext = tenantContext;
     this.healthCheckService = healthCheckService;
     this.processCpuLoad = processCpuLoad;
     this.throttledShare = throttledShare;
+    this.processingBacklog = processingBacklog;
     metrics = new LeaderWarmupMetrics(meterRegistry);
     thread = new Thread(this::run, "zeebe-leader-warmup");
     thread.setDaemon(true);
@@ -149,7 +158,9 @@ public final class LeaderWarmup implements PartitionRaftListener {
         new CpuBudget(
             processCpuLoad,
             throttledShare,
+            processingBacklog,
             cfg.getMaxCpuLoad(),
+            cfg.getMaxProcessingBacklog(),
             cfg.getMaxInFlightInstances(),
             System.nanoTime());
     final var quietWaitStartNanos = System.nanoTime();
@@ -167,11 +178,12 @@ public final class LeaderWarmup implements PartitionRaftListener {
     Files.createDirectories(directory);
 
     LOG.info(
-        "Starting leader warm-up after waiting {} for the broker to be quiet: {} process instances, at most {} in flight, within {} of the CPU, for at most {}",
+        "Starting leader warm-up after waiting {} for the broker to be quiet: {} process instances, at most {} in flight, within {} of the CPU and a processing backlog of {}, for at most {}",
         quietWait,
         cfg.getProcessInstances(),
         cfg.getMaxInFlightInstances(),
         cfg.getMaxCpuLoad(),
+        cfg.getMaxProcessingBacklog(),
         cfg.getMaxDuration());
     metrics.setState(State.RUNNING);
     final var startNanos = System.nanoTime();
@@ -250,8 +262,9 @@ public final class LeaderWarmup implements PartitionRaftListener {
   }
 
   /**
-   * Waits until the process's CPU load has stayed within budget for the quiet period, or gives up
-   * after the maximum duration; returns false if the warm-up was skipped instead.
+   * Waits until the process's CPU load and the processing backlog have stayed within budget for the
+   * quiet period, or gives up after the maximum duration; returns false if the warm-up was skipped
+   * instead.
    */
   private boolean waitUntilQuiet(final CpuBudget cpuBudget) throws InterruptedException {
     final var requiredSamples =
@@ -265,8 +278,12 @@ public final class LeaderWarmup implements PartitionRaftListener {
       }
       if (System.nanoTime() - deadlineNanos >= 0) {
         skip(
-            "the broker did not stay within its CPU budget of %s for %s during %s"
-                .formatted(cfg.getMaxCpuLoad(), cfg.getQuietPeriod(), cfg.getMaxDuration()));
+            "the broker did not stay within its CPU budget of %s and a processing backlog of %d for %s during %s"
+                .formatted(
+                    cfg.getMaxCpuLoad(),
+                    cfg.getMaxProcessingBacklog(),
+                    cfg.getQuietPeriod(),
+                    cfg.getMaxDuration()));
         return false;
       }
       quietSamples = cpuBudget.isWithinBudget() ? quietSamples + 1 : 0;

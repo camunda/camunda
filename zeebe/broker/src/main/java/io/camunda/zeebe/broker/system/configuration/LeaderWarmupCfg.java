@@ -22,6 +22,7 @@ public final class LeaderWarmupCfg {
   private int processInstances = 5_000;
   private int maxInFlightInstances = 32;
   private double maxCpuLoad = 0.7;
+  private long maxProcessingBacklog = 250;
 
   public boolean isEnabled() {
     return enabled;
@@ -83,6 +84,19 @@ public final class LeaderWarmupCfg {
     this.maxCpuLoad = maxCpuLoad;
   }
 
+  /**
+   * How far, in log positions, processing may lag behind the log on any partition this broker
+   * follows before the warm-up pauses. The lag grows while the cluster works off a backlog of
+   * requests, for example after a broker restart, and the warm-up should not compete with that.
+   */
+  public long getMaxProcessingBacklog() {
+    return maxProcessingBacklog;
+  }
+
+  public void setMaxProcessingBacklog(final long maxProcessingBacklog) {
+    this.maxProcessingBacklog = maxProcessingBacklog;
+  }
+
   @Override
   public String toString() {
     return "LeaderWarmupCfg{"
@@ -100,6 +114,8 @@ public final class LeaderWarmupCfg {
         + maxInFlightInstances
         + ", maxCpuLoad="
         + maxCpuLoad
+        + ", maxProcessingBacklog="
+        + maxProcessingBacklog
         + '}';
   }
 }

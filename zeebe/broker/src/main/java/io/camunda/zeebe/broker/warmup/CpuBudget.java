@@ -14,6 +14,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.function.DoubleSupplier;
+import java.util.function.LongSupplier;
 import org.jspecify.annotations.NullMarked;
 
 /**
@@ -24,7 +25,9 @@ import org.jspecify.annotations.NullMarked;
  * more instance in flight; otherwise that number halves, down to zero, which pauses the warm-up.
  * Throttling counts on its own because the quota is enforced over periods much shorter than the
  * sample interval: a process within its average budget can still exhaust the quota in bursts, and
- * every thread in the container then waits for the next period.
+ * every thread in the container then waits for the next period. A processing backlog on any
+ * partition the broker follows counts too: the cluster is then working off requests that queued up,
+ * and that is when the broker's headroom matters most.
  */
 @NullMarked
 final class CpuBudget {
@@ -33,7 +36,9 @@ final class CpuBudget {
 
   private final DoubleSupplier processCpuLoad;
   private final DoubleSupplier throttledShare;
+  private final LongSupplier processingBacklog;
   private final double maxLoad;
+  private final long maxBacklog;
   private final int maxInFlight;
   private int limit = 1;
   private long nextSampleNanos;
@@ -44,16 +49,22 @@ final class CpuBudget {
    *     CPUs available to it, or a negative value if it is unknown
    * @param throttledShare the share of the container's quota periods since it was last called in
    *     which it was throttled, or a negative value if it is unknown
+   * @param processingBacklog the largest processing backlog among the broker's partitions, in log
+   *     positions, or a negative value if it is unknown
    */
   CpuBudget(
       final DoubleSupplier processCpuLoad,
       final DoubleSupplier throttledShare,
+      final LongSupplier processingBacklog,
       final double maxLoad,
+      final long maxBacklog,
       final int maxInFlight,
       final long nowNanos) {
     this.processCpuLoad = processCpuLoad;
     this.throttledShare = throttledShare;
+    this.processingBacklog = processingBacklog;
     this.maxLoad = maxLoad;
+    this.maxBacklog = maxBacklog;
     this.maxInFlight = maxInFlight;
     nextSampleNanos = nowNanos + SAMPLE_INTERVAL.toNanos();
   }
@@ -85,10 +96,11 @@ final class CpuBudget {
   private Sample sample() {
     final var load = processCpuLoad.getAsDouble();
     final var throttled = throttledShare.getAsDouble();
-    if (load > maxLoad || throttled > 0) {
+    final var backlog = processingBacklog.getAsLong();
+    if (load > maxLoad || throttled > 0 || backlog > maxBacklog) {
       return Sample.OVER;
     }
-    return load >= 0 || throttled >= 0 ? Sample.WITHIN : Sample.UNKNOWN;
+    return load >= 0 || throttled >= 0 || backlog >= 0 ? Sample.WITHIN : Sample.UNKNOWN;
   }
 
   /** How many samples found the process over budget. */

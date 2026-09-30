@@ -19,13 +19,14 @@ final class CpuBudgetTest {
 
   private double load;
   private double throttled = -1;
+  private long backlog = -1;
   private int samples;
 
   @Test
   void shouldAllowOneMoreInstancePerIntervalWithinBudget() {
     // given
     load = 0.5;
-    final var budget = new CpuBudget(this::sample, this::throttled, 0.7, 3, 0);
+    final var budget = new CpuBudget(this::sample, this::throttled, this::backlog, 0.7, 250, 3, 0);
 
     // when
     final var limits = limitsOverIntervals(budget, 4);
@@ -38,7 +39,7 @@ final class CpuBudgetTest {
   void shouldHalveUntilPausedWhileOverBudget() {
     // given
     load = 0.5;
-    final var budget = new CpuBudget(this::sample, this::throttled, 0.7, 32, 0);
+    final var budget = new CpuBudget(this::sample, this::throttled, this::backlog, 0.7, 250, 32, 0);
     limitsOverIntervals(budget, 7);
 
     // when
@@ -54,7 +55,7 @@ final class CpuBudgetTest {
   void shouldSampleOncePerInterval() {
     // given
     load = 0.5;
-    final var budget = new CpuBudget(this::sample, this::throttled, 0.7, 32, 0);
+    final var budget = new CpuBudget(this::sample, this::throttled, this::backlog, 0.7, 250, 32, 0);
 
     // when
     for (long now = 0; now < 3 * INTERVAL; now += INTERVAL / 10) {
@@ -69,7 +70,7 @@ final class CpuBudgetTest {
   void shouldKeepTheLimitWhileTheLoadIsUnknown() {
     // given
     load = 0.5;
-    final var budget = new CpuBudget(this::sample, this::throttled, 0.7, 32, 0);
+    final var budget = new CpuBudget(this::sample, this::throttled, this::backlog, 0.7, 250, 32, 0);
     limitsOverIntervals(budget, 2);
 
     // when
@@ -84,7 +85,7 @@ final class CpuBudgetTest {
   void shouldHalveWhileTheContainerIsThrottledWithinTheLoadBudget() {
     // given
     load = 0.5;
-    final var budget = new CpuBudget(this::sample, this::throttled, 0.7, 32, 0);
+    final var budget = new CpuBudget(this::sample, this::throttled, this::backlog, 0.7, 250, 32, 0);
     limitsOverIntervals(budget, 7);
 
     // when
@@ -100,13 +101,32 @@ final class CpuBudgetTest {
     // given
     load = -1;
     throttled = 0;
-    final var budget = new CpuBudget(this::sample, this::throttled, 0.7, 32, 0);
+    final var budget = new CpuBudget(this::sample, this::throttled, this::backlog, 0.7, 250, 32, 0);
 
     // when
     final var limits = limitsOverIntervals(budget, 3);
 
     // then
     assertThat(limits).containsExactly(2, 3, 4);
+  }
+
+  @Test
+  void shouldHalveWhileAPartitionHasAProcessingBacklog() {
+    // given
+    load = 0.5;
+    final var budget = new CpuBudget(this::sample, this::throttled, this::backlog, 0.7, 250, 32, 0);
+    limitsOverIntervals(budget, 7);
+
+    // when
+    backlog = 900;
+    final var limits = limitsOverIntervals(budget, 2, 8);
+
+    // then
+    assertThat(limits).containsExactly(4, 2);
+  }
+
+  private long backlog() {
+    return backlog;
   }
 
   private double throttled() {

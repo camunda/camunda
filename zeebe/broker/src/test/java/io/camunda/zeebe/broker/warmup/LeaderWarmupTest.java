@@ -49,6 +49,7 @@ final class LeaderWarmupTest {
   private final LeaderWarmupCfg cfg = new LeaderWarmupCfg();
   private LeaderWarmup warmup;
   private volatile double processCpuLoad;
+  private volatile long processingBacklog = -1;
 
   @BeforeEach
   void setUp() {
@@ -134,6 +135,27 @@ final class LeaderWarmupTest {
   }
 
   @Test
+  void shouldWaitForTheProcessingBacklogToClearBeforeStarting() {
+    // given
+    cfg.setQuietPeriod(Duration.ofSeconds(2));
+    processCpuLoad = 0.2;
+    processingBacklog = 900;
+    warmup = createWarmup(EngineSecurityConfigurations.defaultConfig());
+    warmup.start();
+    await()
+        .during(Duration.ofSeconds(3))
+        .atMost(Duration.ofSeconds(5))
+        .until(this::state, s -> s == State.PENDING);
+
+    // when
+    processingBacklog = 20;
+
+    // then
+    await().atMost(TIMEOUT).until(this::state, s -> s != State.PENDING);
+    assertThat(state()).isIn(State.RUNNING, State.COMPLETED);
+  }
+
+  @Test
   void shouldCancelWhenBecomingLeader() throws Exception {
     // given
     cfg.setProcessInstances(Integer.MAX_VALUE);
@@ -195,7 +217,8 @@ final class LeaderWarmupTest {
         healthCheckService,
         meterRegistry,
         () -> processCpuLoad,
-        () -> -1);
+        () -> -1,
+        () -> processingBacklog);
   }
 
   private BrokerCfg brokerCfg() {
