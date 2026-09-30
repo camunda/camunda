@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test, expect} from '@playwright/test';
+import {test, expect, type APIRequestContext} from '@playwright/test';
 import {
   jsonHeaders,
   buildUrl,
@@ -21,6 +21,11 @@ import {
 } from '../../../utils/http';
 import {validateResponse} from '../../../json-body-assertions';
 import {
+  uploadDocument,
+  getDocumentContent,
+  type StoredDocument,
+} from '../../../utils/documentFixtures';
+import {
   CREATE_DOC_INVALID_REQUEST,
   CREATE_DOCUMENT_LINK_REQUEST,
   CREATE_ON_FLY_DOCUMENT_REQUEST_BODY_WITH_METADATA,
@@ -28,6 +33,7 @@ import {
   CREATE_TXT_DOC_RESPONSE_BODY,
   CREATE_TXT_DOC_RESPONSE_WITH_METADATA,
   CREATE_TXT_DOCUMENT_REQUEST,
+  CREATE_RAW_MULTIPART_WITHOUT_PART_CONTENT_TYPE,
   documentFileContent,
 } from '../../../utils/beans/requestBeans';
 import {
@@ -258,6 +264,12 @@ test.describe.parallel('Document API Tests', () => {
         'No document hash provided for document',
         'INVALID_ARGUMENT',
       );
+      // The app's own CSP still applies to a problem detail; only the
+      // endpoint's sandbox must be absent.
+      expect(res.headers()['content-disposition']).toBeUndefined();
+      expect(res.headers()['content-security-policy'] ?? '').not.toContain(
+        'sandbox',
+      );
     }).toPass(defaultAssertionOptions);
   });
 
@@ -269,6 +281,10 @@ test.describe.parallel('Document API Tests', () => {
     await assertNotFoundRequest(
       res,
       `Document with id '${nonexistentId}' not found`,
+    );
+    expect(res.headers()['content-disposition']).toBeUndefined();
+    expect(res.headers()['content-security-policy'] ?? '').not.toContain(
+      'sandbox',
     );
   });
 
@@ -496,5 +512,142 @@ test.describe.parallel('Document API Tests', () => {
       },
     );
     await assertUnauthorizedRequest(res);
+  });
+
+  // camunda/camunda#63904. Browser behaviour for these headers is covered in
+  // tests/operate/documentBrowserRendering.spec.ts.
+  const SANDBOX_CSP = "sandbox; default-src 'none'";
+
+  const ACTIVE_CONTENT_TYPES = [
+    'text/html',
+    'application/javascript',
+    'image/svg+xml',
+    'application/xml',
+    'application/json',
+    'text/html; charset=utf-8',
+    'image/png+html',
+  ];
+
+  // Allowlist that keeps the Operate image and PDF previews working.
+  const INLINE_SAFE_CONTENT_TYPES = [
+    'image/png',
+    'image/jpeg',
+    'image/gif',
+    'image/webp',
+    'application/pdf',
+    'image/png; charset=utf-8',
+    'IMAGE/PNG',
+  ];
+
+  async function assertContentDisposition(
+    request: APIRequestContext,
+    document: StoredDocument,
+    expectedDisposition: 'attachment' | 'inline',
+  ) {
+    // Retried: a read straight after an upload is not immediately consistent.
+    await expect(async () => {
+      const res = await getDocumentContent(request, document);
+
+      await assertStatusCode(res, 200);
+      expect(res.headers()['content-disposition']).toBe(expectedDisposition);
+      expect(res.headers()['content-security-policy']).toBe(SANDBOX_CSP);
+    }).toPass(defaultAssertionOptions);
+  }
+
+  test('Get Document Serves Active Content Types As Attachment', async ({
+    request,
+  }) => {
+    const documents = await Promise.all(
+      ACTIVE_CONTENT_TYPES.map((contentType) =>
+        uploadDocument(request, contentType),
+      ),
+    );
+
+    for (const [index, contentType] of ACTIVE_CONTENT_TYPES.entries()) {
+      await test.step(`${contentType} is served as attachment`, async () => {
+        await assertContentDisposition(request, documents[index], 'attachment');
+      });
+    }
+  });
+
+  test('Get Document Serves Safe Content Types Inline', async ({request}) => {
+    const documents = await Promise.all(
+      INLINE_SAFE_CONTENT_TYPES.map((contentType) =>
+        uploadDocument(request, contentType),
+      ),
+    );
+
+    for (const [index, contentType] of INLINE_SAFE_CONTENT_TYPES.entries()) {
+      await test.step(`${contentType} is served inline`, async () => {
+        await assertContentDisposition(request, documents[index], 'inline');
+      });
+    }
+  });
+
+  test('Get Document Falls Back To Octet Stream Without A Usable Content Type', async ({
+    request,
+  }) => {
+    await test.step('an unparseable content type is neutralised', async () => {
+      const document = await uploadDocument(request, 'not-a-media-type');
+
+      await expect(async () => {
+        const res = await getDocumentContent(request, document);
+
+        await assertStatusCode(res, 200);
+        expect(res.headers()['content-type']).toContain(
+          'application/octet-stream',
+        );
+        expect(res.headers()['content-disposition']).toBe('attachment');
+        expect(res.headers()['content-security-policy']).toBe(SANDBOX_CSP);
+      }).toPass(defaultAssertionOptions);
+    });
+
+    await test.step('a document stored with no content type at all is neutralised', async () => {
+      // Hand-built: Playwright always labels a part, which would store the
+      // literal octet-stream and leave the null-content-type branch untested.
+      const fileName = generateUniqueId();
+      const raw = CREATE_RAW_MULTIPART_WITHOUT_PART_CONTENT_TYPE(fileName);
+      const created = await request.post(buildUrl('/documents'), {
+        headers: {...defaultHeaders(), 'Content-Type': raw.contentType},
+        data: raw.body,
+      });
+      await assertStatusCode(created, 201);
+      const body = await created.json();
+      expect(body.metadata.contentType).toBeNull();
+
+      await expect(async () => {
+        const res = await getDocumentContent(request, {
+          documentId: body.documentId,
+          contentHash: body.contentHash,
+        });
+
+        await assertStatusCode(res, 200);
+        expect(res.headers()['content-type']).toContain(
+          'application/octet-stream',
+        );
+        expect(res.headers()['content-disposition']).toBe('attachment');
+        expect(res.headers()['content-security-policy']).toBe(SANDBOX_CSP);
+      }).toPass(defaultAssertionOptions);
+    });
+  });
+
+  test('Get Document Ignores Accept When Choosing The Disposition', async ({
+    request,
+  }) => {
+    const document = await uploadDocument(request, 'text/html');
+
+    for (const accept of ['text/html', '*/*', 'application/octet-stream']) {
+      await test.step(`Accept: ${accept} still yields attachment`, async () => {
+        await expect(async () => {
+          const res = await getDocumentContent(request, document, {
+            ...defaultHeaders(),
+            Accept: accept,
+          });
+
+          await assertStatusCode(res, 200);
+          expect(res.headers()['content-disposition']).toBe('attachment');
+        }).toPass(defaultAssertionOptions);
+      });
+    }
   });
 });
