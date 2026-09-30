@@ -151,6 +151,22 @@ public class JobWorkerFactoryTest {
   }
 
   @Test
+  void shouldTrimTheConfiguredPhysicalTenantId() {
+    // given
+    final CamundaClientConfiguration configuration = mock(CamundaClientConfiguration.class);
+    when(configuration.getPhysicalTenantId()).thenReturn("  tenant-a  ");
+    when(camundaClient.getConfiguration()).thenReturn(configuration);
+
+    // when
+    jobWorkerFactory.createJobWorker(
+        camundaClient, jobWorkerValue, jobHandlerFactory, "client-name");
+
+    // then
+    verify(jobWorkerMetricsFactory)
+        .createJobWorkerMetrics(new JobWorkerMetricsFactoryContext("test", "tenant-a"));
+  }
+
+  @Test
   void shouldFallBackToTheClientNameWhenNoPhysicalTenantIdIsConfigured() {
     // given
     final CamundaClientConfiguration configuration = mock(CamundaClientConfiguration.class);

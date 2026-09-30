@@ -142,7 +142,8 @@ public class JobWorkerFactory {
     final CamundaClientConfiguration configuration = camundaClient.getConfiguration();
     final String configured = configuration == null ? null : configuration.getPhysicalTenantId();
     if (configured != null && !configured.isBlank()) {
-      return configured;
+      // trimmed like the REST client does when building the physical tenant path
+      return configured.trim();
     }
     if (clientName != null && !clientName.isBlank()) {
       return clientName;
