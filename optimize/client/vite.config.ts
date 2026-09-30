@@ -15,7 +15,8 @@ import sbom from 'rollup-plugin-sbom';
 const outDir = 'dist';
 
 const backend = 'http://localhost:8090';
-const sessionCookies = ['X-CSRF-TOKEN', 'X-Optimize-Authorization_0', 'X-Optimize-Refresh-Token'];
+// The CSRF cookie is left out on purpose: it is reissued on a 401, which would unmark the session.
+const sessionCookies = ['X-Optimize-Authorization_0', 'X-Optimize-Refresh-Token'];
 // Per client, so a 401 in one browser (e.g. an expired session) does not affect the others.
 const rejectedSessions = new Set<string>();
 
