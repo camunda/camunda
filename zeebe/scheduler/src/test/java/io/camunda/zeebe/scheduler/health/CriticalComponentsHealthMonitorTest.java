@@ -16,7 +16,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorControl;
-import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
+import io.camunda.zeebe.scheduler.testing.ActorSchedulerExtension;
 import io.camunda.zeebe.util.health.ComponentTreeListener;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthIssue;
@@ -28,9 +28,9 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import org.awaitility.Awaitility;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,13 +38,13 @@ public class CriticalComponentsHealthMonitorTest {
   private static final Logger LOG =
       LoggerFactory.getLogger(CriticalComponentsHealthMonitorTest.class);
 
-  @Rule public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
+  @RegisterExtension public ActorSchedulerExtension actorScheduler = new ActorSchedulerExtension();
   private CriticalComponentsHealthMonitor monitor;
   private ActorControl actorControl;
   private ComponentTreeListener graphListener;
   private final String parentComponent = "parent";
 
-  @Before
+  @BeforeEach
   public void setup() {
     graphListener = mock();
     final Actor testActor =
@@ -71,7 +71,7 @@ public class CriticalComponentsHealthMonitorTest {
             monitor.startMonitoring();
           }
         };
-    actorSchedulerRule.submitActor(testActor).join();
+    actorScheduler.submitActor(testActor).join();
   }
 
   @Test
