@@ -8,6 +8,7 @@
 
 // @ts-check
 
+import {adapterOas} from '@kubb/adapter-oas';
 import {createKubb} from '@kubb/core';
 import {parserTs} from '@kubb/parser-ts';
 import {pluginTs} from '@kubb/plugin-ts';
@@ -61,6 +62,7 @@ async function generateSchemas(version, config) {
 		defineConfig({
 			root: PACKAGE_ROOT,
 			input: path.join(preprocessedDir, path.basename(inputPath)),
+			adapter: adapterOas({integerType: 'number'}),
 			output: {
 				path: outputPath,
 				barrel: {type: 'named'},
