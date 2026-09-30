@@ -32,13 +32,32 @@ public class InstallResponse extends AbstractRaftResponse {
 
   protected int preferredChunkSize;
 
-  public InstallResponse(final Status status, final RaftError error, final int preferredChunkSize) {
+  // false when the response comes from a version without this field
+  protected boolean snapshotNotNeeded;
+
+  public InstallResponse(
+      final Status status,
+      final RaftError error,
+      final int preferredChunkSize,
+      final boolean snapshotNotNeeded) {
     super(status, error);
     this.preferredChunkSize = preferredChunkSize;
+    this.snapshotNotNeeded = snapshotNotNeeded;
   }
 
   public int preferredChunkSize() {
     return preferredChunkSize;
+  }
+
+  /**
+   * Returns whether the follower does not need the snapshot, because its log or its own snapshot
+   * already covers the snapshot's index. The leader should stop the install and continue with
+   * appends after the snapshot's index.
+   *
+   * @return true if the follower does not need the snapshot
+   */
+  public boolean snapshotNotNeeded() {
+    return snapshotNotNeeded;
   }
 
   @Override
@@ -47,6 +66,7 @@ public class InstallResponse extends AbstractRaftResponse {
         .add("status", status)
         .add("error", error)
         .add("preferredChunkSize", preferredChunkSize)
+        .add("snapshotNotNeeded", snapshotNotNeeded)
         .toString();
   }
 
@@ -62,16 +82,22 @@ public class InstallResponse extends AbstractRaftResponse {
   /** Install response builder. */
   public static class Builder extends AbstractRaftResponse.Builder<Builder, InstallResponse> {
     protected int preferredChunkSize;
+    protected boolean snapshotNotNeeded;
 
     @Override
     public InstallResponse build() {
       validate();
       checkArgument(preferredChunkSize >= 0, "preferred chunk size must be positive");
-      return new InstallResponse(status, error, preferredChunkSize);
+      return new InstallResponse(status, error, preferredChunkSize, snapshotNotNeeded);
     }
 
     public Builder withPreferredChunkSize(final int preferredChunkSize) {
       this.preferredChunkSize = preferredChunkSize;
+      return this;
+    }
+
+    public Builder withSnapshotNotNeeded() {
+      snapshotNotNeeded = true;
       return this;
     }
   }
