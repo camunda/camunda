@@ -8,10 +8,11 @@
 
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {describe, expect} from 'vitest';
+import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
 import {userEvent} from 'vitest/browser';
+import {setUpFakeIntersectionObserver} from '#/vitest-modules/fake-intersection-observer';
 import {
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockGetProcessDefinitionInstanceVersionStatisticsEndpoint,
@@ -27,6 +28,7 @@ import {
 	createQueryProcessDefinitionsResponse,
 } from '#/shared-test-modules/api-mocks/process-definitions';
 import {InstancesByProcess} from './InstancesByProcess';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 
 const REQUEST_SCHEMA = z.object({
 	sort: z.array(
@@ -43,6 +45,8 @@ const REQUEST_SCHEMA = z.object({
 const FAILURE_RESPONSE = new HttpResponse(null, {status: 400});
 const ERROR_RESPONSE = new HttpResponse(null, {status: 500});
 const NO_DRAINING_RESPONSE = HttpResponse.json(createQueryProcessDefinitionsResponse());
+const ALPHA_PROCESS_LINK_NAME = '1 Alpha Process – 6 Instances in 1 Version 5';
+const BETA_PROCESS_LINK_NAME = '0 Beta Process – 3 Instances in 1 Version 3';
 
 const PAGE_1_RESPONSE = HttpResponse.json(
 	createPaginatedResponse({
@@ -64,6 +68,14 @@ const PAGE_1_RESPONSE = HttpResponse.json(
 );
 
 describe('<InstancesByProcess />', () => {
+	beforeEach(() => {
+		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
+	});
+
+	afterEach(() => {
+		sessionStorage.clear();
+	});
+
 	it('should render the list of instances by process', async ({worker}) => {
 		worker.use(
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({
@@ -76,8 +88,8 @@ describe('<InstancesByProcess />', () => {
 
 		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate-preview'});
 
-		await expect.element(screen.getByText('Alpha Process')).toBeVisible();
-		await expect.element(screen.getByText('Beta Process')).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: ALPHA_PROCESS_LINK_NAME})).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: BETA_PROCESS_LINK_NAME})).toBeVisible();
 	});
 
 	it('should link each row to the processes page filtered by process', async ({worker}) => {
@@ -92,9 +104,8 @@ describe('<InstancesByProcess />', () => {
 
 		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate-preview'});
 
-		await expect.element(screen.getByText('Alpha Process')).toBeVisible();
 		await expect
-			.element(screen.getByText('Alpha Process').element().closest('a')!)
+			.element(screen.getByRole('link', {name: ALPHA_PROCESS_LINK_NAME}))
 			.toHaveAttribute(
 				'href',
 				'/operate/processes?process=p1&active=true&incidents=true&completed=false&canceled=false&suspended=false',
@@ -111,7 +122,7 @@ describe('<InstancesByProcess />', () => {
 
 		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate-preview'});
 
-		await expect.element(screen.getByText('Data could not be fetched')).toBeVisible();
+		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
 	});
 
 	it('should show a draining indicator for process definitions scheduled for deletion', async ({worker}) => {
@@ -132,12 +143,13 @@ describe('<InstancesByProcess />', () => {
 
 		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate-preview'});
 
-		await expect.element(screen.getByText('Beta Process')).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: BETA_PROCESS_LINK_NAME})).toBeVisible();
 
-		const betaRow = screen.getByText('Beta Process').element().closest('a') as HTMLElement;
+		const betaRow = screen.getByRole('link', {name: BETA_PROCESS_LINK_NAME}).element() as HTMLElement;
 		await expect.element(betaRow.querySelector('[data-testid="draining-indicator"]') as HTMLElement).toBeVisible();
+		expect(betaRow.querySelector('[data-testid="draining-indicator"]')?.hasAttribute('tabindex')).toBe(false);
 
-		const alphaRow = screen.getByText('Alpha Process').element().closest('a') as HTMLElement;
+		const alphaRow = screen.getByRole('link', {name: ALPHA_PROCESS_LINK_NAME}).element() as HTMLElement;
 		await expect
 			.element(alphaRow.querySelector('[data-testid="draining-indicator"]') as HTMLElement | null)
 			.not.toBeInTheDocument();
@@ -197,9 +209,6 @@ describe('<InstancesByProcess />', () => {
 		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate-preview'});
 
 		await expect.element(screen.getByText(/Alpha Process/)).toBeVisible();
-		// DS DataTable's expansion toggle carries "Expand row"/"Collapse row" as its
-		// accessible name (see makeExpansionColumn in data-table.js) — Carbon's own
-		// label was "Expand current row"; not the same string.
 		await userEvent.click(screen.getByRole('button', {name: 'Expand row'}));
 
 		await expect.element(screen.getByText(/Version 2/)).toBeVisible();
@@ -217,5 +226,76 @@ describe('<InstancesByProcess />', () => {
 		await expect
 			.element(version1Row.querySelector('[data-testid="draining-indicator"]') as HTMLElement | null)
 			.not.toBeInTheDocument();
+	});
+});
+
+describe('<InstancesByProcess /> pagination', () => {
+	beforeEach(() => {
+		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
+	});
+
+	afterEach(() => {
+		sessionStorage.clear();
+	});
+
+	const {getObserver} = setUpFakeIntersectionObserver();
+
+	const buildPage = (processDefinitionId: string, name: string) =>
+		HttpResponse.json(
+			createPaginatedResponse({
+				items: [
+					createProcessDefinitionInstanceStatistics({
+						processDefinitionId,
+						latestProcessDefinitionName: name,
+						activeInstancesWithoutIncidentCount: 2,
+					}),
+				],
+				page: {totalItems: 2, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+			}),
+		);
+
+	it('should load the next page when the bottom of the list becomes visible', async ({worker}) => {
+		// given
+		worker.use(
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+				once: true,
+				successResponse: buildPage('p1', 'Alpha Process'),
+			}),
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+				schema: z.object({page: z.object({from: z.literal(1), limit: z.literal(50)})}),
+				successResponse: buildPage('p2', 'Beta Process'),
+				failureResponse: FAILURE_RESPONSE,
+			}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
+		);
+		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate-preview'});
+		await expect.element(screen.getByRole('link', {name: /Alpha Process/})).toBeVisible();
+
+		// when
+		getObserver().intersect(screen.getByTestId('instances-by-process-list-bottom-sentinel').element());
+
+		// then
+		await expect.element(screen.getByRole('link', {name: /Beta Process/})).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: /Alpha Process/})).toBeVisible();
+	});
+
+	it('should not render pagination sentinels when everything fits on one page', async ({worker}) => {
+		// given
+		worker.use(
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+				schema: REQUEST_SCHEMA,
+				successResponse: PAGE_1_RESPONSE,
+				failureResponse: FAILURE_RESPONSE,
+			}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
+		);
+
+		// when
+		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate-preview'});
+
+		// then
+		await expect.element(screen.getByRole('link', {name: ALPHA_PROCESS_LINK_NAME})).toBeVisible();
+		expect(screen.getByTestId('instances-by-process-list-bottom-sentinel').elements()).toHaveLength(0);
+		expect(screen.getByTestId('instances-by-process-list-top-sentinel').elements()).toHaveLength(0);
 	});
 });

@@ -13,6 +13,7 @@ import {
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockLicenseEndpoint,
+	mockQueryProcessDefinitionsEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
@@ -20,6 +21,7 @@ import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {createProcessDefinitionInstanceStatistics} from '#/shared-test-modules/api-mocks/process-definition-statistics';
+import {createQueryProcessDefinitionsResponse} from '#/shared-test-modules/api-mocks/process-definitions';
 
 const STATS_WITH_INSTANCES = createPaginatedResponse({
 	items: [
@@ -58,6 +60,9 @@ test.describe('Operate Dashboard DS preview (/operate-preview)', () => {
 			}),
 			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
 				successResponse: HttpResponse.json(createPaginatedResponse()),
+			}),
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
 			}),
 		);
 
@@ -114,9 +119,8 @@ test.describe('Operate Dashboard DS preview (/operate-preview)', () => {
 		await expect(operatePreviewPage.noInstancesModelerButton).toHaveAttribute('href', 'https://modeler.example.com');
 	});
 
-	test('should show sample rows in the list tiles, since real data has not landed yet', async ({
+	test('should show real process rows and sample incident rows, since real incident data has not landed yet', async ({
 		network,
-		page,
 		operatePreviewPage,
 	}) => {
 		network.use(
@@ -126,12 +130,14 @@ test.describe('Operate Dashboard DS preview (/operate-preview)', () => {
 			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
 				successResponse: HttpResponse.json(createPaginatedResponse()),
 			}),
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
+			}),
 		);
 
 		await operatePreviewPage.goto();
 
-		await expect(operatePreviewPage.processesByNameSampleRow).toBeVisible();
+		await expect(operatePreviewPage.processesByNameRow('Process One')).toBeVisible();
 		await expect(operatePreviewPage.incidentsByErrorSampleRow).toBeVisible();
-		await expect(page.getByText('Process One')).not.toBeAttached();
 	});
 });

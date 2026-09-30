@@ -6,10 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
+import {describe, expect, vi} from 'vitest';
 import {render} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
+import {setUpFakeIntersectionObserver} from '#/vitest-modules/fake-intersection-observer';
 import {ExpandableList} from './ExpandableList';
 import type {ExpandableListRow} from './ExpandableList.types';
 import {EXPANDABLE_LIST_VARIANT_IDS, type ExpandableListVariant} from './ExpandableList.variants';
@@ -74,64 +75,7 @@ function renderList(overrides: RenderOverrides = {}) {
 	);
 }
 
-class FakeIntersectionObserver implements IntersectionObserver {
-	static instances: FakeIntersectionObserver[] = [];
-
-	readonly root = null;
-	readonly rootMargin = '';
-	readonly scrollMargin = '';
-	readonly thresholds = [];
-	observedTargets: Element[] = [];
-	private readonly callback: IntersectionObserverCallback;
-
-	constructor(callback: IntersectionObserverCallback) {
-		this.callback = callback;
-		FakeIntersectionObserver.instances.push(this);
-	}
-
-	observe(target: Element) {
-		this.observedTargets.push(target);
-	}
-
-	unobserve() {}
-	disconnect() {}
-	takeRecords(): IntersectionObserverEntry[] {
-		return [];
-	}
-
-	intersect(target: Element) {
-		this.callback([{target, isIntersecting: true} as IntersectionObserverEntry], this);
-	}
-
-	intersectAll(targets: Element[]) {
-		this.callback(
-			targets.map((target) => ({target, isIntersecting: true}) as IntersectionObserverEntry),
-			this,
-		);
-	}
-}
-
-function getObserver(): FakeIntersectionObserver {
-	const observer = FakeIntersectionObserver.instances[0];
-
-	if (!observer) {
-		throw new Error('No IntersectionObserver was created');
-	}
-
-	return observer;
-}
-
-let originalIntersectionObserver: typeof IntersectionObserver;
-
-beforeEach(() => {
-	originalIntersectionObserver = window.IntersectionObserver;
-	FakeIntersectionObserver.instances = [];
-	window.IntersectionObserver = FakeIntersectionObserver as unknown as typeof IntersectionObserver;
-});
-
-afterEach(() => {
-	window.IntersectionObserver = originalIntersectionObserver;
-});
+const {getObserver} = setUpFakeIntersectionObserver();
 
 describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (variant: ExpandableListVariant) => {
 	it('should show loading skeleton rows in the table while pending', async () => {
@@ -314,6 +258,118 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 		expect(onLoadNextPage).not.toHaveBeenCalled();
 	});
 
+	it('should load the next page when a bottom-sentinel intersection happened while fetching and fetching then ends', async () => {
+		// given
+		const onLoadNextPage = vi.fn();
+		const rows = [buildRow({id: 'process-1', name: 'Order process'})];
+		const screen = await renderList({
+			variant,
+			rows,
+			hasNextPage: true,
+			isFetchingNextPage: true,
+			onLoadNextPage,
+		});
+
+		// when
+		getObserver().intersect(screen.getByTestId('list-bottom-sentinel').element());
+		await screen.rerender(
+			<ExpandableList
+				variant={variant}
+				isPending={false}
+				isError={false}
+				listTestId="list"
+				dataTestId="table"
+				header="Process name"
+				rows={rows}
+				expandedContents={{}}
+				hasNextPage={true}
+				hasPreviousPage={false}
+				isFetchingNextPage={false}
+				isFetchingPreviousPage={false}
+				onLoadNextPage={onLoadNextPage}
+				onLoadPreviousPage={noop}
+			/>,
+		);
+
+		// then
+		expect(onLoadNextPage).toHaveBeenCalledOnce();
+	});
+
+	it('should not retry a failed next-page fetch until the sentinel intersects again', async () => {
+		// given
+		const onLoadNextPage = vi.fn();
+		const rows = [buildRow({id: 'process-1', name: 'Order process'})];
+		const screen = await renderList({
+			variant,
+			rows,
+			hasNextPage: true,
+			isFetchingNextPage: true,
+			onLoadNextPage,
+		});
+		getObserver().intersect(screen.getByTestId('list-bottom-sentinel').element());
+
+		// when
+		await screen.rerender(
+			<ExpandableList
+				variant={variant}
+				isPending={false}
+				isError={false}
+				listTestId="list"
+				dataTestId="table"
+				header="Process name"
+				rows={rows}
+				expandedContents={{}}
+				hasNextPage={true}
+				hasPreviousPage={false}
+				isFetchingNextPage={false}
+				isFetchingPreviousPage={false}
+				isFetchNextPageError={true}
+				onLoadNextPage={onLoadNextPage}
+				onLoadPreviousPage={noop}
+			/>,
+		);
+
+		// then
+		expect(onLoadNextPage).not.toHaveBeenCalled();
+	});
+
+	it('should load the previous page when a top-sentinel intersection happened while fetching and fetching then ends', async () => {
+		// given
+		const onLoadPreviousPage = vi.fn();
+		const rows = [buildRow({id: 'process-1', name: 'Order process'})];
+		const screen = await renderList({
+			variant,
+			rows,
+			hasPreviousPage: true,
+			isFetchingPreviousPage: true,
+			onLoadPreviousPage,
+		});
+
+		// when
+		getObserver().intersect(screen.getByTestId('list-top-sentinel').element());
+		await screen.rerender(
+			<ExpandableList
+				variant={variant}
+				isPending={false}
+				isError={false}
+				listTestId="list"
+				dataTestId="table"
+				header="Process name"
+				rows={rows}
+				expandedContents={{}}
+				hasNextPage={false}
+				hasPreviousPage={true}
+				isFetchingNextPage={false}
+				isFetchingPreviousPage={false}
+				onLoadNextPage={noop}
+				onLoadPreviousPage={onLoadPreviousPage}
+			/>,
+		);
+
+		// then
+		expect(onLoadPreviousPage).toHaveBeenCalledOnce();
+	});
+
 	it('should trigger only one direction when both sentinels intersect in the same batch', async () => {
 		// given
 		const onLoadNextPage = vi.fn();
@@ -382,9 +438,7 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 				onLoadPreviousPage={noop}
 			/>,
 		);
-		FakeIntersectionObserver.instances[FakeIntersectionObserver.instances.length - 1]?.intersect(
-			screen.getByTestId('list-bottom-sentinel').element(),
-		);
+		getObserver().intersect(screen.getByTestId('list-bottom-sentinel').element());
 
 		// then
 		expect(onLoadNextPage).toHaveBeenCalledOnce();
@@ -480,6 +534,56 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 		expect(container.scrollTop).toBe(50 + rowHeight);
 		getBoundingClientRect.mockRestore();
 	});
+
+	it('should reduce the scroll offset by the height of the rows the capped page window evicts from the top after a next-page fetch', async () => {
+		// given
+		const rowHeight = 60;
+		const getBoundingClientRect = mockElementHeights({rowHeight});
+		const rows = [
+			buildRow({id: 'process-1', name: 'Order process'}),
+			buildRow({id: 'process-2', name: 'Shipping process'}),
+			buildRow({id: 'process-3', name: 'Payment process'}),
+		];
+		const screen = await renderList({variant, rows, hasNextPage: true});
+		const container = screen.getByTestId('list').element() as HTMLDivElement;
+		let virtualScrollTop = 200;
+		Object.defineProperty(container, 'scrollTop', {
+			get: () => virtualScrollTop,
+			set: (value: number) => {
+				virtualScrollTop = value;
+			},
+			configurable: true,
+		});
+
+		// when
+		getObserver().intersect(screen.getByTestId('list-bottom-sentinel').element());
+		await screen.rerender(
+			<ExpandableList
+				variant={variant}
+				isPending={false}
+				isError={false}
+				listTestId="list"
+				dataTestId="table"
+				header="Process name"
+				rows={[
+					rows[2]!,
+					buildRow({id: 'process-4', name: 'Refund process'}),
+					buildRow({id: 'process-5', name: 'Billing process'}),
+				]}
+				expandedContents={{}}
+				hasNextPage={true}
+				hasPreviousPage={false}
+				isFetchingNextPage={false}
+				isFetchingPreviousPage={false}
+				onLoadNextPage={noop}
+				onLoadPreviousPage={noop}
+			/>,
+		);
+
+		// then
+		expect(container.scrollTop).toBe(200 - 2 * rowHeight);
+		getBoundingClientRect.mockRestore();
+	});
 });
 
 describe('<ExpandableList /> composed variant', () => {
@@ -559,6 +663,24 @@ describe('<ExpandableList /> nativeExpansion variant', () => {
 		expect(bodyRows[0]!.textContent).not.toContain('Version details for order process');
 		expect(bodyRows[0]!.querySelector('tr')).toBeNull();
 		expect(bodyRows[1]!.textContent).toContain('Version details for order process');
+	});
+
+	it("should bleed the expanded detail row's background to the cell's edges instead of leaving its own padding visible", async () => {
+		// given
+		const screen = await renderList({
+			variant: 'nativeExpansion',
+			rows: [buildRow({id: 'process-1', name: 'Order process'})],
+			expandedContents: {'process-1': <span>Version details for order process</span>},
+		});
+
+		// when
+		await userEvent.click(screen.getByRole('button', {name: 'Expand row'}));
+
+		// then
+		const detail = document.querySelector('[data-row-kind="detail"]')!;
+		const cell = detail.closest('[data-slot="table-cell"]')!;
+		expect(detail.getBoundingClientRect().left).toBe(cell.getBoundingClientRect().left);
+		expect(detail.getBoundingClientRect().right).toBe(cell.getBoundingClientRect().right);
 	});
 
 	it('should preserve the scroll offset when a row prepended by a previous-page fetch is still expanded from before it was evicted', async () => {
