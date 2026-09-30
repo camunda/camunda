@@ -16,6 +16,7 @@ import {
   addHandler,
   removeHandler,
 } from './request';
+import {resetCsrfTokenFetch} from './csrf';
 
 const successResponse = {
   status: 200,
@@ -230,6 +231,7 @@ describe('CSRF (ADR-0038)', () => {
   beforeEach(() => {
     fetch.mockClear();
     sessionStorage.clear();
+    resetCsrfTokenFetch();
     fetch.mockReturnValue(Promise.resolve(successResponse));
   });
 
@@ -269,6 +271,26 @@ describe('CSRF (ADR-0038)', () => {
     expect(fetch.mock.calls[0][0]).toBe('api/identity/current/user');
     const {headers} = fetch.mock.calls[1][1];
     expect(headers['X-CSRF-TOKEN']).toBe('fresh');
+  });
+
+  it('fetches a token only once per page load when the server issues none', async () => {
+    await post(url, 'body');
+    await post(url, 'body');
+
+    const tokenFetches = fetch.mock.calls.filter(
+      ([target]) => target === 'api/identity/current/user'
+    );
+    expect(tokenFetches).toHaveLength(1);
+  });
+
+  it('does not fetch a token on public share pages', async () => {
+    window.history.pushState({}, '', '/external/');
+
+    await post(url, 'body');
+
+    window.history.pushState({}, '', '/');
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch.mock.calls[0][0]).toBe(url);
   });
 
   it('stores the X-CSRF-TOKEN from a successful response header', async () => {

@@ -23,17 +23,24 @@ export function csrfRequestHeader(method: string | undefined): Record<string, st
 let tokenFetch: Promise<void> | undefined;
 
 // A fresh tab has no token yet: fetch one before the first write instead of racing the first reads.
+// Attempted once per page load, since legacy editions and anonymous viewers never receive a token.
 export async function ensureCsrfToken(method: string | undefined): Promise<void> {
-  if (!isProtected(method) || sessionStorage.getItem(CSRF_TOKEN_HEADER)) {
+  if (!isProtected(method) || isSharedPage() || sessionStorage.getItem(CSRF_TOKEN_HEADER)) {
     return;
   }
   tokenFetch ??= fetch('api/identity/current/user', {credentials: 'same-origin'})
     .then(storeCsrfToken)
-    .catch(() => undefined)
-    .finally(() => {
-      tokenFetch = undefined;
-    });
+    .catch(() => undefined);
   await tokenFetch;
+}
+
+export function resetCsrfTokenFetch(): void {
+  tokenFetch = undefined;
+}
+
+// Public share pages are served under /external/ to anonymous viewers, who have no session.
+function isSharedPage(): boolean {
+  return /\/external\/?$/.test(window.location.pathname);
 }
 
 function isProtected(method: string | undefined): boolean {
