@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -20,6 +21,7 @@ import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.entities.WaitStateStatisticsEntity;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -3159,6 +3161,128 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectCancelProcessInstanceBatchOperationWithNonCancellableState() {
+    // given
+    final var request =
+        """
+        {
+          "filter": {
+            "state": "COMPLETED"
+          }
+        }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The value for state is 'COMPLETED' but must be one of [ACTIVE, SUSPENDED].",
+                "instance":"/v2/process-instances/cancellation"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/cancellation")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+
+    verify(processInstanceServices, never())
+        .cancelProcessInstanceBatchOperationWithResult(any(ProcessInstanceFilter.class), any());
+  }
+
+  @Test
+  void shouldRejectCancelProcessInstanceBatchOperationWithNonCancellableStatesInListAndOrFilter() {
+    // given
+    final var request =
+        """
+        {
+          "filter": {
+            "state": {"$in": ["ACTIVE", "TERMINATED"]},
+            "$or": [
+              {"state": "SUSPENDED"},
+              {"state": "COMPLETED", "hasIncident": true}
+            ]
+          }
+        }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The value for state is 'TERMINATED' but must be one of [ACTIVE, SUSPENDED]. The value for state is 'COMPLETED' but must be one of [ACTIVE, SUSPENDED].",
+                "instance":"/v2/process-instances/cancellation"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/cancellation")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+
+    verify(processInstanceServices, never())
+        .cancelProcessInstanceBatchOperationWithResult(any(ProcessInstanceFilter.class), any());
+  }
+
+  @Test
+  void shouldCancelProcessInstanceBatchOperationWithCancellableStateFilter() {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(123L);
+    record.setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
+    when(processInstanceServices.cancelProcessInstanceBatchOperationWithResult(
+            any(ProcessInstanceFilter.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request =
+        """
+        {
+          "filter": {
+            "state": "SUSPENDED",
+            "processDefinitionId": "test-process-definition-id"
+          }
+        }""";
+
+    // when
+    webClient
+        .post()
+        .uri("/v2/process-instances/cancellation")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    // then
+    final var filterCaptor = ArgumentCaptor.forClass(ProcessInstanceFilter.class);
+    verify(processInstanceServices)
+        .cancelProcessInstanceBatchOperationWithResult(filterCaptor.capture(), any());
+    assertThat(filterCaptor.getValue().stateOperations())
+        .containsExactly(Operation.eq("SUSPENDED"));
   }
 
   @Test
