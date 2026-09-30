@@ -38,6 +38,7 @@ final class CommandApiRequestHandler
   private @Nullable LogStreamWriter leadingStream;
   private boolean isDiskSpaceAvailable = true;
   private boolean processingPaused;
+  private boolean frozenForTransfer;
 
   CommandApiRequestHandler(final PartitionId partitionId) {
     super("CommandApi", partitionId, CommandApiRequestReader::new, CommandApiResponseWriter::new);
@@ -87,6 +88,15 @@ final class CommandApiRequestHandler
       return Either.left(errorWriter.outOfDiskSpace(partitionId));
     }
 
+    final var logStreamWriter = leadingStream;
+    // while leadership is moving away, the gateway retries a leader mismatch against the
+    // partition's
+    // next leader as soon as it learns of it, where any other error would reach the client
+    if (logStreamWriter == null || frozenForTransfer) {
+      errorWriter.partitionLeaderMismatch(partitionId);
+      return Either.left(errorWriter);
+    }
+
     if (processingPaused) {
       return Either.left(
           errorWriter.partitionUnavailable(
@@ -94,7 +104,6 @@ final class CommandApiRequestHandler
     }
 
     final var command = reader.getMessageDecoder();
-    final var logStreamWriter = leadingStream;
 
     final var valueType = command.valueType();
     final var intent = Intent.fromProtocolValue(valueType, command.intent());
@@ -108,11 +117,6 @@ final class CommandApiRequestHandler
     metadata.intent(intent);
     metadata.valueType(valueType);
     metadata.operationReference(operationReference);
-
-    if (logStreamWriter == null) {
-      errorWriter.partitionLeaderMismatch(partitionId);
-      return Either.left(errorWriter);
-    }
 
     if (value == null) {
       errorWriter.unsupportedMessage(valueType.name(), SUPPORTED_VALUE_TYPES);
@@ -160,7 +164,15 @@ final class CommandApiRequestHandler
   }
 
   void addPartition(final int partitionId, final LogStreamWriter logStreamWriter) {
-    actor.submit(() -> leadingStream = logStreamWriter);
+    actor.submit(
+        () -> {
+          leadingStream = logStreamWriter;
+          frozenForTransfer = false;
+        });
+  }
+
+  void onTransferFreeze(final boolean frozen) {
+    actor.submit(() -> frozenForTransfer = frozen);
   }
 
   void removePartition(final int partitionId) {
