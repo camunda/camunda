@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.impl.job;
 
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_LONG_POLLING_EMPTY_RESPONSE_THRESHOLD;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_LONG_POLLING_TIMEOUT;
+import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_NOTIFICATION_BATCH_WINDOW;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_PROBE_TIMEOUT;
 import static io.camunda.zeebe.scheduler.clock.ActorClock.currentTimeMillis;
 
@@ -46,6 +47,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
   private final Duration longPollingTimeout;
   private final long probeTimeoutMillis;
   private final int failedAttemptThreshold;
+  private final long notificationBatchWindowMillis;
 
   private final LongPollingMetrics metrics;
 
@@ -59,6 +61,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
       final long longPollingTimeout,
       final long probeTimeoutMillis,
       final int failedAttemptThreshold,
+      final Duration notificationBatchWindow,
       final Function<JobActivationResponse, JobActivationResult<T>> activationResultMapper,
       final Function<String, Exception> resourceExhaustedExceptionProvider,
       final Function<String, Throwable> requestCanceledExceptionProvider,
@@ -72,6 +75,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
     this.probeTimeoutMillis = probeTimeoutMillis;
     this.failedAttemptThreshold = failedAttemptThreshold;
     this.metrics = metrics;
+    notificationBatchWindowMillis = notificationBatchWindow.toMillis();
   }
 
   @Override
@@ -304,18 +308,41 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
   private void onJobAvailableNotification(final String jobType) {
     LOG.trace("Received jobs available notification for type {}.", jobType);
 
-    // instead of calling #getJobTypeState(), do only a
-    // get to avoid the creation of a state instance.
-    final var state = jobTypeState.get(jobType);
-
-    if (state != null) {
-      LOG.trace("Handle jobs available notification for type {}.", jobType);
-      actor.run(
-          () -> {
-            state.resetFailedAttempts();
-            handlePendingRequests(state, jobType);
-          });
+    // skip the actor hop for job types without long polling state
+    if (jobTypeState.containsKey(jobType)) {
+      actor.run(() -> onNotification(jobType));
     }
+  }
+
+  private void onNotification(final String key) {
+    final var state = jobTypeState.get(key);
+    if (state == null) {
+      return;
+    }
+
+    state
+        .notificationThrottle()
+        .onNotification(
+            currentTimeMillis(),
+            notificationBatchWindowMillis,
+            () -> handleNotification(key, state),
+            delayMillis -> actor.schedule(Duration.ofMillis(delayMillis), () -> flush(key, state)));
+  }
+
+  private void flush(
+      final String key, final InFlightLongPollingActivateJobsRequestsState<T> state) {
+    // the state may have been removed or replaced since the flush was scheduled
+    if (jobTypeState.get(key) == state
+        && state.notificationThrottle().shouldFlush(currentTimeMillis())) {
+      handleNotification(key, state);
+    }
+  }
+
+  private void handleNotification(
+      final String key, final InFlightLongPollingActivateJobsRequestsState<T> state) {
+    LOG.trace("Handle jobs available notification for type {}.", key);
+    state.resetFailedAttempts();
+    handlePendingRequests(state, key);
   }
 
   private void handlePendingRequests(
@@ -413,6 +440,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
     private long probeTimeoutMillis = DEFAULT_PROBE_TIMEOUT;
     // Minimum number of responses with jobCount 0 to infer that no jobs are available
     private int minEmptyResponses = DEFAULT_LONG_POLLING_EMPTY_RESPONSE_THRESHOLD;
+    private Duration notificationBatchWindow = DEFAULT_NOTIFICATION_BATCH_WINDOW;
     private Function<JobActivationResponse, JobActivationResult<T>> activationResultMapper;
     private Function<String, Exception> resourceExhaustedExceptionProvider;
     private Function<String, Throwable> requestCanceledExceptionProvider;
@@ -440,6 +468,11 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
 
     public Builder<T> setMinEmptyResponses(final int minEmptyResponses) {
       this.minEmptyResponses = minEmptyResponses;
+      return this;
+    }
+
+    public Builder<T> setNotificationBatchWindow(final Duration notificationBatchWindow) {
+      this.notificationBatchWindow = notificationBatchWindow;
       return this;
     }
 
@@ -474,6 +507,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
           longPollingTimeout,
           probeTimeoutMillis,
           minEmptyResponses,
+          notificationBatchWindow,
           activationResultMapper,
           resourceExhaustedExceptionProvider,
           requestCanceledExceptionProvider,
