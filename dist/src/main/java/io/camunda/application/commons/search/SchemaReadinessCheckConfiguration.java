@@ -19,7 +19,8 @@ import org.springframework.context.annotation.Configuration;
 @ConditionalOnAnyHttpGatewayEnabled
 @ConditionalOnSecondaryStorageType({
   SecondaryStorageType.elasticsearch,
-  SecondaryStorageType.opensearch
+  SecondaryStorageType.opensearch,
+  SecondaryStorageType.rdbms
 })
 public class SchemaReadinessCheckConfiguration {
 

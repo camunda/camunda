@@ -191,9 +191,12 @@ class HealthConfigurationInitializerTest {
     }
 
     @Test
-    void shouldNotIncludeEsIndicatorsWithRdbms() {
-      // given
+    void shouldIncludeSchemaReadinessCheckForWebappsWithRdbms() {
+      // given - RDBMS initializes its schema per physical tenant, like Elasticsearch/OpenSearch, so
+      // a
+      // started node no longer implies a serviceable tenant
       withRdbmsSecondaryStorage();
+      withHttpGatewayEnabled();
       final var profiles = List.of(Profile.OPERATE.getId(), Profile.TASKLIST.getId());
 
       // when
@@ -201,7 +204,7 @@ class HealthConfigurationInitializerTest {
           initializer.collectReadinessGroupHealthIndicators(profiles, environment);
 
       // then
-      assertThat(indicators).contains("readinessState").doesNotContain("schemaReadinessCheck");
+      assertThat(indicators).contains("readinessState", "schemaReadinessCheck");
     }
 
     @Test
@@ -280,17 +283,35 @@ class HealthConfigurationInitializerTest {
     }
 
     @Test
-    void shouldNotIncludeSchemaReadinessCheckWithRdbms() {
+    void shouldIncludeSchemaReadinessCheckForBrokerWithRdbms() {
       // given
       withRdbmsSecondaryStorage();
-      final var profiles = List.of(Profile.GATEWAY.getId());
+      withHttpGatewayEnabled();
+      final var profiles = List.of(Profile.BROKER.getId());
 
       // when
       final var indicators =
           initializer.collectReadinessGroupHealthIndicators(profiles, environment);
 
       // then
-      assertThat(indicators).contains("gatewayStarted").doesNotContain("schemaReadinessCheck");
+      assertThat(indicators).contains("brokerReady", "nodeIdProviderReady", "schemaReadinessCheck");
+    }
+
+    @Test
+    void shouldNotIncludeSchemaReadinessCheckForBrokerWithRdbmsAndEmbeddedGatewayDisabled() {
+      // given
+      withRdbmsSecondaryStorage();
+      withEmbeddedGateway(false);
+      final var profiles = List.of(Profile.BROKER.getId());
+
+      // when
+      final var indicators =
+          initializer.collectReadinessGroupHealthIndicators(profiles, environment);
+
+      // then
+      assertThat(indicators)
+          .contains("brokerReady", "nodeIdProviderReady")
+          .doesNotContain("schemaReadinessCheck");
     }
 
     @Test

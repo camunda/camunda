@@ -8,7 +8,9 @@
 package io.camunda.zeebe.it.physicaltenant;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import feign.FeignException;
 import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.it.cluster.backup.InProcessRestoreTestUtil;
@@ -75,10 +77,7 @@ final class PhysicalTenantRdbmsRecoveryStartupIT {
             });
 
     // and - one tenant enters recovery, which the broker persists in its cluster configuration
-    try (final var client = tenants.newClientBuilder(broker, RECOVERING_TENANT).build()) {
-      InProcessRestoreTestUtil.changeMode(client, RECOVERING_TENANT, "RECOVERING", false);
-    }
-    awaitPartitionsOf(RECOVERING_TENANT, PartitionStateCode.RECOVERING);
+    enterRecovery(RECOVERING_TENANT);
 
     // and - the broker is down while the recovering tenant's database is emptied
     broker.stop();
@@ -110,6 +109,59 @@ final class PhysicalTenantRdbmsRecoveryStartupIT {
         .atMost(Duration.ofSeconds(10))
         .untilAsserted(
             () -> assertThat(deployedResourceTableExists(recoveringTenantUrl)).isFalse());
+  }
+
+  @Test
+  void shouldReportNotReadyUntilATenantsSchemaIsInitialized() throws Exception {
+    // given - both tenants' schemas are applied, then both tenants enter recovery
+    Awaitility.await("both tenants' schemas are applied")
+        .atMost(TRANSITION_TIMEOUT)
+        .untilAsserted(
+            () -> {
+              assertThat(deployedResourceTableExists(defaultTenantUrl)).isTrue();
+              assertThat(deployedResourceTableExists(recoveringTenantUrl)).isTrue();
+            });
+    enterRecovery(RECOVERING_TENANT);
+    enterRecovery(DEFAULT_TENANT);
+
+    // and - the broker is down while both tenants' databases are emptied
+    broker.stop();
+    dropAllObjects(defaultTenantUrl);
+    dropAllObjects(recoveringTenantUrl);
+
+    // when - the broker starts again with every tenant still recovering
+    broker.start();
+
+    // then - the node comes up, since the restore has to reach it, but reports not ready: no tenant
+    // has a schema to serve from
+    broker.healthActuator().live();
+    Awaitility.await("the node stays not ready while no tenant's schema is initialized")
+        .during(Duration.ofSeconds(3))
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(
+            () ->
+                assertThatThrownBy(() -> broker.healthActuator().ready())
+                    .isInstanceOf(FeignException.class));
+
+    // when - one tenant leaves recovery without a restore
+    try (final var client = tenants.newClientBuilder(broker, DEFAULT_TENANT).build()) {
+      InProcessRestoreTestUtil.changeMode(client, DEFAULT_TENANT, "PROCESSING", false);
+    }
+
+    // then - its schema is applied, and the node reports ready on that tenant alone
+    Awaitility.await("the node reports ready once a tenant's schema is initialized")
+        .atMost(TRANSITION_TIMEOUT)
+        .ignoreExceptions()
+        .untilAsserted(() -> broker.healthActuator().ready());
+    assertThat(deployedResourceTableExists(defaultTenantUrl)).isTrue();
+    assertThat(deployedResourceTableExists(recoveringTenantUrl)).isFalse();
+  }
+
+  private void enterRecovery(final String physicalTenantId) {
+    try (final var client = tenants.newClientBuilder(broker, physicalTenantId).build()) {
+      InProcessRestoreTestUtil.changeMode(client, physicalTenantId, "RECOVERING", false);
+    }
+    awaitPartitionsOf(physicalTenantId, PartitionStateCode.RECOVERING);
   }
 
   private void awaitPartitionsOf(final String physicalTenantId, final PartitionStateCode state) {
