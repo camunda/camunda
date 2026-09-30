@@ -100,11 +100,9 @@ function storeCsrfTokenFromResponse(response: Response) {
  * because this request does not tell us if the user has a session.
  */
 async function requestCsrfToken(url: string) {
-  const clientConfig = getClientConfig();
-
   try {
     storeCsrfTokenFromResponse(
-      await fetch(mergePathname(clientConfig.contextPath, url), {
+      await fetch(mergePathname(window.clientConfig?.contextPath ?? '/', url), {
         method: 'GET',
         credentials: 'include',
         headers: {Accept: 'text/html'},
@@ -228,10 +226,6 @@ function isRequestError(error: unknown): error is RequestError {
   );
 }
 
-<<<<<<< HEAD
-export {request, requestAndParse, requestWithThrow, isRequestError};
-export type {RequestError, RequestResult};
-=======
 export {
   request,
   requestAndParse,
@@ -239,5 +233,4 @@ export {
   requestWithThrow,
   isRequestError,
 };
-export type {RequestError};
->>>>>>> 6fb4bf99 (fix: send the CSRF token from the login page in Operate, Tasklist, Identity)
+export type {RequestError, RequestResult};

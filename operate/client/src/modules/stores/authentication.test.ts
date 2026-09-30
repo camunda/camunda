@@ -12,12 +12,8 @@ import {mockMe} from 'modules/mocks/api/v2/me';
 import {createUser} from 'modules/testUtils';
 import {mockLogin, mockLoginCsrfToken} from 'modules/mocks/api/login';
 import {mockLogout} from 'modules/mocks/api/logout';
-<<<<<<< HEAD
-=======
-import * as clientConfig from 'modules/utils/getClientConfig';
 import {mockServer} from 'modules/mock-server/node';
 import {http, HttpResponse} from 'msw';
->>>>>>> 6fb4bf99 (fix: send the CSRF token from the login page in Operate, Tasklist, Identity)
 
 const mockUserResponse = createUser();
 
@@ -204,12 +200,8 @@ describe('authentication store', () => {
       mockLoginCsrfToken().withSuccess('');
       mockLogin().withSuccess({});
       mockMe().withSuccess(mockUserResponse);
-<<<<<<< HEAD
       mockLogout().withSuccess({});
-=======
-      mockLogout().withSuccess({}, {statusCode: 204});
       mockLoginCsrfToken().withSuccess('');
->>>>>>> 6fb4bf99 (fix: send the CSRF token from the login page in Operate, Tasklist, Identity)
       mockLogin().withSuccess({});
       mockMe().withSuccess(mockUserResponse);
 
@@ -236,46 +228,4 @@ describe('authentication store', () => {
       });
     },
   );
-<<<<<<< HEAD
-=======
-
-  it('should redirect to logoutUrl returned by backend during logout', async () => {
-    const mockReload = vi.fn();
-    vi.spyOn(window, 'location', 'get').mockReturnValue({
-      ...window.location,
-      reload: mockReload,
-      href: mockHref,
-    });
-
-    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
-      ...clientConfig.getClientConfig(),
-      canLogout: true,
-      isLoginDelegated: true,
-    });
-
-    const mockIdpLogoutUrl = 'http://example.com/idpLogout';
-
-    mockLoginCsrfToken().withSuccess('');
-    mockLogin().withSuccess({});
-    mockMe().withSuccess(mockUserResponse);
-    mockLogout().withSuccess({url: mockIdpLogoutUrl});
-    mockLoginCsrfToken().withSuccess('');
-    mockLogin().withSuccess({});
-    mockMe().withSuccess(mockUserResponse);
-
-    await authenticationStore.handleLogin('demo', 'demo');
-
-    expect(authenticationStore.status).toBe('logged-in');
-
-    await authenticationStore.handleLogout();
-
-    expect(authenticationStore.status).toBe('invalid-third-party-session');
-
-    expect(window.location.href).toBe(mockIdpLogoutUrl);
-    expect(mockReload).toHaveBeenCalledTimes(0);
-    expect(getStateLocally()).toEqual({
-      wasReloaded: true,
-    });
-  });
->>>>>>> 6fb4bf99 (fix: send the CSRF token from the login page in Operate, Tasklist, Identity)
 });
