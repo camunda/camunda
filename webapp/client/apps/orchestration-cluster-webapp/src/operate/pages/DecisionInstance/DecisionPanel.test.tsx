@@ -147,13 +147,6 @@ describe('<DecisionPanel />', () => {
 								],
 							},
 							{
-								ruleId: null,
-								ruleIndex: null,
-								evaluatedOutputs: [
-									{outputId: 'out-2', outputName: 'classification', outputValue: '"ok"', ruleId: null, ruleIndex: null},
-								],
-							},
-							{
 								ruleId: 'rule-1',
 								ruleIndex: 1,
 								evaluatedOutputs: [

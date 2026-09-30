@@ -132,13 +132,13 @@ test.describe('Task details history', () => {
 		await expect(taskDetailPage.historyTabContent.getByText('Create task')).toBeVisible();
 
 		await taskDetailPage.historyColumnHeader(/sort by operation type/i).click();
-		await expect.poll(() => new URL(page.url()).searchParams.get('sort')).toBe('operationType+asc');
+		await expect.poll(() => new URL(page.url()).searchParams.get('sort')).toBe('operationType+ASC');
 
 		await taskDetailPage.historyColumnHeader(/sort by actor/i).click();
-		await expect.poll(() => new URL(page.url()).searchParams.get('sort')).toBe('actorId+asc');
+		await expect.poll(() => new URL(page.url()).searchParams.get('sort')).toBe('actorId+ASC');
 
 		await taskDetailPage.historyColumnHeader(/sort by date/i).click();
-		await expect.poll(() => new URL(page.url()).searchParams.get('sort')).toBe('timestamp+asc');
+		await expect.poll(() => new URL(page.url()).searchParams.get('sort')).toBe('timestamp+ASC');
 
 		await taskDetailPage.historyColumnHeader(/sort by date/i).click();
 		await expect.poll(() => new URL(page.url()).searchParams.get('sort')).toBe(null);
@@ -161,9 +161,9 @@ test.describe('Task details history', () => {
 			}),
 		);
 
-		await taskDetailPage.gotoHistoryDetails(USER_TASK_KEY, 'direct-link-log', '?sort=timestamp%2Basc');
+		await taskDetailPage.gotoHistoryDetails(USER_TASK_KEY, 'direct-link-log', '?sort=timestamp%2BASC');
 
-		await expect(page).toHaveURL(/\/tasklist\/2251799813685281\/history\/direct-link-log\?sort=timestamp%2Basc/);
+		await expect(page).toHaveURL(/\/tasklist\/2251799813685281\/history\/direct-link-log\?sort=timestamp%2BASC/);
 		await expect(taskDetailPage.historyTab).toHaveAttribute('aria-selected', 'true');
 		await expect(taskDetailPage.historyDetailsModal.getByRole('heading', {name: 'Assign task'})).toBeVisible();
 		await expect(taskDetailPage.historyDetailsModal.getByText('Assignee')).toBeVisible();
@@ -171,7 +171,7 @@ test.describe('Task details history', () => {
 
 		await taskDetailPage.historyDetailsCloseButton.click();
 
-		await expect(page).toHaveURL(/\/tasklist\/2251799813685281\/history\?sort=timestamp%2Basc/);
+		await expect(page).toHaveURL(/\/tasklist\/2251799813685281\/history\?sort=timestamp%2BASC/);
 	});
 
 	test('should help the user recover when task history cannot be loaded', async ({network, taskDetailPage, page}) => {

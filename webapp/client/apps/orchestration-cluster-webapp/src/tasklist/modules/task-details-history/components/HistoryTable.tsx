@@ -63,7 +63,7 @@ type RowData = {
 	id: string;
 	operation: string;
 	details: React.ReactNode;
-	actor: string;
+	actor: string | null;
 	date: string;
 	actions: string;
 };

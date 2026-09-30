@@ -47,7 +47,7 @@ function decisionDefinitionSelectionOptions({
 				tenantId,
 			},
 			page: {limit: decisionDefinitionVersion === undefined ? 1 : 2},
-			sort: [{field: 'version', order: 'desc'}],
+			sort: [{field: 'version', order: 'DESC'}],
 		}),
 		staleTime: 5000,
 	};

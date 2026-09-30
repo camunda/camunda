@@ -45,7 +45,7 @@ function getTasksRequestBody(
 	const sort: QueryUserTasksRequestBody['sort'] = [
 		{
 			field: SORT_BY_FIELD[sortBy],
-			order: 'desc',
+			order: 'DESC',
 		},
 	];
 

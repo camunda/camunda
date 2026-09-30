@@ -114,14 +114,14 @@ describe('mapProcessInstancesFilter', () => {
 
 describe('mapProcessInstancesSort', () => {
 	it.for([
-		['processDefinitionName+asc', 'processDefinitionName', 'asc'],
-		['processInstanceKey+desc', 'processInstanceKey', 'desc'],
-		['processDefinitionVersion+asc', 'processDefinitionVersion', 'asc'],
-		['businessId+desc', 'businessId', 'desc'],
-		['tenantId+asc', 'tenantId', 'asc'],
-		['startDate+desc', 'startDate', 'desc'],
-		['endDate+asc', 'endDate', 'asc'],
-		['parentProcessInstanceKey+desc', 'parentProcessInstanceKey', 'desc'],
+		['processDefinitionName+ASC', 'processDefinitionName', 'ASC'],
+		['processInstanceKey+DESC', 'processInstanceKey', 'DESC'],
+		['processDefinitionVersion+ASC', 'processDefinitionVersion', 'ASC'],
+		['businessId+DESC', 'businessId', 'DESC'],
+		['tenantId+ASC', 'tenantId', 'ASC'],
+		['startDate+DESC', 'startDate', 'DESC'],
+		['endDate+ASC', 'endDate', 'ASC'],
+		['parentProcessInstanceKey+DESC', 'parentProcessInstanceKey', 'DESC'],
 	] as const)('should map the supported sort value %s', ([sort, field, order]) => {
 		expect(mapProcessInstancesSort(sort)).toEqual([{field, order}]);
 	});
@@ -307,7 +307,7 @@ describe('mapProcessInstancesSort', () => {
 		});
 	});
 
-	it.for([undefined, 'unknown+asc', 'startDate+unknown'])('should fall back to the default sort for %s', (sort) => {
-		expect(mapProcessInstancesSort(sort)).toEqual([{field: 'startDate', order: 'desc'}]);
+	it.for([undefined, 'unknown+ASC', 'startDate+unknown'])('should fall back to the default sort for %s', (sort) => {
+		expect(mapProcessInstancesSort(sort)).toEqual([{field: 'startDate', order: 'DESC'}]);
 	});
 });

@@ -71,7 +71,7 @@ const RESPONSE_EXCEEDING_PAGE_SIZE = HttpResponse.json(
 function renderPage(props?: {page?: number; pageSize?: number; sort?: string}) {
 	return renderWithRouter(
 		() => (
-			<BatchOperations page={props?.page ?? 1} pageSize={props?.pageSize ?? 20} sort={props?.sort ?? 'endDate+desc'} />
+			<BatchOperations page={props?.page ?? 1} pageSize={props?.pageSize ?? 20} sort={props?.sort ?? 'endDate+DESC'} />
 		),
 		{path: '/operate/batch-operations'},
 	);
@@ -268,7 +268,7 @@ describe('<BatchOperations />', () => {
 	});
 
 	it('should request sorted and paginated results and restore them through browser history', async ({worker}) => {
-		const requestFor = (from: number, limit: number, field: string, order: 'asc' | 'desc') =>
+		const requestFor = (from: number, limit: number, field: string, order: 'ASC' | 'DESC') =>
 			mockQueryBatchOperationsEndpoint({
 				schema: z.object({
 					page: z.object({from: z.literal(from), limit: z.literal(limit)}),
@@ -277,23 +277,23 @@ describe('<BatchOperations />', () => {
 				successResponse: RESPONSE_EXCEEDING_PAGE_SIZE,
 				failureResponse: HttpResponse.json({}, {status: 500}),
 			});
-		worker.use(requestFor(0, 20, 'endDate', 'desc'));
+		worker.use(requestFor(0, 20, 'endDate', 'DESC'));
 		const screen = await renderRoute();
 		await expect.element(screen.getByText('1–20 of 25 items')).toBeVisible();
 
-		worker.use(requestFor(0, 20, 'actorId', 'desc'));
+		worker.use(requestFor(0, 20, 'actorId', 'DESC'));
 		await userEvent.click(screen.getByRole('columnheader', {name: 'Actor'}));
 		await expect
 			.poll(() => batchOperationsSearchSchema.parse(screen.router.state.location.search).sort)
-			.toBe('actorId+desc');
+			.toBe('actorId+DESC');
 
-		worker.use(requestFor(20, 20, 'actorId', 'desc'));
+		worker.use(requestFor(20, 20, 'actorId', 'DESC'));
 		await userEvent.click(screen.getByRole('button', {name: 'Next page'}));
 		await expect.element(screen.getByText('21–25 of 25 items')).toBeVisible();
 
 		screen.router.history.back();
 		await expect.element(screen.getByText('1–20 of 25 items')).toBeVisible();
-		expect(batchOperationsSearchSchema.parse(screen.router.state.location.search).sort).toBe('actorId+desc');
+		expect(batchOperationsSearchSchema.parse(screen.router.state.location.search).sort).toBe('actorId+DESC');
 		screen.router.history.forward();
 		await expect.element(screen.getByText('21–25 of 25 items')).toBeVisible();
 	});
@@ -314,14 +314,14 @@ describe('<BatchOperations />', () => {
 		worker.use(
 			mockQueryBatchOperationsEndpoint({
 				schema: z.object({
-					sort: z.array(z.object({field: z.literal('startDate'), order: z.literal('asc')})),
+					sort: z.array(z.object({field: z.literal('startDate'), order: z.literal('ASC')})),
 					page: z.object({from: z.literal(100), limit: z.literal(50)}),
 				}),
 				successResponse: RESPONSE_EXCEEDING_PAGE_SIZE,
 				failureResponse: HttpResponse.json({}, {status: 500}),
 			}),
 		);
-		const screen = await renderRoute('/operate/batch-operations?page=3&pageSize=50&sort=startDate%2Basc');
+		const screen = await renderRoute('/operate/batch-operations?page=3&pageSize=50&sort=startDate%2BASC');
 		await expect.element(screen.getByRole('link', {name: 'Resolve Incident'})).toBeVisible();
 	});
 
@@ -329,7 +329,7 @@ describe('<BatchOperations />', () => {
 		worker.use(
 			mockQueryBatchOperationsEndpoint({
 				schema: z.object({
-					sort: z.array(z.object({field: z.literal('endDate'), order: z.literal('desc')})),
+					sort: z.array(z.object({field: z.literal('endDate'), order: z.literal('DESC')})),
 				}),
 				successResponse: RESPONSE_WITH_OPERATIONS,
 				failureResponse: HttpResponse.json({}, {status: 500}),
@@ -362,24 +362,24 @@ describe('<BatchOperations />', () => {
 });
 
 describe('batch operations URL search', () => {
-	it.for(['unknown+asc', 'actorId+sideways', 'state', 'state+asc+extra', ''] as const)(
+	it.for(['unknown+ASC', 'actorId+sideways', 'state', 'state+ASC+extra', ''] as const)(
 		'should replace malformed sort %s with the legacy default',
 		(value) => {
-			expect(batchOperationsSearchSchema.parse({sort: value}).sort).toBe('endDate+desc');
+			expect(batchOperationsSearchSchema.parse({sort: value}).sort).toBe('endDate+DESC');
 		},
 	);
 
 	it.for([
 		{label: 'number', value: 123},
 		{label: 'boolean', value: true},
-		{label: 'repeated parameter array', value: ['state+asc', 'actorId+desc']},
+		{label: 'repeated parameter array', value: ['state+ASC', 'actorId+DESC']},
 	] as const)('should replace malformed $label sort with the legacy default', ({value}) => {
-		expect(batchOperationsSearchSchema.parse({sort: value}).sort).toBe('endDate+desc');
+		expect(batchOperationsSearchSchema.parse({sort: value}).sort).toBe('endDate+DESC');
 	});
 
 	it('should accept every API sort field and valid order', () => {
 		for (const field of ['batchOperationKey', 'operationType', 'state', 'startDate', 'endDate', 'actorId']) {
-			for (const order of ['asc', 'desc']) {
+			for (const order of ['ASC', 'DESC']) {
 				expect(batchOperationsSearchSchema.parse({sort: `${field}+${order}`}).sort).toBe(`${field}+${order}`);
 			}
 		}
