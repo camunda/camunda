@@ -19,7 +19,10 @@
  * 2. `copyInheritedRequiredProperties`: when a schema lists a property in `required` that it only
  *    inherits through `allOf`, Kubb emits it as optional. The property is copied into the local
  *    `properties`, so that the generated intersection makes it required.
- * 3. `PATCHES`: targeted fixes for Kubb output issues in single schemas. Each patch explains why it is
+ * 3. `removePatterns`: drops the `pattern` keyword of string schemas. The frontend types only describe
+ *    the shape of the API; format validation is the backend's job. Kubb would emit `.regex(...)` checks,
+ *    some of them with Unicode property escapes that do not work without the `u` flag.
+ * 4. `PATCHES`: targeted fixes for Kubb output issues in single schemas. Each patch explains why it is
  *    necessary. Spec errors are fixed in the spec yaml itself, not here.
  */
 
@@ -85,6 +88,23 @@ function collapseSingleRefAllOf(node) {
 		delete current.title;
 		current.$ref = member.$ref;
 		count++;
+	});
+	return count;
+}
+
+/**
+ * Rule 3: removes `pattern` from string schemas. Only string values are removed, so a property that is
+ * itself named `pattern` (an object under `properties`) is left alone.
+ * @param {SchemaNode} node
+ * @returns {number}
+ */
+function removePatterns(node) {
+	let count = 0;
+	walk(node, (current) => {
+		if (typeof current.pattern === 'string') {
+			delete current.pattern;
+			count++;
+		}
 	});
 	return count;
 }
@@ -249,8 +269,10 @@ async function preprocessSpec(inputDir, outputDir) {
 	// Rule 2 runs first, so that the copied properties also get collapsed by rule 1.
 	const copied = copyInheritedRequiredProperties(files);
 	let collapsed = 0;
+	let patterns = 0;
 	for (const document of files.values()) {
 		collapsed += collapseSingleRefAllOf(document);
+		patterns += removePatterns(document);
 	}
 	const patched = applyPatches(files);
 
@@ -261,7 +283,7 @@ async function preprocessSpec(inputDir, outputDir) {
 	}
 
 	console.log(
-		`  Preprocessed spec: ${collapsed} allOf wrappers collapsed, ${copied} inherited required properties copied, ${patched} patches applied`,
+		`  Preprocessed spec: ${collapsed} allOf wrappers collapsed, ${copied} inherited required properties copied, ${patterns} patterns removed, ${patched} patches applied`,
 	);
 }
 
