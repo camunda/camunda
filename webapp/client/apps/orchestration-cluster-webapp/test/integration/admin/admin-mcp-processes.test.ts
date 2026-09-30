@@ -174,7 +174,7 @@ test.describe('Admin MCP processes', () => {
 
 		await adminMcpProcessesPage.toolNameSortButton.click();
 
-		await expect(page).toHaveURL(/sortOrder=desc/);
+		await expect(page).toHaveURL(/sortOrder=DESC/);
 	});
 
 	test('should report a load failure instead of an empty list', async ({adminMcpProcessesPage, network}) => {
