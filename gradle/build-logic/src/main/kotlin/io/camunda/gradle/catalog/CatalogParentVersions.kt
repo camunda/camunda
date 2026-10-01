@@ -31,6 +31,7 @@ internal fun VersionCatalogBuilder.catalogParentVersions(
   version("parent-jopt-simple", pomVersion("version.jopt-simple"))
   version("parent-json-smart", pomVersion("version.json-smart"))
   version("parent-jsr305", pomVersion("version.jsr305"))
+  version("parent-keycloak-container", pomVersion("version.keycloak.container"))
   version("parent-lz4", pomVersion("version.lz4"))
   version("parent-model", pomVersion("version.model"))
   version(
