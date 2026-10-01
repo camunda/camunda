@@ -109,8 +109,8 @@ def run(cmd: list[str]) -> str:
     return result.stdout
 
 
-def maven_project_dirs() -> dict[str, str]:
-    """Discover Maven reactor projects by walking module declarations in all POMs."""
+def maven_project_dirs(include_profiles: bool = True) -> dict[str, str]:
+    """Discover Maven projects declared in POM modules, optionally including profiles."""
     def tag(name: str) -> str:
         return f"{{{MAVEN_NAMESPACE}}}{name}"
 
@@ -143,10 +143,11 @@ def maven_project_dirs() -> dict[str, str]:
         modules = root.find(tag("modules"))
         if modules is not None:
             module_containers.append(modules)
-        for profile in root.findall(f"{tag('profiles')}/{tag('profile')}"):
-            profile_modules = profile.find(tag("modules"))
-            if profile_modules is not None:
-                module_containers.append(profile_modules)
+        if include_profiles:
+            for profile in root.findall(f"{tag('profiles')}/{tag('profile')}"):
+                profile_modules = profile.find(tag("modules"))
+                if profile_modules is not None:
+                    module_containers.append(profile_modules)
 
         for container in module_containers:
             for module in container.findall(tag("module")):
@@ -157,9 +158,11 @@ def maven_project_dirs() -> dict[str, str]:
     return projects
 
 
-def has_gradle_build_file(module_dir: str) -> bool:
-    """Return whether a Maven module has a Gradle build file to compare."""
-    return module_dir != "." and (REPO_ROOT / module_dir / "build.gradle.kts").is_file()
+def maven_project_packaging(module_dir: str) -> str:
+    """Return the Maven packaging, defaulting to Maven's standard jar packaging."""
+    pom_path = REPO_ROOT / module_dir / "pom.xml" if module_dir != "." else REPO_ROOT / "pom.xml"
+    root = ElementTree.parse(pom_path).getroot()
+    return root.findtext(f"{{{MAVEN_NAMESPACE}}}packaging", default="jar")
 
 
 def run_maven_dependency_list(module_dir: str, include_scope: str) -> str:
@@ -239,9 +242,14 @@ def run_maven_dependency_report(include_scope: str) -> str:
 
 
 def maven_dependency_report(include_scope: str, reactor: set[str]) -> dict[str, dict]:
-    """Parse one reactor-wide dependency:list output into per-project reports."""
+    """Parse observed dependency:list sections into per-project reports.
+
+    The reactor argument contains modules declared outside profiles. Projects added by
+    active profiles are identified from the Maven output itself; inactive profile modules
+    are not treated as expected reports.
+    """
     output = run_maven_dependency_report(include_scope)
-    sections: dict[str, list[str]] = {project: [] for project in reactor}
+    sections: dict[str, list[str]] = {}
     current_project: str | None = None
     for line in output.splitlines():
         module_match = _MVN_MODULE_RE.search(line)
@@ -253,8 +261,9 @@ def maven_dependency_report(include_scope: str, reactor: set[str]) -> dict[str, 
             sections[current_project].append(line)
 
     reports: dict[str, dict] = {}
+    active_reactor = reactor | set(sections)
     for project, lines in sections.items():
-        third_party, internal = parse_maven_dependency_lines(lines, project, reactor)
+        third_party, internal = parse_maven_dependency_lines(lines, project, active_reactor)
         reports[project] = {"third_party": third_party, "internal": sorted(internal)}
     return reports
 
@@ -286,6 +295,43 @@ def is_patch_only_version_difference(maven: str, gradle: str) -> bool:
     )
 
 
+def validate_gradle_report_entry(report: dict, project: str, scope: str) -> None:
+    """Reject incomplete or malformed Gradle report entries instead of treating them as empty."""
+    if not isinstance(report, dict):
+        raise ProjectError(f"Gradle dependency report for project {project} is not an object")
+    if report.get("project") != project:
+        raise ProjectError(
+            "Gradle dependency report project mismatch: "
+            f"expected {project!r}, got {report.get('project')!r}"
+        )
+    if report.get("scope") != scope:
+        raise ProjectError(
+            "Gradle dependency report scope mismatch: "
+            f"expected {scope!r}, got {report.get('scope')!r}"
+        )
+    for field in ("third_party", "internal", "direct_third_party"):
+        if field not in report:
+            raise ProjectError(
+                f"Gradle dependency report for project {project} has no {field!r} field"
+            )
+    if not isinstance(report["third_party"], dict) or not all(
+        isinstance(coordinate, str) and isinstance(version, str)
+        for coordinate, version in report["third_party"].items()
+    ):
+        raise ProjectError(
+            f"Gradle dependency report field 'third_party' for project {project} "
+            "must map strings to strings"
+        )
+    for field in ("internal", "direct_third_party"):
+        if not isinstance(report[field], list) or not all(
+            isinstance(value, str) for value in report[field]
+        ):
+            raise ProjectError(
+                f"Gradle dependency report field {field!r} for project {project} "
+                "must be a list of strings"
+            )
+
+
 def gradle_deps(project: str, scope: str):
     """Return resolved third-party deps, internal projects, and direct third-party deps."""
     out = run(
@@ -299,28 +345,34 @@ def gradle_deps(project: str, scope: str):
             f":{project}:printGradleDependencyReportEntry",
         ]
     )
-    reports = [json.loads(line) for line in out.splitlines() if line.strip()]
+    reports = []
+    for line in out.splitlines():
+        if not line.strip():
+            continue
+        try:
+            reports.append(json.loads(line))
+        except json.JSONDecodeError as error:
+            raise ProjectError(
+                f"Gradle dependency report line was not valid JSON: {error}"
+            ) from error
     if len(reports) != 1:
         raise ProjectError(
             f"Gradle dependency report returned {len(reports)} entries for project {project}"
         )
     report = reports[0]
-    if report.get("scope") != scope:
-        raise ProjectError(
-            f"Gradle dependency report scope mismatch: expected {scope!r}, got {report.get('scope')!r}"
-        )
+    validate_gradle_report_entry(report, project, scope)
     return (
-        report.get("third_party", {}),
-        set(report.get("internal", [])),
-        set(report.get("direct_third_party", [])),
+        report["third_party"],
+        set(report["internal"]),
+        set(report["direct_third_party"]),
     )
 
 
 def gradle_dependency_report(scope: str) -> dict[str, dict]:
     """Resolve one dependency configuration for all active Gradle projects."""
-    projects = gradle_project_dirs()
+    project_dirs = gradle_project_dirs()
     report_tasks = [
-        f":{project}:printGradleDependencyReportEntry" for project in sorted(projects)
+        f":{project}:printGradleDependencyReportEntry" for project in sorted(project_dirs)
     ]
     out = run(
         [
@@ -340,15 +392,25 @@ def gradle_dependency_report(scope: str) -> dict[str, dict]:
         try:
             project = json.loads(line)
         except json.JSONDecodeError as error:
-            raise ProjectError(f"Gradle dependency report line was not valid JSON: {error}") from error
-        if project.get("scope") != scope:
             raise ProjectError(
-                f"Gradle dependency report scope mismatch: expected {scope!r}, got {project.get('scope')!r}"
-            )
+                f"Gradle dependency report line was not valid JSON: {error}"
+            ) from error
+        if not isinstance(project, dict):
+            raise ProjectError("Gradle dependency report entry is not an object")
         name = project.get("project")
-        if not name:
+        if not isinstance(name, str) or not name:
             raise ProjectError("Gradle dependency report entry has no project name")
+        if name not in project_dirs:
+            raise ProjectError(f"Gradle dependency report returned unknown project: {name}")
+        validate_gradle_report_entry(project, name, scope)
+        if name in projects:
+            raise ProjectError(f"Gradle dependency report returned project {name} more than once")
         projects[name] = project
+    missing_projects = sorted(set(project_dirs) - set(projects))
+    if missing_projects:
+        raise ProjectError(
+            "Gradle dependency report has no entries for projects: " + ", ".join(missing_projects)
+        )
     return projects
 
 
@@ -380,9 +442,10 @@ def compare_project(
         gradle_project = global_gradle_report.get(project)
         if gradle_project is None:
             raise ProjectError(f"Gradle dependency report has no project: {project}")
+        validate_gradle_report_entry(gradle_project, project, scope)
         grd = gradle_project["third_party"]
         grd_int = set(gradle_project["internal"])
-        grd_direct = set(gradle_project.get("direct_third_party", []))
+        grd_direct = set(gradle_project["direct_third_party"])
 
     only_mvn = sorted(set(mvn) - set(grd))
     only_grd = sorted(set(grd) - set(mvn))
@@ -602,6 +665,7 @@ def main() -> int:
         return 0
 
     maven_dirs = maven_project_dirs()
+    default_maven_dirs = maven_project_dirs(include_profiles=False) if args.all else {}
     include_scope, configuration = SCOPES[args.scope]
     reactor = set(maven_dirs)
     results: list[dict] = []
@@ -614,23 +678,39 @@ def main() -> int:
         except (CommandError, ProjectError) as error:
             results.append(error_result("gradle-global-report", ".", args.scope, error))
         try:
-            global_maven_report = maven_dependency_report(include_scope, reactor)
+            global_maven_report = maven_dependency_report(include_scope, set(default_maven_dirs))
         except (CommandError, ProjectError) as error:
             results.append(error_result("maven-global-report", ".", args.scope, error))
 
     if args.all:
         if global_gradle_report is not None and global_maven_report is not None:
-            for project, module_dir in sorted(maven_dirs.items()):
-                if project not in global_gradle_report:
-                    if not has_gradle_build_file(module_dir):
-                        continue
-                    results.append(
-                        missing_gradle_result(
-                            project, module_dir, args.scope, global_maven_report.get(project)
-                        )
+            unknown_maven_projects = sorted(set(global_maven_report) - set(maven_dirs))
+            for project in unknown_maven_projects:
+                results.append(
+                    error_result(
+                        project,
+                        ".",
+                        args.scope,
+                        ProjectError(f"Maven dependency report contains unknown project: {project}"),
                     )
-                    continue
+                )
+            observed_projects = set(global_maven_report) & set(maven_dirs)
+            expected_projects = set(default_maven_dirs) | observed_projects
+            for project in sorted(expected_projects):
+                module_dir = maven_dirs[project]
                 try:
+                    if maven_project_packaging(module_dir) == "pom":
+                        continue
+                    maven_project = global_maven_report.get(project)
+                    if maven_project is None:
+                        raise ProjectError(f"Maven dependency report has no project: {project}")
+                    if project not in global_gradle_report:
+                        results.append(
+                            missing_gradle_result(
+                                project, module_dir, args.scope, maven_project
+                            )
+                        )
+                        continue
                     results.append(
                         compare_project(
                             project=project,
