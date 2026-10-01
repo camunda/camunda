@@ -587,12 +587,13 @@ public final class FileBasedSnapshotStoreImpl {
     LOGGER.trace(
         "Purging snapshots older than {}",
         newPersistedSnapshot.getSnapshotId().getSnapshotIdAsString());
-    final var retainedForNextCheckpoint = snapshotRetainedForNextCheckpoint(newPersistedSnapshot);
+    final var retainedForNextCheckpoint =
+        snapshotRetainedForNextCheckpoint(newPersistedSnapshot).orElse(null);
     final var snapshotsToDelete =
         availableSnapshots.stream()
             .filter(s -> !s.getId().equals(newPersistedSnapshot.getId()))
             .filter(s -> !s.isReserved())
-            .filter(s -> retainedForNextCheckpoint.filter(s::equals).isEmpty())
+            .filter(s -> !Objects.equals(s, retainedForNextCheckpoint))
             .toList();
     snapshotsToDelete.forEach(
         previousSnapshot -> {
