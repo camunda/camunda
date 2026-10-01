@@ -22,6 +22,10 @@ const config: KnipConfig = {
 		'src/operate/shared/StructuredList/**',
 		// TODO(#63423, #63424): remove when InstancesByProcess/IncidentsByError consume ExpandableListRow
 		'src/operate/pages/Dashboard/shadcn.components/ExpandableList.tsx',
+		// TODO(#64456): remove when InstancesList/ProcessInstanceHeader/DecisionInstance
+		// consumers migrate to the shadcn Frame/InstanceHeader siblings
+		'src/operate/shared/Frame/shadcn.components/Frame.tsx',
+		'src/operate/shared/InstanceHeader/shadcn.components/InstanceHeader.tsx',
 	],
 	ignoreDependencies: ['@vitest/browser'],
 	typescript: {
