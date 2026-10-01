@@ -3,7 +3,7 @@
 #   epic is meant to end up with, and can never block a merge or generate a test.
 # test location: https://github.com/camunda/c8-cross-component-e2e-tests/tree/main/coverage
 # type: CI
-# owner: @camunda/qa-engineering
+# owner: @camunda/test-automation-team
 name: Trigger coverage gate
 
 permissions:

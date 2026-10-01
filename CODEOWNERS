@@ -214,3 +214,4 @@
 /.github/workflows/c8-orchestration-cluster-nightly-main-api-es.yml               @camunda/test-automation-team
 /.github/workflows/c8-orchestration-cluster-nightly-main-api-rdbms.yml            @camunda/test-automation-team
 /.github/workflows/c8-orchestration-cluster-nightly-main-e2e.yml                  @camunda/test-automation-team
+/.github/workflows/trigger-coverage-gate.yml                                      @camunda/test-automation-team
