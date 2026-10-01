@@ -8,7 +8,7 @@
 
 import {QueryClient, QueryObserver, type QueryKey} from '@tanstack/react-query';
 import {describe, expect, it} from 'vitest';
-import {patchListCaches} from './patchListCaches';
+import {patchListCaches, removeFromListCaches} from './patchListCaches';
 
 type Item = {id: string; name: string};
 
@@ -145,6 +145,92 @@ describe('patchListCaches', () => {
 		patchListCaches(queryClient, {
 			queryKeyPrefix: ['items'],
 			item: {id: 'b', name: 'Beta'},
+			getId: (item: Item) => item.id,
+		});
+
+		// then
+		expect(queryClient.getQueryData(['items', {page: 1}])).toEqual({
+			items: [{id: 'a', name: 'Alpha'}],
+			page: {totalItems: 1},
+		});
+	});
+});
+
+describe('removeFromListCaches', () => {
+	it('should remove the matching item and decrement totalItems on every active matching list query', () => {
+		// given
+		const queryClient = new QueryClient();
+		const unsubscribe = observeAsActive(
+			queryClient,
+			['items', {page: 1}],
+			[
+				{id: 'a', name: 'Alpha'},
+				{id: 'b', name: 'Beta'},
+			],
+		);
+
+		// when
+		removeFromListCaches(queryClient, {
+			queryKeyPrefix: ['items'],
+			id: 'a',
+			getId: (item: Item) => item.id,
+		});
+
+		// then
+		expect(queryClient.getQueryData(['items', {page: 1}])).toEqual({
+			items: [{id: 'b', name: 'Beta'}],
+			page: {totalItems: 1},
+		});
+		unsubscribe();
+	});
+
+	it('should not go below zero totalItems', () => {
+		// given
+		const queryClient = new QueryClient();
+		const unsubscribe = observeAsActive(queryClient, ['items', {page: 1}], [{id: 'a', name: 'Alpha'}]);
+		queryClient.setQueryData(['items', {page: 1}], {items: [{id: 'a', name: 'Alpha'}], page: {totalItems: 0}});
+
+		// when
+		removeFromListCaches(queryClient, {
+			queryKeyPrefix: ['items'],
+			id: 'a',
+			getId: (item: Item) => item.id,
+		});
+
+		// then
+		expect(queryClient.getQueryData(['items', {page: 1}])).toEqual({items: [], page: {totalItems: 0}});
+		unsubscribe();
+	});
+
+	it('should leave the cache untouched when the id is not present', () => {
+		// given
+		const queryClient = new QueryClient();
+		const unsubscribe = observeAsActive(queryClient, ['items', {page: 1}], [{id: 'a', name: 'Alpha'}]);
+
+		// when
+		removeFromListCaches(queryClient, {
+			queryKeyPrefix: ['items'],
+			id: 'missing',
+			getId: (item: Item) => item.id,
+		});
+
+		// then
+		expect(queryClient.getQueryData(['items', {page: 1}])).toEqual({
+			items: [{id: 'a', name: 'Alpha'}],
+			page: {totalItems: 1},
+		});
+		unsubscribe();
+	});
+
+	it('should leave list queries with no active observer untouched', () => {
+		// given
+		const queryClient = new QueryClient();
+		queryClient.setQueryData(['items', {page: 1}], {items: [{id: 'a', name: 'Alpha'}], page: {totalItems: 1}});
+
+		// when
+		removeFromListCaches(queryClient, {
+			queryKeyPrefix: ['items'],
+			id: 'a',
 			getId: (item: Item) => item.id,
 		});
 

@@ -8,7 +8,15 @@
 
 import {QueryClient} from '@tanstack/react-query';
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {waitUntilReady} from './waitUntilReady';
+import {waitUntilGone, waitUntilReady} from './waitUntilReady';
+
+function notFoundError() {
+	return {variant: 'failed-response' as const, response: new Response(null, {status: 404}), networkError: null};
+}
+
+function serverError() {
+	return {variant: 'failed-response' as const, response: new Response(null, {status: 500}), networkError: null};
+}
 
 describe('waitUntilReady', () => {
 	afterEach(() => {
@@ -89,5 +97,83 @@ describe('waitUntilReady', () => {
 
 		// then
 		expect(data).toBeUndefined();
+	});
+});
+
+describe('waitUntilGone', () => {
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	it('should resolve true immediately when the read already 404s', async () => {
+		// given
+		const queryClient = new QueryClient();
+
+		// when
+		const gone = await waitUntilGone(queryClient, {
+			queryKey: ['waitUntilGone-test-a'],
+			queryFn: () => Promise.reject(notFoundError()),
+		});
+
+		// then
+		expect(gone).toBe(true);
+	});
+
+	it('should retry while the read keeps succeeding, until it 404s', async () => {
+		// given
+		vi.useFakeTimers();
+		const queryClient = new QueryClient();
+		let attempt = 0;
+		const queryFn = vi.fn(() => {
+			attempt += 1;
+			return attempt < 3 ? Promise.resolve({attempt}) : Promise.reject(notFoundError());
+		});
+
+		// when
+		const promise = waitUntilGone(queryClient, {queryKey: ['waitUntilGone-test-b'], queryFn}, {retryDelay: 100});
+		await vi.advanceTimersByTimeAsync(1000);
+		const gone = await promise;
+
+		// then
+		expect(gone).toBe(true);
+		expect(attempt).toBe(3);
+	});
+
+	it('should retry on an unrelated error rather than treating it as confirmation', async () => {
+		// given
+		vi.useFakeTimers();
+		const queryClient = new QueryClient();
+		let attempt = 0;
+		const queryFn = vi.fn(() => {
+			attempt += 1;
+			return attempt < 2 ? Promise.reject(serverError()) : Promise.reject(notFoundError());
+		});
+
+		// when
+		const promise = waitUntilGone(queryClient, {queryKey: ['waitUntilGone-test-c'], queryFn}, {retryDelay: 10});
+		await vi.advanceTimersByTimeAsync(1000);
+		const gone = await promise;
+
+		// then
+		expect(gone).toBe(true);
+		expect(attempt).toBe(2);
+	});
+
+	it('should give up quietly once the retry budget is exhausted while the read still succeeds', async () => {
+		// given
+		vi.useFakeTimers();
+		const queryClient = new QueryClient();
+
+		// when
+		const promise = waitUntilGone(
+			queryClient,
+			{queryKey: ['waitUntilGone-test-d'], queryFn: () => Promise.resolve({stillHere: true})},
+			{retry: 2, retryDelay: 10},
+		);
+		await vi.advanceTimersByTimeAsync(1000);
+		const gone = await promise;
+
+		// then
+		expect(gone).toBe(false);
 	});
 });

@@ -13,7 +13,7 @@ import {userEvent} from 'vitest/browser';
 import {Toaster, toast} from '@camunda/design-system';
 import {afterEach, describe, expect, vi} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
-import {mockDeleteUserEndpoint} from '#/shared-test-modules/mock-handlers';
+import {mockDeleteUserEndpoint, mockGetUserEndpoint} from '#/shared-test-modules/mock-handlers';
 import {createUser} from '#/shared-test-modules/api-mocks/users';
 import {AdminUserDetailPage} from './AdminUserDetailPage';
 
@@ -50,7 +50,10 @@ describe('<AdminUserDetailPage />', () => {
 	it('should delete the user and notify the caller', async ({worker}) => {
 		const user = createUser({username: 'john.doe'});
 		const onDeleted = vi.fn();
-		worker.use(mockDeleteUserEndpoint({successResponse: new HttpResponse(null, {status: 204})}));
+		worker.use(
+			mockDeleteUserEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+			mockGetUserEndpoint({successResponse: HttpResponse.json({}, {status: 404})}),
+		);
 
 		const screen = await render(<AdminUserDetailPage user={user} onDeleted={onDeleted} />, {wrapper: getWrapper()});
 

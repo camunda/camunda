@@ -184,7 +184,10 @@ describe('<AdminUsersPage />', () => {
 
 	it('should delete a user', async ({worker}) => {
 		const user = createUser({username: 'john.doe'});
-		worker.use(mockDeleteUserEndpoint({successResponse: new HttpResponse(null, {status: 204})}));
+		worker.use(
+			mockDeleteUserEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+			mockGetUserEndpoint({successResponse: HttpResponse.json({}, {status: 404})}),
+		);
 
 		const {screen} = await renderPage({users: [user]});
 

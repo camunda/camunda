@@ -46,4 +46,36 @@ function patchListCaches<TItem>(
 	}
 }
 
-export {patchListCaches};
+type RemoveFromListCachesOptions<TItem> = {
+	/** Partial query key every cached list query to patch shares, e.g. `['users']`. */
+	queryKeyPrefix: QueryKey;
+	/** The id of the just-confirmed-deleted entity to remove. */
+	id: string;
+	getId: (item: TItem) => string;
+};
+
+function removeFromListCaches<TItem>(
+	queryClient: QueryClient,
+	{queryKeyPrefix, id, getId}: RemoveFromListCachesOptions<TItem>,
+): void {
+	const matches = queryClient.getQueriesData<ListQueryData<TItem>>({queryKey: queryKeyPrefix, type: 'active'});
+
+	for (const [queryKey, data] of matches) {
+		if (data === undefined) {
+			continue;
+		}
+
+		const items = data.items.filter((existing) => getId(existing) !== id);
+		if (items.length === data.items.length) {
+			continue;
+		}
+
+		queryClient.setQueryData(queryKey, {
+			...data,
+			items,
+			page: {...data.page, totalItems: Math.max(0, data.page.totalItems - 1)},
+		});
+	}
+}
+
+export {patchListCaches, removeFromListCaches};

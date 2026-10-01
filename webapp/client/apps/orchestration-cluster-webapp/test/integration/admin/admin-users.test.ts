@@ -288,11 +288,34 @@ test.describe('Admin users', () => {
 
 		network.use(
 			mockQueryUsersEndpoint({successResponse: HttpResponse.json(createQueryUsersResponse({items: [USERS[1]!]}))}),
+			mockGetUserEndpoint({successResponse: HttpResponse.json({}, {status: 404})}),
 		);
 		await adminUsersPage.alertDialogButton('Delete user').click();
 
 		await expect(adminUsersPage.alertDialog).toBeHidden();
 		await expect(adminUsersPage.cell('jane.doe')).toBeHidden();
+	});
+
+	test('should remove a deleted user from the list immediately even while the search index still lags behind', async ({
+		adminUsersPage,
+		network,
+	}) => {
+		// Neither the list search nor the single-user read reflect the deletion for the rest of this
+		// test — standing in for the search index not having caught up yet. The row should still
+		// disappear immediately, and — crucially — stay gone rather than being re-added by a
+		// reconciliation refetch that hasn't actually caught up.
+		network.use(
+			mockDeleteUserEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+			mockGetUserEndpoint({successResponse: HttpResponse.json(USERS[0]!)}),
+		);
+
+		await adminUsersPage.goto();
+		await adminUsersPage.deleteUser('jane.doe');
+		await adminUsersPage.alertDialogButton('Delete user').click();
+
+		await expect(adminUsersPage.alertDialog).toBeHidden();
+		await expect(adminUsersPage.cell('jane.doe')).toBeHidden();
+		await expect(adminUsersPage.cell('john.smith')).toBeVisible();
 	});
 
 	test('should open a user and show its details', async ({adminUsersPage, adminUserDetailPage, page, network}) => {
@@ -321,6 +344,7 @@ test.describe('Admin users', () => {
 
 		network.use(
 			mockQueryUsersEndpoint({successResponse: HttpResponse.json(createQueryUsersResponse({items: [USERS[1]!]}))}),
+			mockGetUserEndpoint({successResponse: HttpResponse.json({}, {status: 404})}),
 		);
 		await adminUserDetailPage.deleteButton.click();
 		await adminUserDetailPage.alertDialogButton('Delete user').click();

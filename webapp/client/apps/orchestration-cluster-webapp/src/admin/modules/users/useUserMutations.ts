@@ -20,8 +20,8 @@ import {request, requestErrorSchema} from '#/shared/http/request';
 import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
 import {queries} from '#/shared/http/queries';
-import {patchListCaches} from '#/shared/http/patchListCaches';
-import {waitUntilReady} from '#/shared/http/waitUntilReady';
+import {patchListCaches, removeFromListCaches} from '#/shared/http/patchListCaches';
+import {waitUntilGone, waitUntilReady} from '#/shared/http/waitUntilReady';
 
 async function getErrorMessage(error: unknown): Promise<string | undefined> {
 	if (error instanceof Error) {
@@ -64,7 +64,6 @@ function useUserMutations() {
 	const queryClient = useQueryClient();
 
 	const invalidateUsers = () => queryClient.invalidateQueries({queryKey: ['users']});
-	const invalidateUser = (username: string) => queryClient.invalidateQueries({queryKey: ['user', username]});
 
 	const create = useMutation({
 		mutationFn: async (body: CreateUserRequestBody) => {
@@ -141,9 +140,24 @@ function useUserMutations() {
 			return username;
 		},
 		onSuccess: (username) => {
-			invalidateUsers();
-			invalidateUser(username);
+			removeFromListCaches(queryClient, {queryKeyPrefix: ['users'], id: username, getId: (u: User) => u.username});
+			queryClient.removeQueries({queryKey: queries.getUser(username).queryKey});
 			toast.success(t('admin.users.userDeleted', {username}));
+
+			void waitUntilGone(queryClient, {
+				queryKey: ['userGone', username],
+				queryFn: async () => {
+					const {response, error} = await request(endpoints.getUser({username}));
+					if (error !== null) {
+						throw mapQueryError(error);
+					}
+					return response.json();
+				},
+			}).then((gone) => {
+				if (gone) {
+					invalidateUsers();
+				}
+			});
 		},
 		onError: async (error) => {
 			toast.error(t('admin.users.deleteUserFailed'), {description: await getErrorMessage(error)});
