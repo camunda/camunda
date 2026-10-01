@@ -33,7 +33,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.mock.env.MockEnvironment;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.core.Authentication;
@@ -224,7 +223,7 @@ class OidcOverrideBeansConfigurationConverterWiringTest {
         defaultConverter,
         request,
         oidcProviderRepository,
-        noAdditionalJwkSetUris(),
+        AdditionalJwkSetUrisByRegistrationId.empty(),
         membershipPort,
         propagator,
         environment);
@@ -235,12 +234,5 @@ class OidcOverrideBeansConfigurationConverterWiringTest {
     final var principal = mock(OidcUser.class);
     when(principal.getAttributes()).thenReturn(attributes);
     return new OAuth2AuthenticationToken(principal, List.of(), registrationId);
-  }
-
-  @SuppressWarnings("unchecked")
-  private static ObjectProvider<AdditionalJwkSetUrisByRegistrationId> noAdditionalJwkSetUris() {
-    final var provider = mock(ObjectProvider.class);
-    when(provider.getIfAvailable(any())).thenReturn(AdditionalJwkSetUrisByRegistrationId.empty());
-    return provider;
   }
 }
