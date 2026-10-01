@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {BasePage} from './BasePage';
+import {BasePage} from '#/pages/BasePage';
 
 class AdminIndexPage extends BasePage {
 	async goto() {

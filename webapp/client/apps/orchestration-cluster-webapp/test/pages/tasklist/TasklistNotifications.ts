@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {View} from './BasePage';
+import {View} from '#/pages/BasePage';
 
 class TasklistNotifications extends View {
 	getByNotificationTitle(title: string) {

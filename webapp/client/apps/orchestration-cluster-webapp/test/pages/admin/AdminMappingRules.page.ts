@@ -7,7 +7,7 @@
  */
 
 import {type Page} from '@playwright/test';
-import {BasePage, View} from './BasePage';
+import {BasePage, View} from '#/pages/BasePage';
 
 class AddMappingRuleModal extends View {
 	get dialog() {

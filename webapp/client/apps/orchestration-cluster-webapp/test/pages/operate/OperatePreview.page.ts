@@ -7,7 +7,7 @@
  */
 
 import {type Page} from '@playwright/test';
-import {BasePage} from './BasePage';
+import {BasePage} from '#/pages/BasePage';
 
 class OperatePreviewPage extends BasePage {
 	constructor(page: Page) {
