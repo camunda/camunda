@@ -196,7 +196,7 @@ public final class ZeebeDesignTimeValidators {
 
   /** Validators that keep state during a walk. Must be called for every validation. */
   public static Collection<ModelElementValidator<?>> newStatefulValidators() {
-    return Collections.singletonList(new ActivityValidator());
+    return Collections.singletonList(new ScopeIndexedActivityValidator());
   }
 
   /** All validators, with new instances of the stateful ones. */
