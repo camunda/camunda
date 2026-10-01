@@ -23,13 +23,14 @@ import org.jspecify.annotations.NullMarked;
  * includes the broker's own work and the JIT compiler, and whether the container's CPU quota
  * throttled it. While the load is within budget and nothing was throttled, the warm-up may keep one
  * more instance in flight; otherwise that number halves, down to zero, which pauses the warm-up.
- * Once it has backed off, it grows again only after several samples in a row within budget, so that
- * it settles below the point where it gets in the broker's way instead of returning to it every few
- * seconds. Throttling counts on its own because the quota is enforced over periods much shorter
- * than the sample interval: a process within its average budget can still exhaust the quota in
- * bursts, and every thread in the container then waits for the next period. A processing backlog on
- * any partition the broker follows counts too: the cluster is then working off requests that queued
- * up, and that is when the broker's headroom matters most.
+ * After backing off, it grows back by one per sample to half the number it had when the back-off
+ * began, and beyond that only after several samples in a row within budget, so that it settles
+ * below the point where it gets in the broker's way instead of returning to it every few seconds,
+ * yet recovers quickly from a long pause. Throttling counts on its own because the quota is
+ * enforced over periods much shorter than the sample interval: a process within its average budget
+ * can still exhaust the quota in bursts, and every thread in the container then waits for the next
+ * period. A processing backlog on any partition the broker follows counts too: the cluster is then
+ * working off requests that queued up, and that is when the broker's headroom matters most.
  */
 @NullMarked
 final class CpuBudget {
@@ -47,6 +48,8 @@ final class CpuBudget {
   private long nextSampleNanos;
   private long backOffs;
   private int samplesWithinSinceGrowth;
+  private int fastGrowthLimit;
+  private boolean backingOff;
 
   /**
    * @param processCpuLoad the process's CPU load since it was last called, as a fraction of the
@@ -70,6 +73,7 @@ final class CpuBudget {
     this.maxLoad = maxLoad;
     this.maxBacklog = maxBacklog;
     this.maxInFlight = maxInFlight;
+    fastGrowthLimit = maxInFlight;
     nextSampleNanos = nowNanos + SAMPLE_INTERVAL.toNanos();
   }
 
@@ -79,12 +83,17 @@ final class CpuBudget {
       nextSampleNanos = nowNanos + SAMPLE_INTERVAL.toNanos();
       switch (sample()) {
         case OVER -> {
+          if (!backingOff) {
+            fastGrowthLimit = Math.max(1, limit / 2);
+            backingOff = true;
+          }
           limit /= 2;
           backOffs++;
           samplesWithinSinceGrowth = 0;
         }
         case WITHIN -> {
-          if (backOffs == 0 || ++samplesWithinSinceGrowth >= REGROWTH_SAMPLES) {
+          backingOff = false;
+          if (limit < fastGrowthLimit || ++samplesWithinSinceGrowth >= REGROWTH_SAMPLES) {
             limit = Math.min(maxInFlight, limit + 1);
             samplesWithinSinceGrowth = 0;
           }
