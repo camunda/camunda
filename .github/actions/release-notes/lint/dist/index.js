@@ -12,30 +12,21 @@ exports.renderStickyComment = renderStickyComment;
 exports.syncStickyComment = syncStickyComment;
 const github_1 = __nccwpck_require__(631);
 /**
- * The single sticky PR comment the gate maintains. One marked comment per PR,
- * upserted by a hidden marker so re-runs never stack duplicates.
- *
- * Split like the resolver (types.ts): the body render + upsert logic are pure /
- * injectable (unit-tested for idempotency), and only GithubCommentApi touches
- * the network — plain fetch, no octokit, same rationale as GithubResolver.
+ * The single sticky PR comment the gate maintains — one per PR, upserted by
+ * a hidden marker so re-runs never stack duplicates. Split like the resolver:
+ * render + upsert are pure/injectable; only GithubCommentApi touches the
+ * network (plain fetch, no octokit).
  */
-/** Hidden HTML marker identifying our comment. Never change it — it is how
- * every future run finds the comment it already posted. */
+/** Never change — how every future run finds the comment it already posted. */
 exports.STICKY_MARKER = '<!-- release-notes-pr-gate -->';
 /** Where the comment sends authors for the full list of causes and fixes. */
 exports.GATE_DOCS_URL = 'https://camunda.github.io/camunda/ci/#release-notes-pr-gate';
-/**
- * Build the comment body (pure). Always carries the marker on the first line.
- *
- * Deliberately terse: the reasons name the exact fix, and everything else —
- * why the rule exists, the full cause list, the rollout state — lives in the
- * docs behind GATE_DOCS_URL rather than being restated on every failing PR.
- */
+/** Deliberately terse: the reasons name the exact fix; everything else (why
+ *  the rule exists, rollout state) lives behind GATE_DOCS_URL. */
 function renderStickyComment(gate) {
     if (gate.outcome === 'pass') {
         return `${exports.STICKY_MARKER}\n### ✅ Release-notes checks passed\n`;
     }
-    // One block per failing check, each naming the reasons and the fix.
     const blocks = gate.checks
         .filter((check) => check.outcome === 'fail')
         .map((check) => `**${check.label}**\n${check.reasons.map((reason) => `- ${reason}`).join('\n')}`)
@@ -43,14 +34,9 @@ function renderStickyComment(gate) {
     const footer = `[Causes and fixes](${exports.GATE_DOCS_URL}) · advisory, does not block merge`;
     return `${exports.STICKY_MARKER}\n### ❌ Release-notes checks\n\n${blocks}\n\n${footer}\n`;
 }
-/**
- * Idempotently reconcile the PR's single sticky comment against the outcome.
- *
- *  - fail: update the existing comment, or create one if none exists.
- *  - pass: if a comment exists (the PR failed earlier), update it to the
- *          resolved body; if none exists, do nothing — a PR that never failed
- *          stays comment-free, so the gate adds no noise across ~800 PRs.
- */
+/** fail: update or create. pass: update to the resolved body if a comment
+ *  already exists (the PR failed earlier), else do nothing — a PR that never
+ *  failed stays comment-free. */
 async function syncStickyComment(api, gate) {
     const existing = (await api.list()).find((comment) => comment.body.includes(exports.STICKY_MARKER));
     const body = renderStickyComment(gate);
@@ -68,13 +54,9 @@ async function syncStickyComment(api, gate) {
     }
     return 'noop';
 }
-/**
- * issue-comments API over plain fetch (Node global). Same reasoning as
- * GithubResolver: a handful of endpoints, so octokit's bundle cost is not worth
- * paying. Uses GITHUB_TOKEN with `pull-requests: write` — nothing reacts to this
- * comment as an event, so the gate needs no App identity (and therefore no Vault
- * secrets) to post it.
- */
+/** issue-comments API over plain fetch. Uses GITHUB_TOKEN with
+ *  `pull-requests: write` — nothing reacts to this comment as an event, so
+ *  no App identity or Vault secrets are needed to post it. */
 class GithubCommentApi {
     issueNumber;
     repoUrl;
@@ -84,14 +66,8 @@ class GithubCommentApi {
         this.repoUrl = (0, github_1.repoApiUrl)(owner, repo);
         this.headers = (0, github_1.githubHeaders)(token, { json: true });
     }
-    /**
-     * Fetch comments most-recently-updated first, stopping as soon as a page
-     * contains the sticky marker. `syncStickyComment` touches the sticky
-     * comment via `create`/`update` on every run, which keeps its `updated_at`
-     * near the top — so on a busy PR this typically returns after one page
-     * instead of walking every comment. A PR whose sticky comment doesn't exist
-     * yet still pages through everything, but that happens at most once per PR.
-     */
+    /** Fetch most-recently-updated first, stopping as soon as a page contains
+     *  the sticky marker — every run touches it, keeping it near the top. */
     async list() {
         const perPage = 100;
         const all = [];
@@ -144,22 +120,15 @@ const title_1 = __nccwpck_require__(150);
 /** Evaluate the PR-issue link for one PR body: section refs + opt-out. */
 async function evaluateLink(resolver, body) {
     const section = (0, parser_1.extractSection)(body);
-    // Scoped to the same section as refs: the opt-out checkbox lives in the PR
-    // template's "Related issues" block, not just anywhere in the body — a
-    // missing/renamed heading must not let a stray ticked box elsewhere pass
-    // a PR whose actual section was never filled in.
+    // Scoped to the section, not the whole body — a stray ticked box outside
+    // "Related issues" must not pass a PR whose actual section is empty.
     const optOut = section ? (0, parser_1.isOptOutTicked)(section) : false;
     const refs = section ? (0, parser_1.parseRefs)(section) : [];
     const resolved = await resolver.resolve(refs);
     return (0, policy_1.decide)(resolved, optOut);
 }
-/**
- * Explain why a `Backport of #N` marker could not be followed to an original
- * PR, so the author sees the actual problem rather than a generic "no linked
- * issue". Takes the caller's classification of the ref rather than resolving
- * it again — the caller already has it, to decide whether fetching the body
- * is worth doing at all.
- */
+/** Why a `Backport of #N` marker couldn't be followed, so the author sees
+ *  the actual problem rather than a generic "no linked issue". */
 function unresolvableBackportReason(backport, resolved) {
     if (resolved?.crossRepo) {
         return `Backport of ${backport.repo}#${backport.number} points to another repository — attribution can only be inherited from a pull request in this repo.`;
@@ -170,30 +139,24 @@ function unresolvableBackportReason(backport, resolved) {
     return `Backport of #${backport.number} does not resolve to a pull request in this repo — attribution cannot be inherited.`;
 }
 async function evaluateGate(resolver, input) {
-    // --- PR-issue link, with a backport-hop fallback (C7/V2) ---
-    // A backport PR passes on its own section if it has one (manual template);
-    // otherwise (bot backports carry only `Backport of #N`, no section) it passes
-    // by inheriting the ORIGINAL PR's attribution.
+    // A backport PR passes on its own section if it has one; otherwise (bot
+    // backports carry only `Backport of #N`) it inherits the ORIGINAL PR's link.
     let deliveryPath = 'direct';
     let link = await evaluateLink(resolver, input.body);
-    // Only hop for a genuinely undeclared link. A `pr-ref-in-section` failure is a
-    // hard error (the section itself links a PR) — an unrelated `Backport of #N`
-    // marker must not silently discard it and flip the gate to pass.
+    // Hop only for a genuinely undeclared link — a pr-ref-in-section failure
+    // (the section itself links a PR) is a hard error the backport marker must
+    // not silently override.
     if (link.outcome === 'fail' && link.code === 'unlinked-undeclared') {
         const backport = (0, parser_1.parseRefs)(input.body).find((ref) => ref.kind === 'backport');
         if (backport) {
             deliveryPath = 'backportHop';
-            // Only a same-repo pull request needs its body fetched — a cross-repo,
-            // missing, or issue-not-PR target already has everything the failure
-            // message needs from the classification alone.
+            // Only a same-repo pull request needs its body fetched.
             const [resolved] = await resolver.resolve([backport]);
             const originalBody = resolved?.target === 'pullRequest' && !resolved.crossRepo
                 ? await resolver.fetchPullBody(backport.number, backport.repo)
                 : null;
             if (originalBody === null) {
-                // The marker is the PR's stated attribution path, so speak to the marker
-                // only — the generic "add a closing keyword / tick opt-out" section advice
-                // is irrelevant for a backport PR and would just be noise.
+                // Speak to the marker itself — the generic section advice is noise here.
                 link = {
                     outcome: 'fail',
                     code: 'unlinked-undeclared',
@@ -211,11 +174,7 @@ async function evaluateGate(resolver, input) {
                         }
                         : {
                             outcome: 'fail',
-                            // A pr-ref-in-section failure and an unlinked-undeclared one
-                            // point the author at different fixes, so the hop reports the
-                            // original PR's actual code rather than one fixed code for
-                            // every failure reason.
-                            code: original.code,
+                            code: original.code, // original's actual code, not one fixed code — the two failures need different fixes
                             reasons: [
                                 original.code === 'pr-ref-in-section'
                                     ? `Backport of #${backport.number}, but that PR's section links a pull request, not an issue.`
@@ -226,10 +185,8 @@ async function evaluateGate(resolver, input) {
             }
         }
     }
-    // Bot link exemption (Renovate). Applied AFTER the hop and only to a still
-    // failing link, so it is a fallback and never a bypass: a bot PR that does
-    // link an issue keeps its real code, and the hop above still runs for the
-    // backport bot. An explicit link therefore always wins over the exemption.
+    // Bot link exemption (Renovate). After the hop, only on a still-failing
+    // link — a fallback, never a bypass: an explicit link always wins.
     if (link.outcome === 'fail' && (0, title_1.isLinkExemptAuthor)(input.authorLogin)) {
         link = {
             outcome: 'pass',
@@ -238,7 +195,7 @@ async function evaluateGate(resolver, input) {
         };
     }
     const checks = [{ label: 'PR-issue link', outcome: link.outcome, reasons: [...link.reasons] }];
-    // --- Title lint (D16: skipped for bot authors; link/marker still checked) ---
+    // --- Title lint (skipped for bot authors; link/marker still checked) ---
     if (!(0, title_1.isTitleExemptAuthor)(input.authorLogin)) {
         const title = (0, title_1.lintTitle)(input.title);
         checks.push({ label: 'Title', outcome: title.outcome, reasons: [...title.reasons] });
@@ -369,41 +326,25 @@ exports.decideLabelAction = decideLabelAction;
 exports.syncNoIssueLabel = syncNoIssueLabel;
 const github_1 = __nccwpck_require__(631);
 /**
- * Syncs the display-only `no-issue` label to mirror the PR-issue-link check
- * only (not the title check — the label answers one question: "does this PR
- * link a tracked issue?"). Best-effort like the sticky comment: a sync
- * failure never fails the gate, and it runs regardless of `enforce` — the
- * label is informational, not a blocking mechanism.
+ * Syncs the display-only `no-issue` label to the PR-issue-link check only
+ * (not title). Best-effort like the sticky comment: a sync failure never
+ * fails the gate, and it runs regardless of `enforce` — informational, not
+ * a blocking mechanism.
  */
-/** The label the gate syncs. Single source of truth — do not rename without
- *  updating any saved searches/dashboards that filter on it. */
+/** Do not rename without updating any dashboards/saved searches on it. */
 exports.NO_ISSUE_LABEL = 'no-issue';
-/**
- * Used only by GithubLabelApi.ensureLabelExists, which recreates the label if
- * someone deletes it, so a missing label degrades to a self-heal instead of a
- * failed sync.
- *
- * These MUST match the label as it exists in the repo today (colour `ededed`,
- * no description beyond this one) — otherwise a delete-then-heal cycle would
- * silently reskin a label that predates this gate. The wording deliberately
- * avoids "warn-only": that becomes wrong at the required-flip, and nobody would
- * think to update a label description then.
- */
+/** Must match the label as it exists in the repo today — used only to
+ *  recreate it if someone deletes it, never to reskin an existing one. */
 exports.NO_ISSUE_LABEL_COLOR = 'ededed';
 exports.NO_ISSUE_LABEL_DESCRIPTION = 'Release-notes gate: this PR does not link a tracked issue.';
-/** Pure decision: given the PR's current labels and the link check's
- * outcome, decide whether to add/remove the no-issue label. */
 function decideLabelAction(currentLabels, linkOutcome) {
     const has = currentLabels.includes(exports.NO_ISSUE_LABEL);
     if (linkOutcome === 'fail')
         return has ? 'noop' : 'added';
     return has ? 'removed' : 'noop';
 }
-/**
- * Reconcile the no-issue label against the gate's PR-issue-link check.
- * Reads the typed `gate.link` decision (not gate.outcome) so a title-only
- * failure never adds a label whose name specifically means "no linked issue".
- */
+/** Reads the typed `gate.link` decision, not `gate.outcome`, so a title-only
+ *  failure never adds a label that specifically means "no linked issue". */
 async function syncNoIssueLabel(api, gate) {
     const current = await api.list();
     const action = decideLabelAction(current, gate.link.outcome);
@@ -413,11 +354,7 @@ async function syncNoIssueLabel(api, gate) {
         await api.remove(exports.NO_ISSUE_LABEL);
     return action;
 }
-/**
- * issue-labels API over plain fetch. Same rationale as GithubCommentApi /
- * GithubResolver: a handful of endpoints, so octokit's bundle cost isn't
- * worth paying.
- */
+/** issue-labels API over plain fetch — same rationale as GithubCommentApi. */
 class GithubLabelApi {
     issueNumber;
     repoUrl;
@@ -532,33 +469,21 @@ const resolver_1 = __nccwpck_require__(306);
 /**
  * PR-gate lint entrypoint (warn-only rollout).
  *
- * Security: runs on `pull_request`, so the workflow and this action resolve from
- * the PR head — the same trust model as every other lint in ci.yml, and the
- * reason there is no privileged token anywhere here. A fork PR gets a read-only
- * GITHUB_TOKEN and no secrets, which is exactly why the writes below are guarded
- * by `can-write` instead of failing.
+ * Security: runs on `pull_request`, resolving from the PR head — no
+ * privileged token anywhere here. A fork PR gets a read-only GITHUB_TOKEN
+ * and no secrets, so the writes below are guarded by `can-write`, not left
+ * to fail.
  *
- * The PR number comes from the event payload; the body and title are then
- * fetched from the API, so they are current at evaluation time rather than a
- * snapshot from whenever the event fired (a PR edited twice in quick succession
- * must not be judged on the older body).
+ * Body/title are fetched fresh from the API rather than the event payload,
+ * so a PR edited twice in quick succession is judged on the current body.
  *
- * ponytail: warn-only for now — reports the combined gate outcome (PR-issue link
- * + title lint, with a backport hop) to the job summary, the outputs, a single
- * sticky PR comment, and the display-only `no-issue` label. The check itself is
- * the job's own conclusion; GitHub renders it on the PR without us publishing
- * anything. Both syncs run regardless of `enforce` — they are informational, not
- * the enforcement mechanism. `enforce=true` flips a fail into a non-zero exit;
- * enforce mode ships in a follow-up PR.
+ * ponytail: warn-only for now. `enforce=true` flips a fail into a non-zero
+ * exit; enforce mode ships in a follow-up PR.
  */
 async function run() {
     const token = core.getInput('token', { required: true });
     const enforce = core.getBooleanInput('enforce');
-    // False on fork PRs: GitHub issues a read-only token and withholds secrets
-    // there, whatever the workflow's `permissions:` block asks for. Everything the
-    // gate READS still works, so it evaluates and reports normally — only the two
-    // writes are skipped, and the log says so rather than surfacing a 403.
-    const canWrite = core.getBooleanInput('can-write');
+    const canWrite = core.getBooleanInput('can-write'); // false on fork PRs — reads still work, only the two writes below are skipped
     const prNumberInput = core.getInput('pr-number').trim();
     const prNumber = Number(prNumberInput);
     if (!Number.isInteger(prNumber) || prNumber <= 0) {
@@ -567,9 +492,7 @@ async function run() {
     }
     const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? '/').split('/');
     const resolver = new resolver_1.GithubResolver(token, owner ?? '', repo ?? '');
-    // A transient API error (403/500) must respect `enforce`: warn-only means the
-    // gate never hard-fails, so a blip cannot turn a green check red.
-    let gate;
+    let gate; // a transient API error respects `enforce` too — warn-only means a blip can't turn a green check red
     try {
         const pull = await resolver.fetchPull(prNumber);
         if (!pull) {
@@ -595,22 +518,16 @@ async function run() {
     core.setOutput('outcome', gate.outcome);
     core.setOutput('delivery-path', gate.deliveryPath);
     core.setOutput('failed-checks', failed.map((check) => check.label).join(','));
-    // The job summary is the gate's primary report: it is the one channel that
-    // works everywhere, fork PRs included, and needs no token at all.
+    // Job summary is the primary report — works everywhere, fork PRs included, no token needed.
     const heading = gate.outcome === 'pass' ? '✅ Release-notes checks passed' : '❌ Release-notes checks failed';
     const summaryLines = gate.checks.map((check) => `${check.outcome === 'pass' ? '✅' : '❌'} ${check.label}: ${check.reasons.join(' ')}`);
     await core.summary.addHeading(heading, 3).addList(summaryLines).write();
     if (!canWrite) {
-        // Not a failure: a fork PR is still fully evaluated above, and the verdict is
-        // in the summary and this log. Stated explicitly so the absence of the usual
-        // comment reads as designed rather than broken.
         core.info('Fork pull request: no write token available, so the sticky comment and no-issue label are skipped.');
     }
     else {
-        // The sticky comment and the display-only `no-issue` label. Independent of
-        // each other, so run them concurrently. Each is best-effort: a sync failure
-        // is logged and must never fail the gate — warn or not, the outcome above
-        // stands.
+        // Independent, so run concurrently. Each is best-effort — a sync failure
+        // is logged and never fails the gate.
         await Promise.allSettled([
             (async () => {
                 try {
@@ -663,8 +580,8 @@ exports.parseRefs = parseRefs;
 exports.extractSection = extractSection;
 exports.isOptOutTicked = isOptOutTicked;
 /**
- * Pure, section-scoped reference parser. Shared verbatim with the generator
- * (#57713) — no IO, no repo awareness. Cross-repo detection and issue-vs-PR
+ * Pure, section-scoped reference parser, shared verbatim with the generator
+ * — no IO, no repo awareness. Cross-repo detection and issue-vs-PR
  * classification belong to the Resolver, not here.
  */
 /** The template's opt-out phrase. Kept as an exported constant so the PR template
@@ -692,20 +609,14 @@ function kindOf(keyword) {
         return 'closing';
     return 'contributor'; // bare "#N"
 }
-/**
- * Strip HTML comments before any parsing. The PR template's own instructional
- * `<!-- ... closes #1234 ... -->` block lives inside "## Related issues" and is
- * invisible in GitHub's rendered body, so a PR that leaves the boilerplate
- * untouched must NOT be attributed to whatever issue the comment names.
- */
+/** Strips before any parsing — the PR template's own instructional
+ *  `<!-- closes #1234 -->` block is invisible in the rendered body, and a
+ *  PR that leaves the boilerplate untouched must not be attributed to it. */
 function stripHtmlComments(text) {
     return text.replace(/<!--[\s\S]*?-->/g, '');
 }
-/**
- * Strip fenced and inline Markdown code before any parsing. A reviewer citing
- * an example — `` `closes #1234` `` in prose, or a fenced snippet quoting the
- * template — must not be mistaken for the author's own ref or opt-out tick.
- */
+/** A reviewer citing an example (`` `closes #1234` `` in prose, or a fenced
+ *  snippet) must not be mistaken for the author's own ref or opt-out tick. */
 function stripCode(text) {
     return text.replace(/```[\s\S]*?```/g, '').replace(/`[^`\n]*`/g, '');
 }
@@ -734,10 +645,7 @@ function parseRefs(text) {
         push(match, match[2] ?? null, match[3]);
     return refs.sort((first, second) => first.index - second.index);
 }
-/**
- * Slice out a markdown section body: everything after the matching heading up
- * to the next heading of any level (or EOF). Returns null if absent.
- */
+/** Everything after the matching heading up to the next heading (or EOF), or null if absent. */
 function extractSection(body, heading = exports.SECTION_HEADING) {
     const lines = stripHtmlComments(body).split(/\r?\n/);
     const headingRe = new RegExp(`^#{1,6}\\s+${escapeRe(heading)}\\s*$`, 'i');
@@ -985,18 +893,10 @@ exports.lintTitle = lintTitle;
 exports.isTitleExemptAuthor = isTitleExemptAuthor;
 exports.isLinkExemptAuthor = isLinkExemptAuthor;
 /**
- * PR-title lint — the active rules of `commitlint.config.cjs`, reimplemented as
- * a pure check so the action keeps zero runtime deps (pulling @commitlint +
- * config-conventional would vendor hundreds of kB into the committed bundle for
- * a handful of trivial rules). The config's other rules are disabled ([0,...]).
- *
- * DRIFT GUARD: TITLE_TYPES and HEADER_MAX are the single source of truth here,
- * and the action CI greps commitlint.config.cjs to assert they still match —
- * so a change to the repo's commit rules fails CI until this is updated.
- *
- * Active rules mirrored (see commitlint.config.cjs):
- *   type-empty:never · type-case:lower-case · type-enum · scope-empty:always ·
- *   header-max-length:120. Subject/body/footer rules are disabled there.
+ * PR-title lint — `commitlint.config.cjs`'s active rules (type-empty,
+ * type-case, type-enum, scope-empty, header-max-length), reimplemented pure
+ * to keep the action's runtime deps at zero. CI greps that config to assert
+ * TITLE_TYPES/HEADER_MAX still match, so drift fails CI, not a release.
  */
 /** commitlint.config.cjs `type-enum`. Keep in sync — CI enforces it. */
 exports.TITLE_TYPES = [
@@ -1018,13 +918,8 @@ exports.HEADER_MAX = 120;
 // `type` + optional `(scope)` + optional `!` + `: ` + subject. Mirrors the
 // conventional-commit header shape config-conventional parses.
 const HEADER = /^(?<type>[^\s():!]+)(?<scope>\([^)]*\))?!?:[ ](?<subject>.+)$/;
-/**
- * Wrap user-controlled title fragments before interpolating them into the
- * sticky comment / job summary. The gate posts the comment with a write token,
- * so a raw `@mention` in a malicious title would notify (spam) via the bot.
- * Inline code neutralises mentions; stripping backticks stops the value
- * breaking out of the span.
- */
+/** Wraps a title fragment before it goes into the sticky comment — the gate
+ *  posts with a write token, so a raw `@mention` would notify via the bot. */
 function code(value) {
     return `\`${(value ?? '').replace(/`/g, '')}\``;
 }
@@ -1069,8 +964,8 @@ function lintTitle(title) {
     return { outcome: 'pass', code: 'title-ok', reasons: [`Title type "${type}" is valid.`] };
 }
 /**
- * Bot authors whose titles are machine-generated and exempt from title lint
- * (D16). Their PR-issue link / backport marker is still validated — only the
+ * Bot authors whose titles are machine-generated and exempt from title lint.
+ * Their PR-issue link / backport marker is still validated — only the
  * title check is skipped.
  */
 exports.BOT_TITLE_EXEMPT = new Set([
@@ -1083,16 +978,12 @@ function isTitleExemptAuthor(login) {
     return login !== undefined && exports.BOT_TITLE_EXEMPT.has(login);
 }
 /**
- * Bot authors exempt from the PR-issue-LINK check, because they open PRs from
- * their own template and will never tick the opt-out checkbox. Dependency bumps
- * are not release-notes material, so an exemption is the agreed answer rather
- * than teaching each bot to write the section.
+ * Bot authors exempt from the PR-issue-LINK check — they open PRs from their
+ * own template and never tick the opt-out box.
  *
- * DELIBERATELY SEPARATE from BOT_TITLE_EXEMPT, which must never be reused here:
- * that set contains `monorepo-devops-automation[bot]`, the author of every
- * backport PR. Exempting it from the link check would skip the backport hop, so
- * backports would stop inheriting the original PR's issue — silently dropping
- * them from the release notes, which is the failure this gate exists to prevent.
+ * MUST STAY SEPARATE from BOT_TITLE_EXEMPT: that set includes
+ * `monorepo-devops-automation[bot]`, the backport-PR author. Exempting it
+ * here would skip the backport hop, silently dropping backports from notes.
  */
 exports.BOT_LINK_EXEMPT = new Set(['renovate[bot]']);
 function isLinkExemptAuthor(login) {
