@@ -3134,7 +3134,7 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
-              <groups>randomized</groups>
+              <groups>randomized, io.camunda.zeebe.engine.processing.randomized.RandomizedTestCategory</groups>
               <excludedGroups combine.self="override"/>
               <excludes combine.self="override"/>
               <systemPropertyVariables>
@@ -3143,20 +3143,6 @@
                 <replayExecutionCount>5</replayExecutionCount>
               </systemPropertyVariables>
             </configuration>
-            <executions>
-              <execution>
-                <id>legacy-randomized-tests</id>
-                <goals>
-                  <goal>test</goal>
-                </goals>
-                <phase>test</phase>
-                <configuration>
-                  <groups combine.self="override">io.camunda.zeebe.engine.processing.randomized.RandomizedTestCategory</groups>
-                  <excludes combine.self="override"/>
-                  <excludedGroups combine.self="override"/>
-                </configuration>
-              </execution>
-            </executions>
           </plugin>
         </plugins>
       </build>
