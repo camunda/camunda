@@ -15,7 +15,9 @@
  */
 package io.camunda.zeebe.model.bpmn.validation;
 
+import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
 
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
 import io.camunda.zeebe.model.bpmn.traversal.TypeHierarchyVisitor;
@@ -31,13 +33,38 @@ import org.camunda.bpm.model.xml.validation.ValidationResults;
 public class ValidationVisitor extends TypeHierarchyVisitor {
 
   private final Map<Class, List<ModelElementValidator>> validators;
+  private final Map<Class, List<ModelElementValidator>> statefulValidators;
 
   private ValidationResultsCollectorImpl resultCollector;
 
   public ValidationVisitor(final Collection<ModelElementValidator<?>> validators) {
-    this.validators =
-        validators.stream().collect(groupingBy(ModelElementValidator::getElementType));
+    this(groupByType(validators), Collections.emptyList());
+  }
+
+  /**
+   * @param validators stateless validators, already grouped by {@link #groupByType}, which can be
+   *     shared between visitors
+   * @param statefulValidators validators that keep state during a walk; they must be new for every
+   *     visitor and the visitor must not be reused for another walk. For an element they run before
+   *     the stateless ones, which keeps the order of the reported errors as it was when they were
+   *     registered first.
+   */
+  public ValidationVisitor(
+      final Map<Class, List<ModelElementValidator>> validators,
+      final Collection<ModelElementValidator<?>> statefulValidators) {
+    this.validators = validators;
+    this.statefulValidators = groupByType(statefulValidators);
     resultCollector = new ValidationResultsCollectorImpl();
+  }
+
+  public static Map<Class, List<ModelElementValidator>> groupByType(
+      final Collection<ModelElementValidator<?>> validators) {
+    return Collections.unmodifiableMap(
+        validators.stream()
+            .collect(
+                groupingBy(
+                    ModelElementValidator::getElementType,
+                    collectingAndThen(toList(), Collections::unmodifiableList))));
   }
 
   @Override
@@ -46,8 +73,12 @@ public class ValidationVisitor extends TypeHierarchyVisitor {
 
     resultCollector.setCurrentElement(instance);
 
+    final Class<?> type = implementedType.getInstanceType();
+    statefulValidators
+        .getOrDefault(type, Collections.emptyList())
+        .forEach(validator -> validator.validate(instance, resultCollector));
     validators
-        .getOrDefault(implementedType.getInstanceType(), Collections.emptyList())
+        .getOrDefault(type, Collections.emptyList())
         .forEach(validator -> validator.validate(instance, resultCollector));
   }
 

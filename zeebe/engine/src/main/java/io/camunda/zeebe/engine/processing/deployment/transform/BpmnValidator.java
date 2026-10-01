@@ -22,7 +22,8 @@ import org.camunda.bpm.model.xml.impl.validation.ModelValidationResultsImpl;
 import org.camunda.bpm.model.xml.validation.ValidationResults;
 
 public final class BpmnValidator {
-  private final CompositeValidationVisitor validationVisitor;
+  private final ValidationVisitor runtimeAspectValidator;
+  private final ValidationVisitor configurationAspectValidator;
   private final ValidationErrorFormatter formatter = new ValidationErrorFormatter();
   private final int validatorResultsOutputMaxSize;
 
@@ -30,23 +31,26 @@ public final class BpmnValidator {
       final ExpressionLanguage expressionLanguage,
       final ExpressionProcessor expressionProcessor,
       final ValidationConfig config) {
-    final var designTimeAspectValidator =
-        new ValidationVisitor(ZeebeDesignTimeValidators.VALIDATORS);
-    final var runtimeAspectValidator =
+    runtimeAspectValidator =
         new ValidationVisitor(
             ZeebeRuntimeValidators.getValidators(expressionLanguage, expressionProcessor));
-    final var configurationAspectValidator =
+    configurationAspectValidator =
         new ValidationVisitor(ZeebeConfigurationValidators.getValidators(config));
-
-    validationVisitor =
-        new CompositeValidationVisitor(
-            designTimeAspectValidator, runtimeAspectValidator, configurationAspectValidator);
 
     validatorResultsOutputMaxSize = config.validatorResultsOutputMaxSize();
   }
 
   public String validate(final BpmnModelInstance modelInstance) {
-    validationVisitor.reset();
+    // the design time visitor holds stateful validators, so it can't be reused across validations
+    final var designTimeAspectValidator =
+        new ValidationVisitor(
+            ZeebeDesignTimeValidators.STATELESS_VALIDATORS_BY_TYPE,
+            ZeebeDesignTimeValidators.newStatefulValidators());
+    runtimeAspectValidator.reset();
+    configurationAspectValidator.reset();
+    final var validationVisitor =
+        new CompositeValidationVisitor(
+            designTimeAspectValidator, runtimeAspectValidator, configurationAspectValidator);
 
     final ModelWalker walker = new ModelWalker(modelInstance);
     walker.walk(validationVisitor);

@@ -34,19 +34,33 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeScript;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListener;
+import io.camunda.zeebe.model.bpmn.validation.ValidationVisitor;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 
 public final class ZeebeDesignTimeValidators {
 
+  /**
+   * All validators, which can be shared between validations. Prefer {@link #getValidators()} or
+   * {@link #STATELESS_VALIDATORS_BY_TYPE} with {@link #newStatefulValidators()}: the {@link
+   * ActivityValidator} in here scans the whole scope for every activity.
+   */
   public static final Collection<ModelElementValidator<?>> VALIDATORS;
+
+  /**
+   * The validators which can be shared between validations and that are not in {@link
+   * #newStatefulValidators()}, grouped by element type, so it is only done once.
+   */
+  public static final Map<Class, List<ModelElementValidator>> STATELESS_VALIDATORS_BY_TYPE;
+
+  private static final Collection<ModelElementValidator<?>> STATELESS_VALIDATORS;
 
   static {
     final List<ModelElementValidator<?>> validators = new ArrayList<>();
-    validators.add(new ActivityValidator());
     validators.add(new AdHocSubProcessValidator());
     validators.add(new AgentDefinitionValidator());
     validators.add(new BoundaryEventValidator());
@@ -169,8 +183,26 @@ public final class ZeebeDesignTimeValidators {
     validators.add(new ZeebeConditionalFilterValidator());
     validators.addAll(ExtensionElementDuplicationValidators.VALIDATORS);
 
-    VALIDATORS = Collections.unmodifiableList(validators);
+    STATELESS_VALIDATORS = Collections.unmodifiableList(validators);
+    STATELESS_VALIDATORS_BY_TYPE = ValidationVisitor.groupByType(STATELESS_VALIDATORS);
+
+    final List<ModelElementValidator<?>> all = new ArrayList<>();
+    all.add(new ActivityValidator());
+    all.addAll(STATELESS_VALIDATORS);
+    VALIDATORS = Collections.unmodifiableList(all);
   }
 
   private ZeebeDesignTimeValidators() {}
+
+  /** Validators that keep state during a walk. Must be called for every validation. */
+  public static Collection<ModelElementValidator<?>> newStatefulValidators() {
+    return Collections.singletonList(new ActivityValidator());
+  }
+
+  /** All validators, with new instances of the stateful ones. */
+  public static Collection<ModelElementValidator<?>> getValidators() {
+    final List<ModelElementValidator<?>> all = new ArrayList<>(STATELESS_VALIDATORS);
+    all.addAll(newStatefulValidators());
+    return all;
+  }
 }
