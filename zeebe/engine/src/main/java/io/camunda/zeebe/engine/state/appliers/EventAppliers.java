@@ -529,15 +529,19 @@ public final class EventAppliers implements EventApplier {
     register(JobIntent.COMPLETED, 2, new JobCompletedV2Applier(state));
     register(JobIntent.COMPLETED, 3, new JobCompletedV3Applier(state));
     register(JobIntent.COMPLETED, 4, new JobCompletedV4Applier(state));
+    register(JobIntent.COMPLETED, 5, new JobCompletedV5Applier(state));
     register(JobIntent.CREATED, 1, new JobCreatedV1Applier(state));
     register(JobIntent.CREATED, 2, new JobCreatedV2Applier(state));
     register(JobIntent.CREATED, 3, new JobCreatedV3Applier(state));
+    register(JobIntent.CREATED, 4, new JobCreatedV4Applier(state));
     register(JobIntent.ERROR_THROWN, 1, new JobErrorThrownV1Applier(state));
     register(JobIntent.ERROR_THROWN, 2, new JobErrorThrownV2Applier(state));
     register(JobIntent.ERROR_THROWN, 3, new JobErrorThrownV3Applier(state));
+    register(JobIntent.ERROR_THROWN, 4, new JobErrorThrownV4Applier(state));
     register(JobIntent.FAILED, 1, new JobFailedV1Applier(state));
     register(JobIntent.FAILED, 2, new JobFailedV2Applier(state));
     register(JobIntent.FAILED, 3, new JobFailedV3Applier(state));
+    register(JobIntent.FAILED, 4, new JobFailedV4Applier(state));
     register(JobIntent.YIELDED, 1, new JobYieldedApplier(state));
     register(JobIntent.YIELDED, 2, new JobYieldedV2Applier(state));
     register(JobIntent.RETRIES_UPDATED, new JobRetriesUpdatedApplier(state));
@@ -558,6 +562,7 @@ public final class EventAppliers implements EventApplier {
     // JOB record stream for the wait-state exporter, and carry no state change of their own.
     register(JobIntent.SECRET_RESOLUTION_PARKED, NOOP_EVENT_APPLIER);
     register(JobIntent.SECRET_RESOLUTION_RESUMED, NOOP_EVENT_APPLIER);
+    register(JobIntent.EXPIRED, new JobExpiredApplier(state));
   }
 
   private void registerMessageAppliers(final MutableProcessingState state) {

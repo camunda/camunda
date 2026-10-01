@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.value.ImmutableAsyncRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableBufferedCommandRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableCommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableNestedRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ClassInfoList;
@@ -372,6 +373,12 @@ public final class ProtocolFactory {
         ValueType.class,
         new EnumRandomizer<>(
             getSeed(), ValueTypeMapping.getAcceptedValueTypes().toArray(ValueType[]::new)));
+
+    // a standalone job has no process instance, unlike the random records generated here; tests of
+    // standalone jobs set the kind explicitly
+    final var jobKinds = EnumSet.complementOf(EnumSet.of(JobKind.STANDALONE));
+    randomizerRegistry.registerRandomizer(
+        JobKind.class, new EnumRandomizer<>(getSeed(), jobKinds.toArray(JobKind[]::new)));
 
     final var excludedRecordTypes = EnumSet.of(RecordType.NULL_VAL, RecordType.SBE_UNKNOWN);
     final var recordTypes = EnumSet.complementOf(excludedRecordTypes);

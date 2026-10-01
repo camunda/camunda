@@ -127,4 +127,13 @@ public interface MutableJobState extends JobState {
 
   /** Removes from the {@code JOB_BACKOFF} column family. */
   void removeJobBackoff(long job, long backoff);
+
+  /**
+   * Keeps the input variables and the expiry of a standalone job, in the {@code
+   * STANDALONE_JOB_VARIABLES} and {@code STANDALONE_JOB_EXPIRY} column families.
+   */
+  void insertStandaloneJob(long key, JobRecord record);
+
+  /** Removes what {@link #insertStandaloneJob(long, JobRecord)} keeps; a no-op if it is gone. */
+  void removeStandaloneJob(long key, JobRecord record);
 }

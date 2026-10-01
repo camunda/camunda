@@ -42,5 +42,12 @@ public enum JobKind {
    * Represents jobs created for ad-hoc sub-processes. These jobs are associated with the execution
    * of ad-hoc sub-processes within a BPMN workflow.
    */
-  AD_HOC_SUB_PROCESS
+  AD_HOC_SUB_PROCESS,
+
+  /**
+   * Represents standalone jobs, which belong to no process instance. A client creates one to ask
+   * the workers of a job type a question, for example to validate a credential at design time, and
+   * waits for the worker's answer.
+   */
+  STANDALONE
 }

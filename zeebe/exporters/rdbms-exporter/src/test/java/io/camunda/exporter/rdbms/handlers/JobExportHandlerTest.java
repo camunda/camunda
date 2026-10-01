@@ -13,6 +13,7 @@ import static org.mockito.Mockito.verify;
 import io.camunda.db.rdbms.write.domain.JobDbModel;
 import io.camunda.db.rdbms.write.service.JobWriter;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
@@ -255,5 +256,29 @@ class JobExportHandlerTest {
     // then - an empty business ID is stored as null rather than an empty string
     verify(jobWriter).create(jobDbModelCaptor.capture());
     assertThat(jobDbModelCaptor.getValue().businessId()).isNull();
+  }
+
+  @ParameterizedTest(name = "Should not export standalone job with intent: {0}")
+  @MethodSource("exportableIntents")
+  void shouldNotExportStandaloneJob(final JobIntent intent) {
+    // given
+    final Record<JobRecordValue> record = standaloneJobRecord(intent);
+
+    // when / then
+    assertThat(handler.canExport(record))
+        .describedAs("a standalone job is never shown in Operate or Tasklist")
+        .isFalse();
+  }
+
+  private Record<JobRecordValue> standaloneJobRecord(final JobIntent intent) {
+    final JobRecordValue value =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withJobKind(JobKind.STANDALONE)
+            .withProcessInstanceKey(-1L)
+            .withElementInstanceKey(-1L)
+            .build();
+    return factory.generateRecord(
+        ValueType.JOB, r -> r.withRecordType(RecordType.EVENT).withIntent(intent).withValue(value));
   }
 }

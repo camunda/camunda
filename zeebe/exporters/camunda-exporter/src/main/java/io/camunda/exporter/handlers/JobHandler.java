@@ -31,6 +31,7 @@ import io.camunda.webapps.schema.entities.JobEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.util.DateUtil;
 import java.time.Instant;
@@ -76,7 +77,8 @@ public class JobHandler implements OrdinalIndexExportHandler<JobEntity, JobRecor
   @Override
   public boolean handlesRecord(final Record<JobRecordValue> record) {
     final JobIntent intent = (JobIntent) record.getIntent();
-    return JOB_EVENTS.contains(intent);
+    // a standalone job belongs to no process and is never shown in Operate or Tasklist
+    return JOB_EVENTS.contains(intent) && record.getValue().getJobKind() != JobKind.STANDALONE;
   }
 
   @Override

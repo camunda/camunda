@@ -51,9 +51,12 @@ public class JobExportHandler implements RdbmsExportHandler<JobRecordValue> {
 
   @Override
   public boolean canExport(final Record<JobRecordValue> record) {
+    // a standalone job belongs to no process and is never shown in Operate or Tasklist
     return record.getIntent() != null
         && record.getIntent() instanceof final JobIntent intent
-        && EXPORTABLE_INTENTS.contains(intent);
+        && EXPORTABLE_INTENTS.contains(intent)
+        && record.getValue().getJobKind()
+            != io.camunda.zeebe.protocol.record.value.JobKind.STANDALONE;
   }
 
   @Override

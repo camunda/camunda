@@ -8,15 +8,14 @@
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.secretstore.SecretStoreRegistry;
-import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.loggers.JobAuthorizationLogger;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
+import io.camunda.zeebe.engine.processing.job.JobAuthorizations;
 import io.camunda.zeebe.engine.processing.job.JobSecretInjectionIncident;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup.Secret;
@@ -39,12 +38,9 @@ import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
-import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
@@ -199,7 +195,7 @@ public class BpmnJobActivationBehavior {
     final JobActivationProperties properties = jobStream.properties();
 
     setJobProperties(wrappedJobRecord, properties);
-    jobVariablesCollector.setJobVariables(properties.fetchVariables(), wrappedJobRecord);
+    jobVariablesCollector.setJobVariables(properties.fetchVariables(), jobKey, wrappedJobRecord);
     final var pushableJobRecord = new JobRecord();
     cloneJob(wrappedJobRecord, pushableJobRecord);
     if (!injectSecretValues(jobKey, pushableJobRecord, secrets)) {
@@ -415,22 +411,12 @@ public class BpmnJobActivationBehavior {
     }
 
     final var claims = jobActivationProperties.claims();
-    final var bpmnProcessId = jobRecord.getBpmnProcessId();
-    final var cslPermType = AuthzModelMapper.fromProtocol(PermissionType.UPDATE_PROCESS_INSTANCE);
-    final var cslResourceType =
-        AuthzModelMapper.fromProtocol(AuthorizationResourceType.PROCESS_DEFINITION);
     final var authorizationResult =
         cslCheck.checkWithClaims(
             claims,
-            RequiredAuthorization.of(
-                b ->
-                    b.resourceType(cslResourceType)
-                        .permissionType(cslPermType)
-                        .resourceId(bpmnProcessId)),
-            bpmnProcessId,
-            AuthorizationRejectionMapper.forbidden(
-                PermissionType.UPDATE_PROCESS_INSTANCE,
-                AuthorizationResourceType.PROCESS_DEFINITION));
+            JobAuthorizations.forWorker(jobRecord),
+            jobRecord.isStandalone() ? jobRecord.getType() : jobRecord.getBpmnProcessId(),
+            JobAuthorizations.forbiddenForWorker(jobRecord));
 
     authorizationResult.ifLeft(
         ignored ->

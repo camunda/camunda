@@ -60,7 +60,24 @@ public enum JobIntent implements ProcessInstanceRelatedIntent {
   RESUMED((short) 24),
 
   SECRET_RESOLUTION_PARKED((short) 25),
-  SECRET_RESOLUTION_RESUMED((short) 26);
+  SECRET_RESOLUTION_RESUMED((short) 26),
+
+  /**
+   * Creates a standalone job: a job of {@link
+   * io.camunda.zeebe.protocol.record.value.JobKind#STANDALONE} kind, without a process instance.
+   * The command is answered only once a worker answers the job, or once the job expires.
+   */
+  CREATE((short) 27, false),
+
+  /** Expires a standalone job that is not answered in time; written by the engine only. */
+  EXPIRE((short) 28, false),
+  EXPIRED((short) 29),
+
+  /**
+   * Sends a worker's answer of a standalone job back to the client that created it; written by the
+   * engine only, after the worker's complete, fail or throw error command.
+   */
+  ANSWER((short) 30, false);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -134,6 +151,14 @@ public enum JobIntent implements ProcessInstanceRelatedIntent {
         return SECRET_RESOLUTION_PARKED;
       case 26:
         return SECRET_RESOLUTION_RESUMED;
+      case 27:
+        return CREATE;
+      case 28:
+        return EXPIRE;
+      case 29:
+        return EXPIRED;
+      case 30:
+        return ANSWER;
       default:
         return UNKNOWN;
     }
@@ -164,6 +189,7 @@ public enum JobIntent implements ProcessInstanceRelatedIntent {
       case RESUMED:
       case SECRET_RESOLUTION_PARKED:
       case SECRET_RESOLUTION_RESUMED:
+      case EXPIRED:
         return true;
       default:
         return false;

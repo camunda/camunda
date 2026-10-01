@@ -304,4 +304,27 @@ class JobBasedWaitStateTransformerTest {
     final var details = (JobWaitStateDetails) entry.getDetails();
     assertThat(details.retries()).isEqualTo(1);
   }
+
+  @Test
+  void shouldNotSupportStandaloneJob() {
+    // given
+    final Record<JobRecordValue> record = standaloneJobRecord(JobIntent.CREATED);
+
+    // when / then
+    assertThat(transformer.supports(record))
+        .describedAs("a standalone job is no wait state of any process instance")
+        .isFalse();
+  }
+
+  private Record<JobRecordValue> standaloneJobRecord(final JobIntent intent) {
+    final JobRecordValue value =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withJobKind(JobKind.STANDALONE)
+            .withProcessInstanceKey(-1L)
+            .withElementInstanceKey(-1L)
+            .build();
+    return factory.generateRecord(
+        ValueType.JOB, r -> r.withRecordType(RecordType.EVENT).withIntent(intent).withValue(value));
+  }
 }

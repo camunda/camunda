@@ -105,6 +105,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private static final StringValue PRIORITY_KEY = new StringValue(PRIORITY);
   private static final StringValue JOB_LEASE_TOKEN_KEY = new StringValue("jobLeaseToken");
   private static final StringValue SECRET_REFERENCES_KEY = new StringValue("secretReferences");
+  private static final StringValue INPUT_EXPRESSION_KEY = new StringValue("inputExpression");
+  private static final StringValue EXPIRES_AT_KEY = new StringValue("expiresAt");
   private final StringProperty typeProp = new StringProperty(TYPE_KEY, EMPTY_STRING);
   private final StringProperty workerProp = new StringProperty(WORKER_KEY, EMPTY_STRING);
   private final LongProperty deadlineProp = new LongProperty(DEADLINE_KEY, -1);
@@ -157,9 +159,14 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new StringProperty(JOB_LEASE_TOKEN_KEY, EMPTY_STRING);
   private final ArrayProperty<JobSecretReference> secretReferencesProp =
       new ArrayProperty<>(SECRET_REFERENCES_KEY, JobSecretReference::new);
+  // standalone jobs only: the FEEL expression the engine evaluates into the job's variables, on
+  // the CREATE command, and the time at which the job expires when no worker answers it
+  private final StringProperty inputExpressionProp =
+      new StringProperty(INPUT_EXPRESSION_KEY, EMPTY_STRING);
+  private final LongProperty expiresAtProp = new LongProperty(EXPIRES_AT_KEY, -1L);
 
   public JobRecord() {
-    super(31);
+    super(33);
     declareProperty(deadlineProp)
         .declareProperty(timeoutProp)
         .declareProperty(workerProp)
@@ -190,7 +197,9 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(priorityProp)
         .declareProperty(businessIdProp)
         .declareProperty(jobLeaseTokenProp)
-        .declareProperty(secretReferencesProp);
+        .declareProperty(secretReferencesProp)
+        .declareProperty(inputExpressionProp)
+        .declareProperty(expiresAtProp);
   }
 
   public void wrapWithoutVariables(final JobRecord record) {
@@ -226,6 +235,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     businessIdProp.setValue(record.getBusinessIdBuffer());
     jobLeaseTokenProp.setValue(record.getJobLeaseTokenBuffer());
     copySecretReferencesFrom(record);
+    inputExpressionProp.setValue(record.getInputExpressionBuffer());
+    expiresAtProp.setValue(record.getExpiresAt());
   }
 
   private void copySecretReferencesFrom(final JobRecord record) {
@@ -602,6 +613,36 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   public JobRecord resetSecretReferences() {
     secretReferencesProp.reset();
     return this;
+  }
+
+  @JsonIgnore
+  public String getInputExpression() {
+    return bufferAsString(inputExpressionProp.getValue());
+  }
+
+  @JsonIgnore
+  public DirectBuffer getInputExpressionBuffer() {
+    return inputExpressionProp.getValue();
+  }
+
+  public JobRecord setInputExpression(final String inputExpression) {
+    inputExpressionProp.setValue(inputExpression);
+    return this;
+  }
+
+  @JsonIgnore
+  public long getExpiresAt() {
+    return expiresAtProp.getValue();
+  }
+
+  public JobRecord setExpiresAt(final long expiresAt) {
+    expiresAtProp.setValue(expiresAt);
+    return this;
+  }
+
+  @JsonIgnore
+  public boolean isStandalone() {
+    return getJobKind() == JobKind.STANDALONE;
   }
 
   @JsonIgnore

@@ -395,7 +395,10 @@ public final class EngineProcessors {
         incidentMetrics,
         secretStoreRegistry,
         secretResolutionScheduler,
-        suspensionMetrics);
+        suspensionMetrics,
+        asyncRequestBehavior,
+        bpmnBehaviors.expressionLanguage(),
+        bpmnBehaviors.expressionBehavior());
 
     final var userTaskProcessor =
         createUserTaskProcessor(

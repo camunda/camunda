@@ -38,6 +38,7 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.JobTemplate;
 import io.camunda.webapps.schema.entities.JobEntity;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -663,5 +664,31 @@ final class JobHandlerTest {
 
   private Record<JobRecordValue> generateRecord(final JobIntent intent) {
     return factory.generateRecord(ValueType.JOB, r -> r.withIntent(intent));
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = JobIntent.class,
+      names = {"CREATED", "COMPLETED", "FAILED", "ERROR_THROWN"})
+  void shouldNotHandleStandaloneJob(final JobIntent intent) {
+    // given
+    final Record<JobRecordValue> record = standaloneJobRecord(intent);
+
+    // when - then
+    assertThat(underTest.handlesRecord(record))
+        .describedAs("a standalone job is never shown in Operate or Tasklist")
+        .isFalse();
+  }
+
+  private Record<JobRecordValue> standaloneJobRecord(final JobIntent intent) {
+    final JobRecordValue value =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withJobKind(JobKind.STANDALONE)
+            .withProcessInstanceKey(-1L)
+            .withElementInstanceKey(-1L)
+            .build();
+    return factory.generateRecord(
+        ValueType.JOB, r -> r.withRecordType(RecordType.EVENT).withIntent(intent).withValue(value));
   }
 }

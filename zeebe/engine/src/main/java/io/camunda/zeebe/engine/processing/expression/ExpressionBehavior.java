@@ -86,6 +86,21 @@ public class ExpressionBehavior {
         .map(evaluationResult -> mapSuccess(evaluationResult, expressionRecord));
   }
 
+  /**
+   * Evaluates the given expression without any process or element instance scope: it can only read
+   * tenant-scoped and global cluster variables. A {@code camunda.secrets.<name>} reference resolves
+   * to its own placeholder, which job activation later replaces by the secret's value. Used for the
+   * input of a standalone job.
+   */
+  public Either<Rejection, EvaluationResult> evaluateWithoutScope(
+      final Expression expression, final String tenantId) {
+    referencedSecretCollector.reset();
+    return clusterExpressionProcessor
+        .evaluateAnyExpression(expression, -1L, tenantId)
+        .mapLeft(this::mapEvaluationFailure)
+        .flatMap(this::rejectIfEvaluationFailed);
+  }
+
   private Either<Rejection, EvaluationResult> rejectIfEvaluationFailed(
       final EvaluationResult evaluationResult) {
     if (evaluationResult.isFailure()) {

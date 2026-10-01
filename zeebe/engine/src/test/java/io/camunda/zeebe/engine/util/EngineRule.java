@@ -56,6 +56,7 @@ import io.camunda.zeebe.engine.util.client.ResourceFetchClient;
 import io.camunda.zeebe.engine.util.client.RoleClient;
 import io.camunda.zeebe.engine.util.client.ScaleClient;
 import io.camunda.zeebe.engine.util.client.SignalClient;
+import io.camunda.zeebe.engine.util.client.StandaloneJobClient;
 import io.camunda.zeebe.engine.util.client.TenantClient;
 import io.camunda.zeebe.engine.util.client.UsageMetricClient;
 import io.camunda.zeebe.engine.util.client.UserClient;
@@ -544,6 +545,10 @@ public final class EngineRule extends ExternalResource {
 
   public JobClient job() {
     return new JobClient(environmentRule);
+  }
+
+  public StandaloneJobClient standaloneJob() {
+    return new StandaloneJobClient(environmentRule);
   }
 
   public IncidentClient incident() {

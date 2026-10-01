@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.job;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MAX_ERROR_MESSAGE_SIZE;
 import static io.camunda.zeebe.util.StringUtil.limitString;
 
-import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
@@ -157,6 +156,11 @@ public class JobThrowErrorProcessor
     final long jobKey = command.getKey();
 
     final var jobKind = job.getJobKind();
+    if (jobKind == JobKind.STANDALONE) {
+      throwStandaloneJobError(command, job);
+      return;
+    }
+
     if (!SUPPORTED_JOB_KINDS.contains(jobKind)) {
       /*
        Throwing bpmn error is only supported for BPMN element and ad-hoc sub-process jobs:
@@ -224,6 +228,31 @@ public class JobThrowErrorProcessor
     }
   }
 
+  /**
+   * A standalone job has no catch event: the error is the answer to its creator, which reads it as
+   * an error by its error code (see {@link StandaloneJobAnswerProcessor}).
+   */
+  private void throwStandaloneJobError(final TypedRecord<JobRecord> command, final JobRecord job) {
+    final long jobKey = command.getKey();
+    if (command.getValue().getErrorCode().isEmpty()) {
+      final var errorMessage =
+          "Expected to throw an error for standalone job with key '%d', but no error code was given"
+              .formatted(jobKey);
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(
+          command, RejectionType.INVALID_ARGUMENT, errorMessage);
+      return;
+    }
+
+    job.setErrorCode(command.getValue().getErrorCodeBuffer());
+    job.setErrorMessage(
+        limitString(command.getValue().getErrorMessage(), DEFAULT_MAX_ERROR_MESSAGE_SIZE));
+    job.setVariables(command.getValue().getVariablesBuffer());
+
+    writeThrowErrorEvent(jobKey, job, command);
+    StandaloneJobAnswerProcessor.appendAnswer(commandWriter, jobKey, job);
+  }
+
   private boolean elementInstanceIsActive(final ElementInstance elementInstance) {
     return elementInstance != null && elementInstance.isActive();
   }
@@ -278,11 +307,7 @@ public class JobThrowErrorProcessor
   private Either<Rejection, JobRecord> checkAuthorization(
       final TypedRecord<JobRecord> command, final JobRecord job) {
     return cslCheck.check(
-        command,
-        RequiredAuthorization.of(
-            b -> b.processDefinition().updateProcessInstance().resourceId(job.getBpmnProcessId())),
-        job,
-        AuthorizationRejectionMapper.noPrincipal());
+        command, JobAuthorizations.forWorker(job), job, AuthorizationRejectionMapper.noPrincipal());
   }
 
   @Override

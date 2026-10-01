@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
-import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
@@ -147,7 +146,7 @@ final class JobBatchCollector {
           if (value.isWithLease()) {
             jobRecord.setJobLeaseToken(LeaseTokens.generate());
           }
-          jobVariablesCollector.setJobVariables(requestedVariables, jobRecord);
+          jobVariablesCollector.setJobVariables(requestedVariables, key, jobRecord);
 
           // the expected length is based on the current record's length plus the length of the job
           // record we would add to the batch, the number of bytes taken by the additional job key,
@@ -199,16 +198,7 @@ final class JobBatchCollector {
       return job -> true;
     }
     final var auth = maybeAuth.get();
-    return job ->
-        cslCheck
-            .checkAuth(
-                auth,
-                RequiredAuthorization.of(
-                    b ->
-                        b.processDefinition()
-                            .updateProcessInstance()
-                            .resourceId(job.getBpmnProcessId())))
-            .isRight();
+    return job -> cslCheck.checkAuth(auth, JobAuthorizations.forWorker(job)).isRight();
   }
 
   private JobRecord appendJobToBatch(

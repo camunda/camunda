@@ -12,6 +12,7 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.KeyVisitor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.impl.DbBytes;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbInt;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
+import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.util.EnsureUtil;
@@ -33,6 +35,7 @@ import java.util.function.BiPredicate;
 import java.util.function.LongPredicate;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.LongHashSet;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
 public final class DbJobState implements JobState, MutableJobState {
@@ -109,6 +112,17 @@ public final class DbJobState implements JobState, MutableJobState {
   private final ColumnFamily<DbCompositeKey<DbLong, DbForeignKey<DbLong>>, DbNil>
       jobsByProcessInstanceColumnFamily;
 
+  // (expiresAt, jobKey) => nil, for the standalone jobs that still wait for an answer
+  private final DbLong expiresAtKey;
+  private final DbCompositeKey<DbLong, DbForeignKey<DbLong>> expiresAtJobKey;
+  private final ColumnFamily<DbCompositeKey<DbLong, DbForeignKey<DbLong>>, DbNil>
+      standaloneJobExpiryColumnFamily;
+  private long nextStandaloneJobExpiry;
+
+  // jobKey => variables, for standalone jobs
+  private final DbBytes standaloneJobVariables = new DbBytes();
+  private final ColumnFamily<DbForeignKey<DbLong>, DbBytes> standaloneJobVariablesColumnFamily;
+
   /** In-memory, per-partition memory that the legacy JOB_ACTIVATABLE CF is globally drained. */
   private volatile boolean isLegacyCfDrained = false;
 
@@ -168,6 +182,21 @@ public final class DbJobState implements JobState, MutableJobState {
             transactionContext,
             processInstanceJobKey,
             DbNil.INSTANCE);
+
+    expiresAtKey = new DbLong();
+    expiresAtJobKey = new DbCompositeKey<>(expiresAtKey, fkJob);
+    standaloneJobExpiryColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.STANDALONE_JOB_EXPIRY,
+            transactionContext,
+            expiresAtJobKey,
+            DbNil.INSTANCE);
+    standaloneJobVariablesColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.STANDALONE_JOB_VARIABLES,
+            transactionContext,
+            fkJob,
+            standaloneJobVariables);
   }
 
   /**
@@ -450,8 +479,32 @@ public final class DbJobState implements JobState, MutableJobState {
   public void insertJobRecordActivatable(final long key, final JobRecord record) {
     createJobRecord(key, record);
     initializeJobState();
+    if (record.getProcessInstanceKey() < 0) {
+      // a standalone job has no process instance; indexing it would put every such job under the
+      // same -1 prefix
+      return;
+    }
     jobIndexProcessInstanceKey.wrapLong(record.getProcessInstanceKey());
     jobsByProcessInstanceColumnFamily.upsert(processInstanceJobKey, DbNil.INSTANCE);
+  }
+
+  @Override
+  public void insertStandaloneJob(final long key, final JobRecord record) {
+    jobKey.wrapLong(key);
+    expiresAtKey.wrapLong(record.getExpiresAt());
+    standaloneJobExpiryColumnFamily.insert(expiresAtJobKey, DbNil.INSTANCE);
+
+    final DirectBuffer variables = record.getVariablesBuffer();
+    standaloneJobVariables.wrap(variables, 0, variables.capacity());
+    standaloneJobVariablesColumnFamily.insert(fkJob, standaloneJobVariables);
+  }
+
+  @Override
+  public void removeStandaloneJob(final long key, final JobRecord record) {
+    jobKey.wrapLong(key);
+    expiresAtKey.wrapLong(record.getExpiresAt());
+    standaloneJobExpiryColumnFamily.deleteIfExists(expiresAtJobKey);
+    standaloneJobVariablesColumnFamily.deleteIfExists(fkJob);
   }
 
   /** Updates the job record without updating variables */
@@ -686,6 +739,37 @@ public final class DbJobState implements JobState, MutableJobState {
     this.jobKey.wrapLong(jobKey);
     deadlineKey.wrapLong(deadline);
     return deadlinesColumnFamily.exists(deadlineJobKey);
+  }
+
+  @Override
+  public DirectBuffer getStandaloneJobVariables(final long key) {
+    jobKey.wrapLong(key);
+    final DbBytes variables = standaloneJobVariablesColumnFamily.get(fkJob);
+    if (variables == null) {
+      return new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
+    }
+    // copy, as the column family reuses its value instance on the next read
+    return new UnsafeBuffer(variables.getBytes());
+  }
+
+  @Override
+  public long findExpiredStandaloneJobs(
+      final long timestamp, final BiPredicate<Long, JobRecord> callback) {
+    nextStandaloneJobExpiry = -1L;
+    standaloneJobExpiryColumnFamily.whileTrue(
+        key -> {
+          final long expiresAt = key.first().getValue();
+          boolean consumed = false;
+          if (expiresAt <= timestamp) {
+            final long expiredJobKey = key.second().inner().getValue();
+            consumed = visitJob(expiredJobKey, callback);
+          }
+          if (!consumed) {
+            nextStandaloneJobExpiry = expiresAt;
+          }
+          return consumed;
+        });
+    return nextStandaloneJobExpiry;
   }
 
   @Override

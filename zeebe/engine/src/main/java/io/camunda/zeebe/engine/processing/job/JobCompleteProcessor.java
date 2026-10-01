@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
-import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
@@ -59,6 +58,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public final class JobCompleteProcessor
     implements TypedRecordProcessor<JobRecord>, SuspensionAware<JobRecord> {
@@ -216,6 +217,10 @@ public final class JobCompleteProcessor
 
   private void completeJob(
       final TypedRecord<JobRecord> command, final JobRecord job, final ProcessingSession session) {
+    if (job.isStandalone()) {
+      completeStandaloneJob(command, job);
+      return;
+    }
 
     final boolean jobBelongsToAgent = agentDefinitionBehavior.belongsToAgent(job);
     if (job.hasAgenticPrefix() || jobBelongsToAgent) {
@@ -253,6 +258,23 @@ public final class JobCompleteProcessor
     }
     appendBusinessIdAssignment(command, job);
     postCompleteActions(job);
+  }
+
+  private void completeStandaloneJob(final TypedRecord<JobRecord> command, final JobRecord job) {
+    final long jobKey = command.getKey();
+    final DirectBuffer answerVariables = command.getValue().getVariablesBuffer();
+    if (includeVariablesInJobCompletedEvent) {
+      job.setVariables(answerVariables);
+    }
+    job.setResult(command.getValue().getResult());
+
+    stateWriter.appendFollowUpEvent(jobKey, JobIntent.COMPLETED, job);
+    responseWriter.writeAcceptedResponseOnCommand(jobKey, JobIntent.COMPLETED, job, command);
+    jobMetrics.countJobEvent(JobAction.COMPLETED, job.getJobKind(), job.getType());
+
+    // a completion that follows a failure with retries left must not read as that failure
+    job.setVariables(answerVariables).setErrorMessage("").setErrorCode(new UnsafeBuffer());
+    StandaloneJobAnswerProcessor.appendAnswer(commandWriter, jobKey, job);
   }
 
   /**
@@ -627,11 +649,7 @@ public final class JobCompleteProcessor
   private Either<Rejection, JobRecord> checkAuthorization(
       final TypedRecord<JobRecord> command, final JobRecord job) {
     return cslCheck.check(
-        command,
-        RequiredAuthorization.of(
-            b -> b.processDefinition().updateProcessInstance().resourceId(job.getBpmnProcessId())),
-        job,
-        AuthorizationRejectionMapper.noPrincipal());
+        command, JobAuthorizations.forWorker(job), job, AuthorizationRejectionMapper.noPrincipal());
   }
 
   @Override

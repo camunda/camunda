@@ -181,6 +181,15 @@ public class PlatformDefaultEntities {
             .setResourceMatcher(WILDCARD.getMatcher())
             .setResourceId(WILDCARD.getResourceId())
             .setPermissionTypes(Set.of(PermissionType.REVEAL)));
+    // lets the connector runtimes answer the standalone jobs of any job type
+    setupRecord.addAuthorization(
+        new AuthorizationRecord()
+            .setOwnerType(AuthorizationOwnerType.ROLE)
+            .setOwnerId(connectorsRoleId)
+            .setResourceType(AuthorizationResourceType.STANDALONE_JOB)
+            .setResourceMatcher(WILDCARD.getMatcher())
+            .setResourceId(WILDCARD.getResourceId())
+            .setPermissionTypes(Set.of(PermissionType.UPDATE)));
     setupRecord.addTenantMember(
         new TenantRecord()
             .setTenantId(DEFAULT_TENANT_ID)

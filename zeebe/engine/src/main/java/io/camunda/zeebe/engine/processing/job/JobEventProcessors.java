@@ -8,12 +8,15 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.secretstore.SecretStoreRegistry;
+import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
+import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
+import io.camunda.zeebe.engine.processing.expression.ExpressionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionScheduler;
@@ -43,7 +46,10 @@ public final class JobEventProcessors {
       final IncidentMetrics incidentMetrics,
       final SecretStoreRegistry secretStoreRegistry,
       final SecretResolutionScheduler secretResolutionScheduler,
-      final SuspensionMetrics suspensionMetrics) {
+      final SuspensionMetrics suspensionMetrics,
+      final AsyncRequestBehavior asyncRequestBehavior,
+      final ExpressionLanguage expressionLanguage,
+      final ExpressionBehavior expressionBehavior) {
 
     final var keyGenerator = processingState.getKeyGenerator();
 
@@ -59,6 +65,8 @@ public final class JobEventProcessors {
 
     final var jobBackoffChecker =
         new JobBackoffCheckScheduler(clock, scheduledTaskStateFactory.get().getJobState());
+    final var standaloneJobExpiryChecker =
+        new StandaloneJobExpiryCheckScheduler(clock, scheduledTaskStateFactory.get().getJobState());
     typedRecordProcessors
         .onCommand(
             ValueType.JOB,
@@ -157,6 +165,30 @@ public final class JobEventProcessors {
                 config.getJobsTimeoutCheckerPollingInterval(),
                 config.getJobsTimeoutCheckerBatchLimit(),
                 clock))
-        .withListener(jobBackoffChecker);
+        .onCommand(
+            ValueType.JOB,
+            JobIntent.CREATE,
+            new StandaloneJobCreateProcessor(
+                keyGenerator,
+                writers,
+                expressionLanguage,
+                expressionBehavior,
+                processingState.getClusterVariableState(),
+                cslCheck,
+                tenantCheck,
+                asyncRequestBehavior,
+                bpmnBehaviors.jobActivationBehavior(),
+                standaloneJobExpiryChecker,
+                jobMetrics))
+        .onCommand(
+            ValueType.JOB,
+            JobIntent.EXPIRE,
+            new StandaloneJobExpireProcessor(processingState, writers, jobMetrics, clock))
+        .onCommand(
+            ValueType.JOB,
+            JobIntent.ANSWER,
+            new StandaloneJobAnswerProcessor(processingState, writers))
+        .withListener(jobBackoffChecker)
+        .withListener(standaloneJobExpiryChecker);
   }
 }

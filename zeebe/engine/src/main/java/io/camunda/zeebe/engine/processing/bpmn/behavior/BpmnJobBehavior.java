@@ -694,6 +694,7 @@ public final class BpmnJobBehavior {
       case BPMN_ELEMENT, EXECUTION_LISTENER -> context.getBpmnElementType();
       case TASK_LISTENER -> BpmnElementType.USER_TASK;
       case AD_HOC_SUB_PROCESS -> BpmnElementType.SUB_PROCESS;
+      case STANDALONE -> BpmnElementType.UNSPECIFIED;
     };
   }
 

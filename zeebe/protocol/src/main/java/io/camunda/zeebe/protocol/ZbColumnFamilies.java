@@ -397,7 +397,15 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // re-accumulate its metrics. Written when an item is first created (see
   // AgentHistoryCreatedApplier), survives commit/discard, and is deleted in one pass when the
   // instance completes (see AgentInstanceCompletedApplier).
-  AGENT_HISTORY_METRICS_ACCUMULATED_IDS(165, PARTITION_LOCAL);
+  AGENT_HISTORY_METRICS_ACCUMULATED_IDS(165, PARTITION_LOCAL),
+
+  // (expiresAt, jobKey) -> ∅. The standalone jobs that still wait for an answer, ordered by the
+  // time at which they expire, so the expiry checker can find the expired ones by a prefix scan.
+  STANDALONE_JOB_EXPIRY(166, PARTITION_LOCAL),
+
+  // jobKey -> variables. The input of a standalone job, which has no element instance scope to
+  // hold its variables; the job state itself never persists variables.
+  STANDALONE_JOB_VARIABLES(167, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

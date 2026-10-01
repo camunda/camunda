@@ -566,6 +566,7 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
     FAILED("failed"),
     CANCELED("canceled"),
     ERROR_THROWN("error thrown"),
+    EXPIRED("expired"),
     WORKERS_NOTIFIED("workers notified"),
     PUSHED("pushed");
 

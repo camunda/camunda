@@ -177,6 +177,10 @@ public class DbJobMetricsState implements MutableJobMetricsState {
    */
   @Override
   public void incrementMetric(final JobRecord jobRecord, final JobMetricsExportState status) {
+    if (jobRecord.isStandalone()) {
+      // job metrics feed the job statistics of Operate, which must not show standalone jobs
+      return;
+    }
     final var jobType = jobRecord.getType();
     final var tenantId = jobRecord.getTenantId();
     final var workerName = jobRecord.getWorker();

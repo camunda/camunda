@@ -64,6 +64,19 @@ public interface JobState {
   void forEachJobsByProcessInstance(
       long processInstanceKey, long startAtJobKey, LongPredicate visitor);
 
+  /**
+   * Returns the input variables of a standalone job, or an empty document when it has none. A
+   * standalone job has no element instance scope, so its variables are kept next to the job.
+   */
+  DirectBuffer getStandaloneJobVariables(long jobKey);
+
+  /**
+   * Visits the standalone jobs whose expiry is at or before the given timestamp, in expiry order.
+   *
+   * @return the expiry of the first standalone job that is not expired yet, or -1 if there is none
+   */
+  long findExpiredStandaloneJobs(long timestamp, BiPredicate<Long, JobRecord> callback);
+
   /** Index to point to a specific position in the jobs with deadline column family. */
   record DeadlineIndex(long deadline, long key) {}
 

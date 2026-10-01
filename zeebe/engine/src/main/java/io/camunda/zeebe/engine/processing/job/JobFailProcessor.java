@@ -11,7 +11,6 @@ import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MAX_ERROR_MESS
 import static io.camunda.zeebe.util.StringUtil.limitString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
-import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
@@ -27,6 +26,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -58,6 +58,7 @@ public final class JobFailProcessor
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
+  private final TypedCommandWriter commandWriter;
   private final KeyGenerator keyGenerator;
   private final JobProcessingMetrics jobMetrics;
   private final JobBackoffCheckScheduler jobBackoffChecker;
@@ -86,6 +87,7 @@ public final class JobFailProcessor
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
+    commandWriter = writers.command();
     sideEffectWriter = writers.sideEffect();
     variableBehavior = bpmnBehaviors.variableBehavior();
     jobActivationBehavior = bpmnBehaviors.jobActivationBehavior();
@@ -147,6 +149,11 @@ public final class JobFailProcessor
     responseWriter.writeAcceptedResponseOnCommand(jobKey, JobIntent.FAILED, failedJob, record);
     jobMetrics.countJobEvent(JobAction.FAILED, failedJob.getJobKind(), failedJob.getType());
 
+    if (failedJob.isStandalone()) {
+      failStandaloneJob(jobKey, failedJob);
+      return;
+    }
+
     setFailedVariables(failedJob);
 
     final boolean retryImmediately = retries > 0 && retryBackOff <= 0;
@@ -157,6 +164,26 @@ public final class JobFailProcessor
     if (retries <= 0) {
       raiseIncident(jobKey, failedJob);
     }
+  }
+
+  /**
+   * A standalone job has no scope for the failure's variables and raises no incident: with retries
+   * left it is handed out again, otherwise the failure is the answer to its creator.
+   */
+  private void failStandaloneJob(final long jobKey, final JobRecord failedJob) {
+    final var retries = failedJob.getRetries();
+    if (retries > 0) {
+      if (failedJob.getRetryBackoff() <= 0) {
+        jobActivationBehavior.publishWork(jobKey, failedJob);
+      }
+      return;
+    }
+
+    if (failedJob.getErrorMessageBuffer().capacity() == 0) {
+      // the answer reads as a failure by its error message, see StandaloneJobAnswerProcessor
+      failedJob.setErrorMessage(DEFAULT_ERROR_MESSAGE);
+    }
+    StandaloneJobAnswerProcessor.appendAnswer(commandWriter, jobKey, failedJob);
   }
 
   private void setFailedVariables(final JobRecord value) {
@@ -223,17 +250,15 @@ public final class JobFailProcessor
       case JobKind.EXECUTION_LISTENER -> ErrorType.EXECUTION_LISTENER_NO_RETRIES;
       case JobKind.TASK_LISTENER -> ErrorType.TASK_LISTENER_NO_RETRIES;
       case JobKind.AD_HOC_SUB_PROCESS -> ErrorType.AD_HOC_SUB_PROCESS_NO_RETRIES;
+      case JobKind.STANDALONE ->
+          throw new IllegalStateException("A standalone job answers its failure, not an incident");
     };
   }
 
   private Either<Rejection, JobRecord> checkAuthorization(
       final TypedRecord<JobRecord> command, final JobRecord job) {
     return cslCheck.check(
-        command,
-        RequiredAuthorization.of(
-            b -> b.processDefinition().updateProcessInstance().resourceId(job.getBpmnProcessId())),
-        job,
-        AuthorizationRejectionMapper.noPrincipal());
+        command, JobAuthorizations.forWorker(job), job, AuthorizationRejectionMapper.noPrincipal());
   }
 
   @Override

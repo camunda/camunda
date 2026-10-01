@@ -27,6 +27,12 @@ public class JobBasedWaitStateTransformer implements WaitStateTransformer<JobRec
   }
 
   @Override
+  public boolean supports(final Record<JobRecordValue> record) {
+    // a standalone job is no wait state of any process instance
+    return config().supports(record) && record.getValue().getJobKind() != JobKind.STANDALONE;
+  }
+
+  @Override
   public void extract(final Record<JobRecordValue> record, final WaitStateEntry entry) {
     final JobRecordValue value = record.getValue();
     clearElementIdIfSentinelRisk(record, entry);
@@ -60,7 +66,7 @@ public class JobBasedWaitStateTransformer implements WaitStateTransformer<JobRec
   private static boolean isListenerJob(final JobKind jobKind) {
     return switch (jobKind) {
       case EXECUTION_LISTENER, TASK_LISTENER -> true;
-      case BPMN_ELEMENT, AD_HOC_SUB_PROCESS -> false;
+      case BPMN_ELEMENT, AD_HOC_SUB_PROCESS, STANDALONE -> false;
     };
   }
 }
