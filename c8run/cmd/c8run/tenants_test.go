@@ -183,3 +183,43 @@ func TestConfigureTenantSecretStores(t *testing.T) {
 	assert.NotEqual(t, a, b)
 	assert.NotEqual(t, filepath.Join(baseDir, "secrets"), a)
 }
+
+func TestEffectiveStorageTypePrecedence(t *testing.T) {
+	t.Setenv("JAVA_OPTS", "")
+	t.Setenv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "")
+	t.Setenv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", "")
+	got, _ := effectiveStorageType("rdbms")
+	assert.Equal(t, "rdbms", got)
+	t.Setenv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "elasticsearch")
+	got, _ = effectiveStorageType("rdbms")
+	assert.Equal(t, "elasticsearch", got)
+	t.Setenv("JAVA_OPTS", "-Xmx1g -Dcamunda.data.secondary-storage.type=opensearch")
+	got, _ = effectiveStorageType("rdbms")
+	assert.Equal(t, "opensearch", got)
+}
+
+func TestApplyPhysicalTenantsUsesEffectiveStorageType(t *testing.T) {
+	base := t.TempDir()
+	t.Setenv(pt.FileEnv, filepath.Join(t.TempDir(), pt.FileName))
+	t.Setenv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "elasticsearch")
+	settings := types.C8RunSettings{DisableConnectors: true, PhysicalTenantsFlag: []string{"a"}, SecondaryStorageType: "rdbms"}
+	require.NoError(t, applyPhysicalTenants(base, "8.10.0", &settings))
+	content, err := os.ReadFile(settings.PhysicalTenantsConfigPath)
+	require.NoError(t, err)
+	assert.Contains(t, string(content), "index-prefix: a")
+	assert.NotContains(t, string(content), "rdbms")
+}
+
+func TestEnvDeclaresTenants(t *testing.T) {
+	t.Setenv("JAVA_OPTS", "")
+	assert.False(t, envDeclaresTenants())
+	t.Setenv("CAMUNDA_PHYSICALTENANTS_X_DATA_FOO", "1")
+	assert.True(t, envDeclaresTenants())
+}
+
+func TestReservedPortsIncludeCamundaPort(t *testing.T) {
+	reserved := reservedPorts(8087)
+	assert.True(t, reserved[8087])
+	assert.True(t, reserved[8086])
+	assert.True(t, reserved[26500])
+}

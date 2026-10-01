@@ -14,6 +14,7 @@ base="${C8RUN_URL:-http://localhost:8080}"
 auth="${C8RUN_AUTH:-demo:demo}"
 default_auth="${C8RUN_DEFAULT_AUTH:-demo:demo}"
 process_id="c8runPhysicalTenantIsolation"
+grpc_address="${C8RUN_GRPC_URL:-http://localhost:26500}"
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 fail() { printf "test failed: %s\n" "$1"; exit 1; }
@@ -42,6 +43,35 @@ if [[ "$auth" != "$default_auth" ]]; then
         printf "\nTest: default login is rejected by physical tenant %s\n" "$tenant"
         status="$(curl --silent -o /dev/null -w '%{http_code}' -u "$default_auth" "$base/physical-tenants/$tenant/v2/topology")"
         [[ "$status" == "401" ]] || fail "expected 401 for default login on $tenant, got $status"
+fi
+
+# Calls gRPC Topology with raw HTTP/2 (an empty protobuf message is 5 zero bytes) and prints
+# the grpc-status trailer, so no gRPC client tooling is needed.
+grpc_status() {
+        local frame
+        frame="$(mktemp)"
+        printf '\x00\x00\x00\x00\x00' >"$frame"
+        curl --silent --http2-prior-knowledge -D - -o /dev/null -X POST \
+                "$grpc_address/gateway_protocol.Gateway/Topology" \
+                -H 'content-type: application/grpc' -H 'te: trailers' \
+                -H "authorization: Basic $(printf '%s' "$1" | base64)" \
+                -H "Camunda-Physical-Tenant: $2" \
+                --data-binary "@$frame" | tr -d '\r' | sed -n 's/^grpc-status: //p' | tail -1
+        rm -f "$frame"
+}
+
+printf "\nTest: gRPC Camunda-Physical-Tenant header routes to %s\n" "$tenant"
+status="$(grpc_status "$auth" "$tenant")"
+[[ "$status" == "0" ]] || fail "gRPC call to $tenant returned grpc-status '$status'"
+
+printf "\nTest: gRPC rejects an unknown physical tenant\n"
+status="$(grpc_status "$auth" doesnotexist)"
+[[ "$status" != "0" ]] || fail "gRPC call to an unknown tenant succeeded"
+
+if [[ "$auth" != "$default_auth" ]]; then
+        printf "\nTest: gRPC rejects the default login on %s\n" "$tenant"
+        status="$(grpc_status "$default_auth" "$tenant")"
+        [[ "$status" == "16" ]] || fail "expected UNAUTHENTICATED (16) for default login on $tenant over gRPC, got '$status'"
 fi
 
 printf "\nTest: deploy to physical tenant %s\n" "$tenant"

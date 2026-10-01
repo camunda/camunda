@@ -358,3 +358,27 @@ func TestSnapshotWithoutFileCreatesNothing(t *testing.T) {
 	assert.Empty(t, creds)
 	assert.NoDirExists(t, dir)
 }
+
+func TestResolveSkipsReservedPorts(t *testing.T) {
+	store := NewStore(filepath.Join(t.TempDir(), FileName))
+	require.NoError(t, store.Add([]Tenant{{ID: "a"}, {ID: "b"}}, nil))
+	res, err := Resolve(ResolveInput{
+		Store: store, ConnectorsEnabled: true, FirstConnectorsPort: 8087,
+		ReservedPorts: map[int]bool{8087: true},
+		PortFree:      func(int) bool { return true },
+	})
+	require.NoError(t, err)
+	assert.Equal(t, 8088, res.Tenants[0].ConnectorsPort, "the Camunda port must never be given to a connectors runtime")
+	assert.Equal(t, 8089, res.Tenants[1].ConnectorsPort)
+}
+
+func TestResolveDefersToEnvironmentTenants(t *testing.T) {
+	store := NewStore(filepath.Join(t.TempDir(), FileName))
+	require.NoError(t, store.Add([]Tenant{{ID: "a"}}, nil))
+	res, err := Resolve(ResolveInput{Store: store, EnvDeclaresTenants: true})
+	require.NoError(t, err)
+	assert.Empty(t, res.Tenants)
+	require.Len(t, res.Notices, 1)
+	_, err = Resolve(ResolveInput{Store: store, EnvDeclaresTenants: true, FlagIDs: []string{"b"}})
+	assert.ErrorContains(t, err, "cannot be combined")
+}

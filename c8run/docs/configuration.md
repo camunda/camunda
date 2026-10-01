@@ -80,7 +80,7 @@ Existing `JDK_JAVA_OPTIONS` values are preserved and only missing flags are appe
 `c8run tenants` (aliases `pt`, `physical-tenants`) and `start --physical-tenants` are implemented in `cmd/c8run/tenants.go`, `cmd/c8run/physicaltenants_start.go` and `internal/physicaltenants/`.
 
 Resolution on `start` (`physicaltenants.Resolve`), first match wins:
-1. A user `--config` that declares `camunda.physical-tenants` — c8run applies nothing and logs a notice. Combining it with `--physical-tenants` is an error.
+1. Tenants declared outside c8run — a user `--config` with `camunda.physical-tenants`, `CAMUNDA_PHYSICALTENANTS_*` environment variables, or `-Dcamunda.physical-tenants.*` in `JAVA_OPTS`. c8run applies nothing and logs a notice. Combining any of these with `--physical-tenants` is an error.
 2. `--physical-tenants a,b` — for this run only, every tenant uses the start login.
 3. The saved tenants file (`C8RUN_TENANTS_FILE`, default `physical-tenants.yaml` next to the local secrets directory), unless `C8RUN_TENANTS_MODE=external`.
 
@@ -91,6 +91,8 @@ The generated file `configuration/physical-tenants.generated.yaml` holds only st
 - Elasticsearch / OpenSearch: `index-prefix: <id>` plus per-tenant ILM/ISM policy names.
 - `none`: no storage keys.
 
+Isolation keys follow the effective storage type, in Spring's order: `-Dcamunda.data.secondary-storage.type` in `JAVA_OPTS`, then `CAMUNDA_DATA_SECONDARYSTORAGE_TYPE`, then the YAML type.
+
 It is loaded via `--spring.config.additional-location` after `configuration/` and before the user `--config`, so user settings win. The file is removed when no tenants are active and is read by `tenants list` to tell "active" from "pending restart".
 
 Logins are not written to the generated file. Spring does not merge lists across property sources, so the whole `security.initialization` block (user + `defaultRoles.admin`) is passed as `CAMUNDA_PHYSICALTENANTS_<ID>_SECURITY_INITIALIZATION_*` environment variables. Per-tenant passwords from `tenants add --username` are stored in `<tenants file>.credentials` with mode 0600.
@@ -99,8 +101,10 @@ Each tenant gets its own local file secret store in `tenant-secrets/<id>` next t
 
 The tenants file and its credentials file are changed under one file lock (`<tenants file>.lock`); if the tenant list cannot be written, the credentials file is restored. `start` reads both as one locked snapshot. Duplicate IDs in the file are rejected. Tenant readiness probes run concurrently under one shared deadline.
 
-Per-tenant connectors reuse `ConnectorsCmd` and append `SERVER_PORT` and `CAMUNDA_CLIENT_PHYSICALTENANTID` (plus `CAMUNDA_CLIENT_AUTH_*` when the API is protected). PID files are `connectors-<id>.process`; `stop` stops every `connectors-*.process`. Ports start at 8087 and skip ports in use.
+Per-tenant connectors reuse `ConnectorsCmd` and append `SERVER_PORT` and `CAMUNDA_CLIENT_PHYSICALTENANTID` (plus `CAMUNDA_CLIENT_AUTH_*` when the API is protected). PID files are `connectors-<id>.process`; `stop` stops every `connectors-*.process`. Ports start at 8087, skip the Camunda port and c8run's fixed ports (8086, 9600, 26500-26502), and skip ports in use on any interface.
+
+c8run-managed tenants require `C8RUN_SECRETS_MODE=local`; in external mode startup fails with guidance, because tenants would otherwise inherit one shared external store.
 
 After Camunda reports healthy, each tenant's `/physical-tenants/<id>/v2/topology` is probed and the startup summary prints a per-tenant table, naming any tenant that is not ready.
 
-`e2e_tests/physical_tenants_tests.sh` checks reachability, 404 for unknown tenants, and deployment isolation against a c8run started with `--physical-tenants pt1`.
+`e2e_tests/physical_tenants_tests.sh` checks REST and gRPC (`Camunda-Physical-Tenant`) routing, cross-tenant login rejection, deployment isolation, per-tenant secrets, and per-tenant connectors. CI runs it in the c8run unix job with authorizations on and a tenant-specific user.

@@ -169,6 +169,10 @@ func ConfigDeclaresTenants(path string) bool {
 
 // ResolveInput is everything Resolve needs; it keeps the function free of globals for tests.
 type ResolveInput struct {
+	// EnvDeclaresTenants is true when CAMUNDA_PHYSICALTENANTS_* is set outside c8run.
+	EnvDeclaresTenants bool
+	// ReservedPorts are never assigned to a tenant connectors runtime.
+	ReservedPorts   map[int]bool
 	Store           *Store
 	FlagIDs         []string
 	DefaultUsername string
@@ -204,6 +208,14 @@ func Resolve(in ResolveInput) (Resolution, error) {
 		}
 	}
 
+	if in.EnvDeclaresTenants {
+		if len(in.FlagIDs) > 0 {
+			return res, fmt.Errorf("--physical-tenants cannot be combined with CAMUNDA_PHYSICALTENANTS_* environment variables; use one or the other")
+		}
+		res.Notices = append(res.Notices, "Physical tenants are declared through CAMUNDA_PHYSICALTENANTS_* environment variables; tenants managed with `c8run tenants` are not applied.")
+		return res, nil
+	}
+
 	var stored []Tenant
 	creds := map[string]string{}
 	if len(in.FlagIDs) > 0 {
@@ -227,7 +239,7 @@ func Resolve(in ResolveInput) (Resolution, error) {
 			t.Username, t.Password = st.Username, pw
 		}
 		if in.ConnectorsEnabled && !st.NoConnectors {
-			for in.PortFree != nil && !in.PortFree(port) && port < 65535 {
+			for port < 65535 && (in.ReservedPorts[port] || (in.PortFree != nil && !in.PortFree(port))) {
 				port++
 			}
 			t.Connectors, t.ConnectorsPort = true, port
