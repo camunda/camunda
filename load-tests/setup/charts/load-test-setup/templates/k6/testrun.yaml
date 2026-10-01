@@ -25,6 +25,16 @@ spec:
     image: europe-west1-docker.pkg.dev/camunda-benchmark/ghcrio/grafana/k6-operator:starter-v1.6.0
     imagePullPolicy: IfNotPresent
 
+  initializer:
+    volumes:
+      - name: k6-data
+        configMap:
+          name: k6-data
+
+    volumeMounts:
+      - name: k6-data
+        mountPath: /data
+
   runner:
     image: europe-west1-docker.pkg.dev/camunda-benchmark/dockerhub/grafana/k6:2.3.0
     imagePullPolicy: IfNotPresent
@@ -103,5 +113,15 @@ spec:
 
     tolerations:
       {{- toYaml $root.Values.k6.tolerations | nindent 6 }}
+
+    volumes:
+      - name: k6-data
+        configMap:
+          name: k6-data
+
+    volumeMounts:
+      - name: k6-data
+        mountPath: /data
+
 {{- end }}
 {{- end }}
