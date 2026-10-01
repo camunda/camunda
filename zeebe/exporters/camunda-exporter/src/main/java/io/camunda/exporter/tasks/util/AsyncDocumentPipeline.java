@@ -31,6 +31,8 @@ public class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
   private static final List<Class<? extends Throwable>> DEFAULT_RETRYABLE_EXCEPTIONS =
       List.of(
           SocketTimeoutException.class, ElasticsearchException.class, OpenSearchException.class);
+  private static final List<Class<? extends Throwable>> DEFAULT_BATCH_REDUCTION_EXCEPTIONS =
+      List.of(SocketTimeoutException.class);
 
   private final BatchSupplier<DocType, SearchAfterFieldType> batchSupplier;
   private final BatchProcessor<DocType, SearchAfterFieldType> batchProcessor;
@@ -40,6 +42,7 @@ public class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
   private final int maxRetryAttempts;
   private final int retryDelayMs;
   private final List<Class<? extends Throwable>> retryableExceptions;
+  private final List<Class<? extends Throwable>> batchReductionExceptions;
   private final Runnable retryRecorder;
 
   private final AtomicReference<DocumentBatch<DocType, SearchAfterFieldType>> lastSearchResponse =
@@ -60,8 +63,9 @@ public class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
     maxRetryAttempts = builder.maxRetryAttempts;
     retryDelayMs = builder.retryDelayMs;
     retryableExceptions = builder.retryableExceptions;
+    batchReductionExceptions = builder.batchReductionExceptions;
     retryRecorder = builder.retryRecorder;
-    currentBatchSize = new AtomicInteger(builder.batchSize);
+    currentBatchSize = builder.batchSize;
   }
 
   public CompletableFuture<PipelineStats> execute() {
@@ -116,10 +120,11 @@ public class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
   }
 
   private CompletableFuture<Void> batchFailed(final Throwable ex) {
+    adjustBatchSize(ex);
+
     if (isRetryableError(ex) && retryCount.incrementAndGet() <= maxRetryAttempts) {
 
       retryRecorder.run();
-      adjustBatchSize(ex);
 
       logger.trace(
           "Encountered retryable error when running doc pipeline, "
@@ -161,7 +166,7 @@ public class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
   }
 
   private boolean shouldReduceBatchSize(final Throwable thr) {
-    return matchesThrowableOrCause(thr, SocketTimeoutException.class);
+    return batchReductionExceptions.stream().anyMatch(clazz -> matchesThrowableOrCause(thr, clazz));
   }
 
   private boolean isRetryableError(final Throwable thr) {
@@ -175,11 +180,11 @@ public class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
   }
 
   public record DocumentBatch<D, T>(List<D> documents, T searchAfter) {
-    static <D, T> DocumentBatch<D, T> empty() {
+    public static <D, T> DocumentBatch<D, T> empty() {
       return new DocumentBatch<>(List.of(), null);
     }
 
-    static <D, T> DocumentBatch<D, T> from(final List<D> documents, final T searchAfter) {
+    public static <D, T> DocumentBatch<D, T> from(final List<D> documents, final T searchAfter) {
       return new DocumentBatch<>(documents, searchAfter);
     }
 
@@ -194,12 +199,14 @@ public class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
     // TODO review defaults
     private Executor executor = ForkJoinPool.commonPool();
     private Logger logger = DEFAULT_LOGGER;
-    private int batchSize = 1000;
+    private AtomicInteger batchSize = new AtomicInteger(1000);
     private int minBatchSize = 50;
     private int maxRetryAttempts = 0;
     private int retryDelayMs = 1_000;
     private final List<Class<? extends Throwable>> retryableExceptions =
         new ArrayList<>(DEFAULT_RETRYABLE_EXCEPTIONS);
+    private final List<Class<? extends Throwable>> batchReductionExceptions =
+        new ArrayList<>(DEFAULT_BATCH_REDUCTION_EXCEPTIONS);
     private Runnable retryRecorder =
         () -> {
           /* no-op */
@@ -234,6 +241,17 @@ public class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
     }
 
     public Builder<DocType, SearchAfterFieldType> batchSize(final int batchSize) {
+      this.batchSize.set(batchSize);
+      return this;
+    }
+
+    /**
+     * Use this if you want to persist changes to batch sizes across different pipeline runs
+     *
+     * @param batchSize the mutable atomic integer to track batch size with
+     * @return the builder
+     */
+    public Builder<DocType, SearchAfterFieldType> batchSize(final AtomicInteger batchSize) {
       this.batchSize = batchSize;
       return this;
     }
@@ -248,9 +266,27 @@ public class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
       return this;
     }
 
+    /**
+     * Add an exception that what it occurs we will attempt to retry the batch again
+     *
+     * @param exceptionClass the exception it is ok to retry
+     * @return the builder
+     */
     public Builder<DocType, SearchAfterFieldType> addRetryableException(
         final Class<? extends Throwable> exceptionClass) {
       retryableExceptions.add(exceptionClass);
+      return this;
+    }
+
+    /**
+     * Add an exception that is used to trigger a reduction in batch size
+     *
+     * @param exceptionClass the exception that we will use as a signal to reduce the batch size
+     * @return the builder
+     */
+    public Builder<DocType, SearchAfterFieldType> addBatchReductionException(
+        final Class<? extends Throwable> exceptionClass) {
+      batchReductionExceptions.add(exceptionClass);
       return this;
     }
 
