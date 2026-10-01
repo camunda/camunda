@@ -274,8 +274,15 @@ test.describe('Process Instance Suspend and Resume Timer API', () => {
     test.setTimeout(8 * 60 * 1000);
     const fixture = await startCycleTimerInstance(uniquePrefixedId('sr-cycle'));
 
-    // One tick first, so what follows is about the gap, not a timer that never fired.
-    await ticksAfter(request, fixture.processInstanceKey, 0, 1);
+    // Gated on the call activity, not on a tick: the readiness budget is 90s
+    // while R4/PT20S is spent after 80, so waiting for a tick can leave too
+    // few repetitions for the catch-up and the re-arm to both happen.
+    await searchElementInstanceByElementIdAndState(
+      request,
+      fixture.processInstanceKey,
+      'Activity_1dpj0f1',
+      'ACTIVE',
+    );
 
     await suspendAndExpectSuspended(request, fixture.processInstanceKey);
     const suspendedAt = new Date(
