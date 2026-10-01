@@ -160,8 +160,14 @@ public class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
     }
 
     if (shouldReduceBatchSize(ex)) {
+      final var prevSize = currentBatchSize.get();
       currentBatchSize.set(
           (int) Math.max(minBatchSize, currentBatchSize.get() * BATCH_SIZE_REDUCTION_FACTOR));
+      logger.warn(
+          "Adjusting doc pipeline batch size from: {} to {} due to: {}",
+          prevSize,
+          currentBatchSize.get(),
+          ex.getMessage());
     }
   }
 
