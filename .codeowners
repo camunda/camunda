@@ -453,3 +453,24 @@ optimize.Dockerfile         @camunda/core-features
 # Optimize frontend: overrides the broad /optimize/ rule above, which predates the
 # optimize-frontend/optimize-backend team split.
 /optimize/client/           @camunda/optimize-frontend
+
+# Unified webapp frontend: overrides the broad /webapp/ rule above, which covers
+# the Java BFF. Pod areas override the frontend default.
+/webapp/client/                                                       @camunda/orchestration-cluster-webapps
+/webapp/client/apps/orchestration-cluster-webapp/src/routes/          @camunda/orchestration-cluster-webapps
+/webapp/client/apps/orchestration-cluster-webapp/src/shared/          @camunda/orchestration-cluster-webapps
+/webapp/client/apps/orchestration-cluster-webapp/src/admin/                    @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/src/operate/                  @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/src/tasklist/                 @camunda/employee-engagement-tasklist
+/webapp/client/apps/orchestration-cluster-webapp/test/integration/admin/       @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/test/integration/operate/     @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/test/integration/tasklist/    @camunda/employee-engagement-tasklist
+/webapp/client/apps/orchestration-cluster-webapp/test/a11y/admin/              @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/test/a11y/operate/            @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/test/a11y/tasklist/           @camunda/employee-engagement-tasklist
+/webapp/client/apps/orchestration-cluster-webapp/test/pages/admin/             @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/test/pages/operate/           @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/test/pages/tasklist/          @camunda/employee-engagement-tasklist
+/webapp/client/apps/orchestration-cluster-webapp/test/visual/admin/            @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/test/visual/operate/          @camunda/operate-admin-pod
+/webapp/client/apps/orchestration-cluster-webapp/test/visual/tasklist/         @camunda/employee-engagement-tasklist
