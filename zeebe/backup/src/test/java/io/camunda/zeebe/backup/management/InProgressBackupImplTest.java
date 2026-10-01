@@ -101,6 +101,21 @@ class InProgressBackupImplTest {
   }
 
   @Test
+  void shouldReleaseSnapshotReservedWhenProcessingCheckpointIfClosedBeforeReservingSnapshot(
+      @Mock final PersistedSnapshot snapshot, @Mock final SnapshotReservation snapshotReservation) {
+    // given
+    // e.g. the backup already exists in the store, so reserveSnapshot() is never called
+    final var backup =
+        createInProgressBackup(Optional.of(new ReservedSnapshot(snapshot, snapshotReservation)));
+
+    // when
+    backup.close();
+
+    // then
+    verify(snapshotReservation).release();
+  }
+
+  @Test
   void shouldCompleteFutureWhenNoSnapshotExists() {
     // given
     setAvailableSnapshots(Set.of());

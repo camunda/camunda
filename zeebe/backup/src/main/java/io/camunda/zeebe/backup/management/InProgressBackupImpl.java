@@ -149,7 +149,6 @@ final class InProgressBackupImpl implements InProgressBackup {
     return snapshotReservedAtCheckpoint.andThen(
         (reserved, error) -> {
           if (error == null && reserved.isPresent()) {
-            snapshotReservation = reserved.get().reservation();
             reservedSnapshot = reserved.get().snapshot();
             LOG.atTrace()
                 .addKeyValue("backup", backupId)
@@ -344,6 +343,8 @@ final class InProgressBackupImpl implements InProgressBackup {
 
   @Override
   public void close() {
+    snapshotReservedAtCheckpoint.onSuccess(
+        reserved -> reserved.ifPresent(r -> r.reservation().release()), Runnable::run);
     final var reservation = snapshotReservation;
     if (reservation != null) {
       reservation.release();

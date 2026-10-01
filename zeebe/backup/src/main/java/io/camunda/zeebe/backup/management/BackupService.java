@@ -47,7 +47,6 @@ public final class BackupService extends Actor implements BackupManager {
   private final PersistedSnapshotStore snapshotStore;
   private final Path segmentsDirectory;
   private final BackupManagerMetrics metrics;
-  // concurrent: reservations are added by the stream processor, see takeBackup
   private final Set<ActorFuture<Optional<ReservedSnapshot>>> snapshotReservations =
       ConcurrentHashMap.newKeySet();
 
@@ -81,24 +80,19 @@ public final class BackupService extends Actor implements BackupManager {
 
   @Override
   protected void onActorClosing() {
-    // in-progress backups never complete once the service is closed, so their reservations would
-    // otherwise keep snapshots on disk until the next restart
-    snapshotReservations.forEach(this::releaseSnapshotReservation);
+    // Backups whose start was discarded when closing never get an InProgressBackup, so their
+    // reservations would otherwise keep snapshots on disk until the next restart. Started backups
+    // release theirs when the internal backup manager closes them.
+    snapshotReservations.forEach(BackupService::releaseSnapshotReservation);
+    snapshotReservations.clear();
     internalBackupManager.close();
     metrics.close();
   }
 
-  private void releaseSnapshotReservation(
+  private static void releaseSnapshotReservation(
       final ActorFuture<Optional<ReservedSnapshot>> snapshotReservation) {
-    if (snapshotReservations.remove(snapshotReservation)) {
-      snapshotReservation.onComplete(
-          (reserved, error) -> {
-            if (reserved != null) {
-              reserved.ifPresent(r -> r.reservation().release());
-            }
-          },
-          Runnable::run);
-    }
+    snapshotReservation.onSuccess(
+        reserved -> reserved.ifPresent(r -> r.reservation().release()), Runnable::run);
   }
 
   @Override
@@ -111,7 +105,6 @@ public final class BackupService extends Actor implements BackupManager {
     final var snapshotReservation =
         snapshotStore.reserveSnapshotBefore(backupDescriptor.checkpointPosition());
     snapshotReservations.add(snapshotReservation);
-    result.onComplete((ignore, error) -> releaseSnapshotReservation(snapshotReservation), actor);
     actor.run(
         () -> {
           final InProgressBackupImpl inProgressBackup =
@@ -126,6 +119,7 @@ public final class BackupService extends Actor implements BackupManager {
 
           final var opMetrics = metrics.startTakingBackup();
           final var backupResult = internalBackupManager.takeBackup(inProgressBackup, actor);
+          snapshotReservations.remove(snapshotReservation);
           backupResult.onComplete(opMetrics::complete);
 
           backupResult.onComplete(
