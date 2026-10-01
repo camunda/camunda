@@ -1,4 +1,5 @@
 import { appendFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 
 /**
  * ponytail: the ~7 GitHub Actions toolkit calls we actually use, inlined.
@@ -27,9 +28,15 @@ export const getInput = (name: string, opts: { required?: boolean } = {}): strin
 
 export const getBooleanInput = (name: string): boolean => getInput(name).toLowerCase() === 'true';
 
-// GITHUB_OUTPUT file protocol with a heredoc delimiter (safe for multiline values).
-export const setOutput = (name: string, value: string): void =>
-  appendEnvFile('GITHUB_OUTPUT', `${name}<<_GHA_EOF_\n${value}\n_GHA_EOF_\n`);
+// GITHUB_OUTPUT file protocol with a heredoc delimiter. Random per call, like
+// @actions/core, so a value that happens to contain the literal delimiter
+// line (a contributor-authored PR title, passed straight into an output)
+// can't truncate the value and inject arbitrary following output lines.
+export const setOutput = (name: string, value: string): void => {
+  const delimiter = `ghadelimiter_${randomUUID()}`;
+  if (value.includes(delimiter)) throw new Error(`Unexpected input: value matches delimiter "${delimiter}"`);
+  appendEnvFile('GITHUB_OUTPUT', `${name}<<${delimiter}\n${value}\n${delimiter}\n`);
+};
 
 export const info = (msg: string): void => {
   process.stdout.write(`${msg}\n`);
@@ -50,6 +57,13 @@ class Summary {
   }
   addList(items: string[]): this {
     this.buf += `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>\n`;
+    return this;
+  }
+  /** Appends already-formatted Markdown verbatim — GITHUB_STEP_SUMMARY renders
+   *  as GitHub-flavored Markdown, so a pre-rendered document (e.g. the
+   *  generated changelog) is written as-is rather than escaped as HTML. */
+  addRaw(markdown: string): this {
+    this.buf += `${markdown}\n`;
     return this;
   }
   async write(): Promise<void> {
