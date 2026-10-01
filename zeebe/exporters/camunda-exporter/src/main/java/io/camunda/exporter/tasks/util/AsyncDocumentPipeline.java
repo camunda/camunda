@@ -83,13 +83,17 @@ public class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
 
   CompletableFuture<Integer> processNextBatch() {
     final Stopwatch stopwatch = Stopwatch.createStarted();
+    final var batchSizeForBatch = currentBatchSize.get();
     return batchSupplier
-        .supply(getLastSearchPosition(), currentBatchSize.get())
+        .supply(getLastSearchPosition(), batchSizeForBatch)
         .thenComposeAsync(
             batch -> {
-              if (batch.isEmpty()) {
+              if (batch.documents().size() < batchSizeForBatch) {
                 finished.set(true);
-                return CompletableFuture.completedFuture(null);
+              }
+
+              if (batch.isEmpty()) {
+                return CompletableFuture.completedFuture(0);
               }
 
               totalRead.accumulateAndGet(batch.documents.size(), Long::sum);
