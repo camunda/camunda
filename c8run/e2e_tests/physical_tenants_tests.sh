@@ -2,6 +2,8 @@
 # Verifies physical tenant isolation in a running c8run started with a physical tenant, e.g.:
 #   ./c8run start --physical-tenants pt1
 #   PHYSICAL_TENANT=pt1 ./e2e_tests/physical_tenants_tests.sh
+# Set CHECK_CONNECTORS=1 (with C8RUN_DIR pointing at the c8run directory) to also verify that the
+# tenant's own connectors runtime serves its jobs and no other runtime does.
 # Use C8RUN_AUTH for the tenant login and C8RUN_DEFAULT_AUTH for the default tenant login.
 set -euo pipefail
 
@@ -52,5 +54,33 @@ done
 printf "\nTest: process is isolated from the default tenant\n"
 default_after="$(count_definitions "$base" "$default_auth")"
 [[ "$default_after" == "$default_before" ]] || fail "process leaked into the default tenant"
+
+if [[ "${CHECK_CONNECTORS:-0}" == "1" ]]; then
+        tenant_api="$base/physical-tenants/$tenant/v2"
+        run_connector() {
+                curl --silent -o /dev/null -w '%{http_code}' -u "$auth" -X POST "$tenant_api/process-instances" \
+                        -H 'Content-Type: application/json' \
+                        --data-raw "{\"processDefinitionId\":\"c8runPhysicalTenantConnector\",\"awaitCompletion\":true,\"requestTimeout\":$1}"
+        }
+
+        printf "\nTest: connector job in %s is served by its own connectors runtime\n" "$tenant"
+        curl --silent --show-error --fail -u "$auth" -X POST "$tenant_api/deployments" \
+                -F "resources=@$script_dir/physical_tenant_connector.bpmn" >/dev/null || fail "connector process deployment failed"
+        status=""
+        for _ in $(seq 1 10); do
+                status="$(run_connector 30000)"
+                [[ "$status" == "200" ]] && break
+                sleep 3
+        done
+        [[ "$status" == "200" ]] || fail "connector job in $tenant did not complete (HTTP $status)"
+
+        printf "\nTest: other connectors runtimes do not take %s jobs\n" "$tenant"
+        pid_file="${C8RUN_DIR:?C8RUN_DIR is required with CHECK_CONNECTORS=1}/connectors-$tenant.process"
+        [[ -f "$pid_file" ]] || fail "no connectors runtime for $tenant ($pid_file missing)"
+        kill "$(head -1 "$pid_file")"
+        sleep 5
+        status="$(run_connector 15000)"
+        [[ "$status" != "200" ]] || fail "a connectors runtime of another tenant completed a $tenant job"
+fi
 
 printf "\nPhysical tenant tests passed.\n"
