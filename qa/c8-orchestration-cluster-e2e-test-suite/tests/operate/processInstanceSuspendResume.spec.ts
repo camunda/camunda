@@ -468,8 +468,7 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     );
   });
 
-  // Skipped due to bug 64086: https://github.com/camunda/camunda/issues/64086
-  test.skip('Cancelling suspended instances from the toolbar terminates them', async ({
+  test('Cancelling suspended instances from the toolbar terminates them', async ({
     request,
     page,
     operateHomePage,
