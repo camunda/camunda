@@ -111,6 +111,42 @@ func ScrubTenantEnv(env []string) []string {
 	return out
 }
 
+// GeneratedConfigPath is where the generated tenant config lives.
+func GeneratedConfigPath(baseDir string) string {
+	return filepath.Join(baseDir, "configuration", GeneratedConfigName)
+}
+
+// RenderForPort renders the generated config with the start port recorded; nil for no tenants.
+func RenderForPort(tenants []types.PhysicalTenant, storageType string, port int) ([]byte, error) {
+	if len(tenants) == 0 {
+		return nil, nil
+	}
+	content, err := Render(tenants, storageType)
+	if err != nil {
+		return nil, err
+	}
+	if port > 0 {
+		content = append([]byte(fmt.Sprintf("%s%d\n", portMarker, port)), content...)
+	}
+	return content, nil
+}
+
+// ApplyGeneratedConfig writes content to the generated config path, or removes the file when
+// content is empty, so a stale file from an earlier start never leaks into this one.
+func ApplyGeneratedConfig(baseDir string, content []byte) error {
+	path := GeneratedConfigPath(baseDir)
+	if len(content) == 0 {
+		if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return err
+		}
+		return nil
+	}
+	if err := atomicWrite(path, content, 0o644); err != nil {
+		return fmt.Errorf("failed to write %s: %w", path, err)
+	}
+	return nil
+}
+
 // WriteGeneratedConfig writes (or, with no tenants, removes) the generated config file.
 func WriteGeneratedConfig(baseDir string, tenants []types.PhysicalTenant, storageType string) (string, error) {
 	return WriteGeneratedConfigForPort(baseDir, tenants, storageType, 0)

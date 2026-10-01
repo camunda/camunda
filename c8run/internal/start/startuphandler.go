@@ -380,6 +380,11 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 		os.Exit(1)
 	}
 
+	if err := physicaltenants.ApplyGeneratedConfig(parentDir, settings.PhysicalTenantsConfig); err != nil {
+		fmt.Printf("Failed to write physical tenant configuration: %v\n", err)
+		os.Exit(1)
+	}
+
 	err = overrides.SetEnvVars()
 	if err != nil {
 		fmt.Println("Failed to set envVars:", err)
@@ -468,7 +473,15 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 			return
 		}
 	}, func() error {
-		return health.QueryCamunda(ctx, c8, "Camunda", settings, startupHealthCheckRetries)
+		err := health.QueryCamunda(ctx, c8, "Camunda", settings, startupHealthCheckRetries)
+		var notReady *health.TenantsNotReadyError
+		if errors.As(err, &notReady) {
+			// Camunda and the other tenants are usable; keep them running and report the
+			// failed tenants once startup finishes instead of tearing everything down.
+			state.NotReadyTenants = notReady.IDs
+			return nil
+		}
+		return err
 	}, stop)
 
 	if ctx.Err() != nil {

@@ -74,12 +74,17 @@ func applyPhysicalTenants(baseDir, camundaVersion string, settings *types.C8RunS
 		return fmt.Errorf("physical tenants require Camunda 8.%d or newer, but this c8run bundles Camunda %s. Remove them with `c8run tenants reset` or upgrade c8run", physicaltenants.MinCamundaMinor, camundaVersion)
 	}
 
-	path, err := physicaltenants.WriteGeneratedConfigForPort(baseDir, res.Tenants, storageType, settings.Port)
+	content, err := physicaltenants.RenderForPort(res.Tenants, storageType, settings.Port)
 	if err != nil {
 		return err
 	}
 	settings.PhysicalTenants = res.Tenants
-	settings.PhysicalTenantsConfigPath = path
+	// Written by StartCommand only once startup is certain to proceed (after the port check),
+	// so a refused second start never changes what `c8run tenants list` reports as active.
+	settings.PhysicalTenantsConfig = content
+	if len(res.Tenants) > 0 {
+		settings.PhysicalTenantsConfigPath = physicaltenants.GeneratedConfigPath(baseDir)
+	}
 	settings.PhysicalTenantsEnv = physicaltenants.CredentialEnv(res.Tenants)
 	if len(res.Tenants) > 0 {
 		ids := make([]string, 0, len(res.Tenants))
@@ -105,14 +110,14 @@ func portFree(port int) bool {
 // gives them precedence over YAML, so they decide which isolation keys c8run must generate.
 var storageTypeEnv = []string{"CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "CAMUNDA_DATA_SECONDARY_STORAGE_TYPE"}
 
-// effectiveStorageType returns the secondary-storage type Camunda will actually use:
-// JAVA_OPTS system properties, then environment variables, then the YAML-detected type.
+// effectiveStorageType returns the secondary-storage type Camunda will actually use, in JVM
+// and Spring precedence: JAVA_OPTS (command line, so it wins over JDK_JAVA_OPTIONS, which the
+// launcher prepends), then JDK_JAVA_OPTIONS, then environment variables, then the YAML type.
+// Within one option string the last -D wins, as it does in the JVM.
 func effectiveStorageType(fromYAML string) (string, error) {
-	for _, opt := range strings.Fields(os.Getenv("JAVA_OPTS")) {
-		for _, key := range []string{"-Dcamunda.data.secondary-storage.type=", "-Dcamunda.data.secondaryStorage.type="} {
-			if strings.HasPrefix(opt, key) {
-				return strings.TrimSpace(strings.TrimPrefix(opt, key)), nil
-			}
+	for _, source := range []string{"JAVA_OPTS", "JDK_JAVA_OPTIONS"} {
+		if value, ok := lastSystemProperty(os.Getenv(source), "camunda.data.secondary-storage.type", "camunda.data.secondaryStorage.type"); ok {
+			return value, nil
 		}
 	}
 	for _, key := range storageTypeEnv {
@@ -127,6 +132,18 @@ func effectiveStorageType(fromYAML string) (string, error) {
 	return fromYAML, nil
 }
 
+func lastSystemProperty(options string, names ...string) (string, bool) {
+	value, found := "", false
+	for _, opt := range strings.Fields(options) {
+		for _, name := range names {
+			if prefix := "-D" + name + "="; strings.HasPrefix(opt, prefix) {
+				value, found = strings.TrimSpace(strings.TrimPrefix(opt, prefix)), true
+			}
+		}
+	}
+	return value, found
+}
+
 // envDeclaresTenants reports whether physical tenants are already declared outside c8run,
 // through environment variables or JAVA_OPTS system properties.
 func envDeclaresTenants() bool {
@@ -135,7 +152,8 @@ func envDeclaresTenants() bool {
 			return true
 		}
 	}
-	return strings.Contains(os.Getenv("JAVA_OPTS"), "-Dcamunda.physical-tenants.")
+	return strings.Contains(os.Getenv("JAVA_OPTS"), "-Dcamunda.physical-tenants.") ||
+		strings.Contains(os.Getenv("JDK_JAVA_OPTIONS"), "-Dcamunda.physical-tenants.")
 }
 
 // reservedPorts are ports c8run's own processes bind, never handed to a tenant connectors runtime.

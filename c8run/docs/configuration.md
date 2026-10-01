@@ -91,7 +91,7 @@ The generated file `configuration/physical-tenants.generated.yaml` holds only st
 - Elasticsearch / OpenSearch: `index-prefix: <id>` plus per-tenant ILM/ISM policy names.
 - `none`: no storage keys.
 
-Isolation keys follow the effective storage type, in Spring's order: `-Dcamunda.data.secondary-storage.type` in `JAVA_OPTS`, then `CAMUNDA_DATA_SECONDARYSTORAGE_TYPE`, then the YAML type.
+Isolation keys follow the effective storage type, in JVM and Spring order: `-Dcamunda.data.secondary-storage.type` in `JAVA_OPTS`, then in `JDK_JAVA_OPTIONS` (last `-D` wins), then `CAMUNDA_DATA_SECONDARYSTORAGE_TYPE`, then the YAML type. The file is written only after the port check passes, so a refused second `start` never changes what `tenants list` reports as active.
 
 It is loaded via `--spring.config.additional-location` after `configuration/` and before the user `--config`, so user settings win. The file is removed when no tenants are active and is read by `tenants list` to tell "active" from "pending restart".
 
@@ -105,6 +105,6 @@ Per-tenant connectors reuse `ConnectorsCmd` and append `SERVER_PORT` and `CAMUND
 
 c8run-managed tenants require `C8RUN_SECRETS_MODE=local`; in external mode startup fails with guidance, because tenants would otherwise inherit one shared external store.
 
-After Camunda reports healthy, each tenant's `/physical-tenants/<id>/v2/topology` is probed and the startup summary prints a per-tenant table, naming any tenant that is not ready.
+If a tenant is not ready, Camunda and the healthy tenants keep running, and `start` exits 1 naming the failed tenants. After Camunda reports healthy, each tenant's `/physical-tenants/<id>/v2/topology` is probed and the startup summary prints a per-tenant table, naming any tenant that is not ready.
 
 `e2e_tests/physical_tenants_tests.sh` checks REST and gRPC (`Camunda-Physical-Tenant`) routing, cross-tenant login rejection, deployment isolation, per-tenant secrets, and per-tenant connectors. CI runs it in the c8run unix job with authorizations on and a tenant-specific user.

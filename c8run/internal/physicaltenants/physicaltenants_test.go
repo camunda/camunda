@@ -382,3 +382,16 @@ func TestResolveDefersToEnvironmentTenants(t *testing.T) {
 	_, err = Resolve(ResolveInput{Store: store, EnvDeclaresTenants: true, FlagIDs: []string{"b"}})
 	assert.ErrorContains(t, err, "cannot be combined")
 }
+
+func TestApplyGeneratedConfig(t *testing.T) {
+	base := t.TempDir()
+	content, err := RenderForPort([]types.PhysicalTenant{{ID: "a"}}, "rdbms", 8090)
+	require.NoError(t, err)
+	require.NoError(t, ApplyGeneratedConfig(base, content))
+	assert.Equal(t, 8090, LastStartPort(base))
+	require.NoError(t, ApplyGeneratedConfig(base, nil))
+	assert.NoFileExists(t, GeneratedConfigPath(base))
+	empty, err := RenderForPort(nil, "rdbms", 8090)
+	require.NoError(t, err)
+	assert.Nil(t, empty)
+}

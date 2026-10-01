@@ -141,10 +141,12 @@ func TestTenantsExternalMode(t *testing.T) {
 func TestApplyPhysicalTenantsFromFlag(t *testing.T) {
 	base := t.TempDir()
 	t.Setenv(pt.FileEnv, filepath.Join(t.TempDir(), pt.FileName))
-	settings := types.C8RunSettings{Username: "demo", Password: "demo", DisableConnectors: true, PhysicalTenantsFlag: []string{"a,b"}, SecondaryStorageType: "rdbms"}
+	settings := types.C8RunSettings{Port: 8080, Username: "demo", Password: "demo", DisableConnectors: true, PhysicalTenantsFlag: []string{"a,b"}, SecondaryStorageType: "rdbms"}
 	require.NoError(t, applyPhysicalTenants(base, "8.10.0", &settings))
 	assert.Len(t, settings.PhysicalTenants, 2)
 	assert.Equal(t, filepath.Join(base, "configuration", pt.GeneratedConfigName), settings.PhysicalTenantsConfigPath)
+	assert.NoFileExists(t, settings.PhysicalTenantsConfigPath, "nothing is written until startup passes the port check")
+	assert.Contains(t, string(settings.PhysicalTenantsConfig), "c8run-port")
 	assert.Equal(t, "demo", settings.PhysicalTenantsEnv["CAMUNDA_PHYSICALTENANTS_A_SECURITY_INITIALIZATION_USERS_0_USERNAME"])
 	_, exported := os.LookupEnv("CAMUNDA_PHYSICALTENANTS_A_SECURITY_INITIALIZATION_USERS_0_USERNAME")
 	assert.False(t, exported, "tenant logins must not leak into c8run's own environment")
@@ -193,9 +195,12 @@ func TestEffectiveStorageTypePrecedence(t *testing.T) {
 	t.Setenv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "elasticsearch")
 	got, _ = effectiveStorageType("rdbms")
 	assert.Equal(t, "elasticsearch", got)
-	t.Setenv("JAVA_OPTS", "-Xmx1g -Dcamunda.data.secondary-storage.type=opensearch")
+	t.Setenv("JDK_JAVA_OPTIONS", "-Dcamunda.data.secondary-storage.type=elasticsearch -Dcamunda.data.secondary-storage.type=opensearch")
 	got, _ = effectiveStorageType("rdbms")
-	assert.Equal(t, "opensearch", got)
+	assert.Equal(t, "opensearch", got, "JDK_JAVA_OPTIONS beats env vars; the last -D wins")
+	t.Setenv("JAVA_OPTS", "-Xmx1g -Dcamunda.data.secondary-storage.type=rdbms")
+	got, _ = effectiveStorageType("elasticsearch")
+	assert.Equal(t, "rdbms", got, "JAVA_OPTS is on the command line and beats JDK_JAVA_OPTIONS")
 }
 
 func TestApplyPhysicalTenantsUsesEffectiveStorageType(t *testing.T) {
@@ -204,8 +209,7 @@ func TestApplyPhysicalTenantsUsesEffectiveStorageType(t *testing.T) {
 	t.Setenv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "elasticsearch")
 	settings := types.C8RunSettings{DisableConnectors: true, PhysicalTenantsFlag: []string{"a"}, SecondaryStorageType: "rdbms"}
 	require.NoError(t, applyPhysicalTenants(base, "8.10.0", &settings))
-	content, err := os.ReadFile(settings.PhysicalTenantsConfigPath)
-	require.NoError(t, err)
+	content := settings.PhysicalTenantsConfig
 	assert.Contains(t, string(content), "index-prefix: a")
 	assert.NotContains(t, string(content), "rdbms")
 }

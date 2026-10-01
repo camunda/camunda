@@ -630,6 +630,12 @@ func main() {
 
 	select {
 	case <-workDone:
+		if len(state.NotReadyTenants) > 0 {
+			fmt.Fprintf(os.Stderr, "\nCamunda is running, but physical tenant(s) %s did not become ready.\n"+
+				"Check log/camunda.log for physical tenant errors, fix them, then run `./c8run stop && ./c8run start`.\n",
+				strings.Join(state.NotReadyTenants, ", "))
+			os.Exit(1)
+		}
 		log.Info().Msg("All processes are running and healthy, exiting script...")
 	case <-shutdownWorkDone:
 		log.Info().Msg("All processes have been shut down, exiting script...")
