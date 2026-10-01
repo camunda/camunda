@@ -27,12 +27,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.mockito.stubbing.Answer;
 
 class AsyncDocumentPipelineTest {
 
   @Test
   void shouldProcessInBatches() {
     final BatchProcessor<Integer, Integer> batchProcessor = mock(BatchProcessor.class);
+    when(batchProcessor.process(any())).then(returnBatchSize());
 
     final var builder =
         AsyncDocumentPipeline.Builder.builder(batchSupplier(1, 10), batchProcessor)
@@ -57,7 +59,6 @@ class AsyncDocumentPipelineTest {
   @Test
   void shouldFailIfNonRecoverableErrorOccursReadingBatches() {
     final BatchProcessor<Integer, Integer> batchProcessor = mock(BatchProcessor.class);
-
     when(batchProcessor.process(any())).thenThrow(new RuntimeException("simulated error"));
 
     final var builder =
@@ -84,10 +85,10 @@ class AsyncDocumentPipelineTest {
 
     when(batchProcessor.process(any()))
         .thenThrow(new RetryableException())
-        .thenReturn(CompletableFuture.completedFuture(null))
-        .thenReturn(CompletableFuture.completedFuture(null))
+        .then(returnBatchSize())
+        .then(returnBatchSize())
         .thenThrow(new RetryableException())
-        .thenReturn(CompletableFuture.completedFuture(null));
+        .then(returnBatchSize());
 
     final var retryRecorder = mock(Runnable.class);
 
@@ -129,8 +130,8 @@ class AsyncDocumentPipelineTest {
 
     when(batchProcessor.process(any()))
         .thenThrow(new RetryableException())
-        .thenReturn(CompletableFuture.completedFuture(null))
-        .thenReturn(CompletableFuture.completedFuture(null))
+        .then(returnBatchSize())
+        .then(returnBatchSize())
         .thenThrow(new RetryableException());
 
     final var retryRecorder = mock(Runnable.class);
@@ -173,10 +174,11 @@ class AsyncDocumentPipelineTest {
 
     when(batchProcessor.process(any()))
         .thenReturn(CompletableFuture.failedFuture(new SocketTimeoutException()))
-        .thenReturn(CompletableFuture.completedFuture(null))
-        .thenReturn(CompletableFuture.completedFuture(null))
+        .then(returnBatchSize())
+        .then(returnBatchSize())
+        .then(returnBatchSize())
         .thenReturn(CompletableFuture.failedFuture(new SocketTimeoutException()))
-        .thenReturn(CompletableFuture.completedFuture(null));
+        .then(returnBatchSize());
 
     final var retryRecorder = mock(Runnable.class);
 
@@ -312,6 +314,13 @@ class AsyncDocumentPipelineTest {
       }
 
       return CompletableFuture.completedFuture(DocumentBatch.from(docs, nextSearchAfter));
+    };
+  }
+
+  private static Answer<Object> returnBatchSize() {
+    return inv -> {
+      final DocumentBatch<?, ?> batch = inv.getArgument(0);
+      return CompletableFuture.completedFuture(batch.documents().size());
     };
   }
 
