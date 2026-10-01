@@ -47,7 +47,7 @@ Coordinator selection stays deterministic and independent of zone priority. When
 - Integer `nodeId` remains meaningful only in non-zoned clusters; clients and tooling relying on it must switch to `brokerId` before adopting zones.
 - Zones are configured as a list rather than a map keyed by name: a list is much easier to set through environment variables and YAML, and a map would add little. List order is significant, as it drives the migration slot layout.
 - The coordinator lives in the zone that sorts first by name among brokers with node index 0, which is not necessarily the highest-priority zone. This is an accepted compromise in exchange for a deterministic, priority-independent coordinator.
-- Zone operations are planned across every partition group, building on the multi-group cluster configuration model of [dynamic-config ADR-0001](../../../zeebe/dynamic-config/docs/adr/0001-multi-partition-group-cluster-configuration.md).
+- Zone operations are planned across every partition group, building on the multi-group cluster configuration model of [dynamic-config ADR-0001](https://github.com/camunda/camunda/blob/main/zeebe/dynamic-config/docs/adr/0001-multi-partition-group-cluster-configuration.md).
 
 ## Source
 
@@ -57,5 +57,5 @@ Coordinator selection stays deterministic and independent of zone priority. When
 - [#51986](https://github.com/camunda/camunda/issues/51986) (internal) — migration from bare to zoned identities. [#54106](https://github.com/camunda/camunda/issues/54106) (internal) — zone name constraints.
 - [#51586](https://github.com/camunda/camunda/issues/51586), [#51998](https://github.com/camunda/camunda/issues/51998), [#57589](https://github.com/camunda/camunda/issues/57589) (internal) — API backward compatibility.
 - [#51953](https://github.com/camunda/camunda/issues/51953) (internal) — rejected primary-zone coordinator selection.
-- [dynamic-config ADR-0001](../../../zeebe/dynamic-config/docs/adr/0001-multi-partition-group-cluster-configuration.md) — multi-partition-group cluster configuration.
+- [dynamic-config ADR-0001](https://github.com/camunda/camunda/blob/main/zeebe/dynamic-config/docs/adr/0001-multi-partition-group-cluster-configuration.md) — multi-partition-group cluster configuration.
 
