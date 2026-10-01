@@ -693,7 +693,8 @@ test.describe.serial('Process Instance Migration', () => {
     });
   });
 
-  test('Migrated tasks', async ({
+  // Skipped due to bug #59919: https://github.com/camunda/camunda/issues/59919
+  test.skip('Migrated tasks', async ({
     page,
     operateFiltersPanelPage,
     operateProcessesPage,
