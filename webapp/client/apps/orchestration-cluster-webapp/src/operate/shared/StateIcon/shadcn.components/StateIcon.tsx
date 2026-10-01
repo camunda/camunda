@@ -18,7 +18,7 @@ import {
 import type {DecisionInstanceState, ProcessInstanceState} from '@camunda/camunda-api-zod-schemas/8.11';
 import {cn} from '#/shared/cn';
 
-type Props = {
+type Props = React.ComponentProps<typeof CircleAlert> & {
 	state: ProcessInstanceState | DecisionInstanceState | 'INCIDENT';
 	size: React.ComponentProps<typeof TriangleAlert>['size'];
 };
@@ -35,7 +35,7 @@ const stateIconsMap: Record<Props['state'], {Icon: typeof TriangleAlert; classNa
 	UNKNOWN: {Icon: CircleHelp},
 };
 
-const StateIcon: React.FC<Props> = ({state, size}) => {
+const StateIcon: React.FC<Props> = ({state, size, className: classNameProp, ...rest}) => {
 	const {Icon, className} = stateIconsMap[state];
 
 	return (
@@ -44,7 +44,8 @@ const StateIcon: React.FC<Props> = ({state, size}) => {
 			data-testid={`${state}-icon`}
 			aria-hidden="true"
 			focusable="false"
-			className={cn('shrink-0', className)}
+			{...rest}
+			className={cn('shrink-0', className, classNameProp)}
 		/>
 	);
 };

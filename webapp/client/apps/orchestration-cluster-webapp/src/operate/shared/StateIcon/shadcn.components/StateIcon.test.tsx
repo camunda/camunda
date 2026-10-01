@@ -51,4 +51,11 @@ describe('<StateIcon />', () => {
 		await expect.element(icon).toHaveAttribute('width', '24');
 		await expect.element(icon).toHaveAttribute('height', '24');
 	});
+
+	it('should forward caller-provided props, such as a per-row data-testid override', async () => {
+		const screen = await render(<StateIcon state="ACTIVE" size={24} data-testid="ACTIVE-icon-row-123" />);
+
+		await expect.element(screen.getByTestId('ACTIVE-icon-row-123')).toBeVisible();
+		await expect.element(screen.getByTestId('ACTIVE-icon')).not.toBeInTheDocument();
+	});
 });
