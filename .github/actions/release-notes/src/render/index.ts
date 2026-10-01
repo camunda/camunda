@@ -102,14 +102,34 @@ function sectionRank(name: string): number {
   return index === -1 ? SECTION_ORDER.length : index;
 }
 
+/** Grouped by package, not by its own PR; anything with a linked issue keeps issue grouping. */
+function isDependencyBump(pr: RenderPrInput): boolean {
+  return (pr.dependencies?.length ?? 0) > 0 && pr.issueNumbers.length === 0;
+}
+
+/** Issue-less bumps are full-asset only: on 8.10.0 they were ~43k of a
+ *  143k-char customer body, pushing it past GitHub's 125,000-char release body
+ *  limit. A bump that delivers an issue (a CVE fix) stays visible, and so does
+ *  every bump of a package one breaking bump touched — else its range splits. */
+function assetOnlyDependencyBumps(prs: readonly RenderPrInput[]): Set<RenderPrInput> {
+  const bumps = prs.filter(isDependencyBump);
+  const breakingPackages = new Set(
+    bumps.filter((pr) => pr.breaking).flatMap((pr) => (pr.dependencies ?? []).map((dependency) => dependency.name)),
+  );
+  return new Set(
+    bumps.filter((pr) => !(pr.dependencies ?? []).some((dependency) => breakingPackages.has(dependency.name))),
+  );
+}
+
+function dependencyPointer(count: number, version: string): string {
+  const noun = count === 1 ? 'dependency update is' : 'dependency updates are';
+  return `${count} ${noun} listed in the full changelog, \`CHANGELOG-${version}.md\`.`;
+}
+
 /** Where a group's PRs disagree on section, the most customer-visible one
  *  wins (ranked by SECTION_ORDER) rather than "whichever PR closed the
  *  issue" — see GENERATOR.md § 6 for why. */
 function toEntries(prs: readonly RenderPrInput[]): RenderEntry[] {
-  // Grouped by package, not by its own PR; anything with a linked issue keeps issue grouping below.
-  const isDependencyBump = (pr: RenderPrInput): boolean =>
-    (pr.dependencies?.length ?? 0) > 0 && pr.issueNumbers.length === 0;
-
   const grouped = new Map<string, RenderPrInput[]>();
   for (const pr of prs) {
     if (isDependencyBump(pr)) continue;
@@ -286,10 +306,17 @@ export function render(all: readonly RenderPrInput[], options: RenderOptions): R
   const failureReason = guardFailed ? describeGuardFailure(unattributed) : undefined;
   const unattributedReason = options.unattributedReason ?? '';
 
-  const customerPrs = prs.filter((pr) => pr.visibility === 'customer' && pr.section !== null);
+  const customerVisible = prs.filter((pr) => pr.visibility === 'customer' && pr.section !== null);
+  const assetOnly = assetOnlyDependencyBumps(customerVisible);
+  const customerPrs = customerVisible.filter((pr) => !assetOnly.has(pr));
+  const assetOnlyBumps = assetOnly.size;
   const assetPrs = all.filter((pr) => pr.section !== null);
 
-  const customerBody = renderSectionedBody(customerPrs);
+  const sectionedCustomerBody = renderSectionedBody(customerPrs);
+  const customerBody =
+    assetOnlyBumps > 0
+      ? [sectionedCustomerBody, dependencyPointer(assetOnlyBumps, options.version)].filter(Boolean).join('\n\n')
+      : sectionedCustomerBody;
   const fullAsset = renderSectionedBody(assetPrs);
 
   const prsByIssue = new Map<number, RenderPrInput[]>(); // insertion-ordered: issues come out in walk order
