@@ -124,6 +124,38 @@ test.beforeEach(({network}) => {
 });
 
 test.describe('Operate processes page', () => {
+	test('should keep the unfinished migration hidden next to the batch Move action', async ({
+		network,
+		page,
+		operateProcessesPage,
+	}) => {
+		network.use(
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: [
+							createProcessDefinition({
+								processDefinitionId: 'my_simple_process',
+								processDefinitionKey: '123',
+								version: 1,
+							}),
+						],
+					}),
+				),
+			}),
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+			mockGetProcessDefinitionStatisticsEndpoint({
+				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
+			}),
+		);
+
+		await operateProcessesPage.goto('?process=my_simple_process&version=1');
+		await page.getByRole('checkbox', {name: 'Select instance 1001'}).check({force: true});
+
+		await expect(operateProcessesPage.moveButton).toBeVisible();
+		await expect(operateProcessesPage.migrateButton).toHaveCount(0);
+	});
+
 	test('should move a selected process instance and keep the filters and selection', async ({
 		network,
 		page,

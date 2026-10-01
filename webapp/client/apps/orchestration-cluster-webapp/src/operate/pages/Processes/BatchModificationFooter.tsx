@@ -12,7 +12,7 @@ import {useTranslation} from 'react-i18next';
 import {Button, Modal, Table, TableBody, TableCell, TableHead, TableRow} from '@carbon/react';
 import type {ProcessDefinitionSelection} from './DiagramPanel';
 import type {ProcessesNavigationBlocker} from './ProcessesLayout';
-import {getActiveModificationFilter} from './getActiveModificationFilter';
+import {getActiveInstancesFilter} from './getActiveInstancesFilter';
 import {getProcessDefinitionName} from './getProcessDefinitionName';
 import {BatchModificationActions, SummaryTableHeader, SummaryTitle} from './styled';
 import {useBatchModificationStatistics, type BatchModificationScope} from './useBatchModificationStatistics';
@@ -56,7 +56,7 @@ function BatchModificationFooter({
 	const count = useBatchModificationStatistics({definitionKey, sourceElementId, scope});
 	const isTargetElementSelected = targetElementId !== undefined;
 	const isScopeReviewable =
-		scope.selectedCount >= 1 && getActiveModificationFilter(scope.filter) !== null && !isDefinitionChanged;
+		scope.selectedCount >= 1 && getActiveInstancesFilter(scope.filter) !== null && !isDefinitionChanged;
 	const isExitConfirmationOpen = isExitOpen || blocker.status === 'blocked';
 
 	return (
