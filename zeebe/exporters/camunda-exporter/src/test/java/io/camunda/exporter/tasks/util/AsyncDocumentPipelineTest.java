@@ -10,6 +10,9 @@ package io.camunda.exporter.tasks.util;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.BatchProcessor;
@@ -20,6 +23,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -249,6 +253,41 @@ class AsyncDocumentPipelineTest {
     inOrder.verifyNoMoreInteractions();
   }
 
+  @Test
+  void shouldBeAbleToSpecifyExceptionsThatReduceBatchSizeWithRetrying() {
+    final BatchProcessor<Integer, Integer> batchProcessor = mock(BatchProcessor.class);
+
+    when(batchProcessor.process(any()))
+        .thenReturn(CompletableFuture.failedFuture(new BatchReductionException()));
+
+    final var retryRecorder = mock(Runnable.class);
+
+    final var batchSize = new AtomicInteger(10);
+
+    final var builder =
+        AsyncDocumentPipeline.Builder.builder(batchSupplier(5, 16), batchProcessor)
+            .addBatchReductionException(BatchReductionException.class)
+            .minBatchSize(2)
+            .batchSize(batchSize)
+            .maxRetryAttempts(4)
+            .retryDelayMs(1)
+            .retryRecorder(retryRecorder);
+
+    final var future = builder.buildAndExecute();
+    assertThat(future)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableThat()
+        .withRootCauseInstanceOf(BatchReductionException.class);
+
+    verify(batchProcessor)
+        .process(DocumentBatch.from(List.of(5, 6, 7, 8, 9, 10, 11, 12, 13, 14), 14));
+    verifyNoMoreInteractions(batchProcessor);
+
+    verifyNoInteractions(retryRecorder);
+
+    assertThat(batchSize.get()).isEqualTo(5);
+  }
+
   // little batch supplier that runs through a sequence of numbers
   private BatchSupplier<Integer, Integer> batchSupplier(
       final int startInclusive, final int endInclusive) {
@@ -277,4 +316,6 @@ class AsyncDocumentPipelineTest {
   }
 
   static class RetryableException extends RuntimeException {}
+
+  static class BatchReductionException extends RuntimeException {}
 }
