@@ -24,6 +24,7 @@ import io.atomix.raft.protocol.LeadershipTransferInitiateRequest;
 import io.atomix.raft.protocol.LeadershipTransferResultRequest;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
 import io.atomix.raft.protocol.TimeoutNowRequest;
+import io.camunda.zeebe.test.util.junit.SlowTest;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
@@ -34,12 +35,14 @@ import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 /** Coverage for the leader-side rebalance settings (and overrides). */
 @RunWith(Parameterized.class)
+@Category(SlowTest.class)
 public class RaftLeadershipTransferConfigurationTest {
 
   private static final Duration HEARTBEAT_INTERVAL = Duration.ofMillis(100);
