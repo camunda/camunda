@@ -9,7 +9,11 @@ package with two entrypoints that import **one** reference parser:
   syncs a sticky comment and a `no-issue` label. Live now, **warn-only**.
 - `generate/` — the **release-notes generator**
   ([#57713](https://github.com/camunda/camunda/issues/57713)): builds the changelog
-  from the PRs shipped in a release range. **Not built yet.**
+  from the PRs shipped in a release range. Documented in full in
+  **[GENERATOR.md](GENERATOR.md)** — read that one when a release job fails, or when
+  a release's notes are missing something or carry something they should not.
+
+The rest of this file is about the gate.
 
 ## Why this exists
 

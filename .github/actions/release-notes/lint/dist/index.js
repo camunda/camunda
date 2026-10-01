@@ -214,6 +214,7 @@ async function evaluateGate(resolver, input) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.summary = exports.setFailed = exports.warning = exports.info = exports.setOutput = exports.getBooleanInput = exports.getInput = void 0;
 const node_fs_1 = __nccwpck_require__(24);
+const node_crypto_1 = __nccwpck_require__(598);
 /**
  * ponytail: the ~7 GitHub Actions toolkit calls we actually use, inlined.
  * @actions/core drags in @actions/exec + http-client + io (~400kB) for OIDC and
@@ -238,8 +239,16 @@ const getInput = (name, opts = {}) => {
 exports.getInput = getInput;
 const getBooleanInput = (name) => (0, exports.getInput)(name).toLowerCase() === 'true';
 exports.getBooleanInput = getBooleanInput;
-// GITHUB_OUTPUT file protocol with a heredoc delimiter (safe for multiline values).
-const setOutput = (name, value) => appendEnvFile('GITHUB_OUTPUT', `${name}<<_GHA_EOF_\n${value}\n_GHA_EOF_\n`);
+// GITHUB_OUTPUT file protocol with a heredoc delimiter. Random per call, like
+// @actions/core, so a value that happens to contain the literal delimiter
+// line (a contributor-authored PR title, passed straight into an output)
+// can't truncate the value and inject arbitrary following output lines.
+const setOutput = (name, value) => {
+    const delimiter = `ghadelimiter_${(0, node_crypto_1.randomUUID)()}`;
+    if (value.includes(delimiter))
+        throw new Error(`Unexpected input: value matches delimiter "${delimiter}"`);
+    appendEnvFile('GITHUB_OUTPUT', `${name}<<${delimiter}\n${value}\n${delimiter}\n`);
+};
 exports.setOutput = setOutput;
 const info = (msg) => {
     process.stdout.write(`${msg}\n`);
@@ -264,6 +273,13 @@ class Summary {
         this.buf += `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>\n`;
         return this;
     }
+    /** Appends already-formatted Markdown verbatim — GITHUB_STEP_SUMMARY renders
+     *  as GitHub-flavored Markdown, so a pre-rendered document (e.g. the
+     *  generated changelog) is written as-is rather than escaped as HTML. */
+    addRaw(markdown) {
+        this.buf += `${markdown}\n`;
+        return this;
+    }
     async write() {
         appendEnvFile('GITHUB_STEP_SUMMARY', this.buf);
         this.buf = '';
@@ -280,23 +296,102 @@ exports.summary = new Summary();
 
 /**
  * Shared GitHub REST plumbing for the three fetch-based adapters (resolver,
- * comment, labels). One definition of the bot's auth / API-version / user-agent
- * headers and the per-repo base URL — previously copied verbatim into each
- * adapter. The adapters stay octokit-free (a handful of endpoints each); this is
- * just the common boilerplate, not a client.
+ * comment, labels): one definition of auth/headers/retry, previously copied
+ * into each. Stays octokit-free — a handful of endpoints, not a client.
+ *
+ * `retryableStatus`/`backoffMs`/`MAX_RETRIES` are also reused by resolve/index.ts
+ * for its GraphQL transport — same throttle shapes, different transport, so the
+ * classification logic is exported rather than duplicated there.
  */
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.GITHUB_API = void 0;
+exports.MAX_RETRIES = exports.GITHUB_API = void 0;
+exports.retryableStatus = retryableStatus;
+exports.backoffMs = backoffMs;
+exports.fetchWithRetry = fetchWithRetry;
+exports.fetchJsonWithRetry = fetchJsonWithRetry;
 exports.githubHeaders = githubHeaders;
 exports.repoApiUrl = repoApiUrl;
 exports.GITHUB_API = 'https://api.github.com';
 const USER_AGENT = 'camunda-release-notes-gate';
 const GITHUB_API_VERSION = '2022-11-28';
+exports.MAX_RETRIES = 5;
+const MAX_RETRY_AFTER_MS = 60_000; // beyond this the job should fail rather than hold a runner
+/** 429, or 403 with a `retry-after` (a bare 403 is a real permission failure).
+ *  5xx is transient. */
+async function retryableStatus(res) {
+    if (res.status === 429 || res.status >= 500)
+        return true;
+    if (res.status !== 403)
+        return false;
+    if (res.headers.get('retry-after') !== null)
+        return true;
+    if (res.headers.get('x-ratelimit-remaining') === '0')
+        return true;
+    // The secondary rate limit fires on concurrency, answers 403, and names
+    // itself only in the body while the primary counter still reads full.
+    try {
+        return /rate limit/i.test(await res.clone().text());
+    }
+    catch {
+        return false;
+    }
+}
+/** The server's own wait, when it names one, else exponential backoff. */
+function backoffMs(res, attempt) {
+    const header = res?.headers.get('retry-after') ?? null;
+    const seconds = header === null ? NaN : Number(header);
+    if (Number.isFinite(seconds) && seconds >= 0)
+        return Math.min(seconds * 1000, MAX_RETRY_AFTER_MS);
+    return 2 ** attempt * 1000;
+}
+/** `fetch` with backoff on a throttled or transient failure. Never retries a
+ *  non-throttle failure (bare 403, 404) — the caller sees those immediately. */
+async function fetchWithRetry(url, init, sleepImpl = (ms) => new Promise((resolve) => setTimeout(resolve, ms))) {
+    for (let attempt = 0;; attempt++) {
+        let res;
+        try {
+            res = await fetch(url, init);
+        }
+        catch (error) {
+            // fetch REJECTS on a socket-level failure (reset, DNS blip) instead of
+            // returning a Response, so this must be handled separately from status.
+            if (attempt >= exports.MAX_RETRIES - 1) {
+                const detail = error instanceof Error ? error.message : String(error);
+                throw new Error(`GitHub API request never completed past ${exports.MAX_RETRIES} attempts (${url}): ${detail}`);
+            }
+            await sleepImpl(backoffMs(null, attempt));
+            continue;
+        }
+        if (res.ok || !(await retryableStatus(res)))
+            return res;
+        if (attempt >= exports.MAX_RETRIES - 1) {
+            throw new Error(`GitHub API kept returning HTTP ${res.status} past ${exports.MAX_RETRIES} attempts (${url}).`);
+        }
+        await sleepImpl(backoffMs(res, attempt));
+    }
+}
+/** `fetchWithRetry` plus the body read — a truncated/empty body is retried
+ *  like any other transient (GitHub answers that way under load too) instead
+ *  of throwing a SyntaxError past the retry loop. */
+async function fetchJsonWithRetry(url, init, sleepImpl = (ms) => new Promise((resolve) => setTimeout(resolve, ms))) {
+    for (let attempt = 0;; attempt++) {
+        const res = await fetchWithRetry(url, init, sleepImpl);
+        if (!res.ok)
+            return { ok: false, status: res.status };
+        try {
+            return { ok: true, status: res.status, data: (await res.json()) };
+        }
+        catch {
+            if (attempt >= exports.MAX_RETRIES - 1) {
+                throw new Error(`GitHub API returned an unparseable body past ${exports.MAX_RETRIES} attempts (${url}).`);
+            }
+            await sleepImpl(backoffMs(null, attempt));
+        }
+    }
+}
 /** Auth + content-negotiation headers for the plain `GITHUB_TOKEN` every
- *  caller passes in. This action resolves from the PR head on `pull_request`
- *  (see the gate workflow's security-model header), so it must never be
- *  given a privileged token such as MONOREPO_RELEASE_APP. Pass `json: true`
- *  for write requests that send a JSON body. */
+ *  caller passes in — never a privileged token (this action resolves from
+ *  the PR head on `pull_request`). Pass `json: true` for a JSON body. */
 function githubHeaders(token, opts = {}) {
     const headers = {
         authorization: `Bearer ${token}`,
@@ -742,14 +837,12 @@ function decide(refs, optOut) {
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.GithubResolver = void 0;
+exports.prioritizeAndCap = prioritizeAndCap;
 const github_1 = __nccwpck_require__(631);
-/** A PR body can carry at most this many refs to the API. A legitimate PR never
- *  needs more than a handful — this bounds the worst case (a body stuffed with
- *  hundreds of `#N` shorthands on `pull_request_target`) to a fixed cost. */
+/** Bounds the worst case — a body stuffed with hundreds of `#N` shorthands
+ *  on `pull_request_target` — to a fixed cost. */
 const MAX_REFS = 20;
-/** How many classify calls run concurrently. Caps the fan-out against GitHub's
- *  API even after dedup + the cap above, so a burst of distinct numbers cannot
- *  open dozens of sockets at once. */
+/** Caps fan-out even after dedup + the cap above. */
 const CONCURRENCY = 5;
 /** Lower sorts first. Closing/backport refs decide the gate's verdict, so they
  *  must survive the MAX_REFS cap ahead of merely-informational refs. */
@@ -761,43 +854,47 @@ function priorityOf(ref) {
     return 2;
 }
 /**
+ * The refs a caller will actually classify, capped and priority-sorted so a
+ * dropped ref is always the least consequential one. Exported so the gate
+ * and the generator apply the SAME cap — a copied `MAX_REFS` would let them
+ * drift apart the moment either changed.
+ */
+function prioritizeAndCap(refs) {
+    return [...refs].sort((first, second) => priorityOf(first) - priorityOf(second)).slice(0, MAX_REFS);
+}
+/**
  * GitHub-API resolver: the only part of the pipeline that touches the network.
- * Classifies each ref as issue vs PR vs missing and flags cross-repo refs.
- *
+ * Classifies each ref as issue vs PR vs missing and flags cross-repo refs —
  * GitHub's issues API returns PRs too (a PR is an issue with a `pull_request`
- * field), so one lookup per number classifies both. Cross-repo refs are not
- * queried — they never satisfy the gate, so their target stays "missing".
+ * field), so one lookup per number classifies both.
  *
- * ponytail: plain fetch (Node 24 global) over octokit — we hit exactly one
- * endpoint; octokit would inline the whole REST client into the bundle.
+ * ponytail: plain fetch (Node 24 global) over octokit for this one endpoint.
+ * Transient responses retry via `fetchWithRetry` (../github) since PRs are
+ * processed serially — one un-retried 5xx would abort the whole job.
  */
 class GithubResolver {
     token;
     owner;
     repo;
+    sleepImpl;
     repoUrl;
     headers;
-    constructor(token, owner, repo) {
+    /** `classify` and `fetchIssueTitle` hit the same `/issues/N` endpoint, so a
+     *  title seen while classifying serves the later fetchIssueTitle call. */
+    titlesByNumber = new Map();
+    constructor(token, owner, repo, sleepImpl = (ms) => new Promise((resolve) => setTimeout(resolve, ms))) {
         this.token = token;
         this.owner = owner;
         this.repo = repo;
+        this.sleepImpl = sleepImpl;
         this.repoUrl = (0, github_1.repoApiUrl)(owner, repo);
         this.headers = (0, github_1.githubHeaders)(token);
     }
-    /**
-     * Resolve every ref, deduped (repeats of the same "#N" cost one API call),
-     * capped at MAX_REFS (a legitimate PR never needs more), and bounded to
-     * CONCURRENCY in flight — defense against a body engineered to fan out
-     * unbounded concurrent requests through the gate's token.
-     */
+    /** Resolve every ref: deduped, capped at MAX_REFS, bounded to CONCURRENCY
+     *  in flight — defense against a body engineered to fan out unbounded
+     *  concurrent requests through the gate's token. */
     async resolve(refs) {
-        // Closing/backport refs decide the gate's verdict; bare/"relates to" refs
-        // are informational. A stable sort keeps refs of equal priority in their
-        // original order, so when the cap below has to drop something, it drops
-        // the least consequential refs first instead of whichever came last in
-        // the body.
-        const prioritized = [...refs].sort((first, second) => priorityOf(first) - priorityOf(second));
-        const capped = prioritized.slice(0, MAX_REFS);
+        const capped = prioritizeAndCap(refs);
         const cache = new Map();
         const classifyCached = (ref) => {
             const key = `${ref.repo ?? ''}#${ref.number}`;
@@ -817,44 +914,58 @@ class GithubResolver {
                 results.push({ ...ref, target, crossRepo });
             });
         }
-        // Restore body order for the policy's messages — the priority sort above
-        // only controls what survives the cap, not how resolved refs get reported.
-        return results.sort((first, second) => first.index - second.index);
+        return results.sort((first, second) => first.index - second.index); // body order for messages — priority sort only controlled the cap
     }
-    /**
-     * Fetch a same-repo pull request's body for backport-hop validation, or null
-     * if it does not exist. Used to follow `Backport of #N` to the original PR and
-     * validate that PR's attribution (the backport inherits it — C7).
-     *
-     * A cross-repo marker (`Backport of owner/other#N`) resolves to null: this
-     * resolver is hardcoded to its own owner/repo, so #N there would name an
-     * unrelated PR in THIS repo. We only inherit attribution from our own repo.
-     */
+    /** A same-repo pull request's body, for backport-hop validation, or null if
+     *  it doesn't exist. Cross-repo (`Backport of owner/other#N`) resolves to
+     *  null: #N there would name an unrelated PR in THIS repo. */
     async fetchPullBody(number, repo) {
         if (this.isCrossRepo(repo))
             return null;
         const pull = await this.fetchPull(number);
         return pull?.body ?? null;
     }
-    /**
-     * Fetch the fields the gate evaluates for one same-repo pull request, or null
-     * if it does not exist.
-     *
-     * This is how the entrypoint obtains the PR under `workflow_run`, where the
-     * event payload carries no `pull_request` object at all. Fetching also means
-     * the body is read at evaluation time, so a stale or superseded trigger run
-     * can never evaluate an out-of-date body.
-     */
+    /** Same as {@link fetchPullBody} but the full fields, for the generator's
+     *  backport hop (attribution + inherit-original title/mergedAt). */
+    async fetchOriginalPull(number, repo) {
+        if (this.isCrossRepo(repo))
+            return null;
+        return this.fetchPull(number);
+    }
+    /** The fields the gate evaluates for one same-repo pull request, or null if
+     *  it doesn't exist. Fetched fresh rather than trusted from the webhook
+     *  payload, since `workflow_run` carries no `pull_request` object at all
+     *  and a stale trigger run must not evaluate an out-of-date body. */
     async fetchPull(number) {
-        const res = await fetch(`${this.repoUrl}/pulls/${number}`, {
-            headers: this.headers,
-        });
+        const res = await (0, github_1.fetchJsonWithRetry)(`${this.repoUrl}/pulls/${number}`, { headers: this.headers }, this.sleepImpl);
         if (res.status === 404)
             return null;
         if (!res.ok)
             throw new Error(`GitHub API ${res.status} fetching PR #${number}`);
-        const data = (await res.json());
-        return { body: data.body ?? '', title: data.title ?? '', authorLogin: data.user?.login };
+        const { data } = res;
+        return {
+            body: data.body ?? '',
+            title: data.title ?? '',
+            authorLogin: data.user?.login,
+            mergedAt: data.merged_at ?? undefined,
+        };
+    }
+    /** The live title of a same-repo issue, or null if it doesn't exist — the
+     *  generator shows this customer-facing wording, not the PR's dev title. */
+    async fetchIssueTitle(number) {
+        const cached = this.titlesByNumber.get(number);
+        if (cached !== undefined)
+            return cached;
+        const res = await (0, github_1.fetchJsonWithRetry)(`${this.repoUrl}/issues/${number}`, { headers: this.headers }, this.sleepImpl);
+        if (res.status === 404) {
+            this.titlesByNumber.set(number, null);
+            return null;
+        }
+        if (!res.ok)
+            throw new Error(`GitHub API ${res.status} fetching issue #${number}`);
+        const title = res.data.title ?? null;
+        this.titlesByNumber.set(number, title);
+        return title;
     }
     /** A ref points at a different repo than the one being gated (case-insensitive). */
     isCrossRepo(repo) {
@@ -867,15 +978,13 @@ class GithubResolver {
     async classify(ref) {
         if (this.isCrossRepo(ref.repo))
             return { target: 'missing', crossRepo: true };
-        const res = await fetch(`${this.repoUrl}/issues/${ref.number}`, {
-            headers: this.headers,
-        });
+        const res = await (0, github_1.fetchJsonWithRetry)(`${this.repoUrl}/issues/${ref.number}`, { headers: this.headers }, this.sleepImpl);
         if (res.status === 404)
             return { target: 'missing', crossRepo: false };
         if (!res.ok)
             throw new Error(`GitHub API ${res.status} resolving #${ref.number}`);
-        const data = (await res.json());
-        return { target: data.pull_request ? 'pullRequest' : 'issue', crossRepo: false };
+        this.titlesByNumber.set(ref.number, res.data.title ?? null);
+        return { target: res.data.pull_request ? 'pullRequest' : 'issue', crossRepo: false };
     }
 }
 exports.GithubResolver = GithubResolver;
@@ -990,6 +1099,13 @@ function isLinkExemptAuthor(login) {
     return login !== undefined && exports.BOT_LINK_EXEMPT.has(login);
 }
 
+
+/***/ }),
+
+/***/ 598:
+/***/ ((module) => {
+
+module.exports = require("node:crypto");
 
 /***/ }),
 
