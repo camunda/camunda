@@ -2722,7 +2722,7 @@ jobs:
     timeout-minutes: 20
     permissions: {}  # GITHUB_TOKEN unused in this job
     env:
-      TEST_OWNER: '@camunda/employee-engagement-tasklist'
+      TEST_OWNER: '@camunda/orchestration-cluster-webapps'
       TEST_PRODUCT: Orchestration Cluster Webapp
       TEST_TYPE: Build
       CLIENT_DIR: webapp/client
