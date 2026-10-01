@@ -24,35 +24,43 @@ import io.micrometer.core.instrument.Measurement;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.Objects;
+import org.agrona.CloseHelper;
 import org.assertj.core.data.Offset;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Tag("async-repl")
 @TestInstance(Lifecycle.PER_CLASS)
 abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer> {
 
   protected static final Duration DEFAULT_MAX_LAG = Duration.ofSeconds(3);
+  private static final Logger LOG = LoggerFactory.getLogger(AbstractAsyncReplicationIT.class);
 
   /** The replication cluster; created by {@link #createCluster()} in {@link #beforeAll()}. */
-  protected @AutoClose R cluster;
+  protected R cluster;
 
-  protected @AutoClose TestCamundaApplication testInstance;
-  protected @AutoClose CamundaClient camundaClient;
+  protected TestCamundaApplication testInstance;
+  protected CamundaClient camundaClient;
   protected MeterRegistry meterRegistry;
 
   /**
    * Creates the database replication cluster for this test. Called once before any test runs.
-   * Subclasses return a concrete cluster implementation (Postgres or MSSQL).
+   * Subclasses return a concrete cluster implementation for the database under test.
    */
   protected abstract R createCluster();
 
   protected Duration getMaxLag() {
     return DEFAULT_MAX_LAG;
+  }
+
+  protected Duration getExporterAcknowledgementTimeout() {
+    return Duration.ofMinutes(1);
   }
 
   /**
@@ -157,6 +165,12 @@ abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer>
     exporterAcknowledgedAll();
   }
 
+  @AfterAll
+  void afterAll() {
+    // preserve order, first shutdown Camunda, then the database
+    CloseHelper.closeAll(camundaClient, testInstance, cluster);
+  }
+
   protected void startProcessInstances(final int count) {
     for (int i = 0; i < count; i++) {
       startProcessInstance(camundaClient, "service_tasks_v1", "{\"xyz\":\"foo\"}");
@@ -189,14 +203,23 @@ abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer>
   }
 
   protected void exporterAcknowledgedAll() {
+    LOG.info("Waiting for exporter acknowledgement");
     Awaitility.await()
+        .pollInterval(Duration.ofSeconds(5))
         .ignoreExceptions()
-        .atMost(Duration.ofMinutes(1))
+        .atMost(getExporterAcknowledgementTimeout())
         .untilAsserted(
-            () ->
-                assertThat(getCurrentExporterPosition())
-                    // not all records are processed by the exporter, so we need a closeTo here
-                    .isCloseTo(getCurrentAcknowledgedExporterPosition(), Offset.offset(5L)));
+            () -> {
+              final long exporterPosition = getCurrentExporterPosition();
+              final long acknowledgedPosition = getCurrentAcknowledgedExporterPosition();
+              LOG.info(
+                  "Exporter acknowledgement progress: exported position {}, acknowledged position {}",
+                  exporterPosition,
+                  acknowledgedPosition);
+              assertThat(exporterPosition)
+                  // not all records are processed by the exporter, so we need a closeTo here
+                  .isCloseTo(acknowledgedPosition, Offset.offset(5L));
+            });
   }
 
   protected long getCurrentExporterPosition() {

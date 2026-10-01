@@ -101,7 +101,7 @@ class ReplicationLagProviderFactoryTest {
   }
 
   @Test
-  void shouldFailForUnsupportedDatabase() {
+  void shouldRejectTimeLagProviderForOracle() {
     // given
     final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
     when(vendorDatabaseProperties.databaseId()).thenReturn("oracle");
@@ -111,7 +111,22 @@ class ReplicationLagProviderFactoryTest {
 
     // when / then
     assertThatThrownBy(factory::create)
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Time-lag based replication monitoring is not supported for Oracle");
+  }
+
+  @Test
+  void shouldFailForUnsupportedDatabase() {
+    // given
+    final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
+    when(vendorDatabaseProperties.databaseId()).thenReturn("h2");
+    final var factory =
+        new ReplicationLagProviderFactory(
+            vendorDatabaseProperties, mock(ReplicationStatusMapper.class));
+
+    // when / then
+    assertThatThrownBy(factory::create)
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("unknown database id oracle");
+        .hasMessageContaining("unknown database id h2");
   }
 }

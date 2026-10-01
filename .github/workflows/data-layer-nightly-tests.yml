@@ -180,6 +180,20 @@ jobs:
       github.event_name == 'schedule' ||
       github.event_name == 'workflow_dispatch'
 
+  oracle-async-replication:
+    name: "Oracle Async Replication IT"
+    concurrency:
+      group: oracle-async-replication-test
+      cancel-in-progress: false
+    uses: ./.github/workflows/oracle-async-replication-test.yml
+    with:
+      oracle_byol_acknowledged: true
+    secrets: inherit
+    permissions: { }
+    if: |
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch'
+
   notify-failure:
     name: Notify on failure
     runs-on: ubuntu-latest
