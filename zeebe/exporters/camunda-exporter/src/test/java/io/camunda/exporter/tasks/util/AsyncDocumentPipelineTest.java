@@ -37,7 +37,7 @@ class AsyncDocumentPipelineTest {
     when(batchProcessor.process(any())).then(returnBatchSize());
 
     final var builder =
-        AsyncDocumentPipeline.Builder.builder(batchSupplier(1, 10), batchProcessor)
+        AsyncDocumentPipeline.builder(batchSupplier(1, 10), batchProcessor)
             .minBatchSize(1)
             .batchSize(3)
             .maxRetryAttempts(2);
@@ -62,7 +62,7 @@ class AsyncDocumentPipelineTest {
     when(batchProcessor.process(any())).thenThrow(new RuntimeException("simulated error"));
 
     final var builder =
-        AsyncDocumentPipeline.Builder.builder(batchSupplier(1, 10), batchProcessor)
+        AsyncDocumentPipeline.builder(batchSupplier(1, 10), batchProcessor)
             .minBatchSize(1)
             .batchSize(3)
             .maxRetryAttempts(2);
@@ -93,7 +93,7 @@ class AsyncDocumentPipelineTest {
     final var retryRecorder = mock(Runnable.class);
 
     final var builder =
-        AsyncDocumentPipeline.Builder.builder(batchSupplier(1, 10), batchProcessor)
+        AsyncDocumentPipeline.builder(batchSupplier(1, 10), batchProcessor)
             .minBatchSize(1)
             .batchSize(3)
             .addRetryableException(RetryableException.class)
@@ -137,7 +137,7 @@ class AsyncDocumentPipelineTest {
     final var retryRecorder = mock(Runnable.class);
 
     final var builder =
-        AsyncDocumentPipeline.Builder.builder(batchSupplier(1, 10), batchProcessor)
+        AsyncDocumentPipeline.builder(batchSupplier(1, 10), batchProcessor)
             .minBatchSize(1)
             .batchSize(3)
             .addRetryableException(RetryableException.class)
@@ -183,7 +183,7 @@ class AsyncDocumentPipelineTest {
     final var retryRecorder = mock(Runnable.class);
 
     final var builder =
-        AsyncDocumentPipeline.Builder.builder(batchSupplier(1, 10), batchProcessor)
+        AsyncDocumentPipeline.builder(batchSupplier(1, 10), batchProcessor)
             .minBatchSize(1)
             .batchSize(4)
             .maxRetryAttempts(2)
@@ -228,7 +228,7 @@ class AsyncDocumentPipelineTest {
     final var retryRecorder = mock(Runnable.class);
 
     final var builder =
-        AsyncDocumentPipeline.Builder.builder(batchSupplier(1, 10), batchProcessor)
+        AsyncDocumentPipeline.builder(batchSupplier(1, 10), batchProcessor)
             .minBatchSize(2)
             .batchSize(8)
             .maxRetryAttempts(4)
@@ -267,7 +267,7 @@ class AsyncDocumentPipelineTest {
     final var batchSize = new AtomicInteger(10);
 
     final var builder =
-        AsyncDocumentPipeline.Builder.builder(batchSupplier(5, 16), batchProcessor)
+        AsyncDocumentPipeline.builder(batchSupplier(5, 16), batchProcessor)
             .addBatchReductionException(BatchReductionException.class)
             .minBatchSize(2)
             .batchSize(batchSize)
