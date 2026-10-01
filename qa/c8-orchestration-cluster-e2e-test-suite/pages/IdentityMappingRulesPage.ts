@@ -38,6 +38,7 @@ export class IdentityMappingRulesPage {
   readonly deleteMappingRuleModalDeleteButton: Locator;
   readonly emptyStateLocator: Locator;
   readonly usersNavItem: Locator;
+  readonly rolesNavItem: Locator;
   readonly selectMappingRuleRow: (name: string) => Locator;
   readonly mappingRuleCell: (name: string) => Locator;
 
@@ -151,6 +152,7 @@ export class IdentityMappingRulesPage {
 
     this.emptyStateLocator = page.getByText('No mapping rules created yet');
     this.usersNavItem = page.getByText('Users');
+    this.rolesNavItem = page.getByText('Roles');
   }
 
   async navigateToMappingRules() {
