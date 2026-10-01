@@ -37,6 +37,7 @@ import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import java.time.InstantSource;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -80,6 +81,7 @@ public final class StandaloneJobCreateProcessor implements TypedRecordProcessor<
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final StandaloneJobExpiryCheckScheduler expiryChecker;
   private final JobProcessingMetrics jobMetrics;
+  private final InstantSource clock;
 
   public StandaloneJobCreateProcessor(
       final KeyGenerator keyGenerator,
@@ -92,7 +94,8 @@ public final class StandaloneJobCreateProcessor implements TypedRecordProcessor<
       final AsyncRequestBehavior asyncRequestBehavior,
       final BpmnJobActivationBehavior jobActivationBehavior,
       final StandaloneJobExpiryCheckScheduler expiryChecker,
-      final JobProcessingMetrics jobMetrics) {
+      final JobProcessingMetrics jobMetrics,
+      final InstantSource clock) {
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
@@ -107,6 +110,7 @@ public final class StandaloneJobCreateProcessor implements TypedRecordProcessor<
     this.jobActivationBehavior = jobActivationBehavior;
     this.expiryChecker = expiryChecker;
     this.jobMetrics = jobMetrics;
+    this.clock = clock;
   }
 
   @Override
@@ -230,7 +234,9 @@ public final class StandaloneJobCreateProcessor implements TypedRecordProcessor<
 
   private void createJob(final TypedRecord<JobRecord> command, final JobRecord job) {
     final long jobKey = keyGenerator.nextKey();
-    job.setExpiresAt(command.getTimestamp() + command.getValue().getTimeout());
+    // the expiry checker and the expire processor compare against this clock, not against record
+    // timestamps; the event keeps the computed expiry, so replay does not depend on the clock
+    job.setExpiresAt(clock.millis() + command.getValue().getTimeout());
 
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, job);
     asyncRequestBehavior.writeAsyncRequestReceived(jobKey, command);

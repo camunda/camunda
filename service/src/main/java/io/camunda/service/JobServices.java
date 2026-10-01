@@ -58,7 +58,9 @@ import org.agrona.concurrent.UnsafeBuffer;
 public final class JobServices<T> extends SearchQueryService<JobServices<T>, JobQuery, JobEntity> {
 
   static final Duration DEFAULT_STANDALONE_JOB_REQUEST_TIMEOUT = Duration.ofSeconds(10);
-  static final Duration STANDALONE_JOB_EXPIRY_MARGIN = Duration.ofMillis(500);
+  // the expiry checker can fire up to about a second late, and the expiry must answer the client
+  // before the request times out in the gateway
+  static final Duration STANDALONE_JOB_EXPIRY_MARGIN = Duration.ofSeconds(1);
 
   private final ActivateJobsHandler<T> activateJobsHandler;
   private final JobSearchClient jobSearchClient;

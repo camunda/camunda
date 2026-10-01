@@ -179,7 +179,8 @@ public final class JobEventProcessors {
                 asyncRequestBehavior,
                 bpmnBehaviors.jobActivationBehavior(),
                 standaloneJobExpiryChecker,
-                jobMetrics))
+                jobMetrics,
+                clock))
         .onCommand(
             ValueType.JOB,
             JobIntent.EXPIRE,
