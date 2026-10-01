@@ -26,7 +26,7 @@ Each zone declares `name`, `numberOfBrokers`, `numberOfReplicas`, and `priority`
 Static configuration only seeds it on first initialization; afterwards the gossiped cluster configuration is the source of truth, shared by every partition group. Adding or removing a zone and re-ordering zone priorities (e.g. a region failover) are cluster configuration changes applied through the cluster management API, not configuration edits followed by restarts.
 
 **D4. Zone awareness is opt-in and backward compatible.**
-Non-zoned clusters, including existing single- and dual-region setups, behave as before. Broker-facing APIs (gRPC `BrokerInfo`, REST `/v2/topology`, the cluster management API) expose a string `brokerId` alongside the now-deprecated integer `nodeId`. In a zoned cluster, inputs that identify a broker require the composite ID, since the same node index exists in every zone.
+Non-zoned clusters, including existing single- and dual-region setups, behave as before. gRPC `BrokerInfo` and REST `/v2/topology` expose a string `brokerId` alongside the now-deprecated integer `nodeId`. The cluster management API (`/actuator/cluster`) identifies a broker by a single ID that is an integer in non-zoned clusters and the composite string in zoned clusters. In a zoned cluster, inputs that identify a broker require the composite ID, since the same node index exists in every zone.
 
 **D5. Existing clusters migrate from bare to zoned identities one zone at a time, by replacing brokers.**
 Migration is a cluster operation that, per zone, adds new brokers with zoned identities, moves partitions onto them, and removes the bare brokers they replace. A fixed slot layout maps bare node `n` to zone rank `n % zoneCount` and local index `n / zoneCount`, and a zone-aware configuration with equal zone priorities reproduces the round-robin placement exactly, so each partition replica moves to the zoned broker occupying the same slot and the distribution itself does not change.
@@ -44,7 +44,7 @@ Coordinator selection stays deterministic and independent of zone priority. When
 
 - Zone awareness is opt-in and cannot be inferred: existing clusters keep bare IDs until they explicitly migrate, so both identity forms are supported indefinitely.
 - Migration requires roughly twice the broker resources while old and new brokers of a zone are both running, plus the time to replicate partition data to the new brokers.
-- Integer `nodeId` remains meaningful only in non-zoned clusters; clients and tooling relying on it must switch to `brokerId` before adopting zones.
+- Integer broker IDs remain meaningful only in non-zoned clusters; clients and tooling relying on `nodeId` must switch to `brokerId`, and cluster management callers to the composite ID, before adopting zones.
 - Zones are configured as a list rather than a map keyed by name: a list is much easier to set through environment variables and YAML, and a map would add little. List order is significant, as it drives the migration slot layout.
 - The coordinator lives in the zone that sorts first by name among brokers with node index 0, which is not necessarily the highest-priority zone. This is an accepted compromise in exchange for a deterministic, priority-independent coordinator.
 - Zone operations are planned across every partition group, building on the multi-group cluster configuration model of [dynamic-config ADR-0001](https://github.com/camunda/camunda/blob/main/zeebe/dynamic-config/docs/adr/0001-multi-partition-group-cluster-configuration.md).
