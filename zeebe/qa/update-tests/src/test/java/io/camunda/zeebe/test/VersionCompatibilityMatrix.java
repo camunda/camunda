@@ -18,6 +18,7 @@ import io.github.resilience4j.core.IntervalFunction;
 import io.github.resilience4j.retry.Retry;
 import io.github.resilience4j.retry.RetryConfig;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -277,7 +279,7 @@ final class VersionCompatibilityMatrix {
     return shardPending(
         combinations,
         reportPath(),
-        countVersionMatrixTestMethods(RollingUpdateTest.class),
+        versionMatrixTestMethods(RollingUpdateTest.class),
         index,
         total);
   }
@@ -292,18 +294,19 @@ final class VersionCompatibilityMatrix {
   static Stream<Arguments> shardPending(
       final List<Arguments> combinations,
       final Path reportPath,
-      final long expectedMethods,
+      final Set<String> expectedMethods,
       final int index,
       final int total) {
-    final var methodCountPerPair = readMethodCountPerPair(reportPath);
+    final var cachedMethodsPerPair = readCachedMethodsPerPair(reportPath);
     final var shards =
         IntStream.range(0, total).mapToObj(ignored -> new ArrayList<Arguments>()).toList();
     final var shardWeights = new long[total];
 
     for (final var combination : combinations) {
       final var pair = combination.get()[0] + "->" + combination.get()[1];
+      final var cachedMethods = cachedMethodsPerPair.getOrDefault(pair, Set.of());
       final var missingMethods =
-          Math.max(0, expectedMethods - methodCountPerPair.getOrDefault(pair, 0L));
+          expectedMethods.stream().filter(method -> !cachedMethods.contains(method)).count();
       if (missingMethods == 0) {
         continue;
       }
@@ -327,7 +330,7 @@ final class VersionCompatibilityMatrix {
     return shards.get(index).stream();
   }
 
-  private static Map<String, Long> readMethodCountPerPair(final Path reportPath) {
+  private static Map<String, Set<String>> readCachedMethodsPerPair(final Path reportPath) {
     if (reportPath == null || !Files.exists(reportPath)) {
       return Map.of();
     }
@@ -336,7 +339,9 @@ final class VersionCompatibilityMatrix {
           .filter(line -> line.contains(","))
           .collect(
               Collectors.groupingBy(
-                  line -> line.substring(line.indexOf(',') + 1), Collectors.counting()));
+                  line -> line.substring(line.indexOf(',') + 1),
+                  Collectors.mapping(
+                      line -> line.substring(0, line.indexOf(',')), Collectors.toSet())));
     } catch (final IOException e) {
       LOG.warn("Failed to read cache file at {}, proceeding without cached results", reportPath, e);
       return Map.of();
@@ -344,12 +349,12 @@ final class VersionCompatibilityMatrix {
   }
 
   /**
-   * Counts the number of {@link ParameterizedTest} methods in the given test class that use
-   * {@code @MethodSource("versionMatrix")}. This is the authoritative source for how many test
-   * methods each version pair must have cached to be considered fully tested.
+   * Returns the names of the {@link ParameterizedTest} methods in the given test class that use
+   * {@code @MethodSource("versionMatrix")}. A version pair is fully tested only once every one of
+   * these methods is cached for it; cached entries of renamed or removed methods don't count.
    */
   @VisibleForTesting
-  static long countVersionMatrixTestMethods(final Class<?> testClass) {
+  static Set<String> versionMatrixTestMethods(final Class<?> testClass) {
     return Arrays.stream(testClass.getDeclaredMethods())
         .filter(m -> m.isAnnotationPresent(ParameterizedTest.class))
         .filter(
@@ -357,7 +362,8 @@ final class VersionCompatibilityMatrix {
               final var source = m.getAnnotation(MethodSource.class);
               return source != null && Arrays.asList(source.value()).contains("versionMatrix");
             })
-        .count();
+        .map(Method::getName)
+        .collect(Collectors.toSet());
   }
 
   /**

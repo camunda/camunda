@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -286,6 +287,8 @@ class VersionCompatibilityMatrixTest {
   @Nested
   class ShardPendingTest {
 
+    private static final Set<String> METHODS = Set.of("methodA", "methodB", "methodC");
+
     private static final List<Arguments> COMBINATIONS =
         List.of(
             Arguments.of("8.7.0", "8.7.11"),
@@ -298,7 +301,7 @@ class VersionCompatibilityMatrixTest {
     @ValueSource(ints = {1, 2, 3, 5, 7})
     void shouldAssignEveryPendingPairToExactlyOneShard(final int totalShards) {
       // when
-      final var shards = shardAll(COMBINATIONS, null, 3, totalShards);
+      final var shards = shardAll(COMBINATIONS, null, METHODS, totalShards);
 
       // then
       assertThat(shards.stream().flatMap(List::stream).toList())
@@ -310,7 +313,7 @@ class VersionCompatibilityMatrixTest {
     @Test
     void shouldTreatMissingReportAsNothingCached(@TempDir final Path tempDir) {
       // when
-      final var shards = shardAll(COMBINATIONS, tempDir.resolve("missing"), 3, 2);
+      final var shards = shardAll(COMBINATIONS, tempDir.resolve("missing"), METHODS, 2);
 
       // then
       assertThat(shards.stream().flatMap(List::stream).toList())
@@ -333,7 +336,7 @@ class VersionCompatibilityMatrixTest {
           List.of(Arguments.of("8.7.0", "8.7.11"), Arguments.of("8.7.11", "8.7.12"));
 
       // when
-      final var shards = shardAll(combinations, report, 3, 2);
+      final var shards = shardAll(combinations, report, METHODS, 2);
 
       // then
       assertThat(shards.stream().flatMap(List::stream).toList()).containsExactly("8.7.11->8.7.12");
@@ -352,7 +355,7 @@ class VersionCompatibilityMatrixTest {
       final var combinations = List.of(Arguments.of("8.7.0", "8.7.11"));
 
       // when
-      final var shards = shardAll(combinations, report, 2, 3);
+      final var shards = shardAll(combinations, report, Set.of("methodA", "methodB"), 3);
 
       // then
       assertThat(shards).allSatisfy(shard -> assertThat(shard).isEmpty());
@@ -380,7 +383,7 @@ class VersionCompatibilityMatrixTest {
               Arguments.of("8.8.0", "8.8.1"));
 
       // when
-      final var shards = shardAll(combinations, report, 3, 2);
+      final var shards = shardAll(combinations, report, METHODS, 2);
 
       // then - a count-based split would put 2 pairs (4 and 2 invocations) on each shard
       assertThat(shards)
@@ -388,10 +391,32 @@ class VersionCompatibilityMatrixTest {
               List.of("8.7.0->8.7.11"), List.of("8.7.11->8.7.12", "8.7.12->8.8.0", "8.8.0->8.8.1"));
     }
 
+    @Test
+    void shouldIgnoreCachedEntriesOfMethodsNoLongerInTheMatrix(@TempDir final Path tempDir)
+        throws Exception {
+      // given - the pair has as many cached entries as there are methods, but one of them belongs
+      // to a method that was since renamed or removed, so methodC was never run for it
+      final var report = tempDir.resolve("report");
+      Files.writeString(
+          report,
+          """
+          methodA,8.7.0->8.7.11
+          methodB,8.7.0->8.7.11
+          removedMethod,8.7.0->8.7.11
+          """);
+      final var combinations = List.of(Arguments.of("8.7.0", "8.7.11"));
+
+      // when
+      final var shards = shardAll(combinations, report, METHODS, 2);
+
+      // then
+      assertThat(shards.stream().flatMap(List::stream).toList()).containsExactly("8.7.0->8.7.11");
+    }
+
     private static List<List<String>> shardAll(
         final List<Arguments> combinations,
         final Path report,
-        final long expectedMethods,
+        final Set<String> expectedMethods,
         final int totalShards) {
       return IntStream.range(0, totalShards)
           .mapToObj(
@@ -409,23 +434,23 @@ class VersionCompatibilityMatrixTest {
   }
 
   @Nested
-  class CountVersionMatrixTestMethodsTest {
+  class VersionMatrixTestMethodsTest {
 
     @Test
-    void shouldCountOnlyVersionMatrixParameterizedMethods() {
+    void shouldReturnOnlyVersionMatrixParameterizedMethods() {
       // when / then — DummyTestClass has exactly 2 @ParameterizedTest methods
       // with @MethodSource("versionMatrix")
-      assertThat(VersionCompatibilityMatrix.countVersionMatrixTestMethods(DummyTestClass.class))
-          .isEqualTo(2);
+      assertThat(VersionCompatibilityMatrix.versionMatrixTestMethods(DummyTestClass.class))
+          .containsExactlyInAnyOrder("matchingMethodA", "matchingMethodB");
     }
 
     @Test
-    void shouldReturnZeroForClassWithNoMatchingMethods() {
+    void shouldReturnNothingForClassWithNoMatchingMethods() {
       // when / then
       assertThat(
-              VersionCompatibilityMatrix.countVersionMatrixTestMethods(
+              VersionCompatibilityMatrix.versionMatrixTestMethods(
                   VersionCompatibilityMatrixTest.class))
-          .isZero();
+          .isEmpty();
     }
 
     @SuppressWarnings("unused")
