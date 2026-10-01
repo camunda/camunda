@@ -1,7 +1,6 @@
 import buildlogic.DistributionDependencyReportExtension
-import buildlogic.mavenResourceFilterArgs
+import buildlogic.filterMavenResources
 import io.camunda.gradle.pom.PomResolver
-import org.apache.tools.ant.filters.ReplaceTokens
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier
 import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.tasks.bundling.Compression
@@ -56,8 +55,9 @@ val resourceTokens =
 
 val optimizeDistroResources =
   tasks.register<Sync>("generateOptimizeDistroResources") {
+    val task = this
     from("src") {
-      filter(mavenResourceFilterArgs(resourceTokens), ReplaceTokens::class.java)
+      this.filterMavenResources(task, "optimizeDistroResourceTokens", resourceTokens)
     }
     into(layout.buildDirectory.dir("generated/optimize-distro"))
   }
