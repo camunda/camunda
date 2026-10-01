@@ -146,8 +146,7 @@ final class InProgressBackupImpl implements InProgressBackup {
 
   @Override
   public ActorFuture<Void> reserveSnapshot() {
-    final ActorFuture<Void> future = concurrencyControl.createFuture();
-    snapshotReservedAtCheckpoint.onComplete(
+    return snapshotReservedAtCheckpoint.andThen(
         (reserved, error) -> {
           if (error == null && reserved.isPresent()) {
             snapshotReservation = reserved.get().reservation();
@@ -157,21 +156,21 @@ final class InProgressBackupImpl implements InProgressBackup {
                 .addKeyValue("snapshot", reservedSnapshot.getId())
                 .setMessage("Using snapshot reserved when processing the checkpoint")
                 .log();
-            future.complete(unit());
-          } else {
-            // Either no snapshot was before the checkpoint when it was processed, in which case a
-            // snapshot taken before the checkpoint may have been committed since, or reserving
-            // failed; either way, look for a snapshot now.
-            LOG.atDebug()
-                .addKeyValue("backup", backupId)
-                .setCause(error)
-                .setMessage("No snapshot reserved when processing the checkpoint, searching now")
-                .log();
-            findAndReserveSnapshot(future, MAX_RESERVATION_ATTEMPTS);
+            return concurrencyControl.createCompletedFuture();
           }
+          // Either no snapshot was before the checkpoint when it was processed, in which case a
+          // snapshot taken before the checkpoint may have been committed since, or reserving
+          // failed; either way, look for a snapshot now.
+          LOG.atDebug()
+              .addKeyValue("backup", backupId)
+              .setCause(error)
+              .setMessage("No snapshot reserved when processing the checkpoint, searching now")
+              .log();
+          final ActorFuture<Void> future = concurrencyControl.createFuture();
+          findAndReserveSnapshot(future, MAX_RESERVATION_ATTEMPTS);
+          return future;
         },
         concurrencyControl);
-    return future;
   }
 
   private void findAndReserveSnapshot(final ActorFuture<Void> future, final int remainingAttempts) {
