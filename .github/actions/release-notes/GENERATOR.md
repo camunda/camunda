@@ -318,17 +318,17 @@ never the attribution.
 
 The conventional-commit type in the title maps to a section:
 
-|                     Type                      |            Section             |           Visibility           |
-|-----------------------------------------------|--------------------------------|--------------------------------|
-| `feat`                                        | Features                       | customer                       |
-| `fix`                                         | Bug Fixes                      | customer                       |
-| `perf`                                        | Performance                    | customer                       |
-| `docs`                                        | Documentation                  | customer                       |
-| `deps`                                        | Dependency updates             | customer                       |
-| `revert`                                      | Reverts                        | customer                       |
-| `refactor`, `build`, `ci`, `test`, `style`    | Maintenance                    | **internal** — full asset only |
-| `merge`                                       | *(excluded from both outputs)* | —                              |
-| anything else, or a title that does not parse | Uncategorized                  | customer                       |
+|                     Type                      |            Section             |                       Visibility                        |
+|-----------------------------------------------|--------------------------------|---------------------------------------------------------|
+| `feat`                                        | Features                       | customer                                                |
+| `fix`                                         | Bug Fixes                      | customer                                                |
+| `perf`                                        | Performance                    | customer                                                |
+| `docs`                                        | Documentation                  | customer                                                |
+| `deps`                                        | Dependency updates             | customer (issue-less bumps: full asset only, see below) |
+| `revert`                                      | Reverts                        | customer                                                |
+| `refactor`, `build`, `ci`, `test`, `style`    | Maintenance                    | **internal** — full asset only                          |
+| `merge`                                       | *(excluded from both outputs)* | —                                                       |
+| anything else, or a title that does not parse | Uncategorized                  | customer                                                |
 
 An unparseable title is **never dropped** — it lands in `Uncategorized` and produces a warning naming
 the title and its author. On a pre-gate range this is loud by design: 8.9.0 produced 665 uncategorized
@@ -477,11 +477,21 @@ section.
 
 The two bodies differ by audience:
 
-|                        | Customer body (`customer-body` output) | Full asset (`CHANGELOG-<version>.md`) |
-|------------------------|----------------------------------------|---------------------------------------|
-| `Maintenance`          | excluded                               | included                              |
-| unattributed bucket    | excluded                               | included                              |
-| pull request citations | only the ones it may show              | every contributor                     |
+|                             |          Customer body (`customer-body` output)           | Full asset (`CHANGELOG-<version>.md`) |
+|-----------------------------|-----------------------------------------------------------|---------------------------------------|
+| `Maintenance`               | excluded                                                  | included                              |
+| issue-less dependency bumps | excluded, replaced by one line pointing at the full asset | included                              |
+| unattributed bucket         | excluded                                                  | included                              |
+| pull request citations      | only the ones it may show                                 | every contributor                     |
+
+**Dependency bumps and the release body limit.** A GitHub release body is capped at 125,000
+characters, whether set through the API or pasted in the web editor; the editor silently cuts a longer
+paste. On 8.10.0 the customer body was 143,151 characters, ~43k of it bot dependency bumps. So a bump
+with no linked issue goes to the full asset only, and the customer body ends with one line saying how
+many were left out (`N dependency updates are listed in the full changelog, CHANGELOG-<version>.md.`).
+Two kinds stay in the customer body: a dependency pull request that delivers an issue (a CVE fix is
+customer news), and every bump of a package that any breaking bump touched, so its version range is not
+split between the two outputs.
 
 **The unattributed guard.** If any pull request landed in the `unattributed`/`resolutionFailed` bucket,
 the job **fails by default**. Every output is still written first — `audit.json`'s whole purpose is

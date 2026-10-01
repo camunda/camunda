@@ -453,8 +453,8 @@ test('repeated updates of one dependency collapse to one first-to-last line', ()
 
   // then — one line, the range the release actually moved it through, every
   // pull request still cited
-  assert.match(result.customerBody, /- io\.github\.classgraph:classgraph: 4\.8\.193 → 4\.8\.196 \(#61527, #61528, #61530\)$/m);
-  assert.equal(result.customerBody.split('\n').filter((line) => line.includes('classgraph')).length, 1);
+  assert.match(result.fullAsset, /- io\.github\.classgraph:classgraph: 4\.8\.193 → 4\.8\.196 \(#61527, #61528, #61530\)$/m);
+  assert.equal(result.fullAsset.split('\n').filter((line) => line.includes('classgraph')).length, 1);
   assert.doesNotMatch(result.customerBody, /## Breaking changes/);
   assert.doesNotMatch(result.fullAsset, /## Breaking changes/);
 });
@@ -479,7 +479,7 @@ test('one renovate pull request listing a package twice collapses too', () => {
   const result = render(prs, { version: '8.9.19', allowUnattributed: false });
 
   // then
-  assert.match(result.customerBody, /- browserslist: 4\.28\.1 → 4\.28\.7 \(#61684\)$/m);
+  assert.match(result.fullAsset, /- browserslist: 4\.28\.1 → 4\.28\.7 \(#61684\)$/m);
 });
 
 test('one pull request bumping several packages produces one line each', () => {
@@ -501,8 +501,8 @@ test('one pull request bumping several packages produces one line each', () => {
   const result = render(prs, { version: '8.9.19', allowUnattributed: false });
 
   // then — a reader scanning for one package finds it on its own line
-  assert.match(result.customerBody, /- left: 1\.0 → 1\.1 \(#900\)$/m);
-  assert.match(result.customerBody, /- right: 2\.0 → 2\.1 \(#900\)$/m);
+  assert.match(result.fullAsset, /- left: 1\.0 → 1\.1 \(#900\)$/m);
+  assert.match(result.fullAsset, /- right: 2\.0 → 2\.1 \(#900\)$/m);
 });
 
 test('a dependency that is downgraded then bumped back up shows the release\'s actual start and end, not the numeric extremes', () => {
@@ -516,7 +516,7 @@ test('a dependency that is downgraded then bumped back up shows the release\'s a
   const result = render([bump(2, '1', '1.5'), bump(1, '2', '1')], { version: '8.9.19', allowUnattributed: false });
 
   // then
-  assert.match(result.customerBody, /- pkg: 2 → 1\.5 \(#2, #1\)$/m);
+  assert.match(result.fullAsset, /- pkg: 2 → 1\.5 \(#2, #1\)$/m);
 });
 
 test('an unorderable version pair falls back to walk order rather than inventing a range', () => {
@@ -538,5 +538,62 @@ test('an unorderable version pair falls back to walk order rather than inventing
   });
 
   // then
-  assert.match(result.customerBody, /- camunda\/infra-global-github-actions: aaaaaaa → ccccccc \(#2, #1\)$/m);
+  assert.match(result.fullAsset, /- camunda\/infra-global-github-actions: aaaaaaa → ccccccc \(#2, #1\)$/m);
+});
+
+function bump(number: number, overrides: Partial<RenderPrInput> = {}): RenderPrInput {
+  return pr({
+    number,
+    title: `deps: bump pkg${number}`,
+    section: 'Dependency updates',
+    attributionSource: 'botExempt',
+    issueNumbers: [],
+    dependencies: [{ name: `pkg${number}`, from: '1.0', to: '2.0' }],
+    ...overrides,
+  });
+}
+
+test('issue-less dependency bumps are full-asset only, and the customer body points there instead', () => {
+  // given — a minor's bot bumps would push the customer body past GitHub's 125,000-char limit
+  const result = render([pr({ number: 1 }), bump(2), bump(3)], { version: '8.10.0', allowUnattributed: false });
+
+  // then
+  assert.doesNotMatch(result.customerBody, /pkg2|pkg3|## Dependency updates/);
+  assert.match(result.customerBody, /\n\n2 dependency updates are listed in the full changelog, `CHANGELOG-8\.10\.0\.md`\.$/);
+  assert.match(result.fullAsset, /## Dependency updates\n\n- pkg2: 1\.0 → 2\.0 \(#2\)\n- pkg3: 1\.0 → 2\.0 \(#3\)/);
+  assert.doesNotMatch(result.fullAsset, /listed in the full changelog/);
+});
+
+test('a dependency PR that delivers an issue stays in the customer body — a CVE fix is customer news', () => {
+  // given
+  const result = render([bump(4, { issueNumbers: [400], title: 'deps: bump pkg4 to fix CVE' })], {
+    version: '8.10.0',
+    allowUnattributed: false,
+  });
+
+  // then
+  assert.match(result.customerBody, /## Dependency updates\n\n- deps: bump pkg4 to fix CVE \(#400\) — #4/);
+  assert.doesNotMatch(result.customerBody, /listed in the full changelog/);
+});
+
+test('every bump of a package that one breaking bump touched stays in the customer body, so its range does not split', () => {
+  // given — #5 is breaking, #6 bumps the same package later, #7 an unrelated one
+  const result = render(
+    [
+      bump(6, { dependencies: [{ name: 'shared', from: '2.0', to: '3.0' }] }),
+      bump(5, { breaking: true, dependencies: [{ name: 'shared', from: '1.0', to: '2.0' }] }),
+      bump(7),
+    ],
+    { version: '8.10.0', allowUnattributed: false },
+  );
+
+  // then
+  assert.match(result.customerBody, /^## Breaking changes\n\n- shared: 1\.0 → 3\.0 \(#6, #5\)/);
+  assert.doesNotMatch(result.customerBody, /pkg7/);
+  assert.match(result.customerBody, /1 dependency update is listed in the full changelog/);
+});
+
+test('a release of only bot bumps still gets a non-empty customer body pointing at the full changelog', () => {
+  const result = render([bump(8)], { version: '8.9.23', allowUnattributed: false });
+  assert.equal(result.customerBody, '1 dependency update is listed in the full changelog, `CHANGELOG-8.9.23.md`.');
 });
