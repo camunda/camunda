@@ -196,12 +196,11 @@ public class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
   public static class Builder<DocType, SearchAfterFieldType> {
     private final BatchSupplier<DocType, SearchAfterFieldType> batchSupplier;
     private final BatchProcessor<DocType, SearchAfterFieldType> batchProcessor;
-    // TODO review defaults
     private Executor executor = ForkJoinPool.commonPool();
     private Logger logger = DEFAULT_LOGGER;
-    private AtomicInteger batchSize = new AtomicInteger(1000);
+    private AtomicInteger batchSize = new AtomicInteger(2500);
     private int minBatchSize = 50;
-    private int maxRetryAttempts = 0;
+    private int maxRetryAttempts = 3;
     private int retryDelayMs = 1_000;
     private final List<Class<? extends Throwable>> retryableExceptions =
         new ArrayList<>(DEFAULT_RETRYABLE_EXCEPTIONS);
