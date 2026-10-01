@@ -6,18 +6,19 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {z} from 'zod';
+
 // Keep in sync with `io.camunda.security.configuration.SecurityConfiguration.DEFAULT_ID_REGEX`.
 const USERNAME_PATTERN = /^[a-zA-Z0-9_~@.+-]{1,256}$/;
 
-const EMAIL_PATTERN =
-	/^(([^<>()[\].,;:\s@"]+(\.[^<>()[\].,;:\s@"]+)*)|(".+"))@(([^<>()[\].,;:\s@"]+\.)+[^<>()[\].,;:\s@"]{2,})$/i;
+const emailSchema = z.email();
 
 function isValidUsername(username: string): boolean {
 	return USERNAME_PATTERN.test(username);
 }
 
 function isValidEmail(email: string): boolean {
-	return EMAIL_PATTERN.test(email);
+	return emailSchema.safeParse(email).success;
 }
 
 export {isValidUsername, isValidEmail};
