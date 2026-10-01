@@ -2,7 +2,7 @@
 
 **DRI**: Carlo Sana
 
-**Status**: Proposed
+**Status**: Accepted
 
 **Purpose**: Define how an experimental Gradle build mirrors Maven and how CI keeps it usable
 while it is evaluated. Maven remains the source of truth for module behavior,
