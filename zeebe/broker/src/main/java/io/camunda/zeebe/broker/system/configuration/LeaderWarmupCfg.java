@@ -16,7 +16,7 @@ import java.time.Duration;
  */
 public final class LeaderWarmupCfg {
   private boolean enabled = false;
-  private Duration startDelay = Duration.ofSeconds(30);
+  private Duration startDelay = Duration.ofMinutes(5);
   private Duration quietPeriod = Duration.ofSeconds(10);
   private Duration maxDuration = Duration.ofMinutes(15);
   private int processInstances = 5_000;
@@ -32,6 +32,11 @@ public final class LeaderWarmupCfg {
     this.enabled = enabled;
   }
 
+  /**
+   * How long to wait after the broker is healthy before the warm-up may start. Stopping a broker
+   * can stall the clients for a few minutes, and while no requests arrive there is no backlog to
+   * back off from; the delay keeps the warm-up from starting before the clients have caught up.
+   */
   public Duration getStartDelay() {
     return startDelay;
   }
