@@ -7,24 +7,24 @@
  */
 
 import {type Page} from '@playwright/test';
-import {BasePage} from './BasePage';
-import {Header} from './Header';
+import {BasePage} from '#/pages/BasePage';
+import {Header} from '#/pages/Header';
 
-class OperateIndexPage extends BasePage {
+class AdminIndexPage extends BasePage {
 	readonly header: Header;
 
 	constructor(page: Page) {
 		super(page);
-		this.header = new Header(page, 'Camunda Operate');
+		this.header = new Header(page, 'Camunda Admin');
 	}
 
 	async goto() {
-		return this.page.goto('/operate');
+		return this.page.goto('/admin');
 	}
 
 	get heading() {
-		return this.page.getByRole('heading', {name: 'Dashboard'});
+		return this.page.getByRole('heading', {name: 'Admin'});
 	}
 }
 
-export {OperateIndexPage};
+export {AdminIndexPage};

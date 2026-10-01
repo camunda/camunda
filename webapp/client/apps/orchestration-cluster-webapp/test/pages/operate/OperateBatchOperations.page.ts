@@ -7,8 +7,8 @@
  */
 
 import {type Page} from '@playwright/test';
-import {BasePage} from './BasePage';
-import {Header} from './Header';
+import {BasePage} from '#/pages/BasePage';
+import {Header} from '#/pages/Header';
 
 class OperateBatchOperationsPage extends BasePage {
 	readonly header: Header;
