@@ -1551,6 +1551,19 @@
 					"deleteButton": "Löschen",
 					"cancelButton": "Abbrechen",
 					"confirmationError": "Bitte aktivieren Sie dieses Kästchen, wenn Sie fortfahren möchten."
+				},
+				"batchStateIndicator": {
+					"ariaLabelPrefix": "Status des Stapelvorgangs",
+					"state": {
+						"completed": "Abgeschlossen",
+						"active": "Aktiv",
+						"suspended": "Angehalten",
+						"canceled": "Abgebrochen",
+						"failed": "Fehlgeschlagen",
+						"created": "Erstellt",
+						"partiallyCompleted": "Teilweise abgeschlossen",
+						"skipped": "Übersprungen"
+					}
 				}
 			}
 		}

@@ -1554,6 +1554,19 @@
 					"deleteButton": "Supprimer",
 					"cancelButton": "Annuler",
 					"confirmationError": "Veuillez cocher cette case si vous souhaitez continuer."
+				},
+				"batchStateIndicator": {
+					"ariaLabelPrefix": "Statut de l'opération par lots",
+					"state": {
+						"completed": "Terminé",
+						"active": "Actif",
+						"suspended": "Suspendu",
+						"canceled": "Annulé",
+						"failed": "Échoué",
+						"created": "Créé",
+						"partiallyCompleted": "Partiellement terminé",
+						"skipped": "Ignoré"
+					}
 				}
 			}
 		}

@@ -1563,6 +1563,19 @@
 					"deleteButton": "Delete",
 					"cancelButton": "Cancel",
 					"confirmationError": "Tick this box if you want to proceed."
+				},
+				"batchStateIndicator": {
+					"ariaLabelPrefix": "Batch operation status",
+					"state": {
+						"completed": "Completed",
+						"active": "Active",
+						"suspended": "Suspended",
+						"canceled": "Canceled",
+						"failed": "Failed",
+						"created": "Created",
+						"partiallyCompleted": "Partially completed",
+						"skipped": "Skipped"
+					}
 				}
 			}
 		}

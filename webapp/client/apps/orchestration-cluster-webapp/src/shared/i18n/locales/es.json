@@ -1551,6 +1551,19 @@
 					"deleteButton": "Eliminar",
 					"cancelButton": "Cancelar",
 					"confirmationError": "Marque esta casilla si desea continuar."
+				},
+				"batchStateIndicator": {
+					"ariaLabelPrefix": "Estado de la operación por lotes",
+					"state": {
+						"completed": "Completado",
+						"active": "Activo",
+						"suspended": "Suspendido",
+						"canceled": "Cancelado",
+						"failed": "Fallido",
+						"created": "Creado",
+						"partiallyCompleted": "Parcialmente completado",
+						"skipped": "Omitido"
+					}
 				}
 			}
 		}
