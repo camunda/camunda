@@ -87,7 +87,8 @@ public enum AuthorizationResourceType {
       PermissionType.READ, PermissionType.UPDATE, PermissionType.CLAIM, PermissionType.COMPLETE),
   SECRET(PermissionType.READ, PermissionType.REVEAL),
   BACKUP(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE, PermissionType.RESTORE),
-  EXPORTER(PermissionType.PAUSE);
+  EXPORTER(PermissionType.PAUSE),
+  STANDALONE_JOB(PermissionType.CREATE, PermissionType.UPDATE);
 
   private final Set<PermissionType> supportedPermissionTypes;
 

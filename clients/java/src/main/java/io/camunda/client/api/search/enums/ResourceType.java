@@ -35,6 +35,7 @@ public enum ResourceType {
   RESOURCE,
   ROLE,
   SECRET,
+  STANDALONE_JOB,
   SYSTEM,
   TENANT,
   USER,

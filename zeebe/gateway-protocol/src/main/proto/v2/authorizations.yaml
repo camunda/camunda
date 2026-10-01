@@ -502,6 +502,7 @@ components:
         - RESOURCE
         - ROLE
         - SECRET
+        - STANDALONE_JOB
         - SYSTEM
         - TENANT
         - USER
