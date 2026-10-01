@@ -7,7 +7,11 @@
  */
 
 import {test, expect} from '#/pw-modules/test-extend';
-import {HttpResponse} from 'msw';
+import {delay, http, HttpResponse} from 'msw';
+import {
+	endpoints as apiEndpoints,
+	queryProcessDefinitionsRequestBodySchema,
+} from '@camunda/camunda-api-zod-schemas/8.11';
 import {
 	mockCurrentUserEndpoint,
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
@@ -20,6 +24,7 @@ import {
 	mockCreateCancellationBatchOperationEndpoint,
 	mockGetBatchOperationEndpoint,
 	mockGetProcessDefinitionXmlEndpoint,
+	mockGetProcessDefinitionStatisticsEndpoint,
 	mockGetProcessInstanceCallHierarchyEndpoint,
 	mockGetProcessInstanceEndpoint,
 	mockGetProcessInstanceWaitStateStatisticsEndpoint,
@@ -43,6 +48,8 @@ import {
 	createQueryBatchOperationItemsResponse,
 } from '#/shared-test-modules/api-mocks/batch-operations';
 import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
+import {createGetProcessDefinitionStatisticsResponse} from '#/shared-test-modules/api-mocks/process-definition-statistics';
+import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
 
 const PROCESS_INSTANCE_XML =
 	'<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"><process id="order-process"><callActivity id="call-activity" /></process></definitions>';
@@ -155,6 +162,282 @@ test.describe('Operate processes page', () => {
 
 		await expect(operateProcessesPage.filtersPanel).toBeVisible();
 		await expect(operateProcessesPage.processCombobox).toBeVisible();
+	});
+
+	test('should synchronize the element combobox and diagram with URL history and instance requests', async ({
+		network,
+		page,
+		operateProcessesPage,
+	}) => {
+		network.use(
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+			mockGetProcessDefinitionStatisticsEndpoint({
+				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
+			}),
+		);
+		await operateProcessesPage.goto('?process=order-process&version=1');
+		await expect(operateProcessesPage.elementCombobox).toBeEnabled();
+
+		const selectedRequest = page.waitForRequest(
+			(request) =>
+				request.method() === 'POST' &&
+				request.url().endsWith('/v2/process-instances/search') &&
+				JSON.stringify(request.postDataJSON()).includes('"elementId"'),
+		);
+		await operateProcessesPage.elementCombobox.fill('Review invoice');
+		await operateProcessesPage.elementCombobox.press('Enter');
+		expect((await selectedRequest).postDataJSON().filter).toEqual(
+			expect.objectContaining({
+				processDefinitionId: {$eq: 'order-process'},
+				processDefinitionVersion: 1,
+				elementId: {$eq: 'task-1'},
+				elementInstanceState: {$eq: 'ACTIVE'},
+			}),
+		);
+		await expect(operateProcessesPage.elementCombobox).toHaveValue('Review invoice');
+		await expect(operateProcessesPage.diagramElement('task-1')).toHaveClass(/op-selected/);
+		expect(new URL(page.url()).searchParams.get('elementId')).toBe('task-1');
+
+		await page.reload();
+		await expect(operateProcessesPage.elementCombobox).toHaveValue('Review invoice');
+		await expect(operateProcessesPage.diagramElement('task-1')).toHaveClass(/op-selected/);
+		await operateProcessesPage.diagramElement('end_event').click();
+		await expect(operateProcessesPage.elementCombobox).toHaveValue('end_event');
+		await expect(operateProcessesPage.diagramElement('end_event')).toHaveClass(/op-selected/);
+		await page.goBack();
+		await expect(operateProcessesPage.elementCombobox).toHaveValue('Review invoice');
+		await page.goForward();
+		await expect(operateProcessesPage.elementCombobox).toHaveValue('end_event');
+
+		await page.getByRole('button', {name: 'Clear selected item'}).last().click();
+		await expect(operateProcessesPage.elementCombobox).toHaveValue('');
+		await expect.poll(() => new URL(page.url()).searchParams.get('elementId')).toBeNull();
+	});
+
+	test('should keep a bookmarked element filter clearable when XML fails without hiding instances', async ({
+		network,
+		page,
+		operateProcessesPage,
+	}) => {
+		network.use(mockGetProcessDefinitionXmlEndpoint({successResponse: new HttpResponse(null, {status: 503})}));
+		await operateProcessesPage.goto('?process=order-process&version=1&elementId=task-1');
+		await expect(operateProcessesPage.instancesTable).toBeVisible();
+		await expect(operateProcessesPage.elementCombobox).toHaveValue('task-1');
+		await expect(operateProcessesPage.filtersPanel.getByRole('button', {name: 'Retry loading elements'})).toBeVisible({
+			timeout: 15000,
+		});
+		await operateProcessesPage.filtersPanel.getByRole('button', {name: 'Clear element filter'}).click();
+		await expect.poll(() => new URL(page.url()).searchParams.get('elementId')).toBeNull();
+		await expect(operateProcessesPage.instancesTable).toBeVisible();
+	});
+
+	test('should clear the element and diagram selection when the process version changes', async ({
+		network,
+		page,
+		operateProcessesPage,
+	}) => {
+		network.use(
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+			mockGetProcessDefinitionStatisticsEndpoint({
+				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
+			}),
+		);
+		await operateProcessesPage.goto('?process=order-process&version=1&elementId=task-1');
+		await expect(operateProcessesPage.diagramElement('task-1')).toHaveClass(/op-selected/);
+		await operateProcessesPage.versionCombobox.click();
+		await page.getByRole('option', {name: 'All versions'}).click();
+		await expect.poll(() => new URL(page.url()).searchParams.get('elementId')).toBeNull();
+		await expect(operateProcessesPage.elementCombobox).toBeDisabled();
+		await expect(page.getByText('There is more than one Version selected for Process "Order Process"')).toBeVisible();
+	});
+
+	test('should wait for a later tenant on the selected process before showing elements', async ({
+		network,
+		page,
+		operateProcessesPage,
+	}) => {
+		const tenantAVersions = Array.from({length: 1000}, (_, index) =>
+			createProcessDefinition({
+				name: 'Orders',
+				processDefinitionId: 'orders',
+				processDefinitionKey: `tenant-a-${index + 1}`,
+				version: index + 1,
+				tenantId: '<tenant-A>',
+			}),
+		);
+		const otherDefinitions = Array.from({length: 999}, (_, index) =>
+			createProcessDefinition({processDefinitionId: `other-${index}`, processDefinitionKey: `other-${index}`}),
+		);
+		network.use(
+			mockSystemConfigurationEndpoint({
+				successResponse: HttpResponse.json(
+					createSystemConfiguration({
+						components: {active: ['operate']},
+						deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: true, maxRequestSize: 0},
+					}),
+				),
+			}),
+			mockCurrentUserEndpoint({
+				successResponse: HttpResponse.json(
+					createCurrentUser({
+						tenants: [
+							{tenantId: '<tenant-A>', name: 'Tenant A', description: null},
+							{tenantId: '<tenant-B>', name: 'Tenant B', description: null},
+						],
+					}),
+				),
+			}),
+			http.post(apiEndpoints.queryProcessDefinitions.getUrl(), async ({request}) => {
+				const body = queryProcessDefinitionsRequestBodySchema.parse(await request.json());
+				const filter = body.filter?.processDefinitionId;
+				if ((typeof filter === 'string' ? filter : filter?.$eq) === 'orders') {
+					if (body.page?.after === 'orders-next') {
+						await delay(1500);
+						return HttpResponse.json(
+							createQueryProcessDefinitionsResponse({
+								items: [
+									createProcessDefinition({
+										name: 'Orders',
+										processDefinitionId: 'orders',
+										processDefinitionKey: 'tenant-b-1',
+										version: 1,
+										tenantId: '<tenant-B>',
+									}),
+									createProcessDefinition({
+										name: 'Orders',
+										processDefinitionId: 'orders',
+										processDefinitionKey: 'tenant-b-1001',
+										version: 1001,
+										tenantId: '<tenant-B>',
+									}),
+								],
+								page: {totalItems: 1002, hasMoreTotalItems: false},
+							}),
+						);
+					}
+					return HttpResponse.json(
+						createQueryProcessDefinitionsResponse({
+							items: tenantAVersions,
+							page: {totalItems: 1002, hasMoreTotalItems: true, endCursor: 'orders-next'},
+						}),
+					);
+				}
+				return HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: [tenantAVersions[0]!, ...otherDefinitions],
+						page: {totalItems: 2000, hasMoreTotalItems: true, endCursor: 'global-next'},
+					}),
+				);
+			}),
+		);
+		await operateProcessesPage.goto('?tenantId=all&process=orders&version=1');
+		await expect(operateProcessesPage.elementCombobox).toBeDisabled();
+		await expect(page.getByTestId('diagram-spinner')).toBeVisible();
+		await expect(page.getByText('Process "Orders" exists in more than one Tenant')).toBeVisible();
+		await expect(operateProcessesPage.elementCombobox).toBeDisabled();
+		await operateProcessesPage.versionCombobox.click();
+		await expect(page.getByRole('option', {name: '1', exact: true})).toHaveCount(1);
+		await expect(operateProcessesPage.instancesTable).toBeVisible();
+	});
+
+	test('should load a bookmarked process missing from the first 1,000 global definitions', async ({
+		network,
+		page,
+		operateProcessesPage,
+	}) => {
+		const otherDefinitions = Array.from({length: 1000}, (_, index) =>
+			createProcessDefinition({processDefinitionId: `other-${index}`, processDefinitionKey: `other-${index}`}),
+		);
+		network.use(
+			http.post(apiEndpoints.queryProcessDefinitions.getUrl(), async ({request}) => {
+				const body = queryProcessDefinitionsRequestBodySchema.parse(await request.json());
+				const filter = body.filter?.processDefinitionId;
+				return HttpResponse.json(
+					(typeof filter === 'string' ? filter : filter?.$eq) === 'unique'
+						? createQueryProcessDefinitionsResponse({
+								items: [
+									createProcessDefinition({
+										name: 'Unique Process',
+										processDefinitionId: 'unique',
+										processDefinitionKey: 'unique-1',
+										version: 1,
+									}),
+								],
+							})
+						: createQueryProcessDefinitionsResponse({
+								items: otherDefinitions,
+								page: {totalItems: 1001, hasMoreTotalItems: true, endCursor: 'global-next'},
+							}),
+				);
+			}),
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+			mockGetProcessDefinitionStatisticsEndpoint({
+				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
+			}),
+		);
+		await operateProcessesPage.goto('?process=unique&version=1');
+		await expect(operateProcessesPage.processCombobox).toHaveValue('Unique Process');
+		await expect(operateProcessesPage.elementCombobox).toBeEnabled();
+		await expect(operateProcessesPage.diagramElement('task-1')).toBeAttached();
+		expect(new URL(page.url()).searchParams.get('version')).toBe('1');
+	});
+
+	test('should preserve the primary list through selected-definition lookup failure and recovery', async ({
+		network,
+		page,
+		operateProcessesPage,
+	}) => {
+		let lookupFailureStatus: 503 | 403 | undefined = 503;
+		network.use(
+			http.post(apiEndpoints.queryProcessDefinitions.getUrl(), async ({request}) => {
+				const body = queryProcessDefinitionsRequestBodySchema.parse(await request.json());
+				const filter = body.filter?.processDefinitionId;
+				return (typeof filter === 'string' ? filter : filter?.$eq) === 'order-process' &&
+					lookupFailureStatus !== undefined
+					? new HttpResponse(null, {status: lookupFailureStatus})
+					: HttpResponse.json(
+							createQueryProcessDefinitionsResponse({
+								items: [createProcessDefinition({name: 'Order Process', processDefinitionId: 'order-process'})],
+							}),
+						);
+			}),
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+			mockGetProcessDefinitionStatisticsEndpoint({
+				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
+			}),
+		);
+		await operateProcessesPage.goto('?process=order-process&version=1&elementId=task-1');
+		await expect(operateProcessesPage.instancesTable).toBeVisible();
+		await expect(operateProcessesPage.elementCombobox).toBeDisabled();
+		await expect(operateProcessesPage.elementCombobox).toHaveValue('task-1');
+		await expect(operateProcessesPage.filtersPanel.getByRole('button', {name: 'Retry loading elements'})).toBeVisible();
+
+		lookupFailureStatus = undefined;
+		await operateProcessesPage.filtersPanel.getByRole('button', {name: 'Retry loading elements'}).click();
+		await expect(operateProcessesPage.elementCombobox).toHaveValue('Review invoice');
+		await expect(operateProcessesPage.elementCombobox).toBeEnabled();
+
+		lookupFailureStatus = 503;
+		await page.getByRole('link', {name: 'Processes', exact: true}).click();
+		await page.goBack();
+		await expect(operateProcessesPage.filtersPanel.getByRole('button', {name: 'Retry loading elements'})).toBeVisible();
+		await expect(operateProcessesPage.elementCombobox).toBeDisabled();
+		await expect(operateProcessesPage.elementCombobox).toHaveValue('task-1');
+		await expect(operateProcessesPage.instancesTable).toBeVisible();
+
+		lookupFailureStatus = undefined;
+		await operateProcessesPage.filtersPanel.getByRole('button', {name: 'Retry loading elements'}).click();
+		await expect(operateProcessesPage.elementCombobox).toBeEnabled();
+
+		lookupFailureStatus = 403;
+		await page.getByRole('link', {name: 'Processes', exact: true}).click();
+		await page.goBack();
+		await expect(page.getByText('Missing permissions to view the Definition')).toBeVisible();
+		await expect(operateProcessesPage.filtersPanel.getByRole('button', {name: 'Retry loading elements'})).toHaveCount(
+			0,
+		);
+		await expect(operateProcessesPage.filtersPanel.getByRole('button', {name: 'Clear element filter'})).toBeVisible();
+		await expect(operateProcessesPage.instancesTable).toBeVisible();
 	});
 
 	test('should render the reset filters button disabled by default', async ({operateProcessesPage}) => {

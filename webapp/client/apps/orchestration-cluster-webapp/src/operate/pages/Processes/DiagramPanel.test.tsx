@@ -98,6 +98,23 @@ describe('<DiagramPanel />', () => {
 			.toBeVisible();
 	});
 
+	it('should not show a diagram when multiple tenants share the selected definition', async () => {
+		const screen = await renderDiagramPanel({
+			processDefinitionSelection: {
+				kind: 'multiple-tenants',
+				definition: {name: 'Order Process', processDefinitionId: 'order-process'},
+			},
+			onElementSelection: vi.fn(),
+			active: true,
+			incidents: true,
+			completed: false,
+			canceled: false,
+			suspended: false,
+		});
+
+		await expect.element(screen.getByText('Process "Order Process" exists in more than one Tenant')).toBeVisible();
+	});
+
 	it('renders the diagram and a statistics overlay for a single selected version', async ({worker}) => {
 		worker.use(
 			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),

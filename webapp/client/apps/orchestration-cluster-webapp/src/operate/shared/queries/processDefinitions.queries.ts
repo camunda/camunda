@@ -11,10 +11,19 @@ import type {ProcessDefinition, QueryProcessDefinitionsRequestBody} from '@camun
 import {queries} from '#/shared/http/queries';
 
 const PAGE_LIMIT = 1000;
+type DefinitionQueryOptions = {retry?: false; requireComplete?: true};
 
-const operationsLogDefinitionsQuery = (filter: NonNullable<QueryProcessDefinitionsRequestBody['filter']>) =>
+const operationsLogDefinitionsQuery = (
+	filter: NonNullable<QueryProcessDefinitionsRequestBody['filter']>,
+	options?: DefinitionQueryOptions,
+) =>
 	queryOptions({
-		queryKey: ['operationsLogDefinitions', filter] as const,
+		queryKey: [
+			'operationsLogDefinitions',
+			filter,
+			...(options?.retry === false ? ['no-retry'] : []),
+			...(options?.requireComplete === true ? ['require-complete'] : []),
+		] as const,
 		queryFn: async ({client, signal}): Promise<ProcessDefinition[]> => {
 			const items: ProcessDefinition[] = [];
 			let after: string | undefined;
@@ -22,13 +31,26 @@ const operationsLogDefinitionsQuery = (filter: NonNullable<QueryProcessDefinitio
 
 			while (hasMore) {
 				signal.throwIfAborted();
-				const page = await client.fetchQuery(
-					queries.queryProcessDefinitions({filter, page: {limit: PAGE_LIMIT, after}}),
-				);
+				const page = await client.fetchQuery({
+					...queries.queryProcessDefinitions({filter, page: {limit: PAGE_LIMIT, after}}),
+					...(options?.retry === false ? {retry: false} : {}),
+				});
 				items.push(...page.items);
 				const next = page.page.endCursor;
 				if (next === null) {
-					if (items.length < page.page.totalItems && !page.page.hasMoreTotalItems) {
+					// A later empty cursor page proves exhaustion even if the total hit count is capped.
+					if (
+						options?.requireComplete === true &&
+						after !== undefined &&
+						page.items.length === 0 &&
+						page.page.hasMoreTotalItems
+					) {
+						break;
+					}
+					if (
+						(options?.requireComplete === true && page.page.hasMoreTotalItems) ||
+						(items.length < page.page.totalItems && !page.page.hasMoreTotalItems)
+					) {
 						throw new Error('Process definition search ended before all results were returned');
 					}
 					break;
@@ -47,11 +69,14 @@ const operationsLogDefinitionsQuery = (filter: NonNullable<QueryProcessDefinitio
 		},
 	});
 
-const selectedDefinitionsQuery = (process: string, tenantId?: string) =>
-	operationsLogDefinitionsQuery({
-		processDefinitionId: {$eq: process},
-		...(tenantId && tenantId !== 'all' ? {tenantId} : {}),
-	});
+const selectedDefinitionsQuery = (process: string, tenantId?: string, options?: DefinitionQueryOptions) =>
+	operationsLogDefinitionsQuery(
+		{
+			processDefinitionId: {$eq: process},
+			...(tenantId && tenantId !== 'all' ? {tenantId} : {}),
+		},
+		options,
+	);
 
 const resolvedDefinitionQuery = (process: string, tenantId: string | undefined, version: number) =>
 	operationsLogDefinitionsQuery({

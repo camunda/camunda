@@ -30,6 +30,18 @@ class OperateProcessesPage extends BasePage {
 		return this.page.getByRole('combobox', {name: 'Name'});
 	}
 
+	get elementCombobox() {
+		return this.page.getByRole('combobox', {name: 'Element'});
+	}
+
+	get versionCombobox() {
+		return this.page.getByRole('combobox', {name: 'Version'});
+	}
+
+	diagramElement(elementId: string) {
+		return this.page.locator(`[data-element-id="${elementId}"]`);
+	}
+
 	get resetFiltersButton() {
 		return this.page.getByRole('button', {name: 'Reset filters'});
 	}
