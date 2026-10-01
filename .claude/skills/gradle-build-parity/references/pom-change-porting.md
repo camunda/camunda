@@ -138,9 +138,9 @@ Catalog accessors also work inside `buildscript {}` on Gradle 9.5, so use
 After wiring the settings/module entry, compare one module at a time:
 
 ```bash
-python .claude/skills/gradle-build-parity/compare-module-deps.py --dir <module-dir> --scope compile
-python .claude/skills/gradle-build-parity/compare-module-deps.py --dir <module-dir> --scope runtime
-python .claude/skills/gradle-build-parity/compare-module-deps.py --dir <module-dir> --scope test --versions
+python .github/scripts/gradle/compare-module-deps.py --dir <module-dir> --scope compile
+python .github/scripts/gradle/compare-module-deps.py --dir <module-dir> --scope runtime
+python .github/scripts/gradle/compare-module-deps.py --dir <module-dir> --scope test --versions
 ```
 
 Use Maven to explain a discrepancy rather than blindly changing Gradle:
@@ -175,7 +175,7 @@ Before concluding, complete the Gradle CI-shaped validation from the repository 
 Compare the Gradle archive with the Maven archive:
 
 ```bash
-python3 .claude/skills/gradle-build-parity/compare-dist.py \
+python3 .github/scripts/gradle/compare-dist.py \
   dist/build/distributions/camunda-zeebe-*.zip \
   dist/target/camunda-zeebe-*.zip
 ```

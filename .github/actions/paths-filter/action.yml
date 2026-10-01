@@ -361,6 +361,7 @@ runs:
           - 'gradlew.bat'
           - 'gradle/**'
           - 'buildSrc/**'
+          - '.github/scripts/gradle/**'
 
         validate-pom-metadata-extra-change:
           - 'mvnw'

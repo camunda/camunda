@@ -340,7 +340,7 @@ jobs:
           gradle_zip=$(find dist/build/distributions -maxdepth 1 -name 'camunda-zeebe-*.zip' -print -quit)
           maven_zip=$(find dist/target -maxdepth 1 -name 'camunda-zeebe-*.zip' -print -quit)
           test -n "$gradle_zip" && test -n "$maven_zip"
-          python3 .claude/skills/gradle-build-parity/compare-dist.py \
+          python3 .github/scripts/gradle/compare-dist.py \
             "$gradle_zip" "$maven_zip" \
             --gradle-manifest dist/build/reports/dist-dependencies.json
       - name: Observe build status
