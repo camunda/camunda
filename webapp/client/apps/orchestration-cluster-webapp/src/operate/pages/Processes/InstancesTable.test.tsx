@@ -8,6 +8,7 @@
 
 import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
 import {HttpResponse} from 'msw';
+import {z} from 'zod';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
@@ -289,6 +290,7 @@ describe('<InstancesTable />', () => {
 
 		const screen = await renderInstancesTable();
 
+		await expect.element(screen.getByRole('link', {name: 'View instance 1'})).toBeVisible();
 		await expect.element(screen.getByRole('columnheader', {name: 'Operation State'})).not.toBeInTheDocument();
 	});
 
@@ -314,11 +316,270 @@ describe('<InstancesTable />', () => {
 			mockQueryBatchOperationItemsEndpoint({successResponse: EMPTY_BATCH_OPERATION_ITEMS_RESPONSE}),
 		);
 
-		const screen = await renderInstancesTable({...BASE_SEARCH, batchOperationKey: 'batch-op-1'});
+		const screen = await renderInstancesTable({
+			...BASE_SEARCH,
+			active: false,
+			incidents: false,
+			suspended: false,
+			completed: true,
+			batchOperationKey: 'batch-op-1',
+		});
 
 		await expect.element(screen.getByRole('columnheader', {name: 'Operation State'})).toBeVisible();
 		await expect.element(screen.getByText('COMPLETED')).toBeVisible();
 		await expect.element(screen.getByText('FAILED')).toBeVisible();
+		await expect.element(screen.getByText('boom')).not.toBeInTheDocument();
+		await expect
+			.element(screen.getByRole('button', {name: 'Show failure details for instance 1'}))
+			.not.toBeInTheDocument();
+		await userEvent.click(screen.getByRole('button', {name: 'Show failure details for instance 2'}));
+		await expect.element(screen.getByText('boom')).toBeVisible();
+		await userEvent.click(screen.getByRole('button', {name: 'Show failure details for instance 2'}));
+		await expect.element(screen.getByText('boom')).not.toBeInTheDocument();
+	});
+
+	it.for([null, ''])(
+		'should show the fallback for a failed item with %s error message',
+		async (errorMessage, {worker}) => {
+			worker.use(
+				mockQueryProcessInstancesEndpoint({
+					successResponse: HttpResponse.json(
+						createQueryProcessInstancesResponse({
+							items: [createProcessInstance({processInstanceKey: '1'})],
+						}),
+					),
+				}),
+				mockQueryBatchOperationItemsEndpoint({
+					successResponse: HttpResponse.json(
+						createQueryBatchOperationItemsResponse({
+							items: [createBatchOperationItem({processInstanceKey: '1', state: 'FAILED', errorMessage})],
+						}),
+					),
+				}),
+			);
+
+			const screen = await renderInstancesTable({...BASE_SEARCH, batchOperationKey: 'batch-op-1'});
+
+			await userEvent.click(screen.getByRole('button', {name: 'Show failure details for instance 1'}));
+			await expect.element(screen.getByText('Operation failed')).toBeVisible();
+		},
+	);
+
+	it('should keep failure details attached to the instance across filter changes', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({items: [createProcessInstance({processInstanceKey: '1'})]}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryBatchOperationItemsResponse({
+						items: [createBatchOperationItem({processInstanceKey: '1', state: 'FAILED', errorMessage: 'First failed'})],
+					}),
+				),
+			}),
+		);
+		const screen = await renderSearchHarness(
+			{...BASE_SEARCH, batchOperationKey: 'batch-op-1'},
+			{...BASE_SEARCH, batchOperationKey: 'batch-op-1', processInstanceKey: '2'},
+		);
+		await userEvent.click(screen.getByRole('button', {name: 'Show failure details for instance 1'}));
+		await expect.element(screen.getByText('First failed')).toBeVisible();
+
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({items: [createProcessInstance({processInstanceKey: '2'})]}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryBatchOperationItemsResponse({
+						items: [
+							createBatchOperationItem({processInstanceKey: '2', state: 'FAILED', errorMessage: 'Second failed'}),
+						],
+					}),
+				),
+			}),
+		);
+		await userEvent.click(screen.getByRole('button', {name: 'change search'}));
+
+		await expect.element(screen.getByText('First failed')).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('button', {name: 'Show failure details for instance 2'})).toBeVisible();
+		await expect.element(screen.getByText('Second failed')).not.toBeInTheDocument();
+		await userEvent.click(screen.getByRole('button', {name: 'Show failure details for instance 2'}));
+		await expect.element(screen.getByText('Second failed')).toBeVisible();
+	});
+
+	it('should remove expanded failure details when the batch operation filter is cleared', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({items: [createProcessInstance({processInstanceKey: '1'})]}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryBatchOperationItemsResponse({
+						items: [createBatchOperationItem({processInstanceKey: '1', state: 'FAILED', errorMessage: 'First failed'})],
+					}),
+				),
+			}),
+		);
+		const screen = await renderSearchHarness({...BASE_SEARCH, batchOperationKey: 'batch-op-1'}, BASE_SEARCH);
+		await userEvent.click(screen.getByRole('button', {name: 'Show failure details for instance 1'}));
+		await expect.element(screen.getByText('First failed')).toBeVisible();
+
+		await userEvent.click(screen.getByRole('button', {name: 'change search'}));
+
+		await expect.element(screen.getByText('First failed')).not.toBeInTheDocument();
+		await expect
+			.element(screen.getByRole('button', {name: 'Show failure details for instance 1'}))
+			.not.toBeInTheDocument();
+		await expect.element(screen.getByRole('columnheader', {name: 'Operation State'})).not.toBeInTheDocument();
+	});
+
+	it('should reset the expanded detail when the batch operation key changes for the same instance', async ({
+		worker,
+	}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({items: [createProcessInstance({processInstanceKey: '1'})]}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryBatchOperationItemsResponse({
+						items: [createBatchOperationItem({processInstanceKey: '1', state: 'FAILED', errorMessage: 'Old failure'})],
+					}),
+				),
+			}),
+		);
+		const screen = await renderSearchHarness(
+			{...BASE_SEARCH, batchOperationKey: 'batch-op-1'},
+			{...BASE_SEARCH, batchOperationKey: 'batch-op-2'},
+		);
+		await userEvent.click(screen.getByRole('button', {name: 'Show failure details for instance 1'}));
+		await expect.element(screen.getByText('Old failure')).toBeVisible();
+
+		worker.use(
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryBatchOperationItemsResponse({
+						items: [createBatchOperationItem({processInstanceKey: '1', state: 'FAILED', errorMessage: 'New failure'})],
+					}),
+				),
+			}),
+		);
+		await userEvent.click(screen.getByRole('button', {name: 'change search'}));
+
+		await expect.element(screen.getByText('Old failure')).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('button', {name: 'Show failure details for instance 1'})).toBeVisible();
+		await expect.element(screen.getByText('New failure')).not.toBeInTheDocument();
+		await userEvent.click(screen.getByRole('button', {name: 'Show failure details for instance 1'}));
+		await expect.element(screen.getByText('New failure')).toBeVisible();
+	});
+
+	it('should preserve expanded failure details when selecting an instance', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({items: [createProcessInstance({processInstanceKey: '1'})]}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryBatchOperationItemsResponse({
+						items: [createBatchOperationItem({processInstanceKey: '1', state: 'FAILED', errorMessage: 'Failed'})],
+					}),
+				),
+			}),
+		);
+		const screen = await renderInstancesTable({...BASE_SEARCH, batchOperationKey: 'batch-op-1'});
+		await userEvent.click(screen.getByRole('button', {name: 'Show failure details for instance 1'}));
+		await expect.element(screen.getByText('Failed')).toBeVisible();
+
+		let itemRequests = 0;
+		worker.events.on('request:start', ({request}) => {
+			if (request.url.endsWith('/batch-operation-items/search')) {
+				itemRequests++;
+			}
+		});
+		try {
+			await userEvent.click(screen.getByRole('cell', {name: 'Select instance 1'}));
+			await expect.element(screen.getByRole('checkbox', {name: 'Select instance 1'})).toBeChecked();
+			await expect.element(screen.getByText('Failed')).toBeVisible();
+			await expect
+				.element(screen.getByRole('button', {name: 'Show failure details for instance 1'}))
+				.toHaveAttribute('aria-expanded', 'true');
+			expect(itemRequests).toBe(0);
+		} finally {
+			worker.events.removeAllListeners('request:start');
+		}
+	});
+
+	it('should abort the old batch item request when the batch filter changes', async ({worker}) => {
+		const originalFetch = globalThis.fetch;
+		const itemRequests: {request: Request; body: Promise<unknown>}[] = [];
+		const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+			if (input instanceof Request && input.url.endsWith('/batch-operation-items/search')) {
+				itemRequests.push({request: input, body: input.clone().json()});
+			}
+			return originalFetch(input, init);
+		});
+		try {
+			worker.use(
+				mockQueryProcessInstancesEndpoint({
+					successResponse: HttpResponse.json(
+						createQueryProcessInstancesResponse({items: [createProcessInstance({processInstanceKey: '1'})]}),
+					),
+				}),
+				mockQueryBatchOperationItemsEndpoint({
+					successResponse: EMPTY_BATCH_OPERATION_ITEMS_RESPONSE,
+					delay: 'infinite',
+				}),
+			);
+			const screen = await renderSearchHarness(
+				{...BASE_SEARCH, batchOperationKey: 'batch-op-1'},
+				{...BASE_SEARCH, batchOperationKey: 'batch-op-2'},
+			);
+			let oldRequest: Request | undefined;
+			await expect
+				.poll(async () => {
+					for (const {request, body} of itemRequests) {
+						const payload = z
+							.object({filter: z.object({batchOperationKey: z.object({$eq: z.literal('batch-op-1')})})})
+							.safeParse(await body);
+						if (payload.success) {
+							oldRequest = request;
+							return true;
+						}
+					}
+					return false;
+				})
+				.toBe(true);
+
+			worker.use(
+				mockQueryBatchOperationItemsEndpoint({
+					successResponse: HttpResponse.json(
+						createQueryBatchOperationItemsResponse({
+							items: [
+								createBatchOperationItem({processInstanceKey: '1', state: 'FAILED', errorMessage: 'New failure'}),
+							],
+						}),
+					),
+				}),
+			);
+			await userEvent.click(screen.getByRole('button', {name: 'change search'}));
+
+			await expect.poll(() => oldRequest?.signal.aborted).toBe(true);
+			await userEvent.click(screen.getByRole('button', {name: 'Show failure details for instance 1'}));
+			await expect.element(screen.getByText('New failure')).toBeVisible();
+		} finally {
+			fetchSpy.mockRestore();
+		}
 	});
 
 	it('should report all operation item states for the same process instance', async ({worker}) => {
@@ -334,8 +595,13 @@ describe('<InstancesTable />', () => {
 				successResponse: HttpResponse.json(
 					createQueryBatchOperationItemsResponse({
 						items: [
+							createBatchOperationItem({
+								itemKey: 'item-2',
+								processInstanceKey: '1',
+								state: 'FAILED',
+								errorMessage: 'Incident failed',
+							}),
 							createBatchOperationItem({itemKey: 'item-1', processInstanceKey: '1', state: 'COMPLETED'}),
-							createBatchOperationItem({itemKey: 'item-2', processInstanceKey: '1', state: 'FAILED'}),
 						],
 					}),
 				),
@@ -345,6 +611,166 @@ describe('<InstancesTable />', () => {
 		const screen = await renderInstancesTable({...BASE_SEARCH, batchOperationKey: 'batch-op-1'});
 
 		await expect.element(screen.getByText('FAILED, COMPLETED')).toBeVisible();
+		await userEvent.click(screen.getByRole('button', {name: 'Show failure details for instance 1'}));
+		await expect.element(screen.getByText('Incident failed')).toBeVisible();
+	});
+
+	it('should show every failed item message for one instance with a fallback for missing messages', async ({
+		worker,
+	}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({items: [createProcessInstance({processInstanceKey: '1'})]}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryBatchOperationItemsResponse({
+						items: [
+							createBatchOperationItem({
+								itemKey: 'item-1',
+								processInstanceKey: '1',
+								state: 'FAILED',
+								errorMessage: 'Incident A failed',
+							}),
+							createBatchOperationItem({
+								itemKey: 'item-2',
+								processInstanceKey: '1',
+								state: 'FAILED',
+								errorMessage: 'Incident B failed',
+							}),
+							createBatchOperationItem({itemKey: 'item-3', processInstanceKey: '1', state: 'FAILED'}),
+						],
+					}),
+				),
+			}),
+		);
+		const screen = await renderInstancesTable({...BASE_SEARCH, batchOperationKey: 'batch-op-1'});
+
+		await userEvent.click(screen.getByRole('button', {name: 'Show failure details for instance 1'}));
+
+		await expect
+			.element(screen.getByRole('row').filter({hasText: 'Incident A failed'}))
+			.toMatchTextContent(/Incident A failed\s+Incident B failed\s+Operation failed/);
+	});
+
+	it.for([1, 50, 10_000])(
+		'should find a failed item beyond a page of %s operation items',
+		async (pageSize, {worker}) => {
+			const requestedPages: {limit: number; after?: string}[] = [];
+			worker.events.on('request:start', async ({request}) => {
+				if (!request.url.endsWith('/batch-operation-items/search')) {
+					return;
+				}
+				const payload = z
+					.object({
+						filter: z.object({batchOperationKey: z.object({$eq: z.string()})}),
+						page: z.object({limit: z.number(), after: z.string().optional()}),
+					})
+					.safeParse(await request.clone().json());
+				if (payload.success) {
+					requestedPages.push(payload.data.page);
+				}
+			});
+			try {
+				worker.use(
+					mockQueryProcessInstancesEndpoint({
+						successResponse: HttpResponse.json(
+							createQueryProcessInstancesResponse({items: [createProcessInstance({processInstanceKey: '1'})]}),
+						),
+					}),
+					mockQueryBatchOperationItemsEndpoint({
+						schema: z.object({page: z.object({after: z.undefined().optional(), limit: z.literal(10_000)})}),
+						successResponse: HttpResponse.json(
+							createQueryBatchOperationItemsResponse({
+								items: Array.from({length: pageSize}, (_, index) =>
+									createBatchOperationItem({itemKey: `item-${index}`, processInstanceKey: '1', state: 'COMPLETED'}),
+								),
+								page: {totalItems: pageSize + 1, endCursor: 'next-page'},
+							}),
+						),
+						failureResponse: HttpResponse.json(
+							createQueryBatchOperationItemsResponse({
+								items: [
+									createBatchOperationItem({
+										itemKey: `item-${pageSize}`,
+										processInstanceKey: '1',
+										state: 'FAILED',
+										errorMessage: 'Late failure',
+									}),
+								],
+								page: {totalItems: pageSize + 1},
+							}),
+						),
+					}),
+				);
+				const screen = await renderInstancesTable({...BASE_SEARCH, batchOperationKey: 'batch-op-1'});
+
+				await expect.element(screen.getByText('FAILED, COMPLETED')).toBeVisible();
+				await userEvent.click(screen.getByRole('button', {name: 'Show failure details for instance 1'}));
+				await expect.element(screen.getByText('Late failure')).toBeVisible();
+				await expect.poll(() => requestedPages).toEqual([{limit: 10_000}, {limit: 10_000, after: 'next-page'}]);
+			} finally {
+				worker.events.removeAllListeners('request:start');
+			}
+		},
+	);
+
+	it('should finish when the cursor ends even if the total count is only a lower bound', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({items: [createProcessInstance({processInstanceKey: '1'})]}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				schema: z.object({page: z.object({after: z.undefined().optional()})}),
+				successResponse: HttpResponse.json(
+					createQueryBatchOperationItemsResponse({
+						items: [createBatchOperationItem({processInstanceKey: '1', state: 'FAILED', errorMessage: 'Failed'})],
+						page: {totalItems: 1, hasMoreTotalItems: true, endCursor: 'last-page'},
+					}),
+				),
+				failureResponse: HttpResponse.json(
+					createQueryBatchOperationItemsResponse({
+						page: {totalItems: 1, hasMoreTotalItems: true, endCursor: null},
+					}),
+				),
+			}),
+		);
+
+		const screen = await renderInstancesTable({...BASE_SEARCH, batchOperationKey: 'batch-op-1'});
+
+		await userEvent.click(screen.getByRole('button', {name: 'Show failure details for instance 1'}));
+		await expect.element(screen.getByText('Failed')).toBeVisible();
+	});
+
+	it('should not request another page when the reported total is exact', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({items: [createProcessInstance({processInstanceKey: '1'})]}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				schema: z.object({page: z.object({after: z.undefined().optional()})}),
+				successResponse: HttpResponse.json(
+					createQueryBatchOperationItemsResponse({
+						items: Array.from({length: 50}, (_, index) =>
+							createBatchOperationItem({itemKey: `item-${index}`, processInstanceKey: '1', state: 'COMPLETED'}),
+						),
+						page: {totalItems: 50, endCursor: 'last-page'},
+					}),
+				),
+				failureResponse: new HttpResponse(null, {status: 503}),
+			}),
+		);
+
+		const screen = await renderInstancesTable({...BASE_SEARCH, batchOperationKey: 'batch-op-1'});
+
+		await expect.element(screen.getByText('COMPLETED')).toBeVisible();
+		await expect.element(screen.getByText("Couldn't fetch data")).not.toBeInTheDocument();
 	});
 
 	it('should refresh active operation item states until they finish', async ({worker}) => {
@@ -435,6 +861,53 @@ describe('<InstancesTable />', () => {
 		const screen = await renderInstancesTable({...BASE_SEARCH, batchOperationKey: 'batch-op-1'});
 
 		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
+	});
+
+	it('should hide cached failure details when the operation request fails and restore them on recovery', async ({
+		worker,
+	}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({items: [createProcessInstance({processInstanceKey: '1'})]}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryBatchOperationItemsResponse({
+						items: [
+							createBatchOperationItem({processInstanceKey: '1', state: 'FAILED', errorMessage: 'Initial failure'}),
+						],
+					}),
+				),
+			}),
+		);
+		const screen = await renderInstancesTable({...BASE_SEARCH, batchOperationKey: 'batch-op-1'});
+		await expect.element(screen.getByRole('button', {name: 'Show failure details for instance 1'})).toBeVisible();
+
+		worker.use(mockQueryBatchOperationItemsEndpoint({successResponse: new HttpResponse(null, {status: 503})}));
+		await screen.queryClient.invalidateQueries({queryKey: ['batchOperationItems', 'forInstances']});
+
+		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
+		await expect
+			.element(screen.getByRole('button', {name: 'Show failure details for instance 1'}))
+			.not.toBeInTheDocument();
+
+		worker.use(
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryBatchOperationItemsResponse({
+						items: [
+							createBatchOperationItem({processInstanceKey: '1', state: 'FAILED', errorMessage: 'Recovered failure'}),
+						],
+					}),
+				),
+			}),
+		);
+		await screen.queryClient.invalidateQueries({queryKey: ['batchOperationItems', 'forInstances']});
+
+		await userEvent.click(screen.getByRole('button', {name: 'Show failure details for instance 1'}));
+		await expect.element(screen.getByText('Recovered failure')).toBeVisible();
 	});
 
 	it('should announce operation state loading once without assertive cell announcements', async ({worker}) => {
@@ -590,6 +1063,85 @@ describe('<InstancesTable />', () => {
 		);
 
 		await expect.element(screen.getByTestId('operation-spinner')).not.toBeInTheDocument();
+	});
+
+	it('should preserve an in-flight row action when its batch item becomes failed', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({items: [createProcessInstance({processInstanceKey: '1'})]}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({successResponse: EMPTY_BATCH_OPERATION_ITEMS_RESPONSE}),
+			mockSuspendProcessInstanceEndpoint({
+				successResponse: new HttpResponse(null, {status: 204}),
+				delay: 'infinite',
+			}),
+		);
+		const screen = await renderInstancesTable({...BASE_SEARCH, batchOperationKey: 'batch-op-1'});
+		await expect.element(screen.getByRole('columnheader', {name: 'Operation State'})).toBeVisible();
+		await userEvent.click(screen.getByRole('button', {name: 'Suspend Instance 1'}));
+		await expect.element(screen.getByTestId('operation-spinner')).toBeVisible();
+
+		worker.use(
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryBatchOperationItemsResponse({
+						items: [createBatchOperationItem({processInstanceKey: '1', state: 'FAILED', errorMessage: 'Failed'})],
+					}),
+				),
+			}),
+		);
+		await screen.queryClient.invalidateQueries({queryKey: ['batchOperationItems', 'forInstances']});
+
+		await expect.element(screen.getByRole('button', {name: 'Show failure details for instance 1'})).toBeVisible();
+		await expect.element(screen.getByTestId('operation-spinner')).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Suspend Instance 1'})).toBeDisabled();
+	});
+
+	it('should keep an expanded failure visible while a row action is in flight', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({items: [createProcessInstance({processInstanceKey: '1'})]}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryBatchOperationItemsResponse({
+						items: [createBatchOperationItem({processInstanceKey: '1', state: 'FAILED', errorMessage: 'Before'})],
+					}),
+				),
+			}),
+			mockSuspendProcessInstanceEndpoint({
+				successResponse: new HttpResponse(null, {status: 204}),
+				delay: 'infinite',
+			}),
+		);
+		const screen = await renderInstancesTable({...BASE_SEARCH, batchOperationKey: 'batch-op-1'});
+		await userEvent.click(screen.getByRole('button', {name: 'Show failure details for instance 1'}));
+		await expect.element(screen.getByText('Before')).toBeVisible();
+
+		await userEvent.click(screen.getByRole('button', {name: 'Suspend Instance 1'}));
+		await expect.element(screen.getByTestId('operation-spinner')).toBeVisible();
+
+		worker.use(
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryBatchOperationItemsResponse({
+						items: [createBatchOperationItem({processInstanceKey: '1', state: 'FAILED', errorMessage: 'After'})],
+					}),
+				),
+			}),
+		);
+		await screen.queryClient.invalidateQueries({queryKey: ['batchOperationItems', 'forInstances']});
+
+		await expect.element(screen.getByText('After')).toBeVisible();
+		await expect
+			.element(screen.getByRole('button', {name: 'Show failure details for instance 1'}))
+			.toHaveAttribute('aria-expanded', 'true');
+		await expect.element(screen.getByTestId('operation-spinner')).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Suspend Instance 1'})).toBeDisabled();
 	});
 
 	it('should wait for a resume command to take effect before clearing the spinner', async ({worker}) => {

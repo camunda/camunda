@@ -616,6 +616,9 @@
 					"endDate": "Enddatum",
 					"operationState": "Vorgangsstatus",
 					"operationStateLoading": "Wird geladen...",
+					"operationFailed": "Operation fehlgeschlagen",
+					"failureDetails": "Fehlerdetails",
+					"expandFailure": "Fehlerdetails für Instanz {{key}} anzeigen",
 					"operations": {
 						"header": "Vorgänge",
 						"resolveIncidentsFailed": "Wiederholung der Incidents fehlgeschlagen",

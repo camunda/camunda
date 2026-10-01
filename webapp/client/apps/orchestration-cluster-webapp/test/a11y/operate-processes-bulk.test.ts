@@ -17,7 +17,10 @@ import {
 	createProcessInstance,
 	createQueryProcessInstancesResponse,
 } from '#/shared-test-modules/api-mocks/process-instances';
-import {createQueryBatchOperationItemsResponse} from '#/shared-test-modules/api-mocks/batch-operations';
+import {
+	createBatchOperationItem,
+	createQueryBatchOperationItemsResponse,
+} from '#/shared-test-modules/api-mocks/batch-operations';
 import {
 	mockCurrentUserEndpoint,
 	mockSystemConfigurationEndpoint,
@@ -29,12 +32,7 @@ import {
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 
-test('should have no accessibility violations in the bulk toolbar and confirmation', async ({
-	network,
-	page,
-	operateProcessesPage,
-	makeAxeBuilder,
-}) => {
+test.beforeEach(({network}) => {
 	network.use(
 		mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 		mockSystemConfigurationEndpoint({
@@ -57,6 +55,13 @@ test('should have no accessibility violations in the bulk toolbar and confirmati
 			successResponse: HttpResponse.json(createQueryBatchOperationItemsResponse()),
 		}),
 	);
+});
+
+test('should have no accessibility violations in the bulk toolbar and confirmation', async ({
+	page,
+	operateProcessesPage,
+	makeAxeBuilder,
+}) => {
 	await operateProcessesPage.goto();
 	await page.getByRole('checkbox', {name: 'Select all items'}).check({force: true});
 	await expect(page.getByRole('button', {name: 'Cancel', exact: true})).toBeVisible();
@@ -69,5 +74,38 @@ test('should have no accessibility violations in the bulk toolbar and confirmati
 			await Promise.all(element.getAnimations().map((animation) => animation.finished));
 		}
 	});
+	expect((await makeAxeBuilder().analyze()).violations).toEqual([]);
+});
+
+test('should expose failed operation details accessibly', async ({
+	network,
+	page,
+	operateProcessesPage,
+	makeAxeBuilder,
+}) => {
+	network.use(
+		mockQueryBatchOperationItemsEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryBatchOperationItemsResponse({
+					items: [
+						createBatchOperationItem({
+							processInstanceKey: '1',
+							state: 'FAILED',
+							errorMessage: 'Unable to complete operation',
+						}),
+					],
+				}),
+			),
+		}),
+	);
+
+	await operateProcessesPage.goto('?batchOperationKey=2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee');
+	const expand = page.getByRole('button', {name: 'Show failure details for instance 1'});
+	await expect(expand).toBeVisible();
+	expect((await makeAxeBuilder().analyze()).violations).toEqual([]);
+
+	await expand.click();
+	await expect(expand).toHaveAttribute('aria-expanded', 'true');
+	await expect(page.getByText('Unable to complete operation')).toBeVisible();
 	expect((await makeAxeBuilder().analyze()).violations).toEqual([]);
 });

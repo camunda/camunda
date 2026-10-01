@@ -28,7 +28,10 @@ import {getClientConfig} from '#/shared/config/getClientConfig';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
 import {useProcessInstancesSearch} from './useProcessInstancesSearch';
-import {batchOperationItemsQueryOptions} from './batchOperationItems.queries';
+import {
+	batchOperationItemsForInstancesQueryOptions,
+	batchOperationItemsQueryOptions,
+} from './batchOperationItems.queries';
 import {InstanceOperations} from './InstanceOperations';
 import type {ProcessesSearch} from './processesFilter';
 import {InstancesTableContainer, ProcessName, InstanceLink, VisuallyHiddenStatus} from './styled';
@@ -76,6 +79,20 @@ function getActiveOperationsByInstance(items: BatchOperationItem[]) {
 	}, new Map<string, BatchOperationType[]>());
 }
 
+function selectOperationItems({items}: {items: BatchOperationItem[]}) {
+	return {
+		states: getOperationStatesByInstance(items),
+		failures: items
+			.filter((item) => item.state === 'FAILED')
+			.reduce((messages, item) => {
+				const errors = messages.get(item.processInstanceKey) ?? [];
+				errors.push(item.errorMessage);
+				messages.set(item.processInstanceKey, errors);
+				return messages;
+			}, new Map<string, (string | null)[]>()),
+	};
+}
+
 const InstancesTable: React.FC<Props> = ({search, isActionMode, renderActions}) => {
 	const {t} = useTranslation();
 	const {
@@ -118,13 +135,13 @@ const InstancesTable: React.FC<Props> = ({search, isActionMode, renderActions}) 
 		page: {limit: processInstanceKeys.length},
 	} satisfies QueryBatchOperationItemsRequestBody;
 	const {
-		data: operationItemsByInstance,
+		data: operationItems,
 		isLoading: isLoadingOperationItems,
 		isError: isOperationItemsError,
 	} = useQuery({
-		...batchOperationItemsQueryOptions(operationItemsRequestBody),
+		...batchOperationItemsForInstancesQueryOptions(operationItemsRequestBody),
 		enabled: isOperationStateColumnVisible && processInstanceKeys.length > 0,
-		select: ({items}) => getOperationStatesByInstance(items),
+		select: selectOperationItems,
 		refetchInterval: (query) =>
 			query.state.data?.items.some(({state}) => state === 'ACTIVE') ? ACTIVE_ITEMS_REFETCH_INTERVAL_MS : false,
 	});
@@ -172,7 +189,7 @@ const InstancesTable: React.FC<Props> = ({search, isActionMode, renderActions}) 
 							) : isOperationItemsError ? (
 								t('operate.shared.errorMessage.message')
 							) : (
-								(operationItemsByInstance?.get(row.processInstanceKey) ?? '--')
+								(operationItems?.states.get(row.processInstanceKey) ?? '--')
 							),
 					},
 				]
@@ -318,6 +335,29 @@ const InstancesTable: React.FC<Props> = ({search, isActionMode, renderActions}) 
 					columns={columns}
 					rows={processInstances}
 					rowKey={(row) => row.processInstanceKey}
+					expansionScope={batchOperationKey}
+					rowOperationError={
+						isOperationStateColumnVisible
+							? (row) => {
+									if (isLoadingOperationItems || isOperationItemsError) {
+										return null;
+									}
+									const errors = operationItems?.failures.get(row.processInstanceKey);
+									const message = errors
+										?.map((error) => error || t('operate.processes.instancesTable.operationFailed'))
+										.join('\n');
+									return !message
+										? null
+										: {
+												message,
+												expandLabel: t('operate.processes.instancesTable.expandFailure', {
+													key: row.processInstanceKey,
+												}),
+											};
+								}
+							: undefined
+					}
+					failureDetailsLabel={t('operate.processes.instancesTable.failureDetails')}
 					selectionType="checkbox"
 					selectAllLabel={t('operate.processes.toolbar.selectAll')}
 					selectRowLabel={(key) => t('operate.processes.toolbar.selectRow', {key})}

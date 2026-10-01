@@ -628,6 +628,9 @@
 					"endDate": "End Date",
 					"operationState": "Operation State",
 					"operationStateLoading": "Loading...",
+					"operationFailed": "Operation failed",
+					"failureDetails": "Failure details",
+					"expandFailure": "Show failure details for instance {{key}}",
 					"operations": {
 						"header": "Operations",
 						"resolveIncidentsFailed": "Failed to retry incidents",
