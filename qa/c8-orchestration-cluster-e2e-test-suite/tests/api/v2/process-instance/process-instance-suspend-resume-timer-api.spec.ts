@@ -14,6 +14,8 @@ import {
 import {assertStatusCode, buildUrl, jsonHeaders} from '../../../../utils/http';
 import {
   activateJobsByType,
+  elementInstanceStartTimes,
+  expectElementInstancesStartedAfter,
   completeJob,
   createInstanceOnceDeployed,
   expectNoIncidents,
@@ -24,6 +26,7 @@ import {
   suspendAndExpectSuspended,
 } from '@requestHelpers';
 import {
+  defaultAssertionOptions,
   extendedAssertionOptions,
   uniquePrefixedId,
 } from '../../../../utils/constants';
@@ -48,12 +51,13 @@ async function deployDurationTimerProcess(processDefinitionId: string) {
  * the call activity runs. */
 async function deployCycleTimerProcess(prefix: string) {
   const childId = `${prefix}-child`;
+  const childJobType = `${prefix}-child-job`;
   const processDefinitionId = `${prefix}-timer`;
   const tickJobType = `${prefix}-tick`;
   const thresholdJobType = `${prefix}-threshold`;
   await deployWithSubstitutions('./resources/childProcess_v_1.bpmn', {
     'id="childProcess"': `id="${childId}"`,
-    'type="Task"': `type="${prefix}-child-job"`,
+    'type="Task"': `type="${childJobType}"`,
   });
   await deployWithSubstitutions(
     './resources/repeating_boundary_timer_process.bpmn',
@@ -63,7 +67,13 @@ async function deployCycleTimerProcess(prefix: string) {
       'type="sr-threshold"': `type="${thresholdJobType}"`,
     },
   );
-  return {processDefinitionId, childId, tickJobType, thresholdJobType};
+  return {
+    processDefinitionId,
+    childId,
+    childJobType,
+    tickJobType,
+    thresholdJobType,
+  };
 }
 
 async function startCycleTimerInstance(prefix: string, amount = 10) {
@@ -133,41 +143,49 @@ async function countJobs(
   return ((await res.json()).items ?? []).length;
 }
 
-/** Tick start times, oldest first. Timestamps rather than counts: the export
- * lag is unbounded, so a count read at some moment cannot tell a double-fire
- * from a tick that landed while the reader was behind. */
-async function tickStartTimes(
-  request: APIRequestContext,
-  processInstanceKey: string,
-): Promise<number[]> {
-  const res = await request.post(buildUrl('/element-instances/search'), {
-    headers: jsonHeaders(),
-    data: {
-      filter: {processInstanceKey, elementId: 'Activity_tick'},
-      page: {limit: 50},
-    },
-  });
-  await assertStatusCode(res, 200);
-  const items: Array<{startDate: string}> = (await res.json()).items ?? [];
-  return items
-    .map((item) => new Date(item.startDate).getTime())
-    .sort((a, b) => a - b);
-}
+const TICK_ELEMENT = 'Activity_tick';
 
-/** At least, never exactly: the cadence keeps firing, so an exact count can be
- * skipped over entirely when the export falls a whole interval behind. */
-async function expectAtLeastTicks(
+const tickTimes = (request: APIRequestContext, processInstanceKey: string) =>
+  elementInstanceStartTimes(request, processInstanceKey, TICK_ELEMENT);
+
+const ticksAfter = (
   request: APIRequestContext,
   processInstanceKey: string,
+  since: number,
   expected: number,
-  assertionOptions = extendedAssertionOptions,
-): Promise<number[]> {
-  let times: number[] = [];
+) =>
+  expectElementInstancesStartedAfter(
+    request,
+    processInstanceKey,
+    TICK_ELEMENT,
+    since,
+    expected,
+    extendedAssertionOptions,
+  );
+
+/**
+ * Waits until the call activity's child has a job to hand out, which means the
+ * boundary timers are armed. Job activation answers from the engine, so unlike
+ * an element-state read it cannot lag behind the repetitions it is waiting on.
+ * The job is left uncompleted: the child has to keep running.
+ */
+async function awaitChildJobAvailable(
+  request: APIRequestContext,
+  childJobType: string,
+) {
   await expect(async () => {
-    times = await tickStartTimes(request, processInstanceKey);
-    expect(times.length).toBeGreaterThanOrEqual(expected);
-  }).toPass(assertionOptions);
-  return times;
+    const res = await request.post(buildUrl('/jobs/activation'), {
+      headers: jsonHeaders(),
+      data: {
+        type: childJobType,
+        maxJobsToActivate: 1,
+        timeout: 1_000,
+        requestTimeout: 1_000,
+      },
+    });
+    await assertStatusCode(res, 200);
+    expect(((await res.json()).jobs ?? []).length).toBeGreaterThan(0);
+  }).toPass(defaultAssertionOptions);
 }
 
 async function expectJobCount(
@@ -212,10 +230,11 @@ test.describe('Process Instance Suspend and Resume Timer API', () => {
   }) => {
     const processDefinitionId = uniquePrefixedId('sr-timer-due');
     await deployDurationTimerProcess(processDefinitionId);
-    // The duration must outlast the indexing wait below, or the timer fires
-    // before the suspend; the suspension must then outlast the due date, or
-    // "still waiting" only means "not due yet".
-    const TIMER_SECONDS = 30;
+    // The duration has to outlast the readiness wait below, whose budget is
+    // 60s — at 30s a slow index could let the timer fire before the suspend.
+    // The suspension must then outlast the due date, or "still waiting" only
+    // means "not due yet".
+    const TIMER_SECONDS = 90;
     const instance = await createInstanceOnceDeployed(processDefinitionId, 1, {
       duration: `PT${TIMER_SECONDS}S`,
     });
@@ -288,8 +307,10 @@ test.describe('Process Instance Suspend and Resume Timer API', () => {
     test.setTimeout(8 * 60 * 1000);
     const fixture = await startCycleTimerInstance(uniquePrefixedId('sr-cycle'));
 
-    // One tick first, so what follows is about the gap, not a timer that never fired.
-    await expectAtLeastTicks(request, fixture.processInstanceKey, 1);
+    // Gated on the engine, not on an indexed read: R4/PT20S is spent after 80s,
+    // and any search for readiness can itself take longer than that, leaving
+    // too few repetitions for the catch-up and the re-arm to both happen.
+    await awaitChildJobAvailable(request, fixture.childJobType);
 
     await suspendAndExpectSuspended(request, fixture.processInstanceKey);
     const suspendedAt = new Date(
@@ -299,11 +320,10 @@ test.describe('Process Instance Suspend and Resume Timer API', () => {
       ),
     ).getTime();
     await hold(70);
-    // Compared against the engine's own suspension timestamp, so a tick that
-    // fired earlier but exported late cannot be mistaken for one that fired
-    // while the instance was suspended.
+    // Against the engine's own suspension time, so a late export cannot look
+    // like a tick that fired while suspended.
     expect(
-      (await tickStartTimes(request, fixture.processInstanceKey)).filter(
+      (await tickTimes(request, fixture.processInstanceKey)).filter(
         (startedAt) => startedAt > suspendedAt,
       ),
     ).toHaveLength(0);
@@ -313,15 +333,21 @@ test.describe('Process Instance Suspend and Resume Timer API', () => {
       204,
     );
 
-    const times = await expectAtLeastTicks(
+    // By suspension time, not position: a second tick can land before the
+    // suspend, and a positional pair then straddles the suspension.
+    const afterResume = await ticksAfter(
       request,
       fixture.processInstanceKey,
-      3,
+      suspendedAt,
+      2,
     );
 
-    // #62637 anchored the reschedule on now, so the catch-up was followed
-    // immediately by a second fire. A full interval says it was not.
-    expect(times[2]! - times[1]!).toBeGreaterThan(15_000);
+    // One fire for the gap: #62637 fired again immediately.
+    expect(
+      afterResume.filter((startedAt) => startedAt <= afterResume[0]! + 5_000),
+    ).toHaveLength(1);
+    // And the cadence re-arms a full interval on, rather than snapping to now.
+    expect(afterResume[1]! - afterResume[0]!).toBeGreaterThan(15_000);
     await completeBoundaryWork(
       request,
       fixture.processInstanceKey,
