@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.core.authz.LazyTokenClaimsConverter;
+import io.camunda.security.spring.converter.AdditionalJwkSetUrisByRegistrationId;
 import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
@@ -77,7 +78,7 @@ class ProviderAwareOidcUserAuthenticationConverterTest {
         mock(OidcAccessTokenDecoderFactory.class),
         defaultConverter,
         mock(HttpServletRequest.class),
-        Map.of(),
+        AdditionalJwkSetUrisByRegistrationId.empty(),
         Map.of("okta", true),
         providerConverters,
         Map.of("okta", List.of("iss", "https://camunda.com/claims/client_id")));
