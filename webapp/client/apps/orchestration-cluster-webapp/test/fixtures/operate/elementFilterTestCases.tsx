@@ -650,6 +650,7 @@ function registerElementFilterTests() {
 									}),
 						);
 					}),
+					mockQueryProcessInstancesEndpoint({successResponse: EMPTY_INSTANCES}),
 					mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
 					mockGetProcessDefinitionStatisticsEndpoint({successResponse: EMPTY_STATISTICS}),
 				);

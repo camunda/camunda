@@ -685,6 +685,28 @@
 					"processId": "Prozess-ID",
 					"versionTag": "Versions-Tag"
 				},
+				"definitionDeletion": {
+					"buttonTitle": "Prozessdefinition \"{{name}} - Version {{version}}\" löschen",
+					"historyButtonTitle": "Verlauf der Prozessdefinition \"{{name}} - Version {{version}}\" löschen",
+					"runningInstances": "Nur Prozessdefinitionen ohne laufende Instanzen können gelöscht werden.",
+					"deleted": "Gelöscht",
+					"deletedDescription": "Diese Prozessdefinition wurde gelöscht. Ihr Eintrag bleibt verfügbar, bis ihr Verlauf endgültig gelöscht wird.",
+					"title": "Prozessdefinition löschen",
+					"description": "Sie sind dabei, die folgende Prozessdefinition zu löschen:",
+					"historyDescription": "Diese Prozessdefinition wurde bereits gelöscht. Wenn Sie fortfahren, wird ihr verbleibender Verlauf endgültig entfernt:",
+					"confirmation": "Ja, ich bestätige, dass ich diese Prozessdefinition löschen möchte.",
+					"historyConfirmation": "Ja, ich bestätige, dass ich den Verlauf dieser Prozessdefinition endgültig löschen möchte.",
+					"warningTitle": "Das Löschen einer Prozessdefinition entfernt sie dauerhaft und hat folgende Auswirkungen:",
+					"historyWarningTitle": "Das Löschen des verbleibenden Verlaufs der Prozessdefinition ist endgültig und hat folgende Auswirkungen:",
+					"warningFinishedInstances": "Alle abgeschlossenen Prozessinstanzen der gelöschten Prozessdefinition werden aus der Anwendung gelöscht.",
+					"warningReferencedInstances": "Alle von den gelöschten Prozessinstanzen referenzierten Entscheidungs- und Prozessinstanzen werden gelöscht.",
+					"warningUserTasks": "Wenn eine Prozessdefinition Benutzeraufgaben enthält, werden diese aus Tasklist gelöscht.",
+					"documentation": "Weitere Informationen finden Sie in unserem Leitfaden zum Löschen einer Prozessdefinition",
+					"details": "Prozessdetails",
+					"definition": "Prozessdefinition",
+					"definitionVersion": "{{name}} - Version {{version}}",
+					"successTitle": "Vorgang erstellt"
+				},
 				"diagramPanel": {
 					"multipleVersionsSelected": "Für den Prozess \"{{name}}\" ist mehr als eine Version ausgewählt",
 					"selectSingleVersion": "Um ein Diagramm zu sehen, wählen Sie eine einzelne Version aus",

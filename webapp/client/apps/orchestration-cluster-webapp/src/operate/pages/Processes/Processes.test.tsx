@@ -11,7 +11,9 @@ import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {HttpResponse} from 'msw';
+import {queryProcessDefinitionsRequestBodySchema, type ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.11';
 import {
+	mockDeleteResourceEndpoint,
 	mockGetProcessDefinitionStatisticsEndpoint,
 	mockGetProcessDefinitionXmlEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
@@ -25,6 +27,8 @@ import {createGetProcessDefinitionStatisticsResponse} from '#/shared-test-module
 import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
 import {createQueryProcessInstancesResponse} from '#/shared-test-modules/api-mocks/process-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {Notifications} from '#/shared/notifications/components/Notifications';
+import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {Processes} from './Processes';
 import {registerElementFilterTests} from '../../../../test/fixtures/operate/elementFilterTestCases';
 
@@ -302,6 +306,68 @@ describe('<Processes />', () => {
 			const screen = await renderPage({completed: true});
 
 			await expect.element(screen.getByRole('button', {name: 'Reset filters'})).not.toBeDisabled();
+		});
+	});
+
+	describe('definition deletion', () => {
+		const definition = createProcessDefinition({
+			name: 'Order Process',
+			processDefinitionId: 'order-process',
+			version: 2,
+		});
+
+		function mockSelectedDefinition(selected: ProcessDefinition) {
+			return mockQueryProcessDefinitionsEndpoint({
+				schema: queryProcessDefinitionsRequestBodySchema.refine((body) => body.filter?.state !== 'DRAINING'),
+				successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse({items: [selected]})),
+				failureResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
+			});
+		}
+
+		afterEach(() => notificationsStore.reset());
+
+		it('should show the deleted definition once its deletion is created', async ({worker}) => {
+			worker.use(
+				mockSelectedDefinition(definition),
+				mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+				mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text('')}),
+				mockGetProcessDefinitionStatisticsEndpoint({
+					successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
+				}),
+				mockDeleteResourceEndpoint({
+					successResponse: HttpResponse.json({resourceKey: definition.processDefinitionKey, batchOperation: null}),
+				}),
+			);
+			const screen = await renderWithRouter(
+				() => (
+					<>
+						<Processes
+							process="order-process"
+							version={2}
+							active
+							incidents
+							suspended
+							completed={false}
+							canceled={false}
+						/>
+						<Notifications />
+					</>
+				),
+				{path: '/operate/processes'},
+			);
+
+			await userEvent.click(
+				screen.getByRole('button', {name: 'Delete Process Definition "Order Process - Version 2"'}),
+			);
+			await userEvent.click(screen.getByText('Yes, I confirm I want to delete this process definition.'));
+			worker.use(mockSelectedDefinition({...definition, state: 'DELETED'}));
+			await userEvent.click(screen.getByRole('button', {name: 'Delete', exact: true}));
+
+			await expect.element(screen.getByText('Operation created', {exact: true})).toBeVisible();
+			await expect.element(screen.getByText('Deleted', {exact: true})).toBeVisible();
+			await expect
+				.element(screen.getByRole('button', {name: 'Delete Process Definition History "Order Process - Version 2"'}))
+				.toBeEnabled();
 		});
 	});
 });

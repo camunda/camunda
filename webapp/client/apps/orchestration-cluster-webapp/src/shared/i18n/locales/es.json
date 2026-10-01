@@ -685,6 +685,28 @@
 					"processId": "ID del proceso",
 					"versionTag": "Etiqueta de versión"
 				},
+				"definitionDeletion": {
+					"buttonTitle": "Eliminar definición de proceso \"{{name}} - Versión {{version}}\"",
+					"historyButtonTitle": "Eliminar historial de la definición de proceso \"{{name}} - Versión {{version}}\"",
+					"runningInstances": "Solo se pueden eliminar definiciones de proceso sin instancias en ejecución.",
+					"deleted": "Eliminado",
+					"deletedDescription": "Esta definición de proceso se ha eliminado. Su registro permanecerá disponible hasta que su historial se elimine definitivamente.",
+					"title": "Eliminar definición de proceso",
+					"description": "Está a punto de eliminar la siguiente definición de proceso:",
+					"historyDescription": "Esta definición de proceso ya se ha eliminado. Si continúa, se eliminará permanentemente su historial restante:",
+					"confirmation": "Sí, confirmo que deseo eliminar esta definición de proceso.",
+					"historyConfirmation": "Sí, confirmo que deseo eliminar permanentemente el historial de esta definición de proceso.",
+					"warningTitle": "La eliminación de una definición de proceso será permanente y afectará a lo siguiente:",
+					"historyWarningTitle": "La eliminación del historial restante de la definición de proceso será permanente y afectará a lo siguiente:",
+					"warningFinishedInstances": "Todas las instancias finalizadas de la definición de proceso eliminada se eliminarán de la aplicación.",
+					"warningReferencedInstances": "Se eliminarán todas las instancias de decisión y proceso referenciadas por las instancias de proceso eliminadas.",
+					"warningUserTasks": "Si una definición de proceso contiene tareas de usuario, se eliminarán de Tasklist.",
+					"documentation": "Para obtener más información, consulte nuestra guía para eliminar una definición de proceso",
+					"details": "Detalles del proceso",
+					"definition": "Definición de proceso",
+					"definitionVersion": "{{name}} - Versión {{version}}",
+					"successTitle": "Operación creada"
+				},
 				"diagramPanel": {
 					"multipleVersionsSelected": "Hay más de una versión seleccionada para el proceso \"{{name}}\"",
 					"selectSingleVersion": "Para ver un diagrama, seleccione una única versión",

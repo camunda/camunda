@@ -697,6 +697,28 @@
 					"processId": "Process ID",
 					"versionTag": "Version tag"
 				},
+				"definitionDeletion": {
+					"buttonTitle": "Delete Process Definition \"{{name}} - Version {{version}}\"",
+					"historyButtonTitle": "Delete Process Definition History \"{{name}} - Version {{version}}\"",
+					"runningInstances": "Only process definitions without running instances can be deleted.",
+					"deleted": "Deleted",
+					"deletedDescription": "This process definition has been deleted. Its record remains available until its history is permanently deleted.",
+					"title": "Delete Process Definition",
+					"description": "You are about to delete the following process definition:",
+					"historyDescription": "This process definition is already deleted. Continuing will permanently remove its remaining history:",
+					"confirmation": "Yes, I confirm I want to delete this process definition.",
+					"historyConfirmation": "Yes, I confirm I want to permanently delete this process definition history.",
+					"warningTitle": "Deleting a process definition will permanently remove it and will impact the following:",
+					"historyWarningTitle": "Deleting the remaining process definition history is permanent and will impact the following:",
+					"warningFinishedInstances": "All the deleted process definition's finished process instances will be deleted from the application.",
+					"warningReferencedInstances": "All decision and process instances referenced by the deleted process instances will be deleted.",
+					"warningUserTasks": "If a process definition contains user tasks, they will be deleted from Tasklist.",
+					"documentation": "For a detailed overview, please view our guide on deleting a process definition",
+					"details": "Process Details",
+					"definition": "Process Definition",
+					"definitionVersion": "{{name}} - Version {{version}}",
+					"successTitle": "Operation created"
+				},
 				"diagramPanel": {
 					"multipleVersionsSelected": "There is more than one Version selected for Process \"{{name}}\"",
 					"selectSingleVersion": "To see a Diagram, select a single Version",

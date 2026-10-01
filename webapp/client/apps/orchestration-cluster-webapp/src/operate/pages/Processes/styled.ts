@@ -55,6 +55,14 @@ const DescriptionData = styled.dd`
 	white-space: nowrap;
 `;
 
+const HeaderActions = styled.div`
+	margin-left: auto;
+	display: flex;
+	align-items: center;
+	gap: var(--cds-spacing-03);
+	margin-right: var(--cds-spacing-03);
+`;
+
 const InstancesTableContainer = styled.section`
 	height: 100%;
 	display: flex;
@@ -86,6 +94,7 @@ const VisuallyHiddenStatus = styled.span`
 `;
 
 export {
+	HeaderActions,
 	IndentedGroup,
 	CanceledIcon,
 	Section,
