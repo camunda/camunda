@@ -15,7 +15,9 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -130,5 +132,58 @@ public final class SuspendProcessInstanceTest {
     Assertions.assertThat(rejection)
         .hasIntent(ProcessInstanceIntent.SUSPEND)
         .hasRejectionType(RejectionType.NOT_FOUND);
+  }
+
+  @Test
+  public void shouldRejectSuspendIfProcessInstanceIsTerminating() {
+    // given - a runtime instruction terminates the process instance, and a canceling task
+    // listener blocks the termination
+    final String processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .parallelGateway("fork")
+                .serviceTask("trigger", t -> t.zeebeJobType(processId + "-trigger"))
+                .endEvent()
+                .moveToNode("fork")
+                .userTask(
+                    "task",
+                    t -> t.zeebeUserTask().zeebeTaskListener(l -> l.canceling().type(processId)))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withRuntimeTerminateInstruction("trigger")
+            .create();
+    RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    ENGINE.job().ofInstance(processInstanceKey).withType(processId + "-trigger").complete();
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType(processId)
+        .await();
+
+    // when
+    final Record<ProcessInstanceRecordValue> rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .expectSuspendRejection()
+            .suspend();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasIntent(ProcessInstanceIntent.SUSPEND)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            "Expected to suspend a process instance with key '%d', but it is already being terminated"
+                .formatted(processInstanceKey));
   }
 }

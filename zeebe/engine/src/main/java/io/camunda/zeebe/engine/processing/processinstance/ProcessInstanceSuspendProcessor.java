@@ -47,6 +47,8 @@ public final class ProcessInstanceSuspendProcessor
       MESSAGE_PREFIX + "a cancel request is already in progress";
   private static final String PROCESS_ALREADY_SUSPENDED_MESSAGE =
       MESSAGE_PREFIX + "it is already suspended";
+  private static final String PROCESS_TERMINATING_MESSAGE =
+      MESSAGE_PREFIX + "it is already being terminated";
 
   private final ElementInstanceState elementInstanceState;
   private final TypedResponseWriter responseWriter;
@@ -124,9 +126,7 @@ public final class ProcessInstanceSuspendProcessor
   private boolean validateCommand(
       final TypedRecord<ProcessInstanceRecord> command, final ElementInstance elementInstance) {
 
-    if (elementInstance == null
-        || elementInstance.getParentKey() > 0
-        || elementInstance.isTerminating()) {
+    if (elementInstance == null || elementInstance.getParentKey() > 0) {
       final var reason = String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
       responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, reason);
@@ -166,6 +166,14 @@ public final class ProcessInstanceSuspendProcessor
             command.getKey(), ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.CANCEL);
     if (existingCancelRequest.isPresent()) {
       final var reason = String.format(PROCESS_CANCEL_IN_PROGRESS_MESSAGE, command.getKey());
+      enrichRejectionCommand(command, elementInstance.getValue());
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
+      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.INVALID_STATE, reason);
+      return false;
+    }
+
+    if (elementInstance.isTerminating()) {
+      final var reason = String.format(PROCESS_TERMINATING_MESSAGE, command.getKey());
       enrichRejectionCommand(command, elementInstance.getValue());
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
       responseWriter.writeRejectedResponseOnCommand(command, RejectionType.INVALID_STATE, reason);
