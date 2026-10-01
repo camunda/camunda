@@ -310,10 +310,10 @@ Compares the resolved dependencies of one module between Gradle and Maven. Use i
 confirm a parity fix, or to diagnose a suspected dependency gap.
 
 ```bash
-python .claude/skills/gradle-build-parity/compare-module-deps.py <gradle-project> [--scope runtime|compile|test] [--versions]
-python .claude/skills/gradle-build-parity/compare-module-deps.py --dir clients/java      # resolve project from its dir
-python .claude/skills/gradle-build-parity/compare-module-deps.py --list                  # gradle-project -> dir map
-python .claude/skills/gradle-build-parity/compare-module-deps.py --all [--json]          # every active module (slow; see below)
+python .github/scripts/gradle/compare-module-deps.py <gradle-project> [--scope runtime|compile|test] [--versions]
+python .github/scripts/gradle/compare-module-deps.py --dir clients/java      # resolve project from its dir
+python .github/scripts/gradle/compare-module-deps.py --list                  # gradle-project -> dir map
+python .github/scripts/gradle/compare-module-deps.py --all [--json]          # every active module (slow; see below)
 ```
 
 It reports, per module:
@@ -364,12 +364,12 @@ tar/directory mode it compares the JAR names and versions under `lib/`.
 
 ```bash
 # Full ZIP archive comparison
-python3 .claude/skills/gradle-build-parity/compare-dist.py \
+python3 .github/scripts/gradle/compare-dist.py \
     dist/build/distributions/camunda-zeebe-*.zip \
     dist/target/camunda-zeebe-*.zip
 
 # JAR/version comparison against an exploded Maven distribution
-python3 .claude/skills/gradle-build-parity/compare-dist.py \
+python3 .github/scripts/gradle/compare-dist.py \
     dist/build/distributions/camunda-zeebe-*.tar.gz \
     dist/target/camunda-zeebe
 ```
