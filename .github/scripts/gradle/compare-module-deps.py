@@ -32,14 +32,14 @@ Scope mapping (Maven scope -> Gradle configuration):
   test    -> testRuntimeClasspath  (Maven includeScope=test)
 
 Usage:
-  python .claude/skills/gradle-build-parity/compare-module-deps.py <gradle-project> [--scope runtime] [--versions]
-  python .claude/skills/gradle-build-parity/compare-module-deps.py --dir clients/java
-  python .claude/skills/gradle-build-parity/compare-module-deps.py --all --json
-  python .claude/skills/gradle-build-parity/compare-module-deps.py --list           # list gradle-project -> dir map
+  python .github/scripts/gradle/compare-module-deps.py <gradle-project> [--scope runtime] [--versions]
+  python .github/scripts/gradle/compare-module-deps.py --dir clients/java
+  python .github/scripts/gradle/compare-module-deps.py --all --json
+  python .github/scripts/gradle/compare-module-deps.py --list           # list gradle-project -> dir map
 
 Examples:
-  python .claude/skills/gradle-build-parity/compare-module-deps.py camunda-client-java
-  python .claude/skills/gradle-build-parity/compare-module-deps.py camunda-client-java --scope test --versions
+  python .github/scripts/gradle/compare-module-deps.py camunda-client-java
+  python .github/scripts/gradle/compare-module-deps.py camunda-client-java --scope test --versions
 """
 
 from __future__ import annotations
@@ -52,8 +52,8 @@ import sys
 from pathlib import Path
 from xml.etree import ElementTree
 
-# This script lives at .claude/skills/gradle-build-parity/. Walk back to the
-# repository root instead of assuming the skill directory contains build.gradle.kts.
+# This script lives at .github/scripts/gradle/. Walk back to the
+# repository root instead of assuming the script directory contains build.gradle.kts.
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
 # Maven scope -> (Maven includeScope, Gradle configuration)
