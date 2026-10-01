@@ -75,7 +75,7 @@ public class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
                 new PipelineStats(totalRead.get(), totalProcessed.get(), totalTimeTakenMs.get()));
   }
 
-  CompletableFuture<Void> processNextBatch() {
+  CompletableFuture<Integer> processNextBatch() {
     final Stopwatch stopwatch = Stopwatch.createStarted();
     return batchSupplier
         .supply(getLastSearchPosition(), currentBatchSize.get())
@@ -89,7 +89,11 @@ public class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
               totalRead.accumulateAndGet(batch.documents.size(), Long::sum);
 
               return processBatch(batch)
-                  .thenRun(() -> batchCompleted(batch))
+                  .thenApply(
+                      processed -> {
+                        batchCompleted(processed, batch);
+                        return processed;
+                      })
                   .exceptionallyCompose(this::batchFailed);
             },
             executor)
@@ -100,7 +104,7 @@ public class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
             executor);
   }
 
-  private CompletableFuture<Void> processBatch(
+  private CompletableFuture<Integer> processBatch(
       final DocumentBatch<DocType, SearchAfterFieldType> batch) {
     try {
       return batchProcessor.process(batch);
@@ -109,8 +113,9 @@ public class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
     }
   }
 
-  private void batchCompleted(final DocumentBatch<DocType, SearchAfterFieldType> batch) {
-    totalProcessed.addAndGet(batch.documents.size());
+  private void batchCompleted(
+      final int processed, final DocumentBatch<DocType, SearchAfterFieldType> batch) {
+    totalProcessed.addAndGet(processed);
 
     // advance search position only after batch processed successfully
     // so we can retry the batch if we want
@@ -119,7 +124,7 @@ public class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
     retryCount.set(0);
   }
 
-  private CompletableFuture<Void> batchFailed(final Throwable ex) {
+  private <T> CompletableFuture<T> batchFailed(final Throwable ex) {
     adjustBatchSize(ex);
 
     if (isRetryableError(ex) && retryCount.incrementAndGet() <= maxRetryAttempts) {
@@ -310,11 +315,27 @@ public class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
       long totalDocumentsRead, long totalDocumentsProcessed, long totalTimeTakenMs) {}
 
   public interface BatchSupplier<DocType, SearchAfterFieldType> {
+
+    /**
+     * callback to get the next back of documents to process
+     *
+     * @param searchAfter used as the cursor to find the next set of documents
+     * @param batchSize how many documents we want
+     * @return the next batch of docs
+     */
     CompletableFuture<DocumentBatch<DocType, SearchAfterFieldType>> supply(
         SearchAfterFieldType searchAfter, int batchSize);
   }
 
   public interface BatchProcessor<DocType, SearchAfterFieldType> {
-    CompletableFuture<Void> process(DocumentBatch<DocType, SearchAfterFieldType> batch);
+
+    /**
+     * callback to process the given batch
+     *
+     * @param batch the list of documents that need to be processed
+     * @return how many documents were actually processed (does not have to be the same as the
+     *     number in the batch)
+     */
+    CompletableFuture<Integer> process(DocumentBatch<DocType, SearchAfterFieldType> batch);
   }
 }
