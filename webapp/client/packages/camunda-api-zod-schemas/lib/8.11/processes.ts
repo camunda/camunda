@@ -10,56 +10,29 @@
  * This file exists only to avoid circular dependencies. Do not export it directly.
  */
 
-import {z} from 'zod';
+import {processDefinitionResultSchema} from './gen/zod/processDefinitionResultSchema';
+import {processElementStatisticsResultSchema} from './gen/zod/processElementStatisticsResultSchema';
+import {processInstanceResultSchema} from './gen/zod/processInstanceResultSchema';
+import {processInstanceStateEnumSchema} from './gen/zod/processInstanceStateEnumSchema';
+import type {ProcessDefinitionResult, ProcessDefinitionResultStateEnumKey} from './gen/types/ProcessDefinitionResult';
+import type {ProcessElementStatisticsResult} from './gen/types/ProcessElementStatisticsResult';
+import type {ProcessInstanceResult} from './gen/types/ProcessInstanceResult';
+import type {ProcessInstanceStateEnumKey} from './gen/types/ProcessInstanceStateEnum';
 
-const processInstanceStateSchema = z.enum(['ACTIVE', 'COMPLETED', 'SUSPENDED', 'TERMINATED']);
-type ProcessInstanceState = z.infer<typeof processInstanceStateSchema>;
-const processDefinitionStateSchema = z.enum(['ACTIVE', 'DRAINING', 'DELETED']);
-type ProcessDefinitionState = z.infer<typeof processDefinitionStateSchema>;
+const processInstanceStateSchema = processInstanceStateEnumSchema;
+type ProcessInstanceState = ProcessInstanceStateEnumKey;
+const processDefinitionStateSchema = processDefinitionResultSchema.shape.state;
+type ProcessDefinitionState = ProcessDefinitionResultStateEnumKey;
 type StatisticName = 'element-instances';
 
-const processInstanceSchema = z.object({
-	processDefinitionId: z.string(),
-	processDefinitionName: z.string(),
-	processDefinitionVersion: z.number(),
-	processDefinitionVersionTag: z.string().nullable(),
-	startDate: z.string(),
-	endDate: z.string().nullable(),
-	suspendedDate: z.string().nullable(),
-	state: processInstanceStateSchema,
-	hasIncident: z.boolean(),
-	tenantId: z.string(),
-	processInstanceKey: z.string(),
-	processDefinitionKey: z.string(),
-	parentProcessInstanceKey: z.string().nullable(),
-	parentElementInstanceKey: z.string().nullable(),
-	rootProcessInstanceKey: z.string().nullable(),
-	tags: z.array(z.string()),
-	businessId: z.string().nullable(),
-});
-type ProcessInstance = z.infer<typeof processInstanceSchema>;
+const processInstanceSchema = processInstanceResultSchema;
+type ProcessInstance = ProcessInstanceResult;
 
-const processDefinitionSchema = z.object({
-	name: z.string().nullable(),
-	resourceName: z.string().nullable(),
-	version: z.number(),
-	versionTag: z.string().nullable(),
-	processDefinitionId: z.string(),
-	tenantId: z.string(),
-	processDefinitionKey: z.string(),
-	hasStartForm: z.boolean(),
-	state: processDefinitionStateSchema,
-});
-type ProcessDefinition = z.infer<typeof processDefinitionSchema>;
+const processDefinitionSchema = processDefinitionResultSchema;
+type ProcessDefinition = ProcessDefinitionResult;
 
-const processDefinitionStatisticSchema = z.object({
-	elementId: z.string(),
-	active: z.number(),
-	canceled: z.number(),
-	incidents: z.number(),
-	completed: z.number(),
-});
-type ProcessDefinitionStatistic = z.infer<typeof processDefinitionStatisticSchema>;
+const processDefinitionStatisticSchema = processElementStatisticsResultSchema;
+type ProcessDefinitionStatistic = ProcessElementStatisticsResult;
 
 export {
 	processInstanceStateSchema,

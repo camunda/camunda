@@ -83,7 +83,7 @@ test.describe('Custom filters', () => {
 						state: z.literal('COMPLETED'),
 						businessId: z.object({$eq: z.literal('ORDER-2024-0042')}),
 					}),
-					sort: z.tuple([z.object({field: z.literal('creationDate'), order: z.literal('desc')})]),
+					sort: z.tuple([z.object({field: z.literal('creationDate'), order: z.literal('DESC')})]),
 					page: z.object({limit: z.literal(50), from: z.literal(0)}),
 				}),
 				successResponse: HttpResponse.json(

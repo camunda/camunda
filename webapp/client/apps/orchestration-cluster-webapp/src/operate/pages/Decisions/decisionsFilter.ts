@@ -6,7 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {DecisionInstanceState, QueryDecisionInstancesRequestBody} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {
+	DecisionInstanceState,
+	QueryDecisionInstancesRequestBody,
+	QuerySortOrder,
+} from '@camunda/camunda-api-zod-schemas/8.11';
 import {parseIds} from '#/operate/shared/utils/parseIds';
 import {decodeAdvancedStringFilter} from '#/operate/shared/utils/advancedStringFilter';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
@@ -64,9 +68,9 @@ function mapDecisionInstancesFilter(search: DecisionsSearch): DecisionInstancesF
 	};
 }
 
-type ResolvedDecisionInstancesSort = [{field: DecisionInstancesSortField; order: 'asc' | 'desc'}];
+type ResolvedDecisionInstancesSort = [{field: DecisionInstancesSortField; order: QuerySortOrder}];
 
-const DEFAULT_SORT: ResolvedDecisionInstancesSort = [{field: 'evaluationDate', order: 'desc'}];
+const DEFAULT_SORT: ResolvedDecisionInstancesSort = [{field: 'evaluationDate', order: 'DESC'}];
 // The only two sortable columns InstancesTable actually wires up — the app itself never produces
 // a `sort` value outside this set, so anything else can only come from a hand-edited URL.
 const SORTABLE_FIELDS: DecisionInstancesSortField[] = ['evaluationDate', 'businessId'];
@@ -82,7 +86,7 @@ function mapDecisionInstancesSort(sort: string | undefined): ResolvedDecisionIns
 	}
 
 	const [field, order] = sort.split('+');
-	if (!SORTABLE_FIELDS.includes(field as DecisionInstancesSortField) || (order !== 'asc' && order !== 'desc')) {
+	if (!SORTABLE_FIELDS.includes(field as DecisionInstancesSortField) || (order !== 'ASC' && order !== 'DESC')) {
 		return DEFAULT_SORT;
 	}
 

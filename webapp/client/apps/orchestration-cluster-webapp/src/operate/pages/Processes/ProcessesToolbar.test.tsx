@@ -97,7 +97,7 @@ function renderTable(initial = SEARCH, isActionMode = false) {
 		return (
 			<div style={{height: '100vh'}}>
 				<Button onClick={() => setSearch({...search, tenantId: 'tenant-b'})}>Change tenant</Button>
-				<Button onClick={() => setSearch({...search, sort: 'startDate+asc'})}>Change sort</Button>
+				<Button onClick={() => setSearch({...search, sort: 'startDate+ASC'})}>Change sort</Button>
 				<InstancesTable search={search} isActionMode={isActionMode} />
 				<Notifications />
 			</div>

@@ -47,6 +47,11 @@ import {logger} from '#/operate/shared/utils/logger';
 import {OperationsLog} from './OperationsLog';
 import {operationsLogSearchSchema, stripLegacyFilters} from './operationsLog.schema';
 
+type PageWith<T, K extends string> = T extends unknown ? (K extends keyof T ? T : never) : never;
+function isCursorForwardPagination<T extends object>(page: T | undefined): page is PageWith<T, 'after'> {
+	return page !== undefined && 'after' in page;
+}
+
 const TENANT_A = '<tenant-A>';
 const TENANT_B = '<tenant-B>';
 const A_VERSION_1 = createProcessDefinition({
@@ -262,7 +267,7 @@ describe('Operations Log saved filters', () => {
 				if (body.filter?.isLatestVersion) {
 					return HttpResponse.json(
 						createQueryProcessDefinitionsResponse(
-							body.page?.after
+							isCursorForwardPagination(body.page) && body.page.after
 								? {items: [B_VERSION_2]}
 								: {
 										items: [otherProcessInTenant],
@@ -286,7 +291,7 @@ describe('Operations Log saved filters', () => {
 				}
 				return HttpResponse.json(
 					createQueryProcessDefinitionsResponse(
-						body.page?.after
+						isCursorForwardPagination(body.page) && body.page.after
 							? {items: [B_VERSION_2]}
 							: {items: [], page: {totalItems: 1, hasMoreTotalItems: false, endCursor: 'page-2'}},
 					),
@@ -441,7 +446,7 @@ describe('Operations Log saved filters', () => {
 				if (body.filter?.processDefinitionId) {
 					return HttpResponse.json(
 						createQueryProcessDefinitionsResponse(
-							body.page?.after
+							isCursorForwardPagination(body.page) && body.page.after
 								? {items: [], page: {totalItems: 10000, hasMoreTotalItems: true}}
 								: {items: [A_VERSION_1], page: {totalItems: 10000, hasMoreTotalItems: true, endCursor: 'end'}},
 						),
@@ -668,7 +673,7 @@ describe('Operations Log saved filters', () => {
 					lookupRequests.push(body);
 					return HttpResponse.json(
 						createQueryProcessDefinitionsResponse(
-							body.page?.after
+							isCursorForwardPagination(body.page) && body.page.after
 								? {items: [B_VERSION_2]}
 								: {
 										items: [createProcessDefinition({...A_VERSION_1, version: 2})],

@@ -953,6 +953,8 @@ components:
     UserTaskAssignmentRequest:
       type: object
       additionalProperties: false
+      required:
+        - assignee
       properties:
         assignee:
           description: The assignee for the user task. The assignee must not be empty or `null`.

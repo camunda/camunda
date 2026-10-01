@@ -21,8 +21,9 @@ function createProcessInstanceResponse(
 		processDefinitionKey: '2251799813685279',
 		processInstanceKey: '2251799813685280',
 		tenantId: '<default>',
-		variables: null,
+		variables: {},
 		businessId: null,
+		tags: [],
 		...overrides,
 	};
 }
