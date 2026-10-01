@@ -7,15 +7,19 @@
  */
 package io.camunda.optimize.service.db.repository;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.BUSINESS_VALUE_TARGET_INDEX_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
@@ -35,6 +39,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.test.util.ReflectionTestUtils;
 
 class BusinessValueTargetRepositoryTest {
@@ -111,6 +116,83 @@ class BusinessValueTargetRepositoryTest {
                     .readByTenants(List.of("tenant-a")))
         .isInstanceOf(OptimizeRuntimeException.class)
         .hasMessageContaining("LIST_FETCH_LIMIT");
+  }
+
+  /**
+   * An empty id list reaches the repository whenever a clean-up pass finds no orphans, which is the
+   * steady state. Asserting the client is untouched rather than that nothing was deleted keeps an
+   * empty bulk request — accepted by both engines, and a wasted round trip on every sweep — from
+   * passing as correct.
+   */
+  @Test
+  void shouldNotIssueABulkRequestWhenThereAreNoIdsToDelete() {
+    // given
+    final OptimizeElasticsearchClient esClient = mock(OptimizeElasticsearchClient.class);
+    final OptimizeOpenSearchClient osClient = mock(OptimizeOpenSearchClient.class);
+    final OptimizeIndexNameService indexNameService = mock(OptimizeIndexNameService.class);
+
+    // when -- null means "nothing to delete" rather than throwing, matching bulkUpsert
+    final List<String> noIds = null;
+    new BusinessValueTargetRepositoryES(esClient, new ObjectMapper()).deleteByIds(noIds);
+    new BusinessValueTargetRepositoryOS(osClient, indexNameService).deleteByIds(noIds);
+    new BusinessValueTargetRepositoryES(esClient, new ObjectMapper()).deleteByIds(List.of());
+    new BusinessValueTargetRepositoryOS(osClient, indexNameService).deleteByIds(List.of());
+
+    // then
+    verifyNoInteractions(esClient);
+    verifyNoInteractions(osClient);
+  }
+
+  /**
+   * Covered per engine because the two implementations address the index differently — a prefixed
+   * concrete index on Elasticsearch, a prefixed alias on OpenSearch — so one could target the wrong
+   * index while the other stayed correct, and a delete aimed at a non-existent index fails silently
+   * rather than throwing.
+   */
+  @Test
+  void shouldDeleteEveryGivenIdFromTheTargetIndexOnElasticsearch() {
+    // given
+    final OptimizeElasticsearchClient esClient = mock(OptimizeElasticsearchClient.class);
+    when(esClient.addPrefixesToIndices(BUSINESS_VALUE_TARGET_INDEX_NAME))
+        .thenReturn(List.of("prefixed-" + BUSINESS_VALUE_TARGET_INDEX_NAME));
+
+    // when
+    new BusinessValueTargetRepositoryES(esClient, new ObjectMapper())
+        .deleteByIds(List.of("tenant-a::process-1", "tenant-b::process-2"));
+
+    // then
+    final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    verify(esClient)
+        .doBulkRequest(captor.capture(), eq(BUSINESS_VALUE_TARGET_INDEX_NAME), eq(false));
+    assertThat(captor.getValue().operations())
+        .extracting(operation -> operation.delete().index(), operation -> operation.delete().id())
+        .containsExactly(
+            tuple("prefixed-" + BUSINESS_VALUE_TARGET_INDEX_NAME, "tenant-a::process-1"),
+            tuple("prefixed-" + BUSINESS_VALUE_TARGET_INDEX_NAME, "tenant-b::process-2"));
+  }
+
+  @Test
+  void shouldDeleteEveryGivenIdFromTheTargetIndexOnOpenSearch() {
+    // given
+    final OptimizeOpenSearchClient osClient = mock(OptimizeOpenSearchClient.class);
+    when(osClient.convertToPrefixedAliasName(BUSINESS_VALUE_TARGET_INDEX_NAME))
+        .thenReturn("prefixed-" + BUSINESS_VALUE_TARGET_INDEX_NAME);
+
+    // when
+    new BusinessValueTargetRepositoryOS(osClient, mock(OptimizeIndexNameService.class))
+        .deleteByIds(List.of("tenant-a::process-1", "tenant-b::process-2"));
+
+    // then
+    @SuppressWarnings("unchecked")
+    final ArgumentCaptor<List<org.opensearch.client.opensearch.core.bulk.BulkOperation>> captor =
+        ArgumentCaptor.forClass(List.class);
+    verify(osClient)
+        .doBulkRequest(any(), captor.capture(), eq(BUSINESS_VALUE_TARGET_INDEX_NAME), eq(false));
+    assertThat(captor.getValue())
+        .extracting(operation -> operation.delete().index(), operation -> operation.delete().id())
+        .containsExactly(
+            tuple("prefixed-" + BUSINESS_VALUE_TARGET_INDEX_NAME, "tenant-a::process-1"),
+            tuple("prefixed-" + BUSINESS_VALUE_TARGET_INDEX_NAME, "tenant-b::process-2"));
   }
 
   private static List<Hit<BusinessValueTargetDto>> cappedHits() {

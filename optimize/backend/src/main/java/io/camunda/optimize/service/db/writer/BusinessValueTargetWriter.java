@@ -12,8 +12,10 @@ import io.camunda.optimize.dto.optimize.query.report.single.configuration.target
 import io.camunda.optimize.service.db.repository.BusinessValueTargetRepository;
 import java.time.Duration;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
@@ -51,6 +53,34 @@ public class BusinessValueTargetWriter {
         target.getProcessDefinitionKey(),
         target.getTenantId());
     repository.upsert(target);
+  }
+
+  /**
+   * Removes the target of a process definition, if it has one.
+   *
+   * <p>A target is keyed on {@code (tenantId, processDefinitionKey)} and carries no version, so
+   * this is only correct once the definition is gone for that tenant entirely. Deleting a target
+   * that was never set is a no-op, which is the common case: the caller does not have to look
+   * first.
+   *
+   * <p>A blank tenant or key means there can be no target to delete — a target cannot be saved
+   * without either — so this returns rather than failing the caller.
+   */
+  public void deleteForDefinition(final String tenantId, final String processDefinitionKey) {
+    if (StringUtils.isBlank(tenantId) || StringUtils.isBlank(processDefinitionKey)) {
+      LOG.debug(
+          "Skipping business-value target deletion for definition [{}] tenant [{}]: "
+              + "a target cannot exist without both",
+          processDefinitionKey,
+          tenantId);
+      return;
+    }
+    LOG.debug(
+        "Deleting business-value target for definition [{}] tenant [{}]",
+        processDefinitionKey,
+        tenantId);
+    repository.deleteByIds(
+        List.of(BusinessValueTargetRepository.documentId(tenantId, processDefinitionKey)));
   }
 
   private void validate(final BusinessValueTargetDto target) {

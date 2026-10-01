@@ -23,12 +23,18 @@ import io.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
+import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto;
+import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto.AutomationRateBlock;
+import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto.CycleTimeBlock;
+import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto.MetricRange;
+import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueTargetDto;
 import io.camunda.optimize.dto.optimize.query.job.EntityType;
 import io.camunda.optimize.dto.optimize.query.job.JobRegistryEntryDto;
 import io.camunda.optimize.dto.optimize.query.job.JobStatus;
 import io.camunda.optimize.dto.optimize.query.job.JobType;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
+import io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.reader.DefinitionReader;
@@ -36,12 +42,17 @@ import io.camunda.optimize.service.db.reader.JobRegistryReader;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.reader.ProcessOverviewReader;
 import io.camunda.optimize.service.db.reader.ReportReader;
+import io.camunda.optimize.service.db.repository.BusinessValueOverviewRepository;
+import io.camunda.optimize.service.db.repository.BusinessValueTargetRepository;
+import io.camunda.optimize.service.db.writer.BusinessValueOverviewWriter;
+import io.camunda.optimize.service.db.writer.BusinessValueTargetWriter;
 import io.camunda.optimize.service.db.writer.JobRegistryWriter;
 import io.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
 import io.camunda.optimize.service.db.writer.ProcessOverviewWriter;
 import io.camunda.optimize.service.db.writer.ReportWriter;
 import io.camunda.optimize.service.report.ReportService;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +73,9 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
   private DefinitionService definitionService;
   private JobRegistryWriter jobRegistryWriter;
   private JobDispatcher jobDispatcher;
+  private BusinessValueTargetWriter businessValueTargetWriter;
+  private BusinessValueTargetRepository businessValueTargetRepository;
+  private BusinessValueOverviewRepository businessValueOverviewRepository;
 
   @BeforeEach
   void setup() {
@@ -74,6 +88,11 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
     definitionService = embeddedOptimizeExtension.getBean(DefinitionService.class);
     jobRegistryWriter = embeddedOptimizeExtension.getBean(JobRegistryWriter.class);
     jobDispatcher = embeddedOptimizeExtension.getBean(JobDispatcher.class);
+    businessValueTargetWriter = embeddedOptimizeExtension.getBean(BusinessValueTargetWriter.class);
+    businessValueTargetRepository =
+        embeddedOptimizeExtension.getBean(BusinessValueTargetRepository.class);
+    businessValueOverviewRepository =
+        embeddedOptimizeExtension.getBean(BusinessValueOverviewRepository.class);
   }
 
   @Test
@@ -505,7 +524,9 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
             embeddedOptimizeExtension.getBean(ProcessDefinitionWriter.class),
             embeddedOptimizeExtension.getBean(DefinitionReader.class),
             embeddedOptimizeExtension.getBean(ReportService.class),
-            definitionService);
+            definitionService,
+            businessValueTargetWriter,
+            embeddedOptimizeExtension.getBean(BusinessValueOverviewWriter.class));
 
     // when -- the first attempt fails terminally
     assertThatThrownBy(() -> resumableHandler.handle(job(definitionId)))
@@ -553,6 +574,87 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
     assertThat(found).isPresent();
     assertThat(found.get().getId()).isEqualTo(queued.getId());
     assertThat(found.get().getStatus()).isEqualTo(JobStatus.COMPLETED);
+  }
+
+  @Test
+  void shouldDeleteBusinessValueTargetAndOverviewRowsWhenDeletingTheLastVersion() {
+    // given a definition with a target and one overview row per range
+    final String bpmnProcessId = "bvd-deletion-test-" + UUID.randomUUID();
+    final String definitionId = bpmnProcessId + ":1:" + UUID.randomUUID();
+    persistProcessDefinitions(List.of(definitionFor(bpmnProcessId, definitionId, "1")));
+    givenTargetAndOverviewRows(bpmnProcessId);
+    refreshAllIndices();
+
+    // when
+    handler.handle(job(definitionId));
+    refreshAllIndices();
+
+    // then neither the target nor any range's row survives the definition
+    assertThat(businessValueTargetRepository.getByKey(ZEEBE_DEFAULT_TENANT_ID, bpmnProcessId))
+        .isEmpty();
+    for (final MetricRange range : MetricRange.values()) {
+      assertThat(
+              businessValueOverviewRepository.getByKey(
+                  ZEEBE_DEFAULT_TENANT_ID, bpmnProcessId, range))
+          .as("overview row for range %s", range)
+          .isEmpty();
+    }
+  }
+
+  /**
+   * A target carries no version, so it belongs to the process as a whole. Deleting one version of a
+   * process that is still deployed must leave it alone — otherwise a routine version cleanup would
+   * silently discard what the user configured for the live process.
+   */
+  @Test
+  void shouldKeepBusinessValueDataWhenAnotherVersionOfTheProcessRemains() {
+    // given two versions, both imported, with a target on the process
+    final String bpmnProcessId = "bvd-deletion-test-" + UUID.randomUUID();
+    final String definitionIdV1 = bpmnProcessId + ":1:" + UUID.randomUUID();
+    final String definitionIdV2 = bpmnProcessId + ":2:" + UUID.randomUUID();
+    persistProcessDefinitions(
+        List.of(
+            definitionFor(bpmnProcessId, definitionIdV1, "1"),
+            definitionFor(bpmnProcessId, definitionIdV2, "2")));
+    givenTargetAndOverviewRows(bpmnProcessId);
+    refreshAllIndices();
+
+    // when only v1 is deleted
+    handler.handle(job(definitionIdV1));
+    refreshAllIndices();
+
+    // then the target and rows stay with the still-deployed v2
+    assertThat(businessValueTargetRepository.getByKey(ZEEBE_DEFAULT_TENANT_ID, bpmnProcessId))
+        .isPresent();
+    assertThat(
+            businessValueOverviewRepository.getByKey(
+                ZEEBE_DEFAULT_TENANT_ID, bpmnProcessId, MetricRange.SEVEN_DAYS))
+        .isPresent();
+  }
+
+  private void givenTargetAndOverviewRows(final String bpmnProcessId) {
+    businessValueTargetWriter.upsertTarget(
+        new BusinessValueTargetDto(
+            bpmnProcessId,
+            ZEEBE_DEFAULT_TENANT_ID,
+            28_800_000L,
+            TargetValueUnit.HOURS,
+            85,
+            OffsetDateTime.parse("2026-08-05T04:00:15Z"),
+            "someone@camunda.com"));
+    final List<BusinessValueOverviewDto> rows = new ArrayList<>();
+    for (final MetricRange range : MetricRange.values()) {
+      final BusinessValueOverviewDto row = new BusinessValueOverviewDto();
+      row.setTenantId(ZEEBE_DEFAULT_TENANT_ID);
+      row.setProcessDefinitionKey(bpmnProcessId);
+      row.setProcessDefinitionName(bpmnProcessId);
+      row.setMetricRange(range);
+      row.setLastComputedAt(OffsetDateTime.now());
+      row.setCycleTime(new CycleTimeBlock());
+      row.setAutomationRate(new AutomationRateBlock());
+      rows.add(row);
+    }
+    businessValueOverviewRepository.bulkUpsert(rows, true);
   }
 
   private Optional<ProcessDefinitionOptimizeDto> getProcessDefinition(final String definitionId) {
