@@ -26,6 +26,10 @@ class TasklistProcessesPage extends BasePage {
 		return this.page.goto(`/tasklist/processes/${processDefinitionKey}/start${search}`);
 	}
 
+	async seedHasConsentedToStartProcess() {
+		await this.page.addInitScript(`localStorage.setItem('tasklist.hasConsentedToStartProcess', JSON.stringify(true))`);
+	}
+
 	get heading() {
 		return this.page.getByRole('heading', {name: 'Processes', exact: true});
 	}
@@ -70,6 +74,10 @@ class TasklistProcessesPage extends BasePage {
 		return this.startProcessDialog.getByRole('alert');
 	}
 
+	get copyLinkButton() {
+		return this.startProcessDialog.getByRole('button', {name: 'Copy link'});
+	}
+
 	get waitingForTasksStatus() {
 		return this.page.getByText('Waiting for tasks...');
 	}
@@ -108,6 +116,14 @@ class TasklistProcessesPage extends BasePage {
 
 	processTile(processDefinitionKey: string) {
 		return this.page.getByTestId(`process-tile-${processDefinitionKey}`);
+	}
+
+	processTileStartButton(processDefinitionKey: string) {
+		return this.processTile(processDefinitionKey).getByRole('button', {name: 'Start process'});
+	}
+
+	processTileWaitingForTasksStatus(processDefinitionKey: string) {
+		return this.processTile(processDefinitionKey).getByText('Waiting for tasks...');
 	}
 
 	processDefinitionId(processDefinitionKey: string, processDefinitionId: string) {

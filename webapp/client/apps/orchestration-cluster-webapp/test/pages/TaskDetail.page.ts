@@ -46,8 +46,12 @@ class TaskDetailPage extends BasePage {
 		return this.detailsHeader.getByText(name, {exact: true});
 	}
 
+	get processHeader() {
+		return this.processTabContent.getByTestId('process-diagram-header');
+	}
+
 	processName(name: string) {
-		return this.processTabContent.getByText(name, {exact: true});
+		return this.processHeader.getByText(name, {exact: true});
 	}
 
 	get detailsNavigation() {
