@@ -1,6 +1,5 @@
-import buildlogic.mavenResourceFilterArgs
+import buildlogic.filterMavenResources
 import buildlogic.optimizeBackendTestResourceTokens
-import org.apache.tools.ant.filters.ReplaceTokens
 import org.gradle.jvm.tasks.Jar
 
 /*
@@ -18,9 +17,12 @@ tasks.named<ProcessResources>("processTestResources") {
 
   from("src/it/webapp") { into("webapp") }
 
-  filesMatching("integration-extensions.properties") {
-    filter(mavenResourceFilterArgs(resourceTokens), ReplaceTokens::class.java)
-  }
+  this.filterMavenResources(
+    this,
+    "optimizeBackendTestResourceTokens",
+    resourceTokens,
+    matching = "integration-extensions.properties",
+  )
 }
 
 tasks.named<Jar>("jar") {
