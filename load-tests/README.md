@@ -486,7 +486,7 @@ If you need custom tuning, start with the closest `scenario` and then add target
 
 Select the `scenario` input in the workflow dispatch form:
 
-- `max` — artificial stress workload (currently `300` PI/s) for upper-bound throughput checks and quick regression validation; this is the default ad-hoc option. See also the [max / stress load test](../docs/testing/reliability-testing.md#max--stress-load-test).
+- `max` — artificial stress workload (currently `300` PI/s, or `500` PI/s with secondary storage `none`; an explicit `load-test-load` such as `--set load-tester.starter.rate=...` takes precedence) for upper-bound throughput checks and quick regression validation; this is the default ad-hoc option. See also the [max / stress load test](../docs/testing/reliability-testing.md#max--stress-load-test).
 - `realistic` — complex, customer-like workload with multi-instance activities, call activities, and DMN; use this for release-like validation and broader functional realism. See [realistic load](../docs/testing/reliability-testing.md#realistic-load).
 - `typical` — straight-through baseline with a representative BPMN model and `50` PI/s target load; use it for sustained baseline comparisons. See [typical load](../docs/testing/reliability-testing.md#typical-load).
 - `latency` — low-throughput artificial workload (`1` PI/s, `1` worker) to isolate latency and reduce blast radius while debugging. See [latency load test](../docs/testing/reliability-testing.md#latency-load-test).

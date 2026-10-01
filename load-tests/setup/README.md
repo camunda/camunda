@@ -443,7 +443,7 @@ To run a specific workload profile, use one of the named targets:
 make latency   # 1 instance/s, 1 worker — low-throughput, useful for latency measurements
 make typical   # 50 instances/s, 6 workers, typical_process BPMN
 make realistic # Realistic multi-instance benchmark (values from camunda-load-tests-helm)
-make max       # 300 instances/s — maximum stress, also disables consistency check overhead
+make max       # 300 instances/s (500 with secondary_storage=none) — maximum stress, also disables consistency check overhead
 make archiver  # Multi-instance archiver scenario (no workers)
 ```
 
