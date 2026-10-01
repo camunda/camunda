@@ -59,7 +59,7 @@ async function generateSchemas(version, config) {
 		defineConfig({
 			root: PACKAGE_ROOT,
 			input: path.join(preprocessedDir, path.basename(inputPath)),
-			adapter: adapterOas({integerType: 'number'}),
+			adapter: adapterOas({integerType: 'number', discriminator: 'propagate'}),
 			output: {
 				path: outputPath,
 				barrel: {type: 'named'},

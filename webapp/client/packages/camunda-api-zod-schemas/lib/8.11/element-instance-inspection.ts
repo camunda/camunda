@@ -19,9 +19,15 @@ import {userTaskWaitStateDetailsSchema} from './gen/zod/userTaskWaitStateDetails
 import {waitStateDetailsSchema} from './gen/zod/waitStateDetailsSchema';
 import {waitStateElementTypeEnumSchema} from './gen/zod/waitStateElementTypeEnumSchema';
 import {waitStateTypeEnumSchema} from './gen/zod/waitStateTypeEnumSchema';
+import type {ConditionWaitStateDetails} from './gen/types/ConditionWaitStateDetails';
 import type {ElementInstanceWaitStateQuery} from './gen/types/ElementInstanceWaitStateQuery';
 import type {ElementInstanceWaitStateQueryResult} from './gen/types/ElementInstanceWaitStateQueryResult';
 import type {ElementInstanceWaitStateResult} from './gen/types/ElementInstanceWaitStateResult';
+import type {JobWaitStateDetails} from './gen/types/JobWaitStateDetails';
+import type {MessageWaitStateDetails} from './gen/types/MessageWaitStateDetails';
+import type {SignalWaitStateDetails} from './gen/types/SignalWaitStateDetails';
+import type {TimerWaitStateDetails} from './gen/types/TimerWaitStateDetails';
+import type {UserTaskWaitStateDetails} from './gen/types/UserTaskWaitStateDetails';
 import type {WaitStateDetails} from './gen/types/WaitStateDetails';
 import type {WaitStateElementTypeEnumKey} from './gen/types/WaitStateElementTypeEnum';
 import type {WaitStateTypeEnumKey} from './gen/types/WaitStateTypeEnum';
@@ -31,14 +37,6 @@ type WaitStateType = WaitStateTypeEnumKey;
 
 const waitStateElementTypeSchema = waitStateElementTypeEnumSchema;
 type WaitStateElementType = WaitStateElementTypeEnumKey;
-
-// The gen variant types have `waitStateType: string`. The discriminated union narrows each variant to its literal.
-type JobWaitStateDetails = Extract<WaitStateDetails, {waitStateType: 'JOB'}>;
-type MessageWaitStateDetails = Extract<WaitStateDetails, {waitStateType: 'MESSAGE'}>;
-type UserTaskWaitStateDetails = Extract<WaitStateDetails, {waitStateType: 'USER_TASK'}>;
-type TimerWaitStateDetails = Extract<WaitStateDetails, {waitStateType: 'TIMER'}>;
-type SignalWaitStateDetails = Extract<WaitStateDetails, {waitStateType: 'SIGNAL'}>;
-type ConditionWaitStateDetails = Extract<WaitStateDetails, {waitStateType: 'CONDITION'}>;
 
 const elementInstanceInspectionSchema = elementInstanceWaitStateResultSchema;
 type ElementInstanceInspection = ElementInstanceWaitStateResult;
