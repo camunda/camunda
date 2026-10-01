@@ -1567,6 +1567,16 @@
 						"partiallyCompleted": "Partiellement terminé",
 						"skipped": "Ignoré"
 					}
+				},
+				"batchItemsCount": {
+					"notStarted": "non démarré",
+					"noItems": "aucun élément",
+					"successful_one": "{{formattedCount}} réussi",
+					"successful_other": "{{formattedCount}} réussis",
+					"failed_one": "{{formattedCount}} échoué",
+					"failed_other": "{{formattedCount}} échoués",
+					"pending_one": "{{formattedCount}} en attente",
+					"pending_other": "{{formattedCount}} en attente"
 				}
 			}
 		}
