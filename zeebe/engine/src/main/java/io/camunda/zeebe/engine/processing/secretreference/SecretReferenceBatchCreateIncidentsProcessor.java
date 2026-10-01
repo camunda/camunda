@@ -104,12 +104,15 @@ public final class SecretReferenceBatchCreateIncidentsProcessor
     for (final long jobKey : value.getJobKeys()) {
       final JobRecord job = jobState.getJob(jobKey);
       if (job == null
+          || job.isStandalone()
           || hasIncident(jobKey)
           || !secretReferenceState.isWaiting(storeId, secretReference, jobKey)) {
         // The job is gone (e.g. its process instance was cancelled), or it already carries an
         // incident from another failed reference, or a reactivation chain drained it before this
         // command was processed. The key list was collected when the command was written, so it
-        // can be stale by now. The batch event still cleans up the entry either way.
+        // can be stale by now. A standalone job has no element instance to raise an incident on,
+        // so it stays parked until it expires, which answers its creator. The batch event still
+        // cleans up the entry either way.
         processedBatch.addJobKey(jobKey);
         continue;
       }

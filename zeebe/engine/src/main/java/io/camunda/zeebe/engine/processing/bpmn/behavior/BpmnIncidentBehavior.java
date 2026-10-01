@@ -83,6 +83,11 @@ public final class BpmnIncidentBehavior implements StreamProcessorLifecycleAware
     if (incidentState.getJobIncidentKey(jobKey) != IncidentState.MISSING_INCIDENT) {
       return;
     }
+    if (job.isStandalone()) {
+      // a standalone job has no element instance to raise an incident on; it stays unanswered
+      // until it expires, which answers its creator
+      return;
+    }
 
     final var treePathProperties =
         new ElementTreePathBuilder()
