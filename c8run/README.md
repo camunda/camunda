@@ -34,6 +34,27 @@ Use a dedicated dotenv file such as `.env.secrets` for imports. `c8run secrets` 
 
 `C8RUN_SECRETS_MODE` defaults to `local`. Local mode makes `C8RUN_SECRETS_DIR` authoritative. Set `C8RUN_SECRETS_MODE=external` when `--config` or Spring settings configure a file, AWS, or GCP store; local `c8run secrets` commands are disabled in external mode.
 
+## Physical tenants
+
+Physical tenants are fully isolated engines inside one c8run. Each one has its own partitions, its own data in secondary storage, its own users, and its own Operate, Tasklist, Admin and Orchestration Cluster API. They require Camunda 8.10 or newer.
+
+```bash
+./c8run tenants add sales        # saved for the current OS user
+./c8run start                    # starts "default" plus every saved tenant
+./c8run tenants list             # status, login, connectors and URLs per tenant
+./c8run tenants remove sales
+```
+
+A tenant is served under `http://localhost:8080/physical-tenants/<id>/`, for example `/physical-tenants/sales/operate` or `/physical-tenants/sales/v2/`. The `default` tenant always exists and keeps the unprefixed URLs. gRPC clients select a tenant with the `Camunda-Physical-Tenant` header; the Java client and Spring starter use `camunda.client.physical-tenant-id`. The startup summary lists every tenant's URLs and readiness.
+
+Tenant IDs use lowercase letters and digits only, up to 64 characters. By default every tenant gets the same login as `c8run start` (`--username`/`--password`, `demo`/`demo` unless changed). To give a tenant its own user, run `./c8run tenants add hr --username alice`; c8run prompts for the password (or reads it with `--password-stdin`) and stores it in a file readable only by you, never in YAML or shell history.
+
+Each tenant gets its own connectors runtime on the next free port from 8087 upwards (logs in `log/connectors-<id>.log`). Use `--no-connectors` on `tenants add` to skip it for one tenant, or `--disable-connectors` on `start` to skip all connectors. Local secrets are shared by all tenants.
+
+To run with tenants for one start only, without saving them (useful in CI), use `./c8run start --physical-tenants sales,hr`. Removing a tenant keeps its data in secondary storage under the tenant's prefix, so adding the same ID again restores it. `./c8run tenants reset` removes all saved tenants.
+
+`./c8run tenants path` shows where tenants are saved; `C8RUN_TENANTS_FILE` selects another file. If your `--config` already declares `camunda.physical-tenants`, c8run uses it as-is and does not apply its saved tenants. Set `C8RUN_TENANTS_MODE=external` to disable the `tenants` commands entirely.
+
 ## CI requirement for merging
 
 Only CI checks related to C8Run (those with "c8run" in the name) and CI runs marked as `required` are needed to merge. Non-C8Run-related CI checks can be ignored.

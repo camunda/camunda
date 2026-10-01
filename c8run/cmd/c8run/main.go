@@ -15,6 +15,7 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/camunda/camunda/c8run/internal/physicaltenants"
 	"github.com/camunda/camunda/c8run/internal/processmanagement"
 	localsecrets "github.com/camunda/camunda/c8run/internal/secrets"
 	"github.com/camunda/camunda/c8run/internal/shutdown"
@@ -69,6 +70,7 @@ Commands:
   start                 Start Camunda 8 Run
   stop                  Stop any running Camunda 8 Run processes
   secrets               Manage local development secrets
+  tenants               Manage physical tenants (isolated engines in one c8run)
   help                  Show this help message
 
 Options:
@@ -80,6 +82,7 @@ Options:
   --no-browser              Start Camunda 8 Run without opening a browser window
   --port <number>           Set the main Camunda port (default: 8080)
   --log-level <level>       Set log level (e.g., info, debug)
+  --physical-tenants <ids>  Start extra physical tenants for this run only (e.g. sales,hr)
 
 Examples:
   %[1]s start
@@ -89,6 +92,8 @@ Examples:
   %[1]s stop
   %[1]s secrets set OPENAI_API_KEY
   %[1]s secrets import .env.secrets
+  %[1]s tenants add sales
+  %[1]s start --physical-tenants sales,hr
 
 Docs & Support:
   https://docs.camunda.io/docs/guides/getting-started-java-spring/
@@ -124,6 +129,8 @@ func getBaseCommand() (string, error) {
 		return "stop", nil
 	case "secrets":
 		return "secrets", nil
+	case "tenants", "physical-tenants", "pt":
+		return "tenants", nil
 	case "help":
 		usage(0)
 	case "-h", "--help":
@@ -155,6 +162,9 @@ func getBaseCommandSettings(baseCommand string) (types.C8RunSettings, bool, erro
 		startupURLProvided = flagPassed(startFlagSet, "startup-url")
 		if err := validatePort(settings.Port); err != nil {
 			return settings, startupURLProvided, err
+		}
+		if _, err := physicaltenants.ParseIDList(settings.PhysicalTenantsFlag); err != nil {
+			return settings, startupURLProvided, fmt.Errorf("--physical-tenants: %w", err)
 		}
 	case "stop":
 		err := stopFlagSet.Parse(os.Args[2:])
@@ -191,6 +201,7 @@ func createStartFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 	startFlagSet.StringVar(&settings.Username, "username", "demo", "Change the first users username (default: demo)")
 	startFlagSet.StringVar(&settings.Password, "password", "demo", "Change the first users password (default: demo)")
 	startFlagSet.StringVar(&settings.StartupUrl, "startup-url", "", "The URL to open after startup.")
+	startFlagSet.Var((*stringSliceFlag)(&settings.PhysicalTenantsFlag), "physical-tenants", "Comma-separated physical tenant IDs to start for this run only (repeatable).")
 	return startFlagSet
 }
 
@@ -217,6 +228,12 @@ func initialize(baseCommand string, baseDir string) *types.State {
 	}
 
 	applySecondaryStorageDefaults(baseDir, &settings)
+	if baseCommand == "start" {
+		if err := applyPhysicalTenants(baseDir, camundaVersion, &settings); err != nil {
+			fmt.Println(err.Error())
+			os.Exit(1)
+		}
+	}
 	settings.StartupMarkerPath = startupurl.MarkerPath(baseDir)
 
 	if strings.EqualFold(settings.SecondaryStorageType, "rdbms") && settings.ResolvedConfigPath != "" {
@@ -528,6 +545,13 @@ func main() {
 	}
 
 	baseDir, _ := os.Getwd()
+	if baseCommand == "tenants" {
+		if err := newTenantsCommand().run(baseDir, os.Args[2:]); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
+	}
 	if baseCommand == "secrets" {
 		if err := newSecretsCommand().run(baseDir, os.Args[2:]); err != nil {
 			fmt.Fprintln(os.Stderr, err)

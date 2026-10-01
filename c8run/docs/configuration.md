@@ -74,3 +74,29 @@ When the resolved runtime is Java 25 or newer, startup appends the required Java
 - `--sun-misc-unsafe-memory-access=allow`
 
 Existing `JDK_JAVA_OPTIONS` values are preserved and only missing flags are appended. Java 21–24 runtimes are left unchanged.
+
+## Physical Tenants
+
+`c8run tenants` (aliases `pt`, `physical-tenants`) and `start --physical-tenants` are implemented in `cmd/c8run/tenants.go`, `cmd/c8run/physicaltenants_start.go` and `internal/physicaltenants/`.
+
+Resolution on `start` (`physicaltenants.Resolve`), first match wins:
+1. A user `--config` that declares `camunda.physical-tenants` — c8run applies nothing and logs a notice. Combining it with `--physical-tenants` is an error.
+2. `--physical-tenants a,b` — for this run only, every tenant uses the start login.
+3. The saved tenants file (`C8RUN_TENANTS_FILE`, default `physical-tenants.yaml` next to the local secrets directory), unless `C8RUN_TENANTS_MODE=external`.
+
+IDs are validated against the engine rule (`[a-z0-9]{1,64}`, not `default`) before Java starts. Startup refuses tenants when `CAMUNDA_VERSION` is a parseable version below 8.10.
+
+The generated file `configuration/physical-tenants.generated.yaml` holds only storage isolation:
+- RDBMS / bundled H2 / unset type: `camunda.physical-tenants.<id>.data.secondary-storage.rdbms.prefix: <ID>_`. The default tenant's tables keep no prefix, so existing H2 data is untouched.
+- Elasticsearch / OpenSearch: `index-prefix: <id>` plus per-tenant ILM/ISM policy names.
+- `none`: no storage keys.
+
+It is loaded via `--spring.config.additional-location` after `configuration/` and before the user `--config`, so user settings win. The file is removed when no tenants are active and is read by `tenants list` to tell "active" from "pending restart".
+
+Logins are not written to the generated file. Spring does not merge lists across property sources, so the whole `security.initialization` block (user + `defaultRoles.admin`) is passed as `CAMUNDA_PHYSICALTENANTS_<ID>_SECURITY_INITIALIZATION_*` environment variables. Per-tenant passwords from `tenants add --username` are stored in `<tenants file>.credentials` with mode 0600.
+
+Per-tenant connectors reuse `ConnectorsCmd` and append `SERVER_PORT` and `CAMUNDA_CLIENT_PHYSICALTENANTID` (plus `CAMUNDA_CLIENT_AUTH_*` when the API is protected). PID files are `connectors-<id>.process`; `stop` stops every `connectors-*.process`. Ports start at 8087 and skip ports in use.
+
+After Camunda reports healthy, each tenant's `/physical-tenants/<id>/v2/topology` is probed and the startup summary prints a per-tenant table, naming any tenant that is not ready.
+
+`e2e_tests/physical_tenants_tests.sh` checks reachability, 404 for unknown tenants, and deployment isolation against a c8run started with `--physical-tenants pt1`.

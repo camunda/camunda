@@ -30,6 +30,21 @@ type C8RunSettings struct {
 	StartupUrl           string
 	StartupMarkerPath    string
 	ExtraDrivers         []string
+	// PhysicalTenantsFlag holds the raw --physical-tenants values (comma-separated, repeatable).
+	PhysicalTenantsFlag []string
+	// PhysicalTenants is the resolved set of extra physical tenants for this run (never "default").
+	PhysicalTenants []PhysicalTenant
+	// PhysicalTenantsConfigPath is the generated Spring config file declaring the tenants.
+	PhysicalTenantsConfigPath string
+}
+
+// PhysicalTenant is one extra physical tenant c8run starts next to the implicit "default" one.
+type PhysicalTenant struct {
+	ID             string
+	Username       string
+	Password       string
+	Connectors     bool
+	ConnectorsPort int
 }
 
 // HasKeyStore returns true when the keystore and password are set
