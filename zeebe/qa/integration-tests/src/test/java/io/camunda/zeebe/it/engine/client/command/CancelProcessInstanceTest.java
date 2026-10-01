@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.it.engine.client.command;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
@@ -16,9 +17,12 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.grpc.Status.Code;
 import java.time.Duration;
@@ -122,6 +126,58 @@ public final class CancelProcessInstanceTest {
           .extracting("status.code")
           .isEqualTo(Code.NOT_FOUND);
     }
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldRejectIfProcessInstanceIsTerminating(final boolean useRest) {
+    // given - the termination waits for a canceling task listener job
+    final var listenerType = Strings.newRandomValidBpmnId();
+    final long userTaskKey =
+        resourcesHelper.createSingleUserTask(
+            t -> t.zeebeTaskListener(l -> l.canceling().type(listenerType)));
+    final long processInstanceKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withRecordKey(userTaskKey)
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
+
+    final var firstCancel = getCommand(client, useRest, processInstanceKey).send();
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType(listenerType)
+        .await();
+
+    // when
+    final var command = getCommand(client, useRest, processInstanceKey).send();
+
+    // then
+    if (useRest) {
+      assertThatThrownBy(command::join)
+          .isInstanceOf(ProblemException.class)
+          .hasMessageContaining(
+              String.format(
+                  "Expected to cancel a process instance with key '%s', but a cancel request is already in progress",
+                  processInstanceKey))
+          .satisfies(e -> assertThat(((ProblemException) e).code()).isEqualTo(409));
+    } else {
+      assertThatThrownBy(command::join)
+          .isInstanceOf(ClientStatusException.class)
+          .extracting("status.code")
+          .isEqualTo(Code.FAILED_PRECONDITION);
+    }
+
+    // cleanup - complete the listener job so the process instance terminates
+    client
+        .newActivateJobsCommand()
+        .jobType(listenerType)
+        .maxJobsToActivate(1)
+        .send()
+        .join()
+        .getJobs()
+        .forEach(job -> client.newCompleteCommand(job).send().join());
+    firstCancel.join();
   }
 
   private CancelProcessInstanceCommandStep1 getCommand(
