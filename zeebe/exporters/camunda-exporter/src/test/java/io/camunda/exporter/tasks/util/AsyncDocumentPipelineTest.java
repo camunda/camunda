@@ -9,6 +9,7 @@ package io.camunda.exporter.tasks.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -53,6 +54,37 @@ class AsyncDocumentPipelineTest {
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(4, 5, 6), 6));
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(7, 8, 9), 9));
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(10), 10));
+    inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
+  void shouldCompleteOnceLastBatchIsBelowBatchSize() {
+    final BatchProcessor<Integer, Integer> batchProcessor = mock(BatchProcessor.class);
+    when(batchProcessor.process(any())).then(returnBatchSize());
+
+    final BatchSupplier<Integer, Integer> batchSupplier = mock(BatchSupplier.class);
+    when(batchSupplier.supply(any(), anyInt()))
+        .thenReturn(
+            CompletableFuture.completedFuture(DocumentBatch.from(List.of(4, 5, 6), 6)),
+            CompletableFuture.completedFuture(DocumentBatch.from(List.of(7, 8), 8)));
+
+    final var builder =
+        AsyncDocumentPipeline.builder(batchSupplier, batchProcessor)
+            .minBatchSize(1)
+            .batchSize(3)
+            .maxRetryAttempts(2);
+
+    final var future = builder.buildAndExecute();
+    assertThat(future)
+        .succeedsWithin(Duration.ofSeconds(5))
+        .extracting("totalDocumentsRead", "totalDocumentsProcessed")
+        .containsExactly(5L, 5L);
+
+    final var inOrder = Mockito.inOrder(batchSupplier, batchProcessor);
+    inOrder.verify(batchSupplier).supply(null, 3);
+    inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(4, 5, 6), 6));
+    inOrder.verify(batchSupplier).supply(6, 3);
+    inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(7, 8), 8));
     inOrder.verifyNoMoreInteractions();
   }
 
