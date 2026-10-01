@@ -36,7 +36,7 @@ For the rules, the pods, and the changelog template, refer to [reference.md](ref
 5. Tell the user which pods must review the PR. Refer to "Pods" in [reference.md](reference.md).
 6. Do Procedure 4.
 
-NOTE: The CI job "Check / C8 REST OpenAPI / Webapp Client types" does steps 2 and 3 for each spec change. At this time, the job does not block the merge.
+NOTE: The CI job "Check / C8 REST OpenAPI / Webapp Client types" does steps 2 and 3 for each spec change. If the job fails, the PR cannot merge.
 
 ## Procedure 2: Change a module
 

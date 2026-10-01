@@ -2662,9 +2662,6 @@ jobs:
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    # Non-blocking until the signal is trustworthy (see docs/monorepo-docs/ci.md): a failure is
-    # visible on the PR but does not fail check-results. Remove this line to make the check blocking.
-    continue-on-error: true
     permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       TEST_OWNER: '@camunda/employee-engagement-tasklist'
