@@ -24,7 +24,7 @@ import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
+public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
   private static final Logger DEFAULT_LOGGER = LoggerFactory.getLogger(AsyncDocumentPipeline.class);
 
   private static final double BATCH_SIZE_REDUCTION_FACTOR = 0.5;
@@ -214,7 +214,7 @@ public class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
     }
   }
 
-  public static class Builder<DocType, SearchAfterFieldType> {
+  public static final class Builder<DocType, SearchAfterFieldType> {
     private final BatchSupplier<DocType, SearchAfterFieldType> batchSupplier;
     private final BatchProcessor<DocType, SearchAfterFieldType> batchProcessor;
     private Executor executor = ForkJoinPool.commonPool();
