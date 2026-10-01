@@ -11,6 +11,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -240,4 +241,21 @@ func TestAuthenticationIsOIDC(t *testing.T) {
 	assert.False(t, authenticationIsOIDC(nil))
 	t.Setenv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD", "basic")
 	assert.False(t, authenticationIsOIDC([]string{cfg}), "the environment beats config files")
+}
+
+func TestApplyPhysicalTenantsFailsWhenSavedTenantsCannotBeFound(t *testing.T) {
+	t.Setenv(pt.FileEnv, "")
+	if runtime.GOOS == "windows" {
+		t.Setenv("APPDATA", "")
+	} else {
+		t.Setenv("HOME", "")
+		t.Setenv("XDG_CONFIG_HOME", "")
+	}
+	settings := types.C8RunSettings{DisableConnectors: true}
+	err := applyPhysicalTenants(t.TempDir(), "8.10.0", &settings)
+	if err == nil {
+		t.Skip("the platform still resolves a user config directory")
+	}
+	assert.ErrorContains(t, err, "cannot find your saved physical tenants")
+	assert.ErrorContains(t, err, pt.FileEnv)
 }

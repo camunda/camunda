@@ -275,8 +275,11 @@ func Resolve(in ResolveInput) (Resolution, error) {
 			t.Username, t.Password = st.Username, pw
 		}
 		if in.ConnectorsEnabled && !st.NoConnectors {
-			for port < 65535 && (in.ReservedPorts[port] || (in.PortFree != nil && !in.PortFree(port))) {
+			for port <= 65535 && (in.ReservedPorts[port] || (in.PortFree != nil && !in.PortFree(port))) {
 				port++
+			}
+			if port > 65535 {
+				return res, fmt.Errorf("no free port left for the connectors runtime of physical tenant %q; free some ports or add it with --no-connectors", st.ID)
 			}
 			t.Connectors, t.ConnectorsPort = true, port
 			port++

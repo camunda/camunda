@@ -77,10 +77,15 @@ func Probe(ctx context.Context, settings types.C8RunSettings, attempts int, dela
 
 func probeOne(ctx context.Context, client *http.Client, settings types.C8RunSettings, t types.PhysicalTenant, attempts int, delay time.Duration) ProbeResult {
 	{
-		url := EndpointsFor(t.ID, settings.GetProtocol(), settings.Port).REST + "topology"
+		// A search endpoint is gated on the tenant's secondary storage (503 until its schema is
+		// ready), so this checks the tenant can actually serve requests, not just its topology.
+		url := EndpointsFor(t.ID, settings.GetProtocol(), settings.Port).REST + "process-definitions/search"
 		result := ProbeResult{ID: t.ID}
 		for i := 0; i < attempts; i++ {
-			req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+			req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(`{"page":{"limit":1}}`))
+			if err == nil {
+				req.Header.Set("Content-Type", "application/json")
+			}
 			if err != nil {
 				result.Err = err.Error()
 				break
@@ -102,9 +107,12 @@ func probeOne(ctx context.Context, client *http.Client, settings types.C8RunSett
 					}
 					break
 				}
-				result.Err = fmt.Sprintf("GET %s returned HTTP %d", url, resp.StatusCode)
-				if resp.StatusCode == http.StatusNotFound {
+				result.Err = fmt.Sprintf("POST %s returned HTTP %d", url, resp.StatusCode)
+				switch resp.StatusCode {
+				case http.StatusNotFound:
 					result.Err += " (the tenant is not configured; check log/camunda.log for physical tenant validation errors)"
+				case http.StatusServiceUnavailable:
+					result.Err += " (its secondary storage is not ready; check log/camunda.log for schema errors)"
 				}
 			} else {
 				result.Err = err.Error()

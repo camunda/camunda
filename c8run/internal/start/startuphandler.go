@@ -525,15 +525,23 @@ func (s *StartupHandler) startConnectors(ctx context.Context, stop context.Cance
 		return health.QueryConnectors(ctx, "Connectors", startupHealthCheckRetries)
 	}, connectorsFailed)
 
+	// Tenant runtimes start and are health-checked concurrently, so one slow or broken
+	// runtime never delays the others and the total wait does not grow with tenant count.
+	var wg sync.WaitGroup
 	for _, tenant := range state.Settings.PhysicalTenants {
 		if ctx.Err() != nil {
-			return
+			break
 		}
 		if !tenant.Connectors {
 			continue
 		}
-		s.startTenantConnectors(ctx, stop, state, parentDir, javaBinary, tenant)
+		wg.Add(1)
+		go func(tenant types.PhysicalTenant) {
+			defer wg.Done()
+			s.startTenantConnectors(ctx, stop, state, parentDir, javaBinary, tenant)
+		}(tenant)
 	}
+	wg.Wait()
 }
 
 // withTenantEnv adds the per-tenant properties to the Camunda process environment only.

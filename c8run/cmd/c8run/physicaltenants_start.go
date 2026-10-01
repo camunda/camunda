@@ -37,7 +37,8 @@ func applyPhysicalTenants(baseDir, camundaVersion string, settings *types.C8RunS
 	if path, err := physicaltenants.ResolvePath(baseDir); err == nil {
 		store = physicaltenants.NewStore(path)
 	} else if len(flagIDs) == 0 {
-		log.Debug().Err(err).Msg("Physical tenants file unavailable; starting without saved tenants")
+		// Never silently start without the user's saved tenants.
+		return fmt.Errorf("cannot find your saved physical tenants: %w", err)
 	}
 
 	defaultConfig := filepath.Join(baseDir, "configuration", "application.yaml")

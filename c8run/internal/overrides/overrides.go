@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/rs/zerolog/log"
@@ -110,6 +111,16 @@ func ConnectorsAuthRequired(configPaths []string) bool {
 	// The API is open unless a source explicitly protects it.
 	apiUnprotected, apiFound := true, false
 
+	// JVM options and environment variables beat config files in Spring, so read them first.
+	if value, ok := effectiveOverride("camunda.security.authorizations.enabled",
+		"CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED"); ok {
+		authorizationsOn, authorizationsFound = value, true
+	}
+	if value, ok := effectiveOverride("camunda.security.authentication.unprotected-api",
+		"CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTED_API"); ok {
+		apiUnprotected, apiFound = value, true
+	}
+
 	for _, path := range configPaths {
 		root, ok := readConfigMap(path)
 		if !ok {
@@ -135,6 +146,33 @@ func ConnectorsAuthRequired(configPaths []string) bool {
 	}
 
 	return authorizationsOn || !apiUnprotected
+}
+
+// effectiveOverride reads a boolean from JAVA_OPTS (command line, highest), then
+// JDK_JAVA_OPTIONS, then the given environment variables. The last -D in a string wins.
+func effectiveOverride(property string, envNames ...string) (bool, bool) {
+	camel := strings.Replace(property, "unprotected-api", "unprotectedApi", 1)
+	for _, source := range []string{"JAVA_OPTS", "JDK_JAVA_OPTIONS"} {
+		value, found := "", false
+		for _, opt := range strings.Fields(os.Getenv(source)) {
+			for _, name := range []string{property, camel} {
+				if prefix := "-D" + name + "="; strings.HasPrefix(opt, prefix) {
+					value, found = strings.TrimPrefix(opt, prefix), true
+				}
+			}
+		}
+		if found {
+			if parsed, err := strconv.ParseBool(strings.TrimSpace(value)); err == nil {
+				return parsed, true
+			}
+		}
+	}
+	for _, name := range envNames {
+		if parsed, err := strconv.ParseBool(strings.TrimSpace(os.Getenv(name))); err == nil {
+			return parsed, true
+		}
+	}
+	return false, false
 }
 
 func readConfigMap(path string) (map[string]any, bool) {

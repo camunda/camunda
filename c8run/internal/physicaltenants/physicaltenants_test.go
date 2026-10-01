@@ -416,3 +416,29 @@ func TestProbeTreatsAuthRejectionAsReady(t *testing.T) {
 	assert.True(t, results[0].Ready)
 	assert.Contains(t, results[0].Warning, "login for alice was rejected")
 }
+
+func TestResolveFailsWhenPortsAreExhausted(t *testing.T) {
+	store := NewStore(filepath.Join(t.TempDir(), FileName))
+	require.NoError(t, store.Add([]Tenant{{ID: "a"}, {ID: "b"}}, nil))
+	_, err := Resolve(ResolveInput{
+		Store: store, ConnectorsEnabled: true, FirstConnectorsPort: 65535,
+		PortFree: func(int) bool { return true },
+	})
+	assert.ErrorContains(t, err, "no free port left")
+}
+
+func TestProbeWaitsForSecondaryStorage(t *testing.T) {
+	calls := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodPost, r.Method)
+		assert.True(t, strings.HasSuffix(r.URL.Path, "/process-definitions/search"))
+		calls++
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer server.Close()
+	u, _ := url.Parse(server.URL)
+	port, _ := strconv.Atoi(u.Port())
+	results := Probe(context.Background(), types.C8RunSettings{Port: port, PhysicalTenants: []types.PhysicalTenant{{ID: "a"}}}, 2, 10*time.Millisecond)
+	assert.False(t, results[0].Ready, "a tenant whose storage answers 503 is not ready")
+	assert.Contains(t, results[0].Err, "secondary storage is not ready")
+}

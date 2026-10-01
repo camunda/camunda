@@ -195,3 +195,23 @@ camunda:
 	assert.Equal(t, "preset-user", os.Getenv("CAMUNDA_CLIENT_AUTH_USERNAME"))
 	assert.Equal(t, "preset-pass", os.Getenv("CAMUNDA_CLIENT_AUTH_PASSWORD"))
 }
+
+func TestConnectorsAuthRequiredHonoursEnvironmentAndJVMOverrides(t *testing.T) {
+	t.Setenv("JAVA_OPTS", "")
+	t.Setenv("JDK_JAVA_OPTIONS", "")
+	t.Setenv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "")
+	t.Setenv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "")
+	t.Setenv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTED_API", "")
+	if ConnectorsAuthRequired(nil) {
+		t.Fatal("expected open API without any configuration")
+	}
+	t.Setenv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "false")
+	if !ConnectorsAuthRequired(nil) {
+		t.Fatal("an environment variable protecting the API must require credentials")
+	}
+	t.Setenv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "")
+	t.Setenv("JDK_JAVA_OPTIONS", "-Dcamunda.security.authorizations.enabled=true")
+	if !ConnectorsAuthRequired(nil) {
+		t.Fatal("a JVM option enabling authorizations must require credentials")
+	}
+}
