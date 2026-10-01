@@ -8,7 +8,7 @@
 
 import {ReactNode} from 'react';
 import {getLanguage, t} from './translation/translation';
-import {csrfRequestHeader, storeCsrfToken} from './csrf';
+import {csrfRequestHeader, ensureCsrfToken, storeCsrfToken} from './csrf';
 
 type Handler = {
   fct: (response: Response, payload: RequestPayload) => Promise<Response>;
@@ -98,6 +98,7 @@ export async function request(payload: RequestPayload): Promise<Response> {
   const {url, method, body, query, headers} = payload;
   const resourceUrl = query ? `${url}?${formatQuery(query)}` : url;
 
+  await ensureCsrfToken(method);
   let response = await fetch(resourceUrl, {
     method,
     body: processBody(body),
