@@ -46,6 +46,7 @@ When a skill exists for a recurring operation, use it rather than improvising st
 | `design-system-migrator`       | Migrate OC webapp routes and components from Carbon to the Camunda design system                               |
 | `engine-expert`                | Implement or fix capabilities in the Zeebe workflow engine (`zeebe/engine/`)                                   |
 | `frontend-feature`             | Build non-Operate features in the orchestration cluster webapp                                                 |
+| `frontend-docs-screenshots`    | Add, change, or run the Playwright tests that make the docs.camunda.io images for the OC webapp                |
 | `frontend-integration-test`    | Write or debug Playwright-based integration, visual, and accessibility tests in the OC webapp                  |
 | `frontend-operate-migrator`    | Independently port legacy Operate behavior through fidelity review and a draft PR                             |
 | `frontend-unit-test`           | Write or debug Vitest browser-mode unit tests in the orchestration cluster webapp                              |

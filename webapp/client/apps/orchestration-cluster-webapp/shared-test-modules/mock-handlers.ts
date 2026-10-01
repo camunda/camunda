@@ -209,6 +209,11 @@ const mockGetUserTaskEndpoint = createEndpointMock({
 	method: endpoints.getUserTask.method,
 });
 
+const mockGetUserTaskFormEndpoint = createEndpointMock({
+	endpoint: endpoints.getUserTaskForm.getUrl({userTaskKey: ':userTaskKey'}),
+	method: endpoints.getUserTaskForm.method,
+});
+
 const mockQueryVariablesByUserTaskEndpoint = createEndpointMock({
 	endpoint: endpoints.queryVariablesByUserTask.getUrl({userTaskKey: ':userTaskKey'}),
 	method: endpoints.queryVariablesByUserTask.method,
@@ -329,6 +334,7 @@ export {
 	mockLicenseEndpoint,
 	mockSaasTokenEndpoint,
 	mockGetUserTaskEndpoint,
+	mockGetUserTaskFormEndpoint,
 	mockQueryVariablesByUserTaskEndpoint,
 	mockGetVariableEndpoint,
 	mockGetProcessDefinitionXmlEndpoint,
