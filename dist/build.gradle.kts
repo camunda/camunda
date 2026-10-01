@@ -1,8 +1,8 @@
 import buildlogic.DistributionDependencyReportExtension
 import buildlogic.OpenApiDefaults
 import buildlogic.requiredVersion
+import buildlogic.filterMavenResources
 import io.camunda.gradle.pom.PomResolver
-import org.apache.tools.ant.filters.ReplaceTokens
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.file.FileTree
 import org.gradle.api.tasks.WriteProperties
@@ -140,7 +140,13 @@ val generateGitProperties =
 
 tasks.named<ProcessResources>("processResources") {
   dependsOn(generateGitProperties)
-  filter<ReplaceTokens>("tokens" to mapOf("project.version" to project.version.toString()))
+  this.filterMavenResources(
+    this,
+    "distProcessResourceTokens",
+    mapOf("project.version" to project.version.toString()),
+    beginToken = "@",
+    endToken = "@",
+  )
   from(generateGitProperties.map { it.destinationFile })
 }
 
@@ -178,12 +184,12 @@ val startupPrograms =
 
 val generateDistReadme =
   tasks.register<Sync>("generateDistReadme") {
+    val task = this
     from("README.txt") {
-      filter<ReplaceTokens>(
-        "tokens" to
-          mapOf("project.version" to distVersion, "version.elasticsearch" to elasticsearchVersion),
-        "beginToken" to "\${",
-        "endToken" to "}",
+      this.filterMavenResources(
+        task,
+        "distReadmeTokens",
+        mapOf("project.version" to distVersion, "version.elasticsearch" to elasticsearchVersion),
       )
     }
     into(layout.buildDirectory.dir("generated/dist/readme"))
@@ -192,46 +198,49 @@ val generateDistReadme =
 val generateDistScripts =
   tasks.register<Sync>("generateDistScripts") {
     into(layout.buildDirectory.dir("generated/dist/scripts"))
+    val task = this
 
     startupPrograms.forEach { (applicationName, mainClass) ->
       from("src/main/scripts/unixBinTemplate") {
         rename { applicationName }
-        filter<ReplaceTokens>(
-          "tokens" to
-            mapOf(
-              "LICENSE_HEADER" to "",
-              "ENV_SETUP" to "",
-              "REPO" to "lib",
-              "CLASSPATH" to "\"\$BASEDIR\"/config:\"\$REPO\"/*",
-              "ENDORSED_DIR" to "driver-lib",
-              "EXTRA_JVM_ARGUMENTS" to jvmOptsFor("\"\$BASEDIR\"").joinToString(" "),
-              "APP_NAME" to applicationName,
-              "MAINCLASS" to mainClass,
-              "APP_ARGUMENTS" to "",
-              "UNIX_BACKGROUND" to "",
-            ),
-          "beginToken" to "@",
-          "endToken" to "@",
+        this.filterMavenResources(
+          task,
+          "distUnixScriptTokens.$applicationName",
+          mapOf(
+            "LICENSE_HEADER" to "",
+            "ENV_SETUP" to "",
+            "REPO" to "lib",
+            "CLASSPATH" to "\"\$BASEDIR\"/config:\"\$REPO\"/*",
+            "ENDORSED_DIR" to "driver-lib",
+            "EXTRA_JVM_ARGUMENTS" to jvmOptsFor("\"\$BASEDIR\"").joinToString(" "),
+            "APP_NAME" to applicationName,
+            "MAINCLASS" to mainClass,
+            "APP_ARGUMENTS" to "",
+            "UNIX_BACKGROUND" to "",
+          ),
+          beginToken = "@",
+          endToken = "@",
         )
       }
       from("src/main/scripts/windowsBinTemplate") {
         rename { "$applicationName.bat" }
-        filter<ReplaceTokens>(
-          "tokens" to
-            mapOf(
-              "LICENSE_HEADER" to "",
-              "ENV_SETUP" to "",
-              "JAVA_BINARY" to "java",
-              "REPO" to "lib",
-              "CLASSPATH" to "\"%BASEDIR%\"\\config;\"%REPO%\"\\*",
-              "ENDORSED_DIR" to "driver-lib",
-              "EXTRA_JVM_ARGUMENTS" to jvmOptsFor("\"%BASEDIR%\"").joinToString(" "),
-              "APP_NAME" to applicationName,
-              "MAINCLASS" to mainClass,
-              "APP_ARGUMENTS" to "",
-            ),
-          "beginToken" to "#",
-          "endToken" to "#",
+        this.filterMavenResources(
+          task,
+          "distWindowsScriptTokens.$applicationName",
+          mapOf(
+            "LICENSE_HEADER" to "",
+            "ENV_SETUP" to "",
+            "JAVA_BINARY" to "java",
+            "REPO" to "lib",
+            "CLASSPATH" to "\"%BASEDIR%\"\\config;\"%REPO%\"\\*",
+            "ENDORSED_DIR" to "driver-lib",
+            "EXTRA_JVM_ARGUMENTS" to jvmOptsFor("\"%BASEDIR%\"").joinToString(" "),
+            "APP_NAME" to applicationName,
+            "MAINCLASS" to mainClass,
+            "APP_ARGUMENTS" to "",
+          ),
+          beginToken = "#",
+          endToken = "#",
         )
       }
     }

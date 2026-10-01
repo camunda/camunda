@@ -76,6 +76,7 @@ val generateSbe =
     workingDir(workingDir)
 
     val filesToDelete = sbeExtension.generatedFilesToDelete
+    inputs.property("sbeGeneratedFilesToDelete", filesToDelete)
 
     doFirst {
       // SBE does not remove files for schemas that were deleted or renamed. Clean the generated
