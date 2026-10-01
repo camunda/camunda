@@ -20,6 +20,7 @@ import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.core.port.in.OidcProviderConfigurationPort;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import io.camunda.security.spring.converter.AdditionalJwkSetUrisByRegistrationId;
 import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
 import io.camunda.spring.utils.PhysicalTenantContext;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.mock.env.MockEnvironment;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.core.Authentication;
@@ -222,6 +224,7 @@ class OidcOverrideBeansConfigurationConverterWiringTest {
         defaultConverter,
         request,
         oidcProviderRepository,
+        noAdditionalJwkSetUris(),
         membershipPort,
         propagator,
         environment);
@@ -232,5 +235,12 @@ class OidcOverrideBeansConfigurationConverterWiringTest {
     final var principal = mock(OidcUser.class);
     when(principal.getAttributes()).thenReturn(attributes);
     return new OAuth2AuthenticationToken(principal, List.of(), registrationId);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static ObjectProvider<AdditionalJwkSetUrisByRegistrationId> noAdditionalJwkSetUris() {
+    final var provider = mock(ObjectProvider.class);
+    when(provider.getIfAvailable(any())).thenReturn(AdditionalJwkSetUrisByRegistrationId.empty());
+    return provider;
   }
 }

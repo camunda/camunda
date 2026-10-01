@@ -21,6 +21,7 @@ import io.camunda.security.core.port.in.OidcProviderConfigurationPort;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
+import io.camunda.security.spring.converter.AdditionalJwkSetUrisByRegistrationId;
 import io.camunda.security.spring.converter.OidcTokenAuthenticationConverter;
 import io.camunda.security.spring.converter.TokenClaimsConvertersByIssuer;
 import io.camunda.security.spring.handler.OAuth2AuthenticationExceptionHandler;
@@ -208,6 +209,8 @@ public class OidcOverrideBeansConfiguration {
       final LazyTokenClaimsConverter tokenClaimsConverter,
       final HttpServletRequest request,
       final OidcProviderConfigurationPort oidcProviderRepository,
+      final ObjectProvider<AdditionalJwkSetUrisByRegistrationId>
+          additionalJwkSetUrisByRegistrationId,
       final MembershipPort membershipPort,
       final MembershipResolutionContextPropagator membershipResolutionContextPropagator,
       final Environment environment) {
@@ -216,7 +219,8 @@ public class OidcOverrideBeansConfiguration {
         oidcAccessTokenDecoderFactory,
         tokenClaimsConverter,
         request,
-        buildAdditionalJwkSetUrisByIssuer(oidcProviderRepository),
+        additionalJwkSetUrisByRegistrationId.getIfAvailable(
+            AdditionalJwkSetUrisByRegistrationId::empty),
         buildPreferIdTokenClaimsByRegistrationId(oidcProviderRepository),
         PhysicalTenantOidcProviders.tokenClaimsConvertersByRegistrationId(
             environment, membershipPort, membershipResolutionContextPropagator),
@@ -281,29 +285,6 @@ public class OidcOverrideBeansConfiguration {
       throw new IllegalStateException("Unsupported signature algorithm: " + algorithm);
     }
     return value;
-  }
-
-  private Map<String, List<String>> buildAdditionalJwkSetUrisByIssuer(
-      final OidcProviderConfigurationPort oidcProviderRepository) {
-    return oidcProviderRepository.getOidcAuthenticationConfigurations().values().stream()
-        .filter(
-            config ->
-                config.getIssuerUri() != null
-                    && config.getAdditionalJwkSetUris() != null
-                    && !config.getAdditionalJwkSetUris().isEmpty())
-        .collect(
-            toMap(
-                OidcConfiguration::getIssuerUri,
-                config -> List.copyOf(config.getAdditionalJwkSetUris()),
-                (a, b) -> {
-                  if (!a.equals(b)) {
-                    throw new IllegalStateException(
-                        "Multiple OIDC providers share the same issuer URI with different"
-                            + " additional JWKS URIs. Ensure each issuer has a consistent"
-                            + " configuration.");
-                  }
-                  return a;
-                }));
   }
 
   private Map<String, Boolean> buildPreferIdTokenClaimsByRegistrationId(

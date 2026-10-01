@@ -9,6 +9,7 @@ package io.camunda.authentication.config;
 
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.core.authz.LazyTokenClaimsConverter;
+import io.camunda.security.spring.converter.AdditionalJwkSetUrisByRegistrationId;
 import io.camunda.security.spring.converter.OidcUserAuthenticationConverter;
 import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,7 +36,7 @@ final class ProviderAwareOidcUserAuthenticationConverter extends OidcUserAuthent
       final OidcAccessTokenDecoderFactory accessTokenDecoderFactory,
       final LazyTokenClaimsConverter defaultTokenClaimsConverter,
       final HttpServletRequest request,
-      final Map<String, List<String>> additionalJwkSetUrisByIssuer,
+      final AdditionalJwkSetUrisByRegistrationId additionalJwkSetUrisByRegistrationId,
       final Map<String, Boolean> preferIdTokenClaimsByRegistrationId,
       final Map<String, LazyTokenClaimsConverter> tokenClaimsConvertersByRegistrationId,
       final Map<String, List<String>> identityClaimsByRegistrationId) {
@@ -44,7 +45,7 @@ final class ProviderAwareOidcUserAuthenticationConverter extends OidcUserAuthent
         accessTokenDecoderFactory,
         defaultTokenClaimsConverter,
         request,
-        additionalJwkSetUrisByIssuer,
+        additionalJwkSetUrisByRegistrationId,
         preferIdTokenClaimsByRegistrationId);
     this.defaultTokenClaimsConverter = defaultTokenClaimsConverter;
     this.tokenClaimsConvertersByRegistrationId = Map.copyOf(tokenClaimsConvertersByRegistrationId);
