@@ -19,7 +19,9 @@ class AdminLoginPage extends LoginPage {
 	}
 
 	override get passwordInput() {
-		return this.page.getByLabel(/password/i);
+		// Scoped to the textbox role: the design system's password field now ships
+		// a show/hide toggle button whose aria-label also matches /password/i.
+		return this.page.getByRole('textbox', {name: /password/i});
 	}
 
 	get genericErrorHeading() {
