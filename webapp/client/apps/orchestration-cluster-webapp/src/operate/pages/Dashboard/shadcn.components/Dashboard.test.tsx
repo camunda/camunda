@@ -8,18 +8,21 @@
 
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {describe, expect} from 'vitest';
+import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
 import {
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
 	mockCurrentUserEndpoint,
+	mockQueryProcessDefinitionsEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createProcessDefinitionInstanceStatistics} from '#/shared-test-modules/api-mocks/process-definition-statistics';
 import {createIncidentProcessInstanceStatisticsByError} from '#/shared-test-modules/api-mocks/incident-statistics';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
+import {createQueryProcessDefinitionsResponse} from '#/shared-test-modules/api-mocks/process-definitions';
 import {Dashboard} from './Dashboard';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 
 const PROCESS_STATS_REQUEST_SCHEMA = z.object({
 	sort: z.array(
@@ -66,6 +69,8 @@ const INCIDENTS_RESPONSE_WITH_ERRORS = HttpResponse.json(
 
 const INCIDENTS_RESPONSE_EMPTY = HttpResponse.json(createPaginatedResponse());
 
+const NO_DRAINING_RESPONSE = HttpResponse.json(createQueryProcessDefinitionsResponse());
+
 const CURRENT_USER_RESPONSE = HttpResponse.json({
 	userId: 'test-user',
 	displayName: 'Test User',
@@ -73,6 +78,14 @@ const CURRENT_USER_RESPONSE = HttpResponse.json({
 });
 
 describe('<Dashboard />', () => {
+	beforeEach(() => {
+		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
+	});
+
+	afterEach(() => {
+		sessionStorage.clear();
+	});
+
 	it('should render the sr-only dashboard title', async ({worker}) => {
 		worker.use(
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({
@@ -80,6 +93,7 @@ describe('<Dashboard />', () => {
 				successResponse: STATS_RESPONSE_WITH_INSTANCES,
 				failureResponse: FAILURE_RESPONSE,
 			}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
 		);
 
 		const screen = await renderWithRouter(Dashboard, {path: '/operate-preview'});
@@ -99,6 +113,7 @@ describe('<Dashboard />', () => {
 				successResponse: INCIDENTS_RESPONSE_WITH_ERRORS,
 				failureResponse: FAILURE_RESPONSE,
 			}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
 		);
 
 		const screen = await renderWithRouter(Dashboard, {path: '/operate-preview'});
@@ -118,6 +133,7 @@ describe('<Dashboard />', () => {
 				successResponse: INCIDENTS_RESPONSE_WITH_ERRORS,
 				failureResponse: FAILURE_RESPONSE,
 			}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
 		);
 
 		const screen = await renderWithRouter(Dashboard, {path: '/operate-preview'});
@@ -126,7 +142,7 @@ describe('<Dashboard />', () => {
 		await expect.element(screen.getByText('Process Incidents by Error Message')).toBeVisible();
 	});
 
-	it('should render sample rows in both list tiles, pending real data', async ({worker}) => {
+	it('should render real process rows and sample incident rows, pending real incident data', async ({worker}) => {
 		worker.use(
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({
 				schema: PROCESS_STATS_REQUEST_SCHEMA,
@@ -138,13 +154,13 @@ describe('<Dashboard />', () => {
 				successResponse: INCIDENTS_RESPONSE_WITH_ERRORS,
 				failureResponse: FAILURE_RESPONSE,
 			}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
 		);
 
 		const screen = await renderWithRouter(Dashboard, {path: '/operate-preview'});
 
-		await expect.element(screen.getByText('Order process')).toBeVisible();
+		await expect.element(screen.getByText('Process One', {exact: false})).toBeVisible();
 		await expect.element(screen.getByText('Connection timeout')).toBeVisible();
-		expect(screen.getByText('Process One').elements()).toHaveLength(0);
 		expect(screen.getByText('Payment gateway request timed out').elements()).toHaveLength(0);
 	});
 

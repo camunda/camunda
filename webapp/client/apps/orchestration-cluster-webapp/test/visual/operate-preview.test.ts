@@ -13,6 +13,7 @@ import {
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockLicenseEndpoint,
+	mockQueryProcessDefinitionsEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
@@ -20,6 +21,7 @@ import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {createProcessDefinitionInstanceStatistics} from '#/shared-test-modules/api-mocks/process-definition-statistics';
+import {createQueryProcessDefinitionsResponse} from '#/shared-test-modules/api-mocks/process-definitions';
 
 test.beforeEach(({network}) => {
 	network.use(
@@ -70,7 +72,11 @@ test('should match the no-instances empty state snapshot with a modeler link', a
 	await expect(page).toHaveScreenshot();
 });
 
-test('should match the list tiles snapshot with sample rows', async ({network, operatePreviewPage, page}) => {
+test('should match the list tiles snapshot with real process rows and sample incident rows', async ({
+	network,
+	operatePreviewPage,
+	page,
+}) => {
 	network.use(
 		mockCurrentUserEndpoint({
 			successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['operate']})),
@@ -89,10 +95,12 @@ test('should match the list tiles snapshot with sample rows', async ({network, o
 				}),
 			),
 		}),
+		mockQueryProcessDefinitionsEndpoint({successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse())}),
 	);
 
 	await operatePreviewPage.goto();
-	await expect(operatePreviewPage.processesByNameSampleRow).toBeVisible();
+	await expect(operatePreviewPage.processesByNameRow('My Process')).toBeVisible();
+	await expect(operatePreviewPage.incidentsByErrorSampleRow).toBeVisible();
 
 	await expect(page).toHaveScreenshot();
 });

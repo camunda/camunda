@@ -9,15 +9,37 @@
 import {useState} from 'react';
 import {Button, DataTable, useC4Dictionary, type DataTableColumn} from '@camunda/design-system';
 import {ChevronDown, ChevronRight} from '@camunda/design-system/icons';
+import {cn} from '#/shared/cn';
+import {ExpandableListSkeletonRow} from '../ExpandableListSkeletonRow';
 import type {ExpandableListRow, ExpandableListVariantProps} from '../ExpandableList.types';
 
-type DisplayRow = {kind: 'row'; row: ExpandableListRow} | {kind: 'detail'; parentId: string; content: React.ReactNode};
+type DisplayRow =
+	| {kind: 'row'; row: ExpandableListRow}
+	| {kind: 'detail'; parentId: string; content: React.ReactNode}
+	| {kind: 'skeleton'; id: string; testId: string; label: string};
 
 function getDisplayRowId(displayRow: DisplayRow): string {
-	return displayRow.kind === 'row' ? `row-${displayRow.row.id}` : `detail-${displayRow.parentId}`;
+	if (displayRow.kind === 'row') {
+		return `row-${displayRow.row.id}`;
+	}
+
+	if (displayRow.kind === 'detail') {
+		return `detail-${displayRow.parentId}`;
+	}
+
+	return displayRow.id;
 }
 
-const NativeExpansionCell: React.FC<ExpandableListVariantProps> = ({header, rows, renderExpansion, isPending}) => {
+const NativeExpansionCell: React.FC<ExpandableListVariantProps> = ({
+	header,
+	rows,
+	renderExpansion,
+	isPending,
+	isFetchingNextPage,
+	isFetchingPreviousPage,
+	loadingNextPage,
+	loadingPreviousPage,
+}) => {
 	const {t} = useC4Dictionary();
 	const [expandedIds, setExpandedIds] = useState<ReadonlySet<string>>(new Set());
 
@@ -34,6 +56,16 @@ const NativeExpansionCell: React.FC<ExpandableListVariantProps> = ({header, rows
 	};
 
 	const displayRows: DisplayRow[] = [];
+
+	if (isFetchingPreviousPage) {
+		displayRows.push({
+			kind: 'skeleton',
+			id: '__skeleton-previous',
+			testId: loadingPreviousPage.testId,
+			label: loadingPreviousPage.label,
+		});
+	}
+
 	for (const row of rows) {
 		displayRows.push({kind: 'row', row});
 
@@ -45,19 +77,32 @@ const NativeExpansionCell: React.FC<ExpandableListVariantProps> = ({header, rows
 		}
 	}
 
+	if (isFetchingNextPage) {
+		displayRows.push({
+			kind: 'skeleton',
+			id: '__skeleton-next',
+			testId: loadingNextPage.testId,
+			label: loadingNextPage.label,
+		});
+	}
+
 	const columns: DataTableColumn<DisplayRow>[] = [
 		{
 			id: 'content',
-			header: () => <span className="sr-only">{header}</span>,
+			header,
 			cell: ({row: displayRow}) => {
 				const data = displayRow.original;
 
 				if (data.kind === 'detail') {
 					return (
-						<div data-row-kind="detail" className="bg-neutral-background-medium px-4 py-4">
+						<div data-row-kind="detail" className="bg-neutral-background-medium -mx-3 px-4 py-4">
 							{data.content}
 						</div>
 					);
+				}
+
+				if (data.kind === 'skeleton') {
+					return <ExpandableListSkeletonRow testId={data.testId} label={data.label} />;
 				}
 
 				const isExpanded = expandedIds.has(data.row.id);
@@ -65,7 +110,7 @@ const NativeExpansionCell: React.FC<ExpandableListVariantProps> = ({header, rows
 
 				return (
 					<div className="flex items-center gap-2">
-						{expansionContent !== null && (
+						{expansionContent !== null ? (
 							<Button
 								type="button"
 								variant="ghost"
@@ -76,8 +121,10 @@ const NativeExpansionCell: React.FC<ExpandableListVariantProps> = ({header, rows
 							>
 								{isExpanded ? <ChevronDown aria-hidden /> : <ChevronRight aria-hidden />}
 							</Button>
+						) : (
+							<div aria-hidden className="size-8 shrink-0" />
 						)}
-						<div className="flex-1">{data.row.content}</div>
+						<div className="min-w-0 flex-1">{data.row.content}</div>
 					</div>
 				);
 			},
@@ -85,14 +132,24 @@ const NativeExpansionCell: React.FC<ExpandableListVariantProps> = ({header, rows
 	];
 
 	return (
-		<DataTable<DisplayRow>
-			size="sm"
-			columns={columns}
-			data={displayRows}
-			aria-label={header}
-			getRowId={getDisplayRowId}
-			loading={isPending}
-		/>
+		<div
+			className={cn(
+				'contents',
+				'[&_[data-slot=table]]:table-fixed',
+				'[&_[data-slot=table-container]]:overflow-visible!',
+				'[&_[data-slot=table-container]]:rounded-none! [&_[data-slot=table-container]]:border-0! [&_[data-slot=table-container]]:shadow-none!',
+				'[&_[data-slot=table-header]]:sticky [&_[data-slot=table-header]]:top-0 [&_[data-slot=table-header]]:z-10',
+			)}
+		>
+			<DataTable<DisplayRow>
+				size="sm"
+				columns={columns}
+				data={displayRows}
+				aria-label={header}
+				getRowId={getDisplayRowId}
+				loading={isPending}
+			/>
+		</div>
 	);
 };
 
