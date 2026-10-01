@@ -89,6 +89,9 @@ func (c *tenantsCommand) run(baseDir string, args []string) error {
 		return fmt.Errorf("physical tenants require Camunda 8.%d or newer; this c8run bundles Camunda %s", pt.MinCamundaMinor, v)
 	}
 	store := pt.NewStore(path)
+	if port := pt.LastStartPort(baseDir); port > 0 && os.Getenv("C8RUN_PORT") == "" {
+		c.port = port
+	}
 
 	switch args[0] {
 	case "add":

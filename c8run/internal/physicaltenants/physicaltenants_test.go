@@ -246,3 +246,11 @@ func TestPrintSummary(t *testing.T) {
 	PrintSummary(&buf, types.C8RunSettings{}, nil, 8086)
 	assert.Empty(t, buf.String())
 }
+
+func TestLastStartPort(t *testing.T) {
+	base := t.TempDir()
+	assert.Zero(t, LastStartPort(base))
+	_, err := WriteGeneratedConfigForPort(base, []types.PhysicalTenant{{ID: "a"}}, "rdbms", 8090)
+	require.NoError(t, err)
+	assert.Equal(t, 8090, LastStartPort(base))
+}

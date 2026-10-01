@@ -66,7 +66,7 @@ func applyPhysicalTenants(baseDir, camundaVersion string, settings *types.C8RunS
 		return fmt.Errorf("physical tenants require Camunda 8.%d or newer, but this c8run bundles Camunda %s. Remove them with `c8run tenants reset` or upgrade c8run", physicaltenants.MinCamundaMinor, camundaVersion)
 	}
 
-	path, err := physicaltenants.WriteGeneratedConfig(baseDir, res.Tenants, settings.SecondaryStorageType)
+	path, err := physicaltenants.WriteGeneratedConfigForPort(baseDir, res.Tenants, settings.SecondaryStorageType, settings.Port)
 	if err != nil {
 		return err
 	}
