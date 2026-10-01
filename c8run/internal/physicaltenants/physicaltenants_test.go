@@ -448,3 +448,8 @@ func TestProbeWaitsForSecondaryStorage(t *testing.T) {
 	assert.False(t, results[0].Ready, "a tenant whose storage answers 503 is not ready")
 	assert.Contains(t, results[0].Err, "secondary storage is not ready")
 }
+
+func TestRenderRejectsUnknownStorageType(t *testing.T) {
+	_, err := Render([]types.PhysicalTenant{{ID: "a"}}, "${STORAGE_TYPE}")
+	assert.ErrorContains(t, err, "cannot isolate physical tenants")
+}

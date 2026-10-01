@@ -33,20 +33,29 @@ func applyPhysicalTenants(baseDir, camundaVersion string, settings *types.C8RunS
 	if err != nil {
 		return fmt.Errorf("--physical-tenants: %w", err)
 	}
-	var store *physicaltenants.Store
-	if path, err := physicaltenants.ResolvePath(baseDir); err == nil {
-		store = physicaltenants.NewStore(path)
-	} else if len(flagIDs) == 0 {
-		// Never silently start without the user's saved tenants.
-		return fmt.Errorf("cannot find your saved physical tenants: %w", err)
-	}
-
 	defaultConfig := filepath.Join(baseDir, "configuration", "application.yaml")
 	var userConfigs []string
+	externallyDeclared := envDeclaresTenants()
 	for _, p := range settings.ConfigPaths {
 		if p != defaultConfig {
 			userConfigs = append(userConfigs, p)
+			externallyDeclared = externallyDeclared || physicaltenants.ConfigDeclaresTenants(p)
 		}
+	}
+	mode, err := physicaltenants.Mode()
+	if err != nil {
+		return err
+	}
+
+	// The saved tenants file is only needed when c8run will actually read saved tenants.
+	var store *physicaltenants.Store
+	if len(flagIDs) == 0 && mode == "local" && !externallyDeclared {
+		path, err := physicaltenants.ResolvePath(baseDir)
+		if err != nil {
+			// Never silently start without the user's saved tenants.
+			return fmt.Errorf("cannot find your saved physical tenants: %w", err)
+		}
+		store = physicaltenants.NewStore(path)
 	}
 
 	res, err := physicaltenants.Resolve(physicaltenants.ResolveInput{

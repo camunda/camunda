@@ -43,6 +43,11 @@ func StoragePrefix(id, storageType string) (key, value string) {
 // Render produces the Spring config declaring every tenant's storage isolation. Logins are
 // passed through the environment (see CredentialEnv) so passwords never touch disk here.
 func Render(tenants []types.PhysicalTenant, storageType string) ([]byte, error) {
+	switch strings.ToLower(strings.TrimSpace(storageType)) {
+	case "", "rdbms", "elasticsearch", "opensearch", "none":
+	default:
+		return nil, fmt.Errorf("cannot isolate physical tenants for secondary storage type %q; use rdbms, elasticsearch, opensearch or none", storageType)
+	}
 	perTenant := map[string]any{}
 	for _, t := range tenants {
 		tenant := map[string]any{}

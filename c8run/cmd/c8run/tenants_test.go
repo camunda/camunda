@@ -306,3 +306,23 @@ func TestConfigDirectoryFollowsSpringPrecedence(t *testing.T) {
 	applySecondaryStorageDefaults(base, &settings)
 	assert.Equal(t, "elasticsearch", settings.SecondaryStorageType, "tenant isolation must follow the .properties storage type")
 }
+
+func TestExternalTenantConfigDoesNotNeedTheSavedTenantsFile(t *testing.T) {
+	t.Setenv(pt.FileEnv, "")
+	t.Setenv("JAVA_OPTS", "")
+	if runtime.GOOS == "windows" {
+		t.Setenv("APPDATA", "")
+	} else {
+		t.Setenv("HOME", "")
+		t.Setenv("XDG_CONFIG_HOME", "")
+	}
+	cfg := filepath.Join(t.TempDir(), "app.yaml")
+	require.NoError(t, os.WriteFile(cfg, []byte("camunda:\n  physical-tenants:\n    x: {}\n"), 0o644))
+	settings := types.C8RunSettings{DisableConnectors: true, ConfigPaths: []string{cfg}}
+	require.NoError(t, applyPhysicalTenants(t.TempDir(), "8.10.0", &settings))
+	assert.Empty(t, settings.PhysicalTenants)
+
+	t.Setenv(pt.ModeEnv, "external")
+	settings = types.C8RunSettings{DisableConnectors: true}
+	require.NoError(t, applyPhysicalTenants(t.TempDir(), "8.10.0", &settings))
+}

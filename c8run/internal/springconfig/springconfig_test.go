@@ -48,3 +48,38 @@ func TestLoadPropertiesAndYAMLIntoOneShape(t *testing.T) {
 	v, _ = Lookup(root, "camunda", "data", "secondary-storage", "type")
 	assert.Equal(t, "opensearch", v, "flat dotted YAML keys are expanded too")
 }
+
+func TestResolvePlaceholders(t *testing.T) {
+	t.Setenv("STORAGE_TYPE", "")
+	_ = os.Unsetenv("STORAGE_TYPE")
+	assert.Equal(t, "elasticsearch", ResolvePlaceholders("${STORAGE_TYPE:elasticsearch}"))
+	t.Setenv("STORAGE_TYPE", "opensearch")
+	assert.Equal(t, "opensearch", ResolvePlaceholders("${STORAGE_TYPE:elasticsearch}"))
+	assert.Equal(t, "${UNSET_NO_DEFAULT_X}", ResolvePlaceholders("${UNSET_NO_DEFAULT_X}"))
+
+	dir := t.TempDir()
+	props := filepath.Join(dir, "a.properties")
+	require.NoError(t, os.WriteFile(props, []byte("camunda.data.secondary-storage.type=${STORAGE_TYPE:elasticsearch}\n"), 0o644))
+	root, _ := Load(props)
+	v, _ := Lookup(root, "camunda", "data", "secondary-storage", "type")
+	assert.Equal(t, "opensearch", v)
+}
+
+func TestFilesInIncludesActiveProfilesFirst(t *testing.T) {
+	t.Setenv("JAVA_OPTS", "")
+	t.Setenv("JDK_JAVA_OPTIONS", "")
+	t.Setenv("SPRING_PROFILES_ACTIVE", "")
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "application.yaml"), []byte("spring:\n  profiles:\n    active: base,prod\n"), 0o644))
+	for _, name := range []string{"application-prod.yaml", "application-base.properties", "application-other.yaml"} {
+		require.NoError(t, os.WriteFile(filepath.Join(dir, name), nil, 0o644))
+	}
+	assert.Equal(t, []string{
+		filepath.Join(dir, "application-prod.yaml"),
+		filepath.Join(dir, "application-base.properties"),
+		filepath.Join(dir, "application.yaml"),
+	}, FilesIn(dir), "the last active profile wins; inactive profiles are ignored")
+
+	t.Setenv("SPRING_PROFILES_ACTIVE", "other")
+	assert.Equal(t, filepath.Join(dir, "application-other.yaml"), FilesIn(dir)[0], "the environment beats the base file")
+}
