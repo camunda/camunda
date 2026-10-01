@@ -15,6 +15,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/camunda/camunda/c8run/internal/overrides"
 	pt "github.com/camunda/camunda/c8run/internal/physicaltenants"
 	localsecrets "github.com/camunda/camunda/c8run/internal/secrets"
 	"github.com/camunda/camunda/c8run/internal/types"
@@ -281,4 +282,27 @@ func TestStartRejectsExplicitlyEmptyPhysicalTenantsFlag(t *testing.T) {
 		_, _, err := getBaseCommandSettings("start")
 		assert.ErrorContains(t, err, "needs at least one tenant ID", value)
 	}
+}
+
+func TestConfigDirectoryFollowsSpringPrecedence(t *testing.T) {
+	base := t.TempDir()
+	dir := filepath.Join(base, "cfg")
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "application.yml"),
+		[]byte("camunda:\n  security:\n    authentication:\n      unprotected-api: true\n  data:\n    secondary-storage:\n      type: rdbms\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "application.properties"),
+		[]byte("camunda.security.authentication.unprotected-api=false\ncamunda.data.secondary-storage.type=elasticsearch\n"), 0o644))
+	for _, key := range []string{"JAVA_OPTS", "JDK_JAVA_OPTIONS", "CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED",
+		"CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTED_API",
+		"CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "CAMUNDA_DATA_SECONDARY_STORAGE_TYPE"} {
+		t.Setenv(key, "")
+	}
+
+	paths := resolveConfigPaths(base, "cfg")
+	assert.Equal(t, filepath.Join(dir, "application.properties"), paths[0], ".properties wins over YAML in one location")
+	assert.True(t, overrides.ConnectorsAuthRequired(paths), "the protecting .properties value must win, so connectors get credentials")
+
+	settings := types.C8RunSettings{Config: "cfg"}
+	applySecondaryStorageDefaults(base, &settings)
+	assert.Equal(t, "elasticsearch", settings.SecondaryStorageType, "tenant isolation must follow the .properties storage type")
 }

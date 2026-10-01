@@ -254,7 +254,7 @@ func (s *Store) write(doc document) error {
 	}
 	header := "# Physical tenants managed by `c8run tenants`. Edit with the CLI rather than by hand.\n" +
 		"# Readable only by you: it holds the passwords of tenants with their own login.\n"
-	return atomicWrite(s.path, append([]byte(header), content...), 0o600)
+	return localsecrets.WriteOwnerOnlyFile(s.path, append([]byte(header), content...))
 }
 
 func atomicWrite(path string, content []byte, perm os.FileMode) error {

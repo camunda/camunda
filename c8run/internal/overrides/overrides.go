@@ -9,14 +9,13 @@ package overrides
 
 import (
 	"fmt"
+	"github.com/camunda/camunda/c8run/internal/springconfig"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/rs/zerolog/log"
-	"gopkg.in/yaml.v3"
 )
 
 func SetEnvVars() error {
@@ -184,17 +183,9 @@ func readConfigMap(path string) (map[string]any, bool) {
 		return nil, false
 	}
 	if info.IsDir() {
-		return readConfigMap(filepath.Join(path, "application.yaml"))
+		return readConfigMap(springconfig.FilesIn(path)[0])
 	}
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return nil, false
-	}
-	var root map[string]any
-	if err := yaml.Unmarshal(content, &root); err != nil {
-		return nil, false
-	}
-	return root, true
+	return springconfig.Load(path)
 }
 
 func nestedMap(root map[string]any, keys ...string) (map[string]any, bool) {

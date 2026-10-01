@@ -19,6 +19,7 @@ import (
 	"github.com/camunda/camunda/c8run/internal/processmanagement"
 	localsecrets "github.com/camunda/camunda/c8run/internal/secrets"
 	"github.com/camunda/camunda/c8run/internal/shutdown"
+	"github.com/camunda/camunda/c8run/internal/springconfig"
 	"github.com/camunda/camunda/c8run/internal/start"
 	"github.com/camunda/camunda/c8run/internal/startupurl"
 	"github.com/camunda/camunda/c8run/internal/types"
@@ -333,18 +334,9 @@ func resolveConfigPaths(baseDir string, userConfig string) []string {
 	var paths []string
 	if userConfig != "" {
 		candidate := filepath.Join(baseDir, userConfig)
-		if info, err := os.Stat(candidate); err == nil {
-			if info.IsDir() {
-				// Spring loads every standard application file from a config directory.
-				paths = append(paths, filepath.Join(candidate, "application.yaml"))
-				for _, name := range []string{"application.yml", "application.properties"} {
-					if _, err := os.Stat(filepath.Join(candidate, name)); err == nil {
-						paths = append(paths, filepath.Join(candidate, name))
-					}
-				}
-			} else {
-				paths = append(paths, candidate)
-			}
+		if _, err := os.Stat(candidate); err == nil {
+			// Every file Spring loads from the location, in Spring's precedence order.
+			paths = append(paths, springconfig.FilesIn(candidate)...)
 		}
 	}
 	defaultConfig := filepath.Join(baseDir, "configuration", "application.yaml")
@@ -372,11 +364,17 @@ func detectSecondaryStorageType(path string) (string, error) {
 		return "", err
 	}
 
-	ext := strings.ToLower(filepath.Ext(path))
-	if ext != ".yaml" && ext != ".yml" {
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".yaml", ".yml":
+		return parseSecondaryStorageTypeFromYAML(content)
+	case ".properties":
+		root, _ := springconfig.Load(path)
+		typ, _ := springconfig.Lookup(root, "camunda", "data", "secondary-storage", "type")
+		value, _ := typ.(string)
+		return value, nil
+	default:
 		return "", nil
 	}
-	return parseSecondaryStorageTypeFromYAML(content)
 }
 
 func parseSecondaryStorageTypeFromYAML(content []byte) (string, error) {
@@ -411,13 +409,12 @@ func extractSecondaryStorageTypeFromMap(root map[string]any) string {
 }
 
 func detectRdbmsURLFromConfig(path string) (string, error) {
-	content, err := os.ReadFile(path)
-	if err != nil {
+	if _, err := os.Stat(path); err != nil {
 		return "", err
 	}
-	var root map[string]any
-	if err := yaml.Unmarshal(content, &root); err != nil {
-		return "", err
+	root, ok := springconfig.Load(path)
+	if !ok {
+		return "", fmt.Errorf("unable to parse %s", path)
 	}
 	return extractRdbmsURLFromMap(root), nil
 }

@@ -16,6 +16,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/camunda/camunda/c8run/internal/springconfig"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"gopkg.in/yaml.v3"
 )
@@ -179,6 +180,15 @@ func WriteGeneratedConfigForPort(baseDir string, tenants []types.PhysicalTenant,
 
 // ConfigDeclaresTenants reports whether a Spring YAML file declares camunda.physical-tenants.
 func ConfigDeclaresTenants(path string) bool {
+	if root, ok := springconfig.Load(path); ok {
+		if _, ok := springconfig.Lookup(root, "camunda", "physical-tenants"); ok {
+			return true
+		}
+		if _, ok := springconfig.Lookup(root, "camunda", "physicalTenants"); ok {
+			return true
+		}
+		return false
+	}
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return false

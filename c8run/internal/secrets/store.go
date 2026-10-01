@@ -87,6 +87,15 @@ func TenantDirectory(baseDir, tenantID string) (string, error) {
 	return filepath.Join(filepath.Dir(directory), TenantDirectoryName, tenantID), nil
 }
 
+// WriteOwnerOnlyFile atomically writes a file that only the current user (plus SYSTEM and
+// Administrators on Windows) can access: mode 0600 on Unix, a protected DACL on Windows.
+func WriteOwnerOnlyFile(path string, content []byte) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return err
+	}
+	return atomicWrite(path, content)
+}
+
 // NewInDirectory returns a store rooted at an explicit directory.
 func NewInDirectory(directory string) *Store {
 	return &Store{directory: filepath.Clean(directory)}

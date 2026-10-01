@@ -17,9 +17,9 @@ import (
 
 	"github.com/camunda/camunda/c8run/internal/physicaltenants"
 	localsecrets "github.com/camunda/camunda/c8run/internal/secrets"
+	"github.com/camunda/camunda/c8run/internal/springconfig"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/rs/zerolog/log"
-	"gopkg.in/yaml.v3"
 )
 
 // firstTenantConnectorsPort is the first port handed to a per-tenant connectors runtime;
@@ -166,21 +166,14 @@ func authenticationIsOIDC(configPaths []string) bool {
 		return strings.EqualFold(value, "oidc")
 	}
 	for _, path := range configPaths {
-		content, err := os.ReadFile(path)
-		if err != nil {
+		root, ok := springconfig.Load(path)
+		if !ok {
 			continue
 		}
-		var root struct {
-			Camunda struct {
-				Security struct {
-					Authentication struct {
-						Method string `yaml:"method"`
-					} `yaml:"authentication"`
-				} `yaml:"security"`
-			} `yaml:"camunda"`
-		}
-		if yaml.Unmarshal(content, &root) == nil && root.Camunda.Security.Authentication.Method != "" {
-			return strings.EqualFold(root.Camunda.Security.Authentication.Method, "oidc")
+		if method, ok := springconfig.Lookup(root, "camunda", "security", "authentication", "method"); ok {
+			if value, ok := method.(string); ok && value != "" {
+				return strings.EqualFold(value, "oidc")
+			}
 		}
 	}
 	return false
