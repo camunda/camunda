@@ -12,9 +12,12 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.test.util.Strings;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -102,6 +105,68 @@ public class TenantAwareCancelProcessInstanceTest {
             .cancel(user.getUsername());
 
     // then
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to cancel a process instance with key '%s', but no such process was found"
+                .formatted(processInstanceKey));
+  }
+
+  @Test
+  public void shouldRejectCancelTerminatingInstanceForUnauthorizedTenant() {
+    // given - a terminating instance whose cancel waits for a canceling task listener job
+    final var processId = Strings.newRandomValidBpmnId();
+    final var tenantId = Strings.newRandomValidBpmnId();
+    final var otherTenantId = Strings.newRandomValidBpmnId();
+    final var username = Strings.newRandomValidBpmnId();
+    final var user = ENGINE.user().newUser(username).create().getValue();
+    ENGINE.tenant().newTenant().withTenantId(otherTenantId).create();
+    ENGINE
+        .tenant()
+        .addEntity(otherTenantId)
+        .withEntityType(EntityType.USER)
+        .withEntityId(username)
+        .add();
+
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask(
+                    "task",
+                    t -> t.zeebeUserTask().zeebeTaskListener(l -> l.canceling().type(processId)))
+                .endEvent()
+                .done())
+        .withTenantId(tenantId)
+        .deploy();
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withTenantId(tenantId).create();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("task")
+        .await();
+
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .forAuthorizedTenants(tenantId)
+        .expectTerminating()
+        .cancel();
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType(processId)
+        .await();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .expectRejection()
+            .cancel(user.getUsername());
+
+    // then - the tenant check hides that the instance exists and is terminating
     assertThat(rejection)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
