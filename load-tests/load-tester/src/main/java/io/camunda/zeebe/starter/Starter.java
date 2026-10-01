@@ -47,12 +47,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -270,13 +265,22 @@ public class Starter implements CommandLineRunner {
         Collections.unmodifiableMap(deserializeVariables(variablesString));
 
     final BooleanSupplier shouldContinue = createContinuationCondition();
+      // to support still an open-model we have a higher maximum number of concurrent requests
+      int maximum = (int) starterCfg.getRate() * 10;
+      final Semaphore semaphore = new Semaphore(maximum);
 
-    return executorService.scheduleAtFixedRate(
+      return executorService.scheduleAtFixedRate(
         () -> {
           if (!shouldContinue.getAsBoolean()) {
             countDownLatch.countDown();
             return;
           }
+
+          if (!semaphore.tryAcquire())
+          {
+              return; // Skip this iteration if we can't acquire a permit
+          }
+
 
           try {
             final var vars = new HashMap<>(baseVariables);
@@ -296,6 +300,8 @@ public class Starter implements CommandLineRunner {
             }
             requestFuture.whenComplete(
                 (noop, error) -> {
+                    // make room for more requests
+                    semaphore.release();
                   // TODO: we should record the response success/failure for monitoring purposes
                   final long durationNanos = System.nanoTime() - startTime;
                   responseLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
