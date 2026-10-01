@@ -25,6 +25,7 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -273,60 +274,72 @@ final class VersionCompatibilityMatrix {
         Optional.ofNullable(System.getenv("ZEEBE_CI_CHECK_VERSION_COMPATIBILITY_TOTAL"))
             .map(Integer::parseInt)
             .orElse(1);
-    final var shardedCombinations = shard(combinations, index, total).toList();
-
-    if (isFullyCached(shardedCombinations)) {
-      LOG.info(
-          "All {} version pairs in shard {}/{} are fully cached, skipping to avoid"
-              + " unnecessary resource usage",
-          shardedCombinations.size(),
-          index,
-          total);
-      return Stream.empty();
-    }
-
-    return shardedCombinations.stream();
+    return shardPending(
+        combinations,
+        reportPath(),
+        countVersionMatrixTestMethods(RollingUpdateTest.class),
+        index,
+        total);
   }
 
-  /**
-   * Checks if all version pairs are fully cached by reading the cache file referenced by the {@code
-   * ZEEBE_CI_CHECK_VERSION_COMPATIBILITY_REPORT} environment variable. The expected number of test
-   * methods per pair is derived reflectively from {@link RollingUpdateTest} to ensure that newly
-   * added test methods are not silently skipped.
-   *
-   * <p>Returns {@code false} if the cache file is missing, empty, or cannot be read — in those
-   * cases the shard should run normally.
-   */
-  private static boolean isFullyCached(final List<Arguments> combinations) {
-    final var reportPath =
-        Optional.ofNullable(System.getenv("ZEEBE_CI_CHECK_VERSION_COMPATIBILITY_REPORT"))
-            .map(Path::of)
-            .orElse(null);
-    final var expectedMethods = countVersionMatrixTestMethods(RollingUpdateTest.class);
-    return isFullyCached(combinations, reportPath, expectedMethods);
+  private static Path reportPath() {
+    return Optional.ofNullable(System.getenv("ZEEBE_CI_CHECK_VERSION_COMPATIBILITY_REPORT"))
+        .map(Path::of)
+        .orElse(null);
   }
 
   @VisibleForTesting
-  static boolean isFullyCached(
-      final List<Arguments> combinations, final Path reportPath, final long expectedMethods) {
-    if (reportPath == null || !Files.exists(reportPath) || expectedMethods <= 0) {
-      return false;
+  static Stream<Arguments> shardPending(
+      final List<Arguments> combinations,
+      final Path reportPath,
+      final long expectedMethods,
+      final int index,
+      final int total) {
+    final var methodCountPerPair = readMethodCountPerPair(reportPath);
+    final var shards =
+        IntStream.range(0, total).mapToObj(ignored -> new ArrayList<Arguments>()).toList();
+    final var shardWeights = new long[total];
+
+    for (final var combination : combinations) {
+      final var pair = combination.get()[0] + "->" + combination.get()[1];
+      final var missingMethods =
+          Math.max(0, expectedMethods - methodCountPerPair.getOrDefault(pair, 0L));
+      if (missingMethods == 0) {
+        continue;
+      }
+
+      var lightestShard = 0;
+      for (int shard = 1; shard < total; shard++) {
+        if (shardWeights[shard] < shardWeights[lightestShard]) {
+          lightestShard = shard;
+        }
+      }
+      shards.get(lightestShard).add(combination);
+      shardWeights[lightestShard] += missingMethods;
     }
 
-    try {
-      final var methodCountPerPair =
-          Files.readAllLines(reportPath).stream()
-              .filter(line -> line.contains(","))
-              .collect(
-                  Collectors.groupingBy(
-                      line -> line.substring(line.indexOf(',') + 1), Collectors.counting()));
+    LOG.info(
+        "Assigned {} pending version pairs with {} missing test invocations to shard {}/{}",
+        shards.get(index).size(),
+        shardWeights[index],
+        index,
+        total);
+    return shards.get(index).stream();
+  }
 
-      return combinations.stream()
-          .map(args -> args.get()[0] + "->" + args.get()[1])
-          .allMatch(pair -> methodCountPerPair.getOrDefault(pair, 0L) >= expectedMethods);
+  private static Map<String, Long> readMethodCountPerPair(final Path reportPath) {
+    if (reportPath == null || !Files.exists(reportPath)) {
+      return Map.of();
+    }
+    try {
+      return Files.readAllLines(reportPath).stream()
+          .filter(line -> line.contains(","))
+          .collect(
+              Collectors.groupingBy(
+                  line -> line.substring(line.indexOf(',') + 1), Collectors.counting()));
     } catch (final IOException e) {
-      LOG.warn("Failed to read cache file at {}, proceeding with full shard", reportPath, e);
-      return false;
+      LOG.warn("Failed to read cache file at {}, proceeding without cached results", reportPath, e);
+      return Map.of();
     }
   }
 
@@ -345,17 +358,6 @@ final class VersionCompatibilityMatrix {
               return source != null && Arrays.asList(source.value()).contains("versionMatrix");
             })
         .count();
-  }
-
-  @VisibleForTesting
-  static <T> Stream<T> shard(final List<T> list, final int index, final int total) {
-    if (list.size() < total) {
-      throw new IllegalArgumentException(
-          "Can't shard a list of size %d into %d shards".formatted(list.size(), total));
-    }
-    return IntStream.iterate(
-            index, position -> position < list.size(), position -> position + total)
-        .mapToObj(list::get);
   }
 
   /**

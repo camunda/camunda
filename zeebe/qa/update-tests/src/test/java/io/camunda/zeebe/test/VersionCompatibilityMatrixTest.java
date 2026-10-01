@@ -8,7 +8,6 @@
 package io.camunda.zeebe.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -26,7 +25,6 @@ import io.camunda.zeebe.util.SemanticVersion;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -35,9 +33,11 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class VersionCompatibilityMatrixTest {
 
@@ -284,141 +284,127 @@ class VersionCompatibilityMatrixTest {
   }
 
   @Nested
-  class ShardingTest {
-    @ParameterizedTest(name = "Sharding {0} elements into {1} shards")
-    @MethodSource("sizeAndShards")
-    void shouldShardCompletely(final int size, final int totalShards) {
-      final var input = IntStream.range(0, size).boxed().toList();
-      final var sharded = new LinkedList<Integer>();
-      final var shardSizes = new LinkedList<Integer>();
-      for (int i = 0; i < totalShards; i++) {
-        final var shard = VersionCompatibilityMatrix.shard(input, i, totalShards).toList();
-        assertThat(shard).isNotEmpty();
-        shardSizes.add(shard.size());
-        sharded.addAll(shard);
-      }
-      assertThat(sharded).containsExactlyInAnyOrderElementsOf(input);
-      assertThat(Collections.max(shardSizes) - Collections.min(shardSizes)).isLessThanOrEqualTo(1);
+  class ShardPendingTest {
+
+    private static final List<Arguments> COMBINATIONS =
+        List.of(
+            Arguments.of("8.7.0", "8.7.11"),
+            Arguments.of("8.7.11", "8.7.12"),
+            Arguments.of("8.7.12", "8.8.0"),
+            Arguments.of("8.8.0", "8.8.1"),
+            Arguments.of("8.8.1", "8.8.2"));
+
+    @ParameterizedTest(name = "into {0} shards")
+    @ValueSource(ints = {1, 2, 3, 5, 7})
+    void shouldAssignEveryPendingPairToExactlyOneShard(final int totalShards) {
+      // when
+      final var shards = shardAll(COMBINATIONS, null, 3, totalShards);
+
+      // then
+      assertThat(shards.stream().flatMap(List::stream).toList())
+          .containsExactlyInAnyOrderElementsOf(pairs(COMBINATIONS));
+      final var sizes = shards.stream().map(List::size).toList();
+      assertThat(Collections.max(sizes) - Collections.min(sizes)).isLessThanOrEqualTo(1);
     }
 
     @Test
-    void shouldDistributeAdjacentElementsAcrossShards() {
-      final var input = IntStream.range(0, 10).boxed().toList();
+    void shouldTreatMissingReportAsNothingCached(@TempDir final Path tempDir) {
+      // when
+      final var shards = shardAll(COMBINATIONS, tempDir.resolve("missing"), 3, 2);
 
-      assertThat(VersionCompatibilityMatrix.shard(input, 0, 3)).containsExactly(0, 3, 6, 9);
-      assertThat(VersionCompatibilityMatrix.shard(input, 1, 3)).containsExactly(1, 4, 7);
-      assertThat(VersionCompatibilityMatrix.shard(input, 2, 3)).containsExactly(2, 5, 8);
-    }
-
-    static Stream<Arguments> sizeAndShards() {
-      return IntStream.rangeClosed(0, 10)
-          .boxed()
-          .flatMap(
-              size ->
-                  IntStream.rangeClosed(1, 10)
-                      .boxed()
-                      .filter(shards -> shards < size)
-                      .map(shards -> arguments(size, shards)));
-    }
-  }
-
-  @Nested
-  class FullyCachedTest {
-
-    @Test
-    void shouldReturnFalseWhenCacheFileDoesNotExist(
-        @org.junit.jupiter.api.io.TempDir final Path tempDir) {
-      // given
-      final var combinations =
-          List.of(Arguments.of("8.7.0", "8.7.11"), Arguments.of("8.7.11", "8.7.12"));
-
-      // when / then
-      assertThat(
-              VersionCompatibilityMatrix.isFullyCached(combinations, tempDir.resolve("missing"), 3))
-          .isFalse();
+      // then
+      assertThat(shards.stream().flatMap(List::stream).toList())
+          .containsExactlyInAnyOrderElementsOf(pairs(COMBINATIONS));
     }
 
     @Test
-    void shouldReturnFalseWhenCachePathIsNull() {
-      // given
-      final var combinations = List.of(Arguments.of("8.7.0", "8.7.11"));
-
-      // when / then
-      assertThat(VersionCompatibilityMatrix.isFullyCached(combinations, null, 3)).isFalse();
-    }
-
-    @Test
-    void shouldReturnTrueWhenAllPairsFullyCached(
-        @org.junit.jupiter.api.io.TempDir final Path tempDir) throws Exception {
-      // given
-      final var cacheFile = tempDir.resolve("cache");
+    void shouldOnlyAssignPairsWithMissingInvocations(@TempDir final Path tempDir) throws Exception {
+      // given - 8.7.0->8.7.11 is fully cached, 8.7.11->8.7.12 only partially
+      final var report = tempDir.resolve("report");
       Files.writeString(
-          cacheFile,
+          report,
           """
           methodA,8.7.0->8.7.11
           methodB,8.7.0->8.7.11
           methodC,8.7.0->8.7.11
           methodA,8.7.11->8.7.12
-          methodB,8.7.11->8.7.12
-          methodC,8.7.11->8.7.12
           """);
       final var combinations =
           List.of(Arguments.of("8.7.0", "8.7.11"), Arguments.of("8.7.11", "8.7.12"));
 
-      // when / then
-      assertThat(VersionCompatibilityMatrix.isFullyCached(combinations, cacheFile, 3)).isTrue();
+      // when
+      final var shards = shardAll(combinations, report, 3, 2);
+
+      // then
+      assertThat(shards.stream().flatMap(List::stream).toList()).containsExactly("8.7.11->8.7.12");
     }
 
     @Test
-    void shouldReturnFalseWhenSomePairsMissingFromCache(
-        @org.junit.jupiter.api.io.TempDir final Path tempDir) throws Exception {
+    void shouldAssignNothingWhenAllPairsAreCached(@TempDir final Path tempDir) throws Exception {
       // given
-      final var cacheFile = tempDir.resolve("cache");
+      final var report = tempDir.resolve("report");
       Files.writeString(
-          cacheFile,
+          report,
           """
           methodA,8.7.0->8.7.11
           methodB,8.7.0->8.7.11
-          methodC,8.7.0->8.7.11
           """);
-      final var combinations =
-          List.of(Arguments.of("8.7.0", "8.7.11"), Arguments.of("8.7.11", "8.7.12"));
-
-      // when / then
-      assertThat(VersionCompatibilityMatrix.isFullyCached(combinations, cacheFile, 3)).isFalse();
-    }
-
-    @Test
-    void shouldReturnFalseWhenPairPartiallyCached(
-        @org.junit.jupiter.api.io.TempDir final Path tempDir) throws Exception {
-      // given \u2014 pair 8.7.0->8.7.11 only has 2 of 3 methods cached
-      final var cacheFile = tempDir.resolve("cache");
-      Files.writeString(
-          cacheFile,
-          """
-          methodA,8.7.0->8.7.11
-          methodB,8.7.0->8.7.11
-          methodA,8.7.11->8.7.12
-          methodB,8.7.11->8.7.12
-          methodC,8.7.11->8.7.12
-          """);
-      final var combinations =
-          List.of(Arguments.of("8.7.0", "8.7.11"), Arguments.of("8.7.11", "8.7.12"));
-
-      // when / then
-      assertThat(VersionCompatibilityMatrix.isFullyCached(combinations, cacheFile, 3)).isFalse();
-    }
-
-    @Test
-    void shouldReturnFalseWhenCacheFileIsEmpty(@org.junit.jupiter.api.io.TempDir final Path tempDir)
-        throws Exception {
-      // given
-      final var cacheFile = tempDir.resolve("cache");
-      Files.writeString(cacheFile, "");
       final var combinations = List.of(Arguments.of("8.7.0", "8.7.11"));
 
-      // when / then
-      assertThat(VersionCompatibilityMatrix.isFullyCached(combinations, cacheFile, 3)).isFalse();
+      // when
+      final var shards = shardAll(combinations, report, 2, 3);
+
+      // then
+      assertThat(shards).allSatisfy(shard -> assertThat(shard).isEmpty());
+    }
+
+    @Test
+    void shouldBalanceShardsByMissingInvocations(@TempDir final Path tempDir) throws Exception {
+      // given - 8.7.0->8.7.11 misses all 3 invocations, every other pair misses only 1
+      final var report = tempDir.resolve("report");
+      Files.writeString(
+          report,
+          """
+          methodA,8.7.11->8.7.12
+          methodB,8.7.11->8.7.12
+          methodA,8.7.12->8.8.0
+          methodB,8.7.12->8.8.0
+          methodA,8.8.0->8.8.1
+          methodB,8.8.0->8.8.1
+          """);
+      final var combinations =
+          List.of(
+              Arguments.of("8.7.0", "8.7.11"),
+              Arguments.of("8.7.11", "8.7.12"),
+              Arguments.of("8.7.12", "8.8.0"),
+              Arguments.of("8.8.0", "8.8.1"));
+
+      // when
+      final var shards = shardAll(combinations, report, 3, 2);
+
+      // then - a count-based split would put 2 pairs (4 and 2 invocations) on each shard
+      assertThat(shards)
+          .containsExactlyInAnyOrder(
+              List.of("8.7.0->8.7.11"), List.of("8.7.11->8.7.12", "8.7.12->8.8.0", "8.8.0->8.8.1"));
+    }
+
+    private static List<List<String>> shardAll(
+        final List<Arguments> combinations,
+        final Path report,
+        final long expectedMethods,
+        final int totalShards) {
+      return IntStream.range(0, totalShards)
+          .mapToObj(
+              index ->
+                  pairs(
+                      VersionCompatibilityMatrix.shardPending(
+                              combinations, report, expectedMethods, index, totalShards)
+                          .toList()))
+          .toList();
+    }
+
+    private static List<String> pairs(final List<Arguments> combinations) {
+      return combinations.stream().map(args -> args.get()[0] + "->" + args.get()[1]).toList();
     }
   }
 
