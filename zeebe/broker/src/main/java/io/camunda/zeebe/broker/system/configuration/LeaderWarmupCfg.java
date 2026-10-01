@@ -18,8 +18,8 @@ public final class LeaderWarmupCfg {
   private boolean enabled = false;
   private Duration startDelay = Duration.ofSeconds(30);
   private Duration quietPeriod = Duration.ofSeconds(10);
-  private Duration maxDuration = Duration.ofMinutes(15);
-  private int processInstances = 5_000;
+  private Duration maxDuration = Duration.ofMinutes(5);
+  private int processInstances = 300;
   private int maxInFlightInstances = 32;
   private double maxCpuLoad = 0.7;
   private long maxProcessingBacklog = 250;
