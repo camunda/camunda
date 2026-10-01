@@ -12,6 +12,7 @@ that run each suite, see the
 | Integration       | Playwright + MSW (`@msw/playwright`) | `test/integration/`   | `npm run test:integration` |
 | Accessibility     | Playwright + `@axe-core/playwright`  | `test/a11y/`          | `npm run test:a11y`        |
 | Visual regression | Playwright + containerized browser   | `test/visual/`        | `npm run test:visual`      |
+| Docs screenshots  | Playwright + containerized browser   | `test/docs-screenshots/` | `npm run test:docs-screenshots` |
 
 ## Mocking the backend
 
@@ -138,5 +139,47 @@ import { test, expect } from "#/pw-modules/test-extend";
 test("should match snapshot", async ({ page }) => {
   await page.goto("/some-page");
   await expect(page).toHaveScreenshot("some-page.png", { fullPage: true });
+});
+```
+
+## Docs screenshots
+
+Generate the images used on docs.camunda.io pages. Unlike visual
+regression tests, they don't compare anything: they write PNGs with
+`page.screenshot({path})`. There is no CI job — run
+`npm run test:docs-screenshots` manually when a docs page needs fresh
+images. The script runs the browser in the containerized Playwright
+image (Docker required), with the light theme and a Full HD viewport.
+
+- One `test/docs-screenshots/<app>/<docs-page-slug>.test.ts` per docs
+  page, starting with a JSDoc that links the page. Its images go to the
+  sibling `<docs-page-slug>/` folder, named as the docs page references
+  them.
+- Resolve output paths with `getScreenshotPath` from
+  `test/docs-screenshots/screenshot-path.ts`.
+- Use `test/docs-screenshots/callouts.ts` for labelled callouts,
+  zooming, and cropping.
+- Keep output stable: fix the clock with `page.clock.setFixedTime()`, use
+  fixed mock data, and seed localStorage flags so first-time popups
+  don't appear.
+
+For the full procedure and the helper reference, see the
+`frontend-docs-screenshots` skill in `.claude/skills/`.
+
+```ts
+import { test } from "#/pw-modules/test-extend";
+import { getScreenshotPath } from "../screenshot-path";
+
+test("some-page", async ({ page, tasklistIndexPage }) => {
+  await page.clock.setFixedTime(new Date("2024-09-05T13:32:00.000Z"));
+  await tasklistIndexPage.goto();
+
+  await page.screenshot({
+    path: getScreenshotPath({
+      baseUrl: import.meta.url,
+      folder: "some-page",
+      fileName: "some-image.png",
+    }),
+  });
 });
 ```
