@@ -228,6 +228,10 @@ func initialize(baseCommand string, baseDir string) *types.State {
 	}
 
 	applySecondaryStorageDefaults(baseDir, &settings)
+	if err := applyEffectiveRuntimeSettings(&settings); err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
 	if baseCommand == "start" {
 		if err := applyPhysicalTenants(baseDir, camundaVersion, &settings); err != nil {
 			fmt.Println(err.Error())

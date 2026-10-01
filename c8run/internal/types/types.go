@@ -41,6 +41,8 @@ type C8RunSettings struct {
 	// PhysicalTenantsEnv is passed to the Camunda process only (tenant logins, secret paths);
 	// it is never exported to c8run's own environment, so child runtimes cannot read it.
 	PhysicalTenantsEnv map[string]string
+	// OIDC is true when the effective authentication method is OIDC.
+	OIDC bool
 }
 
 // PhysicalTenant is one extra physical tenant c8run starts next to the implicit "default" one.

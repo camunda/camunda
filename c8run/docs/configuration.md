@@ -95,16 +95,16 @@ Isolation keys follow the effective storage type, in JVM and Spring order: `-Dca
 
 It is loaded via `--spring.config.additional-location` after `configuration/` and before the user `--config`, so user settings win. The file is removed when no tenants are active and is read by `tenants list` to tell "active" from "pending restart".
 
-Logins are not written to the generated file. Spring does not merge lists across property sources, so the whole `security.initialization` block (user + `defaultRoles.admin`) is passed as `CAMUNDA_PHYSICALTENANTS_<ID>_SECURITY_INITIALIZATION_*` environment variables. Per-tenant passwords from `tenants add --username` are stored in `<tenants file>.credentials` with mode 0600.
+Logins are not written to the generated file. Spring does not merge lists across property sources, so the whole `security.initialization` block (user + `defaultRoles.admin`) is passed as `CAMUNDA_PHYSICALTENANTS_<ID>_SECURITY_INITIALIZATION_*` environment variables. Per-tenant passwords from `tenants add --username` are stored in the tenants file itself, which is always written with mode 0600.
 
 Each tenant gets its own local file secret store in `tenant-secrets/<id>` next to the default secrets directory (`CAMUNDA_PHYSICALTENANTS_<ID>_SECRETS_STORES_FILE_DEFAULT_PATH`); `c8run secrets --tenant <id>` manages it. Per-tenant logins and secret paths are passed to the Camunda process only, never exported into c8run's own environment, and connectors runtimes get an environment with every `CAMUNDA_PHYSICALTENANTS_*` entry removed.
 
-The tenants file and its credentials file are changed under one file lock (`<tenants file>.lock`); if the tenant list cannot be written, the credentials file is restored. `start` reads both as one locked snapshot. Duplicate IDs in the file are rejected. Tenant readiness probes run concurrently under one shared deadline.
+Tenants and their passwords live in one document, so every change is a single atomic rename and no crash (including SIGKILL) can leave them disagreeing. Changes are serialized with a file lock (`<tenants file>.lock`); reads take no lock and create nothing. Duplicate IDs in the file are rejected. Tenant readiness probes run concurrently under one shared deadline.
 
 Per-tenant connectors reuse `ConnectorsCmd` and append `SERVER_PORT` and `CAMUNDA_CLIENT_PHYSICALTENANTID` (plus `CAMUNDA_CLIENT_AUTH_*` when the API is protected). PID files are `connectors-<id>.process`; `stop` stops every `connectors-*.process`. Ports start at 8087, skip the Camunda port and c8run's fixed ports (8086, 9600, 26500-26502), and skip ports in use on any interface.
 
 c8run-managed tenants require `C8RUN_SECRETS_MODE=local`; in external mode startup fails with guidance, because tenants would otherwise inherit one shared external store.
 
-If a tenant is not ready, Camunda and the healthy tenants keep running, and `start` exits 1 naming the failed tenants. After Camunda reports healthy, each tenant's `/physical-tenants/<id>/v2/topology` is probed and the startup summary prints a per-tenant table, naming any tenant that is not ready.
+If a tenant is not ready, Camunda and the healthy tenants keep running, and `start` exits 1 naming the failed tenants. A tenant answering 401/403 counts as ready, because unknown tenants are rejected with 404 before security runs; that keeps the probe independent of the authentication method (Basic or OIDC). Under Basic auth, a rejected seeded login is shown as a warning. After Camunda reports healthy, each tenant's `/physical-tenants/<id>/v2/topology` is probed and the startup summary prints a per-tenant table, naming any tenant that is not ready.
 
 `e2e_tests/physical_tenants_tests.sh` checks REST and gRPC (`Camunda-Physical-Tenant`) routing, cross-tenant login rejection, deployment isolation, per-tenant secrets, and per-tenant connectors. CI runs it in the c8run unix job with authorizations on and a tenant-specific user.

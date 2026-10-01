@@ -19,6 +19,7 @@ import (
 	localsecrets "github.com/camunda/camunda/c8run/internal/secrets"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/rs/zerolog/log"
+	"gopkg.in/yaml.v3"
 )
 
 // firstTenantConnectorsPort is the first port handed to a per-tenant connectors runtime;
@@ -47,11 +48,6 @@ func applyPhysicalTenants(baseDir, camundaVersion string, settings *types.C8RunS
 		}
 	}
 
-	storageType, err := effectiveStorageType(settings.SecondaryStorageType)
-	if err != nil {
-		return err
-	}
-
 	res, err := physicaltenants.Resolve(physicaltenants.ResolveInput{
 		EnvDeclaresTenants:  envDeclaresTenants(),
 		ReservedPorts:       reservedPorts(settings.Port),
@@ -74,7 +70,7 @@ func applyPhysicalTenants(baseDir, camundaVersion string, settings *types.C8RunS
 		return fmt.Errorf("physical tenants require Camunda 8.%d or newer, but this c8run bundles Camunda %s. Remove them with `c8run tenants reset` or upgrade c8run", physicaltenants.MinCamundaMinor, camundaVersion)
 	}
 
-	content, err := physicaltenants.RenderForPort(res.Tenants, storageType, settings.Port)
+	content, err := physicaltenants.RenderForPort(res.Tenants, settings.SecondaryStorageType, settings.Port)
 	if err != nil {
 		return err
 	}
@@ -104,6 +100,19 @@ func portFree(port int) bool {
 	}
 	_ = l.Close()
 	return true
+}
+
+// applyEffectiveRuntimeSettings resolves settings that JVM options and environment variables
+// can override over YAML (as Spring does), so driver provisioning, tenant isolation, readiness
+// probing and data cleanup all act on what Camunda will actually run with.
+func applyEffectiveRuntimeSettings(settings *types.C8RunSettings) error {
+	effectiveType, err := effectiveStorageType(settings.SecondaryStorageType)
+	if err != nil {
+		return err
+	}
+	settings.SecondaryStorageType = effectiveType
+	settings.OIDC = authenticationIsOIDC(settings.ConfigPaths)
+	return nil
 }
 
 // storageTypeEnv are the environment spellings of camunda.data.secondary-storage.type. Spring
@@ -142,6 +151,38 @@ func lastSystemProperty(options string, names ...string) (string, bool) {
 		}
 	}
 	return value, found
+}
+
+// authenticationIsOIDC reports whether the effective authentication method is OIDC, from the
+// environment, JVM options, then config files (highest precedence first).
+func authenticationIsOIDC(configPaths []string) bool {
+	for _, source := range []string{"JAVA_OPTS", "JDK_JAVA_OPTIONS"} {
+		if value, ok := lastSystemProperty(os.Getenv(source), "camunda.security.authentication.method"); ok {
+			return strings.EqualFold(value, "oidc")
+		}
+	}
+	if value := os.Getenv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD"); value != "" {
+		return strings.EqualFold(value, "oidc")
+	}
+	for _, path := range configPaths {
+		content, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		var root struct {
+			Camunda struct {
+				Security struct {
+					Authentication struct {
+						Method string `yaml:"method"`
+					} `yaml:"authentication"`
+				} `yaml:"security"`
+			} `yaml:"camunda"`
+		}
+		if yaml.Unmarshal(content, &root) == nil && root.Camunda.Security.Authentication.Method != "" {
+			return strings.EqualFold(root.Camunda.Security.Authentication.Method, "oidc")
+		}
+	}
+	return false
 }
 
 // envDeclaresTenants reports whether physical tenants are already declared outside c8run,

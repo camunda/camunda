@@ -208,6 +208,8 @@ func TestApplyPhysicalTenantsUsesEffectiveStorageType(t *testing.T) {
 	t.Setenv(pt.FileEnv, filepath.Join(t.TempDir(), pt.FileName))
 	t.Setenv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "elasticsearch")
 	settings := types.C8RunSettings{DisableConnectors: true, PhysicalTenantsFlag: []string{"a"}, SecondaryStorageType: "rdbms"}
+	require.NoError(t, applyEffectiveRuntimeSettings(&settings))
+	assert.Equal(t, "elasticsearch", settings.SecondaryStorageType, "driver checks and cleanup see the effective type too")
 	require.NoError(t, applyPhysicalTenants(base, "8.10.0", &settings))
 	content := settings.PhysicalTenantsConfig
 	assert.Contains(t, string(content), "index-prefix: a")
@@ -226,4 +228,16 @@ func TestReservedPortsIncludeCamundaPort(t *testing.T) {
 	assert.True(t, reserved[8087])
 	assert.True(t, reserved[8086])
 	assert.True(t, reserved[26500])
+}
+
+func TestAuthenticationIsOIDC(t *testing.T) {
+	t.Setenv("JAVA_OPTS", "")
+	t.Setenv("JDK_JAVA_OPTIONS", "")
+	t.Setenv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD", "")
+	cfg := filepath.Join(t.TempDir(), "app.yaml")
+	require.NoError(t, os.WriteFile(cfg, []byte("camunda:\n  security:\n    authentication:\n      method: oidc\n"), 0o644))
+	assert.True(t, authenticationIsOIDC([]string{cfg}))
+	assert.False(t, authenticationIsOIDC(nil))
+	t.Setenv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD", "basic")
+	assert.False(t, authenticationIsOIDC([]string{cfg}), "the environment beats config files")
 }

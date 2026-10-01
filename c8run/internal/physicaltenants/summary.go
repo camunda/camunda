@@ -47,6 +47,8 @@ type ProbeResult struct {
 	ID    string
 	Ready bool
 	Err   string
+	// Warning is set when the tenant is up but the seeded login could not be confirmed.
+	Warning string
 }
 
 // Probe checks each tenant's topology endpoint so a tenant that failed to come up is named
@@ -88,7 +90,16 @@ func probeOne(ctx context.Context, client *http.Client, settings types.C8RunSett
 			if err == nil {
 				_ = resp.Body.Close()
 				if resp.StatusCode < 300 {
+					result.Ready, result.Err, result.Warning = true, "", ""
+					break
+				}
+				// Unknown tenants are rejected with 404 before security runs, so 401/403 proves
+				// the tenant is up whatever the authentication method (Basic, OIDC, ...).
+				if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
 					result.Ready, result.Err = true, ""
+					if !settings.OIDC {
+						result.Warning = fmt.Sprintf("the login for %s was rejected (HTTP %d); if this tenant ID was used before, it keeps the users from that time", t.Username, resp.StatusCode)
+					}
 					break
 				}
 				result.Err = fmt.Sprintf("GET %s returned HTTP %d", url, resp.StatusCode)
@@ -147,6 +158,8 @@ func PrintSummary(w io.Writer, settings types.C8RunSettings, results []ProbeResu
 	for _, r := range results {
 		if !r.Ready {
 			fmt.Fprintf(w, "  ! %s did not become ready: %s\n", r.ID, r.Err)
+		} else if r.Warning != "" {
+			fmt.Fprintf(w, "  ! %s is ready, but %s\n", r.ID, r.Warning)
 		}
 	}
 	example := settings.PhysicalTenants[0]

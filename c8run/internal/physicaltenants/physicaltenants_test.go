@@ -10,7 +10,6 @@ package physicaltenants
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -78,15 +77,6 @@ func TestStoreAddListRemove(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, "s3cret", pw)
 
-	content, err := os.ReadFile(store.Path())
-	require.NoError(t, err)
-	assert.NotContains(t, string(content), "s3cret", "passwords must never be written to the tenants file")
-	if runtime.GOOS != "windows" {
-		info, err := os.Stat(store.Path() + credentialsSuffix)
-		require.NoError(t, err)
-		assert.Equal(t, os.FileMode(0o600), info.Mode().Perm())
-	}
-
 	assert.ErrorContains(t, store.Add([]Tenant{{ID: "sales"}}, nil), "already exists")
 	assert.ErrorContains(t, store.Remove([]string{"nope"}), "unknown physical tenant")
 
@@ -94,8 +84,9 @@ func TestStoreAddListRemove(t *testing.T) {
 	_, ok, err = store.Password("hr")
 	require.NoError(t, err)
 	assert.False(t, ok)
-	_, err = os.Stat(store.Path() + credentialsSuffix)
-	assert.True(t, os.IsNotExist(err), "credentials file is removed when empty")
+	content, err := os.ReadFile(store.Path())
+	require.NoError(t, err)
+	assert.NotContains(t, string(content), "s3cret", "a removed tenant's password is deleted")
 
 	require.NoError(t, store.Reset())
 	tenants, err = store.List()
@@ -287,24 +278,30 @@ func TestStoreConcurrentAddsAreNotLost(t *testing.T) {
 	}
 }
 
-func TestStoreRollsBackCredentialsWhenTenantWriteFails(t *testing.T) {
-	store := NewStore(filepath.Join(t.TempDir(), FileName))
+func TestStoreKeepsTenantsAndPasswordsInOneOwnerOnlyFile(t *testing.T) {
+	dir := t.TempDir()
+	store := NewStore(filepath.Join(dir, FileName))
 	require.NoError(t, store.Add([]Tenant{{ID: "hr", Username: "alice"}}, map[string]string{"hr": "pw"}))
-
-	original := writeTenantsFunc
-	writeTenantsFunc = func(*Store, []Tenant) error { return errors.New("disk full") }
-	t.Cleanup(func() { writeTenantsFunc = original })
-
-	assert.ErrorContains(t, store.Remove([]string{"hr"}), "disk full")
-	pw, ok, err := store.Password("hr")
+	entries, err := os.ReadDir(dir)
 	require.NoError(t, err)
-	assert.True(t, ok, "remove must not drop the password of a tenant that is still configured")
-	assert.Equal(t, "pw", pw)
+	var names []string
+	for _, e := range entries {
+		names = append(names, e.Name())
+	}
+	assert.ElementsMatch(t, []string{FileName, FileName + lockSuffix}, names, "one data file, so every change is one atomic rename")
+	if runtime.GOOS != "windows" {
+		info, err := os.Stat(store.Path())
+		require.NoError(t, err)
+		assert.Equal(t, os.FileMode(0o600), info.Mode().Perm())
+	}
 
-	assert.ErrorContains(t, store.Add([]Tenant{{ID: "ops", Username: "bob"}}, map[string]string{"ops": "x"}), "disk full")
-	_, ok, err = store.Password("ops")
+	// A rejected change writes nothing.
+	before, err := os.ReadFile(store.Path())
 	require.NoError(t, err)
-	assert.False(t, ok, "a failed add must not leave an orphaned password")
+	assert.Error(t, store.Remove([]string{"hr", "missing"}))
+	after, err := os.ReadFile(store.Path())
+	require.NoError(t, err)
+	assert.Equal(t, before, after)
 }
 
 func TestStoreRejectsDuplicateIDs(t *testing.T) {
@@ -394,4 +391,28 @@ func TestApplyGeneratedConfig(t *testing.T) {
 	empty, err := RenderForPort(nil, "rdbms", 8090)
 	require.NoError(t, err)
 	assert.Nil(t, empty)
+}
+
+func TestProbeTreatsAuthRejectionAsReady(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/physical-tenants/missing/") {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	defer server.Close()
+	u, _ := url.Parse(server.URL)
+	port, _ := strconv.Atoi(u.Port())
+
+	oidc := types.C8RunSettings{Port: port, OIDC: true, PhysicalTenants: []types.PhysicalTenant{{ID: "sales"}, {ID: "missing"}}}
+	results := Probe(context.Background(), oidc, 2, 10*time.Millisecond)
+	assert.True(t, results[0].Ready, "under OIDC a 401 still proves the tenant is up")
+	assert.Empty(t, results[0].Warning)
+	assert.False(t, results[1].Ready, "an unknown tenant is a 404")
+
+	basic := types.C8RunSettings{Port: port, PhysicalTenants: []types.PhysicalTenant{{ID: "sales", Username: "alice"}}}
+	results = Probe(context.Background(), basic, 1, 10*time.Millisecond)
+	assert.True(t, results[0].Ready)
+	assert.Contains(t, results[0].Warning, "login for alice was rejected")
 }
