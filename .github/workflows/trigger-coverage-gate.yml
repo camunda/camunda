@@ -9,8 +9,11 @@ name: Trigger coverage gate
 permissions:
   contents: read
 
+# No workflow_dispatch: every expression below reads github.event.pull_request,
+# which a manual run does not have. Running the gate by hand is already possible
+# from the gate's own workflow_dispatch in c8-cross-component-e2e-tests, which
+# takes source_repo and source_sha directly.
 on:
-  workflow_dispatch:
   pull_request:
     # `edited` matters: the epic link is usually pasted in after opening, and
     # without it those PRs would never get a check.
