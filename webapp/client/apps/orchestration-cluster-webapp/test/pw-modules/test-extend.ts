@@ -16,6 +16,7 @@ import {TasklistProcessesPage} from '#/pages/TasklistProcesses.page';
 import {TaskDetailPage} from '#/pages/TaskDetail.page';
 import {OperateIndexPage} from '#/pages/OperateIndex.page';
 import {OperatePreviewPage} from '#/pages/OperatePreview.page';
+import {OperatePreviewDecisionsPage} from '#/pages/OperatePreviewDecisions.page';
 import {OperateBatchOperationsPage} from '#/pages/OperateBatchOperations.page';
 import {OperateProcessesPage} from '#/pages/OperateProcesses.page';
 import {OperateDecisionsPage} from '#/pages/OperateDecisions.page';
@@ -41,6 +42,7 @@ type Fixtures = {
 	taskDetailPage: TaskDetailPage;
 	operateIndexPage: OperateIndexPage;
 	operatePreviewPage: OperatePreviewPage;
+	operatePreviewDecisionsPage: OperatePreviewDecisionsPage;
 	operateBatchOperationsPage: OperateBatchOperationsPage;
 	operateProcessesPage: OperateProcessesPage;
 	operateDecisionsPage: OperateDecisionsPage;
@@ -80,6 +82,9 @@ const test = base.extend<Fixtures>({
 	},
 	operatePreviewPage: async ({page}, use) => {
 		await use(new OperatePreviewPage(page));
+	},
+	operatePreviewDecisionsPage: async ({page}, use) => {
+		await use(new OperatePreviewDecisionsPage(page));
 	},
 	operateBatchOperationsPage: async ({page}, use) => {
 		await use(new OperateBatchOperationsPage(page));

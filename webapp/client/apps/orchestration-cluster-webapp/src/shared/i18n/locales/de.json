@@ -652,6 +652,11 @@
 			},
 			"decisions": {
 				"title": "Entscheidungen",
+				"scaffold": {
+					"filtersPanelPlaceholder": "Platzhalter für den Filterbereich",
+					"decisionPanelPlaceholder": "Platzhalter für den Entscheidungsbereich",
+					"instancesTablePlaceholder": "Platzhalter für die Instanzentabelle"
+				},
 				"diagramHeader": {
 					"title": "Entscheidung",
 					"copyButtonDescription": "Entscheidungs-ID / Klicken zum Kopieren"

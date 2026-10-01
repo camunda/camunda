@@ -664,6 +664,11 @@
 			},
 			"decisions": {
 				"title": "Decisions",
+				"scaffold": {
+					"filtersPanelPlaceholder": "Filters panel placeholder",
+					"decisionPanelPlaceholder": "Decision panel placeholder",
+					"instancesTablePlaceholder": "Instances table placeholder"
+				},
 				"diagramHeader": {
 					"title": "Decision",
 					"copyButtonDescription": "Decision ID / Click to copy"
