@@ -892,215 +892,63 @@ jobs:
                   }
                 }'
 
+      # A GitHub App token lives 1h, but the wait below is budgeted at 65min
+      # (see .ci/scripts/ci/wait-for-downstream-saas-e2e.sh). So the wait runs in
+      # two phases: the first stops 45min after the job started, a fresh token is
+      # minted, and the second phase picks the same downstream run back up.
+      # Runs that finish inside phase 1 (most of them) never need the refresh.
       - name: Wait for downstream workflow to finish
         id: wait-downstream
         if: steps.check-downstream.outputs.enabled == 'true'
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
           CORRELATION_ID: ${{ github.repository }}:${{ github.run_id }}:${{ github.run_attempt }}:${{ github.sha }}
+          PHASE_ONLY: "true"
         run: |
-          set -euo pipefail
-          echo "Waiting for downstream E2E workflow run in camunda/c8-cross-component-e2e-tests for correlation id: $CORRELATION_ID"
+          # Measured from the job's start, the same clock as `timeout-minutes`.
+          WAIT_DEADLINE=$(( ${JOB_STARTED_AT:-$(date +%s)} + 45 * 60 ))
+          export WAIT_DEADLINE
+          bash .ci/scripts/ci/wait-for-downstream-saas-e2e.sh
 
-          TARGET_REPO="camunda/c8-cross-component-e2e-tests"
-          WORKFLOW_FILE="playwright_saas_pr_trigger_monorepo.yml"
+      - name: Generate GitHub App Token (for the rest of the wait)
+        id: github-token-refresh
+        if: steps.wait-downstream.outputs.wait_incomplete == 'true'
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@7fe5cca167f7826bedbc078ae36ff2e974cc8cb5 # generate-github-app-token-from-vault-secrets-1.1.2
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: camunda,c8-cross-component-e2e-tests
 
-          # Bound the wait by wall clock rather than by a tick count. A tick
-          # is not a fixed cost: a poll whose `gh_api_with_retry` exhausts its
-          # backoff burns up to 62s on top of the 30s tick, so counting ticks
-          # says nothing about how long this step runs: 100 ticks is ~50min at
-          # best and ~153min at worst. (Those two figures are the arithmetic of
-          # the tick loop that used to be here, not the budget set below.)
-          # Only an absolute deadline keeps the loop -- not the runner -- the
-          # thing that ends the wait, which is what lets the timeout path
-          # below emit its diagnostics.
-          #
-          # 65min is sized off the *green* downstream runs only -- median
-          # 29min, p90 41min, p95 44min, p99 60min, max 73min across the 381
-          # successful runs of playwright_saas_pr_trigger_monorepo.yml between
-          # 2026-09-07 and 2026-09-22. Sizing off all 500 runs instead
-          # understates the budget, because a failing run ends early and drags
-          # every percentile down while describing a wait that could never
-          # have hit a deadline. Only runs that would have gone green can be
-          # killed mid-flight, and those are what the budget has to cover: at
-          # 50min, 9 of the 381 (2.4%) were still running and still green when
-          # the deadline fired, and the gate reported each as a failure. At
-          # 65min that is 2 (0.5%). Raise it if the downstream suite grows,
-          # and keep the job-level `timeout-minutes` 10min above it.
-          #
-          # Anchored to the job's start, not this step's, so the 10min of
-          # headroom below the job timeout cannot be eaten by a slow checkout
-          # or a hanging Vault call. The preamble normally costs seconds; if
-          # it ever costs more, the wait shortens instead of the runner
-          # killing the loop before it can report a timeout.
+      - name: Wait for downstream workflow to finish (after token refresh)
+        id: wait-downstream-final
+        if: steps.wait-downstream.outputs.wait_incomplete == 'true'
+        env:
+          GH_TOKEN: ${{ steps.github-token-refresh.outputs.token }}
+          CORRELATION_ID: ${{ github.repository }}:${{ github.run_id }}:${{ github.run_attempt }}:${{ github.sha }}
+          DOWNSTREAM_RUN_ID: ${{ steps.wait-downstream.outputs.downstream_run_id }}
+        run: |
+          # Final deadline: 65min from the job's start, 10min below the job timeout.
           WAIT_DEADLINE=$(( ${JOB_STARTED_AT:-$(date +%s)} + 65 * 60 ))
-
-          # Never sleep past the deadline: both the loop condition and the
-          # retry backoff are only re-checked between sleeps, so an unguarded
-          # sleep is exactly how the overshoot creeps back in.
-          deadline_sleep() {
-            local want="$1" remaining
-            remaining=$(( WAIT_DEADLINE - $(date +%s) ))
-            if (( remaining <= 0 )); then
-              return 0
-            fi
-            if (( remaining > want )); then
-              remaining="$want"
-            fi
-            sleep "$remaining"
-          }
-
-          gh_api_with_retry() {
-            local endpoint="$1"
-            local max_attempts="${2:-6}"
-            local sleep_s="${3:-2}"
-            local attempt=1
-            local out
-
-            while true; do
-              if out="$(gh api "$endpoint" 2>&1)"; then
-                printf '%s' "$out"
-                return 0
-              fi
-
-              # Rate limiting is matched by message, not by status code. GitHub
-              # serves the primary limit as 403 and the secondary limit as 403
-              # or 429, and a plain 403 is the permanent case this function
-              # exists to separate out (a bad token, a repo the App cannot
-              # see). Matching `HTTP 403` wholesale would poll a dead token to
-              # the deadline instead of failing fast, so only the rate-limit
-              # wording -- and 429, which is never anything else -- is treated
-              # as transient. `abuse detection` is the same family: GitHub's
-              # older wording for the secondary limit, served as 403 and
-              # self-clearing, so it retries for the same reason.
-              if echo "$out" | grep -Eqi 'HTTP 429|rate limit|abuse detection|HTTP 500|HTTP 502|HTTP 503|HTTP 504|TLS handshake timeout|timeout|temporarily unavailable|connection reset by peer|EOF|stream error|GOAWAY|broken pipe|no such host|connection refused'; then
-                if (( attempt >= max_attempts )); then
-                  echo "gh api failed after ${attempt}/${max_attempts} attempts for $endpoint" >&2
-                  echo "$out" >&2
-                  return 1
-                fi
-                echo "Transient gh/api error (attempt ${attempt}/${max_attempts}) for $endpoint:" >&2
-                echo "$out" >&2
-                deadline_sleep "$sleep_s"
-                # Do not start another attempt past the deadline. Once the
-                # clamped sleep has run the budget out, a further `gh api`
-                # could stall -- and a stalled call is the one thing a
-                # deadline cannot bound, which would hand the kill back to
-                # the runner and lose the timeout report.
-                if (( $(date +%s) >= WAIT_DEADLINE )); then
-                  echo "Deadline reached while retrying $endpoint; abandoning this poll." >&2
-                  return 1
-                fi
-                attempt=$((attempt + 1))
-                sleep_s=$((sleep_s * 2))
-                continue
-              fi
-
-              # Exit code 2 marks a permanent error (bad token, renamed workflow
-              # file) so the caller fails fast instead of polling to the timeout.
-              echo "Non-retryable gh/api error for $endpoint:" >&2
-              echo "$out" >&2
-              return 2
-            done
-          }
-
-          RUN_ID=""
-
-          while (( $(date +%s) < WAIT_DEADLINE )); do
-            if [[ -z "$RUN_ID" ]]; then
-              # A retry-exhausted poll must not end the wait: this loop is the
-              # timeout mechanism, so fall through to the next tick. Only a
-              # permanent error (exit 2) aborts.
-              RUNS_JSON="" RC=0
-              RUNS_JSON="$(gh_api_with_retry "/repos/$TARGET_REPO/actions/workflows/$WORKFLOW_FILE/runs?event=repository_dispatch&per_page=50")" || RC=$?
-              if (( RC == 2 )); then
-                echo "downstream_conclusion=dispatch-error" >> "$GITHUB_OUTPUT"
-                exit 1
-              elif (( RC != 0 )); then
-                echo "Could not list downstream runs on this poll; retrying on the next tick." >&2
-                deadline_sleep 30
-                continue
-              fi
-
-              RUN_ID=$(
-                jq -r --arg c "$CORRELATION_ID" '
-                    .workflow_runs
-                    | map(select(.display_title != null and (.display_title | contains($c))))
-                    | sort_by(.created_at)
-                    | last
-                    | .id // empty
-                  ' <<<"$RUNS_JSON"
-              )
-
-              if [[ -z "$RUN_ID" ]]; then
-                echo "No downstream run found yet for correlation id. Sleeping..."
-                deadline_sleep 30
-                continue
-              fi
-
-              echo "Locked onto downstream run id: $RUN_ID"
-              echo "downstream_run_url=https://github.com/$TARGET_REPO/actions/runs/$RUN_ID" >> "$GITHUB_OUTPUT"
-
-              # Re-check before falling through to the status request below.
-              # Every other iteration reaches it with the loop's own deadline
-              # check immediately behind it, but this one has an unbounded
-              # `gh api` in between: the run-list call can start inside the
-              # budget and return outside it. Starting a fresh unbounded call
-              # on a spent budget is what hands the kill back to the runner --
-              # a hang there only has the 10min of job-timeout headroom to
-              # land in, and past that the job dies as `cancelled` with no
-              # timeout report. The run url is already written above, so the
-              # report still carries the link.
-              if (( $(date +%s) >= WAIT_DEADLINE )); then
-                echo "Deadline reached while locking onto run $RUN_ID; reporting the timeout instead of starting another poll." >&2
-                break
-              fi
-            fi
-
-            RUN_JSON="" RC=0
-            RUN_JSON="$(gh_api_with_retry "/repos/$TARGET_REPO/actions/runs/$RUN_ID")" || RC=$?
-            if (( RC == 2 )); then
-              echo "downstream_conclusion=dispatch-error" >> "$GITHUB_OUTPUT"
-              exit 1
-            elif (( RC != 0 )); then
-              echo "Could not read downstream run $RUN_ID on this poll; retrying on the next tick." >&2
-              deadline_sleep 30
-              continue
-            fi
-
-            STATUS="$(jq -r .status <<<"$RUN_JSON")"
-            CONCLUSION="$(jq -r .conclusion <<<"$RUN_JSON")"
-            echo "Workflow run $RUN_ID status: $STATUS ($CONCLUSION)"
-
-            if [[ "$STATUS" == "completed" ]]; then
-              if [[ "$CONCLUSION" == "success" ]]; then
-                echo "downstream_conclusion=success" >> "$GITHUB_OUTPUT"
-                echo "Downstream workflow succeeded!"
-                exit 0
-              else
-                echo "downstream_conclusion=${CONCLUSION}" >> "$GITHUB_OUTPUT"
-                echo "Downstream workflow failed: $CONCLUSION"
-                exit 1
-              fi
-            fi
-
-            deadline_sleep 30
-          done
-
-          echo "downstream_conclusion=timeout" >> "$GITHUB_OUTPUT"
-          echo "Timed out waiting for downstream workflow to complete."
-          exit 1
+          export WAIT_DEADLINE
+          bash .ci/scripts/ci/wait-for-downstream-saas-e2e.sh
 
       - name: Add SaaS downstream workflow link to Job Summary
         if: always()
         run: |
-          if [ -n "${{ steps.wait-downstream.outputs.downstream_run_url }}" ]; then
+          if [ -n "${{ (steps.wait-downstream-final.outputs.downstream_run_url || steps.wait-downstream.outputs.downstream_run_url) }}" ]; then
             {
               echo "### SaaS Downstream Workflow Run"
               echo ""
               echo "**Correlation ID:** \`${{ github.repository }}:${{ github.run_id }}:${{ github.run_attempt }}:${{ github.sha }}\`"
               echo ""
-              echo "[Open the triggered SaaS E2E workflow run in camunda/c8-cross-component-e2e-tests](${{ steps.wait-downstream.outputs.downstream_run_url }})"
+              echo "[Open the triggered SaaS E2E workflow run in camunda/c8-cross-component-e2e-tests](${{ (steps.wait-downstream-final.outputs.downstream_run_url || steps.wait-downstream.outputs.downstream_run_url) }})"
             } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "No downstream workflow run URL found." >> "$GITHUB_STEP_SUMMARY"
@@ -1112,9 +960,9 @@ jobs:
         # when that is false -- so without it this step is skipped on the only
         # path it exists for, and the timeout the loop reports lands with no
         # guidance attached.
-        if: always() && steps.wait-downstream.outcome == 'failure'
+        if: always() && (steps.wait-downstream.outcome == 'failure' || steps.wait-downstream-final.outcome == 'failure')
         run: |
-          DOWNSTREAM_URL="${{ steps.wait-downstream.outputs.downstream_run_url }}"
+          DOWNSTREAM_URL="${{ (steps.wait-downstream-final.outputs.downstream_run_url || steps.wait-downstream.outputs.downstream_run_url) }}"
           COOKBOOK_URL="https://github.com/camunda/c8-cross-component-e2e-tests/blob/main/docs/ci-debugging-cookbook.md"
           {
             echo ""
@@ -1148,12 +996,12 @@ jobs:
       # consumer can read it alongside the per-job failure-context artifacts.
       - name: Resolve downstream SaaS E2E failure category
         id: downstream-category
-        if: always() && steps.wait-downstream.outputs.downstream_run_url != ''
+        if: always() && (steps.wait-downstream-final.outputs.downstream_run_url || steps.wait-downstream.outputs.downstream_run_url) != ''
         env:
-          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          GH_TOKEN: ${{ steps.github-token-refresh.outputs.token || steps.github-token.outputs.token }}
         run: |
           set -euo pipefail
-          DOWNSTREAM_URL="${{ steps.wait-downstream.outputs.downstream_run_url }}"
+          DOWNSTREAM_URL="${{ (steps.wait-downstream-final.outputs.downstream_run_url || steps.wait-downstream.outputs.downstream_run_url) }}"
           RUN_ID="${DOWNSTREAM_URL##*/}"
           TARGET_REPO="camunda/c8-cross-component-e2e-tests"
 
@@ -1303,8 +1151,8 @@ jobs:
         env:
           DOWNSTREAM_CATEGORY: ${{ steps.downstream-category.outputs.downstream_category }}
           DOWNSTREAM_OWNER: ${{ steps.downstream-category.outputs.downstream_owner }}
-          DOWNSTREAM_URL: ${{ steps.wait-downstream.outputs.downstream_run_url }}
-          DOWNSTREAM_CONCLUSION: ${{ steps.wait-downstream.outputs.downstream_conclusion }}
+          DOWNSTREAM_URL: ${{ (steps.wait-downstream-final.outputs.downstream_run_url || steps.wait-downstream.outputs.downstream_run_url) }}
+          DOWNSTREAM_CONCLUSION: ${{ (steps.wait-downstream-final.outputs.downstream_conclusion || steps.wait-downstream.outputs.downstream_conclusion) }}
         run: |
           set -euo pipefail
           case "${DOWNSTREAM_CATEGORY:-}" in
@@ -1358,7 +1206,7 @@ jobs:
           slack_bot_token: ${{ steps.slack-secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
           # Same app token the dispatch uses; its installation covers camunda, so
           # no second token step is needed for the PR comment.
-          github_token: ${{ steps.github-token.outputs.token }}
+          github_token: ${{ steps.github-token-refresh.outputs.token || steps.github-token.outputs.token }}
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -1391,7 +1239,7 @@ jobs:
             --arg escalation_team "$OWNER_TEAM" \
             --arg run_url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             --arg status "${{ job.status }}" \
-            --arg downstream_conclusion "${{ steps.wait-downstream.outputs.downstream_conclusion }}" \
+            --arg downstream_conclusion "${{ (steps.wait-downstream-final.outputs.downstream_conclusion || steps.wait-downstream.outputs.downstream_conclusion) }}" \
             '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status,downstream_conclusion:$downstream_conclusion}' > "$CONTEXT_FILE"
       - name: Upload AlwaysGreen failure context artifact
         if: ${{ always() && (failure() || cancelled()) }}
