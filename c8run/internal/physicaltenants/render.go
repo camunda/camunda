@@ -183,6 +183,10 @@ func ConfigDeclaresTenants(path string) bool {
 	if err != nil {
 		return false
 	}
+	if strings.HasSuffix(path, ".properties") {
+		return strings.Contains(string(content), "camunda.physical-tenants.") ||
+			strings.Contains(string(content), "camunda.physicalTenants.")
+	}
 	var root map[string]any
 	if yaml.Unmarshal(content, &root) != nil {
 		return strings.Contains(string(content), "physical-tenants")

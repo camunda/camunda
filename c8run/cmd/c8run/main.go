@@ -163,8 +163,12 @@ func getBaseCommandSettings(baseCommand string) (types.C8RunSettings, bool, erro
 		if err := validatePort(settings.Port); err != nil {
 			return settings, startupURLProvided, err
 		}
-		if _, err := physicaltenants.ParseIDList(settings.PhysicalTenantsFlag); err != nil {
+		ids, err := physicaltenants.ParseIDList(settings.PhysicalTenantsFlag)
+		if err != nil {
 			return settings, startupURLProvided, fmt.Errorf("--physical-tenants: %w", err)
+		}
+		if flagPassed(startFlagSet, "physical-tenants") && len(ids) == 0 {
+			return settings, startupURLProvided, errors.New("--physical-tenants needs at least one tenant ID (e.g. --physical-tenants sales,hr); omit it to start your saved tenants")
 		}
 	case "stop":
 		err := stopFlagSet.Parse(os.Args[2:])
@@ -331,9 +335,16 @@ func resolveConfigPaths(baseDir string, userConfig string) []string {
 		candidate := filepath.Join(baseDir, userConfig)
 		if info, err := os.Stat(candidate); err == nil {
 			if info.IsDir() {
-				candidate = filepath.Join(candidate, "application.yaml")
+				// Spring loads every standard application file from a config directory.
+				paths = append(paths, filepath.Join(candidate, "application.yaml"))
+				for _, name := range []string{"application.yml", "application.properties"} {
+					if _, err := os.Stat(filepath.Join(candidate, name)); err == nil {
+						paths = append(paths, filepath.Join(candidate, name))
+					}
+				}
+			} else {
+				paths = append(paths, candidate)
 			}
-			paths = append(paths, candidate)
 		}
 	}
 	defaultConfig := filepath.Join(baseDir, "configuration", "application.yaml")

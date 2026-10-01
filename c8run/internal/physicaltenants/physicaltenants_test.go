@@ -408,13 +408,19 @@ func TestProbeTreatsAuthRejectionAsReady(t *testing.T) {
 	oidc := types.C8RunSettings{Port: port, OIDC: true, PhysicalTenants: []types.PhysicalTenant{{ID: "sales"}, {ID: "missing"}}}
 	results := Probe(context.Background(), oidc, 2, 10*time.Millisecond)
 	assert.True(t, results[0].Ready, "under OIDC a 401 still proves the tenant is up")
-	assert.Empty(t, results[0].Warning)
+	assert.True(t, results[0].Unverified, "but storage readiness is not claimed")
+	assert.Contains(t, results[0].Warning, "OIDC")
 	assert.False(t, results[1].Ready, "an unknown tenant is a 404")
 
 	basic := types.C8RunSettings{Port: port, PhysicalTenants: []types.PhysicalTenant{{ID: "sales", Username: "alice"}}}
 	results = Probe(context.Background(), basic, 1, 10*time.Millisecond)
 	assert.True(t, results[0].Ready)
+	assert.True(t, results[0].Unverified)
 	assert.Contains(t, results[0].Warning, "login for alice was rejected")
+
+	var buf bytes.Buffer
+	PrintSummary(&buf, basic, results, 8086)
+	assert.Contains(t, buf.String(), "up (unverified)")
 }
 
 func TestResolveFailsWhenPortsAreExhausted(t *testing.T) {

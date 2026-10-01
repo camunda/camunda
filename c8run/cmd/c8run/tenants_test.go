@@ -259,3 +259,26 @@ func TestApplyPhysicalTenantsFailsWhenSavedTenantsCannotBeFound(t *testing.T) {
 	assert.ErrorContains(t, err, "cannot find your saved physical tenants")
 	assert.ErrorContains(t, err, pt.FileEnv)
 }
+
+func TestResolveConfigPathsIncludesEveryStandardFileInADirectory(t *testing.T) {
+	base := t.TempDir()
+	dir := filepath.Join(base, "cfg")
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "application.yml"), []byte("camunda:\n  physical-tenants:\n    x: {}\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "application.properties"), []byte("camunda.physical-tenants.y.foo=1\n"), 0o644))
+	paths := resolveConfigPaths(base, "cfg")
+	assert.Contains(t, paths, filepath.Join(dir, "application.yml"))
+	assert.Contains(t, paths, filepath.Join(dir, "application.properties"))
+	assert.True(t, pt.ConfigDeclaresTenants(filepath.Join(dir, "application.yml")))
+	assert.True(t, pt.ConfigDeclaresTenants(filepath.Join(dir, "application.properties")))
+}
+
+func TestStartRejectsExplicitlyEmptyPhysicalTenantsFlag(t *testing.T) {
+	original := os.Args
+	t.Cleanup(func() { os.Args = original })
+	for _, value := range []string{"--physical-tenants=,", "--physical-tenants= "} {
+		os.Args = []string{"c8run", "start", value}
+		_, _, err := getBaseCommandSettings("start")
+		assert.ErrorContains(t, err, "needs at least one tenant ID", value)
+	}
+}

@@ -49,6 +49,9 @@ type ProbeResult struct {
 	Err   string
 	// Warning is set when the tenant is up but the seeded login could not be confirmed.
 	Warning string
+	// Unverified means the tenant answered but authentication stopped the request before its
+	// secondary storage could be checked (e.g. under OIDC). It does not fail startup.
+	Unverified bool
 }
 
 // Probe checks each tenant's topology endpoint so a tenant that failed to come up is named
@@ -98,12 +101,15 @@ func probeOne(ctx context.Context, client *http.Client, settings types.C8RunSett
 					result.Ready, result.Err, result.Warning = true, "", ""
 					break
 				}
-				// Unknown tenants are rejected with 404 before security runs, so 401/403 proves
-				// the tenant is up whatever the authentication method (Basic, OIDC, ...).
+				// Unknown tenants are rejected with 404 before security runs, so 401/403 proves the
+				// tenant is configured and serving. Security runs before the storage check, though,
+				// so its storage readiness is reported as unverified rather than claimed.
 				if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
-					result.Ready, result.Err = true, ""
-					if !settings.OIDC {
-						result.Warning = fmt.Sprintf("the login for %s was rejected (HTTP %d); if this tenant ID was used before, it keeps the users from that time", t.Username, resp.StatusCode)
+					result.Ready, result.Unverified, result.Err = true, true, ""
+					if settings.OIDC {
+						result.Warning = "storage readiness can't be checked without an OIDC token; open its Operate URL to confirm"
+					} else {
+						result.Warning = fmt.Sprintf("the login for %s was rejected (HTTP %d), so storage readiness was not checked; if this tenant ID was used before, it keeps the users from that time", t.Username, resp.StatusCode)
 					}
 					break
 				}
@@ -152,8 +158,13 @@ func PrintSummary(w io.Writer, settings types.C8RunSettings, results []ProbeResu
 	for _, t := range settings.PhysicalTenants {
 		e := EndpointsFor(t.ID, protocol, settings.Port)
 		state := "ready"
-		if r, ok := status[t.ID]; ok && !r.Ready {
-			state = "NOT READY"
+		if r, ok := status[t.ID]; ok {
+			switch {
+			case !r.Ready:
+				state = "NOT READY"
+			case r.Unverified:
+				state = "up (unverified)"
+			}
 		}
 		conn := "disabled"
 		if t.Connectors {
@@ -167,7 +178,7 @@ func PrintSummary(w io.Writer, settings types.C8RunSettings, results []ProbeResu
 		if !r.Ready {
 			fmt.Fprintf(w, "  ! %s did not become ready: %s\n", r.ID, r.Err)
 		} else if r.Warning != "" {
-			fmt.Fprintf(w, "  ! %s is ready, but %s\n", r.ID, r.Warning)
+			fmt.Fprintf(w, "  ! %s is up, but %s\n", r.ID, r.Warning)
 		}
 	}
 	example := settings.PhysicalTenants[0]
