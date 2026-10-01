@@ -48,4 +48,4 @@ leave it off if the description doesn't say so.
 
 Pass all applicable labels explicitly on `gh issue create` (unlike plain `create-issue`, where most
 labels come from the body labeler): `kind/<type>`, `component/load-tests`, the chosen `rt/*` label,
-and `discovered-by/load-tests` if applicable.
+`discovered-by/load-tests` if applicable, and the `area/*` label from `create-issue` Step 3b if one fits.
