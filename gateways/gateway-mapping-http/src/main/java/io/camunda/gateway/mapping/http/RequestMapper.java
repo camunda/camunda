@@ -20,6 +20,7 @@ import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.vali
 import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobCompletionRequest;
 import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobErrorRequest;
 import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobUpdateRequest;
+import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateStandaloneJobCreationRequest;
 import static io.camunda.gateway.mapping.http.validator.MessageRequestValidator.validateMessageCorrelationRequest;
 import static io.camunda.gateway.mapping.http.validator.MessageRequestValidator.validateMessagePublicationRequest;
 import static io.camunda.gateway.mapping.http.validator.MultiTenancyValidator.validateTenantId;
@@ -61,6 +62,7 @@ import io.camunda.gateway.protocol.model.MessageCorrelationRequest;
 import io.camunda.gateway.protocol.model.MessagePublicationRequest;
 import io.camunda.gateway.protocol.model.SetVariableRequest;
 import io.camunda.gateway.protocol.model.SignalBroadcastRequest;
+import io.camunda.gateway.protocol.model.StandaloneJobCreationRequest;
 import io.camunda.gateway.protocol.model.TenantFilterEnum;
 import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
 import io.camunda.gateway.protocol.model.UserTaskCompletionRequest;
@@ -75,6 +77,7 @@ import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.service.ExpressionServices.ExpressionEvaluationRequest;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.BatchUpdateJobRequest;
+import io.camunda.service.JobServices.CreateStandaloneJobRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageServices.PublicationMessageRequest;
@@ -282,6 +285,24 @@ public class RequestMapper {
                 getJobResultOrDefault(completionRequest),
                 completionRequest == null ? null : completionRequest.getJobLeaseToken(),
                 completionRequest == null ? null : completionRequest.getBusinessId()));
+  }
+
+  public static Either<ProblemDetail, CreateStandaloneJobRequest> toStandaloneJobCreationRequest(
+      final StandaloneJobCreationRequest creationRequest, final boolean multiTenancyEnabled) {
+    final var validation = validateStandaloneJobCreationRequest(creationRequest);
+    if (validation.isPresent()) {
+      return Either.left(validation.get());
+    }
+    return validateTenantId(
+            creationRequest.getTenantId(), multiTenancyEnabled, "Create Standalone Job")
+        .map(
+            tenantId ->
+                new CreateStandaloneJobRequest(
+                    creationRequest.getType(),
+                    tenantId,
+                    creationRequest.getInputExpression(),
+                    creationRequest.getCustomHeaders(),
+                    creationRequest.getRequestTimeout()));
   }
 
   public static Either<ProblemDetail, UpdateJobRequest> toJobUpdateRequest(

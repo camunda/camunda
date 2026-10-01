@@ -36,12 +36,14 @@ import io.camunda.gateway.protocol.model.JobTypeStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.JobUpdateRequest;
 import io.camunda.gateway.protocol.model.JobWorkerStatisticsQuery;
 import io.camunda.gateway.protocol.model.JobWorkerStatisticsQueryResult;
+import io.camunda.gateway.protocol.model.StandaloneJobCreationRequest;
 import io.camunda.search.query.JobQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.BatchUpdateJobRequest;
+import io.camunda.service.JobServices.CreateStandaloneJobRequest;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
@@ -51,6 +53,7 @@ import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.util.Either;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
@@ -122,6 +125,17 @@ public class JobController {
     return RequestMapper.toJobCompletionRequest(completionRequest, jobKey)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse, r -> completeJob(physicalTenantId, r));
+  }
+
+  @CamundaPostMapping(path = "/standalone")
+  public CompletableFuture<ResponseEntity<Object>> createStandaloneJob(
+      @PhysicalTenantId final String physicalTenantId,
+      @RequestBody final StandaloneJobCreationRequest creationRequest) {
+    return RequestMapper.toStandaloneJobCreationRequest(
+            creationRequest, multiTenancyCfg.isChecksEnabled())
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            r -> createStandaloneJob(physicalTenantId, r));
   }
 
   @CamundaPatchMapping(path = "/{jobKey}")
@@ -269,6 +283,20 @@ public class JobController {
                 completeJobRequest.jobLeaseToken(),
                 completeJobRequest.businessId(),
                 authenticationProvider.getCamundaAuthentication()));
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> createStandaloneJob(
+      final String physicalTenantId, final CreateStandaloneJobRequest request) {
+    final var jobServices = serviceRegistry.jobServices(physicalTenantId);
+    return RequestExecutor.executeServiceMethod(
+        () ->
+            jobServices.createStandaloneJob(
+                request, authenticationProvider.getCamundaAuthentication()),
+        answer ->
+            answer.outcome() == JobIntent.EXPIRED
+                ? RestErrorMapper.mapProblemToResponse(
+                    ResponseMapper.toStandaloneJobExpiredProblem(answer))
+                : ResponseEntity.ok(ResponseMapper.toStandaloneJobResult(answer)));
   }
 
   private CompletableFuture<ResponseEntity<Object>> updateJob(

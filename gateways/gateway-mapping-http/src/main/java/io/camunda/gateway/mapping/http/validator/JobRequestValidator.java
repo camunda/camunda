@@ -20,11 +20,15 @@ import io.camunda.gateway.protocol.model.JobChangeset;
 import io.camunda.gateway.protocol.model.JobCompletionRequest;
 import io.camunda.gateway.protocol.model.JobErrorRequest;
 import io.camunda.gateway.protocol.model.JobUpdateRequest;
+import io.camunda.gateway.protocol.model.StandaloneJobCreationRequest;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
 public final class JobRequestValidator {
+
+  /** The longest a client may wait for the answer to a standalone job. */
+  public static final long MAX_STANDALONE_JOB_REQUEST_TIMEOUT = 60_000L;
 
   public static Optional<ProblemDetail> validateJobActivationRequest(
       final JobActivationRequest activationRequest) {
@@ -57,6 +61,25 @@ public final class JobRequestValidator {
           // errorCode can't be null or empty
           if (errorRequest.getErrorCode() == null || errorRequest.getErrorCode().isBlank()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("errorCode"));
+          }
+        });
+  }
+
+  public static Optional<ProblemDetail> validateStandaloneJobCreationRequest(
+      final StandaloneJobCreationRequest creationRequest) {
+    return validate(
+        violations -> {
+          if (creationRequest.getType() == null || creationRequest.getType().isBlank()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("type"));
+          }
+          final Long requestTimeout = creationRequest.getRequestTimeout();
+          if (requestTimeout != null
+              && (requestTimeout < 0 || requestTimeout > MAX_STANDALONE_JOB_REQUEST_TIMEOUT)) {
+            violations.add(
+                ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
+                    "requestTimeout",
+                    requestTimeout,
+                    "between 0 and %d milliseconds".formatted(MAX_STANDALONE_JOB_REQUEST_TIMEOUT)));
           }
         });
   }

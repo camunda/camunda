@@ -30,23 +30,29 @@ import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.BatchUpdateJobRequest;
+import io.camunda.service.JobServices.CreateStandaloneJobRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.registry.ServiceRegistry;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateStandaloneJobRequest.StandaloneJobAnswer;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -2897,6 +2903,129 @@ public class JobControllerTest extends RestControllerTest {
             """
                 .formatted(expectedInstance),
             JsonCompareMode.STRICT);
+
+    verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldAnswerStandaloneJobWithTheWorkersAnswer() {
+    // given
+    final var answer =
+        new JobRecord()
+            .setVariables(
+                new UnsafeBuffer(MsgPackConverter.convertToMsgPack(Map.of("valid", false))))
+            .setErrorCode(BufferUtil.wrapString("INVALID_CREDENTIALS"))
+            .setErrorMessage("the token was revoked");
+    when(jobServices.createStandaloneJob(any(), any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new StandaloneJobAnswer(42L, JobIntent.ERROR_THROWN, answer)));
+
+    final var request =
+        """
+            {
+              "type": "io.camunda:slack:1:query",
+              "inputExpression": "={ authentication: camunda.vars.env.slack }",
+              "customHeaders": { "camunda.query": "validateCredentials" },
+              "requestTimeout": 5000
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/standalone")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            {
+              "jobKey": "42",
+              "outcome": "ERROR_THROWN",
+              "variables": { "valid": false },
+              "errorCode": "INVALID_CREDENTIALS",
+              "errorMessage": "the token was revoked"
+            }""",
+            JsonCompareMode.STRICT);
+
+    final var captor = ArgumentCaptor.forClass(CreateStandaloneJobRequest.class);
+    Mockito.verify(jobServices).createStandaloneJob(captor.capture(), any());
+    assertThat(captor.getValue())
+        .isEqualTo(
+            new CreateStandaloneJobRequest(
+                "io.camunda:slack:1:query",
+                "<default>",
+                "={ authentication: camunda.vars.env.slack }",
+                Map.of("camunda.query", "validateCredentials"),
+                5000L));
+  }
+
+  @Test
+  void shouldTellWhenNoWorkerActivatedTheStandaloneJob() {
+    // given
+    when(jobServices.createStandaloneJob(any(), any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new StandaloneJobAnswer(
+                    42L, JobIntent.EXPIRED, new JobRecord().setType("io.camunda:slack:1:query"))));
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/standalone")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"type\": \"io.camunda:slack:1:query\"}")
+        .exchange()
+        .expectStatus()
+        .isEqualTo(504)
+        .expectBody()
+        .jsonPath("$.title")
+        .isEqualTo("NO_WORKER_ACTIVATED");
+  }
+
+  @Test
+  void shouldTellWhenTheWorkerDidNotAnswerTheStandaloneJob() {
+    // given
+    when(jobServices.createStandaloneJob(any(), any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new StandaloneJobAnswer(
+                    42L,
+                    JobIntent.EXPIRED,
+                    new JobRecord().setType("io.camunda:slack:1:query").setWorker("runtime-1"))));
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/standalone")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"type\": \"io.camunda:slack:1:query\"}")
+        .exchange()
+        .expectStatus()
+        .isEqualTo(504)
+        .expectBody()
+        .jsonPath("$.title")
+        .isEqualTo("WORKER_DID_NOT_ANSWER");
+  }
+
+  @Test
+  void shouldRejectStandaloneJobWithTooLongRequestTimeout() {
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/standalone")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"type\": \"query\", \"requestTimeout\": 600000}")
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
 
     verifyNoInteractions(jobServices);
   }

@@ -33,24 +33,32 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateBatchOperationRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateStandaloneJobRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateStandaloneJobRequest.StandaloneJobAnswer;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerThrowErrorRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobRequest;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.ResponseObserver;
 import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationJobUpdatePlan;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public final class JobServices<T> extends SearchQueryService<JobServices<T>, JobQuery, JobEntity> {
+
+  static final Duration DEFAULT_STANDALONE_JOB_REQUEST_TIMEOUT = Duration.ofSeconds(10);
+  static final Duration STANDALONE_JOB_EXPIRY_MARGIN = Duration.ofMillis(500);
 
   private final ActivateJobsHandler<T> activateJobsHandler;
   private final JobSearchClient jobSearchClient;
@@ -150,6 +158,34 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       request.setJobLeaseToken(jobLeaseToken);
     }
     return sendBrokerRequest(request, authentication);
+  }
+
+  /**
+   * Creates a standalone job and waits for the answer of the worker that activates it. The job
+   * expires shortly before the request times out, so the broker can still tell the caller that no
+   * worker answered in time instead of the request just timing out.
+   */
+  public CompletableFuture<StandaloneJobAnswer> createStandaloneJob(
+      final CreateStandaloneJobRequest request, final CamundaAuthentication authentication) {
+    final long requestTimeout =
+        request.requestTimeout() != null && request.requestTimeout() > 0
+            ? request.requestTimeout()
+            : DEFAULT_STANDALONE_JOB_REQUEST_TIMEOUT.toMillis();
+    final long timeToAnswer =
+        Math.max(requestTimeout - STANDALONE_JOB_EXPIRY_MARGIN.toMillis(), requestTimeout / 2);
+
+    final var brokerRequest =
+        new BrokerCreateStandaloneJobRequest(request.type())
+            .setTenantId(request.tenantId())
+            .setTimeToAnswer(timeToAnswer);
+    if (request.inputExpression() != null) {
+      brokerRequest.setInputExpression(request.inputExpression());
+    }
+    if (request.customHeaders() != null && !request.customHeaders().isEmpty()) {
+      brokerRequest.setCustomHeaders(
+          new UnsafeBuffer(MsgPackConverter.convertToMsgPack(request.customHeaders())));
+    }
+    return sendBrokerRequest(brokerRequest, authentication, Duration.ofMillis(requestTimeout));
   }
 
   public CompletableFuture<JobRecord> completeJob(
@@ -289,6 +325,13 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       List<String> fetchVariable,
       long requestTimeout,
       boolean withLease) {}
+
+  public record CreateStandaloneJobRequest(
+      String type,
+      String tenantId,
+      String inputExpression,
+      Map<String, String> customHeaders,
+      Long requestTimeout) {}
 
   public record UpdateJobChangeset(Integer retries, Long timeout, Integer priority) {}
 

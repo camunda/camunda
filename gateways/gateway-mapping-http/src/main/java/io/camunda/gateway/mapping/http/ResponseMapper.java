@@ -80,6 +80,8 @@ import io.camunda.gateway.protocol.model.SecretListResult;
 import io.camunda.gateway.protocol.model.SecretResolutionError;
 import io.camunda.gateway.protocol.model.SecretResolveResult;
 import io.camunda.gateway.protocol.model.SignalBroadcastResult;
+import io.camunda.gateway.protocol.model.StandaloneJobOutcomeEnum;
+import io.camunda.gateway.protocol.model.StandaloneJobResult;
 import io.camunda.gateway.protocol.model.TenantCreateResult;
 import io.camunda.gateway.protocol.model.TenantUpdateResult;
 import io.camunda.gateway.protocol.model.TopologyResponse;
@@ -103,6 +105,7 @@ import io.camunda.service.TopologyServices.Topology;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.util.EnumUtil;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateStandaloneJobRequest.StandaloneJobAnswer;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResult;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
@@ -150,6 +153,7 @@ import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.InvalidMediaTypeException;
 import org.springframework.http.MediaType;
@@ -640,6 +644,38 @@ public final class ResponseMapper {
         // the conversion to null ensures response contract compliance
         .businessId(emptyToNull(businessId))
         .build();
+  }
+
+  /**
+   * Maps the answer of a worker to a standalone job. An expired job has no answer; see {@link
+   * #toStandaloneJobExpiredProblem}.
+   */
+  public static StandaloneJobResult toStandaloneJobResult(final StandaloneJobAnswer answer) {
+    final JobRecord job = answer.job();
+    return StandaloneJobResult.Builder.create()
+        .jobKey(keyToString(answer.jobKey()))
+        .outcome(StandaloneJobOutcomeEnum.valueOf(answer.outcome().name()))
+        .variables(job.getVariables())
+        .errorCode(emptyToNull(job.getErrorCode()))
+        .errorMessage(emptyToNull(job.getErrorMessage()))
+        .build();
+  }
+
+  public static ProblemDetail toStandaloneJobExpiredProblem(final StandaloneJobAnswer answer) {
+    final JobRecord job = answer.job();
+    if (job.getWorker().isEmpty()) {
+      return GatewayErrorMapper.createProblemDetail(
+          HttpStatus.GATEWAY_TIMEOUT,
+          "No worker of type '%s' activated the standalone job in time. Check that a worker of"
+                  .formatted(job.getType())
+              + " this type is running, and authorized for the job type and its tenant.",
+          "NO_WORKER_ACTIVATED");
+    }
+    return GatewayErrorMapper.createProblemDetail(
+        HttpStatus.GATEWAY_TIMEOUT,
+        "The worker '%s' activated the standalone job of type '%s', but did not answer it in time."
+            .formatted(job.getWorker(), job.getType()),
+        "WORKER_DID_NOT_ANSWER");
   }
 
   public static BatchOperationCreatedResult toBatchOperationCreatedWithResultResponse(

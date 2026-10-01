@@ -293,6 +293,74 @@ paths:
       x-added-in-version: "8.6"
       x-scope: physical-tenant
 
+  /jobs/standalone:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Job
+      operationId: createStandaloneJob
+      x-required-permissions:
+        - { resourceType: STANDALONE_JOB, permissionType: CREATE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Create standalone job (alpha)
+      description: |
+        Asks the workers of a job type a question, for example whether a credential is valid, and
+        waits for the answer. Creates a standalone job: a job that belongs to no process instance.
+        A worker activates and answers it like any other job, by completing it, failing it, or
+        throwing an error for it.
+
+        Waits until a worker answers the job, or until it expires shortly before the request
+        timeout. A standalone job is never shown in Operate or Tasklist.
+
+        This endpoint is an alpha feature and may be subject to change in future releases.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StandaloneJobCreationRequest'
+            examples:
+              Validate a connection:
+                summary: Ask a connector runtime whether a connection's credentials are valid.
+                value:
+                  type: io.camunda:slack:1:query
+                  inputExpression: "={ authentication: camunda.vars.env.slackConnection }"
+                  customHeaders:
+                    camunda.query: validateCredentials
+                  requestTimeout: 10000
+      responses:
+        "200":
+          description: A worker answered the standalone job.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandaloneJobResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+        "504":
+          description: |
+            No worker answered the standalone job in time. The problem title tells why:
+            `NO_WORKER_ACTIVATED` when no worker of the job type activated the job, for example
+            because none is running or none is authorized for it; `WORKER_DID_NOT_ANSWER` when a
+            worker activated the job but did not answer before it expired; `DEADLINE_EXCEEDED` when
+            the request timed out in the gateway before the job expired.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+      x-added-in-version: "8.11"
+      x-scope: physical-tenant
+
   /jobs/batch-update:
     post:
       x-eventually-consistent: false
@@ -1109,6 +1177,86 @@ components:
         - propertyName: jobLeaseToken
           addedInVersion: "8.10"
 
+    StandaloneJobCreationRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        type:
+          description: The job type of the workers to ask.
+          type: string
+          minLength: 1
+        tenantId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: The tenant of the job, and of the workers that may answer it.
+        inputExpression:
+          description: >
+            A FEEL expression that evaluates to a context, which becomes the job's variables. It can
+            only read cluster variables, through `camunda.vars`, and reference secrets, through
+            `camunda.secrets`. A secret, whether referenced directly or through a cluster variable
+            of kind `SECRET_REFERENCE`, is only resolved for the worker that activates the job.
+          type: string
+          nullable: true
+        customHeaders:
+          description: The custom headers of the job, for example to tell the worker what is asked.
+          type: object
+          additionalProperties:
+            type: string
+          nullable: true
+        requestTimeout:
+          description: >
+            The time in milliseconds to wait for an answer. The job expires shortly before, so the
+            response can tell that no worker answered in time. Defaults to 10 seconds when not set
+            or 0.
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 60000
+          nullable: true
+      required:
+        - type
+
+    StandaloneJobResult:
+      type: object
+      properties:
+        jobKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/JobKey'
+          description: The key of the standalone job.
+        outcome:
+          $ref: '#/components/schemas/StandaloneJobOutcomeEnum'
+        variables:
+          description: >
+            The variables the worker answered with: those it completed the job with, or those it
+            threw the error with.
+          type: object
+          additionalProperties: true
+        errorCode:
+          description: The error code the worker threw, for the outcome `ERROR_THROWN`.
+          type: string
+          nullable: true
+        errorMessage:
+          description: >
+            The error message the worker gave, for the outcomes `ERROR_THROWN` and `FAILED`.
+          type: string
+          nullable: true
+      required:
+        - jobKey
+        - outcome
+        - variables
+        - errorCode
+        - errorMessage
+
+    StandaloneJobOutcomeEnum:
+      description: >
+        How the worker answered the standalone job: it completed it, threw an error for it, or
+        failed it with no retries left.
+      type: string
+      enum:
+        - COMPLETED
+        - ERROR_THROWN
+        - FAILED
+
     JobCompletionRequest:
       type: object
       additionalProperties: false
@@ -1410,6 +1558,7 @@ components:
         - EXECUTION_LISTENER
         - TASK_LISTENER
         - AD_HOC_SUB_PROCESS
+        - STANDALONE
 
     JobListenerEventTypeEnum:
       example: UNSPECIFIED
