@@ -15,7 +15,7 @@ import type {
 import {endpoints} from '#/shared/http/endpoints';
 import {request} from '#/shared/http/request';
 import {mapQueryError} from '#/shared/http/mapQueryError';
-import {getActiveModificationFilter} from './getActiveModificationFilter';
+import {getActiveInstancesFilter} from './getActiveInstancesFilter';
 
 type BatchModificationScope = {
 	filter: CreateCancellationBatchOperationRequestBody['filter'];
@@ -31,7 +31,7 @@ function useBatchModificationStatistics({
 	sourceElementId?: string;
 	scope?: BatchModificationScope;
 }) {
-	const activeFilter = scope === undefined ? null : getActiveModificationFilter(scope.filter);
+	const activeFilter = scope === undefined ? null : getActiveInstancesFilter(scope.filter);
 	const {processDefinitionId, processDefinitionVersion, ...selectionFilter} = activeFilter ?? {};
 	const hasSelection = (scope?.selectedCount ?? 0) > 0 && activeFilter !== null;
 	const statisticsFilter = {

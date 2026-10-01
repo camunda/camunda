@@ -8,9 +8,26 @@
 
 import styled, {css} from 'styled-components';
 import {styles} from '@carbon/type';
-import {Button, InlineNotification, Link, Stack, TableHeader} from '@carbon/react';
+import {
+	Button,
+	InlineNotification,
+	Link,
+	ListItem,
+	OrderedList,
+	Select,
+	Stack,
+	TableHeader,
+	TableRow,
+} from '@carbon/react';
 import {createLink} from '@tanstack/react-router';
-import {Add, Error as BaseError, Subtract} from '@carbon/react/icons';
+import {
+	Add,
+	ArrowRight as BaseArrowRight,
+	CheckmarkFilled as BaseCheckmarkFilled,
+	Error as BaseError,
+	Subtract,
+	WarningFilled as BaseWarningFilled,
+} from '@carbon/react/icons';
 import {PanelHeader as BasePanelHeader} from '#/operate/shared/PanelHeader/PanelHeader';
 
 const IndentedGroup = styled.div`
@@ -166,6 +183,124 @@ const VisuallyHiddenStatus = styled.span`
 	border: 0;
 `;
 
+const MigrationHelperList = styled(OrderedList)`
+	display: flex;
+	flex-direction: column;
+	gap: var(--cds-spacing-05);
+`;
+
+const MigrationHelperListItem = styled(ListItem)`
+	list-style: decimal;
+`;
+
+const MigrationDiagrams = styled.div`
+	display: flex;
+	height: 100%;
+
+	.custom-gutter-Horizontal:after {
+		background-color: var(--cds-border-inverse);
+	}
+`;
+
+const MigrationDiagramHeader = styled(Stack)`
+	background-color: var(--cds-layer-accent);
+	padding: 0 var(--cds-spacing-05);
+	display: flex;
+	align-items: center;
+	min-height: var(--cds-spacing-08);
+	height: var(--cds-spacing-08);
+	${styles.bodyCompact01};
+	color: var(--cds-text-primary);
+`;
+
+const MigrationHeaderLabel = styled.label`
+	${styles.headingCompact01};
+	color: var(--cds-text-secondary);
+	align-self: center;
+`;
+
+const MigrationHeaderField = styled.div`
+	display: flex;
+	align-items: center;
+`;
+
+const MigrationMapping = styled.section`
+	height: 100%;
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	background-color: var(--cds-layer);
+	overflow: auto;
+	position: relative;
+
+	td {
+		padding-top: 0;
+		padding-bottom: 0;
+	}
+`;
+
+const MigrationToggleContainer = styled.div`
+	position: absolute;
+	right: 50%;
+	top: 9px;
+	z-index: 1;
+	padding-right: var(--cds-spacing-05);
+`;
+
+const MigrationMessageContainer = styled.div`
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+`;
+
+const MigrationTableHeader = styled(TableHeader)`
+	width: 50%;
+`;
+
+const MigrationTableRow = styled(TableRow)`
+	cursor: pointer;
+`;
+
+const MigrationSourceElement = styled.div`
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	color: var(--cds-text-primary);
+`;
+
+const MigrationSourceElementName = styled.div`
+	flex-grow: 1;
+`;
+
+const MigrationArrowRight = styled(BaseArrowRight)`
+	margin-left: var(--cds-spacing-06);
+`;
+
+const MigrationWarningFilled = styled(BaseWarningFilled)`
+	fill: var(--cds-support-warning);
+	margin-right: var(--cds-spacing-03);
+
+	[data-icon-path='inner-path'] {
+		opacity: 1;
+		fill: black;
+	}
+`;
+
+const MigrationCheckmarkFilled = styled(BaseCheckmarkFilled)`
+	color: var(--cds-support-success);
+`;
+
+const MigrationTargetSelect = styled(Select)`
+	width: 288px;
+`;
+
+const MigrationIconContainer = styled.div`
+	> svg {
+		block-size: 100%;
+	}
+`;
+
 export {
 	HeaderActions,
 	IndentedGroup,
@@ -188,4 +323,22 @@ export {
 	ProcessName,
 	InstanceLink,
 	VisuallyHiddenStatus,
+	MigrationHelperList,
+	MigrationHelperListItem,
+	MigrationDiagrams,
+	MigrationDiagramHeader,
+	MigrationHeaderLabel,
+	MigrationHeaderField,
+	MigrationMapping,
+	MigrationToggleContainer,
+	MigrationMessageContainer,
+	MigrationTableHeader,
+	MigrationTableRow,
+	MigrationSourceElement,
+	MigrationSourceElementName,
+	MigrationArrowRight,
+	MigrationWarningFilled,
+	MigrationCheckmarkFilled,
+	MigrationTargetSelect,
+	MigrationIconContainer,
 };
