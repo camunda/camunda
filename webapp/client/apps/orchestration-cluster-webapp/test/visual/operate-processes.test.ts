@@ -8,6 +8,7 @@
 
 import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
+import {z} from 'zod';
 import {
 	mockCurrentUserEndpoint,
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
@@ -29,7 +30,10 @@ import {
 	createProcessInstance,
 	createQueryProcessInstancesResponse,
 } from '#/shared-test-modules/api-mocks/process-instances';
-import {createQueryBatchOperationItemsResponse} from '#/shared-test-modules/api-mocks/batch-operations';
+import {
+	createBatchOperationItem,
+	createQueryBatchOperationItemsResponse,
+} from '#/shared-test-modules/api-mocks/batch-operations';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {movePointerAwayFromNavigation} from './movePointerAwayFromNavigation';
 
@@ -85,4 +89,45 @@ test('should match the processes page filters panel snapshot', async ({operatePr
 
 	await movePointerAwayFromNavigation(page);
 	await expect(page).toHaveScreenshot();
+});
+
+test('should show expanded failed operation details @desktop', async ({network, operateProcessesPage, page}) => {
+	network.use(
+		mockQueryBatchOperationItemsEndpoint({
+			schema: z.object({filter: z.object({batchOperationKey: z.object({$eq: z.string()})})}),
+			successResponse: HttpResponse.json(
+				createQueryBatchOperationItemsResponse({
+					items: [
+						createBatchOperationItem({
+							itemKey: 'incident-1',
+							processInstanceKey: '2251799813685280',
+							state: 'FAILED',
+							errorMessage: 'Operation timed out',
+						}),
+						createBatchOperationItem({
+							itemKey: 'incident-2',
+							processInstanceKey: '2251799813685280',
+							state: 'FAILED',
+							errorMessage: 'Retry exhausted',
+						}),
+						createBatchOperationItem({
+							itemKey: 'incident-3',
+							processInstanceKey: '2251799813685280',
+							state: 'FAILED',
+						}),
+						createBatchOperationItem({itemKey: 'item-4', processInstanceKey: '2251799813685281', state: 'COMPLETED'}),
+					],
+				}),
+			),
+			failureResponse: HttpResponse.json(createQueryBatchOperationItemsResponse()),
+		}),
+	);
+	await operateProcessesPage.goto('?batchOperationKey=2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee');
+	await page.getByRole('button', {name: 'Show failure details for instance 2251799813685280'}).click();
+	await expect(page.getByRole('row').filter({hasText: 'Operation timed out'})).toContainText(
+		/Operation timed out\s+Retry exhausted\s+Operation failed/,
+	);
+
+	await movePointerAwayFromNavigation(page);
+	await expect(operateProcessesPage.instancesTable).toHaveScreenshot('failed-operation-details.png');
 });

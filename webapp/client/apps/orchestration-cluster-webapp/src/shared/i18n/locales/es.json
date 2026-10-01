@@ -616,6 +616,9 @@
 					"endDate": "Fecha de fin",
 					"operationState": "Estado de la operación",
 					"operationStateLoading": "Cargando...",
+					"operationFailed": "La operación ha fallado",
+					"failureDetails": "Detalles del fallo",
+					"expandFailure": "Mostrar los detalles del fallo de la instancia {{key}}",
 					"operations": {
 						"header": "Operaciones",
 						"resolveIncidentsFailed": "No se pudieron reintentar las incidencias",

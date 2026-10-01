@@ -619,6 +619,9 @@
 					"endDate": "Date de fin",
 					"operationState": "État de l'opération",
 					"operationStateLoading": "Chargement...",
+					"operationFailed": "Échec de l'opération",
+					"failureDetails": "Détails de l'échec",
+					"expandFailure": "Afficher les détails de l'échec pour l'instance {{key}}",
 					"operations": {
 						"header": "Opérations",
 						"resolveIncidentsFailed": "Échec de la relance des incidents",

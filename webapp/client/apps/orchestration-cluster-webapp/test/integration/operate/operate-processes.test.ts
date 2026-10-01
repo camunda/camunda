@@ -197,6 +197,38 @@ test.describe('Operate processes page', () => {
 		await expect(operateProcessesPage.operationState('ACTIVE')).toBeVisible();
 	});
 
+	test('should expand only the failed instance and clear its detail when the batch filter is removed', async ({
+		network,
+		page,
+		operateProcessesPage,
+	}) => {
+		network.use(
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryBatchOperationItemsResponse({
+						items: [
+							createBatchOperationItem({processInstanceKey: '1001', state: 'FAILED', errorMessage: 'Timed out'}),
+							createBatchOperationItem({processInstanceKey: '1002', state: 'COMPLETED'}),
+						],
+					}),
+				),
+			}),
+		);
+		await operateProcessesPage.goto('?batchOperationKey=2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee');
+
+		await expect(operateProcessesPage.operationState('FAILED')).toBeVisible();
+		await expect(operateProcessesPage.operationState('COMPLETED')).toBeVisible();
+		await expect(page.getByText('Timed out')).not.toBeVisible();
+		await expect(page.getByRole('button', {name: 'Show failure details for instance 1002'})).toHaveCount(0);
+		await page.getByRole('button', {name: 'Show failure details for instance 1001'}).click();
+		await expect(page.getByText('Timed out')).toBeVisible();
+
+		await operateProcessesPage.resetFiltersButton.click();
+
+		await expect(operateProcessesPage.operationStateColumn).toHaveCount(0);
+		await expect(page.getByText('Timed out')).toHaveCount(0);
+	});
+
 	test('should render forbidden process-instance content when the instance request returns 403', async ({
 		network,
 		page,
