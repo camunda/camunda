@@ -25,7 +25,6 @@ type Props = {
 	isOpen: boolean;
 	username: string;
 	onClose: () => void;
-	/** Called after a successful deletion, in addition to `onClose`. Omit when nothing besides closing the modal needs to happen (e.g. a list page that already refetches via query invalidation). */
 	onDeleted?: () => void;
 };
 

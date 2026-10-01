@@ -102,10 +102,6 @@ function useUserMutations() {
 			return response.json() as Promise<User>;
 		},
 		onSuccess: (user) => {
-			// Same eventually-consistent read-after-write gap as `create` above, except `getUser`
-			// won't 404 here — the user already exists, it just keeps serving the pre-update version
-			// for a moment. So "ready" means the read reflects the new fields, not just that it
-			// succeeds (see `isReady` below).
 			patchListCaches(queryClient, {
 				queryKeyPrefix: ['users'],
 				item: user,
@@ -115,9 +111,6 @@ function useUserMutations() {
 			queryClient.setQueryData(queries.getUser(user.username).queryKey, user);
 			toast.success(t('admin.users.userUpdated', {username: user.username}));
 
-			// No `invalidateUser` here: `waitUntilReady`'s own successful poll already wrote the fresh
-			// read into the `['user', username]` cache entry — that's what makes `ready` true.
-			// Invalidating it again would just re-fetch data we already just confirmed is current.
 			void waitUntilReady(queryClient, queries.getUser(user.username), {
 				isReady: (data) => data.name === user.name && data.email === user.email,
 			}).then((ready) => {
