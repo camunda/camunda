@@ -7,33 +7,21 @@ import { GithubResolver } from './resolver';
 /**
  * PR-gate lint entrypoint (warn-only rollout).
  *
- * Security: runs on `pull_request`, so the workflow and this action resolve from
- * the PR head — the same trust model as every other lint in ci.yml, and the
- * reason there is no privileged token anywhere here. A fork PR gets a read-only
- * GITHUB_TOKEN and no secrets, which is exactly why the writes below are guarded
- * by `can-write` instead of failing.
+ * Security: runs on `pull_request`, resolving from the PR head — no
+ * privileged token anywhere here. A fork PR gets a read-only GITHUB_TOKEN
+ * and no secrets, so the writes below are guarded by `can-write`, not left
+ * to fail.
  *
- * The PR number comes from the event payload; the body and title are then
- * fetched from the API, so they are current at evaluation time rather than a
- * snapshot from whenever the event fired (a PR edited twice in quick succession
- * must not be judged on the older body).
+ * Body/title are fetched fresh from the API rather than the event payload,
+ * so a PR edited twice in quick succession is judged on the current body.
  *
- * ponytail: warn-only for now — reports the combined gate outcome (PR-issue link
- * + title lint, with a backport hop) to the job summary, the outputs, a single
- * sticky PR comment, and the display-only `no-issue` label. The check itself is
- * the job's own conclusion; GitHub renders it on the PR without us publishing
- * anything. Both syncs run regardless of `enforce` — they are informational, not
- * the enforcement mechanism. `enforce=true` flips a fail into a non-zero exit;
- * enforce mode ships in a follow-up PR.
+ * ponytail: warn-only for now. `enforce=true` flips a fail into a non-zero
+ * exit; enforce mode ships in a follow-up PR.
  */
 async function run(): Promise<void> {
   const token = core.getInput('token', { required: true });
   const enforce = core.getBooleanInput('enforce');
-  // False on fork PRs: GitHub issues a read-only token and withholds secrets
-  // there, whatever the workflow's `permissions:` block asks for. Everything the
-  // gate READS still works, so it evaluates and reports normally — only the two
-  // writes are skipped, and the log says so rather than surfacing a 403.
-  const canWrite = core.getBooleanInput('can-write');
+  const canWrite = core.getBooleanInput('can-write'); // false on fork PRs — reads still work, only the two writes below are skipped
 
   const prNumberInput = core.getInput('pr-number').trim();
   const prNumber = Number(prNumberInput);
@@ -45,9 +33,7 @@ async function run(): Promise<void> {
   const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? '/').split('/');
   const resolver = new GithubResolver(token, owner ?? '', repo ?? '');
 
-  // A transient API error (403/500) must respect `enforce`: warn-only means the
-  // gate never hard-fails, so a blip cannot turn a green check red.
-  let gate;
+  let gate; // a transient API error respects `enforce` too — warn-only means a blip can't turn a green check red
   try {
     const pull = await resolver.fetchPull(prNumber);
     if (!pull) {
@@ -73,8 +59,7 @@ async function run(): Promise<void> {
   core.setOutput('delivery-path', gate.deliveryPath);
   core.setOutput('failed-checks', failed.map((check) => check.label).join(','));
 
-  // The job summary is the gate's primary report: it is the one channel that
-  // works everywhere, fork PRs included, and needs no token at all.
+  // Job summary is the primary report — works everywhere, fork PRs included, no token needed.
   const heading = gate.outcome === 'pass' ? '✅ Release-notes checks passed' : '❌ Release-notes checks failed';
   const summaryLines = gate.checks.map(
     (check) => `${check.outcome === 'pass' ? '✅' : '❌'} ${check.label}: ${check.reasons.join(' ')}`,
@@ -82,15 +67,10 @@ async function run(): Promise<void> {
   await core.summary.addHeading(heading, 3).addList(summaryLines).write();
 
   if (!canWrite) {
-    // Not a failure: a fork PR is still fully evaluated above, and the verdict is
-    // in the summary and this log. Stated explicitly so the absence of the usual
-    // comment reads as designed rather than broken.
     core.info('Fork pull request: no write token available, so the sticky comment and no-issue label are skipped.');
   } else {
-    // The sticky comment and the display-only `no-issue` label. Independent of
-    // each other, so run them concurrently. Each is best-effort: a sync failure
-    // is logged and must never fail the gate — warn or not, the outcome above
-    // stands.
+    // Independent, so run concurrently. Each is best-effort — a sync failure
+    // is logged and never fails the gate.
     await Promise.allSettled([
       (async () => {
         try {

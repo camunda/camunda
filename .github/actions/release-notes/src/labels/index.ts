@@ -2,57 +2,37 @@ import { githubHeaders, repoApiUrl } from '../github';
 import type { GateOutcome, PolicyOutcome } from '../types';
 
 /**
- * Syncs the display-only `no-issue` label to mirror the PR-issue-link check
- * only (not the title check — the label answers one question: "does this PR
- * link a tracked issue?"). Best-effort like the sticky comment: a sync
- * failure never fails the gate, and it runs regardless of `enforce` — the
- * label is informational, not a blocking mechanism.
+ * Syncs the display-only `no-issue` label to the PR-issue-link check only
+ * (not title). Best-effort like the sticky comment: a sync failure never
+ * fails the gate, and it runs regardless of `enforce` — informational, not
+ * a blocking mechanism.
  */
 
-/** The label the gate syncs. Single source of truth — do not rename without
- *  updating any saved searches/dashboards that filter on it. */
+/** Do not rename without updating any dashboards/saved searches on it. */
 export const NO_ISSUE_LABEL = 'no-issue';
 
-/**
- * Used only by GithubLabelApi.ensureLabelExists, which recreates the label if
- * someone deletes it, so a missing label degrades to a self-heal instead of a
- * failed sync.
- *
- * These MUST match the label as it exists in the repo today (colour `ededed`,
- * no description beyond this one) — otherwise a delete-then-heal cycle would
- * silently reskin a label that predates this gate. The wording deliberately
- * avoids "warn-only": that becomes wrong at the required-flip, and nobody would
- * think to update a label description then.
- */
+/** Must match the label as it exists in the repo today — used only to
+ *  recreate it if someone deletes it, never to reskin an existing one. */
 export const NO_ISSUE_LABEL_COLOR = 'ededed';
 export const NO_ISSUE_LABEL_DESCRIPTION = 'Release-notes gate: this PR does not link a tracked issue.';
 
-/** What syncNoIssueLabel did — surfaced to the job log, and asserted in tests. */
 export type LabelAction = 'added' | 'removed' | 'noop';
 
-/**
- * The issue-labels API surface the sync needs, injected so the decision logic
- * is testable without mocking fetch.
- */
+/** Injected so the decision logic is testable without mocking fetch. */
 export interface LabelApi {
   list(): Promise<string[]>;
   add(label: string): Promise<void>;
   remove(label: string): Promise<void>;
 }
 
-/** Pure decision: given the PR's current labels and the link check's
- * outcome, decide whether to add/remove the no-issue label. */
 export function decideLabelAction(currentLabels: readonly string[], linkOutcome: PolicyOutcome): LabelAction {
   const has = currentLabels.includes(NO_ISSUE_LABEL);
   if (linkOutcome === 'fail') return has ? 'noop' : 'added';
   return has ? 'removed' : 'noop';
 }
 
-/**
- * Reconcile the no-issue label against the gate's PR-issue-link check.
- * Reads the typed `gate.link` decision (not gate.outcome) so a title-only
- * failure never adds a label whose name specifically means "no linked issue".
- */
+/** Reads the typed `gate.link` decision, not `gate.outcome`, so a title-only
+ *  failure never adds a label that specifically means "no linked issue". */
 export async function syncNoIssueLabel(api: LabelApi, gate: GateOutcome): Promise<LabelAction> {
   const current = await api.list();
   const action = decideLabelAction(current, gate.link.outcome);
@@ -61,11 +41,7 @@ export async function syncNoIssueLabel(api: LabelApi, gate: GateOutcome): Promis
   return action;
 }
 
-/**
- * issue-labels API over plain fetch. Same rationale as GithubCommentApi /
- * GithubResolver: a handful of endpoints, so octokit's bundle cost isn't
- * worth paying.
- */
+/** issue-labels API over plain fetch — same rationale as GithubCommentApi. */
 export class GithubLabelApi implements LabelApi {
   private readonly repoUrl: string;
   private readonly headers: Record<string, string>;
