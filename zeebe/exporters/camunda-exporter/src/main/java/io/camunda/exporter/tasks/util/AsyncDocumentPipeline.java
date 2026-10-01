@@ -68,7 +68,13 @@ public class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
     currentBatchSize = builder.batchSize;
   }
 
-  public CompletableFuture<PipelineStats> execute() {
+  public static <DocType, SearchAfterFieldType> Builder<DocType, SearchAfterFieldType> builder(
+      final BatchSupplier<DocType, SearchAfterFieldType> batchSupplier,
+      final BatchProcessor<DocType, SearchAfterFieldType> batchProcessor) {
+    return new Builder<>(batchSupplier, batchProcessor);
+  }
+
+  CompletableFuture<PipelineStats> execute() {
     return AsyncRepeatUntil.repeatUntil(this::processNextBatch, ignored -> finished.get())
         .thenApply(
             ignore ->
@@ -227,12 +233,6 @@ public class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
         final BatchProcessor<DocType, SearchAfterFieldType> batchProcessor) {
       this.batchSupplier = batchSupplier;
       this.batchProcessor = batchProcessor;
-    }
-
-    public static <DocType, SearchAfterFieldType> Builder<DocType, SearchAfterFieldType> builder(
-        final BatchSupplier<DocType, SearchAfterFieldType> batchSupplier,
-        final BatchProcessor<DocType, SearchAfterFieldType> batchProcessor) {
-      return new Builder<>(batchSupplier, batchProcessor);
     }
 
     public Builder<DocType, SearchAfterFieldType> executor(final Executor executor) {
