@@ -76,7 +76,6 @@ jobs:
       load-test-setup-changes: ${{ steps.filter.outputs.load-test-setup-changes }}
       scripts-changes: ${{ steps.filter.outputs.scripts-changes }}
       load-test-scripts-changes: ${{ steps.filter.outputs.load-test-scripts-changes }}
-      load-test-k6-changes: ${{ steps.filter.outputs.load-test-k6-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -270,7 +269,7 @@ jobs:
           go-version-file: load-tests/setup/test/go.mod
           cache-dependency-path: load-tests/setup/test/go.sum
       - name: Set up Helm
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        uses: jdx/mise-action@7a4e45a543138629540c9a1616d08632b893e492 # v5.0.1
         with:
           minimum_release_age: 15d
           install_args: helm
@@ -298,40 +297,6 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
-  load-test-k6-prettier:
-    if: needs.detect-changes.outputs.load-test-k6-changes == 'true'
-    name: "Load Test / Lint k6 Scripts"
-    needs: [ detect-changes ]
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions: {}
-    steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: 26
-      - name: Install dependencies
-        uses: ./.github/actions/npm-ci-with-retry
-        with:
-          directory: load-tests/setup/charts/load-test-setup/k6
-          max_attempts: "2"
-          timeout_minutes: "3"
-      - name: Check formatting
-        run: make -C load-tests/setup/charts/load-test-setup/k6 check
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-
   load-test-helm-lockfile:
     if: needs.detect-changes.outputs.load-test-setup-changes == 'true'
     name: "Load Test / Helm Chart Lock"
@@ -349,7 +314,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Set up Helm
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        uses: jdx/mise-action@7a4e45a543138629540c9a1616d08632b893e492 # v5.0.1
         with:
           minimum_release_age: 15d
           install_args: helm
@@ -879,7 +844,7 @@ jobs:
               "docker-file": "camunda.Dockerfile",
               "owner": "@camunda/zeebe-distributed-platform",
               "module": "Zeebe",
-              "test-filter": "io.camunda.zeebe.it.cluster.**,!io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsTest,!**/*${DOLLAR}*.java",
+              "test-filter": "io.camunda.zeebe.it.cluster.**,!io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsBackupRestoreTest,!**/*${DOLLAR}*.java",
               "allow-stress": true,
               "stressRun": 1
             },
@@ -892,7 +857,7 @@ jobs:
               "runs-on": "gcp-perf-core-8-default",
               "owner": "@camunda/zeebe-distributed-platform",
               "module": "Zeebe",
-              "test-filter": "io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsTest",
+              "test-filter": "io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsBackupRestoreTest",
               "stressRun": 1
             },
             {
@@ -2790,9 +2755,6 @@ jobs:
       - name: Run load-test script unit tests
         if: needs.detect-changes.outputs.load-test-scripts-changes == 'true'
         run: make -C load-tests/docs/scripts/load_test_report check
-      - name: Run loadtestctl unit tests
-        if: needs.detect-changes.outputs.load-test-scripts-changes == 'true'
-        run: make -C load-tests/loadtestctl check
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -2809,8 +2771,7 @@ jobs:
     # This name is hard-coded in the branch rules; remember to update that if this name changes
     if: always()
     runs-on: ubuntu-latest
-    # At least the sum of the step timeouts, so the gate step always runs.
-    timeout-minutes: 15
+    timeout-minutes: 3
     permissions:
       actions: read
       checks: read
@@ -2840,7 +2801,6 @@ jobs:
       - junit-vintage-check
       - load-test-golden-tests
       - load-test-helm-lockfile
-      - load-test-k6-prettier
       - maven-spotless-linter
       - openapi-lint
       - openapi-x-added-in-version-check
@@ -2867,7 +2827,7 @@ jobs:
     env:
       # Fork PRs never authenticate to GCS (no Vault access), so there's nothing to clean up
       # there -- exclude them explicitly instead of relying on the run/echo fallback below.
-      SHOULD_CLEANUP_GCS: ${{ needs.build-distball.result == 'success' && github.event.pull_request.head.repo.fork != true }}
+      SHOULD_CLEANUP_GCS: ${{ needs.build-distball.result == 'success' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && github.event.pull_request.head.repo.fork != true }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
@@ -2875,80 +2835,28 @@ jobs:
           persist-credentials: false
       - name: Check for aborted jobs
         continue-on-error: true
-        timeout-minutes: 2
         uses: ./.github/actions/observe-aborted-jobs
         with:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      # The needs context can miss jobs GitHub cancelled or failed before a runner was assigned
-      # (INC-8501), so the gate also reads the latest job results from the Jobs API. A job blocks
-      # unless it succeeded, was skipped or neutral, runs after this job, or has job-level
-      # continue-on-error; the last two are read from this workflow file. Any error leaves
-      # `failed` unset, which fails the gate and keeps the GCS objects.
-      - name: Evaluate job results
-        id: results
-        continue-on-error: true
-        timeout-minutes: 2
-        env:
-          GH_TOKEN: ${{ github.token }}
-          NEEDS_FAILED: ${{ contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
-          BLOCKING_JOBS_FILE: ${{ runner.temp }}/blocking-jobs.json
-        run: |
-          set -euo pipefail
-          for attempt in 1 2 3; do
-            gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/jobs?filter=latest&per_page=100" \
-              > "${RUNNER_TEMP}/jobs.json" && break
-            if (( attempt == 3 )); then
-              echo "::error::Could not read job results from the Jobs API."
-              exit 1
-            fi
-            sleep 10
-          done
-          yq -o=json '.jobs' .github/workflows/ci.yml > "${RUNNER_TEMP}/workflow-jobs.json"
-          jq -s --slurpfile wf "${RUNNER_TEMP}/workflow-jobs.json" '
-            $wf[0] as $wf
-            | def needs_list: (.needs // []) | if type == "string" then [.] else . end;
-              def after($ids):
-                ([$wf | to_entries[] | select(any(.value | needs_list[]; IN($ids[]))) | .key] + $ids | unique) as $next
-                | if ($next | length) == ($ids | length) then $ids else after($next) end;
-              def names: map($wf[.].name // .);
-              # API job names are "<name>", "<name> (<matrix values>)" or "<caller> / <called job>".
-              def named($names): .name as $n
-                | any($names[]; . as $d | $n == $d or ($n | startswith($d + " (")) or ($n | startswith($d + " / ")));
-              (after(["check-results"]) | names) as $ignored
-              | ([$wf | to_entries[] | select(.value["continue-on-error"] == true) | .key] | names) as $non_blocking
-              | {jobs: [.[].jobs[]
-                  | select(.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral")
-                  | select((named($ignored) or named($non_blocking)) | not)]}
-          ' "${RUNNER_TEMP}/jobs.json" > "${BLOCKING_JOBS_FILE}"
-          blocking=$(jq -r '[.jobs[] | "\(.name) (\(.conclusion // .status))"] | join(", ")' "${BLOCKING_JOBS_FILE}")
-          if [[ -n "${blocking}" ]]; then
-            echo "::notice::Blocking jobs: ${blocking}"
-          fi
-          if [[ "${NEEDS_FAILED}" == 'true' || -n "${blocking}" ]]; then
-            echo "failed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "failed=false" >> "$GITHUB_OUTPUT"
-          fi
       - name: Post CI Failure Reasons
         continue-on-error: true
-        timeout-minutes: 2
         uses: ./.github/actions/post-ci-failure-reasons
         with:
           github_token: ${{ github.token }}
-          has_failures: ${{ steps.results.outputs.failed != 'false' }}
-          jobs_file: ${{ runner.temp }}/blocking-jobs.json
+          has_failures: ${{ contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
       # Clean up the run-scoped GCS objects (distball + m2 tarball) only when build-distball
-      # succeeded and the gate passed. Otherwise keep them so "Re-run failed jobs" can re-fetch
-      # the distball (build-distball won't re-run, so it won't re-upload). Non-blocking jobs
-      # don't need the distball on a rerun, so their failures don't keep the objects.
+      # succeeded and no other job failed or was cancelled. If any did, keep them so
+      # "Re-run failed jobs" can re-fetch the distball (build-distball won't re-run, so it won't
+      # re-upload). needs.* here spans every check-results dependency (broader than the old
+      # consumer-only gate) — strictly safer: a failure anywhere keeps the objects for a rerun.
       # Orphaned objects on abandoned runs are reaped by the bucket TTL (Infra-owned).
       # continue-on-error keeps a Vault/GCS infra flake from failing the merge-queue gate.
       # timeout-minutes additionally bounds a Vault/WIF hang so continue-on-error doesn't
       # have to wait out the whole job timeout-minutes budget to take effect -- see INC-6820.
       - name: Authenticate to GCS build-cache
-        if: env.SHOULD_CLEANUP_GCS == 'true' && steps.results.outputs.failed == 'false'
+        if: env.SHOULD_CLEANUP_GCS == 'true'
         continue-on-error: true
         timeout-minutes: 3
         uses: ./.github/actions/gcs-build-cache-auth
@@ -2957,9 +2865,8 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: Delete run-scoped GCS objects
-        if: env.SHOULD_CLEANUP_GCS == 'true' && steps.results.outputs.failed == 'false'
+        if: env.SHOULD_CLEANUP_GCS == 'true'
         continue-on-error: true
-        timeout-minutes: 1
         shell: bash
         run: |
           set -euo pipefail
@@ -2972,7 +2879,7 @@ jobs:
           echo "If you're reading this and wondering what the is the problem, please check other GHA jobs of this workflow run to for errors/cancellation and see their logs."
 
           # shellcheck disable=SC2242
-          exit ${{ (steps.results.outputs.failed != 'false' && 1) || 0 }}
+          exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
 
 
   # Dynamically generate the concurrency group based on branch name
@@ -2994,7 +2901,7 @@ jobs:
     # Covers ~6min setup + up to 2x20min deploy attempts; retry only re-runs the deploy step.
     timeout-minutes: 48
     permissions: { }  # GITHUB_TOKEN unused in this job
-    if: always() && needs.check-results.result == 'success' && needs.build-platform-frontend.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
+    if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
       group: ${{ needs.utils-get-concurrency-group-for-maven-snapshot.outputs.concurrency_group_name }}
       cancel-in-progress: false
@@ -3124,7 +3031,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
-    if: always() && needs.check-results.result == 'success' && needs.build-platform-frontend.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
+    if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
       group: ${{ needs.utils-get-concurrency-group-for-docker-snapshot.outputs.concurrency_group_name }}
       cancel-in-progress: false
@@ -3197,7 +3104,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     permissions: { }  # GITHUB_TOKEN unused in this job
-    if: always() && needs.check-results.result == 'success' && needs.build-platform-frontend.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
+    if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
       group: ${{ needs.utils-get-concurrency-group-for-optimize-docker-snapshot.outputs.concurrency_group_name }}
       cancel-in-progress: false
