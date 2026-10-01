@@ -51,11 +51,11 @@ Coordinator selection stays deterministic and independent of zone priority. When
 
 ## Source
 
-- [[EPIC] Cluster Zone Awareness #51412](https://github.com/camunda/camunda/issues/51412) (internal) — primary source; parent epic [#51411](https://github.com/camunda/camunda/issues/51411).
+- [[EPIC] Cluster Zone Awareness #51412](https://github.com/camunda/camunda/issues/51412) — primary source; parent epic [#51411](https://github.com/camunda/camunda/issues/51411).
 - [Zone-aware clusters](https://docs.camunda.io/docs/next/self-managed/components/orchestration-cluster/zeebe/configuration/zone-aware-clusters/) — user-facing configuration and operations documentation.
-- [#51587](https://github.com/camunda/camunda/issues/51587) (internal) — `ZONE_AWARE` distribution scheme. [#54805](https://github.com/camunda/camunda/issues/54805) (internal) — distribution config in the dynamic cluster configuration.
-- [#51986](https://github.com/camunda/camunda/issues/51986) (internal) — migration from bare to zoned identities. [#54106](https://github.com/camunda/camunda/issues/54106) (internal) — zone name constraints.
-- [#51586](https://github.com/camunda/camunda/issues/51586), [#51998](https://github.com/camunda/camunda/issues/51998), [#57589](https://github.com/camunda/camunda/issues/57589) (internal) — API backward compatibility.
-- [#51953](https://github.com/camunda/camunda/issues/51953) (internal) — rejected primary-zone coordinator selection.
+- [#51587](https://github.com/camunda/camunda/issues/51587) — `ZONE_AWARE` distribution scheme. [#54805](https://github.com/camunda/camunda/issues/54805) — distribution config in the dynamic cluster configuration.
+- [#51986](https://github.com/camunda/camunda/issues/51986) — migration from bare to zoned identities. [#54106](https://github.com/camunda/camunda/issues/54106) — zone name constraints.
+- [#51586](https://github.com/camunda/camunda/issues/51586), [#51998](https://github.com/camunda/camunda/issues/51998), [#57589](https://github.com/camunda/camunda/issues/57589) — API backward compatibility.
+- [#51953](https://github.com/camunda/camunda/issues/51953) — rejected primary-zone coordinator selection.
 - [dynamic-config ADR-0001](https://github.com/camunda/camunda/blob/main/zeebe/dynamic-config/docs/adr/0001-multi-partition-group-cluster-configuration.md) — multi-partition-group cluster configuration.
 
