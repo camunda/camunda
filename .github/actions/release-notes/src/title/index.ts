@@ -1,18 +1,10 @@
 import type { TitleDecision } from '../types';
 
 /**
- * PR-title lint — the active rules of `commitlint.config.cjs`, reimplemented as
- * a pure check so the action keeps zero runtime deps (pulling @commitlint +
- * config-conventional would vendor hundreds of kB into the committed bundle for
- * a handful of trivial rules). The config's other rules are disabled ([0,...]).
- *
- * DRIFT GUARD: TITLE_TYPES and HEADER_MAX are the single source of truth here,
- * and the action CI greps commitlint.config.cjs to assert they still match —
- * so a change to the repo's commit rules fails CI until this is updated.
- *
- * Active rules mirrored (see commitlint.config.cjs):
- *   type-empty:never · type-case:lower-case · type-enum · scope-empty:always ·
- *   header-max-length:120. Subject/body/footer rules are disabled there.
+ * PR-title lint — `commitlint.config.cjs`'s active rules (type-empty,
+ * type-case, type-enum, scope-empty, header-max-length), reimplemented pure
+ * to keep the action's runtime deps at zero. CI greps that config to assert
+ * TITLE_TYPES/HEADER_MAX still match, so drift fails CI, not a release.
  */
 
 /** commitlint.config.cjs `type-enum`. Keep in sync — CI enforces it. */
@@ -38,13 +30,8 @@ export const HEADER_MAX = 120;
 // conventional-commit header shape config-conventional parses.
 const HEADER = /^(?<type>[^\s():!]+)(?<scope>\([^)]*\))?!?:[ ](?<subject>.+)$/;
 
-/**
- * Wrap user-controlled title fragments before interpolating them into the
- * sticky comment / job summary. The gate posts the comment with a write token,
- * so a raw `@mention` in a malicious title would notify (spam) via the bot.
- * Inline code neutralises mentions; stripping backticks stops the value
- * breaking out of the span.
- */
+/** Wraps a title fragment before it goes into the sticky comment — the gate
+ *  posts with a write token, so a raw `@mention` would notify via the bot. */
 function code(value: string | undefined): string {
   return `\`${(value ?? '').replace(/`/g, '')}\``;
 }
@@ -97,8 +84,8 @@ export function lintTitle(title: string): TitleDecision {
 }
 
 /**
- * Bot authors whose titles are machine-generated and exempt from title lint
- * (D16). Their PR-issue link / backport marker is still validated — only the
+ * Bot authors whose titles are machine-generated and exempt from title lint.
+ * Their PR-issue link / backport marker is still validated — only the
  * title check is skipped.
  */
 export const BOT_TITLE_EXEMPT = new Set([
@@ -113,16 +100,12 @@ export function isTitleExemptAuthor(login: string | undefined): boolean {
 }
 
 /**
- * Bot authors exempt from the PR-issue-LINK check, because they open PRs from
- * their own template and will never tick the opt-out checkbox. Dependency bumps
- * are not release-notes material, so an exemption is the agreed answer rather
- * than teaching each bot to write the section.
+ * Bot authors exempt from the PR-issue-LINK check — they open PRs from their
+ * own template and never tick the opt-out box.
  *
- * DELIBERATELY SEPARATE from BOT_TITLE_EXEMPT, which must never be reused here:
- * that set contains `monorepo-devops-automation[bot]`, the author of every
- * backport PR. Exempting it from the link check would skip the backport hop, so
- * backports would stop inheriting the original PR's issue — silently dropping
- * them from the release notes, which is the failure this gate exists to prevent.
+ * MUST STAY SEPARATE from BOT_TITLE_EXEMPT: that set includes
+ * `monorepo-devops-automation[bot]`, the backport-PR author. Exempting it
+ * here would skip the backport hop, silently dropping backports from notes.
  */
 export const BOT_LINK_EXEMPT = new Set(['renovate[bot]']);
 
