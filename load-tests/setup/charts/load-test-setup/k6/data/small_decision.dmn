@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" id="drg" name="drg" namespace="https://example.com/dmn">
+  <decision id="small_decision" name="small_decision">
+    <decisionTable id="table" hitPolicy="FIRST">
+      <input id="in" label="category">
+        <inputExpression typeRef="string">
+          <text>category</text>
+        </inputExpression>
+      </input>
+      <output id="out" name="result" typeRef="string" />
+      <rule id="rule1">
+        <inputEntry><text>"a"</text></inputEntry>
+        <outputEntry><text>"first"</text></outputEntry>
+      </rule>
+      <rule id="rule2">
+        <inputEntry><text>"b"</text></inputEntry>
+        <outputEntry><text>"second"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+</definitions>
