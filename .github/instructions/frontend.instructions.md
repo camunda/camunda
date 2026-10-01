@@ -77,11 +77,13 @@ npm run test:unit         # Vitest browser mode (headless Chromium)
 npm run test:integration  # Playwright integration tests (MSW-mocked)
 npm run test:a11y         # Playwright accessibility (light + dark)
 npm run test:visual       # Playwright visual regression (needs Docker)
+npm run test:docs-screenshots  # Playwright docs.camunda.io images (needs Docker, manual only)
 ```
 
 - Tech stack: React 19, TypeScript, Vite, TanStack Router, TanStack Query, Carbon, MSW
 - Unit tests use Vitest Browser Mode (real Chromium), not jsdom. See `.claude/skills/frontend-unit-test/`.
 - Playwright tests (integration, visual, a11y) use MSW via `@msw/playwright`. See `.claude/skills/frontend-integration-test/`.
+- For the docs.camunda.io image tests in `test/docs-screenshots/`, see `.claude/skills/frontend-docs-screenshots/`.
 - Follow the pod areas + shared + routes architecture. See `.claude/skills/frontend-feature/`.
 - For Tasklist pod work in `src/tasklist/`, see `.claude/skills/tasklist-frontend/`.
 - For migrating legacy Operate code to the unified app, see `.claude/skills/frontend-migrator/`.

@@ -34,6 +34,10 @@ class TasklistIndexPage extends BasePage {
 		await this.page.addInitScript(`localStorage.setItem('tasklist.customFilters', ${JSON.stringify(serialized)})`);
 	}
 
+	async seedHasCompletedTask() {
+		await this.page.addInitScript(`localStorage.setItem('tasklist.hasCompletedTask', JSON.stringify(true))`);
+	}
+
 	get tasksPanel() {
 		return this.page.getByRole('region', {name: 'Tasks side panel'});
 	}
@@ -96,6 +100,10 @@ class TasklistIndexPage extends BasePage {
 
 	taskItem(name: string) {
 		return this.page.getByRole('link', {name: new RegExp(`task.*:.*${name}`, 'i')});
+	}
+
+	taskCard(name: string) {
+		return this.page.getByRole('article').filter({has: this.taskItem(name)});
 	}
 
 	get noTasksMessage() {
