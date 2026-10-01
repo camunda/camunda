@@ -209,8 +209,7 @@ public class OidcOverrideBeansConfiguration {
       final LazyTokenClaimsConverter tokenClaimsConverter,
       final HttpServletRequest request,
       final OidcProviderConfigurationPort oidcProviderRepository,
-      final ObjectProvider<AdditionalJwkSetUrisByRegistrationId>
-          additionalJwkSetUrisByRegistrationId,
+      final AdditionalJwkSetUrisByRegistrationId additionalJwkSetUrisByRegistrationId,
       final MembershipPort membershipPort,
       final MembershipResolutionContextPropagator membershipResolutionContextPropagator,
       final Environment environment) {
@@ -219,8 +218,7 @@ public class OidcOverrideBeansConfiguration {
         oidcAccessTokenDecoderFactory,
         tokenClaimsConverter,
         request,
-        additionalJwkSetUrisByRegistrationId.getIfAvailable(
-            AdditionalJwkSetUrisByRegistrationId::empty),
+        additionalJwkSetUrisByRegistrationId,
         buildPreferIdTokenClaimsByRegistrationId(oidcProviderRepository),
         PhysicalTenantOidcProviders.tokenClaimsConvertersByRegistrationId(
             environment, membershipPort, membershipResolutionContextPropagator),
