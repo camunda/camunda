@@ -78,11 +78,6 @@ feature saves changes back into GitHub automatically:
 Grafana updates the pull request with links back to the dashboard and screenshots of the changes. This can
 take up to 1 minute. When the pull request is merged, the change is reflected in Grafana automatically.
 
-The dashboard can also be previewed with real cluster data in the benchmark environment before the pull
-request is created, so the steps in
-[Verifying a dashboard against an existing cluster](#verifying-a-dashboard-against-an-existing-cluster)
-are not needed in most cases.
-
 #### Adding more changes to an existing pull request
 
 To add more changes on top of an existing branch or pull request:
@@ -108,7 +103,8 @@ To add more changes on top of an existing branch or pull request:
 <!-- separates the two alerts -->
 
 > [!WARNING]
-> Git Sync changes the dashboard schema model of the JSON files that it saves.
+> If the dashboards were using the "Classic" data model format, Git Sync will
+> automatically update them to the new `v2` data model.
 > If this is not desired, use the previous methods instead: export the
 > dashboard from a shared Grafana instance (see
 > [Creating a new dashboard](#creating-a-new-dashboard-camunda-internal)) or
