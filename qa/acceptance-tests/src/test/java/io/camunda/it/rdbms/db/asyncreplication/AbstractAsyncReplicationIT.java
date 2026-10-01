@@ -56,6 +56,25 @@ abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer>
   }
 
   /**
+   * How often the RDBMS writer flushes on its own schedule, independent of per-record exports.
+   * Defaults to a realistic non-zero interval; override to {@code Duration.ZERO} for scenarios that
+   * need every export to flush inline via {@code RdbmsExporter.export(Record)} instead of the
+   * periodic {@code flushAndReschedule()} background task - the latter does not escalate {@code
+   * ExporterPositionMismatchException} to a reopen the way the inline path does.
+   */
+  protected Duration getFlushInterval() {
+    return Duration.ofMillis(500);
+  }
+
+  /**
+   * The JDBC URL used to wire {@link TestCamundaApplication} to the cluster. Defaults to the
+   * primary's URL; overridden by failover scenarios that need a URL covering multiple hosts.
+   */
+  protected String jdbcUrl(final R cluster) {
+    return cluster.getJdbcUrl();
+  }
+
+  /**
    * The async-replication mechanism under test. Defaults to LSN-based tracking; override to
    * exercise {@code TimeMonitoringReplicationSignalStrategy} (lag-based) against the same cluster
    * and test scenarios instead.
@@ -74,13 +93,13 @@ abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer>
             .withUnifiedConfig(
                 cfg -> {
                   cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.rdbms);
-                  cfg.getData().getSecondaryStorage().getRdbms().setUrl(cluster.getJdbcUrl());
+                  cfg.getData().getSecondaryStorage().getRdbms().setUrl(jdbcUrl(cluster));
                   cfg.getData().getSecondaryStorage().getRdbms().setUsername(cluster.getUsername());
                   cfg.getData().getSecondaryStorage().getRdbms().setPassword(cluster.getPassword());
                   cfg.getData()
                       .getSecondaryStorage()
                       .getRdbms()
-                      .setFlushInterval(Duration.ofMillis(500));
+                      .setFlushInterval(getFlushInterval());
                   cfg.getData()
                       .getSecondaryStorage()
                       .getRdbms()
@@ -106,6 +125,18 @@ abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer>
                       .getRdbms()
                       .getAsyncReplication()
                       .setPauseOnMaxLagExceeded(true);
+                  if (getReplicationType() == ReplicationType.DELAY) {
+                    cfg.getData()
+                        .getSecondaryStorage()
+                        .getRdbms()
+                        .getAsyncReplication()
+                        .setDelay(Duration.ofSeconds(30));
+                  }
+                  cfg.getData()
+                      .getSecondaryStorage()
+                      .getRdbms()
+                      .getAsyncReplication()
+                      .setQueueDebounceTime(Duration.ZERO);
                 })
             .withBasicAuth();
 
