@@ -1,6 +1,6 @@
 ---
 name: create-issue
-description: Create a GitHub issue in camunda/camunda with the correct template, component label, and parent link. Use when asked to create, file, or open an issue — for bugs, features, tasks, tech debt, or CVEs.
+description: Create a GitHub issue in camunda/camunda with the correct template, component label, area labels, and parent link. Use when asked to create, file, or open an issue — for bugs, features, tasks, tech debt, or CVEs.
 ---
 
 # Create Issue
@@ -125,6 +125,44 @@ Map path prefixes to component labels:
 When multiple modules are touched, pick the label for the most-affected one. If uncertain, ask the
 user. If no files are modified, ask the user which component applies.
 
+### Step 3b: Infer the area labels
+
+Decide from the title and body which `area/*` labels describe what the issue is about. The
+Reliability Radar dashboard groups open issues by area, so an unlabeled issue is missing from it.
+
+| Area label             | Use when the issue is about                                                  |
+|------------------------|------------------------------------------------------------------------------|
+| `area/performance`     | latency, throughput, CPU, memory or allocation overhead, scalability limits  |
+| `area/reliability`     | data loss, crashes, stuck or non-recovering behavior, recovery from failures |
+| `area/resilience`      | surviving and degrading gracefully under faults or overload                  |
+| `area/observability`   | metrics, logging, tracing, health checks, diagnosability gaps                |
+| `area/security`        | vulnerabilities, authentication, authorization, secrets handling             |
+| `area/ux`              | user experience of the UI, CLI, or API ergonomics                            |
+| `area/test`            | adding or extending test coverage                                            |
+| `area/build`           | build pipeline, Maven settings, CI                                           |
+| `area/maintainability` | refactoring, cleanup, code health                                            |
+| `area/project`         | project management: PR templates, editor config, repository conventions      |
+| `area/bpmn-support`    | supporting BPMN symbols                                                      |
+| `area/dmn`             | the DMN engine or specification                                              |
+| `area/feel`            | the FEEL engine or specification                                             |
+| `area/frontend`        | frontend code and UI implementation                                          |
+| `area/backend`         | backend code and services                                                    |
+| `area/load-tests`      | load tests, benchmarks, and the load-test tooling                            |
+| `area/dx`              | developer experience                                                         |
+| `area/infra`           | infrastructure and environments                                              |
+| `area/metrics`         | metric definitions and dashboards (`area/observability` for broader gaps)    |
+| `area/ai`              | AI-related features and tooling                                              |
+
+- The table can lag behind the repository. Check the live set with
+  `gh label list --repo camunda/camunda --search area/ --limit 100` and use any `area/*` label that
+  fits better.
+- Apply every label that clearly fits, usually one, rarely more than two.
+- Apply none when nothing clearly fits. Do not ask the user when nothing fits.
+- Judge by what the issue is about, not by keywords: a test that merely mentions "performance" or a
+  feature that mentions "logging" does not qualify.
+- `area/reliability` and `area/resilience` overlap: prefer `area/reliability` unless the issue is
+  specifically about behavior under faults or overload.
+
 ### Step 4 — Ask for the parent issue
 
 Ask the user:
@@ -171,7 +209,7 @@ Print a clear summary and wait for explicit confirmation. Do NOT call `gh issue 
 ────────────────────────────────────────────
 Title:   <proposed title>
 Type:    <bug | feature | task | tech-debt | CVE>
-Labels:  kind/<type>  (component/*, severity/*, likelihood/* applied automatically via labeler)
+Labels:  kind/<type>, area/<area>... if any  (component/*, severity/*, likelihood/* applied automatically via labeler)
 Parent:  https://github.com/camunda/camunda/issues/<N>  (or "none")
 
 Body:
@@ -184,9 +222,9 @@ If the user requests changes, revise the summary and ask again before proceeding
 
 ### Step 7 — Create the issue and register the parent relationship
 
-After the user confirms, create the issue. Pass only the `kind/<type>` label explicitly — all
-other labels (`component/*`, `severity/*`, `likelihood/*`, `affects/*`) are applied automatically
-by `.github/opened_issue_labeler.yml`, which scans the body for the HTML comment markers rendered
+After the user confirms, create the issue. Pass the `kind/<type>` label and the `area/*` labels from
+Step 3b (if any) explicitly; the labeler does not set `area/*`. All other labels (`component/*`,
+`severity/*`, `likelihood/*`, `affects/*`) are applied automatically by `.github/opened_issue_labeler.yml`, which scans the body for the HTML comment markers rendered
 in Step 5.
 
 ```bash
@@ -197,7 +235,8 @@ gh issue create \
   --repo camunda/camunda \
   --title "<title>" \
   --body-file "$body_file" \
-  --label "kind/<type>"
+  --label "kind/<type>" \
+  --label "area/<area>"  # omit when Step 3b found no area; repeat per additional area
 
 rm -f "$body_file"
 ```
