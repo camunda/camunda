@@ -21,6 +21,7 @@ import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {createProcessDefinitionInstanceStatistics} from '#/shared-test-modules/api-mocks/process-definition-statistics';
+import {createIncidentProcessInstanceStatisticsByError} from '#/shared-test-modules/api-mocks/incident-statistics';
 import {createQueryProcessDefinitionsResponse} from '#/shared-test-modules/api-mocks/process-definitions';
 
 const STATS_WITH_INSTANCES = createPaginatedResponse({
@@ -30,6 +31,17 @@ const STATS_WITH_INSTANCES = createPaginatedResponse({
 			latestProcessDefinitionName: 'Process One',
 			activeInstancesWithoutIncidentCount: 10,
 			activeInstancesWithIncidentCount: 3,
+		}),
+	],
+	page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+});
+
+const INCIDENTS_WITH_ERRORS = createPaginatedResponse({
+	items: [
+		createIncidentProcessInstanceStatisticsByError({
+			errorHashCode: 1,
+			errorMessage: 'Payment gateway request timed out',
+			activeInstancesWithErrorCount: 5,
 		}),
 	],
 	page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
@@ -58,8 +70,11 @@ test.describe('Operate Dashboard DS preview (/operate-preview)', () => {
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({
 				successResponse: HttpResponse.json(STATS_WITH_INSTANCES),
 			}),
+			// The incidents tile's column header only renders once it has rows to
+			// show; an empty response falls back to the "processes are healthy"
+			// state instead, so use real data here too to assert the tile itself.
 			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
-				successResponse: HttpResponse.json(createPaginatedResponse()),
+				successResponse: HttpResponse.json(INCIDENTS_WITH_ERRORS),
 			}),
 			mockQueryProcessDefinitionsEndpoint({
 				successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
@@ -119,16 +134,13 @@ test.describe('Operate Dashboard DS preview (/operate-preview)', () => {
 		await expect(operatePreviewPage.noInstancesModelerButton).toHaveAttribute('href', 'https://modeler.example.com');
 	});
 
-	test('should show real process rows and sample incident rows, since real incident data has not landed yet', async ({
-		network,
-		operatePreviewPage,
-	}) => {
+	test('should show real process rows and real incident rows', async ({network, operatePreviewPage}) => {
 		network.use(
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({
 				successResponse: HttpResponse.json(STATS_WITH_INSTANCES),
 			}),
 			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
-				successResponse: HttpResponse.json(createPaginatedResponse()),
+				successResponse: HttpResponse.json(INCIDENTS_WITH_ERRORS),
 			}),
 			mockQueryProcessDefinitionsEndpoint({
 				successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
@@ -138,6 +150,6 @@ test.describe('Operate Dashboard DS preview (/operate-preview)', () => {
 		await operatePreviewPage.goto();
 
 		await expect(operatePreviewPage.processesByNameRow('Process One')).toBeVisible();
-		await expect(operatePreviewPage.incidentsByErrorSampleRow).toBeVisible();
+		await expect(operatePreviewPage.incidentsByErrorRow('Payment gateway request timed out')).toBeVisible();
 	});
 });

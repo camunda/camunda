@@ -21,8 +21,8 @@ import {createProcessDefinitionInstanceStatistics} from '#/shared-test-modules/a
 import {createIncidentProcessInstanceStatisticsByError} from '#/shared-test-modules/api-mocks/incident-statistics';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {createQueryProcessDefinitionsResponse} from '#/shared-test-modules/api-mocks/process-definitions';
-import {Dashboard} from './Dashboard';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {Dashboard} from './Dashboard';
 
 const PROCESS_STATS_REQUEST_SCHEMA = z.object({
 	sort: z.array(
@@ -93,6 +93,11 @@ describe('<Dashboard />', () => {
 				successResponse: STATS_RESPONSE_WITH_INSTANCES,
 				failureResponse: FAILURE_RESPONSE,
 			}),
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+				schema: INCIDENTS_REQUEST_SCHEMA,
+				successResponse: INCIDENTS_RESPONSE_WITH_ERRORS,
+				failureResponse: FAILURE_RESPONSE,
+			}),
 			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
 		);
 
@@ -138,11 +143,11 @@ describe('<Dashboard />', () => {
 
 		const screen = await renderWithRouter(Dashboard, {path: '/operate-preview'});
 
-		await expect.element(screen.getByText('Process Instances by Name')).toBeVisible();
-		await expect.element(screen.getByText('Process Incidents by Error Message')).toBeVisible();
+		await expect.element(screen.getByText('Process instances by name')).toBeVisible();
+		await expect.element(screen.getByText('Process incidents by error message')).toBeVisible();
 	});
 
-	it('should render real process rows and sample incident rows, pending real incident data', async ({worker}) => {
+	it('should render real process rows and real incident rows', async ({worker}) => {
 		worker.use(
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({
 				schema: PROCESS_STATS_REQUEST_SCHEMA,
@@ -160,8 +165,7 @@ describe('<Dashboard />', () => {
 		const screen = await renderWithRouter(Dashboard, {path: '/operate-preview'});
 
 		await expect.element(screen.getByText('Process One', {exact: false})).toBeVisible();
-		await expect.element(screen.getByText('Connection timeout')).toBeVisible();
-		expect(screen.getByText('Payment gateway request timed out').elements()).toHaveLength(0);
+		await expect.element(screen.getByText('Payment gateway request timed out')).toBeVisible();
 	});
 
 	it('should render the no-instances empty state when there are no running instances', async ({worker}) => {
@@ -206,8 +210,8 @@ describe('<Dashboard />', () => {
 
 		const screen = await renderWithRouter(Dashboard, {path: '/operate-preview'});
 
-		await expect.element(screen.getByText('Process Instances by Name')).toBeVisible();
-		await expect.element(screen.getByText('Process Incidents by Error Message')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('Process instances by name')).toBeVisible();
+		await expect.element(screen.getByText('Process incidents by error message')).not.toBeInTheDocument();
 	});
 
 	it('should render the go-to-modeler button when the current user has a modeler link', async ({worker}) => {

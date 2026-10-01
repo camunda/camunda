@@ -46,9 +46,9 @@ const REQUEST_SCHEMA = z.object({
 const FAILURE_RESPONSE = new HttpResponse(null, {status: 400});
 const ERROR_RESPONSE = new HttpResponse(null, {status: 500});
 const NO_DRAINING_RESPONSE = HttpResponse.json(createQueryProcessDefinitionsResponse());
-const ALPHA_PROCESS_LINK_NAME = '1 Alpha Process – 6 Instances in 1 Version 5';
-const BETA_PROCESS_LINK_NAME = '0 Beta Process – 3 Instances in 1 Version 3';
-const GAMMA_PROCESS_LINK_NAME = '1 Gamma Process – 3 Instances in 1 Version 2';
+const ALPHA_PROCESS_LINK_NAME = '1 Alpha Process – 6 instances in 1 version 5';
+const BETA_PROCESS_LINK_NAME = '0 Beta Process – 3 instances in 1 version 3';
+const GAMMA_PROCESS_LINK_NAME = '1 Gamma Process – 3 instances in 1 version 2';
 
 const PAGE_1_RESPONSE = HttpResponse.json(
 	createPaginatedResponse({
@@ -146,7 +146,7 @@ describe('<InstancesByProcess />', () => {
 		await userEvent.wheel(screen.getByTestId('instances-by-process-list'), {delta: {y: 10000}});
 
 		await expect
-			.element(screen.getByRole('link', {name: '0 Page Two Process – 1 Instance in 1 Version 1'}))
+			.element(screen.getByRole('link', {name: '0 Page Two Process – 1 instance in 1 version 1'}))
 			.toBeVisible();
 	});
 
@@ -181,7 +181,7 @@ describe('<InstancesByProcess />', () => {
 		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate'});
 
 		const alphaProcessLink = screen.getByRole('link', {name: ALPHA_PROCESS_LINK_NAME});
-		const betaProcessLink = screen.getByRole('link', {name: '0 Beta Process – 0 Instances in 1 Version 0'});
+		const betaProcessLink = screen.getByRole('link', {name: '0 Beta Process – 0 instances in 1 version 0'});
 
 		await expect.element(alphaProcessLink).toBeVisible();
 		await expect
@@ -264,9 +264,9 @@ describe('<InstancesByProcess />', () => {
 	it.for([
 		{
 			language: 'en',
-			oneVersion: 'Invoices – 1 Instance in 1 Version – Tenant A',
-			multipleVersions: 'Orders – 2 Instances in 2+ Versions – Tenant A',
-			version: 'Orders – 2 Instances in Version 2 – Tenant A',
+			oneVersion: 'Invoices – 1 instance in 1 version – Tenant A',
+			multipleVersions: 'Orders – 2 instances in 2+ versions – Tenant A',
+			version: 'Orders – 2 instances in version 2 – Tenant A',
 		},
 		{
 			language: 'de',
@@ -276,15 +276,15 @@ describe('<InstancesByProcess />', () => {
 		},
 		{
 			language: 'fr',
-			oneVersion: 'Invoices – 1 Instance dans 1 Version (Tenant A)',
-			multipleVersions: 'Orders – 2 Instances dans 2+ Versions (Tenant A)',
-			version: 'Orders – 2 Instances dans la Version 2 (Tenant A)',
+			oneVersion: 'Invoices – 1 instance dans 1 version (Tenant A)',
+			multipleVersions: 'Orders – 2 instances dans 2+ versions (Tenant A)',
+			version: 'Orders – 2 instances dans la version 2 (Tenant A)',
 		},
 		{
 			language: 'es',
-			oneVersion: 'Invoices – 1 Instancia en 1 Versión – Tenant A',
-			multipleVersions: 'Orders – 2 Instancias en 2+ Versiones – Tenant A',
-			version: 'Orders – 2 Instancias en la Versión 2 – Tenant A',
+			oneVersion: 'Invoices – 1 instancia en 1 versión – Tenant A',
+			multipleVersions: 'Orders – 2 instancias en 2+ versiones – Tenant A',
+			version: 'Orders – 2 instancias en la versión 2 – Tenant A',
 		},
 	] as const)(
 		'should localize tenant-scoped process and version labels in $language without requiring the tenants API',
@@ -413,7 +413,7 @@ describe('<InstancesByProcess />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Expand current row'}));
 
 		await expect
-			.element(screen.getByRole('link', {name: /My Process.*Version 2.*tenant-B/}))
+			.element(screen.getByRole('link', {name: /My Process.*version 2.*tenant-B/}))
 			.toHaveAttribute('href', expect.stringContaining('process=orders&version=2&tenantId=%3Ctenant-B%3E'));
 	});
 
@@ -448,8 +448,8 @@ describe('<InstancesByProcess />', () => {
 
 		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate'});
 
-		const betaProcessLink = screen.getByTitle('Beta Process – 3 Instances in 1 Version');
-		const alphaProcessLink = screen.getByTitle('Alpha Process – 6 Instances in 1 Version');
+		const betaProcessLink = screen.getByTitle('Beta Process – 3 instances in 1 version');
+		const alphaProcessLink = screen.getByTitle('Alpha Process – 6 instances in 1 version');
 
 		await expect.element(betaProcessLink).toBeVisible();
 		await expect.element(alphaProcessLink).toBeVisible();
@@ -510,11 +510,11 @@ describe('<InstancesByProcess />', () => {
 
 		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate'});
 
-		await expect.element(screen.getByTitle('Alpha Process – 4 Instances in 2+ Versions')).toBeVisible();
+		await expect.element(screen.getByTitle('Alpha Process – 4 instances in 2+ versions')).toBeVisible();
 		await userEvent.click(screen.getByRole('button', {name: 'Expand current row'}));
 
-		const version2Link = screen.getByTitle('My Process – 3 Instances in Version 2');
-		const version1Link = screen.getByTitle('My Process – 1 Instance in Version 1');
+		const version2Link = screen.getByTitle('My Process – 3 instances in version 2');
+		const version1Link = screen.getByTitle('My Process – 1 instance in version 1');
 
 		await expect.element(version2Link).toBeVisible();
 		await expect.element(version1Link).toBeVisible();

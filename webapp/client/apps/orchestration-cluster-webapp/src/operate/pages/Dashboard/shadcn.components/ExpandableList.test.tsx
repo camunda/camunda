@@ -17,18 +17,8 @@ import {EXPANDABLE_LIST_VARIANT_IDS, type ExpandableListVariant} from './Expanda
 
 const noop = () => {};
 
-function buildRow({
-	id,
-	name,
-	activeCount = 0,
-	incidentsCount = 0,
-}: {
-	id: string;
-	name: string;
-	activeCount?: number;
-	incidentsCount?: number;
-}): ExpandableListRow {
-	return {id, name, activeCount, incidentsCount, content: <span>{name}</span>};
+function buildRow({id, name}: {id: string; name: string}): ExpandableListRow {
+	return {id, content: <span>{name}</span>};
 }
 
 function mockElementHeights({
@@ -68,6 +58,8 @@ function renderList(overrides: RenderOverrides = {}) {
 			hasPreviousPage={false}
 			isFetchingNextPage={false}
 			isFetchingPreviousPage={false}
+			isFetchNextPageError={false}
+			isFetchPreviousPageError={false}
 			onLoadNextPage={noop}
 			onLoadPreviousPage={noop}
 			{...overrides}
@@ -92,6 +84,7 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 		const screen = await renderList({variant, isError: true});
 
 		// then
+		await expect.element(screen.getByRole('heading', {name: 'Process name'})).toBeVisible();
 		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
 		await expect.element(screen.getByText('Refresh the page to try again')).toBeVisible();
 		expect(screen.getByTestId('table').elements()).toHaveLength(0);
@@ -105,6 +98,7 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 		});
 
 		// then
+		await expect.element(screen.getByRole('heading', {name: 'Process name'})).toBeVisible();
 		await expect.element(screen.getByTestId('custom-empty-state')).toBeVisible();
 		expect(screen.getByTestId('table').elements()).toHaveLength(0);
 	});
@@ -112,8 +106,8 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 	it('should render every row', async () => {
 		// given
 		const rows = [
-			buildRow({id: 'process-1', name: 'Order process', activeCount: 42, incidentsCount: 3}),
-			buildRow({id: 'process-2', name: 'Shipping process', activeCount: 18, incidentsCount: 0}),
+			buildRow({id: 'process-1', name: 'Order process'}),
+			buildRow({id: 'process-2', name: 'Shipping process'}),
 		];
 
 		// when
@@ -286,6 +280,8 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 				hasPreviousPage={false}
 				isFetchingNextPage={false}
 				isFetchingPreviousPage={false}
+				isFetchNextPageError={false}
+				isFetchPreviousPageError={false}
 				onLoadNextPage={onLoadNextPage}
 				onLoadPreviousPage={noop}
 			/>,
@@ -361,6 +357,8 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 				hasPreviousPage={true}
 				isFetchingNextPage={false}
 				isFetchingPreviousPage={false}
+				isFetchNextPageError={false}
+				isFetchPreviousPageError={false}
 				onLoadNextPage={noop}
 				onLoadPreviousPage={onLoadPreviousPage}
 			/>,
@@ -414,6 +412,8 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 				hasPreviousPage={false}
 				isFetchingNextPage={false}
 				isFetchingPreviousPage={false}
+				isFetchNextPageError={false}
+				isFetchPreviousPageError={false}
 				onLoadNextPage={onLoadNextPage}
 				onLoadPreviousPage={noop}
 			/>,
@@ -434,6 +434,8 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 				hasPreviousPage={false}
 				isFetchingNextPage={false}
 				isFetchingPreviousPage={false}
+				isFetchNextPageError={false}
+				isFetchPreviousPageError={false}
 				onLoadNextPage={onLoadNextPage}
 				onLoadPreviousPage={noop}
 			/>,
@@ -476,6 +478,8 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 				hasPreviousPage={true}
 				isFetchingNextPage={false}
 				isFetchingPreviousPage={false}
+				isFetchNextPageError={false}
+				isFetchPreviousPageError={false}
 				onLoadNextPage={noop}
 				onLoadPreviousPage={noop}
 			/>,
@@ -525,6 +529,8 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 				hasPreviousPage={true}
 				isFetchingNextPage={false}
 				isFetchingPreviousPage={false}
+				isFetchNextPageError={false}
+				isFetchPreviousPageError={false}
 				onLoadNextPage={noop}
 				onLoadPreviousPage={noop}
 			/>,
@@ -587,13 +593,10 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 });
 
 describe('<ExpandableList /> composed variant', () => {
-	it('should render the caller-composed content node rather than the row fields', async () => {
+	it('should render the caller-composed content node', async () => {
 		// given
 		const row: ExpandableListRow = {
 			id: 'process-1',
-			name: 'Unused name',
-			activeCount: 42,
-			incidentsCount: 3,
 			content: <span>Fully composed row</span>,
 		};
 
@@ -602,7 +605,6 @@ describe('<ExpandableList /> composed variant', () => {
 
 		// then
 		await expect.element(screen.getByText('Fully composed row')).toBeVisible();
-		expect(screen.getByText('Unused name').elements()).toHaveLength(0);
 	});
 
 	it('should show the header as a visible column header and name the table for screen readers', async () => {
@@ -716,6 +718,8 @@ describe('<ExpandableList /> nativeExpansion variant', () => {
 				hasPreviousPage={true}
 				isFetchingNextPage={false}
 				isFetchingPreviousPage={false}
+				isFetchNextPageError={false}
+				isFetchPreviousPageError={false}
 				onLoadNextPage={noop}
 				onLoadPreviousPage={noop}
 			/>,
@@ -752,6 +756,8 @@ describe('<ExpandableList /> nativeExpansion variant', () => {
 				hasPreviousPage={true}
 				isFetchingNextPage={false}
 				isFetchingPreviousPage={false}
+				isFetchNextPageError={false}
+				isFetchPreviousPageError={false}
 				onLoadNextPage={noop}
 				onLoadPreviousPage={noop}
 			/>,

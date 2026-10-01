@@ -69,9 +69,6 @@ const InstancesByProcess: React.FC = () => {
 
 				return {
 					id: `${item.processDefinitionId}:${item.tenantId}`,
-					name,
-					activeCount: item.activeInstancesWithoutIncidentCount,
-					incidentsCount: item.activeInstancesWithIncidentCount,
 					content: (
 						<Link
 							to="/operate/processes"
@@ -127,6 +124,7 @@ const InstancesByProcess: React.FC = () => {
 			header={t('operate.dashboard.processesByNameTitle')}
 			rows={rows}
 			expandedContents={expandedContents}
+			variant="nativeExpansion"
 			hasNextPage={hasNextPage}
 			hasPreviousPage={hasPreviousPage}
 			isFetchingNextPage={isFetchingNextPage}

@@ -77,6 +77,13 @@ const ComposedCell: React.FC<ExpandableListVariantProps> = ({
 				'[&_[data-slot=table-container]]:overflow-visible!',
 				'[&_[data-slot=table-container]]:rounded-none! [&_[data-slot=table-container]]:border-0! [&_[data-slot=table-container]]:shadow-none!',
 				'[&_[data-slot=table-header]]:sticky [&_[data-slot=table-header]]:top-0 [&_[data-slot=table-header]]:z-10',
+				// The DS `<TableRow>`'s row-divider (`border-b`) only sets
+				// width/style; its color comes from the same `.c4-ui *` reset
+				// as `ExpandableList`'s outer border (see that component's
+				// comment) and is subject to the same Chromium invalidation bug
+				// after this subtree is detached/reattached. Re-asserting the
+				// color via a direct class selector avoids it here too.
+				'[&_[data-slot=table-row]]:border-b-[var(--border)]',
 			)}
 		>
 			<DataTable<DisplayRow>

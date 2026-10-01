@@ -8,13 +8,9 @@
 
 import type React from 'react';
 
-// TODO(#63423, #63424): delete once InstancesByProcess/IncidentsByError land in PR8
 type ExpandableListRow = {
 	id: string;
 	content: React.ReactNode;
-	name: React.ReactNode;
-	activeCount?: number;
-	incidentsCount: number;
 };
 
 type ExpandableListLoadingIndicator = {

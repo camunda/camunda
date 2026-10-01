@@ -165,12 +165,12 @@ describe('<InstancesByProcess /> multi tenancy', () => {
 		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate-preview'});
 
 		await expect
-			.element(screen.getByTitle('Invoices – 1 Instance in 1 Version – Tenant A'))
+			.element(screen.getByTitle('Invoices – 1 instance in 1 version – Tenant A'))
 			.toHaveAttribute('href', expect.stringContaining('tenantId=%3Ctenant-A%3E'));
-		await expect.element(screen.getByTitle('Orders – 2 Instances in 2+ Versions – Tenant A')).toBeVisible();
+		await expect.element(screen.getByTitle('Orders – 2 instances in 2+ versions – Tenant A')).toBeVisible();
 		await userEvent.click(screen.getByRole('button', {name: 'Expand row'}));
 		await expect
-			.element(screen.getByTitle('Orders – 2 Instances in Version 2 – Tenant A'))
+			.element(screen.getByTitle('Orders – 2 instances in version 2 – Tenant A'))
 			.toHaveAttribute('href', expect.stringContaining('version=2&tenantId=%3Ctenant-A%3E'));
 	});
 
@@ -195,9 +195,9 @@ describe('<InstancesByProcess /> multi tenancy', () => {
 
 		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate-preview'});
 
-		await expect.element(screen.getByRole('link', {name: '0 Orders – 2 Instances in 1 Version 2'})).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: '0 Orders – 2 instances in 1 version 2'})).toBeVisible();
 		await expect
-			.element(screen.getByRole('link', {name: '0 Orders – 2 Instances in 1 Version 2'}))
+			.element(screen.getByRole('link', {name: '0 Orders – 2 instances in 1 version 2'}))
 			.toHaveAttribute(
 				'href',
 				'/operate/processes?process=orders&active=true&incidents=true&completed=false&canceled=false&suspended=false',

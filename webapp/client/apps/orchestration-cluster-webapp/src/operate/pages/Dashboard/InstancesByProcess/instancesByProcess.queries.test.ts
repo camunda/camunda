@@ -126,4 +126,22 @@ describe('instancesByProcessInfiniteQuery', () => {
 		// then
 		expect(previousPageParam).toBeUndefined();
 	});
+
+	it('recovers the exact previous offset and length for a page shorter than PAGE_SIZE, instead of guessing a fixed step back', () => {
+		// given
+		const query = instancesByProcessInfiniteQuery();
+		const shortPageParam = {from: 900, limit: PAGE_SIZE};
+		const shortPage = createPage({itemCount: 17, totalItems: 2000});
+		// Fetching forward records the short page's real size so a later backward
+		// fetch can recover its exact start offset and length instead of assuming
+		// PAGE_SIZE, which would overlap into rows the short page already returned.
+		const nextPageParam = query.getNextPageParam(shortPage, [shortPage], shortPageParam, [shortPageParam]);
+		const nextPage = createPage({itemCount: PAGE_SIZE, totalItems: 2000});
+
+		// when
+		const previousPageParam = query.getPreviousPageParam!(nextPage, [nextPage], nextPageParam!, [nextPageParam!]);
+
+		// then
+		expect(previousPageParam).toEqual({from: 900, limit: 17});
+	});
 });

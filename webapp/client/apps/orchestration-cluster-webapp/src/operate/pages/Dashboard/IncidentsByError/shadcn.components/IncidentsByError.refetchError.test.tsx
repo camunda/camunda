@@ -10,17 +10,13 @@ import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
 import {HttpResponse} from 'msw';
-import {
-	mockGetProcessDefinitionInstanceStatisticsEndpoint,
-	mockQueryProcessDefinitionsEndpoint,
-} from '#/shared-test-modules/mock-handlers';
-import {createProcessDefinitionInstanceStatistics} from '#/shared-test-modules/api-mocks/process-definition-statistics';
+import {mockGetIncidentProcessInstanceStatisticsByErrorEndpoint} from '#/shared-test-modules/mock-handlers';
+import {createIncidentProcessInstanceStatisticsByError} from '#/shared-test-modules/api-mocks/incident-statistics';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
-import {createQueryProcessDefinitionsResponse} from '#/shared-test-modules/api-mocks/process-definitions';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
-import {InstancesByProcess} from './InstancesByProcess';
+import {IncidentsByError} from './IncidentsByError';
 
-describe('<InstancesByProcess /> refetch error', () => {
+describe('<IncidentsByError /> refetch error', () => {
 	beforeEach(() => {
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
 	});
@@ -32,27 +28,23 @@ describe('<InstancesByProcess /> refetch error', () => {
 
 	it('should keep cached rows visible when a poll request fails', async ({worker}) => {
 		worker.use(
-			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
 				once: true,
 				successResponse: HttpResponse.json(
 					createPaginatedResponse({
 						items: [
-							createProcessDefinitionInstanceStatistics({
-								processDefinitionId: 'p1',
-								latestProcessDefinitionName: 'Alpha Process',
-								activeInstancesWithoutIncidentCount: 5,
-								activeInstancesWithIncidentCount: 1,
+							createIncidentProcessInstanceStatisticsByError({
+								errorHashCode: 1,
+								errorMessage: 'Alpha Connection Timeout',
+								activeInstancesWithErrorCount: 5,
 							}),
 						],
 						page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
 					}),
 				),
 			}),
-			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
 				successResponse: new HttpResponse(null, {status: 500}),
-			}),
-			mockQueryProcessDefinitionsEndpoint({
-				successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
 			}),
 		);
 
@@ -63,20 +55,16 @@ describe('<InstancesByProcess /> refetch error', () => {
 
 		vi.useFakeTimers({toFake: ['setInterval', 'clearInterval']});
 
-		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate-preview'});
+		const screen = await renderWithRouter(() => <IncidentsByError />, {path: '/operate-preview'});
 
-		await expect
-			.element(screen.getByRole('link', {name: '1 Alpha Process – 6 instances in 1 version 5'}))
-			.toBeVisible();
+		await expect.element(screen.getByText('Alpha Connection Timeout')).toBeVisible();
 		await vi.advanceTimersByTimeAsync(5500);
 		await vi.waitFor(() => {
 			expect(
-				settledRequests.filter((request) => request === 'POST /v2/process-definitions/statistics/process-instances'),
+				settledRequests.filter((request) => request === 'POST /v2/incidents/statistics/process-instances-by-error'),
 			).toHaveLength(2);
 		});
-		await expect
-			.element(screen.getByRole('link', {name: '1 Alpha Process – 6 instances in 1 version 5'}))
-			.toBeVisible();
+		await expect.element(screen.getByText('Alpha Connection Timeout')).toBeVisible();
 		await expect.element(screen.getByText("Couldn't fetch data")).not.toBeInTheDocument();
 	});
 });

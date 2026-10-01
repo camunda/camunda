@@ -8,29 +8,32 @@
 
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
+import {setUpFakeIntersectionObserver} from '#/vitest-modules/fake-intersection-observer';
 import {afterEach, describe, expect} from 'vitest';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
 import {userEvent} from 'vitest/browser';
-import {createInstance} from 'i18next';
-import {I18nextProvider} from 'react-i18next';
-import {translationResources} from '#/shared/i18n';
 import {
-	mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint,
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
+	mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint,
 	mockCurrentUserEndpoint,
 } from '#/shared-test-modules/mock-handlers';
-import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {
-	createIncidentProcessInstanceStatisticsByDefinition,
 	createIncidentProcessInstanceStatisticsByError,
+	createIncidentProcessInstanceStatisticsByDefinition,
 } from '#/shared-test-modules/api-mocks/incident-statistics';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
+import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {IncidentsByError} from './IncidentsByError';
 
+const {getObserver} = setUpFakeIntersectionObserver();
+
 const REQUEST_SCHEMA = z.object({
-	page: z.object({from: z.number(), limit: z.literal(50)}),
+	page: z.object({
+		limit: z.literal(50),
+		from: z.number().optional(),
+	}),
 });
 const FAILURE_RESPONSE = new HttpResponse(null, {status: 400});
 const ERROR_RESPONSE = new HttpResponse(null, {status: 500});
@@ -48,13 +51,28 @@ const PAGE_1_RESPONSE = HttpResponse.json(
 				errorMessage: 'Beta Null Pointer',
 				activeInstancesWithErrorCount: 3,
 			}),
+		],
+		page: {totalItems: 2, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+	}),
+);
+
+const EMPTY_RESPONSE = HttpResponse.json(createPaginatedResponse());
+
+const PAGE_1_OF_2_RESPONSE = HttpResponse.json(
+	createPaginatedResponse({
+		items: [
 			createIncidentProcessInstanceStatisticsByError({
-				errorHashCode: 3,
-				errorMessage: 'Gamma Service Unavailable',
-				activeInstancesWithErrorCount: 2,
+				errorHashCode: 1,
+				errorMessage: 'Alpha Connection Timeout',
+				activeInstancesWithErrorCount: 5,
+			}),
+			createIncidentProcessInstanceStatisticsByError({
+				errorHashCode: 2,
+				errorMessage: 'Beta Null Pointer',
+				activeInstancesWithErrorCount: 3,
 			}),
 		],
-		page: {totalItems: 60, startCursor: null, endCursor: null, hasMoreTotalItems: true},
+		page: {totalItems: 4, startCursor: null, endCursor: null, hasMoreTotalItems: true},
 	}),
 );
 
@@ -62,12 +80,12 @@ const PAGE_2_RESPONSE = HttpResponse.json(
 	createPaginatedResponse({
 		items: [
 			createIncidentProcessInstanceStatisticsByError({
-				errorHashCode: 51,
+				errorHashCode: 3,
 				errorMessage: 'Page Two Only Error',
 				activeInstancesWithErrorCount: 1,
 			}),
 		],
-		page: {totalItems: 60, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+		page: {totalItems: 3, startCursor: null, endCursor: null, hasMoreTotalItems: false},
 	}),
 );
 
@@ -85,30 +103,22 @@ describe('<IncidentsByError />', () => {
 			}),
 		);
 
-		const screen = await renderWithRouter(() => <IncidentsByError />, {path: '/operate'});
+		const screen = await renderWithRouter(() => <IncidentsByError />, {path: '/operate-preview'});
 
 		await expect.element(screen.getByText('Alpha Connection Timeout')).toBeVisible();
 		await expect.element(screen.getByText('Beta Null Pointer')).toBeVisible();
-		await expect.element(screen.getByText('Gamma Service Unavailable')).toBeVisible();
 	});
 
 	it('should fetch the next page when scrolled to the bottom', async ({worker}) => {
 		worker.use(
 			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
 				schema: REQUEST_SCHEMA,
-				successResponse: PAGE_1_RESPONSE,
+				successResponse: PAGE_1_OF_2_RESPONSE,
 				failureResponse: FAILURE_RESPONSE,
 			}),
 		);
 
-		const screen = await renderWithRouter(
-			() => (
-				<div style={{height: '100px', display: 'flex', flexDirection: 'column'}}>
-					<IncidentsByError />
-				</div>
-			),
-			{path: '/operate'},
-		);
+		const screen = await renderWithRouter(() => <IncidentsByError />, {path: '/operate-preview'});
 
 		await expect.element(screen.getByText('Alpha Connection Timeout')).toBeVisible();
 
@@ -120,7 +130,7 @@ describe('<IncidentsByError />', () => {
 			}),
 		);
 
-		await userEvent.wheel(screen.getByTestId('incidents-by-error-list'), {delta: {y: 10000}});
+		getObserver().intersect(screen.getByTestId('incidents-by-error-list-bottom-sentinel').element());
 
 		await expect.element(screen.getByText('Page Two Only Error')).toBeVisible();
 	});
@@ -134,7 +144,7 @@ describe('<IncidentsByError />', () => {
 			}),
 		);
 
-		const screen = await renderWithRouter(() => <IncidentsByError />, {path: '/operate'});
+		const screen = await renderWithRouter(() => <IncidentsByError />, {path: '/operate-preview'});
 
 		await expect.element(screen.getByText('Alpha Connection Timeout')).toBeVisible();
 		await expect
@@ -151,14 +161,8 @@ describe('<IncidentsByError />', () => {
 				successResponse: HttpResponse.json(
 					createPaginatedResponse({
 						items: [
-							createIncidentProcessInstanceStatisticsByError({
-								errorMessage: 'Connection timeout',
-								errorHashCode: -481,
-							}),
-							createIncidentProcessInstanceStatisticsByError({
-								errorMessage: 'Connection timeout',
-								errorHashCode: 0,
-							}),
+							createIncidentProcessInstanceStatisticsByError({errorMessage: 'Connection timeout', errorHashCode: -481}),
+							createIncidentProcessInstanceStatisticsByError({errorMessage: 'Connection timeout', errorHashCode: 0}),
 						],
 						page: {totalItems: 2, startCursor: null, endCursor: null, hasMoreTotalItems: false},
 					}),
@@ -166,7 +170,7 @@ describe('<IncidentsByError />', () => {
 			}),
 		);
 
-		const screen = await renderWithRouter(() => <IncidentsByError />, {path: '/operate'});
+		const screen = await renderWithRouter(() => <IncidentsByError />, {path: '/operate-preview'});
 
 		await expect
 			.element(screen.getByTestId('incident-byError').getByRole('link').nth(0))
@@ -176,7 +180,7 @@ describe('<IncidentsByError />', () => {
 			.toHaveAttribute('href', expect.stringContaining('errorMessage=Connection+timeout&incidentErrorHashCode=0'));
 	});
 
-	it('should preserve incident hash, version and tenant for expanded process links', async ({worker}) => {
+	it('should preserve incident hash and tenant for expanded process links', async ({worker}) => {
 		sessionStorage.setItem(
 			'clientConfig',
 			JSON.stringify(
@@ -229,9 +233,9 @@ describe('<IncidentsByError />', () => {
 			}),
 		);
 
-		const screen = await renderWithRouter(() => <IncidentsByError />, {path: '/operate'});
-		await expect.element(screen.getByRole('button', {name: 'Expand current row'})).toBeVisible();
-		await userEvent.click(screen.getByRole('button', {name: 'Expand current row'}));
+		const screen = await renderWithRouter(() => <IncidentsByError />, {path: '/operate-preview'});
+		await expect.element(screen.getByRole('button', {name: 'Expand row'})).toBeVisible();
+		await userEvent.click(screen.getByRole('button', {name: 'Expand row'}));
 
 		for (const [name, tenant] of [
 			['Tenant A', '<tenant-A>'],
@@ -248,81 +252,6 @@ describe('<IncidentsByError />', () => {
 		}
 	});
 
-	it.for([
-		{language: 'en', label: 'Orders – version 2 – Tenant A'},
-		{language: 'de', label: 'Orders (Tenant A) – Version 2'},
-		{language: 'fr', label: 'Orders – version 2 (Tenant A)'},
-		{language: 'es', label: 'Orders – versión 2 – Tenant A'},
-	] as const)(
-		'should localize the complete tenant-scoped incident link in $language',
-		async ({language, label}, {worker}) => {
-			const translations = createInstance();
-			await translations.init({lng: language, resources: translationResources, interpolation: {escapeValue: false}});
-			sessionStorage.setItem(
-				'clientConfig',
-				JSON.stringify(
-					createSystemConfiguration({
-						deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: true, maxRequestSize: 0},
-					}),
-				),
-			);
-			worker.use(
-				mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
-					successResponse: HttpResponse.json(
-						createPaginatedResponse({
-							items: [
-								createIncidentProcessInstanceStatisticsByError({
-									errorMessage: 'Connection timeout',
-									errorHashCode: -481,
-								}),
-							],
-							page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
-						}),
-					),
-				}),
-				mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint({
-					successResponse: HttpResponse.json(
-						createPaginatedResponse({
-							items: [
-								createIncidentProcessInstanceStatisticsByDefinition({
-									processDefinitionId: 'orders',
-									processDefinitionName: 'Orders',
-									processDefinitionVersion: 2,
-									tenantId: '<tenant-A>',
-								}),
-							],
-							page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
-						}),
-					),
-				}),
-				mockCurrentUserEndpoint({
-					successResponse: HttpResponse.json(
-						createCurrentUser({
-							tenants: [{tenantId: '<tenant-A>', name: 'Tenant A', description: null}],
-						}),
-					),
-				}),
-			);
-
-			const screen = await renderWithRouter(
-				() => (
-					<I18nextProvider i18n={translations}>
-						<IncidentsByError />
-					</I18nextProvider>
-				),
-				{path: '/operate'},
-			);
-
-			await userEvent.click(screen.getByRole('button', {name: 'Expand current row'}));
-			await expect
-				.element(screen.getByTitle(label))
-				.toHaveAttribute(
-					'href',
-					expect.stringContaining('errorMessage=Connection+timeout&incidentErrorHashCode=-481&tenantId='),
-				);
-		},
-	);
-
 	it('should show an error state when the request fails', async ({worker}) => {
 		worker.use(
 			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
@@ -330,8 +259,24 @@ describe('<IncidentsByError />', () => {
 			}),
 		);
 
-		const screen = await renderWithRouter(() => <IncidentsByError />, {path: '/operate'});
+		const screen = await renderWithRouter(() => <IncidentsByError />, {path: '/operate-preview'});
 
+		await expect.element(screen.getByRole('heading', {name: 'Process incidents by error message'})).toBeVisible();
 		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
+	});
+
+	it('should show the healthy-processes empty state when there are no incidents', async ({worker}) => {
+		worker.use(
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+				schema: REQUEST_SCHEMA,
+				successResponse: EMPTY_RESPONSE,
+				failureResponse: FAILURE_RESPONSE,
+			}),
+		);
+
+		const screen = await renderWithRouter(() => <IncidentsByError />, {path: '/operate-preview'});
+
+		await expect.element(screen.getByRole('heading', {name: 'Process incidents by error message'})).toBeVisible();
+		await expect.element(screen.getByText('Your processes are healthy')).toBeVisible();
 	});
 });

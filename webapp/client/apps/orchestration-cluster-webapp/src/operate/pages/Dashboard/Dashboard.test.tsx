@@ -116,7 +116,7 @@ describe('<Dashboard />', () => {
 		const screen = await renderWithRouter(Dashboard, {path: '/operate'});
 
 		await expect.element(screen.getByTestId('metric-panel')).toBeVisible();
-		await expect.element(screen.getByText('20 Running Process Instances in total')).toBeVisible();
+		await expect.element(screen.getByText('20 running process instances in total')).toBeVisible();
 	});
 
 	it('should render tile titles when running instances exist', async ({worker}) => {
@@ -136,8 +136,8 @@ describe('<Dashboard />', () => {
 
 		const screen = await renderWithRouter(Dashboard, {path: '/operate'});
 
-		await expect.element(screen.getByText('Process Instances by Name')).toBeVisible();
-		await expect.element(screen.getByText('Process Incidents by Error Message')).toBeVisible();
+		await expect.element(screen.getByText('Process instances by name')).toBeVisible();
+		await expect.element(screen.getByText('Process incidents by error message')).toBeVisible();
 	});
 
 	it('should render instances by process list', async ({worker}) => {
@@ -159,10 +159,10 @@ describe('<Dashboard />', () => {
 
 		await expect.element(screen.getByTestId('instances-by-process-list')).toBeVisible();
 		await expect
-			.element(screen.getByRole('link', {name: '3 Process One – 13 Instances in 1 Version 10'}))
+			.element(screen.getByRole('link', {name: '3 Process One – 13 instances in 1 version 10'}))
 			.toBeVisible();
 		await expect
-			.element(screen.getByRole('link', {name: '2 Process Two – 7 Instances in 2+ Versions 5'}))
+			.element(screen.getByRole('link', {name: '2 Process Two – 7 instances in 2+ versions 5'}))
 			.toBeVisible();
 	});
 
@@ -251,8 +251,8 @@ describe('<Dashboard />', () => {
 
 		const screen = await renderWithRouter(Dashboard, {path: '/operate'});
 
-		await expect.element(screen.getByText('Process Instances by Name')).toBeVisible();
-		await expect.element(screen.getByText('Process Incidents by Error Message')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('Process instances by name')).toBeVisible();
+		await expect.element(screen.getByText('Process incidents by error message')).not.toBeInTheDocument();
 	});
 
 	it('should keep the incidents panel visible while process statistics are still loading', async ({worker}) => {
@@ -317,7 +317,7 @@ describe('<Dashboard />', () => {
 
 		const screen = await renderWithRouter(Dashboard, {path: '/operate'});
 
-		await expect.element(screen.getByText('20 Running Process Instances in total')).toBeVisible();
+		await expect.element(screen.getByText('20 running process instances in total')).toBeVisible();
 		await expect.element(screen.getByTestId('instances-by-process-list')).toBeVisible();
 		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
 	});
@@ -352,7 +352,7 @@ describe('<Dashboard />', () => {
 		await vi.advanceTimersByTimeAsync(5000);
 
 		await expect.element(screen.getByTestId('instances-by-process-list')).toBeVisible();
-		await expect.element(screen.getByText('Process Incidents by Error Message')).toBeVisible();
+		await expect.element(screen.getByText('Process incidents by error message')).toBeVisible();
 	});
 
 	it('should show a scoped error instead of a stale empty layout when polling fails', async ({worker}) => {
@@ -380,6 +380,6 @@ describe('<Dashboard />', () => {
 
 		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
 		await expect.element(screen.getByText('No running process instances')).not.toBeInTheDocument();
-		await expect.element(screen.getByText('Process Incidents by Error Message')).toBeVisible();
+		await expect.element(screen.getByText('Process incidents by error message')).toBeVisible();
 	});
 });

@@ -95,7 +95,16 @@ const NativeExpansionCell: React.FC<ExpandableListVariantProps> = ({
 
 				if (data.kind === 'detail') {
 					return (
-						<div data-row-kind="detail" className="bg-neutral-background-medium -mx-3 px-4 py-4">
+						<div
+							data-row-kind="detail"
+							// The DS `<TableCell>` wrapping this div keeps its own
+							// `px-3` (size="sm") padding, which would otherwise leave
+							// an unpainted gap between this background and the
+							// table's edges. `-mx-3` cancels it so the background
+							// bleeds full width, then `px-4` re-applies the desired
+							// inset for the content itself.
+							className="bg-neutral-background-medium -mx-3 px-4 py-4"
+						>
 							{data.content}
 						</div>
 					);
@@ -139,6 +148,11 @@ const NativeExpansionCell: React.FC<ExpandableListVariantProps> = ({
 				'[&_[data-slot=table-container]]:overflow-visible!',
 				'[&_[data-slot=table-container]]:rounded-none! [&_[data-slot=table-container]]:border-0! [&_[data-slot=table-container]]:shadow-none!',
 				'[&_[data-slot=table-header]]:sticky [&_[data-slot=table-header]]:top-0 [&_[data-slot=table-header]]:z-10',
+				// See `ComposedCell`'s equivalent comment: the DS `<TableRow>`'s
+				// `border-b` row divider gets its color from the same `.c4-ui *`
+				// reset that `ExpandableList`'s outer border relied on, and is
+				// subject to the same Chromium invalidation bug on remount.
+				'[&_[data-slot=table-row]]:border-b-[var(--border)]',
 			)}
 		>
 			<DataTable<DisplayRow>

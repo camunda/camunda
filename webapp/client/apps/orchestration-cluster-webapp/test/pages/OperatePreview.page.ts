@@ -27,19 +27,19 @@ class OperatePreviewPage extends BasePage {
 	}
 
 	get processesByNameTile() {
-		return this.page.getByText('Process Instances by Name');
+		return this.page.getByText('Process instances by name');
 	}
 
 	get incidentsByErrorTile() {
-		return this.page.getByText('Process Incidents by Error Message');
-	}
-
-	get incidentsByErrorSampleRow() {
-		return this.page.getByText('Connection timeout');
+		return this.page.getByText('Process incidents by error message');
 	}
 
 	processesByNameRow(name: string) {
 		return this.page.getByText(name, {exact: false});
+	}
+
+	incidentsByErrorRow(errorMessage: string) {
+		return this.page.getByText(errorMessage, {exact: false});
 	}
 
 	get noInstancesEmptyState() {
@@ -52,6 +52,18 @@ class OperatePreviewPage extends BasePage {
 
 	get noInstancesModelerButton() {
 		return this.page.getByRole('link', {name: 'Go to Modeler'});
+	}
+
+	get healthyProcessesEmptyState() {
+		return this.page.getByText('Your processes are healthy');
+	}
+
+	get expandIncidentRowButton() {
+		return this.page.getByTestId('incidents-by-error-list').getByRole('button', {name: 'Expand row'});
+	}
+
+	get expandedRowDetail() {
+		return this.page.locator('[data-row-kind="detail"]');
 	}
 }
 

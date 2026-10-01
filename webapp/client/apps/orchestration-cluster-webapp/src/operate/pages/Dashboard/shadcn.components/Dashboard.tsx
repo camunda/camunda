@@ -13,15 +13,12 @@ import {useRunningInstancesCount} from '../useRunningInstancesCount';
 import {NoInstancesEmptyState} from './NoInstancesEmptyState';
 import {MetricPanel} from '../MetricPanel/shadcn.components/MetricPanel';
 import {InstancesByProcess} from '../InstancesByProcess/shadcn.components/InstancesByProcess';
+import {IncidentsByError} from '../IncidentsByError/shadcn.components/IncidentsByError';
 
-type SnapshotOnlyRow = {id: string; name: string};
+type NoInstancesTableSkeletonRow = {id: string; name: string};
 
-const snapshotOnlyColumns = (header: string): DataTableColumn<SnapshotOnlyRow>[] => [
+const noInstancesTableSkeletonColumns = (header: string): DataTableColumn<NoInstancesTableSkeletonRow>[] => [
 	{id: 'name', header, cell: ({row}) => row.original.name},
-];
-const SNAPSHOT_ONLY_INCIDENT_ROWS: SnapshotOnlyRow[] = [
-	{id: 'sample-incident-1', name: 'Connection timeout'},
-	{id: 'sample-incident-2', name: 'Null pointer exception'},
 ];
 
 const Dashboard: React.FC = () => {
@@ -41,7 +38,7 @@ const Dashboard: React.FC = () => {
 					{hasNoInstances ? (
 						<DataTable
 							aria-label={t('operate.dashboard.processesByNameTitle')}
-							columns={snapshotOnlyColumns(t('operate.dashboard.processesByNameTitle'))}
+							columns={noInstancesTableSkeletonColumns(t('operate.dashboard.processesByNameTitle'))}
 							data={[]}
 							getRowId={(row) => row.id}
 							emptyState={<NoInstancesEmptyState />}
@@ -50,15 +47,7 @@ const Dashboard: React.FC = () => {
 					) : (
 						<InstancesByProcess />
 					)}
-					{!hasNoInstances && (
-						<DataTable
-							aria-label={t('operate.dashboard.incidentsByErrorTitle')}
-							columns={snapshotOnlyColumns(t('operate.dashboard.incidentsByErrorTitle'))}
-							data={SNAPSHOT_ONLY_INCIDENT_ROWS}
-							getRowId={(row) => row.id}
-							className="flex flex-col overflow-hidden"
-						/>
-					)}
+					{!hasNoInstances && <IncidentsByError />}
 				</div>
 			</div>
 		</PageLayout>

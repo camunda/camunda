@@ -8,6 +8,7 @@
 
 import React, {useCallback, useEffect, useEffectEvent, useLayoutEffect, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
+import {typographyVariants} from '@camunda/design-system';
 import SvgErrorRobot from '#/shared/svg/ErrorRobot';
 import {EmptyState} from '#/operate/components/EmptyState/shadcn.components/EmptyState';
 import type {ExpandableListRow} from './ExpandableList.types';
@@ -280,16 +281,24 @@ const ExpandableList: React.FC<Props> = ({
 	if (!isPending) {
 		if (isError) {
 			return (
-				<EmptyState
-					icon={<SvgErrorRobot aria-hidden />}
-					heading={t('operate.dashboard.fetchErrorHeading')}
-					description={t('operate.dashboard.fetchErrorDescription')}
-				/>
+				<div className="flex flex-1 flex-col gap-2">
+					<h2 className={typographyVariants({variant: 'heading-md'})}>{header}</h2>
+					<EmptyState
+						icon={<SvgErrorRobot aria-hidden />}
+						heading={t('operate.dashboard.fetchErrorHeading')}
+						description={t('operate.dashboard.fetchErrorDescription')}
+					/>
+				</div>
 			);
 		}
 
 		if (emptyState !== undefined) {
-			return <>{emptyState}</>;
+			return (
+				<div className="flex flex-1 flex-col gap-2">
+					<h2 className={typographyVariants({variant: 'heading-md'})}>{header}</h2>
+					{emptyState}
+				</div>
+			);
 		}
 	}
 
