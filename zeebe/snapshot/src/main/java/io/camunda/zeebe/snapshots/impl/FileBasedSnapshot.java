@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -231,10 +233,12 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   }
 
   ActorFuture<Void> removeReservation(final FileBasedSnapshotReservation reservation) {
-    return actor.call(
+    final CompletableActorFuture<Void> released = new CompletableActorFuture<>();
+    actor.run(
         () -> {
           reservations.remove(reservation);
-          return null;
+          released.complete(unit());
         });
+    return released;
   }
 }

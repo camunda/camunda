@@ -13,6 +13,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import io.camunda.cluster.PartitionId;
 import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReservedSnapshot;
@@ -38,6 +39,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.zip.CRC32C;
 import org.junit.Before;
@@ -509,6 +511,24 @@ public class FileBasedSnapshotStoreTest {
         .containsExactlyInAnyOrder(reservedSnashot, newSnapshot);
     assertThat(reservedSnashot.getPath()).exists();
     assertThat(newSnapshot.getPath()).exists();
+  }
+
+  @Test
+  public void shouldReleaseReservationFromSnapshotStoreActor() {
+    // given
+    final var reservedSnapshot = persistSnapshot(1, 10, 12, 11);
+    final var reservation = reservedSnapshot.reserve().join();
+    final var released = new CompletableFuture<ActorFuture<Void>>();
+    // listeners are notified on the snapshot store's actor, like callbacks of futures it completes
+    snapshotStore.addSnapshotListener(snapshot -> released.complete(reservation.release())).join();
+
+    // when
+    persistSnapshot(2, 20, 22, 21);
+
+    // then
+    assertThat(released).succeedsWithin(Duration.ofSeconds(5));
+    released.join().join();
+    assertThat(reservedSnapshot.isReserved()).isFalse();
   }
 
   @Test
