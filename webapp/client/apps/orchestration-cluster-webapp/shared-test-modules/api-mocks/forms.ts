@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {Form} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {Form} from '@camunda/camunda-api-zod-schemas/8.10';
 import {USER_TASK_FORM_SCHEMA} from './form-schemas';
 
 function createUserTaskFormResponse(overrides?: Partial<Form>): Form {
