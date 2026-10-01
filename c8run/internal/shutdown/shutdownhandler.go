@@ -59,6 +59,15 @@ func (s *ShutdownHandler) ShutdownProcesses(state *types.State) {
 }
 
 func (s *ShutdownHandler) stopCommand(settings types.C8RunSettings, processes types.Processes) {
+	tenantPids, _ := filepath.Glob(filepath.Join(filepath.Dir(processes.Connectors.PidPath), "connectors-*.process"))
+	for _, pidPath := range tenantPids {
+		tenant := strings.TrimSuffix(strings.TrimPrefix(filepath.Base(pidPath), "connectors-"), ".process")
+		if err := s.stopProcess(pidPath); err != nil {
+			log.Debug().Err(err).Str("tenant", tenant).Msg("Failed to stop tenant connectors")
+		} else {
+			log.Info().Str("tenant", tenant).Msg("Connectors for physical tenant is stopped.")
+		}
+	}
 	err := s.stopProcess(processes.Connectors.PidPath)
 	if err != nil {
 		log.Debug().Err(err).Msg("Failed to stop connectors")
