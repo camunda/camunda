@@ -9,10 +9,13 @@ package physicaltenants
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/camunda/camunda/c8run/internal/types"
@@ -253,4 +256,46 @@ func TestLastStartPort(t *testing.T) {
 	_, err := WriteGeneratedConfigForPort(base, []types.PhysicalTenant{{ID: "a"}}, "rdbms", 8090)
 	require.NoError(t, err)
 	assert.Equal(t, 8090, LastStartPort(base))
+}
+
+func TestStoreConcurrentAddsAreNotLost(t *testing.T) {
+	store := NewStore(filepath.Join(t.TempDir(), FileName))
+	var wg sync.WaitGroup
+	for i := 0; i < 20; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			id := fmt.Sprintf("t%d", i)
+			assert.NoError(t, NewStore(store.Path()).Add([]Tenant{{ID: id, Username: "u"}}, map[string]string{id: "pw"}))
+		}(i)
+	}
+	wg.Wait()
+	tenants, err := store.List()
+	require.NoError(t, err)
+	assert.Len(t, tenants, 20)
+	for _, tenant := range tenants {
+		_, ok, err := store.Password(tenant.ID)
+		require.NoError(t, err)
+		assert.True(t, ok, tenant.ID)
+	}
+}
+
+func TestStoreRollsBackCredentialsWhenTenantWriteFails(t *testing.T) {
+	store := NewStore(filepath.Join(t.TempDir(), FileName))
+	require.NoError(t, store.Add([]Tenant{{ID: "hr", Username: "alice"}}, map[string]string{"hr": "pw"}))
+
+	original := writeTenantsFunc
+	writeTenantsFunc = func(*Store, []Tenant) error { return errors.New("disk full") }
+	t.Cleanup(func() { writeTenantsFunc = original })
+
+	assert.ErrorContains(t, store.Remove([]string{"hr"}), "disk full")
+	pw, ok, err := store.Password("hr")
+	require.NoError(t, err)
+	assert.True(t, ok, "remove must not drop the password of a tenant that is still configured")
+	assert.Equal(t, "pw", pw)
+
+	assert.ErrorContains(t, store.Add([]Tenant{{ID: "ops", Username: "bob"}}, map[string]string{"ops": "x"}), "disk full")
+	_, ok, err = store.Password("ops")
+	require.NoError(t, err)
+	assert.False(t, ok, "a failed add must not leave an orphaned password")
 }

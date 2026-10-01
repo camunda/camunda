@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	localsecrets "github.com/camunda/camunda/c8run/internal/secrets"
+	"github.com/gofrs/flock"
 	"gopkg.in/yaml.v3"
 )
 
@@ -24,6 +25,7 @@ const (
 	ModeEnv            = "C8RUN_TENANTS_MODE"
 	FileName           = "physical-tenants.yaml"
 	credentialsSuffix  = ".credentials"
+	lockSuffix         = ".lock"
 	currentFileVersion = 1
 )
 
@@ -118,6 +120,10 @@ func (s *Store) Get(id string) (Tenant, bool, error) {
 
 // Add persists new tenants. It fails without writing anything if any id already exists.
 func (s *Store) Add(newTenants []Tenant, passwords map[string]string) error {
+	return s.locked(func() error { return s.addUnlocked(newTenants, passwords) })
+}
+
+func (s *Store) addUnlocked(newTenants []Tenant, passwords map[string]string) error {
 	tenants, err := s.List()
 	if err != nil {
 		return err
@@ -135,23 +141,29 @@ func (s *Store) Add(newTenants []Tenant, passwords map[string]string) error {
 		}
 		existing[t.ID] = true
 	}
-	if len(passwords) > 0 {
-		creds, err := s.readCredentials()
-		if err != nil {
-			return err
-		}
-		for id, pw := range passwords {
-			creds[id] = pw
-		}
-		if err := s.writeCredentials(creds); err != nil {
-			return err
-		}
+	if len(passwords) == 0 {
+		return s.write(append(tenants, newTenants...))
 	}
-	return s.write(append(tenants, newTenants...))
+	previous, err := s.readCredentials()
+	if err != nil {
+		return err
+	}
+	creds := make(map[string]string, len(previous)+len(passwords))
+	for id, pw := range previous {
+		creds[id] = pw
+	}
+	for id, pw := range passwords {
+		creds[id] = pw
+	}
+	return s.commit(creds, previous, append(tenants, newTenants...))
 }
 
 // Remove deletes tenants (and their stored passwords). Unknown ids are an error.
 func (s *Store) Remove(ids []string) error {
+	return s.locked(func() error { return s.removeUnlocked(ids) })
+}
+
+func (s *Store) removeUnlocked(ids []string) error {
 	tenants, err := s.List()
 	if err != nil {
 		return err
@@ -176,21 +188,57 @@ func (s *Store) Remove(ids []string) error {
 		sort.Strings(missing)
 		return fmt.Errorf("unknown physical tenant(s): %s (run `c8run tenants list`)", strings.Join(missing, ", "))
 	}
-	creds, err := s.readCredentials()
+	previous, err := s.readCredentials()
 	if err != nil {
 		return err
+	}
+	creds := make(map[string]string, len(previous))
+	for id, pw := range previous {
+		creds[id] = pw
 	}
 	for _, id := range ids {
 		delete(creds, id)
 	}
+	return s.commit(creds, previous, kept)
+}
+
+// commit writes credentials and then the tenant list as one unit: if the tenant list
+// cannot be written, the credentials file is restored so the two never disagree.
+func (s *Store) commit(creds, previous map[string]string, tenants []Tenant) error {
 	if err := s.writeCredentials(creds); err != nil {
 		return err
 	}
-	return s.write(kept)
+	if err := writeTenantsFunc(s, tenants); err != nil {
+		if rollbackErr := s.writeCredentials(previous); rollbackErr != nil {
+			return fmt.Errorf("%w (and restoring tenant credentials failed: %v)", err, rollbackErr)
+		}
+		return err
+	}
+	return nil
+}
+
+// writeTenantsFunc is swapped in tests to simulate a failing tenant-list write.
+var writeTenantsFunc = (*Store).write
+
+// locked serializes every mutation of the tenants and credentials files across processes.
+func (s *Store) locked(operation func() error) error {
+	if err := os.MkdirAll(filepath.Dir(s.path), 0o700); err != nil {
+		return fmt.Errorf("failed to create %s: %w", filepath.Dir(s.path), err)
+	}
+	lock := flock.New(s.path + lockSuffix)
+	if err := lock.Lock(); err != nil {
+		return fmt.Errorf("failed to lock %s: %w", s.path, err)
+	}
+	defer func() { _ = lock.Unlock() }()
+	return operation()
 }
 
 // Reset removes every tenant and stored credential.
 func (s *Store) Reset() error {
+	return s.locked(s.resetUnlocked)
+}
+
+func (s *Store) resetUnlocked() error {
 	for _, p := range []string{s.path, s.credentialsPath()} {
 		if err := os.Remove(p); err != nil && !errors.Is(err, os.ErrNotExist) {
 			return err
