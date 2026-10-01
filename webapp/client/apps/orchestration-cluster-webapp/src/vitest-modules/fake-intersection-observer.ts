@@ -11,15 +11,16 @@ import {afterEach, beforeEach} from 'vitest';
 class FakeIntersectionObserver implements IntersectionObserver {
 	static instances: FakeIntersectionObserver[] = [];
 
-	readonly root = null;
+	readonly root: Element | Document | null;
 	readonly rootMargin = '';
 	readonly scrollMargin = '';
 	readonly thresholds = [];
 	observedTargets: Element[] = [];
 	private readonly callback: IntersectionObserverCallback;
 
-	constructor(callback: IntersectionObserverCallback) {
+	constructor(callback: IntersectionObserverCallback, options?: IntersectionObserverInit) {
 		this.callback = callback;
+		this.root = (options?.root as Element | Document | null | undefined) ?? null;
 		FakeIntersectionObserver.instances.push(this);
 	}
 
