@@ -103,6 +103,9 @@ final class ClusterRuntimeBackupIT {
     BROKER.start().await(TestHealthProbe.READY);
 
     final var partitions = PartitionsActuator.of(BROKER);
+    partitions.takeSnapshot(DEFAULT_TENANT_ID);
+    partitions.takeSnapshot(TENANT_A);
+
     Awaitility.await("every partition has taken its first snapshot")
         .atMost(BACKUP_TIMEOUT)
         .ignoreExceptions()
