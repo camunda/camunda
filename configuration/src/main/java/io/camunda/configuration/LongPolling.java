@@ -9,6 +9,7 @@ package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 
@@ -46,6 +47,14 @@ public class LongPolling implements Cloneable {
    */
   private int minEmptyResponses =
       ConfigurationDefaults.DEFAULT_LONG_POLLING_EMPTY_RESPONSE_THRESHOLD;
+
+  /**
+   * Set the notification batch window for long polling. Jobs available notifications are throttled
+   * per job type: at most one wakes up blocked requests per window, and notifications within the
+   * window are collapsed into a single trailing wake-up. A value of 0 disables throttling.
+   */
+  private Duration notificationBatchWindow =
+      ConfigurationDefaults.DEFAULT_NOTIFICATION_BATCH_WINDOW;
 
   public boolean isEnabled() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
@@ -97,6 +106,26 @@ public class LongPolling implements Cloneable {
 
   public void setMinEmptyResponses(final int minEmptyResponses) {
     this.minEmptyResponses = minEmptyResponses;
+  }
+
+  public Duration getNotificationBatchWindow() {
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        PREFIX + ".notification-batch-window",
+        notificationBatchWindow,
+        Duration.class,
+        BackwardsCompatibilityMode.NOT_SUPPORTED,
+        Set.of());
+  }
+
+  public void setNotificationBatchWindow(final Duration notificationBatchWindow) {
+    if (notificationBatchWindow == null
+        || notificationBatchWindow.isNegative()
+        || notificationBatchWindow.toNanos() % Duration.ofMillis(1).toNanos() != 0) {
+      throw new IllegalArgumentException(
+          "notificationBatchWindow must be a non-negative whole number of milliseconds but was %s"
+              .formatted(notificationBatchWindow));
+    }
+    this.notificationBatchWindow = notificationBatchWindow;
   }
 
   @Override
