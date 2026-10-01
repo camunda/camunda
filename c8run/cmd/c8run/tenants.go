@@ -324,7 +324,7 @@ func (c *tenantsCommand) remove(baseDir string, store *pt.Store, args []string) 
 		return err
 	}
 	_, _ = fmt.Fprintf(c.output, "Removed physical tenant(s): %s.\n", strings.Join(ids, ", "))
-	_, _ = fmt.Fprintln(c.output, "Their data is kept in secondary storage under the tenant's prefix; adding the same ID again restores access to it.")
+	_, _ = fmt.Fprintln(c.output, "Their data is kept in secondary storage under the tenant's prefix. Adding the same ID again restores it, including the users created in that tenant.")
 	c.printRestartHint(baseDir, "stop", 0)
 	return nil
 }

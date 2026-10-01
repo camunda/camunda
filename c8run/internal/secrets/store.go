@@ -74,6 +74,24 @@ func Mode() (string, error) {
 	return mode, nil
 }
 
+// TenantDirectoryName holds one local secret directory per physical tenant, next to the
+// default tenant's directory (never inside it, so it can't shadow a secret name).
+const TenantDirectoryName = "tenant-secrets"
+
+// TenantDirectory returns the local secret directory of a physical tenant.
+func TenantDirectory(baseDir, tenantID string) (string, error) {
+	directory, err := ResolveDirectory(baseDir)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(filepath.Dir(directory), TenantDirectoryName, tenantID), nil
+}
+
+// NewInDirectory returns a store rooted at an explicit directory.
+func NewInDirectory(directory string) *Store {
+	return &Store{directory: filepath.Clean(directory)}
+}
+
 func DefaultDirectory() (string, error) {
 	return defaultDirectory()
 }

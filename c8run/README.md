@@ -49,9 +49,9 @@ A tenant is served under `http://localhost:8080/physical-tenants/<id>/`, for exa
 
 Tenant IDs use lowercase letters and digits only, up to 64 characters. By default every tenant gets the same login as `c8run start` (`--username`/`--password`, `demo`/`demo` unless changed). To give a tenant its own user, run `./c8run tenants add hr --username alice`; c8run prompts for the password (or reads it with `--password-stdin`) and stores it in a file readable only by you, never in YAML or shell history.
 
-Each tenant gets its own connectors runtime on the next free port from 8087 upwards (logs in `log/connectors-<id>.log`). Use `--no-connectors` on `tenants add` to skip it for one tenant, or `--disable-connectors` on `start` to skip all connectors. Local secrets are shared by all tenants.
+Each tenant gets its own connectors runtime on the next free port from 8087 upwards (logs in `log/connectors-<id>.log`). Use `--no-connectors` on `tenants add` to skip it for one tenant, or `--disable-connectors` on `start` to skip all connectors. Each tenant has its own local secrets, so a tenant never resolves the default tenant's or another tenant's `camunda.secrets.*` values. Manage them with `--tenant`, for example `./c8run secrets --tenant sales set OPENAI_API_KEY`.
 
-To run with tenants for one start only, without saving them (useful in CI), use `./c8run start --physical-tenants sales,hr`. Removing a tenant keeps its data in secondary storage under the tenant's prefix, so adding the same ID again restores it. `./c8run tenants reset` removes all saved tenants.
+To run with tenants for one start only, without saving them (useful in CI), use `./c8run start --physical-tenants sales,hr`. Removing a tenant keeps its data in secondary storage under the tenant's prefix, so adding the same ID again restores it, including the users created in that tenant. `./c8run tenants reset` removes all saved tenants.
 
 `./c8run tenants path` shows where tenants are saved; `C8RUN_TENANTS_FILE` selects another file. If your `--config` already declares `camunda.physical-tenants`, c8run uses it as-is and does not apply its saved tenants. Set `C8RUN_TENANTS_MODE=external` to disable the `tenants` commands entirely.
 

@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	pt "github.com/camunda/camunda/c8run/internal/physicaltenants"
+	localsecrets "github.com/camunda/camunda/c8run/internal/secrets"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -65,7 +66,7 @@ func TestTenantsAddListRemove(t *testing.T) {
 	out.Reset()
 	require.NoError(t, cmd.run(base, []string{"remove", "hr"}))
 	assert.Contains(t, out.String(), "Removed physical tenant(s): hr.")
-	assert.Contains(t, out.String(), "restores access")
+	assert.Contains(t, out.String(), "including the users")
 }
 
 func TestTenantsAddRejectsInvalidAndDuplicate(t *testing.T) {
@@ -144,13 +145,41 @@ func TestApplyPhysicalTenantsFromFlag(t *testing.T) {
 	require.NoError(t, applyPhysicalTenants(base, "8.10.0", &settings))
 	assert.Len(t, settings.PhysicalTenants, 2)
 	assert.Equal(t, filepath.Join(base, "configuration", pt.GeneratedConfigName), settings.PhysicalTenantsConfigPath)
-	assert.Equal(t, "demo", os.Getenv("CAMUNDA_PHYSICALTENANTS_A_SECURITY_INITIALIZATION_USERS_0_USERNAME"))
-	t.Cleanup(func() {
-		for key := range pt.CredentialEnv(settings.PhysicalTenants) {
-			_ = os.Unsetenv(key)
-		}
-	})
+	assert.Equal(t, "demo", settings.PhysicalTenantsEnv["CAMUNDA_PHYSICALTENANTS_A_SECURITY_INITIALIZATION_USERS_0_USERNAME"])
+	_, exported := os.LookupEnv("CAMUNDA_PHYSICALTENANTS_A_SECURITY_INITIALIZATION_USERS_0_USERNAME")
+	assert.False(t, exported, "tenant logins must not leak into c8run's own environment")
 
 	old := types.C8RunSettings{PhysicalTenantsFlag: []string{"a"}}
 	assert.ErrorContains(t, applyPhysicalTenants(base, "8.9.1", &old), "8.10 or newer")
+}
+
+func TestSecretsTenantFlagUsesTenantDirectory(t *testing.T) {
+	baseDir := t.TempDir()
+	command, output, _ := testSecretsCommand("tenant-value\n", false)
+	require.NoError(t, command.run(baseDir, []string{"--tenant", "sales", "set", "API_KEY", "--stdin"}))
+	assert.Contains(t, output.String(), "for physical tenant sales")
+
+	tenantDir, err := localsecrets.TenantDirectory(baseDir, "sales")
+	require.NoError(t, err)
+	content, err := os.ReadFile(filepath.Join(tenantDir, "API_KEY"))
+	require.NoError(t, err)
+	assert.Equal(t, "tenant-value", string(content))
+	_, err = os.Stat(filepath.Join(baseDir, "secrets", "API_KEY"))
+	assert.True(t, os.IsNotExist(err), "tenant secret must not land in the default store")
+
+	_, _, err = extractTenantArgument([]string{"--tenant", "Bad-Id", "list"})
+	assert.ErrorContains(t, err, "lowercase")
+	_, _, err = extractTenantArgument([]string{"--tenant=a", "--tenant=b"})
+	assert.ErrorContains(t, err, "only be specified once")
+}
+
+func TestConfigureTenantSecretStores(t *testing.T) {
+	baseDir := t.TempDir()
+	settings := types.C8RunSettings{PhysicalTenants: []types.PhysicalTenant{{ID: "a"}, {ID: "b"}}}
+	require.NoError(t, configureTenantSecretStores(baseDir, &settings))
+	a := settings.PhysicalTenantsEnv[pt.SecretStoreEnv("a")]
+	b := settings.PhysicalTenantsEnv[pt.SecretStoreEnv("b")]
+	assert.DirExists(t, a)
+	assert.NotEqual(t, a, b)
+	assert.NotEqual(t, filepath.Join(baseDir, "secrets"), a)
 }

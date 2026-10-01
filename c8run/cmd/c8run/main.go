@@ -585,6 +585,10 @@ func main() {
 				fmt.Fprintln(os.Stderr, "failed to configure Camunda secret store:", err)
 				os.Exit(1)
 			}
+			if err := configureTenantSecretStores(baseDir, &state.Settings); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
 		}
 	}
 

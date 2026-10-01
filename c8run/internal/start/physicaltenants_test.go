@@ -35,3 +35,16 @@ func TestTenantConnectorsEnvAddsCredentialsWhenAuthRequired(t *testing.T) {
 func TestTenantConnectorsPidPath(t *testing.T) {
 	assert.Equal(t, filepath.Join("base", "connectors-sales.process"), TenantConnectorsPidPath("base", "sales"))
 }
+
+func TestConnectorsEnvDropsTenantProperties(t *testing.T) {
+	t.Setenv("CAMUNDA_PHYSICALTENANTS_HR_SECURITY_INITIALIZATION_USERS_0_PASSWORD", "secret")
+	for _, kv := range connectorsEnv(nil) {
+		assert.NotContains(t, kv, "CAMUNDA_PHYSICALTENANTS_")
+	}
+}
+
+func TestWithTenantEnvOnlyAddsToCamunda(t *testing.T) {
+	env := withTenantEnv([]string{"A=1"}, map[string]string{"CAMUNDA_PHYSICALTENANTS_X_Y": "z"})
+	assert.Equal(t, []string{"A=1", "CAMUNDA_PHYSICALTENANTS_X_Y=z"}, env)
+	assert.Equal(t, []string{"A=1"}, withTenantEnv([]string{"A=1"}, nil))
+}

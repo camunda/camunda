@@ -95,13 +95,38 @@ func (s *Store) List() ([]Tenant, error) {
 	if err := yaml.Unmarshal(content, &doc); err != nil {
 		return nil, fmt.Errorf("%s is not valid YAML (fix or delete it, or run `c8run tenants reset`): %w", s.path, err)
 	}
+	seen := map[string]bool{}
 	for _, t := range doc.Tenants {
 		if err := ValidateID(t.ID); err != nil {
 			return nil, fmt.Errorf("%s: %w", s.path, err)
 		}
+		if seen[t.ID] {
+			return nil, fmt.Errorf("%s: physical tenant %q is listed more than once; remove the duplicate entry", s.path, t.ID)
+		}
+		seen[t.ID] = true
 	}
 	sort.Slice(doc.Tenants, func(i, j int) bool { return doc.Tenants[i].ID < doc.Tenants[j].ID })
 	return doc.Tenants, nil
+}
+
+// Snapshot returns the tenants and their stored passwords as one consistent read, taken under
+// the same lock that Add/Remove/Reset hold, so a concurrent change is never seen half-applied.
+func (s *Store) Snapshot() ([]Tenant, map[string]string, error) {
+	// Reading must not create anything: with no tenants file there is nothing to lock.
+	if _, err := os.Stat(s.path); errors.Is(err, os.ErrNotExist) {
+		return nil, map[string]string{}, nil
+	}
+	var tenants []Tenant
+	var creds map[string]string
+	err := s.locked(func() error {
+		var err error
+		if tenants, err = s.List(); err != nil {
+			return err
+		}
+		creds, err = s.readCredentials()
+		return err
+	})
+	return tenants, creds, err
 }
 
 // Get returns one tenant.

@@ -90,6 +90,27 @@ func CredentialEnv(tenants []types.PhysicalTenant) map[string]string {
 	return env
 }
 
+// SecretStoreEnv is the property that points a tenant's file secret store at its directory.
+func SecretStoreEnv(id string) string {
+	return "CAMUNDA_PHYSICALTENANTS_" + strings.ToUpper(id) + "_SECRETS_STORES_FILE_DEFAULT_PATH"
+}
+
+// TenantEnvPrefix prefixes every per-tenant property c8run passes to Camunda.
+const TenantEnvPrefix = "CAMUNDA_PHYSICALTENANTS_"
+
+// ScrubTenantEnv drops all per-tenant Camunda properties from an environment, so a child
+// runtime (connectors, custom connector code) cannot read other tenants' logins.
+func ScrubTenantEnv(env []string) []string {
+	out := make([]string, 0, len(env))
+	for _, kv := range env {
+		if strings.HasPrefix(strings.ToUpper(kv), TenantEnvPrefix) {
+			continue
+		}
+		out = append(out, kv)
+	}
+	return out
+}
+
 // WriteGeneratedConfig writes (or, with no tenants, removes) the generated config file.
 func WriteGeneratedConfig(baseDir string, tenants []types.PhysicalTenant, storageType string) (string, error) {
 	return WriteGeneratedConfigForPort(baseDir, tenants, storageType, 0)
@@ -184,12 +205,13 @@ func Resolve(in ResolveInput) (Resolution, error) {
 	}
 
 	var stored []Tenant
+	creds := map[string]string{}
 	if len(in.FlagIDs) > 0 {
 		for _, id := range in.FlagIDs {
 			stored = append(stored, Tenant{ID: id})
 		}
 	} else if mode == "local" && in.Store != nil {
-		if stored, err = in.Store.List(); err != nil {
+		if stored, creds, err = in.Store.Snapshot(); err != nil {
 			return res, err
 		}
 	}
@@ -198,10 +220,7 @@ func Resolve(in ResolveInput) (Resolution, error) {
 	for _, st := range stored {
 		t := types.PhysicalTenant{ID: st.ID, Username: in.DefaultUsername, Password: in.DefaultPassword}
 		if st.Username != "" {
-			pw, ok, err := in.Store.Password(st.ID)
-			if err != nil {
-				return res, err
-			}
+			pw, ok := creds[st.ID]
 			if !ok {
 				return res, fmt.Errorf("physical tenant %q has user %q but no stored password; run `c8run tenants remove %s` and add it again", st.ID, st.Username, st.ID)
 			}

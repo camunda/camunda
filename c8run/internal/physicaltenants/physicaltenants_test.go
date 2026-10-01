@@ -9,14 +9,20 @@ package physicaltenants
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/stretchr/testify/assert"
@@ -244,6 +250,7 @@ func TestPrintSummary(t *testing.T) {
 	assert.Contains(t, out, "NOT READY")
 	assert.Contains(t, out, "hr did not become ready: HTTP 404")
 	assert.Contains(t, out, "Camunda-Physical-Tenant: sales")
+	assert.Contains(t, out, "secrets --tenant sales")
 
 	buf.Reset()
 	PrintSummary(&buf, types.C8RunSettings{}, nil, 8086)
@@ -298,4 +305,56 @@ func TestStoreRollsBackCredentialsWhenTenantWriteFails(t *testing.T) {
 	_, ok, err = store.Password("ops")
 	require.NoError(t, err)
 	assert.False(t, ok, "a failed add must not leave an orphaned password")
+}
+
+func TestStoreRejectsDuplicateIDs(t *testing.T) {
+	path := filepath.Join(t.TempDir(), FileName)
+	require.NoError(t, os.WriteFile(path, []byte("version: 1\ntenants:\n  - id: a\n  - id: a\n"), 0o644))
+	_, err := NewStore(path).List()
+	assert.ErrorContains(t, err, "more than once")
+}
+
+func TestSnapshotIsConsistent(t *testing.T) {
+	store := NewStore(filepath.Join(t.TempDir(), FileName))
+	require.NoError(t, store.Add([]Tenant{{ID: "hr", Username: "alice"}}, map[string]string{"hr": "pw"}))
+	tenants, creds, err := store.Snapshot()
+	require.NoError(t, err)
+	assert.Len(t, tenants, 1)
+	assert.Equal(t, "pw", creds["hr"])
+}
+
+func TestScrubTenantEnv(t *testing.T) {
+	env := ScrubTenantEnv([]string{"PATH=/bin", "CAMUNDA_PHYSICALTENANTS_HR_SECURITY_INITIALIZATION_USERS_0_PASSWORD=x", "camunda_physicaltenants_a_b=y", "CAMUNDA_CLIENT_X=1"})
+	assert.Equal(t, []string{"PATH=/bin", "CAMUNDA_CLIENT_X=1"}, env)
+}
+
+func TestProbeRunsTenantsConcurrentlyUnderOneDeadline(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer server.Close()
+	u, _ := url.Parse(server.URL)
+	port, _ := strconv.Atoi(u.Port())
+	settings := types.C8RunSettings{Port: port}
+	for _, id := range []string{"a", "b", "c", "d", "e"} {
+		settings.PhysicalTenants = append(settings.PhysicalTenants, types.PhysicalTenant{ID: id})
+	}
+	start := time.Now()
+	results := Probe(context.Background(), settings, 3, 100*time.Millisecond)
+	elapsed := time.Since(start)
+	require.Len(t, results, 5)
+	for i, r := range results {
+		assert.Equal(t, settings.PhysicalTenants[i].ID, r.ID)
+		assert.False(t, r.Ready)
+	}
+	assert.Less(t, elapsed, 1200*time.Millisecond, "five failing tenants must share one deadline, not wait in sequence")
+}
+
+func TestSnapshotWithoutFileCreatesNothing(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "absent")
+	tenants, creds, err := NewStore(filepath.Join(dir, FileName)).Snapshot()
+	require.NoError(t, err)
+	assert.Empty(t, tenants)
+	assert.Empty(t, creds)
+	assert.NoDirExists(t, dir)
 }

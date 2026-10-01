@@ -95,6 +95,10 @@ It is loaded via `--spring.config.additional-location` after `configuration/` an
 
 Logins are not written to the generated file. Spring does not merge lists across property sources, so the whole `security.initialization` block (user + `defaultRoles.admin`) is passed as `CAMUNDA_PHYSICALTENANTS_<ID>_SECURITY_INITIALIZATION_*` environment variables. Per-tenant passwords from `tenants add --username` are stored in `<tenants file>.credentials` with mode 0600.
 
+Each tenant gets its own local file secret store in `tenant-secrets/<id>` next to the default secrets directory (`CAMUNDA_PHYSICALTENANTS_<ID>_SECRETS_STORES_FILE_DEFAULT_PATH`); `c8run secrets --tenant <id>` manages it. Per-tenant logins and secret paths are passed to the Camunda process only, never exported into c8run's own environment, and connectors runtimes get an environment with every `CAMUNDA_PHYSICALTENANTS_*` entry removed.
+
+The tenants file and its credentials file are changed under one file lock (`<tenants file>.lock`); if the tenant list cannot be written, the credentials file is restored. `start` reads both as one locked snapshot. Duplicate IDs in the file are rejected. Tenant readiness probes run concurrently under one shared deadline.
+
 Per-tenant connectors reuse `ConnectorsCmd` and append `SERVER_PORT` and `CAMUNDA_CLIENT_PHYSICALTENANTID` (plus `CAMUNDA_CLIENT_AUTH_*` when the API is protected). PID files are `connectors-<id>.process`; `stop` stops every `connectors-*.process`. Ports start at 8087 and skip ports in use.
 
 After Camunda reports healthy, each tenant's `/physical-tenants/<id>/v2/topology` is probed and the startup summary prints a per-tenant table, naming any tenant that is not ready.

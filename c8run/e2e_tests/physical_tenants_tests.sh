@@ -4,6 +4,8 @@
 #   PHYSICAL_TENANT=pt1 ./e2e_tests/physical_tenants_tests.sh
 # Set CHECK_CONNECTORS=1 (with C8RUN_DIR pointing at the c8run directory) to also verify that the
 # tenant's own connectors runtime serves its jobs and no other runtime does.
+# Set TENANT_SECRET_VALUE to the value of C8RUN_E2E_SECRET stored with
+# `c8run secrets --tenant <id> set` to verify the tenant resolves its own secret, not the default one.
 # Use C8RUN_AUTH for the tenant login and C8RUN_DEFAULT_AUTH for the default tenant login.
 set -euo pipefail
 
@@ -36,6 +38,10 @@ if [[ "$auth" != "$default_auth" ]]; then
         printf "\nTest: tenant login is rejected by the default tenant\n"
         status="$(curl --silent -o /dev/null -w '%{http_code}' -u "$auth" "$base/v2/topology")"
         [[ "$status" == "401" ]] || fail "expected 401 for $tenant login on default, got $status"
+
+        printf "\nTest: default login is rejected by physical tenant %s\n" "$tenant"
+        status="$(curl --silent -o /dev/null -w '%{http_code}' -u "$default_auth" "$base/physical-tenants/$tenant/v2/topology")"
+        [[ "$status" == "401" ]] || fail "expected 401 for default login on $tenant, got $status"
 fi
 
 printf "\nTest: deploy to physical tenant %s\n" "$tenant"
@@ -54,6 +60,26 @@ done
 printf "\nTest: process is isolated from the default tenant\n"
 default_after="$(count_definitions "$base" "$default_auth")"
 [[ "$default_after" == "$default_before" ]] || fail "process leaked into the default tenant"
+
+if [[ -n "${TENANT_SECRET_VALUE:-}" ]]; then
+        tenant_api="$base/physical-tenants/$tenant/v2"
+        printf "\nTest: physical tenant %s resolves its own secrets\n" "$tenant"
+        curl --silent --show-error --fail -u "$auth" -X POST "$tenant_api/deployments" \
+                -F "resources=@$script_dir/centralized_secrets.bpmn" >/dev/null || fail "secrets process deployment failed"
+        curl --silent --show-error --fail -u "$auth" -X POST "$tenant_api/process-instances" \
+                -H 'Content-Type: application/json' --data-raw '{"processDefinitionId":"c8runSecretPresent"}' >/dev/null \
+                || fail "secrets process instance creation failed"
+        resolved=""
+        for _ in $(seq 1 10); do
+                resolved="$(curl --silent --show-error --fail -u "$auth" -X POST "$tenant_api/jobs/activation" \
+                        -H 'Content-Type: application/json' \
+                        --data-raw '{"type":"c8run-secret-present","worker":"c8run-e2e","timeout":30000,"maxJobsToActivate":1,"requestTimeout":5000}' \
+                        | jq -r '.jobs[0].variables.resolvedSecret // empty')"
+                [[ -n "$resolved" ]] && break
+                sleep 2
+        done
+        [[ "$resolved" == "$TENANT_SECRET_VALUE" ]] || fail "$tenant resolved '$resolved' instead of its own secret"
+fi
 
 if [[ "${CHECK_CONNECTORS:-0}" == "1" ]]; then
         tenant_api="$base/physical-tenants/$tenant/v2"

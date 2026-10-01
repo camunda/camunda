@@ -14,6 +14,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"text/tabwriter"
 	"time"
 
@@ -50,13 +51,30 @@ type ProbeResult struct {
 
 // Probe checks each tenant's topology endpoint so a tenant that failed to come up is named
 // explicitly instead of hiding behind the cluster-wide health check.
+// Tenants are probed concurrently under one deadline (attempts*delay), so the total wait
+// does not grow with the number of tenants.
 func Probe(ctx context.Context, settings types.C8RunSettings, attempts int, delay time.Duration) []ProbeResult {
 	client := &http.Client{
 		Timeout:   5 * time.Second,
 		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
 	}
-	results := make([]ProbeResult, 0, len(settings.PhysicalTenants))
-	for _, t := range settings.PhysicalTenants {
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(attempts)*delay)
+	defer cancel()
+	results := make([]ProbeResult, len(settings.PhysicalTenants))
+	var wg sync.WaitGroup
+	for i, t := range settings.PhysicalTenants {
+		wg.Add(1)
+		go func(i int, t types.PhysicalTenant) {
+			defer wg.Done()
+			results[i] = probeOne(ctx, client, settings, t, attempts, delay)
+		}(i, t)
+	}
+	wg.Wait()
+	return results
+}
+
+func probeOne(ctx context.Context, client *http.Client, settings types.C8RunSettings, t types.PhysicalTenant, attempts int, delay time.Duration) ProbeResult {
+	{
 		url := EndpointsFor(t.ID, settings.GetProtocol(), settings.Port).REST + "topology"
 		result := ProbeResult{ID: t.ID}
 		for i := 0; i < attempts; i++ {
@@ -82,13 +100,15 @@ func Probe(ctx context.Context, settings types.C8RunSettings, attempts int, dela
 			}
 			select {
 			case <-ctx.Done():
-				return append(results, result)
+				if result.Err == "" {
+					result.Err = "timed out waiting for the tenant"
+				}
+				return result
 			case <-time.After(delay):
 			}
 		}
-		results = append(results, result)
+		return result
 	}
-	return results
 }
 
 // PrintSummary writes the physical tenant section of the startup summary.
@@ -137,7 +157,7 @@ func PrintSummary(w io.Writer, settings types.C8RunSettings, results []ProbeResu
 	fmt.Fprintf(w, "  - gRPC (:26500):   send header \"Camunda-Physical-Tenant: %s\"\n", example.ID)
 	fmt.Fprintf(w, "  - Java/Spring:     camunda.client.physical-tenant-id=%s\n", example.ID)
 	fmt.Fprintf(w, "  - MCP:             %s\n", ex.MCP)
-	fmt.Fprintln(w, "Local secrets (camunda.secrets.*) are shared by all physical tenants.")
+	fmt.Fprintf(w, "Each tenant has its own local secrets: `c8run secrets --tenant %s set <NAME>`.\n", example.ID)
 	fmt.Fprintln(w, "Manage tenants with `c8run tenants list|add|remove`.")
 	fmt.Fprintln(w)
 }

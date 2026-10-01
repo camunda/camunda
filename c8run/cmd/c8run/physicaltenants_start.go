@@ -10,12 +10,12 @@ package main
 import (
 	"fmt"
 	"net"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/camunda/camunda/c8run/internal/physicaltenants"
+	localsecrets "github.com/camunda/camunda/c8run/internal/secrets"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/rs/zerolog/log"
 )
@@ -72,11 +72,7 @@ func applyPhysicalTenants(baseDir, camundaVersion string, settings *types.C8RunS
 	}
 	settings.PhysicalTenants = res.Tenants
 	settings.PhysicalTenantsConfigPath = path
-	for key, value := range physicaltenants.CredentialEnv(res.Tenants) {
-		if err := os.Setenv(key, value); err != nil {
-			return fmt.Errorf("failed to configure physical tenant login: %w", err)
-		}
-	}
+	settings.PhysicalTenantsEnv = physicaltenants.CredentialEnv(res.Tenants)
 	if len(res.Tenants) > 0 {
 		ids := make([]string, 0, len(res.Tenants))
 		for _, t := range res.Tenants {
@@ -94,4 +90,28 @@ func portFree(port int) bool {
 	}
 	_ = l.Close()
 	return true
+}
+
+// configureTenantSecretStores gives every physical tenant its own local secret directory, so
+// no tenant can resolve another tenant's (or the default tenant's) camunda.secrets.* names.
+func configureTenantSecretStores(baseDir string, settings *types.C8RunSettings) error {
+	for _, tenant := range settings.PhysicalTenants {
+		directory, err := localsecrets.TenantDirectory(baseDir, tenant.ID)
+		if err != nil {
+			return err
+		}
+		store := localsecrets.NewInDirectory(directory)
+		if err := store.Ensure(); err != nil {
+			return fmt.Errorf("failed to prepare secrets for physical tenant %s: %w", tenant.ID, err)
+		}
+		resolved, err := store.Directory()
+		if err != nil {
+			return err
+		}
+		if settings.PhysicalTenantsEnv == nil {
+			settings.PhysicalTenantsEnv = map[string]string{}
+		}
+		settings.PhysicalTenantsEnv[physicaltenants.SecretStoreEnv(tenant.ID)] = resolved
+	}
+	return nil
 }

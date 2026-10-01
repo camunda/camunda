@@ -36,6 +36,9 @@ type C8RunSettings struct {
 	PhysicalTenants []PhysicalTenant
 	// PhysicalTenantsConfigPath is the generated Spring config file declaring the tenants.
 	PhysicalTenantsConfigPath string
+	// PhysicalTenantsEnv is passed to the Camunda process only (tenant logins, secret paths);
+	// it is never exported to c8run's own environment, so child runtimes cannot read it.
+	PhysicalTenantsEnv map[string]string
 }
 
 // PhysicalTenant is one extra physical tenant c8run starts next to the implicit "default" one.
