@@ -16,11 +16,11 @@ import {
   buildUrl,
   jsonHeaders,
 } from '../../../../utils/http';
-import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   createCancellationBatch,
   cancelBatchOperation,
   createCompletedBatchOperation,
+  expectBatchState,
 } from '@requestHelpers';
 
 /* eslint-disable playwright/expect-expect */
@@ -41,9 +41,15 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
   test('Cancel active batch operation returns 204 and status becomes CANCELED', async ({
     request,
   }) => {
+    // Use a large instance count so the batch stays ACTIVE long enough for the
+    // cancel command to catch it in flight. Cancellation time scales with the
+    // instance count: a small batch can reach a terminal state between the
+    // accepted create and the cancel command, and cancelling an already
+    // finished batch correctly returns a permanent 404. Mirrors the instance
+    // count main relies on for the same reason.
     const key =
       await test.step('Create cancelable batch operation', async () => {
-        return createCancellationBatch(request, 10);
+        return createCancellationBatch(request, 500);
       });
 
     await test.step('Cancel batch operation', async () => {
@@ -52,17 +58,7 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
     });
 
     await test.step('Poll batch status', async () => {
-      await expect(async () => {
-        const statusRes = await request.get(
-          buildUrl(`/batch-operations/${key}`),
-          {
-            headers: jsonHeaders(),
-          },
-        );
-        await assertStatusCode(statusRes, 200);
-        const body = await statusRes.json();
-        expect(body.state).toBe('CANCELED');
-      }).toPass(defaultAssertionOptions);
+      await expectBatchState(request, key, 'CANCELED');
     });
   });
 
