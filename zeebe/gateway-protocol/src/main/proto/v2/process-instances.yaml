@@ -328,6 +328,15 @@ paths:
             application/problem+json:
               schema:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: |
+            The process instance cannot be canceled, for example because it is already being
+            terminated or because it is a child process instance.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
