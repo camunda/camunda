@@ -190,6 +190,8 @@ for (const newerIsBot of [false, true]) {
     assert.deepEqual(result.changelog.prs.map((pr) => pr.number), [10, 20]);
     assert.deepEqual(result.labels.pullRequests, [10, 20]);
     assert.deepEqual(result.audit.overrides.map((entry) => entry.number), [newerIsBot ? 20 : 10]);
-    assert.match(result.customerBody, newerIsBot ? /pkg: 2\.0 → 3\.0 \(#10\)/ : /pkg: 1\.0 → 2\.0 \(#20\)/);
+    // Issue-less bumps are full-asset only; the customer body points there instead.
+    assert.doesNotMatch(result.customerBody, /pkg:/);
+    assert.match(result.customerBody, /^1 dependency update is listed in the full changelog/m);
   });
 }
