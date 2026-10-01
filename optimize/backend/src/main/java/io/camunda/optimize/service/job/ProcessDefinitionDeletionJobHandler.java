@@ -16,6 +16,8 @@ import io.camunda.optimize.dto.optimize.query.job.JobType;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.reader.DefinitionReader;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
+import io.camunda.optimize.service.db.writer.BusinessValueOverviewWriter;
+import io.camunda.optimize.service.db.writer.BusinessValueTargetWriter;
 import io.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
 import io.camunda.optimize.service.exceptions.OptimizeByQueryFailureException;
@@ -54,6 +56,8 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
   private final DefinitionReader definitionReader;
   private final ReportService reportService;
   private final DefinitionService definitionService;
+  private final BusinessValueTargetWriter businessValueTargetWriter;
+  private final BusinessValueOverviewWriter businessValueOverviewWriter;
   private final Sleeper sleeper;
 
   @Autowired
@@ -63,7 +67,9 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
       final ProcessDefinitionWriter processDefinitionWriter,
       final DefinitionReader definitionReader,
       final ReportService reportService,
-      final DefinitionService definitionService) {
+      final DefinitionService definitionService,
+      final BusinessValueTargetWriter businessValueTargetWriter,
+      final BusinessValueOverviewWriter businessValueOverviewWriter) {
     this(
         processDefinitionReader,
         processInstanceWriter,
@@ -71,6 +77,8 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
         definitionReader,
         reportService,
         definitionService,
+        businessValueTargetWriter,
+        businessValueOverviewWriter,
         Thread::sleep);
   }
 
@@ -81,6 +89,8 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
       final DefinitionReader definitionReader,
       final ReportService reportService,
       final DefinitionService definitionService,
+      final BusinessValueTargetWriter businessValueTargetWriter,
+      final BusinessValueOverviewWriter businessValueOverviewWriter,
       final Sleeper sleeper) {
     this.processDefinitionReader = processDefinitionReader;
     this.processInstanceWriter = processInstanceWriter;
@@ -88,6 +98,8 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
     this.definitionReader = definitionReader;
     this.reportService = reportService;
     this.definitionService = definitionService;
+    this.businessValueTargetWriter = businessValueTargetWriter;
+    this.businessValueOverviewWriter = businessValueOverviewWriter;
     this.sleeper = sleeper;
   }
 
@@ -148,6 +160,12 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
       withRetry(
           "clear cached XML for reports referencing " + bpmnProcessId,
           () -> reportService.clearCachedReportXml(bpmnProcessId, tenantId));
+      withRetry(
+          "delete business-value target for " + bpmnProcessId,
+          () -> businessValueTargetWriter.deleteForDefinition(tenantId, bpmnProcessId));
+      withRetry(
+          "delete business-value overview rows for " + bpmnProcessId,
+          () -> businessValueOverviewWriter.deleteForDefinition(tenantId, bpmnProcessId));
     }
   }
 

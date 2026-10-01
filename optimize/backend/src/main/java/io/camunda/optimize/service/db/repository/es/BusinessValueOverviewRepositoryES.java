@@ -15,6 +15,7 @@ import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto.MetricRange;
@@ -80,6 +81,22 @@ public class BusinessValueOverviewRepositoryES implements BusinessValueOverviewR
                                               .document(row)))));
               return b;
             });
+    esClient.doBulkRequest(bulkRequest, BUSINESS_VALUE_OVERVIEW_INDEX_NAME, false);
+  }
+
+  @Override
+  public void deleteByIds(final List<String> documentIds) {
+    if (documentIds == null || documentIds.isEmpty()) {
+      return;
+    }
+    final String index = esClient.addPrefixesToIndices(BUSINESS_VALUE_OVERVIEW_INDEX_NAME).get(0);
+    final BulkRequest bulkRequest =
+        BulkRequest.of(
+            b ->
+                b.operations(
+                    documentIds.stream()
+                        .map(id -> BulkOperation.of(o -> o.delete(d -> d.id(id).index(index))))
+                        .toList()));
     esClient.doBulkRequest(bulkRequest, BUSINESS_VALUE_OVERVIEW_INDEX_NAME, false);
   }
 

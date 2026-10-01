@@ -31,6 +31,8 @@ import io.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.reader.DefinitionReader;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
+import io.camunda.optimize.service.db.writer.BusinessValueOverviewWriter;
+import io.camunda.optimize.service.db.writer.BusinessValueTargetWriter;
 import io.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
 import io.camunda.optimize.service.exceptions.OptimizeByQueryFailureException;
@@ -60,6 +62,8 @@ class ProcessDefinitionDeletionJobHandlerTest {
   private DefinitionReader definitionReader;
   private ReportService reportService;
   private DefinitionService definitionService;
+  private BusinessValueTargetWriter businessValueTargetWriter;
+  private BusinessValueOverviewWriter businessValueOverviewWriter;
   private ProcessDefinitionDeletionJobHandler handler;
 
   @BeforeEach
@@ -70,6 +74,8 @@ class ProcessDefinitionDeletionJobHandlerTest {
     definitionReader = mock(DefinitionReader.class);
     reportService = mock(ReportService.class);
     definitionService = mock(DefinitionService.class);
+    businessValueTargetWriter = mock(BusinessValueTargetWriter.class);
+    businessValueOverviewWriter = mock(BusinessValueOverviewWriter.class);
     // default: after deletion, no other version is left (i.e. this was the last remaining
     // version); individual tests override this when they need to assert the "other versions
     // remain" behavior
@@ -85,6 +91,8 @@ class ProcessDefinitionDeletionJobHandlerTest {
             definitionReader,
             reportService,
             definitionService,
+            businessValueTargetWriter,
+            businessValueOverviewWriter,
             millis -> {});
   }
 
@@ -393,6 +401,66 @@ class ProcessDefinitionDeletionJobHandlerTest {
     verify(reportService).clearCachedReportXml(BPMN_PROCESS_ID, TENANT_ID);
     verify(definitionService)
         .invalidateProcessDefinitionIfLatest(BPMN_PROCESS_ID, TENANT_ID, VERSION);
+  }
+
+  /**
+   * A target and its overview rows are keyed on (tenantId, processDefinitionKey) and carry no
+   * version, so they may only go once the last version for this tenant is gone — otherwise deleting
+   * v1 of a process still running v2 would silently discard the user's target.
+   */
+  @Test
+  void shouldDeleteBusinessValueDataWhenDeletingTheOnlyRemainingVersion() {
+    // given
+    when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
+        .thenReturn(Optional.of(definition()));
+
+    // when
+    handler.handle(job());
+
+    // then both indices are cleaned for this (tenant, definition) pair
+    verify(businessValueTargetWriter).deleteForDefinition(TENANT_ID, BPMN_PROCESS_ID);
+    verify(businessValueOverviewWriter).deleteForDefinition(TENANT_ID, BPMN_PROCESS_ID);
+  }
+
+  @Test
+  void shouldNotDeleteBusinessValueDataWhenOtherVersionsRemainAfterDeletion() {
+    // given another version of the same process survives for this tenant
+    when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
+        .thenReturn(Optional.of(definition()));
+    when(definitionReader.getDefinitionVersions(
+            DefinitionType.PROCESS, BPMN_PROCESS_ID, Collections.singleton(TENANT_ID)))
+        .thenReturn(List.of(new DefinitionVersionResponseDto("2", "2")));
+
+    // when
+    handler.handle(job());
+
+    // then the target the user set on the still-live process is untouched
+    verify(businessValueTargetWriter, never()).deleteForDefinition(anyString(), anyString());
+    verify(businessValueOverviewWriter, never()).deleteForDefinition(anyString(), anyString());
+  }
+
+  /**
+   * Single-tenant setups store a null tenantId. The writers own the decision that there is nothing
+   * to delete in that case; asserted here that the handler passes it through untouched rather than
+   * guarding or failing, so the rest of the cascade still completes.
+   */
+  @Test
+  void shouldDelegateBusinessValueDeletionWithANullTenantWithoutFailingTheJob() {
+    // given
+    final ProcessDefinitionOptimizeDto definitionWithNullTenant = definition();
+    definitionWithNullTenant.setTenantId(null);
+    when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
+        .thenReturn(Optional.of(definitionWithNullTenant));
+    when(definitionReader.getDefinitionVersions(
+            DefinitionType.PROCESS, BPMN_PROCESS_ID, Collections.singleton(null)))
+        .thenReturn(List.of());
+
+    // when / then the cascade completes
+    handler.handle(job());
+
+    verify(businessValueTargetWriter).deleteForDefinition(null, BPMN_PROCESS_ID);
+    verify(businessValueOverviewWriter).deleteForDefinition(null, BPMN_PROCESS_ID);
+    verify(reportService).clearCachedReportXml(BPMN_PROCESS_ID, null);
   }
 
   private JobRegistryEntryDto job() {

@@ -35,6 +35,16 @@ public interface BusinessValueOverviewRepository {
    */
   List<BusinessValueOverviewDto> readByRange(MetricRange metricRange, Collection<String> tenantIds);
 
+  /**
+   * Deletes the overview rows with the given ids in a single bulk request, as built by {@link
+   * #documentId(String, String, MetricRange)}. A null or empty collection issues no request,
+   * matching {@code bulkUpsert}.
+   *
+   * <p>A definition's rows are one per {@link MetricRange}, so a caller removing a definition
+   * passes every range's id rather than deleting by query.
+   */
+  void deleteByIds(List<String> documentIds);
+
   static String documentId(
       final String tenantId, final String processDefinitionKey, final MetricRange metricRange) {
     if (StringUtils.isBlank(tenantId)) {

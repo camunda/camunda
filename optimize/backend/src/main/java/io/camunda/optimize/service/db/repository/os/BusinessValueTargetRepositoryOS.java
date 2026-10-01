@@ -25,11 +25,13 @@ import java.util.List;
 import java.util.Optional;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Result;
+import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.IndexResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -115,6 +117,20 @@ public class BusinessValueTargetRepositoryOS implements BusinessValueTargetRepos
               targets.size()));
     }
     return targets;
+  }
+
+  @Override
+  public void deleteByIds(final List<String> documentIds) {
+    if (documentIds == null || documentIds.isEmpty()) {
+      return;
+    }
+    final String index = osClient.convertToPrefixedAliasName(BUSINESS_VALUE_TARGET_INDEX_NAME);
+    final List<BulkOperation> bulkOperations =
+        documentIds.stream()
+            .map(id -> BulkOperation.of(op -> op.delete(d -> d.index(index).id(id))))
+            .toList();
+    osClient.doBulkRequest(
+        BulkRequest.Builder::new, bulkOperations, BUSINESS_VALUE_TARGET_INDEX_NAME, false);
   }
 
   @Override
