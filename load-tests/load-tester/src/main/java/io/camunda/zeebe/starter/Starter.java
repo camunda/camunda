@@ -92,6 +92,8 @@ public class Starter implements CommandLineRunner {
 
   private Timer responseLatencyTimer;
   private Counter processInstancesStartedCounter;
+  private Counter processInstancesSubmittedCounter;
+  private Counter processInstancesSkippedCounter;
   private ScheduledExecutorService executorService;
   private ProcessInstanceStartMeter processInstanceStartMeter;
   private DataReadMeter dataReadMeter;
@@ -137,6 +139,9 @@ public class Starter implements CommandLineRunner {
         Counter.builder(StarterMetricsDoc.PROCESS_INSTANCES_STARTED.getName())
             .description(StarterMetricsDoc.PROCESS_INSTANCES_STARTED.getDescription())
             .register(registry);
+
+    processInstancesSubmittedCounter = registerSubmissionCounter("submitted");
+    processInstancesSkippedCounter = registerSubmissionCounter("skipped");
 
     Gauge.builder(StarterMetricsDoc.RUN_FINISHED.getName(), runFinished, AtomicInteger::doubleValue)
         .description(StarterMetricsDoc.RUN_FINISHED.getDescription())
@@ -202,6 +207,13 @@ public class Starter implements CommandLineRunner {
     if (optimizeReportEvaluator != null) {
       optimizeReportEvaluator.close();
     }
+  }
+
+  private Counter registerSubmissionCounter(final String outcome) {
+    return Counter.builder(StarterMetricsDoc.PROCESS_INSTANCES_SUBMISSIONS.getName())
+        .description(StarterMetricsDoc.PROCESS_INSTANCES_SUBMISSIONS.getDescription())
+        .tag(StarterMetricKeyNames.OUTCOME.asString(), outcome)
+        .register(registry);
   }
 
   private void setupDataAvailabilityMeter() {
@@ -280,6 +292,7 @@ public class Starter implements CommandLineRunner {
             final var vars = new HashMap<>(baseVariables);
             vars.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
             processInstancesStartedCounter.increment();
+            processInstancesSubmittedCounter.increment();
 
             final var startTime = System.nanoTime();
             final CompletionStage<?> requestFuture;
