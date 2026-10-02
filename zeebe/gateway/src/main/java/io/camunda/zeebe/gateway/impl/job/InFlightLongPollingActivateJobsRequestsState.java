@@ -23,6 +23,7 @@ public final class InFlightLongPollingActivateJobsRequestsState<T> {
   private final Set<InflightActivateJobsRequest<T>> activeRequestsToBeRepeated = new HashSet<>();
   private int failedAttempts;
   private long lastUpdatedTime;
+  private final NotificationThrottle notificationThrottle = new NotificationThrottle();
 
   public InFlightLongPollingActivateJobsRequestsState(
       final String jobType, final LongPollingMetrics metrics) {
@@ -56,6 +57,10 @@ public final class InFlightLongPollingActivateJobsRequestsState<T> {
 
   public long getLastUpdatedTime() {
     return lastUpdatedTime;
+  }
+
+  NotificationThrottle notificationThrottle() {
+    return notificationThrottle;
   }
 
   public void enqueueRequest(final InflightActivateJobsRequest<T> request) {
