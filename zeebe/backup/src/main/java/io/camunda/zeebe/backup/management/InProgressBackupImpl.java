@@ -22,7 +22,6 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
-import io.camunda.zeebe.snapshots.SnapshotReservation;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
@@ -62,7 +61,7 @@ final class InProgressBackupImpl implements InProgressBackup {
   // Snapshot related data
   private boolean hasSnapshot = true;
   private @Nullable Set<PersistedSnapshot> availableValidSnapshots;
-  private @Nullable SnapshotReservation snapshotReservation;
+  private @Nullable String lookedUpSnapshotId;
   private @Nullable PersistedSnapshot reservedSnapshot;
   private @Nullable NamedFileSet snapshotFileSet;
   private @Nullable NamedFileSet segmentsFileSet;
@@ -356,14 +355,12 @@ final class InProgressBackupImpl implements InProgressBackup {
         .snapshotId()
         .ifPresent(
             snapshotId -> snapshotStore.releaseReservation(backupId.checkpointId(), snapshotId));
-    final var reservation = snapshotReservation;
-    if (reservation != null) {
-      reservation.release();
+    final var snapshotId = lookedUpSnapshotId;
+    if (snapshotId != null) {
+      snapshotStore.releaseReservation(backupId.checkpointId(), snapshotId);
       LOG.atTrace()
           .addKeyValue("backup", backupId)
-          .addKeyValue(
-              "snapshot",
-              requireNonNull(reservedSnapshot, "reservedSnapshot must be set before releasing"))
+          .addKeyValue("snapshot", snapshotId)
           .setMessage("Released snapshot reservation")
           .log();
     }
@@ -463,9 +460,10 @@ final class InProgressBackupImpl implements InProgressBackup {
         .addKeyValue("snapshot", snapshot.getId())
         .setMessage("Attempting to reserve snapshot")
         .log();
-    final ActorFuture<SnapshotReservation> reservationFuture = snapshot.reserve();
+    final ActorFuture<Void> reservationFuture =
+        snapshotStore.reserveSnapshot(backupId.checkpointId(), snapshot.getId());
     reservationFuture.onComplete(
-        (reservation, error) -> {
+        (ignored, error) -> {
           if (error != null) {
             if (snapshotIterator.hasNext()) {
               LOG.atDebug()
@@ -499,7 +497,7 @@ final class InProgressBackupImpl implements InProgressBackup {
             }
           } else {
             // complete
-            snapshotReservation = reservation;
+            lookedUpSnapshotId = snapshot.getId();
             reservedSnapshot = snapshot;
             LOG.atTrace()
                 .addKeyValue("backup", backupId)

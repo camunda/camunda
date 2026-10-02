@@ -28,7 +28,6 @@ import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.SnapshotMetadata;
-import io.camunda.zeebe.snapshots.SnapshotReservation;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -129,11 +128,10 @@ class InProgressBackupImplTest {
   }
 
   @Test
-  void shouldReserveSnapshotWhenValidSnapshotExists(
-      @Mock final SnapshotReservation snapshotReservation) {
+  void shouldReserveSnapshotWhenValidSnapshotExists() {
     // given
     final var validSnapshot = snapshotWith(1L, 5L);
-    onReserve(validSnapshot, snapshotReservation);
+    onReserve(validSnapshot);
     setAvailableSnapshots(Set.of(validSnapshot));
 
     mockJournalProviderWithNonEmptySegments();
@@ -141,17 +139,16 @@ class InProgressBackupImplTest {
 
     // then
     assertThat(backup.descriptor().snapshotId()).hasValue(validSnapshot.getId());
-    verify(validSnapshot).reserve();
+    verify(snapshotStore).reserveSnapshot(1L, validSnapshot.getId());
   }
 
   @Test
-  void shouldReserveLatestSnapshotWhenMoreThanOneValidSnapshotExists(
-      @Mock final SnapshotReservation snapshotReservation) {
+  void shouldReserveLatestSnapshotWhenMoreThanOneValidSnapshotExists() {
     // given
     final var oldValidSnapshot = snapshotWith(1L, 5L);
     final var latestValidSnapshot = snapshotWith(2L, 6L);
-    onReserve(oldValidSnapshot, snapshotReservation);
-    onReserve(latestValidSnapshot, snapshotReservation);
+    onReserve(oldValidSnapshot);
+    onReserve(latestValidSnapshot);
     setAvailableSnapshots(Set.of(oldValidSnapshot, latestValidSnapshot));
 
     mockJournalProviderWithNonEmptySegments();
@@ -160,7 +157,7 @@ class InProgressBackupImplTest {
 
     // then
     assertThat(backup.descriptor().snapshotId()).hasValue(latestValidSnapshot.getId());
-    verify(latestValidSnapshot).reserve();
+    verify(snapshotStore).reserveSnapshot(1L, latestValidSnapshot.getId());
   }
 
   @Test
@@ -182,14 +179,13 @@ class InProgressBackupImplTest {
   }
 
   @Test
-  void shouldReserveNextSnapshotWhenOneSnapshotFails(
-      @Mock final SnapshotReservation snapshotReservation) {
+  void shouldReserveNextSnapshotWhenOneSnapshotFails() {
     // given
     final var oldValidSnapshot = snapshotWith(1L, 5L);
     final var latestValidSnapshot = snapshotWith(2L, 6L);
 
     mockJournalProviderWithNonEmptySegments();
-    onReserve(oldValidSnapshot, snapshotReservation);
+    onReserve(oldValidSnapshot);
     failOnReserve(latestValidSnapshot);
 
     final Set<PersistedSnapshot> snapshots = Set.of(oldValidSnapshot, latestValidSnapshot);
@@ -200,19 +196,18 @@ class InProgressBackupImplTest {
 
     // then
     assertThat(backup.descriptor().snapshotId()).hasValue(oldValidSnapshot.getId());
-    verify(oldValidSnapshot).reserve();
+    verify(snapshotStore).reserveSnapshot(1L, oldValidSnapshot.getId());
   }
 
   @Test
-  void shouldRetryReservationByRediscoveringSnapshots(
-      @Mock final SnapshotReservation snapshotReservation) {
+  void shouldRetryReservationByRediscoveringSnapshots() {
     // given - a snapshot that was deleted between find and reserve (e.g. after leader change)
     final var deletedSnapshot = snapshotWith(1L, 5L);
     failOnReserve(deletedSnapshot);
 
     // a new snapshot becomes available on retry
     final var newSnapshot = snapshotWith(2L, 6L);
-    onReserve(newSnapshot, snapshotReservation);
+    onReserve(newSnapshot);
 
     // first discovery returns the soon-to-be-deleted snapshot,
     // second discovery (after retry) returns the new one
@@ -225,15 +220,15 @@ class InProgressBackupImplTest {
 
     // then - succeeds after re-discovering snapshots
     assertThat(future).succeedsWithin(Duration.ofMillis(100));
-    verify(newSnapshot).reserve();
+    verify(snapshotStore).reserveSnapshot(1L, newSnapshot.getId());
     verify(snapshotStore, times(2)).getAvailableSnapshots();
   }
 
   @Test
-  void shouldReleaseReservationWhenClosed(@Mock final SnapshotReservation snapshotReservation) {
+  void shouldReleaseReservationWhenClosed() {
     // given
     final var validSnapshot = snapshotWith(1L, 5L);
-    onReserve(validSnapshot, snapshotReservation);
+    onReserve(validSnapshot);
     final Set<PersistedSnapshot> snapshots = Set.of(validSnapshot);
     setAvailableSnapshots(snapshots);
 
@@ -243,15 +238,14 @@ class InProgressBackupImplTest {
     inProgressBackup.close();
 
     // then
-    verify(snapshotReservation).release();
+    verify(snapshotStore).releaseReservation(1L, validSnapshot.getId());
   }
 
   @Test
-  void shouldCollectSnapshotFilesWhenValidSnapshotIsReserved(
-      @Mock final SnapshotReservation snapshotReservation) throws IOException {
+  void shouldCollectSnapshotFilesWhenValidSnapshotIsReserved() throws IOException {
     // given
     final var validSnapshot = snapshotWith(1L, 5L);
-    onReserve(validSnapshot, snapshotReservation);
+    onReserve(validSnapshot);
     setAvailableSnapshots(Set.of(validSnapshot));
 
     // create snapshot files
@@ -282,8 +276,7 @@ class InProgressBackupImplTest {
   }
 
   @Test
-  void shouldUseLastSnapshotIndexToFindSegments(
-      @Mock final SnapshotReservation snapshotReservation) {
+  void shouldUseLastSnapshotIndexToFindSegments() {
     // given
     final var firstSnapshot = snapshotWith(1L, 2L);
     final var lastSnapshot = snapshotWith(4L, 6L);
@@ -293,7 +286,7 @@ class InProgressBackupImplTest {
     final var file2 = segmentsDirectory.resolve("file2.log");
     // create segment files
     mockJournalProviderWith(lastSnapshot.getIndex(), List.of(file1, file2), OptionalLong.of(100L));
-    onReserve(lastSnapshot, snapshotReservation);
+    onReserve(lastSnapshot);
     // when
     final var backup = collectBackupContents();
 
@@ -304,23 +297,22 @@ class InProgressBackupImplTest {
   }
 
   @Test
-  void shouldIgnoreSnapshotWithExporterPositionTooFarAhead(
-      @Mock final SnapshotReservation snapshotReservation) {
+  void shouldIgnoreSnapshotWithExporterPositionTooFarAhead() {
     // given
     final var checkpointPosition = inProgressBackup.backupDescriptor().checkpointPosition();
     final var validExporterPosition = checkpointPosition - 1L;
     final var invalidExporterPosition = checkpointPosition + 1L;
 
     final var validSnapshot = snapshotWith(1L, 1L, validExporterPosition);
-    final var invalidSnapshot = snapshotWith(1L, 1L, invalidExporterPosition);
-    onReserve(validSnapshot, snapshotReservation);
+    final var invalidSnapshot = snapshotWith(2L, 1L, invalidExporterPosition);
+    onReserve(validSnapshot);
     setAvailableSnapshots(Set.of(validSnapshot, invalidSnapshot));
 
     // when
     inProgressBackup.reserveSnapshot().join();
 
     // then - only the valid snapshot should be reserved
-    verify(validSnapshot).reserve();
+    verify(snapshotStore).reserveSnapshot(1L, validSnapshot.getId());
   }
 
   @Test
@@ -379,14 +371,13 @@ class InProgressBackupImplTest {
   }
 
   @Test
-  void shouldLookUpSnapshotWhenCheckpointSnapshotIsNotReserved(
-      @Mock final SnapshotReservation snapshotReservation) {
+  void shouldLookUpSnapshotWhenCheckpointSnapshotIsNotReserved() {
     // given
     inProgressBackup = backupWithCheckpointSnapshot("not-reserved");
     when(snapshotStore.getReservedSnapshot(1L, "not-reserved"))
         .thenReturn(TestActorFuture.completedFuture(Optional.empty()));
     final var validSnapshot = snapshotWith(1L, 5L);
-    onReserve(validSnapshot, snapshotReservation);
+    onReserve(validSnapshot);
     setAvailableSnapshots(Set.of(validSnapshot));
     mockJournalProviderWithNonEmptySegments();
 
@@ -411,6 +402,25 @@ class InProgressBackupImplTest {
 
     // then
     verify(snapshotStore).releaseReservation(1L, reservedSnapshot.getId());
+  }
+
+  @Test
+  void shouldReleaseBothReservationsWhenClosedAfterLookingUpSnapshot() {
+    // given
+    inProgressBackup = backupWithCheckpointSnapshot("not-reserved");
+    when(snapshotStore.getReservedSnapshot(1L, "not-reserved"))
+        .thenReturn(TestActorFuture.completedFuture(Optional.empty()));
+    final var validSnapshot = snapshotWith(1L, 5L);
+    onReserve(validSnapshot);
+    setAvailableSnapshots(Set.of(validSnapshot));
+    inProgressBackup.reserveSnapshot().join();
+
+    // when
+    inProgressBackup.close();
+
+    // then
+    verify(snapshotStore).releaseReservation(1L, "not-reserved");
+    verify(snapshotStore).releaseReservation(1L, validSnapshot.getId());
   }
 
   @Test
@@ -502,16 +512,15 @@ class InProgressBackupImplTest {
     return snapshot;
   }
 
-  private void onReserve(
-      final PersistedSnapshot snapshot, final SnapshotReservation snapshotReservation) {
+  private void onReserve(final PersistedSnapshot snapshot) {
     lenient()
-        .when(snapshot.reserve())
-        .thenReturn(TestActorFuture.completedFuture(snapshotReservation));
+        .when(snapshotStore.reserveSnapshot(1L, snapshot.getId()))
+        .thenReturn(TestActorFuture.completedFuture(null));
   }
 
   private void failOnReserve(final PersistedSnapshot snapshot) {
     lenient()
-        .when(snapshot.reserve())
+        .when(snapshotStore.reserveSnapshot(1L, snapshot.getId()))
         .thenReturn(TestActorFuture.failedFuture(new RuntimeException("Reservation Failed")));
   }
 
