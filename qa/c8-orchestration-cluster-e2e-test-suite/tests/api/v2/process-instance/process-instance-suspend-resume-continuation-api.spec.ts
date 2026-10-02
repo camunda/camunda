@@ -462,9 +462,8 @@ test.describe('Process Instance Suspend and Resume Continuation API', () => {
       await resumeProcessInstance(request, instance.processInstanceKey),
       204,
     );
-    // The 204 comes at RESUMING, before the buffered subscription reopens
-    // finish. Signals are not buffered, so broadcasting on the response can be
-    // dropped into a closed subscription; ACTIVE is written from RESUMED.
+    // Broadcasts are skipped while the SUSPENDED or RESUMING marker is set,
+    // and signals are not buffered. RESUMED clears it and writes ACTIVE.
     await expectProcessState(
       request,
       instance.processInstanceKey,
