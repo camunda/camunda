@@ -12,11 +12,13 @@ import {
 	mockCurrentUserEndpoint,
 	mockLicenseEndpoint,
 	mockLoginEndpoint,
+	mockQueryUsersEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {createQueryUsersResponse} from '#/shared-test-modules/api-mocks/users';
 
 test.beforeEach(({network}) => {
 	network.use(
@@ -26,6 +28,7 @@ test.beforeEach(({network}) => {
 			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['admin']}})),
 		}),
 		mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
+		mockQueryUsersEndpoint({successResponse: HttpResponse.json(createQueryUsersResponse())}),
 	);
 });
 
