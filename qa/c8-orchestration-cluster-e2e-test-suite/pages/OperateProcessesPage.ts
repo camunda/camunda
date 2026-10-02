@@ -12,6 +12,13 @@ import {sleep} from '../utils/sleep';
 import {checkUpdateOnVersion} from 'utils/zeebeClient';
 import {waitForAssertion} from '../utils/waitForAssertion';
 
+// How long a row is given to pick up a state change the engine has already
+// applied: the table does not poll, so this covers one indexer round trip.
+const ROW_ACTION_TIMEOUT = 15_000;
+
+// How long the instances table is given to settle onto a changed filter.
+const TABLE_SETTLE_TIMEOUT = 15_000;
+
 class OperateProcessesPage {
   private page: Page;
   readonly processResultCount: Locator;
@@ -48,6 +55,8 @@ class OperateProcessesPage {
   readonly migrateButton: Locator;
   readonly selectAllRowsCheckbox: Locator;
   readonly retryButton: Locator;
+  readonly suspendButton: Locator;
+  readonly resumeButton: Locator;
   readonly cancelButton: Locator;
   readonly applyButton: Locator;
   readonly resultsCount: Locator;
@@ -69,7 +78,9 @@ class OperateProcessesPage {
       | 'Resolve Incident'
       | 'Retry'
       | 'Cancel Process Instance'
-      | 'Delete Process Instance',
+      | 'Delete Process Instance'
+      | 'Suspend Process Instance'
+      | 'Resume Process Instance',
   ) => Locator;
   readonly processCouldNotBeFoundMessage: Locator;
   readonly goToOperationDetailsButton: Locator;
@@ -168,6 +179,13 @@ class OperateProcessesPage {
       name: 'Select all rows',
     });
     this.retryButton = page.getByRole('button', {name: 'Retry', exact: true});
+    // Exact: the row actions are named "Suspend Instance <key>", so a
+    // substring match would resolve to a row rather than to the toolbar.
+    this.suspendButton = page.getByRole('button', {
+      name: 'Suspend',
+      exact: true,
+    });
+    this.resumeButton = page.getByRole('button', {name: 'Resume', exact: true});
     this.cancelButton = page.getByRole('button', {name: 'Cancel', exact: true});
     this.applyButton = page.getByRole('button', {name: 'Apply'});
     this.resultsCount = page.getByText(/\d+ results/);
@@ -201,7 +219,9 @@ class OperateProcessesPage {
         | 'Resolve Incident'
         | 'Retry'
         | 'Cancel Process Instance'
-        | 'Delete Process Instance',
+        | 'Delete Process Instance'
+        | 'Suspend Process Instance'
+        | 'Resume Process Instance',
     ) =>
       page.getByText(
         `Batch operation \"${batchOperationType}\" has been started`,
@@ -431,6 +451,93 @@ class OperateProcessesPage {
         'Cancel Process Instance',
       ),
     });
+  }
+
+  async suspendAllProcessInstancesInBatch(): Promise<void> {
+    await this.applyBatchOperationToAllInstances({
+      toolbarButton: this.suspendButton,
+      confirmButton: this.batchOperationDialogButton('Apply'),
+      startedMessage: this.batchOperationStartedMessage(
+        'Suspend Process Instance',
+      ),
+    });
+  }
+
+  async resumeAllProcessInstancesInBatch(): Promise<void> {
+    await this.applyBatchOperationToAllInstances({
+      toolbarButton: this.resumeButton,
+      confirmButton: this.batchOperationDialogButton('Apply'),
+      startedMessage: this.batchOperationStartedMessage(
+        'Resume Process Instance',
+      ),
+    });
+  }
+
+  /**
+   * The row an instance occupies in the instances table.
+   *
+   * Scoping a row action to its row is what makes it an assertion about that
+   * instance: the action buttons are identical across rows, so an unscoped
+   * lookup would act on whichever row happened to render first.
+   */
+  processInstanceRow(processInstanceKey: string): Locator {
+    return this.page
+      .getByTestId('data-list')
+      .getByRole('row')
+      .filter({hasText: processInstanceKey});
+  }
+
+  /**
+   * Waits until the instances table holds exactly these instances.
+   *
+   * The result count and the rows settle independently, so the count can
+   * already read the filtered total while the pre-filter rows are still on
+   * screen. Select all takes the rows, so a batch started in that gap reaches
+   * instances the filter excludes and misses ones not yet rendered — which is
+   * invisible afterwards from the targeted instances alone.
+   */
+  async expectInstancesTableToHoldExactly(
+    processInstanceKeys: string[],
+  ): Promise<void> {
+    await expect(this.resultsCount).toHaveText(
+      new RegExp(`\\b${processInstanceKeys.length} results$`),
+      {timeout: TABLE_SETTLE_TIMEOUT},
+    );
+    await expect(
+      this.page.getByTestId('data-list').getByRole('row'),
+    ).toHaveCount(processInstanceKeys.length, {timeout: TABLE_SETTLE_TIMEOUT});
+    for (const processInstanceKey of processInstanceKeys) {
+      await expect(this.processInstanceRow(processInstanceKey)).toBeVisible({
+        timeout: TABLE_SETTLE_TIMEOUT,
+      });
+    }
+  }
+
+  async clickSuspendRowAction(processInstanceKey: string): Promise<void> {
+    await this.clickRowAction(processInstanceKey, 'suspend-operation');
+  }
+
+  async clickResumeRowAction(processInstanceKey: string): Promise<void> {
+    await this.clickRowAction(processInstanceKey, 'resume-operation');
+  }
+
+  private async clickRowAction(
+    processInstanceKey: string,
+    testId: 'suspend-operation' | 'resume-operation',
+  ): Promise<void> {
+    const action =
+      this.processInstanceRow(processInstanceKey).getByTestId(testId);
+    // The row carries the action only once the state the action belongs to has
+    // reached secondary storage, and the table does not refresh itself.
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(action).toBeVisible({timeout: ROW_ACTION_TIMEOUT});
+      },
+      onFailure: async () => {
+        await this.page.reload();
+      },
+    });
+    await action.click();
   }
 
   async deleteSelectedInstancesInBatch(): Promise<void> {

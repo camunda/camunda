@@ -156,6 +156,7 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     page,
     operateHomePage,
     operateFiltersPanelPage,
+    operateProcessesPage,
   }) => {
     const suspended = await startInstance('sr-ui-filter');
     await suspendAndExpectSuspended(request, suspended.processInstanceKey);
@@ -163,16 +164,20 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     await navigateToAppHome(page, 'operate');
     await expect(operateHomePage.operateBanner).toBeVisible();
     await operateHomePage.clickProcessesTab();
-    await operateFiltersPanelPage.clickSuspendedInstancesCheckbox();
     await operateFiltersPanelPage.displayOptionalFilter(
       'Process Instance Key(s)',
     );
     await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
       suspended.processInstanceKey,
     );
+    // After the keys, not before: writing them rewrites the search params and
+    // drops a Suspended filter applied beforehand, leaving the list empty.
+    await operateFiltersPanelPage.applySuspendedFilter();
 
     await expect(
-      page.getByText(suspended.processInstanceKey, {exact: false}).first(),
+      operateProcessesPage.processInstanceLinkByKey(
+        suspended.processInstanceKey,
+      ),
     ).toBeVisible({timeout: UI_REFRESH_TIMEOUT});
     await resumeAndCompleteServiceTask(
       request,
@@ -389,6 +394,7 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     page,
     operateHomePage,
     operateFiltersPanelPage,
+    operateProcessesPage,
   }) => {
     const subject = await startInstance('sr-ui-row');
     const control = await startInstance('sr-ui-row-control');
@@ -403,24 +409,9 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       subject.processInstanceKey,
     );
 
-    // Row actions carry no key in their accessible name — locate by test id.
-    const subjectRow = page
-      .getByTestId('data-list')
-      .getByRole('row')
-      .filter({hasText: subject.processInstanceKey});
-    const suspendRowAction = subjectRow.getByTestId('suspend-operation');
-    // The row appears only once the instance reaches secondary storage.
-    await waitForAssertion({
-      assertion: async () => {
-        await expect(suspendRowAction).toBeVisible({
-          timeout: UI_REFRESH_TIMEOUT,
-        });
-      },
-      onFailure: async () => {
-        await page.reload();
-      },
-    });
-    await suspendRowAction.click();
+    await operateProcessesPage.clickSuspendRowAction(
+      subject.processInstanceKey,
+    );
 
     await expectProcessState(
       request,
@@ -435,19 +426,10 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       extendedAssertionOptions,
     );
 
-    const resumeRowAction = subjectRow.getByTestId('resume-operation');
-    await waitForAssertion({
-      assertion: async () => {
-        await operateFiltersPanelPage.applySuspendedFilter();
-        await expect(resumeRowAction).toBeVisible({
-          timeout: UI_REFRESH_TIMEOUT,
-        });
-      },
-      onFailure: async () => {
-        await page.reload();
-      },
-    });
-    await resumeRowAction.click();
+    // Suspended has to go on before the row can carry Resume: the default
+    // Active and Incidents filter no longer matches the instance.
+    await operateFiltersPanelPage.applySuspendedFilter();
+    await operateProcessesPage.clickResumeRowAction(subject.processInstanceKey);
 
     await expectProcessState(
       request,
@@ -497,14 +479,10 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     // Exactly the two, before selecting: Select all takes whatever the list
     // holds at that moment, so a list still showing every suspended instance
     // would put the control in the batch.
-    await expect(operateProcessesPage.resultsCount).toHaveText(/\b2 results$/, {
-      timeout: UI_REFRESH_TIMEOUT,
-    });
-    for (const {processInstanceKey} of [first, second]) {
-      await expect(
-        page.getByText(processInstanceKey, {exact: false}).first(),
-      ).toBeVisible({timeout: UI_REFRESH_TIMEOUT});
-    }
+    await operateProcessesPage.expectInstancesTableToHoldExactly([
+      first.processInstanceKey,
+      second.processInstanceKey,
+    ]);
 
     await operateProcessesPage.cancelAllProcessInstancesInBatch();
 
@@ -557,6 +535,89 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
         control.processInstanceKey,
       ),
     ).toBeHidden();
+
+    // Untouched, not merely excluded: SUSPENDED alone still passes on a
+    // control the batch reached and damaged.
+    await resumeAndCompleteServiceTask(
+      request,
+      control.jobType,
+      control.processInstanceKey,
+    );
+  });
+
+  test('Suspending and resuming selected instances from the toolbar leaves the rest alone', async ({
+    request,
+    page,
+    operateHomePage,
+    operateFiltersPanelPage,
+    operateProcessesPage,
+  }) => {
+    // The toolbar's own Suspend and Resume, which the row and header controls
+    // do not reach: they submit a batch over a selection, so a control outside
+    // the filter is what distinguishes the selection from the whole list.
+    const first = await startInstance('sr-ui-batch-suspend-a');
+    const second = await startInstance('sr-ui-batch-suspend-b');
+    const control = await startInstance('sr-ui-batch-suspend-control');
+
+    await navigateToAppHome(page, 'operate');
+    await expect(operateHomePage.operateBanner).toBeVisible();
+    await operateHomePage.clickProcessesTab();
+    await operateFiltersPanelPage.displayOptionalFilter(
+      'Process Instance Key(s)',
+    );
+    await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
+      `${first.processInstanceKey} ${second.processInstanceKey}`,
+    );
+    await operateProcessesPage.expectInstancesTableToHoldExactly([
+      first.processInstanceKey,
+      second.processInstanceKey,
+    ]);
+
+    await operateProcessesPage.suspendAllProcessInstancesInBatch();
+
+    for (const {processInstanceKey} of [first, second]) {
+      await expectProcessState(
+        request,
+        processInstanceKey,
+        'SUSPENDED',
+        extendedAssertionOptions,
+      );
+    }
+    await expectProcessState(
+      request,
+      control.processInstanceKey,
+      'ACTIVE',
+      extendedAssertionOptions,
+    );
+
+    // Suspended goes on only now: the two have left the Active and Incidents
+    // filter, and the resume batch needs them listed to be selected.
+    await operateFiltersPanelPage.applySuspendedFilter();
+    await operateProcessesPage.expectInstancesTableToHoldExactly([
+      first.processInstanceKey,
+      second.processInstanceKey,
+    ]);
+
+    await operateProcessesPage.resumeAllProcessInstancesInBatch();
+
+    for (const {processInstanceKey} of [first, second]) {
+      await expectProcessState(
+        request,
+        processInstanceKey,
+        'ACTIVE',
+        extendedAssertionOptions,
+      );
+      await expectSuspendedDate(
+        request,
+        processInstanceKey,
+        false,
+        extendedAssertionOptions,
+      );
+    }
+
+    for (const {jobType, processInstanceKey} of [first, second, control]) {
+      await resumeAndCompleteServiceTask(request, jobType, processInstanceKey);
+    }
   });
 
   test('A call activity child instance offers Suspend in its own header', async ({
