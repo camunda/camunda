@@ -48,6 +48,10 @@ import {
 	type DecisionInstance,
 	type Variable,
 	type ProcessInstance,
+	type MappingRule,
+	type CreateMappingRuleRequestBody,
+	type UpdateMappingRuleRequestBody,
+	type QueryMappingRulesRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {mergePathname} from './mergePathname';
@@ -612,6 +616,41 @@ const endpoints = {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.getProcessInstanceSequenceFlows.method,
 		}),
+	queryMappingRules: (body: QueryMappingRulesRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryMappingRules.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryMappingRules.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createMappingRule: (body: CreateMappingRuleRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createMappingRule.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createMappingRule.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	updateMappingRule: ({mappingRuleId, ...body}: Pick<MappingRule, 'mappingRuleId'> & UpdateMappingRuleRequestBody) =>
+		new Request(
+			getFullURL(unifiedAPIEndpoints.updateMappingRule.getUrl({mappingRuleId: encodeURIComponent(mappingRuleId)})),
+			{
+				...BASE_REQUEST_OPTIONS,
+				method: unifiedAPIEndpoints.updateMappingRule.method,
+				body: JSON.stringify(body),
+				headers: {'Content-Type': 'application/json'},
+			},
+		),
+
+	deleteMappingRule: ({mappingRuleId}: Pick<MappingRule, 'mappingRuleId'>) =>
+		new Request(
+			getFullURL(unifiedAPIEndpoints.deleteMappingRule.getUrl({mappingRuleId: encodeURIComponent(mappingRuleId)})),
+			{
+				...BASE_REQUEST_OPTIONS,
+				method: unifiedAPIEndpoints.deleteMappingRule.method,
+			},
+		),
 };
 
 export {endpoints};

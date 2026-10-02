@@ -25,6 +25,7 @@ import {AdminIndexPage} from '#/pages/AdminIndex.page';
 import {AdminLoginPage} from '#/pages/AdminLogin.page';
 import {AdminMcpProcessesPage} from '#/pages/AdminMcpProcesses.page';
 import {AdminOperationsLogPage} from '#/pages/AdminOperationsLog.page';
+import {AdminMappingRulesPage} from '#/pages/AdminMappingRules.page';
 import {NotFoundPage} from '#/pages/NotFound.page';
 import {ForbiddenPage} from '#/pages/Forbidden.page';
 import {ComponentAccessDeniedPage} from '#/pages/ComponentAccessDenied.page';
@@ -50,6 +51,7 @@ type Fixtures = {
 	adminLoginPage: AdminLoginPage;
 	adminMcpProcessesPage: AdminMcpProcessesPage;
 	adminOperationsLogPage: AdminOperationsLogPage;
+	adminMappingRulesPage: AdminMappingRulesPage;
 	notFoundPage: NotFoundPage;
 	forbiddenPage: ForbiddenPage;
 	componentAccessDeniedPage: ComponentAccessDeniedPage;
@@ -104,6 +106,9 @@ const test = base.extend<Fixtures>({
 	},
 	adminMcpProcessesPage: async ({page}, use) => {
 		await use(new AdminMcpProcessesPage(page));
+	},
+	adminMappingRulesPage: async ({page}, use) => {
+		await use(new AdminMappingRulesPage(page));
 	},
 	adminOperationsLogPage: async ({page}, use) => {
 		await use(new AdminOperationsLogPage(page));

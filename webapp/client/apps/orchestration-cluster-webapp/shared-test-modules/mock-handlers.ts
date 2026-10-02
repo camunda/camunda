@@ -295,6 +295,26 @@ const mockGetProcessInstanceSequenceFlowsEndpoint = createEndpointMock({
 	method: endpoints.getProcessInstanceSequenceFlows.method,
 });
 
+const mockQueryMappingRulesEndpoint = createEndpointMock({
+	endpoint: endpoints.queryMappingRules.getUrl(),
+	method: endpoints.queryMappingRules.method,
+});
+
+const mockCreateMappingRuleEndpoint = createEndpointMock({
+	endpoint: endpoints.createMappingRule.getUrl(),
+	method: endpoints.createMappingRule.method,
+});
+
+const mockUpdateMappingRuleEndpoint = createEndpointMock({
+	endpoint: endpoints.updateMappingRule.getUrl({mappingRuleId: ':mappingRuleId'}),
+	method: endpoints.updateMappingRule.method,
+});
+
+const mockDeleteMappingRuleEndpoint = createEndpointMock({
+	endpoint: endpoints.deleteMappingRule.getUrl({mappingRuleId: ':mappingRuleId'}),
+	method: endpoints.deleteMappingRule.method,
+});
+
 const mockCreateCancellationBatchOperationEndpoint = createEndpointMock({
 	endpoint: endpoints.createCancellationBatchOperation.getUrl(),
 	method: endpoints.createCancellationBatchOperation.method,
@@ -382,4 +402,8 @@ export {
 	mockGetProcessInstanceWaitStateStatisticsEndpoint,
 	mockGetProcessInstanceStatisticsEndpoint,
 	mockGetProcessInstanceSequenceFlowsEndpoint,
+	mockQueryMappingRulesEndpoint,
+	mockCreateMappingRuleEndpoint,
+	mockUpdateMappingRuleEndpoint,
+	mockDeleteMappingRuleEndpoint,
 };
