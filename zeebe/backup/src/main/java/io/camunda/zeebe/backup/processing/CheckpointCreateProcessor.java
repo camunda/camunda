@@ -89,7 +89,8 @@ public final class CheckpointCreateProcessor {
         new CheckpointRecord()
             .setCheckpointId(checkpointId)
             .setCheckpointPosition(checkpointPosition)
-            .setCheckpointType(checkpointType);
+            .setCheckpointType(checkpointType)
+            .setSnapshotId(checkpointRecord.getSnapshotId());
 
     // Checkpoint should be created even if we don't take a backup for checkpoint-consistency
     metrics.created(checkpointId, checkpointPosition);
