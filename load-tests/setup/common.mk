@@ -144,6 +144,7 @@ ifneq ($(filter $(secondary_storage),$(rdbms_storages)),)
 	platform_values += -f camunda-platform-values-rdbms.yaml
 else ifeq ($(secondary_storage),none)
 	_load_test_setup_flags += --set global.extraConfig.load-tester.monitor-data-availability=false
+	_load_test_setup_flags += --set global.performReadBenchmarks=false
 endif
 platform_values += -f camunda-platform-values-$(secondary_storage).yaml
 
