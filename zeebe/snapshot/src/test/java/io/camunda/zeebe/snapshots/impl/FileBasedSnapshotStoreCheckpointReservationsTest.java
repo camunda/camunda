@@ -225,6 +225,23 @@ final class FileBasedSnapshotStoreCheckpointReservationsTest {
         .hasValue(snapshot);
   }
 
+  @Test
+  void shouldKeepSnapshotReservedByHandleWhenCheckpointReservationsAreReleased() {
+    // given
+    final var snapshot = persistSnapshot(1);
+    snapshot.reserve().join();
+    store.reserveSnapshot(CHECKPOINT_ID, snapshot.getId()).join();
+
+    // when
+    store.releaseReservation(CHECKPOINT_ID, snapshot.getId());
+    store.releaseAllReservations();
+    persistSnapshot(2);
+
+    // then
+    assertThat(snapshot.getPath()).exists();
+    assertThat(store.getReservedSnapshot(CHECKPOINT_ID, snapshot.getId()).join()).isEmpty();
+  }
+
   private PersistedSnapshot persistSnapshot(final long index) {
     final var transientSnapshot = store.newTransientSnapshot(index, 1, index, 0, false).get();
     transientSnapshot.take(

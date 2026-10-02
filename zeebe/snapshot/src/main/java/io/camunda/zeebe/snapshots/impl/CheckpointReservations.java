@@ -8,14 +8,16 @@
 package io.camunda.zeebe.snapshots.impl;
 
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 /**
- * Snapshot reservations made on behalf of checkpoints, counted per checkpoint and snapshot.
- * Requests for the same checkpoint share a reservation, so the snapshot is only released once each
- * of them released it.
+ * Snapshot reservations made on behalf of checkpoints, tracked per checkpoint and snapshot. Each
+ * reserve takes its own reservation of the snapshot, so the snapshot holds the only count, and it
+ * stays reserved until every reserve was matched by a release.
  *
  * <p>Not thread-safe: must only be used on the snapshot store's actor.
  */
@@ -27,18 +29,14 @@ final class CheckpointReservations {
    * @return true if the snapshot is reserved for the checkpoint, false if it is already deleted
    */
   boolean reserve(final long checkpointId, final FileBasedSnapshot snapshot) {
-    final var key = new Key(checkpointId, snapshot.getId());
-    final var existing = reservations.get(key);
-    if (existing != null) {
-      existing.count++;
-      return true;
-    }
-
     final var reservation = snapshot.reserveOnActor();
     if (reservation == null) {
       return false;
     }
-    reservations.put(key, new Reservation(snapshot, reservation));
+    reservations
+        .computeIfAbsent(new Key(checkpointId, snapshot.getId()), key -> new Reservation(snapshot))
+        .handles
+        .push(reservation);
     return true;
   }
 
@@ -55,15 +53,16 @@ final class CheckpointReservations {
       return;
     }
 
-    reservation.count--;
-    if (reservation.count == 0) {
-      reservation.reservation.releaseOnActor();
+    reservation.handles.pop().releaseOnActor();
+    if (reservation.handles.isEmpty()) {
       reservations.remove(key);
     }
   }
 
   void releaseAll() {
-    reservations.values().forEach(reservation -> reservation.reservation.releaseOnActor());
+    reservations.values().stream()
+        .flatMap(reservation -> reservation.handles.stream())
+        .forEach(FileBasedSnapshotReservation::releaseOnActor);
     reservations.clear();
   }
 
@@ -71,13 +70,10 @@ final class CheckpointReservations {
 
   private static final class Reservation {
     private final FileBasedSnapshot snapshot;
-    private final FileBasedSnapshotReservation reservation;
-    private int count = 1;
+    private final Deque<FileBasedSnapshotReservation> handles = new ArrayDeque<>();
 
-    private Reservation(
-        final FileBasedSnapshot snapshot, final FileBasedSnapshotReservation reservation) {
+    private Reservation(final FileBasedSnapshot snapshot) {
       this.snapshot = snapshot;
-      this.reservation = reservation;
     }
   }
 }
