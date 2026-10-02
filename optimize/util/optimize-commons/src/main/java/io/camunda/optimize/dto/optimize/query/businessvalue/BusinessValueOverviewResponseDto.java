@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.dto.optimize.query.businessvalue;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.List;
 import java.util.Objects;
 
@@ -14,7 +15,9 @@ import java.util.Objects;
  * Assembled L0 target-overview response for {@code GET /business-value/overview?range=<preset>}.
  * Shape mirrors {@code bvd-target-technical-design.md} §5.3: an attainment rollup plus two per-KPI
  * category donuts (cycle time + automation rate; volume is descoped in v1) plus a flat off-target
- * list sorted by {@code gapPct} descending.
+ * list carrying every KPI whose target is not met: measured misses first, sorted by {@code gapPct}
+ * descending, then the entries that have no measurement to put a gap on (see {@link
+ * OffTargetStatus}).
  *
  * <p>Cycle-time {@link OffTargetEntryDto#getValue()} / {@link OffTargetEntryDto#getTarget()} are
  * emitted in their native storage unit (milliseconds); {@code displayUnit} is the FE formatting
@@ -313,6 +316,57 @@ public class BusinessValueOverviewResponseDto {
   }
 
   /**
+   * Why a KPI's target is not met.
+   *
+   * <p>A target with no measured value is unmet — {@code targetsMet} has always counted it that way
+   * — but it is unmet for a different reason than a measured miss, and there is no gap to quote. A
+   * consumer needs the distinction to explain the verdict instead of printing a percentage it does
+   * not have.
+   */
+  public enum OffTargetStatus {
+    /**
+     * Measured, and the value misses the target. {@code value}, {@code gapPct} and {@code
+     * comparison} are all populated.
+     */
+    OFF_TARGET("offTarget"),
+    /**
+     * The sweep measured this definition and found no completed instances in the range, so the KPI
+     * produced no bucket. Also covers a definition with no process-instance index at all, and —
+     * acknowledged imprecision — one dropped by the aggregation bucket limit.
+     */
+    NO_COMPLETED_INSTANCES("noCompletedInstances"),
+    /**
+     * The target exists but no overview row does, so the definition has never been measured: the
+     * write-time measurement failed, or the sweep is switched off. Transient — the next successful
+     * compute moves the entry to one of the other statuses.
+     */
+    NOT_MEASURED("notMeasured");
+
+    private final String id;
+
+    OffTargetStatus(final String id) {
+      this.id = id;
+    }
+
+    @JsonValue
+    public String getId() {
+      return id;
+    }
+
+    public static OffTargetStatus fromId(final String id) {
+      for (final OffTargetStatus status : values()) {
+        if (status.id.equals(id)) {
+          return status;
+        }
+      }
+      throw new IllegalArgumentException(
+          "Unknown offTarget status id ["
+              + id
+              + "]; must be one of: offTarget, noCompletedInstances, notMeasured");
+    }
+  }
+
+  /**
    * One process/KPI pair whose target was set but not met.
    *
    * <p>{@code value} and {@code target} are emitted in the KPI's native storage unit — for
@@ -324,6 +378,11 @@ public class BusinessValueOverviewResponseDto {
    * "under"}. It answers "did the observed value overshoot or undershoot the target?" and is
    * independent of whether the KPI is lower-is-better or higher-is-better; the FE combines {@code
    * comparison} with the KPI direction to render the copy ("22h vs 8h target, 175% over").
+   *
+   * <p>{@code value}, {@code gapPct} and {@code comparison} are null for every {@link
+   * OffTargetStatus} other than {@link OffTargetStatus#OFF_TARGET} — there is no measurement to
+   * report or to compute a gap from. {@code target} is never null: an entry is only emitted for a
+   * KPI that has one.
    */
   public static class OffTargetEntryDto {
 
@@ -331,10 +390,11 @@ public class BusinessValueOverviewResponseDto {
     private String processKey;
     private String processName;
     private String kpi;
-    private double value;
+    private OffTargetStatus status;
+    private Double value;
     private double target;
     private String displayUnit;
-    private double gapPct;
+    private Double gapPct;
     private String comparison;
 
     public OffTargetEntryDto() {}
@@ -344,15 +404,17 @@ public class BusinessValueOverviewResponseDto {
         final String processKey,
         final String processName,
         final String kpi,
-        final double value,
+        final OffTargetStatus status,
+        final Double value,
         final double target,
         final String displayUnit,
-        final double gapPct,
+        final Double gapPct,
         final String comparison) {
       this.tenantId = tenantId;
       this.processKey = processKey;
       this.processName = processName;
       this.kpi = kpi;
+      this.status = status;
       this.value = value;
       this.target = target;
       this.displayUnit = displayUnit;
@@ -392,11 +454,19 @@ public class BusinessValueOverviewResponseDto {
       this.kpi = kpi;
     }
 
-    public double getValue() {
+    public OffTargetStatus getStatus() {
+      return status;
+    }
+
+    public void setStatus(final OffTargetStatus status) {
+      this.status = status;
+    }
+
+    public Double getValue() {
       return value;
     }
 
-    public void setValue(final double value) {
+    public void setValue(final Double value) {
       this.value = value;
     }
 
@@ -416,11 +486,11 @@ public class BusinessValueOverviewResponseDto {
       this.displayUnit = displayUnit;
     }
 
-    public double getGapPct() {
+    public Double getGapPct() {
       return gapPct;
     }
 
-    public void setGapPct(final double gapPct) {
+    public void setGapPct(final Double gapPct) {
       this.gapPct = gapPct;
     }
 
@@ -438,13 +508,14 @@ public class BusinessValueOverviewResponseDto {
         return false;
       }
       final OffTargetEntryDto that = (OffTargetEntryDto) o;
-      return Double.compare(value, that.value) == 0
-          && Double.compare(target, that.target) == 0
-          && Double.compare(gapPct, that.gapPct) == 0
+      return Double.compare(target, that.target) == 0
+          && Objects.equals(value, that.value)
+          && Objects.equals(gapPct, that.gapPct)
           && Objects.equals(tenantId, that.tenantId)
           && Objects.equals(processKey, that.processKey)
           && Objects.equals(processName, that.processName)
           && Objects.equals(kpi, that.kpi)
+          && status == that.status
           && Objects.equals(displayUnit, that.displayUnit)
           && Objects.equals(comparison, that.comparison);
     }
@@ -452,7 +523,16 @@ public class BusinessValueOverviewResponseDto {
     @Override
     public int hashCode() {
       return Objects.hash(
-          tenantId, processKey, processName, kpi, value, target, displayUnit, gapPct, comparison);
+          tenantId,
+          processKey,
+          processName,
+          kpi,
+          status,
+          value,
+          target,
+          displayUnit,
+          gapPct,
+          comparison);
     }
 
     @Override
@@ -465,6 +545,8 @@ public class BusinessValueOverviewResponseDto {
           + processName
           + ", kpi="
           + kpi
+          + ", status="
+          + status
           + ", value="
           + value
           + ", target="
