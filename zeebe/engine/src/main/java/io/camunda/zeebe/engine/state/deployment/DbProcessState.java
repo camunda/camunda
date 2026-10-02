@@ -197,10 +197,18 @@ public final class DbProcessState implements MutableProcessState {
             pendingDeletionKey,
             DbNil.INSTANCE);
 
+    // soft values: a cached process is a large object graph (parsed model, compiled FEEL
+    // expressions) whose size we can't weigh, so let the GC reclaim entries under heap pressure
     processByTenantAndKeyCache =
-        CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity()).build();
+        CacheBuilder.newBuilder()
+            .maximumSize(config.getProcessCacheCapacity())
+            .softValues()
+            .build();
     processesByTenantAndProcessIdAndVersionCache =
-        CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity()).build();
+        CacheBuilder.newBuilder()
+            .maximumSize(config.getProcessCacheCapacity())
+            .softValues()
+            .build();
     processDefinitionKeyByTenantAndProcessIdAndDeploymentKeyCache =
         CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity()).build();
   }
@@ -759,14 +767,7 @@ public final class DbProcessState implements MutableProcessState {
         processByIdAndVersionColumnFamily.get(tenantAwareProcessIdAndVersionKey);
 
     if (processWithVersionAndId != null) {
-      updateInMemoryState(processWithVersionAndId);
-
-      final var tenantIdAndProcessIdAndVersion =
-          new TenantIdAndProcessIdAndVersion(tenantId, processIdBuffer, version);
-
-      // return the cached copy
-      return processesByTenantAndProcessIdAndVersionCache.getIfPresent(
-          tenantIdAndProcessIdAndVersion);
+      return updateInMemoryState(processWithVersionAndId);
     }
     // does not exist in persistence and in memory state
     return null;
@@ -780,10 +781,7 @@ public final class DbProcessState implements MutableProcessState {
     final PersistedProcess processWithKey =
         processColumnFamily.get(tenantAwareProcessDefinitionKey);
     if (processWithKey != null) {
-      updateInMemoryState(processWithKey);
-
-      final var key = new TenantIdAndProcessDefinitionKey(tenantId, processDefinitionKey);
-      return processByTenantAndKeyCache.getIfPresent(key);
+      return updateInMemoryState(processWithKey);
     }
     // does not exist in persistence and in memory state
     return null;
