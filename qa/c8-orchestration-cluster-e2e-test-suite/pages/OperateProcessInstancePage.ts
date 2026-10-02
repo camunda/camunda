@@ -44,6 +44,7 @@ class OperateProcessInstancePage {
   readonly incidentsTable: Locator;
   readonly incidentsTableOperationSpinner: Locator;
   readonly incidentsTableRows: Locator;
+  readonly firstIncidentRetryButton: Locator;
   readonly incidentsTab: Locator;
   readonly variablePanelEmptyText: Locator;
   readonly addVariableButton: Locator;
@@ -174,6 +175,11 @@ class OperateProcessInstancePage {
     this.incidentsTableOperationSpinner =
       this.incidentsTable.getByTestId('operation-spinner');
     this.incidentsTableRows = this.incidentsTable.getByRole('row');
+    // Exposed as a locator rather than as a click helper: the suspended case
+    // asserts that the button is disabled, which a click cannot express.
+    this.firstIncidentRetryButton = this.incidentsTableRows
+      .getByRole('button', {name: 'Retry Incident'})
+      .first();
     this.incidentsTab = page
       .getByLabel('Process Instance Bottom Panel Tabs')
       .getByRole('link', {name: /^Incidents$/i});

@@ -225,9 +225,7 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
         await page.reload();
       },
     });
-    const retryButton = operateProcessInstancePage.incidentsTableRows
-      .getByRole('button', {name: 'Retry Incident'})
-      .first();
+    const retryButton = operateProcessInstancePage.firstIncidentRetryButton;
     // Control: without it, a globally broken button would pass as gating.
     await expect(retryButton).toBeEnabled({timeout: UI_REFRESH_TIMEOUT});
 
