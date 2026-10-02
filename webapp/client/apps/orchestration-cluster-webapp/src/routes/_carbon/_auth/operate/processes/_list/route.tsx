@@ -6,18 +6,23 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute} from '@tanstack/react-router';
+import {createFileRoute, Outlet} from '@tanstack/react-router';
 import {queries} from '#/shared/http/queries';
 import {Processes} from '#/operate/pages/Processes/Processes';
 import {processesSearchSchema, stripLegacyProcessFilters} from '#/operate/pages/Processes/processesFilter';
 
-const Route = createFileRoute('/_carbon/_auth/operate/processes/')({
+const Route = createFileRoute('/_carbon/_auth/operate/processes/_list')({
 	validateSearch: processesSearchSchema,
 	search: {middlewares: [stripLegacyProcessFilters]},
 	loader: ({context: {queryClient}}) =>
 		queryClient.ensureQueryData(queries.queryProcessDefinitions({page: {limit: 1000}})),
 	component: function ProcessesRoute() {
-		return <Processes {...Route.useSearch()} />;
+		return (
+			<>
+				<Processes {...Route.useSearch()} />
+				<Outlet />
+			</>
+		);
 	},
 });
 

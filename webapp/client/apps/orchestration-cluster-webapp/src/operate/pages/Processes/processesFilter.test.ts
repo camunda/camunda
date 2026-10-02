@@ -70,7 +70,40 @@ describe('mapProcessInstancesFilter', () => {
 			startDate: undefined,
 			endDate: undefined,
 			businessId: undefined,
+			variables: undefined,
 		});
+	});
+
+	it('should combine variable conditions with the URL filters', () => {
+		const search = processesSearchSchema.parse({process: 'orders', tenantId: 'tenant-A', businessId: 'eq_order-123'});
+
+		expect(
+			mapProcessInstancesFilter({
+				...search,
+				variable: [
+					{name: 'status', operator: 'equals', value: '"open"'},
+					{name: 'region', operator: 'exists', value: ''},
+				],
+			}),
+		).toMatchObject({
+			processDefinitionId: {$eq: 'orders'},
+			tenantId: {$eq: 'tenant-A'},
+			businessId: {$eq: 'order-123'},
+			variables: [
+				{name: 'status', value: {$eq: '"open"'}},
+				{name: 'region', value: {$exists: true}},
+			],
+		});
+	});
+
+	it('should omit variables when there are no conditions', () => {
+		expect(mapProcessInstancesFilter({...processesSearchSchema.parse({}), variable: []})?.variables).toBeUndefined();
+	});
+
+	it('should not read variable conditions from the URL', () => {
+		expect(
+			processesSearchSchema.parse({variable: [{name: 'status', operator: 'equals', value: '"open"'}]}),
+		).not.toHaveProperty('variable');
 	});
 
 	it('should preserve message-only bookmarks and the zero error hash', () => {

@@ -8,6 +8,7 @@
 
 import {describe, expect, vi} from 'vitest';
 import {HttpResponse} from 'msw';
+import {z} from 'zod';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
@@ -146,6 +147,49 @@ describe('<DiagramPanel />', () => {
 			completed: false,
 			canceled: false,
 			suspended: false,
+		});
+
+		await expect.element(screen.getByTestId('state-overlay-startEvent_1-active')).toHaveTextContent('3');
+	});
+
+	it('should count the instances the list filters select, including variables and business ID', async ({worker}) => {
+		worker.use(
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+			mockGetProcessDefinitionStatisticsEndpoint({
+				schema: z.object({
+					filter: z
+						.object({
+							$or: z.tuple([
+								z.object({state: z.object({$eq: z.literal('ACTIVE')}), hasIncident: z.literal(false)}).strict(),
+								z.object({hasIncident: z.literal(true)}).strict(),
+							]),
+							tenantId: z.object({$eq: z.literal('tenant-A')}).strict(),
+							businessId: z.object({$eq: z.literal('order-1')}).strict(),
+							startDate: z.object({$gt: z.literal('2021-02-21T20:00:00.000Z')}).strict(),
+							variables: z.tuple([
+								z.object({name: z.literal('status'), value: z.object({$eq: z.literal('"open"')}).strict()}).strict(),
+							]),
+						})
+						.strict(),
+				}),
+				successResponse: HttpResponse.json(
+					createGetProcessDefinitionStatisticsResponse([
+						createProcessDefinitionStatistic({elementId: 'startEvent_1', active: 3}),
+					]),
+				),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+		);
+		const screen = await renderDiagramPanel({
+			processDefinitionSelection: {kind: 'single-version', definition: DEFINITION},
+			onElementSelection: vi.fn(),
+			active: true,
+			incidents: true,
+			completed: false,
+			canceled: false,
+			suspended: false,
+			variable: [{name: 'status', operator: 'equals', value: '"open"'}],
+			otherFilters: {tenantId: 'tenant-A', businessId: 'eq_order-1', startDateFrom: '2021-02-21T20:00:00Z'},
 		});
 
 		await expect.element(screen.getByTestId('state-overlay-startEvent_1-active')).toHaveTextContent('3');
