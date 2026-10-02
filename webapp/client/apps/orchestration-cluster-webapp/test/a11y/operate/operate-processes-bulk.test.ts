@@ -7,6 +7,7 @@
  */
 
 import {HttpResponse} from 'msw';
+import type {Locator} from '@playwright/test';
 import {queryProcessDefinitionsRequestBodySchema} from '@camunda/camunda-api-zod-schemas/8.11';
 import {test, expect} from '#/pw-modules/test-extend';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
@@ -14,9 +15,14 @@ import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {
-	createProcessDefinition,
 	createQueryProcessDefinitionsResponse,
+	createProcessDefinition,
 } from '#/shared-test-modules/api-mocks/process-definitions';
+import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
+import {
+	createGetProcessDefinitionStatisticsResponse,
+	createProcessDefinitionStatistic,
+} from '#/shared-test-modules/api-mocks/process-definition-statistics';
 import {
 	createProcessInstance,
 	createQueryProcessInstancesResponse,
@@ -37,7 +43,15 @@ import {
 	mockGetProcessDefinitionXmlEndpoint,
 	mockGetProcessDefinitionStatisticsEndpoint,
 } from '#/shared-test-modules/mock-handlers';
-import {createGetProcessDefinitionStatisticsResponse} from '#/shared-test-modules/api-mocks/process-definition-statistics';
+
+async function waitForModalAnimations(dialog: Locator) {
+	await dialog.evaluate(async (node) => {
+		type AnimatedElement = {parentElement: AnimatedElement | null; getAnimations: () => {finished: Promise<unknown>}[]};
+		for (let element: AnimatedElement | null = node; element !== null; element = element.parentElement) {
+			await Promise.all(element.getAnimations().map((animation) => animation.finished));
+		}
+	});
+}
 
 test.beforeEach(({network}) => {
 	network.use(
@@ -75,12 +89,51 @@ test('should have no accessibility violations in the bulk toolbar and confirmati
 	expect((await makeAxeBuilder().analyze()).violations).toEqual([]);
 	await page.getByRole('button', {name: 'Cancel', exact: true}).click();
 	await expect(page.getByRole('dialog')).toBeVisible();
-	await page.getByRole('dialog').evaluate(async (dialog) => {
-		type AnimatedElement = {parentElement: AnimatedElement | null; getAnimations: () => {finished: Promise<unknown>}[]};
-		for (let element: AnimatedElement | null = dialog; element !== null; element = element.parentElement) {
-			await Promise.all(element.getAnimations().map((animation) => animation.finished));
-		}
-	});
+	await waitForModalAnimations(page.getByRole('dialog'));
+	expect((await makeAxeBuilder().analyze()).violations).toEqual([]);
+});
+
+test('should have no accessibility violations in batch modification mode and review', async ({
+	network,
+	page,
+	operateProcessesPage,
+	makeAxeBuilder,
+}) => {
+	network.use(
+		mockQueryProcessDefinitionsEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryProcessDefinitionsResponse({
+					items: [createProcessDefinition({processDefinitionId: 'my_simple_process', processDefinitionKey: '123'})],
+				}),
+			),
+		}),
+		mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+		mockGetProcessDefinitionStatisticsEndpoint({
+			successResponse: HttpResponse.json(
+				createGetProcessDefinitionStatisticsResponse([
+					createProcessDefinitionStatistic({elementId: 'task-1', active: 1}),
+				]),
+			),
+		}),
+	);
+	await operateProcessesPage.goto('?process=my_simple_process&version=1&elementId=task-1');
+	await page.getByRole('checkbox', {name: 'Select instance 1'}).check({force: true});
+	await operateProcessesPage.moveButton.click();
+	await expect(page.getByRole('dialog')).toBeVisible();
+	await waitForModalAnimations(page.getByRole('dialog'));
+	expect((await makeAxeBuilder().analyze()).violations).toEqual([]);
+	await page.getByRole('dialog').getByRole('button', {name: 'Continue'}).click();
+	await operateProcessesPage.targetElement('end_event').click();
+	await operateProcessesPage.reviewModificationButton.click();
+	await expect(page.getByRole('dialog')).toBeVisible();
+	await waitForModalAnimations(page.getByRole('dialog'));
+	expect((await makeAxeBuilder().analyze()).violations).toEqual([]);
+	await page.getByRole('dialog').getByRole('button', {name: 'Cancel'}).click();
+	await expect(page.getByRole('dialog')).not.toBeVisible();
+	await page.getByRole('link', {name: 'View instance 1'}).click();
+	const exitConfirmation = page.getByRole('dialog', {name: 'Exit batch modification mode'});
+	await expect(exitConfirmation).toBeVisible();
+	await waitForModalAnimations(exitConfirmation);
 	expect((await makeAxeBuilder().analyze()).violations).toEqual([]);
 });
 

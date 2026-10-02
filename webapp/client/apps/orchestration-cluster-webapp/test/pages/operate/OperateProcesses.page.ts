@@ -79,6 +79,18 @@ class OperateProcessesPage extends BasePage {
 	instanceLink(processInstanceKey: string) {
 		return this.page.getByRole('link', {name: `View instance ${processInstanceKey}`});
 	}
+
+	get moveButton() {
+		return this.page.getByRole('button', {name: 'Move'});
+	}
+
+	get reviewModificationButton() {
+		return this.page.getByRole('button', {name: 'Review Modification'});
+	}
+
+	targetElement(id: string) {
+		return this.page.locator(`[data-element-id="${id}"]`);
+	}
 }
 
 export {OperateProcessesPage};

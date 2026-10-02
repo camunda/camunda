@@ -16,6 +16,9 @@ const Container = styled.main`
 	height: 100%;
 `;
 
+type ProcessesMode = 'list' | 'batch-modification' | 'migration';
+type ProcessesNavigationBlocker = {status: 'idle' | 'blocked'; proceed?: () => void; reset?: () => void};
+
 function ProcessesLayout(props: ComponentProps<typeof InstancesList>) {
 	const {t} = useTranslation();
 	return (
@@ -27,3 +30,4 @@ function ProcessesLayout(props: ComponentProps<typeof InstancesList>) {
 }
 
 export {ProcessesLayout};
+export type {ProcessesMode, ProcessesNavigationBlocker};
