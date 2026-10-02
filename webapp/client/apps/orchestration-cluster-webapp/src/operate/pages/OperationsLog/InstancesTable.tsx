@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useQueries, useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {Button, DataTableSkeleton, InlineNotification, Stack} from '@carbon/react';
@@ -18,6 +18,7 @@ import {
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {queries} from '#/shared/http/queries';
 import {logger} from '#/operate/shared/utils/logger';
+import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {PanelHeader} from '#/operate/shared/PanelHeader/PanelHeader';
 import {PaginatedSortableTable} from '#/operate/shared/PaginatedSortableTable/PaginatedSortableTable';
 import {EmptyMessage} from '#/operate/shared/EmptyMessage/EmptyMessage';
@@ -94,6 +95,7 @@ const InstancesTable: React.FC<Props> = ({search, selectedTenantId, selectedDefi
 
 	const {
 		data,
+		dataUpdatedAt,
 		error,
 		status,
 		isFetching,
@@ -107,11 +109,25 @@ const InstancesTable: React.FC<Props> = ({search, selectedTenantId, selectedDefi
 		fetchNextPage,
 	} = useAuditLogs(requestFilter, [{field: sortField, order: sortOrder}]);
 
+	const isFetchErrorReported = useRef(false);
 	useEffect(() => {
-		if (error) {
-			logger.error(error);
+		isFetchErrorReported.current = false;
+	}, [dataUpdatedAt]);
+	useEffect(() => {
+		if (!error) {
+			return;
 		}
-	}, [error]);
+		logger.error(error);
+		if (isFetchErrorReported.current) {
+			return;
+		}
+		isFetchErrorReported.current = true;
+		notificationsStore.displayNotification({
+			isDismissable: true,
+			kind: 'error',
+			title: t('operate.operationsLog.notifications.fetchFailed'),
+		});
+	}, [error, t]);
 
 	const auditLogs = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
 	const processDefinitionKeys = useMemo(

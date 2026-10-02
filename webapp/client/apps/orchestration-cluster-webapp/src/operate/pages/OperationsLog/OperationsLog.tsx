@@ -52,10 +52,9 @@ const OperationsLog: React.FC<OperationsLogSearch> = (search) => {
 		search.version === undefined ? undefined : candidates?.find((definition) => definition.tenantId === tenantId);
 	const isResolved =
 		!needsLookup ||
-		(tenantId !== undefined &&
-			matches !== undefined &&
+		(matches !== undefined &&
 			matches.length > 0 &&
-			(search.version === undefined || selectedDefinition !== undefined));
+			(search.version === undefined || (tenantId !== undefined && selectedDefinition !== undefined)));
 
 	return (
 		<PageContainer>
