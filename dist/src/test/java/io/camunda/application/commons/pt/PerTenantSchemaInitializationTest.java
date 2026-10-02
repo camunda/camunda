@@ -1225,6 +1225,104 @@ final class PerTenantSchemaInitializationTest {
   }
 
   @Test
+  void shouldReportInitializedOnceAnExplicitRequestInitializesARecoveringTenant() {
+    // given - a tenant held back in recovery mode, as it is while a restore runs
+    final var deferred = new AtomicBoolean(true);
+    final var worker = new AtomicReference<Thread>();
+    try (final var initialization =
+        initialization(
+            Set.of(TENANT_A),
+            tenantId -> {},
+            tenantId -> {
+              worker.set(Thread.currentThread());
+              return deferred.get();
+            })) {
+      initialization.start();
+      Awaitility.await("the tenant is deferred")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(
+              () ->
+                  assertThat(initialization.status(TENANT_A).state()).isEqualTo(State.RECOVERING));
+
+      // when
+      initialization.initializeNow(TENANT_A);
+
+      // then
+      assertThat(initialization.status(TENANT_A))
+          .isEqualTo(new SchemaInitializationStatus(State.INITIALIZED, 0, null));
+
+      // when - the deferral lifts, and the background task ends without an attempt of its own
+      deferred.set(false);
+
+      // then - its ending does not overwrite what the explicit request achieved
+      Awaitility.await("the background task ends")
+          .atMost(Duration.ofSeconds(10))
+          .until(() -> !worker.get().isAlive());
+      assertThat(initialization.status(TENANT_A))
+          .isEqualTo(new SchemaInitializationStatus(State.INITIALIZED, 0, null));
+    }
+  }
+
+  @Test
+  void shouldReportInitializedOnceAnExplicitRequestRepairsATerminallyFailedTenant() {
+    // given - tenant B fails terminally in the background, then succeeds when asked explicitly
+    final var failure = new TerminalFailure();
+    final var attemptsOfB = new AtomicInteger();
+    try (final var initialization =
+        initialization(
+            bothTenants(),
+            tenantId -> {
+              if (TENANT_B.equals(tenantId) && attemptsOfB.incrementAndGet() == 1) {
+                throw failure;
+              }
+            })) {
+      initialization.start();
+      initialization.awaitGate();
+      Awaitility.await("tenant B stops trying")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(
+              () ->
+                  assertThat(initialization.status(TENANT_B))
+                      .isEqualTo(new SchemaInitializationStatus(State.FAILED, 1, failure)));
+
+      // when
+      initialization.initializeNow(TENANT_B);
+
+      // then - the failure that no longer applies is not reported alongside the success
+      assertThat(initialization.status(TENANT_B))
+          .isEqualTo(new SchemaInitializationStatus(State.INITIALIZED, 1, null));
+    }
+  }
+
+  @Test
+  void shouldLeaveTheStatusUnchangedWhenAnExplicitRequestFails() {
+    // given - a recovering tenant whose explicit attempt fails
+    final var failure = new IllegalStateException("storage unreachable");
+    try (final var initialization =
+        initialization(
+            Set.of(TENANT_A),
+            tenantId -> {
+              throw failure;
+            },
+            tenantId -> true)) {
+      initialization.start();
+      Awaitility.await("the tenant is deferred")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(
+              () ->
+                  assertThat(initialization.status(TENANT_A).state()).isEqualTo(State.RECOVERING));
+
+      // when
+      assertThatThrownBy(() -> initialization.initializeNow(TENANT_A)).isSameAs(failure);
+
+      // then - the failure is the caller's to handle; the background task is still deferring, and
+      // nothing it does has failed
+      assertThat(initialization.status(TENANT_A))
+          .isEqualTo(new SchemaInitializationStatus(State.RECOVERING, 0, null));
+    }
+  }
+
+  @Test
   void shouldReportEveryTenantsStatusInConfigurationOrder() {
     // given - configured B first, so that the order cannot come from sorting the ids
     final var failure = new TerminalFailure();
