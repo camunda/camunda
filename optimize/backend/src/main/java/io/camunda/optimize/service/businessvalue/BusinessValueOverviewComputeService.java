@@ -230,6 +230,29 @@ public class BusinessValueOverviewComputeService {
           return target != null && hasAnyTarget(target) && !targetedDocIds.contains(docId);
         });
 
+    // Re-read the live definitions rather than reusing the snapshot taken before the evaluations.
+    // A definition deleted during the sweep has already had its overview rows removed by the
+    // process-definition deletion cascade; upserting the stale snapshot would put them straight
+    // back, and no later sweep selects a deleted definition, so nothing would ever remove them
+    // again. Same two-reads shape as the target read above, and it narrows the window from the
+    // whole sweep to the bulk write itself.
+    final Set<String> liveDocIds = liveDefinitionDocIds();
+    if (liveDocIds.isEmpty()) {
+      // Every definition vanishing mid-sweep is far more likely to be a failed or incomplete read
+      // than a real fleet-wide deletion. Skipping the write costs this tick's freshness; writing
+      // rows whose definitions cannot be confirmed risks resurrecting rows nothing will clean up.
+      LOG.warn(
+          "No live process definitions resolved after evaluation; skipping the overview write "
+              + "rather than upserting rows that may belong to deleted definitions.");
+      return;
+    }
+    rowsToUpsert.removeIf(
+        row -> !liveDocIds.contains(targetDocId(row.getTenantId(), row.getProcessDefinitionKey())));
+    if (rowsToUpsert.isEmpty()) {
+      LOG.debug("No business-value overview rows left to upsert after the liveness re-check");
+      return;
+    }
+
     // Stamped here rather than when the sweep started, so that whichever writer touches a row last
     // also leaves the latest timestamp on it. A sweep that began before a target write and finished
     // after it would otherwise move the row's freshness backwards, and the stale-read backstop keys
@@ -682,6 +705,16 @@ public class BusinessValueOverviewComputeService {
       }
     }
     return pairs;
+  }
+
+  /**
+   * The {@code (tenantId, processDefinitionKey)} pairs that are still fully imported, read fresh so
+   * it reflects deletions that landed while this sweep was evaluating.
+   */
+  private Set<String> liveDefinitionDocIds() {
+    return resolveDefinitions().stream()
+        .map(def -> targetDocId(def.tenantId(), def.processDefinitionKey()))
+        .collect(Collectors.toSet());
   }
 
   private Map<String, BusinessValueTargetDto> readTargets() {
