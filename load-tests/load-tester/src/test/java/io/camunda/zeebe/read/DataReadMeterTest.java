@@ -14,9 +14,11 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
+import io.camunda.client.api.command.ClientHttpException;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc.StarterLatencyMetricKeyNames;
+import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
 import io.camunda.zeebe.read.DataReadMeter.ReadQuery;
 import io.camunda.zeebe.read.DataReadMeter.ReadQueryContext;
 import io.micrometer.core.instrument.Timer;
@@ -136,8 +138,49 @@ final class DataReadMeterTest {
     // when the failing run, its callback, the next run and its callback execute
     executor.runTasks(4);
 
-    // then only the successful run is recorded
+    // then the failed and the successful run are recorded separately
     assertThat(timer("readFailing").count()).isEqualTo(1);
+    assertThat(failureTimer("readFailing", "IllegalStateException").count()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldRecordFailureWhenQueryCannotBeSent() {
+    // given
+    final ReadQuery query =
+        new ReadQuery(
+            "readThrowing",
+            Duration.ofMillis(5),
+            (client, context) -> {
+              throw new IllegalArgumentException("boom");
+            });
+    meter = new DataReadMeter(meterRegistry, executor, mock(CamundaClient.class), List.of(query));
+    meter.start();
+
+    // when
+    executor.runTasks(1);
+
+    // then the failure is counted and the query is scheduled again
+    assertThat(failureTimer("readThrowing", "IllegalArgumentException").count()).isEqualTo(1);
+    assertThat(timer("readThrowing").count()).isZero();
+    assertThat(executor.pending()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldTagFailureWithStatusOfTheError() {
+    // given
+    final var commandStep = mock(FinalCommandStep.class);
+    when(commandStep.send())
+        .thenReturn(TestCamundaFuture.failed(new ClientHttpException(503, "unavailable")));
+    final ReadQuery query =
+        new ReadQuery("readHttp", Duration.ofMillis(5), (client, context) -> commandStep);
+    meter = new DataReadMeter(meterRegistry, executor, mock(CamundaClient.class), List.of(query));
+    meter.start();
+
+    // when
+    executor.runTasks(2);
+
+    // then
+    assertThat(failureTimer("readHttp", "http_503").count()).isEqualTo(1);
   }
 
   @Test
@@ -333,9 +376,19 @@ final class DataReadMeterTest {
   }
 
   private Timer timer(final String queryName) {
+    return timer(queryName, "success", "none");
+  }
+
+  private Timer failureTimer(final String queryName, final String error) {
+    return timer(queryName, "failure", error);
+  }
+
+  private Timer timer(final String queryName, final String outcome, final String error) {
     return meterRegistry
         .get(StarterLatencyMetricsDoc.READ_BENCHMARK.getName())
         .tag(StarterLatencyMetricKeyNames.QUERY_NAME.asString(), queryName)
+        .tag(StarterMetricKeyNames.OUTCOME.asString(), outcome)
+        .tag(StarterMetricKeyNames.ERROR.asString(), error)
         .timer();
   }
 
