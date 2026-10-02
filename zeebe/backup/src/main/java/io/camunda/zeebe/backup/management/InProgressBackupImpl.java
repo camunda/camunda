@@ -98,12 +98,116 @@ final class InProgressBackupImpl implements InProgressBackup {
     return backupId;
   }
 
+  private ActorFuture<Set<PersistedSnapshot>> findValidSnapshot() {
+    final ActorFuture<Set<PersistedSnapshot>> result = concurrencyControl.createFuture();
+    snapshotStore
+        .getAvailableSnapshots()
+        .onComplete(
+            (snapshots, error) -> {
+              if (error != null) {
+                LOG.atError()
+                    .addKeyValue("backup", backupId)
+                    .setCause(error)
+                    .setMessage("Failed to retrieve available snapshots")
+                    .log();
+                result.completeExceptionally(error);
+              } else if (snapshots.isEmpty()) {
+                LOG.atTrace()
+                    .addKeyValue("backup", backupId)
+                    .setMessage("Found no snapshots for backup")
+                    .log();
+                // no snapshot is taken until now, so return successfully
+                hasSnapshot = false;
+                availableValidSnapshots = Collections.emptySet();
+                result.complete(availableValidSnapshots);
+              } else {
+                LOG.atTrace()
+                    .addKeyValue("backup", backupId)
+                    .addKeyValue("snapshots", snapshots::size)
+                    .setMessage("Found snapshots for backup")
+                    .log();
+                final var eitherSnapshots = findValidSnapshot(snapshots);
+                if (eitherSnapshots.isLeft()) {
+                  result.completeExceptionally(
+                      new SnapshotNotFoundException(eitherSnapshots.getLeft()));
+                } else {
+                  availableValidSnapshots = eitherSnapshots.get();
+                  result.complete(availableValidSnapshots);
+                }
+              }
+            });
+
+    return result;
+  }
+
   @Override
   public ActorFuture<Void> reserveSnapshot() {
     return backupDescriptor
         .snapshotId()
         .map(this::useProvidedSnapshot)
         .orElseGet(this::findAndReserveSnapshot);
+  }
+
+  private ActorFuture<Void> useProvidedSnapshot(final String snapshotId) {
+    return snapshotStore
+        .getReservedSnapshot(backupId.checkpointId(), snapshotId)
+        .andThen(
+            (snapshot, error) -> {
+              if (error == null && snapshot.isPresent()) {
+                reservedSnapshot = snapshot.get();
+                LOG.atTrace()
+                    .addKeyValue("backup", backupId)
+                    .addKeyValue("snapshot", snapshotId)
+                    .setMessage("Using snapshot reserved for the checkpoint")
+                    .log();
+                return concurrencyControl.createCompletedFuture();
+              }
+              LOG.atDebug()
+                  .addKeyValue("backup", backupId)
+                  .addKeyValue("snapshot", snapshotId)
+                  .setCause(error)
+                  .setMessage("Snapshot of the checkpoint is not reserved, searching for one")
+                  .log();
+              return findAndReserveSnapshot();
+            },
+            concurrencyControl);
+  }
+
+  private ActorFuture<Void> findAndReserveSnapshot() {
+    final ActorFuture<Void> future = concurrencyControl.createFuture();
+    findAndReserveSnapshot(future, MAX_RESERVATION_ATTEMPTS);
+    return future;
+  }
+
+  private void findAndReserveSnapshot(final ActorFuture<Void> future, final int remainingAttempts) {
+    findValidSnapshot()
+        .onComplete(
+            (snapshots, findError) -> {
+              if (findError != null) {
+                future.completeExceptionally(findError);
+              } else if (!hasSnapshot) {
+                // No snapshot to reserve
+                future.complete(unit());
+              } else {
+                tryReserveWithRetry(future, remainingAttempts);
+              }
+            });
+  }
+
+  private void tryReserveWithRetry(final ActorFuture<Void> future, final int remainingAttempts) {
+    if (availableValidSnapshots == null) {
+      future.completeExceptionally(
+          new IllegalStateException("availableValidSnapshots must be set by findValidSnapshot"));
+      return;
+    }
+
+    // Try reserve snapshot in the order - latest snapshot first
+    final var snapshotIterator =
+        availableValidSnapshots.stream()
+            .sorted(Comparator.comparingLong(PersistedSnapshot::getCompactionBound).reversed())
+            .iterator();
+
+    tryReserveAnySnapshot(snapshotIterator, future, remainingAttempts);
   }
 
   @Override
@@ -263,110 +367,6 @@ final class InProgressBackupImpl implements InProgressBackup {
           .setMessage("Released snapshot reservation")
           .log();
     }
-  }
-
-  private ActorFuture<Set<PersistedSnapshot>> findValidSnapshot() {
-    final ActorFuture<Set<PersistedSnapshot>> result = concurrencyControl.createFuture();
-    snapshotStore
-        .getAvailableSnapshots()
-        .onComplete(
-            (snapshots, error) -> {
-              if (error != null) {
-                LOG.atError()
-                    .addKeyValue("backup", backupId)
-                    .setCause(error)
-                    .setMessage("Failed to retrieve available snapshots")
-                    .log();
-                result.completeExceptionally(error);
-              } else if (snapshots.isEmpty()) {
-                LOG.atTrace()
-                    .addKeyValue("backup", backupId)
-                    .setMessage("Found no snapshots for backup")
-                    .log();
-                // no snapshot is taken until now, so return successfully
-                hasSnapshot = false;
-                availableValidSnapshots = Collections.emptySet();
-                result.complete(availableValidSnapshots);
-              } else {
-                LOG.atTrace()
-                    .addKeyValue("backup", backupId)
-                    .addKeyValue("snapshots", snapshots::size)
-                    .setMessage("Found snapshots for backup")
-                    .log();
-                final var eitherSnapshots = findValidSnapshot(snapshots);
-                if (eitherSnapshots.isLeft()) {
-                  result.completeExceptionally(
-                      new SnapshotNotFoundException(eitherSnapshots.getLeft()));
-                } else {
-                  availableValidSnapshots = eitherSnapshots.get();
-                  result.complete(availableValidSnapshots);
-                }
-              }
-            });
-
-    return result;
-  }
-
-  private ActorFuture<Void> useProvidedSnapshot(final String snapshotId) {
-    return snapshotStore
-        .getReservedSnapshot(backupId.checkpointId(), snapshotId)
-        .andThen(
-            (snapshot, error) -> {
-              if (error == null && snapshot.isPresent()) {
-                reservedSnapshot = snapshot.get();
-                LOG.atTrace()
-                    .addKeyValue("backup", backupId)
-                    .addKeyValue("snapshot", snapshotId)
-                    .setMessage("Using snapshot reserved for the checkpoint")
-                    .log();
-                return concurrencyControl.createCompletedFuture();
-              }
-              LOG.atDebug()
-                  .addKeyValue("backup", backupId)
-                  .addKeyValue("snapshot", snapshotId)
-                  .setCause(error)
-                  .setMessage("Snapshot of the checkpoint is not reserved, searching for one")
-                  .log();
-              return findAndReserveSnapshot();
-            },
-            concurrencyControl);
-  }
-
-  private ActorFuture<Void> findAndReserveSnapshot() {
-    final ActorFuture<Void> future = concurrencyControl.createFuture();
-    findAndReserveSnapshot(future, MAX_RESERVATION_ATTEMPTS);
-    return future;
-  }
-
-  private void findAndReserveSnapshot(final ActorFuture<Void> future, final int remainingAttempts) {
-    findValidSnapshot()
-        .onComplete(
-            (snapshots, findError) -> {
-              if (findError != null) {
-                future.completeExceptionally(findError);
-              } else if (!hasSnapshot) {
-                // No snapshot to reserve
-                future.complete(unit());
-              } else {
-                tryReserveWithRetry(future, remainingAttempts);
-              }
-            });
-  }
-
-  private void tryReserveWithRetry(final ActorFuture<Void> future, final int remainingAttempts) {
-    if (availableValidSnapshots == null) {
-      future.completeExceptionally(
-          new IllegalStateException("availableValidSnapshots must be set by findValidSnapshot"));
-      return;
-    }
-
-    // Try reserve snapshot in the order - latest snapshot first
-    final var snapshotIterator =
-        availableValidSnapshots.stream()
-            .sorted(Comparator.comparingLong(PersistedSnapshot::getCompactionBound).reversed())
-            .iterator();
-
-    tryReserveAnySnapshot(snapshotIterator, future, remainingAttempts);
   }
 
   private Either<String, Set<PersistedSnapshot>> findValidSnapshot(
