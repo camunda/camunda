@@ -62,7 +62,7 @@
     <version.elasticsearch.client>9.5.5</version.elasticsearch.client>
     <version.elasticsearch-java-client>9.5.5</version.elasticsearch-java-client>
     <!-- renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch -->
-    <version.elasticsearch.container>8.19.16</version.elasticsearch.container>
+    <version.elasticsearch.container>9.5.5</version.elasticsearch.container>
     <version.error-prone>2.50.0</version.error-prone>
     <version.nullaway>0.14.2</version.nullaway>
     <version.grpc>1.84.0</version.grpc>
@@ -1509,8 +1509,8 @@
       </dependency>
 
       <dependency>
-        <groupId>org.elasticsearch.client</groupId>
-        <artifactId>elasticsearch-rest-client</artifactId>
+        <groupId>co.elastic.clients</groupId>
+        <artifactId>elasticsearch-rest5-client</artifactId>
         <version>${version.elasticsearch.client}</version>
       </dependency>
 
