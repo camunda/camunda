@@ -6569,7 +6569,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Shows how many cached process definitions per second the GC reclaimed under heap pressure, per pod and partition. Reclaimed definitions are re-parsed on their next access, so a sustained non-zero rate means the heap is too small for the set of active process versions.",
+          "description": "Shows how many cached process definitions per second the GC reclaimed under heap pressure, per pod, physical tenant and partition. Reclaimed definitions are re-parsed on their next access, so a sustained non-zero rate means the heap is too small for the set of active process versions.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -6655,8 +6655,8 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_process_cache_collected_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (pod, partition)",
-              "legendFormat": "{{pod}} {{partition}}",
+              "expr": "sum(rate(zeebe_process_cache_collected_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (pod, physicalTenant, partition)",
+              "legendFormat": "{{physicalTenant}} {{pod}} p{{partition}}",
               "range": true,
               "refId": "A"
             }
