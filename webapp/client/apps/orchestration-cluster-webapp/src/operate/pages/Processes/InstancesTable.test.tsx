@@ -338,32 +338,55 @@ describe('<InstancesTable />', () => {
 		await expect.element(screen.getByText('boom')).not.toBeInTheDocument();
 	});
 
-	it.for([null, ''])(
-		'should show the fallback for a failed item with %s error message',
-		async (errorMessage, {worker}) => {
-			worker.use(
-				mockQueryProcessInstancesEndpoint({
-					successResponse: HttpResponse.json(
-						createQueryProcessInstancesResponse({
-							items: [createProcessInstance({processInstanceKey: '1'})],
-						}),
-					),
-				}),
-				mockQueryBatchOperationItemsEndpoint({
-					successResponse: HttpResponse.json(
-						createQueryBatchOperationItemsResponse({
-							items: [createBatchOperationItem({processInstanceKey: '1', state: 'FAILED', errorMessage})],
-						}),
-					),
-				}),
-			);
+	it.for([null])('should show the fallback for a failed item with %s error message', async (errorMessage, {worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '1'})],
+					}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryBatchOperationItemsResponse({
+						items: [createBatchOperationItem({processInstanceKey: '1', state: 'FAILED', errorMessage})],
+					}),
+				),
+			}),
+		);
 
-			const screen = await renderInstancesTable({...BASE_SEARCH, batchOperationKey: 'batch-op-1'});
+		const screen = await renderInstancesTable({...BASE_SEARCH, batchOperationKey: 'batch-op-1'});
 
-			await userEvent.click(screen.getByRole('button', {name: 'Show failure details for instance 1'}));
-			await expect.element(screen.getByText('Operation failed')).toBeVisible();
-		},
-	);
+		await userEvent.click(screen.getByRole('button', {name: 'Show failure details for instance 1'}));
+		await expect.element(screen.getByText('Operation failed')).toBeVisible();
+	});
+
+	it('should not show failure details for a failed item with an empty error message', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '1'})],
+					}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryBatchOperationItemsResponse({
+						items: [createBatchOperationItem({processInstanceKey: '1', state: 'FAILED', errorMessage: ''})],
+					}),
+				),
+			}),
+		);
+
+		const screen = await renderInstancesTable({...BASE_SEARCH, batchOperationKey: 'batch-op-1'});
+
+		await expect.element(screen.getByText('FAILED')).toBeVisible();
+		await expect
+			.element(screen.getByRole('button', {name: 'Show failure details for instance 1'}))
+			.not.toBeInTheDocument();
+	});
 
 	it('should keep failure details attached to the instance across filter changes', async ({worker}) => {
 		worker.use(
