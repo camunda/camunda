@@ -145,6 +145,14 @@ Use the [`load-tester` subchart](../../../load-tester/README.md) instead for:
 
 See [Grafana Dashboards](https://dashboard.benchmark.camunda.cloud/dashboards/f/bfx7qui8e1bswa/k6)
 
+### Which tests are deployed?
+
+* `default`: checks the cluster topology. Runs for every storage type.
+* `data-read`: reads data through the search APIs, so it needs a secondary
+  storage. It is disabled when read benchmarks are off (for
+  `secondary_storage=none` and when the `perform-read-benchmarks` workflow
+  input is false).
+
 ### How to add a new test?
 
 1. Add the script under [`k6/scripts/`](k6/scripts) (e.g. `test.mytest.js`).

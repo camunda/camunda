@@ -91,6 +91,11 @@ if [[ "${perform_read_benchmarks}" != "true" ]]; then
   load_test_config="$load_test_config --set global.performReadBenchmarks=false"
 fi
 
+# The k6 data-read test reads from secondary storage, like the read benchmarks.
+if [[ "${perform_read_benchmarks}" != "true" ]]; then
+  load_test_config="$load_test_config --set k6.tests.data-read.enabled=false"
+fi
+
 # Enable the load-tester Optimize report-evaluation meter via chart extraConfig
 # (binds to the Spring property load-tester.optimize.report-evaluation-enabled; off by default).
 if [[ "${enable_optimize_metrics}" == "true" ]]; then
