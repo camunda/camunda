@@ -16,6 +16,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.BatchProcessor;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.BatchSupplier;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.DocumentBatch;
@@ -24,11 +25,16 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 
 class AsyncDocumentPipelineTest {
 
@@ -111,22 +117,23 @@ class AsyncDocumentPipelineTest {
     inOrder.verifyNoMoreInteractions();
   }
 
-  @Test
-  void shouldRetryIfRecoverableErrorOccursReadingBatches() {
+  @ParameterizedTest
+  @MethodSource("retryableErrors")
+  void shouldRetryIfRecoverableErrorOccursReadingBatches(final Throwable retryableError) {
     final BatchProcessor<Integer, Integer> batchProcessor = mock(BatchProcessor.class);
 
     when(batchProcessor.process(any()))
-        .thenThrow(new RetryableException())
+        .thenReturn(CompletableFuture.failedFuture(retryableError))
         .then(returnBatchSize())
         .then(returnBatchSize())
-        .thenThrow(new RetryableException())
+        .thenReturn(CompletableFuture.failedFuture(retryableError))
         .then(returnBatchSize());
 
     final var retryRecorder = mock(Runnable.class);
 
     final var builder =
         AsyncDocumentPipeline.builder(batchSupplier(1, 10), batchProcessor)
-            .minBatchSize(1)
+            .minBatchSize(3)
             .batchSize(3)
             .addRetryableException(RetryableException.class)
             .maxRetryAttempts(2)
@@ -320,6 +327,19 @@ class AsyncDocumentPipelineTest {
     verifyNoInteractions(retryRecorder);
 
     assertThat(batchSize.get()).isEqualTo(5);
+  }
+
+  static Stream<Throwable> retryableErrors() {
+    return Stream.of(
+        new CompletionException(new SocketTimeoutException()),
+        new CompletionException(mock(ElasticsearchException.class)),
+        new CompletionException(mock(OpenSearchException.class)),
+        new CompletionException(new RetryableException()),
+        new RuntimeException(new SocketTimeoutException()),
+        new SocketTimeoutException(),
+        mock(ElasticsearchException.class),
+        mock(OpenSearchException.class),
+        new RetryableException());
   }
 
   // little batch supplier that runs through a sequence of numbers
