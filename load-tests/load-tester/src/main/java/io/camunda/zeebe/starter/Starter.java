@@ -304,7 +304,6 @@ public class Starter implements CommandLineRunner {
             final var vars = new HashMap<>(baseVariables);
             vars.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
             processInstancesStartedCounter.increment();
-            processInstancesSubmittedCounter.increment();
 
             if (starterCfg.isStartViaMessage()) {
               requestFuture = startInstanceByMessagePublishing(vars);
@@ -313,6 +312,7 @@ public class Starter implements CommandLineRunner {
             } else {
               requestFuture = startInstance(startTime, starterCfg.getProcessId(), vars);
             }
+            processInstancesSubmittedCounter.increment();
           } catch (final Exception e) {
             inFlight.release();
             THROTTLED_LOGGER.error("Error on creating new process instance", e);
