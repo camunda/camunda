@@ -15,15 +15,15 @@ import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
+import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepositoryIT.RoutedDocument;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
-import org.apache.http.HttpHost;
-import org.elasticsearch.client.RestClient;
+import org.apache.hc.core5.http.HttpHost;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.slf4j.Logger;
@@ -43,7 +43,7 @@ final class ElasticsearchIncidentUpdateRepositoryIT extends IncidentUpdateReposi
   private static final ElasticsearchContainer CONTAINER =
       TestSearchContainers.createDefaultElasticsearchContainer();
 
-  @AutoClose private final RestClientTransport transport = createTransport();
+  @AutoClose private final Rest5ClientTransport transport = createTransport();
   private final ElasticsearchAsyncClient client = new ElasticsearchAsyncClient(transport);
 
   public ElasticsearchIncidentUpdateRepositoryIT() {
@@ -109,9 +109,14 @@ final class ElasticsearchIncidentUpdateRepositoryIT extends IncidentUpdateReposi
     assertThat(response.hits().hits()).hasSize(expectedHits);
   }
 
-  private RestClientTransport createTransport() {
-    final var restClient =
-        RestClient.builder(HttpHost.create(CONTAINER.getHttpHostAddress())).build();
-    return new RestClientTransport(restClient, new JacksonJsonpMapper());
+  private Rest5ClientTransport createTransport() {
+    final HttpHost host;
+    try {
+      host = HttpHost.create(CONTAINER.getHttpHostAddress());
+    } catch (final java.net.URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
+    final var restClient = Rest5Client.builder(host).build();
+    return new Rest5ClientTransport(restClient, new JacksonJsonpMapper());
   }
 }

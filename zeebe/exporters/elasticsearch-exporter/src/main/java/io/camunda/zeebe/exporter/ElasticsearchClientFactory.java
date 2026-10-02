@@ -9,23 +9,24 @@ package io.camunda.zeebe.exporter;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
+import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5ClientBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.ProxyConfiguration;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import org.apache.http.Header;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpRequestInterceptor;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
-import org.apache.http.impl.nio.reactor.IOReactorConfig;
-import org.apache.http.message.BasicHeader;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestClientBuilder;
+import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
+import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
+import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
+import org.apache.hc.core5.http.Header;
+import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.HttpRequestInterceptor;
+import org.apache.hc.core5.http.message.BasicHeader;
+import org.apache.hc.core5.reactor.IOReactorConfig;
+import org.apache.hc.core5.util.Timeout;
 
 final class ElasticsearchClientFactory {
 
@@ -54,26 +55,27 @@ final class ElasticsearchClientFactory {
       final ObjectMapper objectMapper,
       final HttpRequestInterceptor... interceptors) {
     final var restClient = INSTANCE.createRestClient(config, interceptors);
-    final var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(objectMapper));
+    final var transport =
+        new Rest5ClientTransport(restClient, new JacksonJsonpMapper(objectMapper));
     return new ElasticsearchClient(transport);
   }
 
-  private RestClient createRestClient(
+  private Rest5Client createRestClient(
       final ElasticsearchExporterConfiguration config,
       final HttpRequestInterceptor... interceptors) {
     final HttpHost[] httpHosts = parseUrl(config);
     final Header[] defaultHeaders =
         new Header[] {
-          new BasicHeader("Accept", "application/vnd.elasticsearch+json;compatible-with=8"),
-          new BasicHeader("Content-Type", "application/vnd.elasticsearch+json;compatible-with=8")
+          new BasicHeader("Accept", "application/vnd.elasticsearch+json;compatible-with=9"),
+          new BasicHeader("Content-Type", "application/vnd.elasticsearch+json;compatible-with=9")
         };
-    final RestClientBuilder builder =
-        RestClient.builder(httpHosts)
+    final Rest5ClientBuilder builder =
+        Rest5Client.builder(httpHosts)
             .setDefaultHeaders(defaultHeaders)
-            .setRequestConfigCallback(
+            .setConnectionConfigCallback(
                 b ->
-                    b.setConnectTimeout(config.requestTimeoutMs)
-                        .setSocketTimeout(config.requestTimeoutMs))
+                    b.setConnectTimeout(Timeout.ofMilliseconds(config.requestTimeoutMs))
+                        .setSocketTimeout(Timeout.ofMilliseconds(config.requestTimeoutMs)))
             .setHttpClientConfigCallback(b -> configureHttpClient(config, b, interceptors));
 
     return builder.build();
@@ -83,10 +85,11 @@ final class ElasticsearchClientFactory {
       final ElasticsearchExporterConfiguration config,
       final HttpAsyncClientBuilder builder,
       final HttpRequestInterceptor... interceptors) {
-    // use single thread for rest client; enable TCP keepalive so that a firewall or NAT device in
-    // front of Elasticsearch does not silently drop its tracking entry for a connection left idle
-    // between flushes, which would leave the exporter blocked on a dead socket until it times out
-    builder.setDefaultIOReactorConfig(
+    // use single thread for rest client; TCP keepalive guards against a firewall or NAT device in
+    // front of Elasticsearch silently dropping its tracking entry for a connection left idle
+    // between flushes, which would leave the exporter blocked on a dead socket until it times out.
+    // In HC5 it is active by default, but we keep it explicit in case the default ever changes.
+    builder.setIOReactorConfig(
         IOReactorConfig.custom().setIoThreadCount(1).setSoKeepAlive(true).build());
 
     if (config.hasAuthenticationPresent()) {
@@ -99,7 +102,7 @@ final class ElasticsearchClientFactory {
     }
 
     for (final var interceptor : interceptors) {
-      builder.addInterceptorLast(interceptor);
+      builder.addRequestInterceptorLast(interceptor);
     }
 
     return builder;
@@ -107,11 +110,12 @@ final class ElasticsearchClientFactory {
 
   private void setupBasicAuthentication(
       final ElasticsearchExporterConfiguration config, final HttpAsyncClientBuilder builder) {
-    final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+    final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
     credentialsProvider.setCredentials(
-        AuthScope.ANY,
+        new AuthScope(null, -1),
         new UsernamePasswordCredentials(
-            config.getAuthentication().getUsername(), config.getAuthentication().getPassword()));
+            config.getAuthentication().getUsername(),
+            config.getAuthentication().getPassword().toCharArray()));
 
     builder.setDefaultCredentialsProvider(credentialsProvider);
   }
@@ -136,7 +140,7 @@ final class ElasticsearchClientFactory {
           "Elasticsearch exporter proxy port must be between 1 and 65535, but was: " + port);
     }
 
-    builder.setProxy(new HttpHost(host, port, proxyConfig.isSslEnabled() ? "https" : "http"));
+    builder.setProxy(new HttpHost(proxyConfig.isSslEnabled() ? "https" : "http", host, port));
   }
 
   private void addPreemptiveProxyAuthInterceptor(
@@ -153,13 +157,12 @@ final class ElasticsearchClientFactory {
         Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
     final String proxyAuthHeaderValue = "Basic " + encodedCredentials;
 
-    builder.addInterceptorFirst(
-        (HttpRequestInterceptor)
-            (request, context) -> {
-              if (!request.containsHeader("Proxy-Authorization")) {
-                request.addHeader("Proxy-Authorization", proxyAuthHeaderValue);
-              }
-            });
+    builder.addRequestInterceptorFirst(
+        (request, entity, context) -> {
+          if (!request.containsHeader("Proxy-Authorization")) {
+            request.addHeader("Proxy-Authorization", proxyAuthHeaderValue);
+          }
+        });
   }
 
   private HttpHost[] parseUrl(final ElasticsearchExporterConfiguration config) {
@@ -167,7 +170,11 @@ final class ElasticsearchClientFactory {
     final var hosts = new HttpHost[urls.length];
 
     for (int i = 0; i < urls.length; i++) {
-      hosts[i] = HttpHost.create(urls[i]);
+      try {
+        hosts[i] = HttpHost.create(urls[i]);
+      } catch (final URISyntaxException e) {
+        throw new IllegalArgumentException("Error in url: " + urls[i], e);
+      }
     }
 
     return hosts;
