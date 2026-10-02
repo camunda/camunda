@@ -38,6 +38,7 @@ public class EngineCachesTest {
         "camunda.processing.engine.caches.authorizations-cache-ttl=5s",
         "camunda.processing.engine.caches.group-name-cache-capacity=60",
         "camunda.processing.engine.caches.candidate-group-name-resolution=false",
+        "camunda.processing.engine.caches.process-cache-soft-values=false",
       })
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;
@@ -56,7 +57,8 @@ public class EngineCachesTest {
           .returns(50, CachesCfg::getAuthorizationsCacheCapacity)
           .returns(Duration.ofSeconds(5), CachesCfg::getAuthorizationsCacheTtl)
           .returns(60, CachesCfg::getGroupNameCacheCapacity)
-          .returns(false, CachesCfg::isCandidateGroupNameResolution);
+          .returns(false, CachesCfg::isCandidateGroupNameResolution)
+          .returns(false, CachesCfg::isProcessCacheSoftValues);
     }
   }
 

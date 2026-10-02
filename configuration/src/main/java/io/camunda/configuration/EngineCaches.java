@@ -14,6 +14,7 @@ import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_DRG_CACHE_CAPA
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_FORM_CACHE_CAPACITY;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_GROUP_NAME_CACHE_CAPACITY;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_PROCESS_CACHE_CAPACITY;
+import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_PROCESS_CACHE_SOFT_VALUES;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.time.Duration;
@@ -47,6 +48,12 @@ public class EngineCaches {
 
   /** Configures the maximum number of parsed processes to cache. */
   private int processCacheCapacity = DEFAULT_PROCESS_CACHE_CAPACITY;
+
+  /**
+   * Configures whether the GC may reclaim cached processes under heap pressure. Reclaimed processes
+   * are parsed again on their next access.
+   */
+  private boolean processCacheSoftValues = DEFAULT_PROCESS_CACHE_SOFT_VALUES;
 
   /** Configures the maximum number of resources (e.g. RPA scripts) to cache. */
   private int resourceCacheCapacity = DEFAULT_PROCESS_CACHE_CAPACITY;
@@ -100,6 +107,19 @@ public class EngineCaches {
 
   public void setProcessCacheCapacity(final int processCacheCapacity) {
     this.processCacheCapacity = processCacheCapacity;
+  }
+
+  public boolean isProcessCacheSoftValues() {
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        PREFIX + ".process-cache-soft-values",
+        processCacheSoftValues,
+        Boolean.class,
+        BackwardsCompatibilityMode.NOT_SUPPORTED,
+        Set.of());
+  }
+
+  public void setProcessCacheSoftValues(final boolean processCacheSoftValues) {
+    this.processCacheSoftValues = processCacheSoftValues;
   }
 
   public int getResourceCacheCapacity() {
