@@ -223,6 +223,23 @@ jobs:
       # ── Database ────────────────────────────────────────────────────────────
       - name: Start database service
         run: |
+          # Pulling the matrix database image occasionally fails mid-download
+          # with a transient registry reset ("connection reset by peer"), which
+          # killed the whole matrix leg before any test could run. Retry the
+          # pull with backoff so a single registry blip no longer fails the run,
+          # then start the already-cached image.
+          for attempt in 1 2 3; do
+            if docker compose -f db/docker-compose.yml pull ${{ env.DATABASE_CONTAINER }}; then
+              break
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "Database image pull failed after 3 attempts"
+              exit 1
+            fi
+            echo "Image pull attempt $attempt failed; retrying in $((attempt * 15))s..."
+            sleep "$((attempt * 15))"
+          done
+
           docker compose -f db/docker-compose.yml up -d --wait ${{ env.DATABASE_CONTAINER }} || {
             docker compose -f db/docker-compose.yml logs
             exit 1
