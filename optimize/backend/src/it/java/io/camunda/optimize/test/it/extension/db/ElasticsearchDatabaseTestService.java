@@ -406,7 +406,10 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                       u.index(zeebeRecordPrefix + "_" + indexName + "*")
                           .refresh(true)
                           .script(
-                              Script.of(s -> s.lang(ScriptLanguage.Painless).source(updateScript)))
+                              Script.of(
+                                  s ->
+                                      s.lang(ScriptLanguage.Painless)
+                                          .source(src -> src.scriptString(updateScript))))
                           .query(Query.of(q -> q.matchAll(m -> m)))));
     } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
@@ -428,7 +431,10 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                       u.index(zeebeRecordPrefix + "_" + indexName + "*")
                           .refresh(true)
                           .script(
-                              Script.of(s -> s.lang(ScriptLanguage.Painless).source(updateScript)))
+                              Script.of(
+                                  s ->
+                                      s.lang(ScriptLanguage.Painless)
+                                          .source(src -> src.scriptString(updateScript))))
                           .query(
                               Query.of(
                                   q ->
@@ -461,7 +467,10 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                       u.index(zeebeRecordPrefix + "_" + ZEEBE_PROCESS_INSTANCE_INDEX_NAME + "*")
                           .refresh(true)
                           .script(
-                              Script.of(s -> s.lang(ScriptLanguage.Painless).source(updateScript)))
+                              Script.of(
+                                  s ->
+                                      s.lang(ScriptLanguage.Painless)
+                                          .source(src -> src.scriptString(updateScript))))
                           .query(
                               Query.of(
                                   q ->
@@ -499,7 +508,10 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                               getProcessInstanceIndexAliasName(processDefinitionKey))
                           .id(processInstanceId)
                           .script(
-                              Script.of(s -> s.lang(ScriptLanguage.Painless).source(updateScript)))
+                              Script.of(
+                                  s ->
+                                      s.lang(ScriptLanguage.Painless)
+                                          .source(src -> src.scriptString(updateScript))))
                           .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)),
               Object.class);
     } catch (final IOException e) {
@@ -833,7 +845,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                 Script.of(
                     s ->
                         s.lang(ScriptLanguage.Painless)
-                            .source(scriptData.scriptString())
+                            .source(src -> src.scriptString(scriptData.scriptString()))
                             .params(
                                 scriptData.params().entrySet().stream()
                                     .collect(
@@ -870,7 +882,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                 Script.of(
                     s ->
                         s.lang(ScriptLanguage.Painless)
-                            .source(script.scriptString())
+                            .source(src -> src.scriptString(script.scriptString()))
                             .params(
                                 script.params().entrySet().stream()
                                     .collect(
@@ -934,7 +946,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
             a -> a.index(getOptimizeElasticClient().addPrefixesToIndices(aliasNameWithPrefix)));
     final Map<String, IndexAliases> indexNameToAliasMap;
     try {
-      indexNameToAliasMap = getOptimizeElasticClient().getAlias(aliasesRequest).result();
+      indexNameToAliasMap = getOptimizeElasticClient().getAlias(aliasesRequest).aliases();
     } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
@@ -999,7 +1011,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
     final GetMappingResponse getMappingResponse =
         getOptimizeElasticClient().getMapping(new GetMappingRequest.Builder(), indexName);
     final Object propertiesMap =
-        getMappingResponse.result().values().stream()
+        getMappingResponse.mappings().values().stream()
             .findFirst()
             .orElseThrow(
                 () ->
@@ -1052,7 +1064,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                         a.name(
                             getOptimizeElasticClient()
                                 .addPrefixesToIndices(readOnlyAliasForIndex))));
-    return aliases.result().values().stream()
+    return aliases.aliases().values().stream()
         .flatMap(a -> a.aliases().values().stream())
         .collect(Collectors.toSet())
         .stream()
@@ -1066,7 +1078,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
             a -> a.index(getOptimizeElasticClient().addPrefixesToIndices(aliasNameWithPrefix)));
     final Map<String, IndexAliases> indexNameToAliasMap;
     try {
-      indexNameToAliasMap = getOptimizeElasticClient().getAlias(aliasesRequest).result();
+      indexNameToAliasMap = getOptimizeElasticClient().getAlias(aliasesRequest).aliases();
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
@@ -1091,7 +1103,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
           .get(
               GetIndexRequest.of(
                   r -> r.index(prefix + "*").ignoreUnavailable(true).allowNoIndices(true)))
-          .result()
+          .indices()
           .keySet()
           .toArray(String[]::new);
     } catch (final IOException e) {

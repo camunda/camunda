@@ -10,7 +10,9 @@ package io.camunda.optimize.upgrade.es;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.TransportOptions;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
+import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5ClientBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.service.db.es.schema.TransportOptionsProvider;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
@@ -34,19 +36,20 @@ import java.util.Map;
 import java.util.Optional;
 import javax.net.ssl.SSLContext;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpRequestInterceptor;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
-import org.apache.http.conn.ssl.TrustStrategy;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
-import org.apache.http.impl.nio.reactor.IOReactorConfig;
-import org.apache.http.ssl.SSLContexts;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestClientBuilder;
+import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.client5.http.auth.CredentialsProvider;
+import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
+import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
+import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
+import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
+import org.apache.hc.client5.http.ssl.TrustSelfSignedStrategy;
+import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.HttpRequestInterceptor;
+import org.apache.hc.core5.reactor.IOReactorConfig;
+import org.apache.hc.core5.ssl.SSLContexts;
+import org.apache.hc.core5.ssl.TrustStrategy;
+import org.apache.hc.core5.util.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,18 +75,17 @@ public class ElasticsearchClientBuilder {
     return esClient.withTransportOptions(requestOptions).info().version().number();
   }
 
-  public static RestClient restClient(
+  public static Rest5Client restClient(
       final ConfigurationService configurationService, final PluginRepository pluginRepository) {
     final List<PluginConfiguration> plugins =
         extractPluginConfigs(configurationService.getElasticSearchConfiguration());
     pluginRepository.load(plugins);
     if (configurationService.getElasticSearchConfiguration().getSecuritySSLEnabled()) {
       LOGGER.info("Setting up https rest client connection");
-      final RestClientBuilder builder =
+      final Rest5ClientBuilder builder =
           buildDefaultRestClient(
               configurationService, HTTPS, pluginRepository.asRequestInterceptor());
       try {
-
         final SSLContext sslContext;
         final KeyStore truststore = loadCustomTrustStore(configurationService);
 
@@ -99,9 +101,9 @@ public class ElasticsearchClientBuilder {
           sslContext = SSLContext.getDefault();
         }
 
-        builder.setHttpClientConfigCallback(
-            createHttpClientConfigCallback(
-                configurationService, sslContext, pluginRepository.asRequestInterceptor()));
+        builder.setConnectionManagerCallback(
+            connectionManagerBuilder ->
+                configureTls(connectionManagerBuilder, configurationService, sslContext));
       } catch (final Exception e) {
         final String message = "Could not build secured Elasticsearch client.";
         throw new OptimizeRuntimeException(message, e);
@@ -115,65 +117,63 @@ public class ElasticsearchClientBuilder {
     }
   }
 
-  private static RestClientBuilder.HttpClientConfigCallback createHttpClientConfigCallback(
-      final ConfigurationService configurationService) {
-    return createHttpClientConfigCallback(configurationService, null);
-  }
-
-  private static RestClientBuilder.HttpClientConfigCallback createHttpClientConfigCallback(
+  private static PoolingAsyncClientConnectionManagerBuilder configureTls(
+      final PoolingAsyncClientConnectionManagerBuilder connectionManagerBuilder,
       final ConfigurationService configurationService,
-      final SSLContext sslContext,
-      final HttpRequestInterceptor... requestInterceptors) {
-    return httpClientBuilder -> {
-      // TCP keepalive is off by default in the Apache HttpAsyncClient, which lets a firewall or NAT
-      // device in front of Elasticsearch silently drop its tracking entry for an idle pooled
-      // connection; the next request then blocks on that dead socket until the socket timeout
-      httpClientBuilder.setDefaultIOReactorConfig(
-          IOReactorConfig.custom().setSoKeepAlive(true).build());
-
-      buildCredentialsProviderIfConfigured(configurationService)
-          .ifPresent(httpClientBuilder::setDefaultCredentialsProvider);
-
-      for (final HttpRequestInterceptor interceptor : requestInterceptors) {
-        httpClientBuilder.addInterceptorLast(interceptor);
-      }
-
-      httpClientBuilder.setSSLContext(sslContext);
-
-      final ProxyConfiguration proxyConfig =
-          configurationService.getElasticSearchConfiguration().getProxyConfig();
-      if (proxyConfig.isEnabled()) {
-        httpClientBuilder.setProxy(
-            new HttpHost(
-                proxyConfig.getHost(),
-                proxyConfig.getPort(),
-                proxyConfig.isSslEnabled() ? HTTPS : HTTP));
-        addPreemptiveProxyAuthInterceptor(httpClientBuilder, proxyConfig);
-      }
-
-      if (configurationService.getElasticSearchConfiguration().getSkipHostnameVerification()) {
-        // setting this to always be true essentially skips the hostname verification
-        httpClientBuilder.setSSLHostnameVerifier((s, sslSession) -> true);
-      }
-
-      return httpClientBuilder;
-    };
+      final SSLContext sslContext) {
+    final var tlsStrategyBuilder = ClientTlsStrategyBuilder.create().setSslContext(sslContext);
+    if (configurationService.getElasticSearchConfiguration().getSkipHostnameVerification()) {
+      // setting this to always return true essentially skips the hostname verification
+      tlsStrategyBuilder.setHostnameVerifier((s, sslSession) -> true);
+    }
+    connectionManagerBuilder.setTlsStrategy(tlsStrategyBuilder.buildAsync());
+    return connectionManagerBuilder;
   }
 
-  private static RestClientBuilder buildDefaultRestClient(
+  static void applyHttpClientConfig(
+      final HttpAsyncClientBuilder httpClientBuilder,
+      final ConfigurationService configurationService,
+      final HttpRequestInterceptor... requestInterceptors) {
+    // TCP keepalive avoids a firewall or NAT device in front of Elasticsearch silently dropping
+    // its tracking entry for an idle pooled connection, which would block the next request on
+    // that dead socket until the socket timeout. In HC5 it is active by default, but we keep it
+    // explicit in case the default ever changes.
+    httpClientBuilder.setIOReactorConfig(IOReactorConfig.custom().setSoKeepAlive(true).build());
+
+    buildCredentialsProviderIfConfigured(configurationService)
+        .ifPresent(httpClientBuilder::setDefaultCredentialsProvider);
+
+    for (final HttpRequestInterceptor interceptor : requestInterceptors) {
+      httpClientBuilder.addRequestInterceptorLast(interceptor);
+    }
+
+    final ProxyConfiguration proxyConfig =
+        configurationService.getElasticSearchConfiguration().getProxyConfig();
+    if (proxyConfig.isEnabled()) {
+      httpClientBuilder.setProxy(
+          new HttpHost(
+              proxyConfig.isSslEnabled() ? HTTPS : HTTP,
+              proxyConfig.getHost(),
+              proxyConfig.getPort()));
+      addPreemptiveProxyAuthInterceptor(httpClientBuilder, proxyConfig);
+    }
+  }
+
+  private static Rest5ClientBuilder buildDefaultRestClient(
       final ConfigurationService configurationService,
       final String protocol,
       final HttpRequestInterceptor... requestInterceptors) {
-    final RestClientBuilder restClientBuilder =
-        RestClient.builder(buildElasticsearchConnectionNodes(configurationService, protocol))
-            .setRequestConfigCallback(
-                requestConfigBuilder ->
-                    requestConfigBuilder
+    final Rest5ClientBuilder restClientBuilder =
+        Rest5Client.builder(buildElasticsearchConnectionNodes(configurationService, protocol))
+            .setConnectionConfigCallback(
+                connectionConfigBuilder ->
+                    connectionConfigBuilder
                         .setConnectTimeout(
-                            configurationService
-                                .getElasticSearchConfiguration()
-                                .getConnectionTimeout())
-                        .setSocketTimeout(0));
+                            Timeout.ofMilliseconds(
+                                configurationService
+                                    .getElasticSearchConfiguration()
+                                    .getConnectionTimeout()))
+                        .setSocketTimeout(Timeout.DISABLED));
     if (!StringUtils.isEmpty(
         configurationService.getElasticSearchConfiguration().getPathPrefix())) {
       restClientBuilder.setPathPrefix(
@@ -181,7 +181,8 @@ public class ElasticsearchClientBuilder {
     }
 
     restClientBuilder.setHttpClientConfigCallback(
-        createHttpClientConfigCallback(configurationService, null, requestInterceptors));
+        httpClientBuilder ->
+            applyHttpClientConfig(httpClientBuilder, configurationService, requestInterceptors));
 
     return restClientBuilder;
   }
@@ -189,21 +190,24 @@ public class ElasticsearchClientBuilder {
   private static HttpHost[] buildElasticsearchConnectionNodes(
       final ConfigurationService configurationService, final String protocol) {
     return configurationService.getElasticSearchConfiguration().getConnectionNodes().stream()
-        .map(conf -> new HttpHost(conf.getHost(), conf.getHttpPort(), protocol))
+        .map(conf -> new HttpHost(protocol, conf.getHost(), conf.getHttpPort()))
         .toArray(HttpHost[]::new);
   }
 
   private static Optional<CredentialsProvider> buildCredentialsProviderIfConfigured(
       final ConfigurationService configurationService) {
-    CredentialsProvider credentialsProvider = null;
+    BasicCredentialsProvider credentialsProvider = null;
     if (configurationService.getElasticSearchConfiguration().getSecurityUsername() != null
         && configurationService.getElasticSearchConfiguration().getSecurityPassword() != null) {
       credentialsProvider = new BasicCredentialsProvider();
       credentialsProvider.setCredentials(
-          AuthScope.ANY,
+          new AuthScope(null, -1),
           new UsernamePasswordCredentials(
               configurationService.getElasticSearchConfiguration().getSecurityUsername(),
-              configurationService.getElasticSearchConfiguration().getSecurityPassword()));
+              configurationService
+                  .getElasticSearchConfiguration()
+                  .getSecurityPassword()
+                  .toCharArray()));
     } else {
       LOGGER.debug(
           "Elasticsearch username and password not provided, skipping connection credential setup.");
@@ -274,10 +278,10 @@ public class ElasticsearchClientBuilder {
   }
 
   private static ElasticsearchClient getElasticsearchClient(
-      final RestClient builder, final ObjectMapper objectMapper) {
+      final Rest5Client builder, final ObjectMapper objectMapper) {
     LOGGER.info("Finished setting up HTTP rest client connection.");
     return new ElasticsearchClient(
-        new RestClientTransport(builder, new JacksonJsonpMapper(objectMapper)), transportOptions);
+        new Rest5ClientTransport(builder, new JacksonJsonpMapper(objectMapper)), transportOptions);
   }
 
   public static TransportOptions getTransportOptions(
@@ -313,13 +317,12 @@ public class ElasticsearchClientBuilder {
                   (proxyConfig.getUsername() + ":" + proxyConfig.getPassword())
                       .getBytes(StandardCharsets.UTF_8));
       final String proxyAuthHeaderValue = "Basic " + encoded;
-      builder.addInterceptorFirst(
-          (HttpRequestInterceptor)
-              (request, context) -> {
-                if (!request.containsHeader("Proxy-Authorization")) {
-                  request.addHeader("Proxy-Authorization", proxyAuthHeaderValue);
-                }
-              });
+      builder.addRequestInterceptorFirst(
+          (request, entity, context) -> {
+            if (!request.containsHeader("Proxy-Authorization")) {
+              request.addHeader("Proxy-Authorization", proxyAuthHeaderValue);
+            }
+          });
     }
   }
 }

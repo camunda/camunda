@@ -79,7 +79,7 @@ final class TestClient implements CloseableSilently {
   Optional<IndexState> getIndexSettings(final String index) {
     try {
       final var response = esClient.indices().getSettings(b -> b.index(index));
-      return response.result().values().stream().findFirst();
+      return response.settings().values().stream().findFirst();
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }

@@ -111,7 +111,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
   public void validateRepositoryExists(final String repositoryName) {
     try {
       final var repository = esClient.snapshot().getRepository(r -> r.name(repositoryName));
-      if (repository.result().isEmpty()) {
+      if (repository.repositories().isEmpty()) {
         final String reason =
             String.format("No repository with name [%s] could be found.", repositoryName);
         throw new MissingRepositoryException(reason);
@@ -203,7 +203,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
                               // setting this to true to not receive an exception, but only the list
                               // of available indices
                               .ignoreUnavailable(true)));
-      return response.result().keySet();
+      return response.indices().keySet();
     } catch (final IOException e) {
       throw new BackupRepositoryConnectionException("Unable to connect to Elasticsearch", e);
     }

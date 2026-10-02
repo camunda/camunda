@@ -47,19 +47,24 @@ public class ProcessDefinitionWriterES extends AbstractProcessDefinitionWriterES
           s ->
               s.lang(ScriptLanguage.Painless)
                   .source(
-                      "ctx._source.deleted = true;"
-                          + " ctx._source."
-                          + PROCESS_DEFINITION_XML
-                          + " = null;"
-                          + " ctx._source."
-                          + FLOW_NODE_DATA
-                          + " = null;"
-                          + " ctx._source."
-                          + USER_TASK_NAMES
-                          + " = null"));
+                      src ->
+                          src.scriptString(
+                              "ctx._source.deleted = true;"
+                                  + " ctx._source."
+                                  + PROCESS_DEFINITION_XML
+                                  + " = null;"
+                                  + " ctx._source."
+                                  + FLOW_NODE_DATA
+                                  + " = null;"
+                                  + " ctx._source."
+                                  + USER_TASK_NAMES
+                                  + " = null")));
 
   private static final Script MARK_AS_ONBOARDED_SCRIPT =
-      Script.of(s -> s.lang(ScriptLanguage.Painless).source("ctx._source.onboarded = true"));
+      Script.of(
+          s ->
+              s.lang(ScriptLanguage.Painless)
+                  .source(src -> src.scriptString("ctx._source.onboarded = true")));
 
   /**
    * Update-by-query defaults to a scroll page size of 1000. Because each definition contains the

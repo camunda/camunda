@@ -25,20 +25,6 @@ import org.junit.jupiter.api.Test;
 public class PluginRepositoryInterceptorTest {
 
   @Test
-  void shouldProcessApache4Headers() {
-    final var customHeaderSupplier = new TestDatabaseCustomHeaderSupplierImpl();
-    final var plugins = new ArrayList<DatabaseCustomHeaderSupplier>(List.of(customHeaderSupplier));
-    final var apache4Req = new org.apache.http.message.BasicHttpRequest("GET", "localhost");
-    final var apache4Context = new org.apache.http.protocol.BasicHttpContext();
-
-    final var interceptor = new PluginRepositoryInterceptor(plugins);
-    interceptor.process(apache4Req, apache4Context);
-
-    assertThat(apache4Req.getFirstHeader(KEY_CUSTOM_HEADER).getValue())
-        .isEqualTo(VALUE_CUSTOM_HEADER);
-  }
-
-  @Test
   void shouldProcessApache5Headers() {
     final var customHeaderSupplier = new TestDatabaseCustomHeaderSupplierImpl();
     final var plugins = new ArrayList<DatabaseCustomHeaderSupplier>(List.of(customHeaderSupplier));

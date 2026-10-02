@@ -72,7 +72,7 @@ public class SearchAggregationResultTransformer<T>
 
   private AggregationResult transformSingleMetricAggregate(
       final SingleMetricAggregateBase aggregate) {
-    return new Builder().docCount((long) aggregate.value()).build();
+    return new Builder().docCount(aggregate.value().longValue()).build();
   }
 
   private SearchTopHitsAggregator findTopHitsAggregatorRecursively(

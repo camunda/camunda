@@ -296,7 +296,7 @@ public class ElasticSearchSchemaManager
     try {
       final GetIndicesSettingsResponse settingsResponse = esClient.getOldIndexSettings();
       indexBlocked =
-          settingsResponse.result().values().stream()
+          settingsResponse.settings().values().stream()
               .anyMatch(
                   settings -> {
                     final IndexSettingBlocks s = settings.settings().blocks();

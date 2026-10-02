@@ -90,7 +90,7 @@ public class ElasticSearchMetadataService
                       .script(
                           sb ->
                               sb.lang(ScriptLanguage.Painless)
-                                  .source(scriptData.scriptString())
+                                  .source(src -> src.scriptString(scriptData.scriptString()))
                                   .params(
                                       scriptData.params().entrySet().stream()
                                           .collect(
