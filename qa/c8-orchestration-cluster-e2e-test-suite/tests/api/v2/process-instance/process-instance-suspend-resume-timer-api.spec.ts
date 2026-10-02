@@ -46,9 +46,20 @@ async function deployDurationTimerProcess(processDefinitionId: string) {
   return deployment.processes[0];
 }
 
+// As authored in repeating_boundary_timer_process.bpmn, and so also the
+// substitution key that overrides it.
+const TICK_CYCLE = 'R4/PT20S';
+
+// Repetitions are spent by wall-clock while the instance runs, so readiness
+// waits before the suspension compete with the assertions after it. The
+// readiness budget is 90s, i.e. up to four ticks, and the catch-up and the
+// re-arm need two more; ten leaves room for both without changing the interval
+// the gap and cadence assertions are built on.
+const CATCH_UP_TICK_CYCLE = 'R10/PT20S';
+
 /** The child's job is left unworked: the boundary timers stay armed only while
  * the call activity runs. */
-async function deployCycleTimerProcess(prefix: string) {
+async function deployCycleTimerProcess(prefix: string, tickCycle = TICK_CYCLE) {
   const childId = `${prefix}-child`;
   const processDefinitionId = `${prefix}-timer`;
   const tickJobType = `${prefix}-tick`;
@@ -63,13 +74,18 @@ async function deployCycleTimerProcess(prefix: string) {
       'id="updatable_boundary_timer_process"': `id="${processDefinitionId}"`,
       'type="sr-tick"': `type="${tickJobType}"`,
       'type="sr-threshold"': `type="${thresholdJobType}"`,
+      [TICK_CYCLE]: tickCycle,
     },
   );
   return {processDefinitionId, childId, tickJobType, thresholdJobType};
 }
 
-async function startCycleTimerInstance(prefix: string, amount = 10) {
-  const fixture = await deployCycleTimerProcess(prefix);
+async function startCycleTimerInstance(
+  prefix: string,
+  amount = 10,
+  tickCycle = TICK_CYCLE,
+) {
+  const fixture = await deployCycleTimerProcess(prefix, tickCycle);
   const instance = await createInstanceOnceDeployed(
     fixture.processDefinitionId,
     1,
@@ -272,7 +288,11 @@ test.describe('Process Instance Suspend and Resume Timer API', () => {
     request,
   }) => {
     test.setTimeout(8 * 60 * 1000);
-    const fixture = await startCycleTimerInstance(uniquePrefixedId('sr-cycle'));
+    const fixture = await startCycleTimerInstance(
+      uniquePrefixedId('sr-cycle'),
+      10,
+      CATCH_UP_TICK_CYCLE,
+    );
 
     // One tick first, so what follows is about the gap, not a timer that never fired.
     await ticksAfter(request, fixture.processInstanceKey, 0, 1);
