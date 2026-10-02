@@ -18,6 +18,8 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -36,6 +38,7 @@ public class DataReadMeter implements AutoCloseable {
   private static final String NO_ERROR = "none";
   private final ScheduledExecutorService executorService;
   private final MeterRegistry registry;
+  private final Map<TimerKey, Timer> timers = new ConcurrentHashMap<>();
   private final CamundaClient client;
   private final List<ReadQuery> queries;
   private volatile boolean closed;
@@ -120,11 +123,14 @@ public class DataReadMeter implements AutoCloseable {
   }
 
   private Timer timer(final ReadQuery query, final String outcome, final String error) {
-    return MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.READ_BENCHMARK)
-        .tag(StarterLatencyMetricKeyNames.QUERY_NAME.asString(), query.name())
-        .tag(StarterMetricKeyNames.OUTCOME.asString(), outcome)
-        .tag(StarterMetricKeyNames.ERROR.asString(), error)
-        .register(registry);
+    return timers.computeIfAbsent(
+        new TimerKey(query.name(), outcome, error),
+        key ->
+            MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.READ_BENCHMARK)
+                .tag(StarterLatencyMetricKeyNames.QUERY_NAME.asString(), key.query())
+                .tag(StarterMetricKeyNames.OUTCOME.asString(), key.outcome())
+                .tag(StarterMetricKeyNames.ERROR.asString(), key.error())
+                .register(registry));
   }
 
   @Override
@@ -151,6 +157,8 @@ public class DataReadMeter implements AutoCloseable {
       final Supplier<Pair<String, Object>> businessKeySupplier) {
     queryContext.updateAndGet(context -> context.withBusinessKey(businessKeySupplier));
   }
+
+  private record TimerKey(String query, String outcome, String error) {}
 
   private record Result(long durationNanos, Throwable error) {}
 
