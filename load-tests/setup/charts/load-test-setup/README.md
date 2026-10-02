@@ -123,8 +123,8 @@ using [k6](https://grafana.com/docs/k6/latest/) against the deployed Camunda clu
 
 ### In which case to use k6 tests?
 
-* This is a unofficial, partially supported, way to run load tests against Camunda cluster
-* Feedback welcome on #oc-reliablity-testing
+* This is an experimental, unofficial, partially supported, way to run load tests against Camunda cluster
+* Feedback welcome on [#oc-reliability-testing](https://camunda.slack.com/archives/C0807665N8G)
 * Use it for ad-hoc REST API tests, and if it's simpler to use than patching the load-tester app
 
 Use the [`load-tester` subchart](../../../load-tester/README.md) instead for:

@@ -48,7 +48,7 @@ export async function searchProcessInstances(context) {
       return;
     }
     processDefinitionId = items[0].processDefinitionId;
-    console.log(`Will searching process instances from process definition ${processDefinitionId}.`);
+    console.log(`Will search process instances from process definition ${processDefinitionId}.`);
   }
 
   const endpoint = '/v2/process-instances/search';
