@@ -254,6 +254,10 @@ orchestration:
         # coordinated `/cluster/v2/rebalance` endpoint. Set here, not via `orchestration.env`,
         # which the Optimize overlays also define and would silently replace.
         camunda.security.cluster-admin.oidc.clients[0]: leader-balancer
+
+        # enable detailed statistics for rocksDB operations
+        camunda.data.primary-storage.rocks-db.statistics-enabled: "true"
+
     # This file is loaded after application.yml (higher priority). It is empty by default,
     # but can be overridden via --set-file for specific scenarios (e.g. max) to change settings
     # like disabling consistency checks without duplicating the full application.yml content.
