@@ -59,8 +59,8 @@
     <version.commons-text>1.15.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.7.1</version.docker-java-api>
-    <version.elasticsearch.client>8.19.22</version.elasticsearch.client>
-    <version.elasticsearch-java-client>8.19.22</version.elasticsearch-java-client>
+    <version.elasticsearch.client>9.5.5</version.elasticsearch.client>
+    <version.elasticsearch-java-client>9.5.5</version.elasticsearch-java-client>
     <!-- renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch -->
     <version.elasticsearch.container>8.19.16</version.elasticsearch.container>
     <version.error-prone>2.50.0</version.error-prone>

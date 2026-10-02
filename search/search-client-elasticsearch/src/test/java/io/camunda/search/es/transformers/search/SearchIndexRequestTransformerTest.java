@@ -49,7 +49,7 @@ public class SearchIndexRequestTransformerTest {
     assertThat(result).isNotNull();
     assertThat(result.id()).isEqualTo("foo");
     assertThat(result.index()).isEqualTo("bar");
-    assertThat(result.routing()).isEqualTo("foobar");
+    assertThat(result.routing()).singleElement().isEqualTo("foobar");
     assertThat(result.document()).isEqualTo(doc);
   }
 

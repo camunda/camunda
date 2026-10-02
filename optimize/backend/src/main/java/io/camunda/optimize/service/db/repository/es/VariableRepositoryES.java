@@ -169,8 +169,10 @@ public class VariableRepositoryES implements VariableRepository {
                                                           Script.of(
                                                               s ->
                                                                   s.source(
-                                                                      ProcessInstanceScriptFactory
-                                                                          .createVariableClearScript()))))
+                                                                      src ->
+                                                                          src.scriptString(
+                                                                              ProcessInstanceScriptFactory
+                                                                                  .createVariableClearScript())))))
                                               .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
                                               .requireAlias(true)))));
               return b;
@@ -465,7 +467,7 @@ public class VariableRepositoryES implements VariableRepository {
                                                                           .getAggregationBucketLimit())
                                                                   .sources(
                                                                       List.of(
-                                                                          Map.of(
+                                                                          new NamedValue<>(
                                                                               NAME_AGGREGATION,
                                                                               CompositeAggregationSource
                                                                                   .of(
@@ -476,7 +478,7 @@ public class VariableRepositoryES implements VariableRepository {
                                                                                                           false)
                                                                                                       .field(
                                                                                                           getNestedVariableNameField())))),
-                                                                          Map.of(
+                                                                          new NamedValue<>(
                                                                               TYPE_AGGREGATION,
                                                                               CompositeAggregationSource
                                                                                   .of(
@@ -487,7 +489,7 @@ public class VariableRepositoryES implements VariableRepository {
                                                                                                           false)
                                                                                                       .field(
                                                                                                           getNestedVariableTypeField())))),
-                                                                          Map.of(
+                                                                          new NamedValue<>(
                                                                               INDEX_AGGREGATION,
                                                                               CompositeAggregationSource
                                                                                   .of(

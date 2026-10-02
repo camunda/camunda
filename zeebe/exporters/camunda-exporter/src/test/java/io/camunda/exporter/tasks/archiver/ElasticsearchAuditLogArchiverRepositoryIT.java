@@ -14,7 +14,9 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.mapping.Property;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
+import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
+import co.elastic.clients.transport.rest5_client.low_level.Request;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.search.test.utils.SearchDBExtension;
@@ -31,9 +33,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.http.HttpHost;
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RestClient;
+import org.apache.hc.core5.http.HttpHost;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,7 +55,7 @@ final class ElasticsearchAuditLogArchiverRepositoryIT {
 
   @RegisterExtension private static final SearchDBExtension SEARCH_DB = SearchDBExtension.create();
 
-  @AutoClose private final RestClientTransport transport = createRestClient();
+  @AutoClose private final Rest5ClientTransport transport = createRestClient();
   private final HistoryConfiguration config = new HistoryConfiguration();
   private String auditLogIndex;
   private String auditLogCleanupIndex;
@@ -67,7 +67,7 @@ final class ElasticsearchAuditLogArchiverRepositoryIT {
   void afterEach() throws IOException {
     // wipes all data in ES between tests
     final var response = transport.restClient().performRequest(new Request("DELETE", "_all"));
-    assertThat(response.getStatusLine().getStatusCode()).isEqualTo(200);
+    assertThat(response.getStatusCode()).isEqualTo(200);
   }
 
   @BeforeEach
@@ -423,9 +423,15 @@ final class ElasticsearchAuditLogArchiverRepositoryIT {
         clock);
   }
 
-  private RestClientTransport createRestClient() {
-    final var restClient = RestClient.builder(HttpHost.create(SEARCH_DB.esUrl())).build();
-    return new RestClientTransport(restClient, new JacksonJsonpMapper());
+  private Rest5ClientTransport createRestClient() {
+    final HttpHost host;
+    try {
+      host = HttpHost.create(SEARCH_DB.esUrl());
+    } catch (final java.net.URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
+    final var restClient = Rest5Client.builder(host).build();
+    return new Rest5ClientTransport(restClient, new JacksonJsonpMapper());
   }
 
   private void createAuditLogCleanupIndex() throws IOException {

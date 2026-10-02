@@ -30,7 +30,7 @@ class ProcessViewAgentTotalTokensInterpreterESTest {
   void getAggregationScriptReferencesTotalTokensField() {
     final var script = interpreter.getAggregationScript();
     assertThat(script).isNotNull();
-    assertThat(script.source()).contains(ProcessInstanceIndex.AGENT_TOTAL_TOKENS);
+    assertThat(script.source().scriptString()).contains(ProcessInstanceIndex.AGENT_TOTAL_TOKENS);
   }
 
   @Test

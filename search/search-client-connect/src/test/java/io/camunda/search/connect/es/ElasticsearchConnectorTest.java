@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.never;
 
-import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.plugin.PluginConfiguration;
@@ -23,15 +22,15 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
 import net.bytebuddy.ByteBuddy;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.config.RequestConfig.Builder;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpRequestWrapper;
-import org.apache.http.concurrent.FutureCallback;
-import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
-import org.apache.http.impl.nio.reactor.IOReactorConfig;
-import org.apache.http.protocol.BasicHttpContext;
+import org.apache.hc.client5.http.config.ConnectionConfig;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
+import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
+import org.apache.hc.core5.http.impl.BasicEntityDetails;
+import org.apache.hc.core5.http.message.BasicHttpRequest;
+import org.apache.hc.core5.http.protocol.BasicHttpContext;
+import org.apache.hc.core5.reactor.IOReactorConfig;
+import org.apache.hc.core5.util.Timeout;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -39,34 +38,38 @@ import org.mockito.Mockito;
 class ElasticsearchConnectorTest {
 
   @Test
-  void shouldApplyRequestInterceptorsWithinClasspathForNativeRestClient() {
-    final var context = new BasicHttpContext();
+  void shouldApplyRequestInterceptorsWithinClasspathForNativeRestClient()
+      throws IOException, org.apache.hc.core5.http.HttpException {
+    // given
     final var configuration = new ConnectConfiguration();
     configuration.setInterceptorPlugins(
         List.of(
             new PluginConfiguration(
                 "my-plg", TestDatabaseCustomHeaderSupplierImpl.class.getName(), null)));
     final PluginRepository pluginRepository = new PluginRepository();
+    pluginRepository.load(configuration.getInterceptorPlugins());
     final var connector =
-        Mockito.spy(
-            new ElasticsearchConnector(configuration, new ObjectMapper(), pluginRepository));
-    final var client = connector.createClient();
+        new ElasticsearchConnector(configuration, new ObjectMapper(), pluginRepository);
+    final var builder = Mockito.mock(HttpAsyncClientBuilder.class);
 
     // when
-    ((RestClientTransport) client._transport())
-        .restClient()
-        .getHttpClient()
-        .execute(HttpHost.create("localhost:9200"), new HttpGet(), context, NoopCallback.INSTANCE);
+    connector.configureHttpClient(builder, configuration, pluginRepository.asRequestInterceptor());
+    final var interceptorCaptor =
+        org.mockito.ArgumentCaptor.forClass(org.apache.hc.core5.http.HttpRequestInterceptor.class);
+    Mockito.verify(builder).addRequestInterceptorLast(interceptorCaptor.capture());
+
+    final var request = new BasicHttpRequest("GET", "localhost");
+    final var entity = new BasicEntityDetails(0, null);
+    interceptorCaptor.getValue().process(request, entity, new BasicHttpContext());
 
     // then
-    final HttpRequestWrapper reqWrapper = (HttpRequestWrapper) context.getAttribute("http.request");
-
-    assertThat(reqWrapper.getFirstHeader("foo").getValue()).isEqualTo("bar");
+    assertThat(request.getFirstHeader("foo").getValue()).isEqualTo("bar");
   }
 
   @Test
-  void shouldApplyExternalRequestInterceptorsForNativeRestClient() throws IOException {
-    final var context = new BasicHttpContext();
+  void shouldApplyExternalRequestInterceptorsForNativeRestClient()
+      throws IOException, org.apache.hc.core5.http.HttpException {
+    // given
     final var jar =
         new ByteBuddy()
             .subclass(TestDatabaseCustomHeaderSupplierImpl.class)
@@ -78,22 +81,23 @@ class ElasticsearchConnectorTest {
     final var configuration = new ConnectConfiguration();
     configuration.setInterceptorPlugins(List.of(plugin));
     final PluginRepository pluginRepository = new PluginRepository();
+    pluginRepository.load(configuration.getInterceptorPlugins());
     final var connector =
-        Mockito.spy(
-            new ElasticsearchConnector(configuration, new ObjectMapper(), pluginRepository));
-    final var client = connector.createClient();
+        new ElasticsearchConnector(configuration, new ObjectMapper(), pluginRepository);
+    final var builder = Mockito.mock(HttpAsyncClientBuilder.class);
 
     // when
-    ((RestClientTransport) client._transport())
-        .restClient()
-        .getHttpClient()
-        .execute(HttpHost.create("localhost:9200"), new HttpGet(), context, NoopCallback.INSTANCE);
+    connector.configureHttpClient(builder, configuration, pluginRepository.asRequestInterceptor());
+    final var interceptorCaptor =
+        org.mockito.ArgumentCaptor.forClass(org.apache.hc.core5.http.HttpRequestInterceptor.class);
+    Mockito.verify(builder).addRequestInterceptorLast(interceptorCaptor.capture());
+
+    final var request = new BasicHttpRequest("GET", "localhost");
+    final var entity = new BasicEntityDetails(0, null);
+    interceptorCaptor.getValue().process(request, entity, new BasicHttpContext());
 
     // then
-    final HttpRequestWrapper reqWrapper = (HttpRequestWrapper) context.getAttribute("http.request");
-
-    assertThat(reqWrapper.getFirstHeader(KEY_CUSTOM_HEADER).getValue())
-        .isEqualTo(VALUE_CUSTOM_HEADER);
+    assertThat(request.getFirstHeader(KEY_CUSTOM_HEADER).getValue()).isEqualTo(VALUE_CUSTOM_HEADER);
   }
 
   @Test
@@ -104,10 +108,10 @@ class ElasticsearchConnectorTest {
     configuration.setMaxConnectionsPerRoute(40);
     final var connector =
         new ElasticsearchConnector(configuration, new ObjectMapper(), new PluginRepository());
-    final var builder = Mockito.mock(HttpAsyncClientBuilder.class);
+    final var builder = Mockito.mock(PoolingAsyncClientConnectionManagerBuilder.class);
 
     // when
-    connector.configureHttpClient(builder, configuration);
+    connector.configureConnectionManager(builder, configuration);
 
     // then
     Mockito.verify(builder).setMaxConnTotal(75);
@@ -120,10 +124,10 @@ class ElasticsearchConnectorTest {
     final var configuration = new ConnectConfiguration();
     final var connector =
         new ElasticsearchConnector(configuration, new ObjectMapper(), new PluginRepository());
-    final var builder = Mockito.mock(HttpAsyncClientBuilder.class);
+    final var builder = Mockito.mock(PoolingAsyncClientConnectionManagerBuilder.class);
 
     // when
-    connector.configureHttpClient(builder, configuration);
+    connector.configureConnectionManager(builder, configuration);
 
     // then
     Mockito.verify(builder, never()).setMaxConnTotal(anyInt());
@@ -139,15 +143,18 @@ class ElasticsearchConnectorTest {
 
     final var connector =
         new ElasticsearchConnector(configuration, new ObjectMapper(), new PluginRepository());
-    final var builder = Mockito.mock(Builder.class);
+    final var connectionConfigBuilder = Mockito.mock(ConnectionConfig.Builder.class);
+    final var requestConfigBuilder = Mockito.mock(RequestConfig.Builder.class);
 
     // when
-    connector.setTimeouts(builder, configuration);
+    connector.setConnectionTimeouts(connectionConfigBuilder, configuration);
+    connector.setRequestTimeouts(requestConfigBuilder, configuration);
 
     // then
-    Mockito.verify(builder).setSocketTimeout(125456);
-    Mockito.verify(builder).setConnectTimeout(654321);
-    Mockito.verify(builder).setConnectionRequestTimeout(180_000);
+    Mockito.verify(connectionConfigBuilder).setSocketTimeout(Timeout.ofMilliseconds(125456));
+    Mockito.verify(connectionConfigBuilder).setConnectTimeout(Timeout.ofMilliseconds(654321));
+    Mockito.verify(requestConfigBuilder)
+        .setConnectionRequestTimeout(Timeout.ofMilliseconds(180_000));
   }
 
   @Test
@@ -156,15 +163,18 @@ class ElasticsearchConnectorTest {
     final var configuration = new ConnectConfiguration();
     final var connector =
         new ElasticsearchConnector(configuration, new ObjectMapper(), new PluginRepository());
-    final var builder = Mockito.mock(Builder.class);
+    final var connectionConfigBuilder = Mockito.mock(ConnectionConfig.Builder.class);
+    final var requestConfigBuilder = Mockito.mock(RequestConfig.Builder.class);
 
     // when
-    connector.setTimeouts(builder, configuration);
+    connector.setConnectionTimeouts(connectionConfigBuilder, configuration);
+    connector.setRequestTimeouts(requestConfigBuilder, configuration);
 
     // then
-    Mockito.verify(builder).setSocketTimeout(30_000);
-    Mockito.verify(builder).setConnectTimeout(5_000);
-    Mockito.verify(builder).setConnectionRequestTimeout(180_000);
+    Mockito.verify(connectionConfigBuilder).setSocketTimeout(Timeout.ofMilliseconds(30_000));
+    Mockito.verify(connectionConfigBuilder).setConnectTimeout(Timeout.ofMilliseconds(5_000));
+    Mockito.verify(requestConfigBuilder)
+        .setConnectionRequestTimeout(Timeout.ofMilliseconds(180_000));
   }
 
   @Test
@@ -180,20 +190,7 @@ class ElasticsearchConnectorTest {
 
     // then
     final var captor = ArgumentCaptor.forClass(IOReactorConfig.class);
-    Mockito.verify(builder).setDefaultIOReactorConfig(captor.capture());
+    Mockito.verify(builder).setIOReactorConfig(captor.capture());
     assertThat(captor.getValue().isSoKeepalive()).isTrue();
-  }
-
-  private static final class NoopCallback implements FutureCallback<HttpResponse> {
-    private static final NoopCallback INSTANCE = new NoopCallback();
-
-    @Override
-    public void completed(final HttpResponse result) {}
-
-    @Override
-    public void failed(final Exception ex) {}
-
-    @Override
-    public void cancelled() {}
   }
 }

@@ -69,6 +69,7 @@ import co.elastic.clients.elasticsearch.indices.GetMappingRequest.Builder;
 import co.elastic.clients.elasticsearch.indices.GetMappingResponse;
 import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import co.elastic.clients.elasticsearch.indices.IndexState;
+import co.elastic.clients.elasticsearch.indices.IndicesBlockOptions;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
 import co.elastic.clients.elasticsearch.indices.PutTemplateRequest;
@@ -76,7 +77,6 @@ import co.elastic.clients.elasticsearch.indices.RefreshRequest;
 import co.elastic.clients.elasticsearch.indices.RefreshResponse;
 import co.elastic.clients.elasticsearch.indices.RolloverRequest;
 import co.elastic.clients.elasticsearch.indices.RolloverResponse;
-import co.elastic.clients.elasticsearch.indices.add_block.IndicesBlockOptions;
 import co.elastic.clients.elasticsearch.snapshot.CreateSnapshotRequest;
 import co.elastic.clients.elasticsearch.snapshot.CreateSnapshotResponse;
 import co.elastic.clients.elasticsearch.snapshot.DeleteSnapshotRequest;
@@ -91,6 +91,10 @@ import co.elastic.clients.json.SimpleJsonpMapper;
 import co.elastic.clients.json.jackson.JacksonJsonpGenerator;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.DefaultTransportOptions;
+import co.elastic.clients.transport.rest5_client.low_level.Request;
+import co.elastic.clients.transport.rest5_client.low_level.Response;
+import co.elastic.clients.transport.rest5_client.low_level.ResponseException;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -126,13 +130,9 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
-import org.apache.http.HttpEntity;
-import org.apache.http.entity.ContentType;
-import org.apache.http.nio.entity.NStringEntity;
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.Response;
-import org.elasticsearch.client.ResponseException;
-import org.elasticsearch.client.RestClient;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -150,14 +150,14 @@ import org.springframework.context.ApplicationContext;
 public class OptimizeElasticsearchClient extends DatabaseClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(OptimizeElasticsearchClient.class);
-  private RestClient restClient;
+  private Rest5Client restClient;
   private final ObjectMapper objectMapper;
   private ElasticsearchClient esClient;
   private ElasticsearchAsyncClient elasticsearchAsyncClient;
   private TransportOptionsProvider transportOptionsProvider;
 
   public OptimizeElasticsearchClient(
-      final RestClient restClient,
+      final Rest5Client restClient,
       final ObjectMapper objectMapper,
       final ElasticsearchClient esClient,
       final OptimizeIndexNameService indexNameService) {
@@ -165,7 +165,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   }
 
   public OptimizeElasticsearchClient(
-      final RestClient restClient,
+      final Rest5Client restClient,
       final ObjectMapper objectMapper,
       final ElasticsearchClient esClient,
       final OptimizeIndexNameService indexNameService,
@@ -351,7 +351,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
 
   public final boolean exists(final GetIndexRequest getRequest) throws IOException {
     try {
-      return !esWithTransportOptions().indices().get(getRequest).result().isEmpty();
+      return !esWithTransportOptions().indices().get(getRequest).indices().isEmpty();
     } catch (final ElasticsearchException e) {
       if (e.getMessage().contains("index_not_found_exception")) {
         return false;
@@ -432,7 +432,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   @Override
   public Map<String, Set<String>> getAliasesForIndexPattern(final String indexNamePattern) {
     try {
-      return getAlias(indexNamePattern).result().entrySet().stream()
+      return getAlias(indexNamePattern).aliases().entrySet().stream()
           .collect(Collectors.toMap(Entry::getKey, entry -> entry.getValue().aliases().keySet()));
     } catch (final IOException e) {
       throw new RuntimeException(e);
@@ -445,7 +445,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
       return esWithTransportOptions()
           .indices()
           .getAlias((b) -> b.name(aliasName))
-          .result()
+          .aliases()
           .keySet();
     } catch (final ElasticsearchException e) {
       if (e.response().status() == 404) {
@@ -530,7 +530,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
                                 GetIndexRequest.of(r -> r.index("*"))
                                     .index()
                                     .toArray(new String[] {}))))))
-        .result()
+        .indices()
         .keySet()
         .stream()
         .toList();
@@ -574,7 +574,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
                                           .collect(
                                               Collectors.toMap(
                                                   Entry::getKey, e -> JsonData.of(e.getValue()))))
-                                  .source(script.scriptString())
+                                  .source(src -> src.scriptString(script.scriptString()))
                                   .lang(ScriptLanguage.Painless))
                       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)),
           Object.class);
@@ -726,7 +726,6 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
           esWithTransportOptions()
               .indices()
               .getSettings(g -> g.index(rawIndexName).name("index.blocks.write"))
-              .result()
               .get(rawIndexName);
       return index != null && isWriteBlocked(index.settings());
     } catch (final IOException e) {
@@ -830,7 +829,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     try {
       final Request request = new Request(HttpPost.METHOD_NAME, path);
       final HttpEntity entity =
-          new NStringEntity(extractQuery(searchRequest), ContentType.APPLICATION_JSON);
+          new StringEntity(extractQuery(searchRequest), ContentType.APPLICATION_JSON);
       request.setEntity(entity);
       final Response response = restClient.performRequest(request);
       final Map map = OPTIMIZE_MAPPER.readValue(response.getEntity().getContent(), Map.class);
@@ -919,7 +918,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     return Script.of(
         b ->
             b.lang(ScriptLanguage.Painless)
-                .source(inlineUpdateScript)
+                .source(src -> src.scriptString(inlineUpdateScript))
                 .params(
                     params.entrySet().stream()
                         .collect(Collectors.toMap(Entry::getKey, e -> JsonData.of(e.getValue())))));
