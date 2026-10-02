@@ -90,7 +90,7 @@ function InstanceDiagram({
 	const overlaysData = useInstanceDiagramOverlays({
 		statistics: statistics.data,
 		waitStates: isRunning ? waitStates : undefined,
-		agents: isRunning ? agents.data : undefined,
+		agents: agents.data,
 		businessObjects: diagram?.businessObjects,
 		processDefinitionId: processInstance.processDefinitionId,
 		isModificationModeEnabled,
