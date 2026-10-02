@@ -379,46 +379,6 @@ class InProgressBackupImplTest {
   }
 
   @Test
-  void shouldHoldOwnReservationOfSnapshotReservedForCheckpoint(
-      @Mock final SnapshotReservation snapshotReservation) {
-    // given - the checkpoint's reservation can be released by a duplicate checkpoint record
-    final var reservedSnapshot = reservedSnapshot("reserved");
-    onReserve(reservedSnapshot, snapshotReservation);
-    inProgressBackup = backupWithCheckpointSnapshot(reservedSnapshot.getId());
-    when(snapshotStore.getReservedSnapshot(1L, reservedSnapshot.getId()))
-        .thenReturn(TestActorFuture.completedFuture(Optional.of(reservedSnapshot)));
-    inProgressBackup.reserveSnapshot().join();
-
-    // when
-    inProgressBackup.close();
-
-    // then
-    verify(reservedSnapshot).reserve();
-    verify(snapshotReservation).release();
-  }
-
-  @Test
-  void shouldLookUpSnapshotWhenCheckpointSnapshotCannotBeReserved(
-      @Mock final SnapshotReservation snapshotReservation) {
-    // given
-    final var reservedSnapshot = reservedSnapshot("reserved");
-    failOnReserve(reservedSnapshot);
-    inProgressBackup = backupWithCheckpointSnapshot(reservedSnapshot.getId());
-    when(snapshotStore.getReservedSnapshot(1L, reservedSnapshot.getId()))
-        .thenReturn(TestActorFuture.completedFuture(Optional.of(reservedSnapshot)));
-    final var validSnapshot = snapshotWith(1L, 5L);
-    onReserve(validSnapshot, snapshotReservation);
-    setAvailableSnapshots(Set.of(validSnapshot));
-    mockJournalProviderWithNonEmptySegments();
-
-    // when
-    final var backup = collectBackupContents();
-
-    // then
-    assertThat(backup.descriptor().snapshotId()).hasValue(validSnapshot.getId());
-  }
-
-  @Test
   void shouldLookUpSnapshotWhenCheckpointSnapshotIsNotReserved(
       @Mock final SnapshotReservation snapshotReservation) {
     // given
@@ -485,7 +445,6 @@ class InProgressBackupImplTest {
 
   private PersistedSnapshot reservedSnapshot(final String snapshotId) {
     final var snapshot = mock(PersistedSnapshot.class);
-    onReserve(snapshot, mock(SnapshotReservation.class));
     lenient().when(snapshot.getId()).thenReturn(snapshotId);
     lenient().when(snapshot.getIndex()).thenReturn(1L);
     lenient().when(snapshot.getPath()).thenReturn(snapshotDir);
