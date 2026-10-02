@@ -278,7 +278,10 @@ public final class BackupApiRequestHandler extends ReadOnlyBackupApiRequestHandl
 
   private ActorFuture<String> reserveSnapshotForCheckpoint(
       final long checkpointId, final CheckpointType checkpointType) {
-    if (!checkpointType.shouldCreateBackup()) {
+    // a checkpoint that is not newer than the latest one is ignored by the processor, e.g. a
+    // retried request, so it takes no backup and needs no snapshot
+    if (!checkpointType.shouldCreateBackup()
+        || checkpointId <= checkpointState.getLatestCheckpointId()) {
       return CompletableActorFuture.completed("");
     }
 
