@@ -293,6 +293,11 @@ public class Starter implements CommandLineRunner {
 
     final BooleanSupplier shouldContinue = createContinuationCondition();
     final Semaphore inFlight = new Semaphore(starterCfg.getMaxInFlightRequests());
+    Gauge.builder(
+            StarterMetricsDoc.PROCESS_INSTANCES_IN_FLIGHT.getName(),
+            () -> starterCfg.getMaxInFlightRequests() - inFlight.availablePermits())
+        .description(StarterMetricsDoc.PROCESS_INSTANCES_IN_FLIGHT.getDescription())
+        .register(registry);
 
     return executorService.scheduleAtFixedRate(
         () -> {

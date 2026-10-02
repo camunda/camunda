@@ -102,6 +102,24 @@ public enum StarterMetricsDoc implements ExtendedMeterDocumentation {
     }
   },
 
+  /** Number of process instance start requests that were sent and have no answer yet. */
+  PROCESS_INSTANCES_IN_FLIGHT {
+    @Override
+    public String getDescription() {
+      return "Number of process instance start requests sent and still awaiting an answer.";
+    }
+
+    @Override
+    public String getName() {
+      return "starter.process.instances.in.flight";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+  },
+
   /**
    * Set to 1 when the starter has finished its instance-creation loop (either because the
    * configured duration-limit elapsed or because it was otherwise stopped). Stays at 0 while the
