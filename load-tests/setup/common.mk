@@ -86,7 +86,12 @@ else ifeq ($(scenario),max)
 ifeq ($(scenario_max_override_key),)
 $(error scenario=max requires scenario_max_override_key to be declared by the version Makefile)
 endif
+# Without secondary storage the exporters do no indexing work, so the cluster sustains a higher rate.
+ifeq ($(secondary_storage),none)
+_scenario_load_test_flags = --set load-tester.starter.rate=500
+else
 _scenario_load_test_flags = --set load-tester.starter.rate=300
+endif
 _scenario_platform_flags = --set-file '$(scenario_max_override_key)./camunda-platform-override-values.yaml'
 else ifeq ($(scenario),archiver)
 _scenario_load_test_flags = --set load-tester.starter.rate=1 --set load-tester.starter.rateDuration=10m --set load-tester.starter.processId=multiInstanceElements --set load-tester.starter.bpmnXmlPath=bpmn/multiInstanceElements.bpmn --set load-tester.starter.payloadPath=bpmn/multiInstanceElementsPayload.json --set load-tester.workers.worker.replicas=0

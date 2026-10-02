@@ -99,6 +99,8 @@ var defaultScenarios = []scenario{
 	{Name: "opensearch-stable", Storage: "opensearch", Optimize: true, Stable: true},
 	{Name: "rdbms-stable", Storage: "postgresql", Optimize: false, Stable: true},
 	{Name: "max", Storage: "elasticsearch", Optimize: true, Stable: false, Workload: "max"},
+	// The max rate depends on the storage (500 PI/s for none, 300 otherwise), see common.mk.
+	{Name: "max-none", Storage: "none", Optimize: false, Stable: false, Workload: "max"},
 	{Name: "realistic", Storage: "elasticsearch", Optimize: true, Stable: false, Workload: "realistic"},
 	// SetupTarget scenarios render only the load-test-setup chart via a named
 	// Makefile target, verifying opt-in chart features without duplicating the

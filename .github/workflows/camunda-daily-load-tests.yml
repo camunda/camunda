@@ -112,12 +112,12 @@ jobs:
             secondary-storage-type: elasticsearch
           - key: none-grpc
             label: None-gRPC
-            load-test-load: '--set load-tester.starter.rate=500 --set global.preferRest.enabled=false'
+            load-test-load: '--set global.preferRest.enabled=false'
             load-test-setup-helm-values: ''
             secondary-storage-type: none
           - key: none-rest
             label: None-REST
-            load-test-load: '--set load-tester.starter.rate=500 --set global.preferRest.enabled=true'
+            load-test-load: '--set global.preferRest.enabled=true'
             load-test-setup-helm-values: ''
             secondary-storage-type: none
     uses: ./.github/workflows/stress-load-test.yml
