@@ -95,6 +95,47 @@ class AsyncDocumentPipelineTest {
   }
 
   @Test
+  void shouldNotCompleteLastBatchIfRetryableErrorOccursInProcessing() {
+    final BatchProcessor<Integer, Integer> batchProcessor = mock(BatchProcessor.class);
+    when(batchProcessor.process(any()))
+        .then(returnBatchSize())
+        .thenReturn(CompletableFuture.failedFuture(new RetryableException()))
+        .then(returnBatchSize());
+
+    final BatchSupplier<Integer, Integer> batchSupplier = mock(BatchSupplier.class);
+    when(batchSupplier.supply(any(), anyInt()))
+        .thenReturn(
+            CompletableFuture.completedFuture(DocumentBatch.from(List.of(4, 5, 6), 6)),
+            CompletableFuture.completedFuture(DocumentBatch.from(List.of(7, 8), 8)));
+
+    final var retryRecorder = mock(Runnable.class);
+
+    final var builder =
+        AsyncDocumentPipeline.builder(batchSupplier, batchProcessor)
+            .minBatchSize(1)
+            .batchSize(3)
+            .addRetryableException(RetryableException.class)
+            .retryRecorder(retryRecorder)
+            .retryDelayMs(1)
+            .maxRetryAttempts(2);
+
+    final var future = builder.buildAndExecute();
+    assertThat(future)
+        .succeedsWithin(Duration.ofSeconds(5))
+        .extracting("totalDocumentsRead", "totalDocumentsProcessed")
+        .containsExactly(7L, 5L);
+
+    final var inOrder = Mockito.inOrder(batchSupplier, batchProcessor, retryRecorder);
+    inOrder.verify(batchSupplier).supply(null, 3);
+    inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(4, 5, 6), 6));
+    inOrder.verify(batchSupplier).supply(6, 3);
+    inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(7, 8), 8));
+    inOrder.verify(retryRecorder).run();
+    inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(7, 8), 8));
+    inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
   void shouldFailIfNonRecoverableErrorOccursReadingBatches() {
     final BatchProcessor<Integer, Integer> batchProcessor = mock(BatchProcessor.class);
     when(batchProcessor.process(any())).thenThrow(new RuntimeException("simulated error"));
@@ -327,6 +368,61 @@ class AsyncDocumentPipelineTest {
     verifyNoInteractions(retryRecorder);
 
     assertThat(batchSize.get()).isEqualTo(5);
+  }
+
+  @Test
+  void shouldResetRetryCountAfterSuccessfulBatch() {
+    final BatchProcessor<Integer, Integer> batchProcessor = mock(BatchProcessor.class);
+
+    when(batchProcessor.process(any()))
+        // two retries in a row
+        .thenThrow(new RetryableException())
+        .thenThrow(new RetryableException())
+        .then(returnBatchSize())
+        .then(returnBatchSize())
+        .then(returnBatchSize())
+        // third retry, but should be for new batch so retry count reset
+        .thenThrow(new RetryableException())
+        .thenThrow(new RetryableException())
+        .then(returnBatchSize());
+
+    final var retryRecorder = mock(Runnable.class);
+
+    final var builder =
+        AsyncDocumentPipeline.builder(batchSupplier(1, 10), batchProcessor)
+            .minBatchSize(1)
+            .batchSize(3)
+            .addRetryableException(RetryableException.class)
+            .maxRetryAttempts(2)
+            .retryDelayMs(1)
+            .retryRecorder(retryRecorder);
+
+    final var future = builder.buildAndExecute();
+    assertThat(future)
+        .succeedsWithin(Duration.ofSeconds(5))
+        .extracting("totalDocumentsRead", "totalDocumentsProcessed")
+        .containsExactly(18L, 10L);
+
+    final var inOrder = Mockito.inOrder(batchProcessor, retryRecorder);
+    // first batch has two retries before it succeeds
+    inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(1, 2, 3), 3));
+    inOrder.verify(retryRecorder).run();
+    inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(1, 2, 3), 3));
+    inOrder.verify(retryRecorder).run();
+    inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(1, 2, 3), 3));
+
+    // next batches succeed
+    inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(4, 5, 6), 6));
+    inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(7, 8, 9), 9));
+
+    // last batch needs two retries before it succeeds
+    inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(10), 10));
+    inOrder.verify(retryRecorder).run();
+    inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(10), 10));
+    inOrder.verify(retryRecorder).run();
+    inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(10), 10));
+
+    inOrder.verifyNoMoreInteractions();
   }
 
   static Stream<Throwable> retryableErrors() {
