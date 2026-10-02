@@ -149,9 +149,9 @@ data:
       for (let i = 0; i < vars.length; i++) {
         const name = vars[i];
         const value = __ENV[name];
-        if (value === undefined) {
+        if (value === undefined || value === '') {
           missing.push(name);
-          console.error(`Environment variable ${name} is not defined.`);
+          console.error(`Environment variable ${name} is not defined or empty.`);
         }
       }
   
@@ -199,7 +199,7 @@ data:
     }
   test.data-read.js: |
     import http from 'k6/http';
-    import { check } from 'k6';
+    import { check, sleep } from 'k6';
   
     import * as auth from './lib.auth.js';
     import * as helpers from './lib.helpers.js';
@@ -208,8 +208,9 @@ data:
     /* Tests reading data from Camunda, which requires a secondary storage.
      * This test is disabled when running with `secondary_storage=none`. */
     export const options = {
-      // Give enough time for Camunda to be ready before continuing with the test.
-      setupTimeout: '15m',
+      // Give enough time for Camunda to be ready and for a process definition to
+      // exist before continuing with the test.
+      setupTimeout: '20m',
       scenarios: {
         /* Search for process instances.
          * Run a basic search for process instances at a low rate. */
@@ -226,30 +227,33 @@ data:
     };
   
     export async function setup() {
-      return helpers.setupContext();
-    }
+      const context = await helpers.setupContext();
   
-    // Process definition to search for, kept for the lifetime of the VU.
-    let processDefinitionId = null;
+      // Process definition to search process instances for. Retries until one exists.
+      const waitTime = 10; // seconds
+      while (context.processDefinitionId === undefined) {
+        auth.renew(context.token);
+        const response = await camunda.listProcessDefinitions(context);
+        if (response.status !== 200) {
+          console.error(`Unable to list process definitions (will retry in ${waitTime}s), got HTTP status=${response.status}`);
+        } else {
+          const items = response.json().items;
+          if (items.length > 0) {
+            context.processDefinitionId = items[0].processDefinitionId;
+            break;
+          }
+          console.info(`No process definition found yet (will retry in ${waitTime}s).`);
+        }
+        sleep(waitTime);
+      }
+      console.log(`Will search process instances from process definition ${context.processDefinitionId}.`);
+  
+      return context;
+    }
   
     // https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/search-process-instances/
     export async function searchProcessInstances(context) {
       const token = auth.renew(context.token);
-  
-      if (processDefinitionId === null) {
-        const processDefinitionsResponse = await camunda.listProcessDefinitions(context);
-        if (processDefinitionsResponse.status !== 200) {
-          console.error(`Unable to list process definitions, got HTTP status=${processDefinitionsResponse.status}`);
-          return;
-        }
-        const items = processDefinitionsResponse.json().items;
-        if (items.length === 0) {
-          // Wait until we find at least one process definition.
-          return;
-        }
-        processDefinitionId = items[0].processDefinitionId;
-        console.log(`Will search process instances from process definition ${processDefinitionId}.`);
-      }
   
       const endpoint = '/v2/process-instances/search';
       const params = {
@@ -264,7 +268,14 @@ data:
           {field: "startDate", order: "DESC"},
         ],
         filter: {
-          processDefinitionId: processDefinitionId,
+          processDefinitionId: context.processDefinitionId,
+          $or: [
+            { state: "ACTIVE" },
+            { hasIncident: true },
+          ],
+        },
+        page: {
+          limit: 100,
         },
       };
       const response = http.post(context.baseURL + endpoint, JSON.stringify(payload), params);
@@ -281,13 +292,13 @@ data:
       // Give enough time for Camunda to be ready before continuing with the test.
       setupTimeout: '15m',
       scenarios: {
-        /* Poll the topology endpoint has a way to check whether the cluster is alive or not.
+        /* Poll the topology endpoint to check whether the cluster is alive.
          * This is very basic, but should also work almost all the time. */
         topology: {
           exec: 'checkTopology',
           executor: 'constant-arrival-rate',
           duration: '60d',
-          rate: 100,
+          rate: 10,
           timeUnit: '1s',
           preAllocatedVUs: 10,
           maxVUs: 100,

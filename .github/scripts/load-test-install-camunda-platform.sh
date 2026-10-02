@@ -87,12 +87,9 @@ load_test_config="--set global.image.tag=${image_tag} \
 # Only pass the value to turn read benchmarks off. This flag is rendered after the Makefile flags,
 # so always passing it (including "true") would override the Makefile, which turns read benchmarks
 # off for scenarios without secondary storage. When on, the chart default and the Makefile decide.
-if [[ "${perform_read_benchmarks}" != "true" ]]; then
-  load_test_config="$load_test_config --set global.performReadBenchmarks=false"
-fi
-
 # The k6 data-read test reads from secondary storage, like the read benchmarks.
 if [[ "${perform_read_benchmarks}" != "true" ]]; then
+  load_test_config="$load_test_config --set global.performReadBenchmarks=false"
   load_test_config="$load_test_config --set k6.tests.data-read.enabled=false"
 fi
 

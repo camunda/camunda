@@ -17,9 +17,9 @@ export function ensureEnvVars() {
   for (let i = 0; i < vars.length; i++) {
     const name = vars[i];
     const value = __ENV[name];
-    if (value === undefined) {
+    if (value === undefined || value === '') {
       missing.push(name);
-      console.error(`Environment variable ${name} is not defined.`);
+      console.error(`Environment variable ${name} is not defined or empty.`);
     }
   }
 

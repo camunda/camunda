@@ -94,7 +94,9 @@ spec:
       {{- toYaml $root.Values.k6.resources | nindent 6 }}
 
     nodeSelector:
+      {{- if $root.Values.topologyZone }}
       topology.kubernetes.io/zone: "{{ $root.Values.topologyZone }}"
+      {{- end }}
       {{- with $root.Values.k6.nodeSelector }}
       {{- toYaml . | nindent 6 }}
       {{- end }}
