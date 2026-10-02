@@ -42,6 +42,8 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 @ExtendWith(ProcessingStateExtension.class)
 public final class ProcessStateTest {
@@ -994,22 +996,27 @@ public final class ProcessStateTest {
     assertThat(latestActive).isNull();
   }
 
-  @Test
-  public void shouldKeepDrainingStateWhenReloadingByVersionAfterCacheMiss() {
+  @ParameterizedTest
+  @EnumSource(
+      value = PersistedProcessState.class,
+      names = {"DRAINING", "PENDING_DELETION"})
+  public void shouldKeepUpdatedStateWhenReloadingByVersionAfterCacheMiss(
+      final PersistedProcessState state) {
     // given
     final var processRecord = creatingProcessRecord(processingState);
     processState.putProcess(processRecord.getKey(), processRecord);
-    processState.markDraining(processRecord.setDeleteHistory(true));
+    processState.updateProcessState(processRecord, state);
 
     // when - the cached definition is gone, e.g. reclaimed by the GC
     processState.clearCache();
-    final var process =
+    final var byVersion =
         processState.getProcessByProcessIdAndVersion(
             wrapString("processId"), processRecord.getVersion(), TENANT_ID);
 
-    // then
-    assertThat(process.getState()).isEqualTo(PersistedProcessState.DRAINING);
-    assertThat(process.isDeleteHistory()).isTrue();
+    // then - the version lookup also refills the key cache, which must not regress either
+    final var byKey = processState.getProcessByKeyAndTenant(processRecord.getKey(), TENANT_ID);
+    assertThat(byVersion.getState()).isEqualTo(state);
+    assertThat(byKey.getState()).isEqualTo(state);
   }
 
   @Test
@@ -1028,23 +1035,6 @@ public final class ProcessStateTest {
 
     // then
     assertThat(latestActive.getKey()).isEqualTo(v1.getKey());
-  }
-
-  @Test
-  public void shouldKeepUpdatedStateInKeyCacheAfterReloadingByVersion() {
-    // given
-    final var processRecord = creatingProcessRecord(processingState);
-    processState.putProcess(processRecord.getKey(), processRecord);
-    processState.updateProcessState(processRecord, PersistedProcessState.PENDING_DELETION);
-    processState.clearCache();
-
-    // when - a version lookup reloads the definition into both caches
-    processState.getProcessByProcessIdAndVersion(
-        wrapString("processId"), processRecord.getVersion(), TENANT_ID);
-
-    // then
-    final var process = processState.getProcessByKeyAndTenant(processRecord.getKey(), TENANT_ID);
-    assertThat(process.getState()).isEqualTo(PersistedProcessState.PENDING_DELETION);
   }
 
   @Test
