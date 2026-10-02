@@ -8,7 +8,7 @@
 
 import {type Page} from '@playwright/test';
 import {TasklistNotifications} from './TasklistNotifications';
-import {View} from './BasePage';
+import {View} from '#/pages/BasePage';
 
 type LanguageOption = 'English' | 'Français' | 'Deutsch' | 'Español';
 
