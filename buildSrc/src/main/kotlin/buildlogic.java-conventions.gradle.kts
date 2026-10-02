@@ -3,6 +3,7 @@ import com.diffplug.gradle.spotless.SpotlessExtension
 import io.camunda.gradle.flags.asEnabledFlag
 import net.ltgt.gradle.errorprone.errorprone
 import org.gradle.api.artifacts.VersionCatalogsExtension
+import org.gradle.api.tasks.testing.junitplatform.JUnitPlatformOptions
 import org.gradle.jvm.tasks.Jar
 
 plugins {
@@ -95,8 +96,10 @@ tasks.named<JavaCompile>("compileJava") {
 
 tasks.withType<Javadoc> { options.encoding = "utf-8" }
 
-val skipRandomTests = providers.gradleProperty("skip.random.tests").isPresent
 val includeRandomTests = providers.gradleProperty("includeRandomTests").isPresent
+val includeSlowTests = providers.gradleProperty("includeSlowTests").isPresent
+val includePerformanceTests = providers.gradleProperty("includePerformanceTests").isPresent
+val includeStraceTests = providers.gradleProperty("includeStraceTests").isPresent
 val parallelTests = providers.gradleProperty("parallel.tests").isPresent
 val junitThreadCount = providers.gradleProperty("junit.thread.count").getOrElse("2")
 val testJvmMaxHeap = providers.gradleProperty("test.jvm.maxheap").orNull
@@ -143,14 +146,6 @@ tasks.withType<Test>().configureEach {
   environment("LANG", "en_US.UTF-8")
   environment("LC_ALL", "en_US.UTF-8")
 
-  if (skipRandomTests) {
-    exclude("**/*RandomizedPropertyTest.class", "**/*RandomizedRaftTest.class")
-  }
-
-  if (includeRandomTests) {
-    include("**/*RandomizedPropertyTest.class", "**/*RandomizedRaftTest.class")
-  }
-
   if (parallelTests) {
     systemProperty("junit.jupiter.execution.parallel.enabled", "true")
     systemProperty("junit.jupiter.execution.parallel.config.strategy", "fixed")
@@ -168,6 +163,31 @@ tasks.withType<Test>().configureEach {
 tasks.named<Test>("test") {
   description = "Runs unit tests (Maven surefire equivalent); excludes IT* patterns"
   exclude(itPatterns)
+
+  val junitOptions = options as JUnitPlatformOptions
+  if (includeRandomTests) {
+    junitOptions.includeTags(
+      "randomized",
+      "io.camunda.zeebe.engine.processing.randomized.RandomizedTestCategory",
+    )
+    systemProperty("processCount", "10")
+    systemProperty("executionCount", "100")
+    systemProperty("replayExecutionCount", "5")
+  } else if (!includePerformanceTests && !includeStraceTests) {
+    val excludedTags =
+      mutableListOf(
+        "performance",
+        "randomized",
+        "strace",
+        "io.camunda.zeebe.engine.processing.randomized.RandomizedTestCategory",
+        "dl-nightly",
+      )
+    if (!includeSlowTests) {
+      excludedTags.add("slow")
+      excludedTags.add("io.camunda.zeebe.test.util.junit.SlowTest")
+    }
+    junitOptions.excludeTags(*excludedTags.toTypedArray())
+  }
 }
 
 val it =
