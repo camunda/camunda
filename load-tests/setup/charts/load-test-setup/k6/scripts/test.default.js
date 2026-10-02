@@ -13,8 +13,17 @@ export const options = {
     topology: {
       exec: 'checkTopology',
       executor: 'constant-arrival-rate',
-      duration: '7d',
+      duration: '60d',
       rate: 100,
+      timeUnit: '1s',
+      preAllocatedVUs: 10,
+      maxVUs: 100,
+    },
+    status: {
+      exec: 'checkStatus',
+      executor: 'constant-arrival-rate',
+      duration: '60d',
+      rate: 10,
       timeUnit: '1s',
       preAllocatedVUs: 10,
       maxVUs: 100,
@@ -26,7 +35,12 @@ export async function setup() {
   return helpers.setupContext();
 }
 
-// https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/get-topology/
+export async function checkStatus(context) {
+  // The /v2/status endpoint doesn't require authentication, and returns 204 if the cluster is OK.
+  const response = await camunda.status(context);
+  check(response, { 'status is 204': (r) => r.status === 204 });
+};
+
 export async function checkTopology(context) {
   auth.renew(context.token);
   const response = await camunda.topology(context);
