@@ -17,6 +17,7 @@ import {
   deployCallActivityPair,
   createInstanceOnceDeployed,
   deployServiceTaskProcess,
+  deployUserTaskProcess,
   startServiceTaskInstance,
   resumeAndCompleteServiceTask,
   batchOperationKeyForItem,
@@ -35,12 +36,6 @@ import {cancelProcessInstance} from 'utils/zeebeClient';
 import {assertStatusCode} from 'utils/http';
 import {uniquePrefixedId, extendedAssertionOptions} from 'utils/constants';
 
-/**
- * The UI half of suspend/resume. State changes the UI only has to reflect are
- * driven over REST; the UI controls are exercised only where the control itself
- * is what is under test.
- */
-
 const UI_REFRESH_TIMEOUT = 15_000;
 const instancesToCancel: string[] = [];
 
@@ -48,6 +43,15 @@ async function startInstance(prefix: string) {
   const instance = await startServiceTaskInstance(prefix);
   instancesToCancel.push(instance.processInstanceKey);
   return instance;
+}
+
+/** A user task is the one kind of work an operator can finish without a worker. */
+async function startUserTaskInstance(prefix: string) {
+  const processDefinitionId = uniquePrefixedId(prefix);
+  await deployUserTaskProcess(processDefinitionId);
+  const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
+  instancesToCancel.push(instance.processInstanceKey);
+  return {processDefinitionId, processInstanceKey: instance.processInstanceKey};
 }
 
 test.describe('Operate Process Instance Suspend and Resume', () => {
@@ -67,11 +71,14 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     instancesToCancel.length = 0;
   });
 
-  test('Suspending and resuming from the instance header updates the state', async ({
+  test('An instance suspended and resumed from its header can be completed in the UI', async ({
     request,
+    page,
     operateProcessInstancePage,
+    taskPanelPage,
+    taskDetailsPage,
   }) => {
-    const subject = await startInstance('sr-ui-header');
+    const subject = await startUserTaskInstance('sr-ui-header');
     const control = await startInstance('sr-ui-header-control');
     await operateProcessInstancePage.gotoProcessInstancePage({
       id: subject.processInstanceKey,
@@ -120,11 +127,19 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       false,
       extendedAssertionOptions,
     );
-    await resumeAndCompleteServiceTask(
-      request,
-      subject.jobType,
-      subject.processInstanceKey,
-    );
+    // Finished where an operator would finish it: the resume is only proven by
+    // work that runs after it, and completing the task needs a live instance.
+    await navigateToAppHome(page, 'tasklist');
+    await taskPanelPage.openTask(subject.processDefinitionId, {
+      timeout: 60_000,
+    });
+    await taskDetailsPage.clickAssignToMeButton();
+    await taskDetailsPage.clickCompleteTaskButton();
+
+    await operateProcessInstancePage.gotoProcessInstancePage({
+      id: subject.processInstanceKey,
+    });
+    await operateProcessInstancePage.completedIconAssertion();
   });
 
   test('A suspended instance offers Resume and Cancel but not Suspend', async ({
@@ -150,6 +165,12 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     expect(suspendedActions).toContain('cancel');
     expect(suspendedActions).not.toContain('suspend');
     await resumeAndCompleteServiceTask(request, jobType, processInstanceKey);
+    // Re-read the instance from Operate: the detail view does not refresh
+    // itself (#52021), so the API completion is only visible on a fresh load.
+    await operateProcessInstancePage.gotoProcessInstancePage({
+      id: processInstanceKey,
+    });
+    await operateProcessInstancePage.completedIconAssertion();
   });
 
   test('The Suspended filter returns the suspended instance', async ({
@@ -231,6 +252,12 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       jobType,
       instance.processInstanceKey,
     );
+    // Re-read the instance from Operate: the detail view does not refresh
+    // itself (#52021), so the API completion is only visible on a fresh load.
+    await operateProcessInstancePage.gotoProcessInstancePage({
+      id: instance.processInstanceKey,
+    });
+    await operateProcessInstancePage.completedIconAssertion();
   });
 
   test('An existing variable can be edited on a suspended instance, and the edit is applied after the resume', async ({
@@ -303,6 +330,12 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       'COMPLETED',
       extendedAssertionOptions,
     );
+    // Re-read the instance from Operate: the detail view does not refresh
+    // itself (#52021), so the API completion is only visible on a fresh load.
+    await operateProcessInstancePage.gotoProcessInstancePage({
+      id: instance.processInstanceKey,
+    });
+    await operateProcessInstancePage.completedIconAssertion();
   });
 
   test('The operations log records the suspend and the resume', async ({
@@ -344,6 +377,12 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       ).toBeVisible({timeout: UI_REFRESH_TIMEOUT});
     }
     await resumeAndCompleteServiceTask(request, jobType, processInstanceKey);
+    // Re-read the instance from Operate: the detail view does not refresh
+    // itself (#52021), so the API completion is only visible on a fresh load.
+    await operateProcessInstancePage.gotoProcessInstancePage({
+      id: processInstanceKey,
+    });
+    await operateProcessInstancePage.completedIconAssertion();
   });
 
   test('Suspending and resuming from an instances-table row targets that row only', async ({
@@ -590,13 +629,20 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       'SUSPENDED',
       extendedAssertionOptions,
     );
-    // No cascade: the parent is untouched by its child's suspension.
+    // No cascade: the parent is untouched by its child's suspension, and an
+    // operator looking at the parent sees it still running.
     await expectProcessState(
       request,
       parent.processInstanceKey,
       'ACTIVE',
       extendedAssertionOptions,
     );
+    await operateProcessInstancePage.gotoProcessInstancePage({
+      id: parent.processInstanceKey,
+    });
+    await operateProcessInstancePage.activeIconAssertion();
+    await expect(operateProcessInstancePage.suspendedStateIcon).toBeHidden();
+    await operateProcessInstancePage.gotoProcessInstancePage({id: childKey});
 
     await operateProcessInstancePage.resumeInstance(childKey);
     await expectProcessState(
@@ -614,5 +660,11 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       'COMPLETED',
       extendedAssertionOptions,
     );
+    // Re-read the instance from Operate: the detail view does not refresh
+    // itself (#52021), so the API completion is only visible on a fresh load.
+    await operateProcessInstancePage.gotoProcessInstancePage({
+      id: parent.processInstanceKey,
+    });
+    await operateProcessInstancePage.completedIconAssertion();
   });
 });
