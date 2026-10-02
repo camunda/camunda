@@ -28,7 +28,7 @@ public final class EngineConfiguration {
   public static final int DEFAULT_DRG_CACHE_CAPACITY = 1000;
   public static final int DEFAULT_FORM_CACHE_CAPACITY = 1000;
   public static final int DEFAULT_PROCESS_CACHE_CAPACITY = 1000;
-  public static final boolean DEFAULT_PROCESS_CACHE_SOFT_VALUES = true;
+  public static final boolean DEFAULT_PROCESS_CACHE_SOFT_VALUES = false;
   public static final int DEFAULT_AUTHORIZATIONS_CACHE_CAPACITY = 1000;
   public static final int DEFAULT_GROUP_NAME_CACHE_CAPACITY = 1000;
   public static final boolean DEFAULT_CANDIDATE_GROUP_NAME_RESOLUTION = true;
