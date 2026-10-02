@@ -143,7 +143,7 @@ final class FileBasedSnapshotStoreCheckpointReservationsTest {
   }
 
   @Test
-  void shouldShareReservationOfSameCheckpointAndSnapshot() {
+  void shouldKeepSnapshotUntilEveryReservationIsReleased() {
     // given
     final var snapshot = persistSnapshot(1);
     store.reserveLatestSnapshot(CHECKPOINT_ID).join();
@@ -154,8 +154,9 @@ final class FileBasedSnapshotStoreCheckpointReservationsTest {
     persistSnapshot(2);
 
     // then
-    assertThat(snapshot.getPath()).doesNotExist();
-    assertThat(store.getReservedSnapshot(CHECKPOINT_ID, snapshot.getId()).join()).isEmpty();
+    assertThat(snapshot.getPath()).exists();
+    assertThat(store.getReservedSnapshot(CHECKPOINT_ID, snapshot.getId()).join())
+        .hasValue(snapshot);
   }
 
   @Test

@@ -154,7 +154,13 @@ final class InProgressBackupImpl implements InProgressBackup {
         .andThen(
             (snapshot, error) -> {
               if (error == null && snapshot.isPresent()) {
-                return reserveProvidedSnapshot(snapshot.get());
+                reservedSnapshot = snapshot.get();
+                LOG.atTrace()
+                    .addKeyValue("backup", backupId)
+                    .addKeyValue("snapshot", snapshotId)
+                    .setMessage("Using snapshot reserved for the checkpoint")
+                    .log();
+                return concurrencyControl.createCompletedFuture();
               }
               LOG.atDebug()
                   .addKeyValue("backup", backupId)
@@ -163,34 +169,6 @@ final class InProgressBackupImpl implements InProgressBackup {
                   .setMessage("Snapshot of the checkpoint is not reserved, searching for one")
                   .log();
               return findAndReserveSnapshot();
-            },
-            concurrencyControl);
-  }
-
-  private ActorFuture<Void> reserveProvidedSnapshot(final PersistedSnapshot snapshot) {
-    // the checkpoint's reservation can be released by a duplicate checkpoint record while this
-    // backup is running, so the backup holds its own reservation like for any other snapshot
-    return snapshot
-        .reserve()
-        .andThen(
-            (reservation, error) -> {
-              if (error != null) {
-                LOG.atDebug()
-                    .addKeyValue("backup", backupId)
-                    .addKeyValue("snapshot", snapshot.getId())
-                    .setCause(error)
-                    .setMessage("Failed to reserve snapshot of the checkpoint, searching for one")
-                    .log();
-                return findAndReserveSnapshot();
-              }
-              snapshotReservation = reservation;
-              reservedSnapshot = snapshot;
-              LOG.atTrace()
-                  .addKeyValue("backup", backupId)
-                  .addKeyValue("snapshot", snapshot.getId())
-                  .setMessage("Reserved snapshot of the checkpoint")
-                  .log();
-              return concurrencyControl.<Void>createCompletedFuture();
             },
             concurrencyControl);
   }
