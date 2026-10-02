@@ -464,8 +464,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.elasticsearch.client</groupId>
-      <artifactId>elasticsearch-rest-client</artifactId>
+      <groupId>co.elastic.clients</groupId>
+      <artifactId>elasticsearch-rest5-client</artifactId>
       <scope>test</scope>
     </dependency>
 

@@ -51,7 +51,7 @@ dependencies {
   api(libs.org.testcontainers.testcontainers.mssqlserver)
   api(libs.com.github.dasniko.testcontainers.keycloak)
   api(libs.org.opensearch.opensearch.testcontainers)
-  testImplementation(libs.org.elasticsearch.client.elasticsearch.rest.client)
+  testImplementation(libs.co.elastic.clients.elasticsearch.rest5.client)
   testImplementation(libs.org.opensearch.client.opensearch.rest.client)
   api(libs.org.openjdk.jmh.jmh.core)
   testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)

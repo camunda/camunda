@@ -10,10 +10,7 @@ package io.camunda.search.connect.plugin;
 /**
  * A unifying interface for every Search DB connector interceptor.
  *
- * <p>Different connectors currently use different HTTP client. This interface is supposed to unify
- * single implementation for every type of HTTP client.
+ * <p>All connectors now use Apache HTTP Client 5.x, so this simply aliases its interceptor type.
  */
 public interface CompatHttpRequestInterceptor
-    extends org.apache.hc.core5.http.HttpRequestInterceptor,
-        /* TODO: remove and simplify once no connector is using Apache HTTP Client 4.x */
-        org.apache.http.HttpRequestInterceptor {}
+    extends org.apache.hc.core5.http.HttpRequestInterceptor {}

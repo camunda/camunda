@@ -133,7 +133,7 @@ public class SearchClientAdapter {
   public Map<String, JsonNode> getAllIndicesAsNode(final String indexPrefix) throws IOException {
     if (elsClient != null) {
       final var indices = elsClient.indices().get(req -> req.index(indexPrefix + "*"));
-      return indices.result().entrySet().stream()
+      return indices.indices().entrySet().stream()
           .collect(Collectors.toMap(Entry::getKey, e -> elsIndexToNode(e.getValue())));
     } else if (osClient != null) {
       final var indices = osClient.indices().get(req -> req.index(indexPrefix + "*"));
@@ -146,7 +146,7 @@ public class SearchClientAdapter {
   public JsonNode getPolicyAsNode(final String policyName) throws IOException {
     if (elsClient != null) {
       final var policy =
-          elsClient.ilm().getLifecycle(req -> req.name(policyName)).result().get(policyName);
+          elsClient.ilm().getLifecycle(req -> req.name(policyName)).lifecycles().get(policyName);
 
       return elsPolicyToNode(policy);
     } else if (osClient != null) {
@@ -162,7 +162,7 @@ public class SearchClientAdapter {
     if (elsClient != null) {
       final var response = elsClient.indices().getSettings(req -> req.index(indexName));
 
-      final var state = response.result().get(indexName);
+      final var state = response.settings().get(indexName);
       return Optional.ofNullable(state)
           .map(co.elastic.clients.elasticsearch.indices.IndexState::settings)
           .map(co.elastic.clients.elasticsearch.indices.IndexSettings::index)
