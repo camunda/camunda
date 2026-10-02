@@ -41,7 +41,7 @@
 		"@tanstack/react-virtual": "3.14.13",
 		"@tanstack/router-plugin": "1.168.41",
 		"@xstate/react": "6.1.0",
-		"bpmn-js": "18.30.1",
+		"bpmn-js": "18.31.0",
 		"bpmn-moddle": "10.3.1",
 		"date-fns": "4.4.0",
 		"diagram-js-minimap": "5.5.0",

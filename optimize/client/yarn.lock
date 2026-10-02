@@ -5653,14 +5653,14 @@ bpmn-js-disable-collapsed-subprocess@^0.1.7:
   dependencies:
     min-dash "^4.0.0"
 
-bpmn-js@18.30.1:
-  version "18.30.1"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-18.30.1.tgz#b3e5cae1dd082a724260f63b1b50ce40042883f4"
-  integrity sha512-xQawvly/8bL9fIW14+RpYh2w+8eFUXDSgiCi/+YjBk3IxT3ZUIiDPZbDhDZjZqNuHSTeZ4J/n3vWjSYh+Y3eXQ==
+bpmn-js@18.31.0:
+  version "18.31.0"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-18.31.0.tgz#1c27a4c88af2866904d2ca82cc1a9e8f65c3b7f8"
+  integrity sha512-tGc6spNXC81858FXhk0NI9+CjfsPYDmKWSyiq0u2Rhk9J8l+DJtzZK1CYj4fqcek026PQDEwwUQwsr2Opfec/w==
   dependencies:
     bpmn-moddle "^10.3.1"
-    diagram-js "^15.27.1"
-    diagram-js-direct-editing "^3.5.1"
+    diagram-js "^15.28.0"
+    diagram-js-direct-editing "^3.6.0"
     ids "^3.0.2"
     inherits-browser "^0.1.0"
     min-dash "^5.1.0"
@@ -7039,18 +7039,18 @@ diagram-js-direct-editing@^1.6.3:
     min-dash "^3.5.2"
     min-dom "^3.1.3"
 
-diagram-js-direct-editing@^3.5.1:
-  version "3.5.1"
-  resolved "https://registry.yarnpkg.com/diagram-js-direct-editing/-/diagram-js-direct-editing-3.5.1.tgz#535323c3007f933f5a08f59c6821a0d6f00821dc"
-  integrity sha512-fEQCQ/x5oKVV0m7Nmgv7i85Vhw+kJkKNXF8zcV5Vm0KwF8x/8e3Ax0aJgdXt8/fDPymEkY8HmZweXIipCeeh+g==
+diagram-js-direct-editing@^3.6.0:
+  version "3.6.0"
+  resolved "https://registry.yarnpkg.com/diagram-js-direct-editing/-/diagram-js-direct-editing-3.6.0.tgz#2c30d24236f67082d5f543d1fcf82af78902aac8"
+  integrity sha512-zaXChbFqLccq+rji1fnKD9dL90kO7XLJoaENMVqFOxslax8QD7eumwBBpLYS36br7zva9R4bz3YTu0ey3mbHAA==
   dependencies:
     min-dash "^5.0.0"
     min-dom "^5.3.0"
 
-diagram-js@^15.27.1:
-  version "15.27.1"
-  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-15.27.1.tgz#98b5b4fc7075f0cc8d0f1706159961afd40dd138"
-  integrity sha512-bs0J/ZTPZeaYY4Yd0VUhnMHRF3kX2tk45aCB3k9sOcCIHqxaqJxxgMR3QO0hylV55Kq6r4Sbb0Ev8VFeZx8+KA==
+diagram-js@^15.28.0:
+  version "15.28.0"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-15.28.0.tgz#9a8bb5cd80fba82ef2ece92995b2a87d266b67f3"
+  integrity sha512-szp5V8ipbwMNB2aR1c7ABvN1N4bVdl5K1uO6Lpcn+LQ/Sw5C9fKwo6GOaV0ZVX8rWoZKb4ki34Qt6UZ8Z/Ig9w==
   dependencies:
     "@bpmn-io/diagram-js-ui" "^0.2.4"
     clsx "^2.1.1"
