@@ -28,13 +28,19 @@ import {
 	PauseOutlineFilled,
 } from '#/operate/shared/StateIcon/styled';
 import {IndentedGroup, CanceledIcon} from './styled';
-import {OptionalFiltersFormGroup, type OptionalFilter, type OptionalFilterValues} from './OptionalFiltersFormGroup';
+import {
+	OptionalFiltersFormGroup,
+	type OptionalFilter,
+	type OptionalFilterValues,
+	type VariableFieldValues,
+} from './OptionalFiltersFormGroup';
 import {DiagramPanel, type ProcessDefinitionSelection} from './DiagramPanel';
 import {InstancesTable} from './InstancesTable';
 import {useDiagramXml} from './useDiagramXml';
 import {selectedDefinitionsQuery} from '#/operate/shared/queries/processDefinitions.queries';
+import {setVariableConditions, useVariableConditions} from './VariablesFilter/variableFilterStore';
 
-type FiltersFormValues = OptionalFilterValues & {tenantId?: string};
+type FiltersFormValues = OptionalFilterValues & VariableFieldValues & {tenantId?: string};
 
 type Props = {
 	process?: string;
@@ -47,9 +53,17 @@ type Props = {
 	canceled: boolean;
 	suspended: boolean;
 	sort?: string;
-} & FiltersFormValues;
+} & OptionalFilterValues & {tenantId?: string};
 
 type ProcessItem = {id: string; label: string};
+
+const SESSION_FILTER_FIELDS = new Set(['variableName', 'variableValues']);
+
+// The variable fields follow session storage; re-initialising on their change would discard unsubmitted URL filter edits.
+function areUrlFilterValuesEqual(previous: Record<string, unknown> = {}, next: Record<string, unknown> = {}) {
+	const keys = new Set([...Object.keys(previous), ...Object.keys(next)]);
+	return [...keys].every((key) => SESSION_FILTER_FIELDS.has(key) || previous[key] === next[key]);
+}
 
 const Processes: React.FC<Props> = ({
 	process,
@@ -100,6 +114,8 @@ const Processes: React.FC<Props> = ({
 	const isDefinitionsReady =
 		Boolean(process) && selectedDefinitions !== undefined && !isDefinitionsLoading && !isDefinitionsError;
 	const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
+	const variable = useVariableConditions();
+	const inlineVariableCondition = variable.length === 1 && variable[0]?.operator === 'equals' ? variable[0] : undefined;
 
 	const optionalFilterValues = useMemo<OptionalFilterValues>(
 		() => ({
@@ -237,6 +253,7 @@ const Processes: React.FC<Props> = ({
 		tenantId !== undefined ||
 		incidentErrorHashCode !== undefined ||
 		Object.values(optionalFilterValues).some((value) => value !== undefined);
+	const hasVariableFilter = variable.length > 0;
 
 	const isResetDisabled =
 		active &&
@@ -248,6 +265,7 @@ const Processes: React.FC<Props> = ({
 		version === undefined &&
 		elementId === undefined &&
 		!hasOptionalFilters &&
+		!hasVariableFilter &&
 		visibleFilters.length === 0;
 
 	const handleFiltersSubmit = (values: FiltersFormValues) => {
@@ -278,7 +296,16 @@ const Processes: React.FC<Props> = ({
 		<ProcessesLayout
 			type="process"
 			leftPanel={
-				<Form<FiltersFormValues> onSubmit={handleFiltersSubmit} initialValues={{tenantId, ...optionalFilterValues}}>
+				<Form<FiltersFormValues>
+					onSubmit={handleFiltersSubmit}
+					initialValuesEqual={areUrlFilterValuesEqual}
+					initialValues={{
+						tenantId,
+						...optionalFilterValues,
+						variableName: inlineVariableCondition?.name,
+						variableValues: inlineVariableCondition?.value,
+					}}
+				>
 					{({handleSubmit, form}) => (
 						<StyledForm onSubmit={handleSubmit}>
 							<AutoSubmit fieldsToSkipTimeout={['tenantId', 'hasRetriesLeft']} />
@@ -286,6 +313,7 @@ const Processes: React.FC<Props> = ({
 								localStorageKey="isProcessesFiltersCollapsed"
 								isResetButtonDisabled={isResetDisabled}
 								onResetClick={() => {
+									setVariableConditions([]);
 									form.reset();
 									setVisibleFilters([]);
 									void navigate({to: '.', search: {}});
@@ -538,6 +566,21 @@ const Processes: React.FC<Props> = ({
 					completed={completed}
 					canceled={canceled}
 					suspended={suspended}
+					variable={variable}
+					otherFilters={{
+						tenantId,
+						businessId,
+						processInstanceKey,
+						parentProcessInstanceKey,
+						batchOperationKey,
+						errorMessage,
+						incidentErrorHashCode,
+						hasRetriesLeft,
+						startDateFrom,
+						startDateTo,
+						endDateFrom,
+						endDateTo,
+					}}
 				/>
 			}
 			bottomPanel={
@@ -552,6 +595,7 @@ const Processes: React.FC<Props> = ({
 						businessId,
 						batchOperationKey,
 						errorMessage,
+						variable,
 						incidentErrorHashCode,
 						hasRetriesLeft,
 						startDateFrom,

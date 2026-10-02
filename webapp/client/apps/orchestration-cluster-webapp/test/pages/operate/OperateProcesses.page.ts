@@ -58,6 +58,24 @@ class OperateProcessesPage extends BasePage {
 		return this.instancesTable.getByRole('cell', {name: state});
 	}
 
+	get variableFilterModal() {
+		return this.page.getByRole('dialog', {name: 'Filter by variable'});
+	}
+
+	get variableConditionsList() {
+		return this.page.getByRole('list', {name: 'Active variable filters'});
+	}
+
+	async addOptionalFilter(label: string) {
+		await this.page.getByRole('button', {name: 'More Filters'}).click();
+		await this.page.getByRole('menuitem', {name: label}).click();
+	}
+
+	async removeOptionalFilter(label: string) {
+		await this.filtersPanel.getByRole('heading', {name: label}).hover();
+		await this.page.getByRole('button', {name: `Remove ${label} Filter`}).click();
+	}
+
 	instanceLink(processInstanceKey: string) {
 		return this.page.getByRole('link', {name: `View instance ${processInstanceKey}`});
 	}

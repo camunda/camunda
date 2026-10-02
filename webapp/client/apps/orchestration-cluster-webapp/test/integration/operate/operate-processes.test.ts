@@ -446,6 +446,51 @@ test.describe('Operate processes page', () => {
 		await expect(operateProcessesPage.resetFiltersButton).toBeDisabled();
 	});
 
+	test('should send modal variable conditions with other filters and keep them for the session', async ({
+		page,
+		operateProcessesPage,
+	}) => {
+		await operateProcessesPage.goto('?businessId=eq_order-123');
+		await operateProcessesPage.addOptionalFilter('Variables');
+		await page.getByRole('textbox', {name: 'Name'}).fill('status');
+		await page.getByRole('textbox', {name: 'Value'}).fill('"open"');
+		await page.getByRole('button', {name: 'Add condition'}).click();
+
+		const modal = operateProcessesPage.variableFilterModal;
+		await expect(page).toHaveURL(/\/operate\/processes\/filters\/variables\?.*businessId=eq_order-123/);
+		await modal.getByRole('button', {name: 'Add condition'}).click();
+		await modal.getByRole('textbox', {name: 'Name'}).last().fill('region');
+		await modal.getByRole('combobox', {name: 'Operator'}).last().click();
+		await page.getByRole('option', {name: 'exists'}).click();
+		const request = page.waitForRequest(
+			(candidate) =>
+				candidate.url().endsWith('/v2/process-instances/search') &&
+				candidate.postDataJSON().filter?.variables?.length === 2,
+		);
+		await modal.getByRole('button', {name: 'Apply'}).click();
+
+		expect((await request).postDataJSON().filter).toMatchObject({
+			businessId: {$eq: 'order-123'},
+			variables: [
+				{name: 'status', value: {$eq: '"open"'}},
+				{name: 'region', value: {$exists: true}},
+			],
+		});
+		await expect(modal).toBeHidden();
+		await expect(page).toHaveURL(/\/operate\/processes\?.*businessId=eq_order-123/);
+		await expect(operateProcessesPage.variableConditionsList).toContainText('status equals "open"');
+		await expect(operateProcessesPage.variableConditionsList).toContainText('region exists');
+
+		await page.reload();
+
+		await expect(operateProcessesPage.variableConditionsList).toContainText('region exists');
+
+		await operateProcessesPage.removeOptionalFilter('Variables');
+
+		await expect(operateProcessesPage.variableConditionsList).toBeHidden();
+		await expect(page).toHaveURL(/businessId=eq_order-123/);
+	});
+
 	test('should list the matching process instances and link each one to its details page', async ({
 		network,
 		page,

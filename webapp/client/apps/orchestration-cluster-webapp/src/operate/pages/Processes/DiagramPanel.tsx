@@ -18,6 +18,8 @@ import {useDiagramXml} from './useDiagramXml';
 import {useDiagramStatisticsOverlays} from './useDiagramStatisticsOverlays';
 import {getStatisticsFilter} from './getStatisticsFilter';
 import {getProcessDefinitionName} from './getProcessDefinitionName';
+import type {VariableCondition} from './VariablesFilter/variableConditions';
+import type {ProcessesSearch} from './processesFilter';
 import {Section} from './styled';
 
 type ProcessDefinitionSelection =
@@ -67,6 +69,22 @@ type Props = {
 	completed: boolean;
 	canceled: boolean;
 	suspended: boolean;
+	variable?: VariableCondition[];
+	otherFilters?: Pick<
+		ProcessesSearch,
+		| 'tenantId'
+		| 'businessId'
+		| 'processInstanceKey'
+		| 'parentProcessInstanceKey'
+		| 'batchOperationKey'
+		| 'errorMessage'
+		| 'incidentErrorHashCode'
+		| 'hasRetriesLeft'
+		| 'startDateFrom'
+		| 'startDateTo'
+		| 'endDateFrom'
+		| 'endDateTo'
+	>;
 };
 
 const DiagramPanel: React.FC<Props> = ({
@@ -80,6 +98,8 @@ const DiagramPanel: React.FC<Props> = ({
 	completed,
 	canceled,
 	suspended,
+	variable,
+	otherFilters,
 }) => {
 	const {t} = useTranslation();
 	const selectedDefinitionKey =
@@ -93,7 +113,16 @@ const DiagramPanel: React.FC<Props> = ({
 
 	const {data: diagramData, isFetching: isXmlFetching, isError: isXmlError} = useDiagramXml(selectedDefinitionKey);
 
-	const statisticsFilter = getStatisticsFilter({active, incidents, completed, canceled, suspended});
+	const statisticsFilter = getStatisticsFilter({
+		active,
+		incidents,
+		completed,
+		canceled,
+		suspended,
+		elementId,
+		variable,
+		...otherFilters,
+	});
 	const {data: overlaysData} = useDiagramStatisticsOverlays({
 		processDefinitionKey: selectedDefinitionKey,
 		filter: statisticsFilter ?? {},

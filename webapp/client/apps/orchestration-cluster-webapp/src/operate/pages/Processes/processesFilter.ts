@@ -12,6 +12,7 @@ import {z} from 'zod';
 import {parseIds} from '#/operate/shared/utils/parseIds';
 import {decodeAdvancedStringFilter} from '#/operate/shared/utils/advancedStringFilter';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
+import {toVariableEntry, type VariableCondition} from './VariablesFilter/variableConditions';
 
 type ProcessInstancesFilter = NonNullable<QueryProcessInstancesRequestBody['filter']>;
 type ProcessInstancesSort = NonNullable<QueryProcessInstancesRequestBody['sort']>;
@@ -25,6 +26,7 @@ type ProcessesSearch = {
 	processInstanceKey?: string;
 	parentProcessInstanceKey?: string;
 	businessId?: string;
+	variable?: VariableCondition[];
 	batchOperationKey?: string;
 	errorMessage?: string;
 	incidentErrorHashCode?: number;
@@ -243,6 +245,7 @@ function mapProcessInstancesFilter(search: ProcessesSearch): ProcessInstancesFil
 				? {$gt: toISO(search.endDateFrom), $lt: toISO(search.endDateTo)}
 				: undefined,
 		businessId: search.businessId ? decodeAdvancedStringFilter(search.businessId) : undefined,
+		variables: search.variable?.length ? search.variable.map(toVariableEntry) : undefined,
 	};
 }
 
