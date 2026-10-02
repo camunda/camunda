@@ -6,12 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {Heading} from '@camunda/design-system';
 import {useTranslation} from 'react-i18next';
 
 const AdminAuthorizationsPage: React.FC = () => {
 	const {t} = useTranslation();
 
-	return <h1>{t('admin.headerNavItemAuthorizations')}</h1>;
+	return (
+		<Heading as="h1" variant="heading-lg">
+			{t('admin.headerNavItemAuthorizations')}
+		</Heading>
+	);
 };
 
 export {AdminAuthorizationsPage};

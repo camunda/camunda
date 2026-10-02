@@ -57,27 +57,27 @@ describe('User info', () => {
 		expect(handleLogout).toHaveBeenCalledOnce();
 	});
 
-	it('should render links', async () => {
-		const mockOpenFn = vi.fn();
-		vi.stubGlobal('open', mockOpenFn);
+	it.for([
+		['Terms of use', 'https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-saas-trial/'],
+		['Privacy policy', 'https://camunda.com/legal/privacy/'],
+		['Imprint', 'https://camunda.com/legal/imprint/'],
+	] as const)('should render the %s link', async ([name, href]) => {
 		const screen = await render(<AccountMenu displayName="Demo User" canLogout onLogout={() => {}} />);
 
 		await userEvent.click(screen.getByRole('button', {name: 'Settings'}));
-		await userEvent.click(screen.getByRole('menuitem', {name: 'Terms of use'}));
-		expect(mockOpenFn).toHaveBeenLastCalledWith(
-			'https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-saas-trial/',
-			'_blank',
-			'noopener,noreferrer',
-		);
+
+		const link = screen.getByRole('menuitem', {name});
+		await expect.element(link).toHaveAttribute('href', href);
+		await expect.element(link).toHaveAttribute('target', '_blank');
+		await expect.element(link).toHaveAttribute('rel', 'noopener noreferrer');
+	});
+
+	it('should not render cookie preferences without a handler', async () => {
+		const screen = await render(<AccountMenu displayName="Demo User" canLogout onLogout={() => {}} />);
 
 		await userEvent.click(screen.getByRole('button', {name: 'Settings'}));
-		await userEvent.click(screen.getByRole('menuitem', {name: 'Privacy policy'}));
-		expect(mockOpenFn).toHaveBeenLastCalledWith('https://camunda.com/legal/privacy/', '_blank', 'noopener,noreferrer');
 
-		await userEvent.click(screen.getByRole('button', {name: 'Settings'}));
-		await userEvent.click(screen.getByRole('menuitem', {name: 'Imprint'}));
-		expect(mockOpenFn).toHaveBeenLastCalledWith('https://camunda.com/legal/imprint/', '_blank', 'noopener,noreferrer');
-
+		await expect.element(screen.getByRole('menuitem', {name: 'Imprint'})).toBeVisible();
 		expect(screen.getByRole('menuitem', {name: 'Cookie preferences'}).elements()).toHaveLength(0);
 	});
 

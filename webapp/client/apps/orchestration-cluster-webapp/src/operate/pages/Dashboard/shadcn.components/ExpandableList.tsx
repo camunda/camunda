@@ -8,7 +8,7 @@
 
 import React, {useCallback, useEffect, useEffectEvent, useLayoutEffect, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {typographyVariants} from '@camunda/design-system';
+import {Heading} from '@camunda/design-system';
 import SvgErrorRobot from '#/shared/svg/ErrorRobot';
 import {EmptyState} from '#/operate/components/EmptyState/shadcn.components/EmptyState';
 import type {ExpandableListRow} from './ExpandableList.types';
@@ -282,7 +282,9 @@ const ExpandableList: React.FC<Props> = ({
 		if (isError) {
 			return (
 				<div className="flex flex-1 flex-col gap-2">
-					<h2 className={typographyVariants({variant: 'heading-md'})}>{header}</h2>
+					<Heading as="h2" variant="heading-md">
+						{header}
+					</Heading>
 					<EmptyState
 						icon={<SvgErrorRobot aria-hidden />}
 						heading={t('operate.dashboard.fetchErrorHeading')}
@@ -295,7 +297,9 @@ const ExpandableList: React.FC<Props> = ({
 		if (emptyState !== undefined) {
 			return (
 				<div className="flex flex-1 flex-col gap-2">
-					<h2 className={typographyVariants({variant: 'heading-md'})}>{header}</h2>
+					<Heading as="h2" variant="heading-md">
+						{header}
+					</Heading>
 					{emptyState}
 				</div>
 			);
