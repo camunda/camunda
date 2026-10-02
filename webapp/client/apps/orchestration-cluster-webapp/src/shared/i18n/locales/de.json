@@ -582,6 +582,8 @@
 					"allVersions": "Alle Versionen",
 					"element": "Element",
 					"searchByElement": "Nach Prozesselement suchen",
+					"retryElementLoad": "Elemente erneut laden",
+					"clearElement": "Elementfilter löschen",
 					"instancesStates": "Instanzstatus",
 					"runningInstances": "Laufende Instanzen",
 					"finishedInstances": "Abgeschlossene Instanzen",
@@ -646,6 +648,8 @@
 				"diagramPanel": {
 					"multipleVersionsSelected": "Für den Prozess \"{{name}}\" ist mehr als eine Version ausgewählt",
 					"selectSingleVersion": "Um ein Diagramm zu sehen, wählen Sie eine einzelne Version aus",
+					"multipleTenantsSelected": "Prozess \"{{name}}\" ist in mehreren Mandanten vorhanden",
+					"selectSingleTenant": "Um ein Diagramm zu sehen, wählen Sie einen einzelnen Mandanten aus",
 					"noProcessSelected": "Es ist kein Prozess ausgewählt",
 					"selectProcessInFilters": "Um ein Diagramm zu sehen, wählen Sie einen Prozess im Filterbereich aus"
 				}

@@ -12,7 +12,7 @@ import {useTranslation} from 'react-i18next';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import type {OperationsLogSearch} from './operationsLog.schema';
-import {resolvedDefinitionQuery, selectedDefinitionsQuery} from './definitions.queries';
+import {resolvedDefinitionQuery, selectedDefinitionsQuery} from '#/operate/shared/queries/processDefinitions.queries';
 import {Filters} from './Filters';
 import {InstancesTable} from './InstancesTable';
 import {PageContainer} from './styled';

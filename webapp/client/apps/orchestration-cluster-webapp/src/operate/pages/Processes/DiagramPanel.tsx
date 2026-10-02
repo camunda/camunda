@@ -23,7 +23,8 @@ import {Section} from './styled';
 type ProcessDefinitionSelection =
 	| {kind: 'no-match'}
 	| {kind: 'single-version'; definition: ProcessDefinition}
-	| {kind: 'all-versions'; definition: Pick<ProcessDefinition, 'name' | 'processDefinitionId'>};
+	| {kind: 'all-versions'; definition: Pick<ProcessDefinition, 'name' | 'processDefinitionId'>}
+	| {kind: 'multiple-tenants'; definition: Pick<ProcessDefinition, 'name' | 'processDefinitionId'>};
 
 function isStatisticsPayload(
 	payload: unknown,
@@ -57,6 +58,8 @@ function StatisticsOverlays() {
 
 type Props = {
 	processDefinitionSelection: ProcessDefinitionSelection;
+	isDefinitionSelectionLoading?: boolean;
+	isDefinitionSelectionError?: boolean;
 	elementId?: string;
 	onElementSelection: (elementId?: string) => void;
 	active: boolean;
@@ -68,6 +71,8 @@ type Props = {
 
 const DiagramPanel: React.FC<Props> = ({
 	processDefinitionSelection,
+	isDefinitionSelectionLoading = false,
+	isDefinitionSelectionError = false,
 	elementId,
 	onElementSelection,
 	active,
@@ -97,10 +102,10 @@ const DiagramPanel: React.FC<Props> = ({
 	});
 
 	const getStatus = () => {
-		if (isXmlFetching) {
+		if (isDefinitionSelectionLoading || isXmlFetching) {
 			return 'loading';
 		}
-		if (isXmlError) {
+		if (isDefinitionSelectionError || isXmlError) {
 			return 'error';
 		}
 		if (processDefinitionSelection.kind !== 'single-version' || diagramData?.xml === '') {
@@ -120,12 +125,17 @@ const DiagramPanel: React.FC<Props> = ({
 								message: t('operate.processes.diagramPanel.multipleVersionsSelected', {name: selectedDefinitionName}),
 								additionalInfo: t('operate.processes.diagramPanel.selectSingleVersion'),
 							}
-						: processDefinitionSelection.kind === 'single-version'
-							? {message: t('operate.processInstance.diagram.noDiagram')}
-							: {
-									message: t('operate.processes.diagramPanel.noProcessSelected'),
-									additionalInfo: t('operate.processes.diagramPanel.selectProcessInFilters'),
+						: processDefinitionSelection.kind === 'multiple-tenants'
+							? {
+									message: t('operate.processes.diagramPanel.multipleTenantsSelected', {name: selectedDefinitionName}),
+									additionalInfo: t('operate.processes.diagramPanel.selectSingleTenant'),
 								}
+							: processDefinitionSelection.kind === 'single-version'
+								? {message: t('operate.processInstance.diagram.noDiagram')}
+								: {
+										message: t('operate.processes.diagramPanel.noProcessSelected'),
+										additionalInfo: t('operate.processes.diagramPanel.selectProcessInFilters'),
+									}
 				}
 			>
 				{diagramData?.xml && (

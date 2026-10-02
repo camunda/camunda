@@ -8,11 +8,12 @@
 
 import {useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useSuspenseQuery} from '@tanstack/react-query';
+import {useQuery, useSuspenseQuery} from '@tanstack/react-query';
 import {useNavigate} from '@tanstack/react-router';
 import {Form} from 'react-final-form';
-import {Checkbox, ComboBox, Dropdown, Stack} from '@carbon/react';
+import {Button, Checkbox, ComboBox, Dropdown, Stack} from '@carbon/react';
 import {queries} from '#/shared/http/queries';
+import {ForbiddenError} from '#/shared/errors';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import {ProcessesLayout} from './ProcessesLayout';
@@ -30,6 +31,8 @@ import {IndentedGroup, CanceledIcon} from './styled';
 import {OptionalFiltersFormGroup, type OptionalFilter, type OptionalFilterValues} from './OptionalFiltersFormGroup';
 import {DiagramPanel, type ProcessDefinitionSelection} from './DiagramPanel';
 import {InstancesTable} from './InstancesTable';
+import {useDiagramXml} from './useDiagramXml';
+import {selectedDefinitionsQuery} from '#/operate/shared/queries/processDefinitions.queries';
 
 type FiltersFormValues = OptionalFilterValues & {tenantId?: string};
 
@@ -80,6 +83,22 @@ const Processes: React.FC<Props> = ({
 			filter: specificTenantId ? {tenantId: specificTenantId} : undefined,
 		}),
 	);
+	const {
+		data: selectedDefinitions,
+		error: selectedDefinitionsError,
+		isPending: isDefinitionsPending,
+		isFetching: isDefinitionsFetching,
+		isError: isDefinitionsError,
+		refetch: refetchSelectedDefinitions,
+	} = useQuery({
+		...selectedDefinitionsQuery(process ?? '', specificTenantId, {retry: false, requireComplete: true}),
+		enabled: Boolean(process),
+		retry: false,
+	});
+	const isDefinitionsLoading =
+		Boolean(process) && (isDefinitionsPending || (isDefinitionsError && isDefinitionsFetching));
+	const isDefinitionsReady =
+		Boolean(process) && selectedDefinitions !== undefined && !isDefinitionsLoading && !isDefinitionsError;
 	const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
 
 	const optionalFilterValues = useMemo<OptionalFilterValues>(
@@ -111,46 +130,103 @@ const Processes: React.FC<Props> = ({
 
 	const processItems = useMemo<ProcessItem[]>(() => {
 		const seen = new Set<string>();
-		return data.items.reduce<ProcessItem[]>((acc, def) => {
+		const items = data.items.reduce<ProcessItem[]>((acc, def) => {
 			if (!seen.has(def.processDefinitionId)) {
 				seen.add(def.processDefinitionId);
 				acc.push({id: def.processDefinitionId, label: def.name ?? def.processDefinitionId});
 			}
 			return acc;
 		}, []);
-	}, [data]);
+		const selected = isDefinitionsReady
+			? selectedDefinitions?.find(
+					(definition) =>
+						definition.processDefinitionId === process &&
+						(specificTenantId === undefined || definition.tenantId === specificTenantId),
+				)
+			: undefined;
+		if (selected !== undefined && !seen.has(selected.processDefinitionId)) {
+			items.push({id: selected.processDefinitionId, label: selected.name ?? selected.processDefinitionId});
+		}
+		return items;
+	}, [data, isDefinitionsReady, process, selectedDefinitions, specificTenantId]);
 
-	const versionNumbers = useMemo<(number | undefined)[]>(() => {
-		if (!process) {
+	const matchingDefinitions = useMemo(
+		() =>
+			isDefinitionsReady
+				? (selectedDefinitions ?? []).filter(
+						(definition) =>
+							definition.processDefinitionId === process &&
+							(specificTenantId === undefined || definition.tenantId === specificTenantId),
+					)
+				: [],
+		[isDefinitionsReady, process, selectedDefinitions, specificTenantId],
+	);
+
+	const versionNumbers = useMemo<(number | 'all')[]>(() => {
+		if (!isDefinitionsReady || matchingDefinitions.length === 0) {
 			return [];
 		}
-		const versions = data.items
-			.filter((def) => def.processDefinitionId === process)
-			.sort((a, b) => b.version - a.version)
-			.map((def) => def.version);
-		return [undefined, ...versions];
-	}, [data, process]);
+		const versions = [...new Set(matchingDefinitions.map((def) => def.version))].sort((a, b) => b - a);
+		return ['all', ...versions];
+	}, [isDefinitionsReady, matchingDefinitions]);
 
 	const selectedProcess = processItems.find((i) => i.id === process) ?? null;
-	const selectedVersion = version;
+	const selectedVersion = version ?? 'all';
 
 	const processDefinitionSelection = useMemo<ProcessDefinitionSelection>(() => {
-		if (!process) {
+		if (!isDefinitionsReady) {
 			return {kind: 'no-match'};
 		}
 
-		const matches = data.items.filter((def) => def.processDefinitionId === process);
-
+		const definition =
+			version === undefined
+				? matchingDefinitions[0]
+				: matchingDefinitions.find((candidate) => candidate.version === version);
+		if (definition === undefined) {
+			return {kind: 'no-match'};
+		}
+		if (!specificTenantId && matchingDefinitions.some((candidate) => candidate.tenantId !== definition.tenantId)) {
+			return {
+				kind: 'multiple-tenants',
+				definition: {name: definition.name, processDefinitionId: definition.processDefinitionId},
+			};
+		}
 		if (version === undefined) {
-			const first = matches[0];
-			return first === undefined
-				? {kind: 'no-match'}
-				: {kind: 'all-versions', definition: {name: first.name, processDefinitionId: first.processDefinitionId}};
+			return {
+				kind: 'all-versions',
+				definition: {name: definition.name, processDefinitionId: definition.processDefinitionId},
+			};
 		}
 
-		const definition = matches.find((def) => def.version === version);
-		return definition === undefined ? {kind: 'no-match'} : {kind: 'single-version', definition};
-	}, [data, process, version]);
+		return {kind: 'single-version', definition};
+	}, [isDefinitionsReady, matchingDefinitions, specificTenantId, version]);
+	const selectedDefinitionKey =
+		processDefinitionSelection.kind === 'single-version'
+			? processDefinitionSelection.definition.processDefinitionKey
+			: undefined;
+	const {
+		data: diagramData,
+		error: xmlError,
+		isError: isXmlError,
+		refetch: refetchDiagramXml,
+	} = useDiagramXml(selectedDefinitionKey);
+	const elementItems = useMemo(
+		() =>
+			(diagramData?.selectableElements ?? [])
+				.map((id) => ({id, label: diagramData?.businessObjects[id]?.name ?? id}))
+				.sort((a, b) => {
+					const label = a.label.toUpperCase();
+					const nextLabel = b.label.toUpperCase();
+					return label < nextLabel ? -1 : label > nextLabel ? 1 : 0;
+				}),
+		[diagramData],
+	);
+	const selectedElement = useMemo(
+		() => elementItems.find((item) => item.id === elementId) ?? (elementId ? {id: elementId, label: elementId} : null),
+		[elementItems, elementId],
+	);
+	const isElementDisabled =
+		!isDefinitionsReady || selectedDefinitionKey === undefined || isXmlError || elementItems.length === 0;
 
 	const runningChecked = active && incidents && suspended;
 	const runningIndeterminate = !runningChecked && (active || incidents || suspended);
@@ -234,6 +310,9 @@ const Processes: React.FC<Props> = ({
 												selectedItem={selectedProcess}
 												size="sm"
 												onChange={({selectedItem}) => {
+													if (selectedItem?.id === process) {
+														return;
+													}
 													void navigate({
 														to: '.',
 														search: (prev) => ({
@@ -246,36 +325,87 @@ const Processes: React.FC<Props> = ({
 												}}
 											/>
 											<Dropdown
+												key={process ? 'process-selected' : 'process-unselected'}
 												id="process-version-filter"
 												titleText={t('operate.processes.filters.version')}
 												label={t('operate.processes.filters.selectVersion')}
 												items={versionNumbers}
 												itemToString={(item) =>
-													item === undefined || item === null
+													item === 'all' || item === undefined || item === null
 														? t('operate.processes.filters.allVersions')
 														: String(item)
 												}
-												selectedItem={selectedVersion}
-												disabled={!process}
+												selectedItem={process ? selectedVersion : version}
+												disabled={!isDefinitionsReady || versionNumbers.length === 0}
 												size="sm"
 												onChange={({selectedItem}) => {
+													if (selectedItem === null || selectedItem === undefined) {
+														return;
+													}
 													void navigate({
 														to: '.',
-														search: (prev) => ({...prev, version: selectedItem ?? undefined, elementId: undefined}),
+														search: (prev) => ({
+															...prev,
+															version: selectedItem === 'all' ? undefined : selectedItem,
+															elementId: undefined,
+														}),
 													});
 												}}
 											/>
+											{isDefinitionsError && !isDefinitionsFetching && (
+												<div role="alert">
+													{selectedDefinitionsError instanceof ForbiddenError
+														? t('operate.shared.diagramShell.forbiddenMessage')
+														: t('operate.shared.errorMessage.message')}{' '}
+													{!(selectedDefinitionsError instanceof ForbiddenError) && (
+														<Button kind="ghost" size="sm" onClick={() => void refetchSelectedDefinitions()}>
+															{t('operate.processes.filters.retryElementLoad')}
+														</Button>
+													)}
+												</div>
+											)}
 											<ComboBox
 												id="process-element-filter"
 												titleText={t('operate.processes.filters.element')}
 												placeholder={t('operate.processes.filters.searchByElement')}
-												items={[]}
-												itemToString={(item: {label?: string} | null) => item?.label ?? ''}
-												selectedItem={null}
-												disabled
+												items={isXmlError ? [] : elementItems}
+												itemToString={(item) => item?.label ?? ''}
+												shouldFilterItem={({inputValue, item}) =>
+													inputValue !== null && item.label.toLowerCase().includes(inputValue.toLowerCase())
+												}
+												selectedItem={selectedElement}
+												disabled={isElementDisabled}
 												size="sm"
-												onChange={() => {}}
+												onChange={({selectedItem}) => {
+													void navigate({
+														to: '.',
+														search: (prev) => ({...prev, elementId: selectedItem?.id}),
+													});
+												}}
 											/>
+											{isXmlError && selectedDefinitionKey !== undefined && (
+												<div role="alert">
+													{xmlError instanceof ForbiddenError
+														? t('operate.shared.diagramShell.forbiddenMessage')
+														: t('operate.shared.errorMessage.message')}{' '}
+													{!(xmlError instanceof ForbiddenError) && (
+														<Button kind="ghost" size="sm" onClick={() => void refetchDiagramXml()}>
+															{t('operate.processes.filters.retryElementLoad')}
+														</Button>
+													)}
+												</div>
+											)}
+											{isElementDisabled && elementId && (
+												<Button
+													kind="ghost"
+													size="sm"
+													onClick={() => {
+														void navigate({to: '.', search: (prev) => ({...prev, elementId: undefined})});
+													}}
+												>
+													{t('operate.processes.filters.clearElement')}
+												</Button>
+											)}
 										</Stack>
 									</div>
 									<div>
@@ -394,6 +524,8 @@ const Processes: React.FC<Props> = ({
 			topPanel={
 				<DiagramPanel
 					processDefinitionSelection={processDefinitionSelection}
+					isDefinitionSelectionLoading={isDefinitionsLoading}
+					isDefinitionSelectionError={isDefinitionsError}
 					elementId={elementId}
 					onElementSelection={(selectedElementId) => {
 						void navigate({

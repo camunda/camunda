@@ -26,6 +26,7 @@ import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls'
 import {createQueryProcessInstancesResponse} from '#/shared-test-modules/api-mocks/process-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {Processes} from './Processes';
+import {registerElementFilterTests} from '../../../../test/fixtures/operate/elementFilterTestCases';
 
 const PROCESS_DEFINITIONS = HttpResponse.json(
 	createQueryProcessDefinitionsResponse({
@@ -67,6 +68,8 @@ function renderPage(props?: RenderProps) {
 }
 
 const EMPTY_PROCESS_INSTANCES = HttpResponse.json(createQueryProcessInstancesResponse());
+
+registerElementFilterTests();
 
 describe('<Processes />', () => {
 	beforeEach(() => {
@@ -114,11 +117,11 @@ describe('<Processes />', () => {
 		await expect.element(screen.getByRole('combobox', {name: 'Version'})).not.toBeDisabled();
 	});
 
-	it('should always render the element combobox as disabled', async ({worker}) => {
+	it('should enable the element combobox after the selected definition XML loads', async ({worker}) => {
 		worker.use(
 			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
 			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
-			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML), delay: 1500}),
 			mockGetProcessDefinitionStatisticsEndpoint({
 				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
 			}),
@@ -127,6 +130,7 @@ describe('<Processes />', () => {
 		const screen = await renderPage({process: 'order-process', version: 1});
 
 		await expect.element(screen.getByRole('combobox', {name: 'Element'})).toBeDisabled();
+		await expect.element(screen.getByRole('combobox', {name: 'Element'})).toBeEnabled();
 	});
 
 	it('should navigate resetting version and elementId when a process is selected', async ({worker}) => {
