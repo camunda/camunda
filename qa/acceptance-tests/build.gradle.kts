@@ -21,6 +21,8 @@ dependencies {
   testImplementation(project(":webapps-schema"))
   testImplementation(project(":webapps-backup"))
   testImplementation(project(":zeebe-broker"))
+  testImplementation(project(":zeebe-cluster-config"))
+  testImplementation(project(":zeebe-broker-client"))
   testImplementation(project(":zeebe-protocol"))
   testImplementation(project(":zeebe-bpmn-model"))
   testImplementation(libs.org.camunda.bpm.model.camunda.xml.model)
