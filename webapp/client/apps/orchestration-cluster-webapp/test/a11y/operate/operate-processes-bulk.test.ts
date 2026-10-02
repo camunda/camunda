@@ -7,12 +7,16 @@
  */
 
 import {HttpResponse} from 'msw';
+import {queryProcessDefinitionsRequestBodySchema} from '@camunda/camunda-api-zod-schemas/8.11';
 import {test, expect} from '#/pw-modules/test-extend';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
-import {createQueryProcessDefinitionsResponse} from '#/shared-test-modules/api-mocks/process-definitions';
+import {
+	createProcessDefinition,
+	createQueryProcessDefinitionsResponse,
+} from '#/shared-test-modules/api-mocks/process-definitions';
 import {
 	createProcessInstance,
 	createQueryProcessInstancesResponse,
@@ -30,7 +34,10 @@ import {
 	mockQueryBatchOperationItemsEndpoint,
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
+	mockGetProcessDefinitionXmlEndpoint,
+	mockGetProcessDefinitionStatisticsEndpoint,
 } from '#/shared-test-modules/mock-handlers';
+import {createGetProcessDefinitionStatisticsResponse} from '#/shared-test-modules/api-mocks/process-definition-statistics';
 
 test.beforeEach(({network}) => {
 	network.use(
@@ -108,4 +115,41 @@ test('should expose failed operation details accessibly', async ({
 	await expect(expand).toHaveAttribute('aria-expanded', 'true');
 	await expect(page.getByText('Unable to complete operation')).toBeVisible();
 	expect((await makeAxeBuilder().analyze()).violations).toEqual([]);
+});
+
+test('should have no accessibility violations in the process definition deletion confirmation', async ({
+	network,
+	page,
+	operateProcessesPage,
+	makeAxeBuilder,
+}) => {
+	network.use(
+		mockQueryProcessDefinitionsEndpoint({
+			schema: queryProcessDefinitionsRequestBodySchema.refine((body) => body.filter?.state === 'DRAINING'),
+			successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
+			failureResponse: HttpResponse.json(
+				createQueryProcessDefinitionsResponse({
+					items: [createProcessDefinition({name: 'Order Process', processDefinitionId: 'order-process'})],
+				}),
+			),
+		}),
+		mockQueryProcessInstancesEndpoint({successResponse: HttpResponse.json(createQueryProcessInstancesResponse())}),
+		mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text('')}),
+		mockGetProcessDefinitionStatisticsEndpoint({
+			successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
+		}),
+	);
+	await operateProcessesPage.goto('?process=order-process&version=1');
+	await page.getByRole('button', {name: 'Delete Process Definition "Order Process - Version 1"'}).click();
+	await expect(page.getByRole('dialog')).toBeVisible();
+	await page.getByRole('dialog').evaluate(async (dialog) => {
+		type AnimatedElement = {
+			parentElement: AnimatedElement | null;
+			getAnimations: () => {finished: Promise<unknown>}[];
+		};
+		for (let element: AnimatedElement | null = dialog; element !== null; element = element.parentElement) {
+			await Promise.all(element.getAnimations().map((animation) => animation.finished));
+		}
+	});
+	expect((await makeAxeBuilder().include('[role="dialog"]').analyze()).violations).toEqual([]);
 });

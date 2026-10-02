@@ -688,6 +688,28 @@
 					"processId": "ID du processus",
 					"versionTag": "Étiquette de version"
 				},
+				"definitionDeletion": {
+					"buttonTitle": "Supprimer la définition du processus \"{{name}} - Version {{version}}\"",
+					"historyButtonTitle": "Supprimer l'historique de la définition du processus \"{{name}} - Version {{version}}\"",
+					"runningInstances": "Seules les définitions de processus sans instances en cours peuvent être supprimées.",
+					"deleted": "Supprimé",
+					"deletedDescription": "Cette définition de processus a été supprimée. Son enregistrement reste disponible jusqu'à la suppression définitive de son historique.",
+					"title": "Supprimer la définition du processus",
+					"description": "Vous êtes sur le point de supprimer la définition de processus suivante :",
+					"historyDescription": "Cette définition de processus est déjà supprimée. Continuer supprimera définitivement son historique restant :",
+					"confirmation": "Oui, je confirme vouloir supprimer cette définition de processus.",
+					"historyConfirmation": "Oui, je confirme vouloir supprimer définitivement l'historique de cette définition de processus.",
+					"warningTitle": "La suppression d'une définition de processus est définitive et aura les conséquences suivantes :",
+					"historyWarningTitle": "La suppression de l'historique restant de la définition de processus est définitive et aura les conséquences suivantes :",
+					"warningFinishedInstances": "Toutes les instances terminées de la définition de processus supprimée seront supprimées de l'application.",
+					"warningReferencedInstances": "Toutes les instances de décision et de processus référencées par les instances de processus supprimées seront supprimées.",
+					"warningUserTasks": "Si une définition de processus contient des tâches utilisateur, elles seront supprimées de Tasklist.",
+					"documentation": "Pour plus de détails, consultez notre guide sur la suppression d'une définition de processus",
+					"details": "Détails du processus",
+					"definition": "Définition du processus",
+					"definitionVersion": "{{name}} - Version {{version}}",
+					"successTitle": "Opération créée"
+				},
 				"diagramPanel": {
 					"multipleVersionsSelected": "Plusieurs versions sont sélectionnées pour le processus \"{{name}}\"",
 					"selectSingleVersion": "Pour voir un diagramme, sélectionnez une seule version",

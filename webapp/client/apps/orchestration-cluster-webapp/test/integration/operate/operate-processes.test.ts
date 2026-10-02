@@ -29,6 +29,7 @@ import {
 	mockGetProcessInstanceEndpoint,
 	mockGetProcessInstanceWaitStateStatisticsEndpoint,
 	mockQueryProcessInstanceIncidentsEndpoint,
+	mockDeleteResourceEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
@@ -120,6 +121,78 @@ test.beforeEach(({network}) => {
 });
 
 test.describe('Operate processes page', () => {
+	test('should recover from a forbidden deletion, then delete and show the deleted definition', async ({
+		network,
+		page,
+		operateProcessesPage,
+	}) => {
+		const definition = createProcessDefinition({
+			name: 'Order Process',
+			processDefinitionId: 'order-process',
+			processDefinitionKey: '2251799813685279',
+			tenantId: 'tenant-a',
+			version: 2,
+		});
+		const mockSelectedDefinition = (selected: typeof definition) =>
+			mockQueryProcessDefinitionsEndpoint({
+				schema: queryProcessDefinitionsRequestBodySchema.refine((body) => body.filter?.state !== 'DRAINING'),
+				successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse({items: [selected]})),
+				failureResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
+			});
+		network.use(
+			mockSelectedDefinition(definition),
+			mockQueryProcessInstancesEndpoint({successResponse: HttpResponse.json(createQueryProcessInstancesResponse())}),
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text('')}),
+			mockGetProcessDefinitionStatisticsEndpoint({
+				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
+			}),
+			mockDeleteResourceEndpoint({successResponse: new HttpResponse(null, {status: 403})}),
+		);
+		await operateProcessesPage.goto('?process=order-process&version=2&tenantId=tenant-a&businessId=order-1');
+		const dialog = page.getByRole('dialog');
+		const action = page.getByRole('button', {name: 'Delete Process Definition "Order Process - Version 2"'});
+
+		await test.step('notify about a forbidden deletion', async () => {
+			await action.click();
+			await expect(dialog).toContainText('Order Process - Version 2');
+			await expect(dialog.getByRole('button', {name: 'Delete'})).toBeDisabled();
+			await dialog.getByText('Yes, I confirm I want to delete this process definition.').click();
+			await dialog.getByRole('button', {name: 'Delete'}).click();
+
+			await expect(page.getByText("You don't have permission to perform this operation")).toBeVisible();
+			await expect(action).toBeEnabled();
+		});
+
+		await test.step('delete the definition and refresh the header', async () => {
+			network.use(
+				mockDeleteResourceEndpoint({
+					successResponse: HttpResponse.json({resourceKey: definition.processDefinitionKey, batchOperation: null}),
+				}),
+			);
+			await action.click();
+			await dialog.getByText('Yes, I confirm I want to delete this process definition.').click();
+			const submitted = page.waitForRequest(
+				(request) =>
+					request.method() === 'POST' &&
+					request.url().endsWith(`/v2/resources/${definition.processDefinitionKey}/deletion`),
+			);
+			network.use(mockSelectedDefinition({...definition, state: 'DELETED'}));
+			await dialog.getByRole('button', {name: 'Delete'}).click();
+
+			expect((await submitted).postDataJSON()).toEqual({deleteHistory: true});
+			await expect(page.getByText('Operation created', {exact: true})).toBeVisible();
+			await expect(page.getByText('Deleted', {exact: true})).toBeVisible();
+			await expect(
+				page.getByRole('button', {name: 'Delete Process Definition History "Order Process - Version 2"'}),
+			).toBeEnabled();
+			const search = new URL(page.url()).searchParams;
+			expect(search.get('process')).toBe('order-process');
+			expect(search.get('version')).toBe('2');
+			expect(search.get('tenantId')).toBe('tenant-a');
+			expect(search.get('businessId')).toBe('order-1');
+		});
+	});
+
 	test('should cancel all matching instances and discard selection after acceptance', async ({
 		network,
 		page,
