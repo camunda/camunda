@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Bench only (PLAN-gate.md): ten_tasks.bpmn without its timers, so create-with-result measures
+     create -> complete over ten jobs. -->
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="ten-tasks-no-timers" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="benchmark" name="Ten tasks process without timers" isExecutable="true">
+    <bpmn:startEvent id="start" />
+    <bpmn:serviceTask id="task1" name="task1">
+      <bpmn:extensionElements><zeebe:taskDefinition type="benchmark-task" /></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="flow1" sourceRef="start" targetRef="task1" />
+    <bpmn:serviceTask id="task2" name="task2">
+      <bpmn:extensionElements><zeebe:taskDefinition type="benchmark-task" /></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="flow2" sourceRef="task1" targetRef="task2" />
+    <bpmn:serviceTask id="task3" name="task3">
+      <bpmn:extensionElements><zeebe:taskDefinition type="benchmark-task" /></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="flow3" sourceRef="task2" targetRef="task3" />
+    <bpmn:serviceTask id="task4" name="task4">
+      <bpmn:extensionElements><zeebe:taskDefinition type="benchmark-task" /></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="flow4" sourceRef="task3" targetRef="task4" />
+    <bpmn:serviceTask id="task5" name="task5">
+      <bpmn:extensionElements><zeebe:taskDefinition type="benchmark-task" /></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="flow5" sourceRef="task4" targetRef="task5" />
+    <bpmn:serviceTask id="task6" name="task6">
+      <bpmn:extensionElements><zeebe:taskDefinition type="benchmark-task" /></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="flow6" sourceRef="task5" targetRef="task6" />
+    <bpmn:serviceTask id="task7" name="task7">
+      <bpmn:extensionElements><zeebe:taskDefinition type="benchmark-task" /></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="flow7" sourceRef="task6" targetRef="task7" />
+    <bpmn:serviceTask id="task8" name="task8">
+      <bpmn:extensionElements><zeebe:taskDefinition type="benchmark-task" /></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="flow8" sourceRef="task7" targetRef="task8" />
+    <bpmn:serviceTask id="task9" name="task9">
+      <bpmn:extensionElements><zeebe:taskDefinition type="benchmark-task" /></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="flow9" sourceRef="task8" targetRef="task9" />
+    <bpmn:serviceTask id="task10" name="task10">
+      <bpmn:extensionElements><zeebe:taskDefinition type="benchmark-task" /></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="flow10" sourceRef="task9" targetRef="task10" />
+    <bpmn:endEvent id="end" />
+    <bpmn:sequenceFlow id="flowEnd" sourceRef="task10" targetRef="end" />
+  </bpmn:process>
+</bpmn:definitions>

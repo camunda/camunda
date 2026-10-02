@@ -15,6 +15,7 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.response.ProcessInstanceResult;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.zeebe.config.LoadTesterProperties;
@@ -308,6 +309,7 @@ public class Starter implements CommandLineRunner {
                 (noop, error) -> {
                   final long durationNanos = System.nanoTime() - startTime;
                   responseLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
+                  recordPartitionLatency(noop, durationNanos);
                   requestOutcomeRecorder.record(command, error);
                   requestOutcomeRecorder.recordLatency(command, error, durationNanos);
                   if (error instanceof final StatusRuntimeException statusRuntimeException) {
@@ -359,6 +361,22 @@ public class Starter implements CommandLineRunner {
               }
               return response;
             });
+  }
+
+  /**
+   * Bench only: the same latency per partition, decoded from the instance key, so a rebalance's
+   * effect can be attributed to the partition that moved. The name extends the response latency
+   * timer's, so the same SLO bucket property applies to it.
+   */
+  private void recordPartitionLatency(final Object response, final long durationNanos) {
+    final String partition =
+        response instanceof final ProcessInstanceResult result
+            ? String.valueOf(result.getProcessInstanceKey() >> 51)
+            : "unknown";
+    Timer.builder(StarterLatencyMetricsDoc.RESPONSE_LATENCY.getName() + ".partition")
+        .tag("partition", partition)
+        .register(registry)
+        .record(durationNanos, TimeUnit.NANOSECONDS);
   }
 
   private CompletionStage<?> startInstanceWithAwaitingResult(
