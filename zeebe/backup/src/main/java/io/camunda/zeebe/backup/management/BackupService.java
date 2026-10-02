@@ -89,6 +89,9 @@ public final class BackupService extends Actor implements BackupManager {
   @Override
   protected void onActorClosing() {
     internalBackupManager.close();
+    // checkpoints written but not yet processed will not find their reservation once a new
+    // backup manager is installed, so nothing needs the snapshots reserved for them anymore
+    snapshotStore.releaseAllReservations();
     metrics.close();
   }
 
