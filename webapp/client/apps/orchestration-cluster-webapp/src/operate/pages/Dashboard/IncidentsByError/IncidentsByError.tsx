@@ -18,6 +18,7 @@ import emptyStateIconUrl from '#/operate/assets/empty-state-process-instances-by
 import {ExpandableList} from '../ExpandableList';
 import {ExpandedRowErrorFallback} from '../ExpandedRowErrorFallback';
 import {useDashboardScrollPagination} from '../useDashboardScrollPagination';
+import {truncateErrorMessage} from './truncateErrorMessage';
 import {LinkWrapper, LoadingRow} from '../styled';
 import {incidentsByErrorInfiniteQuery, PAGE_SIZE} from './incidentsByError.queries';
 import {IncidentsByErrorDefinitions} from './IncidentsByErrorDefinitions';
@@ -57,7 +58,7 @@ const IncidentsByError: React.FC = () => {
 					<LinkWrapper
 						to="/operate/processes"
 						search={{
-							errorMessage: item.errorMessage,
+							errorMessage: truncateErrorMessage(item.errorMessage),
 							incidentErrorHashCode: item.errorHashCode,
 							incidents: true,
 							active: false,

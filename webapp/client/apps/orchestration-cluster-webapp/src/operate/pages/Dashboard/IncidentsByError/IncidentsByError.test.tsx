@@ -176,6 +176,50 @@ describe('<IncidentsByError />', () => {
 			.toHaveAttribute('href', expect.stringContaining('errorMessage=Connection+timeout&incidentErrorHashCode=0'));
 	});
 
+	it('should truncate long incident messages to 100 characters at a word boundary in drill-down links', async ({
+		worker,
+	}) => {
+		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
+		const errorMessage =
+			"Expected to evaluate decision 'decision-a', but Assertion failure on evaluate the expression 'assert(0,1)': The condition is not fulfilled";
+		const truncated = "Expected to evaluate decision 'decision-a', but Assertion failure on evaluate the expression";
+		worker.use(
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+				successResponse: HttpResponse.json(
+					createPaginatedResponse({
+						items: [createIncidentProcessInstanceStatisticsByError({errorMessage, errorHashCode: -481})],
+						page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+					}),
+				),
+			}),
+			mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint({
+				successResponse: HttpResponse.json(
+					createPaginatedResponse({
+						items: [
+							createIncidentProcessInstanceStatisticsByDefinition({
+								processDefinitionId: 'orders',
+								processDefinitionName: 'Orders',
+								processDefinitionVersion: 2,
+							}),
+						],
+						page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+					}),
+				),
+			}),
+		);
+
+		const screen = await renderWithRouter(() => <IncidentsByError />, {path: '/operate'});
+		const expectedSearch = `errorMessage=${new URLSearchParams({m: truncated}).toString().slice(2)}&incidentErrorHashCode=-481`;
+
+		await expect
+			.element(screen.getByTestId('incident-byError').getByRole('link').nth(0))
+			.toHaveAttribute('href', expect.stringContaining(expectedSearch));
+		await userEvent.click(screen.getByRole('button', {name: 'Expand current row'}));
+		await expect
+			.element(screen.getByRole('link', {name: /Orders/}))
+			.toHaveAttribute('href', expect.stringContaining(expectedSearch));
+	});
+
 	it('should preserve incident hash, version and tenant for expanded process links', async ({worker}) => {
 		sessionStorage.setItem(
 			'clientConfig',
