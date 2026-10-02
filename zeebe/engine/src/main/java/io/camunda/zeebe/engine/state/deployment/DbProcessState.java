@@ -214,12 +214,8 @@ public final class DbProcessState implements MutableProcessState {
             .description(collectedDoc.getDescription())
             .register(zeebeDb.getMeterRegistry());
 
-    // soft values: a cached process is a large object graph (parsed model, compiled FEEL
-    // expressions) whose size we can't weigh, so let the GC reclaim entries under heap pressure
     processByTenantAndKeyCache =
-        CacheBuilder.newBuilder()
-            .maximumSize(config.getProcessCacheCapacity())
-            .softValues()
+        newProcessCacheBuilder(config)
             // both caches hold the same values, so counting one avoids double-counting
             .<TenantIdAndProcessDefinitionKey, DeployedProcess>removalListener(
                 notification -> {
@@ -228,13 +224,17 @@ public final class DbProcessState implements MutableProcessState {
                   }
                 })
             .build();
-    processesByTenantAndProcessIdAndVersionCache =
-        CacheBuilder.newBuilder()
-            .maximumSize(config.getProcessCacheCapacity())
-            .softValues()
-            .build();
+    processesByTenantAndProcessIdAndVersionCache = newProcessCacheBuilder(config).build();
     processDefinitionKeyByTenantAndProcessIdAndDeploymentKeyCache =
         CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity()).build();
+  }
+
+  private static CacheBuilder<Object, Object> newProcessCacheBuilder(
+      final EngineConfiguration config) {
+    final var builder = CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity());
+    // soft values: a cached process is a large object graph (parsed model, compiled FEEL
+    // expressions) whose size we can't weigh, so let the GC reclaim entries under heap pressure
+    return config.isProcessCacheSoftValues() ? builder.softValues() : builder;
   }
 
   @Override

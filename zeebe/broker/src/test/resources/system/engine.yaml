@@ -9,6 +9,7 @@ zeebe:
           drgCacheCapacity: 2000
           formCacheCapacity: 2000
           processCacheCapacity: 2000
+          processCacheSoftValues: true
           groupNameCacheCapacity: 2000
           candidateGroupNameResolution: false
         jobs:
