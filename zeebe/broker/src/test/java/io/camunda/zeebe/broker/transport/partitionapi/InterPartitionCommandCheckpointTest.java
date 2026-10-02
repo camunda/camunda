@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.transport.partitionapi;
 import static io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderImpl.LEGACY_TOPIC_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.inOrder;
@@ -73,7 +74,7 @@ final class InterPartitionCommandCheckpointTest {
         new InterPartitionCommandReceiverImpl(
             logStreamWriter, snapshotStore, new TestConcurrencyControl());
     lenient()
-        .when(snapshotStore.reserveLatestSnapshot())
+        .when(snapshotStore.reserveLatestSnapshot(anyLong()))
         .thenReturn(CompletableActorFuture.completed(Optional.empty()));
   }
 
@@ -82,7 +83,7 @@ final class InterPartitionCommandCheckpointTest {
     // given
     when(logStreamWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
         .thenReturn(Either.right(1L));
-    when(snapshotStore.reserveLatestSnapshot())
+    when(snapshotStore.reserveLatestSnapshot(anyLong()))
         .thenReturn(CompletableActorFuture.completed(Optional.of("latest")));
     sender.setCheckpointInfo(17, CheckpointType.SCHEDULED_BACKUP);
 
@@ -91,7 +92,7 @@ final class InterPartitionCommandCheckpointTest {
 
     // then
     final var io = inOrder(snapshotStore, logStreamWriter);
-    io.verify(snapshotStore).reserveLatestSnapshot();
+    io.verify(snapshotStore).reserveLatestSnapshot(17L);
     io.verify(logStreamWriter)
         .tryWrite(
             any(WriteContext.class),
@@ -115,7 +116,7 @@ final class InterPartitionCommandCheckpointTest {
     // then
     verify(logStreamWriter)
         .tryWrite(any(WriteContext.class), matchesCheckpoint(17, CheckpointType.MARKER, ""));
-    verify(snapshotStore, never()).reserveLatestSnapshot();
+    verify(snapshotStore, never()).reserveLatestSnapshot(anyLong());
   }
 
   @Test
@@ -124,7 +125,7 @@ final class InterPartitionCommandCheckpointTest {
     when(logStreamWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
         .thenReturn(Either.right(1L));
     final var reservation = new CompletableActorFuture<Optional<String>>();
-    when(snapshotStore.reserveLatestSnapshot()).thenReturn(reservation);
+    when(snapshotStore.reserveLatestSnapshot(anyLong())).thenReturn(reservation);
     sender.setCheckpointInfo(17, CheckpointType.MANUAL_BACKUP);
     final var handled = sendAndReceive(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
     verifyNoInteractions(logStreamWriter);
@@ -151,7 +152,7 @@ final class InterPartitionCommandCheckpointTest {
     when(logStreamWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
         .thenReturn(Either.right(1L));
     final var reservation = new CompletableActorFuture<Optional<String>>();
-    when(snapshotStore.reserveLatestSnapshot()).thenReturn(reservation);
+    when(snapshotStore.reserveLatestSnapshot(anyLong())).thenReturn(reservation);
     sender.setCheckpointInfo(17, CheckpointType.MANUAL_BACKUP);
     sendAndReceive(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
 
@@ -164,7 +165,7 @@ final class InterPartitionCommandCheckpointTest {
         .tryWrite(
             any(WriteContext.class),
             matchesMetadata(ValueType.CHECKPOINT, CheckpointIntent.CREATE));
-    verify(snapshotStore).releaseReservation("latest");
+    verify(snapshotStore).releaseReservation(17L, "latest");
   }
 
   @Test
@@ -172,7 +173,7 @@ final class InterPartitionCommandCheckpointTest {
     // given
     when(logStreamWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
         .thenReturn(Either.right(1L));
-    when(snapshotStore.reserveLatestSnapshot())
+    when(snapshotStore.reserveLatestSnapshot(anyLong()))
         .thenReturn(CompletableActorFuture.completed(Optional.of("latest")));
     sender.setCheckpointInfo(17, CheckpointType.MANUAL_BACKUP);
 
@@ -184,7 +185,7 @@ final class InterPartitionCommandCheckpointTest {
     verify(logStreamWriter, times(1))
         .tryWrite(
             any(WriteContext.class), matchesCheckpoint(17, CheckpointType.MANUAL_BACKUP, "latest"));
-    verify(snapshotStore, times(1)).reserveLatestSnapshot();
+    verify(snapshotStore, times(1)).reserveLatestSnapshot(anyLong());
   }
 
   @Test
@@ -192,7 +193,7 @@ final class InterPartitionCommandCheckpointTest {
     // given
     when(logStreamWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
         .thenReturn(Either.left(WriteFailure.WRITE_LIMIT_EXHAUSTED));
-    when(snapshotStore.reserveLatestSnapshot())
+    when(snapshotStore.reserveLatestSnapshot(anyLong()))
         .thenReturn(CompletableActorFuture.completed(Optional.of("latest")));
     sender.setCheckpointInfo(17, CheckpointType.MANUAL_BACKUP);
 
@@ -200,7 +201,7 @@ final class InterPartitionCommandCheckpointTest {
     sendAndReceive(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
 
     // then
-    verify(snapshotStore).releaseReservation("latest");
+    verify(snapshotStore).releaseReservation(17L, "latest");
   }
 
   @Test
