@@ -340,12 +340,18 @@ const mockCreateResumptionBatchOperationEndpoint = createEndpointMock({
 	method: endpoints.resumeProcessInstancesBatchOperation.method,
 });
 
+const mockCreateModificationBatchOperationEndpoint = createEndpointMock({
+	endpoint: endpoints.createModificationBatchOperation.getUrl(),
+	method: endpoints.createModificationBatchOperation.method,
+});
+
 export {
 	mockCreateCancellationBatchOperationEndpoint,
 	mockCreateIncidentResolutionBatchOperationEndpoint,
 	mockCreateDeletionBatchOperationEndpoint,
 	mockCreateSuspensionBatchOperationEndpoint,
 	mockCreateResumptionBatchOperationEndpoint,
+	mockCreateModificationBatchOperationEndpoint,
 	mockCurrentUserEndpoint,
 	mockLoginCsrfTokenEndpoint,
 	mockLoginEndpoint,

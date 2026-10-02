@@ -34,8 +34,10 @@ const DiagramHeader: React.FC<Props> = ({processDefinitionSelection, panelHeader
 		<PanelHeader ref={panelHeaderRef}>
 			<Description>
 				<DescriptionTitle>{t('operate.processes.diagramHeader.processName')}</DescriptionTitle>
-				<DescriptionData title={name} role="heading" aria-level={2}>
-					{name}
+				<DescriptionData title={name}>
+					<span role="heading" aria-level={2}>
+						{name}
+					</span>
 				</DescriptionData>
 			</Description>
 			<Description>

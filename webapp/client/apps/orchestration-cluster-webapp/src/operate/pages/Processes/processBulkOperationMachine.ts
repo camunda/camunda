@@ -14,6 +14,8 @@ import type {
 	CreateCancellationBatchOperationRequestBody,
 	CreateCancellationBatchOperationResponseBody,
 	CreateDeletionBatchOperationResponseBody,
+	CreateModificationBatchOperationRequestBody,
+	CreateModificationBatchOperationResponseBody,
 	CreateIncidentResolutionBatchOperationResponseBody,
 	SuspendProcessInstancesBatchOperationResponseBody,
 	ResumeProcessInstancesBatchOperationResponseBody,
@@ -26,16 +28,18 @@ import type {ProcessBulkAction} from './useProcessInstancesSelection';
 
 type Submission = {
 	type: 'submit';
-	action: ProcessBulkAction;
-	body: CreateCancellationBatchOperationRequestBody;
 	filterIdentity: string;
-};
+} & (
+	| {action: ProcessBulkAction; body: CreateCancellationBatchOperationRequestBody}
+	| {action: 'modify'; body: CreateModificationBatchOperationRequestBody}
+);
 type SubmissionResponse =
 	| CreateCancellationBatchOperationResponseBody
 	| CreateDeletionBatchOperationResponseBody
 	| CreateIncidentResolutionBatchOperationResponseBody
 	| SuspendProcessInstancesBatchOperationResponseBody
-	| ResumeProcessInstancesBatchOperationResponseBody;
+	| ResumeProcessInstancesBatchOperationResponseBody
+	| CreateModificationBatchOperationResponseBody;
 type TrackingInput = {queryClient: QueryClient; batchOperationKey: string};
 const REQUESTS = {
 	delete: endpoints.createDeletionBatchOperation,
@@ -43,6 +47,7 @@ const REQUESTS = {
 	retry: endpoints.createIncidentResolutionBatchOperation,
 	suspend: endpoints.createSuspensionBatchOperation,
 	resume: endpoints.createResumptionBatchOperation,
+	modify: endpoints.createModificationBatchOperation,
 };
 
 function refresh(queryClient: QueryClient) {
@@ -129,7 +134,8 @@ const processBulkOperationMachine = setup({
 	actors: {
 		track: trackingMachine,
 		submit: fromPromise(async ({input}: {input: Submission}) => {
-			const {response, error} = await request(REQUESTS[input.action](input.body));
+			const inputRequest = input.action === 'modify' ? REQUESTS.modify(input.body) : REQUESTS[input.action](input.body);
+			const {response, error} = await request(inputRequest);
 			if (error !== null) {
 				throw error;
 			}
