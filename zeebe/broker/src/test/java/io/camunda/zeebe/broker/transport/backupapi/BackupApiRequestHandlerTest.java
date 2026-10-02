@@ -776,6 +776,20 @@ final class BackupApiRequestHandlerTest {
     verifyNoInteractions(snapshotStore);
   }
 
+  @Test
+  void shouldNotTakeSnapshotForCheckpointThatIsNotNewer() {
+    // given - a retried request for the latest checkpoint, which the processor ignores
+    when(checkpointState.getLatestCheckpointId()).thenReturn(10L);
+    final var writtenEntry = captureWrittenEntry(Either.right(1L));
+
+    // when
+    handleRequest(takeBackupRequest(CheckpointType.MANUAL_BACKUP));
+
+    // then - the command is still written, so the processor responds as before
+    assertThat(writtenCheckpoint(writtenEntry).getSnapshotId()).isEmpty();
+    verifyNoInteractions(snapshotDirector, snapshotStore);
+  }
+
   private BackupRequest takeBackupRequest(final CheckpointType checkpointType) {
     return new BackupRequest()
         .setType(BackupRequestType.TAKE_BACKUP)
