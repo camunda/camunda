@@ -140,10 +140,17 @@ public enum StarterLatencyMetricsDoc implements ExtendedMeterDocumentation {
     }
   },
 
-  /** The latency of read benchmark queries executed against the Camunda cluster. */
+  /**
+   * The latency of read benchmark queries executed against the Camunda cluster, labeled with the
+   * outcome of the query and, for failures, the type of the error.
+   */
   READ_BENCHMARK {
     private static final KeyName[] KEY_NAMES =
-        new KeyName[] {StarterLatencyMetricKeyNames.QUERY_NAME};
+        new KeyName[] {
+          StarterLatencyMetricKeyNames.QUERY_NAME,
+          StarterMetricKeyNames.OUTCOME,
+          StarterMetricKeyNames.ERROR
+        };
 
     private static final Duration[] BUCKETS = {
       Duration.ofMillis(10),
@@ -171,7 +178,7 @@ public enum StarterLatencyMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getDescription() {
-      return "The latency of read benchmark queries executed against the Camunda cluster.";
+      return "The latency of read benchmark queries executed against the Camunda cluster, labeled with the outcome and the error type of failed queries.";
     }
 
     @Override
