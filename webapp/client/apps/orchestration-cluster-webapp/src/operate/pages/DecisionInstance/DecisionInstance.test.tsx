@@ -149,6 +149,20 @@ describe('<DecisionInstance />', () => {
 		await expect.element(screen.getByTestId('state-overlay-EVALUATED')).toBeVisible();
 	});
 
+	it('should title the DRD panel with the definitions id when the definitions have no name', async ({worker}) => {
+		mockPage(worker);
+		worker.use(
+			mockGetDecisionDefinitionXmlEndpoint({
+				successResponse: HttpResponse.text(DMN_XML.replace(' name="Invoice Business Decisions"', '')),
+			}),
+		);
+		const screen = await renderPage();
+
+		await expect
+			.element(screen.getByRole('region', {name: 'DRD panel'}).getByText('invoiceBusinessDecisions'))
+			.toBeVisible();
+	});
+
 	it('should switch between minimized, maximized and closed layouts without losing the decision panels', async ({
 		worker,
 	}) => {
