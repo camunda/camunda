@@ -187,11 +187,20 @@ export class OperateDiagramPage {
         await expect(this.showMetadataButton).toBeVisible({timeout: 5000});
       },
       onFailure: async () => {
+        // Under the loaded v2 nightly, Operate's import lag can leave the
+        // clicked element without flow-node-instance data yet, so no metadata
+        // popover renders; and simply re-clicking the same node toggles its
+        // selection off. Reload to pick up freshly-imported data and restart
+        // from a clean, deselected diagram before retrying (the same recovery
+        // the migrated business-rule-task incident check in
+        // processInstanceMigration.spec.ts already relies on).
         console.log(
-          `Popover not visible after clicking flow node ${flowNodeId}, retrying...`,
+          `Popover not visible after clicking flow node ${flowNodeId}, reloading and retrying...`,
         );
+        await this.page.reload();
+        await this.resetDiagramZoomButton.click();
       },
-      maxRetries: 3,
+      maxRetries: 10,
     });
     await this.clickShowMetaData();
 
