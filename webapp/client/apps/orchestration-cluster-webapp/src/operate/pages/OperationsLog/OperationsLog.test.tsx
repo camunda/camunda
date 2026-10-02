@@ -255,7 +255,7 @@ describe('<OperationsLog />', () => {
 			await expect.element(screen.getByText('No operations log found')).toBeVisible();
 		});
 
-		it('should show an initial fetch error and recover on retry without a notification', async ({worker}) => {
+		it('should show an initial fetch error with a notification and recover on retry', async ({worker}) => {
 			worker.use(
 				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
 				mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
@@ -268,7 +268,9 @@ describe('<OperationsLog />', () => {
 			await expect.element(screen.getByText("Couldn't fetch audit logs")).toBeVisible();
 			await expect.element(screen.getByRole('button', {name: 'Try again'})).toBeVisible();
 			await expect.element(screen.getByText('No operation log items yet')).not.toBeInTheDocument();
-			expect(notificationsStore.notifications).toHaveLength(0);
+			expect(notificationsStore.notifications).toContainEqual(
+				expect.objectContaining({kind: 'error', title: "Couldn't fetch audit logs"}),
+			);
 
 			worker.use(
 				mockQueryAuditLogsEndpoint({
@@ -281,62 +283,58 @@ describe('<OperationsLog />', () => {
 
 			await expect.element(screen.getByText("Couldn't fetch audit logs")).not.toBeInTheDocument();
 			await expect.element(screen.getByRole('heading', {name: 'Operations Log - 1 result'})).toBeVisible();
-			expect(notificationsStore.notifications).toHaveLength(0);
 		});
 
 		it.for([
 			{description: 'cached rows', items: [createAuditLog({auditLogKey: 'cached', entityKey: '42'})]},
 			{description: 'a cached empty response', items: []},
-		])(
-			'should show a failed refetch for $description and recover without duplicate notifications',
-			async ({items}, {worker}) => {
-				worker.use(
-					mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
-					mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
-					mockQueryAuditLogsEndpoint({
-						successResponse: HttpResponse.json(createQueryAuditLogsResponse({items})),
-					}),
-				);
+		])('should show a failed refetch for $description with a notification and recover', async ({items}, {worker}) => {
+			worker.use(
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+				mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
+				mockQueryAuditLogsEndpoint({
+					successResponse: HttpResponse.json(createQueryAuditLogsResponse({items})),
+				}),
+			);
 
-				const screen = await renderPage();
-				const {queryClient} = screen;
+			const screen = await renderPage();
+			const {queryClient} = screen;
 
-				if (items.length > 0) {
-					await expect.element(screen.getByRole('heading', {name: 'Operations Log - 1 result'})).toBeVisible();
-				} else {
-					await expect.element(screen.getByText('No operation log items yet')).toBeVisible();
-				}
+			if (items.length > 0) {
+				await expect.element(screen.getByRole('heading', {name: 'Operations Log - 1 result'})).toBeVisible();
+			} else {
+				await expect.element(screen.getByText('No operation log items yet')).toBeVisible();
+			}
 
-				worker.use(mockQueryAuditLogsEndpoint({successResponse: AUDIT_LOG_ERROR}));
-				await queryClient.invalidateQueries({queryKey: ['operationsLogAuditLogs']});
+			worker.use(mockQueryAuditLogsEndpoint({successResponse: AUDIT_LOG_ERROR}));
+			await queryClient.invalidateQueries({queryKey: ['operationsLogAuditLogs']});
 
-				await expect.element(screen.getByTestId('operations-log-table').getByRole('alert')).toBeVisible();
-				await expect.element(screen.getByText("Couldn't fetch audit logs")).toBeVisible();
-				await expect.element(screen.getByRole('button', {name: 'Try again'})).toBeVisible();
-				await expect.element(screen.getByText('No operation log items yet')).not.toBeInTheDocument();
-				await expect.element(screen.getByRole('heading', {name: 'Operations Log'})).toBeVisible();
-				expect(notificationsStore.notifications).toHaveLength(0);
+			await expect.element(screen.getByTestId('operations-log-table').getByRole('alert')).toBeVisible();
+			await expect.element(screen.getByText("Couldn't fetch audit logs")).toBeVisible();
+			await expect.element(screen.getByRole('button', {name: 'Try again'})).toBeVisible();
+			await expect.element(screen.getByText('No operation log items yet')).not.toBeInTheDocument();
+			await expect.element(screen.getByRole('heading', {name: 'Operations Log'})).toBeVisible();
+			expect(notificationsStore.notifications).toContainEqual(
+				expect.objectContaining({kind: 'error', title: "Couldn't fetch audit logs"}),
+			);
 
-				await userEvent.click(screen.getByRole('button', {name: 'Try again'}));
-				await expect.element(screen.getByText("Couldn't fetch audit logs")).toBeVisible();
-				expect(notificationsStore.notifications).toHaveLength(0);
+			await userEvent.click(screen.getByRole('button', {name: 'Try again'}));
+			await expect.element(screen.getByText("Couldn't fetch audit logs")).toBeVisible();
 
-				worker.use(
-					mockQueryAuditLogsEndpoint({
-						successResponse: HttpResponse.json(createQueryAuditLogsResponse({items})),
-					}),
-				);
-				await userEvent.click(screen.getByRole('button', {name: 'Try again'}));
+			worker.use(
+				mockQueryAuditLogsEndpoint({
+					successResponse: HttpResponse.json(createQueryAuditLogsResponse({items})),
+				}),
+			);
+			await userEvent.click(screen.getByRole('button', {name: 'Try again'}));
 
-				await expect.element(screen.getByText("Couldn't fetch audit logs")).not.toBeInTheDocument();
-				if (items.length > 0) {
-					await expect.element(screen.getByRole('heading', {name: 'Operations Log - 1 result'})).toBeVisible();
-				} else {
-					await expect.element(screen.getByText('No operation log items yet')).toBeVisible();
-				}
-				expect(notificationsStore.notifications).toHaveLength(0);
-			},
-		);
+			await expect.element(screen.getByText("Couldn't fetch audit logs")).not.toBeInTheDocument();
+			if (items.length > 0) {
+				await expect.element(screen.getByRole('heading', {name: 'Operations Log - 1 result'})).toBeVisible();
+			} else {
+				await expect.element(screen.getByText('No operation log items yet')).toBeVisible();
+			}
+		});
 
 		it('should display approximate totals without changing existing row links', async ({worker}) => {
 			worker.use(

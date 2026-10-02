@@ -18,6 +18,7 @@ import {
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {queries} from '#/shared/http/queries';
 import {logger} from '#/operate/shared/utils/logger';
+import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {PanelHeader} from '#/operate/shared/PanelHeader/PanelHeader';
 import {PaginatedSortableTable} from '#/operate/shared/PaginatedSortableTable/PaginatedSortableTable';
 import {EmptyMessage} from '#/operate/shared/EmptyMessage/EmptyMessage';
@@ -109,9 +110,14 @@ const InstancesTable: React.FC<Props> = ({search, selectedTenantId, selectedDefi
 
 	useEffect(() => {
 		if (error) {
+			notificationsStore.displayNotification({
+				isDismissable: true,
+				kind: 'error',
+				title: t('operate.operationsLog.notifications.fetchFailed'),
+			});
 			logger.error(error);
 		}
-	}, [error]);
+	}, [error, t]);
 
 	const auditLogs = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
 	const processDefinitionKeys = useMemo(
