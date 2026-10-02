@@ -111,6 +111,7 @@ public final class InterPartitionCommandServiceStep implements PartitionTransiti
             partitionId,
             context.getClusterCommunicationService(),
             logStreamWriter,
+            context.getPersistedSnapshotStore(),
             receivingSubjects);
     context
         .getActorSchedulingService()
