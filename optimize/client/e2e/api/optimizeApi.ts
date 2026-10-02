@@ -24,7 +24,8 @@ export type ReportData = {
 };
 
 export type DashboardTile =
-  {type: 'optimize_report'; reportId: string} | {type: 'text'; text: string};
+  | {type: 'optimize_report'; reportId: string}
+  | {type: 'text'; text: string};
 
 export class OptimizeApi {
   private csrfToken?: string;
