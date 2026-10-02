@@ -2026,7 +2026,6 @@
       {
         "kind": "QueryVariable",
         "spec": {
-          "allValue": "",
           "allowCustomValue": true,
           "current": {
             "text": [
@@ -2037,7 +2036,7 @@
             ]
           },
           "definition": "label_values(kube_namespace_created{namespace=~\"(c8-)?release-8.*\"},namespace)",
-          "hide": "dontHide",
+          "hide": "inControlsMenu",
           "includeAll": true,
           "label": "Release",
           "multi": true,
