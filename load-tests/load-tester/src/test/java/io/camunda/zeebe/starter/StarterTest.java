@@ -21,6 +21,7 @@ import io.camunda.zeebe.util.PayloadReader;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationContext;
 import org.springframework.web.reactive.function.client.WebClient;
 
 class StarterTest {
@@ -44,7 +45,8 @@ class StarterTest {
         mock(PayloadReader.class),
         mock(ConnectionMonitor.class),
         mock(WebClient.Builder.class),
-        new ObjectMapper());
+        new ObjectMapper(),
+        mock(ApplicationContext.class));
 
     // then
     final var gauge = registry.find(StarterMetricsDoc.CLIENT_INFO.getName()).gauge();
