@@ -12,11 +12,7 @@ import {sleep} from '../utils/sleep';
 import {checkUpdateOnVersion} from 'utils/zeebeClient';
 import {waitForAssertion} from '../utils/waitForAssertion';
 
-// How long a row is given to pick up a state change the engine has already
-// applied: the table does not poll, so this covers one indexer round trip.
 const ROW_ACTION_TIMEOUT = 15_000;
-
-// How long the instances table is given to settle onto a changed filter.
 const TABLE_SETTLE_TIMEOUT = 15_000;
 
 class OperateProcessesPage {
@@ -179,8 +175,8 @@ class OperateProcessesPage {
       name: 'Select all rows',
     });
     this.retryButton = page.getByRole('button', {name: 'Retry', exact: true});
-    // Exact: the row actions are named "Suspend Instance <key>", so a
-    // substring match would resolve to a row rather than to the toolbar.
+    // Exact: row actions are named "Suspend Instance <key>", which a substring
+    // match would hit instead of the toolbar.
     this.suspendButton = page.getByRole('button', {
       name: 'Suspend',
       exact: true,
@@ -473,13 +469,6 @@ class OperateProcessesPage {
     });
   }
 
-  /**
-   * The row an instance occupies in the instances table.
-   *
-   * Scoping a row action to its row is what makes it an assertion about that
-   * instance: the action buttons are identical across rows, so an unscoped
-   * lookup would act on whichever row happened to render first.
-   */
   processInstanceRow(processInstanceKey: string): Locator {
     return this.page
       .getByTestId('data-list')
@@ -488,13 +477,9 @@ class OperateProcessesPage {
   }
 
   /**
-   * Waits until the instances table holds exactly these instances.
-   *
-   * The result count and the rows settle independently, so the count can
-   * already read the filtered total while the pre-filter rows are still on
-   * screen. Select all takes the rows, so a batch started in that gap reaches
-   * instances the filter excludes and misses ones not yet rendered — which is
-   * invisible afterwards from the targeted instances alone.
+   * The count settles before the rows do, and Select all takes the rows — so a
+   * batch started on a settled count alone can still run against the list the
+   * filter replaced.
    */
   async expectInstancesTableToHoldExactly(
     processInstanceKeys: string[],
@@ -527,8 +512,6 @@ class OperateProcessesPage {
   ): Promise<void> {
     const action =
       this.processInstanceRow(processInstanceKey).getByTestId(testId);
-    // The row carries the action only once the state the action belongs to has
-    // reached secondary storage, and the table does not refresh itself.
     await waitForAssertion({
       assertion: async () => {
         await expect(action).toBeVisible({timeout: ROW_ACTION_TIMEOUT});
