@@ -83,18 +83,18 @@ final class InterPartitionCommandReceiverImpl {
                       error);
                 }
                 writeCheckpointAndCommand(
-                    memberId, decoded, error == null ? snapshotId.orElse("") : "");
+                    memberId, decoded, error == null ? snapshotId : Optional.empty());
                 return CompletableActorFuture.completed();
               },
               concurrencyControl);
     }
 
-    writeCheckpointAndCommand(memberId, decoded, "");
+    writeCheckpointAndCommand(memberId, decoded, Optional.empty());
     return CompletableActorFuture.completed();
   }
 
   private void writeCheckpointAndCommand(
-      final MemberId memberId, final DecodedMessage decoded, final String snapshotId) {
+      final MemberId memberId, final DecodedMessage decoded, final Optional<String> snapshotId) {
     if (!isNewCheckpoint(decoded)) {
       // created meanwhile, e.g. by the backup request sent to all partitions: the reservation
       // isn't carried by any checkpoint
@@ -144,14 +144,13 @@ final class InterPartitionCommandReceiverImpl {
     return decoded.checkpointId > Math.max(checkpointId, inFlightCheckpointId);
   }
 
-  private void releaseSnapshotReservation(final long checkpointId, final String snapshotId) {
-    if (!snapshotId.isEmpty()) {
-      snapshotStore.releaseReservation(checkpointId, snapshotId);
-    }
+  private void releaseSnapshotReservation(
+      final long checkpointId, final Optional<String> snapshotId) {
+    snapshotId.ifPresent(id -> snapshotStore.releaseReservation(checkpointId, id));
   }
 
   private Either<WriteFailure, Long> writeCheckpoint(
-      final DecodedMessage decoded, final String snapshotId) {
+      final DecodedMessage decoded, final Optional<String> snapshotId) {
     if (!isNewCheckpoint(decoded)) {
       // No need to write a new checkpoint create record
       return Either.right(checkpointId);
@@ -172,7 +171,7 @@ final class InterPartitionCommandReceiverImpl {
         new CheckpointRecord()
             .setCheckpointId(decoded.checkpointId)
             .setCheckpointType(decoded.checkpointType)
-            .setSnapshotId(snapshotId);
+            .setSnapshotId(snapshotId.orElse(""));
     final var written =
         logStreamWriter.tryWrite(
             WriteContext.interPartition(), LogAppendEntry.of(metadata, checkpointRecord));
