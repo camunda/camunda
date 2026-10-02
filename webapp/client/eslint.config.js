@@ -16,6 +16,7 @@ import reactHooksPlugin from 'eslint-plugin-react-hooks';
 import reactRefreshPlugin from 'eslint-plugin-react-refresh';
 import tanstackPlugin from '@tanstack/eslint-plugin-query';
 import vitestPlugin from '@vitest/eslint-plugin';
+import camundaDsPlugin from '@camunda/design-system/eslint-plugin';
 
 const files = {
 	browser: ['packages/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}', 'apps/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}'],
@@ -192,6 +193,21 @@ export default defineConfig([
 		files: ocFiles.browser,
 		plugins: {'@tanstack/query': tanstackPlugin},
 		rules: {...tanstackPlugin.configs.recommended.rules},
+	},
+
+	{
+		files: ocFiles.browser,
+		ignores: ocFiles.test,
+		...camundaDsPlugin.configs.recommended,
+	},
+
+	{
+		files: [
+			`${ocPath}/src/{admin,tasklist}/**/*.{js,jsx,ts,tsx}`,
+			`${ocPath}/src/**/shadcn.components/**/*.{js,jsx,ts,tsx}`,
+		],
+		ignores: ocFiles.test,
+		...camundaDsPlugin.configs.tailwind,
 	},
 
 	{
