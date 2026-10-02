@@ -18,8 +18,9 @@ public class FileBasedSnapshotReservation implements SnapshotReservation {
     this.snapshot = snapshot;
   }
 
-  FileBasedSnapshot snapshot() {
-    return snapshot;
+  /** Releases the reservation immediately; must be called on the snapshot store's actor. */
+  void releaseOnActor() {
+    snapshot.removeReservationOnActor(this);
   }
 
   @Override
