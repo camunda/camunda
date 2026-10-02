@@ -727,6 +727,47 @@ describe('Processes migration', () => {
 		await expect.element(screen.getByTestId('modifications-overlay')).not.toBeInTheDocument();
 	});
 
+	it('should show where the instances are when the summary opens', async ({worker}) => {
+		mockPage(worker);
+		const screen = await renderPage();
+		await enterMigration(screen);
+		worker.use(
+			mockGetProcessDefinitionStatisticsEndpoint({
+				successResponse: HttpResponse.json(
+					createGetProcessDefinitionStatisticsResponse([
+						createProcessDefinitionStatistic({elementId: 'check-payment', active: 5}),
+					]),
+				),
+			}),
+		);
+
+		await userEvent.click(screen.getByRole('button', {name: 'Next'}));
+
+		await expect.element(screen.getByTestId('state-overlay-check-payment-active')).toHaveTextContent('5');
+		await expect.element(screen.getByTestId('state-overlay-task-1-active')).not.toBeInTheDocument();
+		await expect.element(screen.getByTestId('modifications-overlay')).not.toBeInTheDocument();
+	});
+
+	it('should hide stale overlays while the summary refreshes where the instances are', async ({worker}) => {
+		mockPage(worker);
+		const screen = await renderPage();
+		await enterSummary(screen);
+		await expect.element(screen.getByTestId('state-overlay-task-1-active')).toHaveTextContent('2');
+		await userEvent.click(screen.getByRole('button', {name: 'Back'}));
+		worker.use(
+			mockGetProcessDefinitionStatisticsEndpoint({
+				delay: 'infinite',
+				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
+			}),
+		);
+
+		await userEvent.click(screen.getByRole('button', {name: 'Next'}));
+
+		await expect.element(screen.getByText('Migration step 2 - confirm')).toBeVisible();
+		await expect.element(screen.getByTestId('state-overlay-task-1-active')).not.toBeInTheDocument();
+		await expect.element(screen.getByTestId('modifications-overlay')).not.toBeInTheDocument();
+	});
+
 	it.for([
 		{selection: 'one instance', keys: ['1'], totalItems: 1, hasMoreTotalItems: false, instances: '1 process instance'},
 		{

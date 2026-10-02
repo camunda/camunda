@@ -15,6 +15,10 @@ import {endpoints} from '#/shared/http/endpoints';
 import {request} from '#/shared/http/request';
 import {mapQueryError} from '#/shared/http/mapQueryError';
 
+/**
+ * Instances can advance while the migration is being mapped, so the summary enables this query when
+ * it opens and only shows statistics once they are fresh; cached ones are hidden during the refetch.
+ */
 function useMigrationStatistics({
 	processDefinitionKey,
 	filter,
@@ -24,9 +28,10 @@ function useMigrationStatistics({
 	filter: GetProcessDefinitionStatisticsRequestBody['filter'];
 	enabled: boolean;
 }) {
-	return useQuery({
-		queryKey: ['processDefinitionStatistics', processDefinitionKey, filter],
+	const {data, isFetching} = useQuery({
+		queryKey: ['migrationStatistics', processDefinitionKey, filter],
 		enabled,
+		staleTime: 0,
 		queryFn: async (): Promise<GetProcessDefinitionStatisticsResponseBody> => {
 			const {response, error} = await request(endpoints.getProcessDefinitionStatistics({processDefinitionKey, filter}));
 			if (error !== null) {
@@ -35,6 +40,8 @@ function useMigrationStatistics({
 			return response.json();
 		},
 	});
+
+	return isFetching ? undefined : data;
 }
 
 export {useMigrationStatistics};

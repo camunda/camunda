@@ -65,10 +65,10 @@ function MigrationView({source, scope, onExit}: Props) {
 	);
 	const mapping = editedMapping ?? autoMapping;
 	const isSummaryStep = step === 'summary';
-	const {data: statistics} = useMigrationStatistics({
+	const statistics = useMigrationStatistics({
 		processDefinitionKey: source.processDefinitionKey,
 		filter: scope.statisticsFilter,
-		enabled: scope.selectedCount > 0,
+		enabled: isSummaryStep && scope.selectedCount > 0,
 	});
 	const sourceBusinessObjects = sourceXml.data?.businessObjects;
 	const sourceOverlays = useMemo(
