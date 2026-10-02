@@ -428,6 +428,7 @@ import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.netty.handler.ssl.SslContext;
 import java.io.Closeable;
 import java.io.FileInputStream;
@@ -454,7 +455,7 @@ public final class CamundaClientImpl implements CamundaClient {
   private final List<Closeable> closeables = new CopyOnWriteArrayList<>();
   private final JobClient jobClient;
   private final CredentialsProvider credentialsProvider;
-  private final HttpClient httpClient;
+  private HttpClient httpClient;
 
   public CamundaClientImpl(final CamundaClientConfiguration configuration) {
     this(configuration, buildChannel(configuration));
@@ -512,6 +513,16 @@ public final class CamundaClientImpl implements CamundaClient {
     }
     jobClient = newJobClient();
     this.httpClient.start();
+  }
+
+  public void setMeterRegistry(final MeterRegistry meterRegistry) {
+      try {
+          httpClient.close();
+      } catch (Exception e) {
+
+      }
+      httpClient = new HttpClientFactory(config).setMeterRegistry(meterRegistry).createClient();
+      httpClient.start();
   }
 
   private static HttpClient buildHttpClient(final CamundaClientConfiguration config) {

@@ -58,15 +58,8 @@ public class DataReadMeter implements AutoCloseable {
               .register(registry);
 
       final ScheduledFuture<?> task =
-          executorService.scheduleWithFixedDelay(
-              () -> {
-                try {
-                  executeQuery(query, client, timer);
-                } catch (final Exception e) {
-                  LOG.error("Failed to execute read query '{}'. Will retry...", query.name(), e);
-                }
-              },
-              query.interval().toMillis(),
+          executorService.schedule(
+              () -> executeQuery(query, client, timer),
               query.interval().toMillis(),
               TimeUnit.MILLISECONDS);
 
@@ -77,21 +70,29 @@ public class DataReadMeter implements AutoCloseable {
 
   private void executeQuery(final ReadQuery query, final CamundaClient client, final Timer timer) {
     final long startTime = System.nanoTime();
-    try {
-      // to limit parallel executions, we limit the scheduling frequency and execute synchronously
-      // this might lead to less data points if a query execution takes longer than the scheduling
-      // interval, but it prevents piling up of executions and thus influencing the actual load-test
-      query.queryFunction().apply(client, queryContext).send().join();
-      final long durationNanos = System.nanoTime() - startTime;
-      timer.record(durationNanos, TimeUnit.NANOSECONDS);
-      LOG.debug(
-          "Read query '{}' executed in {} ms",
-          query.name(),
-          TimeUnit.NANOSECONDS.toMillis(durationNanos));
+    query
+        .queryFunction()
+        .apply(client, queryContext)
+        .send()
+        .whenCompleteAsync(
+            (result, error) -> {
+              if (error != null) {
+                LOG.error("Failed to execute read query '{}'. Will retry...", query.name(), error);
+              }
 
-    } catch (final Exception e) {
-      LOG.warn("Error while executing read query '{}'", query.name(), e);
-    }
+              final long durationNanos = System.nanoTime() - startTime;
+              timer.record(durationNanos, TimeUnit.NANOSECONDS);
+              LOG.debug(
+                  "Read query '{}' executed in {} ms",
+                  query.name(),
+                  TimeUnit.NANOSECONDS.toMillis(durationNanos));
+
+              executorService.schedule(
+                  () -> executeQuery(query, client, timer),
+                  query.interval().toMillis(),
+                  TimeUnit.MILLISECONDS);
+            },
+            executorService);
   }
 
   @Override
@@ -103,6 +104,7 @@ public class DataReadMeter implements AutoCloseable {
     executorService.shutdownNow();
   }
 
+  // TODO no synchronization between threads!
   public void setContextProcessInstanceKey(final long processInstanceKey) {
     queryContext = queryContext.withProcessInstanceKey(processInstanceKey);
   }

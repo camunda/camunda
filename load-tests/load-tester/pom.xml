@@ -34,6 +34,13 @@
   </properties>
 
   <dependencies>
+
+    <dependency>
+      <groupId>org.apache.httpcomponents.client5</groupId>
+      <artifactId>httpclient5-observation</artifactId>
+      <version>${version.httpclient5}</version>
+    </dependency>
+
     <!-- Camunda Spring Boot Starter: auto-configures CamundaClient, @JobWorker, properties -->
     <dependency>
       <groupId>io.camunda</groupId>
@@ -366,7 +373,7 @@
                 <image>eclipse-temurin:21</image>
               </from>
               <to>
-                <image>gcr.io/zeebe-io/starter:SNAPSHOT</image>
+                <image>registry.camunda.cloud/team-reliability-testing/starter:jb-ck-metrics-fixdep</image>
               </to>
               <container>
                 <mainClass>io.camunda.zeebe.LoadTesterApplication</mainClass>

@@ -17,6 +17,7 @@ import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.client.impl.CamundaClientImpl;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
@@ -46,12 +47,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -114,6 +110,7 @@ public class Starter implements CommandLineRunner {
     this.webClientBuilder = webClientBuilder;
     this.objectMapper = objectMapper;
 
+    ((CamundaClientImpl) client).setMeterRegistry(registry);
     // Expose the client information early: these are only static values which are not supposed to
     // be affected by the current state of the client (whether it successfully connects to the
     // brokers, etc.)
@@ -268,18 +265,29 @@ public class Starter implements CommandLineRunner {
         Collections.unmodifiableMap(deserializeVariables(variablesString));
 
     final BooleanSupplier shouldContinue = createContinuationCondition();
+      // to support still an open-model we have a higher maximum number of concurrent requests
+      int maximum = (int) starterCfg.getRate() * 10;
+      final Semaphore semaphore = new Semaphore(maximum);
 
-    return executorService.scheduleAtFixedRate(
+      return executorService.scheduleAtFixedRate(
         () -> {
           if (!shouldContinue.getAsBoolean()) {
             countDownLatch.countDown();
             return;
           }
 
+          if (!semaphore.tryAcquire())
+          {
+              return; // Skip this iteration if we can't acquire a permit
+          }
+
+
           try {
             final var vars = new HashMap<>(baseVariables);
             vars.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
-            processInstancesStartedCounter.increment();
+
+            // TODO: we should move this down - to when complete
+            processInstancesStartedCounter.increment(); // <--- to early
 
             final var startTime = System.nanoTime();
             final CompletionStage<?> requestFuture;
@@ -292,6 +300,9 @@ public class Starter implements CommandLineRunner {
             }
             requestFuture.whenComplete(
                 (noop, error) -> {
+                    // make room for more requests
+                    semaphore.release();
+                  // TODO: we should record the response success/failure for monitoring purposes
                   final long durationNanos = System.nanoTime() - startTime;
                   responseLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
                   if (error instanceof final StatusRuntimeException statusRuntimeException) {
@@ -303,7 +314,7 @@ public class Starter implements CommandLineRunner {
                     }
                   }
                 });
-          } catch (final Exception e) {
+          } catch (final Exception e) { // TODO there is no way that we raise an except/catch here
             THROTTLED_LOGGER.error("Error on creating new process instance", e);
           }
         },
