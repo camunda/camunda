@@ -96,9 +96,9 @@ public class Starter implements CommandLineRunner {
       new AtomicReference<>(Instant.now());
 
   private Timer responseLatencyTimer;
-  private Counter processInstancesStartedCounter;
   private Counter processInstancesSubmittedCounter;
   private Counter processInstancesSkippedCounter;
+  private StarterResultMetrics resultMetrics;
   private ScheduledExecutorService executorService;
   private ProcessInstanceStartMeter processInstanceStartMeter;
   private DataReadMeter dataReadMeter;
@@ -142,13 +142,9 @@ public class Starter implements CommandLineRunner {
     responseLatencyTimer =
         MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.RESPONSE_LATENCY).register(registry);
 
-    processInstancesStartedCounter =
-        Counter.builder(StarterMetricsDoc.PROCESS_INSTANCES_STARTED.getName())
-            .description(StarterMetricsDoc.PROCESS_INSTANCES_STARTED.getDescription())
-            .register(registry);
-
     processInstancesSubmittedCounter = registerSubmissionCounter("submitted");
     processInstancesSkippedCounter = registerSubmissionCounter("skipped");
+    resultMetrics = new StarterResultMetrics(registry);
 
     Gauge.builder(StarterMetricsDoc.RUN_FINISHED.getName(), runFinished, AtomicInteger::doubleValue)
         .description(StarterMetricsDoc.RUN_FINISHED.getDescription())
@@ -195,7 +191,9 @@ public class Starter implements CommandLineRunner {
     runFinished.set(1);
     LOG.info(
         "Starter finished. Total process instance start requests submitted: {}",
-        processInstancesStartedCounter == null ? 0 : (long) processInstancesStartedCounter.count());
+        processInstancesSubmittedCounter == null
+            ? 0
+            : (long) processInstancesSubmittedCounter.count());
     scheduledTask.cancel(true);
     shutdown();
   }
@@ -319,7 +317,6 @@ public class Starter implements CommandLineRunner {
           try {
             final var vars = new HashMap<>(baseVariables);
             vars.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
-            processInstancesStartedCounter.increment();
 
             if (starterCfg.isStartViaMessage()) {
               requestFuture = startInstanceByMessagePublishing(vars);
@@ -347,6 +344,7 @@ public class Starter implements CommandLineRunner {
                 inFlight.release();
                 final long durationNanos = System.nanoTime() - startTime;
                 responseLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
+                resultMetrics.record(error);
                 if (error instanceof final StatusRuntimeException statusRuntimeException) {
                   if (statusRuntimeException.getStatus().getCode() != Code.RESOURCE_EXHAUSTED) {
                     THROTTLED_LOGGER.warn(

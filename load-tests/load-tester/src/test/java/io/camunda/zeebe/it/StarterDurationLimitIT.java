@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.zeebe.LoadTesterApplication;
 import io.camunda.zeebe.metrics.StarterMetricsDoc;
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -71,12 +72,12 @@ class StarterDurationLimitIT {
         .isEqualTo(1.0);
 
     // and — at least one start request was submitted, ruling out an immediate stop.
-    final var counter =
-        meterRegistry.find(StarterMetricsDoc.PROCESS_INSTANCES_STARTED.getName()).counter();
-    assertThat(counter)
+    final var counters =
+        meterRegistry.find(StarterMetricsDoc.PROCESS_INSTANCES_STARTED.getName()).counters();
+    assertThat(counters)
         .describedAs("starter.process.instances.started counter should be registered")
-        .isNotNull();
-    assertThat(counter.count())
+        .isNotEmpty();
+    assertThat(counters.stream().mapToDouble(Counter::count).sum())
         .describedAs("counter should reflect that the loop ran at least once before stopping")
         .isGreaterThan(0.0);
   }
