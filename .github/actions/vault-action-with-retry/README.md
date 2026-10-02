@@ -33,9 +33,17 @@ See [Notes](#notes) for what that means when you edit this action.
 
 ### Outputs
 
-None. `hashicorp/vault-action` writes the imported secrets to step outputs and environment
-variables, and those writes still reach the parent workflow when it runs inside this composite
-action. This wrapper does not add any outputs of its own.
+This wrapper forwards the secret outputs currently used by [`setup-build`](../setup-build):
+
+|       Output        |       Description        |
+|---------------------|--------------------------|
+| ci-account-password | Imported Nexus password  |
+| ci-account-username | Imported Nexus username  |
+| dockerhub-token     | Imported DockerHub token |
+| dockerhub-username  | Imported DockerHub username |
+| minimus-token       | Imported Minimus token   |
+| harbor-username     | Imported Harbor username |
+| harbor-password     | Imported Harbor password |
 
 ## Notes
 
@@ -45,6 +53,9 @@ action. This wrapper does not add any outputs of its own.
 - **Editing one attempt means editing all three.** The `with:` blocks must stay identical, including
   the pinned `hashicorp/vault-action` SHA. A mismatch means one attempt silently reads different
   secrets from the others.
+- **Outputs are static.** Composite actions cannot dynamically forward an arbitrary set of Vault
+  outputs derived from the `secrets` input. Every output this wrapper exposes must be declared in
+  `action.yml`, and each one must resolve across attempt 1/2/3 explicitly.
 - **The last attempt deliberately omits `continue-on-error`**, so an exhausted retry fails the job.
   Attempts 1 and 2 carry it, which is what lets the next attempt run.
 - **Gating on the immediate predecessor is enough.** A skipped step reports `outcome: skipped`, never
