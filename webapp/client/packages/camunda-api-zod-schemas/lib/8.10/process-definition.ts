@@ -106,6 +106,7 @@ const processDefinitionStatisticsFilterFieldsSchema = z.object({
 	elementId: advancedStringFilterSchema,
 	hasElementInstanceIncident: z.boolean(),
 	incidentErrorHashCode: advancedIntegerFilterSchema,
+	businessId: advancedStringFilterSchema,
 });
 
 const getProcessDefinitionStatisticsRequestBodySchema = z
