@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.transport.partitionapi;
 import static io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderImpl.LEGACY_TOPIC_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.mock;
@@ -103,7 +104,7 @@ final class InterPartitionCommandReceiverActorTest {
     assertThat(checkpoint.getCheckpointId()).isEqualTo(17);
     assertThat(checkpoint.getSnapshotId()).isEqualTo(snapshot);
     assertThat(written.getAllValues().getLast().recordValue()).isInstanceOf(JobRecord.class);
-    assertThat(snapshotStore.getReservedSnapshot(snapshot).join()).isPresent();
+    assertThat(snapshotStore.getReservedSnapshot(17, snapshot).join()).isPresent();
   }
 
   @Test
@@ -111,7 +112,7 @@ final class InterPartitionCommandReceiverActorTest {
     // given
     final var snapshotStore = mock(PersistedSnapshotStore.class);
     final var reservation = new CompletableActorFuture<Optional<String>>();
-    when(snapshotStore.reserveLatestSnapshot()).thenReturn(reservation);
+    when(snapshotStore.reserveLatestSnapshot(anyLong())).thenReturn(reservation);
     final var logStreamWriter = mock(LogStreamWriter.class);
     when(logStreamWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
         .thenReturn(Either.right(1L));
@@ -121,7 +122,7 @@ final class InterPartitionCommandReceiverActorTest {
     receiver.accept(commandWithCheckpoint(17, CheckpointType.MANUAL_BACKUP, ValueType.JOB));
     receiver.accept(
         commandWithCheckpoint(17, CheckpointType.MANUAL_BACKUP, ValueType.MESSAGE_SUBSCRIPTION));
-    verify(snapshotStore, timeout(5_000)).reserveLatestSnapshot();
+    verify(snapshotStore, timeout(5_000)).reserveLatestSnapshot(anyLong());
     verify(logStreamWriter, after(200).never())
         .tryWrite(any(WriteContext.class), any(LogAppendEntry.class));
     reservation.complete(Optional.of("latest"));
@@ -133,7 +134,7 @@ final class InterPartitionCommandReceiverActorTest {
     assertThat(written.getAllValues())
         .extracting(entry -> (Object) entry.recordValue().getClass())
         .containsExactly(CheckpointRecord.class, JobRecord.class, MessageSubscriptionRecord.class);
-    verify(snapshotStore).reserveLatestSnapshot();
+    verify(snapshotStore).reserveLatestSnapshot(anyLong());
   }
 
   @Test
@@ -141,13 +142,13 @@ final class InterPartitionCommandReceiverActorTest {
     // given - the first message starts a backup checkpoint, which first needs a snapshot reserved
     final var snapshotStore = mock(PersistedSnapshotStore.class);
     final var reservation = new CompletableActorFuture<Optional<String>>();
-    when(snapshotStore.reserveLatestSnapshot()).thenReturn(reservation);
+    when(snapshotStore.reserveLatestSnapshot(anyLong())).thenReturn(reservation);
     final var logStreamWriter = mock(LogStreamWriter.class);
     when(logStreamWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
         .thenReturn(Either.right(1L));
     final var receiver = startReceiver(logStreamWriter, snapshotStore);
     receiver.accept(commandWithCheckpoint(17, CheckpointType.MANUAL_BACKUP, ValueType.JOB));
-    verify(snapshotStore, timeout(5_000)).reserveLatestSnapshot();
+    verify(snapshotStore, timeout(5_000)).reserveLatestSnapshot(anyLong());
 
     // when - messages that need no checkpoint arrive while the snapshot is being reserved
     for (int i = 0; i < 5; i++) {
@@ -188,7 +189,7 @@ final class InterPartitionCommandReceiverActorTest {
     // given
     final var snapshotStore = mock(PersistedSnapshotStore.class);
     final var reservation = new CompletableActorFuture<Optional<String>>();
-    when(snapshotStore.reserveLatestSnapshot()).thenReturn(reservation);
+    when(snapshotStore.reserveLatestSnapshot(anyLong())).thenReturn(reservation);
     final var logStreamWriter = mock(LogStreamWriter.class);
     when(logStreamWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
         .thenThrow(new RuntimeException("expected"))
@@ -197,7 +198,7 @@ final class InterPartitionCommandReceiverActorTest {
     receiver.accept(commandWithCheckpoint(17, CheckpointType.MANUAL_BACKUP, ValueType.JOB));
     receiver.accept(
         commandWithCheckpoint(-1, CheckpointType.MANUAL_BACKUP, ValueType.MESSAGE_SUBSCRIPTION));
-    verify(snapshotStore, timeout(5_000)).reserveLatestSnapshot();
+    verify(snapshotStore, timeout(5_000)).reserveLatestSnapshot(anyLong());
 
     // when - writing the checkpoint of the first message fails
     reservation.complete(Optional.empty());
