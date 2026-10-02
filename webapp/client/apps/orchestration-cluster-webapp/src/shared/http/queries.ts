@@ -37,6 +37,8 @@ import type {
 	QueryMessageSubscriptionsResponseBody,
 	QueryMappingRulesRequestBody,
 	QueryMappingRulesResponseBody,
+	QueryGlobalTaskListenersRequestBody,
+	QueryGlobalTaskListenersResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from './request';
 import {endpoints} from './endpoints';
@@ -77,6 +79,8 @@ const queryKeys = {
 		['getIncidentProcessInstanceStatisticsByError', body] as const,
 	queryAuditLogs: (body: QueryAuditLogsRequestBody) => ['queryAuditLogs', body] as const,
 	queryMappingRules: (body: QueryMappingRulesRequestBody) => ['queryMappingRules', body] as const,
+	searchGlobalTaskListeners: (body: QueryGlobalTaskListenersRequestBody) =>
+		['searchGlobalTaskListeners', body] as const,
 };
 
 const queries = {
@@ -452,6 +456,18 @@ const queries = {
 			queryKey: queryKeys.queryMappingRules(body),
 			queryFn: async (): Promise<QueryMappingRulesResponseBody> => {
 				const {response, error} = await request(endpoints.queryMappingRules(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	searchGlobalTaskListeners: (body: QueryGlobalTaskListenersRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.searchGlobalTaskListeners(body),
+			queryFn: async (): Promise<QueryGlobalTaskListenersResponseBody> => {
+				const {response, error} = await request(endpoints.searchGlobalTaskListeners(body));
 				if (error !== null) {
 					throw mapQueryError(error);
 				}
