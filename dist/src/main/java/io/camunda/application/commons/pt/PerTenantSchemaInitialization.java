@@ -237,10 +237,27 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
     }
     gateLock.lock();
     try {
-      return new SchemaInitializationStatus(state.stage, state.failedAttempts, state.lastFailure);
+      return statusOf(state);
     } finally {
       gateLock.unlock();
     }
+  }
+
+  /** {@link #status(String)} of every physical tenant, in the order they are configured in. */
+  public Map<String, SchemaInitializationStatus> statuses() {
+    final var statuses = new LinkedHashMap<String, SchemaInitializationStatus>();
+    gateLock.lock();
+    try {
+      tenants.forEach((tenantId, state) -> statuses.put(tenantId, statusOf(state)));
+    } finally {
+      gateLock.unlock();
+    }
+    return statuses;
+  }
+
+  /** Must be called with {@link #gateLock} held. */
+  private static SchemaInitializationStatus statusOf(final TenantState state) {
+    return new SchemaInitializationStatus(state.stage, state.failedAttempts, state.lastFailure);
   }
 
   /** Stops all retrying and opens the gate; idempotent. */
@@ -408,7 +425,7 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
                     + " restarted. If no other tenant can be served either, startup aborts.",
                 physicalTenantId,
                 failure);
-            recordTerminal(state, failure);
+            recordFailure(state, failure, State.FAILED);
             return;
           }
           if (attemptNumber >= maxAttempts) {
@@ -463,7 +480,7 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
    * tenant may settle before its failure has been classified: settling leaves {@code trying} set,
    * so {@link #isGateOpen()} can only be satisfied by some <em>other</em> tenant being ready — and
    * a ready tenant is precisely the case {@link #failIfEveryTenantFailedTerminally()} declines to
-   * abort. The order that does matter is {@link #recordTerminal} before {@link #stopTrying}.
+   * abort. The order that does matter is {@link #recordFailure} before {@link #stopTrying}.
    */
   private void settle(final TenantState state) {
     gateLock.lock();
@@ -478,18 +495,13 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
   }
 
   /**
-   * Records the failure that stopped a tenant for good, for the one cause the gate treats
-   * differently from the rest.
+   * Records a failed attempt, and what the tenant does next because of it.
    *
-   * <p>Called before {@link #stopTrying}, never after, because stopping is what can open the gate:
-   * the other order lets a waiter wake on the last tenant stopping and read a failure that has not
-   * been written yet, and release into the state this exists to abort.
+   * <p>For a terminal failure, the one cause the gate treats differently from the rest, this is
+   * called before {@link #stopTrying}, never after, because stopping is what can open the gate: the
+   * other order lets a waiter wake on the last tenant stopping and read a failure that has not been
+   * written yet, and release into the state this exists to abort.
    */
-  private void recordTerminal(final TenantState state, final Throwable failure) {
-    recordFailure(state, failure, State.FAILED);
-  }
-
-  /** Records a failed attempt, and what the tenant does next because of it. */
   private void recordFailure(final TenantState state, final Throwable failure, final State next) {
     gateLock.lock();
     try {
