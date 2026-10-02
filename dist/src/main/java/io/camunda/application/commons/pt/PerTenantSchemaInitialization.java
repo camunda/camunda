@@ -223,27 +223,24 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
   }
 
   /**
-   * Where the physical tenant's initialization stands. Takes the lock the tasks write under, which
-   * is fine for an operator's health check but not for anything consulted per request — that is
-   * what {@link #isInitialized(String)} is for.
+   * Where the physical tenant's initialization stands, as {@link #statuses()} reports it.
    *
    * @throws IllegalArgumentException for a tenant this node does not initialize
    */
   public SchemaInitializationStatus status(final String physicalTenantId) {
-    final TenantState state = tenants.get(physicalTenantId);
-    if (state == null) {
+    final var status = statuses().get(physicalTenantId);
+    if (status == null) {
       throw new IllegalArgumentException(
           "Physical tenant '" + physicalTenantId + "' is not initialized by this node");
     }
-    gateLock.lock();
-    try {
-      return statusOf(state);
-    } finally {
-      gateLock.unlock();
-    }
+    return status;
   }
 
-  /** {@link #status(String)} of every physical tenant, in the order they are configured in. */
+  /**
+   * Where every physical tenant's initialization stands, in the order they are configured in. Takes
+   * the lock the tasks write under, which is fine for an operator's health check but not for
+   * anything consulted per request — that is what {@link #isInitialized(String)} is for.
+   */
   public Map<String, SchemaInitializationStatus> statuses() {
     final var statuses = new LinkedHashMap<String, SchemaInitializationStatus>();
     gateLock.lock();
