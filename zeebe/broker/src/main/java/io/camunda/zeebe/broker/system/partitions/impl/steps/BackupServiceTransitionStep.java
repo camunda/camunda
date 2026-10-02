@@ -36,9 +36,6 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
               context.setBackupManager(null);
               context.setCheckpointProcessor(null);
             }
-            // Backups in progress fail on a role change, and checkpoints written but not yet
-            // processed will not find their reservation, so nothing needs the reserved snapshots.
-            context.getPersistedSnapshotStore().releaseAllReservations();
           });
       return closeFuture;
     }
