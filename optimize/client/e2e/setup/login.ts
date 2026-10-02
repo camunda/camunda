@@ -30,7 +30,7 @@ export async function login(browser: Browser, user: UserName, id: string): Promi
   await page.getByLabel('Username or email').fill(username);
   await page.getByLabel('Password', {exact: true}).fill(password);
   await page.getByRole('button', {name: 'Log in'}).click();
-  await expect(page.getByRole('navigation', {name: 'Main navigation'})).toBeVisible({
+  await expect(page.getByRole('navigation', {name: 'Camunda Optimize'})).toBeVisible({
     timeout: LOGIN_TIMEOUT,
   });
 
