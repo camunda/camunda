@@ -58,7 +58,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/users/$username')({
 		const {data: user} = useSuspenseQuery(queries.getUser(username));
 
 		const handleDeleted = useCallback(() => {
-			navigate({to: '/admin/users'});
+			navigate({to: '/admin/users', replace: true});
 		}, [navigate]);
 
 		return <AdminUserDetailPage user={user} onDeleted={handleDeleted} />;

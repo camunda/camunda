@@ -222,7 +222,10 @@ describe('removeFromListCaches', () => {
 		unsubscribe();
 	});
 
-	it('should leave list queries with no active observer untouched', () => {
+	it('should also remove the matching item from a list query with no active observer', () => {
+		// A query goes inactive (but stays cached) once its last observer unmounts, e.g. navigating
+		// from the list to a detail route. Deleting there must still clean up that cached page so a
+		// Back navigation doesn't rehydrate the just-deleted row before the next refetch.
 		// given
 		const queryClient = new QueryClient();
 		queryClient.setQueryData(['items', {page: 1}], {items: [{id: 'a', name: 'Alpha'}], page: {totalItems: 1}});
@@ -235,9 +238,6 @@ describe('removeFromListCaches', () => {
 		});
 
 		// then
-		expect(queryClient.getQueryData(['items', {page: 1}])).toEqual({
-			items: [{id: 'a', name: 'Alpha'}],
-			page: {totalItems: 1},
-		});
+		expect(queryClient.getQueryData(['items', {page: 1}])).toEqual({items: [], page: {totalItems: 0}});
 	});
 });

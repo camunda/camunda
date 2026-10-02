@@ -353,6 +353,34 @@ test.describe('Admin users', () => {
 		await expect(adminUsersPage.cell('jane.doe')).toBeHidden();
 	});
 
+	test('should not return to the deleted user on back navigation after deleting from its detail page', async ({
+		adminUsersPage,
+		adminUserDetailPage,
+		page,
+		network,
+	}) => {
+		network.use(
+			mockGetUserEndpoint({successResponse: HttpResponse.json(USERS[0]!)}),
+			mockDeleteUserEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+		);
+
+		await adminUserDetailPage.goto('jane.doe');
+		await expect(adminUserDetailPage.heading('jane.doe')).toBeVisible();
+
+		network.use(
+			mockQueryUsersEndpoint({successResponse: HttpResponse.json(createQueryUsersResponse({items: [USERS[1]!]}))}),
+			mockGetUserEndpoint({successResponse: HttpResponse.json({}, {status: 404})}),
+		);
+		await adminUserDetailPage.deleteButton.click();
+		await adminUserDetailPage.alertDialogButton('Delete user').click();
+		await expect(page).toHaveURL('/admin/users');
+
+		await page.goBack();
+
+		await expect(page).toHaveURL('/admin/users');
+		await expect(adminUsersPage.cell('jane.doe')).toBeHidden();
+	});
+
 	test('should report a load failure instead of an empty list', async ({adminUsersPage, network}) => {
 		network.use(
 			mockQueryUsersEndpoint({successResponse: HttpResponse.json(createQueryUsersResponse(), {status: 500})}),

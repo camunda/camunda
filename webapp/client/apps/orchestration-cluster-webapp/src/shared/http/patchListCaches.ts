@@ -58,7 +58,7 @@ function removeFromListCaches<TItem>(
 	queryClient: QueryClient,
 	{queryKeyPrefix, id, getId}: RemoveFromListCachesOptions<TItem>,
 ): void {
-	const matches = queryClient.getQueriesData<ListQueryData<TItem>>({queryKey: queryKeyPrefix, type: 'active'});
+	const matches = queryClient.getQueriesData<ListQueryData<TItem>>({queryKey: queryKeyPrefix});
 
 	for (const [queryKey, data] of matches) {
 		if (data === undefined) {

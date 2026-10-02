@@ -65,8 +65,12 @@ const DeleteUserModal: React.FC<Props> = ({isOpen, username, onClose, onDeleted}
 					{t('admin.users.actionCannotBeUndone')}
 				</AlertDialogDescription>
 				<AlertDialogFooter>
-					<AlertDialogCancel>{t('admin.users.cancel')}</AlertDialogCancel>
-					<AlertDialogAction className={buttonVariants({variant: 'destructive'})} onClick={handleDelete}>
+					<AlertDialogCancel disabled={remove.isPending}>{t('admin.users.cancel')}</AlertDialogCancel>
+					<AlertDialogAction
+						className={buttonVariants({variant: 'destructive'})}
+						disabled={remove.isPending}
+						onClick={handleDelete}
+					>
 						{t('admin.users.deleteUser')}
 					</AlertDialogAction>
 				</AlertDialogFooter>

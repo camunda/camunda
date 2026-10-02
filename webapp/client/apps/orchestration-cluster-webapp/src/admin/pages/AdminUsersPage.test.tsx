@@ -197,4 +197,19 @@ describe('<AdminUsersPage />', () => {
 
 		await expect.element(screen.getByText('User john.doe deleted')).toBeVisible();
 	});
+
+	it('should disable the delete confirmation while the deletion is pending', async ({worker}) => {
+		const user = createUser({username: 'john.doe'});
+		worker.use(mockDeleteUserEndpoint({successResponse: new HttpResponse(null, {status: 204}), delay: 'infinite'}));
+
+		const {screen} = await renderPage({users: [user]});
+
+		await userEvent.click(screen.getByRole('button', {name: 'Row actions'}));
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Delete user'}));
+		const confirmButton = screen.getByRole('button', {name: 'Delete user'}).last();
+		await userEvent.click(confirmButton);
+
+		await expect.element(confirmButton).toBeDisabled();
+		await expect.element(screen.getByRole('button', {name: 'Cancel'})).toBeDisabled();
+	});
 });
