@@ -99,6 +99,8 @@ public class VariablesV1OperateOptOutIT {
     }
 
     // then
+    // Tasklist's VariableResponse identifies a variable by "id", Operate's by "key", so
+    // deserializing into it proves the response came from Tasklist's controller.
     assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
     final var variable =
         TestRestTasklistClient.OBJECT_MAPPER.readValue(response.body(), VariableResponse.class);

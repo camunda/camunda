@@ -14,7 +14,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.operate.webapp.api.v1.entities.Variable;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
+import io.camunda.qa.util.cluster.TestRestTasklistClient;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -91,10 +93,14 @@ public class VariablesV1TasklistOptOutIT {
     }
 
     // then
+    // Operate's Variable identifies a variable by "key", Tasklist's by "id", so deserializing into
+    // it proves the response came from Operate's controller.
     assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
-    assertThat(response.body()).contains("\"key\":" + variableKey);
-    assertThat(response.body()).contains(VARIABLE_NAME);
-    assertThat(response.body()).contains("\"value\":\"" + VARIABLE_VALUE + "\"");
+    final var variable =
+        TestRestTasklistClient.OBJECT_MAPPER.readValue(response.body(), Variable.class);
+    assertThat(variable.getKey()).isEqualTo(variableKey);
+    assertThat(variable.getName()).isEqualTo(VARIABLE_NAME);
+    assertThat(variable.getValue()).isEqualTo(String.valueOf(VARIABLE_VALUE));
   }
 
   @Test
