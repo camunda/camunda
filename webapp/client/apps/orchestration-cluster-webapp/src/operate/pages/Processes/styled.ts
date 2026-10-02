@@ -10,6 +10,7 @@ import styled, {css} from 'styled-components';
 import {styles} from '@carbon/type';
 import {
 	Button,
+	InlineLoading,
 	InlineNotification,
 	Link,
 	ListItem,
@@ -299,6 +300,21 @@ const MigrationIconContainer = styled.div`
 	}
 `;
 
+const MigrationSummaryNotification = styled(InlineNotification)`
+	max-width: unset;
+`;
+
+const MigrationSummary = styled(Stack)`
+	p {
+		${styles.bodyCompact01};
+	}
+`;
+
+const MigrationInlineLoading = styled(InlineLoading)`
+	display: inline-flex;
+	inline-size: fit-content;
+`;
+
 export {
 	IndentedGroup,
 	TenantFilterGroup,
@@ -338,5 +354,8 @@ export {
 	MigrationWarningFilled,
 	MigrationCheckmarkFilled,
 	MigrationTargetSelect,
+	MigrationSummaryNotification,
+	MigrationSummary,
+	MigrationInlineLoading,
 	MigrationIconContainer,
 };

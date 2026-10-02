@@ -43,6 +43,7 @@ import {
 
 type Props = {
 	isTargetSelected: boolean;
+	isSummaryStep: boolean;
 	hasSourceXml: boolean;
 	sourceElements: MigrationElements;
 	targetElements?: MigrationElements;
@@ -55,6 +56,7 @@ type Props = {
 
 function MigrationMappingTable({
 	isTargetSelected,
+	isSummaryStep,
 	hasSourceXml,
 	sourceElements,
 	targetElements,
@@ -72,9 +74,9 @@ function MigrationMappingTable({
 			targetElements === undefined
 				? []
 				: [...sourceElements.elements, ...sourceElements.sequenceFlows]
-						.filter(({id}) => !isNotMappedFilterEnabled || mapping[id] === undefined)
+						.filter(({id}) => isSummaryStep || !isNotMappedFilterEnabled || mapping[id] === undefined)
 						.map((sourceElement) => ({sourceElement, choices: getTargetChoices(sourceElement, targetElements)})),
-		[sourceElements, targetElements, mapping, isNotMappedFilterEnabled],
+		[sourceElements, targetElements, mapping, isNotMappedFilterEnabled, isSummaryStep],
 	);
 	const isEmbeddedFormMigration = (sourceElementId: string, targetElementId?: string) =>
 		isTargetSelected &&
@@ -104,6 +106,7 @@ function MigrationMappingTable({
 								labelB={t('operate.processes.migration.notMappedOnly')}
 								aria-label={t('operate.processes.migration.notMappedOnly')}
 								toggled={isNotMappedFilterEnabled}
+								disabled={isSummaryStep}
 								onToggle={setIsNotMappedFilterEnabled}
 							/>
 							<MigrationArrowRight />
@@ -157,7 +160,7 @@ function MigrationMappingTable({
 											<TableCell>
 												<Stack orientation="horizontal" gap={4}>
 													<MigrationTargetSelect
-														disabled={choices.length === 0}
+														disabled={isSummaryStep || choices.length === 0}
 														size="sm"
 														hideLabel
 														labelText={t('operate.processes.migration.targetFor', {name})}

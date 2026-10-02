@@ -118,4 +118,4 @@ function useDiagramStatisticsOverlays({
 	});
 }
 
-export {useDiagramStatisticsOverlays};
+export {useDiagramStatisticsOverlays, statisticsOverlaysParser};
