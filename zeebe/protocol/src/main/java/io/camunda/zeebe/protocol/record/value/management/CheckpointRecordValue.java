@@ -33,4 +33,10 @@ public interface CheckpointRecordValue extends RecordValue {
    * @return the position of the checkpoint
    */
   long getCheckpointPosition();
+
+  /**
+   * @return the id of the snapshot reserved for the backup of this checkpoint before the checkpoint
+   *     was written, or an empty string if none was reserved
+   */
+  String getSnapshotId();
 }
