@@ -34,19 +34,6 @@ export async function listProcessDefinitions(context) {
   return response;
 }
 
-export async function status(context) {
-  // https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/get-status/
-
-  // This endpoint doesn't require authentication.
-  const endpoint = '/v2/status';
-  const params = {
-    tags: { name: endpoint },
-  };
-
-  const response = http.get(context.baseURL + endpoint, params);
-  return response;
-}
-
 // https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/get-topology/
 export async function topology(context) {
   // Assume the token is valid and has been checked before.

@@ -517,7 +517,8 @@ k6:
       enabled: true
       script: test.default.js
     # Reads data from secondary storage. Disabled together with `global.performReadBenchmarks`
-    # (see `common.mk` and `.github/scripts/load-test-install-camunda-platform.sh`).
+    # (see `common.mk` and `.github/scripts/load-test-install-camunda-platform.sh`), and for
+    # versions without the search endpoints it uses (`k6_data_read_supported` in `common.mk`).
     data-read:
       enabled: true
       script: test.data-read.js

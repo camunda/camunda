@@ -147,11 +147,13 @@ See [Grafana Dashboards](https://dashboard.benchmark.camunda.cloud/dashboards/f/
 
 ### Which tests are deployed?
 
-* `default`: checks the cluster topology. Runs for every storage type.
+* `default`: checks the cluster topology. Runs for every storage type and version.
 * `data-read`: reads data through the search APIs, so it needs a secondary
   storage. It is disabled when read benchmarks are off (for
   `secondary_storage=none` and when the `perform-read-benchmarks` workflow
-  input is false).
+  input is false). Also disabled for 8.7, which does not have the
+  `/v2/process-definitions/search` endpoint (`k6_data_read_supported=false` in
+  `stable-87/Makefile`).
 
 ### How to add a new test?
 

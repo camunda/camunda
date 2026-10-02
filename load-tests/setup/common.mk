@@ -34,6 +34,10 @@
 #   Whether the load testers prefer REST over gRPC (matches the load-tester
 #   application default). Set to `false` on versions that should keep gRPC (8.7).
 #
+# - k6_data_read_supported
+#   Set to `false` for versions without the `/v2/process-definitions/search` endpoint (8.7),
+#   which disables the k6 `data-read` test.
+#
 # - cluster_rebalance_supported
 #   Set to `false` for versions without the `/cluster/v2/rebalance` endpoint (before 8.10),
 #   so the `leader-balancer` CronJob falls back to the deprecated actuator endpoint.
@@ -45,6 +49,7 @@ install_storage_target ?= install-storage
 physical_tenants_supported ?= true
 prefer_rest ?= true
 cluster_rebalance_supported ?= true
+k6_data_read_supported ?= true
 
 template_output_dir ?= .
 # Enable the chaos-killer CronJob (randomly deletes one matching pod per run).
@@ -125,6 +130,12 @@ endif
 # back to the deprecated actuator endpoint.
 ifneq ($(cluster_rebalance_supported),true)
 _load_test_setup_flags += --set leaderBalancer.endpoint=actuator
+endif
+
+# The k6 tests are enabled by default in charts/load-test-setup/values.yaml. Only emit an
+# explicit override for versions without the endpoint they use.
+ifneq ($(k6_data_read_supported),true)
+_load_test_setup_flags += --set k6.tests.data-read.enabled=false
 endif
 
 # The Docker image tag for the load test metrics exporter

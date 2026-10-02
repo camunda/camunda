@@ -19,27 +19,12 @@ export const options = {
       preAllocatedVUs: 10,
       maxVUs: 100,
     },
-    status: {
-      exec: 'checkStatus',
-      executor: 'constant-arrival-rate',
-      duration: '60d',
-      rate: 10,
-      timeUnit: '1s',
-      preAllocatedVUs: 10,
-      maxVUs: 100,
-    },
   },
 };
 
 export async function setup() {
   return helpers.setupContext();
 }
-
-export async function checkStatus(context) {
-  // The /v2/status endpoint doesn't require authentication, and returns 204 if the cluster is OK.
-  const response = await camunda.status(context);
-  check(response, { 'status is 204': (r) => r.status === 204 });
-};
 
 export async function checkTopology(context) {
   auth.renew(context.token);
