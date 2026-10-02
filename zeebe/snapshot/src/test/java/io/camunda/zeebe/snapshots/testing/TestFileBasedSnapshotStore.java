@@ -91,13 +91,13 @@ public class TestFileBasedSnapshotStore implements ReceivableSnapshotStore {
   }
 
   @Override
-  public ActorFuture<Void> releaseReservation(final long checkpointId, final String snapshotId) {
-    return snapshotStore.releaseReservation(checkpointId, snapshotId);
+  public void releaseReservation(final long checkpointId, final String snapshotId) {
+    snapshotStore.releaseReservation(checkpointId, snapshotId);
   }
 
   @Override
-  public ActorFuture<Void> releaseAllReservations() {
-    return snapshotStore.releaseAllReservations();
+  public void releaseAllReservations() {
+    snapshotStore.releaseAllReservations();
   }
 
   @Override
