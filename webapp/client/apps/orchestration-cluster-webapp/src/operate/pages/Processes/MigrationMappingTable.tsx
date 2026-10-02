@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useId, useState} from 'react';
+import {useId, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {
 	Callout,
@@ -67,12 +67,15 @@ function MigrationMappingTable({
 	const {t} = useTranslation();
 	const [isNotMappedFilterEnabled, setIsNotMappedFilterEnabled] = useState(false);
 	const embeddedFormWarningId = useId();
-	const rows =
-		targetElements === undefined
-			? []
-			: [...sourceElements.elements, ...sourceElements.sequenceFlows]
-					.filter(({id}) => !isNotMappedFilterEnabled || mapping[id] === undefined)
-					.map((sourceElement) => ({sourceElement, choices: getTargetChoices(sourceElement, targetElements)}));
+	const rows = useMemo(
+		() =>
+			targetElements === undefined
+				? []
+				: [...sourceElements.elements, ...sourceElements.sequenceFlows]
+						.filter(({id}) => !isNotMappedFilterEnabled || mapping[id] === undefined)
+						.map((sourceElement) => ({sourceElement, choices: getTargetChoices(sourceElement, targetElements)})),
+		[sourceElements, targetElements, mapping, isNotMappedFilterEnabled],
+	);
 	const isEmbeddedFormMigration = (sourceElementId: string, targetElementId?: string) =>
 		isTargetSelected &&
 		hasEmbeddedForm(sourceElements.elements.find(({id}) => id === sourceElementId)) &&
