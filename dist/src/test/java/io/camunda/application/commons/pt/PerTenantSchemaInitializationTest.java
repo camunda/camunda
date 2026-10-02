@@ -34,6 +34,8 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Exercises the startup gate and the background retry loop against a fake attempt, so that the
@@ -1319,6 +1321,90 @@ final class PerTenantSchemaInitializationTest {
       // nothing it does has failed
       assertThat(initialization.status(TENANT_A))
           .isEqualTo(new SchemaInitializationStatus(State.RECOVERING, 0, null));
+    }
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void shouldKeepReportingInitializedWhenABackgroundFailureIsRecordedAfterAnExplicitSuccess(
+      final boolean terminalFailure) throws Exception {
+    // given - a background attempt that has failed, held after releasing the attempt lock but
+    // before its failure is recorded, which is where the classification runs
+    final var attempts = new AtomicInteger();
+    final var classifying = new CountDownLatch(1);
+    final var release = new CountDownLatch(1);
+    final var worker = new AtomicReference<Thread>();
+    try (final var initialization =
+        new PerTenantSchemaInitialization(
+            Set.of(TENANT_A),
+            tenantId -> {
+              if (attempts.incrementAndGet() == 1) {
+                throw new IllegalStateException("storage unreachable");
+              }
+            },
+            failure -> {
+              if (worker.compareAndSet(null, Thread.currentThread())) {
+                classifying.countDown();
+                awaitUninterruptibly(release);
+              }
+              return terminalFailure;
+            },
+            retryConfig())) {
+      try {
+        initialization.start();
+        assertThat(classifying.await(10, TimeUnit.SECONDS)).isTrue();
+
+        // when - an explicit request succeeds in that window
+        initialization.initializeNow(TENANT_A);
+        release.countDown();
+
+        // then - the failure it overtook no longer applies, however the task ends
+        Awaitility.await("the background task ends")
+            .atMost(Duration.ofSeconds(10))
+            .until(() -> !worker.get().isAlive());
+        assertThat(initialization.status(TENANT_A).state()).isEqualTo(State.INITIALIZED);
+        assertThat(initialization.status(TENANT_A).lastFailure()).isNull();
+      } finally {
+        release.countDown();
+      }
+    }
+  }
+
+  @Test
+  void shouldKeepReportingInitializedWhenABackgroundDeferralIsRecordedAfterAnExplicitSuccess()
+      throws Exception {
+    // given - a background task held in its deferral check, after it has seen the tenant unready
+    final var checking = new CountDownLatch(1);
+    final var release = new CountDownLatch(1);
+    final var worker = new AtomicReference<Thread>();
+    try (final var initialization =
+        initialization(
+            Set.of(TENANT_A),
+            tenantId -> {},
+            tenantId -> {
+              if (worker.compareAndSet(null, Thread.currentThread())) {
+                checking.countDown();
+                awaitUninterruptibly(release);
+              }
+              return true;
+            })) {
+      try {
+        initialization.start();
+        assertThat(checking.await(10, TimeUnit.SECONDS)).isTrue();
+
+        // when - an explicit request succeeds in that window, and the check then defers
+        initialization.initializeNow(TENANT_A);
+        release.countDown();
+
+        // then
+        Awaitility.await("the background task ends")
+            .atMost(Duration.ofSeconds(10))
+            .until(() -> !worker.get().isAlive());
+        assertThat(initialization.status(TENANT_A))
+            .isEqualTo(new SchemaInitializationStatus(State.INITIALIZED, 0, null));
+      } finally {
+        release.countDown();
+      }
     }
   }
 
