@@ -203,6 +203,7 @@ fun Test.configureAcceptanceProfile(
   excludeTags: Array<String>,
   exclusions: Array<String> = emptyArray(),
   preferredExtension: String? = "multi-db",
+  systemProperties: Map<String, String> = emptyMap(),
 ) {
   group = "verification"
   dependsOn("testClasses")
@@ -214,6 +215,7 @@ fun Test.configureAcceptanceProfile(
   junitOptions.includeTags(*includeTags)
   junitOptions.excludeTags(*excludeTags)
   preferredExtension?.let { systemProperty("camunda.test.preferred.extension", it) }
+  systemProperties.forEach { (name, value) -> systemProperty(name, value) }
 }
 
 tasks.register<Test>("itMultiDb") {
@@ -270,6 +272,17 @@ tasks.register<Test>("itRdbms") {
   )
 }
 
+tasks.register<Test>("itRdbmsOracle") {
+  description = "Runs the Maven rdbms-oracle acceptance-test profile."
+  configureAcceptanceProfile(
+    includePatterns = allItPatterns,
+    includeTags = arrayOf("rdbms-oracle"),
+    excludeTags = arrayOf("multi-db-test", "compatibility-test", "history"),
+    exclusions = arrayOf("**/*$*.class"),
+    preferredExtension = null,
+  )
+}
+
 tasks.register<Test>("itAsyncReplication") {
   description = "Runs the Maven async-repl acceptance-test profile."
   configureAcceptanceProfile(
@@ -279,12 +292,35 @@ tasks.register<Test>("itAsyncReplication") {
       arrayOf(
         "rdbms-aurora",
         "rdbms-aurora-mysql",
+        "rdbms-oracle",
         "multi-db-test",
         "compatibility-test",
         "history",
       ),
     exclusions = arrayOf("**/*$*.class"),
     preferredExtension = null,
+  )
+}
+
+tasks.register<Test>("itArchiverless") {
+  description = "Runs the Maven archiverless acceptance-test profile."
+  configureAcceptanceProfile(
+    includePatterns = allItPatterns,
+    includeTags = arrayOf("multi-db-test"),
+    excludeTags = arrayOf("rdbms", "history", "archiverless-wip"),
+    exclusions = physicalTenantIdentityPatterns + arrayOf("**/*$*.class"),
+    systemProperties = mapOf("test.integration.camunda.archiverless.enabled" to "true"),
+  )
+}
+
+tasks.register<Test>("itArchiverlessIdentity") {
+  description = "Runs the Maven archiverless-identity acceptance-test profile."
+  configureAcceptanceProfile(
+    includePatterns = physicalTenantIdentityPatterns,
+    includeTags = arrayOf("multi-db-test"),
+    excludeTags = arrayOf("rdbms", "history"),
+    exclusions = arrayOf("**/*$*.class"),
+    systemProperties = mapOf("test.integration.camunda.archiverless.enabled" to "true"),
   )
 }
 
