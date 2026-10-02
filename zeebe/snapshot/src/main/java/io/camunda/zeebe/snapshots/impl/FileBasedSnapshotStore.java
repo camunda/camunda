@@ -172,6 +172,31 @@ public final class FileBasedSnapshotStore extends Actor
     return snapshotStore.restore(snapshot);
   }
 
+  @Override
+  public ActorFuture<Optional<String>> reserveLatestSnapshot() {
+    return snapshotStore.reserveLatestSnapshot();
+  }
+
+  @Override
+  public ActorFuture<Void> reserveSnapshot(final String snapshotId) {
+    return snapshotStore.reserveSnapshot(snapshotId);
+  }
+
+  @Override
+  public ActorFuture<Optional<PersistedSnapshot>> getReservedSnapshot(final String snapshotId) {
+    return snapshotStore.getReservedSnapshot(snapshotId);
+  }
+
+  @Override
+  public ActorFuture<Void> releaseReservation(final String snapshotId) {
+    return snapshotStore.releaseReservation(snapshotId);
+  }
+
+  @Override
+  public ActorFuture<Void> releaseAllReservations() {
+    return snapshotStore.releaseAllReservations();
+  }
+
   public SnapshotMetrics getSnapshotMetrics() {
     return snapshotStore.getMetrics();
   }
