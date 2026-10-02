@@ -18,6 +18,7 @@ dependencies {
   testImplementation(project(":zeebe-qa-util"))
   testImplementation(project(":configuration"))
   testImplementation(project(":zeebe-backup-store-s3"))
+  testImplementation(libs.com.adobe.testing.s3mock.testcontainers)
   testImplementation(project(":zeebe-backup"))
   testImplementation(project(":zeebe-backup-store-gcs"))
   testImplementation(project(":camunda-testcontainer"))
