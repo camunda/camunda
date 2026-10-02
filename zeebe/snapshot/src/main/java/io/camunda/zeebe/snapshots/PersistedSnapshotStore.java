@@ -48,10 +48,10 @@ public interface PersistedSnapshotStore extends CloseableSilently, BootstrapSnap
    * Reserves the latest snapshot for the given checkpoint in one step, so it cannot be deleted
    * between selecting and reserving it.
    *
-   * <p>Reservations are made on behalf of a checkpoint and counted per checkpoint and snapshot, so
-   * a checkpoint can only see and release reservations made for it: a checkpoint written before
+   * <p>Reservations are made on behalf of a checkpoint and kept per checkpoint and snapshot, so a
+   * checkpoint can only see and release reservations made for it: a checkpoint written before
    * {@link #releaseAllReservations()} cannot consume a reservation a newer checkpoint made for the
-   * same snapshot.
+   * same snapshot. Reserving a snapshot again for the same checkpoint shares the reservation.
    *
    * @return future completed with the id of the reserved snapshot, or empty if there is none
    */
@@ -73,8 +73,8 @@ public interface PersistedSnapshotStore extends CloseableSilently, BootstrapSnap
       long checkpointId, String snapshotId);
 
   /**
-   * Releases one reservation of the snapshot with the given id made for the given checkpoint; no-op
-   * if there is none.
+   * Releases the reservation of the snapshot with the given id made for the given checkpoint, even
+   * if it was reserved more than once; no-op if there is none.
    */
   void releaseReservation(long checkpointId, String snapshotId);
 

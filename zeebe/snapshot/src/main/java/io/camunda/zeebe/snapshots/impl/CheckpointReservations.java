@@ -13,9 +13,9 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Snapshot reservations made on behalf of checkpoints, counted per checkpoint and snapshot.
- * Requests for the same checkpoint share a reservation, so the snapshot is only released once each
- * of them released it.
+ * Snapshot reservations made on behalf of checkpoints, kept per checkpoint and snapshot. Requests
+ * for the same checkpoint share a reservation, which the first release drops: a backup holds its
+ * own reservation of the snapshot it uses, so it does not depend on this one once it started.
  *
  * <p>Not thread-safe: must only be used on the snapshot store's actor.
  */
@@ -28,9 +28,7 @@ final class CheckpointReservations {
    */
   boolean reserve(final long checkpointId, final FileBasedSnapshot snapshot) {
     final var key = new Key(checkpointId, snapshot.getId());
-    final var existing = reservations.get(key);
-    if (existing != null) {
-      existing.count++;
+    if (reservations.containsKey(key)) {
       return true;
     }
 
@@ -44,40 +42,24 @@ final class CheckpointReservations {
 
   Optional<PersistedSnapshot> get(final long checkpointId, final String snapshotId) {
     return Optional.ofNullable(reservations.get(new Key(checkpointId, snapshotId)))
-        .map(reservation -> reservation.snapshot);
+        .map(Reservation::snapshot);
   }
 
-  /** Releases one reservation of the snapshot for the checkpoint; no-op if there is none. */
+  /** Releases the reservation of the snapshot for the checkpoint; no-op if there is none. */
   void release(final long checkpointId, final String snapshotId) {
-    final var key = new Key(checkpointId, snapshotId);
-    final var reservation = reservations.get(key);
-    if (reservation == null) {
-      return;
-    }
-
-    reservation.count--;
-    if (reservation.count == 0) {
-      reservation.reservation.releaseOnActor();
-      reservations.remove(key);
+    final var reservation = reservations.remove(new Key(checkpointId, snapshotId));
+    if (reservation != null) {
+      reservation.reservation().releaseOnActor();
     }
   }
 
   void releaseAll() {
-    reservations.values().forEach(reservation -> reservation.reservation.releaseOnActor());
+    reservations.values().forEach(reservation -> reservation.reservation().releaseOnActor());
     reservations.clear();
   }
 
   private record Key(long checkpointId, String snapshotId) {}
 
-  private static final class Reservation {
-    private final FileBasedSnapshot snapshot;
-    private final FileBasedSnapshotReservation reservation;
-    private int count = 1;
-
-    private Reservation(
-        final FileBasedSnapshot snapshot, final FileBasedSnapshotReservation reservation) {
-      this.snapshot = snapshot;
-      this.reservation = reservation;
-    }
-  }
+  private record Reservation(
+      FileBasedSnapshot snapshot, FileBasedSnapshotReservation reservation) {}
 }
