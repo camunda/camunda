@@ -11,6 +11,7 @@ import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.warmup.LeaderWarmup;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import java.util.List;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -40,7 +41,14 @@ final class LeaderWarmupStep extends AbstractBrokerStartupStep {
             brokerCfg,
             brokerStartupContext.getPhysicalTenantContext(PartitionManager.DEFAULT_GROUP_NAME),
             brokerStartupContext.getHealthCheckService(),
-            brokerStartupContext.getMeterRegistry());
+            brokerStartupContext.getMeterRegistry(),
+            () -> {
+              final var partitionManager =
+                  brokerStartupContext
+                      .getPartitionManagers()
+                      .get(PartitionManager.DEFAULT_GROUP_NAME);
+              return partitionManager == null ? List.of() : partitionManager.getZeebePartitions();
+            });
     brokerStartupContext.addPartitionRaftListener(warmup);
     warmup.start();
     startupFuture.complete(brokerStartupContext);

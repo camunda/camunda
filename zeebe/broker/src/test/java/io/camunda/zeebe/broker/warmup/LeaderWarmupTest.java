@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -47,6 +48,14 @@ final class LeaderWarmupTest {
   private final BrokerHealthCheckService healthCheckService = mock(BrokerHealthCheckService.class);
   private final LeaderWarmupCfg cfg = new LeaderWarmupCfg();
   private LeaderWarmup warmup;
+  private volatile double processCpuLoad;
+  private volatile long processingBacklog = -1;
+
+  @BeforeEach
+  void setUp() {
+    cfg.setStartDelay(Duration.ZERO);
+    cfg.setQuietPeriod(Duration.ZERO);
+  }
 
   @AfterEach
   void tearDown() throws Exception {
@@ -106,6 +115,47 @@ final class LeaderWarmupTest {
   }
 
   @Test
+  void shouldWaitForTheBrokerToBeQuietBeforeStarting() {
+    // given
+    cfg.setQuietPeriod(Duration.ofSeconds(2));
+    processCpuLoad = 0.9;
+    warmup = createWarmup(EngineSecurityConfigurations.defaultConfig());
+    warmup.start();
+    await()
+        .during(Duration.ofSeconds(3))
+        .atMost(Duration.ofSeconds(5))
+        .until(this::state, s -> s == State.PENDING);
+
+    // when
+    processCpuLoad = 0.2;
+
+    // then
+    await().atMost(TIMEOUT).until(this::state, s -> s != State.PENDING);
+    assertThat(state()).isIn(State.RUNNING, State.COMPLETED);
+  }
+
+  @Test
+  void shouldWaitForTheProcessingBacklogToClearBeforeStarting() {
+    // given
+    cfg.setQuietPeriod(Duration.ofSeconds(2));
+    processCpuLoad = 0.2;
+    processingBacklog = 900;
+    warmup = createWarmup(EngineSecurityConfigurations.defaultConfig());
+    warmup.start();
+    await()
+        .during(Duration.ofSeconds(3))
+        .atMost(Duration.ofSeconds(5))
+        .until(this::state, s -> s == State.PENDING);
+
+    // when
+    processingBacklog = 20;
+
+    // then
+    await().atMost(TIMEOUT).until(this::state, s -> s != State.PENDING);
+    assertThat(state()).isIn(State.RUNNING, State.COMPLETED);
+  }
+
+  @Test
   void shouldCancelWhenBecomingLeader() throws Exception {
     // given
     cfg.setProcessInstances(Integer.MAX_VALUE);
@@ -152,7 +202,6 @@ final class LeaderWarmupTest {
   private LeaderWarmup createWarmup(
       final EngineSecurityConfig securityConfig, final BrokerCfg brokerCfg) {
     when(healthCheckService.isBrokerHealthy()).thenReturn(true);
-    cfg.setStartDelay(Duration.ZERO);
     final var tenantContext =
         new PhysicalTenantContext(
             securityConfig,
@@ -161,7 +210,15 @@ final class LeaderWarmupTest {
             brokerCfg,
             new ExporterRepository(),
             new SecretStoreRegistry(Map.of()));
-    return new LeaderWarmup(cfg, brokerCfg, tenantContext, healthCheckService, meterRegistry);
+    return new LeaderWarmup(
+        cfg,
+        brokerCfg,
+        tenantContext,
+        healthCheckService,
+        meterRegistry,
+        () -> processCpuLoad,
+        () -> -1,
+        () -> processingBacklog);
   }
 
   private BrokerCfg brokerCfg() {

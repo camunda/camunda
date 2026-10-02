@@ -7,42 +7,73 @@
  */
 package io.camunda.zeebe.broker.warmup;
 
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Optional;
 import java.util.function.DoubleSupplier;
+import java.util.function.LongSupplier;
 import org.jspecify.annotations.NullMarked;
 
 /**
  * Keeps the warm-up within a share of the broker's CPU, so that the work the broker is actually
  * doing always has headroom. Once per sample interval it reads the whole process's CPU load, which
- * includes the broker's own work and the JIT compiler; while the load is within budget the warm-up
- * may keep one more instance in flight, and while it is over budget that number halves, down to
- * zero, which pauses the warm-up.
+ * includes the broker's own work and the JIT compiler, and whether the container's CPU quota
+ * throttled it. While the load is within budget and nothing was throttled, the warm-up may keep one
+ * more instance in flight; otherwise that number halves, down to zero, which pauses the warm-up.
+ * After backing off, it grows back by one per sample to half the number it had when the back-off
+ * began, and beyond that only after several samples in a row within budget, so that it settles
+ * below the point where it gets in the broker's way instead of returning to it every few seconds,
+ * yet recovers quickly from a long pause. Throttling counts on its own because the quota is
+ * enforced over periods much shorter than the sample interval: a process within its average budget
+ * can still exhaust the quota in bursts, and every thread in the container then waits for the next
+ * period. A processing backlog on any partition the broker follows counts too: the cluster is then
+ * working off requests that queued up, and that is when the broker's headroom matters most.
  */
 @NullMarked
 final class CpuBudget {
 
   static final Duration SAMPLE_INTERVAL = Duration.ofSeconds(1);
+  static final int REGROWTH_SAMPLES = 5;
 
   private final DoubleSupplier processCpuLoad;
+  private final DoubleSupplier throttledShare;
+  private final LongSupplier processingBacklog;
   private final double maxLoad;
+  private final long maxBacklog;
   private final int maxInFlight;
   private int limit = 1;
   private long nextSampleNanos;
   private long backOffs;
+  private int samplesWithinSinceGrowth;
+  private int fastGrowthLimit;
+  private boolean backingOff;
 
   /**
    * @param processCpuLoad the process's CPU load since it was last called, as a fraction of the
    *     CPUs available to it, or a negative value if it is unknown
+   * @param throttledShare the share of the container's quota periods since it was last called in
+   *     which it was throttled, or a negative value if it is unknown
+   * @param processingBacklog the largest processing backlog among the broker's partitions, in log
+   *     positions, or a negative value if it is unknown
    */
   CpuBudget(
       final DoubleSupplier processCpuLoad,
+      final DoubleSupplier throttledShare,
+      final LongSupplier processingBacklog,
       final double maxLoad,
+      final long maxBacklog,
       final int maxInFlight,
       final long nowNanos) {
     this.processCpuLoad = processCpuLoad;
+    this.throttledShare = throttledShare;
+    this.processingBacklog = processingBacklog;
     this.maxLoad = maxLoad;
+    this.maxBacklog = maxBacklog;
     this.maxInFlight = maxInFlight;
+    fastGrowthLimit = maxInFlight;
     nextSampleNanos = nowNanos + SAMPLE_INTERVAL.toNanos();
   }
 
@@ -50,20 +81,131 @@ final class CpuBudget {
   int inFlightLimit(final long nowNanos) {
     if (nowNanos - nextSampleNanos >= 0) {
       nextSampleNanos = nowNanos + SAMPLE_INTERVAL.toNanos();
-      final var load = processCpuLoad.getAsDouble();
-      if (load > maxLoad) {
-        limit /= 2;
-        backOffs++;
-      } else if (load >= 0) {
-        limit = Math.min(maxInFlight, limit + 1);
+      switch (sample()) {
+        case OVER -> {
+          if (!backingOff) {
+            fastGrowthLimit = Math.max(1, limit / 2);
+            backingOff = true;
+          }
+          limit /= 2;
+          backOffs++;
+          samplesWithinSinceGrowth = 0;
+        }
+        case WITHIN -> {
+          backingOff = false;
+          if (limit < fastGrowthLimit || ++samplesWithinSinceGrowth >= REGROWTH_SAMPLES) {
+            limit = Math.min(maxInFlight, limit + 1);
+            samplesWithinSinceGrowth = 0;
+          }
+        }
+        case UNKNOWN -> {}
       }
     }
     return limit;
   }
 
+  /**
+   * Samples the CPU now, outside the budget's own interval; unknown counts as within budget. Calls
+   * should be at least a sample interval apart for the load to be meaningful.
+   */
+  boolean isWithinBudget() {
+    return sample() != Sample.OVER;
+  }
+
+  private Sample sample() {
+    final var load = processCpuLoad.getAsDouble();
+    final var throttled = throttledShare.getAsDouble();
+    final var backlog = processingBacklog.getAsLong();
+    if (load > maxLoad || throttled > 0 || backlog > maxBacklog) {
+      return Sample.OVER;
+    }
+    return load >= 0 || throttled >= 0 || backlog >= 0 ? Sample.WITHIN : Sample.UNKNOWN;
+  }
+
   /** How many samples found the process over budget. */
   long backOffs() {
     return backOffs;
+  }
+
+  /**
+   * The share of the container's CPU quota periods in which it was throttled, between calls, read
+   * from its cgroup v2 {@code cpu.stat}. A container normally sees its own cgroup at the root of
+   * its cgroup mount; a privileged one sees the host's, so its own is found by its path in {@code
+   * /proc/self/cgroup}. Without a quota there is nothing to throttle, and the share is unknown.
+   */
+  static DoubleSupplier throttledShare() {
+    final var cpuStat = ownCgroup().map(cgroup -> cgroup.resolve("cpu.stat")).orElse(null);
+    if (cpuStat == null) {
+      return () -> -1;
+    }
+    return new DoubleSupplier() {
+      private long[] last = readThrottling(cpuStat);
+
+      @Override
+      public double getAsDouble() {
+        final var now = readThrottling(cpuStat);
+        final var periods = now[0] - last[0];
+        final var throttled = now[1] - last[1];
+        final var known = now[0] >= 0 && last[0] >= 0;
+        last = now;
+        if (!known) {
+          return -1;
+        }
+        return periods > 0 ? (double) throttled / periods : 0;
+      }
+    };
+  }
+
+  private static Optional<Path> ownCgroup() {
+    final var root = Path.of("/sys/fs/cgroup");
+    if (Files.isRegularFile(root.resolve("cpu.max")) && hasQuota(root)) {
+      return Optional.of(root);
+    }
+    try {
+      for (final var line : Files.readAllLines(Path.of("/proc/self/cgroup"))) {
+        if (line.startsWith("0::/") && line.length() > 4) {
+          final var own = root.resolve(line.substring(4));
+          if (hasQuota(own)) {
+            return Optional.of(own);
+          }
+        }
+      }
+    } catch (final IOException | RuntimeException e) {
+      return Optional.empty();
+    }
+    return Optional.empty();
+  }
+
+  private static boolean hasQuota(final Path cgroup) {
+    try {
+      return !Files.readString(cgroup.resolve("cpu.max")).startsWith("max");
+    } catch (final IOException | RuntimeException e) {
+      return false;
+    }
+  }
+
+  /** Returns {nr_periods, nr_throttled}, or {-1, -1} if they cannot be read. */
+  private static long[] readThrottling(final Path cpuStat) {
+    long periods = -1;
+    long throttled = -1;
+    try {
+      for (final var line : Files.readAllLines(cpuStat)) {
+        if (line.startsWith("nr_periods ")) {
+          periods = Long.parseLong(line.substring("nr_periods ".length()).trim());
+        } else if (line.startsWith("nr_throttled ")) {
+          throttled = Long.parseLong(line.substring("nr_throttled ".length()).trim());
+        }
+      }
+    } catch (final IOException | RuntimeException e) {
+      return new long[] {-1, -1};
+    }
+    return periods >= 0 && throttled >= 0 ? new long[] {periods, throttled} : new long[] {-1, -1};
+  }
+
+  private enum Sample {
+    WITHIN,
+    OVER,
+    UNKNOWN
   }
 
   /**
