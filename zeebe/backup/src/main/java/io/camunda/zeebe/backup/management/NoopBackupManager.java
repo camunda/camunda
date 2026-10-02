@@ -45,6 +45,18 @@ public class NoopBackupManager implements BackupManager {
   }
 
   @Override
+  public ActorFuture<BackupStatus> getBackupStatus(final long checkpointId) {
+    return CompletableActorFuture.completedExceptionally(
+        new UnsupportedOperationException(errorMessage));
+  }
+
+  @Override
+  public ActorFuture<Collection<BackupStatus>> listBackups(final String pattern) {
+    return CompletableActorFuture.completedExceptionally(
+        new UnsupportedOperationException(errorMessage));
+  }
+
+  @Override
   public ActorFuture<Void> requestBackupDeletion(final long checkpointId) {
     return CompletableActorFuture.completedExceptionally(
         new UnsupportedOperationException(errorMessage));
@@ -78,6 +90,12 @@ public class NoopBackupManager implements BackupManager {
   }
 
   @Override
+  public ActorFuture<Collection<BackupRangeStatus>> getBackupRangeStatus() {
+    return CompletableActorFuture.completedExceptionally(
+        new UnsupportedOperationException(errorMessage));
+  }
+
+  @Override
   public ActorFuture<Collection<BackupRangeStatus>> syncMetadata(
       final SequencedCollection<Checkpoint> checkpoints,
       final SequencedCollection<BackupRange> ranges) {
@@ -93,22 +111,4 @@ public class NoopBackupManager implements BackupManager {
 
   @Override
   public void releaseSnapshotReservation(final long checkpointId, final String snapshotId) {}
-
-  @Override
-  public ActorFuture<BackupStatus> getBackupStatus(final long checkpointId) {
-    return CompletableActorFuture.completedExceptionally(
-        new UnsupportedOperationException(errorMessage));
-  }
-
-  @Override
-  public ActorFuture<Collection<BackupStatus>> listBackups(final String pattern) {
-    return CompletableActorFuture.completedExceptionally(
-        new UnsupportedOperationException(errorMessage));
-  }
-
-  @Override
-  public ActorFuture<Collection<BackupRangeStatus>> getBackupRangeStatus() {
-    return CompletableActorFuture.completedExceptionally(
-        new UnsupportedOperationException(errorMessage));
-  }
 }
