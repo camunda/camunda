@@ -860,6 +860,58 @@ public final class ProcessStateTest {
   }
 
   @Test
+  public void shouldKeepDrainingStateWhenReloadingByVersionAfterCacheMiss() {
+    // given
+    final var processRecord = creatingProcessRecord(processingState);
+    processState.putProcess(processRecord.getKey(), processRecord);
+    processState.updateProcessState(processRecord, PersistedProcessState.DRAINING);
+
+    // when - the cached definition is gone, e.g. reclaimed by the GC
+    processState.clearCache();
+    final var process =
+        processState.getProcessByProcessIdAndVersion(
+            wrapString("processId"), processRecord.getVersion(), TENANT_ID);
+
+    // then
+    assertThat(process.getState()).isEqualTo(PersistedProcessState.DRAINING);
+  }
+
+  @Test
+  public void shouldNotResolveDrainingLatestAsLatestActiveAfterCacheMiss() {
+    // given
+    final var v1 = creatingProcessRecord(processingState, "processId", 1);
+    final var v2 = creatingProcessRecord(processingState, "processId", 2);
+    processState.putProcess(v1.getKey(), v1);
+    processState.putProcess(v2.getKey(), v2);
+    processState.updateProcessState(v2, PersistedProcessState.DRAINING);
+
+    // when - the cached definitions are gone, e.g. reclaimed by the GC
+    processState.clearCache();
+    final var latestActive =
+        processState.getLatestActiveProcessVersionByProcessId(wrapString("processId"), TENANT_ID);
+
+    // then
+    assertThat(latestActive.getKey()).isEqualTo(v1.getKey());
+  }
+
+  @Test
+  public void shouldKeepUpdatedStateInKeyCacheAfterReloadingByVersion() {
+    // given
+    final var processRecord = creatingProcessRecord(processingState);
+    processState.putProcess(processRecord.getKey(), processRecord);
+    processState.updateProcessState(processRecord, PersistedProcessState.PENDING_DELETION);
+    processState.clearCache();
+
+    // when - a version lookup reloads the definition into both caches
+    processState.getProcessByProcessIdAndVersion(
+        wrapString("processId"), processRecord.getVersion(), TENANT_ID);
+
+    // then
+    final var process = processState.getProcessByKeyAndTenant(processRecord.getKey(), TENANT_ID);
+    assertThat(process.getState()).isEqualTo(PersistedProcessState.PENDING_DELETION);
+  }
+
+  @Test
   public void shouldDeleteLatestProcess() {
     // given
     final String processId = Strings.newRandomValidBpmnId();
