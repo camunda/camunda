@@ -768,6 +768,43 @@ describe('Processes migration', () => {
 		await expect.element(screen.getByTestId('modifications-overlay')).not.toBeInTheDocument();
 	});
 
+	it('should hide stale overlays when the summary cannot refresh where the instances are', async ({worker}) => {
+		mockPage(worker);
+		const screen = await renderPage();
+		await enterSummary(screen);
+		await expect.element(screen.getByTestId('state-overlay-task-1-active')).toHaveTextContent('2');
+		await userEvent.click(screen.getByRole('button', {name: 'Back'}));
+		let reportStatisticsFailure = () => {};
+		const statisticsFailed = new Promise<void>((resolve) => {
+			reportStatisticsFailure = resolve;
+		});
+		worker.use(
+			http.post(
+				endpoints.getProcessDefinitionStatistics.getUrl({
+					processDefinitionKey: ':processDefinitionKey',
+					statisticName: 'element-instances',
+				}),
+				() => {
+					reportStatisticsFailure();
+					return new HttpResponse(null, {status: 500});
+				},
+			),
+		);
+		mockMigrationCount(worker, {
+			keys: ['1'],
+			getResponse: async () => {
+				await statisticsFailed;
+				return createCountResponse(7);
+			},
+		});
+
+		await userEvent.click(screen.getByRole('button', {name: 'Next'}));
+
+		await expect.element(screen.getByText(/^You are about to migrate 7 process instances /)).toBeVisible();
+		await expect.element(screen.getByTestId('state-overlay-task-1-active')).not.toBeInTheDocument();
+		await expect.element(screen.getByTestId('modifications-overlay')).not.toBeInTheDocument();
+	});
+
 	it.for([
 		{selection: 'one instance', keys: ['1'], totalItems: 1, hasMoreTotalItems: false, instances: '1 process instance'},
 		{

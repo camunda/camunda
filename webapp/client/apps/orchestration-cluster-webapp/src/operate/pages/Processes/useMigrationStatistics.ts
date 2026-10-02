@@ -17,7 +17,8 @@ import {mapQueryError} from '#/shared/http/mapQueryError';
 
 /**
  * Instances can advance while the migration is being mapped, so the summary enables this query when
- * it opens and only shows statistics once they are fresh; cached ones are hidden during the refetch.
+ * it opens and only shows statistics once they are fresh; cached ones are hidden while refetching and
+ * after a failed refetch.
  */
 function useMigrationStatistics({
 	processDefinitionKey,
@@ -28,7 +29,7 @@ function useMigrationStatistics({
 	filter: GetProcessDefinitionStatisticsRequestBody['filter'];
 	enabled: boolean;
 }) {
-	const {data, isFetching} = useQuery({
+	const {data, status, isFetching} = useQuery({
 		queryKey: ['migrationStatistics', processDefinitionKey, filter],
 		enabled,
 		staleTime: 0,
@@ -41,7 +42,7 @@ function useMigrationStatistics({
 		},
 	});
 
-	return isFetching ? undefined : data;
+	return status === 'success' && !isFetching ? data : undefined;
 }
 
 export {useMigrationStatistics};
