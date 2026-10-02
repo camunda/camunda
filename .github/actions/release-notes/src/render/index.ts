@@ -75,6 +75,17 @@ export function emptyCustomerBodyWarning(hasAttributedWork: boolean, customerBod
     : undefined;
 }
 
+/** GitHub rejects a longer release body via the API; the web editor silently truncates it. */
+export const RELEASE_BODY_LIMIT = 125_000;
+
+/** Asset-only bumps buy headroom, not a guarantee — warns before cutover
+ *  publishes a body GitHub will reject. */
+export function oversizedCustomerBodyWarning(customerBody: string): string | undefined {
+  return customerBody.length > RELEASE_BODY_LIMIT
+    ? `Customer-facing body is ${customerBody.length} characters, over GitHub's ${RELEASE_BODY_LIMIT}-character release body limit — publishing it will fail.`
+    : undefined;
+}
+
 /** An opt-out PR is grouped under its own section, never its type's. */
 function groupNameFor(pr: RenderPrInput): string {
   if (pr.attributionSource === 'optOut') return 'Changes without a tracked issue';
@@ -107,23 +118,41 @@ function isDependencyBump(pr: RenderPrInput): boolean {
   return (pr.dependencies?.length ?? 0) > 0 && pr.issueNumbers.length === 0;
 }
 
+function packagesOf(pr: RenderPrInput): string[] {
+  return (pr.dependencies ?? []).map((dependency) => dependency.name);
+}
+
 /** Issue-less bumps are full-asset only: on 8.10.0 they were ~43k of a
  *  143k-char customer body, pushing it past GitHub's 125,000-char release body
  *  limit. A bump that delivers an issue (a CVE fix) stays visible, and so does
- *  every bump of a package one breaking bump touched — else its range splits. */
+ *  every bump sharing a package with a visible bump, transitively — else that
+ *  package's range splits between the two outputs. */
 function assetOnlyDependencyBumps(prs: readonly RenderPrInput[]): Set<RenderPrInput> {
   const bumps = prs.filter(isDependencyBump);
-  const breakingPackages = new Set(
-    bumps.filter((pr) => pr.breaking).flatMap((pr) => (pr.dependencies ?? []).map((dependency) => dependency.name)),
-  );
-  return new Set(
-    bumps.filter((pr) => !(pr.dependencies ?? []).some((dependency) => breakingPackages.has(dependency.name))),
-  );
+  const visible = new Set(bumps.filter((pr) => pr.breaking));
+  const visiblePackages = new Set([...visible].flatMap(packagesOf));
+  let grew = visible.size > 0;
+  while (grew) {
+    grew = false;
+    for (const pr of bumps) {
+      if (visible.has(pr) || !packagesOf(pr).some((name) => visiblePackages.has(name))) continue;
+      visible.add(pr);
+      for (const name of packagesOf(pr)) visiblePackages.add(name);
+      grew = true;
+    }
+  }
+  return new Set(bumps.filter((pr) => !visible.has(pr)));
 }
 
-function dependencyPointer(count: number, version: string): string {
-  const noun = count === 1 ? 'dependency update is' : 'dependency updates are';
-  return `${count} ${noun} listed in the full changelog, \`CHANGELOG-${version}.md\`.`;
+/** Counts packages, not pull requests — one line each in the full changelog. */
+interface DependencyPointer {
+  readonly packageCount: number;
+  readonly version: string;
+}
+
+function renderDependencyPointer({ packageCount, version }: DependencyPointer, others: boolean): string {
+  const noun = packageCount === 1 ? 'dependency update is' : 'dependency updates are';
+  return `${packageCount} ${others ? 'other ' : ''}${noun} listed in the full changelog, \`CHANGELOG-${version}.md\`.`;
 }
 
 /** Where a group's PRs disagree on section, the most customer-visible one
@@ -159,7 +188,7 @@ function toEntries(prs: readonly RenderPrInput[]): RenderEntry[] {
   return [...entries, ...collapseDependencies(prs.filter(isDependencyBump))];
 }
 
-function renderSectionedBody(prs: readonly RenderPrInput[]): string {
+function renderSectionedBody(prs: readonly RenderPrInput[], dependencyPointer?: DependencyPointer): string {
   const entries = toEntries(prs);
   const groups = new Map<string, RenderEntry[]>();
   for (const entry of entries) {
@@ -175,9 +204,12 @@ function renderSectionedBody(prs: readonly RenderPrInput[]): string {
   }
   const orderedNames = [...SECTION_ORDER, ...[...groups.keys()].filter((name) => !SECTION_ORDER.includes(name))];
   for (const name of orderedNames) {
-    const list = groups.get(name);
-    if (!list?.length) continue;
-    lines.push(`## ${name}`, '', ...list.map((entry) => renderLine(entry)), '');
+    const list = groups.get(name) ?? [];
+    const pointer = name === 'Dependency updates' && dependencyPointer ? dependencyPointer : undefined;
+    if (list.length === 0 && !pointer) continue;
+    lines.push(`## ${name}`, '', ...list.map((entry) => renderLine(entry)));
+    if (pointer) lines.push(...(list.length > 0 ? [''] : []), renderDependencyPointer(pointer, list.length > 0));
+    lines.push('');
   }
   return lines.join('\n').trim();
 }
@@ -309,14 +341,13 @@ export function render(all: readonly RenderPrInput[], options: RenderOptions): R
   const customerVisible = prs.filter((pr) => pr.visibility === 'customer' && pr.section !== null);
   const assetOnly = assetOnlyDependencyBumps(customerVisible);
   const customerPrs = customerVisible.filter((pr) => !assetOnly.has(pr));
-  const assetOnlyBumps = assetOnly.size;
+  const packageCount = new Set([...assetOnly].flatMap(packagesOf)).size;
   const assetPrs = all.filter((pr) => pr.section !== null);
 
-  const sectionedCustomerBody = renderSectionedBody(customerPrs);
-  const customerBody =
-    assetOnlyBumps > 0
-      ? [sectionedCustomerBody, dependencyPointer(assetOnlyBumps, options.version)].filter(Boolean).join('\n\n')
-      : sectionedCustomerBody;
+  const customerBody = renderSectionedBody(
+    customerPrs,
+    packageCount > 0 ? { packageCount, version: options.version } : undefined,
+  );
   const fullAsset = renderSectionedBody(assetPrs);
 
   const prsByIssue = new Map<number, RenderPrInput[]>(); // insertion-ordered: issues come out in walk order
@@ -335,8 +366,8 @@ export function render(all: readonly RenderPrInput[], options: RenderOptions): R
   // Only recorded when the override actually let the guard pass — else a plain
   // failure would look identical to an approved exception in this file.
   const overrides = guardFailed ? [] : unattributed.map((pr) => ({ number: pr.number, reason: unattributedReason }));
-  const emptyBodyWarning = emptyCustomerBodyWarning(prs.length > 0, customerBody);
-  const warnings = [...(options.warnings ?? []), ...(emptyBodyWarning ? [emptyBodyWarning] : [])];
+  const bodyWarnings = [emptyCustomerBodyWarning(prs.length > 0, customerBody), oversizedCustomerBodyWarning(customerBody)];
+  const warnings = [...(options.warnings ?? []), ...bodyWarnings.filter((warning) => warning !== undefined)];
 
   return {
     customerBody,
