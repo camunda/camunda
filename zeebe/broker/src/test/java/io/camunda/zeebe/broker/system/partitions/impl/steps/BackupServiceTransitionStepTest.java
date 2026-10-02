@@ -30,6 +30,7 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.util.Either;
 import java.nio.file.Path;
 import java.util.Set;
@@ -54,6 +55,7 @@ class BackupServiceTransitionStepTest {
   @Mock ActorSchedulingService actorSchedulingService;
   @Mock LogStream logStream;
   @Mock BackupStore backupStore;
+  @Mock PersistedSnapshotStore snapshotStore;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   BrokerCfg brokerCfg;
@@ -75,6 +77,7 @@ class BackupServiceTransitionStepTest {
     transitionContext.setRaftPartition(raftPartition);
     transitionContext.setLogStream(logStream);
     transitionContext.setZeebeDb(zeebeDb);
+    transitionContext.setPersistedSnapshotStore(snapshotStore);
 
     lenient().when(brokerCfg.getCluster().getPartitionsCount()).thenReturn(3);
     lenient()
@@ -110,6 +113,20 @@ class BackupServiceTransitionStepTest {
     assertThat(transitionContext.getBackupManager()).isNull();
     verify(backupManagerPreviousRole).closeAsync();
     assertThat(transitionContext.getCheckpointProcessor()).isNull();
+  }
+
+  @ParameterizedTest
+  @ArgumentsSource(TransitionsThatShouldCloseService.class)
+  void shouldReleaseCheckpointSnapshotReservationsWhenClosingService(
+      final Role currentRole, final Role targetRole) {
+    // given
+    setUpCurrentRole(currentRole);
+
+    // when
+    step.prepareTransition(transitionContext, 1, targetRole).join();
+
+    // then
+    verify(snapshotStore).releaseAllReservations();
   }
 
   @ParameterizedTest

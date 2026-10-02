@@ -16,9 +16,11 @@ import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
+import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse;
@@ -36,13 +38,17 @@ import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
 import java.time.Instant;
 import java.util.Collection;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Request handler to handle commands and queries related to the backup ({@link RequestType#BACKUP})
@@ -59,6 +65,8 @@ public final class BackupApiRequestHandler
   private final DbBackupRangeState backupRangeState;
   private final int partitionId;
   private final boolean backupFeatureEnabled;
+  private final PersistedSnapshotStore snapshotStore;
+  private final AsyncSnapshotDirector snapshotDirector;
 
   public BackupApiRequestHandler(
       final AtomixServerTransport transport,
@@ -67,6 +75,8 @@ public final class BackupApiRequestHandler
       final CheckpointState checkpointState,
       final DbCheckpointMetadataState checkpointMetadataState,
       final DbBackupRangeState backupRangeState,
+      final PersistedSnapshotStore snapshotStore,
+      final AsyncSnapshotDirector snapshotDirector,
       final int partitionId,
       final boolean backupFeatureEnabled) {
     super(BackupApiRequestReader::new, BackupApiResponseWriter::new);
@@ -76,6 +86,8 @@ public final class BackupApiRequestHandler
     this.checkpointState = checkpointState;
     this.checkpointMetadataState = checkpointMetadataState;
     this.backupRangeState = backupRangeState;
+    this.snapshotStore = snapshotStore;
+    this.snapshotDirector = snapshotDirector;
     this.partitionId = partitionId;
     this.backupFeatureEnabled = backupFeatureEnabled;
     transport.unsubscribe(partitionId, RequestType.BACKUP);
@@ -104,9 +116,8 @@ public final class BackupApiRequestHandler
 
     return switch (requestReader.type()) {
       case TAKE_BACKUP ->
-          CompletableActorFuture.completed(
-              handleTakeBackupRequest(
-                  requestStreamId, requestId, requestReader, responseWriter, errorWriter));
+          handleTakeBackupRequest(
+              requestStreamId, requestId, requestReader, responseWriter, errorWriter);
       case QUERY_STATUS -> handleQueryStatusRequest(requestReader, responseWriter, errorWriter);
       case LIST -> handleListBackupRequest(requestReader, responseWriter, errorWriter);
       case DELETE -> handleDeleteBackupRequest(requestReader, responseWriter, errorWriter);
@@ -119,16 +130,46 @@ public final class BackupApiRequestHandler
     };
   }
 
-  private Either<ErrorResponseWriter, BackupApiResponseWriter> handleTakeBackupRequest(
+  private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> handleTakeBackupRequest(
       final int requestStreamId,
       final long requestId,
       final BackupApiRequestReader requestReader,
       final BackupApiResponseWriter responseWriter,
       final ErrorResponseWriter errorWriter) {
     if (!isDiskSpaceAvailable) {
-      return Either.left(errorWriter.outOfDiskSpace(partitionId));
+      return CompletableActorFuture.completed(Either.left(errorWriter.outOfDiskSpace(partitionId)));
     }
 
+    final var checkpointId = requestReader.backupId();
+    final var checkpointType = requestReader.checkpointType();
+    final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
+        actor.createFuture();
+
+    reserveSnapshotForCheckpoint(checkpointType)
+        .onComplete(
+            (snapshotId, ignored) -> {
+              final var written =
+                  writeCheckpoint(
+                      requestStreamId, requestId, checkpointId, checkpointType, snapshotId);
+              if (written.isRight()) {
+                result.complete(Either.right(responseWriter.noResponse()));
+              } else {
+                releaseSnapshotReservation(snapshotId);
+                result.complete(
+                    Either.left(
+                        errorWriter.mapWriteError(partitionId, written.getLeft())));
+              }
+            },
+            actor);
+    return result;
+  }
+
+  private Either<WriteFailure, Long> writeCheckpoint(
+      final int requestStreamId,
+      final long requestId,
+      final long checkpointId,
+      final CheckpointType checkpointType,
+      final String snapshotId) {
     final RecordMetadata metadata =
         new RecordMetadata()
             .recordType(RecordType.COMMAND)
@@ -138,18 +179,11 @@ public final class BackupApiRequestHandler
             .requestStreamId(requestStreamId);
     final var checkpointRecord =
         new CheckpointRecord()
-            .setCheckpointId(requestReader.backupId())
-            .setCheckpointType(requestReader.checkpointType());
-    final var written =
-        logStreamWriter.tryWrite(
-            WriteContext.internal(), LogAppendEntry.of(metadata, checkpointRecord));
-
-    if (written.isRight()) {
-      // Response will be sent by the processor
-      return Either.right(responseWriter.noResponse());
-    } else {
-      return Either.left(errorWriter.mapWriteError(partitionId, written.getLeft()));
-    }
+            .setCheckpointId(checkpointId)
+            .setCheckpointType(checkpointType)
+            .setSnapshotId(snapshotId);
+    return logStreamWriter.tryWrite(
+        WriteContext.internal(), LogAppendEntry.of(metadata, checkpointRecord));
   }
 
   private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>>
@@ -393,6 +427,52 @@ public final class BackupApiRequestHandler
     status.created().ifPresent(instant -> response.setCreatedAt(instant.toString()));
     status.lastModified().ifPresent(instant -> response.setLastUpdated(instant.toString()));
     return response;
+  }
+
+  private ActorFuture<String> reserveSnapshotForCheckpoint(final CheckpointType checkpointType) {
+    if (!checkpointType.shouldCreateBackup()) {
+      return CompletableActorFuture.completed("");
+    }
+
+    return snapshotDirector
+        .forceSnapshot()
+        .andThen(this::reserveFreshSnapshot, actor)
+        .andThen(
+            (snapshotId, error) ->
+                error == null
+                    ? CompletableActorFuture.completed(snapshotId)
+                    : reserveLatestSnapshot(error),
+            actor);
+  }
+
+  private ActorFuture<String> reserveFreshSnapshot(final @Nullable PersistedSnapshot snapshot) {
+    if (snapshot == null) {
+      return CompletableActorFuture.completedExceptionally(
+          new IllegalStateException("Snapshot was skipped, e.g. because one is already taken"));
+    }
+    final var snapshotId = snapshot.getId();
+    return snapshotStore.reserveSnapshot(snapshotId).thenApply(ignored -> snapshotId, actor);
+  }
+
+  private ActorFuture<String> reserveLatestSnapshot(final Throwable cause) {
+    LOG.debug("Failed to reserve a fresh snapshot for the checkpoint, reserving the latest", cause);
+    return snapshotStore
+        .reserveLatestSnapshot()
+        .andThen(
+            (snapshotId, error) -> {
+              if (error != null) {
+                LOG.warn("Failed to reserve a snapshot for the checkpoint", error);
+                return CompletableActorFuture.completed("");
+              }
+              return CompletableActorFuture.completed(snapshotId.orElse(""));
+            },
+            actor);
+  }
+
+  private void releaseSnapshotReservation(final String snapshotId) {
+    if (!snapshotId.isEmpty()) {
+      snapshotStore.releaseReservation(snapshotId);
+    }
   }
 
   private Either<ErrorResponseWriter, BackupApiResponseWriter> unknownRequest(
