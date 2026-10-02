@@ -350,3 +350,51 @@ func TestApplyPhysicalTenantsRejectsIDsTooLongForRDBMS(t *testing.T) {
 	es := types.C8RunSettings{DisableConnectors: true, PhysicalTenantsFlag: []string{"salesemea1"}, SecondaryStorageType: "elasticsearch"}
 	require.NoError(t, applyPhysicalTenants(base, "8.10.0", &es))
 }
+
+func TestDetectSecondaryStorageTypeUsesSpringConfigLoader(t *testing.T) {
+	dir := t.TempDir()
+	write := func(name, content string) string {
+		path := filepath.Join(dir, name)
+		require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
+		return path
+	}
+	cases := map[string]struct{ file, content, want string }{
+		"flat dotted YAML key":    {"flat.yaml", "camunda.data.secondary-storage.type: elasticsearch\n", "elasticsearch"},
+		"placeholder default":     {"placeholder.yaml", "camunda:\n  data:\n    secondary-storage:\n      type: ${C8RUN_TEST_STORAGE:elasticsearch}\n", "elasticsearch"},
+		"camelCase YAML":          {"camel.yaml", "camunda:\n  data:\n    secondaryStorage:\n      type: opensearch\n", "opensearch"},
+		"camelCase properties":    {"camel.properties", "camunda.data.secondaryStorage.type=elasticsearch\n", "elasticsearch"},
+		"kebab-case properties":   {"kebab.properties", "camunda.data.secondary-storage.type=rdbms\n", "rdbms"},
+		"no storage type present": {"empty.yaml", "camunda:\n  data: {}\n", ""},
+	}
+	for name, tc := range cases {
+		got, err := detectSecondaryStorageType(write(tc.file, tc.content))
+		require.NoError(t, err, name)
+		assert.Equal(t, tc.want, got, name)
+	}
+
+	t.Setenv("C8RUN_TEST_STORAGE", "opensearch")
+	got, err := detectSecondaryStorageType(filepath.Join(dir, "placeholder.yaml"))
+	require.NoError(t, err)
+	assert.Equal(t, "opensearch", got, "the environment overrides the placeholder default")
+}
+
+func TestFlatYAMLStorageTypeIsolatesTenantsByIndexPrefix(t *testing.T) {
+	base := t.TempDir()
+	t.Setenv(pt.FileEnv, filepath.Join(t.TempDir(), pt.FileName))
+	t.Setenv("JAVA_OPTS", "")
+	t.Setenv("JDK_JAVA_OPTIONS", "")
+	for _, key := range storageTypeEnv {
+		t.Setenv(key, "")
+	}
+	cfg := filepath.Join(base, "user.yaml")
+	require.NoError(t, os.WriteFile(cfg, []byte("camunda.data.secondary-storage.type: elasticsearch\n"), 0o644))
+
+	settings := types.C8RunSettings{Config: "user.yaml", DisableConnectors: true, PhysicalTenantsFlag: []string{"sales"}}
+	applySecondaryStorageDefaults(base, &settings)
+	require.NoError(t, applyEffectiveRuntimeSettings(&settings))
+	require.NoError(t, applyPhysicalTenants(base, "8.10.0", &settings))
+
+	content := string(settings.PhysicalTenantsConfig)
+	assert.Contains(t, content, "index-prefix: sales")
+	assert.NotContains(t, content, "rdbms")
+}

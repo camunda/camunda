@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"flag"
@@ -28,7 +27,6 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"gopkg.in/yaml.v3"
 )
 
 func getC8RunPlatform() types.C8Run {
@@ -344,66 +342,43 @@ func resolveConfigPaths(baseDir string, userConfig string) []string {
 	return paths
 }
 
+// detectSecondaryStorageType reads camunda.data.secondary-storage.type (or the camelCase
+// secondaryStorage spelling Spring also binds) through the shared Spring config loader, so YAML
+// and .properties files, flat dotted keys and ${VAR:default} placeholders all resolve the way
+// Spring resolves them. A directory is read in Spring's file precedence.
 func detectSecondaryStorageType(path string) (string, error) {
-	info, err := os.Stat(path)
-	if err != nil {
+	if _, err := os.Stat(path); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return "", nil
 		}
 		return "", err
 	}
-	if info.IsDir() {
-		return detectSecondaryStorageType(filepath.Join(path, "application.yaml"))
-	}
-
-	content, err := os.ReadFile(path)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return "", nil
+	for _, file := range springconfig.FilesIn(path) {
+		ext := strings.ToLower(filepath.Ext(file))
+		if ext != ".yaml" && ext != ".yml" && ext != ".properties" {
+			continue
 		}
-		return "", err
+		if _, err := os.Stat(file); err != nil {
+			continue
+		}
+		root, ok := springconfig.Load(file)
+		if !ok {
+			return "", fmt.Errorf("unable to parse %s", file)
+		}
+		if value := storageTypeFromMap(root); value != "" {
+			return value, nil
+		}
 	}
-
-	switch strings.ToLower(filepath.Ext(path)) {
-	case ".yaml", ".yml":
-		return parseSecondaryStorageTypeFromYAML(content)
-	case ".properties":
-		root, _ := springconfig.Load(path)
-		typ, _ := springconfig.Lookup(root, "camunda", "data", "secondary-storage", "type")
-		value, _ := typ.(string)
-		return value, nil
-	default:
-		return "", nil
-	}
+	return "", nil
 }
 
-func parseSecondaryStorageTypeFromYAML(content []byte) (string, error) {
-	if len(bytes.TrimSpace(content)) == 0 {
-		return "", nil
-	}
-
-	var root map[string]any
-	if err := yaml.Unmarshal(content, &root); err != nil {
-		return "", err
-	}
-	return extractSecondaryStorageTypeFromMap(root), nil
-}
-
-func extractSecondaryStorageTypeFromMap(root map[string]any) string {
-	camunda, ok := root["camunda"].(map[string]any)
-	if !ok {
-		return ""
-	}
-	data, ok := camunda["data"].(map[string]any)
-	if !ok {
-		return ""
-	}
-	secondary, ok := data["secondary-storage"].(map[string]any)
-	if !ok {
-		return ""
-	}
-	if typ, ok := secondary["type"].(string); ok {
-		return typ
+func storageTypeFromMap(root map[string]any) string {
+	for _, section := range []string{"secondary-storage", "secondaryStorage"} {
+		if typ, ok := springconfig.Lookup(root, "camunda", "data", section, "type"); ok {
+			if value, ok := typ.(string); ok && strings.TrimSpace(value) != "" {
+				return strings.TrimSpace(value)
+			}
+		}
 	}
 	return ""
 }
