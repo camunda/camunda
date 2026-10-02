@@ -315,6 +315,26 @@ const mockDeleteMappingRuleEndpoint = createEndpointMock({
 	method: endpoints.deleteMappingRule.method,
 });
 
+const mockSearchGlobalTaskListenersEndpoint = createEndpointMock({
+	endpoint: endpoints.searchGlobalTaskListeners.getUrl(),
+	method: endpoints.searchGlobalTaskListeners.method,
+});
+
+const mockCreateGlobalTaskListenerEndpoint = createEndpointMock({
+	endpoint: endpoints.createGlobalTaskListener.getUrl(),
+	method: endpoints.createGlobalTaskListener.method,
+});
+
+const mockUpdateGlobalTaskListenerEndpoint = createEndpointMock({
+	endpoint: endpoints.updateGlobalTaskListener.getUrl({id: ':id'}),
+	method: endpoints.updateGlobalTaskListener.method,
+});
+
+const mockDeleteGlobalTaskListenerEndpoint = createEndpointMock({
+	endpoint: endpoints.deleteGlobalTaskListener.getUrl({id: ':id'}),
+	method: endpoints.deleteGlobalTaskListener.method,
+});
+
 const mockCreateCancellationBatchOperationEndpoint = createEndpointMock({
 	endpoint: endpoints.createCancellationBatchOperation.getUrl(),
 	method: endpoints.createCancellationBatchOperation.method,
@@ -406,4 +426,8 @@ export {
 	mockCreateMappingRuleEndpoint,
 	mockUpdateMappingRuleEndpoint,
 	mockDeleteMappingRuleEndpoint,
+	mockSearchGlobalTaskListenersEndpoint,
+	mockCreateGlobalTaskListenerEndpoint,
+	mockUpdateGlobalTaskListenerEndpoint,
+	mockDeleteGlobalTaskListenerEndpoint,
 };
