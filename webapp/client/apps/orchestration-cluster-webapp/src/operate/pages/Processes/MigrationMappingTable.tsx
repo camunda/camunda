@@ -76,13 +76,24 @@ function MigrationMappingTable({
 						.map((sourceElement) => ({sourceElement, choices: getTargetChoices(sourceElement, targetElements)})),
 		[sourceElements, targetElements, mapping, isNotMappedFilterEnabled],
 	);
-	const isEmbeddedFormMigration = (sourceElementId: string, targetElementId?: string) =>
-		isTargetSelected &&
-		hasEmbeddedForm(sourceElements.elements.find(({id}) => id === sourceElementId)) &&
-		isCamundaUserTask(targetElements?.elements.find(({id}) => id === targetElementId));
-	const hasEmbeddedFormMigration = Object.entries(mapping).some(([sourceElementId, targetElementId]) =>
-		isEmbeddedFormMigration(sourceElementId, targetElementId),
-	);
+	const embeddedFormMigrationSourceIds = useMemo(() => {
+		if (!isTargetSelected || targetElements === undefined) {
+			return new Set<string>();
+		}
+		const sourceElementsById = new Map(sourceElements.elements.map((element) => [element.id, element]));
+		const targetElementsById = new Map(targetElements.elements.map((element) => [element.id, element]));
+
+		return new Set(
+			Object.entries(mapping)
+				.filter(
+					([sourceElementId, targetElementId]) =>
+						hasEmbeddedForm(sourceElementsById.get(sourceElementId)) &&
+						isCamundaUserTask(targetElementsById.get(targetElementId)),
+				)
+				.map(([sourceElementId]) => sourceElementId),
+		);
+	}, [isTargetSelected, sourceElements, targetElements, mapping]);
+	const hasEmbeddedFormMigration = embeddedFormMigrationSourceIds.size > 0;
 
 	return (
 		<MigrationMapping>
@@ -138,7 +149,7 @@ function MigrationMappingTable({
 										>
 											<TableCell>
 												<MigrationSourceElement>
-													{isEmbeddedFormMigration(sourceElement.id, targetElementId) && (
+													{embeddedFormMigrationSourceIds.has(sourceElement.id) && (
 														<Tooltip
 															label={t('operate.processes.migration.embeddedFormElement')}
 															align="right-bottom"
