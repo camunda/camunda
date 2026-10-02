@@ -20,6 +20,12 @@ internal fun VersionCatalogBuilder.catalogPlatformLibraries() {
   library("com-github-sisyphsu-dateparser", "com.github.sisyphsu", "dateparser").withoutVersion()
   library("com-google-protobuf-protobuf-java", "com.google.protobuf", "protobuf-java")
     .withoutVersion()
+  library(
+      "com-google-protobuf-protobuf-java-spring-boot-baseline",
+      "com.google.protobuf",
+      "protobuf-java",
+    )
+    .versionRef("protobuf-spring-boot-baseline")
   library("com-google-protobuf-protobuf-java-util", "com.google.protobuf", "protobuf-java-util")
     .withoutVersion()
   library("com-google-protobuf-protobuf-bom", "com.google.protobuf", "protobuf-bom")

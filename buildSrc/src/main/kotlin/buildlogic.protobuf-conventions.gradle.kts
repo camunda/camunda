@@ -17,11 +17,11 @@ plugins {
 }
 
 val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
-val protobufVersion = versionCatalog.requiredVersion("protobuf")
+val protocVersion = versionCatalog.requiredVersion("protoc")
 val grpcVersion = versionCatalog.requiredVersion("grpc")
 
 protobuf {
-  protoc { artifact = "com.google.protobuf:protoc:$protobufVersion" }
+  protoc { artifact = "com.google.protobuf:protoc:$protocVersion" }
   plugins { create("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:$grpcVersion" } }
   generateProtoTasks { all().forEach { task -> task.plugins { create("grpc") } } }
 }

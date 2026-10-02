@@ -208,6 +208,8 @@ internal fun VersionCatalogBuilder.catalogVersions(
   version("postgresql", pomVersion("version.postgresql"))
   version("prometheus", pomVersion("version.prometheus"))
   version("protobuf", pomVersion("version.protobuf"))
+  version("protobuf-spring-boot-baseline", pomVersion("version.protobuf-spring-boot-baseline"))
+  version("protoc", pomVersion("version.protoc"))
   version("reflections", pomVersion("version.reflections"))
   version("resilience4j", pomVersion("version.resilience4j"))
   version("rest-assured", pomVersion("version.rest-assured"))

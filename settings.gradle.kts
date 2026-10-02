@@ -344,6 +344,11 @@ registerProject(":camunda-search-client", "search/search-client")
 
 registerProject(":camunda-client-java", "clients/java")
 
+registerProject(
+  ":camunda-spring-boot-protobuf-compatibility",
+  "clients/spring-boot-protobuf-compatibility",
+)
+
 registerProject(":rdbms-exporter", "zeebe/exporters/rdbms-exporter")
 
 registerProject(":operate-webjar", "operate/client")
