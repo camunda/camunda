@@ -522,12 +522,15 @@ async function run() {
         unattributedReason: input.unattributedReason,
         warnings: auditWarnings,
     });
-    // Same condition render() already folded into audit.json — surfaced here
+    // Same conditions render() already folded into audit.json — surfaced here
     // too so it isn't only visible to someone who goes looking at that file.
     const attributedCount = renderPrs.filter((pr) => !(0, render_1.isUnattributed)(pr)).length;
     const emptyBodyWarning = (0, render_1.emptyCustomerBodyWarning)(attributedCount > 0, result.customerBody);
     if (emptyBodyWarning)
         core.warning(emptyBodyWarning);
+    const oversizedBodyWarning = (0, render_1.oversizedCustomerBodyWarning)(result.customerBody);
+    if (oversizedBodyWarning)
+        core.warning(oversizedBodyWarning);
     (0, node_fs_1.mkdirSync)(input.outputDir, { recursive: true }); // writeFileSync doesn't create the dir; recursive for a nested output-dir too
     (0, node_fs_1.writeFileSync)(`${input.outputDir}/CHANGELOG-${input.targetVersion}.md`, result.fullAsset);
     (0, node_fs_1.writeFileSync)(`${input.outputDir}/changelog.json`, JSON.stringify(result.changelogJson, null, 2));
@@ -1173,8 +1176,9 @@ function walkFirstParent(repoDir, baseline, target) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.SCHEMA_VERSION = void 0;
+exports.RELEASE_BODY_LIMIT = exports.SCHEMA_VERSION = void 0;
 exports.emptyCustomerBodyWarning = emptyCustomerBodyWarning;
+exports.oversizedCustomerBodyWarning = oversizedCustomerBodyWarning;
 exports.isUnattributed = isUnattributed;
 exports.render = render;
 /**
@@ -1206,6 +1210,15 @@ function emptyCustomerBodyWarning(hasAttributedWork, customerBody) {
         ? 'Customer-facing body is empty even though pull requests were attributed to this release — every one is internal-only, opted out, or otherwise excluded from the customer body. Verify this is genuinely a maintenance-only release before publishing.'
         : undefined;
 }
+/** GitHub rejects a longer release body via the API; the web editor silently truncates it. */
+exports.RELEASE_BODY_LIMIT = 125_000;
+/** Asset-only bumps buy headroom, not a guarantee — warns before cutover
+ *  publishes a body GitHub will reject. */
+function oversizedCustomerBodyWarning(customerBody) {
+    return customerBody.length > exports.RELEASE_BODY_LIMIT
+        ? `Customer-facing body is ${customerBody.length} characters, over GitHub's ${exports.RELEASE_BODY_LIMIT}-character release body limit — publishing it will fail.`
+        : undefined;
+}
 /** An opt-out PR is grouped under its own section, never its type's. */
 function groupNameFor(pr) {
     if (pr.attributionSource === 'optOut')
@@ -1224,18 +1237,35 @@ function sectionRank(name) {
 function isDependencyBump(pr) {
     return (pr.dependencies?.length ?? 0) > 0 && pr.issueNumbers.length === 0;
 }
+function packagesOf(pr) {
+    return (pr.dependencies ?? []).map((dependency) => dependency.name);
+}
 /** Issue-less bumps are full-asset only: on 8.10.0 they were ~43k of a
  *  143k-char customer body, pushing it past GitHub's 125,000-char release body
  *  limit. A bump that delivers an issue (a CVE fix) stays visible, and so does
- *  every bump of a package one breaking bump touched — else its range splits. */
+ *  every bump sharing a package with a visible bump, transitively — else that
+ *  package's range splits between the two outputs. */
 function assetOnlyDependencyBumps(prs) {
     const bumps = prs.filter(isDependencyBump);
-    const breakingPackages = new Set(bumps.filter((pr) => pr.breaking).flatMap((pr) => (pr.dependencies ?? []).map((dependency) => dependency.name)));
-    return new Set(bumps.filter((pr) => !(pr.dependencies ?? []).some((dependency) => breakingPackages.has(dependency.name))));
+    const visible = new Set(bumps.filter((pr) => pr.breaking));
+    const visiblePackages = new Set([...visible].flatMap(packagesOf));
+    let grew = visible.size > 0;
+    while (grew) {
+        grew = false;
+        for (const pr of bumps) {
+            if (visible.has(pr) || !packagesOf(pr).some((name) => visiblePackages.has(name)))
+                continue;
+            visible.add(pr);
+            for (const name of packagesOf(pr))
+                visiblePackages.add(name);
+            grew = true;
+        }
+    }
+    return new Set(bumps.filter((pr) => !visible.has(pr)));
 }
-function dependencyPointer(count, version) {
-    const noun = count === 1 ? 'dependency update is' : 'dependency updates are';
-    return `${count} ${noun} listed in the full changelog, \`CHANGELOG-${version}.md\`.`;
+function renderDependencyPointer({ packageCount, version }, others) {
+    const noun = packageCount === 1 ? 'dependency update is' : 'dependency updates are';
+    return `${packageCount} ${others ? 'other ' : ''}${noun} listed in the full changelog, \`CHANGELOG-${version}.md\`.`;
 }
 /** Where a group's PRs disagree on section, the most customer-visible one
  *  wins (ranked by SECTION_ORDER) rather than "whichever PR closed the
@@ -1266,7 +1296,7 @@ function toEntries(prs) {
     });
     return [...entries, ...collapseDependencies(prs.filter(isDependencyBump))];
 }
-function renderSectionedBody(prs) {
+function renderSectionedBody(prs, dependencyPointer) {
     const entries = toEntries(prs);
     const groups = new Map();
     for (const entry of entries) {
@@ -1281,10 +1311,14 @@ function renderSectionedBody(prs) {
     }
     const orderedNames = [...SECTION_ORDER, ...[...groups.keys()].filter((name) => !SECTION_ORDER.includes(name))];
     for (const name of orderedNames) {
-        const list = groups.get(name);
-        if (!list?.length)
+        const list = groups.get(name) ?? [];
+        const pointer = name === 'Dependency updates' && dependencyPointer ? dependencyPointer : undefined;
+        if (list.length === 0 && !pointer)
             continue;
-        lines.push(`## ${name}`, '', ...list.map((entry) => renderLine(entry)), '');
+        lines.push(`## ${name}`, '', ...list.map((entry) => renderLine(entry)));
+        if (pointer)
+            lines.push(...(list.length > 0 ? [''] : []), renderDependencyPointer(pointer, list.length > 0));
+        lines.push('');
     }
     return lines.join('\n').trim();
 }
@@ -1403,12 +1437,9 @@ function render(all, options) {
     const customerVisible = prs.filter((pr) => pr.visibility === 'customer' && pr.section !== null);
     const assetOnly = assetOnlyDependencyBumps(customerVisible);
     const customerPrs = customerVisible.filter((pr) => !assetOnly.has(pr));
-    const assetOnlyBumps = assetOnly.size;
+    const packageCount = new Set([...assetOnly].flatMap(packagesOf)).size;
     const assetPrs = all.filter((pr) => pr.section !== null);
-    const sectionedCustomerBody = renderSectionedBody(customerPrs);
-    const customerBody = assetOnlyBumps > 0
-        ? [sectionedCustomerBody, dependencyPointer(assetOnlyBumps, options.version)].filter(Boolean).join('\n\n')
-        : sectionedCustomerBody;
+    const customerBody = renderSectionedBody(customerPrs, packageCount > 0 ? { packageCount, version: options.version } : undefined);
     const fullAsset = renderSectionedBody(assetPrs);
     const prsByIssue = new Map(); // insertion-ordered: issues come out in walk order
     for (const pr of all) {
@@ -1425,8 +1456,8 @@ function render(all, options) {
     // Only recorded when the override actually let the guard pass — else a plain
     // failure would look identical to an approved exception in this file.
     const overrides = guardFailed ? [] : unattributed.map((pr) => ({ number: pr.number, reason: unattributedReason }));
-    const emptyBodyWarning = emptyCustomerBodyWarning(prs.length > 0, customerBody);
-    const warnings = [...(options.warnings ?? []), ...(emptyBodyWarning ? [emptyBodyWarning] : [])];
+    const bodyWarnings = [emptyCustomerBodyWarning(prs.length > 0, customerBody), oversizedCustomerBodyWarning(customerBody)];
+    const warnings = [...(options.warnings ?? []), ...bodyWarnings.filter((warning) => warning !== undefined)];
     return {
         customerBody,
         fullAsset,
