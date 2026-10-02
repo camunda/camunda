@@ -114,6 +114,20 @@ data:
       return response;
     }
   
+    export async function status(context) {
+      // https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/get-status/
+  
+      // This endpoint doesn't require authentication.
+      const endpoint = '/v2/status';
+      const params = {
+        tags: { name: endpoint },
+      };
+  
+      const response = http.get(context.baseURL + endpoint, params);
+      return response;
+    }
+  
+    // https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/get-topology/
     export async function topology(context) {
       // Assume the token is valid and has been checked before.
       const endpoint = '/v2/topology';
@@ -179,7 +193,24 @@ data:
         }
       }
     }
-  test.default.js: |
+  
+    /* Common `setup()` body: validate the environment, authenticate, and wait for Camunda.
+     * Returns the context passed to every scenario function. */
+    export async function setupContext() {
+      ensureEnvVars();
+  
+      const token = auth.createToken();
+      const context = {
+        token: token,
+        baseURL: __ENV.CAMUNDA_BASE_URL,
+      };
+  
+      await waitCamundaReady(context);
+      console.log("Camunda seems to be ready ✅");
+  
+      return context;
+    }
+  test.data-read.js: |
     import http from 'k6/http';
     import { check } from 'k6';
   
@@ -187,29 +218,19 @@ data:
     import * as helpers from './lib.helpers.js';
     import * as camunda from './lib.camunda.js';
   
+    /* Tests reading data from Camunda, which requires a secondary storage.
+     * This test is disabled when running with `secondary_storage=none`. */
     export const options = {
       // Give enough time for Camunda to be ready before continuing with the test.
       setupTimeout: '15m',
       scenarios: {
-        /* Poll the topology endpoint has a way to check whether the cluster is alive or not.
-         * This is very basic, but should also work almost all the time. */
-        topology: {
-          exec: 'checkTopology',
-          executor: 'constant-arrival-rate',
-          duration: '7d',
-          rate: 100,
-          timeUnit: '1s',
-          preAllocatedVUs: 10,
-          maxVUs: 100,
-        },
-  
         /* Search for process instances.
-         * Run a basic search for process insgtances at a low rate. */
-        searchInstances: {
+         * Run a basic search for process instances at a low rate. */
+        searchProcessInstances: {
           exec: 'searchProcessInstances',
           executor: 'constant-arrival-rate',
-          duration: '7d',
-          rate: 20,
+          duration: '60d', // As long as the longest benchmark we run
+          rate: 1,
           timeUnit: '1s',
           preAllocatedVUs: 10,
           maxVUs: 100,
@@ -218,48 +239,29 @@ data:
     };
   
     export async function setup() {
-      helpers.ensureEnvVars();
-  
-      const token = auth.createToken();
-      const context = {
-        token: token,
-        baseURL: __ENV.CAMUNDA_BASE_URL,
-      };
-  
-      await helpers.waitCamundaReady(context);
-      console.log("Setup complete, starting tests...");
-  
-      return context;
+      return helpers.setupContext();
     }
   
-    // https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/get-topology/
-    export async function checkTopology(context) {
-      auth.renew(context.token);
-      const response = await camunda.topology(context);
-      check(response, { 'status is 200': (r) => r.status === 200 });
-    };
-  
-    // List of process definitions we want to search for.
-    let processDefinitionIds = [];
+    // Process definition to search for, kept for the lifetime of the VU.
+    let processDefinitionId = null;
   
     // https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/search-process-instances/
     export async function searchProcessInstances(context) {
       const token = auth.renew(context.token);
   
-      // Process definitions are listed until at least one has been found, then kept for the
-      // lifetime of the VU.
-      if (processDefinitionIds.length === 0) {
+      if (processDefinitionId === null) {
         const processDefinitionsResponse = await camunda.listProcessDefinitions(context);
         if (processDefinitionsResponse.status !== 200) {
           console.error(`Unable to list process definitions, got HTTP status=${processDefinitionsResponse.status}`);
           return;
         }
-        processDefinitionIds = processDefinitionsResponse.json().items.map((pd) => pd.processDefinitionId);
-        if (processDefinitionIds.length === 0) {
+        const items = processDefinitionsResponse.json().items;
+        if (items.length === 0) {
           // Wait until we find at least one process definition.
           return;
         }
-        console.log(`Found ${processDefinitionIds.length} process definitions, will not search for them anymore.`);
+        processDefinitionId = items[0].processDefinitionId;
+        console.log(`Will searching process instances from process definition ${processDefinitionId}.`);
       }
   
       const endpoint = '/v2/process-instances/search';
@@ -275,10 +277,58 @@ data:
           {field: "startDate", order: "DESC"},
         ],
         filter: {
-          // Search only the first process definition discovered earlier..
-          processDefinitionId: processDefinitionIds[0],
+          processDefinitionId: processDefinitionId,
         },
       };
       const response = http.post(context.baseURL + endpoint, JSON.stringify(payload), params);
+      check(response, { 'status is 200': (r) => r.status === 200 });
+    };
+  test.default.js: |
+    import { check } from 'k6';
+  
+    import * as auth from './lib.auth.js';
+    import * as helpers from './lib.helpers.js';
+    import * as camunda from './lib.camunda.js';
+  
+    export const options = {
+      // Give enough time for Camunda to be ready before continuing with the test.
+      setupTimeout: '15m',
+      scenarios: {
+        /* Poll the topology endpoint has a way to check whether the cluster is alive or not.
+         * This is very basic, but should also work almost all the time. */
+        topology: {
+          exec: 'checkTopology',
+          executor: 'constant-arrival-rate',
+          duration: '60d',
+          rate: 100,
+          timeUnit: '1s',
+          preAllocatedVUs: 10,
+          maxVUs: 100,
+        },
+        status: {
+          exec: 'checkStatus',
+          executor: 'constant-arrival-rate',
+          duration: '60d',
+          rate: 10,
+          timeUnit: '1s',
+          preAllocatedVUs: 10,
+          maxVUs: 100,
+        },
+      },
+    };
+  
+    export async function setup() {
+      return helpers.setupContext();
+    }
+  
+    export async function checkStatus(context) {
+      // The /v2/status endpoint doesn't require authentication, and returns 204 if the cluster is OK.
+      const response = await camunda.status(context);
+      check(response, { 'status is 204': (r) => r.status === 204 });
+    };
+  
+    export async function checkTopology(context) {
+      auth.renew(context.token);
+      const response = await camunda.topology(context);
       check(response, { 'status is 200': (r) => r.status === 200 });
     };
