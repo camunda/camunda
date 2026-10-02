@@ -84,7 +84,7 @@ Resolution on `start` (`physicaltenants.Resolve`), first match wins:
 2. `--physical-tenants a,b` — for this run only, every tenant uses the start login.
 3. The saved tenants file (`C8RUN_TENANTS_FILE`, default `physical-tenants.yaml` next to the local secrets directory), unless `C8RUN_TENANTS_MODE=external`.
 
-IDs are validated against the engine rule (`[a-z0-9]{1,64}`, not `default`) before Java starts. Startup refuses tenants when `CAMUNDA_VERSION` is a parseable version below 8.10.
+IDs are validated against the engine rule (`[a-z0-9]{1,64}`, not `default`) before Java starts. With RDBMS secondary storage (including H2 and an unset type) IDs are limited to 8 characters (`MaxRDBMSIDLength`): table and index names are `<ID>_` plus the schema name, the longest schema name is 54 characters, and PostgreSQL truncates identifiers at 63. `tenants add` checks this before saving, and `start` checks again because the storage type can change. Startup refuses tenants when `CAMUNDA_VERSION` is a parseable version below 8.10.
 
 The generated file `configuration/physical-tenants.generated.yaml` holds only storage isolation:
 - RDBMS / bundled H2 / unset type: `camunda.physical-tenants.<id>.data.secondary-storage.rdbms.prefix: <ID>_`. The default tenant's tables keep no prefix, so existing H2 data is untouched.
@@ -105,6 +105,6 @@ Per-tenant connectors reuse `ConnectorsCmd` and append `SERVER_PORT` and `CAMUND
 
 c8run-managed tenants require `C8RUN_SECRETS_MODE=local`; in external mode startup fails with guidance, because tenants would otherwise inherit one shared external store.
 
-If a tenant is not ready, Camunda and the healthy tenants keep running, and `start` exits 1 naming the failed tenants. A tenant answering 401/403 counts as ready, because unknown tenants are rejected with 404 before security runs; that keeps the probe independent of the authentication method (Basic or OIDC). Under Basic auth, a rejected seeded login is shown as a warning. After Camunda reports healthy, each tenant's `/physical-tenants/<id>/v2/topology` is probed and the startup summary prints a per-tenant table, naming any tenant that is not ready.
+After Camunda reports healthy, each tenant is probed with `POST /physical-tenants/<id>/v2/process-definitions/search` using the tenant's login. That endpoint returns 503 until the tenant's secondary storage is ready, so a 2xx means the tenant can serve requests. Unknown tenants are rejected with 404 before security runs, so a 401/403 proves the tenant is configured; because security runs before the storage check, the tenant is then shown as "up (unverified)" with a warning (under OIDC, that no token was available; under Basic auth, that the seeded login was rejected). The startup summary prints a per-tenant table. If a tenant is not ready, Camunda and the healthy tenants keep running, and `start` exits 1 naming the failed tenants.
 
 `e2e_tests/physical_tenants_tests.sh` checks REST and gRPC (`Camunda-Physical-Tenant`) routing, cross-tenant login rejection, deployment isolation, per-tenant secrets, and per-tenant connectors. CI runs it in the c8run unix job with authorizations on and a tenant-specific user.

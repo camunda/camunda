@@ -47,13 +47,22 @@ Physical tenants are fully isolated engines inside one c8run. Each one has its o
 
 A tenant is served under `http://localhost:8080/physical-tenants/<id>/`, for example `/physical-tenants/sales/operate` or `/physical-tenants/sales/v2/`. The `default` tenant always exists and keeps the unprefixed URLs. gRPC clients select a tenant with the `Camunda-Physical-Tenant` header; the Java client and Spring starter use `camunda.client.physical-tenant-id`. The startup summary lists every tenant's URLs and readiness.
 
-Tenant IDs use lowercase letters and digits only, up to 64 characters. By default every tenant gets the same login as `c8run start` (`--username`/`--password`, `demo`/`demo` unless changed). To give a tenant its own user, run `./c8run tenants add hr --username alice`; c8run prompts for the password (or reads it with `--password-stdin`) and saves it in the tenants file, which only you can read. It never appears in the generated Camunda configuration, a command line, or your shell history.
+Tenant IDs use lowercase letters and digits only, up to 64 characters (8 with RDBMS or H2 storage, see below). By default every tenant gets the same login as `c8run start` (`--username`/`--password`, `demo`/`demo` unless changed). To give a tenant its own user, run `./c8run tenants add hr --username alice`; c8run prompts for the password (or reads it with `--password-stdin`) and saves it in the tenants file, which only you can read. It never appears in the generated Camunda configuration, a command line, or your shell history.
 
 Each tenant gets its own connectors runtime on the next free port from 8087 upwards (logs in `log/connectors-<id>.log`). Use `--no-connectors` on `tenants add` to skip it for one tenant, or `--disable-connectors` on `start` to skip all connectors. Each tenant has its own local secrets, so a tenant never resolves the default tenant's or another tenant's `camunda.secrets.*` values. Manage them with `--tenant`, for example `./c8run secrets --tenant sales set OPENAI_API_KEY`.
 
 To run with tenants for one start only, without saving them (useful in CI), use `./c8run start --physical-tenants sales,hr`. Removing a tenant keeps its data in secondary storage under the tenant's prefix, so adding the same ID again restores it, including the users created in that tenant. `./c8run tenants reset` removes all saved tenants.
 
 `./c8run tenants path` shows where tenants are saved; `C8RUN_TENANTS_FILE` selects another file. If your `--config` already declares `camunda.physical-tenants`, c8run uses it as-is and does not apply its saved tenants. Set `C8RUN_TENANTS_MODE=external` to disable the `tenants` commands entirely.
+
+### Limitations
+
+- Physical tenants require Camunda 8.10 or newer. On older versions every `tenants` command is refused; `./c8run tenants path` still shows the saved file if you need to delete it.
+- With RDBMS secondary storage, including the bundled H2, tenant IDs can be at most 8 characters, because the tenant's tables are named `<ID>_<table>` and database identifier length is limited. Elasticsearch and OpenSearch allow up to 64.
+- Removing a tenant does not delete its data; it stays in secondary storage under the tenant's prefix.
+- c8run does not manage tenants when your `--config`, `CAMUNDA_PHYSICALTENANTS_*` environment variables or `JAVA_OPTS` already declare them, or when `C8RUN_TENANTS_MODE=external` is set.
+- Each tenant's connectors runtime uses an extra local port (from 8087 upwards) and its own JVM.
+- Tenants need `C8RUN_SECRETS_MODE=local`, the default, so each tenant gets its own secret store.
 
 ## CI requirement for merging
 
