@@ -10,6 +10,21 @@ import {Page, Locator, expect} from '@playwright/test';
 import {sleep} from 'utils/sleep';
 import {waitForAssertion} from 'utils/waitForAssertion';
 
+type InstanceHeaderAction = 'suspend' | 'resume' | 'cancel';
+
+// The header renders its operations either as an "Actions" menu or as inline
+// icon buttons, and the two name them differently. Pairing both spellings here
+// is what lets a caller ask for an action without knowing which layout it got.
+const INSTANCE_HEADER_ACTIONS: ReadonlyArray<{
+  action: InstanceHeaderAction;
+  testId: string;
+  menuItem: RegExp;
+}> = [
+  {action: 'suspend', testId: 'suspend-operation', menuItem: /^suspend$/i},
+  {action: 'resume', testId: 'resume-operation', menuItem: /^resume$/i},
+  {action: 'cancel', testId: 'cancel-operation', menuItem: /^cancel$/i},
+];
+
 class OperateProcessInstancePage {
   private page: Page;
   readonly diagram: Locator;
@@ -897,7 +912,14 @@ class OperateProcessInstancePage {
    * Actions menu, so callers asserting which actions are offered have to read
    * whichever layout is present rather than assuming one.
    */
-  async instanceHeaderActionNames(): Promise<string[]> {
+  /**
+   * Which of the suspend, resume and cancel operations the header offers.
+   *
+   * Reported as actions rather than as whatever the DOM happens to call them,
+   * so a caller asserts on what an operator can do and stays unaware of the
+   * layout and of the test ids behind it.
+   */
+  async instanceHeaderActions(): Promise<InstanceHeaderAction[]> {
     const actionsMenuButton = this.instanceHeader.getByRole('button', {
       name: 'Actions',
     });
@@ -909,19 +931,14 @@ class OperateProcessInstancePage {
       await actionsMenuButton.click();
       const names = await this.page.getByRole('menuitem').allInnerTexts();
       await this.page.keyboard.press('Escape');
-      return names.map((name) => name.trim());
+      return INSTANCE_HEADER_ACTIONS.filter(({menuItem}) =>
+        names.some((name) => menuItem.test(name.trim())),
+      ).map(({action}) => action);
     }
-    const testIds = [
-      'suspend-operation',
-      'resume-operation',
-      'cancel-operation',
-      'retry-operation',
-      'enter-modification-mode',
-    ];
-    const present: string[] = [];
-    for (const testId of testIds) {
+    const present: InstanceHeaderAction[] = [];
+    for (const {action, testId} of INSTANCE_HEADER_ACTIONS) {
       if (await this.instanceHeader.getByTestId(testId).isVisible()) {
-        present.push(testId);
+        present.push(action);
       }
     }
     return present;
@@ -1195,3 +1212,4 @@ class OperateProcessInstancePage {
 }
 
 export {OperateProcessInstancePage};
+export type {InstanceHeaderAction};
