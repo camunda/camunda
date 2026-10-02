@@ -360,7 +360,9 @@ the actual shipped distribution. In ZIP mode it compares the versioned root and 
 names/versions under `lib/`; other file-content differences are intentionally ignored. When
 `dist/build/reports/dist-dependencies.json` is present or passed with `--gradle-manifest`,
 patch-only JAR differences are ignored only for Gradle-transitive artifacts. In the legacy
-tar/directory mode it compares the JAR names and versions under `lib/`.
+tar/directory mode it compares the JAR names and versions under `lib/`. Explicit artifact-inventory
+exceptions are listed in `.github/scripts/gradle/distribution-parity-exceptions.json`; update that
+file rather than hardcoding another exception in the comparator.
 
 ```bash
 # Full ZIP archive comparison

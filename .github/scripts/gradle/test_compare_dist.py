@@ -60,6 +60,44 @@ class DistributionComparisonTest(unittest.TestCase):
 
             self.assertEqual(MODULE.compare(str(gradle), str(maven)), 0)
 
+    def test_should_load_metadata_variant_exceptions_from_json(self):
+        self.assertEqual(
+            MODULE.load_maven_metadata_variants(),
+            {"okhttp.jar": "okhttp-jvm.jar", "okio.jar": "okio-jvm.jar"},
+        )
+
+    def test_should_ignore_maven_metadata_variant_when_jvm_artifact_is_present_on_both_sides(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            directory = Path(temporary_directory)
+            gradle = self.create_archive(
+                directory,
+                "gradle.zip",
+                "camunda-zeebe-1.0.0",
+                ["okhttp-jvm-4.12.0.jar"],
+            )
+            maven = self.create_archive(
+                directory,
+                "maven.zip",
+                "camunda-zeebe-1.0.0",
+                ["okhttp-4.12.0.jar", "okhttp-jvm-4.12.0.jar"],
+            )
+
+            self.assertEqual(MODULE.compare(str(gradle), str(maven)), 0)
+
+    def test_should_report_maven_metadata_variant_without_shared_jvm_artifact(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            directory = Path(temporary_directory)
+            gradle = self.create_archive(
+                directory, "gradle.zip", "camunda-zeebe-1.0.0", ["other-1.0.0.jar"]
+            )
+            maven = self.create_archive(
+                directory, "maven.zip", "camunda-zeebe-1.0.0", ["okhttp-4.12.0.jar"]
+            )
+
+            self.assertEqual(MODULE.compare(str(gradle), str(maven)), 2)
+
     def test_should_ignore_patch_only_jar_version_mismatches(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             directory = Path(temporary_directory)
