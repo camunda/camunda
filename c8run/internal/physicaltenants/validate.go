@@ -49,6 +49,34 @@ func ValidateID(id string) error {
 	return nil
 }
 
+// MaxRDBMSIDLength bounds ids on RDBMS secondary storage. The tenant's table and index names
+// are "<ID>_" + the schema name; the longest schema name is 54 characters
+// (IDX_AGENT_INSTANCE_ELEMENT_INSTANCE_AGENT_INSTANCE_KEY) and PostgreSQL truncates
+// identifiers at 63, so 54 + 1 + 8 = 63. Longer ids would collide after truncation.
+const MaxRDBMSIDLength = 8
+
+// usesRDBMSPrefix reports whether the storage type isolates tenants with an RDBMS table
+// prefix; it mirrors StoragePrefix, where rdbms and an unset type share the RDBMS branch.
+func usesRDBMSPrefix(storageType string) bool {
+	switch strings.ToLower(strings.TrimSpace(storageType)) {
+	case "elasticsearch", "opensearch", "none":
+		return false
+	}
+	return true
+}
+
+// ValidateIDForStorage applies ValidateID plus the limits of the secondary storage the
+// tenant's data lands in, so ids that would break schema creation are never accepted.
+func ValidateIDForStorage(id, storageType string) error {
+	if err := ValidateID(id); err != nil {
+		return err
+	}
+	if usesRDBMSPrefix(storageType) && len(id) > MaxRDBMSIDLength {
+		return fmt.Errorf("physical tenant ID %q is too long for RDBMS secondary storage: IDs can be at most %d characters (try %q)", id, MaxRDBMSIDLength, id[:MaxRDBMSIDLength])
+	}
+	return nil
+}
+
 // SuggestID lowercases and strips everything that is not [a-z0-9].
 func SuggestID(id string) string {
 	var b strings.Builder

@@ -453,3 +453,14 @@ func TestRenderRejectsUnknownStorageType(t *testing.T) {
 	_, err := Render([]types.PhysicalTenant{{ID: "a"}}, "${STORAGE_TYPE}")
 	assert.ErrorContains(t, err, "cannot isolate physical tenants")
 }
+
+func TestValidateIDForStorage(t *testing.T) {
+	for _, storage := range []string{"rdbms", "", "RDBMS"} {
+		assert.NoError(t, ValidateIDForStorage("abcdefgh", storage), storage)
+		assert.ErrorContains(t, ValidateIDForStorage("abcdefghi", storage), "at most 8", storage)
+	}
+	for _, storage := range []string{"elasticsearch", "opensearch", "none"} {
+		assert.NoError(t, ValidateIDForStorage(strings.Repeat("a", MaxIDLength), storage), storage)
+	}
+	assert.ErrorContains(t, ValidateIDForStorage("Bad-ID", "elasticsearch"), "lowercase")
+}

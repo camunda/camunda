@@ -77,7 +77,13 @@ func applyPhysicalTenants(baseDir, camundaVersion string, settings *types.C8RunS
 		log.Info().Msg(notice)
 	}
 	if len(res.Tenants) > 0 && camundaVersion != "" && !physicaltenants.SupportsVersion(camundaVersion) {
-		return fmt.Errorf("physical tenants require Camunda 8.%d or newer, but this c8run bundles Camunda %s. Remove them with `c8run tenants reset` or upgrade c8run", physicaltenants.MinCamundaMinor, camundaVersion)
+		return fmt.Errorf("physical tenants require Camunda 8.%d or newer, but this c8run bundles Camunda %s. Upgrade c8run, or delete the saved tenants file (`c8run tenants path` shows where) and drop --physical-tenants", physicaltenants.MinCamundaMinor, camundaVersion)
+	}
+	// Re-checked here because the storage type can change after `c8run tenants add`.
+	for _, t := range res.Tenants {
+		if err := physicaltenants.ValidateIDForStorage(t.ID, settings.SecondaryStorageType); err != nil {
+			return fmt.Errorf("%w. Remove it with `c8run tenants remove %s` or switch secondary storage", err, t.ID)
+		}
 	}
 
 	content, err := physicaltenants.RenderForPort(res.Tenants, settings.SecondaryStorageType, settings.Port)

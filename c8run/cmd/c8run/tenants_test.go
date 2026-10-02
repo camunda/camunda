@@ -37,7 +37,8 @@ func testTenantsCommand(t *testing.T, input string, terminal bool, passwords ...
 			i++
 			return []byte(pw), nil
 		},
-		port: 8080,
+		port:        8080,
+		storageType: func(string) (string, error) { return "rdbms", nil },
 	}, out, errOut
 }
 
@@ -325,4 +326,27 @@ func TestExternalTenantConfigDoesNotNeedTheSavedTenantsFile(t *testing.T) {
 	t.Setenv(pt.ModeEnv, "external")
 	settings = types.C8RunSettings{DisableConnectors: true}
 	require.NoError(t, applyPhysicalTenants(t.TempDir(), "8.10.0", &settings))
+}
+
+func TestTenantsAddRejectsIDsTooLongForRDBMS(t *testing.T) {
+	base := t.TempDir()
+	cmd, _, _ := testTenantsCommand(t, "", false, "")
+	assert.ErrorContains(t, cmd.run(base, []string{"add", "salesemea1"}), `at most 8 characters (try "saleseme")`)
+	tenants, err := pt.NewStore(os.Getenv(pt.FileEnv)).List()
+	require.NoError(t, err)
+	assert.Empty(t, tenants, "a rejected id must not be saved")
+	require.NoError(t, cmd.run(base, []string{"add", "saleseme"}))
+
+	cmd.storageType = func(string) (string, error) { return "elasticsearch", nil }
+	require.NoError(t, cmd.run(base, []string{"add", "salesemea1"}))
+}
+
+func TestApplyPhysicalTenantsRejectsIDsTooLongForRDBMS(t *testing.T) {
+	base := t.TempDir()
+	t.Setenv(pt.FileEnv, filepath.Join(t.TempDir(), pt.FileName))
+	settings := types.C8RunSettings{DisableConnectors: true, PhysicalTenantsFlag: []string{"salesemea1"}, SecondaryStorageType: "rdbms"}
+	assert.ErrorContains(t, applyPhysicalTenants(base, "8.10.0", &settings), "c8run tenants remove salesemea1")
+
+	es := types.C8RunSettings{DisableConnectors: true, PhysicalTenantsFlag: []string{"salesemea1"}, SecondaryStorageType: "elasticsearch"}
+	require.NoError(t, applyPhysicalTenants(base, "8.10.0", &es))
 }
