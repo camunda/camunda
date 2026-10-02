@@ -136,25 +136,18 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     });
     await expect(operateProcessInstancePage.instanceHeader).toBeVisible();
 
-    const activeActions =
-      await operateProcessInstancePage.instanceHeaderActionNames();
-    expect(
-      activeActions.some((action) =>
-        /^(suspend|suspend-operation)$/i.test(action.trim()),
-      ),
-    ).toBe(true);
+    expect(await operateProcessInstancePage.instanceHeaderActions()).toContain(
+      'suspend',
+    );
 
     await suspendAndExpectSuspended(request, processInstanceKey);
     await operateProcessInstancePage.reloadUntilSuspended(UI_REFRESH_TIMEOUT);
 
     const suspendedActions =
-      await operateProcessInstancePage.instanceHeaderActionNames();
-    const offers = (pattern: RegExp) =>
-      suspendedActions.some((action) => pattern.test(action.trim()));
-    expect(offers(/^(resume|resume-operation)$/i)).toBe(true);
-    expect(offers(/^(cancel|cancel-operation)$/i)).toBe(true);
-    // Per action: a joined substring match would accept a menu still offering Suspend.
-    expect(offers(/^(suspend|suspend-operation)$/i)).toBe(false);
+      await operateProcessInstancePage.instanceHeaderActions();
+    expect(suspendedActions).toContain('resume');
+    expect(suspendedActions).toContain('cancel');
+    expect(suspendedActions).not.toContain('suspend');
     await resumeAndCompleteServiceTask(request, jobType, processInstanceKey);
   });
 
