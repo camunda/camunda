@@ -144,7 +144,9 @@ runs:
     # Secrets are imported only if current workflow run is not related to a fork PR
     if: steps.is-fork.outputs.is-fork != 'true'
     id: secrets
-    uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+    # Retries hashicorp/vault-action through transient network/setup failures (INC-8449). The pin
+    # for hashicorp/vault-action itself lives in that action, not here.
+    uses: ./.github/actions/vault-action-with-retry
     with:
       url: ${{ inputs.vault-address }}
       method: approle

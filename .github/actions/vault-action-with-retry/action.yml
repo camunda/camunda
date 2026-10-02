@@ -1,0 +1,80 @@
+---
+# owner: @camunda/engineering-operations
+name: Vault Action with retry
+
+description: >
+  Runs `hashicorp/vault-action` with retries so a transient network error or similar does not fail
+  the whole job (INC-8449).
+
+inputs:
+  url:
+    description: see https://github.com/hashicorp/vault-action#url
+    required: true
+  method:
+    description: see https://github.com/hashicorp/vault-action#method
+    required: true
+  roleId:
+    description: see https://github.com/hashicorp/vault-action#roleid
+    required: true
+  secretId:
+    description: see https://github.com/hashicorp/vault-action#secretid
+    required: true
+  secrets:
+    description: see https://github.com/hashicorp/vault-action#secrets
+    required: true
+
+runs:
+  using: composite
+  # GitHub Actions has no retry primitive for a `uses:` step, so each attempt is
+  # a literal copy of the step gated on the previous attempt's outcome. Editing
+  # one attempt means editing all of them -- keep the `with:` blocks identical.
+  #
+  # A skipped step reports `outcome: skipped`, never `failure`, so gating each
+  # attempt on its immediate predecessor is enough: attempt 3 can only run if
+  # attempt 2 ran and failed, which in turn required attempt 1 to fail.
+  #
+  # The last attempt deliberately omits `continue-on-error` so an exhausted
+  # retry fails the job.
+  steps:
+    - name: Vault Action (attempt 1 of 3)
+      id: attempt-1
+      continue-on-error: true
+      uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+      with:
+        url: ${{ inputs.url }}
+        method: ${{ inputs.method }}
+        roleId: ${{ inputs.roleId }}
+        secretId: ${{ inputs.secretId }}
+        secrets: ${{ inputs.secrets }}
+
+    - name: Wait before attempt 2
+      if: steps.attempt-1.outcome == 'failure'
+      shell: bash
+      run: sleep 10
+
+    - name: Vault Action (attempt 2 of 3)
+      id: attempt-2
+      if: steps.attempt-1.outcome == 'failure'
+      continue-on-error: true
+      uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+      with:
+        url: ${{ inputs.url }}
+        method: ${{ inputs.method }}
+        roleId: ${{ inputs.roleId }}
+        secretId: ${{ inputs.secretId }}
+        secrets: ${{ inputs.secrets }}
+
+    - name: Wait before attempt 3
+      if: steps.attempt-2.outcome == 'failure'
+      shell: bash
+      run: sleep 10
+
+    - name: Vault Action (attempt 3 of 3)
+      if: steps.attempt-2.outcome == 'failure'
+      uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+      with:
+        url: ${{ inputs.url }}
+        method: ${{ inputs.method }}
+        roleId: ${{ inputs.roleId }}
+        secretId: ${{ inputs.secretId }}
+        secrets: ${{ inputs.secrets }}
