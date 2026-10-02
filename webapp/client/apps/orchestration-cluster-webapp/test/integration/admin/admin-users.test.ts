@@ -370,17 +370,19 @@ test.describe('Admin users', () => {
 		page,
 		network,
 	}) => {
-		network.use(
-			mockGetUserEndpoint({successResponse: HttpResponse.json(USERS[0]!)}),
-			mockDeleteUserEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-		);
-
-		await adminUserDetailPage.goto('jane.doe');
-		await expect(adminUserDetailPage.heading('jane.doe')).toBeVisible();
+		// Reaching the detail page via a click (push navigation) rather than a direct goto is the
+		// point of this test: it puts the list page itself in browser history before the detail
+		// page, which a direct goto would not, so Back can only land on the detail page's stale URL
+		// if deleting failed to replace that history entry.
+		network.use(mockGetUserEndpoint({successResponse: HttpResponse.json(USERS[0]!)}));
+		await adminUsersPage.goto();
+		await adminUsersPage.cell('jane.doe').click();
+		await expect(page).toHaveURL('/admin/users/jane.doe');
 
 		network.use(
 			mockQueryUsersEndpoint({successResponse: HttpResponse.json(createQueryUsersResponse({items: [USERS[1]!]}))}),
 			mockGetUserEndpoint({successResponse: HttpResponse.json({}, {status: 404})}),
+			mockDeleteUserEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
 		);
 		await adminUserDetailPage.deleteButton.click();
 		await adminUserDetailPage.alertDialogButton('Delete user').click();
