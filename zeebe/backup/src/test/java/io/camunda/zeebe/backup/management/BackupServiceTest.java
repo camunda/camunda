@@ -7,16 +7,22 @@
  */
 package io.camunda.zeebe.backup.management;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.BrokerMemberId;
 import io.camunda.cluster.PartitionId;
+import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -60,5 +66,22 @@ final class BackupServiceTest {
 
     // then
     verify(snapshotStore).releaseAllReservations();
+  }
+
+  @Test
+  void shouldReleaseSnapshotReservedForCheckpointWhenCreatingFailedBackup() {
+    // given
+    when(backupStore.markFailed(any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(BackupStatusCode.FAILED));
+    final var descriptor =
+        new BackupDescriptorImpl(
+            "reserved-snapshot", 10, 1, "8.9.0", Instant.now(), CheckpointType.MANUAL_BACKUP);
+
+    // when
+    backupService.createFailedBackup(1L, descriptor, "scaling in progress");
+    actorScheduler.workUntilDone();
+
+    // then
+    verify(snapshotStore).releaseReservation(1L, "reserved-snapshot");
   }
 }
