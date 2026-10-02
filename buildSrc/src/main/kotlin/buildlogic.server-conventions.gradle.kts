@@ -3,37 +3,40 @@
  */
 
 import org.gradle.api.tasks.testing.Test
+import org.gradle.api.tasks.testing.junitplatform.JUnitPlatformOptions
 
 plugins { id("buildlogic.parent-conventions") }
 
 val includePerformanceTests = providers.gradleProperty("includePerformanceTests").isPresent
 val includeStraceTests = providers.gradleProperty("includeStraceTests").isPresent
+val includeRandomTests = providers.gradleProperty("includeRandomTests").isPresent
 
 tasks.withType<Test>().configureEach {
-  useJUnitPlatform {
-    val includedTags = buildList {
-      if (includePerformanceTests) {
-        add("performance")
-      }
-      if (includeStraceTests) {
-        add("strace")
-      }
+  val junitOptions = options as JUnitPlatformOptions
+  val profileOverridesExcludes =
+    name == "test" && (includeRandomTests || includePerformanceTests || includeStraceTests)
+  val includedTags = buildList {
+    if (includePerformanceTests) {
+      add("performance")
     }
-    val excludedTags = buildList {
-      if (!includePerformanceTests) {
-        add("performance")
-      }
-      if (!includeStraceTests) {
-        add("strace")
-      }
+    if (includeStraceTests) {
+      add("strace")
     }
+  }
+  val excludedTags = buildList {
+    if (!includePerformanceTests && !profileOverridesExcludes) {
+      add("performance")
+    }
+    if (!includeStraceTests && !profileOverridesExcludes) {
+      add("strace")
+    }
+  }
 
-    if (includedTags.isNotEmpty()) {
-      includeTags(*includedTags.toTypedArray())
-    }
-    if (excludedTags.isNotEmpty()) {
-      excludeTags(*excludedTags.toTypedArray())
-    }
+  if (includedTags.isNotEmpty()) {
+    junitOptions.includeTags(*includedTags.toTypedArray())
+  }
+  if (excludedTags.isNotEmpty()) {
+    junitOptions.excludeTags(*excludedTags.toTypedArray())
   }
 
   if (includePerformanceTests) {
