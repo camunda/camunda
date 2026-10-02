@@ -18,6 +18,7 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc.StarterLatencyMetricKeyNames;
 import io.camunda.zeebe.read.DataReadMeter.ReadQuery;
+import io.camunda.zeebe.read.DataReadMeter.ReadQueryContext;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
@@ -30,6 +31,10 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
+import java.util.stream.IntStream;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -255,6 +260,76 @@ final class DataReadMeterTest {
     final Timer timer = timer("queued");
     assertThat(timer.count()).isEqualTo(1);
     assertThat(timer.totalTime(TimeUnit.MILLISECONDS)).isLessThan(150);
+  }
+
+  @Test
+  void shouldKeepOtherFieldsWhenOneFieldIsUpdated() {
+    // given
+    final var observed = startMeterCapturingContext();
+    final Supplier<Pair<String, Object>> businessKey = () -> Pair.of("key", 42L);
+
+    // when
+    meter.setContextProcessInstanceKey(1L);
+    meter.setContextProcessDefinitionId("definition");
+    meter.setContextProcessDefinitionKey(2L);
+    meter.setContextBusinessKeySupplier(businessKey);
+    executor.runTasks(1);
+
+    // then
+    assertThat(observed.get()).isEqualTo(new ReadQueryContext(1L, "definition", 2L, businessKey));
+  }
+
+  @Test
+  void shouldNotLoseConcurrentContextUpdates() {
+    // given
+    final var observed = startMeterCapturingContext();
+    final int updates = 2_000;
+    final Supplier<Pair<String, Object>> businessKey = () -> Pair.of("key", 42L);
+
+    // when every field is updated from its own thread
+    CompletableFuture.allOf(
+            CompletableFuture.runAsync(
+                () ->
+                    IntStream.rangeClosed(1, updates).forEach(meter::setContextProcessInstanceKey)),
+            CompletableFuture.runAsync(
+                () ->
+                    IntStream.rangeClosed(1, updates)
+                        .forEach(meter::setContextProcessDefinitionKey)),
+            CompletableFuture.runAsync(
+                () ->
+                    IntStream.rangeClosed(1, updates)
+                        .forEach(i -> meter.setContextProcessDefinitionId("definition-" + i))),
+            CompletableFuture.runAsync(
+                () ->
+                    IntStream.rangeClosed(1, updates)
+                        .forEach(
+                            i ->
+                                meter.setContextBusinessKeySupplier(
+                                    i == updates ? businessKey : () -> null))))
+        .join();
+    executor.runTasks(1);
+
+    // then no thread overwrote the last value of another field
+    assertThat(observed.get())
+        .isEqualTo(new ReadQueryContext(updates, "definition-" + updates, updates, businessKey));
+  }
+
+  /** Starts a meter whose only query records the context it is called with. */
+  private AtomicReference<ReadQueryContext> startMeterCapturingContext() {
+    final var commandStep = mock(FinalCommandStep.class);
+    when(commandStep.send()).thenAnswer(invocation -> TestCamundaFuture.completed(null));
+    final var observed = new AtomicReference<ReadQueryContext>();
+    final ReadQuery query =
+        new ReadQuery(
+            "context",
+            Duration.ofMillis(5),
+            (client, context) -> {
+              observed.set(context);
+              return commandStep;
+            });
+    meter = new DataReadMeter(meterRegistry, executor, mock(CamundaClient.class), List.of(query));
+    meter.start();
+    return observed;
   }
 
   private Timer timer(final String queryName) {
