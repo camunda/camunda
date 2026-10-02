@@ -24,6 +24,10 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.time.Duration;
@@ -36,15 +40,23 @@ final class InterPartitionCommandReceiverImpl {
   private final Logger throttledLog = new ThrottledLogger(LOG, Duration.ofSeconds(15));
   private final Decoder decoder = new Decoder();
   private final LogStreamWriter logStreamWriter;
+  private final PersistedSnapshotStore snapshotStore;
+  private final ConcurrencyControl concurrencyControl;
   private boolean diskSpaceAvailable = true;
   private long checkpointId = CheckpointState.NO_CHECKPOINT;
   private CheckpointType checkpointType = null;
+  private long inFlightCheckpointId = CheckpointState.NO_CHECKPOINT;
 
-  InterPartitionCommandReceiverImpl(final LogStreamWriter logStreamWriter) {
+  InterPartitionCommandReceiverImpl(
+      final LogStreamWriter logStreamWriter,
+      final PersistedSnapshotStore snapshotStore,
+      final ConcurrencyControl concurrencyControl) {
     this.logStreamWriter = logStreamWriter;
+    this.snapshotStore = snapshotStore;
+    this.concurrencyControl = concurrencyControl;
   }
 
-  void handleMessage(final MemberId memberId, final byte[] message) {
+  ActorFuture<Void> handleMessage(final MemberId memberId, final byte[] message) {
     LOG.trace("Received message from {}", memberId);
 
     final var decoded = decoder.decodeMessage(message);
@@ -56,13 +68,44 @@ final class InterPartitionCommandReceiverImpl {
           decoded.metadata.getIntent(),
           memberId,
           decoded.checkpointId);
-      return;
+      return CompletableActorFuture.completed();
     }
 
-    final var checkpointWritten = writeCheckpoint(decoded);
+    if (shouldTakeSnapshot(decoded)) {
+      return snapshotStore
+          .reserveLatestSnapshot()
+          .andThen(
+              (snapshotId, error) -> {
+                if (error != null) {
+                  LOG.warn(
+                      "Failed to reserve a snapshot for checkpoint {}",
+                      decoded.checkpointId,
+                      error);
+                }
+                writeCheckpointAndCommand(
+                    memberId, decoded, error == null ? snapshotId.orElse("") : "");
+                return CompletableActorFuture.completed();
+              },
+              concurrencyControl);
+    }
+
+    writeCheckpointAndCommand(memberId, decoded, "");
+    return CompletableActorFuture.completed();
+  }
+
+  private void writeCheckpointAndCommand(
+      final MemberId memberId, final DecodedMessage decoded, final String snapshotId) {
+    if (!isNewCheckpoint(decoded)) {
+      // created meanwhile, e.g. by the backup request sent to all partitions: the reservation
+      // isn't carried by any checkpoint
+      releaseSnapshotReservation(snapshotId);
+    }
+    final var checkpointWritten = writeCheckpoint(decoded, snapshotId);
+
     if (checkpointWritten.isLeft()) {
       // It's unsafe to write this record without first writing the checkpoint, bail out early.
       logCheckpointFailure(memberId, decoded, checkpointWritten);
+      releaseSnapshotReservation(snapshotId);
       return;
     }
 
@@ -93,8 +136,23 @@ final class InterPartitionCommandReceiverImpl {
         memberId);
   }
 
-  private Either<WriteFailure, Long> writeCheckpoint(final DecodedMessage decoded) {
-    if (decoded.checkpointId <= checkpointId) {
+  private boolean shouldTakeSnapshot(final DecodedMessage decoded) {
+    return isNewCheckpoint(decoded) && decoded.checkpointType.shouldCreateBackup();
+  }
+
+  private boolean isNewCheckpoint(final DecodedMessage decoded) {
+    return decoded.checkpointId > Math.max(checkpointId, inFlightCheckpointId);
+  }
+
+  private void releaseSnapshotReservation(final String snapshotId) {
+    if (!snapshotId.isEmpty()) {
+      snapshotStore.releaseReservation(snapshotId);
+    }
+  }
+
+  private Either<WriteFailure, Long> writeCheckpoint(
+      final DecodedMessage decoded, final String snapshotId) {
+    if (!isNewCheckpoint(decoded)) {
       // No need to write a new checkpoint create record
       return Either.right(checkpointId);
     }
@@ -113,9 +171,15 @@ final class InterPartitionCommandReceiverImpl {
     final var checkpointRecord =
         new CheckpointRecord()
             .setCheckpointId(decoded.checkpointId)
-            .setCheckpointType(decoded.checkpointType);
-    return logStreamWriter.tryWrite(
-        WriteContext.interPartition(), LogAppendEntry.of(metadata, checkpointRecord));
+            .setCheckpointType(decoded.checkpointType)
+            .setSnapshotId(snapshotId);
+    final var written =
+        logStreamWriter.tryWrite(
+            WriteContext.interPartition(), LogAppendEntry.of(metadata, checkpointRecord));
+    if (written.isRight()) {
+      inFlightCheckpointId = decoded.checkpointId;
+    }
+    return written;
   }
 
   private Either<WriteFailure, Long> writeCommand(final DecodedMessage decoded) {
