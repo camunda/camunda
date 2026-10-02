@@ -88,11 +88,8 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
         .supply(getLastSearchPosition(), batchSizeForBatch)
         .thenComposeAsync(
             batch -> {
-              if (batch.documents().size() < batchSizeForBatch) {
-                finished.set(true);
-              }
-
               if (batch.isEmpty()) {
+                finished.set(true);
                 return CompletableFuture.completedFuture(0);
               }
 
@@ -102,6 +99,12 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
                   .thenApply(
                       processed -> {
                         batchCompleted(processed, batch);
+                        // batch was below page size, so that implies that should
+                        // not be another batch to read, so now that we've processed
+                        // this batch we can finish
+                        if (batch.documents().size() < batchSizeForBatch) {
+                          finished.set(true);
+                        }
                         return processed;
                       })
                   .exceptionallyCompose(this::batchFailed);
