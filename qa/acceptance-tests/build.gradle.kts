@@ -90,7 +90,7 @@ dependencies {
   testImplementation(libs.org.testcontainers.testcontainers.mariadb)
   testImplementation(libs.org.testcontainers.testcontainers.oracle.free)
   testImplementation(libs.org.testcontainers.testcontainers.elasticsearch)
-  testImplementation(libs.org.elasticsearch.client.elasticsearch.rest.client)
+  testImplementation(libs.co.elastic.clients.elasticsearch.rest5.client)
   testImplementation(libs.org.apache.httpcomponents.httpcore)
   testImplementation(libs.org.apache.httpcomponents.core5.httpcore5)
   testImplementation(libs.org.testcontainers.testcontainers.jdbc)

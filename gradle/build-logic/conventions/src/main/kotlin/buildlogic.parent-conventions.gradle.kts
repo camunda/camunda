@@ -28,7 +28,7 @@ val forcedModules =
   mapOf(
       "co.elastic.clients:elasticsearch-java" to "co-elastic-clients-elasticsearch-java",
       "com.google.code.gson:gson" to "gson",
-      "org.elasticsearch.client:elasticsearch-rest-client" to "elasticsearch",
+      "co.elastic.clients:elasticsearch-rest5-client" to "elasticsearch",
       "com.google.guava:guava" to "guava",
       "com.google.api.grpc:proto-google-common-protos" to
         "com-google-api-grpc-proto-google-common-protos",

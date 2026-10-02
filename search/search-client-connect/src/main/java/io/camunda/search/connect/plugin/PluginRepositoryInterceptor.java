@@ -35,15 +35,6 @@ final class PluginRepositoryInterceptor implements CompatHttpRequestInterceptor 
     }
   }
 
-  @Override
-  public void process(
-      final org.apache.http.HttpRequest request,
-      final org.apache.http.protocol.HttpContext context) {
-    for (final var plugin : databaseHeaderPlugins) {
-      setHeader(plugin, request::setHeader);
-    }
-  }
-
   private void setHeader(
       final DatabaseCustomHeaderSupplier plugin, final HeaderConsumer headerConsumer) {
     final var header = plugin.getSearchDatabaseCustomHeader();
