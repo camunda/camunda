@@ -80,6 +80,7 @@ public final class CheckpointCreateProcessor {
       // We want to mark the backup as failed for observability
       backupManager.createFailedBackup(
           checkpointId, descriptor, "Cannot create checkpoint while scaling is in progress");
+      releaseSnapshotReserved(checkpointRecord);
     } else if (checkpointType.shouldCreateBackup()) {
       backupManager.takeBackup(checkpointId, descriptor);
     }
@@ -112,6 +113,7 @@ public final class CheckpointCreateProcessor {
       final TypedRecord<CheckpointRecord> record, final ProcessingResultBuilder resultBuilder) {
 
     metrics.ignored();
+    releaseSnapshotReserved(record.getValue());
     // Use the latest checkpoint info in the response for client information
     final var latestCheckpointRecord =
         new CheckpointRecord()
@@ -121,6 +123,13 @@ public final class CheckpointCreateProcessor {
 
     return createFollowUpAndResponse(
         record, CheckpointIntent.IGNORED, latestCheckpointRecord, resultBuilder);
+  }
+
+  private void releaseSnapshotReserved(final CheckpointRecord checkpointRecord) {
+    final var snapshotId = checkpointRecord.getSnapshotId();
+    if (!snapshotId.isEmpty()) {
+      backupManager.releaseSnapshotReservation(snapshotId);
+    }
   }
 
   private void appendCheckpointCreatedEvent(

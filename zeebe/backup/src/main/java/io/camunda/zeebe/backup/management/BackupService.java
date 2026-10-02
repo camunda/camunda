@@ -222,4 +222,9 @@ public final class BackupService extends Actor implements BackupManager {
     return new BackupIdentifierImpl(
         brokerMemberId.nodeIdx(), brokerMemberId.zone(), partitionId.number(), checkpointId);
   }
+
+  @Override
+  public void releaseSnapshotReservation(final String snapshotId) {
+    snapshotStore.releaseReservation(snapshotId);
+  }
 }
