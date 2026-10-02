@@ -18,6 +18,10 @@ public class FileBasedSnapshotReservation implements SnapshotReservation {
     this.snapshot = snapshot;
   }
 
+  FileBasedSnapshot snapshot() {
+    return snapshot;
+  }
+
   @Override
   public ActorFuture<Void> release() {
     return snapshot.removeReservation(this);

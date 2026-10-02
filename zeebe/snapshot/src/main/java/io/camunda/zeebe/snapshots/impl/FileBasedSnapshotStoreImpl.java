@@ -23,6 +23,7 @@ import io.camunda.zeebe.snapshots.SnapshotException;
 import io.camunda.zeebe.snapshots.SnapshotException.CorruptedSnapshotException;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotCopyForBootstrapException;
+import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId.SnapshotParseResult.Invalid;
@@ -34,7 +35,9 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.ConcurrentModificationException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -72,6 +75,7 @@ public final class FileBasedSnapshotStoreImpl {
 
   private final Set<PersistableSnapshot> pendingSnapshots = new HashSet<>();
   private final Set<FileBasedSnapshot> availableSnapshots = new HashSet<>();
+  private final Map<String, CheckpointReservation> reservations = new HashMap<>();
 
   public FileBasedSnapshotStoreImpl(
       final int brokerId,
@@ -240,6 +244,76 @@ public final class FileBasedSnapshotStoreImpl {
   public ActorFuture<Set<PersistedSnapshot>> getAvailableSnapshots() {
     // return a new set so that caller cannot modify availableSnapshot
     return actor.call(() -> Collections.unmodifiableSet(availableSnapshots));
+  }
+
+  public ActorFuture<Optional<String>> reserveLatestSnapshot() {
+    return actor.call(
+        () ->
+            availableSnapshots.stream()
+                .max(Comparator.comparing(FileBasedSnapshot::getSnapshotId))
+                .filter(this::reserveForCheckpoint)
+                .map(FileBasedSnapshot::getId));
+  }
+
+  public ActorFuture<Void> reserveSnapshot(final String snapshotId) {
+    return actor.call(
+        () -> {
+          final var reserved =
+              availableSnapshots.stream()
+                  .filter(snapshot -> snapshot.getId().equals(snapshotId))
+                  .findFirst()
+                  .filter(this::reserveForCheckpoint);
+          if (reserved.isEmpty()) {
+            throw new SnapshotNotFoundException(
+                "Expected to reserve snapshot %s, but it does not exist".formatted(snapshotId));
+          }
+          return unit();
+        });
+  }
+
+  public ActorFuture<Optional<PersistedSnapshot>> getReservedSnapshot(final String snapshotId) {
+    return actor.call(
+        () ->
+            Optional.ofNullable(reservations.get(snapshotId))
+                .map(reservation -> reservation.reservation().snapshot()));
+  }
+
+  public ActorFuture<Void> releaseReservation(final String snapshotId) {
+    return actor.call(
+        () -> {
+          reservations.computeIfPresent(
+              snapshotId,
+              (id, reservation) -> {
+                if (reservation.count() > 1) {
+                  return reservation.decrement();
+                }
+                reservation.release();
+                return null;
+              });
+          return unit();
+        });
+  }
+
+  public ActorFuture<Void> releaseAllReservations() {
+    return actor.call(
+        () -> {
+          reservations.values().forEach(CheckpointReservation::release);
+          reservations.clear();
+          return unit();
+        });
+  }
+
+  private boolean reserveForCheckpoint(final FileBasedSnapshot snapshot) {
+    final var reservation =
+        reservations.compute(
+            snapshot.getId(),
+            (id, existing) -> existing != null ? existing.increment() : reserve(snapshot));
+    return reservation != null;
+  }
+
+  private static @Nullable CheckpointReservation reserve(final FileBasedSnapshot snapshot) {
+    final var reservation = snapshot.reserveOnActor();
+    return reservation != null ? new CheckpointReservation(reservation, 1) : null;
   }
 
   public ActorFuture<Long> getCompactionBound() {
@@ -731,5 +805,21 @@ public final class FileBasedSnapshotStoreImpl {
 
   public Optional<PersistedSnapshot> getBootstrapSnapshot() {
     return Optional.ofNullable(bootstrapSnapshot.get());
+  }
+
+  /** Snapshot reservation reference count. */
+  private record CheckpointReservation(FileBasedSnapshotReservation reservation, int count) {
+
+    CheckpointReservation increment() {
+      return new CheckpointReservation(reservation, count + 1);
+    }
+
+    CheckpointReservation decrement() {
+      return new CheckpointReservation(reservation, count - 1);
+    }
+
+    void release() {
+      reservation.snapshot().removeReservationOnActor(reservation);
+    }
   }
 }

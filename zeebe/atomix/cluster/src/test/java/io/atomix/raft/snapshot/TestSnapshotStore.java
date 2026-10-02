@@ -22,6 +22,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
+import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -73,6 +74,32 @@ public class TestSnapshotStore implements ReceivableSnapshotStore {
             .map(Entry::getValue)
             .map(InMemorySnapshot::getCompactionBound)
             .orElse(0L));
+  }
+
+  @Override
+  public ActorFuture<Optional<String>> reserveLatestSnapshot() {
+    return CompletableActorFuture.completed(Optional.empty());
+  }
+
+  @Override
+  public ActorFuture<Void> reserveSnapshot(final String snapshotId) {
+    return CompletableActorFuture.completedExceptionally(
+        new SnapshotNotFoundException("Expected to reserve snapshot " + snapshotId));
+  }
+
+  @Override
+  public ActorFuture<Optional<PersistedSnapshot>> getReservedSnapshot(final String snapshotId) {
+    return CompletableActorFuture.completed(Optional.empty());
+  }
+
+  @Override
+  public ActorFuture<Void> releaseReservation(final String snapshotId) {
+    return CompletableActorFuture.completed();
+  }
+
+  @Override
+  public ActorFuture<Void> releaseAllReservations() {
+    return CompletableActorFuture.completed();
   }
 
   @Override
