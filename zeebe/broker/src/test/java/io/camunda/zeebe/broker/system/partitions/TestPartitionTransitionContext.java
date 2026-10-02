@@ -65,6 +65,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   private RaftPartition raftPartition;
   private Role currentRole;
+  private PersistedSnapshotStore persistedSnapshotStore;
   private long currentTerm;
   private HealthMonitor healthMonitor;
   private TypedRecordProcessorFactory typedRecordProcessorFactory;
@@ -557,7 +558,11 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   @Override
   public PersistedSnapshotStore getPersistedSnapshotStore() {
-    return null;
+    return persistedSnapshotStore;
+  }
+
+  public void setPersistedSnapshotStore(final PersistedSnapshotStore persistedSnapshotStore) {
+    this.persistedSnapshotStore = persistedSnapshotStore;
   }
 
   @Override

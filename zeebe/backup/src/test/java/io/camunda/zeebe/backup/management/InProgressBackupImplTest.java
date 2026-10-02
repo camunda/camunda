@@ -8,9 +8,11 @@
 package io.camunda.zeebe.backup.management;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -34,6 +36,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -355,9 +358,109 @@ class InProgressBackupImplTest {
             """);
   }
 
+  @Test
+  void shouldUseSnapshotReservedForCheckpoint() {
+    // given
+    final var reservedSnapshot = reservedSnapshot("reserved");
+    inProgressBackup = backupWithCheckpointSnapshot(reservedSnapshot.getId());
+    when(snapshotStore.getReservedSnapshot(reservedSnapshot.getId()))
+        .thenReturn(TestActorFuture.completedFuture(Optional.of(reservedSnapshot)));
+    mockJournalProviderWith(
+        reservedSnapshot.getIndex(),
+        List.of(segmentsDirectory.resolve("file1.log")),
+        OptionalLong.of(100L));
+
+    // when
+    final var backup = collectBackupContents();
+
+    // then
+    assertThat(backup.descriptor().snapshotId()).hasValue(reservedSnapshot.getId());
+    verify(snapshotStore, never()).getAvailableSnapshots();
+  }
+
+  @Test
+  void shouldLookUpSnapshotWhenCheckpointSnapshotIsNotReserved(
+      @Mock final SnapshotReservation snapshotReservation) {
+    // given
+    inProgressBackup = backupWithCheckpointSnapshot("not-reserved");
+    when(snapshotStore.getReservedSnapshot("not-reserved"))
+        .thenReturn(TestActorFuture.completedFuture(Optional.empty()));
+    final var validSnapshot = snapshotWith(1L, 5L);
+    onReserve(validSnapshot, snapshotReservation);
+    setAvailableSnapshots(Set.of(validSnapshot));
+    mockJournalProviderWithNonEmptySegments();
+
+    // when
+    final var backup = collectBackupContents();
+
+    // then
+    assertThat(backup.descriptor().snapshotId()).hasValue(validSnapshot.getId());
+  }
+
+  @Test
+  void shouldReleaseCheckpointReservationWhenClosed() {
+    // given
+    final var reservedSnapshot = reservedSnapshot("reserved");
+    inProgressBackup = backupWithCheckpointSnapshot(reservedSnapshot.getId());
+    when(snapshotStore.getReservedSnapshot(reservedSnapshot.getId()))
+        .thenReturn(TestActorFuture.completedFuture(Optional.of(reservedSnapshot)));
+    inProgressBackup.reserveSnapshot().join();
+
+    // when
+    inProgressBackup.close();
+
+    // then
+    verify(snapshotStore).releaseReservation(reservedSnapshot.getId());
+  }
+
+  @Test
+  void shouldReleaseCheckpointReservationWhenClosedWithoutReservingSnapshot() {
+    // given
+    inProgressBackup = backupWithCheckpointSnapshot("reserved");
+
+    // when
+    inProgressBackup.close();
+
+    // then
+    verify(snapshotStore).releaseReservation("reserved");
+  }
+
+  @Test
+  void shouldNotReleaseCheckpointReservationWhenCheckpointHasNoSnapshot() {
+    // given
+    setAvailableSnapshots(Set.of());
+    inProgressBackup.reserveSnapshot().join();
+
+    // when
+    inProgressBackup.close();
+
+    // then
+    verify(snapshotStore, never()).releaseReservation(any());
+  }
+
   private void setAvailableSnapshots(final Set<PersistedSnapshot> snapshots) {
     when(snapshotStore.getAvailableSnapshots())
         .thenReturn(TestActorFuture.completedFuture(snapshots));
+  }
+
+  private PersistedSnapshot reservedSnapshot(final String snapshotId) {
+    final var snapshot = mock(PersistedSnapshot.class);
+    lenient().when(snapshot.getId()).thenReturn(snapshotId);
+    lenient().when(snapshot.getIndex()).thenReturn(1L);
+    lenient().when(snapshot.getPath()).thenReturn(snapshotDir);
+    lenient().when(snapshot.getChecksumPath()).thenReturn(CHECKSUM_PATH);
+    return snapshot;
+  }
+
+  private InProgressBackupImpl backupWithCheckpointSnapshot(final String snapshotId) {
+    return new InProgressBackupImpl(
+        snapshotStore,
+        new BackupIdentifierImpl(1, 1, 1),
+        new BackupDescriptorImpl(
+            snapshotId, 10L, 1, "8.1.0", Instant.now(), CheckpointType.MANUAL_BACKUP),
+        concurrencyControl,
+        segmentsDirectory,
+        metadataProvider);
   }
 
   private Backup collectBackupContents() {
