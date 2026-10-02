@@ -7,7 +7,7 @@
  */
 
 import {useTranslation} from 'react-i18next';
-import {DataTable, PageLayout, Separator, type DataTableColumn} from '@camunda/design-system';
+import {DataTable, Heading, PageLayout, Separator, type DataTableColumn} from '@camunda/design-system';
 import {cn} from '#/shared/cn';
 import {useRunningInstancesCount} from '../useRunningInstancesCount';
 import {NoInstancesEmptyState} from './NoInstancesEmptyState';
@@ -29,7 +29,9 @@ const Dashboard: React.FC = () => {
 	return (
 		<PageLayout id="main-content" tabIndex={-1} padding="none" width="full" className="h-full">
 			<div className="flex h-full min-h-0 flex-1 flex-col gap-4 overflow-hidden px-6 py-4">
-				<h1 className="sr-only">{t('operate.dashboard.title')}</h1>
+				<Heading as="h1" className="sr-only">
+					{t('operate.dashboard.title')}
+				</Heading>
 				<div data-testid="metric-panel">
 					<MetricPanel count={count} />
 				</div>
