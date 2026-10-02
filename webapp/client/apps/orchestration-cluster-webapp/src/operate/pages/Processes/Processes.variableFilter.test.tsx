@@ -137,6 +137,25 @@ describe('Processes variable filter', () => {
 		expect(screen.router.state.location.search).toEqual({});
 	});
 
+	it('should apply the inline condition when Enter submits the filters form', async ({worker}) => {
+		worker.use(
+			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+			...mockInstancesMatching({variables: [{name: 'status', value: {$eq: '"open"'}}]}),
+		);
+		const screen = await renderProcessesPage();
+
+		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Variables'}));
+		await userEvent.fill(screen.getByRole('textbox', {name: 'Name'}), 'status');
+		await userEvent.type(screen.getByRole('textbox', {name: 'Value'}), '"open"{Enter}');
+
+		await expect.element(screen.getByRole('link', {name: 'View instance 1'})).toBeVisible();
+		expect(getStoredConditions()).toEqual([{name: 'status', operator: 'equals', value: '"open"'}]);
+		await expect.element(screen.getByRole('textbox', {name: 'Name'})).toHaveValue('status');
+		await expect.element(screen.getByRole('textbox', {name: 'Value'})).toHaveValue('"open"');
+		expect(screen.router.state.location.search).toEqual({});
+	});
+
 	it.for([
 		{field: 'Name', error: 'Name has to be filled'},
 		{field: 'Value', error: 'Value has to be filled'},
