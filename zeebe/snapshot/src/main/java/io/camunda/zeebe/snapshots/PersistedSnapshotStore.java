@@ -45,6 +45,34 @@ public interface PersistedSnapshotStore extends CloseableSilently, BootstrapSnap
   ActorFuture<Long> getCompactionBound();
 
   /**
+   * Reserves the latest snapshot in one step, so it cannot be deleted between selecting and
+   * reserving it.
+   *
+   * @return future completed with the id of the reserved snapshot, or empty if there is none
+   */
+  ActorFuture<Optional<String>> reserveLatestSnapshot();
+
+  /**
+   * Reserves the snapshot with the given id.
+   *
+   * @return future completed once the snapshot is reserved, or completed exceptionally with a
+   *     {@link SnapshotException.SnapshotNotFoundException} if it does not exist (anymore)
+   */
+  ActorFuture<Void> reserveSnapshot(String snapshotId);
+
+  /**
+   * @return future completed with the snapshot with the given id if it is currently reserved via
+   *     this interface, empty otherwise
+   */
+  ActorFuture<Optional<PersistedSnapshot>> getReservedSnapshot(String snapshotId);
+
+  /** Releases one reservation of the snapshot with the given id; no-op if there is none. */
+  ActorFuture<Void> releaseReservation(String snapshotId);
+
+  /** Releases every reservation made via this interface. */
+  ActorFuture<Void> releaseAllReservations();
+
+  /**
    * Purges all ongoing pending/transient/volatile snapshots.
    *
    * @return future which will be completed when all pending snapshots are deleted

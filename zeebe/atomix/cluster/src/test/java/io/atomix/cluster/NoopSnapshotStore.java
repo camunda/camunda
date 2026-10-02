@@ -22,6 +22,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
+import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Set;
@@ -47,6 +48,32 @@ public class NoopSnapshotStore implements ReceivableSnapshotStore {
   @Override
   public ActorFuture<Long> getCompactionBound() {
     return null;
+  }
+
+  @Override
+  public ActorFuture<Optional<String>> reserveLatestSnapshot() {
+    return CompletableActorFuture.completed(Optional.empty());
+  }
+
+  @Override
+  public ActorFuture<Void> reserveSnapshot(final String snapshotId) {
+    return CompletableActorFuture.completedExceptionally(
+        new SnapshotNotFoundException("Expected to reserve snapshot " + snapshotId));
+  }
+
+  @Override
+  public ActorFuture<Optional<PersistedSnapshot>> getReservedSnapshot(final String snapshotId) {
+    return CompletableActorFuture.completed(Optional.empty());
+  }
+
+  @Override
+  public ActorFuture<Void> releaseReservation(final String snapshotId) {
+    return CompletableActorFuture.completed();
+  }
+
+  @Override
+  public ActorFuture<Void> releaseAllReservations() {
+    return CompletableActorFuture.completed();
   }
 
   @Override
