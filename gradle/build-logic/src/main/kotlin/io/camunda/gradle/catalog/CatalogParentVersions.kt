@@ -52,6 +52,10 @@ internal fun VersionCatalogBuilder.catalogParentVersions(
   )
   version("parent-revapi", pomVersion("version.revapi"))
   version("parent-servlet-api", pomVersion("version.servlet-api"))
+  version(
+    "parent-spring-boot-oldest-managing-protobuf",
+    pomVersion("version.spring-boot-oldest-managing-protobuf"),
+  )
   version("parent-yarn", pomVersion("version.yarn"))
 
   version("optimize-zeebe-docker", optimizePomVersion("zeebe.docker.version"))
