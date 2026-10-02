@@ -8,6 +8,8 @@
 
 import type {Locator, Page} from '@playwright/test';
 
+import {setCheckbox} from './toggle';
+
 // Any list of entities (reports, dashboards, collections, users, data sources, alerts).
 export class EntityList {
   readonly searchBox: Locator;
@@ -36,26 +38,26 @@ export class EntityList {
   }
 
   async rowAction(text: string, action: string): Promise<void> {
-    await this.row(text).getByRole('button', {name: 'Row actions'}).click();
+    await this.row(text).getByRole('button', {name: 'Options'}).click();
     await this.page.getByRole('menuitem', {name: action, exact: true}).click();
   }
 
-  // Rows with a single action render it as an inline button instead of an overflow menu.
+  // Rows render up to two actions as inline buttons instead of an overflow menu.
   async inlineRowAction(text: string, action: string): Promise<void> {
     await this.row(text).getByRole('button', {name: action, exact: true}).click();
   }
 
   async select(text: string): Promise<void> {
-    await this.row(text).getByRole('checkbox', {name: 'Select row'}).check();
+    await setCheckbox(this.row(text).getByRole('checkbox', {name: 'Select row'}), true);
   }
 
   async selectAll(): Promise<void> {
-    await this.root.getByRole('checkbox', {name: 'Select all rows'}).check();
+    await setCheckbox(this.root.getByRole('checkbox', {name: 'Select all rows'}), true);
   }
 
   async bulkAction(action: string): Promise<void> {
     await this.root
-      .locator('.entityToolbarAction')
+      .getByRole('region', {name: 'data table toolbar'})
       .getByRole('button', {name: action, exact: true})
       .click();
   }

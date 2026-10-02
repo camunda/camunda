@@ -110,7 +110,7 @@ export class CollectionPage {
   }
 
   async changeUserRole(username: string, role: 'Viewer' | 'Editor' | 'Manager'): Promise<void> {
-    await this.list.rowAction(username, 'Edit');
+    await this.list.inlineRowAction(username, 'Edit');
     const dialog = this.page.getByRole('dialog');
     await setCheckbox(dialog.getByRole('radio', {name: new RegExp(`^${role}`)}), true);
     await dialog.getByRole('button', {name: 'Apply'}).click();
@@ -119,7 +119,7 @@ export class CollectionPage {
   }
 
   async removeUser(username: string): Promise<void> {
-    await this.list.rowAction(username, 'Remove');
+    await this.list.inlineRowAction(username, 'Remove');
     await confirmDialog(this.page, /Remove/, /Remove/);
     await expect(this.list.row(username)).toBeHidden();
   }
