@@ -9,7 +9,9 @@
 import {problemDetailResponseSchema} from '@camunda/camunda-api-zod-schemas/8.11';
 import {requestErrorSchema} from '#/shared/http/request';
 
-
+// A 409 is also returned when the claim name/value pair already exists (see
+// `MAPPING_RULE_SAME_CLAIM_ALREADY_EXISTS_ERROR_MESSAGE` in the engine). Only the `detail` message
+// distinguishes the two conflicts, since both share the same status and title.
 const DUPLICATE_ID_DETAIL_PATTERN = /with this id already exists/i;
 
 async function isDuplicateMappingRuleIdError(error: unknown): Promise<boolean> {
