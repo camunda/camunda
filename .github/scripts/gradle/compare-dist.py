@@ -10,7 +10,8 @@ The original mode compares JAR names in a Gradle distTar with an exploded Maven
 When both arguments are ZIP archives, the tool compares the versioned distribution
 root and JAR names/versions under `lib/`; other file contents are intentionally ignored.
 If a Gradle dependency manifest is available, patch-only version differences are ignored
-only for artifacts marked transitive:
+only for artifacts marked transitive. Narrow Maven-only metadata-variant exceptions are listed
+in the adjacent `distribution-parity-exceptions.json` file:
 
     python3 compare-dist.py <gradle-zip> <maven-zip> \\
         --gradle-manifest dist/build/reports/dist-dependencies.json
@@ -30,10 +31,9 @@ def strip_version(name: str) -> str:
     return re.sub(r"-[\d][\w.\-]*\.jar$", ".jar", name)
 
 
-KOTLIN_MULTIPLATFORM_METADATA_VARIANTS = {
-    "okhttp.jar": "okhttp-jvm.jar",
-    "okio.jar": "okio-jvm.jar",
-}
+DISTRIBUTION_PARITY_EXCEPTIONS_FILE = Path(__file__).with_name(
+    "distribution-parity-exceptions.json"
+)
 
 
 PATCH_VERSION_RE = re.compile(r"-(\d+)\.(\d+)\.(\d+)\.jar$")
@@ -100,11 +100,22 @@ def jars_from_archive(files: Iterable[str]) -> dict[str, list[str]]:
     return result
 
 
+def load_maven_metadata_variants() -> dict[str, str]:
+    with DISTRIBUTION_PARITY_EXCEPTIONS_FILE.open() as exceptions_file:
+        exceptions = json.load(exceptions_file)
+    return {
+        entry["mavenArtifact"]: entry["gradleArtifact"]
+        for entry in exceptions["mavenOnlyMetadataVariants"]
+    }
+
+
 def ignore_maven_metadata_variants(
-    gradle: dict[str, list[str]], maven: dict[str, list[str]]
+    gradle: dict[str, list[str]],
+    maven: dict[str, list[str]],
+    metadata_variants: dict[str, str],
 ) -> list[str]:
     ignored = []
-    for metadata_variant, jvm_variant in KOTLIN_MULTIPLATFORM_METADATA_VARIANTS.items():
+    for metadata_variant, jvm_variant in metadata_variants.items():
         if (
             metadata_variant in maven
             and metadata_variant not in gradle
@@ -145,7 +156,9 @@ def compare_inventories(
     gradle_manifest_bases: set[str] | None = None,
     gradle_direct_bases: set[str] | None = None,
 ) -> int:
-    ignored_metadata_variants = ignore_maven_metadata_variants(gradle, maven)
+    ignored_metadata_variants = ignore_maven_metadata_variants(
+        gradle, maven, load_maven_metadata_variants()
+    )
 
     all_bases = sorted(set(gradle) | set(maven))
     version_diffs: list[tuple[str, list[str], list[str]]] = []
