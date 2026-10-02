@@ -261,19 +261,19 @@ describe('<OperationsLog />', () => {
 				toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'],
 				shouldAdvanceTime: true,
 			});
+			const shownToastIds = new Set<string>();
+			const stopRecording = autorun(() => {
+				notificationsStore.notifications
+					.filter(({title}) => title === "Couldn't fetch audit logs")
+					.forEach(({id}) => shownToastIds.add(id));
+			});
+			const fetchFailedToasts = () => [...shownToastIds];
 			try {
 				worker.use(
 					mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
 					mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
 					mockQueryAuditLogsEndpoint({successResponse: AUDIT_LOG_ERROR}),
 				);
-				const shownToastIds = new Set<string>();
-				const stopRecording = autorun(() => {
-					notificationsStore.notifications
-						.filter(({title}) => title === "Couldn't fetch audit logs")
-						.forEach(({id}) => shownToastIds.add(id));
-				});
-				const fetchFailedToasts = () => [...shownToastIds];
 
 				await renderPage();
 				await expect.poll(fetchFailedToasts).toHaveLength(1);
@@ -287,8 +287,8 @@ describe('<OperationsLog />', () => {
 				await vi.advanceTimersByTimeAsync(20_000);
 
 				expect(fetchFailedToasts()).toHaveLength(2);
-				stopRecording();
 			} finally {
+				stopRecording();
 				vi.useRealTimers();
 			}
 		});
