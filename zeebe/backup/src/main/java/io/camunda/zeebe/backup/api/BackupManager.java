@@ -91,4 +91,10 @@ public interface BackupManager {
    * @return future which will be completed after the CLEAR_STATE command is written to the log
    */
   ActorFuture<Void> requestStateClear();
+
+  /**
+   * Releases the reservation of a snapshot that was reserved for a checkpoint which does not take a
+   * backup, e.g. because the checkpoint was ignored.
+   */
+  void releaseSnapshotReservation(String snapshotId);
 }

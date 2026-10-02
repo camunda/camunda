@@ -241,4 +241,9 @@ public final class BackupService extends Actor implements BackupManager {
   private BackupIdentifierImpl getBackupId(final long checkpointId) {
     return new BackupIdentifierImpl(nodeId, partitionId, checkpointId);
   }
+
+  @Override
+  public void releaseSnapshotReservation(final String snapshotId) {
+    snapshotStore.releaseReservation(snapshotId);
+  }
 }
