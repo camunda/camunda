@@ -25,7 +25,6 @@ import {
 } from '@camunda/design-system';
 import {languageItems} from '#/shared/i18n';
 import {themeStore} from '#/shared/theme/theme';
-import {useCallback} from 'react';
 
 const themeOptions = [
 	['light', 'tasklist.headerThemeLight'],
@@ -46,19 +45,6 @@ const AccountMenu: React.FC<Props> = observer(
 		const {t, i18n} = useTranslation();
 		const {selectedTheme, changeTheme} = themeStore;
 		const selectedLanguage = i18n.language.split('-')[0];
-		const handleLegalTermsClick = useCallback(() => {
-			window.open(
-				'https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-saas-trial/',
-				'_blank',
-				'noopener,noreferrer',
-			);
-		}, []);
-		const handlePrivacyPolicyClick = useCallback(() => {
-			window.open('https://camunda.com/legal/privacy/', '_blank', 'noopener,noreferrer');
-		}, []);
-		const handleImprintClick = useCallback(() => {
-			window.open('https://camunda.com/legal/imprint/', '_blank', 'noopener,noreferrer');
-		}, []);
 
 		return (
 			<DropdownMenu>
@@ -126,9 +112,25 @@ const AccountMenu: React.FC<Props> = observer(
 					{onOpenCookiePreferences === undefined ? null : (
 						<DropdownMenuItem onClick={onOpenCookiePreferences}>{t('headerCookiePreferencesLabel')}</DropdownMenuItem>
 					)}
-					<DropdownMenuItem onClick={handleLegalTermsClick}>{t('headerTermsOfUseLabel')}</DropdownMenuItem>
-					<DropdownMenuItem onClick={handlePrivacyPolicyClick}>{t('headerPrivacyPolicyLabel')}</DropdownMenuItem>
-					<DropdownMenuItem onClick={handleImprintClick}>{t('headerImprintLabel')}</DropdownMenuItem>
+					<DropdownMenuItem asChild>
+						<a
+							href="https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-saas-trial/"
+							target="_blank"
+							rel="noopener noreferrer"
+						>
+							{t('headerTermsOfUseLabel')}
+						</a>
+					</DropdownMenuItem>
+					<DropdownMenuItem asChild>
+						<a href="https://camunda.com/legal/privacy/" target="_blank" rel="noopener noreferrer">
+							{t('headerPrivacyPolicyLabel')}
+						</a>
+					</DropdownMenuItem>
+					<DropdownMenuItem asChild>
+						<a href="https://camunda.com/legal/imprint/" target="_blank" rel="noopener noreferrer">
+							{t('headerImprintLabel')}
+						</a>
+					</DropdownMenuItem>
 
 					{canLogout ? (
 						<>
