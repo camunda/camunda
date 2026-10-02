@@ -1,0 +1,2823 @@
+{
+  "orderReference": "ORD-2026-0000042",
+  "channel": "web",
+  "requestedAt": "2026-08-28T09:15:00Z",
+  "priority": "standard",
+  "customer": {
+    "profile": {
+      "contact": {
+        "address": {
+          "geo": {
+            "region": {
+              "district": {
+                "block": {
+                  "unit": {
+                    "code": "UNIT-0042-B",
+                    "floor": 3,
+                    "verified": true,
+                    "notes": "delivery to the rear entrance"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "items": [
+    {
+      "sku": "SKU-00000",
+      "name": "alpha-delta-component",
+      "quantity": 1,
+      "unitPrice": 10.5,
+      "attributes": {
+        "colour": "bravo",
+        "weightGrams": 100,
+        "packaging": {
+          "kind": "foxtrot",
+          "recyclable": true,
+          "dimensionsMm": [
+            10,
+            20,
+            30
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00001",
+      "name": "bravo-echo-component",
+      "quantity": 2,
+      "unitPrice": 11.75,
+      "attributes": {
+        "colour": "charlie",
+        "weightGrams": 101,
+        "packaging": {
+          "kind": "golf",
+          "recyclable": false,
+          "dimensionsMm": [
+            11,
+            21,
+            31
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00002",
+      "name": "charlie-foxtrot-component",
+      "quantity": 3,
+      "unitPrice": 13.0,
+      "attributes": {
+        "colour": "delta",
+        "weightGrams": 102,
+        "packaging": {
+          "kind": "hotel",
+          "recyclable": true,
+          "dimensionsMm": [
+            12,
+            22,
+            32
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00003",
+      "name": "delta-golf-component",
+      "quantity": 4,
+      "unitPrice": 14.25,
+      "attributes": {
+        "colour": "echo",
+        "weightGrams": 103,
+        "packaging": {
+          "kind": "india",
+          "recyclable": false,
+          "dimensionsMm": [
+            13,
+            23,
+            33
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00004",
+      "name": "echo-hotel-component",
+      "quantity": 5,
+      "unitPrice": 15.5,
+      "attributes": {
+        "colour": "foxtrot",
+        "weightGrams": 104,
+        "packaging": {
+          "kind": "juliet",
+          "recyclable": true,
+          "dimensionsMm": [
+            14,
+            24,
+            34
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00005",
+      "name": "foxtrot-india-component",
+      "quantity": 6,
+      "unitPrice": 16.75,
+      "attributes": {
+        "colour": "golf",
+        "weightGrams": 105,
+        "packaging": {
+          "kind": "alpha",
+          "recyclable": false,
+          "dimensionsMm": [
+            15,
+            25,
+            35
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00006",
+      "name": "golf-juliet-component",
+      "quantity": 7,
+      "unitPrice": 18.0,
+      "attributes": {
+        "colour": "hotel",
+        "weightGrams": 106,
+        "packaging": {
+          "kind": "bravo",
+          "recyclable": true,
+          "dimensionsMm": [
+            16,
+            26,
+            36
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00007",
+      "name": "hotel-alpha-component",
+      "quantity": 1,
+      "unitPrice": 19.25,
+      "attributes": {
+        "colour": "india",
+        "weightGrams": 107,
+        "packaging": {
+          "kind": "charlie",
+          "recyclable": false,
+          "dimensionsMm": [
+            17,
+            27,
+            37
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00008",
+      "name": "india-bravo-component",
+      "quantity": 2,
+      "unitPrice": 20.5,
+      "attributes": {
+        "colour": "juliet",
+        "weightGrams": 108,
+        "packaging": {
+          "kind": "delta",
+          "recyclable": true,
+          "dimensionsMm": [
+            18,
+            28,
+            38
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00009",
+      "name": "juliet-charlie-component",
+      "quantity": 3,
+      "unitPrice": 21.75,
+      "attributes": {
+        "colour": "alpha",
+        "weightGrams": 109,
+        "packaging": {
+          "kind": "echo",
+          "recyclable": false,
+          "dimensionsMm": [
+            19,
+            29,
+            39
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00010",
+      "name": "alpha-delta-component",
+      "quantity": 4,
+      "unitPrice": 23.0,
+      "attributes": {
+        "colour": "bravo",
+        "weightGrams": 110,
+        "packaging": {
+          "kind": "foxtrot",
+          "recyclable": true,
+          "dimensionsMm": [
+            20,
+            30,
+            40
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00011",
+      "name": "bravo-echo-component",
+      "quantity": 5,
+      "unitPrice": 24.25,
+      "attributes": {
+        "colour": "charlie",
+        "weightGrams": 111,
+        "packaging": {
+          "kind": "golf",
+          "recyclable": false,
+          "dimensionsMm": [
+            21,
+            31,
+            41
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00012",
+      "name": "charlie-foxtrot-component",
+      "quantity": 6,
+      "unitPrice": 25.5,
+      "attributes": {
+        "colour": "delta",
+        "weightGrams": 112,
+        "packaging": {
+          "kind": "hotel",
+          "recyclable": true,
+          "dimensionsMm": [
+            22,
+            32,
+            42
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00013",
+      "name": "delta-golf-component",
+      "quantity": 7,
+      "unitPrice": 26.75,
+      "attributes": {
+        "colour": "echo",
+        "weightGrams": 113,
+        "packaging": {
+          "kind": "india",
+          "recyclable": false,
+          "dimensionsMm": [
+            23,
+            33,
+            43
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00014",
+      "name": "echo-hotel-component",
+      "quantity": 1,
+      "unitPrice": 28.0,
+      "attributes": {
+        "colour": "foxtrot",
+        "weightGrams": 114,
+        "packaging": {
+          "kind": "juliet",
+          "recyclable": true,
+          "dimensionsMm": [
+            24,
+            34,
+            44
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00015",
+      "name": "foxtrot-india-component",
+      "quantity": 2,
+      "unitPrice": 29.25,
+      "attributes": {
+        "colour": "golf",
+        "weightGrams": 115,
+        "packaging": {
+          "kind": "alpha",
+          "recyclable": false,
+          "dimensionsMm": [
+            25,
+            35,
+            45
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00016",
+      "name": "golf-juliet-component",
+      "quantity": 3,
+      "unitPrice": 30.5,
+      "attributes": {
+        "colour": "hotel",
+        "weightGrams": 116,
+        "packaging": {
+          "kind": "bravo",
+          "recyclable": true,
+          "dimensionsMm": [
+            26,
+            36,
+            46
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00017",
+      "name": "hotel-alpha-component",
+      "quantity": 4,
+      "unitPrice": 31.75,
+      "attributes": {
+        "colour": "india",
+        "weightGrams": 117,
+        "packaging": {
+          "kind": "charlie",
+          "recyclable": false,
+          "dimensionsMm": [
+            27,
+            37,
+            47
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00018",
+      "name": "india-bravo-component",
+      "quantity": 5,
+      "unitPrice": 33.0,
+      "attributes": {
+        "colour": "juliet",
+        "weightGrams": 118,
+        "packaging": {
+          "kind": "delta",
+          "recyclable": true,
+          "dimensionsMm": [
+            28,
+            38,
+            48
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00019",
+      "name": "juliet-charlie-component",
+      "quantity": 6,
+      "unitPrice": 34.25,
+      "attributes": {
+        "colour": "alpha",
+        "weightGrams": 119,
+        "packaging": {
+          "kind": "echo",
+          "recyclable": false,
+          "dimensionsMm": [
+            29,
+            39,
+            49
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00020",
+      "name": "alpha-delta-component",
+      "quantity": 7,
+      "unitPrice": 35.5,
+      "attributes": {
+        "colour": "bravo",
+        "weightGrams": 120,
+        "packaging": {
+          "kind": "foxtrot",
+          "recyclable": true,
+          "dimensionsMm": [
+            30,
+            40,
+            30
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00021",
+      "name": "bravo-echo-component",
+      "quantity": 1,
+      "unitPrice": 36.75,
+      "attributes": {
+        "colour": "charlie",
+        "weightGrams": 121,
+        "packaging": {
+          "kind": "golf",
+          "recyclable": false,
+          "dimensionsMm": [
+            31,
+            41,
+            31
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00022",
+      "name": "charlie-foxtrot-component",
+      "quantity": 2,
+      "unitPrice": 38.0,
+      "attributes": {
+        "colour": "delta",
+        "weightGrams": 122,
+        "packaging": {
+          "kind": "hotel",
+          "recyclable": true,
+          "dimensionsMm": [
+            32,
+            42,
+            32
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00023",
+      "name": "delta-golf-component",
+      "quantity": 3,
+      "unitPrice": 39.25,
+      "attributes": {
+        "colour": "echo",
+        "weightGrams": 123,
+        "packaging": {
+          "kind": "india",
+          "recyclable": false,
+          "dimensionsMm": [
+            33,
+            43,
+            33
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00024",
+      "name": "echo-hotel-component",
+      "quantity": 4,
+      "unitPrice": 40.5,
+      "attributes": {
+        "colour": "foxtrot",
+        "weightGrams": 124,
+        "packaging": {
+          "kind": "juliet",
+          "recyclable": true,
+          "dimensionsMm": [
+            34,
+            44,
+            34
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00025",
+      "name": "foxtrot-india-component",
+      "quantity": 5,
+      "unitPrice": 41.75,
+      "attributes": {
+        "colour": "golf",
+        "weightGrams": 125,
+        "packaging": {
+          "kind": "alpha",
+          "recyclable": false,
+          "dimensionsMm": [
+            35,
+            45,
+            35
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00026",
+      "name": "golf-juliet-component",
+      "quantity": 6,
+      "unitPrice": 43.0,
+      "attributes": {
+        "colour": "hotel",
+        "weightGrams": 126,
+        "packaging": {
+          "kind": "bravo",
+          "recyclable": true,
+          "dimensionsMm": [
+            36,
+            46,
+            36
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00027",
+      "name": "hotel-alpha-component",
+      "quantity": 7,
+      "unitPrice": 44.25,
+      "attributes": {
+        "colour": "india",
+        "weightGrams": 127,
+        "packaging": {
+          "kind": "charlie",
+          "recyclable": false,
+          "dimensionsMm": [
+            37,
+            47,
+            37
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00028",
+      "name": "india-bravo-component",
+      "quantity": 1,
+      "unitPrice": 45.5,
+      "attributes": {
+        "colour": "juliet",
+        "weightGrams": 128,
+        "packaging": {
+          "kind": "delta",
+          "recyclable": true,
+          "dimensionsMm": [
+            38,
+            48,
+            38
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00029",
+      "name": "juliet-charlie-component",
+      "quantity": 2,
+      "unitPrice": 46.75,
+      "attributes": {
+        "colour": "alpha",
+        "weightGrams": 129,
+        "packaging": {
+          "kind": "echo",
+          "recyclable": false,
+          "dimensionsMm": [
+            39,
+            49,
+            39
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00030",
+      "name": "alpha-delta-component",
+      "quantity": 3,
+      "unitPrice": 48.0,
+      "attributes": {
+        "colour": "bravo",
+        "weightGrams": 130,
+        "packaging": {
+          "kind": "foxtrot",
+          "recyclable": true,
+          "dimensionsMm": [
+            40,
+            20,
+            40
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00031",
+      "name": "bravo-echo-component",
+      "quantity": 4,
+      "unitPrice": 49.25,
+      "attributes": {
+        "colour": "charlie",
+        "weightGrams": 131,
+        "packaging": {
+          "kind": "golf",
+          "recyclable": false,
+          "dimensionsMm": [
+            41,
+            21,
+            41
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00032",
+      "name": "charlie-foxtrot-component",
+      "quantity": 5,
+      "unitPrice": 50.5,
+      "attributes": {
+        "colour": "delta",
+        "weightGrams": 132,
+        "packaging": {
+          "kind": "hotel",
+          "recyclable": true,
+          "dimensionsMm": [
+            42,
+            22,
+            42
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00033",
+      "name": "delta-golf-component",
+      "quantity": 6,
+      "unitPrice": 51.75,
+      "attributes": {
+        "colour": "echo",
+        "weightGrams": 133,
+        "packaging": {
+          "kind": "india",
+          "recyclable": false,
+          "dimensionsMm": [
+            43,
+            23,
+            43
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00034",
+      "name": "echo-hotel-component",
+      "quantity": 7,
+      "unitPrice": 53.0,
+      "attributes": {
+        "colour": "foxtrot",
+        "weightGrams": 134,
+        "packaging": {
+          "kind": "juliet",
+          "recyclable": true,
+          "dimensionsMm": [
+            44,
+            24,
+            44
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00035",
+      "name": "foxtrot-india-component",
+      "quantity": 1,
+      "unitPrice": 54.25,
+      "attributes": {
+        "colour": "golf",
+        "weightGrams": 135,
+        "packaging": {
+          "kind": "alpha",
+          "recyclable": false,
+          "dimensionsMm": [
+            45,
+            25,
+            45
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00036",
+      "name": "golf-juliet-component",
+      "quantity": 2,
+      "unitPrice": 55.5,
+      "attributes": {
+        "colour": "hotel",
+        "weightGrams": 136,
+        "packaging": {
+          "kind": "bravo",
+          "recyclable": true,
+          "dimensionsMm": [
+            46,
+            26,
+            46
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00037",
+      "name": "hotel-alpha-component",
+      "quantity": 3,
+      "unitPrice": 56.75,
+      "attributes": {
+        "colour": "india",
+        "weightGrams": 137,
+        "packaging": {
+          "kind": "charlie",
+          "recyclable": false,
+          "dimensionsMm": [
+            47,
+            27,
+            47
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00038",
+      "name": "india-bravo-component",
+      "quantity": 4,
+      "unitPrice": 58.0,
+      "attributes": {
+        "colour": "juliet",
+        "weightGrams": 138,
+        "packaging": {
+          "kind": "delta",
+          "recyclable": true,
+          "dimensionsMm": [
+            48,
+            28,
+            48
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00039",
+      "name": "juliet-charlie-component",
+      "quantity": 5,
+      "unitPrice": 59.25,
+      "attributes": {
+        "colour": "alpha",
+        "weightGrams": 139,
+        "packaging": {
+          "kind": "echo",
+          "recyclable": false,
+          "dimensionsMm": [
+            49,
+            29,
+            49
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00040",
+      "name": "alpha-delta-component",
+      "quantity": 6,
+      "unitPrice": 10.5,
+      "attributes": {
+        "colour": "bravo",
+        "weightGrams": 140,
+        "packaging": {
+          "kind": "foxtrot",
+          "recyclable": true,
+          "dimensionsMm": [
+            50,
+            30,
+            30
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00041",
+      "name": "bravo-echo-component",
+      "quantity": 7,
+      "unitPrice": 11.75,
+      "attributes": {
+        "colour": "charlie",
+        "weightGrams": 141,
+        "packaging": {
+          "kind": "golf",
+          "recyclable": false,
+          "dimensionsMm": [
+            51,
+            31,
+            31
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00042",
+      "name": "charlie-foxtrot-component",
+      "quantity": 1,
+      "unitPrice": 13.0,
+      "attributes": {
+        "colour": "delta",
+        "weightGrams": 142,
+        "packaging": {
+          "kind": "hotel",
+          "recyclable": true,
+          "dimensionsMm": [
+            52,
+            32,
+            32
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00043",
+      "name": "delta-golf-component",
+      "quantity": 2,
+      "unitPrice": 14.25,
+      "attributes": {
+        "colour": "echo",
+        "weightGrams": 143,
+        "packaging": {
+          "kind": "india",
+          "recyclable": false,
+          "dimensionsMm": [
+            53,
+            33,
+            33
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00044",
+      "name": "echo-hotel-component",
+      "quantity": 3,
+      "unitPrice": 15.5,
+      "attributes": {
+        "colour": "foxtrot",
+        "weightGrams": 144,
+        "packaging": {
+          "kind": "juliet",
+          "recyclable": true,
+          "dimensionsMm": [
+            54,
+            34,
+            34
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00045",
+      "name": "foxtrot-india-component",
+      "quantity": 4,
+      "unitPrice": 16.75,
+      "attributes": {
+        "colour": "golf",
+        "weightGrams": 145,
+        "packaging": {
+          "kind": "alpha",
+          "recyclable": false,
+          "dimensionsMm": [
+            55,
+            35,
+            35
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00046",
+      "name": "golf-juliet-component",
+      "quantity": 5,
+      "unitPrice": 18.0,
+      "attributes": {
+        "colour": "hotel",
+        "weightGrams": 146,
+        "packaging": {
+          "kind": "bravo",
+          "recyclable": true,
+          "dimensionsMm": [
+            56,
+            36,
+            36
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00047",
+      "name": "hotel-alpha-component",
+      "quantity": 6,
+      "unitPrice": 19.25,
+      "attributes": {
+        "colour": "india",
+        "weightGrams": 147,
+        "packaging": {
+          "kind": "charlie",
+          "recyclable": false,
+          "dimensionsMm": [
+            57,
+            37,
+            37
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00048",
+      "name": "india-bravo-component",
+      "quantity": 7,
+      "unitPrice": 20.5,
+      "attributes": {
+        "colour": "juliet",
+        "weightGrams": 148,
+        "packaging": {
+          "kind": "delta",
+          "recyclable": true,
+          "dimensionsMm": [
+            58,
+            38,
+            38
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00049",
+      "name": "juliet-charlie-component",
+      "quantity": 1,
+      "unitPrice": 21.75,
+      "attributes": {
+        "colour": "alpha",
+        "weightGrams": 149,
+        "packaging": {
+          "kind": "echo",
+          "recyclable": false,
+          "dimensionsMm": [
+            59,
+            39,
+            39
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00050",
+      "name": "alpha-delta-component",
+      "quantity": 2,
+      "unitPrice": 23.0,
+      "attributes": {
+        "colour": "bravo",
+        "weightGrams": 150,
+        "packaging": {
+          "kind": "foxtrot",
+          "recyclable": true,
+          "dimensionsMm": [
+            10,
+            40,
+            40
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00051",
+      "name": "bravo-echo-component",
+      "quantity": 3,
+      "unitPrice": 24.25,
+      "attributes": {
+        "colour": "charlie",
+        "weightGrams": 151,
+        "packaging": {
+          "kind": "golf",
+          "recyclable": false,
+          "dimensionsMm": [
+            11,
+            41,
+            41
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00052",
+      "name": "charlie-foxtrot-component",
+      "quantity": 4,
+      "unitPrice": 25.5,
+      "attributes": {
+        "colour": "delta",
+        "weightGrams": 152,
+        "packaging": {
+          "kind": "hotel",
+          "recyclable": true,
+          "dimensionsMm": [
+            12,
+            42,
+            42
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00053",
+      "name": "delta-golf-component",
+      "quantity": 5,
+      "unitPrice": 26.75,
+      "attributes": {
+        "colour": "echo",
+        "weightGrams": 153,
+        "packaging": {
+          "kind": "india",
+          "recyclable": false,
+          "dimensionsMm": [
+            13,
+            43,
+            43
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00054",
+      "name": "echo-hotel-component",
+      "quantity": 6,
+      "unitPrice": 28.0,
+      "attributes": {
+        "colour": "foxtrot",
+        "weightGrams": 154,
+        "packaging": {
+          "kind": "juliet",
+          "recyclable": true,
+          "dimensionsMm": [
+            14,
+            44,
+            44
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00055",
+      "name": "foxtrot-india-component",
+      "quantity": 7,
+      "unitPrice": 29.25,
+      "attributes": {
+        "colour": "golf",
+        "weightGrams": 155,
+        "packaging": {
+          "kind": "alpha",
+          "recyclable": false,
+          "dimensionsMm": [
+            15,
+            45,
+            45
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00056",
+      "name": "golf-juliet-component",
+      "quantity": 1,
+      "unitPrice": 30.5,
+      "attributes": {
+        "colour": "hotel",
+        "weightGrams": 156,
+        "packaging": {
+          "kind": "bravo",
+          "recyclable": true,
+          "dimensionsMm": [
+            16,
+            46,
+            46
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00057",
+      "name": "hotel-alpha-component",
+      "quantity": 2,
+      "unitPrice": 31.75,
+      "attributes": {
+        "colour": "india",
+        "weightGrams": 157,
+        "packaging": {
+          "kind": "charlie",
+          "recyclable": false,
+          "dimensionsMm": [
+            17,
+            47,
+            47
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00058",
+      "name": "india-bravo-component",
+      "quantity": 3,
+      "unitPrice": 33.0,
+      "attributes": {
+        "colour": "juliet",
+        "weightGrams": 158,
+        "packaging": {
+          "kind": "delta",
+          "recyclable": true,
+          "dimensionsMm": [
+            18,
+            48,
+            48
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00059",
+      "name": "juliet-charlie-component",
+      "quantity": 4,
+      "unitPrice": 34.25,
+      "attributes": {
+        "colour": "alpha",
+        "weightGrams": 159,
+        "packaging": {
+          "kind": "echo",
+          "recyclable": false,
+          "dimensionsMm": [
+            19,
+            49,
+            49
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00060",
+      "name": "alpha-delta-component",
+      "quantity": 5,
+      "unitPrice": 35.5,
+      "attributes": {
+        "colour": "bravo",
+        "weightGrams": 160,
+        "packaging": {
+          "kind": "foxtrot",
+          "recyclable": true,
+          "dimensionsMm": [
+            20,
+            20,
+            30
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00061",
+      "name": "bravo-echo-component",
+      "quantity": 6,
+      "unitPrice": 36.75,
+      "attributes": {
+        "colour": "charlie",
+        "weightGrams": 161,
+        "packaging": {
+          "kind": "golf",
+          "recyclable": false,
+          "dimensionsMm": [
+            21,
+            21,
+            31
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00062",
+      "name": "charlie-foxtrot-component",
+      "quantity": 7,
+      "unitPrice": 38.0,
+      "attributes": {
+        "colour": "delta",
+        "weightGrams": 162,
+        "packaging": {
+          "kind": "hotel",
+          "recyclable": true,
+          "dimensionsMm": [
+            22,
+            22,
+            32
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00063",
+      "name": "delta-golf-component",
+      "quantity": 1,
+      "unitPrice": 39.25,
+      "attributes": {
+        "colour": "echo",
+        "weightGrams": 163,
+        "packaging": {
+          "kind": "india",
+          "recyclable": false,
+          "dimensionsMm": [
+            23,
+            23,
+            33
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00064",
+      "name": "echo-hotel-component",
+      "quantity": 2,
+      "unitPrice": 40.5,
+      "attributes": {
+        "colour": "foxtrot",
+        "weightGrams": 164,
+        "packaging": {
+          "kind": "juliet",
+          "recyclable": true,
+          "dimensionsMm": [
+            24,
+            24,
+            34
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00065",
+      "name": "foxtrot-india-component",
+      "quantity": 3,
+      "unitPrice": 41.75,
+      "attributes": {
+        "colour": "golf",
+        "weightGrams": 165,
+        "packaging": {
+          "kind": "alpha",
+          "recyclable": false,
+          "dimensionsMm": [
+            25,
+            25,
+            35
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00066",
+      "name": "golf-juliet-component",
+      "quantity": 4,
+      "unitPrice": 43.0,
+      "attributes": {
+        "colour": "hotel",
+        "weightGrams": 166,
+        "packaging": {
+          "kind": "bravo",
+          "recyclable": true,
+          "dimensionsMm": [
+            26,
+            26,
+            36
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00067",
+      "name": "hotel-alpha-component",
+      "quantity": 5,
+      "unitPrice": 44.25,
+      "attributes": {
+        "colour": "india",
+        "weightGrams": 167,
+        "packaging": {
+          "kind": "charlie",
+          "recyclable": false,
+          "dimensionsMm": [
+            27,
+            27,
+            37
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00068",
+      "name": "india-bravo-component",
+      "quantity": 6,
+      "unitPrice": 45.5,
+      "attributes": {
+        "colour": "juliet",
+        "weightGrams": 168,
+        "packaging": {
+          "kind": "delta",
+          "recyclable": true,
+          "dimensionsMm": [
+            28,
+            28,
+            38
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00069",
+      "name": "juliet-charlie-component",
+      "quantity": 7,
+      "unitPrice": 46.75,
+      "attributes": {
+        "colour": "alpha",
+        "weightGrams": 169,
+        "packaging": {
+          "kind": "echo",
+          "recyclable": false,
+          "dimensionsMm": [
+            29,
+            29,
+            39
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00070",
+      "name": "alpha-delta-component",
+      "quantity": 1,
+      "unitPrice": 48.0,
+      "attributes": {
+        "colour": "bravo",
+        "weightGrams": 170,
+        "packaging": {
+          "kind": "foxtrot",
+          "recyclable": true,
+          "dimensionsMm": [
+            30,
+            30,
+            40
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00071",
+      "name": "bravo-echo-component",
+      "quantity": 2,
+      "unitPrice": 49.25,
+      "attributes": {
+        "colour": "charlie",
+        "weightGrams": 171,
+        "packaging": {
+          "kind": "golf",
+          "recyclable": false,
+          "dimensionsMm": [
+            31,
+            31,
+            41
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00072",
+      "name": "charlie-foxtrot-component",
+      "quantity": 3,
+      "unitPrice": 50.5,
+      "attributes": {
+        "colour": "delta",
+        "weightGrams": 172,
+        "packaging": {
+          "kind": "hotel",
+          "recyclable": true,
+          "dimensionsMm": [
+            32,
+            32,
+            42
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00073",
+      "name": "delta-golf-component",
+      "quantity": 4,
+      "unitPrice": 51.75,
+      "attributes": {
+        "colour": "echo",
+        "weightGrams": 173,
+        "packaging": {
+          "kind": "india",
+          "recyclable": false,
+          "dimensionsMm": [
+            33,
+            33,
+            43
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00074",
+      "name": "echo-hotel-component",
+      "quantity": 5,
+      "unitPrice": 53.0,
+      "attributes": {
+        "colour": "foxtrot",
+        "weightGrams": 174,
+        "packaging": {
+          "kind": "juliet",
+          "recyclable": true,
+          "dimensionsMm": [
+            34,
+            34,
+            44
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00075",
+      "name": "foxtrot-india-component",
+      "quantity": 6,
+      "unitPrice": 54.25,
+      "attributes": {
+        "colour": "golf",
+        "weightGrams": 175,
+        "packaging": {
+          "kind": "alpha",
+          "recyclable": false,
+          "dimensionsMm": [
+            35,
+            35,
+            45
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00076",
+      "name": "golf-juliet-component",
+      "quantity": 7,
+      "unitPrice": 55.5,
+      "attributes": {
+        "colour": "hotel",
+        "weightGrams": 176,
+        "packaging": {
+          "kind": "bravo",
+          "recyclable": true,
+          "dimensionsMm": [
+            36,
+            36,
+            46
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00077",
+      "name": "hotel-alpha-component",
+      "quantity": 1,
+      "unitPrice": 56.75,
+      "attributes": {
+        "colour": "india",
+        "weightGrams": 177,
+        "packaging": {
+          "kind": "charlie",
+          "recyclable": false,
+          "dimensionsMm": [
+            37,
+            37,
+            47
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00078",
+      "name": "india-bravo-component",
+      "quantity": 2,
+      "unitPrice": 58.0,
+      "attributes": {
+        "colour": "juliet",
+        "weightGrams": 178,
+        "packaging": {
+          "kind": "delta",
+          "recyclable": true,
+          "dimensionsMm": [
+            38,
+            38,
+            48
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00079",
+      "name": "juliet-charlie-component",
+      "quantity": 3,
+      "unitPrice": 59.25,
+      "attributes": {
+        "colour": "alpha",
+        "weightGrams": 179,
+        "packaging": {
+          "kind": "echo",
+          "recyclable": false,
+          "dimensionsMm": [
+            39,
+            39,
+            49
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00080",
+      "name": "alpha-delta-component",
+      "quantity": 4,
+      "unitPrice": 10.5,
+      "attributes": {
+        "colour": "bravo",
+        "weightGrams": 180,
+        "packaging": {
+          "kind": "foxtrot",
+          "recyclable": true,
+          "dimensionsMm": [
+            40,
+            40,
+            30
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00081",
+      "name": "bravo-echo-component",
+      "quantity": 5,
+      "unitPrice": 11.75,
+      "attributes": {
+        "colour": "charlie",
+        "weightGrams": 181,
+        "packaging": {
+          "kind": "golf",
+          "recyclable": false,
+          "dimensionsMm": [
+            41,
+            41,
+            31
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00082",
+      "name": "charlie-foxtrot-component",
+      "quantity": 6,
+      "unitPrice": 13.0,
+      "attributes": {
+        "colour": "delta",
+        "weightGrams": 182,
+        "packaging": {
+          "kind": "hotel",
+          "recyclable": true,
+          "dimensionsMm": [
+            42,
+            42,
+            32
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00083",
+      "name": "delta-golf-component",
+      "quantity": 7,
+      "unitPrice": 14.25,
+      "attributes": {
+        "colour": "echo",
+        "weightGrams": 183,
+        "packaging": {
+          "kind": "india",
+          "recyclable": false,
+          "dimensionsMm": [
+            43,
+            43,
+            33
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00084",
+      "name": "echo-hotel-component",
+      "quantity": 1,
+      "unitPrice": 15.5,
+      "attributes": {
+        "colour": "foxtrot",
+        "weightGrams": 184,
+        "packaging": {
+          "kind": "juliet",
+          "recyclable": true,
+          "dimensionsMm": [
+            44,
+            44,
+            34
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00085",
+      "name": "foxtrot-india-component",
+      "quantity": 2,
+      "unitPrice": 16.75,
+      "attributes": {
+        "colour": "golf",
+        "weightGrams": 185,
+        "packaging": {
+          "kind": "alpha",
+          "recyclable": false,
+          "dimensionsMm": [
+            45,
+            45,
+            35
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00086",
+      "name": "golf-juliet-component",
+      "quantity": 3,
+      "unitPrice": 18.0,
+      "attributes": {
+        "colour": "hotel",
+        "weightGrams": 186,
+        "packaging": {
+          "kind": "bravo",
+          "recyclable": true,
+          "dimensionsMm": [
+            46,
+            46,
+            36
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00087",
+      "name": "hotel-alpha-component",
+      "quantity": 4,
+      "unitPrice": 19.25,
+      "attributes": {
+        "colour": "india",
+        "weightGrams": 187,
+        "packaging": {
+          "kind": "charlie",
+          "recyclable": false,
+          "dimensionsMm": [
+            47,
+            47,
+            37
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00088",
+      "name": "india-bravo-component",
+      "quantity": 5,
+      "unitPrice": 20.5,
+      "attributes": {
+        "colour": "juliet",
+        "weightGrams": 188,
+        "packaging": {
+          "kind": "delta",
+          "recyclable": true,
+          "dimensionsMm": [
+            48,
+            48,
+            38
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00089",
+      "name": "juliet-charlie-component",
+      "quantity": 6,
+      "unitPrice": 21.75,
+      "attributes": {
+        "colour": "alpha",
+        "weightGrams": 189,
+        "packaging": {
+          "kind": "echo",
+          "recyclable": false,
+          "dimensionsMm": [
+            49,
+            49,
+            39
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00090",
+      "name": "alpha-delta-component",
+      "quantity": 7,
+      "unitPrice": 23.0,
+      "attributes": {
+        "colour": "bravo",
+        "weightGrams": 190,
+        "packaging": {
+          "kind": "foxtrot",
+          "recyclable": true,
+          "dimensionsMm": [
+            50,
+            20,
+            40
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00091",
+      "name": "bravo-echo-component",
+      "quantity": 1,
+      "unitPrice": 24.25,
+      "attributes": {
+        "colour": "charlie",
+        "weightGrams": 191,
+        "packaging": {
+          "kind": "golf",
+          "recyclable": false,
+          "dimensionsMm": [
+            51,
+            21,
+            41
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00092",
+      "name": "charlie-foxtrot-component",
+      "quantity": 2,
+      "unitPrice": 25.5,
+      "attributes": {
+        "colour": "delta",
+        "weightGrams": 192,
+        "packaging": {
+          "kind": "hotel",
+          "recyclable": true,
+          "dimensionsMm": [
+            52,
+            22,
+            42
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00093",
+      "name": "delta-golf-component",
+      "quantity": 3,
+      "unitPrice": 26.75,
+      "attributes": {
+        "colour": "echo",
+        "weightGrams": 193,
+        "packaging": {
+          "kind": "india",
+          "recyclable": false,
+          "dimensionsMm": [
+            53,
+            23,
+            43
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00094",
+      "name": "echo-hotel-component",
+      "quantity": 4,
+      "unitPrice": 28.0,
+      "attributes": {
+        "colour": "foxtrot",
+        "weightGrams": 194,
+        "packaging": {
+          "kind": "juliet",
+          "recyclable": true,
+          "dimensionsMm": [
+            54,
+            24,
+            44
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00095",
+      "name": "foxtrot-india-component",
+      "quantity": 5,
+      "unitPrice": 29.25,
+      "attributes": {
+        "colour": "golf",
+        "weightGrams": 195,
+        "packaging": {
+          "kind": "alpha",
+          "recyclable": false,
+          "dimensionsMm": [
+            55,
+            25,
+            45
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00096",
+      "name": "golf-juliet-component",
+      "quantity": 6,
+      "unitPrice": 30.5,
+      "attributes": {
+        "colour": "hotel",
+        "weightGrams": 196,
+        "packaging": {
+          "kind": "bravo",
+          "recyclable": true,
+          "dimensionsMm": [
+            56,
+            26,
+            46
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00097",
+      "name": "hotel-alpha-component",
+      "quantity": 7,
+      "unitPrice": 31.75,
+      "attributes": {
+        "colour": "india",
+        "weightGrams": 197,
+        "packaging": {
+          "kind": "charlie",
+          "recyclable": false,
+          "dimensionsMm": [
+            57,
+            27,
+            47
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00098",
+      "name": "india-bravo-component",
+      "quantity": 1,
+      "unitPrice": 33.0,
+      "attributes": {
+        "colour": "juliet",
+        "weightGrams": 198,
+        "packaging": {
+          "kind": "delta",
+          "recyclable": true,
+          "dimensionsMm": [
+            58,
+            28,
+            48
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00099",
+      "name": "juliet-charlie-component",
+      "quantity": 2,
+      "unitPrice": 34.25,
+      "attributes": {
+        "colour": "alpha",
+        "weightGrams": 199,
+        "packaging": {
+          "kind": "echo",
+          "recyclable": false,
+          "dimensionsMm": [
+            59,
+            29,
+            49
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00100",
+      "name": "alpha-delta-component",
+      "quantity": 3,
+      "unitPrice": 35.5,
+      "attributes": {
+        "colour": "bravo",
+        "weightGrams": 200,
+        "packaging": {
+          "kind": "foxtrot",
+          "recyclable": true,
+          "dimensionsMm": [
+            10,
+            30,
+            30
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00101",
+      "name": "bravo-echo-component",
+      "quantity": 4,
+      "unitPrice": 36.75,
+      "attributes": {
+        "colour": "charlie",
+        "weightGrams": 201,
+        "packaging": {
+          "kind": "golf",
+          "recyclable": false,
+          "dimensionsMm": [
+            11,
+            31,
+            31
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00102",
+      "name": "charlie-foxtrot-component",
+      "quantity": 5,
+      "unitPrice": 38.0,
+      "attributes": {
+        "colour": "delta",
+        "weightGrams": 202,
+        "packaging": {
+          "kind": "hotel",
+          "recyclable": true,
+          "dimensionsMm": [
+            12,
+            32,
+            32
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00103",
+      "name": "delta-golf-component",
+      "quantity": 6,
+      "unitPrice": 39.25,
+      "attributes": {
+        "colour": "echo",
+        "weightGrams": 203,
+        "packaging": {
+          "kind": "india",
+          "recyclable": false,
+          "dimensionsMm": [
+            13,
+            33,
+            33
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00104",
+      "name": "echo-hotel-component",
+      "quantity": 7,
+      "unitPrice": 40.5,
+      "attributes": {
+        "colour": "foxtrot",
+        "weightGrams": 204,
+        "packaging": {
+          "kind": "juliet",
+          "recyclable": true,
+          "dimensionsMm": [
+            14,
+            34,
+            34
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00105",
+      "name": "foxtrot-india-component",
+      "quantity": 1,
+      "unitPrice": 41.75,
+      "attributes": {
+        "colour": "golf",
+        "weightGrams": 205,
+        "packaging": {
+          "kind": "alpha",
+          "recyclable": false,
+          "dimensionsMm": [
+            15,
+            35,
+            35
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00106",
+      "name": "golf-juliet-component",
+      "quantity": 2,
+      "unitPrice": 43.0,
+      "attributes": {
+        "colour": "hotel",
+        "weightGrams": 206,
+        "packaging": {
+          "kind": "bravo",
+          "recyclable": true,
+          "dimensionsMm": [
+            16,
+            36,
+            36
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00107",
+      "name": "hotel-alpha-component",
+      "quantity": 3,
+      "unitPrice": 44.25,
+      "attributes": {
+        "colour": "india",
+        "weightGrams": 207,
+        "packaging": {
+          "kind": "charlie",
+          "recyclable": false,
+          "dimensionsMm": [
+            17,
+            37,
+            37
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00108",
+      "name": "india-bravo-component",
+      "quantity": 4,
+      "unitPrice": 45.5,
+      "attributes": {
+        "colour": "juliet",
+        "weightGrams": 208,
+        "packaging": {
+          "kind": "delta",
+          "recyclable": true,
+          "dimensionsMm": [
+            18,
+            38,
+            38
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00109",
+      "name": "juliet-charlie-component",
+      "quantity": 5,
+      "unitPrice": 46.75,
+      "attributes": {
+        "colour": "alpha",
+        "weightGrams": 209,
+        "packaging": {
+          "kind": "echo",
+          "recyclable": false,
+          "dimensionsMm": [
+            19,
+            39,
+            39
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00110",
+      "name": "alpha-delta-component",
+      "quantity": 6,
+      "unitPrice": 48.0,
+      "attributes": {
+        "colour": "bravo",
+        "weightGrams": 210,
+        "packaging": {
+          "kind": "foxtrot",
+          "recyclable": true,
+          "dimensionsMm": [
+            20,
+            40,
+            40
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00111",
+      "name": "bravo-echo-component",
+      "quantity": 7,
+      "unitPrice": 49.25,
+      "attributes": {
+        "colour": "charlie",
+        "weightGrams": 211,
+        "packaging": {
+          "kind": "golf",
+          "recyclable": false,
+          "dimensionsMm": [
+            21,
+            41,
+            41
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00112",
+      "name": "charlie-foxtrot-component",
+      "quantity": 1,
+      "unitPrice": 50.5,
+      "attributes": {
+        "colour": "delta",
+        "weightGrams": 212,
+        "packaging": {
+          "kind": "hotel",
+          "recyclable": true,
+          "dimensionsMm": [
+            22,
+            42,
+            42
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00113",
+      "name": "delta-golf-component",
+      "quantity": 2,
+      "unitPrice": 51.75,
+      "attributes": {
+        "colour": "echo",
+        "weightGrams": 213,
+        "packaging": {
+          "kind": "india",
+          "recyclable": false,
+          "dimensionsMm": [
+            23,
+            43,
+            43
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00114",
+      "name": "echo-hotel-component",
+      "quantity": 3,
+      "unitPrice": 53.0,
+      "attributes": {
+        "colour": "foxtrot",
+        "weightGrams": 214,
+        "packaging": {
+          "kind": "juliet",
+          "recyclable": true,
+          "dimensionsMm": [
+            24,
+            44,
+            44
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00115",
+      "name": "foxtrot-india-component",
+      "quantity": 4,
+      "unitPrice": 54.25,
+      "attributes": {
+        "colour": "golf",
+        "weightGrams": 215,
+        "packaging": {
+          "kind": "alpha",
+          "recyclable": false,
+          "dimensionsMm": [
+            25,
+            45,
+            45
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00116",
+      "name": "golf-juliet-component",
+      "quantity": 5,
+      "unitPrice": 55.5,
+      "attributes": {
+        "colour": "hotel",
+        "weightGrams": 216,
+        "packaging": {
+          "kind": "bravo",
+          "recyclable": true,
+          "dimensionsMm": [
+            26,
+            46,
+            46
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00117",
+      "name": "hotel-alpha-component",
+      "quantity": 6,
+      "unitPrice": 56.75,
+      "attributes": {
+        "colour": "india",
+        "weightGrams": 217,
+        "packaging": {
+          "kind": "charlie",
+          "recyclable": false,
+          "dimensionsMm": [
+            27,
+            47,
+            47
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00118",
+      "name": "india-bravo-component",
+      "quantity": 7,
+      "unitPrice": 58.0,
+      "attributes": {
+        "colour": "juliet",
+        "weightGrams": 218,
+        "packaging": {
+          "kind": "delta",
+          "recyclable": true,
+          "dimensionsMm": [
+            28,
+            48,
+            48
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00119",
+      "name": "juliet-charlie-component",
+      "quantity": 1,
+      "unitPrice": 59.25,
+      "attributes": {
+        "colour": "alpha",
+        "weightGrams": 219,
+        "packaging": {
+          "kind": "echo",
+          "recyclable": false,
+          "dimensionsMm": [
+            29,
+            49,
+            49
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00120",
+      "name": "alpha-delta-component",
+      "quantity": 2,
+      "unitPrice": 10.5,
+      "attributes": {
+        "colour": "bravo",
+        "weightGrams": 220,
+        "packaging": {
+          "kind": "foxtrot",
+          "recyclable": true,
+          "dimensionsMm": [
+            30,
+            20,
+            30
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00121",
+      "name": "bravo-echo-component",
+      "quantity": 3,
+      "unitPrice": 11.75,
+      "attributes": {
+        "colour": "charlie",
+        "weightGrams": 221,
+        "packaging": {
+          "kind": "golf",
+          "recyclable": false,
+          "dimensionsMm": [
+            31,
+            21,
+            31
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00122",
+      "name": "charlie-foxtrot-component",
+      "quantity": 4,
+      "unitPrice": 13.0,
+      "attributes": {
+        "colour": "delta",
+        "weightGrams": 222,
+        "packaging": {
+          "kind": "hotel",
+          "recyclable": true,
+          "dimensionsMm": [
+            32,
+            22,
+            32
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00123",
+      "name": "delta-golf-component",
+      "quantity": 5,
+      "unitPrice": 14.25,
+      "attributes": {
+        "colour": "echo",
+        "weightGrams": 223,
+        "packaging": {
+          "kind": "india",
+          "recyclable": false,
+          "dimensionsMm": [
+            33,
+            23,
+            33
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00124",
+      "name": "echo-hotel-component",
+      "quantity": 6,
+      "unitPrice": 15.5,
+      "attributes": {
+        "colour": "foxtrot",
+        "weightGrams": 224,
+        "packaging": {
+          "kind": "juliet",
+          "recyclable": true,
+          "dimensionsMm": [
+            34,
+            24,
+            34
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00125",
+      "name": "foxtrot-india-component",
+      "quantity": 7,
+      "unitPrice": 16.75,
+      "attributes": {
+        "colour": "golf",
+        "weightGrams": 225,
+        "packaging": {
+          "kind": "alpha",
+          "recyclable": false,
+          "dimensionsMm": [
+            35,
+            25,
+            35
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00126",
+      "name": "golf-juliet-component",
+      "quantity": 1,
+      "unitPrice": 18.0,
+      "attributes": {
+        "colour": "hotel",
+        "weightGrams": 226,
+        "packaging": {
+          "kind": "bravo",
+          "recyclable": true,
+          "dimensionsMm": [
+            36,
+            26,
+            36
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00127",
+      "name": "hotel-alpha-component",
+      "quantity": 2,
+      "unitPrice": 19.25,
+      "attributes": {
+        "colour": "india",
+        "weightGrams": 227,
+        "packaging": {
+          "kind": "charlie",
+          "recyclable": false,
+          "dimensionsMm": [
+            37,
+            27,
+            37
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00128",
+      "name": "india-bravo-component",
+      "quantity": 3,
+      "unitPrice": 20.5,
+      "attributes": {
+        "colour": "juliet",
+        "weightGrams": 228,
+        "packaging": {
+          "kind": "delta",
+          "recyclable": true,
+          "dimensionsMm": [
+            38,
+            28,
+            38
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00129",
+      "name": "juliet-charlie-component",
+      "quantity": 4,
+      "unitPrice": 21.75,
+      "attributes": {
+        "colour": "alpha",
+        "weightGrams": 229,
+        "packaging": {
+          "kind": "echo",
+          "recyclable": false,
+          "dimensionsMm": [
+            39,
+            29,
+            39
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00130",
+      "name": "alpha-delta-component",
+      "quantity": 5,
+      "unitPrice": 23.0,
+      "attributes": {
+        "colour": "bravo",
+        "weightGrams": 230,
+        "packaging": {
+          "kind": "foxtrot",
+          "recyclable": true,
+          "dimensionsMm": [
+            40,
+            30,
+            40
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00131",
+      "name": "bravo-echo-component",
+      "quantity": 6,
+      "unitPrice": 24.25,
+      "attributes": {
+        "colour": "charlie",
+        "weightGrams": 231,
+        "packaging": {
+          "kind": "golf",
+          "recyclable": false,
+          "dimensionsMm": [
+            41,
+            31,
+            41
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00132",
+      "name": "charlie-foxtrot-component",
+      "quantity": 7,
+      "unitPrice": 25.5,
+      "attributes": {
+        "colour": "delta",
+        "weightGrams": 232,
+        "packaging": {
+          "kind": "hotel",
+          "recyclable": true,
+          "dimensionsMm": [
+            42,
+            32,
+            42
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00133",
+      "name": "delta-golf-component",
+      "quantity": 1,
+      "unitPrice": 26.75,
+      "attributes": {
+        "colour": "echo",
+        "weightGrams": 233,
+        "packaging": {
+          "kind": "india",
+          "recyclable": false,
+          "dimensionsMm": [
+            43,
+            33,
+            43
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00134",
+      "name": "echo-hotel-component",
+      "quantity": 2,
+      "unitPrice": 28.0,
+      "attributes": {
+        "colour": "foxtrot",
+        "weightGrams": 234,
+        "packaging": {
+          "kind": "juliet",
+          "recyclable": true,
+          "dimensionsMm": [
+            44,
+            34,
+            44
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00135",
+      "name": "foxtrot-india-component",
+      "quantity": 3,
+      "unitPrice": 29.25,
+      "attributes": {
+        "colour": "golf",
+        "weightGrams": 235,
+        "packaging": {
+          "kind": "alpha",
+          "recyclable": false,
+          "dimensionsMm": [
+            45,
+            35,
+            45
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00136",
+      "name": "golf-juliet-component",
+      "quantity": 4,
+      "unitPrice": 30.5,
+      "attributes": {
+        "colour": "hotel",
+        "weightGrams": 236,
+        "packaging": {
+          "kind": "bravo",
+          "recyclable": true,
+          "dimensionsMm": [
+            46,
+            36,
+            46
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00137",
+      "name": "hotel-alpha-component",
+      "quantity": 5,
+      "unitPrice": 31.75,
+      "attributes": {
+        "colour": "india",
+        "weightGrams": 237,
+        "packaging": {
+          "kind": "charlie",
+          "recyclable": false,
+          "dimensionsMm": [
+            47,
+            37,
+            47
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00138",
+      "name": "india-bravo-component",
+      "quantity": 6,
+      "unitPrice": 33.0,
+      "attributes": {
+        "colour": "juliet",
+        "weightGrams": 238,
+        "packaging": {
+          "kind": "delta",
+          "recyclable": true,
+          "dimensionsMm": [
+            48,
+            38,
+            48
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00139",
+      "name": "juliet-charlie-component",
+      "quantity": 7,
+      "unitPrice": 34.25,
+      "attributes": {
+        "colour": "alpha",
+        "weightGrams": 239,
+        "packaging": {
+          "kind": "echo",
+          "recyclable": false,
+          "dimensionsMm": [
+            49,
+            39,
+            49
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00140",
+      "name": "alpha-delta-component",
+      "quantity": 1,
+      "unitPrice": 35.5,
+      "attributes": {
+        "colour": "bravo",
+        "weightGrams": 240,
+        "packaging": {
+          "kind": "foxtrot",
+          "recyclable": true,
+          "dimensionsMm": [
+            50,
+            40,
+            30
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00141",
+      "name": "bravo-echo-component",
+      "quantity": 2,
+      "unitPrice": 36.75,
+      "attributes": {
+        "colour": "charlie",
+        "weightGrams": 241,
+        "packaging": {
+          "kind": "golf",
+          "recyclable": false,
+          "dimensionsMm": [
+            51,
+            41,
+            31
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00142",
+      "name": "charlie-foxtrot-component",
+      "quantity": 3,
+      "unitPrice": 38.0,
+      "attributes": {
+        "colour": "delta",
+        "weightGrams": 242,
+        "packaging": {
+          "kind": "hotel",
+          "recyclable": true,
+          "dimensionsMm": [
+            52,
+            42,
+            32
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00143",
+      "name": "delta-golf-component",
+      "quantity": 4,
+      "unitPrice": 39.25,
+      "attributes": {
+        "colour": "echo",
+        "weightGrams": 243,
+        "packaging": {
+          "kind": "india",
+          "recyclable": false,
+          "dimensionsMm": [
+            53,
+            43,
+            33
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00144",
+      "name": "echo-hotel-component",
+      "quantity": 5,
+      "unitPrice": 40.5,
+      "attributes": {
+        "colour": "foxtrot",
+        "weightGrams": 244,
+        "packaging": {
+          "kind": "juliet",
+          "recyclable": true,
+          "dimensionsMm": [
+            54,
+            44,
+            34
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00145",
+      "name": "foxtrot-india-component",
+      "quantity": 6,
+      "unitPrice": 41.75,
+      "attributes": {
+        "colour": "golf",
+        "weightGrams": 245,
+        "packaging": {
+          "kind": "alpha",
+          "recyclable": false,
+          "dimensionsMm": [
+            55,
+            45,
+            35
+          ]
+        }
+      }
+    },
+    {
+      "sku": "SKU-00146",
+      "name": "golf-juliet-component",
+      "quantity": 7,
+      "unitPrice": 43.0,
+      "attributes": {
+        "colour": "hotel",
+        "weightGrams": 246,
+        "packaging": {
+          "kind": "bravo",
+          "recyclable": true,
+          "dimensionsMm": [
+            56,
+            46,
+            36
+          ]
+        }
+      }
+    }
+  ]
+}

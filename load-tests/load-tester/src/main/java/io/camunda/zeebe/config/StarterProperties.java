@@ -18,6 +18,7 @@ public class StarterProperties {
   private Duration rateDuration = Duration.ofSeconds(1);
   private int threads = 2;
   private String bpmnXmlPath = "bpmn/one_task.bpmn";
+  private int secretVariants = 0;
   private List<String> extraBpmnModels = List.of();
   private String businessKey = "businessKey";
   private String payloadPath = "bpmn/big_payload.json";
@@ -69,6 +70,18 @@ public class StarterProperties {
 
   public void setBpmnXmlPath(final String bpmnXmlPath) {
     this.bpmnXmlPath = bpmnXmlPath;
+  }
+
+  /**
+   * How many variants of {@link #getBpmnXmlPath()} the starter deploys, each with its own process
+   * id and its own secret name. {@code 0} disables the mode and deploys the model as it is.
+   */
+  public int getSecretVariants() {
+    return secretVariants;
+  }
+
+  public void setSecretVariants(final int secretVariants) {
+    this.secretVariants = secretVariants;
   }
 
   public List<String> getExtraBpmnModels() {
