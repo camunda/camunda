@@ -12,9 +12,8 @@ import {waitForAssertion} from 'utils/waitForAssertion';
 
 type InstanceHeaderAction = 'suspend' | 'resume' | 'cancel';
 
-// The header renders its operations either as an "Actions" menu or as inline
-// icon buttons, and the two name them differently. Pairing both spellings here
-// is what lets a caller ask for an action without knowing which layout it got.
+// The header names an operation by menu label or by test id depending on
+// viewport; pairing both spellings lets callers ask for the action instead.
 const INSTANCE_HEADER_ACTIONS: ReadonlyArray<{
   action: InstanceHeaderAction;
   testId: string;
@@ -175,8 +174,7 @@ class OperateProcessInstancePage {
     this.incidentsTableOperationSpinner =
       this.incidentsTable.getByTestId('operation-spinner');
     this.incidentsTableRows = this.incidentsTable.getByRole('row');
-    // Exposed as a locator rather than as a click helper: the suspended case
-    // asserts that the button is disabled, which a click cannot express.
+    // A locator, not a click helper: the suspended case asserts it is disabled.
     this.firstIncidentRetryButton = this.incidentsTableRows
       .getByRole('button', {name: 'Retry Incident'})
       .first();
@@ -918,13 +916,27 @@ class OperateProcessInstancePage {
    * Actions menu, so callers asserting which actions are offered have to read
    * whichever layout is present rather than assuming one.
    */
-  /**
-   * Which of the suspend, resume and cancel operations the header offers.
-   *
-   * Reported as actions rather than as whatever the DOM happens to call them,
-   * so a caller asserts on what an operator can do and stays unaware of the
-   * layout and of the test ids behind it.
-   */
+  // The tab appears only once the incident reaches Operate's view, and the
+  // table only once the tab is open — so wait for the tab, don't probe it.
+  async openIncidentsTab(): Promise<void> {
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(this.incidentsTab).toBeVisible({timeout: 15_000});
+        await this.incidentsTab.click();
+        await expect(this.incidentsTable).toBeVisible({timeout: 15_000});
+      },
+      onFailure: async () => {
+        await this.page.reload();
+      },
+    });
+  }
+
+  operationsLogEntry(operationType: string): Locator {
+    return this.operationsLogTableRow
+      .getByText(operationType, {exact: false})
+      .first();
+  }
+
   async instanceHeaderActions(): Promise<InstanceHeaderAction[]> {
     const actionsMenuButton = this.instanceHeader.getByRole('button', {
       name: 'Actions',
