@@ -8,7 +8,7 @@
 
 import {describe, expect} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
-import {getMigrationFilter} from './getMigrationFilter';
+import {getMigrationFilter, getMigrationStatisticsFilter} from './getMigrationFilter';
 import type {ProcessesSearch} from './processesFilter';
 
 const RUNNING_SEARCH: ProcessesSearch = {
@@ -76,4 +76,19 @@ describe('getMigrationFilter', () => {
 			).toEqual(processInstanceKey);
 		},
 	);
+});
+
+describe('getMigrationStatisticsFilter', () => {
+	it('should count the migrated active instances and drop the definition fields', () => {
+		expect(getMigrationStatisticsFilter({search: RUNNING_SEARCH, includeIds: ['1'], excludeIds: []})).toEqual({
+			$or: [
+				{state: {$eq: 'ACTIVE'}, hasIncident: false},
+				{state: {$eq: 'SUSPENDED'}},
+				{hasIncident: true, state: {$neq: 'SUSPENDED'}},
+			],
+			state: {$eq: 'ACTIVE'},
+			tenantId: {$eq: 'tenant-a'},
+			processInstanceKey: {$in: ['1']},
+		});
+	});
 });

@@ -8,6 +8,7 @@
 
 import {test, expect} from '#/pw-modules/test-extend';
 import {delay, http, HttpResponse} from 'msw';
+import {z} from 'zod';
 import {
 	endpoints as apiEndpoints,
 	queryProcessDefinitionsRequestBodySchema,
@@ -23,6 +24,7 @@ import {
 	mockSystemConfigurationEndpoint,
 	mockCreateCancellationBatchOperationEndpoint,
 	mockCreateModificationBatchOperationEndpoint,
+	mockCreateMigrationBatchOperationEndpoint,
 	mockGetBatchOperationEndpoint,
 	mockGetProcessDefinitionXmlEndpoint,
 	mockGetProcessDefinitionStatisticsEndpoint,
@@ -124,7 +126,7 @@ test.beforeEach(({network}) => {
 });
 
 test.describe('Operate processes page', () => {
-	test('should keep the unfinished migration hidden next to the batch Move action', async ({
+	test('should migrate a selected process instance and list the target version', async ({
 		network,
 		page,
 		operateProcessesPage,
@@ -139,6 +141,11 @@ test.describe('Operate processes page', () => {
 								processDefinitionKey: '123',
 								version: 1,
 							}),
+							createProcessDefinition({
+								processDefinitionId: 'my_simple_process',
+								processDefinitionKey: '124',
+								version: 2,
+							}),
 						],
 					}),
 				),
@@ -147,13 +154,42 @@ test.describe('Operate processes page', () => {
 			mockGetProcessDefinitionStatisticsEndpoint({
 				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
 			}),
+			mockCreateMigrationBatchOperationEndpoint({
+				schema: z.object({
+					filter: z.object({
+						processDefinitionKey: z.strictObject({$eq: z.literal('123')}),
+						processInstanceKey: z.strictObject({$in: z.tuple([z.literal('1001')])}),
+					}),
+					migrationPlan: z.strictObject({
+						targetProcessDefinitionKey: z.literal('124'),
+						mappingInstructions: z.tuple([
+							z.strictObject({sourceElementId: z.literal('task-1'), targetElementId: z.literal('task-1')}),
+						]),
+					}),
+				}),
+				successResponse: HttpResponse.json(
+					{batchOperationKey: 'migration-1', batchOperationType: 'MIGRATE_PROCESS_INSTANCE'},
+					{status: 202},
+				),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
 		);
 
 		await operateProcessesPage.goto('?process=my_simple_process&version=1');
 		await page.getByRole('checkbox', {name: 'Select instance 1001'}).check({force: true});
+		await operateProcessesPage.migrateButton.click();
+		await page.getByRole('dialog').getByRole('button', {name: 'Continue'}).click();
+		await page.getByRole('button', {name: 'Next'}).click();
+		await expect(page.getByText('Migration step 2 - confirm')).toBeVisible();
+		await page.getByRole('button', {name: 'Confirm'}).click();
+		const confirmation = page.getByRole('dialog', {name: 'Migration confirmation'});
+		await confirmation.getByRole('textbox', {name: 'Type MIGRATE to confirm'}).fill('MIGRATE');
+		await confirmation.getByRole('button', {name: 'Confirm'}).click();
 
-		await expect(operateProcessesPage.moveButton).toBeVisible();
-		await expect(operateProcessesPage.migrateButton).toHaveCount(0);
+		await expect(page.getByText('The batch operation "Migrate Process Instance" has been started')).toBeVisible();
+		await expect(page.getByText('Migration step 2 - confirm')).toHaveCount(0);
+		await expect(page).toHaveURL(/process=my_simple_process/);
+		await expect(page).toHaveURL(/version=2/);
 	});
 
 	test('should move a selected process instance and keep the filters and selection', async ({
