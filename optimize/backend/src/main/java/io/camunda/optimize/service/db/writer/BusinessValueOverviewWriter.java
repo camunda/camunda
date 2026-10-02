@@ -12,6 +12,8 @@ import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOvervie
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto.CycleTimeBlock;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto.MetricRange;
 import io.camunda.optimize.service.db.repository.BusinessValueOverviewRepository;
+import io.camunda.optimize.service.exceptions.OptimizeBulkFailureException;
+import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;
@@ -66,13 +68,28 @@ public class BusinessValueOverviewWriter {
         "Deleting business-value overview rows for definition [{}] tenant [{}]",
         processDefinitionKey,
         tenantId);
-    repository.deleteByIds(
-        Arrays.stream(MetricRange.values())
-            .map(
-                range ->
-                    BusinessValueOverviewRepository.documentId(
-                        tenantId, processDefinitionKey, range))
-            .toList());
+    try {
+      repository.deleteByIds(
+          Arrays.stream(MetricRange.values())
+              .map(
+                  range ->
+                      BusinessValueOverviewRepository.documentId(
+                          tenantId, processDefinitionKey, range))
+              .toList());
+    } catch (final OptimizeRuntimeException e) {
+      // Logged here as well as rethrown: the caller retries, so a failure that later succeeds
+      // leaves no other trace that the cluster rejected the delete.
+      LOG.warn(
+          "Bulk delete of business-value overview rows for definition [{}] tenant [{}] failed",
+          processDefinitionKey,
+          tenantId,
+          e);
+      throw new OptimizeBulkFailureException(
+          String.format(
+              "Could not delete the business-value overview rows for definition [%s] tenant [%s].",
+              processDefinitionKey, tenantId),
+          e);
+    }
   }
 
   private void validateAll(final List<BusinessValueOverviewDto> rows) {
