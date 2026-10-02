@@ -80,7 +80,7 @@ public final class FileBasedSnapshotStoreImpl {
 
   private final Set<PersistableSnapshot> pendingSnapshots = new HashSet<>();
   private final Set<FileBasedSnapshot> availableSnapshots = new HashSet<>();
-  private final Map<String, CheckpointReservation> reservations = new HashMap<>();
+  private final Map<ReservationKey, CheckpointReservation> reservations = new HashMap<>();
 
   public FileBasedSnapshotStoreImpl(
       final int brokerId,
@@ -263,23 +263,23 @@ public final class FileBasedSnapshotStoreImpl {
     return actor.call(() -> Collections.unmodifiableSet(availableSnapshots));
   }
 
-  public ActorFuture<Optional<String>> reserveLatestSnapshot() {
+  public ActorFuture<Optional<String>> reserveLatestSnapshot(final long checkpointId) {
     return actor.call(
         () ->
             availableSnapshots.stream()
                 .max(Comparator.comparing(FileBasedSnapshot::getSnapshotId))
-                .filter(this::reserveForCheckpoint)
+                .filter(snapshot -> reserveForCheckpoint(checkpointId, snapshot))
                 .map(FileBasedSnapshot::getId));
   }
 
-  public ActorFuture<Void> reserveSnapshot(final String snapshotId) {
+  public ActorFuture<Void> reserveSnapshot(final long checkpointId, final String snapshotId) {
     return actor.call(
         () -> {
           final var reserved =
               availableSnapshots.stream()
                   .filter(snapshot -> snapshot.getId().equals(snapshotId))
                   .findFirst()
-                  .filter(this::reserveForCheckpoint);
+                  .filter(snapshot -> reserveForCheckpoint(checkpointId, snapshot));
           if (reserved.isEmpty()) {
             throw new SnapshotNotFoundException(
                 "Expected to reserve snapshot %s, but it does not exist".formatted(snapshotId));
@@ -288,19 +288,20 @@ public final class FileBasedSnapshotStoreImpl {
         });
   }
 
-  public ActorFuture<Optional<PersistedSnapshot>> getReservedSnapshot(final String snapshotId) {
+  public ActorFuture<Optional<PersistedSnapshot>> getReservedSnapshot(
+      final long checkpointId, final String snapshotId) {
     return actor.call(
         () ->
-            Optional.ofNullable(reservations.get(snapshotId))
+            Optional.ofNullable(reservations.get(new ReservationKey(checkpointId, snapshotId)))
                 .map(reservation -> reservation.reservation().snapshot()));
   }
 
-  public ActorFuture<Void> releaseReservation(final String snapshotId) {
+  public ActorFuture<Void> releaseReservation(final long checkpointId, final String snapshotId) {
     return actor.call(
         () -> {
           reservations.computeIfPresent(
-              snapshotId,
-              (id, reservation) -> {
+              new ReservationKey(checkpointId, snapshotId),
+              (key, reservation) -> {
                 if (reservation.count() > 1) {
                   return reservation.decrement();
                 }
@@ -320,11 +321,11 @@ public final class FileBasedSnapshotStoreImpl {
         });
   }
 
-  private boolean reserveForCheckpoint(final FileBasedSnapshot snapshot) {
+  private boolean reserveForCheckpoint(final long checkpointId, final FileBasedSnapshot snapshot) {
     final var reservation =
         reservations.compute(
-            snapshot.getId(),
-            (id, existing) -> existing != null ? existing.increment() : reserve(snapshot));
+            new ReservationKey(checkpointId, snapshot.getId()),
+            (key, existing) -> existing != null ? existing.increment() : reserve(snapshot));
     return reservation != null;
   }
 
@@ -832,6 +833,8 @@ public final class FileBasedSnapshotStoreImpl {
   public Optional<PersistedSnapshot> getBootstrapSnapshot() {
     return Optional.ofNullable(bootstrapSnapshot.get());
   }
+
+  private record ReservationKey(long checkpointId, String snapshotId) {}
 
   /** Snapshot reservation reference count. */
   private record CheckpointReservation(FileBasedSnapshotReservation reservation, int count) {

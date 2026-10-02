@@ -92,7 +92,7 @@ public class NoopBackupManager implements BackupManager {
   }
 
   @Override
-  public void releaseSnapshotReservation(final String snapshotId) {}
+  public void releaseSnapshotReservation(final long checkpointId, final String snapshotId) {}
 
   @Override
   public ActorFuture<BackupStatus> getBackupStatus(final long checkpointId) {

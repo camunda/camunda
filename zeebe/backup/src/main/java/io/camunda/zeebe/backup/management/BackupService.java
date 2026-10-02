@@ -224,7 +224,7 @@ public final class BackupService extends Actor implements BackupManager {
   }
 
   @Override
-  public void releaseSnapshotReservation(final String snapshotId) {
-    snapshotStore.releaseReservation(snapshotId);
+  public void releaseSnapshotReservation(final long checkpointId, final String snapshotId) {
+    snapshotStore.releaseReservation(checkpointId, snapshotId);
   }
 }

@@ -128,7 +128,7 @@ public final class CheckpointCreateProcessor {
   private void releaseSnapshotReserved(final CheckpointRecord checkpointRecord) {
     final var snapshotId = checkpointRecord.getSnapshotId();
     if (!snapshotId.isEmpty()) {
-      backupManager.releaseSnapshotReservation(snapshotId);
+      backupManager.releaseSnapshotReservation(checkpointRecord.getCheckpointId(), snapshotId);
     }
   }
 

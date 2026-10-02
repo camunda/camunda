@@ -248,7 +248,10 @@ final class InProgressBackupImpl implements InProgressBackup {
   public void close() {
     // the reservation was made for this checkpoint before it was written, so it must be released
     // even if this backup never got to use it
-    backupDescriptor.snapshotId().ifPresent(snapshotStore::releaseReservation);
+    backupDescriptor
+        .snapshotId()
+        .ifPresent(
+            snapshotId -> snapshotStore.releaseReservation(backupId.checkpointId(), snapshotId));
     final var reservation = snapshotReservation;
     if (reservation != null) {
       reservation.release();
@@ -306,7 +309,7 @@ final class InProgressBackupImpl implements InProgressBackup {
 
   private ActorFuture<Void> useProvidedSnapshot(final String snapshotId) {
     return snapshotStore
-        .getReservedSnapshot(snapshotId)
+        .getReservedSnapshot(backupId.checkpointId(), snapshotId)
         .andThen(
             (snapshot, error) -> {
               if (error == null && snapshot.isPresent()) {
