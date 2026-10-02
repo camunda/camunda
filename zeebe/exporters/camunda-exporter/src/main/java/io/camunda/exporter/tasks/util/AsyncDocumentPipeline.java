@@ -187,17 +187,31 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
   }
 
   private boolean shouldReduceBatchSize(final Throwable thr) {
-    return batchReductionExceptions.stream().anyMatch(clazz -> matchesThrowableOrCause(thr, clazz));
+    return throwableMatchesFromList(thr, batchReductionExceptions);
   }
 
   private boolean isRetryableError(final Throwable thr) {
-    return retryableExceptions.stream().anyMatch(clazz -> matchesThrowableOrCause(thr, clazz));
+    return throwableMatchesFromList(thr, retryableExceptions);
   }
 
-  private boolean matchesThrowableOrCause(
-      final Throwable thr, final Class<? extends Throwable> throwableClass) {
-    return thr != null
-        && (throwableClass.isInstance(thr) || throwableClass.isInstance(thr.getCause()));
+  private boolean throwableMatchesFromList(
+      final Throwable thr, final List<Class<? extends Throwable>> exceptions) {
+    // with completable futures we can often end up with fairly nested exceptions
+    // so we want to be careful to unwrap it and check all causes
+    var current = thr;
+    do {
+      if (isInstanceFromList(current, exceptions)) {
+        return true;
+      }
+      current = current.getCause();
+    } while (current != null);
+
+    return false;
+  }
+
+  private boolean isInstanceFromList(
+      final Throwable thr, final List<Class<? extends Throwable>> exceptions) {
+    return exceptions.stream().anyMatch(clazz -> clazz.isInstance(thr));
   }
 
   public record DocumentBatch<D, T>(List<D> documents, T searchAfter) {
