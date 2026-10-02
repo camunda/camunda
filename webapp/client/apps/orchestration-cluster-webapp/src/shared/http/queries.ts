@@ -37,6 +37,10 @@ import type {
 	QueryMessageSubscriptionsResponseBody,
 	QueryMappingRulesRequestBody,
 	QueryMappingRulesResponseBody,
+	QueryProcessInstancesRequestBody,
+	QueryProcessInstancesResponseBody,
+	QueryElementInstanceInspectionRequestBody,
+	QueryElementInstanceInspectionResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from './request';
 import {endpoints} from './endpoints';
@@ -77,6 +81,9 @@ const queryKeys = {
 		['getIncidentProcessInstanceStatisticsByError', body] as const,
 	queryAuditLogs: (body: QueryAuditLogsRequestBody) => ['queryAuditLogs', body] as const,
 	queryMappingRules: (body: QueryMappingRulesRequestBody) => ['queryMappingRules', body] as const,
+	queryProcessInstances: (body: QueryProcessInstancesRequestBody) => ['queryProcessInstances', body] as const,
+	queryElementInstanceWaitStates: (body: QueryElementInstanceInspectionRequestBody) =>
+		['queryElementInstanceWaitStates', body] as const,
 };
 
 const queries = {
@@ -452,6 +459,30 @@ const queries = {
 			queryKey: queryKeys.queryMappingRules(body),
 			queryFn: async (): Promise<QueryMappingRulesResponseBody> => {
 				const {response, error} = await request(endpoints.queryMappingRules(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryProcessInstances: (body: QueryProcessInstancesRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryProcessInstances(body),
+			queryFn: async (): Promise<QueryProcessInstancesResponseBody> => {
+				const {response, error} = await request(endpoints.queryProcessInstances(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryElementInstanceWaitStates: (body: QueryElementInstanceInspectionRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryElementInstanceWaitStates(body),
+			queryFn: async (): Promise<QueryElementInstanceInspectionResponseBody> => {
+				const {response, error} = await request(endpoints.queryElementInstanceWaitStates(body));
 				if (error !== null) {
 					throw mapQueryError(error);
 				}

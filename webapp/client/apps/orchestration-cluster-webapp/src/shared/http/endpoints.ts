@@ -18,6 +18,7 @@ import {
 	type GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
 	type QueryProcessInstancesRequestBody,
 	type QueryElementInstancesRequestBody,
+	type QueryElementInstanceInspectionRequestBody,
 	type QueryAgentInstancesRequestBody,
 	type QueryProcessInstanceIncidentsRequestBody,
 	type CancelProcessInstanceRequestBody,
@@ -304,6 +305,14 @@ const endpoints = {
 		new Request(getFullURL(unifiedAPIEndpoints.queryElementInstances.getUrl()), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.queryElementInstances.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryElementInstanceWaitStates: (body: QueryElementInstanceInspectionRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryElementInstanceInspection.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryElementInstanceInspection.method,
 			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),
