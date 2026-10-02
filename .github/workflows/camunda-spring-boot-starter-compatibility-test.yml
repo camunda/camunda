@@ -71,6 +71,12 @@ jobs:
             fi
           fi
 
+      - uses: ./.github/actions/setup-build
+        with:
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
       - name: Get current version from pom.xml
         id: pom-version
         run: |
