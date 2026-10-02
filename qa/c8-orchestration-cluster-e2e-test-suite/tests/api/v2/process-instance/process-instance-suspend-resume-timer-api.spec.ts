@@ -26,7 +26,6 @@ import {
   suspendAndExpectSuspended,
 } from '@requestHelpers';
 import {
-  defaultAssertionOptions,
   extendedAssertionOptions,
   uniquePrefixedId,
 } from '../../../../utils/constants';
@@ -47,17 +46,27 @@ async function deployDurationTimerProcess(processDefinitionId: string) {
   return deployment.processes[0];
 }
 
+// As authored in repeating_boundary_timer_process.bpmn, and so also the
+// substitution key that overrides it.
+const TICK_CYCLE = 'R4/PT20S';
+
+// Repetitions are spent by wall-clock while the instance runs, so readiness
+// waits before the suspension compete with the assertions after it. The
+// readiness budget is 90s, i.e. up to four ticks, and the catch-up and the
+// re-arm need two more; ten leaves room for both without changing the interval
+// the gap and cadence assertions are built on.
+const CATCH_UP_TICK_CYCLE = 'R10/PT20S';
+
 /** The child's job is left unworked: the boundary timers stay armed only while
  * the call activity runs. */
-async function deployCycleTimerProcess(prefix: string) {
+async function deployCycleTimerProcess(prefix: string, tickCycle = TICK_CYCLE) {
   const childId = `${prefix}-child`;
-  const childJobType = `${prefix}-child-job`;
   const processDefinitionId = `${prefix}-timer`;
   const tickJobType = `${prefix}-tick`;
   const thresholdJobType = `${prefix}-threshold`;
   await deployWithSubstitutions('./resources/childProcess_v_1.bpmn', {
     'id="childProcess"': `id="${childId}"`,
-    'type="Task"': `type="${childJobType}"`,
+    'type="Task"': `type="${prefix}-child-job"`,
   });
   await deployWithSubstitutions(
     './resources/repeating_boundary_timer_process.bpmn',
@@ -65,19 +74,18 @@ async function deployCycleTimerProcess(prefix: string) {
       'id="updatable_boundary_timer_process"': `id="${processDefinitionId}"`,
       'type="sr-tick"': `type="${tickJobType}"`,
       'type="sr-threshold"': `type="${thresholdJobType}"`,
+      [TICK_CYCLE]: tickCycle,
     },
   );
-  return {
-    processDefinitionId,
-    childId,
-    childJobType,
-    tickJobType,
-    thresholdJobType,
-  };
+  return {processDefinitionId, childId, tickJobType, thresholdJobType};
 }
 
-async function startCycleTimerInstance(prefix: string, amount = 10) {
-  const fixture = await deployCycleTimerProcess(prefix);
+async function startCycleTimerInstance(
+  prefix: string,
+  amount = 10,
+  tickCycle = TICK_CYCLE,
+) {
+  const fixture = await deployCycleTimerProcess(prefix, tickCycle);
   const instance = await createInstanceOnceDeployed(
     fixture.processDefinitionId,
     1,
@@ -162,31 +170,6 @@ const ticksAfter = (
     expected,
     extendedAssertionOptions,
   );
-
-/**
- * Waits until the call activity's child has a job to hand out, which means the
- * boundary timers are armed. Job activation answers from the engine, so unlike
- * an element-state read it cannot lag behind the repetitions it is waiting on.
- * The job is left uncompleted: the child has to keep running.
- */
-async function awaitChildJobAvailable(
-  request: APIRequestContext,
-  childJobType: string,
-) {
-  await expect(async () => {
-    const res = await request.post(buildUrl('/jobs/activation'), {
-      headers: jsonHeaders(),
-      data: {
-        type: childJobType,
-        maxJobsToActivate: 1,
-        timeout: 1_000,
-        requestTimeout: 1_000,
-      },
-    });
-    await assertStatusCode(res, 200);
-    expect(((await res.json()).jobs ?? []).length).toBeGreaterThan(0);
-  }).toPass(defaultAssertionOptions);
-}
 
 async function expectJobCount(
   request: APIRequestContext,
@@ -305,12 +288,14 @@ test.describe('Process Instance Suspend and Resume Timer API', () => {
     request,
   }) => {
     test.setTimeout(8 * 60 * 1000);
-    const fixture = await startCycleTimerInstance(uniquePrefixedId('sr-cycle'));
+    const fixture = await startCycleTimerInstance(
+      uniquePrefixedId('sr-cycle'),
+      10,
+      CATCH_UP_TICK_CYCLE,
+    );
 
-    // Gated on the engine, not on an indexed read: R4/PT20S is spent after 80s,
-    // and any search for readiness can itself take longer than that, leaving
-    // too few repetitions for the catch-up and the re-arm to both happen.
-    await awaitChildJobAvailable(request, fixture.childJobType);
+    // One tick first, so what follows is about the gap, not a timer that never fired.
+    await ticksAfter(request, fixture.processInstanceKey, 0, 1);
 
     await suspendAndExpectSuspended(request, fixture.processInstanceKey);
     const suspendedAt = new Date(
