@@ -29,6 +29,7 @@ import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager;
 import org.apache.hc.client5.http.nio.AsyncClientConnectionManager;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.concurrent.FutureCallback;
+import org.apache.hc.core5.reactor.IOReactorConfig;
 import org.apache.hc.core5.util.Timeout;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -225,6 +226,23 @@ class OpensearchConnectorTest {
     Mockito.verify(builder).setConnectTimeout(Timeout.of(5_000L, TimeUnit.MILLISECONDS));
     Mockito.verify(builder)
         .setConnectionRequestTimeout(Timeout.of(180_000L, TimeUnit.MILLISECONDS));
+  }
+
+  @Test
+  void shouldEnableTcpKeepAlive() {
+    // given
+    final var configuration = new ConnectConfiguration();
+    final var connector =
+        new OpensearchConnector(configuration, new ObjectMapper(), null, new PluginRepository());
+    final var builder = Mockito.mock(HttpAsyncClientBuilder.class);
+
+    // when
+    connector.configureHttpClient(builder, configuration);
+
+    // then
+    final var captor = ArgumentCaptor.forClass(IOReactorConfig.class);
+    Mockito.verify(builder).setIOReactorConfig(captor.capture());
+    Assertions.assertThat(captor.getValue().isSoKeepAlive()).isTrue();
   }
 
   private static CloseableHttpAsyncClient getOpensearchApacheClient(

@@ -30,8 +30,10 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpRequestWrapper;
 import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.http.impl.nio.reactor.IOReactorConfig;
 import org.apache.http.protocol.BasicHttpContext;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 class ElasticsearchConnectorTest {
@@ -163,6 +165,23 @@ class ElasticsearchConnectorTest {
     Mockito.verify(builder).setSocketTimeout(30_000);
     Mockito.verify(builder).setConnectTimeout(5_000);
     Mockito.verify(builder).setConnectionRequestTimeout(180_000);
+  }
+
+  @Test
+  void shouldEnableTcpKeepAlive() {
+    // given
+    final var configuration = new ConnectConfiguration();
+    final var connector =
+        new ElasticsearchConnector(configuration, new ObjectMapper(), new PluginRepository());
+    final var builder = Mockito.mock(HttpAsyncClientBuilder.class);
+
+    // when
+    connector.configureHttpClient(builder, configuration);
+
+    // then
+    final var captor = ArgumentCaptor.forClass(IOReactorConfig.class);
+    Mockito.verify(builder).setDefaultIOReactorConfig(captor.capture());
+    assertThat(captor.getValue().isSoKeepalive()).isTrue();
   }
 
   private static final class NoopCallback implements FutureCallback<HttpResponse> {

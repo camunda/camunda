@@ -8,6 +8,8 @@
 package io.camunda.zeebe.exporter.opensearch;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
@@ -18,11 +20,14 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.concurrent.FutureCallback;
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.http.impl.nio.reactor.IOReactorConfig;
 import org.apache.http.nio.client.HttpAsyncClient;
 import org.apache.http.protocol.BasicHttpContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.mockito.ArgumentCaptor;
 import org.opensearch.client.Node;
 import org.opensearch.client.RestClient;
 
@@ -108,6 +113,20 @@ final class RestClientFactoryTest {
     final var field = client.getClass().getDeclaredField("client");
     field.setAccessible(true);
     return (HttpAsyncClient) field.get(client);
+  }
+
+  @Test
+  void shouldEnableTcpKeepAlive() {
+    // given
+    final var builder = mock(HttpAsyncClientBuilder.class);
+
+    // when
+    RestClientFactory.INSTANCE.configureHttpClient(config, builder, false);
+
+    // then
+    final var captor = ArgumentCaptor.forClass(IOReactorConfig.class);
+    verify(builder).setDefaultIOReactorConfig(captor.capture());
+    assertThat(captor.getValue().isSoKeepalive()).isTrue();
   }
 
   private static final class NoopCallback implements FutureCallback<HttpResponse> {
