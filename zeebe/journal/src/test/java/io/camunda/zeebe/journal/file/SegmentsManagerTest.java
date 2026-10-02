@@ -304,6 +304,24 @@ class SegmentsManagerTest {
     }
   }
 
+  @Test
+  void shouldNotIncludeSegmentsCreatedAfterGettingTailSegments() {
+    // given
+    final var segmentsManager = journalFactory.segmentsManager(directory);
+    try (final var journal = journalFactory.journal(segmentsManager)) {
+      journal.append(journalFactory.entry());
+      final var tailSegments = segmentsManager.getTailSegments(1);
+
+      // when - the next record does not fit and rolls over into a new segment
+      journal.append(journalFactory.entry());
+
+      // then - e.g. a flush iterating the tail segments does not reach the new segment, which may
+      // hold records appended after the flush already flushed the previous segment
+      assertThat(tailSegments.keySet()).containsExactly(1L);
+      assertThat(segmentsManager.getTailSegments(1).keySet()).containsExactly(1L, 2L);
+    }
+  }
+
   private SegmentedJournal openJournal() {
     return journalFactory.journal(journalFactory.segmentsManager(directory));
   }
