@@ -40,9 +40,11 @@ import {useProcessInstancesSelection, type ProcessInstancesSelection} from './us
 import {ProcessesToolbar} from './ProcessesToolbar';
 import {processBulkOperationMachine} from './processBulkOperationMachine';
 import {MoveAction} from './MoveAction';
+import {MigrateAction} from './MigrateAction';
+import {getMigrationFilter, type MigrationScope} from './getMigrationFilter';
 import {BatchModificationFooter} from './BatchModificationFooter';
 import {useDiagramXml} from './useDiagramXml';
-import {getActiveModificationFilter} from './getActiveModificationFilter';
+import {getActiveInstancesFilter} from './getActiveInstancesFilter';
 import {getElementName} from './getElementName';
 import type {ProcessDefinitionSelection} from './DiagramPanel';
 import type {ProcessesMode, ProcessesNavigationBlocker} from './ProcessesLayout';
@@ -57,6 +59,7 @@ type Props = {
 	onEnterMode?: (mode: ProcessesMode) => void;
 	onExitMode?: () => void;
 	onSelectionScopeChange?: Dispatch<SetStateAction<BatchModificationScope | null>>;
+	onMigrationEnter?: (source: ProcessDefinition, scope: MigrationScope) => void;
 	isActionMode?: boolean;
 	renderActions?: (selection: ProcessInstancesSelection) => ReactNode;
 };
@@ -118,6 +121,7 @@ const InstancesTable: React.FC<Props> = ({
 	onEnterMode,
 	onExitMode,
 	onSelectionScopeChange,
+	onMigrationEnter,
 	isActionMode,
 	renderActions,
 }) => {
@@ -168,6 +172,15 @@ const InstancesTable: React.FC<Props> = ({
 		setModeDefinition(null);
 		onExitMode?.();
 	};
+	const migrationFilter =
+		processDefinitionSelection?.kind === 'single-version'
+			? getMigrationFilter({
+					search,
+					includeIds: selection.mode === 'INCLUDE' ? selection.includedIds : [],
+					excludeIds: selection.excludedIds,
+					processDefinitionKey: processDefinitionSelection.definition.processDefinitionKey,
+				})
+			: null;
 	const canSelect = status === 'success' && !isPlaceholderData && !isSubmitting;
 
 	// The operation-state column only exists while the list is filtered by a batch operation —
@@ -385,6 +398,25 @@ const InstancesTable: React.FC<Props> = ({
 									}}
 								/>
 							)}
+							{processDefinitionSelection && onMigrationEnter && (
+								<MigrateAction
+									mode={mode}
+									isSubmitting={isSubmitting}
+									hasActiveScope={migrationFilter !== null}
+									selection={selection}
+									processDefinitionSelection={processDefinitionSelection}
+									onEnter={() => {
+										if (processDefinitionSelection.kind !== 'single-version' || migrationFilter === null) {
+											return;
+										}
+										onMigrationEnter(processDefinitionSelection.definition, {
+											filter: migrationFilter,
+											selectedCount: selection.mode === 'INCLUDE' ? selection.runningCount : selection.selectedCount,
+											isCountTruncated: selection.isCountTruncated,
+										});
+									}}
+								/>
+							)}
 							{renderActions?.(selection)}
 						</>
 					}
@@ -474,7 +506,7 @@ const InstancesTable: React.FC<Props> = ({
 					})}
 					onExit={exitMode}
 					onSubmit={(moveInstruction) => {
-						const activeFilter = getActiveModificationFilter(selection.getRequest('cancel').filter);
+						const activeFilter = getActiveInstancesFilter(selection.getRequest('cancel').filter);
 						if (
 							activeFilter === null ||
 							selection.selectedCount < 1 ||

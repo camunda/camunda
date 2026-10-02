@@ -6,7 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {endpoints} from '@camunda/camunda-api-zod-schemas/8.11';
+import {http, HttpResponse} from 'msw';
+import {
+	endpoints,
+	queryProcessDefinitionsRequestBodySchema,
+	type QueryProcessDefinitionsRequestBody,
+} from '@camunda/camunda-api-zod-schemas/8.11';
 import {createEndpointMock} from './mock-endpoint';
 
 const mockQueryUserTasksEndpoint = createEndpointMock({
@@ -23,6 +28,16 @@ const mockQueryProcessDefinitionsEndpoint = createEndpointMock({
 	endpoint: endpoints.queryProcessDefinitions.getUrl(),
 	method: endpoints.queryProcessDefinitions.method,
 });
+
+const mockQueryProcessDefinitionsByFilterEndpoint = ({
+	getResponse,
+}: {
+	getResponse: (filter: QueryProcessDefinitionsRequestBody['filter']) => Response;
+}) =>
+	http.post(endpoints.queryProcessDefinitions.getUrl(), async ({request}) => {
+		const {filter} = queryProcessDefinitionsRequestBodySchema.parse(await request.json());
+		return getResponse(filter);
+	});
 
 const mockQueryMessageSubscriptionsEndpoint = createEndpointMock({
 	endpoint: endpoints.queryMessageSubscriptions.getUrl(),
@@ -229,6 +244,12 @@ const mockGetProcessDefinitionXmlEndpoint = createEndpointMock({
 	method: endpoints.getProcessDefinitionXml.method,
 });
 
+const mockGetProcessDefinitionXmlByKeyEndpoint = ({xmlByKey}: {xmlByKey: Record<string, string>}) =>
+	http.get(endpoints.getProcessDefinitionXml.getUrl({processDefinitionKey: ':processDefinitionKey'}), ({params}) => {
+		const xml = xmlByKey[String(params.processDefinitionKey)];
+		return xml === undefined ? new HttpResponse(null, {status: 404}) : HttpResponse.text(xml);
+	});
+
 const mockGetProcessDefinitionStatisticsEndpoint = createEndpointMock({
 	endpoint: endpoints.getProcessDefinitionStatistics.getUrl({
 		processDefinitionKey: ':processDefinitionKey',
@@ -364,6 +385,7 @@ export {
 	mockQueryVariablesByUserTaskEndpoint,
 	mockGetVariableEndpoint,
 	mockGetProcessDefinitionXmlEndpoint,
+	mockGetProcessDefinitionXmlByKeyEndpoint,
 	mockGetProcessDefinitionStatisticsEndpoint,
 	mockAssignTaskEndpoint,
 	mockUnassignTaskEndpoint,
@@ -372,6 +394,7 @@ export {
 	mockGetAuditLogEndpoint,
 	mockQueryUserTasksEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
+	mockQueryProcessDefinitionsByFilterEndpoint,
 	mockQueryMessageSubscriptionsEndpoint,
 	mockGetProcessDefinitionEndpoint,
 	mockGetProcessStartFormEndpoint,
