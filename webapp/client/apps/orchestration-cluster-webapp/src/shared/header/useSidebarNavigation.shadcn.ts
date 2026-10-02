@@ -193,7 +193,12 @@ function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 	if (isOperateRoute) {
 		const hasOperateAccess = hasComponentAccess('operate', authorizedComponents);
 		const isOperateProcessesRoute = matchRoute({to: tabRoutes['operateProcesses'], fuzzy: true}) !== false;
-		const isOperateDecisionsRoute = matchRoute({to: tabRoutes['operateDecisions'], fuzzy: true}) !== false;
+		// Decisions isn't migrated yet, but its DS scaffold is reachable directly at
+		// /operate-preview/decisions ahead of the real link target moving there; match both
+		// paths so the sidebar doesn't fall back to highlighting Dashboard on that route.
+		const isOperateDecisionsRoute =
+			matchRoute({to: tabRoutes['operateDecisions'], fuzzy: true}) !== false ||
+			matchRoute({to: '/operate-preview/decisions', fuzzy: true}) !== false;
 		const isOperateOperationsLogRoute = matchRoute({to: tabRoutes['operateOperationsLog'], fuzzy: true}) !== false;
 		const isOperateBatchOperationsRoute = matchRoute({to: tabRoutes['operateBatchOperations'], fuzzy: true}) !== false;
 
