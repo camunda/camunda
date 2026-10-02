@@ -24,6 +24,7 @@ dependencies {
   implementation(project(":zeebe-atomix-cluster"))
   implementation(project(":zeebe-workflow-engine"))
   implementation(project(":zeebe-exporter-common"))
+  implementation(project(":zeebe-exporter-config-support"))
   implementation(project(":dynamic-node-id-provider"))
   implementation(project(":zeebe-util"))
   implementation(project(":camunda-search-domain"))
