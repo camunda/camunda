@@ -569,6 +569,35 @@ public class ProcessInstanceSuspendResumeIT {
         camundaClient, f -> f.processInstanceKey(processInstanceKey), 1);
   }
 
+  @Test
+  void shouldRejectSuspendWithConflictWhileCancelIsInProgress() {
+    // given - the cancel waits for a canceling task listener job
+    final var listenerType = Strings.newRandomValidBpmnId();
+    final long processInstanceKey = startProcessWithCancelingListener(listenerType);
+
+    final var cancel = camundaClient.newCancelInstanceCommand(processInstanceKey).send();
+    final long listenerJobKey = activateJob(listenerType);
+
+    // when
+    final var problem =
+        assertThatExceptionOfType(ProblemException.class)
+            .isThrownBy(
+                () ->
+                    camundaClient
+                        .newSuspendProcessInstanceCommand(processInstanceKey)
+                        .send()
+                        .join())
+            .actual();
+
+    // then
+    assertThat(problem.code()).isEqualTo(409);
+    assertThat(problem.details().getDetail()).contains("a cancel request is already in progress");
+
+    // complete the listener job so the process instance terminates
+    camundaClient.newCompleteCommand(listenerJobKey).send().join();
+    cancel.join();
+  }
+
   private static void activateAndCompleteJobs(final String jobType, final int count) {
     // Complete whatever each poll activates and accumulate toward count, rather than requiring all
     // count jobs at once. The two instances can reach a task moments apart; a poll that grabbed a
@@ -641,6 +670,29 @@ public class ProcessInstanceSuspendResumeIT {
         .stream()
         .map(e -> Tuple.tuple(e.getElementId(), e.getState()))
         .toList();
+  }
+
+  private static long startProcessWithCancelingListener(final String listenerType) {
+    final var processId = Strings.newRandomValidBpmnId();
+    final var model =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .userTask(
+                "userTask",
+                t -> t.zeebeUserTask().zeebeTaskListener(l -> l.canceling().type(listenerType)))
+            .endEvent()
+            .done();
+    camundaClient
+        .newDeployResourceCommand()
+        .addProcessModel(model, processId + ".bpmn")
+        .send()
+        .join();
+    waitForProcessesToBeDeployed(camundaClient, f -> f.processDefinitionId(processId), 1);
+
+    final long processInstanceKey =
+        startProcessInstance(camundaClient, processId).getProcessInstanceKey();
+    waitForUserTask(camundaClient, f -> f.processInstanceKey(processInstanceKey));
+    return processInstanceKey;
   }
 
   private static DeployedProcess deployProcess() {

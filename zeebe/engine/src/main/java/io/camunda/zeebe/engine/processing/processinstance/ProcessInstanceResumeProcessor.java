@@ -48,6 +48,8 @@ public final class ProcessInstanceResumeProcessor
       MESSAGE_PREFIX + "no such process was found";
   private static final String PROCESS_NOT_SUSPENDED_MESSAGE =
       MESSAGE_PREFIX + "it is not currently suspended";
+  private static final String PROCESS_TERMINATING_MESSAGE =
+      MESSAGE_PREFIX + "it is already being terminated";
 
   private final ElementInstanceState elementInstanceState;
   private final TypedResponseWriter responseWriter;
@@ -79,6 +81,7 @@ public final class ProcessInstanceResumeProcessor
 
     validateNotFound(command, elementInstance)
         .flatMap(ei -> validateAuthorized(command, ei))
+        .flatMap(ei -> validateNotTerminating(command, ei))
         .flatMap(ei -> validateSuspensionState(command, ei))
         .ifRightOrLeft(
             ei -> resume(command, ei),
@@ -104,9 +107,7 @@ public final class ProcessInstanceResumeProcessor
 
   private Either<Rejection, ElementInstance> validateNotFound(
       final TypedRecord<ProcessInstanceRecord> command, final ElementInstance elementInstance) {
-    if (elementInstance == null
-        || elementInstance.getParentKey() > 0
-        || elementInstance.isTerminating()) {
+    if (elementInstance == null || elementInstance.getParentKey() > 0) {
       return Either.left(
           new Rejection(
               RejectionType.NOT_FOUND, PROCESS_NOT_FOUND_MESSAGE.formatted(command.getKey())));
@@ -137,6 +138,17 @@ public final class ProcessInstanceResumeProcessor
                 PROCESS_NOT_FOUND_MESSAGE.formatted(
                     elementInstance.getValue().getProcessInstanceKey())))
         .map(ignored -> elementInstance);
+  }
+
+  private Either<Rejection, ElementInstance> validateNotTerminating(
+      final TypedRecord<ProcessInstanceRecord> command, final ElementInstance elementInstance) {
+    if (elementInstance.isTerminating()) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_STATE,
+              PROCESS_TERMINATING_MESSAGE.formatted(command.getKey())));
+    }
+    return Either.right(elementInstance);
   }
 
   private Either<Rejection, ElementInstance> validateSuspensionState(
