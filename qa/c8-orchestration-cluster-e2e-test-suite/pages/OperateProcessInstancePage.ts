@@ -933,11 +933,6 @@ class OperateProcessInstancePage {
     );
   }
 
-  /**
-   * The header renders its actions either as direct buttons or behind an
-   * Actions menu, so callers asserting which actions are offered have to read
-   * whichever layout is present rather than assuming one.
-   */
   // The tab appears only once the incident reaches Operate's view, and the
   // table only once the tab is open — so wait for the tab, don't probe it.
   async openIncidentsTab(): Promise<void> {
