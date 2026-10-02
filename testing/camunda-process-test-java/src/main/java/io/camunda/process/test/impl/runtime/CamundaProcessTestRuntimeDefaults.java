@@ -32,7 +32,7 @@ public class CamundaProcessTestRuntimeDefaults {
   public static final String DEFAULT_CAMUNDA_DOCKER_IMAGE_VERSION = "8.11-SNAPSHOT";
   public static final String DEFAULT_CONNECTORS_DOCKER_IMAGE_NAME = "camunda/connectors-bundle";
   public static final String DEFAULT_CONNECTORS_DOCKER_IMAGE_VERSION = "8.11-SNAPSHOT";
-  public static final String DEFAULT_ELASTICSEARCH_VERSION = "8.19.16";
+  public static final String DEFAULT_ELASTICSEARCH_VERSION = "9.5.5";
 
   public static final String DEFAULT_ELASTICSEARCH_DOCKER_IMAGE_NAME = "elasticsearch";
 
