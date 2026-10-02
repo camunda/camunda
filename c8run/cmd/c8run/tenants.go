@@ -48,10 +48,6 @@ func newTenantsCommand() *tenantsCommand {
 	}
 }
 
-func isTenantsCommand(name string) bool {
-	return name == "tenants" || name == "physical-tenants" || name == "pt"
-}
-
 func (c *tenantsCommand) run(baseDir string, args []string) error {
 	if len(args) == 0 || args[0] == "help" || args[0] == "-h" || args[0] == "--help" {
 		_, _ = fmt.Fprint(c.output, tenantsHelp)

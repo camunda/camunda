@@ -146,15 +146,15 @@ func PrintSummary(w io.Writer, settings types.C8RunSettings, results []ProbeResu
 		status[r.ID] = r
 	}
 	protocol := settings.GetProtocol()
-	fmt.Fprintln(w, "Physical tenants:")
+	_, _ = fmt.Fprintln(w, "Physical tenants:")
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(tw, "  TENANT\tSTATUS\tLOGIN\tOPERATE\tORCHESTRATION API\tCONNECTORS")
+	_, _ = fmt.Fprintln(tw, "  TENANT\tSTATUS\tLOGIN\tOPERATE\tORCHESTRATION API\tCONNECTORS")
 	defaultConnectors := "disabled"
 	if !settings.DisableConnectors {
 		defaultConnectors = fmt.Sprintf("http://localhost:%d/", inboundPort)
 	}
 	d := EndpointsFor(DefaultID, protocol, settings.Port)
-	fmt.Fprintf(tw, "  %s\t%s\t%s\t%s\t%s\t%s\n", DefaultID, "ready", orDemo(settings.Username), d.Operate, d.REST, defaultConnectors)
+	_, _ = fmt.Fprintf(tw, "  %s\t%s\t%s\t%s\t%s\t%s\n", DefaultID, "ready", orDemo(settings.Username), d.Operate, d.REST, defaultConnectors)
 	for _, t := range settings.PhysicalTenants {
 		e := EndpointsFor(t.ID, protocol, settings.Port)
 		state := "ready"
@@ -170,28 +170,28 @@ func PrintSummary(w io.Writer, settings types.C8RunSettings, results []ProbeResu
 		if t.Connectors {
 			conn = fmt.Sprintf("http://localhost:%d/", t.ConnectorsPort)
 		}
-		fmt.Fprintf(tw, "  %s\t%s\t%s\t%s\t%s\t%s\n", t.ID, state, t.Username, e.Operate, e.REST, conn)
+		_, _ = fmt.Fprintf(tw, "  %s\t%s\t%s\t%s\t%s\t%s\n", t.ID, state, t.Username, e.Operate, e.REST, conn)
 	}
 	_ = tw.Flush()
-	fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w)
 	for _, r := range results {
 		if !r.Ready {
-			fmt.Fprintf(w, "  ! %s did not become ready: %s\n", r.ID, r.Err)
+			_, _ = fmt.Fprintf(w, "  ! %s did not become ready: %s\n", r.ID, r.Err)
 		} else if r.Warning != "" {
-			fmt.Fprintf(w, "  ! %s is up, but %s\n", r.ID, r.Warning)
+			_, _ = fmt.Fprintf(w, "  ! %s is up, but %s\n", r.ID, r.Warning)
 		}
 	}
 	example := settings.PhysicalTenants[0]
 	ex := EndpointsFor(example.ID, protocol, settings.Port)
-	fmt.Fprintln(w, "Connect to a physical tenant:")
-	fmt.Fprintf(w, "  - Desktop Modeler: cluster endpoint %s\n", ex.REST)
-	fmt.Fprintf(w, "  - REST:            prefix paths with /physical-tenants/<id> (e.g. %stopology)\n", ex.REST)
-	fmt.Fprintf(w, "  - gRPC (:26500):   send header \"Camunda-Physical-Tenant: %s\"\n", example.ID)
-	fmt.Fprintf(w, "  - Java/Spring:     camunda.client.physical-tenant-id=%s\n", example.ID)
-	fmt.Fprintf(w, "  - MCP:             %s\n", ex.MCP)
-	fmt.Fprintf(w, "Each tenant has its own local secrets: `c8run secrets --tenant %s set <NAME>`.\n", example.ID)
-	fmt.Fprintln(w, "Manage tenants with `c8run tenants list|add|remove`.")
-	fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w, "Connect to a physical tenant:")
+	_, _ = fmt.Fprintf(w, "  - Desktop Modeler: cluster endpoint %s\n", ex.REST)
+	_, _ = fmt.Fprintf(w, "  - REST:            prefix paths with /physical-tenants/<id> (e.g. %stopology)\n", ex.REST)
+	_, _ = fmt.Fprintf(w, "  - gRPC (:26500):   send header \"Camunda-Physical-Tenant: %s\"\n", example.ID)
+	_, _ = fmt.Fprintf(w, "  - Java/Spring:     camunda.client.physical-tenant-id=%s\n", example.ID)
+	_, _ = fmt.Fprintf(w, "  - MCP:             %s\n", ex.MCP)
+	_, _ = fmt.Fprintf(w, "Each tenant has its own local secrets: `c8run secrets --tenant %s set <NAME>`.\n", example.ID)
+	_, _ = fmt.Fprintln(w, "Manage tenants with `c8run tenants list|add|remove`.")
+	_, _ = fmt.Fprintln(w)
 }
 
 func orDemo(v string) string {
