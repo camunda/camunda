@@ -49,16 +49,24 @@ public enum StarterMetricsDoc implements ExtendedMeterDocumentation {
   },
 
   /**
-   * Total number of process instance start requests submitted by the starter. Incremented before
-   * the create-instance call is issued, so this counts attempted submissions (including ones that
-   * may fail before reaching the gateway) — a measure of "instances we asked the engine to start",
-   * not "instances the engine created". Used by the quicker load test to compute throughput at the
-   * end of a finite run.
+   * Total number of answered process instance start requests by their {@code outcome}: {@code
+   * success} or {@code failure}. Failures also carry the {@code error} type, e.g. {@code
+   * grpc_resource_exhausted} or {@code http_503}; successes use {@code none}. Counted when the
+   * answer arrives, so requests without an answer are not included, they show up in the in-flight
+   * gauge. Used by the quicker load test to compute throughput at the end of a finite run.
    */
   PROCESS_INSTANCES_STARTED {
+    private static final KeyName[] KEY_NAMES =
+        new KeyName[] {StarterMetricKeyNames.OUTCOME, StarterMetricKeyNames.ERROR};
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return KEY_NAMES;
+    }
+
     @Override
     public String getDescription() {
-      return "Total number of process instance start requests submitted by the starter.";
+      return "Total number of answered process instance start requests by outcome and error type.";
     }
 
     @Override
@@ -154,11 +162,21 @@ public enum StarterMetricsDoc implements ExtendedMeterDocumentation {
       }
     },
 
-    /** The outcome of a scheduled start submission */
+    /** The outcome of a start submission or of its answer */
     OUTCOME {
       @Override
       public String asString() {
         return "outcome";
+      }
+    },
+
+    /**
+     * The error type of a failed answer, e.g. {@code grpc_resource_exhausted} or {@code http_503}
+     */
+    ERROR {
+      @Override
+      public String asString() {
+        return "error";
       }
     },
 
