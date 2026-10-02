@@ -24,7 +24,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState.PersistedProcessVisi
 import io.camunda.zeebe.engine.state.immutable.ProcessState.ProcessIdentifier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.util.ProcessingStateRule;
+import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
@@ -35,23 +35,21 @@ import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.function.LongConsumer;
 import org.assertj.core.api.Assertions;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith(ProcessingStateExtension.class)
 public final class ProcessStateTest {
 
   private static final Long FIRST_PROCESS_KEY =
       Protocol.encodePartitionId(Protocol.DEPLOYMENT_PARTITION, 1);
   private static final String TENANT_ID = "defaultTenant";
-  @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
-
   private MutableProcessState processState;
   private MutableProcessingState processingState;
 
-  @Before
+  @BeforeEach
   public void setUp() {
-    processingState = stateRule.getProcessingState();
     processState = processingState.getProcessState();
   }
 
