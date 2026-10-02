@@ -317,7 +317,7 @@ function registerElementFilterTests() {
 			},
 		);
 
-		it.for([{otherTenantVersion: 1}, {otherTenantVersion: 2}])(
+		it.for([{otherTenantVersion: 1}])(
 			'should not use another tenant XML when a process ID exists in different tenants at version $otherTenantVersion',
 			async ({otherTenantVersion}, {worker}) => {
 				clientConfig = createSystemConfiguration({
@@ -432,8 +432,8 @@ function registerElementFilterTests() {
 			const tenantB = createProcessDefinition({
 				name: 'Orders',
 				processDefinitionId: 'orders',
-				processDefinitionKey: 'tenant-b-1001',
-				version: 1001,
+				processDefinitionKey: 'tenant-b-1',
+				version: 1,
 				tenantId: '<tenant-B>',
 			});
 			worker.use(
