@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { render, SCHEMA_VERSION, emptyCustomerBodyWarning } from '../src/render';
+import { render, SCHEMA_VERSION, emptyCustomerBodyWarning, RELEASE_BODY_LIMIT } from '../src/render';
 import type { RenderPrInput } from '../src/render';
 
 function pr(overrides: Partial<RenderPrInput> = {}): RenderPrInput {
@@ -558,8 +558,11 @@ test('issue-less dependency bumps are full-asset only, and the customer body poi
   const result = render([pr({ number: 1 }), bump(2), bump(3)], { version: '8.10.0', allowUnattributed: false });
 
   // then
-  assert.doesNotMatch(result.customerBody, /pkg2|pkg3|## Dependency updates/);
-  assert.match(result.customerBody, /\n\n2 dependency updates are listed in the full changelog, `CHANGELOG-8\.10\.0\.md`\.$/);
+  assert.doesNotMatch(result.customerBody, /pkg2|pkg3/);
+  assert.match(
+    result.customerBody,
+    /\n\n## Dependency updates\n\n2 dependency updates are listed in the full changelog, `CHANGELOG-8\.10\.0\.md`\.$/,
+  );
   assert.match(result.fullAsset, /## Dependency updates\n\n- pkg2: 1\.0 → 2\.0 \(#2\)\n- pkg3: 1\.0 → 2\.0 \(#3\)/);
   assert.doesNotMatch(result.fullAsset, /listed in the full changelog/);
 });
@@ -590,10 +593,52 @@ test('every bump of a package that one breaking bump touched stays in the custom
   // then
   assert.match(result.customerBody, /^## Breaking changes\n\n- shared: 1\.0 → 3\.0 \(#6, #5\)/);
   assert.doesNotMatch(result.customerBody, /pkg7/);
+  assert.match(result.customerBody, /## Dependency updates\n\n- shared: 1\.0 → 3\.0 \(#6, #5\)\n\n1 other dependency update is listed/);
+});
+
+test('a bump sharing a package with a kept bump is kept too, transitively, so no range splits', () => {
+  // given — #5 is breaking on `shared`; #6 bumps `shared` and `other`; #4 bumps only `other`
+  const result = render(
+    [
+      bump(6, { dependencies: [{ name: 'shared', from: '2.0', to: '3.0' }, { name: 'other', from: '2.0', to: '3.0' }] }),
+      bump(5, { breaking: true, dependencies: [{ name: 'shared', from: '1.0', to: '2.0' }] }),
+      bump(4, { dependencies: [{ name: 'other', from: '1.0', to: '2.0' }] }),
+    ],
+    { version: '8.10.0', allowUnattributed: false },
+  );
+
+  // then
+  assert.match(result.customerBody, /- other: 1\.0 → 3\.0 \(#6, #4\)/);
+  assert.doesNotMatch(result.customerBody, /listed in the full changelog/);
+});
+
+test('the full-changelog pointer counts packages, not pull requests', () => {
+  // given — two pull requests bumping the same package are one line in the full changelog
+  const result = render(
+    [bump(9, { dependencies: [{ name: 'pkg', from: '2.0', to: '3.0' }] }), bump(8, { dependencies: [{ name: 'pkg', from: '1.0', to: '2.0' }] })],
+    { version: '8.10.0', allowUnattributed: false },
+  );
+
+  // then
   assert.match(result.customerBody, /1 dependency update is listed in the full changelog/);
+});
+
+test('a customer body over the release body limit is flagged in audit.json', () => {
+  // given
+  const result = render([pr({ number: 1, title: 'x'.repeat(RELEASE_BODY_LIMIT) })], {
+    version: '8.10.0',
+    allowUnattributed: false,
+  });
+
+  // then
+  const { warnings } = result.auditJson as { warnings: string[] };
+  assert.ok(warnings.some((warning) => warning.includes('release body limit')));
 });
 
 test('a release of only bot bumps still gets a non-empty customer body pointing at the full changelog', () => {
   const result = render([bump(8)], { version: '8.9.23', allowUnattributed: false });
-  assert.equal(result.customerBody, '1 dependency update is listed in the full changelog, `CHANGELOG-8.9.23.md`.');
+  assert.equal(
+    result.customerBody,
+    '## Dependency updates\n\n1 dependency update is listed in the full changelog, `CHANGELOG-8.9.23.md`.',
+  );
 });
