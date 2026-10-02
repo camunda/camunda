@@ -52,6 +52,10 @@ import {
 	type CreateMappingRuleRequestBody,
 	type UpdateMappingRuleRequestBody,
 	type QueryMappingRulesRequestBody,
+	type User,
+	type CreateUserRequestBody,
+	type UpdateUserRequestBody,
+	type QueryUsersRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {mergePathname} from './mergePathname';
@@ -201,6 +205,44 @@ const endpoints = {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.queryMessageSubscriptions.method,
 			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryUsers: (body: QueryUsersRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryUsers.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryUsers.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getUser: ({username}: Pick<User, 'username'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getUser.getUrl({username})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getUser.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createUser: (body: CreateUserRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createUser.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createUser.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	updateUser: ({username, ...body}: Pick<User, 'username'> & UpdateUserRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.updateUser.getUrl({username})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.updateUser.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	deleteUser: ({username}: Pick<User, 'username'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.deleteUser.getUrl({username})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.deleteUser.method,
 			headers: {'Content-Type': 'application/json'},
 		}),
 

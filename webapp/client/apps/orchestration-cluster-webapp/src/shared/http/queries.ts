@@ -37,6 +37,9 @@ import type {
 	QueryMessageSubscriptionsResponseBody,
 	QueryMappingRulesRequestBody,
 	QueryMappingRulesResponseBody,
+	User,
+	QueryUsersRequestBody,
+	QueryUsersResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from './request';
 import {endpoints} from './endpoints';
@@ -77,6 +80,8 @@ const queryKeys = {
 		['getIncidentProcessInstanceStatisticsByError', body] as const,
 	queryAuditLogs: (body: QueryAuditLogsRequestBody) => ['queryAuditLogs', body] as const,
 	queryMappingRules: (body: QueryMappingRulesRequestBody) => ['queryMappingRules', body] as const,
+	users: (body: QueryUsersRequestBody) => ['users', body] as const,
+	user: (username: string) => ['user', username] as const,
 };
 
 const queries = {
@@ -428,6 +433,30 @@ const queries = {
 			queryKey: queryKeys.queryDecisionDefinitions(body),
 			queryFn: async (): Promise<QueryDecisionDefinitionsResponseBody> => {
 				const {response, error} = await request(endpoints.queryDecisionDefinitions(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryUsers: (body: QueryUsersRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.users(body),
+			queryFn: async (): Promise<QueryUsersResponseBody> => {
+				const {response, error} = await request(endpoints.queryUsers(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	getUser: (username: string) =>
+		queryOptions({
+			queryKey: queryKeys.user(username),
+			queryFn: async (): Promise<User> => {
+				const {response, error} = await request(endpoints.getUser({username}));
 				if (error !== null) {
 					throw mapQueryError(error);
 				}
