@@ -19,8 +19,22 @@ public final class SuspensionBatchRecord extends UnifiedRecordValue
       new LongProperty("processInstanceKey", -1L);
   private final LongProperty processDefinitionKeyProperty =
       new LongProperty("processDefinitionKey", -1L);
+
+  /**
+   * The index of the position in the suspension batch. When the index is {@code -1}, there are no
+   * more children to visit.
+   *
+   * <p>This is the element instance key of the next child to visit for most intents, or the key the
+   * scope for which traversal was completed for {@code COMPLETE_SUSPENDING_ELEMENT_INSTANCE}.
+   */
   private final LongProperty indexKeyProperty = new LongProperty("indexKey", -1L);
+
+  /**
+   * The parent key used to find its children and siblings. {@code -1} identifies the traversal root
+   * without a parent.
+   */
   private final LongProperty parentKeyProperty = new LongProperty("parentKey", -1L);
+
   private final IntegerProperty storageOrdinalProperty = new IntegerProperty("storageOrdinal", 0);
 
   public SuspensionBatchRecord() {
