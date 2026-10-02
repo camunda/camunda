@@ -23,27 +23,27 @@ See [Notes](#notes) for what that means when you edit this action.
 
 ### Inputs
 
-|  Input   |                      Description                       | Required | Default |
-|----------|--------------------------------------------------------|----------|---------|
-| url      | Vault URL                                              | true     |         |
+|  Input   |                        Description                         | Required | Default |
+|----------|------------------------------------------------------------|----------|---------|
+| url      | Vault URL                                                  | true     |         |
 | method   | Authentication method; currently the callers use `approle` | true     |         |
-| roleId   | Vault AppRole role ID                                  | true     |         |
-| secretId | Vault AppRole secret ID                                | true     |         |
-| secrets  | Multi-line Vault secret mapping forwarded to the action | true     |         |
+| roleId   | Vault AppRole role ID                                      | true     |         |
+| secretId | Vault AppRole secret ID                                    | true     |         |
+| secrets  | Multi-line Vault secret mapping forwarded to the action    | true     |         |
 
 ### Outputs
 
 This wrapper forwards the secret outputs currently used by [`setup-build`](../setup-build):
 
-|       Output        |       Description        |
-|---------------------|--------------------------|
-| ci-account-password | Imported Nexus password  |
-| ci-account-username | Imported Nexus username  |
-| dockerhub-token     | Imported DockerHub token |
+|       Output        |         Description         |
+|---------------------|-----------------------------|
+| ci-account-password | Imported Nexus password     |
+| ci-account-username | Imported Nexus username     |
+| dockerhub-token     | Imported DockerHub token    |
 | dockerhub-username  | Imported DockerHub username |
-| minimus-token       | Imported Minimus token   |
-| harbor-username     | Imported Harbor username |
-| harbor-password     | Imported Harbor password |
+| minimus-token       | Imported Minimus token      |
+| harbor-username     | Imported Harbor username    |
+| harbor-password     | Imported Harbor password    |
 
 ## Notes
 
