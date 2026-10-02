@@ -28,7 +28,7 @@ import co.elastic.clients.elasticsearch.indices.Alias;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
 import co.elastic.clients.elasticsearch.indices.IndexSettings;
-import co.elastic.clients.elasticsearch.indices.IndexTemplate;
+import co.elastic.clients.elasticsearch.indices.IndexTemplateWithRollover;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
@@ -201,7 +201,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       return client
           .indices()
           .getAlias(req -> req.index(List.copyOf(indexNames)))
-          .result()
+          .aliases()
           .entrySet()
           .stream()
           .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().aliases().keySet()));
@@ -244,7 +244,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
                   req.index(List.copyOf(indexNames))
                       .name("index.number_of_shards")
                       .ignoreUnavailable(true))
-          .result()
+          .settings()
           .entrySet()
           .stream()
           .flatMap(
@@ -280,7 +280,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
                   req.index(List.copyOf(indexNames))
                       .name("index.number_of_replicas")
                       .ignoreUnavailable(true))
-          .result()
+          .settings()
           .entrySet()
           .stream()
           .flatMap(
@@ -326,7 +326,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   private boolean lifecyclePolicyMatches(final String policyName, final String deletionMinAge) {
     try {
       final var lifecycle =
-          client.ilm().getLifecycle(req -> req.name(policyName)).result().get(policyName);
+          client.ilm().getLifecycle(req -> req.name(policyName)).lifecycles().get(policyName);
       if (lifecycle == null) {
         // policy does not exist yet, so there is nothing to compare against
         return false;
@@ -518,7 +518,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
           client
               .indices()
               .get(req -> req.index(pattern).ignoreUnavailable(true))
-              .result()
+              .indices()
               .keySet());
     } catch (final IOException | ElasticsearchException e) {
       final var errMsg = String.format("Failed to retrieve index names for pattern '%s'", pattern);
@@ -576,7 +576,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       return client
           .indices()
           .getMapping(req -> req.index(namePattern).ignoreUnavailable(true))
-          .result()
+          .mappings()
           .entrySet()
           .stream()
           .collect(Collectors.toMap(Entry::getKey, e -> e.getValue().mappings()));
@@ -750,12 +750,12 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     }
   }
 
-  private static String storedSettingsFingerprint(final IndexTemplate template) {
+  private static String storedSettingsFingerprint(final IndexTemplateWithRollover template) {
     final var fingerprint = template.meta().get(SETTINGS_FINGERPRINT_META_KEY);
     return fingerprint == null ? null : fingerprint.to(String.class);
   }
 
-  private IndexTemplate getIndexTemplateState(
+  private IndexTemplateWithRollover getIndexTemplateState(
       final IndexTemplateDescriptor indexTemplateDescriptor) {
     try {
       return client

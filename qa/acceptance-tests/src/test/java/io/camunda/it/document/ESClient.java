@@ -20,7 +20,8 @@ import co.elastic.clients.elasticsearch.indices.RefreshRequest;
 import co.elastic.clients.elasticsearch.snapshot.Repository;
 import co.elastic.clients.elasticsearch.snapshot.RestoreRequest;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
+import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.repository.BackupRepositoryPropsRecord;
 import io.camunda.webapps.backup.repository.SnapshotNameProvider;
@@ -29,21 +30,25 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.net.URISyntaxException;
 import java.util.concurrent.Executor;
-import org.apache.http.HttpHost;
-import org.elasticsearch.client.RestClient;
+import org.apache.hc.core5.http.HttpHost;
 
 public class ESClient implements DocumentClient {
 
-  final RestClient restClient;
+  final Rest5Client restClient;
   final ElasticsearchClient esClient;
   private final Executor executor;
 
   public ESClient(final String url, final Executor executor) {
-    restClient = RestClient.builder(HttpHost.create(url)).build();
+    try {
+      restClient = Rest5Client.builder(HttpHost.create(url)).build();
+    } catch (final URISyntaxException e) {
+      throw new IllegalArgumentException("Error in url: " + url, e);
+    }
     this.executor = executor;
     esClient =
-        new ElasticsearchClient(new RestClientTransport(restClient, new JacksonJsonpMapper()));
+        new ElasticsearchClient(new Rest5ClientTransport(restClient, new JacksonJsonpMapper()));
   }
 
   @Override
@@ -115,7 +120,7 @@ public class ESClient implements DocumentClient {
 
   @Override
   public List<String> cat(final String indexPrefix) throws IOException {
-    return esClient.cat().indices(r -> r.index(indexPrefix + "*")).valueBody().stream()
+    return esClient.cat().indices(r -> r.index(indexPrefix + "*")).indices().stream()
         .map(IndicesRecord::index)
         .toList();
   }
