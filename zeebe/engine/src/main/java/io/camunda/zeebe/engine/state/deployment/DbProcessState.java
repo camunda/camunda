@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.RemovalCause;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.EngineMetricsDoc;
 import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
@@ -38,6 +40,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.micrometer.core.instrument.Counter;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -199,12 +202,25 @@ public final class DbProcessState implements MutableProcessState {
             pendingDeletionKey,
             DbNil.INSTANCE);
 
+    final var collectedDoc = EngineMetricsDoc.PROCESS_CACHE_COLLECTED;
+    final var collectedCounter =
+        Counter.builder(collectedDoc.getName())
+            .description(collectedDoc.getDescription())
+            .register(zeebeDb.getMeterRegistry());
+
     // soft values: a cached process is a large object graph (parsed model, compiled FEEL
     // expressions) whose size we can't weigh, so let the GC reclaim entries under heap pressure
     processByTenantAndKeyCache =
         CacheBuilder.newBuilder()
             .maximumSize(config.getProcessCacheCapacity())
             .softValues()
+            // both caches hold the same values, so counting one avoids double-counting
+            .<TenantIdAndProcessDefinitionKey, DeployedProcess>removalListener(
+                notification -> {
+                  if (notification.getCause() == RemovalCause.COLLECTED) {
+                    collectedCounter.increment();
+                  }
+                })
             .build();
     processesByTenantAndProcessIdAndVersionCache =
         CacheBuilder.newBuilder()

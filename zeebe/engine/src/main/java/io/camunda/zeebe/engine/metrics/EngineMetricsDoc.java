@@ -264,6 +264,29 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
     public KeyName[] getAdditionalKeyNames() {
       return PartitionKeyNames.values();
     }
+  },
+
+  /** Number of cached process definitions reclaimed by the GC under memory pressure */
+  PROCESS_CACHE_COLLECTED {
+    @Override
+    public String getDescription() {
+      return "Number of cached process definitions reclaimed by the GC under memory pressure";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.process.cache.collected.total";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.COUNTER;
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
   };
 
   /** Tags/label values possibly used by the engine metrics. */
