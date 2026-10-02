@@ -20,6 +20,7 @@ import {
   deployServiceTaskProcess,
   startServiceTaskInstance,
   resumeAndCompleteServiceTask,
+  batchOperationKeyForItem,
   expectProcessState,
   expectSuspendedDate,
   failJob,
@@ -468,7 +469,7 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     );
   });
 
-  test('Cancelling suspended instances from the toolbar terminates them', async ({
+  test('Cancelling suspended instances from the toolbar terminates every selected one', async ({
     request,
     page,
     operateHomePage,
@@ -476,41 +477,65 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     operateProcessesPage,
     operateOperationsDetailsPage,
   }) => {
-    const subject = await startInstance('sr-ui-batch-cancel');
-    await suspendAndExpectSuspended(request, subject.processInstanceKey);
+    // Two subjects, because one cannot tell "cancelled the selection" from
+    // "cancelled something", and a control the filter leaves out, because a
+    // batch that over-reaches looks identical from the subjects alone.
+    const first = await startInstance('sr-ui-batch-cancel-a');
+    const second = await startInstance('sr-ui-batch-cancel-b');
+    const control = await startInstance('sr-ui-batch-cancel-control');
+    for (const {processInstanceKey} of [first, second, control]) {
+      await suspendAndExpectSuspended(request, processInstanceKey);
+    }
 
     await navigateToAppHome(page, 'operate');
     await expect(operateHomePage.operateBanner).toBeVisible();
     await operateHomePage.clickProcessesTab();
     // Active and Incidents stay on: that combination builds the filter that
     // loses suspended instances. Suspended alone would not reproduce it.
-    await operateFiltersPanelPage.applySuspendedFilter();
     await operateFiltersPanelPage.displayOptionalFilter(
       'Process Instance Key(s)',
     );
     await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
-      subject.processInstanceKey,
+      `${first.processInstanceKey} ${second.processInstanceKey}`,
     );
-    await expect(
-      page.getByText(subject.processInstanceKey, {exact: false}).first(),
-    ).toBeVisible({timeout: UI_REFRESH_TIMEOUT});
+    // After the keys, not before: writing them rewrites the search params and
+    // drops a Suspended filter applied beforehand.
+    await operateFiltersPanelPage.applySuspendedFilter();
+    // Exactly the two, before selecting: Select all takes whatever the list
+    // holds at that moment, so a list still showing every suspended instance
+    // would put the control in the batch.
+    await expect(operateProcessesPage.resultsCount).toHaveText(/\b2 results$/, {
+      timeout: UI_REFRESH_TIMEOUT,
+    });
+    for (const {processInstanceKey} of [first, second]) {
+      await expect(
+        page.getByText(processInstanceKey, {exact: false}).first(),
+      ).toBeVisible({timeout: UI_REFRESH_TIMEOUT});
+    }
 
-    // Off the toolbar's own request: the newest batch could be another spec's.
-    const cancellationResponse = page.waitForResponse(
-      (response) =>
-        response.url().includes('/process-instances/cancellation') &&
-        response.request().method() === 'POST',
-    );
     await operateProcessesPage.cancelAllProcessInstancesInBatch();
-    const batchOperationKey = String(
-      (await (await cancellationResponse).json()).batchOperationKey,
-    );
 
+    for (const {processInstanceKey} of [first, second]) {
+      await expectProcessState(
+        request,
+        processInstanceKey,
+        'TERMINATED',
+        extendedAssertionOptions,
+      );
+    }
     await expectProcessState(
       request,
-      subject.processInstanceKey,
-      'TERMINATED',
+      control.processInstanceKey,
+      'SUSPENDED',
       extendedAssertionOptions,
+    );
+
+    // Found by the item it acted on rather than by watching for the request:
+    // the toolbar retries its interaction, so the first POST is not reliably
+    // the one that submitted the batch.
+    const batchOperationKey = await batchOperationKeyForItem(
+      request,
+      first.processInstanceKey,
     );
 
     // A batch that matched nothing also reports Completed.
@@ -527,12 +552,18 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
         await page.reload();
       },
     });
-    await expect(operateOperationsDetailsPage.summaryOfItems).toHaveText('1');
+    // What the batch acted on, read from the items it lists rather than the
+    // summary tile, whose badges come and go while the batch runs.
+    for (const {processInstanceKey} of [first, second]) {
+      await expect(
+        operateOperationsDetailsPage.getProcessInstanceLink(processInstanceKey),
+      ).toBeVisible({timeout: UI_REFRESH_TIMEOUT});
+    }
     await expect(
       operateOperationsDetailsPage.getProcessInstanceLink(
-        subject.processInstanceKey,
+        control.processInstanceKey,
       ),
-    ).toBeVisible({timeout: UI_REFRESH_TIMEOUT});
+    ).toBeHidden();
   });
 
   test('A call activity child instance offers Suspend in its own header', async ({
