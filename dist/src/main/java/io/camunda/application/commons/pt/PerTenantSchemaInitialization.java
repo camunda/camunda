@@ -505,6 +505,9 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
   private void recordFailure(final TenantState state, final Throwable failure, final State next) {
     gateLock.lock();
     try {
+      if (isStatusFinal(state)) {
+        return;
+      }
       state.failedAttempts++;
       state.lastFailure = failure;
       state.stage = next;
@@ -517,6 +520,9 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
   private void abort(final TenantState state, final Throwable cause) {
     gateLock.lock();
     try {
+      if (isStatusFinal(state)) {
+        return;
+      }
       state.lastFailure = cause;
       state.stage = State.ABORTED;
     } finally {
@@ -573,11 +579,23 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
     try {
       state.trying = false;
       state.settled = true;
-      state.stage = State.RECOVERING;
+      if (!isStatusFinal(state)) {
+        state.stage = State.RECOVERING;
+      }
       gateChanged.signalAll();
     } finally {
       gateLock.unlock();
     }
+  }
+
+  /**
+   * Whether nothing the tenant's background task records any more may change what it reports. That
+   * holds once it is ready: {@link #initializeNow} can make it ready while the task is between two
+   * steps, and what the task records next — a failure it caught before, a deferral it decided on —
+   * no longer applies. Must be called with {@link #gateLock} held.
+   */
+  private static boolean isStatusFinal(final TenantState state) {
+    return state.ready.get();
   }
 
   private static boolean hasStopped(final State stage) {
@@ -591,7 +609,9 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
   private void startTrying(final TenantState state) {
     gateLock.lock();
     try {
-      state.stage = state.failedAttempts > 0 ? State.RETRYING : State.INITIALIZING;
+      if (!isStatusFinal(state)) {
+        state.stage = state.failedAttempts > 0 ? State.RETRYING : State.INITIALIZING;
+      }
       if (!state.trying) {
         state.trying = true;
         gateChanged.signalAll();
