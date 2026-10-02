@@ -87,7 +87,7 @@ public class AdHocSubProcessActivityServicesTest {
     final CompletableFuture<BrokerResponse<AdHocSubProcessInstructionRecord>> brokerFuture =
         new CompletableFuture<>();
 
-    when(brokerClient.sendRequest(any(BrokerActivateAdHocSubProcessActivityRequest.class)))
+    when(brokerClient.sendRequestWithRetry(any(BrokerActivateAdHocSubProcessActivityRequest.class)))
         .thenReturn(brokerFuture);
 
     // when
@@ -116,7 +116,7 @@ public class AdHocSubProcessActivityServicesTest {
     final BrokerResponse<AdHocSubProcessInstructionRecord> brokerResponse =
         new BrokerResponse<>(expectedResponse);
 
-    when(brokerClient.sendRequest(requestCaptor.capture()))
+    when(brokerClient.sendRequestWithRetry(requestCaptor.capture()))
         .thenReturn(CompletableFuture.completedFuture(brokerResponse));
 
     // when
@@ -142,7 +142,7 @@ public class AdHocSubProcessActivityServicesTest {
                 new AdHocSubProcessActivateActivityReference("activity2", Map.of("var", "value"))),
             cancelRemainingInstances);
 
-    when(brokerClient.sendRequest(requestCaptor.capture()))
+    when(brokerClient.sendRequestWithRetry(requestCaptor.capture()))
         .thenReturn(CompletableFuture.completedFuture(DEFAULT_BROKER_RESPONSE));
 
     // when
@@ -174,7 +174,7 @@ public class AdHocSubProcessActivityServicesTest {
             List.of(new AdHocSubProcessActivateActivityReference(ELEMENT_ID, null)),
             false);
 
-    when(brokerClient.sendRequest(requestCaptor.capture()))
+    when(brokerClient.sendRequestWithRetry(requestCaptor.capture()))
         .thenReturn(CompletableFuture.completedFuture(DEFAULT_BROKER_RESPONSE));
 
     // when

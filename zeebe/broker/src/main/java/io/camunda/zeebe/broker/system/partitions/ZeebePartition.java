@@ -7,10 +7,12 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
+import io.atomix.raft.LeadershipTransferHandover;
 import io.atomix.raft.LeadershipTransferWriteBarrier;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.SnapshotReplicationListener;
+import io.atomix.raft.protocol.ExporterPosition;
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
@@ -85,6 +87,9 @@ public final class ZeebePartition extends Actor
         }
       };
 
+  /** Carries this partition's exporter state to the next leader on TimeoutNow. */
+  private final LeadershipTransferHandover handover;
+
   public ZeebePartition(
       final PartitionStartupAndTransitionContextImpl transitionContext,
       final PartitionTransition transition,
@@ -121,6 +126,19 @@ public final class ZeebePartition extends Actor
         new RoleMetrics(
             transitionContext.getPartitionStartupMeterRegistry(),
             transitionContext.getPartitionId());
+    final var exporterStateHandover = transitionContext.getExporterStateHandover();
+    handover =
+        new LeadershipTransferHandover() {
+          @Override
+          public List<ExporterPosition> exporterPositions() {
+            return exporterStateHandover.outgoing();
+          }
+
+          @Override
+          public void receive(final long term, final List<ExporterPosition> exporterPositions) {
+            exporterStateHandover.receive(term, exporterPositions);
+          }
+        };
     coordinatorCheck =
         new ClusterConfigurationCoordinatorCheck(
             () ->
@@ -232,6 +250,7 @@ public final class ZeebePartition extends Actor
   private void installLeadershipTransferHooks() {
     final var server = context.getRaftPartition().getServer();
     server.setLeadershipTransferWriteBarrier(writeBarrier);
+    server.setLeadershipTransferHandover(handover);
     server
         .setLeadershipTransferCoordinatorCheck(coordinatorCheck)
         .whenCompleteAsync(
@@ -562,6 +581,7 @@ public final class ZeebePartition extends Actor
           // Make the transfer pause visible to shouldProcess(), so a disk/admin resume mid-transfer
           // cannot silently un-pause the partition.
           context.setPausedForTransfer(true);
+          context.getCommandApiService().onTransferFreeze(context.getPartitionId(), true);
           // If the freeze does not complete within the timeout, roll back and fail so a stalled
           // processor pause cannot leave the partition half-frozen. This bounds arming the freeze
           // only; how long the partition may then stay frozen is the Raft watchdog's budget.
@@ -617,6 +637,7 @@ public final class ZeebePartition extends Actor
    */
   private void rollbackTransferPause() {
     context.setPausedForTransfer(false);
+    context.getCommandApiService().onTransferFreeze(context.getPartitionId(), false);
     context.getLogStream().resumeWrites();
     final var streamProcessor = context.getStreamProcessor();
     if (streamProcessor != null && context.shouldProcess()) {
@@ -648,6 +669,7 @@ public final class ZeebePartition extends Actor
   private void reopen(final CompletableActorFuture<Void> result) {
     context.getLogStream().resumeWrites();
     context.setPausedForTransfer(false);
+    context.getCommandApiService().onTransferFreeze(context.getPartitionId(), false);
     final ActorFuture<Void> processorResume;
     if (context.getStreamProcessor() != null && context.shouldProcess()) {
       processorResume = context.getStreamProcessor().resumeProcessing();

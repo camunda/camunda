@@ -122,6 +122,15 @@ RUN \
 # hadolint ignore=DL3006
 FROM ${DIST} AS dist
 
+### AOT training workload ###
+# Compiled here, against the distribution's own client, because the application image has
+# no compiler. Bytecode is platform-neutral, so this never needs to run emulated.
+# hadolint ignore=DL3006,DL3007,DL3029
+FROM --platform=$BUILDPLATFORM eclipse-temurin:25-jdk-noble AS aot-training
+COPY --link zeebe/docker/aot/ /aot-training/
+RUN --mount=type=bind,from=dist,source=/camunda/camunda-zeebe/lib,target=/camunda-lib \
+    javac -cp '/camunda-lib/*' -d /aot-training /aot-training/AotTrainingWorkload.java
+
 ### Application Image ###
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # hadolint ignore=DL3006
@@ -197,5 +206,53 @@ COPY --from=dist /camunda/rocksdb-lib/ /usr/java/packages/lib/
 RUN ln -s /driver-lib ${CAMUNDA_HOME}/driver-lib
 
 USER 1001:1001
+
+### AOT cache ###
+# Train an AOT cache (JEP 483/514/515) so that at runtime the JVM skips loading, parsing,
+# verifying and linking the classes a startup touches, and the JIT starts from the method
+# profiles of a real workload rather than from nothing. See train.sh for the run itself.
+#
+# The cache must hold no machine code. JDK 25 turns on AOTAdapterCaching ergonomically
+# whenever a cache is created or used, which stores adapters generated for the training
+# machine's CPU. At runtime it mislinks some of them, even on the training CPU, and
+# crashes with SIGILL (#61440). With adapter and stub caching off, the cache holds only
+# CPU-independent metadata and profiles, and all code is still generated for the CPU it
+# runs on. The flags go into jvm.options before training, so the training run, the cache
+# assembly it spawns and every later start all see the same ones.
+#
+# A cache the JVM cannot validate is ignored and startup falls back to the uncached
+# path. That happens when the classpath changes (a JDBC driver mounted into
+# /driver-lib), when compressed oops are off (a heap above ~32G, or ZGC), or when
+# UseCompactObjectHeaders is overridden.
+#
+# The training run boots a broker, so it leaves a data directory and a log file
+# behind, and both have to be put back exactly as the setup step left them. The
+# cleanup uses `find -delete` rather than a glob because the topology metadata is
+# a dotfile a glob would miss, and the mode is reset explicitly because writing
+# into data/ and logs/ leaves them at the default 0755. Either one alone is
+# enough to break an OpenShift-style deployment, which runs as an arbitrary uid
+# in group 0 and so needs these group-writable and empty.
+#
+# On by default, so an image built straight from this file is the image we ship, but
+# only trained when the target platform is the builder's own. Training boots Camunda,
+# and a foreign platform would boot under QEMU: on the Docker Checks job that took the
+# image build from ~1m15s to 8m05s. In CI that means amd64 gets a cache and arm64 does
+# not. This is tested here rather than in CI because a build arg applies to every
+# platform of one buildx invocation. Builders that do not populate the platform args
+# leave both empty, which still trains.
+ARG AOT_CACHE="true"
+ARG TARGETARCH
+ARG BUILDARCH
+RUN --mount=type=bind,from=aot-training,source=/aot-training,target=/aot-training \
+    if [ "${AOT_CACHE}" = "true" ] && [ "${TARGETARCH}" = "${BUILDARCH}" ]; then \
+      printf -- '%s\n' -XX:+UnlockDiagnosticVMOptions -XX:-AOTAdapterCaching -XX:-AOTStubCaching \
+        >> "${CAMUNDA_HOME}/config/jvm.options" && \
+      sh /aot-training/train.sh "${CAMUNDA_HOME}/camunda.aot" /aot-training && \
+      find "${CAMUNDA_HOME}/data" "${CAMUNDA_HOME}/logs" -mindepth 1 -delete && \
+      chmod 0775 "${CAMUNDA_HOME}/data" "${CAMUNDA_HOME}/logs" && \
+      printf -- '-XX:AOTCache=%s/camunda.aot\n' "${CAMUNDA_HOME}" \
+        >> "${CAMUNDA_HOME}/config/jvm.options" && \
+      du -h "${CAMUNDA_HOME}/camunda.aot"; \
+    fi
 
 ENTRYPOINT ["/usr/local/camunda/bin/camunda"]

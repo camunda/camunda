@@ -26,6 +26,7 @@ import io.atomix.raft.protocol.AppendRequest;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.ConfigureRequest;
 import io.atomix.raft.protocol.ConfigureResponse;
+import io.atomix.raft.protocol.ExporterPosition;
 import io.atomix.raft.protocol.ForceConfigureRequest;
 import io.atomix.raft.protocol.ForceConfigureResponse;
 import io.atomix.raft.protocol.InstallRequest;
@@ -112,6 +113,7 @@ public final class RaftNamespaces {
           .register(LeadershipTransferResultRequest.class)
           .register(LeadershipTransferResultResponse.class)
           .register(LeadershipTransferResult.class)
+          .register(ExporterPosition.class)
           .name("RaftProtocol")
           .build();
 

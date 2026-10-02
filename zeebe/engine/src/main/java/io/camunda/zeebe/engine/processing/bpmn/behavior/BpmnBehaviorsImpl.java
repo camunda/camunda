@@ -207,7 +207,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             writers);
 
     processResultSenderBehavior =
-        new BpmnProcessResultSenderBehavior(processingState, writers.response());
+        new BpmnProcessResultSenderBehavior(processingState, writers.response(), writers.state());
 
     bufferedMessageStartEventBehavior =
         new BpmnBufferedMessageStartEventBehavior(

@@ -7,10 +7,12 @@
 # plugin jar). The plugin has not been updated since 2015 and is effectively
 # frozen, so this copy should not require maintenance.
 #
-# The only change we made is the "CAMUNDA ADDITION" block below, which loads an
-# optional config/jvm.options @argfile before the exec call so that
-# runtime-specific JVM flags (e.g. flags only available on JDK 23+) can be
-# applied in Docker images without breaking the general distribution.
+# The only changes we made are the "CAMUNDA ADDITION" blocks below: one lists
+# the repository's jars in a stable order instead of passing the JVM a
+# wildcard, so that an AOT cache stays valid, and one loads an optional
+# config/jvm.options @argfile before the exec call so that runtime-specific JVM
+# flags (e.g. flags only available on JDK 23+) can be applied in Docker images
+# without breaking the general distribution.
 # -----------------------------------------------------------------------------
 
 # resolve links - $0 may be a softlink
@@ -92,6 +94,21 @@ then
 fi
 
 CLASSPATH=@CLASSPATH@
+
+# --- CAMUNDA ADDITION ---------------------------------------------------------
+# List the repository's jars here rather than pass the JVM a wildcard, which it
+# expands in whatever order the filesystem lists the directory. An AOT cache
+# records the classpath it was trained with and is rejected when the order
+# differs, and the order differs between the filesystem that builds an image
+# and the one that runs it. Sorting bytewise makes it stable; a shell glob
+# would not do, as it collates by locale, and the locale can differ too.
+if [ -d "$REPO" ]; then
+  CLASSPATH=`ls "$REPO" | LC_ALL=C sort | while read -r jar; do
+    case "$jar" in *.jar) printf '%s:' "$REPO/$jar" ;; esac
+  done`
+  CLASSPATH=${CLASSPATH%:}
+fi
+# --- END CAMUNDA ADDITION -----------------------------------------------------
 
 ENDORSED_DIR=@ENDORSED_DIR@
 if [ -n "$ENDORSED_DIR" ] ; then
