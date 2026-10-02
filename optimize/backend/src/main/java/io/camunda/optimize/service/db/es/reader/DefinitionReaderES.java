@@ -225,10 +225,10 @@ public class DefinitionReaderES implements DefinitionReader {
                           .size(LIST_FETCH_LIMIT));
 
           // 1. group by key, type and tenant (composite aggregation)
-          final List<Map<String, CompositeAggregationSource>> keyAndTypeAndTenantSources =
+          final List<NamedValue<CompositeAggregationSource>> keyAndTypeAndTenantSources =
               new ArrayList<>();
           keyAndTypeAndTenantSources.add(
-              Map.of(
+              new NamedValue<>(
                   TENANT_AGGREGATION,
                   CompositeAggregationSource.of(
                       c ->
@@ -238,7 +238,7 @@ public class DefinitionReaderES implements DefinitionReader {
                                       .missingBucket(true)
                                       .order(SortOrder.Asc)))));
           keyAndTypeAndTenantSources.add(
-              Map.of(
+              new NamedValue<>(
                   DEFINITION_KEY_AGGREGATION,
                   CompositeAggregationSource.of(
                       c ->
@@ -248,7 +248,7 @@ public class DefinitionReaderES implements DefinitionReader {
                                       .missingBucket(false)
                                       .order(SortOrder.Asc)))));
           keyAndTypeAndTenantSources.add(
-              Map.of(
+              new NamedValue<>(
                   DEFINITION_TYPE_AGGREGATION,
                   CompositeAggregationSource.of(
                       c ->
@@ -841,16 +841,16 @@ public class DefinitionReaderES implements DefinitionReader {
                             .minDocCount(1)
                             .size(LIST_FETCH_LIMIT)));
     // 1. group by key and type
-    final List<Map<String, CompositeAggregationSource>> keyAndTypeSources = new ArrayList<>();
+    final List<NamedValue<CompositeAggregationSource>> keyAndTypeSources = new ArrayList<>();
     keyAndTypeSources.add(
-        Map.of(
+        new NamedValue<>(
             DEFINITION_KEY_AGGREGATION,
             CompositeAggregationSource.of(
                 c ->
                     c.terms(
                         t -> t.field(DEFINITION_KEY).missingBucket(false).order(SortOrder.Asc)))));
     keyAndTypeSources.add(
-        Map.of(
+        new NamedValue<>(
             DEFINITION_TYPE_AGGREGATION,
             CompositeAggregationSource.of(
                 c ->

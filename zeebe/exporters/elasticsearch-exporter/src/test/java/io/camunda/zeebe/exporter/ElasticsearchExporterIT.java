@@ -595,7 +595,7 @@ final class ElasticsearchExporterIT {
               .getEsClient()
               .indices()
               .get(r -> r.index(firstRecordIndexName))
-              .result()
+              .indices()
               .get(firstRecordIndexName)
               .aliases();
       assertThat(firstRecordIndexAliases.size()).isEqualTo(1);
@@ -607,7 +607,7 @@ final class ElasticsearchExporterIT {
               .getEsClient()
               .indices()
               .get(r -> r.index(secondRecordIndexName))
-              .result()
+              .indices()
               .get(secondRecordIndexName)
               .aliases();
       assertThat(secondRecordIndexAliases.size()).isEqualTo(1);
