@@ -178,6 +178,10 @@ final class PhysicalTenantRdbmsSchemaInitializationIsolationIT {
               assertThat(retryingTenant.path("status").asText()).isEqualTo("DEGRADED");
               assertThat(retryingTenant.path("state").asText()).isEqualTo("RETRYING");
               assertThat(retryingTenant.path("failedAttempts").asInt()).isPositive();
+              // the cause an operator can act on, not the carrier the retry loop moved it in
+              assertThat(retryingTenant.path("error").asText())
+                  .isNotBlank()
+                  .doesNotContain("SchemaInitializationFailedException");
             });
 
     // then - the healthy tenant is served ...

@@ -483,6 +483,26 @@ final class RdbmsSchemaInitializerTest {
   // ---- helpers ----
 
   /** Always holds startup at the gate, as an RDBMS node does. */
+  // ---- what an operator reads ----
+
+  @Test
+  void shouldReportTheSchemaManagersOwnFailureRatherThanItsCarrier() throws Exception {
+    // given - a checked failure, which crosses the retry loop wrapped in a carrier
+    final var failure = new SQLException("no DDL grant");
+    initializer =
+        initializer(tenants(new FakeSchemaManager(), FakeSchemaManager.alwaysFailingWith(failure)));
+
+    // when
+    initializer.afterPropertiesSet();
+
+    // then
+    Awaitility.await("tenant B's failure is recorded")
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(
+            () -> assertThat(initializer.statuses().get(TENANT_B).lastFailure()).isSameAs(failure));
+    assertThat(initializer.statuses().get(TENANT_A).lastFailure()).isNull();
+  }
+
   private RdbmsSchemaInitializer initializer(final Map<String, RdbmsSchemaManager> managers) {
     return initializer(managers, DeferralCheck.of(ignored -> Deferral.NONE));
   }
