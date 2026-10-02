@@ -10,8 +10,8 @@ package io.camunda.application.commons.rdbms;
 import io.camunda.application.commons.pt.EveryTenantTerminallyFailedException;
 import io.camunda.application.commons.pt.PerTenantSchemaInitialization;
 import io.camunda.application.commons.pt.PerTenantSchemaInitialization.DeferralCheck;
-import io.camunda.application.commons.pt.SchemaInitializer;
 import io.camunda.application.commons.pt.SchemaInitializationStatus;
+import io.camunda.application.commons.pt.SchemaInitializer;
 import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.exception.RdbmsSchemaMigrationFailedException;
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIncompatibleException;
@@ -19,7 +19,6 @@ import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIndeterminateException;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.retry.RetryConfiguration;
 import java.io.Serial;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Function;
 import org.jspecify.annotations.NullMarked;
@@ -131,11 +130,7 @@ public class RdbmsSchemaInitializer implements InitializingBean, DisposableBean,
 
   /** Where each physical tenant's schema initialization stands. */
   public Map<String, SchemaInitializationStatus> statuses() {
-    final var statuses = new LinkedHashMap<String, SchemaInitializationStatus>();
-    schemaManagers
-        .keySet()
-        .forEach(tenantId -> statuses.put(tenantId, initialization.status(tenantId)));
-    return statuses;
+    return initialization.statuses();
   }
 
   /**

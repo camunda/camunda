@@ -17,6 +17,7 @@ import io.camunda.zeebe.util.retry.RetryConfiguration;
 import java.time.Duration;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -1220,6 +1221,38 @@ final class PerTenantSchemaInitializationTest {
       // when / then
       assertThatThrownBy(() -> initialization.status(TENANT_B))
           .isInstanceOf(IllegalArgumentException.class);
+    }
+  }
+
+  @Test
+  void shouldReportEveryTenantsStatusInConfigurationOrder() {
+    // given - configured B first, so that the order cannot come from sorting the ids
+    final var failure = new TerminalFailure();
+    try (final var initialization =
+        initialization(
+            new LinkedHashSet<>(List.of(TENANT_B, TENANT_A)),
+            tenantId -> {
+              if (TENANT_B.equals(tenantId)) {
+                throw failure;
+              }
+            })) {
+
+      // when
+      initialization.start();
+      initialization.awaitGate();
+
+      // then
+      Awaitility.await("tenant B stops trying")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(
+              () ->
+                  assertThat(initialization.statuses())
+                      .containsExactly(
+                          Map.entry(
+                              TENANT_B, new SchemaInitializationStatus(State.FAILED, 1, failure)),
+                          Map.entry(
+                              TENANT_A,
+                              new SchemaInitializationStatus(State.INITIALIZED, 0, null))));
     }
   }
 
