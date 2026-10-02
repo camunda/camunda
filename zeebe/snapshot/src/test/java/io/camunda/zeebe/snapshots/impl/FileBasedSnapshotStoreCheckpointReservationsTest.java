@@ -134,7 +134,7 @@ final class FileBasedSnapshotStoreCheckpointReservationsTest {
     store.reserveLatestSnapshot(CHECKPOINT_ID).join();
 
     // when
-    store.releaseReservation(CHECKPOINT_ID, snapshot.getId()).join();
+    store.releaseReservation(CHECKPOINT_ID, snapshot.getId());
     persistSnapshot(2);
 
     // then
@@ -150,7 +150,7 @@ final class FileBasedSnapshotStoreCheckpointReservationsTest {
     store.reserveSnapshot(CHECKPOINT_ID, snapshot.getId()).join();
 
     // when
-    store.releaseReservation(CHECKPOINT_ID, snapshot.getId()).join();
+    store.releaseReservation(CHECKPOINT_ID, snapshot.getId());
     persistSnapshot(2);
 
     // then
@@ -165,8 +165,8 @@ final class FileBasedSnapshotStoreCheckpointReservationsTest {
     final var snapshot = persistSnapshot(1);
 
     // when
-    store.releaseReservation(CHECKPOINT_ID, snapshot.getId()).join();
-    store.releaseReservation(CHECKPOINT_ID, "unknown").join();
+    store.releaseReservation(CHECKPOINT_ID, snapshot.getId());
+    store.releaseReservation(CHECKPOINT_ID, "unknown");
 
     // then
     assertThat(store.getReservedSnapshot(CHECKPOINT_ID, snapshot.getId()).join()).isEmpty();
@@ -182,7 +182,7 @@ final class FileBasedSnapshotStoreCheckpointReservationsTest {
     store.reserveLatestSnapshot(CHECKPOINT_ID).join();
 
     // when
-    store.releaseAllReservations().join();
+    store.releaseAllReservations();
     persistSnapshot(3);
 
     // then
@@ -212,11 +212,11 @@ final class FileBasedSnapshotStoreCheckpointReservationsTest {
     // checkpoint that reserved the same snapshot
     final var snapshot = persistSnapshot(1);
     store.reserveLatestSnapshot(CHECKPOINT_ID).join();
-    store.releaseAllReservations().join();
+    store.releaseAllReservations();
     store.reserveLatestSnapshot(OTHER_CHECKPOINT_ID).join();
 
     // when
-    store.releaseReservation(CHECKPOINT_ID, snapshot.getId()).join();
+    store.releaseReservation(CHECKPOINT_ID, snapshot.getId());
     persistSnapshot(2);
 
     // then

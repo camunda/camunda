@@ -68,14 +68,10 @@ public class NoopSnapshotStore implements ReceivableSnapshotStore {
   }
 
   @Override
-  public ActorFuture<Void> releaseReservation(final long checkpointId, final String snapshotId) {
-    return CompletableActorFuture.completed();
-  }
+  public void releaseReservation(final long checkpointId, final String snapshotId) {}
 
   @Override
-  public ActorFuture<Void> releaseAllReservations() {
-    return CompletableActorFuture.completed();
-  }
+  public void releaseAllReservations() {}
 
   @Override
   public ActorFuture<Void> abortPendingSnapshots() {
