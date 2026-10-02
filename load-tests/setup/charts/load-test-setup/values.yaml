@@ -516,6 +516,11 @@ k6:
     default:
       enabled: true
       script: test.default.js
+    # Reads data from secondary storage. Disabled together with `global.performReadBenchmarks`
+    # (see `common.mk` and `.github/scripts/load-test-install-camunda-platform.sh`).
+    data-read:
+      enabled: true
+      script: test.data-read.js
 
   prometheus:
     endpoint: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090/api/v1/write

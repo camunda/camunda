@@ -48,3 +48,20 @@ export async function waitCamundaReady(context) {
     }
   }
 }
+
+/* Common `setup()` body: validate the environment, authenticate, and wait for Camunda.
+ * Returns the context passed to every scenario function. */
+export async function setupContext() {
+  ensureEnvVars();
+
+  const token = auth.createToken();
+  const context = {
+    token: token,
+    baseURL: __ENV.CAMUNDA_BASE_URL,
+  };
+
+  await waitCamundaReady(context);
+  console.log("Camunda seems to be ready ✅");
+
+  return context;
+}
