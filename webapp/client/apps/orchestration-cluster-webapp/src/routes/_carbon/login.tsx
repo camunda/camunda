@@ -6,19 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {LoginPage} from '#/shared/pages/LoginPage';
 import {createFileRoute, isRedirect, redirect} from '@tanstack/react-router';
 import {z} from 'zod';
 import {queries} from '#/shared/http/queries';
-import {LoginPage} from '#/shared/pages/shadcn.components/LoginPage';
-import {ThemeProvider} from '#/shared/theme/shadcn.components/ThemeProvider';
-import tailwindCss from '#/shared/theme/tailwind.css?url';
 
-// TODO(#64077): temporary DS reskin of the Carbon-hosted /login route, following the
-// same "swap the visual now, cut the route over later" approach already used for the
-// header's C3Navigation. Operate is this route's only remaining consumer (Admin and
-// Tasklist already moved their logins under /_shadcn). Once Operate's own route-level
-// shadcn migration lands, delete this bridge and move the route under
-// /_shadcn/_auth/operate/login instead, alongside the rest of Operate's DS routes.
 export const Route = createFileRoute('/_carbon/login')({
 	validateSearch: z.object({
 		redirect: z
@@ -37,12 +29,5 @@ export const Route = createFileRoute('/_carbon/login')({
 			// Not authenticated — show login form
 		}
 	},
-	head: () => ({
-		links: [{rel: 'stylesheet', href: tailwindCss}],
-	}),
-	component: () => (
-		<ThemeProvider>
-			<LoginPage title="Operate" />
-		</ThemeProvider>
-	),
+	component: LoginPage,
 });
