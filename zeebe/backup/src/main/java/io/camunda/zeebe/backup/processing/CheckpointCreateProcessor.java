@@ -80,7 +80,6 @@ public final class CheckpointCreateProcessor {
       // We want to mark the backup as failed for observability
       backupManager.createFailedBackup(
           checkpointId, descriptor, "Cannot create checkpoint while scaling is in progress");
-      releaseSnapshotReserved(checkpointRecord);
     } else if (checkpointType.shouldCreateBackup()) {
       backupManager.takeBackup(checkpointId, descriptor);
     }
