@@ -76,10 +76,10 @@ public interface PersistedSnapshotStore extends CloseableSilently, BootstrapSnap
    * Releases one reservation of the snapshot with the given id made for the given checkpoint; no-op
    * if there is none.
    */
-  ActorFuture<Void> releaseReservation(long checkpointId, String snapshotId);
+  void releaseReservation(long checkpointId, String snapshotId);
 
   /** Releases every reservation made via this interface. */
-  ActorFuture<Void> releaseAllReservations();
+  void releaseAllReservations();
 
   /**
    * Purges all ongoing pending/transient/volatile snapshots.
