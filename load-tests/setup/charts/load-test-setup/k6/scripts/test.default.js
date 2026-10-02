@@ -8,13 +8,13 @@ export const options = {
   // Give enough time for Camunda to be ready before continuing with the test.
   setupTimeout: '15m',
   scenarios: {
-    /* Poll the topology endpoint has a way to check whether the cluster is alive or not.
+    /* Poll the topology endpoint to check whether the cluster is alive.
      * This is very basic, but should also work almost all the time. */
     topology: {
       exec: 'checkTopology',
       executor: 'constant-arrival-rate',
       duration: '60d',
-      rate: 100,
+      rate: 10,
       timeUnit: '1s',
       preAllocatedVUs: 10,
       maxVUs: 100,

@@ -204,7 +204,7 @@ CAMUNDA_BASE_URL=http://localhost:8080 k6 run k6/scripts/test.mytest.js
 ```
 
 > [!NOTE]
-> The OAuth host is rewritten to use the the `keycloak` port-forward locally,
+> The OAuth host is rewritten to use the `keycloak` port-forward locally,
 > instead of the default in-cluster URL.
 
 ### Reusing common helpers
@@ -217,9 +217,8 @@ import * as auth from './lib.auth.js';
 import * as helpers from './lib.helpers.js';
 ```
 
-* `helpers.ensureEnvVars()` — call once in `setup()` to fail fast if a required environment
-  variable is missing.
-* `auth.createToken()` — call once in `setup()`, and return the token in the context object.
+* `helpers.setupContext()` — call in `setup()` and return its result. It checks the environment
+  variables, creates the token and waits for Camunda to be ready.
 * `auth.renew(token)` — call at the start of each test function with the context's token; it
   refreshes the token if it's about to expire.
 
