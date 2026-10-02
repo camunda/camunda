@@ -128,7 +128,7 @@ final class BackupApiRequestHandlerTest {
         .when(backupManager.getBackupRangeStatus())
         .thenReturn(CompletableActorFuture.completed(List.of()));
     lenient()
-        .when(snapshotStore.reserveLatestSnapshot())
+        .when(snapshotStore.reserveLatestSnapshot(anyLong()))
         .thenReturn(CompletableActorFuture.completed(Optional.empty()));
   }
 
@@ -671,7 +671,8 @@ final class BackupApiRequestHandlerTest {
   void shouldWriteCheckpointWithFreshlyTakenSnapshot() {
     // given
     givenFreshSnapshot("fresh");
-    when(snapshotStore.reserveSnapshot("fresh")).thenReturn(CompletableActorFuture.completed());
+    when(snapshotStore.reserveSnapshot(10L, "fresh"))
+        .thenReturn(CompletableActorFuture.completed());
     final var writtenEntry = captureWrittenEntry(Either.right(1L));
 
     // when
@@ -682,9 +683,9 @@ final class BackupApiRequestHandlerTest {
     assertThat(writtenCheckpoint(writtenEntry).getSnapshotId()).isEqualTo("fresh");
     final var inOrder = inOrder(snapshotDirector, snapshotStore, logStreamWriter);
     inOrder.verify(snapshotDirector).forceSnapshot();
-    inOrder.verify(snapshotStore).reserveSnapshot("fresh");
+    inOrder.verify(snapshotStore).reserveSnapshot(10L, "fresh");
     inOrder.verify(logStreamWriter).tryWrite(any(WriteContext.class), any(LogAppendEntry.class));
-    verify(snapshotStore, never()).reserveLatestSnapshot();
+    verify(snapshotStore, never()).reserveLatestSnapshot(anyLong());
   }
 
   @Test
@@ -719,7 +720,7 @@ final class BackupApiRequestHandlerTest {
   void shouldReserveLatestSnapshotWhenFreshSnapshotCannotBeReserved() {
     // given
     givenFreshSnapshot("fresh");
-    when(snapshotStore.reserveSnapshot("fresh"))
+    when(snapshotStore.reserveSnapshot(10L, "fresh"))
         .thenReturn(
             CompletableActorFuture.completedExceptionally(
                 new SnapshotNotFoundException("expected")));
@@ -750,7 +751,8 @@ final class BackupApiRequestHandlerTest {
   void shouldReleaseSnapshotReservationWhenCheckpointCannotBeWritten() {
     // given
     givenFreshSnapshot("fresh");
-    when(snapshotStore.reserveSnapshot("fresh")).thenReturn(CompletableActorFuture.completed());
+    when(snapshotStore.reserveSnapshot(10L, "fresh"))
+        .thenReturn(CompletableActorFuture.completed());
     captureWrittenEntry(Either.left(WriteFailure.WRITE_LIMIT_EXHAUSTED));
 
     // when
@@ -758,7 +760,7 @@ final class BackupApiRequestHandlerTest {
 
     // then
     assertThat(responseFuture).succeedsWithin(Duration.ofMinutes(1)).matches(Either::isLeft);
-    verify(snapshotStore).releaseReservation("fresh");
+    verify(snapshotStore).releaseReservation(10L, "fresh");
   }
 
   @Test
@@ -788,7 +790,7 @@ final class BackupApiRequestHandlerTest {
   }
 
   private void givenLatestSnapshot(final String snapshotId) {
-    when(snapshotStore.reserveLatestSnapshot())
+    when(snapshotStore.reserveLatestSnapshot(10L))
         .thenReturn(CompletableActorFuture.completed(Optional.of(snapshotId)));
   }
 

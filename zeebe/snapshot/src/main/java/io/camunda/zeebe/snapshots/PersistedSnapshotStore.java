@@ -45,29 +45,38 @@ public interface PersistedSnapshotStore extends CloseableSilently, BootstrapSnap
   ActorFuture<Long> getCompactionBound();
 
   /**
-   * Reserves the latest snapshot in one step, so it cannot be deleted between selecting and
-   * reserving it.
+   * Reserves the latest snapshot for the given checkpoint in one step, so it cannot be deleted
+   * between selecting and reserving it.
+   *
+   * <p>Reservations are made on behalf of a checkpoint and counted per checkpoint and snapshot, so
+   * a checkpoint can only see and release reservations made for it: a checkpoint written before
+   * {@link #releaseAllReservations()} cannot consume a reservation a newer checkpoint made for the
+   * same snapshot.
    *
    * @return future completed with the id of the reserved snapshot, or empty if there is none
    */
-  ActorFuture<Optional<String>> reserveLatestSnapshot();
+  ActorFuture<Optional<String>> reserveLatestSnapshot(long checkpointId);
 
   /**
-   * Reserves the snapshot with the given id.
+   * Reserves the snapshot with the given id for the given checkpoint.
    *
    * @return future completed once the snapshot is reserved, or completed exceptionally with a
    *     {@link SnapshotException.SnapshotNotFoundException} if it does not exist (anymore)
    */
-  ActorFuture<Void> reserveSnapshot(String snapshotId);
+  ActorFuture<Void> reserveSnapshot(long checkpointId, String snapshotId);
 
   /**
-   * @return future completed with the snapshot with the given id if it is currently reserved via
-   *     this interface, empty otherwise
+   * @return future completed with the snapshot with the given id if it is currently reserved for
+   *     the given checkpoint, empty otherwise
    */
-  ActorFuture<Optional<PersistedSnapshot>> getReservedSnapshot(String snapshotId);
+  ActorFuture<Optional<PersistedSnapshot>> getReservedSnapshot(
+      long checkpointId, String snapshotId);
 
-  /** Releases one reservation of the snapshot with the given id; no-op if there is none. */
-  ActorFuture<Void> releaseReservation(String snapshotId);
+  /**
+   * Releases one reservation of the snapshot with the given id made for the given checkpoint; no-op
+   * if there is none.
+   */
+  ActorFuture<Void> releaseReservation(long checkpointId, String snapshotId);
 
   /** Releases every reservation made via this interface. */
   ActorFuture<Void> releaseAllReservations();

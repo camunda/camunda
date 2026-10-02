@@ -780,7 +780,7 @@ final class CheckpointRecordsProcessorTest {
             eq(1L),
             argThat(
                 descriptor -> descriptor.snapshotId().equals(Optional.of("reserved-snapshot"))));
-    verify(backupManager, never()).releaseSnapshotReservation(any());
+    verify(backupManager, never()).releaseSnapshotReservation(anyLong(), any());
     final var created = (CheckpointRecord) result.records().getFirst().value();
     assertThat(created.getSnapshotId()).isEqualTo("reserved-snapshot");
   }
@@ -801,7 +801,7 @@ final class CheckpointRecordsProcessorTest {
     processor.process(record, resultBuilder);
 
     // then
-    verify(backupManager).releaseSnapshotReservation("reserved-snapshot");
+    verify(backupManager).releaseSnapshotReservation(1L, "reserved-snapshot");
   }
 
   @Test
@@ -821,7 +821,7 @@ final class CheckpointRecordsProcessorTest {
     processor.process(record, resultBuilder);
 
     // then
-    verify(backupManager).releaseSnapshotReservation("reserved-snapshot");
+    verify(backupManager).releaseSnapshotReservation(1L, "reserved-snapshot");
   }
 
   @Test
@@ -837,7 +837,7 @@ final class CheckpointRecordsProcessorTest {
     processor.process(record, resultBuilder);
 
     // then
-    verify(backupManager, never()).releaseSnapshotReservation(any());
+    verify(backupManager, never()).releaseSnapshotReservation(anyLong(), any());
   }
 
   @Test

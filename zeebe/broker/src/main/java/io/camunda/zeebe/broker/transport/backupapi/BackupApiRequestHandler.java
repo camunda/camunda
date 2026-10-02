@@ -145,7 +145,7 @@ public final class BackupApiRequestHandler
     final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
         actor.createFuture();
 
-    reserveSnapshotForCheckpoint(checkpointType)
+    reserveSnapshotForCheckpoint(checkpointId, checkpointType)
         .onComplete(
             (snapshotId, ignored) -> {
               final var written =
@@ -154,7 +154,7 @@ public final class BackupApiRequestHandler
               if (written.isRight()) {
                 result.complete(Either.right(responseWriter.noResponse()));
               } else {
-                releaseSnapshotReservation(snapshotId);
+                releaseSnapshotReservation(checkpointId, snapshotId);
                 result.complete(
                     Either.left(
                         errorWriter.mapWriteError(partitionId, written.getLeft())));
@@ -429,35 +429,40 @@ public final class BackupApiRequestHandler
     return response;
   }
 
-  private ActorFuture<String> reserveSnapshotForCheckpoint(final CheckpointType checkpointType) {
+  private ActorFuture<String> reserveSnapshotForCheckpoint(
+      final long checkpointId, final CheckpointType checkpointType) {
     if (!checkpointType.shouldCreateBackup()) {
       return CompletableActorFuture.completed("");
     }
 
     return snapshotDirector
         .forceSnapshot()
-        .andThen(this::reserveFreshSnapshot, actor)
+        .andThen(snapshot -> reserveFreshSnapshot(checkpointId, snapshot), actor)
         .andThen(
             (snapshotId, error) ->
                 error == null
                     ? CompletableActorFuture.completed(snapshotId)
-                    : reserveLatestSnapshot(error),
+                    : reserveLatestSnapshot(checkpointId, error),
             actor);
   }
 
-  private ActorFuture<String> reserveFreshSnapshot(final @Nullable PersistedSnapshot snapshot) {
+  private ActorFuture<String> reserveFreshSnapshot(
+      final long checkpointId, final @Nullable PersistedSnapshot snapshot) {
     if (snapshot == null) {
       return CompletableActorFuture.completedExceptionally(
           new IllegalStateException("Snapshot was skipped, e.g. because one is already taken"));
     }
     final var snapshotId = snapshot.getId();
-    return snapshotStore.reserveSnapshot(snapshotId).thenApply(ignored -> snapshotId, actor);
+    return snapshotStore
+        .reserveSnapshot(checkpointId, snapshotId)
+        .thenApply(ignored -> snapshotId, actor);
   }
 
-  private ActorFuture<String> reserveLatestSnapshot(final Throwable cause) {
+  private ActorFuture<String> reserveLatestSnapshot(
+      final long checkpointId, final Throwable cause) {
     LOG.debug("Failed to reserve a fresh snapshot for the checkpoint, reserving the latest", cause);
     return snapshotStore
-        .reserveLatestSnapshot()
+        .reserveLatestSnapshot(checkpointId)
         .andThen(
             (snapshotId, error) -> {
               if (error != null) {
@@ -469,9 +474,9 @@ public final class BackupApiRequestHandler
             actor);
   }
 
-  private void releaseSnapshotReservation(final String snapshotId) {
+  private void releaseSnapshotReservation(final long checkpointId, final String snapshotId) {
     if (!snapshotId.isEmpty()) {
-      snapshotStore.releaseReservation(snapshotId);
+      snapshotStore.releaseReservation(checkpointId, snapshotId);
     }
   }
 

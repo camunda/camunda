@@ -363,7 +363,7 @@ class InProgressBackupImplTest {
     // given
     final var reservedSnapshot = reservedSnapshot("reserved");
     inProgressBackup = backupWithCheckpointSnapshot(reservedSnapshot.getId());
-    when(snapshotStore.getReservedSnapshot(reservedSnapshot.getId()))
+    when(snapshotStore.getReservedSnapshot(1L, reservedSnapshot.getId()))
         .thenReturn(TestActorFuture.completedFuture(Optional.of(reservedSnapshot)));
     mockJournalProviderWith(
         reservedSnapshot.getIndex(),
@@ -383,7 +383,7 @@ class InProgressBackupImplTest {
       @Mock final SnapshotReservation snapshotReservation) {
     // given
     inProgressBackup = backupWithCheckpointSnapshot("not-reserved");
-    when(snapshotStore.getReservedSnapshot("not-reserved"))
+    when(snapshotStore.getReservedSnapshot(1L, "not-reserved"))
         .thenReturn(TestActorFuture.completedFuture(Optional.empty()));
     final var validSnapshot = snapshotWith(1L, 5L);
     onReserve(validSnapshot, snapshotReservation);
@@ -402,7 +402,7 @@ class InProgressBackupImplTest {
     // given
     final var reservedSnapshot = reservedSnapshot("reserved");
     inProgressBackup = backupWithCheckpointSnapshot(reservedSnapshot.getId());
-    when(snapshotStore.getReservedSnapshot(reservedSnapshot.getId()))
+    when(snapshotStore.getReservedSnapshot(1L, reservedSnapshot.getId()))
         .thenReturn(TestActorFuture.completedFuture(Optional.of(reservedSnapshot)));
     inProgressBackup.reserveSnapshot().join();
 
@@ -410,7 +410,7 @@ class InProgressBackupImplTest {
     inProgressBackup.close();
 
     // then
-    verify(snapshotStore).releaseReservation(reservedSnapshot.getId());
+    verify(snapshotStore).releaseReservation(1L, reservedSnapshot.getId());
   }
 
   @Test
@@ -422,7 +422,7 @@ class InProgressBackupImplTest {
     inProgressBackup.close();
 
     // then
-    verify(snapshotStore).releaseReservation("reserved");
+    verify(snapshotStore).releaseReservation(1L, "reserved");
   }
 
   @Test
@@ -435,7 +435,7 @@ class InProgressBackupImplTest {
     inProgressBackup.close();
 
     // then
-    verify(snapshotStore, never()).releaseReservation(any());
+    verify(snapshotStore, never()).releaseReservation(anyLong(), any());
   }
 
   private void setAvailableSnapshots(final Set<PersistedSnapshot> snapshots) {

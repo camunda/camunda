@@ -51,23 +51,24 @@ public class NoopSnapshotStore implements ReceivableSnapshotStore {
   }
 
   @Override
-  public ActorFuture<Optional<String>> reserveLatestSnapshot() {
+  public ActorFuture<Optional<String>> reserveLatestSnapshot(final long checkpointId) {
     return CompletableActorFuture.completed(Optional.empty());
   }
 
   @Override
-  public ActorFuture<Void> reserveSnapshot(final String snapshotId) {
+  public ActorFuture<Void> reserveSnapshot(final long checkpointId, final String snapshotId) {
     return CompletableActorFuture.completedExceptionally(
         new SnapshotNotFoundException("Expected to reserve snapshot " + snapshotId));
   }
 
   @Override
-  public ActorFuture<Optional<PersistedSnapshot>> getReservedSnapshot(final String snapshotId) {
+  public ActorFuture<Optional<PersistedSnapshot>> getReservedSnapshot(
+      final long checkpointId, final String snapshotId) {
     return CompletableActorFuture.completed(Optional.empty());
   }
 
   @Override
-  public ActorFuture<Void> releaseReservation(final String snapshotId) {
+  public ActorFuture<Void> releaseReservation(final long checkpointId, final String snapshotId) {
     return CompletableActorFuture.completed();
   }
 
