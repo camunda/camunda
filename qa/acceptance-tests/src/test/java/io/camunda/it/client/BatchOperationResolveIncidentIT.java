@@ -209,7 +209,7 @@ public class BatchOperationResolveIncidentIT {
   }
 
   @Test
-  void shouldResolveIncidentsWhenStateFilterIsIgnored() {
+  void shouldNarrowResolveIncidentStateFilterInsteadOfIgnoringIt() {
     // given
     final var activeIncidentKeys =
         camundaClient
@@ -222,7 +222,10 @@ public class BatchOperationResolveIncidentIT {
             .map(Incident::getIncidentKey)
             .toList();
 
-    // when - state filter would match nothing if it were applied, since the instances are ACTIVE
+    // when - the caller's state filter is combined (ANDed) with the operation's required ACTIVE,
+    // not discarded: every instance here is ACTIVE, so a COMPLETED filter narrows the batch to
+    // zero items instead of resolving every incident regardless of the filter (the REST layer
+    // does not yet reject this conflicting combination up front, unlike migrate/modify)
     final Future<CreateBatchOperationResponse> result =
         camundaClient
             .newCreateBatchOperationCommand()
@@ -236,10 +239,28 @@ public class BatchOperationResolveIncidentIT {
             .succeedsWithin(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
             .actual()
             .getBatchOperationKey();
-    waitForBatchOperationWithCorrectTotalCount(
-        camundaClient, batchOperationKey, AMOUNT_OF_INCIDENTS);
-    waitForBatchOperationCompleted(camundaClient, batchOperationKey, AMOUNT_OF_INCIDENTS, 0);
-    waitUntilIncidentsAreResolved(camundaClient, activeIncidentKeys);
+    Awaitility.await("should finish batch operation that matched no items")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var batchOperation =
+                  camundaClient.newBatchOperationGetRequest(batchOperationKey).execute();
+              assertThat(batchOperation.getStatus()).isEqualTo(BatchOperationState.COMPLETED);
+              assertThat(batchOperation.getOperationsTotalCount()).isZero();
+            });
+
+    final var stillActiveIncidentKeys =
+        camundaClient
+            .newIncidentSearchRequest()
+            .filter(f -> f.state(IncidentState.ACTIVE))
+            .send()
+            .join()
+            .items()
+            .stream()
+            .map(Incident::getIncidentKey)
+            .toList();
+    assertThat(stillActiveIncidentKeys).containsExactlyInAnyOrderElementsOf(activeIncidentKeys);
   }
 
   @Test

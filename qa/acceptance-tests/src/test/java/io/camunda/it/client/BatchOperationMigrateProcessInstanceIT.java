@@ -17,10 +17,12 @@ import static io.camunda.it.util.TestHelper.waitForBatchOperationWithCorrectTota
 import static io.camunda.it.util.TestHelper.waitForScopedProcessInstancesToStart;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.MigrationPlan;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.CreateBatchOperationResponse;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
@@ -149,7 +151,7 @@ public class BatchOperationMigrateProcessInstanceIT {
   }
 
   @Test
-  void shouldMigrateProcessInstanceWhenStateFilterIsIgnored(final TestInfo testInfo) {
+  void shouldRejectMigrateProcessInstanceWithNonActiveStateFilter(final TestInfo testInfo) {
     // given
     final String testScopeId =
         testInfo.getTestMethod().map(Method::toString).orElse(UUID.randomUUID().toString());
@@ -161,41 +163,35 @@ public class BatchOperationMigrateProcessInstanceIT {
         deployProcessAndWaitForIt(client, "process/migration-process_v2.bpmn")
             .getProcessDefinitionKey();
 
-    final long processInstanceKey =
-        startScopedProcessInstance(
-                client, sourceProcessDefinitionKey, testScopeId, Map.of("foo", "bar"))
-            .getProcessInstanceKey();
+    startScopedProcessInstance(
+        client, sourceProcessDefinitionKey, testScopeId, Map.of("foo", "bar"));
 
     waitForScopedProcessInstancesToStart(client, testScopeId, 1);
     waitForActiveScopedUserTasks(client, testScopeId, 1);
 
-    // when - state filter would match nothing if it were applied, since the instance is ACTIVE
-    final var batchCreated =
-        client
-            .newCreateBatchOperationCommand()
-            .migrateProcessInstance()
-            .migrationPlan(
-                MigrationPlan.newBuilder()
-                    .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-                    .addMappingInstruction("taskA", "taskA2")
-                    .addMappingInstruction("taskB", "taskB2")
-                    .addMappingInstruction("taskC", "taskC2")
-                    .build())
-            .filter(
-                new ProcessInstanceFilterImpl()
-                    .processDefinitionKey(sourceProcessDefinitionKey)
-                    .variables(getScopedVariables(testScopeId))
-                    .state(ProcessInstanceState.COMPLETED))
-            .send()
-            .join();
-
-    // then
-    waitForBatchOperationWithCorrectTotalCount(client, batchCreated.getBatchOperationKey(), 1);
-    waitForBatchOperationCompleted(client, batchCreated.getBatchOperationKey(), 1, 0);
-    processInstanceExistAndMatches(
-        client,
-        f -> f.processInstanceKey(processInstanceKey).processDefinitionId("migration-process_v2"),
-        f -> assertThat(f).hasSize(1));
+    // when / then - only ACTIVE is a valid state filter for migration; a conflicting state is
+    // rejected up front instead of silently narrowing the batch to zero items
+    assertThatThrownBy(
+            () ->
+                client
+                    .newCreateBatchOperationCommand()
+                    .migrateProcessInstance()
+                    .migrationPlan(
+                        MigrationPlan.newBuilder()
+                            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+                            .addMappingInstruction("taskA", "taskA2")
+                            .addMappingInstruction("taskB", "taskB2")
+                            .addMappingInstruction("taskC", "taskC2")
+                            .build())
+                    .filter(
+                        new ProcessInstanceFilterImpl()
+                            .processDefinitionKey(sourceProcessDefinitionKey)
+                            .variables(getScopedVariables(testScopeId))
+                            .state(ProcessInstanceState.COMPLETED))
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("The value for state is 'COMPLETED' but must be one of");
   }
 
   @Test

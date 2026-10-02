@@ -279,18 +279,6 @@ public record ProcessInstanceFilter(
 
     public Builder replaceStateOperations(final List<Operation<String>> operations) {
       stateOperations = new ArrayList<>(operations);
-      // a state carried by an orFilters entry is ANDed with the replaced top-level state, so it
-      // must be cleared too, or a caller-supplied state nested in $or can still empty the query
-      if (orFilters != null) {
-        orFilters =
-            orFilters.stream()
-                .map(
-                    orFilter ->
-                        orFilter.toBuilder()
-                            .replaceStateOperations(Collections.emptyList())
-                            .build())
-                .toList();
-      }
       return this;
     }
 
