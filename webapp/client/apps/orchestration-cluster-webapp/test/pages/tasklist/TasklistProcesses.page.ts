@@ -7,7 +7,7 @@
  */
 
 import {type Page} from '@playwright/test';
-import {BasePage} from './BasePage';
+import {BasePage} from '#/pages/BasePage';
 import {TasklistHeader} from './TasklistHeader';
 
 class TasklistProcessesPage extends BasePage {

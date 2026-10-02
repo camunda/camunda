@@ -7,10 +7,10 @@
  */
 
 import {type Page} from '@playwright/test';
-import {BasePage} from './BasePage';
-import {Header} from './Header';
+import {BasePage} from '#/pages/BasePage';
+import {Header} from '#/pages/Header';
 
-class OperateIndexPage extends BasePage {
+class OperateBatchOperationsPage extends BasePage {
 	readonly header: Header;
 
 	constructor(page: Page) {
@@ -19,12 +19,24 @@ class OperateIndexPage extends BasePage {
 	}
 
 	async goto() {
-		return this.page.goto('/operate');
+		return this.page.goto('/operate/batch-operations');
 	}
 
-	get heading() {
-		return this.page.getByRole('heading', {name: 'Dashboard'});
+	get table() {
+		return this.page.getByTestId('batch-operations-table');
+	}
+
+	get emptyState() {
+		return this.page.getByText('No batch operations found');
+	}
+
+	get pagination() {
+		return this.page.getByRole('combobox', {name: 'Items per page:'});
+	}
+
+	cellByText(text: string) {
+		return this.page.getByRole('cell', {name: text});
 	}
 }
 
-export {OperateIndexPage};
+export {OperateBatchOperationsPage};
