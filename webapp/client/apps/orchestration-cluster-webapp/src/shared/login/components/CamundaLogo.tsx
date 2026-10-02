@@ -9,8 +9,13 @@
 import CamundaLogoSVG from '#/shared/svg/CamundaLogo';
 import styles from './CamundaLogo.module.scss';
 
-const CamundaLogo: React.FC<React.ComponentProps<typeof CamundaLogoSVG>> = () => (
-	<CamundaLogoSVG className={styles.logo} />
+const CamundaLogo: React.FC<React.ComponentProps<typeof CamundaLogoSVG>> = (props) => (
+	<CamundaLogoSVG
+		backgroundClassName={styles.background}
+		foregroundClassName={styles.foreground}
+		className={styles.logo}
+		{...props}
+	/>
 );
 
 export {CamundaLogo};

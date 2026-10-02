@@ -7,6 +7,16 @@
  */
 
 .logo {
-	color: var(--cds-icon-primary);
-	fill: currentColor;
+	width: var(--cds-spacing-09);
+	height: var(--cds-spacing-09);
+}
+
+// The square mark inverts with theme: a dark square in light mode, a light
+// square in dark mode — matching the Design System's packaged CamundaLogo.
+.background {
+	fill: var(--cds-text-primary);
+}
+
+.foreground {
+	fill: var(--cds-background);
 }

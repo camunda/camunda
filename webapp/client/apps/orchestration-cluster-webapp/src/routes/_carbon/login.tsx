@@ -29,5 +29,5 @@ export const Route = createFileRoute('/_carbon/login')({
 			// Not authenticated — show login form
 		}
 	},
-	component: LoginPage,
+	component: () => <LoginPage title="Operate" />,
 });
