@@ -18,11 +18,18 @@ type PatchListCachesOptions<TItem> = {
 	item: TItem;
 	getId: (item: TItem) => string;
 	compare?: (a: TItem, b: TItem, queryKey: QueryKey) => number;
+	/**
+	 * Gates inserting a brand-new item into a matched query's cached page. Without this, an item
+	 * is inserted into every active page regardless of whether it matches that query's filter or
+	 * whether the page already has room for it, e.g. prepending a row that doesn't match the
+	 * current search term, or growing a full page beyond its configured size.
+	 */
+	canInsert?: (item: TItem, queryKey: QueryKey, currentItemCount: number) => boolean;
 };
 
 function patchListCaches<TItem>(
 	queryClient: QueryClient,
-	{queryKeyPrefix, item, getId, compare}: PatchListCachesOptions<TItem>,
+	{queryKeyPrefix, item, getId, compare, canInsert}: PatchListCachesOptions<TItem>,
 ): void {
 	const id = getId(item);
 	const matches = queryClient.getQueriesData<ListQueryData<TItem>>({queryKey: queryKeyPrefix, type: 'active'});
@@ -34,6 +41,11 @@ function patchListCaches<TItem>(
 
 		const withoutExisting = data.items.filter((existing) => getId(existing) !== id);
 		const isNew = withoutExisting.length === data.items.length;
+
+		if (isNew && canInsert?.(item, queryKey, data.items.length) === false) {
+			continue;
+		}
+
 		const items = compare
 			? [...withoutExisting, item].sort((a, b) => compare(a, b, queryKey))
 			: [item, ...withoutExisting];

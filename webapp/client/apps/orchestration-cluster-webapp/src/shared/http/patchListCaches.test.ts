@@ -154,6 +154,79 @@ describe('patchListCaches', () => {
 			page: {totalItems: 1},
 		});
 	});
+
+	it('should skip inserting a new item into a query that rejects it via canInsert', () => {
+		// given
+		const queryClient = new QueryClient();
+		const unsubscribe = observeAsActive(queryClient, ['items', {page: 1}], [{id: 'a', name: 'Alpha'}]);
+
+		// when
+		patchListCaches(queryClient, {
+			queryKeyPrefix: ['items'],
+			item: {id: 'b', name: 'Beta'},
+			getId: (item: Item) => item.id,
+			canInsert: () => false,
+		});
+
+		// then
+		expect(queryClient.getQueryData(['items', {page: 1}])).toEqual({
+			items: [{id: 'a', name: 'Alpha'}],
+			page: {totalItems: 1},
+		});
+		unsubscribe();
+	});
+
+	it('should still update an already-present item in place even when canInsert rejects it', () => {
+		// given
+		const queryClient = new QueryClient();
+		const unsubscribe = observeAsActive(queryClient, ['items', {page: 1}], [{id: 'a', name: 'Alpha'}]);
+
+		// when
+		patchListCaches(queryClient, {
+			queryKeyPrefix: ['items'],
+			item: {id: 'a', name: 'Alpha (renamed)'},
+			getId: (item: Item) => item.id,
+			canInsert: () => false,
+		});
+
+		// then
+		expect(queryClient.getQueryData(['items', {page: 1}])).toEqual({
+			items: [{id: 'a', name: 'Alpha (renamed)'}],
+			page: {totalItems: 1},
+		});
+		unsubscribe();
+	});
+
+	it('should pass the current item count to canInsert so a full page can be skipped', () => {
+		// given
+		const queryClient = new QueryClient();
+		const unsubscribe = observeAsActive(
+			queryClient,
+			['items', {page: 1}],
+			[
+				{id: 'a', name: 'Alpha'},
+				{id: 'c', name: 'Charlie'},
+			],
+		);
+
+		// when
+		patchListCaches(queryClient, {
+			queryKeyPrefix: ['items'],
+			item: {id: 'b', name: 'Bravo'},
+			getId: (item: Item) => item.id,
+			canInsert: (_item, _queryKey, currentItemCount) => currentItemCount < 2,
+		});
+
+		// then
+		expect(queryClient.getQueryData(['items', {page: 1}])).toEqual({
+			items: [
+				{id: 'a', name: 'Alpha'},
+				{id: 'c', name: 'Charlie'},
+			],
+			page: {totalItems: 2},
+		});
+		unsubscribe();
+	});
 });
 
 describe('removeFromListCaches', () => {

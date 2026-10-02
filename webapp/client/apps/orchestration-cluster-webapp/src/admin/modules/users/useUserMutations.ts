@@ -59,6 +59,31 @@ function compareUsersBySort(a: User, b: User, queryKey: QueryKey): number {
 	return direction * (valueA < valueB ? -1 : valueA > valueB ? 1 : 0);
 }
 
+function userMatchesFilter(user: User, filter: QueryUsersRequestBody['filter']): boolean {
+	const usernameFilter = filter?.username;
+	if (usernameFilter === undefined) {
+		return true;
+	}
+	if (typeof usernameFilter === 'string') {
+		return user.username === usernameFilter;
+	}
+
+	const pattern = usernameFilter.$like;
+	return pattern === undefined || user.username.includes(pattern.replaceAll('*', ''));
+}
+
+// Only insert into a page that is both searched for this user and not already full - a full page
+// may need an item pushed onto the next page, which a purely optimistic update cannot do safely.
+function canInsertUser(user: User, queryKey: QueryKey, currentItemCount: number): boolean {
+	const body = queryKey[1] as QueryUsersRequestBody | undefined;
+	if (!userMatchesFilter(user, body?.filter)) {
+		return false;
+	}
+
+	const limit = body?.page?.limit;
+	return limit === undefined || currentItemCount < limit;
+}
+
 function useUserMutations() {
 	const {t} = useTranslation();
 	const queryClient = useQueryClient();
@@ -79,6 +104,7 @@ function useUserMutations() {
 				item: user,
 				getId: (u: User) => u.username,
 				compare: compareUsersBySort,
+				canInsert: canInsertUser,
 			});
 			toast.success(t('admin.users.userCreated', {username: user.username}));
 
@@ -107,6 +133,7 @@ function useUserMutations() {
 				item: user,
 				getId: (u: User) => u.username,
 				compare: compareUsersBySort,
+				canInsert: canInsertUser,
 			});
 			queryClient.setQueryData(queries.getUser(user.username).queryKey, user);
 			toast.success(t('admin.users.userUpdated', {username: user.username}));
