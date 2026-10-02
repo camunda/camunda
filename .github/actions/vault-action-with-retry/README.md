@@ -33,17 +33,9 @@ See [Notes](#notes) for what that means when you edit this action.
 
 ### Outputs
 
-This wrapper forwards the secret outputs currently used by [`setup-build`](../setup-build):
-
-|       Output        |         Description         |
-|---------------------|-----------------------------|
-| ci-account-password | Imported Nexus password     |
-| ci-account-username | Imported Nexus username     |
-| dockerhub-token     | Imported DockerHub token    |
-| dockerhub-username  | Imported DockerHub username |
-| minimus-token       | Imported Minimus token      |
-| harbor-username     | Imported Harbor username    |
-| harbor-password     | Imported Harbor password    |
+None. Prefer the environment variables that `hashicorp/vault-action` exports. They continue to
+propagate out of this composite action, which is what callers such as [`setup-build`](../setup-build)
+consume.
 
 ## Notes
 
@@ -53,9 +45,6 @@ This wrapper forwards the secret outputs currently used by [`setup-build`](../se
 - **Editing one attempt means editing all three.** The `with:` blocks must stay identical, including
   the pinned `hashicorp/vault-action` SHA. A mismatch means one attempt silently reads different
   secrets from the others.
-- **Outputs are static.** Composite actions cannot dynamically forward an arbitrary set of Vault
-  outputs derived from the `secrets` input. Every output this wrapper exposes must be declared in
-  `action.yml`, and each one must resolve across attempt 1/2/3 explicitly.
 - **The last attempt deliberately omits `continue-on-error`**, so an exhausted retry fails the job.
   Attempts 1 and 2 carry it, which is what lets the next attempt run.
 - **Gating on the immediate predecessor is enough.** A skipped step reports `outcome: skipped`, never
@@ -72,16 +61,18 @@ This wrapper forwards the secret outputs currently used by [`setup-build`](../se
 ```yaml
 steps:
   - uses: actions/checkout@v6
-  - id: secrets
-    uses: ./.github/actions/vault-action-with-retry
+  - uses: ./.github/actions/vault-action-with-retry
     with:
       url: ${{ inputs.vault-address }}
       method: approle
       roleId: ${{ inputs.vault-role-id }}
       secretId: ${{ inputs.vault-secret-id }}
       secrets: |
-        secret/data/github.com/organizations/camunda NEXUS_PSW | ci-account-password;
-        secret/data/github.com/organizations/camunda NEXUS_USR | ci-account-username
+        secret/data/github.com/organizations/camunda NEXUS_PSW | CI_ACCOUNT_PASSWORD;
+        secret/data/github.com/organizations/camunda NEXUS_USR | CI_ACCOUNT_USERNAME
+
+  - name: Use imported secret from env
+    run: echo "Configured user is ${CI_ACCOUNT_USERNAME}"
 ```
 
 Most jobs should not call this directly — [`setup-build`](../setup-build) is the main caller, along

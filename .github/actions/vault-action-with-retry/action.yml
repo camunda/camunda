@@ -23,64 +23,6 @@ inputs:
     description: see https://github.com/hashicorp/vault-action#secrets
     required: true
 
-outputs:
-  ci-account-password:
-    description: Imported Nexus password
-    value: >-
-      ${{
-        steps.attempt-1.outputs.ci-account-password ||
-        steps.attempt-2.outputs.ci-account-password ||
-        steps.attempt-3.outputs.ci-account-password
-      }}
-  ci-account-username:
-    description: Imported Nexus username
-    value: >-
-      ${{
-        steps.attempt-1.outputs.ci-account-username ||
-        steps.attempt-2.outputs.ci-account-username ||
-        steps.attempt-3.outputs.ci-account-username
-      }}
-  dockerhub-token:
-    description: Imported DockerHub token
-    value: >-
-      ${{
-        steps.attempt-1.outputs.dockerhub-token ||
-        steps.attempt-2.outputs.dockerhub-token ||
-        steps.attempt-3.outputs.dockerhub-token
-      }}
-  dockerhub-username:
-    description: Imported DockerHub username
-    value: >-
-      ${{
-        steps.attempt-1.outputs.dockerhub-username ||
-        steps.attempt-2.outputs.dockerhub-username ||
-        steps.attempt-3.outputs.dockerhub-username
-      }}
-  minimus-token:
-    description: Imported Minimus token
-    value: >-
-      ${{
-        steps.attempt-1.outputs.minimus-token ||
-        steps.attempt-2.outputs.minimus-token ||
-        steps.attempt-3.outputs.minimus-token
-      }}
-  harbor-username:
-    description: Imported Harbor username
-    value: >-
-      ${{
-        steps.attempt-1.outputs.harbor-username ||
-        steps.attempt-2.outputs.harbor-username ||
-        steps.attempt-3.outputs.harbor-username
-      }}
-  harbor-password:
-    description: Imported Harbor password
-    value: >-
-      ${{
-        steps.attempt-1.outputs.harbor-password ||
-        steps.attempt-2.outputs.harbor-password ||
-        steps.attempt-3.outputs.harbor-password
-      }}
-
 runs:
   using: composite
   # GitHub Actions has no retry primitive for a `uses:` step, so each attempt is

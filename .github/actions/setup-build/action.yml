@@ -153,13 +153,13 @@ runs:
       roleId: ${{ inputs.vault-role-id }}
       secretId: ${{ inputs.vault-secret-id }}
       secrets: |
-        secret/data/github.com/organizations/camunda NEXUS_PSW | ci-account-password;
-        secret/data/github.com/organizations/camunda NEXUS_USR | ci-account-username;
-        ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_PSW${{ inputs.dockerhub-readonly == 'true' && '_READ_ONLY' || ''}} | dockerhub-token;
-        ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_USR | dockerhub-username;
-        secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token;
-        secret/data/products/camunda/ci/harbor username | harbor-username;
-        secret/data/products/camunda/ci/harbor password | harbor-password
+        secret/data/github.com/organizations/camunda NEXUS_PSW | CI_ACCOUNT_PASSWORD;
+        secret/data/github.com/organizations/camunda NEXUS_USR | CI_ACCOUNT_USERNAME;
+        ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_PSW${{ inputs.dockerhub-readonly == 'true' && '_READ_ONLY' || ''}} | DOCKERHUB_TOKEN;
+        ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_USR | DOCKERHUB_USERNAME;
+        secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | MINIMUS_TOKEN;
+        secret/data/products/camunda/ci/harbor username | HARBOR_USERNAME;
+        secret/data/products/camunda/ci/harbor password | HARBOR_PASSWORD
   - name: Setup Java
     # Retries setup-java through transient network/setup failures (INC-7417). The pin for
     # setup-java itself lives in that action, not here.
@@ -195,8 +195,8 @@ runs:
       CAMUNDA_NEXUS_MAVEN_SERVER: >-
         [{
           "id": "camunda-nexus",
-          "username": "${{ steps.secrets.outputs.ci-account-username }}",
-          "password": "${{ steps.secrets.outputs.ci-account-password }}"
+          "username": "${{ env.CI_ACCOUNT_USERNAME }}",
+          "password": "${{ env.CI_ACCOUNT_PASSWORD }}"
         }]
       # Avoid rate limiting on repo.maven.apache.org by mirroring central via Google's
       # public Maven Central mirror. Applies to all artifacts (deps, plugins, extensions, BOM).
@@ -270,8 +270,8 @@ runs:
       )
     uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
     env:
-      DOCKER_USERNAME: ${{ steps.secrets.outputs.dockerhub-username }}
-      DOCKER_PASSWORD: ${{ steps.secrets.outputs.dockerhub-token }}
+      DOCKER_USERNAME: ${{ env.DOCKERHUB_USERNAME }}
+      DOCKER_PASSWORD: ${{ env.DOCKERHUB_TOKEN }}
     with:
       max_attempts: 3
       retry_wait_seconds: 10
@@ -286,8 +286,8 @@ runs:
       inputs.harbor == 'true'
     uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
     env:
-      DOCKER_USERNAME: ${{ steps.secrets.outputs.harbor-username }}
-      DOCKER_PASSWORD: ${{ steps.secrets.outputs.harbor-password }}
+      DOCKER_USERNAME: ${{ env.HARBOR_USERNAME }}
+      DOCKER_PASSWORD: ${{ env.HARBOR_PASSWORD }}
     with:
       max_attempts: 3
       retry_wait_seconds: 10
@@ -303,7 +303,7 @@ runs:
       inputs.minimus == 'true'
     uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
     env:
-      DOCKER_PASSWORD: ${{ steps.secrets.outputs.minimus-token }}
+      DOCKER_PASSWORD: ${{ env.MINIMUS_TOKEN }}
     with:
       max_attempts: 3
       retry_wait_seconds: 10
