@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" id="sensitive_inputs" name="Sensitive Inputs" namespace="http://camunda.org/schema/1.0/dmn">
+  <decision id="sensitive_inputs_decision" name="Sensitive inputs decision">
+    <decisionTable id="DecisionTable_SensitiveInputs">
+      <input id="Input_Direct" label="Direct reference">
+        <inputExpression id="InputExpression_Direct" typeRef="string">
+          <text>sensitive_ssn</text>
+        </inputExpression>
+      </input>
+      <input id="Input_Derived" label="Derived from sensitive">
+        <inputExpression id="InputExpression_Derived" typeRef="boolean">
+          <text>sensitive_salary &gt; 100000</text>
+        </inputExpression>
+      </input>
+      <input id="Input_Plain" label="Plain">
+        <inputExpression id="InputExpression_Plain" typeRef="string">
+          <text>lightsaberColor</text>
+        </inputExpression>
+      </input>
+      <output id="Output_Result" name="result" typeRef="string" />
+      <rule id="Rule_Any">
+        <inputEntry id="InputEntry_Direct">
+          <text>-</text>
+        </inputEntry>
+        <inputEntry id="InputEntry_Derived">
+          <text>-</text>
+        </inputEntry>
+        <inputEntry id="InputEntry_Plain">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="OutputEntry_Result">
+          <text>"ok"</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+</definitions>
