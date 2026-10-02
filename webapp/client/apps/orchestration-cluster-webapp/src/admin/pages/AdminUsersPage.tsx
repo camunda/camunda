@@ -29,7 +29,6 @@ import {DEFAULT_PAGE_SIZE, PAGE_SIZES, type UsersSearch} from '#/admin/modules/u
 type SortingState = NonNullable<SortingConfig['sortState']>;
 
 const SEARCH_DEBOUNCE = 500;
-const SORTED_COLUMN_ID = 'username';
 const USERS_GUIDE_URL = 'https://docs.camunda.io/docs/next/components/admin/user/';
 
 type ModalState = {type: 'create'} | {type: 'edit'; user: User} | {type: 'delete'; user: User} | null;
@@ -71,8 +70,8 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({users, totalItems, searc
 	const columns = useMemo<DataTableColumn<User>[]>(
 		() => [
 			{accessorKey: 'username', header: t('admin.users.username')},
-			{accessorKey: 'name', header: t('admin.users.name'), enableSorting: false},
-			{accessorKey: 'email', header: t('admin.users.email'), enableSorting: false},
+			{accessorKey: 'name', header: t('admin.users.name')},
+			{accessorKey: 'email', header: t('admin.users.email')},
 		],
 		[t],
 	);
@@ -99,16 +98,17 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({users, totalItems, searc
 	);
 
 	const sortState = useMemo<SortingState>(
-		() => [{id: SORTED_COLUMN_ID, desc: search.sortOrder === 'desc'}],
-		[search.sortOrder],
+		() => [{id: search.sortField ?? 'username', desc: search.sortOrder === 'desc'}],
+		[search.sortField, search.sortOrder],
 	);
 
 	const handleSortingChange = useCallback(
 		(state: SortingState) => {
-			const sortedColumn = state.find(({id}) => id === SORTED_COLUMN_ID);
+			const [sorted] = state;
 
 			onSearchChange({
-				sortOrder: sortedColumn === undefined || !sortedColumn.desc ? undefined : 'desc',
+				sortField: sorted?.id as UsersSearch['sortField'],
+				sortOrder: sorted === undefined ? undefined : sorted.desc ? 'desc' : 'asc',
 				page: undefined,
 			});
 		},

@@ -74,6 +74,17 @@ test.describe('Admin users', () => {
 		await expect(page).toHaveURL(/sortOrder=desc/);
 	});
 
+	test('should sort by name or email when those columns are sorted', async ({adminUsersPage, page}) => {
+		await adminUsersPage.goto();
+		await expect(adminUsersPage.cell('jane.doe')).toBeVisible();
+
+		await adminUsersPage.nameSortButton.click();
+		await expect(page).toHaveURL(/sortField=name/);
+
+		await adminUsersPage.emailSortButton.click();
+		await expect(page).toHaveURL(/sortField=email/);
+	});
+
 	test('should create a user', async ({adminUsersPage, network}) => {
 		network.use(
 			mockCreateUserEndpoint({successResponse: HttpResponse.json(createUser({username: 'new.user'}))}),

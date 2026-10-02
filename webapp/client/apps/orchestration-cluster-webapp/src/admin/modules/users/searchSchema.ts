@@ -12,8 +12,11 @@ import type {QueryUsersRequestBody} from '@camunda/camunda-api-zod-schemas/8.11'
 const PAGE_SIZES = [10, 20, 50, 100] as const;
 const DEFAULT_PAGE_SIZE = 20;
 
+const SORTABLE_FIELDS = ['username', 'name', 'email'] as const;
+
 const usersSearchSchema = z.object({
 	search: z.coerce.string().optional(),
+	sortField: z.enum(SORTABLE_FIELDS).optional(),
 	sortOrder: z.enum(['asc', 'desc']).optional(),
 	page: z.number().int().positive().optional(),
 	pageSize: z.literal(PAGE_SIZES).optional(),
@@ -26,7 +29,7 @@ function getUsersRequestBody(search: UsersSearch): QueryUsersRequestBody {
 	const searchTerm = search.search?.trim();
 
 	return {
-		sort: [{field: 'username', order: search.sortOrder ?? 'asc'}],
+		sort: [{field: search.sortField ?? 'username', order: search.sortOrder ?? 'asc'}],
 		filter: searchTerm === undefined || searchTerm === '' ? {} : {username: {$like: `*${searchTerm}*`}},
 		page: {
 			from: ((search.page ?? 1) - 1) * pageSize,

@@ -29,6 +29,14 @@ class AdminUsersPage extends BasePage {
 		return this.page.getByRole('button', {name: 'Username'});
 	}
 
+	get nameSortButton() {
+		return this.page.getByRole('button', {name: 'Name', exact: true});
+	}
+
+	get emailSortButton() {
+		return this.page.getByRole('button', {name: 'Email'});
+	}
+
 	get pageSizeSelect() {
 		return this.page.getByRole('combobox');
 	}
