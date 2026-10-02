@@ -633,18 +633,24 @@ const endpoints = {
 		}),
 
 	updateMappingRule: ({mappingRuleId, ...body}: Pick<MappingRule, 'mappingRuleId'> & UpdateMappingRuleRequestBody) =>
-		new Request(getFullURL(unifiedAPIEndpoints.updateMappingRule.getUrl({mappingRuleId})), {
-			...BASE_REQUEST_OPTIONS,
-			method: unifiedAPIEndpoints.updateMappingRule.method,
-			body: JSON.stringify(body),
-			headers: {'Content-Type': 'application/json'},
-		}),
+		new Request(
+			getFullURL(unifiedAPIEndpoints.updateMappingRule.getUrl({mappingRuleId: encodeURIComponent(mappingRuleId)})),
+			{
+				...BASE_REQUEST_OPTIONS,
+				method: unifiedAPIEndpoints.updateMappingRule.method,
+				body: JSON.stringify(body),
+				headers: {'Content-Type': 'application/json'},
+			},
+		),
 
 	deleteMappingRule: ({mappingRuleId}: Pick<MappingRule, 'mappingRuleId'>) =>
-		new Request(getFullURL(unifiedAPIEndpoints.deleteMappingRule.getUrl({mappingRuleId})), {
-			...BASE_REQUEST_OPTIONS,
-			method: unifiedAPIEndpoints.deleteMappingRule.method,
-		}),
+		new Request(
+			getFullURL(unifiedAPIEndpoints.deleteMappingRule.getUrl({mappingRuleId: encodeURIComponent(mappingRuleId)})),
+			{
+				...BASE_REQUEST_OPTIONS,
+				method: unifiedAPIEndpoints.deleteMappingRule.method,
+			},
+		),
 };
 
 export {endpoints};

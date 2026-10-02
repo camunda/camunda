@@ -6,13 +6,24 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {problemDetailResponseSchema} from '@camunda/camunda-api-zod-schemas/8.11';
 import {requestErrorSchema} from '#/shared/http/request';
 
-function isDuplicateMappingRuleIdError(error: unknown): boolean {
+
+const DUPLICATE_ID_DETAIL_PATTERN = /with this id already exists/i;
+
+async function isDuplicateMappingRuleIdError(error: unknown): Promise<boolean> {
 	const requestError = requestErrorSchema.safeParse(error);
-	return (
-		requestError.success && requestError.data.variant === 'failed-response' && requestError.data.response.status === 409
-	);
+	if (
+		!requestError.success ||
+		requestError.data.variant !== 'failed-response' ||
+		requestError.data.response.status !== 409
+	) {
+		return false;
+	}
+
+	const problemDetail = problemDetailResponseSchema.safeParse(await requestError.data.response.clone().json());
+	return problemDetail.success && DUPLICATE_ID_DETAIL_PATTERN.test(problemDetail.data.detail);
 }
 
 export {isDuplicateMappingRuleIdError};

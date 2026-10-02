@@ -92,7 +92,17 @@ describe('<AddMappingRuleModal />', () => {
 	it('should show an inline error when the mapping rule ID already exists', async ({worker}) => {
 		worker.use(
 			mockCreateMappingRuleEndpoint({
-				successResponse: new HttpResponse(null, {status: 409}),
+				successResponse: HttpResponse.json(
+					{
+						type: 'about:blank',
+						title: 'ALREADY_EXISTS',
+						status: 409,
+						detail:
+							"Expected to create mapping rule with id 'my-rule', but a mapping rule with this id already exists.",
+						instance: '/v2/mapping-rules',
+					},
+					{status: 409},
+				),
 			}),
 		);
 
@@ -105,6 +115,34 @@ describe('<AddMappingRuleModal />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
 
 		await expect.element(screen.getByText('A mapping rule with this ID already exists')).toBeVisible();
+	});
+
+	it('should show a generic error toast when the claim already exists on another mapping rule', async ({worker}) => {
+		worker.use(
+			mockCreateMappingRuleEndpoint({
+				successResponse: HttpResponse.json(
+					{
+						type: 'about:blank',
+						title: 'ALREADY_EXISTS',
+						status: 409,
+						detail:
+							"Expected to create mapping rule with claimName 'email' and claimValue 'demo@example.com', but a mapping rule with this claim already exists.",
+						instance: '/v2/mapping-rules',
+					},
+					{status: 409},
+				),
+			}),
+		);
+
+		const screen = await render(<AddMappingRuleModal isOpen onClose={() => {}} />, {wrapper: getWrapper()});
+
+		await userEvent.fill(screen.getByRole('textbox', {name: 'Mapping rule ID'}), 'my-rule');
+		await userEvent.fill(screen.getByRole('textbox', {name: 'Name'}), 'My rule');
+		await userEvent.fill(screen.getByRole('textbox', {name: 'Claim name'}), 'email');
+		await userEvent.fill(screen.getByRole('textbox', {name: 'Claim value'}), 'demo@example.com');
+		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
+
+		await expect.element(screen.getByText('Failed to create mapping rule')).toBeVisible();
 	});
 
 	it('should call onClose when cancelled', async () => {

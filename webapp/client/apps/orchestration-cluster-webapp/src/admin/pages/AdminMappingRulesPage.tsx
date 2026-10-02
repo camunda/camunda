@@ -30,7 +30,6 @@ type SortingState = NonNullable<SortingConfig['sortState']>;
 type ModalState = {type: 'add'} | {type: 'edit'; mappingRule: MappingRule} | {type: 'delete'; mappingRule: MappingRule};
 
 const SEARCH_DEBOUNCE = 500;
-const SORTED_COLUMN_ID = 'mappingRuleId';
 const MAPPING_RULES_GUIDE_URL = 'https://docs.camunda.io/docs/next/components/admin/mapping-rules/';
 
 type AdminMappingRulesPageProps = {
@@ -75,24 +74,25 @@ const AdminMappingRulesPage: React.FC<AdminMappingRulesPageProps> = ({
 
 	const columns = useMemo<DataTableColumn<MappingRule>[]>(
 		() => [
-			{accessorKey: SORTED_COLUMN_ID, header: t('admin.mappingRules.mappingRuleIdColumn')},
-			{accessorKey: 'name', header: t('admin.mappingRules.mappingRuleNameColumn'), enableSorting: false},
-			{accessorKey: 'claimName', header: t('admin.mappingRules.claimNameColumn'), enableSorting: false},
-			{accessorKey: 'claimValue', header: t('admin.mappingRules.claimValueColumn'), enableSorting: false},
+			{accessorKey: 'mappingRuleId', header: t('admin.mappingRules.mappingRuleIdColumn')},
+			{accessorKey: 'name', header: t('admin.mappingRules.mappingRuleNameColumn')},
+			{accessorKey: 'claimName', header: t('admin.mappingRules.claimNameColumn')},
+			{accessorKey: 'claimValue', header: t('admin.mappingRules.claimValueColumn')},
 		],
 		[t],
 	);
 
 	const sortState = useMemo<SortingState>(
-		() => [{id: SORTED_COLUMN_ID, desc: search.sortOrder === 'desc'}],
-		[search.sortOrder],
+		() => [{id: search.sortField ?? 'mappingRuleId', desc: search.sortOrder === 'desc'}],
+		[search.sortField, search.sortOrder],
 	);
 
 	const handleSortingChange = useCallback(
 		(state: SortingState) => {
-			const sortedColumn = state.find(({id}) => id === SORTED_COLUMN_ID);
+			const [sorted] = state;
 			onSearchChange({
-				sortOrder: sortedColumn === undefined || !sortedColumn.desc ? undefined : 'desc',
+				sortField: sorted?.id as MappingRulesSearch['sortField'],
+				sortOrder: sorted === undefined ? undefined : sorted.desc ? 'desc' : 'asc',
 				page: undefined,
 			});
 		},

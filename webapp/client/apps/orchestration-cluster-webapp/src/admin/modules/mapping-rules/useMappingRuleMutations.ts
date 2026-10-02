@@ -32,9 +32,9 @@ function useMappingRuleMutations() {
 			invalidateMappingRules();
 			toast.success(t('admin.mappingRules.createMappingRuleSuccess'));
 		},
-		onError: (error) => {
+		onError: async (error) => {
 			// A duplicate ID is corrected inline on the mapping rule ID field instead of a toast.
-			if (!isDuplicateMappingRuleIdError(error)) {
+			if (!(await isDuplicateMappingRuleIdError(error))) {
 				toast.error(t('admin.mappingRules.createMappingRuleError'));
 			}
 		},

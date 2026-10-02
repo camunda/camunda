@@ -11,8 +11,11 @@ import {z} from 'zod';
 const PAGE_SIZES = [10, 20, 50, 100] as const;
 const DEFAULT_PAGE_SIZE = 20;
 
+const SORTABLE_FIELDS = ['mappingRuleId', 'name', 'claimName', 'claimValue'] as const;
+
 const mappingRulesSearchSchema = z.object({
 	search: z.coerce.string().optional(),
+	sortField: z.enum(SORTABLE_FIELDS).optional(),
 	sortOrder: z.enum(['asc', 'desc']).optional(),
 	page: z.number().int().positive().optional(),
 	pageSize: z.literal(PAGE_SIZES).optional(),

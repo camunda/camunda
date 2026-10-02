@@ -457,7 +457,6 @@ const queries = {
 				}
 				return response.json();
 			},
-			staleTime: Infinity,
 		}),
 } as const;
 

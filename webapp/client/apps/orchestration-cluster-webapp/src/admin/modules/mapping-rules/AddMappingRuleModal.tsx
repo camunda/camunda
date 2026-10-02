@@ -69,7 +69,7 @@ const AddMappingRuleModal: React.FC<Props> = ({isOpen, onClose}) => {
 								onClose();
 								return undefined;
 							} catch (error) {
-								if (isDuplicateMappingRuleIdError(error)) {
+								if (await isDuplicateMappingRuleIdError(error)) {
 									return {mappingRuleId: t('admin.mappingRules.mappingRuleIdAlreadyExistsError')};
 								}
 								return undefined;
