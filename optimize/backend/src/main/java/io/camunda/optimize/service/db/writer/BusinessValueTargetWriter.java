@@ -10,6 +10,8 @@ package io.camunda.optimize.service.db.writer;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueTargetDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import io.camunda.optimize.service.db.repository.BusinessValueTargetRepository;
+import io.camunda.optimize.service.exceptions.OptimizeBulkFailureException;
+import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.time.Duration;
 import java.util.EnumMap;
 import java.util.List;
@@ -79,8 +81,23 @@ public class BusinessValueTargetWriter {
         "Deleting business-value target for definition [{}] tenant [{}]",
         processDefinitionKey,
         tenantId);
-    repository.deleteByIds(
-        List.of(BusinessValueTargetRepository.documentId(tenantId, processDefinitionKey)));
+    try {
+      repository.deleteByIds(
+          List.of(BusinessValueTargetRepository.documentId(tenantId, processDefinitionKey)));
+    } catch (final OptimizeRuntimeException e) {
+      // Logged here as well as rethrown: the caller retries, so a failure that later succeeds
+      // leaves no other trace that the cluster rejected the delete.
+      LOG.warn(
+          "Bulk delete of the business-value target for definition [{}] tenant [{}] failed",
+          processDefinitionKey,
+          tenantId,
+          e);
+      throw new OptimizeBulkFailureException(
+          String.format(
+              "Could not delete the business-value target for definition [%s] tenant [%s].",
+              processDefinitionKey, tenantId),
+          e);
+    }
   }
 
   private void validate(final BusinessValueTargetDto target) {

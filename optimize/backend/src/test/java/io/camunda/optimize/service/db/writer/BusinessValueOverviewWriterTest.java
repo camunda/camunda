@@ -9,6 +9,8 @@ package io.camunda.optimize.service.db.writer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -18,6 +20,8 @@ import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOvervie
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto.CycleTimeBlock;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto.MetricRange;
 import io.camunda.optimize.service.db.repository.BusinessValueOverviewRepository;
+import io.camunda.optimize.service.exceptions.OptimizeBulkFailureException;
+import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.importing.ZeebeConstants;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -318,5 +322,27 @@ class BusinessValueOverviewWriterTest {
 
     // then
     verifyNoInteractions(repository);
+  }
+
+  /**
+   * The database clients raise a bare OptimizeRuntimeException when a bulk reports per-item
+   * failures, and the deletion job only retries a known set of types. Translating it here is what
+   * makes a transient rejection retryable instead of failing the job on the first attempt.
+   */
+  @Test
+  void shouldTranslateABulkFailureIntoARetryableException() {
+    // given
+    doThrow(new OptimizeRuntimeException("rejected execution"))
+        .when(repository)
+        .deleteByIds(anyList());
+
+    // when / then
+    assertThatThrownBy(
+            () ->
+                writer.deleteForDefinition(
+                    ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID, "invoice-automation"))
+        .isInstanceOf(OptimizeBulkFailureException.class)
+        .hasMessageContaining("invoice-automation")
+        .hasRootCauseMessage("rejected execution");
   }
 }
