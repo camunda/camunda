@@ -41,7 +41,7 @@ import {ProcessesToolbar} from './ProcessesToolbar';
 import {processBulkOperationMachine} from './processBulkOperationMachine';
 import {MoveAction} from './MoveAction';
 import {MigrateAction} from './MigrateAction';
-import {getMigrationFilter, type MigrationScope} from './getMigrationFilter';
+import {getMigrationFilter, getMigrationStatisticsFilter, type MigrationScope} from './getMigrationFilter';
 import {BatchModificationFooter} from './BatchModificationFooter';
 import {useDiagramXml} from './useDiagramXml';
 import {getActiveInstancesFilter} from './getActiveInstancesFilter';
@@ -409,10 +409,15 @@ const InstancesTable: React.FC<Props> = ({
 										if (processDefinitionSelection.kind !== 'single-version' || migrationFilter === null) {
 											return;
 										}
+										const migrationSelection = {
+											search,
+											includeIds: selection.mode === 'INCLUDE' ? selection.includedIds : [],
+											excludeIds: selection.excludedIds,
+										};
 										onMigrationEnter(processDefinitionSelection.definition, {
 											filter: migrationFilter,
+											statisticsFilter: getMigrationStatisticsFilter(migrationSelection),
 											selectedCount: selection.mode === 'INCLUDE' ? selection.runningCount : selection.selectedCount,
-											isCountTruncated: selection.isCountTruncated,
 										});
 									}}
 								/>

@@ -366,8 +366,14 @@ const mockCreateModificationBatchOperationEndpoint = createEndpointMock({
 	method: endpoints.createModificationBatchOperation.method,
 });
 
+const mockCreateMigrationBatchOperationEndpoint = createEndpointMock({
+	endpoint: endpoints.createMigrationBatchOperation.getUrl(),
+	method: endpoints.createMigrationBatchOperation.method,
+});
+
 export {
 	mockCreateCancellationBatchOperationEndpoint,
+	mockCreateMigrationBatchOperationEndpoint,
 	mockCreateIncidentResolutionBatchOperationEndpoint,
 	mockCreateDeletionBatchOperationEndpoint,
 	mockCreateSuspensionBatchOperationEndpoint,
