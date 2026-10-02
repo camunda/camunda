@@ -463,6 +463,32 @@ describe('Processes migration', () => {
 		await expect.element(checkPaymentRow).toHaveAttribute('aria-selected', 'false');
 	});
 
+	it('should not change the selected row when operating its target select', async ({worker}) => {
+		mockPage(worker);
+		const screen = await renderPage();
+		await enterMigration(screen);
+		const reviewRow = getMappingRow(screen, 'Review invoice');
+		const reviewSelect = reviewRow.getByRole('combobox');
+
+		await userEvent.click(reviewSelect);
+
+		await expect.element(reviewRow).toHaveAttribute('aria-selected', 'false');
+
+		await userEvent.keyboard('{Enter}');
+
+		await expect.element(reviewRow).toHaveAttribute('aria-selected', 'false');
+
+		await userEvent.selectOptions(reviewSelect, '');
+
+		await expect.element(reviewSelect).toHaveValue('');
+		await expect.element(reviewRow).toHaveAttribute('aria-selected', 'false');
+
+		reviewRow.element().focus();
+		await userEvent.keyboard('{Enter}');
+
+		await expect.element(reviewRow).toHaveAttribute('aria-selected', 'true');
+	});
+
 	it('should ask for a target when the source process has no other version', async ({worker}) => {
 		mockPage(worker, {sourceVersions: [SOURCE], latestOtherProcesses: []});
 		const screen = await renderPage();

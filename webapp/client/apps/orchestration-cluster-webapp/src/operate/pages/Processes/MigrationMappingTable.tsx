@@ -141,8 +141,8 @@ function MigrationMappingTable({
 											aria-selected={isSelected}
 											tabIndex={0}
 											onClick={() => onSourceElementSelection(sourceElement.id)}
-											onKeyDown={({key}) => {
-												if (key === 'Enter') {
+											onKeyDown={({key, target, currentTarget}) => {
+												if (key === 'Enter' && target === currentTarget) {
 													onSourceElementSelection(sourceElement.id);
 												}
 											}}
@@ -174,6 +174,7 @@ function MigrationMappingTable({
 														labelText={t('operate.processes.migration.targetFor', {name})}
 														id={sourceElement.id}
 														value={targetElementId}
+														onClick={(event) => event.stopPropagation()}
 														onChange={({target}) => onMappingChange(sourceElement.id, target.value)}
 													>
 														{[{id: '', name: ''}, ...choices].map(({id, name: choiceName}) => (
