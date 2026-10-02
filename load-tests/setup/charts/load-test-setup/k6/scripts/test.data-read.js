@@ -13,11 +13,11 @@ export const options = {
   scenarios: {
     /* Search for process instances.
      * Run a basic search for process instances at a low rate. */
-    searchInstances: {
+    searchProcessInstances: {
       exec: 'searchProcessInstances',
       executor: 'constant-arrival-rate',
-      duration: '7d',
-      rate: 20,
+      duration: '60d', // As long as the longest benchmark we run
+      rate: 1,
       timeUnit: '1s',
       preAllocatedVUs: 10,
       maxVUs: 100,
@@ -29,27 +29,26 @@ export async function setup() {
   return helpers.setupContext();
 }
 
-// List of process definitions we want to search for.
-let processDefinitionIds = [];
+// Process definition to search for, kept for the lifetime of the VU.
+let processDefinitionId = null;
 
 // https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/search-process-instances/
 export async function searchProcessInstances(context) {
   const token = auth.renew(context.token);
 
-  // Process definitions are listed until at least one has been found, then kept for the
-  // lifetime of the VU.
-  if (processDefinitionIds.length === 0) {
+  if (processDefinitionId === null) {
     const processDefinitionsResponse = await camunda.listProcessDefinitions(context);
     if (processDefinitionsResponse.status !== 200) {
       console.error(`Unable to list process definitions, got HTTP status=${processDefinitionsResponse.status}`);
       return;
     }
-    processDefinitionIds = processDefinitionsResponse.json().items.map((pd) => pd.processDefinitionId);
-    if (processDefinitionIds.length === 0) {
+    const items = processDefinitionsResponse.json().items;
+    if (items.length === 0) {
       // Wait until we find at least one process definition.
       return;
     }
-    console.log(`Found ${processDefinitionIds.length} process definitions, will not search for them anymore.`);
+    processDefinitionId = items[0].processDefinitionId;
+    console.log(`Will searching process instances from process definition ${processDefinitionId}.`);
   }
 
   const endpoint = '/v2/process-instances/search';
@@ -65,8 +64,7 @@ export async function searchProcessInstances(context) {
       {field: "startDate", order: "DESC"},
     ],
     filter: {
-      // Search only the first process definition discovered earlier..
-      processDefinitionId: processDefinitionIds[0],
+      processDefinitionId: processDefinitionId,
     },
   };
   const response = http.post(context.baseURL + endpoint, JSON.stringify(payload), params);
