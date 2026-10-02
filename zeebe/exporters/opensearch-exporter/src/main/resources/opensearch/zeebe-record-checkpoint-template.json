@@ -36,6 +36,9 @@
             },
             "firstLogPosition": {
               "type": "long"
+            },
+            "snapshotId": {
+              "type": "keyword"
             }
           }
         }
