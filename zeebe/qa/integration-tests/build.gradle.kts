@@ -61,6 +61,7 @@ dependencies {
   testImplementation(libs.junit.junit)
   testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
   testImplementation(libs.org.testcontainers.testcontainers)
+  testImplementation(libs.com.adobe.testing.s3mock.testcontainers)
   testImplementation(libs.org.testcontainers.testcontainers.toxiproxy)
   testImplementation(libs.eu.rekawek.toxiproxy.toxiproxy.java)
   testImplementation(libs.com.github.dasniko.testcontainers.keycloak)

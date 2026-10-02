@@ -211,6 +211,7 @@ internal fun VersionCatalogBuilder.catalogVersions(
   version("protobuf-spring-boot-baseline", pomVersion("version.protobuf-spring-boot-baseline"))
   version("protoc", pomVersion("version.protoc"))
   version("reflections", pomVersion("version.reflections"))
+  version("s3mock-testcontainers", pomVersion("version.s3mock-testcontainers"))
   version("resilience4j", pomVersion("version.resilience4j"))
   version("rest-assured", pomVersion("version.rest-assured"))
   version("scala", pomVersion("version.scala"))

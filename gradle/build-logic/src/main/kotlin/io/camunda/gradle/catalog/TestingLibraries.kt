@@ -143,6 +143,12 @@ internal fun VersionCatalogBuilder.catalogTestingLibraries() {
   library("org-mockito-mockito-bom", "org.mockito", "mockito-bom").versionRef("mockito")
   library("org-objenesis-objenesis", "org.objenesis", "objenesis").versionRef("objenesis")
   library("org-skyscreamer-jsonassert", "org.skyscreamer", "jsonassert").withoutVersion()
+  library(
+      "com-adobe-testing-s3mock-testcontainers",
+      "com.adobe.testing",
+      "s3mock-testcontainers",
+    )
+    .versionRef("s3mock-testcontainers")
   library("org-testcontainers-testcontainers", "org.testcontainers", "testcontainers")
     .withoutVersion()
   library(
