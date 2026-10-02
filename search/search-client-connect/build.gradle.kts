@@ -13,6 +13,7 @@ dependencies {
   api(libs.org.elasticsearch.client.elasticsearch.rest.client)
   api(libs.org.apache.httpcomponents.httpcore)
   api(libs.org.apache.httpcomponents.httpasyncclient)
+  implementation(libs.org.apache.httpcomponents.httpcore.nio)
   api(libs.org.apache.httpcomponents.core5.httpcore5)
   api(libs.org.opensearch.client.opensearch.java)
   implementation(libs.software.amazon.awssdk.aws.core)
