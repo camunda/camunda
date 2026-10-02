@@ -45,6 +45,36 @@ public enum StarterMetricsDoc implements ExtendedMeterDocumentation {
   },
 
   /**
+   * Total number of scheduled process instance start submissions by their {@code outcome}: {@code
+   * submitted} when the request was sent, {@code skipped} when it was dropped because the maximum
+   * number of in-flight requests was reached. A non-zero skipped rate means the target rate is not
+   * sustained, e.g. because the cluster responds slower than the starter schedules requests.
+   */
+  PROCESS_INSTANCES_SUBMISSIONS {
+    private static final KeyName[] KEY_NAMES = new KeyName[] {StarterMetricKeyNames.OUTCOME};
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return KEY_NAMES;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Total number of scheduled process instance start submissions by outcome.";
+    }
+
+    @Override
+    public String getName() {
+      return "starter.process.instances.submissions";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.COUNTER;
+    }
+  },
+
+  /**
    * Set to 1 when the starter has finished its instance-creation loop (either because the
    * configured duration-limit elapsed or because it was otherwise stopped). Stays at 0 while the
    * starter is actively creating instances. Lets external watchers (e.g. the quicker load test
@@ -66,5 +96,51 @@ public enum StarterMetricsDoc implements ExtendedMeterDocumentation {
     public Type getType() {
       return Type.GAUGE;
     }
+<<<<<<< HEAD
+=======
+  };
+
+  public enum StarterMetricKeyNames implements KeyName {
+
+    /** The name of the load-tester component emitting the metric */
+    NAME {
+      @Override
+      public String asString() {
+        return "name";
+      }
+    },
+
+    /** The outcome of a scheduled start submission */
+    OUTCOME {
+      @Override
+      public String asString() {
+        return "outcome";
+      }
+    },
+
+    /** The number of threads configured in the starter */
+    NB_THREADS {
+      @Override
+      public String asString() {
+        return "nb_threads";
+      }
+    },
+
+    /** The ID of the partition associated to the metric */
+    PARTITION {
+      @Override
+      public String asString() {
+        return "partition";
+      }
+    },
+
+    /** The BPMN process id loaded by the starter */
+    PROCESS_ID {
+      @Override
+      public String asString() {
+        return "process_id";
+      }
+    },
+>>>>>>> 3cdd9645 (feat: add submission metrics)
   }
 }

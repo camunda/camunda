@@ -82,6 +82,8 @@ public class Starter implements CommandLineRunner {
 
   private Timer responseLatencyTimer;
   private Counter processInstancesStartedCounter;
+  private Counter processInstancesSubmittedCounter;
+  private Counter processInstancesSkippedCounter;
   private ScheduledExecutorService executorService;
 
   public Starter(
@@ -109,6 +111,9 @@ public class Starter implements CommandLineRunner {
         Counter.builder(StarterMetricsDoc.PROCESS_INSTANCES_STARTED.getName())
             .description(StarterMetricsDoc.PROCESS_INSTANCES_STARTED.getDescription())
             .register(registry);
+
+    processInstancesSubmittedCounter = registerSubmissionCounter("submitted");
+    processInstancesSkippedCounter = registerSubmissionCounter("skipped");
 
     Gauge.builder(StarterMetricsDoc.RUN_FINISHED.getName(), runFinished, AtomicInteger::doubleValue)
         .description(StarterMetricsDoc.RUN_FINISHED.getDescription())
@@ -145,6 +150,74 @@ public class Starter implements CommandLineRunner {
         LOG.error("Shutdown executor service was interrupted", e);
       }
     }
+<<<<<<< HEAD
+=======
+    if (processInstanceStartMeter != null) {
+      processInstanceStartMeter.close();
+    }
+    if (dataReadMeter != null) {
+      dataReadMeter.close();
+    }
+    if (optimizeReportEvaluator != null) {
+      optimizeReportEvaluator.close();
+    }
+  }
+
+  private Counter registerSubmissionCounter(final String outcome) {
+    return Counter.builder(StarterMetricsDoc.PROCESS_INSTANCES_SUBMISSIONS.getName())
+        .description(StarterMetricsDoc.PROCESS_INSTANCES_SUBMISSIONS.getDescription())
+        .tag(StarterMetricKeyNames.OUTCOME.asString(), outcome)
+        .register(registry);
+  }
+
+  private void setupDataAvailabilityMeter() {
+    LOG.info("Monitor data availability of started process instances");
+    processInstanceStartMeter =
+        new ProcessInstanceStartMeter(
+            System::nanoTime,
+            registry,
+            Executors.newScheduledThreadPool(1),
+            properties.getMonitorDataAvailabilityInterval(),
+            (listOfStartedInstances) -> {
+              final CamundaFuture<SearchResponse<ProcessInstance>> send =
+                  client
+                      .newProcessInstanceSearchRequest()
+                      .filter((f) -> f.processInstanceKey(key -> key.in(listOfStartedInstances)))
+                      .sort(s -> s.startDate().asc())
+                      .page(p -> p.limit(2500))
+                      .send();
+
+              return send.thenApply(
+                  processInstanceSearchResponse ->
+                      processInstanceSearchResponse.items().stream()
+                          .map(ProcessInstance::getProcessInstanceKey)
+                          .toList());
+            });
+    processInstanceStartMeter.start();
+  }
+
+  private void setupOptimizeReportEvaluator() {
+    LOG.info("Starting Optimize report evaluation meter");
+    optimizeReportEvaluator =
+        OptimizeReportEvaluatorFactory.create(
+            properties.getOptimize(), webClientBuilder, objectMapper, registry);
+  }
+
+  private void setupDataReadMeter() {
+    LOG.info("Starting read benchmark queries");
+    dataReadMeter =
+        new DataReadMeter(
+            registry,
+            Executors.newScheduledThreadPool(2),
+            client,
+            DataReadMeterQueryProvider.getDefaultQueries(properties.getDisabledQueriesList()));
+    dataReadMeter.setContextProcessDefinitionId(starterCfg.getProcessId());
+    dataReadMeter.setContextBusinessKeySupplier(
+        () ->
+            Pair.of(
+                starterCfg.getBusinessKey(),
+                businessKey.get() - (long) (starterCfg.getRatePerSecond() * 60.0)));
+>>>>>>> 3cdd9645 (feat: add submission metrics)
   }
 
   private ScheduledFuture<?> scheduleProcessInstanceCreation(
@@ -174,6 +247,7 @@ public class Starter implements CommandLineRunner {
             final var vars = new HashMap<>(baseVariables);
             vars.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
             processInstancesStartedCounter.increment();
+            processInstancesSubmittedCounter.increment();
 
             final var startTime = System.nanoTime();
             final CompletionStage<?> requestFuture;
