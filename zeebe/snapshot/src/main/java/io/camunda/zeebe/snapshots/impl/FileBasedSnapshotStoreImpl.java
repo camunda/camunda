@@ -296,28 +296,25 @@ public final class FileBasedSnapshotStoreImpl {
                 .map(reservation -> reservation.reservation().snapshot()));
   }
 
-  public ActorFuture<Void> releaseReservation(final long checkpointId, final String snapshotId) {
-    return actor.call(
-        () -> {
-          reservations.computeIfPresent(
-              new ReservationKey(checkpointId, snapshotId),
-              (key, reservation) -> {
-                if (reservation.count() > 1) {
-                  return reservation.decrement();
-                }
-                reservation.release();
-                return null;
-              });
-          return unit();
-        });
+  public void releaseReservation(final long checkpointId, final String snapshotId) {
+    actor.run(
+        () ->
+            reservations.computeIfPresent(
+                new ReservationKey(checkpointId, snapshotId),
+                (key, reservation) -> {
+                  if (reservation.count() > 1) {
+                    return reservation.decrement();
+                  }
+                  reservation.release();
+                  return null;
+                }));
   }
 
-  public ActorFuture<Void> releaseAllReservations() {
-    return actor.call(
+  public void releaseAllReservations() {
+    actor.run(
         () -> {
           reservations.values().forEach(CheckpointReservation::release);
           reservations.clear();
-          return unit();
         });
   }
 
