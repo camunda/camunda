@@ -29,7 +29,7 @@ test.describe('OIDC session recovery', () => {
     loginPage,
     identityMappingRulesPage,
   }) => {
-    await navigateToApp(page, 'admin');
+    await navigateToApp(page, 'identity');
     await mockOIDCModeUI(page);
     await loginPage.login(
       LOGIN_CREDENTIALS.username,
