@@ -73,7 +73,7 @@ final class InterPartitionCommandReceiverImpl {
 
     if (shouldTakeSnapshot(decoded)) {
       return snapshotStore
-          .reserveLatestSnapshot()
+          .reserveLatestSnapshot(decoded.checkpointId)
           .andThen(
               (snapshotId, error) -> {
                 if (error != null) {
@@ -98,14 +98,14 @@ final class InterPartitionCommandReceiverImpl {
     if (!isNewCheckpoint(decoded)) {
       // created meanwhile, e.g. by the backup request sent to all partitions: the reservation
       // isn't carried by any checkpoint
-      releaseSnapshotReservation(snapshotId);
+      releaseSnapshotReservation(decoded.checkpointId, snapshotId);
     }
     final var checkpointWritten = writeCheckpoint(decoded, snapshotId);
 
     if (checkpointWritten.isLeft()) {
       // It's unsafe to write this record without first writing the checkpoint, bail out early.
       logCheckpointFailure(memberId, decoded, checkpointWritten);
-      releaseSnapshotReservation(snapshotId);
+      releaseSnapshotReservation(decoded.checkpointId, snapshotId);
       return;
     }
 
@@ -144,9 +144,9 @@ final class InterPartitionCommandReceiverImpl {
     return decoded.checkpointId > Math.max(checkpointId, inFlightCheckpointId);
   }
 
-  private void releaseSnapshotReservation(final String snapshotId) {
+  private void releaseSnapshotReservation(final long checkpointId, final String snapshotId) {
     if (!snapshotId.isEmpty()) {
-      snapshotStore.releaseReservation(snapshotId);
+      snapshotStore.releaseReservation(checkpointId, snapshotId);
     }
   }
 
