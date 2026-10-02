@@ -159,6 +159,9 @@ public final class BackupService extends Actor implements BackupManager {
       final String failureReason) {
     actor.run(
         () -> {
+          backupDescriptor
+              .snapshotId()
+              .ifPresent(snapshotId -> snapshotStore.releaseReservation(checkpointId, snapshotId));
           final var backupId = getBackupId(checkpointId);
           internalBackupManager.createFailedBackup(
               backupId, backupDescriptor.checkpointPosition(), failureReason, actor);

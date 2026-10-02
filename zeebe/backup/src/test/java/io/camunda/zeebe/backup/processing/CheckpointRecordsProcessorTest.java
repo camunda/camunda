@@ -806,7 +806,7 @@ final class CheckpointRecordsProcessorTest {
   }
 
   @Test
-  void shouldReleaseSnapshotReservationWhenScalingInProgress() {
+  void shouldCreateFailedBackupWithReservedSnapshotWhenScalingInProgress() {
     // given
     scalingInProgress.set(true);
     final var value =
@@ -822,7 +822,12 @@ final class CheckpointRecordsProcessorTest {
     processor.process(record, resultBuilder);
 
     // then
-    verify(backupManager).releaseSnapshotReservation(1L, "reserved-snapshot");
+    verify(backupManager)
+        .createFailedBackup(
+            eq(1L),
+            argThat(descriptor -> descriptor.snapshotId().equals(Optional.of("reserved-snapshot"))),
+            any());
+    verify(backupManager, never()).releaseSnapshotReservation(anyLong(), any());
   }
 
   @Test

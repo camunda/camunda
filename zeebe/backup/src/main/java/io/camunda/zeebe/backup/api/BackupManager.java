@@ -56,7 +56,8 @@ public interface BackupManager extends ReadOnlyBackupManager {
 
   /**
    * Creates a backup with failed status. This is used when a backup cannot be taken due to system
-   * constraints (e.g., scaling in progress) but the backup entry needs to be recorded.
+   * constraints (e.g., scaling in progress) but the backup entry needs to be recorded. Releases the
+   * snapshot reserved for the checkpoint, as no backup will use it.
    *
    * @param checkpointId id of the backup to create
    * @param backupDescriptor descriptor of the checkpoint triggering the backup
