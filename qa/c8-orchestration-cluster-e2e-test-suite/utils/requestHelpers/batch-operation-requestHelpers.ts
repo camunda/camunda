@@ -224,3 +224,28 @@ export async function findCompletedBatchKey(
   }
   return result.batchKey;
 }
+
+/**
+ * The batch that acted on this item. Identifying a batch by what it touched
+ * survives a UI helper that retries its interaction, where watching for the
+ * request can catch an attempt that never submitted.
+ */
+export async function batchOperationKeyForItem(
+  request: APIRequestContext,
+  itemKey: string,
+  assertionOptions = defaultAssertionOptions,
+): Promise<string> {
+  let batchOperationKey = '';
+  await expect(async () => {
+    const res = await request.post(buildUrl('/batch-operation-items/search'), {
+      headers: jsonHeaders(),
+      data: {filter: {itemKey}},
+    });
+    await assertStatusCode(res, 200);
+    const items: Array<{batchOperationKey: string}> =
+      (await res.json()).items ?? [];
+    expect(items.length).toBeGreaterThan(0);
+    batchOperationKey = String(items[0]!.batchOperationKey);
+  }).toPass(assertionOptions);
+  return batchOperationKey;
+}
