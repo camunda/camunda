@@ -163,15 +163,22 @@ final class PhysicalTenantRdbmsSchemaInitializationIsolationIT {
     assertThat(readinessGaugeFor(DEFAULT_TENANT)).isEqualTo(1);
     assertThat(readinessGaugeFor(TENANT_A)).isZero();
 
-    // then - the actuator tells an operator the tenant is still being retried, so it needs no one
-    final JsonNode schemaInitialization = schemaInitializationHealth();
-    assertThat(schemaInitialization.path("status").asText()).isEqualTo("DEGRADED");
-    assertThat(schemaInitialization.at("/details/" + DEFAULT_TENANT + "/status").asText())
-        .isEqualTo("UP");
-    final JsonNode retryingTenant = schemaInitialization.at("/details/" + TENANT_A);
-    assertThat(retryingTenant.path("status").asText()).isEqualTo("DEGRADED");
-    assertThat(retryingTenant.path("state").asText()).isEqualTo("RETRYING");
-    assertThat(retryingTenant.path("failedAttempts").asInt()).isPositive();
+    // then - the actuator tells an operator the tenant is still being retried, so it needs no one.
+    // Awaited, because the gate can open through the default tenant just before tenant A's first
+    // failure is recorded
+    Awaitility.await("tenant A is reported as retrying")
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              final JsonNode schemaInitialization = schemaInitializationHealth();
+              assertThat(schemaInitialization.path("status").asText()).isEqualTo("DEGRADED");
+              assertThat(schemaInitialization.at("/details/" + DEFAULT_TENANT + "/status").asText())
+                  .isEqualTo("UP");
+              final JsonNode retryingTenant = schemaInitialization.at("/details/" + TENANT_A);
+              assertThat(retryingTenant.path("status").asText()).isEqualTo("DEGRADED");
+              assertThat(retryingTenant.path("state").asText()).isEqualTo("RETRYING");
+              assertThat(retryingTenant.path("failedAttempts").asInt()).isPositive();
+            });
 
     // then - the healthy tenant is served ...
     assertThat(searchProcessInstances(DEFAULT_TENANT).statusCode()).isEqualTo(200);

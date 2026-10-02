@@ -109,17 +109,23 @@ final class PhysicalTenantSchemaInitializationIsolationIT {
     assertThat(readinessGaugeFor(TENANT_A)).isZero();
 
     // then - the actuator tells an operator which tenant needs them and why, without reading as
-    // down: the node still serves the default tenant
-    final HttpResponse<String> health = actuatorHealth();
-    assertThat(health.statusCode()).isEqualTo(200);
-    final JsonNode schemaInitialization = schemaInitializationHealth(health);
-    assertThat(schemaInitialization.path("status").asText()).isEqualTo("DEGRADED");
-    assertThat(schemaInitialization.at("/details/" + DEFAULT_TENANT + "/status").asText())
-        .isEqualTo("UP");
-    final JsonNode failedTenant = schemaInitialization.at("/details/" + TENANT_A);
-    assertThat(failedTenant.path("status").asText()).isEqualTo("DOWN");
-    assertThat(failedTenant.path("state").asText()).isEqualTo("FAILED");
-    assertThat(failedTenant.path("error").asText()).isNotBlank();
+    // down: the node still serves the default tenant. Awaited, because the gate can open through
+    // the default tenant just before tenant A's failure is recorded
+    Awaitility.await("tenant A's terminal failure is reported")
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              final HttpResponse<String> health = actuatorHealth();
+              assertThat(health.statusCode()).isEqualTo(200);
+              final JsonNode schemaInitialization = schemaInitializationHealth(health);
+              assertThat(schemaInitialization.path("status").asText()).isEqualTo("DEGRADED");
+              assertThat(schemaInitialization.at("/details/" + DEFAULT_TENANT + "/status").asText())
+                  .isEqualTo("UP");
+              final JsonNode failedTenant = schemaInitialization.at("/details/" + TENANT_A);
+              assertThat(failedTenant.path("status").asText()).isEqualTo("DOWN");
+              assertThat(failedTenant.path("state").asText()).isEqualTo("FAILED");
+              assertThat(failedTenant.path("error").asText()).isNotBlank();
+            });
 
     // then - the healthy tenant is served ...
     assertThat(searchProcessInstances(DEFAULT_TENANT).statusCode()).isEqualTo(200);
