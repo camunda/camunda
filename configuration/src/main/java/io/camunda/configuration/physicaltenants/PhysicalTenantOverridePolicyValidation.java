@@ -128,6 +128,10 @@ final class PhysicalTenantOverridePolicyValidation {
               // safety cap on the same shared memory pool as memory-fraction above, not a
               // per-partition setting
               "data.primary-storage.rocks-db.max-memory-fraction",
+              // uniform-policy call, not a technical constraint: all tenants share one heap, so a
+              // tenant with soft values disabled would push GC reclamation onto the others. Bound a
+              // single tenant's cache with the overridable process-cache-capacity instead
+              "processing.engine.caches.process-cache-soft-values",
               // camunda.security.* — identity-security settings that must apply uniformly
               "security.authentication.method",
               "security.authentication.unprotected-api",
