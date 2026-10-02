@@ -340,6 +340,7 @@ public class BrokerBasedPropertiesOverride {
     cachesCfg.setDrgCacheCapacity(caches.getDrgCacheCapacity());
     cachesCfg.setFormCacheCapacity(caches.getFormCacheCapacity());
     cachesCfg.setProcessCacheCapacity(caches.getProcessCacheCapacity());
+    cachesCfg.setProcessCacheSoftValues(caches.isProcessCacheSoftValues());
     cachesCfg.setResourceCacheCapacity(caches.getResourceCacheCapacity());
     cachesCfg.setAuthorizationsCacheCapacity(caches.getAuthorizationsCacheCapacity());
     cachesCfg.setAuthorizationsCacheTtl(caches.getAuthorizationsCacheTtl());
