@@ -5,7 +5,7 @@ import type { OriginalPull, PipelineResolver } from './pipeline';
 import { resolveBaselineStrategy, resolveCommitsToPrs } from './range';
 import { resolveBaselineRef, walkFirstParent } from './range/walk';
 import type { RenderPrInput } from './render';
-import { render, emptyCustomerBodyWarning, isUnattributed } from './render';
+import { render, emptyCustomerBodyWarning, isUnattributed, oversizedCustomerBodyWarning } from './render';
 import { hiddenFromCustomerBody } from './categorize';
 import { closesIssueNumbers } from './delivery';
 import type { DeliveryInput } from './delivery';
@@ -280,11 +280,13 @@ async function run(): Promise<void> {
     warnings: auditWarnings,
   });
 
-  // Same condition render() already folded into audit.json — surfaced here
+  // Same conditions render() already folded into audit.json — surfaced here
   // too so it isn't only visible to someone who goes looking at that file.
   const attributedCount = renderPrs.filter((pr) => !isUnattributed(pr)).length;
   const emptyBodyWarning = emptyCustomerBodyWarning(attributedCount > 0, result.customerBody);
   if (emptyBodyWarning) core.warning(emptyBodyWarning);
+  const oversizedBodyWarning = oversizedCustomerBodyWarning(result.customerBody);
+  if (oversizedBodyWarning) core.warning(oversizedBodyWarning);
 
   mkdirSync(input.outputDir, { recursive: true }); // writeFileSync doesn't create the dir; recursive for a nested output-dir too
 

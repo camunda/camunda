@@ -487,11 +487,13 @@ The two bodies differ by audience:
 **Dependency bumps and the release body limit.** A GitHub release body is capped at 125,000
 characters, whether set through the API or pasted in the web editor; the editor silently cuts a longer
 paste. On 8.10.0 the customer body was 143,151 characters, ~43k of it bot dependency bumps. So a bump
-with no linked issue goes to the full asset only, and the customer body ends with one line saying how
-many were left out (`N dependency updates are listed in the full changelog, CHANGELOG-<version>.md.`).
-Two kinds stay in the customer body: a dependency pull request that delivers an issue (a CVE fix is
-customer news), and every bump of a package that any breaking bump touched, so its version range is not
-split between the two outputs.
+with no linked issue goes to the full asset only, and the customer body's `Dependency updates` section
+ends with one line saying how many packages were left out (`N dependency updates are listed in the full
+changelog, CHANGELOG-<version>.md.`, "N other …" when the section also lists bumps). Two kinds stay in
+the customer body: a dependency pull request that delivers an issue (a CVE fix is customer news), and
+every bump of a package that any breaking bump touched — transitively, so a kept bump's other packages
+keep all their bumps too and no version range is split between the two outputs. This buys headroom, not
+a guarantee: a customer body still over the limit is flagged in the log and `audit.json`.
 
 **The unattributed guard.** If any pull request landed in the `unattributed`/`resolutionFailed` bucket,
 the job **fails by default**. Every output is still written first — `audit.json`'s whole purpose is
