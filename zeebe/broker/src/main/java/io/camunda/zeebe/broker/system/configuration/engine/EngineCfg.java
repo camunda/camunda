@@ -139,6 +139,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setFormCacheCapacity(caches.getFormCacheCapacity())
         .setResourceCacheCapacity(caches.getResourceCacheCapacity())
         .setProcessCacheCapacity(caches.getProcessCacheCapacity())
+        .setProcessCacheSoftValues(caches.isProcessCacheSoftValues())
         .setAuthorizationsCacheCapacity(caches.getAuthorizationsCacheCapacity())
         .setAuthorizationsCacheTtl(caches.getAuthorizationsCacheTtl())
         .setGroupNameCacheCapacity(caches.getGroupNameCacheCapacity())
