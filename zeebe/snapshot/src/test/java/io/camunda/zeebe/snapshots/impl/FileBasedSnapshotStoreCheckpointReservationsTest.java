@@ -29,6 +29,9 @@ import org.junit.jupiter.api.io.TempDir;
 
 final class FileBasedSnapshotStoreCheckpointReservationsTest {
 
+  private static final long CHECKPOINT_ID = 10L;
+  private static final long OTHER_CHECKPOINT_ID = 11L;
+
   @RegisterExtension final ActorSchedulerExtension actorScheduler = new ActorSchedulerExtension();
 
   @TempDir Path root;
@@ -44,7 +47,7 @@ final class FileBasedSnapshotStoreCheckpointReservationsTest {
   @Test
   void shouldReturnEmptyWhenNoSnapshotToReserve() {
     // when
-    final var reserved = store.reserveLatestSnapshot().join();
+    final var reserved = store.reserveLatestSnapshot(CHECKPOINT_ID).join();
 
     // then
     assertThat(reserved).isEmpty();
@@ -57,25 +60,25 @@ final class FileBasedSnapshotStoreCheckpointReservationsTest {
     final var latest = persistSnapshot(2);
 
     // when
-    final var reserved = store.reserveLatestSnapshot().join();
+    final var reserved = store.reserveLatestSnapshot(CHECKPOINT_ID).join();
 
     // then
     assertThat(reserved).hasValue(latest.getId());
-    assertThat(store.getReservedSnapshot(latest.getId()).join()).hasValue(latest);
+    assertThat(store.getReservedSnapshot(CHECKPOINT_ID, latest.getId()).join()).hasValue(latest);
   }
 
   @Test
   void shouldKeepReservedLatestSnapshotWhenNewerSnapshotIsPersisted() {
     // given
     final var reservedSnapshot = persistSnapshot(1);
-    store.reserveLatestSnapshot().join();
+    store.reserveLatestSnapshot(CHECKPOINT_ID).join();
 
     // when
     persistSnapshot(2);
 
     // then
     assertThat(reservedSnapshot.getPath()).exists();
-    assertThat(store.getReservedSnapshot(reservedSnapshot.getId()).join())
+    assertThat(store.getReservedSnapshot(CHECKPOINT_ID, reservedSnapshot.getId()).join())
         .hasValue(reservedSnapshot);
   }
 
@@ -85,12 +88,13 @@ final class FileBasedSnapshotStoreCheckpointReservationsTest {
     final var snapshot = persistSnapshot(1);
 
     // when
-    store.reserveSnapshot(snapshot.getId()).join();
+    store.reserveSnapshot(CHECKPOINT_ID, snapshot.getId()).join();
     persistSnapshot(2);
 
     // then
     assertThat(snapshot.getPath()).exists();
-    assertThat(store.getReservedSnapshot(snapshot.getId()).join()).hasValue(snapshot);
+    assertThat(store.getReservedSnapshot(CHECKPOINT_ID, snapshot.getId()).join())
+        .hasValue(snapshot);
   }
 
   @Test
@@ -100,7 +104,7 @@ final class FileBasedSnapshotStoreCheckpointReservationsTest {
     persistSnapshot(2);
 
     // when
-    final var reserved = store.reserveSnapshot(deleted.getId());
+    final var reserved = store.reserveSnapshot(CHECKPOINT_ID, deleted.getId());
 
     // then
     assertThat(reserved)
@@ -108,7 +112,7 @@ final class FileBasedSnapshotStoreCheckpointReservationsTest {
         .withThrowableOfType(ExecutionException.class)
         .withCauseInstanceOf(SnapshotNotFoundException.class)
         .withMessageContaining(deleted.getId());
-    assertThat(store.getReservedSnapshot(deleted.getId()).join()).isEmpty();
+    assertThat(store.getReservedSnapshot(CHECKPOINT_ID, deleted.getId()).join()).isEmpty();
   }
 
   @Test
@@ -117,7 +121,7 @@ final class FileBasedSnapshotStoreCheckpointReservationsTest {
     final var snapshot = persistSnapshot(1);
 
     // when
-    final var reserved = store.getReservedSnapshot(snapshot.getId()).join();
+    final var reserved = store.getReservedSnapshot(CHECKPOINT_ID, snapshot.getId()).join();
 
     // then
     assertThat(reserved).isEmpty();
@@ -127,31 +131,32 @@ final class FileBasedSnapshotStoreCheckpointReservationsTest {
   void shouldDeleteSnapshotOnceReleasedAndNewerSnapshotIsPersisted() {
     // given
     final var snapshot = persistSnapshot(1);
-    store.reserveLatestSnapshot().join();
+    store.reserveLatestSnapshot(CHECKPOINT_ID).join();
 
     // when
-    store.releaseReservation(snapshot.getId()).join();
+    store.releaseReservation(CHECKPOINT_ID, snapshot.getId()).join();
     persistSnapshot(2);
 
     // then
     assertThat(snapshot.getPath()).doesNotExist();
-    assertThat(store.getReservedSnapshot(snapshot.getId()).join()).isEmpty();
+    assertThat(store.getReservedSnapshot(CHECKPOINT_ID, snapshot.getId()).join()).isEmpty();
   }
 
   @Test
   void shouldKeepSnapshotUntilEveryReservationIsReleased() {
     // given
     final var snapshot = persistSnapshot(1);
-    store.reserveLatestSnapshot().join();
-    store.reserveSnapshot(snapshot.getId()).join();
+    store.reserveLatestSnapshot(CHECKPOINT_ID).join();
+    store.reserveSnapshot(CHECKPOINT_ID, snapshot.getId()).join();
 
     // when
-    store.releaseReservation(snapshot.getId()).join();
+    store.releaseReservation(CHECKPOINT_ID, snapshot.getId()).join();
     persistSnapshot(2);
 
     // then
     assertThat(snapshot.getPath()).exists();
-    assertThat(store.getReservedSnapshot(snapshot.getId()).join()).hasValue(snapshot);
+    assertThat(store.getReservedSnapshot(CHECKPOINT_ID, snapshot.getId()).join())
+        .hasValue(snapshot);
   }
 
   @Test
@@ -160,21 +165,21 @@ final class FileBasedSnapshotStoreCheckpointReservationsTest {
     final var snapshot = persistSnapshot(1);
 
     // when
-    store.releaseReservation(snapshot.getId()).join();
-    store.releaseReservation("unknown").join();
+    store.releaseReservation(CHECKPOINT_ID, snapshot.getId()).join();
+    store.releaseReservation(CHECKPOINT_ID, "unknown").join();
 
     // then
-    assertThat(store.getReservedSnapshot(snapshot.getId()).join()).isEmpty();
+    assertThat(store.getReservedSnapshot(CHECKPOINT_ID, snapshot.getId()).join()).isEmpty();
   }
 
   @Test
   void shouldReleaseAllReservations() {
     // given
     final var first = persistSnapshot(1);
-    store.reserveLatestSnapshot().join();
-    store.reserveLatestSnapshot().join();
+    store.reserveLatestSnapshot(CHECKPOINT_ID).join();
+    store.reserveLatestSnapshot(CHECKPOINT_ID).join();
     final var second = persistSnapshot(2);
-    store.reserveLatestSnapshot().join();
+    store.reserveLatestSnapshot(CHECKPOINT_ID).join();
 
     // when
     store.releaseAllReservations().join();
@@ -183,8 +188,41 @@ final class FileBasedSnapshotStoreCheckpointReservationsTest {
     // then
     assertThat(first.getPath()).doesNotExist();
     assertThat(second.getPath()).doesNotExist();
-    assertThat(store.getReservedSnapshot(first.getId()).join()).isEmpty();
-    assertThat(store.getReservedSnapshot(second.getId()).join()).isEmpty();
+    assertThat(store.getReservedSnapshot(CHECKPOINT_ID, first.getId()).join()).isEmpty();
+    assertThat(store.getReservedSnapshot(CHECKPOINT_ID, second.getId()).join()).isEmpty();
+  }
+
+  @Test
+  void shouldNotReturnSnapshotReservedForAnotherCheckpoint() {
+    // given
+    final var snapshot = persistSnapshot(1);
+    store.reserveLatestSnapshot(OTHER_CHECKPOINT_ID).join();
+
+    // when
+    final var reserved = store.getReservedSnapshot(CHECKPOINT_ID, snapshot.getId()).join();
+
+    // then
+    assertThat(reserved).isEmpty();
+  }
+
+  @Test
+  void shouldKeepReservationOfAnotherCheckpointWhenReleasingSameSnapshot() {
+    // given - a checkpoint whose reservation was already dropped, e.g. on a role change, and a
+    // newer
+    // checkpoint that reserved the same snapshot
+    final var snapshot = persistSnapshot(1);
+    store.reserveLatestSnapshot(CHECKPOINT_ID).join();
+    store.releaseAllReservations().join();
+    store.reserveLatestSnapshot(OTHER_CHECKPOINT_ID).join();
+
+    // when
+    store.releaseReservation(CHECKPOINT_ID, snapshot.getId()).join();
+    persistSnapshot(2);
+
+    // then
+    assertThat(snapshot.getPath()).exists();
+    assertThat(store.getReservedSnapshot(OTHER_CHECKPOINT_ID, snapshot.getId()).join())
+        .hasValue(snapshot);
   }
 
   private PersistedSnapshot persistSnapshot(final long index) {
