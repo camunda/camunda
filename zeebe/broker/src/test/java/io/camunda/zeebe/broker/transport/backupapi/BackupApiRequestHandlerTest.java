@@ -28,7 +28,6 @@ import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
-import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
@@ -96,7 +95,7 @@ final class BackupApiRequestHandlerTest {
   @Mock DbBackupRangeState backupRangeState;
   @Mock PersistedSnapshotStore snapshotStore;
   @Mock PersistedSnapshot freshSnapshot;
-  @Mock AsyncSnapshotDirector snapshotDirector;
+  @Mock SnapshotTrigger snapshotTrigger;
   BackupApiRequestHandler handler;
   private ActorFuture<PersistedSnapshot> takenSnapshot =
       CompletableActorFuture.completedExceptionally(new IllegalStateException("not configured"));
@@ -114,7 +113,7 @@ final class BackupApiRequestHandlerTest {
             checkpointMetadataState,
             backupRangeState,
             snapshotStore,
-            snapshotDirector,
+            snapshotTrigger,
             1,
             true);
     scheduler.submitActor(handler);
@@ -123,7 +122,7 @@ final class BackupApiRequestHandlerTest {
     serverOutput = new ResponseReader();
     responseFuture = new CompletableFuture<>();
 
-    lenient().when(snapshotDirector.forceSnapshot()).thenAnswer(invocation -> takenSnapshot);
+    lenient().when(snapshotTrigger.forceSnapshot()).thenAnswer(invocation -> takenSnapshot);
     lenient()
         .when(backupManager.getBackupRangeStatus())
         .thenReturn(CompletableActorFuture.completed(List.of()));
@@ -681,8 +680,8 @@ final class BackupApiRequestHandlerTest {
     // then - the snapshot is taken and reserved before the checkpoint is written, so it is strictly
     // before the checkpoint and still exists when the backup is taken
     assertThat(writtenCheckpoint(writtenEntry).getSnapshotId()).isEqualTo("fresh");
-    final var inOrder = inOrder(snapshotDirector, snapshotStore, logStreamWriter);
-    inOrder.verify(snapshotDirector).forceSnapshot();
+    final var inOrder = inOrder(snapshotTrigger, snapshotStore, logStreamWriter);
+    inOrder.verify(snapshotTrigger).forceSnapshot();
     inOrder.verify(snapshotStore).reserveSnapshot(10L, "fresh");
     inOrder.verify(logStreamWriter).tryWrite(any(WriteContext.class), any(LogAppendEntry.class));
     verify(snapshotStore, never()).reserveLatestSnapshot(anyLong());
@@ -787,7 +786,7 @@ final class BackupApiRequestHandlerTest {
 
     // then - the command is still written, so the processor responds as before
     assertThat(writtenCheckpoint(writtenEntry).getSnapshotId()).isEmpty();
-    verifyNoInteractions(snapshotDirector, snapshotStore);
+    verifyNoInteractions(snapshotTrigger, snapshotStore);
   }
 
   private BackupRequest takeBackupRequest(final CheckpointType checkpointType) {

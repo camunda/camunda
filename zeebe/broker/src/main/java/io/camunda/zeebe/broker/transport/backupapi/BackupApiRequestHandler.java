@@ -16,7 +16,6 @@ import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
-import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
@@ -41,14 +40,13 @@ import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
 import java.time.Instant;
 import java.util.Collection;
-import org.jspecify.annotations.Nullable;
+import java.util.Optional;
 
 /**
  * Request handler to handle commands and queries related to the backup ({@link RequestType#BACKUP})
@@ -65,8 +63,7 @@ public final class BackupApiRequestHandler
   private final DbBackupRangeState backupRangeState;
   private final int partitionId;
   private final boolean backupFeatureEnabled;
-  private final PersistedSnapshotStore snapshotStore;
-  private final AsyncSnapshotDirector snapshotDirector;
+  private final CheckpointSnapshotReserver snapshotReserver;
 
   public BackupApiRequestHandler(
       final AtomixServerTransport transport,
@@ -76,7 +73,7 @@ public final class BackupApiRequestHandler
       final DbCheckpointMetadataState checkpointMetadataState,
       final DbBackupRangeState backupRangeState,
       final PersistedSnapshotStore snapshotStore,
-      final AsyncSnapshotDirector snapshotDirector,
+      final SnapshotTrigger snapshotTrigger,
       final int partitionId,
       final boolean backupFeatureEnabled) {
     super(BackupApiRequestReader::new, BackupApiResponseWriter::new);
@@ -86,8 +83,8 @@ public final class BackupApiRequestHandler
     this.checkpointState = checkpointState;
     this.checkpointMetadataState = checkpointMetadataState;
     this.backupRangeState = backupRangeState;
-    this.snapshotStore = snapshotStore;
-    this.snapshotDirector = snapshotDirector;
+    snapshotReserver =
+        new CheckpointSnapshotReserver(snapshotStore, snapshotTrigger, checkpointState, actor);
     this.partitionId = partitionId;
     this.backupFeatureEnabled = backupFeatureEnabled;
     transport.unsubscribe(partitionId, RequestType.BACKUP);
@@ -145,7 +142,8 @@ public final class BackupApiRequestHandler
     final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
         actor.createFuture();
 
-    reserveSnapshotForCheckpoint(checkpointId, checkpointType)
+    snapshotReserver
+        .reserveFor(checkpointId, checkpointType)
         .onComplete(
             (snapshotId, ignored) -> {
               final var written =
@@ -154,7 +152,7 @@ public final class BackupApiRequestHandler
               if (written.isRight()) {
                 result.complete(Either.right(responseWriter.noResponse()));
               } else {
-                releaseSnapshotReservation(checkpointId, snapshotId);
+                snapshotReserver.release(checkpointId, snapshotId);
                 result.complete(
                     Either.left(
                         errorWriter.mapWriteError(partitionId, written.getLeft())));
@@ -169,7 +167,7 @@ public final class BackupApiRequestHandler
       final long requestId,
       final long checkpointId,
       final CheckpointType checkpointType,
-      final String snapshotId) {
+      final Optional<String> snapshotId) {
     final RecordMetadata metadata =
         new RecordMetadata()
             .recordType(RecordType.COMMAND)
@@ -181,7 +179,7 @@ public final class BackupApiRequestHandler
         new CheckpointRecord()
             .setCheckpointId(checkpointId)
             .setCheckpointType(checkpointType)
-            .setSnapshotId(snapshotId);
+            .setSnapshotId(snapshotId.orElse(""));
     return logStreamWriter.tryWrite(
         WriteContext.internal(), LogAppendEntry.of(metadata, checkpointRecord));
   }
@@ -427,60 +425,6 @@ public final class BackupApiRequestHandler
     status.created().ifPresent(instant -> response.setCreatedAt(instant.toString()));
     status.lastModified().ifPresent(instant -> response.setLastUpdated(instant.toString()));
     return response;
-  }
-
-  private ActorFuture<String> reserveSnapshotForCheckpoint(
-      final long checkpointId, final CheckpointType checkpointType) {
-    // a checkpoint that is not newer than the latest one is ignored by the processor, e.g. a
-    // retried request, so it takes no backup and needs no snapshot
-    if (!checkpointType.shouldCreateBackup()
-        || checkpointId <= checkpointState.getLatestCheckpointId()) {
-      return CompletableActorFuture.completed("");
-    }
-
-    return snapshotDirector
-        .forceSnapshot()
-        .andThen(snapshot -> reserveFreshSnapshot(checkpointId, snapshot), actor)
-        .andThen(
-            (snapshotId, error) ->
-                error == null
-                    ? CompletableActorFuture.completed(snapshotId)
-                    : reserveLatestSnapshot(checkpointId, error),
-            actor);
-  }
-
-  private ActorFuture<String> reserveFreshSnapshot(
-      final long checkpointId, final @Nullable PersistedSnapshot snapshot) {
-    if (snapshot == null) {
-      return CompletableActorFuture.completedExceptionally(
-          new IllegalStateException("Snapshot was skipped, e.g. because one is already taken"));
-    }
-    final var snapshotId = snapshot.getId();
-    return snapshotStore
-        .reserveSnapshot(checkpointId, snapshotId)
-        .thenApply(ignored -> snapshotId, actor);
-  }
-
-  private ActorFuture<String> reserveLatestSnapshot(
-      final long checkpointId, final Throwable cause) {
-    LOG.debug("Failed to reserve a fresh snapshot for the checkpoint, reserving the latest", cause);
-    return snapshotStore
-        .reserveLatestSnapshot(checkpointId)
-        .andThen(
-            (snapshotId, error) -> {
-              if (error != null) {
-                LOG.warn("Failed to reserve a snapshot for the checkpoint", error);
-                return CompletableActorFuture.completed("");
-              }
-              return CompletableActorFuture.completed(snapshotId.orElse(""));
-            },
-            actor);
-  }
-
-  private void releaseSnapshotReservation(final long checkpointId, final String snapshotId) {
-    if (!snapshotId.isEmpty()) {
-      snapshotStore.releaseReservation(checkpointId, snapshotId);
-    }
   }
 
   private Either<ErrorResponseWriter, BackupApiResponseWriter> unknownRequest(
