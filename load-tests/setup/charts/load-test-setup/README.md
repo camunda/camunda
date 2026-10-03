@@ -154,6 +154,9 @@ See [Grafana Dashboards](https://dashboard.benchmark.camunda.cloud/dashboards/f/
   input is false). Also disabled for 8.7, which does not have the
   `/v2/process-definitions/search` endpoint (`k6_data_read_supported=false` in
   `stable-87/Makefile`).
+* `dmn`: deploys `k6/data/small_decision.dmn` and evaluates it through
+  `/v2/decision-definitions/evaluation` with a ramping arrival rate. Disabled by
+  default.
 
 ### How to add a new test?
 

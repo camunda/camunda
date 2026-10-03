@@ -514,7 +514,7 @@ postgresql:
 k6:
   tests:
     default:
-      enabled: true
+      enabled: false
       script: test.default.js
     # Reads data from secondary storage. Disabled together with `global.performReadBenchmarks`
     # (see `common.mk` and `.github/scripts/load-test-install-camunda-platform.sh`), and for
@@ -522,6 +522,10 @@ k6:
     data-read:
       enabled: true
       script: test.data-read.js
+
+    dmn:
+      enabled: false
+      script: test.dmn.js
 
   prometheus:
     endpoint: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090/api/v1/write
