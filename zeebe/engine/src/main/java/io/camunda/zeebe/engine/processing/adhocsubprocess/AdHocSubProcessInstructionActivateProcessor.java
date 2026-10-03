@@ -11,6 +11,7 @@ import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnAdHocSubProcessBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnAdHocSubProcessBehavior.ElementActivation;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
@@ -34,6 +35,8 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
 
 public class AdHocSubProcessInstructionActivateProcessor
     implements TypedRecordProcessor<AdHocSubProcessInstructionRecord>,
@@ -155,14 +158,16 @@ public class AdHocSubProcessInstructionActivateProcessor
       bpmnAdHocSubProcessBehavior.terminateChildInstances(bpmnElementContext);
     }
 
-    // activate the elements
+    // activate the elements; the array iterator reuses its element, so the values are copied
+    final var elementActivations = new ArrayList<ElementActivation>();
     for (final var elementValue : command.getValue().activateElements()) {
-      bpmnAdHocSubProcessBehavior.activateElement(
-          adHocSubProcessElement,
-          bpmnElementContext,
-          elementValue.getElementId(),
-          elementValue.getVariablesBuffer());
+      elementActivations.add(
+          new ElementActivation(
+              elementValue.getElementId(),
+              BufferUtil.cloneBuffer(elementValue.getVariablesBuffer())));
     }
+    bpmnAdHocSubProcessBehavior.activateElements(
+        adHocSubProcessElement, bpmnElementContext, elementActivations);
 
     stateWriter.appendFollowUpEvent(
         command.getKey(), AdHocSubProcessInstructionIntent.ACTIVATED, command.getValue());

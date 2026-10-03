@@ -36,6 +36,10 @@ public class ExecutableAdHocSubProcess extends ExecutableFlowElementContainer
   private final Map<String, ExecutableFlowNode> adHocActivitiesById = new HashMap<>();
   private final DirectBuffer adHocActivitiesMetadata = new UnsafeBuffer();
 
+  // derived lazily from the model instead of in the (frozen) transformer, so that the join groups
+  // also apply to processes that were deployed before they were introduced
+  private volatile Map<String, String> joinGroupIdsByAdHocActivityId;
+
   public ExecutableAdHocSubProcess(final String id) {
     super(id);
     innerInstanceId = id + AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
@@ -77,6 +81,19 @@ public class ExecutableAdHocSubProcess extends ExecutableFlowElementContainer
   public void addAdHocActivity(final ExecutableFlowNode adHocActivity) {
     final String elementId = BufferUtil.bufferAsString(adHocActivity.getId());
     adHocActivitiesById.put(elementId, adHocActivity);
+  }
+
+  /**
+   * Returns the join group of the ad-hoc activity if it leads into a joining gateway. Ad-hoc
+   * activities of the same join group that are activated together must share an inner instance.
+   */
+  public Optional<String> getJoinGroupId(final String adHocActivityId) {
+    var joinGroupIds = joinGroupIdsByAdHocActivityId;
+    if (joinGroupIds == null) {
+      joinGroupIds = AdHocSubProcessJoinGroups.compute(adHocActivitiesById);
+      joinGroupIdsByAdHocActivityId = joinGroupIds;
+    }
+    return Optional.ofNullable(joinGroupIds.get(adHocActivityId));
   }
 
   public ZeebeAdHocImplementationType getImplementationType() {

@@ -27,6 +27,9 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -54,20 +57,43 @@ public final class BpmnAdHocSubProcessBehavior {
     elementInstanceState = processingState.getElementInstanceState();
   }
 
-  public void activateElement(
-      final BpmnElementContext adHocSubProcessContext,
+  /**
+   * Activates the given elements of the ad-hoc sub-process. Each element is activated in a new
+   * inner instance, except for elements of the same join group: they share one inner instance, so
+   * that their joining gateway can count all of its incoming sequence flows in one flow scope.
+   */
+  public void activateElements(
       final ExecutableAdHocSubProcess adHocSubProcess,
-      final String elementToActivateId) {
-    activateElement(adHocSubProcess, adHocSubProcessContext, elementToActivateId, NO_VARIABLES);
+      final BpmnElementContext context,
+      final List<ElementActivation> elementActivations) {
+    final Map<String, Long> innerInstanceKeyByJoinGroupId = new HashMap<>();
+
+    for (final ElementActivation elementActivation : elementActivations) {
+      final String elementIdToActivate = elementActivation.elementId();
+      final long adHocSubProcessInnerInstanceKey =
+          adHocSubProcess
+              .getJoinGroupId(elementIdToActivate)
+              .map(
+                  joinGroupId ->
+                      innerInstanceKeyByJoinGroupId.computeIfAbsent(
+                          joinGroupId, id -> createInnerInstance(context, adHocSubProcess)))
+              .orElseGet(() -> createInnerInstance(context, adHocSubProcess));
+
+      activateElement(
+          adHocSubProcess,
+          context,
+          elementIdToActivate,
+          elementActivation.variables(),
+          adHocSubProcessInnerInstanceKey);
+    }
   }
 
-  public void activateElement(
+  private void activateElement(
       final ExecutableAdHocSubProcess adHocSubProcess,
       final BpmnElementContext context,
       final String elementIdToActivate,
-      final DirectBuffer variablesBuffer) {
-
-    final long adHocSubProcessInnerInstanceKey = createInnerInstance(context, adHocSubProcess);
+      final DirectBuffer variablesBuffer,
+      final long adHocSubProcessInnerInstanceKey) {
 
     if (variablesBuffer != NO_VARIABLES && variablesBuffer.capacity() > 0) {
       // set local variable in the scope of the inner instance
@@ -208,5 +234,12 @@ public final class BpmnAdHocSubProcessBehavior {
         adHocSubProcessContext.getElementInstanceKey(),
         ProcessInstanceIntent.COMPLETE_ELEMENT,
         adHocSubProcessContext.getRecordValue());
+  }
+
+  public record ElementActivation(String elementId, DirectBuffer variables) {
+
+    public static ElementActivation withoutVariables(final String elementId) {
+      return new ElementActivation(elementId, NO_VARIABLES);
+    }
   }
 }

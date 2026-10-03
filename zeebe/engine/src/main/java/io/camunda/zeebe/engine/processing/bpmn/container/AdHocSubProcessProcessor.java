@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.AdHocSubProcessOutputCollectionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnAdHocSubProcessBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnAdHocSubProcessBehavior.ElementActivation;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscriptionBehaviour;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
@@ -225,9 +226,10 @@ public class AdHocSubProcessProcessor
       final BpmnElementContext context,
       final List<String> elementsToActivate) {
 
-    elementsToActivate.forEach(
-        elementToActivate ->
-            adHocSubProcessBehavior.activateElement(context, element, elementToActivate));
+    adHocSubProcessBehavior.activateElements(
+        element,
+        context,
+        elementsToActivate.stream().map(ElementActivation::withoutVariables).toList());
   }
 
   @Override

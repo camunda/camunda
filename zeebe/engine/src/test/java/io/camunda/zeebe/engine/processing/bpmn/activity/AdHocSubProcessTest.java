@@ -1372,6 +1372,181 @@ public final class AdHocSubProcessTest {
         .containsOnly("results", "[\"foo\"]", ahspKey);
   }
 
+  @Test
+  public void shouldCompleteWhenParallelGatewayJoinsActivatedElements() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.zeebeActiveElementsCollectionExpression("[\"task1\",\"task2\"]");
+              adHocSubProcess.manualTask("task1").parallelGateway("join").manualTask("downstream");
+              adHocSubProcess.manualTask("task2").connectTo("join");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("downstream", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldCompleteWhenParallelGatewayJoinsThreeActivatedElements() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.zeebeActiveElementsCollectionExpression(
+                  "[\"task1\",\"task2\",\"task3\"]");
+              adHocSubProcess.manualTask("task1").parallelGateway("join").manualTask("downstream");
+              adHocSubProcess.manualTask("task2").connectTo("join");
+              adHocSubProcess.manualTask("task3").connectTo("join");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("downstream", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldCompleteWhenInclusiveGatewayJoinsActivatedElements() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.zeebeActiveElementsCollectionExpression("[\"task1\",\"task2\"]");
+              adHocSubProcess.manualTask("task1").inclusiveGateway("join").manualTask("downstream");
+              adHocSubProcess.manualTask("task2").connectTo("join");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("downstream", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withElementId("downstream"))
+        .describedAs("Expected the inclusive gateway to join both branches into one token")
+        .hasSize(1);
+  }
+
+  @Test
+  public void shouldActivateOnlyElementsOfTheSameJoinGroupInASharedInnerInstance() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.zeebeActiveElementsCollectionExpression(
+                  "[\"task1\",\"task2\",\"task3\"]");
+              adHocSubProcess.manualTask("task1").parallelGateway("join").manualTask("downstream");
+              adHocSubProcess.manualTask("task2").connectTo("join");
+              adHocSubProcess.manualTask("task3");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Map<String, Long> flowScopeKeyByElementId = new HashMap<>();
+    RecordingExporter.processInstanceRecords()
+        .withProcessInstanceKey(processInstanceKey)
+        .limitToProcessInstanceCompleted()
+        .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .filter(r -> List.of("task1", "task2", "task3").contains(r.getValue().getElementId()))
+        .forEach(
+            r ->
+                flowScopeKeyByElementId.put(
+                    r.getValue().getElementId(), r.getValue().getFlowScopeKey()));
+
+    assertThat(flowScopeKeyByElementId.get("task1"))
+        .describedAs("Expected the elements of a join group to share an inner instance")
+        .isEqualTo(flowScopeKeyByElementId.get("task2"));
+    assertThat(flowScopeKeyByElementId.get("task3"))
+        .describedAs("Expected an element outside of the join group to get its own inner instance")
+        .isNotEqualTo(flowScopeKeyByElementId.get("task1"));
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE))
+        .hasSize(2);
+  }
+
+  @Test
+  public void shouldCompleteWhenGatewayInsideSingleActivatedElementBranch() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.zeebeActiveElementsCollectionExpression("[\"task1\"]");
+              adHocSubProcess
+                  .manualTask("task1")
+                  .parallelGateway("fork")
+                  .manualTask("a")
+                  .parallelGateway("join")
+                  .moveToNode("fork")
+                  .manualTask("b")
+                  .connectTo("join");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("join", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
   private static Predicate<Record<RecordValue>> signalBroadcasted(final String signalName) {
     return r ->
         r.getIntent() == SignalIntent.BROADCASTED

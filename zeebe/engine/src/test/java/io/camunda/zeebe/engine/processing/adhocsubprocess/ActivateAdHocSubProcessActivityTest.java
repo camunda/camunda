@@ -212,6 +212,56 @@ public class ActivateAdHocSubProcessActivityTest {
   }
 
   @Test
+  public void shouldCompleteWhenParallelGatewayJoinsElementsActivatedTogether() {
+    // given
+    final var joinProcessId = "join-" + UUID.randomUUID();
+    deployProcess(
+        joinProcessId,
+        adHocSubProcess -> {
+          adHocSubProcess.manualTask("task1").parallelGateway("join").manualTask("downstream");
+          adHocSubProcess.manualTask("task2").connectTo("join");
+          adHocSubProcess.completionCondition(COMPLETION_CONDITION_VAR);
+        });
+    final var joinProcessInstanceKey = getProcessInstanceKey(joinProcessId);
+    final var joinAdHocSubProcessInstanceKey =
+        getAdHocSubProcessInstanceKey(joinProcessInstanceKey);
+
+    // when
+    ENGINE
+        .adHocSubProcessActivity()
+        .withAdHocSubProcessInstanceKey(joinAdHocSubProcessInstanceKey)
+        .withElementIdAndVariables("task1", Map.of("x", 1))
+        .withElementIdAndVariables("task2", Map.of("y", 2))
+        .activate();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(joinProcessInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("downstream", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(joinProcessId, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    final var innerInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(joinProcessInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE)
+            .getFirst()
+            .getKey();
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(joinProcessInstanceKey)
+                .withScopeKey(innerInstanceKey)
+                .limit(2))
+        .describedAs("Expected the variables of both activations in the shared inner instance")
+        .extracting(r -> r.getValue().getName())
+        .containsExactlyInAnyOrder("x", "y");
+  }
+
+  @Test
   public void shouldRejectCommandIfElementDoesntExist() {
     final var nonExistingActivities = List.of("does_not_exist");
     final var rejection =
