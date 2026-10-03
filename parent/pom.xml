@@ -104,7 +104,7 @@
          spring-boot-starter-parent, thus this line gives our client the lowest runtime that a
          user can have. Older supported lines manage no protobuf-java and take version.protobuf
          from us. -->
-    <version.spring-boot-oldest-managing-protobuf>4.1.0</version.spring-boot-oldest-managing-protobuf>
+    <version.spring-boot-oldest-managing-protobuf>4.1.1</version.spring-boot-oldest-managing-protobuf>
     <!-- protobuf-java that the line above manages. A test reads the Spring Boot BOM and fails if
          the two disagree. -->
     <version.protobuf-spring-boot-baseline>4.34.2</version.protobuf-spring-boot-baseline>
