@@ -13,6 +13,7 @@ import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.query.SearchWildcardQuery;
 import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.GroupFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.security.api.model.authz.EntityType;
 import java.util.List;
@@ -98,6 +99,30 @@ class GroupFilterTransformerTest extends AbstractTransformerTest {
                         assertThat(termValue(or.should().get(0))).isEqualTo("group-1");
                         assertThat(termValue(or.should().get(1))).isEqualTo("group-2");
                       });
+            });
+  }
+
+  @Test
+  void shouldIgnoreOrClauseWhenItContainsAnEmptyFilter() {
+    final var filter =
+        FilterBuilders.group(
+            f ->
+                f.groupIds("group-top")
+                    .orFilters(
+                        List.of(
+                            new GroupFilter.Builder().build(),
+                            FilterBuilders.group(f1 -> f1.groupIds("group-1")))));
+
+    final var searchQuery = transformQuery(filter);
+
+    assertThat(searchQuery.queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            bool -> {
+              // an empty $or group matches everything, collapsing the whole $or clause into a
+              // no-op: only the top-level groupId and the unconditional JOIN term remain
+              assertThat(bool.must()).hasSize(2);
+              assertThat(termValue(bool.must().get(0))).isEqualTo("group-top");
             });
   }
 

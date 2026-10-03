@@ -22,8 +22,10 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
 import java.util.ArrayList;
+import java.util.List;
 
-public class RoleFilterTransformer extends IndexFilterTransformer<RoleFilter> {
+public class RoleFilterTransformer extends IndexFilterTransformer<RoleFilter>
+    implements OrFilterTransformer<RoleFilter> {
   public RoleFilterTransformer(final IndexDescriptor indexDescriptor) {
     super(indexDescriptor);
   }
@@ -37,14 +39,13 @@ public class RoleFilterTransformer extends IndexFilterTransformer<RoleFilter> {
       queries.add(createMultipleMemberTypeQuery(filter));
     }
 
-    if (filter.orFilters() != null && !filter.orFilters().isEmpty()) {
-      queries.add(or(filter.orFilters().stream().map(f -> and(toSearchQueryFields(f))).toList()));
-    }
+    toOrClause(filter).ifPresent(queries::add);
 
     return and(queries);
   }
 
-  private ArrayList<SearchQuery> toSearchQueryFields(final RoleFilter filter) {
+  @Override
+  public List<SearchQuery> toSearchQueryFields(final RoleFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
     if (filter.roleIdOperations() != null && !filter.roleIdOperations().isEmpty()) {
       queries.addAll(stringOperations(RoleIndex.ROLE_ID, filter.roleIdOperations()));

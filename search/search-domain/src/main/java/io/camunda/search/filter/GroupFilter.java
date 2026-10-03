@@ -29,7 +29,20 @@ public record GroupFilter(
     String roleId,
     Map<EntityType, Set<String>> memberIdsByType,
     List<GroupFilter> orFilters)
-    implements FilterBase {
+    implements OrFilter<GroupFilter> {
+
+  @Override
+  public boolean isEmpty() {
+    return !FilterUtil.hasAnyNonEmpty(
+        groupIdOperations,
+        nameOperations,
+        description,
+        memberIds,
+        tenantId,
+        childMemberType,
+        roleId,
+        memberIdsByType);
+  }
 
   public static GroupFilter of(
       final Function<GroupFilter.Builder, GroupFilter.Builder> builderFunction) {

@@ -161,6 +161,39 @@ public class ProcessDefinitionStatisticsIT {
   }
 
   @Test
+  void shouldGetStatisticsAndFilterByOrFiltersWithEmptyGroup() {
+    // given
+    final var processDefinitionKey = deployIsolatedCompleteBPMN();
+    final var pi1 = createInstance(processDefinitionKey);
+    createInstance(processDefinitionKey);
+    createInstance(processDefinitionKey);
+    waitForProcessInstances(
+        camundaClient,
+        f -> f.processDefinitionKey(processDefinitionKey).state(ProcessInstanceState.COMPLETED),
+        3);
+
+    // when - an empty $or group has no criteria of its own, so it matches every instance; that
+    // makes the whole $or clause a no-op instead of narrowing to just pi1 (#60407)
+    final var actual =
+        camundaClient
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
+            .filter(
+                f ->
+                    f.orFilters(
+                        List.of(
+                            f1 -> {}, f2 -> f2.processInstanceKey(pi1.getProcessInstanceKey()))))
+            .send()
+            .join();
+
+    // then
+    assertThat(actual).hasSize(2);
+    assertThat(actual)
+        .containsExactlyInAnyOrder(
+            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 3L),
+            new ProcessElementStatisticsImpl("EndEvent", 0L, 0L, 0L, 3L));
+  }
+
+  @Test
   void shouldGetStatisticsAndFilterByElementIdOrFilters() {
     // given
     final var processDefinitionKey = deployIncidentBPMN();

@@ -136,6 +136,31 @@ class ProcessDefinitionMapperTest {
     assertThat(sql).contains("LOWER(i.ERROR_MESSAGE) LIKE LOWER(").contains("ESCAPE");
   }
 
+  @Test
+  void shouldSkipOrClauseWhenItContainsAnEmptyFilter() throws Exception {
+    // given - an empty $or group matches everything, so the whole clause must be a no-op (#60407)
+    // rather than the literal "AND ( OR (...) )" that used to produce invalid SQL
+    final var configuration = mapperConfiguration();
+    final var filter =
+        new ProcessDefinitionStatisticsFilter.Builder(1L)
+            .orFilters(
+                List.of(
+                    new ProcessDefinitionStatisticsFilter.Builder(1L).build(),
+                    new ProcessDefinitionStatisticsFilter.Builder(1L).states("ACTIVE").build()))
+            .build();
+    final var query = ProcessDefinitionStatisticsDbQuery.of(builder -> builder.filter(filter));
+
+    // when
+    final var sql =
+        configuration
+            .getMappedStatement(FLOW_NODE_STATISTICS_STATEMENT)
+            .getBoundSql(query)
+            .getSql();
+
+    // then
+    assertThat(sql).contains("pd.PROCESS_DEFINITION_KEY = ?").doesNotContain("pi.STATE");
+  }
+
   private Configuration mapperConfiguration() throws Exception {
     return mapperConfiguration(null);
   }

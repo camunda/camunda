@@ -200,7 +200,8 @@
       <trim prefix="AND" prefixOverrides="AND">
         <bind name="filter" value="_parameter.filter" />
         <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.statisticsSearchFilter"/>
-        <if test="filter.orFilters != null and !filter.orFilters.isEmpty()">
+        <if
+          test="filter.orFilters != null and !filter.orFilters.isEmpty() and !filter.hasEmptyOrFilter()">
           AND (
           <foreach collection="filter.orFilters" item="filter" separator=" OR ">
             <trim prefix="(" suffix=")">
