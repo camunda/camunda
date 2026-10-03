@@ -52,6 +52,12 @@ ADR for that domain is written.
   path, remapping `camunda.client.*` to `camunda.clients.default.*`, with a
   `defaultCamundaClient` `@Primary` bean plus a `camundaClient` alias for
   backward compatibility (camunda/camunda#57344).
+- `clients/0002-run-job-handlers-on-virtual-threads-by-default.md` — when no
+  job handling threads or executor are configured, the Java client and Spring
+  Boot starter run each job handler on its own virtual thread (bounded per
+  worker by `maxJobsActive`), with runtime detection and fallback on JVMs
+  without virtual threads; explicit thread counts and custom executors keep
+  their behavior (camunda/camunda#14662).
 - `storage/001-remove-numeric-key-from-identity-entity-filters.md` — drop the
   internal numeric `key` filter fields from `UserFilter`, `GroupFilter`,
   `TenantFilter`, and `MappingRuleFilter`; Identity entities are filtered by their
