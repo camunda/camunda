@@ -18,7 +18,7 @@
                            BUSINESS_ID,
                            ELEMENT_INSTANCE_KEY, TENANT_ID, DUE_DATE, FOLLOW_UP_DATE,
                            EXTERNAL_FORM_REFERENCE, PROCESS_DEFINITION_VERSION, CUSTOM_HEADERS,
-                                    PRIORITY, PARTITION_ID)
+                                    PRIORITY, IS_SUSPENDED, PARTITION_ID)
     VALUES (#{userTaskKey}, #{elementId}, #{name}, #{processDefinitionId}, #{creationDate, jdbcType=TIMESTAMP},
             #{completionDate, jdbcType=TIMESTAMP},
             #{assignee}, #{state}, #{formKey},
@@ -26,7 +26,7 @@
             #{businessId}, #{elementInstanceKey}, #{tenantId},
             #{dueDate, jdbcType=TIMESTAMP}, #{followUpDate, jdbcType=TIMESTAMP},
             #{externalFormReference}, #{processDefinitionVersion}, #{serializedCustomHeaders},
-            #{priority}, #{partitionId})
+            #{priority}, #{isSuspended}, #{partitionId})
   </insert>
 
   <insert id="insertCandidateUsers" parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel">
@@ -100,6 +100,7 @@
       <arg column="PROCESS_DEFINITION_VERSION" javaType="java.lang.Integer" name="processDefinitionVersion"/>
       <arg column="CUSTOM_HEADERS" javaType="java.lang.String" name="serializedCustomHeaders"/>
       <arg column="PRIORITY" javaType="java.lang.Integer" name="priority"/>
+      <arg column="IS_SUSPENDED" javaType="_boolean" name="isSuspended"/>
     </constructor>
     <collection property="candidateGroups" ofType="java.lang.String" javaType="java.util.List">
       <id column="CANDIDATE_GROUP"/>
@@ -145,7 +146,8 @@
     ut.EXTERNAL_FORM_REFERENCE,
     ut.PROCESS_DEFINITION_VERSION,
     ut.CUSTOM_HEADERS,
-    ut.PRIORITY
+    ut.PRIORITY,
+    ut.IS_SUSPENDED
     FROM ${prefix}USER_TASK ut
     <include refid="io.camunda.db.rdbms.sql.UserTaskMapper.searchAndAuthFilter"/>
     ) filtered

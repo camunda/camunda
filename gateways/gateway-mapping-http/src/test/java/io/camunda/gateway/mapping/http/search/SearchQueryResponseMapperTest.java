@@ -370,7 +370,8 @@ class SearchQueryResponseMapperTest {
             1, // processDefinitionVersion
             null, // customHeaders
             50, // priority
-            null); // tags
+            null, // tags
+            false); // suspended
 
     // when
     final var response = SearchQueryResponseMapper.toUserTask(entity);
@@ -1021,7 +1022,8 @@ class SearchQueryResponseMapperTest {
             1, // processDefinitionVersion
             null, // customHeaders
             50, // priority
-            null); // tags
+            null, // tags
+            false); // suspended
 
     // when
     final var response = SearchQueryResponseMapper.toUserTask(entity);

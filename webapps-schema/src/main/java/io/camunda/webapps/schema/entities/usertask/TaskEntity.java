@@ -153,6 +153,9 @@ public class TaskEntity extends AbstractExporterEntity<TaskEntity>
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String businessId;
 
+  @SinceVersion(value = "8.11.0")
+  private boolean isSuspended;
+
   // transient flag: signals flush() to issue a delete instead of an upsert; never written to index
   @JsonIgnore private boolean markedForDeletion;
 
@@ -463,6 +466,15 @@ public class TaskEntity extends AbstractExporterEntity<TaskEntity>
 
   public TaskEntity setBusinessId(final String businessId) {
     this.businessId = businessId;
+    return this;
+  }
+
+  public boolean getIsSuspended() {
+    return isSuspended;
+  }
+
+  public TaskEntity setIsSuspended(final boolean isSuspended) {
+    this.isSuspended = isSuspended;
     return this;
   }
 
