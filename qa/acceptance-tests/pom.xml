@@ -23,6 +23,9 @@
   <properties>
     <version.maven-surefire-junit5-tree-reporter>1.5.1</version.maven-surefire-junit5-tree-reporter>
     <identity-packages>io/camunda/it/auth/*,io/camunda/it/identity/*,io/camunda/it/csrf/*,io/camunda/it/logout/*,io/camunda/it/oidc/*</identity-packages>
+    <!-- Timeout for forked processes in seconds. Sized for the default CI job budget (20 minutes);
+     long-running callers must raise this via -D failsafe.timeout=<seconds> to match their own job timeout. -->
+    <failsafe.timeout>960</failsafe.timeout>
   </properties>
 
   <dependencies>
@@ -757,7 +760,7 @@
             <identity.docker.image.version>${version.identity}</identity.docker.image.version>
           </systemPropertyVariables>
           <excludedGroups>rdbms, rdbms-aurora, rdbms-aurora-mysql, multi-db-test, compatibility-test, dl-nightly, async-repl</excludedGroups>
-          <forkedProcessTimeoutInSeconds>10800</forkedProcessTimeoutInSeconds>
+          <forkedProcessTimeoutInSeconds>${failsafe.timeout}</forkedProcessTimeoutInSeconds>
         </configuration>
         <dependencies>
           <dependency>
@@ -807,9 +810,12 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
+            <!-- combine.self="override" replaces the whole base <configuration>, including
+                 forkedProcessTimeoutInSeconds; repeat it here so nightly forks stay bounded too. -->
             <configuration combine.self="override">
               <groups>dl-nightly</groups>
               <excludedGroups/>
+              <forkedProcessTimeoutInSeconds>${failsafe.timeout}</forkedProcessTimeoutInSeconds>
             </configuration>
           </plugin>
         </plugins>

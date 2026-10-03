@@ -295,6 +295,7 @@ jobs:
             verify -pl qa/acceptance-tests
             ${{ (inputs.db_engine || 'postgresql') == 'mysql' && '-Prdbms-aurora-mysql' || '-Prdbms-aurora' }}
             -DskipUTs -DskipChecks -DskipTests=false
+            -Dfailsafe.timeout=5400
 
       - name: Upload test reports and SSM logs
         if: always()
