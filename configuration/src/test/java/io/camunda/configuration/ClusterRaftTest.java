@@ -14,6 +14,7 @@ import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg;
 import io.camunda.zeebe.broker.system.configuration.RaftCfg;
+import io.camunda.zeebe.util.schedule.Schedule.IntervalSchedule;
 import java.time.Duration;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -53,7 +54,11 @@ public class ClusterRaftTest {
         "camunda.cluster.raft.rebalance.replication-lag-threshold=16MB",
         "camunda.cluster.raft.rebalance.replication-timeout=30s",
         "camunda.cluster.raft.rebalance.max-transfer-attempts=5",
-        "camunda.cluster.raft.rebalance.leader-wait-timeout=2m"
+        "camunda.cluster.raft.rebalance.leader-wait-timeout=2m",
+        "camunda.cluster.raft.rebalance.schedule=PT1H",
+        "camunda.cluster.raft.rebalance.max-process-instances-per-second=50",
+        "camunda.cluster.raft.rebalance.max-commands-per-second=2000",
+        "camunda.cluster.raft.rebalance.load-window=10m"
       })
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;
@@ -117,6 +122,15 @@ public class ClusterRaftTest {
           .returns(Duration.ofSeconds(30), RaftCfg::getRebalanceReplicationTimeout)
           .returns(5, RaftCfg::getRebalanceMaxTransferAttempts)
           .returns(Duration.ofMinutes(2), RaftCfg::getRebalanceLeaderWaitTimeout);
+    }
+
+    @Test
+    void shouldSetScheduledRebalance() {
+      assertThat(brokerCfg.getCluster().getRaft())
+          .returns(new IntervalSchedule(Duration.ofHours(1)), RaftCfg::getRebalanceSchedule)
+          .returns(50.0, RaftCfg::getRebalanceMaxProcessInstancesPerSecond)
+          .returns(2000.0, RaftCfg::getRebalanceMaxCommandsPerSecond)
+          .returns(Duration.ofMinutes(10), RaftCfg::getRebalanceLoadWindow);
     }
   }
 

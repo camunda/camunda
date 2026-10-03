@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.broker.system.configuration;
 
+import io.camunda.zeebe.util.schedule.Schedule;
 import java.time.Duration;
+import org.jspecify.annotations.Nullable;
 import org.springframework.util.unit.DataSize;
 
 public final class RaftCfg implements ConfigurationEntry {
@@ -17,6 +19,7 @@ public final class RaftCfg implements ConfigurationEntry {
   public static final Duration DEFAULT_REBALANCE_REPLICATION_TIMEOUT = Duration.ofSeconds(10);
   public static final int DEFAULT_REBALANCE_MAX_TRANSFER_ATTEMPTS = 3;
   public static final Duration DEFAULT_REBALANCE_LEADER_WAIT_TIMEOUT = Duration.ofMinutes(1);
+  public static final Duration DEFAULT_REBALANCE_LOAD_WINDOW = Duration.ofMinutes(5);
   private static final FlushConfig DEFAULT_FLUSH_CONFIG = new FlushConfig(true, Duration.ZERO);
 
   private boolean enablePriorityElection = DEFAULT_ENABLE_PRIORITY_ELECTION;
@@ -26,6 +29,10 @@ public final class RaftCfg implements ConfigurationEntry {
   private Duration rebalanceReplicationTimeout = DEFAULT_REBALANCE_REPLICATION_TIMEOUT;
   private int rebalanceMaxTransferAttempts = DEFAULT_REBALANCE_MAX_TRANSFER_ATTEMPTS;
   private Duration rebalanceLeaderWaitTimeout = DEFAULT_REBALANCE_LEADER_WAIT_TIMEOUT;
+  private String rebalanceSchedule = Schedule.NONE;
+  private @Nullable Double rebalanceMaxProcessInstancesPerSecond;
+  private @Nullable Double rebalanceMaxCommandsPerSecond;
+  private Duration rebalanceLoadWindow = DEFAULT_REBALANCE_LOAD_WINDOW;
 
   public boolean isEnablePriorityElection() {
     return enablePriorityElection;
@@ -75,6 +82,40 @@ public final class RaftCfg implements ConfigurationEntry {
     this.rebalanceLeaderWaitTimeout = rebalanceLeaderWaitTimeout;
   }
 
+  public Schedule getRebalanceSchedule() {
+    return Schedule.parseSchedule(rebalanceSchedule);
+  }
+
+  public void setRebalanceSchedule(final String rebalanceSchedule) {
+    this.rebalanceSchedule = rebalanceSchedule;
+  }
+
+  public @Nullable Double getRebalanceMaxProcessInstancesPerSecond() {
+    return rebalanceMaxProcessInstancesPerSecond;
+  }
+
+  public void setRebalanceMaxProcessInstancesPerSecond(
+      final @Nullable Double rebalanceMaxProcessInstancesPerSecond) {
+    this.rebalanceMaxProcessInstancesPerSecond = rebalanceMaxProcessInstancesPerSecond;
+  }
+
+  public @Nullable Double getRebalanceMaxCommandsPerSecond() {
+    return rebalanceMaxCommandsPerSecond;
+  }
+
+  public void setRebalanceMaxCommandsPerSecond(
+      final @Nullable Double rebalanceMaxCommandsPerSecond) {
+    this.rebalanceMaxCommandsPerSecond = rebalanceMaxCommandsPerSecond;
+  }
+
+  public Duration getRebalanceLoadWindow() {
+    return rebalanceLoadWindow;
+  }
+
+  public void setRebalanceLoadWindow(final Duration rebalanceLoadWindow) {
+    this.rebalanceLoadWindow = rebalanceLoadWindow;
+  }
+
   @Override
   public String toString() {
     return "RaftCfg{"
@@ -90,6 +131,14 @@ public final class RaftCfg implements ConfigurationEntry {
         + rebalanceMaxTransferAttempts
         + ", rebalanceLeaderWaitTimeout="
         + rebalanceLeaderWaitTimeout
+        + ", rebalanceSchedule="
+        + rebalanceSchedule
+        + ", rebalanceMaxProcessInstancesPerSecond="
+        + rebalanceMaxProcessInstancesPerSecond
+        + ", rebalanceMaxCommandsPerSecond="
+        + rebalanceMaxCommandsPerSecond
+        + ", rebalanceLoadWindow="
+        + rebalanceLoadWindow
         + '}';
   }
 

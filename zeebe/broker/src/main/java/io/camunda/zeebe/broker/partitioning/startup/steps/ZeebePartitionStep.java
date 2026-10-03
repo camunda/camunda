@@ -29,19 +29,21 @@ public final class ZeebePartitionStep implements StartupStep<PartitionStartupCon
   public ActorFuture<PartitionStartupContext> startup(final PartitionStartupContext context) {
     final var result = context.concurrencyControl().<PartitionStartupContext>createFuture();
 
+    final var factory = context.zeebePartitionFactory();
+    final var loadCounters = factory.loadCounters().register();
     final ZeebePartition zeebePartition;
     try {
       zeebePartition =
-          context
-              .zeebePartitionFactory()
-              .constructPartition(
-                  context.raftPartition(),
-                  context.snapshotStore(),
-                  context.initialPartitionConfig(),
-                  context.brokerHealthCheckService(),
-                  context.partitionMeterRegistry(),
-                  context.commandApiService());
+          factory.constructPartition(
+              context.raftPartition(),
+              context.snapshotStore(),
+              context.initialPartitionConfig(),
+              context.brokerHealthCheckService(),
+              context.partitionMeterRegistry(),
+              context.commandApiService(),
+              loadCounters);
     } catch (final Exception e) {
+      factory.loadCounters().retire(loadCounters);
       result.completeExceptionally(e);
       return result;
     }
@@ -52,8 +54,9 @@ public final class ZeebePartitionStep implements StartupStep<PartitionStartupCon
             submit,
             (ignored, failure) -> {
               if (failure == null) {
-                result.complete(context.zeebePartition(zeebePartition));
+                result.complete(context.zeebePartition(zeebePartition).loadCounters(loadCounters));
               } else {
+                factory.loadCounters().retire(loadCounters);
                 result.completeExceptionally(failure);
               }
             });
@@ -80,7 +83,14 @@ public final class ZeebePartitionStep implements StartupStep<PartitionStartupCon
             close,
             (ignored, failure) -> {
               if (failure == null) {
-                result.complete(partitionStartupContext.zeebePartition(null));
+                final var loadCounters = partitionStartupContext.loadCounters();
+                if (loadCounters != null) {
+                  partitionStartupContext
+                      .zeebePartitionFactory()
+                      .loadCounters()
+                      .retire(loadCounters);
+                }
+                result.complete(partitionStartupContext.zeebePartition(null).loadCounters(null));
               } else {
                 result.completeExceptionally(failure);
               }
