@@ -79,6 +79,41 @@ chaosKiller:
   # -- Space-separated shell glob patterns. One pod matching any pattern is deleted per run.
   targetPatterns: "camunda-* elastic-* postgresql-*"
 
+# -- Optional in-cluster k6 DMN decision-evaluation load generator.
+# When enabled, runs a one-shot k6 Job that first deploys the bundled decision(s)
+# (dmn-k6/resources/*.dmn), then drives POST /v2/decision-definitions/evaluation at
+# a FIXED arrival rate (requests/second, held independent of latency). The Job is
+# kept OFF the broker nodes so the generator never steals CPU from the cluster
+# under test — the whole point of running it in-cluster instead of from a laptop.
+# Typically paired with `load-tester.enabled=false` (the `dmn` scenario sets both).
+dmnK6:
+  # -- Set to true to deploy the k6 DMN evaluation Job.
+  enabled: false
+  # -- k6 container image (pinned for reproducible latency numbers).
+  image: grafana/k6:0.55.0
+  # -- curl image used by the init container that deploys the decision(s).
+  deployImage: curlimages/curl:8.11.1
+  # -- Evaluations per second, held constant (constant-arrival-rate executor).
+  # 3334 ≈ 200k/min, 6667 ≈ 400k/min.
+  rate: 100
+  # -- How long to sustain the rate.
+  duration: 60s
+  # -- Cap on concurrent in-flight requests (VUs).
+  maxVUs: 200
+  # -- Decision id evaluated in single mode (must match a bundled *.dmn).
+  decisionId: small_decision
+  # -- Optional weighted mix as a JSON array of {id, weight, variables?}.
+  # When set, overrides single mode, e.g. '[{"id":"small_decision","weight":42}]'.
+  mix: ""
+  # -- CPU/memory bounds so the generator can never contend beyond its own node.
+  resources:
+    requests:
+      cpu: "2"
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 1Gi
+
 # -- load-tester subchart toggle. Set to false to skip deploying the load
 # generators (e.g. for a bare cluster setup).
 load-tester:

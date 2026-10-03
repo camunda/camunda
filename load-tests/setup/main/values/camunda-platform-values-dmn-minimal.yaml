@@ -1,0 +1,45 @@
+# Low-latency, single-broker Camunda overlay for DMN decision-evaluation probing,
+# while KEEPING Operate visibility.
+#
+# Layered on top of camunda-platform-values-defaults.yaml (+ the elasticsearch
+# secondary-storage file). It only overrides scalars, so the base OIDC/identity
+# config injected via `orchestration.extraConfiguration` stays intact. Do NOT add
+# an `orchestration.extraConfiguration` block here: Helm REPLACES lists rather than
+# merging them, so a partial list would wipe the base OIDC issuer config and the
+# broker would crashloop on a relative `authorization-uri`.
+#
+# Two levers remove the dominant avoidable parts of the ~14ms C8 evaluation floor:
+#   * replicationFactor 1     -> commit is local; no Raft quorum round-trip
+#   * persistenceType memory  -> the data dir is a tmpfs (RAM), so the per-commit
+#                                fsync leaves the disk (and EFS) entirely off the
+#                                hot path. This is the biggest single lever once
+#                                replication is gone.
+# Elasticsearch + the `camunda` exporter stay ON, so decisions remain visible in
+# Operate. The exporter is asynchronous and off the request hot path, so it costs
+# CPU/throughput but little per-evaluation latency.
+#
+# This is a MINIMUM-LATENCY reference with Operate, NOT a production/HA topology.
+# For throughput/HA use the standard defaults (clusterSize/RF 3).
+#
+# Usage (deploy with the elasticsearch secondary storage so Operate works):
+#   scenario=dmn, secondary-storage-type=elasticsearch,
+#   platform-helm-values: -f camunda-platform-values-dmn-minimal.yaml
+
+########################################################################################
+################################################### Orchestration cluster configuration
+########################################################################################
+orchestration:
+  # Single broker, single partition, no replication -> minimum write-path latency.
+  clusterSize: "1"
+  partitionCount: "1"
+  replicationFactor: "1"
+
+  # Back the Zeebe data dir with a tmpfs (RAM) instead of a PVC, so the per-commit
+  # fsync never touches disk. tmpfs usage counts against the pod memory limit, so
+  # the limit below is raised to leave room for the JVM heap plus the in-memory log.
+  persistenceType: memory
+  resources:
+    requests:
+      memory: 6Gi
+    limits:
+      memory: 6Gi

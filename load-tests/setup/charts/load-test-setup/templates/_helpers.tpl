@@ -45,4 +45,38 @@ http://keycloak:{{ .Values.keycloak.http.port }}/auth/realms/camunda-platform/pr
 {{- end -}}
 {{- end -}}
 
+{{/*
+Shared auth/base-URL environment variables for the DMN k6 Job (both the
+deploy init container and the k6 container). Values come from the
+`load-test-credentials` Secret rendered by load-test-credentials.yaml, so the
+generator reuses the exact same OIDC client and audience as the load-tester.
+*/}}
+{{- define "dmn-k6.authEnv" -}}
+- name: CAMUNDA_BASE_URL
+  valueFrom:
+    secretKeyRef:
+      name: load-test-credentials
+      key: zeebeRestAddress
+- name: CAMUNDA_CLIENT_ID
+  valueFrom:
+    secretKeyRef:
+      name: load-test-credentials
+      key: clientId
+- name: CAMUNDA_CLIENT_SECRET
+  valueFrom:
+    secretKeyRef:
+      name: load-test-credentials
+      key: clientSecret
+- name: CAMUNDA_OAUTH_URL
+  valueFrom:
+    secretKeyRef:
+      name: load-test-credentials
+      key: authServer
+- name: CAMUNDA_TOKEN_AUDIENCE
+  valueFrom:
+    secretKeyRef:
+      name: load-test-credentials
+      key: authorizationAudience
+{{- end -}}
+
 {{/* vim: set filetype=gotmpl: */}}

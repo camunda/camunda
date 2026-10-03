@@ -200,6 +200,14 @@ cp -v  "$SCRIPT_DIR/scenarios/load-tester-values-realistic-benchmark.yaml"      
 cp -v  "$VERSION_DIR/values/camunda-platform-values-defaults.yaml"              "$TARGET_DIRECTORY/"
 cp -v  "$VERSION_DIR/values/camunda-platform-values-${secondary_storage}.yaml"   "$TARGET_DIRECTORY/"
 
+# Optional DMN minimum-latency overlay, layered on via the load test's
+# platform-helm-values input (`-f camunda-platform-values-dmn-minimal.yaml`) for
+# the `dmn` scenario. Only present on versions that ship it (main), so copy it
+# conditionally rather than failing the scaffold where it doesn't exist.
+if [[ -f "$VERSION_DIR/values/camunda-platform-values-dmn-minimal.yaml" ]]; then
+  cp -v "$VERSION_DIR/values/camunda-platform-values-dmn-minimal.yaml"          "$TARGET_DIRECTORY/"
+fi
+
 # Don't configure Elasticsearch unless specifically enabled (secondary storage,
 # or via Optimize)
 elasticsearchEnabled=false

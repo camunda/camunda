@@ -38,6 +38,7 @@ on:
           - typical
           - max
           - archiver
+          - dmn
         default: max
       secondary-storage-type:
         description: 'Secondary database backend for Camunda Platform'
@@ -644,6 +645,50 @@ jobs:
           kubectl annotate namespace "${NAMESPACE}" \
             "github.com/workflow-run-url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             --overwrite
+
+      # The `dmn` scenario deploys a one-shot in-cluster k6 Job (dmn-k6) instead of
+      # the continuous BPMN load-tester, so its results are not visible on Grafana.
+      # Wait for that Job to finish and surface k6's latency/throughput summary in
+      # the run log and step summary, which is the whole point of this scenario.
+      - name: Collect DMN k6 results
+        if: success() && inputs.scenario == 'dmn'
+        shell: bash --noprofile --norc -exo pipefail {0}
+        run: |
+          NS="${NAMESPACE}"
+          # Diagnostics first: if the Job never runs (e.g. Pending / init failure),
+          # these reveal why without needing cluster access after the fact.
+          echo "===== dmn-k6 Job / pod status ====="
+          kubectl -n "$NS" get pods -l app.kubernetes.io/component=dmn-k6 -o wide || true
+          kubectl -n "$NS" describe job/dmn-k6 || true
+          # Bounded wait, well under the job's 30m timeout, so we always reach the
+          # log-dump below instead of being cancelled mid-wait.
+          end=$((SECONDS + 720))
+          status="timeout"
+          while [ "$SECONDS" -lt "$end" ]; do
+            if kubectl -n "$NS" wait --for=condition=complete job/dmn-k6 --timeout=15s >/dev/null 2>&1; then status="complete"; break; fi
+            if kubectl -n "$NS" wait --for=condition=failed   job/dmn-k6 --timeout=15s >/dev/null 2>&1; then status="failed"; break; fi
+          done
+          echo "dmn-k6 Job status: ${status}"
+          echo "===== pod events (scheduling / init failures show here) ====="
+          kubectl -n "$NS" describe pod -l app.kubernetes.io/component=dmn-k6 | sed -n '/Events:/,$p' || true
+          echo "===== init container (deploy-decisions) logs ====="
+          INIT_LOGS="$(kubectl -n "$NS" logs job/dmn-k6 -c deploy-decisions --tail=-1 2>&1 || true)"
+          echo "$INIT_LOGS"
+          echo "===== k6 logs ====="
+          K6_LOGS="$(kubectl -n "$NS" logs job/dmn-k6 -c k6 --tail=-1 2>&1 || true)"
+          echo "$K6_LOGS"
+          {
+            echo "## DMN k6 results (${status})"
+            echo ""
+            echo "Namespace \`${NS}\`."
+            echo ""
+            echo '```'
+            echo "$K6_LOGS"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$status" != "complete" ]; then
+            echo "::warning::dmn-k6 Job did not complete (status=${status}); see diagnostics above"
+          fi
 
       - name: Summarize load test deployment
         if: success()
