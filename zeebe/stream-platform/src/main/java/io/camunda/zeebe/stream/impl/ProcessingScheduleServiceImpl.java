@@ -250,8 +250,11 @@ public class ProcessingScheduleServiceImpl
 
       writeFuture.onComplete(
           (v, t) -> {
-            if (t != null) {
+            // a false result without an error means the write was aborted before it succeeded
+            if (t != null || !Boolean.TRUE.equals(v)) {
               stagedCache.rollback();
+            }
+            if (t != null) {
               // todo handle error;
               //   can happen if we tried to write a too big batch of records
               //   this should resolve if we use the buffered writer were we detect these errors

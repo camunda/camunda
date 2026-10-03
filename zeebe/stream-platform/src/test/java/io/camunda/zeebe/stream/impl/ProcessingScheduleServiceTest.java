@@ -424,6 +424,31 @@ class ProcessingScheduleServiceTest {
   }
 
   @Test
+  void shouldNotCacheWrittenCommandsIfWriteIsAborted() {
+    // given - the write keeps failing and the stream processor closes during the retry
+    testWriter.acceptWrites.set(
+        () -> {
+          lifecycleSupplier.isAborted = true;
+          return false;
+        });
+
+    // when
+    scheduleService.runDelayed(
+        Duration.ZERO,
+        (builder) -> {
+          builder.appendCommandRecord(1, ACTIVATE_ELEMENT, Records.processInstance(1));
+          return builder.build();
+        });
+    actorScheduler.workUntilDone();
+
+    // then - write was staged for caching, but rolled back since it was never written
+    assertThat(commandCache.stagedCache().contains(ACTIVATE_ELEMENT, 1)).isTrue();
+    assertThat(commandCache.stagedCache().persisted()).isFalse();
+    assertThat(commandCache.contains(ACTIVATE_ELEMENT, 1)).isFalse();
+    assertThat(testWriter.entries).isEmpty();
+  }
+
+  @Test
   void shouldNotExecuteCancelledDelayedTask() {
     // given
     final var mockedTask = spy(new DummyTask());
