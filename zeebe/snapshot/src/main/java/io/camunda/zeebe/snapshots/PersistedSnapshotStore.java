@@ -45,6 +45,20 @@ public interface PersistedSnapshotStore extends CloseableSilently, BootstrapSnap
   ActorFuture<Long> getCompactionBound();
 
   /**
+   * Reserves the newest snapshot that is {@link SnapshotMetadata#isStrictlyBefore(long) strictly
+   * before} the given position. Selecting and reserving happen in one step, so the selected
+   * snapshot cannot be deleted in between.
+   *
+   * <p>To back up a checkpoint, call this while the checkpoint is processed: no snapshot covering
+   * the checkpoint can have been committed yet, so the snapshot usable for the backup still exists.
+   *
+   * @param position the log position, e.g. of a checkpoint
+   * @return future completed with the reserved snapshot, or empty if no snapshot is strictly before
+   *     the position
+   */
+  ActorFuture<Optional<ReservedSnapshot>> reserveSnapshotBefore(long position);
+
+  /**
    * Purges all ongoing pending/transient/volatile snapshots.
    *
    * @return future which will be completed when all pending snapshots are deleted

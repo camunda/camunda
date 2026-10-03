@@ -21,6 +21,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
+import io.camunda.zeebe.snapshots.ReservedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import java.nio.file.Path;
@@ -73,6 +74,11 @@ public class TestSnapshotStore implements ReceivableSnapshotStore {
             .map(Entry::getValue)
             .map(InMemorySnapshot::getCompactionBound)
             .orElse(0L));
+  }
+
+  @Override
+  public ActorFuture<Optional<ReservedSnapshot>> reserveSnapshotBefore(final long position) {
+    return CompletableActorFuture.completed(Optional.empty());
   }
 
   @Override

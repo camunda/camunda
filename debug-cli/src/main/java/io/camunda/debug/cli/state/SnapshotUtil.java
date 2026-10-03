@@ -95,7 +95,8 @@ public class SnapshotUtil {
             rootDirectory,
             new RocksDBSnapshotFileInfoProvider(),
             new CurrentThreadConcurrencyControl(),
-            new SnapshotMetrics(new SimpleMeterRegistry()));
+            new SnapshotMetrics(new SimpleMeterRegistry()),
+            false);
 
     final var transientSnapshot =
         snapshotStore

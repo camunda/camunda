@@ -21,6 +21,7 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
+import io.camunda.zeebe.snapshots.ReservedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.SnapshotReservation;
 import io.camunda.zeebe.util.Either;
@@ -53,6 +54,7 @@ final class InProgressBackupImpl implements InProgressBackup {
   private final PersistedSnapshotStore snapshotStore;
   private final BackupIdentifier backupId;
   private final BackupDescriptor backupDescriptor;
+  private final ActorFuture<Optional<ReservedSnapshot>> snapshotReservedAtCheckpoint;
   private final ConcurrencyControl concurrencyControl;
 
   private final Path segmentsDirectory;
@@ -72,12 +74,14 @@ final class InProgressBackupImpl implements InProgressBackup {
       final PersistedSnapshotStore snapshotStore,
       final BackupIdentifier backupId,
       final BackupDescriptor backupDescriptor,
+      final ActorFuture<Optional<ReservedSnapshot>> snapshotReservedAtCheckpoint,
       final ConcurrencyControl concurrencyControl,
       final Path segmentsDirectory,
       final JournalInfoProvider journalInfoProvider) {
     this.snapshotStore = snapshotStore;
     this.backupId = backupId;
     this.backupDescriptor = backupDescriptor;
+    this.snapshotReservedAtCheckpoint = snapshotReservedAtCheckpoint;
     this.concurrencyControl = concurrencyControl;
     this.segmentsDirectory = segmentsDirectory;
     this.journalInfoProvider = journalInfoProvider;
@@ -142,9 +146,30 @@ final class InProgressBackupImpl implements InProgressBackup {
 
   @Override
   public ActorFuture<Void> reserveSnapshot() {
-    final ActorFuture<Void> future = concurrencyControl.createFuture();
-    findAndReserveSnapshot(future, MAX_RESERVATION_ATTEMPTS);
-    return future;
+    return snapshotReservedAtCheckpoint.andThen(
+        (reserved, error) -> {
+          if (error == null && reserved.isPresent()) {
+            reservedSnapshot = reserved.get().snapshot();
+            LOG.atTrace()
+                .addKeyValue("backup", backupId)
+                .addKeyValue("snapshot", reservedSnapshot.getId())
+                .setMessage("Using snapshot reserved when processing the checkpoint")
+                .log();
+            return concurrencyControl.createCompletedFuture();
+          }
+          // Either no snapshot was before the checkpoint when it was processed, in which case a
+          // snapshot taken before the checkpoint may have been committed since, or reserving
+          // failed; either way, look for a snapshot now.
+          LOG.atDebug()
+              .addKeyValue("backup", backupId)
+              .setCause(error)
+              .setMessage("No snapshot reserved when processing the checkpoint, searching now")
+              .log();
+          final ActorFuture<Void> future = concurrencyControl.createFuture();
+          findAndReserveSnapshot(future, MAX_RESERVATION_ATTEMPTS);
+          return future;
+        },
+        concurrencyControl);
   }
 
   private void findAndReserveSnapshot(final ActorFuture<Void> future, final int remainingAttempts) {
@@ -318,6 +343,8 @@ final class InProgressBackupImpl implements InProgressBackup {
 
   @Override
   public void close() {
+    snapshotReservedAtCheckpoint.onSuccess(
+        reserved -> reserved.ifPresent(r -> r.reservation().release()), Runnable::run);
     final var reservation = snapshotReservation;
     if (reservation != null) {
       reservation.release();

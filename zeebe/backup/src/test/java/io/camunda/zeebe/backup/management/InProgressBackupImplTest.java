@@ -13,6 +13,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.backup.api.Backup;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
+import io.camunda.zeebe.snapshots.ReservedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.SnapshotMetadata;
 import io.camunda.zeebe.snapshots.SnapshotReservation;
@@ -34,6 +36,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -60,19 +63,56 @@ class InProgressBackupImplTest {
   @BeforeEach
   void setup() throws IOException {
     metadataProvider = mock();
-    final var checkpointDescriptor =
-        new BackupDescriptorImpl(10L, 1, "8.1.0", Instant.now(), CheckpointType.MANUAL_BACKUP);
-
-    inProgressBackup =
-        new InProgressBackupImpl(
-            snapshotStore,
-            new BackupIdentifierImpl(1, 1, 1),
-            checkpointDescriptor,
-            concurrencyControl,
-            segmentsDirectory,
-            metadataProvider);
+    // no snapshot reserved when processing the checkpoint, so the backup searches for one
+    inProgressBackup = createInProgressBackup(Optional.empty());
 
     createSegmentFiles();
+  }
+
+  private InProgressBackupImpl createInProgressBackup(
+      final Optional<ReservedSnapshot> snapshotReservedAtCheckpoint) {
+    final var checkpointDescriptor =
+        new BackupDescriptorImpl(10L, 1, "8.1.0", Instant.now(), CheckpointType.MANUAL_BACKUP);
+    return new InProgressBackupImpl(
+        snapshotStore,
+        new BackupIdentifierImpl(1, 1, 1),
+        checkpointDescriptor,
+        TestActorFuture.completedFuture(snapshotReservedAtCheckpoint),
+        concurrencyControl,
+        segmentsDirectory,
+        metadataProvider);
+  }
+
+  @Test
+  void shouldUseSnapshotReservedWhenProcessingCheckpoint(
+      @Mock final PersistedSnapshot snapshot, @Mock final SnapshotReservation snapshotReservation) {
+    // given
+    final var backup =
+        createInProgressBackup(Optional.of(new ReservedSnapshot(snapshot, snapshotReservation)));
+
+    // when
+    final var future = backup.reserveSnapshot();
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofMillis(100));
+    verifyNoInteractions(snapshotStore);
+    backup.close();
+    verify(snapshotReservation).release();
+  }
+
+  @Test
+  void shouldReleaseSnapshotReservedWhenProcessingCheckpointIfClosedBeforeReservingSnapshot(
+      @Mock final PersistedSnapshot snapshot, @Mock final SnapshotReservation snapshotReservation) {
+    // given
+    // e.g. the backup already exists in the store, so reserveSnapshot() is never called
+    final var backup =
+        createInProgressBackup(Optional.of(new ReservedSnapshot(snapshot, snapshotReservation)));
+
+    // when
+    backup.close();
+
+    // then
+    verify(snapshotReservation).release();
   }
 
   @Test

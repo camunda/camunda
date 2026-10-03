@@ -12,16 +12,20 @@ import static io.camunda.zeebe.scheduler.AsyncClosable.closeHelper;
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotTransferServiceClient;
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
 import io.camunda.zeebe.broker.partitioning.startup.SnapshotInitializationUtil;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
+import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotFileInfoProvider;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransferImpl;
+import org.jspecify.annotations.Nullable;
 
 public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
 
   private final String name;
+  private @Nullable DiskSpaceUsageListener diskSpaceUsageListener;
 
   public SnapshotStoreStep(final int partitionId) {
     name = String.format("Partition %d - Snapshot Store", partitionId);
@@ -40,13 +44,19 @@ public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
             context.partitionMetadata().id(),
             context.partitionDirectory(),
             new RocksDBSnapshotFileInfoProvider(),
-            context.partitionMeterRegistry());
+            context.partitionMeterRegistry(),
+            isBackupStoreConfigured(context));
 
     var result =
         context
             .schedulingService()
             .submitActor(snapshotStore, SchedulingHints.ioBound())
-            .thenApply(v -> context.snapshotStore(snapshotStore), context.concurrencyControl());
+            .thenApply(
+                v -> {
+                  registerDiskSpaceUsageListener(context, snapshotStore);
+                  return context.snapshotStore(snapshotStore);
+                },
+                context.concurrencyControl());
 
     if (context.isInitializeFromSnapshot()) {
       result =
@@ -87,8 +97,41 @@ public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
 
   @Override
   public ActorFuture<PartitionStartupContext> shutdown(final PartitionStartupContext context) {
+    if (diskSpaceUsageListener != null) {
+      context.diskSpaceUsageMonitor().removeDiskUsageListener(diskSpaceUsageListener);
+      diskSpaceUsageListener = null;
+    }
     return closeHelper(context.snapshotTransfer())
         .andThen(ignore -> closeHelper(context.snapshotStore()), context.concurrencyControl())
         .thenApply(ignored -> context.snapshotStore(null), context.concurrencyControl());
+  }
+
+  /**
+   * The snapshot retained for the next checkpoint when backups are configured holds back log
+   * compaction, so it must not prevent the broker from freeing disk space when it runs out of it.
+   */
+  private void registerDiskSpaceUsageListener(
+      final PartitionStartupContext context, final FileBasedSnapshotStore snapshotStore) {
+    if (!isBackupStoreConfigured(context)) {
+      return;
+    }
+    final var listener =
+        new DiskSpaceUsageListener() {
+          @Override
+          public void onDiskSpaceNotAvailable() {
+            snapshotStore.onDiskSpaceNotAvailable();
+          }
+
+          @Override
+          public void onDiskSpaceAvailable() {
+            snapshotStore.onDiskSpaceAvailable();
+          }
+        };
+    context.diskSpaceUsageMonitor().addDiskUsageListener(listener);
+    diskSpaceUsageListener = listener;
+  }
+
+  private static boolean isBackupStoreConfigured(final PartitionStartupContext context) {
+    return context.brokerConfig().getData().getBackup().getStore() != BackupStoreType.NONE;
   }
 }

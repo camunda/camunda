@@ -26,10 +26,14 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
+import io.camunda.zeebe.snapshots.ReservedSnapshot;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.SequencedCollection;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +47,8 @@ public final class BackupService extends Actor implements BackupManager {
   private final PersistedSnapshotStore snapshotStore;
   private final Path segmentsDirectory;
   private final BackupManagerMetrics metrics;
+  private final Set<ActorFuture<Optional<ReservedSnapshot>>> snapshotReservations =
+      ConcurrentHashMap.newKeySet();
 
   public BackupService(
       final BrokerMemberId brokerMemberId,
@@ -74,14 +80,31 @@ public final class BackupService extends Actor implements BackupManager {
 
   @Override
   protected void onActorClosing() {
+    // Backups whose start was discarded when closing never get an InProgressBackup, so their
+    // reservations would otherwise keep snapshots on disk until the next restart. Started backups
+    // release theirs when the internal backup manager closes them.
+    snapshotReservations.forEach(BackupService::releaseSnapshotReservation);
+    snapshotReservations.clear();
     internalBackupManager.close();
     metrics.close();
+  }
+
+  private static void releaseSnapshotReservation(
+      final ActorFuture<Optional<ReservedSnapshot>> snapshotReservation) {
+    snapshotReservation.onSuccess(
+        reserved -> reserved.ifPresent(r -> r.reservation().release()), Runnable::run);
   }
 
   @Override
   public ActorFuture<Void> takeBackup(
       final long checkpointId, final BackupDescriptor backupDescriptor) {
     final ActorFuture<Void> result = createFuture();
+    // Reserved before switching to the backup actor: this runs while the checkpoint is being
+    // processed, so no snapshot covering the checkpoint can have been committed yet, and the
+    // snapshot usable for this backup still exists.
+    final var snapshotReservation =
+        snapshotStore.reserveSnapshotBefore(backupDescriptor.checkpointPosition());
+    snapshotReservations.add(snapshotReservation);
     actor.run(
         () -> {
           final InProgressBackupImpl inProgressBackup =
@@ -89,12 +112,14 @@ public final class BackupService extends Actor implements BackupManager {
                   snapshotStore,
                   getBackupId(checkpointId),
                   backupDescriptor,
+                  snapshotReservation,
                   actor,
                   segmentsDirectory,
                   journalInfoProvider);
 
           final var opMetrics = metrics.startTakingBackup();
           final var backupResult = internalBackupManager.takeBackup(inProgressBackup, actor);
+          snapshotReservations.remove(snapshotReservation);
           backupResult.onComplete(opMetrics::complete);
 
           backupResult.onComplete(

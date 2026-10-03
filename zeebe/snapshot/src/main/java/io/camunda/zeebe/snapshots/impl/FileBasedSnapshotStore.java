@@ -17,6 +17,7 @@ import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
+import io.camunda.zeebe.snapshots.ReservedSnapshot;
 import io.camunda.zeebe.snapshots.RestorableSnapshotStore;
 import io.camunda.zeebe.snapshots.SnapshotException;
 import io.camunda.zeebe.snapshots.SnapshotFileInfoProvider;
@@ -44,10 +45,30 @@ public final class FileBasedSnapshotStore extends Actor
       final Path root,
       final SnapshotFileInfoProvider fileInfoProvider,
       final MeterRegistry meterRegistry) {
+    this(brokerId, partitionId, root, fileInfoProvider, meterRegistry, false);
+  }
+
+  /**
+   * @param retainSnapshotForNextCheckpoint whether committing a snapshot keeps the newest older
+   *     snapshot that a backup of the next checkpoint could still need; only useful when backups
+   *     are taken, as the retained snapshot also holds back log compaction
+   */
+  public FileBasedSnapshotStore(
+      final int brokerId,
+      final PartitionId partitionId,
+      final Path root,
+      final SnapshotFileInfoProvider fileInfoProvider,
+      final MeterRegistry meterRegistry,
+      final boolean retainSnapshotForNextCheckpoint) {
     super("SnapshotStore", partitionId);
     snapshotStore =
         new FileBasedSnapshotStoreImpl(
-            brokerId, root, fileInfoProvider, actor, new SnapshotMetrics(meterRegistry));
+            brokerId,
+            root,
+            fileInfoProvider,
+            actor,
+            new SnapshotMetrics(meterRegistry),
+            retainSnapshotForNextCheckpoint);
   }
 
   /**
@@ -96,6 +117,24 @@ public final class FileBasedSnapshotStore extends Actor
   @Override
   public ActorFuture<Long> getCompactionBound() {
     return snapshotStore.getCompactionBound();
+  }
+
+  /**
+   * Stops retaining a snapshot for the next checkpoint and deletes a snapshot retained for it, so
+   * that log compaction can free disk space. Snapshots reserved by in-flight backups are kept.
+   */
+  public ActorFuture<Void> onDiskSpaceNotAvailable() {
+    return snapshotStore.onDiskSpaceNotAvailable();
+  }
+
+  /** Resumes retaining a snapshot for the next checkpoint, if configured. */
+  public ActorFuture<Void> onDiskSpaceAvailable() {
+    return snapshotStore.onDiskSpaceAvailable();
+  }
+
+  @Override
+  public ActorFuture<Optional<ReservedSnapshot>> reserveSnapshotBefore(final long position) {
+    return snapshotStore.reserveLatestSnapshotBefore(position);
   }
 
   @Override

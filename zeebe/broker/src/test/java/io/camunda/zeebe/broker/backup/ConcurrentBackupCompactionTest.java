@@ -10,8 +10,8 @@ package io.camunda.zeebe.broker.backup;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.MemberId;
@@ -112,8 +112,9 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
                 .build());
     logCompactor = new LogCompactor(threadContext, raftLog, 3, raftMetrics);
 
-    // raftLog just calls journal in the real implementation
-    when(raftLog.deleteUntil(anyLong()))
+    // raftLog just calls journal in the real implementation; not every test compacts the log
+    lenient()
+        .when(raftLog.deleteUntil(anyLong()))
         .thenAnswer(
             (Answer<Boolean>)
                 invocation -> {
@@ -206,12 +207,83 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
         .until(backupResultFut::isDone);
   }
 
+  @Test
+  void shouldBackUpSnapshotBeforeCheckpointWhenNewerSnapshotIsCommittedDuringBackup() {
+    // given
+    appendRecord(1L, "1");
+    appendRecord(2L, "2");
+    final var snapshotBeforeCheckpoint = takeSnapshot(2L, 1L, 2L);
+    appendRecord(3L, "3");
+    final var checkpointId = 3L;
+    final var descriptor =
+        new BackupDescriptorImpl(
+            snapshotBeforeCheckpoint.getId(),
+            3L,
+            1,
+            "1.0.0",
+            Instant.now(),
+            CheckpointType.MANUAL_BACKUP);
+    // the backup waits on the remote store before it looks for a snapshot
+    backupStore.blockList();
+    final var backupResult = backupService.takeBackup(checkpointId, descriptor);
+
+    // when
+    // a snapshot past the checkpoint is committed while the backup waits on the backup store
+    appendRecord(4L, "4");
+    takeSnapshot(4L, 4L, 4L);
+    backupStore.unblockList();
+
+    // then
+    Awaitility.await("backup is saved or failed")
+        .atMost(Duration.ofSeconds(5))
+        .until(() -> !backupStore.backupInProgress().isEmpty() || backupResult.isDone());
+    backupStore.completeSaveFutures();
+    assertThat(backupResult).succeedsWithin(Duration.ofSeconds(5));
+    final var backupId = backupStore.backupInProgress().iterator().next();
+    assertThat(backupStore.getBackup(backupId).orElseThrow().descriptor().snapshotId())
+        .hasValue(snapshotBeforeCheckpoint.getId());
+  }
+
+  @Test
+  void shouldNotRetainSnapshotForBackupInProgressWhenServiceIsClosed() {
+    // given
+    appendRecord(1L, "1");
+    appendRecord(2L, "2");
+    takeSnapshot(2L, 1L, 2L);
+    appendRecord(3L, "3");
+    final var descriptor =
+        new BackupDescriptorImpl(
+            "unused", 3L, 1, "1.0.0", Instant.now(), CheckpointType.MANUAL_BACKUP);
+    backupStore.blockList();
+    backupService.takeBackup(3L, descriptor);
+
+    // when
+    // the backup can never complete once the service is closed, e.g. after losing leadership
+    backupService.closeAsync().join();
+    appendRecord(4L, "4");
+    final var newSnapshot = takeSnapshot(4L, 4L, 4L);
+
+    // then
+    Awaitility.await("snapshot before the checkpoint is no longer retained")
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () ->
+                assertThat(snapshotStore.getAvailableSnapshots().join())
+                    .containsExactly(newSnapshot));
+  }
+
   private void appendRecord(final long asqn, final String data) {
     journal.append(asqn, new DirectBufferWriter(new UnsafeBuffer(data.getBytes())));
   }
 
   private PersistedSnapshot takeSnapshot(final long index, final long lastWrittenPosition) {
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(index, 1, 1, 1, false).get();
+    return takeSnapshot(index, 1, lastWrittenPosition);
+  }
+
+  private PersistedSnapshot takeSnapshot(
+      final long index, final long processedPosition, final long lastWrittenPosition) {
+    final var transientSnapshot =
+        snapshotStore.newTransientSnapshot(index, 1, processedPosition, 1, false).get();
     transientSnapshot.take(
         path -> {
           try {

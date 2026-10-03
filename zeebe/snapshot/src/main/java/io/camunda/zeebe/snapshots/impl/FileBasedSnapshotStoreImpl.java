@@ -19,6 +19,7 @@ import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.PersistableSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
+import io.camunda.zeebe.snapshots.ReservedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException;
 import io.camunda.zeebe.snapshots.SnapshotException.CorruptedSnapshotException;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
@@ -36,6 +37,7 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.Map;
@@ -68,6 +70,10 @@ public final class FileBasedSnapshotStoreImpl {
   private final SnapshotMetrics metrics;
   private final SnapshotFileInfoProvider fileInfoProvider;
   private final ConcurrencyControl actor;
+  // only needed when backups are taken; otherwise it would needlessly hold back log compaction
+  private final boolean retainSnapshotForNextCheckpoint;
+  // the retained snapshot holds back log compaction, which is what frees disk space
+  private boolean diskSpaceAvailable = true;
 
   // Use AtomicReference so that getting latest snapshot doesn't have to go through the actor
   private final AtomicReference<@Nullable FileBasedSnapshot> currentSnapshot =
@@ -83,8 +89,10 @@ public final class FileBasedSnapshotStoreImpl {
       final Path root,
       final SnapshotFileInfoProvider fileInfoProvider,
       final ConcurrencyControl actor,
-      final SnapshotMetrics metrics) {
+      final SnapshotMetrics metrics,
+      final boolean retainSnapshotForNextCheckpoint) {
     this.brokerId = brokerId;
+    this.retainSnapshotForNextCheckpoint = retainSnapshotForNextCheckpoint;
     this.actor = Objects.requireNonNull(actor);
     this.metrics = Objects.requireNonNull(metrics);
     this.fileInfoProvider = Objects.requireNonNull(fileInfoProvider);
@@ -266,6 +274,13 @@ public final class FileBasedSnapshotStoreImpl {
                 .map(PersistedSnapshot::getCompactionBound)
                 .min(Long::compareTo)
                 .orElse(0L));
+  }
+
+  public ActorFuture<Optional<ReservedSnapshot>> reserveLatestSnapshotBefore(final long position) {
+    return actor.call(
+        () ->
+            newestSnapshotStrictlyBefore(position)
+                .map(snapshot -> new ReservedSnapshot(snapshot, snapshot.reserveOnActor())));
   }
 
   public ActorFuture<Void> abortPendingSnapshots() {
@@ -541,21 +556,82 @@ public final class FileBasedSnapshotStoreImpl {
     }
   }
 
+  public ActorFuture<Void> onDiskSpaceNotAvailable() {
+    return actor.call(
+        () -> {
+          diskSpaceAvailable = false;
+          final var latestSnapshot = currentSnapshot.get();
+          if (latestSnapshot != null && deleteSnapshotsOlderThan(latestSnapshot) > 0) {
+            // No new snapshot may be committed while the disk is full, e.g. when exporters are
+            // up to date, so trigger compaction of the log the deleted snapshots held back now.
+            listeners.forEach(listener -> listener.onNewSnapshot(latestSnapshot));
+          }
+          return null;
+        });
+  }
+
+  public ActorFuture<Void> onDiskSpaceAvailable() {
+    return actor.call(
+        () -> {
+          diskSpaceAvailable = true;
+          return null;
+        });
+  }
+
   private void deleteOlderSnapshots(final FileBasedSnapshot newPersistedSnapshot) {
+    deleteSnapshotsOlderThan(newPersistedSnapshot);
+    abortPendingSnapshots(newPersistedSnapshot.getSnapshotId());
+  }
+
+  private int deleteSnapshotsOlderThan(final FileBasedSnapshot newPersistedSnapshot) {
     LOGGER.trace(
         "Purging snapshots older than {}",
         newPersistedSnapshot.getSnapshotId().getSnapshotIdAsString());
+    final var retainedForNextCheckpoint =
+        snapshotRetainedForNextCheckpoint(newPersistedSnapshot).orElse(null);
     final var snapshotsToDelete =
         availableSnapshots.stream()
             .filter(s -> !s.getId().equals(newPersistedSnapshot.getId()))
             .filter(s -> !s.isReserved())
+            .filter(s -> !Objects.equals(s, retainedForNextCheckpoint))
             .toList();
     snapshotsToDelete.forEach(
         previousSnapshot -> {
           LOGGER.debug("Deleting previous snapshot {}", previousSnapshot.getId());
           previousSnapshot.delete();
         });
-    abortPendingSnapshots(newPersistedSnapshot.getSnapshotId());
+    return snapshotsToDelete.size();
+  }
+
+  /**
+   * Returns the snapshot that a backup of the next checkpoint may need, so that a checkpoint never
+   * ends up without a snapshot strictly before it just because a newer snapshot was committed.
+   *
+   * <p>Checkpoints up to the new snapshot's processed position were processed before this snapshot
+   * was taken, so their backups have already reserved a snapshot. Any later checkpoint is after the
+   * new snapshot's processed position, and the newest snapshot strictly before the next position is
+   * also strictly before all of those. The new snapshot itself may not be, when its follow-up
+   * events or exported records are after the next checkpoint's position.
+   */
+  private Optional<FileBasedSnapshot> snapshotRetainedForNextCheckpoint(
+      final FileBasedSnapshot newPersistedSnapshot) {
+    if (!retainSnapshotForNextCheckpoint || !diskSpaceAvailable) {
+      return Optional.empty();
+    }
+    final var nextCheckpointPosition = newPersistedSnapshot.getMetadata().processedPosition() + 1;
+    final var retained =
+        newestSnapshotStrictlyBefore(nextCheckpointPosition)
+            .filter(snapshot -> !snapshot.equals(newPersistedSnapshot));
+    retained.ifPresent(
+        snapshot ->
+            LOGGER.debug("Retaining snapshot {} for the next checkpoint", snapshot.getId()));
+    return retained;
+  }
+
+  private Optional<FileBasedSnapshot> newestSnapshotStrictlyBefore(final long position) {
+    return availableSnapshots.stream()
+        .filter(s -> s.getMetadata().isStrictlyBefore(position))
+        .max(Comparator.comparing(FileBasedSnapshot::getSnapshotId));
   }
 
   private void rollbackPartialSnapshot(final Path destination) {

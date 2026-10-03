@@ -42,6 +42,17 @@ public interface SnapshotMetadata {
   long lastFollowupEventPosition();
 
   /**
+   * Returns true if every position this snapshot depends on is strictly before the given position.
+   * Only such a snapshot can be combined with the log up to that position, e.g. to back up a
+   * checkpoint written at that position.
+   */
+  default boolean isStrictlyBefore(final long position) {
+    return processedPosition() < position
+        && lastFollowupEventPosition() < position
+        && maxExportedPosition() < position;
+  }
+
+  /**
    * @return true if the snapshot is a bootstrap snapshot, i.e. a snapshot used to bootstrap a new
    *     partition with the "global" data from another partition
    */
