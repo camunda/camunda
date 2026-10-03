@@ -76,5 +76,5 @@
     "vite-plugin-svgr": "5.2.0"
   },
   "stableVersion": "8.10.0-SNAPSHOT",
-  "packageManager": "npm@12.1.0"
+  "packageManager": "npm@12.2.0"
 }
