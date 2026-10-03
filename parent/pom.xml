@@ -49,7 +49,7 @@
     <version.camunda-security-library>1.1.0</version.camunda-security-library>
     <version.checkstyle>14.3.0</version.checkstyle>
     <version.commons-beanutils>1.11.0</version.commons-beanutils>
-    <version.commons-lang>3.20.0</version.commons-lang>
+    <version.commons-lang>3.21.0</version.commons-lang>
     <version.commons-logging>1.4.0</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.22.1</version.commons-codec>
