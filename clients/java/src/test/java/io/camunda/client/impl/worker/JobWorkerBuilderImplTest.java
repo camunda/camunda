@@ -55,6 +55,8 @@ import org.awaitility.core.ThrowingRunnable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -139,9 +141,30 @@ class JobWorkerBuilderImplTest {
         .hasMessageContaining("timeout must be not zero");
   }
 
+  @ParameterizedTest(name = "maxJobsActive={0} reserves {1} poll slots")
+  @CsvSource({
+    // a worker reserves nothing until it has four slots to spare a whole one (floor of 0.25)
+    "1, 0",
+    "2, 0",
+    "3, 0",
+    "4, 1",
+    "5, 1",
+    "7, 1",
+    "8, 2",
+    "30, 7",
+    "100, 25"
+  })
+  void shouldReserveFlooredFractionOfCapacityForThePollPath(
+      final int maxJobsActive, final int expectedReserved) {
+    // given / when - then the streaming reservation is the floor of the fixed fraction, so a wrong
+    // boundary (for example reserving one slot at maxJobsActive below four, or none at four) would
+    // fail here instead of silently disabling or over-reserving the poll lane
+    assertThat(JobWorkerBuilderImpl.reservedPollCapacity(maxJobsActive))
+        .isEqualTo(expectedReserved);
+  }
+
   @Test
-  void shouldNotUseStreamingIfNotOptedIn() {
-    // given
+  void shouldNotUseStreamingIfNotOptedIn() { // given
     final JobWorkerBuilderStep3 builder =
         jobWorkerBuilder
             .jobType("type")
