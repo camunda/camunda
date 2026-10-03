@@ -10,7 +10,6 @@ import {test} from 'fixtures';
 import {expect} from '@playwright/test';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
-import {waitForAssertion} from 'utils/waitForAssertion';
 import {
   activateJobsByType,
   activateSingleJob,
@@ -18,8 +17,12 @@ import {
   deployCallActivityPair,
   createInstanceOnceDeployed,
   deployServiceTaskProcess,
+  deployUserTaskProcess,
   startServiceTaskInstance,
   resumeAndCompleteServiceTask,
+  batchOperationKeyForItem,
+  expectVariableValue,
+  updateJobRetries,
   expectProcessState,
   expectSuspendedDate,
   failJob,
@@ -30,14 +33,8 @@ import {
   suspendProcessInstance,
 } from '@requestHelpers';
 import {cancelProcessInstance} from 'utils/zeebeClient';
-import {assertStatusCode, buildUrl, jsonHeaders} from 'utils/http';
+import {assertStatusCode} from 'utils/http';
 import {uniquePrefixedId, extendedAssertionOptions} from 'utils/constants';
-
-/**
- * The UI half of suspend/resume. State changes the UI only has to reflect are
- * driven over REST; the UI controls are exercised only where the control itself
- * is what is under test.
- */
 
 const UI_REFRESH_TIMEOUT = 15_000;
 const instancesToCancel: string[] = [];
@@ -46,6 +43,15 @@ async function startInstance(prefix: string) {
   const instance = await startServiceTaskInstance(prefix);
   instancesToCancel.push(instance.processInstanceKey);
   return instance;
+}
+
+/** A user task is the one kind of work an operator can finish without a worker. */
+async function startUserTaskInstance(prefix: string) {
+  const processDefinitionId = uniquePrefixedId(prefix);
+  await deployUserTaskProcess(processDefinitionId);
+  const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
+  instancesToCancel.push(instance.processInstanceKey);
+  return {processDefinitionId, processInstanceKey: instance.processInstanceKey};
 }
 
 test.describe('Operate Process Instance Suspend and Resume', () => {
@@ -65,11 +71,14 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     instancesToCancel.length = 0;
   });
 
-  test('Suspending and resuming from the instance header updates the state', async ({
+  test('An instance suspended and resumed from its header can be completed in the UI', async ({
     request,
+    page,
     operateProcessInstancePage,
+    taskPanelPage,
+    taskDetailsPage,
   }) => {
-    const subject = await startInstance('sr-ui-header');
+    const subject = await startUserTaskInstance('sr-ui-header');
     const control = await startInstance('sr-ui-header-control');
     await operateProcessInstancePage.gotoProcessInstancePage({
       id: subject.processInstanceKey,
@@ -118,11 +127,19 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       false,
       extendedAssertionOptions,
     );
-    await resumeAndCompleteServiceTask(
-      request,
-      subject.jobType,
-      subject.processInstanceKey,
-    );
+    // Finished where an operator would finish it: the resume is only proven by
+    // work that runs after it, and completing the task needs a live instance.
+    await navigateToAppHome(page, 'tasklist');
+    await taskPanelPage.openTask(subject.processDefinitionId, {
+      timeout: 60_000,
+    });
+    await taskDetailsPage.clickAssignToMeButton();
+    await taskDetailsPage.clickCompleteTaskButton();
+
+    await operateProcessInstancePage.gotoProcessInstancePage({
+      id: subject.processInstanceKey,
+    });
+    await operateProcessInstancePage.completedIconAssertion();
   });
 
   test('A suspended instance offers Resume and Cancel but not Suspend', async ({
@@ -135,26 +152,25 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     });
     await expect(operateProcessInstancePage.instanceHeader).toBeVisible();
 
-    const activeActions =
-      await operateProcessInstancePage.instanceHeaderActionNames();
-    expect(
-      activeActions.some((action) =>
-        /^(suspend|suspend-operation)$/i.test(action.trim()),
-      ),
-    ).toBe(true);
+    expect(await operateProcessInstancePage.instanceHeaderActions()).toContain(
+      'suspend',
+    );
 
     await suspendAndExpectSuspended(request, processInstanceKey);
     await operateProcessInstancePage.reloadUntilSuspended(UI_REFRESH_TIMEOUT);
 
     const suspendedActions =
-      await operateProcessInstancePage.instanceHeaderActionNames();
-    const offers = (pattern: RegExp) =>
-      suspendedActions.some((action) => pattern.test(action.trim()));
-    expect(offers(/^(resume|resume-operation)$/i)).toBe(true);
-    expect(offers(/^(cancel|cancel-operation)$/i)).toBe(true);
-    // Per action: a joined substring match would accept a menu still offering Suspend.
-    expect(offers(/^(suspend|suspend-operation)$/i)).toBe(false);
+      await operateProcessInstancePage.instanceHeaderActions();
+    expect(suspendedActions).toContain('resume');
+    expect(suspendedActions).toContain('cancel');
+    expect(suspendedActions).not.toContain('suspend');
     await resumeAndCompleteServiceTask(request, jobType, processInstanceKey);
+    // Re-read the instance from Operate: the detail view does not refresh
+    // itself (#52021), so the API completion is only visible on a fresh load.
+    await operateProcessInstancePage.gotoProcessInstancePage({
+      id: processInstanceKey,
+    });
+    await operateProcessInstancePage.completedIconAssertion();
   });
 
   test('The Suspended filter returns the suspended instance', async ({
@@ -162,6 +178,7 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     page,
     operateHomePage,
     operateFiltersPanelPage,
+    operateProcessesPage,
   }) => {
     const suspended = await startInstance('sr-ui-filter');
     await suspendAndExpectSuspended(request, suspended.processInstanceKey);
@@ -169,16 +186,20 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     await navigateToAppHome(page, 'operate');
     await expect(operateHomePage.operateBanner).toBeVisible();
     await operateHomePage.clickProcessesTab();
-    await operateFiltersPanelPage.clickSuspendedInstancesCheckbox();
     await operateFiltersPanelPage.displayOptionalFilter(
       'Process Instance Key(s)',
     );
     await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
       suspended.processInstanceKey,
     );
+    // After the keys, not before: writing them rewrites the search params and
+    // drops the filter.
+    await operateFiltersPanelPage.applySuspendedFilter();
 
     await expect(
-      page.getByText(suspended.processInstanceKey, {exact: false}).first(),
+      operateProcessesPage.processInstanceLinkByKey(
+        suspended.processInstanceKey,
+      ),
     ).toBeVisible({timeout: UI_REFRESH_TIMEOUT});
     await resumeAndCompleteServiceTask(
       request,
@@ -210,25 +231,8 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     await operateProcessInstancePage.gotoProcessInstancePage({
       id: instance.processInstanceKey,
     });
-    // The tab appears only once the incident reaches Operate's view, and the
-    // table only once the tab is open — so wait for the tab, don't probe it.
-    await waitForAssertion({
-      assertion: async () => {
-        await expect(operateProcessInstancePage.incidentsTab).toBeVisible({
-          timeout: UI_REFRESH_TIMEOUT,
-        });
-        await operateProcessInstancePage.incidentsTab.click();
-        await expect(operateProcessInstancePage.incidentsTable).toBeVisible({
-          timeout: UI_REFRESH_TIMEOUT,
-        });
-      },
-      onFailure: async () => {
-        await page.reload();
-      },
-    });
-    const retryButton = operateProcessInstancePage.incidentsTableRows
-      .getByRole('button', {name: 'Retry Incident'})
-      .first();
+    await operateProcessInstancePage.openIncidentsTab();
+    const retryButton = operateProcessInstancePage.firstIncidentRetryButton;
     // Control: without it, a globally broken button would pass as gating.
     await expect(retryButton).toBeEnabled({timeout: UI_REFRESH_TIMEOUT});
 
@@ -238,16 +242,7 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
 
     // The mirror of the assertion above; the job needs its retries back first.
     await resumeProcessInstance(request, instance.processInstanceKey);
-    await assertStatusCode(
-      await request.patch(
-        buildUrl('/jobs/{jobKey}', {jobKey: String(jobKey)}),
-        {
-          headers: jsonHeaders(),
-          data: {changeset: {retries: 2}},
-        },
-      ),
-      204,
-    );
+    await updateJobRetries(request, String(jobKey), 2);
     await page.reload();
     await expect(retryButton).toBeEnabled({timeout: UI_REFRESH_TIMEOUT});
     await retryButton.click();
@@ -257,6 +252,12 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       jobType,
       instance.processInstanceKey,
     );
+    // Re-read the instance from Operate: the detail view does not refresh
+    // itself (#52021), so the API completion is only visible on a fresh load.
+    await operateProcessInstancePage.gotoProcessInstancePage({
+      id: instance.processInstanceKey,
+    });
+    await operateProcessInstancePage.completedIconAssertion();
   });
 
   test('An existing variable can be edited on a suspended instance, and the edit is applied after the resume', async ({
@@ -294,21 +295,12 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     });
 
     // Stored while still suspended, before anything resumes.
-    await expect(async () => {
-      const res = await request.post(buildUrl('/variables/search'), {
-        headers: jsonHeaders(),
-        data: {
-          filter: {
-            processInstanceKey: instance.processInstanceKey,
-            name: 'approved',
-          },
-        },
-      });
-      await assertStatusCode(res, 200);
-      const items = (await res.json()).items ?? [];
-      expect(items).toHaveLength(1);
-      expect(items[0].value).toBe('"yes"');
-    }).toPass(extendedAssertionOptions);
+    await expectVariableValue(
+      request,
+      {processInstanceKey: instance.processInstanceKey, name: 'approved'},
+      '"yes"',
+      extendedAssertionOptions,
+    );
     await expectProcessState(
       request,
       instance.processInstanceKey,
@@ -338,6 +330,12 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       'COMPLETED',
       extendedAssertionOptions,
     );
+    // Re-read the instance from Operate: the detail view does not refresh
+    // itself (#52021), so the API completion is only visible on a fresh load.
+    await operateProcessInstancePage.gotoProcessInstancePage({
+      id: instance.processInstanceKey,
+    });
+    await operateProcessInstancePage.completedIconAssertion();
   });
 
   test('The operations log records the suspend and the resume', async ({
@@ -373,21 +371,18 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     await expect(operateProcessInstancePage.operationsLogTable).toBeVisible({
       timeout: UI_REFRESH_TIMEOUT,
     });
-    await expect(
-      operateProcessInstancePage.operationsLogTable
-        .getByText('SUSPEND', {
-          exact: false,
-        })
-        .first(),
-    ).toBeVisible({timeout: UI_REFRESH_TIMEOUT});
-    await expect(
-      operateProcessInstancePage.operationsLogTable
-        .getByText('RESUME', {
-          exact: false,
-        })
-        .first(),
-    ).toBeVisible({timeout: UI_REFRESH_TIMEOUT});
+    for (const operationType of ['SUSPEND', 'RESUME']) {
+      await expect(
+        operateProcessInstancePage.operationsLogEntry(operationType),
+      ).toBeVisible({timeout: UI_REFRESH_TIMEOUT});
+    }
     await resumeAndCompleteServiceTask(request, jobType, processInstanceKey);
+    // Re-read the instance from Operate: the detail view does not refresh
+    // itself (#52021), so the API completion is only visible on a fresh load.
+    await operateProcessInstancePage.gotoProcessInstancePage({
+      id: processInstanceKey,
+    });
+    await operateProcessInstancePage.completedIconAssertion();
   });
 
   test('Suspending and resuming from an instances-table row targets that row only', async ({
@@ -395,6 +390,7 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     page,
     operateHomePage,
     operateFiltersPanelPage,
+    operateProcessesPage,
   }) => {
     const subject = await startInstance('sr-ui-row');
     const control = await startInstance('sr-ui-row-control');
@@ -409,24 +405,9 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       subject.processInstanceKey,
     );
 
-    // Row actions carry no key in their accessible name — locate by test id.
-    const subjectRow = page
-      .getByTestId('data-list')
-      .getByRole('row')
-      .filter({hasText: subject.processInstanceKey});
-    const suspendRowAction = subjectRow.getByTestId('suspend-operation');
-    // The row appears only once the instance reaches secondary storage.
-    await waitForAssertion({
-      assertion: async () => {
-        await expect(suspendRowAction).toBeVisible({
-          timeout: UI_REFRESH_TIMEOUT,
-        });
-      },
-      onFailure: async () => {
-        await page.reload();
-      },
-    });
-    await suspendRowAction.click();
+    await operateProcessesPage.clickSuspendRowAction(
+      subject.processInstanceKey,
+    );
 
     await expectProcessState(
       request,
@@ -441,19 +422,9 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       extendedAssertionOptions,
     );
 
-    const resumeRowAction = subjectRow.getByTestId('resume-operation');
-    await waitForAssertion({
-      assertion: async () => {
-        await operateFiltersPanelPage.applySuspendedFilter();
-        await expect(resumeRowAction).toBeVisible({
-          timeout: UI_REFRESH_TIMEOUT,
-        });
-      },
-      onFailure: async () => {
-        await page.reload();
-      },
-    });
-    await resumeRowAction.click();
+    // Suspended must be on before the row offers Resume.
+    await operateFiltersPanelPage.applySuspendedFilter();
+    await operateProcessesPage.clickResumeRowAction(subject.processInstanceKey);
 
     await expectProcessState(
       request,
@@ -468,7 +439,7 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     );
   });
 
-  test('Cancelling suspended instances from the toolbar terminates them', async ({
+  test('Cancelling suspended instances from the toolbar terminates every selected one', async ({
     request,
     page,
     operateHomePage,
@@ -476,68 +447,156 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     operateProcessesPage,
     operateOperationsDetailsPage,
   }) => {
-    const subject = await startInstance('sr-ui-batch-cancel');
-    await suspendAndExpectSuspended(request, subject.processInstanceKey);
+    // Two subjects, because one cannot tell "cancelled the selection" from
+    // "cancelled something", and a control the filter leaves out, because a
+    // batch that over-reaches looks identical from the subjects alone.
+    const first = await startInstance('sr-ui-batch-cancel-a');
+    const second = await startInstance('sr-ui-batch-cancel-b');
+    const control = await startInstance('sr-ui-batch-cancel-control');
+    for (const {processInstanceKey} of [first, second, control]) {
+      await suspendAndExpectSuspended(request, processInstanceKey);
+    }
 
     await navigateToAppHome(page, 'operate');
     await expect(operateHomePage.operateBanner).toBeVisible();
     await operateHomePage.clickProcessesTab();
     // Active and Incidents stay on: that combination builds the filter that
     // loses suspended instances. Suspended alone would not reproduce it.
-    await operateFiltersPanelPage.applySuspendedFilter();
     await operateFiltersPanelPage.displayOptionalFilter(
       'Process Instance Key(s)',
     );
     await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
-      subject.processInstanceKey,
+      `${first.processInstanceKey} ${second.processInstanceKey}`,
     );
-    await expect(
-      page.getByText(subject.processInstanceKey, {exact: false}).first(),
-    ).toBeVisible({timeout: UI_REFRESH_TIMEOUT});
+    // After the keys, not before: writing them rewrites the search params and
+    // drops a Suspended filter applied beforehand.
+    await operateFiltersPanelPage.applySuspendedFilter();
+    await operateProcessesPage.expectInstancesTableToHoldExactly([
+      first.processInstanceKey,
+      second.processInstanceKey,
+    ]);
 
-    // Off the toolbar's own request: the newest batch could be another spec's.
-    const cancellationResponse = page.waitForResponse(
-      (response) =>
-        response.url().includes('/process-instances/cancellation') &&
-        response.request().method() === 'POST',
-    );
     await operateProcessesPage.cancelAllProcessInstancesInBatch();
-    const batchOperationKey = String(
-      (await (await cancellationResponse).json()).batchOperationKey,
-    );
 
+    for (const {processInstanceKey} of [first, second]) {
+      await expectProcessState(
+        request,
+        processInstanceKey,
+        'TERMINATED',
+        extendedAssertionOptions,
+      );
+    }
     await expectProcessState(
       request,
-      subject.processInstanceKey,
-      'TERMINATED',
+      control.processInstanceKey,
+      'SUSPENDED',
       extendedAssertionOptions,
+    );
+
+    // Found by the item it acted on rather than by watching for the request:
+    // the toolbar retries its interaction, so the first POST is not reliably
+    // the one that submitted the batch.
+    const batchOperationKey = await batchOperationKeyForItem(
+      request,
+      first.processInstanceKey,
     );
 
     // A batch that matched nothing also reports Completed.
     await operateOperationsDetailsPage.goto(batchOperationKey);
-    await waitForAssertion({
-      assertion: async () => {
-        await expect(operateOperationsDetailsPage.state).toHaveText(
-          /completed/i,
-          {timeout: UI_REFRESH_TIMEOUT},
-        );
-      },
-      // The detail view does not refresh itself (#52021).
-      onFailure: async () => {
-        await page.reload();
-      },
-    });
-    await expect(operateOperationsDetailsPage.summaryOfItems).toHaveText('1');
+    await operateOperationsDetailsPage.expectState(/completed/i);
+    // What the batch acted on, read from the items it lists rather than the
+    // summary tile, whose badges come and go while the batch runs.
+    for (const {processInstanceKey} of [first, second]) {
+      await expect(
+        operateOperationsDetailsPage.getProcessInstanceLink(processInstanceKey),
+      ).toBeVisible({timeout: UI_REFRESH_TIMEOUT});
+    }
     await expect(
       operateOperationsDetailsPage.getProcessInstanceLink(
-        subject.processInstanceKey,
+        control.processInstanceKey,
       ),
-    ).toBeVisible({timeout: UI_REFRESH_TIMEOUT});
+    ).toBeHidden();
+
+    // SUSPENDED alone passes on a control the batch reached and damaged.
+    await resumeAndCompleteServiceTask(
+      request,
+      control.jobType,
+      control.processInstanceKey,
+    );
+  });
+
+  test('Suspending and resuming selected instances from the toolbar leaves the rest alone', async ({
+    request,
+    page,
+    operateHomePage,
+    operateFiltersPanelPage,
+    operateProcessesPage,
+  }) => {
+    const first = await startInstance('sr-ui-batch-suspend-a');
+    const second = await startInstance('sr-ui-batch-suspend-b');
+    const control = await startInstance('sr-ui-batch-suspend-control');
+
+    await navigateToAppHome(page, 'operate');
+    await expect(operateHomePage.operateBanner).toBeVisible();
+    await operateHomePage.clickProcessesTab();
+    await operateFiltersPanelPage.displayOptionalFilter(
+      'Process Instance Key(s)',
+    );
+    await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
+      `${first.processInstanceKey} ${second.processInstanceKey}`,
+    );
+    await operateProcessesPage.expectInstancesTableToHoldExactly([
+      first.processInstanceKey,
+      second.processInstanceKey,
+    ]);
+
+    await operateProcessesPage.suspendAllProcessInstancesInBatch();
+
+    for (const {processInstanceKey} of [first, second]) {
+      await expectProcessState(
+        request,
+        processInstanceKey,
+        'SUSPENDED',
+        extendedAssertionOptions,
+      );
+    }
+    await expectProcessState(
+      request,
+      control.processInstanceKey,
+      'ACTIVE',
+      extendedAssertionOptions,
+    );
+
+    await operateFiltersPanelPage.applySuspendedFilter();
+    await operateProcessesPage.expectInstancesTableToHoldExactly([
+      first.processInstanceKey,
+      second.processInstanceKey,
+    ]);
+
+    await operateProcessesPage.resumeAllProcessInstancesInBatch();
+
+    for (const {processInstanceKey} of [first, second]) {
+      await expectProcessState(
+        request,
+        processInstanceKey,
+        'ACTIVE',
+        extendedAssertionOptions,
+      );
+      await expectSuspendedDate(
+        request,
+        processInstanceKey,
+        false,
+        extendedAssertionOptions,
+      );
+    }
+
+    for (const {jobType, processInstanceKey} of [first, second, control]) {
+      await resumeAndCompleteServiceTask(request, jobType, processInstanceKey);
+    }
   });
 
   test('A call activity child instance offers Suspend in its own header', async ({
     request,
-    page,
     operateProcessInstancePage,
   }) => {
     const prefix = uniquePrefixedId('sr-ui-child');
@@ -570,13 +629,20 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       'SUSPENDED',
       extendedAssertionOptions,
     );
-    // No cascade: the parent is untouched by its child's suspension.
+    // No cascade: the parent is untouched by its child's suspension, and an
+    // operator looking at the parent sees it still running.
     await expectProcessState(
       request,
       parent.processInstanceKey,
       'ACTIVE',
       extendedAssertionOptions,
     );
+    await operateProcessInstancePage.gotoProcessInstancePage({
+      id: parent.processInstanceKey,
+    });
+    await operateProcessInstancePage.activeIconAssertion();
+    await expect(operateProcessInstancePage.suspendedStateIcon).toBeHidden();
+    await operateProcessInstancePage.gotoProcessInstancePage({id: childKey});
 
     await operateProcessInstancePage.resumeInstance(childKey);
     await expectProcessState(
@@ -594,6 +660,11 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       'COMPLETED',
       extendedAssertionOptions,
     );
-    void page;
+    // Re-read the instance from Operate: the detail view does not refresh
+    // itself (#52021), so the API completion is only visible on a fresh load.
+    await operateProcessInstancePage.gotoProcessInstancePage({
+      id: parent.processInstanceKey,
+    });
+    await operateProcessInstancePage.completedIconAssertion();
   });
 });
