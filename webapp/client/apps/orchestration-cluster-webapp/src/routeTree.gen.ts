@@ -34,6 +34,7 @@ import { Route as ShadcnAuthOperatePreviewIndexRouteImport } from './routes/_sha
 import { Route as ShadcnAuthTasklistSplatRouteImport } from './routes/_shadcn/_auth/tasklist/$'
 import { Route as ShadcnAuthTasklistTasksRouteRouteImport } from './routes/_shadcn/_auth/tasklist/_tasks/route'
 import { Route as ShadcnAuthTasklistProcessesRouteRouteImport } from './routes/_shadcn/_auth/tasklist/processes/route'
+import { Route as ShadcnAuthTasklistThemeEditorRouteImport } from './routes/_shadcn/_auth/tasklist/theme-editor'
 import { Route as CarbonAuthOperateBatchOperationsIndexRouteImport } from './routes/_carbon/_auth/operate/batch-operations/index'
 import { Route as CarbonAuthOperateBatchOperationsBatchOperationKeyRouteImport } from './routes/_carbon/_auth/operate/batch-operations/$batchOperationKey'
 import { Route as CarbonAuthOperateDecisionsIndexRouteImport } from './routes/_carbon/_auth/operate/decisions/index'
@@ -191,6 +192,12 @@ const ShadcnAuthTasklistProcessesRouteRoute =
   ShadcnAuthTasklistProcessesRouteRouteImport.update({
     id: '/processes',
     path: '/processes',
+    getParentRoute: () => ShadcnAuthTasklistRouteRoute,
+  } as any)
+const ShadcnAuthTasklistThemeEditorRoute =
+  ShadcnAuthTasklistThemeEditorRouteImport.update({
+    id: '/theme-editor',
+    path: '/theme-editor',
     getParentRoute: () => ShadcnAuthTasklistRouteRoute,
   } as any)
 const CarbonAuthOperateBatchOperationsIndexRoute =
@@ -391,6 +398,7 @@ export interface FileRoutesByFullPath {
   '/operate/operations-log': typeof CarbonAuthOperateOperationsLogRoute
   '/admin/$': typeof ShadcnAuthAdminSplatRoute
   '/tasklist/$': typeof ShadcnAuthTasklistSplatRoute
+  '/tasklist/theme-editor': typeof ShadcnAuthTasklistThemeEditorRoute
   '/operate/': typeof CarbonAuthOperateIndexRoute
   '/admin/': typeof ShadcnAuthAdminIndexRoute
   '/operate-preview/': typeof ShadcnAuthOperatePreviewIndexRoute
@@ -437,6 +445,7 @@ export interface FileRoutesByTo {
   '/operate/operations-log': typeof CarbonAuthOperateOperationsLogRoute
   '/admin/$': typeof ShadcnAuthAdminSplatRoute
   '/tasklist/$': typeof ShadcnAuthTasklistSplatRoute
+  '/tasklist/theme-editor': typeof ShadcnAuthTasklistThemeEditorRoute
   '/operate': typeof CarbonAuthOperateIndexRoute
   '/admin': typeof ShadcnAuthAdminIndexRoute
   '/operate-preview': typeof ShadcnAuthOperatePreviewIndexRoute
@@ -490,6 +499,7 @@ export interface FileRoutesById {
   '/_carbon/_auth/operate/operations-log': typeof CarbonAuthOperateOperationsLogRoute
   '/_shadcn/_auth/admin/$': typeof ShadcnAuthAdminSplatRoute
   '/_shadcn/_auth/tasklist/$': typeof ShadcnAuthTasklistSplatRoute
+  '/_shadcn/_auth/tasklist/theme-editor': typeof ShadcnAuthTasklistThemeEditorRoute
   '/_carbon/_auth/operate/': typeof CarbonAuthOperateIndexRoute
   '/_shadcn/_auth/admin/': typeof ShadcnAuthAdminIndexRoute
   '/_shadcn/_auth/operate-preview/': typeof ShadcnAuthOperatePreviewIndexRoute
@@ -544,6 +554,7 @@ export interface FileRouteTypes {
     | '/operate/operations-log'
     | '/admin/$'
     | '/tasklist/$'
+    | '/tasklist/theme-editor'
     | '/operate/'
     | '/admin/'
     | '/operate-preview/'
@@ -590,6 +601,7 @@ export interface FileRouteTypes {
     | '/operate/operations-log'
     | '/admin/$'
     | '/tasklist/$'
+    | '/tasklist/theme-editor'
     | '/operate'
     | '/admin'
     | '/operate-preview'
@@ -642,6 +654,7 @@ export interface FileRouteTypes {
     | '/_carbon/_auth/operate/operations-log'
     | '/_shadcn/_auth/admin/$'
     | '/_shadcn/_auth/tasklist/$'
+    | '/_shadcn/_auth/tasklist/theme-editor'
     | '/_carbon/_auth/operate/'
     | '/_shadcn/_auth/admin/'
     | '/_shadcn/_auth/operate-preview/'
@@ -857,6 +870,13 @@ declare module '@tanstack/react-router' {
       path: '/processes'
       fullPath: '/tasklist/processes'
       preLoaderRoute: typeof ShadcnAuthTasklistProcessesRouteRouteImport
+      parentRoute: typeof ShadcnAuthTasklistRouteRoute
+    }
+    '/_shadcn/_auth/tasklist/theme-editor': {
+      id: '/_shadcn/_auth/tasklist/theme-editor'
+      path: '/theme-editor'
+      fullPath: '/tasklist/theme-editor'
+      preLoaderRoute: typeof ShadcnAuthTasklistThemeEditorRouteImport
       parentRoute: typeof ShadcnAuthTasklistRouteRoute
     }
     '/_carbon/_auth/operate/batch-operations/': {
@@ -1346,6 +1366,7 @@ interface ShadcnAuthTasklistRouteRouteChildren {
   ShadcnAuthTasklistTasksRouteRoute: typeof ShadcnAuthTasklistTasksRouteRouteWithChildren
   ShadcnAuthTasklistProcessesRouteRoute: typeof ShadcnAuthTasklistProcessesRouteRouteWithChildren
   ShadcnAuthTasklistSplatRoute: typeof ShadcnAuthTasklistSplatRoute
+  ShadcnAuthTasklistThemeEditorRoute: typeof ShadcnAuthTasklistThemeEditorRoute
 }
 
 const ShadcnAuthTasklistRouteRouteChildren: ShadcnAuthTasklistRouteRouteChildren =
@@ -1355,6 +1376,7 @@ const ShadcnAuthTasklistRouteRouteChildren: ShadcnAuthTasklistRouteRouteChildren
     ShadcnAuthTasklistProcessesRouteRoute:
       ShadcnAuthTasklistProcessesRouteRouteWithChildren,
     ShadcnAuthTasklistSplatRoute: ShadcnAuthTasklistSplatRoute,
+    ShadcnAuthTasklistThemeEditorRoute: ShadcnAuthTasklistThemeEditorRoute,
   }
 
 const ShadcnAuthTasklistRouteRouteWithChildren =
