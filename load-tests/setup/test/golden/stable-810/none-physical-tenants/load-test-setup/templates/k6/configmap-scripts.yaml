@@ -1,0 +1,317 @@
+---
+# Source: load-test-setup/templates/k6/configmap-scripts.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k6-scripts
+  labels:
+    app.kubernetes.io/component: k6
+data:
+  lib.auth.js: |
+    /* Contains authentication helpers. */
+  
+    import http from 'k6/http';
+    import { sleep } from 'k6';
+  
+    // Module-level code runs once per VU, in its own JS runtime, so every VU draws a different
+    // value. This staggers renewals that would otherwise all fire at once, because every VU starts
+    // out sharing the same token and expiryDate from setup().
+    const renewalJitterSeconds = 1 + Math.floor(Math.random() * 60);
+  
+    // Returns an empty token. The first call to renew() fetches the actual token.
+    export function createToken() {
+      return {
+        accessToken: null,
+        expiryDate: 0,
+      };
+    }
+  
+    export function renew(token) {
+      if (token.expiryDate - renewalJitterSeconds * 1000 > Date.now()) {
+        return token;
+      }
+  
+      console.debug("Token will expire soon, will renew now.")
+      try {
+        updateAuthenticationToken(token);
+      } catch (e) {
+        console.error(`Error while renewing the token.`, e);
+        // Known limitation: during an OAuth outage, each VU retries and sleeps 1s per call
+        // until the old token expires, which can cause dropped iterations.
+        sleep(1);
+        // Without a previous token, callers would send "Bearer null".
+        if (token.accessToken === null) {
+          throw e;
+        }
+      }
+      return token;
+    };
+  
+    function updateAuthenticationToken(token) {
+      const token_url = __ENV.CAMUNDA_OAUTH_URL;
+      const client_id = __ENV.CAMUNDA_CLIENT_ID;
+      const client_secret = __ENV.CAMUNDA_CLIENT_SECRET;
+      const audience = __ENV.CAMUNDA_TOKEN_AUDIENCE;
+  
+      console.debug(`Fetching authentication token from: ${token_url}`);
+  
+      const payload = {
+        grant_type: 'client_credentials',
+        audience: audience,
+        client_id: client_id,
+        client_secret: client_secret,
+      };
+  
+      const params = {
+        tags: { name: 'token-request' },
+      };
+  
+      const response = http.post(token_url, payload, params);
+      if (response.status != 200) {
+        throw new Error(`unable to fetch token, got HTTP status=${response.status}, body=${response.body}`);
+      }
+  
+      token.accessToken = response.json('access_token');
+      const expiresIn = response.json('expires_in');
+      token.expiryDate = Date.now() + expiresIn * 1000;
+  
+      console.log(`Authentication token fetched successfully; will renew in ${expiresIn}s`);
+    };
+  lib.camunda.js: |
+    /* Wrapper for the Camunda API.
+     *
+     * Expose the Camunda API endpoints via convenient async functions to be used during tests.
+     *
+     * All these functions assumes the authentication token is valid and has been checked before.
+     */
+    import http from 'k6/http';
+  
+    export async function listProcessDefinitions(context) {
+      // https://docs.camunda.io/docs/apis-tools/orchestration-cluster-api-rest/specifications/search-process-definitions/
+      // Assume the token is valid and has been checked before.
+      const endpoint = '/v2/process-definitions/search';
+      const params = {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': "Bearer " + context.token.accessToken,
+        },
+        tags: { name: endpoint },
+      };
+  
+      const payload = {
+        sort: [
+          {
+            field: "processDefinitionKey",
+            order: "ASC",
+          },
+        ],
+        page: {
+          limit: 10,
+        },
+      };
+  
+      const response = http.post(context.baseURL + endpoint, JSON.stringify(payload), params);
+      return response;
+    }
+  
+    // https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/get-topology/
+    export async function topology(context) {
+      // Assume the token is valid and has been checked before.
+      const endpoint = '/v2/topology';
+      const params = {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': "Bearer " + context.token.accessToken,
+        },
+        tags: { name: endpoint },
+      };
+  
+      const response = http.get(context.baseURL + endpoint, params);
+      return response;
+    }
+  lib.helpers.js: |
+    /* Helper functions for the k6 load test scripts. */
+    import { sleep } from 'k6';
+    import * as auth from './lib.auth.js';
+    import * as camunda from './lib.camunda.js';
+  
+    export function ensureEnvVars() {
+      const vars = [
+          "CAMUNDA_BASE_URL",
+          "CAMUNDA_CLIENT_ID",
+          "CAMUNDA_CLIENT_SECRET",
+          "CAMUNDA_OAUTH_URL",
+          "CAMUNDA_TOKEN_AUDIENCE",
+      ];
+  
+      let missing = [];
+  
+      for (let i = 0; i < vars.length; i++) {
+        const name = vars[i];
+        const value = __ENV[name];
+        if (value === undefined || value === '') {
+          missing.push(name);
+          console.error(`Environment variable ${name} is not defined or empty.`);
+        }
+      }
+  
+      if (missing.length > 0) {
+        throw Error(`Missing environment variables: ${missing.join(', ')}`);
+      }
+    }
+  
+    export async function waitCamundaReady(context) {
+      const waitTime = 10; // seconds
+      while (true) {
+        try {
+          console.info("Trying to get the first token...");
+          auth.renew(context.token);
+          console.info("Got a token, checking if Camunda topology is ready.");
+  
+          const response = await camunda.topology(context);
+          if (response.status !== 200) {
+            throw new Error(`Camunda topology endpoint returned status: ${response.status}`);
+          }
+          console.info("Got a token and Camunda topology looks good!")
+          break;
+        } catch (e) {
+          console.error(`Error waiting for Camunda to be ready (will retry in ${waitTime}s).`, e);
+          sleep(waitTime);
+        }
+      }
+    }
+  
+    /* Common `setup()` body: validate the environment, authenticate, and wait for Camunda.
+     * Returns the context passed to every scenario function. */
+    export async function setupContext() {
+      ensureEnvVars();
+  
+      const token = auth.createToken();
+      const context = {
+        token: token,
+        baseURL: __ENV.CAMUNDA_BASE_URL,
+      };
+  
+      await waitCamundaReady(context);
+      console.log("Camunda seems to be ready ✅");
+  
+      return context;
+    }
+  test.data-read.js: |
+    import http from 'k6/http';
+    import { check, sleep } from 'k6';
+  
+    import * as auth from './lib.auth.js';
+    import * as helpers from './lib.helpers.js';
+    import * as camunda from './lib.camunda.js';
+  
+    /* Tests reading data from Camunda, which requires a secondary storage.
+     * This test is disabled when running with `secondary_storage=none`. */
+    export const options = {
+      // Give enough time for Camunda to be ready and for a process definition to
+      // exist before continuing with the test.
+      setupTimeout: '20m',
+      scenarios: {
+        /* Search for process instances.
+         * Run a basic search for process instances at a low rate. */
+        searchProcessInstances: {
+          exec: 'searchProcessInstances',
+          executor: 'constant-arrival-rate',
+          duration: '60d', // As long as the longest benchmark we run
+          rate: 1,
+          timeUnit: '1s',
+          preAllocatedVUs: 10,
+          maxVUs: 100,
+        },
+      },
+    };
+  
+    export async function setup() {
+      const context = await helpers.setupContext();
+  
+      // Process definition to search process instances for. Retries until one exists.
+      const waitTime = 10; // seconds
+      while (context.processDefinitionId === undefined) {
+        auth.renew(context.token);
+        const response = await camunda.listProcessDefinitions(context);
+        if (response.status !== 200) {
+          console.error(`Unable to list process definitions (will retry in ${waitTime}s), got HTTP status=${response.status}`);
+        } else {
+          const items = response.json().items;
+          if (items.length > 0) {
+            context.processDefinitionId = items[0].processDefinitionId;
+            break;
+          }
+          console.info(`No process definition found yet (will retry in ${waitTime}s).`);
+        }
+        sleep(waitTime);
+      }
+      console.log(`Will search process instances from process definition ${context.processDefinitionId}.`);
+  
+      return context;
+    }
+  
+    // https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/search-process-instances/
+    export async function searchProcessInstances(context) {
+      const token = auth.renew(context.token);
+  
+      const endpoint = '/v2/process-instances/search';
+      const params = {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': "Bearer " + token.accessToken,
+        },
+        tags: { name: endpoint },
+      };
+      const payload = {
+        sort: [
+          {field: "startDate", order: "DESC"},
+        ],
+        filter: {
+          processDefinitionId: context.processDefinitionId,
+          $or: [
+            { state: "ACTIVE" },
+            { hasIncident: true },
+          ],
+        },
+        page: {
+          limit: 100,
+        },
+      };
+      const response = http.post(context.baseURL + endpoint, JSON.stringify(payload), params);
+      check(response, { 'status is 200': (r) => r.status === 200 });
+    };
+  test.default.js: |
+    import { check } from 'k6';
+  
+    import * as auth from './lib.auth.js';
+    import * as helpers from './lib.helpers.js';
+    import * as camunda from './lib.camunda.js';
+  
+    export const options = {
+      // Give enough time for Camunda to be ready before continuing with the test.
+      setupTimeout: '15m',
+      scenarios: {
+        /* Poll the topology endpoint to check whether the cluster is alive.
+         * This is very basic, but should also work almost all the time. */
+        topology: {
+          exec: 'checkTopology',
+          executor: 'constant-arrival-rate',
+          duration: '60d',
+          rate: 10,
+          timeUnit: '1s',
+          preAllocatedVUs: 10,
+          maxVUs: 100,
+        },
+      },
+    };
+  
+    export async function setup() {
+      return helpers.setupContext();
+    }
+  
+    export async function checkTopology(context) {
+      auth.renew(context.token);
+      const response = await camunda.topology(context);
+      check(response, { 'status is 200': (r) => r.status === 200 });
+    };
