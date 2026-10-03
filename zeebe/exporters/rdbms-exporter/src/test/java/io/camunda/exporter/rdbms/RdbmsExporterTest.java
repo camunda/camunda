@@ -630,7 +630,12 @@ class RdbmsExporterTest {
     final var replicationConfig = new ExporterConfiguration.ReplicationConfiguration();
     replicationConfig.setPollingInterval(Duration.ofSeconds(5));
     replicationConfig.setMaxLag(Duration.ofSeconds(10));
-    replicationConfig.setMinSyncReplicas(1);
+    final var defaultRegion =
+        new ExporterConfiguration.ReplicationConfiguration.RegionConfiguration();
+    defaultRegion.setName("default");
+    defaultRegion.setPattern(".*");
+    defaultRegion.setMinReplicas(1);
+    replicationConfig.setRegions(List.of(defaultRegion));
     final var clock = mock(InstantSource.class);
     when(clock.millis()).thenReturn(0L);
     final var strategy = new LsnReplicationSignalStrategy(lsnProvider, replicationConfig);

@@ -112,6 +112,12 @@ class RdbmsExporterWrapperTest {
     final var configuration = new ExporterConfiguration();
     configuration.getAsyncReplication().setEnabled(true);
     configuration.getAsyncReplication().setType(replicationType);
+    final var defaultRegion =
+        new ExporterConfiguration.ReplicationConfiguration.RegionConfiguration();
+    defaultRegion.setName("default");
+    defaultRegion.setPattern(".*");
+    defaultRegion.setMinReplicas(1);
+    configuration.getAsyncReplication().setRegions(List.of(defaultRegion));
     final Context context = mock(Context.class, Mockito.RETURNS_DEEP_STUBS);
     final Controller controller = mock(Controller.class);
     final RdbmsServiceFactory rdbmsServiceFactory = mock(RdbmsServiceFactory.class);
