@@ -1482,6 +1482,9 @@ camunda: # Type: io.camunda.configuration.Camunda
         group-name-cache-capacity: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_CACHES_GROUPNAMECACHECAPACITY
         # Configures the maximum number of parsed processes to cache.
         process-cache-capacity: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_CACHES_PROCESSCACHECAPACITY
+        # Configures whether the GC may reclaim cached processes under heap pressure. Reclaimed processes are
+        # parsed again on their next access.
+        process-cache-soft-values: null # Type: Boolean, Env: CAMUNDA_PROCESSING_ENGINE_CACHES_PROCESSCACHESOFTVALUES
         # Configures the maximum number of resources (e.g. RPA scripts) to cache.
         resource-cache-capacity: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_CACHES_RESOURCECACHECAPACITY
       
