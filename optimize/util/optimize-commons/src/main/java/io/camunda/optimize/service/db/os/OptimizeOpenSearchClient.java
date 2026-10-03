@@ -104,6 +104,7 @@ import org.opensearch.client.opensearch.indices.GetMappingRequest;
 import org.opensearch.client.opensearch.indices.GetMappingResponse;
 import org.opensearch.client.opensearch.indices.RolloverRequest;
 import org.opensearch.client.opensearch.indices.RolloverResponse;
+import org.opensearch.client.opensearch.indices.add_block.IndicesBlockOptions;
 import org.opensearch.client.opensearch.indices.rollover.RolloverConditions;
 import org.opensearch.client.opensearch.snapshot.CreateSnapshotRequest;
 import org.opensearch.client.opensearch.snapshot.CreateSnapshotResponse;
@@ -512,6 +513,29 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   }
 
   @Override
+  public void addWriteBlock(final String rawIndexName) {
+    try {
+      getOpenSearchClient()
+          .indices()
+          .addBlock(b -> b.index(rawIndexName).block(IndicesBlockOptions.Write));
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException("Could not add write block to index " + rawIndexName, e);
+    }
+  }
+
+  @Override
+  public void removeWriteBlock(final String rawIndexName) {
+    try {
+      getOpenSearchClient()
+          .indices()
+          .putSettings(b -> b.index(rawIndexName).settings(st -> st.blocks(bl -> bl.write(false))));
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException(
+          "Could not remove write block from index " + rawIndexName, e);
+    }
+  }
+
+  @Override
   public void deleteIndexByRawIndexNames(final String... indexNames) {
     final String indexNamesString = Arrays.toString(indexNames);
     LOG.debug("Deleting indices [{}].", indexNamesString);
@@ -704,6 +728,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
                                         Map.Entry::getKey,
                                         entry -> JsonData.of(entry.getValue())))))
                     .retryOnConflict(requestDto.getRetryNumberOnConflict())
+                    .requireAlias(requestDto.isRequireAlias())
                     .build())
             .build();
       }

@@ -66,6 +66,7 @@ public class OptimizeProcessCleanupServiceTest {
   @Mock private ProcessInstanceReader processInstanceReader;
   @Mock private ProcessInstanceWriter processInstanceWriter;
   @Mock private ProcessVariableWriter processVariableWriter;
+  @Mock private EmptyProcessInstanceIndexReaper emptyProcessInstanceIndexReaper;
   private ConfigurationService configurationService;
 
   @BeforeEach
@@ -390,6 +391,7 @@ public class OptimizeProcessCleanupServiceTest {
         processDefinitionReader,
         processInstanceReader,
         processInstanceWriter,
-        processVariableWriter);
+        processVariableWriter,
+        emptyProcessInstanceIndexReaper);
   }
 }
