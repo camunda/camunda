@@ -515,7 +515,7 @@ public class OpensearchEngineClientIT {
     reset(indicesSpy); // ignore create
 
     // when
-    engineClient.updateIndexTemplateSettings(template, initialSettings);
+    engineClient.updateIndexTemplateSettings(template, initialSettings, true);
 
     // then
     verify(indicesSpy, never()).putIndexTemplate(any(PutIndexTemplateRequest.class));
@@ -538,7 +538,7 @@ public class OpensearchEngineClientIT {
     reset(indicesSpy); // ignore create
 
     // when
-    engineClient.updateIndexTemplateSettings(template, updated);
+    engineClient.updateIndexTemplateSettings(template, updated, true);
 
     // then
     verify(indicesSpy, times(1)).putIndexTemplate(any(PutIndexTemplateRequest.class));
@@ -580,7 +580,7 @@ public class OpensearchEngineClientIT {
     updated.setTemplatePriority(100); // change
 
     // when
-    engineClient.updateIndexTemplateSettings(template, updated);
+    engineClient.updateIndexTemplateSettings(template, updated, true);
 
     // then
     verify(indicesSpy, times(1)).putIndexTemplate(any(PutIndexTemplateRequest.class));
