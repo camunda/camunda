@@ -23,11 +23,52 @@ inputs:
 
 runs:
   using: composite
+  # GitHub Actions has no retry primitive for a `uses:` step, so each attempt is
+  # a literal copy of the step gated on the previous attempt's outcome (same
+  # pattern as setup-java-with-retry, adopted after INC-7417 showed that
+  # wrapping a `uses:` step in a third-party retry action can break it).
+  # Editing one attempt means editing all of them -- keep the `with:` blocks
+  # identical.
   steps:
-  - name: Archive Test Results
+  - name: Archive Test Results (attempt 1 of 3)
+    id: attempt-1
+    continue-on-error: true
     uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
     with:
       name: Test results for ${{ inputs.name  }}
       path: ${{ inputs.path }}
       retention-days: ${{ inputs.retention-days }}
       if-no-files-found: ignore
+      overwrite: true
+
+  - name: Wait before attempt 2
+    if: always() && steps.attempt-1.outcome == 'failure'
+    shell: bash
+    run: sleep 10
+
+  - name: Archive Test Results (attempt 2 of 3)
+    id: attempt-2
+    if: always() && steps.attempt-1.outcome == 'failure'
+    continue-on-error: true
+    uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+    with:
+      name: Test results for ${{ inputs.name  }}
+      path: ${{ inputs.path }}
+      retention-days: ${{ inputs.retention-days }}
+      if-no-files-found: ignore
+      overwrite: true
+
+  - name: Wait before attempt 3
+    if: always() && steps.attempt-2.outcome == 'failure'
+    shell: bash
+    run: sleep 10
+
+  - name: Archive Test Results (attempt 3 of 3)
+    if: always() && steps.attempt-2.outcome == 'failure'
+    uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+    with:
+      name: Test results for ${{ inputs.name  }}
+      path: ${{ inputs.path }}
+      retention-days: ${{ inputs.retention-days }}
+      if-no-files-found: ignore
+      overwrite: true
