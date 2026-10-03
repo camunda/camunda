@@ -12,6 +12,10 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.util.Iterator;
 
+/**
+ * Allocates ports from the bounded per-fork range laid out by {@link SocketUtil}. Returns
+ * unoccupied ports within {@code [min, max)}.
+ */
 class PortRange implements Iterator<InetSocketAddress> {
   private final String host;
   private final int basePort;
@@ -21,6 +25,7 @@ class PortRange implements Iterator<InetSocketAddress> {
   private int currentOffset;
 
   PortRange(final String host, final int forkNumber, final int min, final int max) {
+    assert max > min : "Port range must be non-empty, got min=" + min + " max=" + max;
     assert max <= 65535 : "Port range exceeds maximal available port 65535, got max port " + max;
     this.host = host;
     basePort = min;
