@@ -109,7 +109,7 @@
     "jsdom": "26.1.0",
     "knip": "6.39.0",
     "monaco-editor": "0.55.1",
-    "msw": "2.15.0",
+    "msw": "3.0.1",
     "playwright": "1.63.0",
     "prettier": "3.9.4",
     "resize-observer-polyfill": "1.5.1",
