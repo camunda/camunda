@@ -19,6 +19,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
@@ -33,6 +35,16 @@ public class SearchEngineClientUtils {
    * a lower value to be conservative
    */
   public static final int MAX_INDEX_PATTERN_REQUEST_LENGTH = 3500;
+
+  /**
+   * Index-level settings keys that runtime configuration owns and can therefore be safely diffed
+   * against the search engine's normalized rendering. Any other key (e.g. {@code analysis}) is
+   * owned by the template JSON, not runtime config, and comparing it against the engine's
+   * normalized form is unreliable (key relocation, injected defaults, scalar/list coercion), so it
+   * is deliberately excluded from {@link SchemaSettingsAppender#equalsManagedSettings(Map)}.
+   */
+  private static final Set<String> MANAGED_INDEX_SETTINGS_KEYS =
+      Set.of("number_of_shards", "number_of_replicas", "refresh_interval");
 
   private static final Logger LOG = LoggerFactory.getLogger(SearchEngineClientUtils.class);
   private final ObjectMapper objectMapper;
@@ -114,7 +126,6 @@ public class SearchEngineClientUtils {
 
   public class SchemaSettingsAppender {
     private final Map<String, Object> map;
-    private final Map<String, Object> settingsBlock;
     private final Map<String, Object> indexBlock;
 
     /**
@@ -126,7 +137,8 @@ public class SearchEngineClientUtils {
      */
     public SchemaSettingsAppender(final InputStream file) throws IOException {
       map = objectMapper.readValue(file, new TypeReference<Map<String, Object>>() {});
-      settingsBlock = (Map<String, Object>) map.computeIfAbsent("settings", k -> new HashMap<>());
+      final var settingsBlock =
+          (Map<String, Object>) map.computeIfAbsent("settings", k -> new HashMap<>());
       indexBlock =
           (Map<String, Object>) settingsBlock.computeIfAbsent("index", k -> new HashMap<>());
     }
@@ -152,8 +164,53 @@ public class SearchEngineClientUtils {
       return new ByteArrayInputStream(objectMapper.writeValueAsBytes(map));
     }
 
-    public boolean equalsSettings(final Map<String, Object> otherSettings) {
-      return settingsBlock.equals(otherSettings);
+    /**
+     * Compares only the index-level settings that runtime configuration owns ({@link
+     * #MANAGED_INDEX_SETTINGS_KEYS}), ignoring everything else in the settings block (e.g. an
+     * {@code analysis} block owned by the template JSON, which the search engine normalizes on
+     * storage — injecting defaults, relocating keys, coercing scalars to lists — in a way a raw
+     * comparison could never reliably match). A template whose JSON-owned settings may have changed
+     * is instead rewritten unconditionally on a schema-version change; see {@code
+     * SchemaManager#forceCustomSettingsTemplates}.
+     *
+     * <p>Values are compared with {@link Objects#equals} and are deliberately not coerced, so a
+     * caller has to append the managed settings in the same representation the engine it talks to
+     * renders them back in — Elasticsearch returns them as strings, OpenSearch as numbers, which is
+     * why the two call sites differ. Getting that wrong makes this permanently return {@code false}
+     * and turns every restart into a redundant template write for every template — the failure this
+     * comparison exists to prevent.
+     *
+     * @param otherSettings the stored settings block, or {@code null} when the template has none. A
+     *     template that stores no settings at all cannot match a configured one, so it counts as a
+     *     mismatch and gets repaired rather than failing the comparison.
+     */
+    @SuppressWarnings("unchecked")
+    private boolean equalsManagedSettings(final Map<String, Object> otherSettings) {
+      if (otherSettings == null) {
+        return false;
+      }
+      final var otherIndexBlock =
+          (Map<String, Object>) otherSettings.getOrDefault("index", Map.of());
+      return MANAGED_INDEX_SETTINGS_KEYS.stream()
+          .allMatch(key -> Objects.equals(indexBlock.get(key), otherIndexBlock.get(key)));
+    }
+
+    /**
+     * Decides whether an existing index template's stored settings already match this configured
+     * settings, i.e. whether the caller can skip writing them. Only ever compares the settings
+     * runtime configuration owns; see {@link #equalsManagedSettings(Map)}.
+     *
+     * @param currentPriority the template's currently stored priority.
+     * @param configuredPriority the priority runtime configuration wants.
+     * @param currentSettings the template's currently stored settings block, serialized to a map,
+     *     or {@code null} when the template stores none.
+     */
+    public boolean matchesConfiguredTemplate(
+        final Long currentPriority,
+        final Long configuredPriority,
+        final Map<String, Object> currentSettings) {
+      return Objects.equals(configuredPriority, currentPriority)
+          && equalsManagedSettings(currentSettings);
     }
   }
 }
