@@ -45,3 +45,54 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
       x-scope: physical-tenant
+
+  /forms/{formId}/latest:
+    get:
+      x-eventually-consistent: true
+      tags:
+        - Form
+      operationId: getLatestFormByFormId
+      x-required-permissions:
+        - { resourceType: RESOURCE, permissionType: READ }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Get latest form by form ID
+      description: |
+        Get the latest deployed version of a form by its user-defined form ID.
+      parameters:
+        - name: formId
+          in: path
+          required: true
+          description: The user-defined form ID.
+          schema:
+            $ref: 'identifiers.yaml#/components/schemas/FormId'
+        - name: tenantId
+          in: query
+          required: false
+          description: The tenant the form belongs to. Defaults to the default tenant.
+          schema:
+            $ref: 'identifiers.yaml#/components/schemas/TenantId'
+      responses:
+        "200":
+          description: The latest version of the form is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: 'form-models.yaml#/components/schemas/FormResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: No form with the given form ID was found for the tenant.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.11"
+      x-scope: physical-tenant

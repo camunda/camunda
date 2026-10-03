@@ -19,6 +19,7 @@ import {
 	type QueryProcessInstancesRequestBody,
 	type QueryElementInstancesRequestBody,
 	type QueryElementInstanceInspectionRequestBody,
+	type QueryVariablesRequestBody,
 	type QueryAgentInstancesRequestBody,
 	type QueryProcessInstanceIncidentsRequestBody,
 	type CancelProcessInstanceRequestBody,
@@ -315,6 +316,20 @@ const endpoints = {
 			method: unifiedAPIEndpoints.queryElementInstanceInspection.method,
 			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryVariables: (body: QueryVariablesRequestBody, {truncateValues}: {truncateValues?: boolean} = {}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryVariables.getUrl({truncateValues})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryVariables.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getLatestFormByFormId: ({formId, tenantId}: {formId: string; tenantId?: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getLatestFormByFormId.getUrl({formId, tenantId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getLatestFormByFormId.method,
 		}),
 
 	queryAgentInstances: (body: QueryAgentInstancesRequestBody) =>

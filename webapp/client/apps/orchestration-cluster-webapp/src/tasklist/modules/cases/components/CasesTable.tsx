@@ -9,24 +9,20 @@
 import {useCallback, useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from '@tanstack/react-router';
-import {Badge, DataTable, type DataTableColumn, type SortingConfig} from '@camunda/design-system';
+import {DataTable, type DataTableColumn, type SortingConfig} from '@camunda/design-system';
 import type {ElementInstanceInspection, ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {DateLabel} from '#/tasklist/modules/available-tasks/components/DateLabel';
 import {CaseCell} from '#/tasklist/modules/cases/components/CaseCell';
+import {CaseStatusBadge} from '#/tasklist/modules/cases/components/CaseStatusBadge';
 import {WaitStateList} from '#/tasklist/modules/cases/components/WaitStateList';
 import {groupWaitStatesByCase} from '#/tasklist/modules/cases/groupWaitStatesByCase';
-import {mapProcessInstanceToCase, type Case, type CaseStatus} from '#/tasklist/modules/cases/mapProcessInstanceToCase';
+import {mapProcessInstanceToCase, type Case} from '#/tasklist/modules/cases/mapProcessInstanceToCase';
 import {PAGE_SIZES, casesSearchDefaults, type CasesSearch} from '#/tasklist/modules/cases/searchSchema';
 import {formatISODateTime} from '#/tasklist/modules/dates/formatDateRelative';
 
 type SortingState = NonNullable<SortingConfig['sortState']>;
 
 const EMPTY_WAIT_STATES: ElementInstanceInspection[] = [];
-
-const STATUS_MAPPINGS = {
-	active: {variant: 'success', labelKey: 'tasklist.casesActive'},
-	incident: {variant: 'danger', labelKey: 'tasklist.casesIncident'},
-} as const satisfies Record<CaseStatus, {variant: string; labelKey: string}>;
 
 const SORT_FIELD_MAPPINGS = {
 	caseId: 'businessId',
@@ -90,11 +86,7 @@ const CasesTable: React.FC<Props> = ({cases, waitStates, totalItems, search}) =>
 			{
 				id: 'status',
 				header: t('tasklist.casesColumnStatus'),
-				cell: ({row}) => {
-					const {variant, labelKey} = STATUS_MAPPINGS[row.original.status];
-
-					return <Badge variant={variant}>{t(labelKey)}</Badge>;
-				},
+				cell: ({row}) => <CaseStatusBadge status={row.original.status} />,
 				enableSorting: false,
 			},
 		],

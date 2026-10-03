@@ -246,6 +246,8 @@ paths:
   # Form endpoints
   /forms/{formKey}:
     $ref: 'forms.yaml#/paths/~1forms~1{formKey}'
+  /forms/{formId}/latest:
+    $ref: 'forms.yaml#/paths/~1forms~1{formId}~1latest'
 
   # Global listeners endpoints
   /global-task-listeners:

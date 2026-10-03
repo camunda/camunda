@@ -170,5 +170,5 @@ function groupWaitStateLabelsByKind(waitStates: WaitStateLabel[]): WaitStateGrou
 	return [...groups.values()];
 }
 
-export {getWaitStateLabel, groupWaitStateLabelsByKind};
+export {compareWaitStateLabels, getWaitStateLabel, groupWaitStateLabelsByKind};
 export type {WaitStateGroup, WaitStateKind, WaitStateLabel};

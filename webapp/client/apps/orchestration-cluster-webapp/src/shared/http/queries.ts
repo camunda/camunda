@@ -41,6 +41,15 @@ import type {
 	QueryProcessInstancesResponseBody,
 	QueryElementInstanceInspectionRequestBody,
 	QueryElementInstanceInspectionResponseBody,
+	ProcessInstance,
+	GetProcessInstanceStatisticsResponseBody,
+	QueryElementInstancesRequestBody,
+	QueryElementInstancesResponseBody,
+	QueryVariablesRequestBody,
+	QueryVariablesResponseBody,
+	QueryProcessInstanceIncidentsRequestBody,
+	QueryProcessInstanceIncidentsResponseBody,
+	FormResult,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from './request';
 import {endpoints} from './endpoints';
@@ -84,6 +93,16 @@ const queryKeys = {
 	queryProcessInstances: (body: QueryProcessInstancesRequestBody) => ['queryProcessInstances', body] as const,
 	queryElementInstanceWaitStates: (body: QueryElementInstanceInspectionRequestBody) =>
 		['queryElementInstanceWaitStates', body] as const,
+	processInstance: (processInstanceKey: string) => ['processInstance', processInstanceKey] as const,
+	processInstanceElementStatistics: (processInstanceKey: string) =>
+		['processInstanceElementStatistics', processInstanceKey] as const,
+	queryElementInstances: (body: QueryElementInstancesRequestBody) => ['queryElementInstances', body] as const,
+	queryVariables: (body: QueryVariablesRequestBody, truncateValues?: boolean) =>
+		['queryVariables', body, truncateValues] as const,
+	queryUserTasksPage: (body: QueryUserTasksRequestBody) => ['queryUserTasksPage', body] as const,
+	queryProcessInstanceIncidents: (processInstanceKey: string, body: QueryProcessInstanceIncidentsRequestBody) =>
+		['queryProcessInstanceIncidents', processInstanceKey, body] as const,
+	latestFormByFormId: (formId: string, tenantId?: string) => ['latestFormByFormId', formId, tenantId] as const,
 };
 
 const queries = {
@@ -488,6 +507,95 @@ const queries = {
 				}
 				return response.json();
 			},
+		}),
+
+	getProcessInstance: (processInstanceKey: string) =>
+		queryOptions({
+			queryKey: queryKeys.processInstance(processInstanceKey),
+			queryFn: async (): Promise<ProcessInstance> => {
+				const {response, error} = await request(endpoints.getProcessInstance(processInstanceKey));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	getProcessInstanceElementStatistics: (processInstanceKey: string) =>
+		queryOptions({
+			queryKey: queryKeys.processInstanceElementStatistics(processInstanceKey),
+			queryFn: async (): Promise<GetProcessInstanceStatisticsResponseBody> => {
+				const {response, error} = await request(
+					endpoints.getProcessInstanceElementInstanceStatistics(processInstanceKey),
+				);
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryElementInstances: (body: QueryElementInstancesRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryElementInstances(body),
+			queryFn: async (): Promise<QueryElementInstancesResponseBody> => {
+				const {response, error} = await request(endpoints.queryElementInstances(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryVariables: (body: QueryVariablesRequestBody, options?: {truncateValues?: boolean}) =>
+		queryOptions({
+			queryKey: queryKeys.queryVariables(body, options?.truncateValues),
+			queryFn: async (): Promise<QueryVariablesResponseBody> => {
+				const {response, error} = await request(
+					endpoints.queryVariables(body, {truncateValues: options?.truncateValues}),
+				);
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryUserTasksPage: (body: QueryUserTasksRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryUserTasksPage(body),
+			queryFn: async (): Promise<QueryUserTasksResponseBody> => {
+				const {response, error} = await request(endpoints.queryUserTasks(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryProcessInstanceIncidents: (processInstanceKey: string, body: QueryProcessInstanceIncidentsRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryProcessInstanceIncidents(processInstanceKey, body),
+			queryFn: async (): Promise<QueryProcessInstanceIncidentsResponseBody> => {
+				const {response, error} = await request(endpoints.queryProcessInstanceIncidents(processInstanceKey, body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	getLatestFormByFormId: ({formId, tenantId}: {formId: string; tenantId?: string}) =>
+		queryOptions({
+			queryKey: queryKeys.latestFormByFormId(formId, tenantId),
+			queryFn: async (): Promise<FormResult> => {
+				const {response, error} = await request(endpoints.getLatestFormByFormId({formId, tenantId}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+			staleTime: 'static',
 		}),
 } as const;
 

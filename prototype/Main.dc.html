@@ -1,0 +1,655 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: "Geist", "Geist Sans", system-ui, sans-serif; background: #f9f9fb; color: #18181b; -webkit-font-smoothing: antialiased; }
+    a { color: #c44500; text-decoration: none; }
+    a:hover { color: #9c3700; text-decoration: underline; }
+    .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+    .btn { cursor: pointer; user-select: none; }
+    .row { cursor: pointer; }
+    .row:hover { background: rgba(255,236,227,0.30); }
+    .card { background: #ffffff; border-radius: 12px; box-shadow: 0 0 0 1px rgba(24,24,27,0.10); }
+    .lbl { font-size: 11px; color: #5d5d6a; }
+    .sec { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #5d5d6a; }
+    .fld { width: 100%; box-sizing: border-box; height: 32px; padding: 0 10px; border-radius: 7px; border: 1px solid rgba(24,24,27,0.18); background: #ffffff; font-family: inherit; font-size: 13px; color: #18181b; }
+    .fld:focus { outline: none; border-color: #c44500; box-shadow: 0 0 0 3px rgba(196,69,0,0.16); }
+    .ta { width: 100%; box-sizing: border-box; padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(24,24,27,0.18); background: #ffffff; font-family: inherit; font-size: 13px; color: #18181b; resize: vertical; }
+    .ta:focus { outline: none; border-color: #c44500; box-shadow: 0 0 0 3px rgba(196,69,0,0.16); }
+  </style>
+</helmet>
+
+<div style="width: 1440px; min-height: 1800px; background: #f9f9fb; display: flex; flex-direction: column;">
+
+  <!-- app header -->
+  <div style="height: 48px; flex-shrink: 0; background: #ffffff; border-bottom: 1px solid rgba(24,24,27,0.12); display: flex; align-items: center; gap: 14px; padding: 0 16px;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <div style="width: 22px; height: 22px; border-radius: 5px; background: #c44500; display: flex; align-items: center; justify-content: center;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 3v18"></path></svg>
+      </div>
+      <span style="font-size: 13px; font-weight: 600; letter-spacing: -0.01em;">Tasklist</span>
+    </div>
+    <div style="width: 1px; height: 20px; background: rgba(24,24,27,0.14);"></div>
+    <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #5d5d6a;">
+      <span class="btn" onClick="{{ onBack }}" style="color: {{ crumbColor }};">Cases</span>
+      <sc-if value="{{ isCase }}" hint-placeholder-val="{{ true }}">
+        <span style="display: inline-flex; align-items: center; gap: 6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
+          <span class="mono" style="color: #18181b; font-weight: 500;">{{ c.id }}</span>
+        </span>
+      </sc-if>
+    </div>
+    <div style="flex-grow: 1;"></div>
+    <div style="width: 26px; height: 26px; border-radius: 50%; background: #ffece3; color: #c44500; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center;">DT</div>
+  </div>
+
+  <!-- ============ CASE LIST ============ -->
+  <sc-if value="{{ isList }}" hint-placeholder-val="{{ true }}">
+  <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 16px; padding: 24px;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="display: flex; flex-direction: column; gap: 3px; flex-grow: 1;">
+        <span style="font-size: 20px; font-weight: 600; letter-spacing: -0.015em;">Cases</span>
+        <span style="font-size: 12px; color: #5d5d6a;">4 open &middot; pick a case to open it</span>
+      </div>
+      <span style="display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 8px; background: #ffffff; box-shadow: inset 0 0 0 1px rgba(24,24,27,0.18); font-size: 13px; color: #5d5d6a;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5d5d6a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+        Search by case ID or customer
+      </span>
+    </div>
+    <div class="card" style="overflow: hidden;">
+      <div style="display: flex; align-items: center; gap: 16px; padding: 10px 18px; background: rgba(228,228,231,0.45); border-bottom: 1px solid rgba(24,24,27,0.09);" class="sec">
+        <span style="width: 290px; flex-shrink: 0;">Case</span>
+        <span style="flex-grow: 1;">Progress</span>
+        <span style="width: 230px; flex-shrink: 0;">Waiting for</span>
+        <span style="width: 110px; flex-shrink: 0;">Owner</span>
+        <span style="width: 86px; flex-shrink: 0; text-align: right;">Due</span>
+      </div>
+      <sc-for list="{{ rows }}" as="r" hint-placeholder-count="4">
+        <div class="row" onClick="{{ r.open }}" style="display: flex; align-items: center; gap: 16px; padding: 14px 18px; border-bottom: 1px solid rgba(24,24,27,0.07);">
+          <div style="width: 290px; flex-shrink: 0; display: flex; flex-direction: column; gap: 2px;">
+            <span style="font-size: 13px; font-weight: 600;">{{ r.title }}</span>
+            <span style="font-size: 11px; color: #5d5d6a;"><span class="mono">{{ r.id }}</span> &middot; {{ r.customer }} &middot; {{ r.amount }}</span>
+          </div>
+          <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 5px;">
+            <div style="display: flex; align-items: center; gap: 3px;">
+              <sc-for list="{{ r.pips }}" as="p" hint-placeholder-count="5">
+                <span style="width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; background: {{ p.bg }}; box-shadow: {{ p.ring }};"></span>
+                <sc-if value="{{ p.hasLine }}" hint-placeholder-val="{{ true }}">
+                  <span style="width: 14px; height: 2px; flex-shrink: 0; background: {{ p.line }};"></span>
+                </sc-if>
+              </sc-for>
+            </div>
+            <span style="font-size: 12px; font-weight: {{ r.stageWeight }}; color: {{ r.stageColor }};">{{ r.stageLabel }}</span>
+          </div>
+          <div style="width: 230px; flex-shrink: 0; display: flex; align-items: center; gap: 7px;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; background: {{ r.waitDot }};"></span>
+            <span style="font-size: 12px; color: #3f3f46;">{{ r.waitShort }}</span>
+          </div>
+          <span style="width: 110px; flex-shrink: 0; font-size: 12px; color: {{ r.ownerColor }};">{{ r.owner }}</span>
+          <span style="width: 86px; flex-shrink: 0; font-size: 12px; font-weight: {{ r.dueWeight }}; color: {{ r.dueColor }}; text-align: right;">{{ r.due }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ============ CASE VIEW ============ -->
+  <sc-if value="{{ isCase }}" hint-placeholder-val="{{ true }}">
+  <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 16px; padding: 20px 24px 32px;">
+
+    <!-- ALWAYS: case metadata -->
+    <div class="card" style="padding: 15px 20px; display: flex; align-items: center; gap: 22px;">
+      <div style="display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; width: 250px;">
+        <div style="display: flex; align-items: center; gap: 9px;">
+          <span class="btn" onClick="{{ onBack }}" style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #5d5d6a;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5d5d6a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+            All cases
+          </span>
+          <span class="mono" style="font-size: 11px; color: #5d5d6a;">{{ c.id }}</span>
+        </div>
+        <span style="font-size: 19px; font-weight: 600; letter-spacing: -0.015em; line-height: 1.2;">{{ c.title }}</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 12px; color: #5d5d6a;">{{ c.customer }}</span>
+          <span style="display: inline-flex; align-items: center; height: 19px; padding: 0 7px; border-radius: 9999px; background: rgba(217,119,6,0.12); color: #a35c05; font-size: 10px; font-weight: 500;">In progress</span>
+        </div>
+      </div>
+      <div style="width: 1px; align-self: stretch; background: rgba(24,24,27,0.10);"></div>
+      <div style="flex-grow: 1; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px 16px;">
+        <sc-for list="{{ c.meta }}" as="m" hint-placeholder-count="6">
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <span class="lbl">{{ m.k }}</span>
+            <span style="font-size: 14px; font-weight: 500; color: {{ m.color }};">{{ m.v }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- ALWAYS: case progress. ON CLICK: waiting states, diagram -->
+    <div class="card" style="display: flex; flex-direction: column; overflow: hidden;">
+      <div style="padding: 14px 20px 0; display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 13px; font-weight: 600; flex-grow: 1;">Case progress</span>
+        <div style="display: flex; gap: 2px; padding: 2px; border-radius: 9px; background: rgba(228,228,231,0.7);">
+          <span class="btn" onClick="{{ onStages }}" style="display: inline-flex; align-items: center; height: 26px; padding: 0 11px; border-radius: 7px; font-size: 12px; font-weight: 500; background: {{ tgl.stagesBg }}; color: {{ tgl.stagesFg }}; box-shadow: {{ tgl.stagesShadow }};">Stages</span>
+          <span class="btn" onClick="{{ onDiagram }}" style="display: inline-flex; align-items: center; height: 26px; padding: 0 11px; border-radius: 7px; font-size: 12px; font-weight: 500; background: {{ tgl.diagBg }}; color: {{ tgl.diagFg }}; box-shadow: {{ tgl.diagShadow }};">Diagram</span>
+        </div>
+      </div>
+
+      <sc-if value="{{ stagesMode }}" hint-placeholder-val="{{ true }}">
+        <div style="padding: 18px 20px 16px; display: flex; align-items: flex-start;">
+          <sc-for list="{{ c.stages }}" as="s" hint-placeholder-count="5">
+            <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 7px;">
+              <div style="width: 100%; display: flex; align-items: center;">
+                <span style="flex-grow: 1; height: 2px; background: {{ s.lineL }};"></span>
+                <span style="width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: {{ s.dotBg }}; box-shadow: {{ s.dotRing }};">
+                  <sc-if value="{{ s.isDone }}" hint-placeholder-val="{{ true }}">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+                  </sc-if>
+                  <sc-if value="{{ s.isActive }}" hint-placeholder-val="{{ true }}">
+                    <span style="width: 8px; height: 8px; border-radius: 50%; background: #c44500;"></span>
+                  </sc-if>
+                </span>
+                <span style="flex-grow: 1; height: 2px; background: {{ s.lineR }};"></span>
+              </div>
+              <span style="font-size: 12px; text-align: center; line-height: 1.3; font-weight: {{ s.labelWeight }}; color: {{ s.labelColor }};">{{ s.label }}</span>
+              <span style="font-size: 11px; font-weight: {{ s.whenWeight }}; color: {{ s.whenColor }};">{{ s.when }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <div class="btn" onClick="{{ onToggleWait }}" style="padding: 11px 20px; border-top: 1px solid rgba(24,24,27,0.09); background: rgba(228,228,231,0.30); display: flex; align-items: center; gap: 9px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5d5d6a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+          <span style="font-size: 12px; flex-grow: 1;"><strong style="font-weight: 600;">{{ c.waitCount }}</strong> {{ c.waitHeadline }}</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5d5d6a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; transform: rotate({{ waitRot }}deg);"><path d="m6 9 6 6 6-6"></path></svg>
+        </div>
+        <sc-if value="{{ waitOpen }}" hint-placeholder-val="{{ true }}">
+          <div style="padding: 4px 20px 16px; background: rgba(228,228,231,0.30); display: flex; gap: 10px;">
+            <sc-for list="{{ c.waiting }}" as="w" hint-placeholder-count="2">
+              <div style="flex-grow: 1; display: flex; align-items: center; gap: 11px; padding: 10px 12px; border-radius: 8px; background: #ffffff; box-shadow: inset 0 0 0 1px rgba(24,24,27,0.10);">
+                <span style="width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; background: {{ w.dot }};"></span>
+                <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0;">
+                  <span style="font-size: 13px; font-weight: 500;">{{ w.what }}</span>
+                  <span style="font-size: 11px; color: #5d5d6a;">{{ w.who }}</span>
+                </div>
+                <span style="font-size: 11px; color: #5d5d6a; flex-shrink: 0;">{{ w.since }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </sc-if>
+
+      <sc-if value="{{ diagramMode }}" hint-placeholder-val="{{ true }}">
+        <div style="padding: 8px 20px 18px; display: flex; flex-direction: column; gap: 10px;">
+          <span style="font-size: 12px; color: #5d5d6a;">The model behind this case. The highlighted step is where it stands now, and the <strong style="font-weight: 600; color: #c44500;">double-ringed events are the stage markers</strong> - their numbers match the dots above.</span>
+          <div style="overflow-x: auto; border-radius: 8px; background: rgba(249,249,251,0.9); box-shadow: inset 0 0 0 1px rgba(24,24,27,0.08);">
+            <sc-if value="{{ hlAssessment }}" hint-placeholder-val="{{ true }}">
+              <svg width="1180" height="320" viewBox="0 0 1180 320" style="display: block;"><defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8c8c96"></path></marker></defs><path d="M73 150 L92 150" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><path d="M188 150 L213 150" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><path d="M239 150 L264 150" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><path d="M360 150 L398 150" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><path d="M494 150 L532 150" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><path d="M670 150 L692 150" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><path d="M769 52 L794 52" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><path d="M890 52 L915 52" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><path d="M941 52 L966 52" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><path d="M1062 52 L1087 52" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><path d="M1113 52 L1125 52" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><path d="M769 250 L794 250" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><path d="M890 250 L915 250" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><path d="M941 250 L953 250" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><path d="M710 132 L710 52 L743 52" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><text x="728" y="44" text-anchor="middle" font-family="Geist, sans-serif" font-size="8.5" font-weight="600" fill="#047857">approved</text><path d="M710 168 L710 250 L743 250" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><text x="728" y="266" text-anchor="middle" font-family="Geist, sans-serif" font-size="8.5" font-weight="600" fill="#be123c">rejected</text><circle cx="60" cy="150" r="13" fill="#fff" stroke="#5d5d6a" stroke-width="1.8"></circle><text x="60" y="192" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="400" fill="#5d5d6a">Application</text><text x="60" y="202" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="400" fill="#5d5d6a">received</text><rect x="92" y="125" width="96" height="50" rx="7" fill="#fff" stroke="#5d5d6a" stroke-width="1.6"></rect><g transform="translate(96,129) scale(0.5)" fill="none" stroke="#5d5d6a" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="3.3"></circle><path d="M5.5 20a6.5 6.5 0 0 1 13 0"></path></g><text x="140" y="148" text-anchor="middle" font-family="Geist, sans-serif" font-size="9.5" font-weight="500" fill="#18181b">Capture</text><text x="140" y="159" text-anchor="middle" font-family="Geist, sans-serif" font-size="9.5" font-weight="500" fill="#18181b">application</text><circle cx="226" cy="150" r="13" fill="#fff" stroke="#047857" stroke-width="1.9"></circle><circle cx="226" cy="150" r="9" fill="none" stroke="#047857" stroke-width="1.9"></circle><circle cx="238" cy="138" r="9" fill="#047857" stroke="#fff" stroke-width="1.6"></circle><text x="238" y="141" text-anchor="middle" font-family="Geist, sans-serif" font-size="10" font-weight="600" fill="#fff">1</text><text x="226" y="184" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#047857">Stage:</text><text x="226" y="194" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#047857">Case initiation</text><rect x="264" y="125" width="96" height="50" rx="7" fill="#fff" stroke="#5d5d6a" stroke-width="2.8"></rect><g transform="translate(268,129) scale(0.5)" fill="none" stroke="#5d5d6a" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"></circle><path d="M12 2.5v3M12 18.5v3M4.8 4.8l2 2M17.2 17.2l2 2M2.5 12h3M18.5 12h3M4.8 19.2l2-2M17.2 6.8l2-2"></path></g><rect x="306" y="161" width="12" height="12" rx="2" fill="#fff" stroke="#5d5d6a" stroke-width="1.3"></rect><path d="M308 167 H316 M312 164 V170" stroke="#5d5d6a" stroke-width="1.2"></path><text x="312" y="148" text-anchor="middle" font-family="Geist, sans-serif" font-size="9.5" font-weight="500" fill="#18181b">Collect</text><text x="312" y="159" text-anchor="middle" font-family="Geist, sans-serif" font-size="9.5" font-weight="500" fill="#18181b">documents</text><circle cx="362" cy="123" r="9" fill="#047857" stroke="#fff" stroke-width="1.6"></circle><text x="362" y="126" text-anchor="middle" font-family="Geist, sans-serif" font-size="10" font-weight="600" fill="#fff">2</text><text x="312" y="220" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#047857">Stage: Credit application</text><text x="312" y="230" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#047857">in the called process</text><rect x="398" y="125" width="96" height="50" rx="7" fill="#fff" stroke="#5d5d6a" stroke-width="1.6"></rect><g transform="translate(402,129) scale(0.5)" fill="none" stroke="#5d5d6a" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"></circle><path d="M12 2.5v3M12 18.5v3M4.8 4.8l2 2M17.2 17.2l2 2M2.5 12h3M18.5 12h3M4.8 19.2l2-2M17.2 6.8l2-2"></path></g><text x="446" y="148" text-anchor="middle" font-family="Geist, sans-serif" font-size="9.5" font-weight="500" fill="#18181b">Run credit</text><text x="446" y="159" text-anchor="middle" font-family="Geist, sans-serif" font-size="9.5" font-weight="500" fill="#18181b">scoring</text><rect x="532" y="106" width="138" height="88" rx="9" fill="#fff" stroke="#c44500" stroke-width="2.6" stroke-dasharray="5 4"></rect><text x="601" y="127" text-anchor="middle" font-family="Geist, sans-serif" font-size="10" font-weight="600" fill="#c44500">Credit assessment</text><text x="601" y="143" text-anchor="middle" font-family="Geist, sans-serif" font-size="8.5" font-weight="400" fill="#5d5d6a">caseworker picks</text><text x="601" y="153" text-anchor="middle" font-family="Geist, sans-serif" font-size="8.5" font-weight="400" fill="#5d5d6a">from 5 actions</text><text x="601" y="185" text-anchor="middle" font-family="Geist, sans-serif" font-size="13" font-weight="400" fill="#5d5d6a">≈</text><path d="M710 132 L728 150 L710 168 L692 150 Z" fill="#fff" stroke="#5d5d6a" stroke-width="1.7"></path><path d="M703 143 L717 157 M717 143 L703 157" stroke="#5d5d6a" stroke-width="1.4"></path><circle cx="756" cy="52" r="13" fill="#fff" stroke="#c44500" stroke-width="1.9"></circle><circle cx="756" cy="52" r="9" fill="none" stroke="#c44500" stroke-width="1.9"></circle><circle cx="768" cy="40" r="9" fill="#c44500" stroke="#fff" stroke-width="1.6"></circle><text x="768" y="43" text-anchor="middle" font-family="Geist, sans-serif" font-size="10" font-weight="600" fill="#fff">3</text><text x="756" y="86" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#c44500">Stage: Credit assessment</text><text x="756" y="96" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#c44500">(approved)</text><rect x="794" y="27" width="96" height="50" rx="7" fill="#fff" stroke="#5d5d6a" stroke-width="1.6"></rect><g transform="translate(798,31) scale(0.5)" fill="none" stroke="#5d5d6a" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="3.3"></circle><path d="M5.5 20a6.5 6.5 0 0 1 13 0"></path></g><text x="842" y="50" text-anchor="middle" font-family="Geist, sans-serif" font-size="9.5" font-weight="500" fill="#18181b">Underwriter</text><text x="842" y="61" text-anchor="middle" font-family="Geist, sans-serif" font-size="9.5" font-weight="500" fill="#18181b">review</text><circle cx="928" cy="52" r="13" fill="#fff" stroke="#c3c9d4" stroke-width="1.9"></circle><circle cx="928" cy="52" r="9" fill="none" stroke="#c3c9d4" stroke-width="1.9"></circle><circle cx="940" cy="40" r="9" fill="#fff" stroke="#c3c9d4" stroke-width="2"></circle><text x="940" y="43" text-anchor="middle" font-family="Geist, sans-serif" font-size="10" font-weight="600" fill="#5d5d6a">4</text><text x="928" y="86" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#5d5d6a">Stage: Underwriter</text><text x="928" y="96" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#5d5d6a">review</text><rect x="966" y="27" width="96" height="50" rx="7" fill="#fff" stroke="#5d5d6a" stroke-width="1.6"></rect><g transform="translate(970,31) scale(0.5)" fill="none" stroke="#5d5d6a" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"></circle><path d="M12 2.5v3M12 18.5v3M4.8 4.8l2 2M17.2 17.2l2 2M2.5 12h3M18.5 12h3M4.8 19.2l2-2M17.2 6.8l2-2"></path></g><text x="1014" y="55" text-anchor="middle" font-family="Geist, sans-serif" font-size="9.5" font-weight="500" fill="#18181b">Disburse loan</text><circle cx="1100" cy="52" r="13" fill="#fff" stroke="#c3c9d4" stroke-width="1.9"></circle><circle cx="1100" cy="52" r="9" fill="none" stroke="#c3c9d4" stroke-width="1.9"></circle><circle cx="1112" cy="40" r="9" fill="#fff" stroke="#c3c9d4" stroke-width="2"></circle><text x="1112" y="43" text-anchor="middle" font-family="Geist, sans-serif" font-size="10" font-weight="600" fill="#5d5d6a">5</text><text x="1100" y="86" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#5d5d6a">Stage: Closing</text><text x="1100" y="96" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#5d5d6a">(disbursed)</text><circle cx="1138" cy="52" r="13" fill="#fff" stroke="#5d5d6a" stroke-width="3.4"></circle><circle cx="756" cy="250" r="13" fill="#fff" stroke="#c44500" stroke-width="1.9"></circle><circle cx="756" cy="250" r="9" fill="none" stroke="#c44500" stroke-width="1.9"></circle><circle cx="768" cy="238" r="9" fill="#c44500" stroke="#fff" stroke-width="1.6"></circle><text x="768" y="241" text-anchor="middle" font-family="Geist, sans-serif" font-size="10" font-weight="600" fill="#fff">3</text><text x="756" y="284" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#c44500">Stage: Credit assessment</text><text x="756" y="294" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#c44500">(rejected)</text><rect x="794" y="225" width="96" height="50" rx="7" fill="#fff" stroke="#5d5d6a" stroke-width="1.6"></rect><g transform="translate(798,229) scale(0.5)" fill="none" stroke="#5d5d6a" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"></circle><path d="M12 2.5v3M12 18.5v3M4.8 4.8l2 2M17.2 17.2l2 2M2.5 12h3M18.5 12h3M4.8 19.2l2-2M17.2 6.8l2-2"></path></g><text x="842" y="248" text-anchor="middle" font-family="Geist, sans-serif" font-size="9.5" font-weight="500" fill="#18181b">Send rejection</text><text x="842" y="259" text-anchor="middle" font-family="Geist, sans-serif" font-size="9.5" font-weight="500" fill="#18181b">notice</text><circle cx="928" cy="250" r="13" fill="#fff" stroke="#c3c9d4" stroke-width="1.9"></circle><circle cx="928" cy="250" r="9" fill="none" stroke="#c3c9d4" stroke-width="1.9"></circle><circle cx="940" cy="238" r="9" fill="#fff" stroke="#c3c9d4" stroke-width="2"></circle><text x="940" y="241" text-anchor="middle" font-family="Geist, sans-serif" font-size="10" font-weight="600" fill="#5d5d6a">5</text><text x="928" y="284" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#5d5d6a">Stage: Closing</text><text x="928" y="294" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#5d5d6a">(declined)</text><circle cx="966" cy="250" r="13" fill="#fff" stroke="#5d5d6a" stroke-width="3.4"></circle></svg>
+            </sc-if>
+            <sc-if value="{{ hlReview }}" hint-placeholder-val="{{ true }}">
+              <svg width="1180" height="320" viewBox="0 0 1180 320" style="display: block;"><defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8c8c96"></path></marker></defs><path d="M73 150 L92 150" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><path d="M188 150 L213 150" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><path d="M239 150 L264 150" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><path d="M360 150 L398 150" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><path d="M494 150 L532 150" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><path d="M670 150 L692 150" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><path d="M769 52 L794 52" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><path d="M890 52 L915 52" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><path d="M941 52 L966 52" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><path d="M1062 52 L1087 52" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><path d="M1113 52 L1125 52" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><path d="M769 250 L794 250" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><path d="M890 250 L915 250" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><path d="M941 250 L953 250" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><path d="M710 132 L710 52 L743 52" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><text x="728" y="44" text-anchor="middle" font-family="Geist, sans-serif" font-size="8.5" font-weight="600" fill="#047857">approved</text><path d="M710 168 L710 250 L743 250" fill="none" stroke="#8c8c96" stroke-width="1.5" marker-end="url(#a)"></path><text x="728" y="266" text-anchor="middle" font-family="Geist, sans-serif" font-size="8.5" font-weight="600" fill="#be123c">rejected</text><circle cx="60" cy="150" r="13" fill="#fff" stroke="#5d5d6a" stroke-width="1.8"></circle><text x="60" y="192" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="400" fill="#5d5d6a">Application</text><text x="60" y="202" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="400" fill="#5d5d6a">received</text><rect x="92" y="125" width="96" height="50" rx="7" fill="#fff" stroke="#5d5d6a" stroke-width="1.6"></rect><g transform="translate(96,129) scale(0.5)" fill="none" stroke="#5d5d6a" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="3.3"></circle><path d="M5.5 20a6.5 6.5 0 0 1 13 0"></path></g><text x="140" y="148" text-anchor="middle" font-family="Geist, sans-serif" font-size="9.5" font-weight="500" fill="#18181b">Capture</text><text x="140" y="159" text-anchor="middle" font-family="Geist, sans-serif" font-size="9.5" font-weight="500" fill="#18181b">application</text><circle cx="226" cy="150" r="13" fill="#fff" stroke="#047857" stroke-width="1.9"></circle><circle cx="226" cy="150" r="9" fill="none" stroke="#047857" stroke-width="1.9"></circle><circle cx="238" cy="138" r="9" fill="#047857" stroke="#fff" stroke-width="1.6"></circle><text x="238" y="141" text-anchor="middle" font-family="Geist, sans-serif" font-size="10" font-weight="600" fill="#fff">1</text><text x="226" y="184" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#047857">Stage:</text><text x="226" y="194" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#047857">Case initiation</text><rect x="264" y="125" width="96" height="50" rx="7" fill="#fff" stroke="#5d5d6a" stroke-width="2.8"></rect><g transform="translate(268,129) scale(0.5)" fill="none" stroke="#5d5d6a" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"></circle><path d="M12 2.5v3M12 18.5v3M4.8 4.8l2 2M17.2 17.2l2 2M2.5 12h3M18.5 12h3M4.8 19.2l2-2M17.2 6.8l2-2"></path></g><rect x="306" y="161" width="12" height="12" rx="2" fill="#fff" stroke="#5d5d6a" stroke-width="1.3"></rect><path d="M308 167 H316 M312 164 V170" stroke="#5d5d6a" stroke-width="1.2"></path><text x="312" y="148" text-anchor="middle" font-family="Geist, sans-serif" font-size="9.5" font-weight="500" fill="#18181b">Collect</text><text x="312" y="159" text-anchor="middle" font-family="Geist, sans-serif" font-size="9.5" font-weight="500" fill="#18181b">documents</text><circle cx="362" cy="123" r="9" fill="#047857" stroke="#fff" stroke-width="1.6"></circle><text x="362" y="126" text-anchor="middle" font-family="Geist, sans-serif" font-size="10" font-weight="600" fill="#fff">2</text><text x="312" y="220" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#047857">Stage: Credit application</text><text x="312" y="230" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#047857">in the called process</text><rect x="398" y="125" width="96" height="50" rx="7" fill="#fff" stroke="#5d5d6a" stroke-width="1.6"></rect><g transform="translate(402,129) scale(0.5)" fill="none" stroke="#5d5d6a" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"></circle><path d="M12 2.5v3M12 18.5v3M4.8 4.8l2 2M17.2 17.2l2 2M2.5 12h3M18.5 12h3M4.8 19.2l2-2M17.2 6.8l2-2"></path></g><text x="446" y="148" text-anchor="middle" font-family="Geist, sans-serif" font-size="9.5" font-weight="500" fill="#18181b">Run credit</text><text x="446" y="159" text-anchor="middle" font-family="Geist, sans-serif" font-size="9.5" font-weight="500" fill="#18181b">scoring</text><rect x="532" y="106" width="138" height="88" rx="9" fill="#fff" stroke="#5d5d6a" stroke-width="1.7" stroke-dasharray="5 4"></rect><text x="601" y="127" text-anchor="middle" font-family="Geist, sans-serif" font-size="10" font-weight="600" fill="#18181b">Credit assessment</text><text x="601" y="143" text-anchor="middle" font-family="Geist, sans-serif" font-size="8.5" font-weight="400" fill="#5d5d6a">caseworker picks</text><text x="601" y="153" text-anchor="middle" font-family="Geist, sans-serif" font-size="8.5" font-weight="400" fill="#5d5d6a">from 5 actions</text><text x="601" y="185" text-anchor="middle" font-family="Geist, sans-serif" font-size="13" font-weight="400" fill="#5d5d6a">≈</text><path d="M710 132 L728 150 L710 168 L692 150 Z" fill="#fff" stroke="#5d5d6a" stroke-width="1.7"></path><path d="M703 143 L717 157 M717 143 L703 157" stroke="#5d5d6a" stroke-width="1.4"></path><circle cx="756" cy="52" r="13" fill="#fff" stroke="#047857" stroke-width="1.9"></circle><circle cx="756" cy="52" r="9" fill="none" stroke="#047857" stroke-width="1.9"></circle><circle cx="768" cy="40" r="9" fill="#047857" stroke="#fff" stroke-width="1.6"></circle><text x="768" y="43" text-anchor="middle" font-family="Geist, sans-serif" font-size="10" font-weight="600" fill="#fff">3</text><text x="756" y="86" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#047857">Stage: Credit assessment</text><text x="756" y="96" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#047857">(approved)</text><rect x="794" y="27" width="96" height="50" rx="7" fill="#fff" stroke="#c44500" stroke-width="2.6"></rect><g transform="translate(798,31) scale(0.5)" fill="none" stroke="#5d5d6a" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="3.3"></circle><path d="M5.5 20a6.5 6.5 0 0 1 13 0"></path></g><text x="842" y="50" text-anchor="middle" font-family="Geist, sans-serif" font-size="9.5" font-weight="500" fill="#c44500">Underwriter</text><text x="842" y="61" text-anchor="middle" font-family="Geist, sans-serif" font-size="9.5" font-weight="500" fill="#c44500">review</text><circle cx="928" cy="52" r="13" fill="#fff" stroke="#c44500" stroke-width="1.9"></circle><circle cx="928" cy="52" r="9" fill="none" stroke="#c44500" stroke-width="1.9"></circle><circle cx="940" cy="40" r="9" fill="#c44500" stroke="#fff" stroke-width="1.6"></circle><text x="940" y="43" text-anchor="middle" font-family="Geist, sans-serif" font-size="10" font-weight="600" fill="#fff">4</text><text x="928" y="86" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#c44500">Stage: Underwriter</text><text x="928" y="96" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#c44500">review</text><rect x="966" y="27" width="96" height="50" rx="7" fill="#fff" stroke="#5d5d6a" stroke-width="1.6"></rect><g transform="translate(970,31) scale(0.5)" fill="none" stroke="#5d5d6a" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"></circle><path d="M12 2.5v3M12 18.5v3M4.8 4.8l2 2M17.2 17.2l2 2M2.5 12h3M18.5 12h3M4.8 19.2l2-2M17.2 6.8l2-2"></path></g><text x="1014" y="55" text-anchor="middle" font-family="Geist, sans-serif" font-size="9.5" font-weight="500" fill="#18181b">Disburse loan</text><circle cx="1100" cy="52" r="13" fill="#fff" stroke="#c3c9d4" stroke-width="1.9"></circle><circle cx="1100" cy="52" r="9" fill="none" stroke="#c3c9d4" stroke-width="1.9"></circle><circle cx="1112" cy="40" r="9" fill="#fff" stroke="#c3c9d4" stroke-width="2"></circle><text x="1112" y="43" text-anchor="middle" font-family="Geist, sans-serif" font-size="10" font-weight="600" fill="#5d5d6a">5</text><text x="1100" y="86" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#5d5d6a">Stage: Closing</text><text x="1100" y="96" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#5d5d6a">(disbursed)</text><circle cx="1138" cy="52" r="13" fill="#fff" stroke="#5d5d6a" stroke-width="3.4"></circle><circle cx="756" cy="250" r="13" fill="#fff" stroke="#047857" stroke-width="1.9"></circle><circle cx="756" cy="250" r="9" fill="none" stroke="#047857" stroke-width="1.9"></circle><circle cx="768" cy="238" r="9" fill="#047857" stroke="#fff" stroke-width="1.6"></circle><text x="768" y="241" text-anchor="middle" font-family="Geist, sans-serif" font-size="10" font-weight="600" fill="#fff">3</text><text x="756" y="284" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#047857">Stage: Credit assessment</text><text x="756" y="294" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#047857">(rejected)</text><rect x="794" y="225" width="96" height="50" rx="7" fill="#fff" stroke="#5d5d6a" stroke-width="1.6"></rect><g transform="translate(798,229) scale(0.5)" fill="none" stroke="#5d5d6a" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"></circle><path d="M12 2.5v3M12 18.5v3M4.8 4.8l2 2M17.2 17.2l2 2M2.5 12h3M18.5 12h3M4.8 19.2l2-2M17.2 6.8l2-2"></path></g><text x="842" y="248" text-anchor="middle" font-family="Geist, sans-serif" font-size="9.5" font-weight="500" fill="#18181b">Send rejection</text><text x="842" y="259" text-anchor="middle" font-family="Geist, sans-serif" font-size="9.5" font-weight="500" fill="#18181b">notice</text><circle cx="928" cy="250" r="13" fill="#fff" stroke="#c3c9d4" stroke-width="1.9"></circle><circle cx="928" cy="250" r="9" fill="none" stroke="#c3c9d4" stroke-width="1.9"></circle><circle cx="940" cy="238" r="9" fill="#fff" stroke="#c3c9d4" stroke-width="2"></circle><text x="940" y="241" text-anchor="middle" font-family="Geist, sans-serif" font-size="10" font-weight="600" fill="#5d5d6a">5</text><text x="928" y="284" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#5d5d6a">Stage: Closing</text><text x="928" y="294" text-anchor="middle" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#5d5d6a">(declined)</text><circle cx="966" cy="250" r="13" fill="#fff" stroke="#5d5d6a" stroke-width="3.4"></circle></svg>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+
+    <!-- BODY -->
+    <div style="display: flex; gap: 16px; align-items: flex-start;">
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 16px; min-width: 0;">
+
+        <!-- ALWAYS: current task -->
+        <sc-if value="{{ isTask }}" hint-placeholder-val="{{ true }}">
+          <div class="card" style="display: flex; flex-direction: column; overflow: hidden;">
+            <div style="padding: 15px 20px 13px; border-bottom: 1px solid rgba(24,24,27,0.09); display: flex; align-items: flex-start; gap: 12px;">
+              <div style="display: flex; flex-direction: column; gap: 3px; flex-grow: 1; min-width: 0;">
+                <span class="sec">Current task</span>
+                <span style="font-size: 15px; font-weight: 600; letter-spacing: -0.01em;">Underwriter review</span>
+              </div>
+              <span style="display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 9999px; background: rgba(4,120,87,0.10); color: #047857; font-size: 11px; font-weight: 500; flex-shrink: 0;">Assigned to you</span>
+            </div>
+            <div style="padding: 16px 20px; display: flex; flex-direction: column; gap: 15px;">
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <span class="lbl">Recommendation from credit assessment</span>
+                <div style="padding: 11px 13px; border-radius: 8px; background: rgba(4,120,87,0.06); box-shadow: inset 0 0 0 1px rgba(4,120,87,0.18); font-size: 13px; line-height: 1.5;">Approve. Score 682 with two late payments in 2019, customer since 2014 with no defaults. Recommend proceeding at standard rate.</div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <span class="lbl">Decision</span>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                  <span style="display: flex; align-items: center; gap: 9px; font-size: 13px;">
+                    <span style="width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 5px #c44500, inset 0 0 0 7px #ffffff, inset 0 0 0 9px #c44500; flex-shrink: 0;"></span>
+                    Approve and disburse
+                  </span>
+                  <span style="display: flex; align-items: center; gap: 9px; font-size: 13px; color: #3f3f46;">
+                    <span style="width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px rgba(24,24,27,0.30); flex-shrink: 0;"></span>
+                    Decline
+                  </span>
+                  <span style="display: flex; align-items: center; gap: 9px; font-size: 13px; color: #3f3f46;">
+                    <span style="width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px rgba(24,24,27,0.30); flex-shrink: 0;"></span>
+                    Send back to assessment
+                  </span>
+                </div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <span class="lbl">Sign-off notes</span>
+                <textarea class="ta" rows="3" placeholder="Anything the audit trail should carry"></textarea>
+              </div>
+            </div>
+            <div style="padding: 13px 20px; background: rgba(228,228,231,0.35); border-top: 1px solid rgba(24,24,27,0.09); display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 11px; color: #5d5d6a; flex-grow: 1;">Saved automatically. You can come back to this.</span>
+              <span class="btn" style="display: inline-flex; align-items: center; height: 34px; padding: 0 14px; border-radius: 8px; background: #ffffff; box-shadow: inset 0 0 0 1px rgba(24,24,27,0.18); font-size: 13px; font-weight: 500;">Save and close</span>
+              <span class="btn" style="display: inline-flex; align-items: center; height: 34px; padding: 0 16px; border-radius: 8px; background: #c44500; color: #ffffff; font-size: 13px; font-weight: 500;">Complete task</span>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isAhsp }}" hint-placeholder-val="{{ true }}">
+          <div class="card" style="display: flex; flex-direction: column; overflow: hidden;">
+            <div style="padding: 15px 20px 13px; border-bottom: 1px solid rgba(24,24,27,0.09); display: flex; align-items: flex-start; gap: 12px;">
+              <div style="display: flex; flex-direction: column; gap: 3px; flex-grow: 1; min-width: 0;">
+                <span class="sec">Current task</span>
+                <span style="font-size: 15px; font-weight: 600; letter-spacing: -0.01em;">Credit assessment</span>
+                <span style="font-size: 12px; color: #5d5d6a;">No single form here. Pick the actions you need, then close the stage with a decision.</span>
+              </div>
+              <span style="display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 9px; border-radius: 9999px; background: rgba(196,69,0,0.10); color: #c44500; font-size: 11px; font-weight: 500; flex-shrink: 0;">
+                <span style="width: 6px; height: 6px; border-radius: 50%; background: #c44500;"></span>Open 31 min
+              </span>
+            </div>
+            <div style="padding: 15px 20px; display: flex; flex-direction: column; gap: 10px;">
+              <div style="display: flex; align-items: baseline; gap: 8px;">
+                <span class="sec">Actions</span>
+                <span style="font-size: 11px; color: #a1a1aa;">{{ doneCount }} of {{ toolCount }} used</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <sc-for list="{{ tools }}" as="t" hint-placeholder-count="5">
+                  <div style="display: flex; align-items: center; gap: 11px; padding: 9px 12px; border-radius: 8px; background: {{ t.bg }}; box-shadow: inset 0 0 0 1px {{ t.ring }};">
+                    <sc-if value="{{ t.ran }}" hint-placeholder-val="{{ true }}">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#047857" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M20 6 9 17l-5-5"></path></svg>
+                    </sc-if>
+                    <sc-if value="{{ t.notRan }}" hint-placeholder-val="{{ true }}">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5d5d6a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><circle cx="12" cy="12" r="9"></circle><path d="m10 9 5 3-5 3z"></path></svg>
+                    </sc-if>
+                    <div style="display: flex; flex-direction: column; gap: 1px; flex-grow: 1; min-width: 0;">
+                      <span style="font-size: 13px; font-weight: 500;">{{ t.name }}</span>
+                      <span style="font-size: 11px; color: {{ t.noteColor }};">{{ t.note }}</span>
+                    </div>
+                    <span class="btn" onClick="{{ t.run }}" style="display: inline-flex; align-items: center; height: 28px; padding: 0 11px; border-radius: 8px; flex-shrink: 0; font-size: 12px; font-weight: 500; background: {{ t.btnBg }}; color: {{ t.btnFg }}; box-shadow: {{ t.btnRing }};">{{ t.btn }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="padding: 13px 20px; background: rgba(228,228,231,0.35); border-top: 1px solid rgba(24,24,27,0.09); display: flex; align-items: center; gap: 10px;">
+              <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0;">
+                <span style="font-size: 12px; font-weight: 600;">Close this stage</span>
+                <span style="font-size: 11px; color: {{ gate.color }};">{{ gate.hint }}</span>
+              </div>
+              <span class="btn" style="display: inline-flex; align-items: center; height: 34px; padding: 0 14px; border-radius: 8px; background: #ffffff; font-size: 13px; font-weight: 500; box-shadow: inset 0 0 0 1px rgba(24,24,27,0.18); color: {{ gate.rejectFg }};">Reject</span>
+              <span class="btn" style="display: inline-flex; align-items: center; height: 34px; padding: 0 16px; border-radius: 8px; background: #c44500; color: #ffffff; font-size: 13px; font-weight: 500; opacity: {{ gate.opacity }};">Approve</span>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ALWAYS: case information -->
+        <div class="card" style="display: flex; flex-direction: column; overflow: hidden;">
+          <div style="padding: 15px 20px 13px; border-bottom: 1px solid rgba(24,24,27,0.09); display: flex; align-items: center; gap: 12px;">
+            <div style="display: flex; flex-direction: column; gap: 3px; flex-grow: 1;">
+              <span style="font-size: 15px; font-weight: 600; letter-spacing: -0.01em;">Case information</span>
+              <span style="font-size: 12px; color: #5d5d6a;">The case record, as one form. Editable where your role allows it.</span>
+            </div>
+            <span class="btn" style="display: inline-flex; align-items: center; height: 30px; padding: 0 12px; border-radius: 8px; background: #ffffff; box-shadow: inset 0 0 0 1px rgba(24,24,27,0.18); font-size: 12px; font-weight: 500; flex-shrink: 0;">Save changes</span>
+          </div>
+          <div style="padding: 16px 20px; display: flex; flex-direction: column; gap: 17px;">
+            <sc-for list="{{ infoGroups }}" as="g" hint-placeholder-count="4">
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <span class="sec">{{ g.title }}</span>
+                <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 14px;">
+                  <sc-for list="{{ g.fields }}" as="f" hint-placeholder-count="6">
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                      <span class="lbl">{{ f.label }}</span>
+                      <input class="fld" defaultValue="{{ f.value }}" readOnly="{{ f.locked }}" style="background: {{ f.bg }}; color: {{ f.fg }};">
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: documents always, history on click -->
+      <div style="width: 396px; flex-shrink: 0; display: flex; flex-direction: column; gap: 16px;">
+        <div class="card" style="display: flex; flex-direction: column; overflow: hidden;">
+          <div style="padding: 14px 18px 12px; border-bottom: 1px solid rgba(24,24,27,0.09); display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 13px; font-weight: 600; flex-grow: 1;">Documents</span>
+            <span class="btn" style="display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 11px; border-radius: 8px; background: #c44500; color: #ffffff; font-size: 12px; font-weight: 500;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+              Add
+            </span>
+          </div>
+          <div style="display: flex; flex-direction: column;">
+            <sc-for list="{{ docs }}" as="d" hint-placeholder-count="4">
+              <div style="display: flex; align-items: center; gap: 10px; padding: 11px 18px; border-bottom: 1px solid rgba(24,24,27,0.07);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#be123c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M19 8v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7z"></path></svg>
+                <div style="display: flex; flex-direction: column; gap: 1px; flex-grow: 1; min-width: 0;">
+                  <span style="font-size: 12px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ d.name }}</span>
+                  <span style="font-size: 11px; color: #5d5d6a;">{{ d.kind }} &middot; {{ d.when }}</span>
+                </div>
+                <span style="font-size: 11px; color: #5d5d6a; flex-shrink: 0;">{{ d.size }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div class="card" style="display: flex; flex-direction: column; overflow: hidden;">
+          <div class="btn" onClick="{{ onToggleHist }}" style="padding: 14px 18px; display: flex; align-items: center; gap: 9px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5d5d6a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M3 3v6h6"></path><path d="M3.5 9a9 9 0 1 0 2.1-5.6L3 6"></path><path d="M12 8v4l3 2"></path></svg>
+            <span style="font-size: 13px; font-weight: 600; flex-grow: 1;">Case history</span>
+            <span style="font-size: 11px; color: #5d5d6a;">{{ histCount }} entries</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5d5d6a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; transform: rotate({{ histRot }}deg);"><path d="m6 9 6 6 6-6"></path></svg>
+          </div>
+          <sc-if value="{{ histOpen }}" hint-placeholder-val="{{ true }}">
+            <div style="padding: 4px 18px 16px; border-top: 1px solid rgba(24,24,27,0.09); display: flex; flex-direction: column;">
+              <sc-for list="{{ history }}" as="h" hint-placeholder-count="8">
+                <div style="display: flex; gap: 11px; padding-top: 13px;">
+                  <div style="display: flex; flex-direction: column; align-items: center; width: 9px; flex-shrink: 0;">
+                    <span style="width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; background: {{ h.dot }};"></span>
+                    <sc-if value="{{ h.hasTail }}" hint-placeholder-val="{{ true }}">
+                      <span style="width: 2px; flex-grow: 1; background: rgba(24,24,27,0.10);"></span>
+                    </sc-if>
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+                    <div style="display: flex; align-items: center; gap: 7px;">
+                      <span style="display: inline-flex; align-items: center; height: 17px; padding: 0 6px; border-radius: 4px; background: {{ h.tagBg }}; color: {{ h.tagFg }}; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">{{ h.tag }}</span>
+                      <span style="font-size: 11px; color: #5d5d6a;">{{ h.when }}</span>
+                    </div>
+                    <span style="font-size: 12px; line-height: 1.45;">{{ h.text }}</span>
+                    <span style="font-size: 11px; color: #5d5d6a;">{{ h.who }}</span>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":1440,"height":1800}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { view: 'list', caseId: 'HL-28005', mode: 'stages', waitOpen: false, histOpen: false, ran: {} };
+  }
+
+  renderVals() {
+    const st = this.state || {};
+    const view = st.view || 'list';
+    const caseId = st.caseId || 'HL-28005';
+    const mode = st.mode || 'stages';
+    const waitOpen = !!st.waitOpen;
+    const histOpen = !!st.histOpen;
+    const ran = st.ran || {};
+
+    const GREEN = '#047857', BRAND = '#c44500', GREY = 'rgba(24,24,27,0.16)', LINE = 'rgba(24,24,27,0.12)';
+    const STAGES = ['Case initiation', 'Credit application', 'Credit assessment', 'Underwriter review', 'Closing'];
+
+    const DATA = {
+      'HL-28005': {
+        id: 'HL-28005', title: 'Home loan application', customer: 'Sara Connor', amount: '$365,000',
+        owner: 'Donna Tello', ownerColor: '#18181b', due: 'in 2 days', dueColor: '#be123c', dueWeight: '500',
+        idx: 2, kind: 'ahsp', waitShort: 'You, and the applicant', waitDot: BRAND,
+        when: ['13:22', '13:42', 'In progress', '', ''],
+        waitHeadline: 'things this case is waiting on',
+        waiting: [
+          { what: 'An assessment decision', who: 'You, in the Credit assessment stage', since: '31 min', dot: BRAND },
+          { what: 'A recent payslip', who: 'Sara Connor, asked by you at 13:51', since: '12 min', dot: '#d97706' }
+        ],
+        meta: [
+          { k: 'Amount', v: '$365,000.00' }, { k: 'Term', v: '30 years' },
+          { k: 'Credit band', v: '682, yellow', color: '#a35c05' }, { k: 'Due', v: '21 Feb', color: '#be123c' },
+          { k: 'Opened', v: '13 Feb 2026' }, { k: 'Owner', v: 'Donna Tello' }
+        ],
+        hl: { x: 295, y: 58, w: 140, h: 94 }
+      },
+      'HL-28011': {
+        id: 'HL-28011', title: 'Home loan application', customer: 'Marcus Reed', amount: '$210,000',
+        owner: 'Donna Tello', ownerColor: '#18181b', due: 'in 6 days', dueColor: '#5d5d6a', dueWeight: '400',
+        idx: 3, kind: 'task', waitShort: 'You', waitDot: GREEN,
+        when: ['09:10', '10:04', '11:38', 'In progress', ''],
+        waitHeadline: 'thing this case is waiting on',
+        waiting: [
+          { what: 'Your underwriter sign-off', who: 'You, in the Underwriter review stage', since: '2 hours', dot: BRAND }
+        ],
+        meta: [
+          { k: 'Amount', v: '$210,000.00' }, { k: 'Term', v: '25 years' },
+          { k: 'Credit band', v: '744, green', color: '#047857' }, { k: 'Due', v: '27 Feb' },
+          { k: 'Opened', v: '09 Feb 2026' }, { k: 'Owner', v: 'Donna Tello' }
+        ],
+        hl: { x: 511, y: 76, w: 100, h: 58 }
+      }
+    };
+
+    const LIST = [
+      DATA['HL-28005'],
+      DATA['HL-28011'],
+      { id: 'HL-27994', title: 'Home loan application', customer: 'Priya Nandra', amount: '$480,000',
+        owner: 'Unassigned', ownerColor: '#a1a1aa', due: 'in 9 days', dueColor: '#5d5d6a', dueWeight: '400',
+        idx: 3, waitShort: 'Loan underwriting group', waitDot: '#d97706' },
+      { id: 'HL-28022', title: 'Home loan application', customer: 'Tom Alvarez', amount: '$155,000',
+        owner: 'Unassigned', ownerColor: '#a1a1aa', due: 'in 12 days', dueColor: '#5d5d6a', dueWeight: '400',
+        idx: 0, waitShort: 'Applicant documents', waitDot: '#d97706' }
+    ];
+
+    const rows = LIST.map((d) => ({
+      id: d.id, title: d.title, customer: d.customer, amount: d.amount,
+      owner: d.owner, ownerColor: d.ownerColor, due: d.due, dueColor: d.dueColor, dueWeight: d.dueWeight,
+      waitShort: d.waitShort, waitDot: d.waitDot,
+      stageLabel: STAGES[d.idx] + ', ' + (d.idx + 1) + ' of 5',
+      stageColor: '#3f3f46', stageWeight: '500',
+      pips: STAGES.map((_, i) => ({
+        bg: i < d.idx ? GREEN : (i === d.idx ? '#ffffff' : GREY),
+        ring: i === d.idx ? '0 0 0 2px ' + BRAND : 'none',
+        hasLine: i < 4,
+        line: i < d.idx ? GREEN : LINE
+      })),
+      open: DATA[d.id] ? () => this.setState({ view: 'case', caseId: d.id, mode: 'stages', waitOpen: false, histOpen: false }) : () => {}
+    }));
+
+    const c0 = DATA[caseId];
+    const stages = STAGES.map((label, i) => {
+      const done = i < c0.idx, active = i === c0.idx;
+      return {
+        label: label, isDone: done, isActive: active,
+        dotBg: done ? GREEN : '#ffffff',
+        dotRing: done ? 'none' : (active ? '0 0 0 3px ' + BRAND + ', 0 0 0 7px rgba(196,69,0,0.16)' : 'inset 0 0 0 2px rgba(24,24,27,0.18)'),
+        lineL: i === 0 ? 'transparent' : (i <= c0.idx ? GREEN : LINE),
+        lineR: i === 4 ? 'transparent' : (i < c0.idx ? GREEN : LINE),
+        labelColor: active ? BRAND : (done ? '#18181b' : '#5d5d6a'),
+        labelWeight: done || active ? '600' : '400',
+        when: c0.when[i] || 'Not started',
+        whenColor: active ? BRAND : (done ? '#5d5d6a' : '#a1a1aa'),
+        whenWeight: active ? '500' : '400'
+      };
+    });
+
+    const TOOLS = [
+      { key: 'score', name: 'Retrieve credit score details', done: 'Score 682, two late payments in 2019', todo: 'Not used yet' },
+      { key: 'hist', name: 'Fetch customer history', done: 'Customer since 2014, no defaults', todo: 'Not used yet' },
+      { key: 'loans', name: 'List prior loans', done: 'Two closed loans, both repaid early', todo: 'Not used yet' },
+      { key: 'doc', name: 'Request a document from the applicant', done: 'Payslip requested, awaiting reply', todo: 'Pauses the stage until they reply' },
+      { key: 'dec', name: 'Record the assessment decision', done: 'Approve, recorded by you', todo: 'Needed before the stage can close' }
+    ];
+    const preRan = { score: true, hist: true };
+    const isRan = (k) => (ran[k] !== undefined ? ran[k] : !!preRan[k]);
+
+    const tools = TOOLS.map((t) => {
+      const r = isRan(t.key);
+      return {
+        name: t.name, ran: r, notRan: !r,
+        note: r ? t.done : t.todo,
+        noteColor: r ? '#5d5d6a' : '#a1a1aa',
+        bg: r ? 'rgba(4,120,87,0.05)' : 'transparent',
+        ring: r ? 'rgba(4,120,87,0.18)' : 'rgba(24,24,27,0.12)',
+        btn: r ? 'Again' : 'Run',
+        btnBg: '#ffffff', btnFg: r ? '#5d5d6a' : '#18181b',
+        btnRing: 'inset 0 0 0 1px rgba(24,24,27,0.18)',
+        run: () => {
+          const next = Object.assign({}, ran);
+          next[t.key] = !isRan(t.key);
+          this.setState({ ran: next });
+        }
+      };
+    });
+    const decRecorded = isRan('dec');
+    const doneCount = TOOLS.filter((t) => isRan(t.key)).length;
+
+    const INFO_BY_CASE = {
+      'HL-28005': [
+        { title: 'Applicant', fields: [
+          { label: 'First name', value: 'Sara' }, { label: 'Last name', value: 'Connor' },
+          { label: 'Date of birth', value: '05/03/1981' }, { label: 'Email', value: 'sara.connor@example.com' },
+          { label: 'Phone', value: '613 543 1234' }, { label: 'Customer since', value: '2014', locked: true } ] },
+        { title: 'Financial', fields: [
+          { label: 'Annual income', value: '$160,200.00' }, { label: 'Income source', value: 'Employment' },
+          { label: 'Housing status', value: 'Tenant' }, { label: 'Credit score', value: '682', locked: true },
+          { label: 'Credit band', value: 'Yellow', locked: true }, { label: 'Existing loans', value: '0' } ] },
+        { title: 'Residence', fields: [
+          { label: 'Street', value: '100 Main Street' }, { label: 'City', value: 'Cambridge' },
+          { label: 'State', value: 'Massachusetts' }, { label: 'Zip', value: '20392' },
+          { label: 'Years at address', value: '4' }, { label: 'Country', value: 'United States' } ] },
+        { title: 'Loan', fields: [
+          { label: 'Amount to borrow', value: '$365,000.00' }, { label: 'Term', value: '30 years' },
+          { label: 'Product', value: '30-year fixed' }, { label: 'Monthly payable', value: '$2,099.98', locked: true },
+          { label: 'APR', value: '5.78%', locked: true }, { label: 'Application date', value: '13 Feb 2026', locked: true } ] }
+      ],
+      'HL-28011': [
+        { title: 'Applicant', fields: [
+          { label: 'First name', value: 'Marcus' }, { label: 'Last name', value: 'Reed' },
+          { label: 'Date of birth', value: '22/11/1989' }, { label: 'Email', value: 'marcus.reed@example.com' },
+          { label: 'Phone', value: '617 220 8841' }, { label: 'Customer since', value: '2019', locked: true } ] },
+        { title: 'Financial', fields: [
+          { label: 'Annual income', value: '$112,500.00' }, { label: 'Income source', value: 'Employment' },
+          { label: 'Housing status', value: 'Owner' }, { label: 'Credit score', value: '744', locked: true },
+          { label: 'Credit band', value: 'Green', locked: true }, { label: 'Existing loans', value: '1' } ] },
+        { title: 'Residence', fields: [
+          { label: 'Street', value: '18 Elm Row' }, { label: 'City', value: 'Somerville' },
+          { label: 'State', value: 'Massachusetts' }, { label: 'Zip', value: '02143' },
+          { label: 'Years at address', value: '7' }, { label: 'Country', value: 'United States' } ] },
+        { title: 'Loan', fields: [
+          { label: 'Amount to borrow', value: '$210,000.00' }, { label: 'Term', value: '25 years' },
+          { label: 'Product', value: '25-year fixed' }, { label: 'Monthly payable', value: '$1,284.40', locked: true },
+          { label: 'APR', value: '5.41%', locked: true }, { label: 'Application date', value: '09 Feb 2026', locked: true } ] }
+      ]
+    };
+    const infoGroups = INFO_BY_CASE[caseId].map((g) => ({
+      title: g.title,
+      fields: g.fields.map((f) => ({
+        label: f.label, value: f.value, locked: !!f.locked,
+        bg: f.locked ? 'rgba(228,228,231,0.45)' : '#ffffff',
+        fg: f.locked ? '#5d5d6a' : '#18181b'
+      }))
+    }));
+
+    const DOCS_BY_CASE = {
+      'HL-28005': [
+        { name: 'DriversLicence_SaraConnor.pdf', kind: "Driver's licence", by: 'Sara Connor', when: 'Today, 13:38', size: '1.2 MB' },
+        { name: 'W2_SaraConnor.pdf', kind: 'Income proof', by: 'Sara Connor', when: 'Today, 13:38', size: '480 KB' },
+        { name: 'Utilitybill_SaraConnor.pdf', kind: 'Proof of address', by: 'Sara Connor', when: 'Today, 13:38', size: '210 KB' },
+        { name: 'CreditReport_682.pdf', kind: 'Credit report', by: 'Generated by the case', when: 'Today, 13:48', size: '96 KB' }
+      ],
+      'HL-28011': [
+        { name: 'Passport_MarcusReed.pdf', kind: 'Identity', by: 'Marcus Reed', when: '10 Feb, 09:02', size: '2.1 MB' },
+        { name: 'Payslips_Q4_MarcusReed.pdf', kind: 'Income proof', by: 'Marcus Reed', when: '10 Feb, 09:02', size: '640 KB' },
+        { name: 'MortgageStatement_Existing.pdf', kind: 'Existing debt', by: 'Marcus Reed', when: '10 Feb, 09:04', size: '312 KB' },
+        { name: 'CreditReport_744.pdf', kind: 'Credit report', by: 'Generated by the case', when: '10 Feb, 11:22', size: '94 KB' }
+      ]
+    };
+    const docs = DOCS_BY_CASE[caseId];
+
+    const BLUE = '#2563eb';
+    const tagStage = { dot: BLUE, tagBg: 'rgba(37,99,235,0.10)', tagFg: BLUE };
+    const tagAction = { dot: BRAND, tagBg: 'rgba(196,69,0,0.10)', tagFg: BRAND };
+    const tagDoc = { dot: GREEN, tagBg: 'rgba(4,120,87,0.10)', tagFg: GREEN };
+    const tagOpen = { dot: '#5d5d6a', tagBg: 'rgba(24,24,27,0.07)', tagFg: '#3f3f46' };
+    const HIST_BY_CASE = {
+      'HL-28005': [
+        Object.assign({ tag: 'Action', text: 'Requested a recent payslip from the applicant', who: 'You', when: 'Today, 13:51' }, tagAction),
+        Object.assign({ tag: 'Action', text: 'Fetched customer history: customer since 2014, no defaults', who: 'You', when: 'Today, 13:50' }, tagAction),
+        Object.assign({ tag: 'Action', text: 'Retrieved credit score details: 682, two late payments in 2019', who: 'You', when: 'Today, 13:48' }, tagAction),
+        Object.assign({ tag: 'Stage', text: 'Credit assessment started, escalated on credit band', who: 'Automatic', when: 'Today, 13:42' }, tagStage),
+        Object.assign({ tag: 'Stage', text: 'Credit application completed', who: 'Automatic', when: 'Today, 13:42' }, tagStage),
+        Object.assign({ tag: 'Document', text: 'Three documents submitted and validated', who: 'Sara Connor', when: 'Today, 13:38' }, tagDoc),
+        Object.assign({ tag: 'Stage', text: 'Case initiation completed', who: 'David Grimes', when: 'Today, 13:22' }, tagStage),
+        Object.assign({ tag: 'Opened', text: 'Case opened from the applicant portal', who: 'Sara Connor', when: '13 Feb, 09:14' }, tagOpen)
+      ],
+      'HL-28011': [
+        Object.assign({ tag: 'Stage', text: 'Underwriter review started, sign-off assigned to you', who: 'Automatic', when: 'Today, 11:38' }, tagStage),
+        Object.assign({ tag: 'Stage', text: 'Credit assessment completed, outcome approved', who: 'Donna Tello', when: 'Today, 11:38' }, tagStage),
+        Object.assign({ tag: 'Action', text: 'Recorded the assessment decision: approve at standard rate', who: 'Donna Tello', when: 'Today, 11:35' }, tagAction),
+        Object.assign({ tag: 'Action', text: 'Retrieved credit score details: 744, clean file', who: 'Donna Tello', when: 'Today, 11:20' }, tagAction),
+        Object.assign({ tag: 'Stage', text: 'Credit application completed', who: 'Automatic', when: 'Today, 10:04' }, tagStage),
+        Object.assign({ tag: 'Document', text: 'Four documents submitted and validated', who: 'Marcus Reed', when: '10 Feb, 09:04' }, tagDoc),
+        Object.assign({ tag: 'Stage', text: 'Case initiation completed', who: 'David Grimes', when: 'Today, 09:10' }, tagStage),
+        Object.assign({ tag: 'Opened', text: 'Case opened in branch by an adviser', who: 'David Grimes', when: '09 Feb, 15:40' }, tagOpen)
+      ]
+    };
+    const HIST = HIST_BY_CASE[caseId];
+    const history = HIST.map((h, i) => Object.assign({}, h, { hasTail: i < HIST.length - 1 }));
+
+    const on = (k, v) => () => { const p = {}; p[k] = v; this.setState(p); };
+
+    return {
+      isList: view === 'list', isCase: view === 'case',
+      crumbColor: view === 'case' ? '#5d5d6a' : '#18181b',
+      onBack: on('view', 'list'),
+      rows: rows,
+
+      c: {
+        id: c0.id, title: c0.title, customer: c0.customer, meta: c0.meta,
+        stages: stages, waiting: c0.waiting,
+        waitCount: c0.waiting.length, waitHeadline: c0.waitHeadline
+      },
+      hlAssessment: c0.kind === 'ahsp', hlReview: c0.kind === 'task',
+
+      stagesMode: mode === 'stages', diagramMode: mode === 'diagram',
+      onStages: on('mode', 'stages'), onDiagram: on('mode', 'diagram'),
+      tgl: {
+        stagesBg: mode === 'stages' ? '#ffffff' : 'transparent',
+        stagesFg: mode === 'stages' ? '#18181b' : '#5d5d6a',
+        stagesShadow: mode === 'stages' ? '0 1px 2px rgba(24,24,27,0.08)' : 'none',
+        diagBg: mode === 'diagram' ? '#ffffff' : 'transparent',
+        diagFg: mode === 'diagram' ? '#18181b' : '#5d5d6a',
+        diagShadow: mode === 'diagram' ? '0 1px 2px rgba(24,24,27,0.08)' : 'none'
+      },
+      waitOpen: waitOpen, waitRot: waitOpen ? 180 : 0,
+      onToggleWait: () => this.setState({ waitOpen: !waitOpen }),
+      histOpen: histOpen, histRot: histOpen ? 180 : 0,
+      onToggleHist: () => this.setState({ histOpen: !histOpen }),
+      histCount: HIST.length,
+
+      isAhsp: c0.kind === 'ahsp', isTask: c0.kind === 'task',
+      tools: tools, toolCount: TOOLS.length, doneCount: doneCount,
+      gate: {
+        hint: decRecorded ? 'Decision recorded. Pick an outcome to close the stage.' : 'Record the assessment decision first.',
+        color: decRecorded ? '#047857' : '#5d5d6a',
+        opacity: decRecorded ? 1 : 0.45,
+        rejectFg: decRecorded ? '#18181b' : '#a1a1aa'
+      },
+
+      infoGroups: infoGroups, docs: docs, history: history
+    };
+  }
+}
+</script>
+</body>
+</html>
