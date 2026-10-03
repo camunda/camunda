@@ -137,3 +137,13 @@ func assertRestrictedACL(t *testing.T, path string, inherits bool) {
 		assert.Equal(t, uint16(3), dacl.AceCount)
 	}
 }
+
+func TestWriteOwnerOnlyFileRestrictsWindowsACL(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "nested", "physical-tenants.yaml")
+	require.NoError(t, WriteOwnerOnlyFile(path, []byte("passwords:\n  hr: pw\n")))
+	assertRestrictedACL(t, path, false)
+
+	// Rewriting keeps the protected ACL.
+	require.NoError(t, WriteOwnerOnlyFile(path, []byte("passwords: {}\n")))
+	assertRestrictedACL(t, path, false)
+}
