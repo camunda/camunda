@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.businessvalue;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -24,6 +25,8 @@ import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOvervie
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto.CycleTimeBlock;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto.MetricRange;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewResponseDto;
+import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewResponseDto.OffTargetEntryDto;
+import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewResponseDto.OffTargetStatus;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueTargetDto;
 import io.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
@@ -200,17 +203,71 @@ class BusinessValueOverviewReadServiceTest {
   }
 
   @Test
-  void shouldEmitOffTargetOnlyForRowsWithTargetAndNotMet() {
+  void shouldEmitOffTargetForEveryRowWithATargetThatIsNotMet() {
+    // A row with a target and no measured value is a row whose target is not met — targetsMet has
+    // always counted it that way. Omitting it from the only machine-readable list of unmet targets
+    // let a consumer conclude the opposite.
     // given
     seedRows(
         MetricRange.THIRTY_DAYS,
         fresh(row(TENANT_A, "proc-no-target", cycNull(), autoNull(), 0, 0)),
         fresh(row(TENANT_A, "proc-met", cyc(6_000L, 8_000L, true), autoNull(), 1, 1)),
         fresh(row(TENANT_A, "proc-missed", cyc(9_000L, 8_000L, false), autoNull(), 1, 0)),
+        fresh(row(TENANT_A, "proc-no-value", cyc(null, 8_000L, null), autoNull(), 1, 0)));
+
+    // when
+    final BusinessValueOverviewResponseDto response =
+        readService.getOverview(USER, MetricRange.THIRTY_DAYS);
+
+    // then the measured miss leads, and the unmeasured target is reported rather than dropped
+    assertThat(response.getOffTarget())
+        .extracting(OffTargetEntryDto::getProcessKey, OffTargetEntryDto::getStatus)
+        .containsExactly(
+            tuple("proc-missed", OffTargetStatus.OFF_TARGET),
+            tuple("proc-no-value", OffTargetStatus.NO_COMPLETED_INSTANCES));
+  }
+
+  @Test
+  void shouldReportAComputedRowWithNoValueAsHavingNoCompletedInstances() {
+    // The sweep stamped this row, so it ran and the definition produced no bucket. That is a
+    // statement about the process, not about our bookkeeping — distinct from NOT_MEASURED.
+    // given
+    seedRows(
+        MetricRange.THIRTY_DAYS,
+        fresh(row(TENANT_A, "idle", cyc(null, 8_000L, null), aut(null, 90, null), 2, 0)));
+
+    // when
+    final BusinessValueOverviewResponseDto response =
+        readService.getOverview(USER, MetricRange.THIRTY_DAYS);
+
+    // then both targeted KPIs are listed, with nothing fabricated for the missing measurement
+    assertThat(response.getOffTarget())
+        .extracting(OffTargetEntryDto::getKpi, OffTargetEntryDto::getStatus)
+        .containsExactlyInAnyOrder(
+            tuple("cycleTime", OffTargetStatus.NO_COMPLETED_INSTANCES),
+            tuple("automationRate", OffTargetStatus.NO_COMPLETED_INSTANCES));
+    assertThat(response.getOffTarget())
+        .allSatisfy(
+            entry -> {
+              assertThat(entry.getValue()).isNull();
+              assertThat(entry.getGapPct()).isNull();
+              assertThat(entry.getComparison()).isNull();
+              assertThat(entry.getTarget()).isPositive();
+            });
+  }
+
+  @Test
+  void shouldTreatAFalseVerdictWithNoValueAsUnmeasuredRatherThanThrow() {
+    // BusinessValueOverviewWriter rejects this pair, so it cannot be persisted. The read path still
+    // has to survive it, because dereferencing the absent value to build a gap would crash the
+    // whole response for every other process in the cluster.
+    // given
+    seedRows(
+        MetricRange.THIRTY_DAYS,
         fresh(
             row(
                 TENANT_A,
-                "proc-null-value",
+                "impossible",
                 new CycleTimeBlock(null, 8_000L, false),
                 autoNull(),
                 1,
@@ -222,8 +279,8 @@ class BusinessValueOverviewReadServiceTest {
 
     // then
     assertThat(response.getOffTarget())
-        .extracting(BusinessValueOverviewResponseDto.OffTargetEntryDto::getProcessKey)
-        .containsExactly("proc-missed");
+        .extracting(OffTargetEntryDto::getStatus)
+        .containsExactly(OffTargetStatus.NO_COMPLETED_INSTANCES);
   }
 
   @Test
@@ -301,6 +358,25 @@ class BusinessValueOverviewReadServiceTest {
     seedRows(
         MetricRange.THIRTY_DAYS,
         fresh(row(TENANT_A, "zero-auto", cycNull(), aut(0.0, 0, false), 1, 0)));
+
+    // when
+    final BusinessValueOverviewResponseDto response =
+        readService.getOverview(USER, MetricRange.THIRTY_DAYS);
+
+    // then
+    assertThat(response.getOffTarget()).isEmpty();
+  }
+
+  @Test
+  void shouldSkipAnUnmeasuredEntryWhenTheTargetIsZero() {
+    // The zero-target guard predates this list and exists because gapPct would divide by zero. It
+    // gates the unmeasured entries on the same terms, so a zero target reads as no target whether
+    // or
+    // not a measurement exists — rather than appearing only in the branch that cannot divide.
+    // given
+    seedRows(
+        MetricRange.THIRTY_DAYS,
+        fresh(row(TENANT_A, "zero-unmeasured", cyc(null, 0L, null), aut(null, 0, null), 2, 0)));
 
     // when
     final BusinessValueOverviewResponseDto response =
@@ -631,9 +707,13 @@ class BusinessValueOverviewReadServiceTest {
     assertThat(response.getAttainment().getTargetsMet()).isZero();
   }
 
-  /** There is no measurement, so there is no gap to rank — an entry here would be fabricated. */
+  /**
+   * There is no measurement, so there is no gap to rank — but the target is still unmet, and this
+   * definition has never been measured rather than measured and found empty. The status carries
+   * that difference so a consumer can say "not measured yet" instead of blaming the process.
+   */
   @Test
-  void shouldNotListATargetOnlyDefinitionAsOffTarget() {
+  void shouldListATargetOnlyDefinitionAsNotMeasured() {
     // given
     when(overviewRepository.readByRange(eq(MetricRange.THIRTY_DAYS), any())).thenReturn(List.of());
     stubCurrentDefinitions(new DefKey(TENANT_A, "fresh-import"));
@@ -645,7 +725,55 @@ class BusinessValueOverviewReadServiceTest {
         readService.getOverview(USER, MetricRange.THIRTY_DAYS);
 
     // then
-    assertThat(response.getOffTarget()).isEmpty();
+    assertThat(response.getOffTarget())
+        .extracting(OffTargetEntryDto::getKpi, OffTargetEntryDto::getStatus)
+        .containsExactlyInAnyOrder(
+            tuple("cycleTime", OffTargetStatus.NOT_MEASURED),
+            tuple("automationRate", OffTargetStatus.NOT_MEASURED));
+    assertThat(response.getOffTarget()).allSatisfy(e -> assertThat(e.getGapPct()).isNull());
+  }
+
+  @Test
+  void shouldRankMeasuredMissesAheadOfUnmeasuredTargets() {
+    // The ranking is the list's purpose, and an entry with no gap cannot take part in it. Ordering
+    // those last keeps the worst real miss at the top rather than behind an unrankable row.
+    // given
+    seedRows(
+        MetricRange.THIRTY_DAYS,
+        fresh(row(TENANT_A, "b-unmeasured", cyc(null, 8_000L, null), autoNull(), 1, 0)),
+        fresh(row(TENANT_A, "small-gap", cyc(8_800L, 8_000L, false), autoNull(), 1, 0)),
+        fresh(row(TENANT_A, "a-unmeasured", cyc(null, 8_000L, null), autoNull(), 1, 0)),
+        fresh(row(TENANT_A, "big-gap", cyc(12_000L, 8_000L, false), autoNull(), 1, 0)));
+
+    // when
+    final BusinessValueOverviewResponseDto response =
+        readService.getOverview(USER, MetricRange.THIRTY_DAYS);
+
+    // then measured misses by gap descending, then the unmeasured ones by name for determinism
+    assertThat(response.getOffTarget())
+        .extracting(OffTargetEntryDto::getProcessKey)
+        .containsExactly("big-gap", "small-gap", "a-unmeasured", "b-unmeasured");
+  }
+
+  @Test
+  void shouldListBothAMeasuredMissAndAnUnmeasuredTargetForTheSameProcess() {
+    // One process, one KPI measured and missing, the other with no measurement. A consumer groups
+    // these under one process, so both have to arrive carrying their own status.
+    // given
+    seedRows(
+        MetricRange.THIRTY_DAYS,
+        fresh(row(TENANT_A, "mixed", cyc(9_000L, 8_000L, false), aut(null, 90, null), 2, 0)));
+
+    // when
+    final BusinessValueOverviewResponseDto response =
+        readService.getOverview(USER, MetricRange.THIRTY_DAYS);
+
+    // then
+    assertThat(response.getOffTarget())
+        .extracting(OffTargetEntryDto::getKpi, OffTargetEntryDto::getStatus)
+        .containsExactly(
+            tuple("cycleTime", OffTargetStatus.OFF_TARGET),
+            tuple("automationRate", OffTargetStatus.NO_COMPLETED_INSTANCES));
   }
 
   /**
