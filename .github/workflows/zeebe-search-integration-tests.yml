@@ -64,9 +64,25 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: read
+      actions: read
     steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+      # Stay quiet when rerun-failed-jobs is about to retry this run, otherwise a build-distball
+      # killed by a runner shutdown that the retry goes on to fix leaves a false alarm behind. A
+      # genuine failure, a cancellation, or one on the last permitted attempt still alerts.
+      - name: Decide whether this run will be retried
+        id: retry
+        uses: ./.github/actions/detect-runner-shutdown
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      # !cancelled() replaces the implicit success(), so a failing detector still lets the alert out.
       - name: Import secrets from Vault
         id: secrets
+        if: ${{ !cancelled() && steps.retry.outputs.should-retry != 'true' }}
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
@@ -76,6 +92,7 @@ jobs:
           secrets: |
             secret/data/products/camunda/ci/github-actions DATA_ENGINE_CI_ALERT_WEBHOOK_URL;
       - name: Send notification
+        if: ${{ !cancelled() && steps.retry.outputs.should-retry != 'true' }}
         uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
           webhook: ${{ steps.secrets.outputs.DATA_ENGINE_CI_ALERT_WEBHOOK_URL }}
@@ -88,10 +105,6 @@ jobs:
                   type: "mrkdwn"
                   text: "Scheduled *Search Integration Tests* shared build (`build-distball`) on *${{ github.ref_name }}* FAILED or WAS CANCELLED — every matrix shard was skipped as a result\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
       # Send metrics about CI health
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          sparse-checkout: .github
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -172,3 +185,19 @@ jobs:
       test-type-label: "Identity"
       notify-slack-on-failure: ${{ github.event_name == 'schedule' }}
       use-shared-distball: true
+
+  # Auto-retry when one of the jobs above failed because its self-hosted runner was terminated
+  # mid-job rather than by a real test failure. No run here has been lost that way yet, but these
+  # shards use the same gcp-perf runner classes as the RDBMS ones that have, so the exposure is
+  # identical.
+  #
+  # generate-matrix is deliberately not in `needs`: it runs on a GitHub-hosted runner and so is
+  # not exposed to spot preemption. build-distball is, and a shutdown there skips every shard
+  # below it, so it is covered. See rerun-failed-jobs-reusable.yml.
+  rerun-failed-jobs:
+    needs: [ build-distball, search-integration-tests, search-history-tests, search-identity-tests ]
+    if: failure() && fromJSON(github.run_attempt) < 3
+    uses: ./.github/workflows/rerun-failed-jobs-reusable.yml
+    with:
+      test_owner: '@camunda/data-layer'
+    secrets: inherit
