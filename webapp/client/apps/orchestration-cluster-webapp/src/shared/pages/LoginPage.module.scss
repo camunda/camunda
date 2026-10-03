@@ -7,43 +7,105 @@
  */
 
 @use '@carbon/type';
-@use '@carbon/layout';
 
-.button {
-	min-width: 100%;
-	margin-top: var(--cds-spacing-05);
+// Centered card layout matching the Design System's packaged LoginScreen
+// (used by Admin/Tasklist), hand-built with Carbon components since Operate
+// isn't migrated onto the design system yet and can't adopt that package.
+.page {
+	display: flex;
+	min-height: 100dvh;
+	flex-direction: column;
+	align-items: center;
+	background: var(--cds-background);
+	padding: var(--cds-spacing-05);
 }
 
-.container {
-	height: 100%;
-	padding: var(--cds-spacing-03);
+.main {
+	display: flex;
+	width: 100%;
+	flex: 1 0 auto;
+	align-items: center;
+	justify-content: center;
+}
+
+.content {
+	display: flex;
+	width: 100%;
+	max-width: 26rem;
+	flex-direction: column;
+	gap: var(--cds-spacing-05);
+}
+
+.card {
+	display: flex;
+	flex-direction: column;
+	gap: var(--cds-spacing-05);
+	border: 1px solid var(--cds-border-subtle);
+	border-radius: var(--cds-spacing-04);
+	background: var(--cds-layer);
+	box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
+	padding: var(--cds-spacing-05);
 }
 
 .logo {
-	text-align: center;
-	padding-top: var(--cds-spacing-12);
-	padding-bottom: var(--cds-spacing-02);
+	display: flex;
+	justify-content: center;
+	padding-top: var(--cds-spacing-03);
 }
 
 .title {
-	padding-bottom: var(--cds-spacing-10);
+	margin: 0 0 var(--cds-spacing-03);
 	text-align: center;
 	color: var(--cds-text-primary);
-	@include type.type-style('productive-heading-05');
+	@include type.type-style('heading-04');
 }
 
+// Overrides Carbon's bottom-border-only text input style with a fully
+// bordered, rounded field to match the Design System card's inputs.
+// `TextInput`'s `className` lands on the outer wrapper (hence the descendant
+// selector), while `PasswordInput`'s lands on the `<input>` itself (hence the
+// compound selector) -- both resolve to the same rendered `.cds--text-input`.
 .field {
-	min-height: layout.to-rem(84px);
+	&:global(.cds--text-input),
+	:global(.cds--text-input) {
+		height: var(--cds-spacing-08);
+		border: 1px solid var(--cds-border-subtle);
+		border-radius: var(--cds-spacing-03);
+		background: var(--cds-field);
+	}
+
+	:global(.cds--text-input__field-wrapper) {
+		width: 100%;
+	}
+
+	// Required-field marker rendered purely via CSS so it never joins the
+	// label's text content -- keeps `getByLabelText(/^username$/i)`-style
+	// exact-match queries working while still showing the "*" visually.
+	:global(.cds--label)::after {
+		margin-inline-start: var(--cds-spacing-02);
+		color: var(--cds-support-error);
+		content: '*';
+	}
 }
 
-.copyrightNotice {
-	color: var(--cds-text-secondary);
+.button {
+	min-width: 100%;
+	margin-top: var(--cds-spacing-03);
+	border-radius: var(--cds-spacing-03);
+	background: var(--cds-text-primary);
+	color: var(--cds-background);
+	font-weight: 500;
+
+	&:hover,
+	&:focus {
+		background: var(--cds-text-primary);
+		opacity: 0.85;
+	}
+}
+
+.footer {
+	padding: var(--cds-spacing-05) 0;
 	text-align: center;
-	align-self: end;
+	color: var(--cds-text-secondary);
 	@include type.type-style('legal-01');
-}
-
-.error {
-	min-height: calc(layout.to-rem(48px) + var(--cds-spacing-06));
-	padding-bottom: var(--cds-spacing-06);
 }
