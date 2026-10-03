@@ -26,6 +26,7 @@ test.describe.parallel('Process Definition Search API', () => {
       './resources/process_definition_api_tests.bpmn',
       './resources/process_definition_api_tests_2.bpmn',
     ]);
+
     await createInstances('process_definition_api_tests', 1, 1).then(
       (instances) => {
         state['processDefinitionKey'] = instances[0].processDefinitionKey;
@@ -61,12 +62,13 @@ test.describe.parallel('Process Definition Search API', () => {
   test('Search Process Definitions - with one filter field', async ({
     request,
   }) => {
+    const processDefinitionId = 'process_definition_api_tests_2';
     await expect(async () => {
       const res = await request.post(buildUrl('/process-definitions/search'), {
         headers: jsonHeaders(),
         data: {
           filter: {
-            processDefinitionId: state.processDefinitionId,
+            processDefinitionId,
           },
         },
       });
@@ -74,7 +76,7 @@ test.describe.parallel('Process Definition Search API', () => {
       const body = await res.json();
       expect(body.page.totalItems).toBe(body.items.length);
       expect(body.page.totalItems).toBe(1);
-      expect(body.items[0].processDefinitionId).toBe(state.processDefinitionId);
+      expect(body.items[0].processDefinitionId).toBe(processDefinitionId);
     }).toPass(defaultAssertionOptions);
   });
 
