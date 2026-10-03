@@ -56,7 +56,7 @@ def test_should_parse_auth_flags(tmp_path: Path) -> None:
     assert options.queries_file == queries_file
 
 
-def test_should_derive_duration_from_start_and_end(tmp_path: Path) -> None:
+def test_should_derive_end_from_start_and_duration(tmp_path: Path) -> None:
     queries_file = tmp_path / "queries.yaml"
     queries_file.write_text("queries: []", encoding="utf-8")
 
@@ -65,8 +65,8 @@ def test_should_derive_duration_from_start_and_end(tmp_path: Path) -> None:
             "c8-ck-test",
             "--start",
             "2026-08-14T10:00:00Z",
-            "--end",
-            "2026-08-14T10:30:00Z",
+            "--duration-seconds",
+            "1800",
             "--queries",
             str(queries_file),
         ]
@@ -78,14 +78,30 @@ def test_should_derive_duration_from_start_and_end(tmp_path: Path) -> None:
     assert options.end_label == "2026-08-14T10:30:00Z"
 
 
+def test_should_derive_defaults(tmp_path: Path) -> None:
+    queries_file = tmp_path / "queries.yaml"
+    queries_file.write_text("queries: []", encoding="utf-8")
+
+    options = parse_args(
+        [
+            "c8-ck-test",
+        ]
+    )
+
+    assert options.duration_seconds == 600
+    assert options.time_anchor == ""
+    assert options.start_label == ""
+    assert options.end_label == ""
+
+
 def test_should_normalize_timezone_less_time_window() -> None:
     options = parse_args(
         [
             "c8-ck-test",
             "--start",
             "2026-08-14T10:00:00",
-            "--end",
-            "2026-08-14T10:30:00",
+            "--duration-seconds",
+            "1800",
         ]
     )
 
@@ -121,12 +137,17 @@ def test_should_reject_out_of_order_prometheus_durations() -> None:
 
 def test_should_reject_unrepresentable_timestamp() -> None:
     with pytest.raises(SystemExit):
-        parse_args(["c8-ck-test", "--at", "999999999999999999999"])
+        parse_args(["c8-ck-test", "--start", "999999999999999999999"])
 
 
 def test_should_reject_fractional_timestamp() -> None:
     with pytest.raises(SystemExit):
-        parse_args(["c8-ck-test", "--at", "2026-08-14T10:00:00.5Z"])
+        parse_args(["c8-ck-test", "--start", "2026-08-14T10:00:00.5Z"])
+
+
+def test_should_reject_wrong_format_timestamp() -> None:
+    with pytest.raises(SystemExit):
+        parse_args(["c8-ck-test", "--start", "2026-08-XXT10:00:00.5Z"])
 
 
 def test_should_use_packaged_default_queries() -> None:
@@ -162,9 +183,54 @@ def test_should_reject_unrepresentable_reporting_window() -> None:
         parse_args(
             [
                 "c8-ck-test",
-                "--at",
+                "--start",
                 "0",
                 "--duration-seconds",
                 "999999999999999999999",
             ]
         )
+
+
+def test_should_reject_negative_duration(capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit):
+        parse_args(
+            [
+                "c8-ck-test",
+                "--start",
+                "2026-08-14T10:00:00",
+                "--duration-seconds",
+                "-1",
+            ]
+        )
+
+    assert "'-1' must be a positive integer" in capsys.readouterr().err
+
+
+def test_should_reject_too_long_namespace(capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit):
+        parse_args(
+            [
+                "a" * 64,
+                "--start",
+                "2026-08-14T10:00:00",
+                "--duration-seconds",
+                "123",
+            ]
+        )
+
+    assert "(max 63 characters; lowercase alphanumeric or '-', and must start and end " in capsys.readouterr().err
+
+
+def test_should_reject_invalid_namespace(capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit):
+        parse_args(
+            [
+                "Invalid_Namespace",
+                "--start",
+                "2026-08-14T10:00:00",
+                "--duration-seconds",
+                "123",
+            ]
+        )
+
+    assert "(max 63 characters; lowercase alphanumeric or '-', and must start and end " in capsys.readouterr().err
