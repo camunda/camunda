@@ -67,7 +67,7 @@
     <version.nullaway>0.14.2</version.nullaway>
     <version.grpc>1.84.0</version.grpc>
     <version.gson>2.14.0</version.gson>
-    <version.guava>33.7.1-jre</version.guava>
+    <version.guava>33.7.2-jre</version.guava>
     <version.hamcrest>3.0</version.hamcrest>
     <version.icu4j>78.3</version.icu4j>
     <version.json-schema-validator>3.0.7</version.json-schema-validator>
