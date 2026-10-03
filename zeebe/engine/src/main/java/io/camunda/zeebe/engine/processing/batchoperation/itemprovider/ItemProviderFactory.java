@@ -89,6 +89,10 @@ public class ItemProviderFactory {
 
   private ProcessInstanceItemProvider forModifyProcessInstance(
       final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
+    // Narrows rather than replaces, like cancel (#64350): a caller-supplied state is ANDed with
+    // ACTIVE instead of discarded, so a conflicting value narrows to zero items rather than
+    // silently being ignored. The REST layer rejects anything other than ACTIVE with a 400
+    // before it reaches here (see ProcessInstanceRequestValidator).
     return new ProcessInstanceItemProvider(
         searchClientsProxy,
         metrics,
@@ -101,6 +105,7 @@ public class ItemProviderFactory {
 
   private ProcessInstanceItemProvider forMigrateProcessInstance(
       final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
+    // See forModifyProcessInstance: narrowed and rejected at the REST layer, not replaced.
     return new ProcessInstanceItemProvider(
         searchClientsProxy,
         metrics,
@@ -113,6 +118,10 @@ public class ItemProviderFactory {
 
   private IncidentItemProvider forResolveIncident(
       final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
+    // Narrowed like modify/migrate above, but NOT yet rejected at the REST layer: Operate's
+    // default toolbar filter for retry sends an incidents branch with no state constraint, so a
+    // naive reject-list would break that flow. Left as narrow-only pending a follow-up that
+    // works out the allowed-state list with Operate. See the open thread on #64070.
     return new IncidentItemProvider(
         searchClientsProxy,
         metrics,

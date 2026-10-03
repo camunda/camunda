@@ -2054,8 +2054,9 @@ paths:
       summary: Create a batch operation to resolve incidents of process instances
       description: |
         Resolves multiple instances of process instances.
-        Since only process instances with ACTIVE state can have unresolved incidents, any given
-        filters for state are ignored and overridden during this batch operation.
+        Only process instances with ACTIVE state can have unresolved incidents. A given state
+        filter is combined with this restriction rather than replacing it, so a filter for any
+        other state narrows the batch to no items instead of being ignored.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: false
@@ -2093,8 +2094,10 @@ paths:
       summary: Create a batch operation to migrate process instances
       description: |
         Migrate multiple instances of process instances.
-        Since only process instances with ACTIVE state can be migrated, any given
-        filters for state are ignored and overridden during this batch operation.
+        Only ACTIVE process instances can be migrated. A state filter narrows the batch to ACTIVE.
+        Requesting any state other than ACTIVE through the `$eq` or `$in` operators is rejected.
+        Other state operators (`$neq`, `$exists`, `$like`) are applied as given, and the batch
+        remains limited to ACTIVE instances.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: true
@@ -2132,8 +2135,10 @@ paths:
       summary: Create a batch operation to modify process instances
       description: |
         Modify multiple process instances.
-        Since only process instances with ACTIVE state can be modified, any given
-        filters for state are ignored and overridden during this batch operation.
+        Only ACTIVE process instances can be modified. A state filter narrows the batch to ACTIVE.
+        Requesting any state other than ACTIVE through the `$eq` or `$in` operators is rejected.
+        Other state operators (`$neq`, `$exists`, `$like`) are applied as given, and the batch
+        remains limited to ACTIVE instances.
         In contrast to single modification operation, it is not possible to add variable instructions or modify by element key.
         It is only possible to use the element id of the source and target.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).

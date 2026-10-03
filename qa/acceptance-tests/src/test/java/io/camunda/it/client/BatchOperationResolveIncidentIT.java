@@ -23,6 +23,7 @@ import io.camunda.client.api.response.CreateBatchOperationResponse;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.IncidentState;
+import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
@@ -205,6 +206,61 @@ public class BatchOperationResolveIncidentIT {
     assertThat(itemKeys).containsExactlyInAnyOrderElementsOf(activeIncidentKeys);
     assertThat(itemsObj.items().stream().map(BatchOperationItem::getStatus).distinct().toList())
         .containsExactly(BatchOperationItemState.COMPLETED);
+  }
+
+  @Test
+  void shouldNarrowResolveIncidentStateFilterInsteadOfIgnoringIt() {
+    // given
+    final var activeIncidentKeys =
+        camundaClient
+            .newIncidentSearchRequest()
+            .filter(f -> f.state(IncidentState.ACTIVE))
+            .send()
+            .join()
+            .items()
+            .stream()
+            .map(Incident::getIncidentKey)
+            .toList();
+
+    // when - the caller's state filter is combined (ANDed) with the operation's required ACTIVE,
+    // not discarded: every instance here is ACTIVE, so a COMPLETED filter narrows the batch to
+    // zero items instead of resolving every incident regardless of the filter (the REST layer
+    // does not yet reject this conflicting combination up front, unlike migrate/modify)
+    final Future<CreateBatchOperationResponse> result =
+        camundaClient
+            .newCreateBatchOperationCommand()
+            .resolveIncident()
+            .filter(f -> f.hasIncident(true).state(ProcessInstanceState.COMPLETED))
+            .send();
+
+    // then
+    final var batchOperationKey =
+        assertThat(result)
+            .succeedsWithin(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
+            .actual()
+            .getBatchOperationKey();
+    Awaitility.await("should finish batch operation that matched no items")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var batchOperation =
+                  camundaClient.newBatchOperationGetRequest(batchOperationKey).execute();
+              assertThat(batchOperation.getStatus()).isEqualTo(BatchOperationState.COMPLETED);
+              assertThat(batchOperation.getOperationsTotalCount()).isZero();
+            });
+
+    final var stillActiveIncidentKeys =
+        camundaClient
+            .newIncidentSearchRequest()
+            .filter(f -> f.state(IncidentState.ACTIVE))
+            .send()
+            .join()
+            .items()
+            .stream()
+            .map(Incident::getIncidentKey)
+            .toList();
+    assertThat(stillActiveIncidentKeys).containsExactlyInAnyOrderElementsOf(activeIncidentKeys);
   }
 
   @Test
