@@ -61,7 +61,6 @@ public class GatewayClusterConfigurationService extends Actor
             memberShipService,
             new ProtoBufSerializer(),
             config,
-            ignored -> {},
             this::updateCurrentClusterTopology,
             topologyMetrics);
   }

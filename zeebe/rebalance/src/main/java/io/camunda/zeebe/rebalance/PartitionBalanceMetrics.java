@@ -9,7 +9,6 @@ package io.camunda.zeebe.rebalance;
 
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.Gauge;
@@ -37,11 +36,6 @@ public final class PartitionBalanceMetrics implements ClusterConfigurationUpdate
       final MeterRegistry registry, final PartitionLeaders partitionLeaders) {
     this.registry = registry;
     this.partitionLeaders = partitionLeaders;
-  }
-
-  @Override
-  public void onClusterConfigurationUpdated(final ClusterConfiguration clusterConfiguration) {
-    onClusterConfigurationUpdated(CurrentClusterConfiguration.fromLegacy(clusterConfiguration));
   }
 
   @Override

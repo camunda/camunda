@@ -17,7 +17,6 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics;
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationSerializer;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -54,9 +53,6 @@ public final class ClusterConfigurationGossiper
   private List<MemberId> membersToSync = new LinkedList<>();
 
   // The handler which can merge configuration updates and reacts to the changes.
-  private final Consumer<ClusterConfiguration> clusterConfigurationUpdateHandler;
-  // New-model handler; when set, received gossip is delivered as a CurrentClusterConfiguration
-  // (field 2, or migrated from field 1) instead of through the legacy handler.
   private final Consumer<CurrentClusterConfiguration> currentConfigurationUpdateHandler;
   private final TopologyMetrics topologyMetrics;
 
@@ -66,7 +62,6 @@ public final class ClusterConfigurationGossiper
       final ClusterMembershipService membershipService,
       final ClusterConfigurationSerializer serializer,
       final ClusterConfigurationGossiperConfig config,
-      final Consumer<ClusterConfiguration> clusterConfigurationUpdateHandler,
       final Consumer<CurrentClusterConfiguration> currentConfigurationUpdateHandler,
       final TopologyMetrics topologyMetrics) {
     this.executor = executor;
@@ -74,7 +69,6 @@ public final class ClusterConfigurationGossiper
     this.membershipService = membershipService;
     this.config = config;
     this.serializer = serializer;
-    this.clusterConfigurationUpdateHandler = clusterConfigurationUpdateHandler;
     this.currentConfigurationUpdateHandler = currentConfigurationUpdateHandler;
     this.topologyMetrics = topologyMetrics;
   }
@@ -176,42 +170,15 @@ public final class ClusterConfigurationGossiper
     if (receivedGossipState.equals(gossipState)) {
       return;
     }
-    if (currentConfigurationUpdateHandler != null) {
-      // New model: prefer field 2; fall back to migrating field 1 from an old broker.
-      final var received = receivedGossipState.getCurrentClusterConfiguration();
-      final CurrentClusterConfiguration wrapper =
-          received != null
-              ? received
-              : receivedGossipState.getClusterConfiguration() != null
-                  ? CurrentClusterConfiguration.fromLegacy(
-                      receivedGossipState.getClusterConfiguration())
-                  : null;
-      if (wrapper != null) {
-        currentConfigurationUpdateHandler.accept(wrapper);
-      }
-      return;
+    final var received = receivedGossipState.getCurrentClusterConfiguration();
+    if (received != null) {
+      currentConfigurationUpdateHandler.accept(received);
     }
-    final ClusterConfiguration topology = receivedGossipState.getClusterConfiguration();
-    if (topology != null) {
-      clusterConfigurationUpdateHandler.accept(topology);
-    }
-  }
-
-  private void onConfigurationUpdated(final ClusterConfiguration updatedConfiguration) {
-    gossipState.setClusterConfiguration(updatedConfiguration);
-    LOGGER.trace("Updated local gossipState to {}", updatedConfiguration);
-    gossip();
-    notifyListeners(updatedConfiguration);
-    topologyMetrics.updateFromTopology(
-        CurrentClusterConfiguration.fromLegacy(updatedConfiguration));
   }
 
   private void onCurrentConfigurationUpdated(
       final CurrentClusterConfiguration updatedConfiguration) {
-    // Dual-write: field 2 carries the full new model, field 1 the legacy view read by old brokers.
-    final var legacyView = updatedConfiguration.toLegacyDefault();
     gossipState.setCurrentClusterConfiguration(updatedConfiguration);
-    gossipState.setClusterConfiguration(legacyView);
     LOGGER.trace("Updated local gossipState to {}", updatedConfiguration);
     gossip();
     notifyListeners(updatedConfiguration);
@@ -221,11 +188,6 @@ public final class ClusterConfigurationGossiper
   private void notifyListeners(final CurrentClusterConfiguration updatedConfiguration) {
     configurationUpdateListeners.forEach(
         listener -> listener.onClusterConfigurationUpdated(updatedConfiguration));
-  }
-
-  private void notifyListeners(final ClusterConfiguration updatedTopology) {
-    configurationUpdateListeners.forEach(
-        listener -> listener.onClusterConfigurationUpdated(updatedTopology));
   }
 
   private ClusterConfigurationGossipState handleSyncRequest(
@@ -238,21 +200,6 @@ public final class ClusterConfigurationGossiper
     return gossipState;
   }
 
-  public void updateClusterConfiguration(final ClusterConfiguration clusterConfiguration) {
-    if (clusterConfiguration == null) {
-      return;
-    }
-    executor.run(
-        () -> {
-          if (!clusterConfiguration.equals(gossipState.getClusterConfiguration())) {
-            onConfigurationUpdated(clusterConfiguration);
-          }
-        });
-  }
-
-  /**
-   * New-model counterpart of {@link #updateClusterConfiguration}; dual-writes both gossip fields.
-   */
   public void updateCurrentClusterConfiguration(
       final CurrentClusterConfiguration currentClusterConfiguration) {
     if (currentClusterConfiguration == null) {
@@ -264,21 +211,6 @@ public final class ClusterConfigurationGossiper
             onCurrentConfigurationUpdated(currentClusterConfiguration);
           }
         });
-  }
-
-  public ActorFuture<ClusterConfiguration> queryClusterConfiguration(final MemberId memberId) {
-    final ActorFuture<ClusterConfiguration> responseFuture = executor.createFuture();
-    sendSyncRequest(memberId)
-        .whenCompleteAsync(
-            (response, error) -> {
-              if (error == null) {
-                responseFuture.complete(response.getClusterConfiguration());
-              } else {
-                responseFuture.completeExceptionally(error);
-              }
-            },
-            executor::run);
-    return responseFuture;
   }
 
   public ActorFuture<CurrentClusterConfiguration> queryCurrentClusterConfiguration(
@@ -340,16 +272,9 @@ public final class ClusterConfigurationGossiper
     executor.run(
         () -> {
           configurationUpdateListeners.add(listener);
-          // Prefer the new-model view (field 2): it carries every partition group, whereas the
-          // legacy view (field 1) is always a single-group projection (see
-          // CurrentClusterConfiguration#toLegacyDefault) and would silently hide every
-          // non-default physical tenant group from a listener backfilled through it. Fall back to
-          // the legacy field only when the new-model one hasn't been populated yet.
           final var currentConfiguration = gossipState.getCurrentClusterConfiguration();
           if (currentConfiguration != null) {
             listener.onClusterConfigurationUpdated(currentConfiguration);
-          } else if (gossipState.getClusterConfiguration() != null) {
-            listener.onClusterConfigurationUpdated(gossipState.getClusterConfiguration());
           }
         });
   }

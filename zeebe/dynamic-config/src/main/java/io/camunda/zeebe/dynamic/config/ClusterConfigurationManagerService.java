@@ -121,7 +121,6 @@ public final class ClusterConfigurationManagerService
             memberShipService,
             new ProtoBufSerializer(),
             config,
-            ignored -> {},
             clusterConfigurationManager::onGossipReceivedCurrent,
             topologyMetrics);
     configurationChangeCoordinator =
@@ -166,8 +165,7 @@ public final class ClusterConfigurationManagerService
                 clusterConfigurationGossiper,
                 persistedCurrentClusterConfiguration::getConfiguration,
                 clusterConfigurationGossiper::updateCurrentClusterConfiguration,
-                managerActor,
-                CurrentClusterConfiguration.uninitialized()))
+                managerActor))
         .andThen(exporterStateModifier(staticConfiguration, false))
         .andThen(
             PartitionDistributorInitializer
