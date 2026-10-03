@@ -60,29 +60,19 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
   test('Search Batch Operation Items - by itemKey [incident key] - Success', async ({
     request,
   }) => {
-    const localState: Record<string, unknown> = {};
-    await createSingleIncidentProcessInstance(localState, request);
-    const incidentKeys = localState['incidentKeys'] as string[];
+    const {processInstanceKey, incidentKeys} =
+      await createSingleIncidentProcessInstance({}, request);
     const incidentKey = incidentKeys[0];
-    const processInstanceKeyToResolveIncident =
-      localState.processInstanceKey as string;
-    processInstanceKeys.push(processInstanceKeyToResolveIncident);
+
+    expect(incidentKey).toBeDefined();
+    processInstanceKeys.push(processInstanceKey);
 
     await test.step('Verify that the process instance has incidents', async () => {
-      await verifyIncidentsForProcessInstance(
-        request,
-        processInstanceKeyToResolveIncident,
-        1,
-      );
+      await verifyIncidentsForProcessInstance(request, processInstanceKey, 1);
     });
 
-    await sleep(10000);
-
     await test.step('Poll process instance can be found', async () => {
-      await expectProcessInstanceCanBeFound(
-        request,
-        processInstanceKeyToResolveIncident,
-      );
+      await expectProcessInstanceCanBeFound(request, processInstanceKey);
     });
 
     await test.step('Create Batch Operation to Resolve Incidents', async () => {
@@ -93,7 +83,7 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
             headers: jsonHeaders(),
             data: {
               filter: {
-                processInstanceKey: localState.processInstanceKey,
+                processInstanceKey,
               },
             },
           },
@@ -146,9 +136,7 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
             expect(item.itemKey).toBe(incidentKey);
             expect(item.operationType).toBe('RESOLVE_INCIDENT');
             expect(item.state).toBeDefined();
-            expect(item.processInstanceKey).toBe(
-              processInstanceKeyToResolveIncident,
-            );
+            expect(item.processInstanceKey).toBe(processInstanceKey);
           }).toPass(defaultAssertionOptions);
         },
         onFailure: async () => {},
