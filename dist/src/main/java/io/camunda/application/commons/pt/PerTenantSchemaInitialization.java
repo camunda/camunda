@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.pt;
 
+import io.camunda.application.commons.pt.SchemaInitializationStatus.State;
 import io.camunda.zeebe.util.retry.RetryConfiguration;
 import io.github.resilience4j.core.IntervalFunction;
 import java.util.Collections;
@@ -176,6 +177,7 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
                     + " are unaffected.",
                 tenantId,
                 notStarted);
+            abort(state, notStarted);
             stopTrying(state);
           }
         });
@@ -218,6 +220,41 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
   public boolean isInitialized(final String physicalTenantId) {
     final TenantState state = tenants.get(physicalTenantId);
     return state != null && state.ready.get();
+  }
+
+  /**
+   * Where the physical tenant's initialization stands, as {@link #statuses()} reports it.
+   *
+   * @throws IllegalArgumentException for a tenant this node does not initialize
+   */
+  public SchemaInitializationStatus status(final String physicalTenantId) {
+    final var status = statuses().get(physicalTenantId);
+    if (status == null) {
+      throw new IllegalArgumentException(
+          "Physical tenant '" + physicalTenantId + "' is not initialized by this node");
+    }
+    return status;
+  }
+
+  /**
+   * Where every physical tenant's initialization stands, in the order they are configured in. Takes
+   * the lock the tasks write under, which is fine for an operator's health check but not for
+   * anything consulted per request — that is what {@link #isInitialized(String)} is for.
+   */
+  public Map<String, SchemaInitializationStatus> statuses() {
+    final var statuses = new LinkedHashMap<String, SchemaInitializationStatus>();
+    gateLock.lock();
+    try {
+      tenants.forEach((tenantId, state) -> statuses.put(tenantId, statusOf(state)));
+    } finally {
+      gateLock.unlock();
+    }
+    return statuses;
+  }
+
+  /** Must be called with {@link #gateLock} held. */
+  private static SchemaInitializationStatus statusOf(final TenantState state) {
+    return new SchemaInitializationStatus(state.stage, state.failedAttempts, state.lastFailure);
   }
 
   /** Stops all retrying and opens the gate; idempotent. */
@@ -283,10 +320,11 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
     final var terminalFailures = new LinkedHashMap<String, Throwable>();
     for (final var tenant : tenants.entrySet()) {
       final TenantState state = tenant.getValue();
-      if (state.ready.get() || state.terminalFailure == null) {
+      final Throwable failure = state.lastFailure;
+      if (state.ready.get() || state.stage != State.FAILED || failure == null) {
         return;
       }
-      terminalFailures.put(tenant.getKey(), state.terminalFailure);
+      terminalFailures.put(tenant.getKey(), failure);
     }
     throw EveryTenantTerminallyFailedException.of(terminalFailures);
   }
@@ -319,7 +357,7 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
             // still opens its gate and comes up. That is what keeps the operator able to reach the
             // node that has to be told the deferral is over.
             if (!recoveryDeferred) {
-              stopTrying(state);
+              deferForRecovery(state);
               recoveryDeferred = true;
             }
             if (awaitAndCheckShutdown(deferralPollMillis)) {
@@ -384,10 +422,11 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
                     + " restarted. If no other tenant can be served either, startup aborts.",
                 physicalTenantId,
                 failure);
-            recordTerminal(state, failure);
+            recordFailure(state, failure, State.FAILED);
             return;
           }
           if (attemptNumber >= maxAttempts) {
+            recordFailure(state, failure, State.GAVE_UP);
             LOG.error(
                 "Schema initialization for physical tenant '{}' failed on all {} configured"
                     + " attempts and will not be retried further. This tenant stays degraded, and"
@@ -399,6 +438,7 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
             return;
           }
           retryDelayMillis = backoff.apply(attemptNumber);
+          recordFailure(state, failure, State.RETRYING);
           LOG.warn(
               "Schema initialization for physical tenant '{}' failed on attempt {}, retrying in"
                   + " {}ms. This tenant stays degraded meanwhile.",
@@ -420,6 +460,7 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
               + " unaffected.",
           physicalTenantId,
           unexpected);
+      abort(state, unexpected);
     } finally {
       // The one guarantee the gate rests on: however this task ends — success, terminal failure,
       // an exhausted retry budget, shutdown, or an Error this class never sees — it stops counting
@@ -436,7 +477,7 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
    * tenant may settle before its failure has been classified: settling leaves {@code trying} set,
    * so {@link #isGateOpen()} can only be satisfied by some <em>other</em> tenant being ready — and
    * a ready tenant is precisely the case {@link #failIfEveryTenantFailedTerminally()} declines to
-   * abort. The order that does matter is {@link #recordTerminal} before {@link #stopTrying}.
+   * abort. The order that does matter is {@link #recordFailure} before {@link #stopTrying}.
    */
   private void settle(final TenantState state) {
     gateLock.lock();
@@ -451,17 +492,36 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
   }
 
   /**
-   * Records the failure that stopped a tenant for good, for the one cause the gate treats
-   * differently from the rest.
+   * Records a failed attempt, and what the tenant does next because of it.
    *
-   * <p>Called before {@link #stopTrying}, never after, because stopping is what can open the gate:
-   * the other order lets a waiter wake on the last tenant stopping and read a failure that has not
-   * been written yet, and release into the state this exists to abort.
+   * <p>For a terminal failure, the one cause the gate treats differently from the rest, this is
+   * called before {@link #stopTrying}, never after, because stopping is what can open the gate: the
+   * other order lets a waiter wake on the last tenant stopping and read a failure that has not been
+   * written yet, and release into the state this exists to abort.
    */
-  private void recordTerminal(final TenantState state, final Throwable failure) {
+  private void recordFailure(final TenantState state, final Throwable failure, final State next) {
     gateLock.lock();
     try {
-      state.terminalFailure = failure;
+      if (isStatusFinal(state)) {
+        return;
+      }
+      state.failedAttempts++;
+      state.lastFailure = failure;
+      state.stage = next;
+    } finally {
+      gateLock.unlock();
+    }
+  }
+
+  /** Records why a task ended outside any attempt; the finally that stops it follows. */
+  private void abort(final TenantState state, final Throwable cause) {
+    gateLock.lock();
+    try {
+      if (isStatusFinal(state)) {
+        return;
+      }
+      state.lastFailure = cause;
+      state.stage = State.ABORTED;
     } finally {
       gateLock.unlock();
     }
@@ -472,6 +532,9 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
     try {
       state.ready.set(true);
       state.settled = true;
+      state.stage = State.INITIALIZED;
+      // nothing reports the failures of a serviceable tenant, so none is kept for its lifetime
+      state.lastFailure = null;
       gateChanged.signalAll();
     } finally {
       gateLock.unlock();
@@ -483,21 +546,69 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
    * an outcome — it could not be set up at all, or shutdown won the race against its first attempt
    * — counts as settled too: it has stopped contributing either way, and leaving it unsettled would
    * hold the gate shut on a condition nothing can satisfy.
+   *
+   * <p>A task that ends without having recorded why — an {@link Error} passes every catch — is
+   * reported as aborted, not as still initializing, retrying or recovering, which nothing is left
+   * running to do. Shutdown is the exception: a node going down has no one left to report to.
    */
   private void stopTrying(final TenantState state) {
     gateLock.lock();
     try {
       state.trying = false;
       state.settled = true;
+      if (!shutdown.get() && !hasStopped(state.stage)) {
+        state.stage = State.ABORTED;
+        // what ended the task was not recorded, so an earlier attempt's failure must not read as it
+        state.lastFailure = null;
+      }
       gateChanged.signalAll();
     } finally {
       gateLock.unlock();
     }
   }
 
+  /**
+   * Stops a tenant counting as still trying while it is in recovery mode, as {@link #stopTrying}
+   * does, but without ending its task: it is picked up again by {@link #startTrying}.
+   */
+  private void deferForRecovery(final TenantState state) {
+    gateLock.lock();
+    try {
+      state.trying = false;
+      state.settled = true;
+      if (!isStatusFinal(state)) {
+        state.stage = State.RECOVERING;
+      }
+      gateChanged.signalAll();
+    } finally {
+      gateLock.unlock();
+    }
+  }
+
+  /**
+   * Whether nothing the tenant's background task records any more may change what it reports. That
+   * holds once it is ready: {@link #initializeNow} can make it ready while the task is between two
+   * steps, and what the task records next — a failure it caught before, a deferral it decided on —
+   * no longer applies. Must be called with {@link #gateLock} held.
+   */
+  private static boolean isStatusFinal(final TenantState state) {
+    return state.ready.get();
+  }
+
+  private static boolean hasStopped(final State stage) {
+    return switch (stage) {
+      case INITIALIZED, FAILED, GAVE_UP, ABORTED -> true;
+      case INITIALIZING, RETRYING, RECOVERING -> false;
+    };
+  }
+
+  /** Resumes a tenant that {@link #deferForRecovery} held back. */
   private void startTrying(final TenantState state) {
     gateLock.lock();
     try {
+      if (!isStatusFinal(state)) {
+        state.stage = state.failedAttempts > 0 ? State.RETRYING : State.INITIALIZING;
+      }
       if (!state.trying) {
         state.trying = true;
         gateChanged.signalAll();
@@ -611,22 +722,24 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
   }
 
   /**
-   * One tenant's contribution to the gate. {@code settled}, {@code trying} and {@code
-   * terminalFailure} are written and read only under {@link #gateLock}; {@code ready} is also
+   * One tenant's contribution to the gate, and what {@link #status(String)} reports of it. Every
+   * field but {@code ready} is written and read only under {@link #gateLock}; {@code ready} is also
    * written under it, but is read without the lock by {@link #isInitialized(String)}, which every
    * rejected request consults and which must not serialize on a lock shared with every other
    * tenant.
    *
-   * <p>{@code terminalFailure} is null for every way of stopping other than a terminal
-   * classification, which is the distinction the gate's abort rests on — not {@code trying}, which
-   * every way of stopping clears alike.
+   * <p>{@code stage} is {@link State#FAILED} for a terminal classification and for no other way of
+   * stopping, which is the distinction the gate's abort rests on — not {@code trying}, which every
+   * way of stopping clears alike.
    */
   private static final class TenantState {
     private final ReentrantLock attemptLock = new ReentrantLock();
     private final AtomicBoolean ready = new AtomicBoolean(false);
     private boolean settled;
     private boolean trying = true;
-    private @Nullable Throwable terminalFailure;
+    private State stage = State.INITIALIZING;
+    private int failedAttempts;
+    private @Nullable Throwable lastFailure;
   }
 
   public enum Deferral {
