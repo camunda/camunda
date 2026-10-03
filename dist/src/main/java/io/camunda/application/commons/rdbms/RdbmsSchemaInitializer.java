@@ -10,6 +10,7 @@ package io.camunda.application.commons.rdbms;
 import io.camunda.application.commons.pt.EveryTenantTerminallyFailedException;
 import io.camunda.application.commons.pt.PerTenantSchemaInitialization;
 import io.camunda.application.commons.pt.PerTenantSchemaInitialization.DeferralCheck;
+import io.camunda.application.commons.pt.SchemaInitializationStatus;
 import io.camunda.application.commons.pt.SchemaInitializer;
 import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.exception.RdbmsSchemaMigrationFailedException;
@@ -18,6 +19,7 @@ import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIndeterminateException;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.retry.RetryConfiguration;
 import java.io.Serial;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Function;
 import org.jspecify.annotations.NullMarked;
@@ -128,16 +130,44 @@ public class RdbmsSchemaInitializer implements InitializingBean, DisposableBean,
   }
 
   /**
+   * Where each physical tenant's schema initialization stands. The failure reported is the schema
+   * manager's own, as on a single-tenant node's aborted startup: the carrier it crossed the retry
+   * loop in names only the tenant, which the report is already keyed by.
+   */
+  public Map<String, SchemaInitializationStatus> statuses() {
+    final var statuses = new LinkedHashMap<String, SchemaInitializationStatus>();
+    initialization
+        .statuses()
+        .forEach((tenantId, status) -> statuses.put(tenantId, withOriginalFailure(status)));
+    return statuses;
+  }
+
+  private static SchemaInitializationStatus withOriginalFailure(
+      final SchemaInitializationStatus status) {
+    final var failure = status.lastFailure();
+    return failure == null
+        ? status
+        : new SchemaInitializationStatus(
+            status.state(), status.failedAttempts(), unwrapped(failure));
+  }
+
+  /**
    * The exception a single-tenant node aborted with before per-tenant initialization existed: the
    * schema manager's own, unwrapped from the carrier a checked failure travels the retry loop in.
    */
   private static Exception originalFailure(final Throwable failure) {
+    // the retry loop only ever records an Exception as a terminal failure, and the carrier only
+    // ever carries one
+    return (Exception) unwrapped(failure);
+  }
+
+  /** The failure out of the carrier a checked one travels the retry loop in, if it is in one. */
+  private static Throwable unwrapped(final Throwable failure) {
     if (failure instanceof SchemaInitializationFailedException
         && failure.getCause() instanceof final Exception checked) {
       return checked;
     }
-    // the retry loop only ever records an Exception as a terminal failure
-    return (Exception) failure;
+    return failure;
   }
 
   /**
