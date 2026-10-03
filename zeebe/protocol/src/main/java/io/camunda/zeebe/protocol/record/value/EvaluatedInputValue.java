@@ -17,6 +17,8 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import java.util.Collections;
+import java.util.Set;
 import org.immutables.value.Value;
 
 /**
@@ -41,4 +43,26 @@ public interface EvaluatedInputValue extends RecordValue {
    * @return the value of the evaluated input expression as JSON string
    */
   String getInputValue();
+
+  /**
+   * Returns the protection modes declared for this input, decided by the engine when the decision
+   * is evaluated: the input carries the configured modes if its expression references a variable
+   * whose name matches a configured sensitive-variable pattern.
+   *
+   * @return the declared protection modes, or an empty set if the input is not protected
+   */
+  @Value.Default
+  default Set<ProtectionMode> getProtectionModes() {
+    return Collections.emptySet();
+  }
+
+  /**
+   * Derived from {@link #getProtectionModes()}. Implementations should annotate this override with
+   * {@code @JsonIgnore}, so it is not serialized next to the modes it is derived from.
+   *
+   * @return {@code true} if the input value must be redacted before it leaves the engine
+   */
+  default boolean shouldBeRedacted() {
+    return getProtectionModes().contains(ProtectionMode.REDACT);
+  }
 }

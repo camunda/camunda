@@ -68,7 +68,10 @@ public class DecisionInstanceEntityTransformer
       return null;
     }
     return source.stream()
-        .map(s -> new DecisionInstanceInputEntity(s.getId(), s.getName(), s.getValue()))
+        .map(
+            s ->
+                new DecisionInstanceInputEntity(
+                    s.getId(), s.getName(), s.getValue(), s.getProtectionModes()))
         .toList();
   }
 

@@ -236,6 +236,7 @@ components:
         - variableKey
         - scopeKey
         - rootProcessInstanceKey
+        - protectionModes
       properties:
         name:
           description: Name of this variable.
@@ -268,9 +269,27 @@ components:
           nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+        protectionModes:
+          description: |
+            The data protection modes declared for this variable. When it contains `REDACT`, the
+            value was redacted before reaching secondary storage and is returned as the JSON literal `null`.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProtectionModeEnum'
       x-properties-added-in-version:
         - propertyName: rootProcessInstanceKey
           addedInVersion: "8.9"
+        - propertyName: protectionModes
+          addedInVersion: "8.11"
+
+    ProtectionModeEnum:
+      description: |
+        A data protection mode declared for a sensitive value. Only `REDACT` is enforced today.
+      type: string
+      enum:
+        - REDACT
+        - MASK
+        - ENCRYPT
 
     VariableValueFilterProperty:
       type: object

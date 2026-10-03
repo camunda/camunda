@@ -17,7 +17,9 @@ import io.camunda.zeebe.stream.api.EventFilter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.InstantSource;
+import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 
 public final class ExporterDirectorContext {
@@ -41,6 +43,7 @@ public final class ExporterDirectorContext {
   private @Nullable String licenseKey;
   private String tenantName;
   private boolean receiveOnLegacySubject = true;
+  private List<Pattern> sensitiveVariablePatterns = List.of(Pattern.compile("sensitive_.*"));
 
   public int getId() {
     return id;
@@ -98,8 +101,18 @@ public final class ExporterDirectorContext {
     return tenantName;
   }
 
+  public List<Pattern> getSensitiveVariablePatterns() {
+    return sensitiveVariablePatterns;
+  }
+
   public boolean isReceiveOnLegacySubject() {
     return receiveOnLegacySubject;
+  }
+
+  public ExporterDirectorContext sensitiveVariablePatterns(
+      final List<Pattern> sensitiveVariablePatterns) {
+    this.sensitiveVariablePatterns = sensitiveVariablePatterns;
+    return this;
   }
 
   public ExporterDirectorContext id(final int id) {

@@ -321,7 +321,8 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                          {
                              "inputId": "1",
                              "inputName": "name",
-                             "inputValue": "value"
+                             "inputValue": "value",
+                             "protectionModes": []
                          }
                      ],
                      "matchedRules": [

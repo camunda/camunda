@@ -38,6 +38,7 @@ import {
 	createVariableFieldName,
 	getVariableFieldName,
 } from '#/tasklist/modules/task-details-variables/variableFieldNames';
+import {isRedactedVariable, REDACTED_VALUE_LABEL} from '#/tasklist/modules/task-details-variables/redactedVariable';
 import {tryParseJSON} from '#/tasklist/modules/json/tryParseJSON';
 import {ResetForm} from './ResetForm';
 import {VariableEditor} from './VariableEditor';
@@ -89,7 +90,13 @@ const TaskDetailsVariables: React.FC<Props> = ({
 	const [variablesLoadingFullValue, setVariablesLoadingFullValue] = useState<string[]>([]);
 	const [editingVariable, setEditingVariable] = useState<string | undefined>();
 	const initialFormValues = useMemo(
-		() => Object.fromEntries(variables.map((variable) => [createVariableFieldName(variable.name), variable.value])),
+		() =>
+			Object.fromEntries(
+				variables.map((variable) => [
+					createVariableFieldName(variable.name),
+					isRedactedVariable(variable) ? REDACTED_VALUE_LABEL : variable.value,
+				]),
+			),
 		[variables],
 	);
 	const isJsonEditorModalOpen = editingVariable !== undefined;

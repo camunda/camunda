@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl.record.value.variable;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -18,9 +19,12 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public final class VariableRecord extends UnifiedRecordValue implements VariableRecordValue {
@@ -38,6 +42,7 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
       new StringValue("rootProcessInstanceKey");
   private static final StringValue SOURCE_KEY = new StringValue("source");
   private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
+  private static final StringValue PROTECTION_MODES_KEY = new StringValue("protectionModes");
 
   private final StringProperty nameProp = new StringProperty(NAME_KEY);
   private final BinaryProperty valueProp = new BinaryProperty(VALUE_KEY);
@@ -53,6 +58,8 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
   private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
   private final ObjectProperty<VariableSourceRecord> sourceProp =
       new ObjectProperty<>(SOURCE_KEY, new VariableSourceRecord());
+  private final ArrayProperty<StringValue> protectionModesProp =
+      new ArrayProperty<>(PROTECTION_MODES_KEY, StringValue::new);
 
   /**
    * Cached JSON representation of the value. Lazily computed on first call to {@link #getValue()}
@@ -61,7 +68,7 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
   private String cachedJsonValue;
 
   public VariableRecord() {
-    super(10);
+    super(11);
     declareProperty(nameProp)
         .declareProperty(valueProp)
         .declareProperty(scopeKeyProp)
@@ -71,7 +78,8 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
         .declareProperty(tenantIdProp)
         .declareProperty(rootProcessInstanceKeyProp)
         .declareProperty(storageOrdinalProp)
-        .declareProperty(sourceProp);
+        .declareProperty(sourceProp)
+        .declareProperty(protectionModesProp);
   }
 
   @Override
@@ -210,5 +218,28 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
   public VariableRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProp.setValue(storageOrdinal);
     return this;
+  }
+
+  @Override
+  public Set<ProtectionMode> getProtectionModes() {
+    return protectionModesProp.stream()
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .map(ProtectionMode::valueOf)
+        .collect(Collectors.toSet());
+  }
+
+  public VariableRecord setProtectionModes(final Set<ProtectionMode> protectionModes) {
+    protectionModesProp.reset();
+    protectionModes.forEach(
+        mode -> protectionModesProp.add().wrap(BufferUtil.wrapString(mode.name())));
+    return this;
+  }
+
+  // Derived from getProtectionModes(); excluded from JSON to avoid duplicating that field.
+  @JsonIgnore
+  @Override
+  public boolean shouldBeRedacted() {
+    return VariableRecordValue.super.shouldBeRedacted();
   }
 }

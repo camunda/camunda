@@ -71,7 +71,9 @@ public class VariableHandler
         .setBpmnProcessId(recordValue.getBpmnProcessId())
         .setName(recordValue.getName())
         .setTenantId(tenantOrDefault(recordValue.getTenantId()))
-        .setPosition(record.getPosition());
+        .setPosition(record.getPosition())
+        .setProtectionModes(
+            recordValue.getProtectionModes().stream().map(Enum::name).sorted().toList());
 
     if (recordValue.getValue().length() > variableSizeThreshold) {
       entity.setValue(recordValue.getValue().substring(0, variableSizeThreshold));

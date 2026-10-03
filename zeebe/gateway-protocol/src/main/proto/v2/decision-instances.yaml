@@ -519,6 +519,7 @@ components:
         - inputId
         - inputName
         - inputValue
+        - protectionModes
       type: object
       description: A decision input that was evaluated within this decision evaluation.
       properties:
@@ -531,7 +532,17 @@ components:
         inputValue:
           description: The value of the decision input.
           type: string
+        protectionModes:
+          description: |
+            The data protection modes declared for this input, because its expression references a
+            sensitive variable. When it contains `REDACT`, the value was redacted before reaching
+            secondary storage and is returned as the JSON literal `null`.
+          type: array
+          items:
+            $ref: 'variables.yaml#/components/schemas/ProtectionModeEnum'
       x-properties-added-in-version:
+        - propertyName: protectionModes
+          addedInVersion: "8.11"
         - propertyName: inputId
           addedInVersion: "8.6"
         - propertyName: inputName

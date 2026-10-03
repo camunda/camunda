@@ -243,6 +243,11 @@ public class DecisionEvaluationHandlerTest {
         .isEqualTo(evaluatedDecision.getEvaluatedInputs().getFirst().getInputName());
     assertThat(decisionInstanceEntity.getEvaluatedInputs().getFirst().getValue())
         .isEqualTo(evaluatedDecision.getEvaluatedInputs().getFirst().getInputValue());
+    assertThat(decisionInstanceEntity.getEvaluatedInputs().getFirst().getProtectionModes())
+        .containsExactlyInAnyOrderElementsOf(
+            evaluatedDecision.getEvaluatedInputs().getFirst().getProtectionModes().stream()
+                .map(Enum::name)
+                .toList());
 
     assertThat(decisionInstanceEntity.getPosition()).isEqualTo(decisionRecord.getPosition());
     assertThat(decisionInstanceEntity.getPartitionId()).isEqualTo(decisionRecord.getPartitionId());

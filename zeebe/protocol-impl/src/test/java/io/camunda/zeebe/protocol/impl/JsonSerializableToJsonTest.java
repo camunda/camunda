@@ -758,7 +758,8 @@ final class JsonSerializableToJsonTest {
                   "processDefinitionPath": [101, 102],
                   "callingElementPath": [12345, 67890],
                   "rootProcessInstanceKey": 101,
-                  "storageOrdinal": 5
+                  "storageOrdinal": 5,
+                  "protectionModes": []
                 }
                 """
       },
@@ -786,7 +787,8 @@ final class JsonSerializableToJsonTest {
                   "processDefinitionPath":[],
                   "callingElementPath":[],
                   "rootProcessInstanceKey": -1,
-                  "storageOrdinal": 0
+                  "storageOrdinal": 0,
+                  "protectionModes": []
                 }
                 """
       },
@@ -1743,6 +1745,7 @@ final class JsonSerializableToJsonTest {
                   "rootProcessInstanceKey": 5,
                   "storageOrdinal": 6,
                   "elementInstanceKey": 3,
+                  "protectionModes": [],
                   "source": {
                     "type":"API"
                   }
@@ -1789,6 +1792,7 @@ final class JsonSerializableToJsonTest {
                   "rootProcessInstanceKey": 5,
                   "storageOrdinal": 6,
                   "elementInstanceKey": 3,
+                  "protectionModes": [],
                   "source": {
                     "type":"API"
                   }
@@ -2342,7 +2346,8 @@ final class JsonSerializableToJsonTest {
                         {
                           "inputId":"input-id",
                           "inputName":"input-name",
-                          "inputValue":'"input-value"'
+                          "inputValue":'"input-value"',
+                          "protectionModes":[]
                         }
                       ],
                       "matchedRules":[
@@ -2459,7 +2464,8 @@ final class JsonSerializableToJsonTest {
                         {
                           "inputId":"input-id",
                           "inputName":"input-name",
-                          "inputValue":'"input-value"'
+                          "inputValue":'"input-value"',
+                          "protectionModes":[]
                         }
                       ],
                       "matchedRules":[

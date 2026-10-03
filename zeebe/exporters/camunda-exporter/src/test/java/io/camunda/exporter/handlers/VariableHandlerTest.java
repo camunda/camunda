@@ -24,8 +24,10 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -202,6 +204,30 @@ public class VariableHandlerTest {
 
     // then
     assertThat(variableEntity.getRootProcessInstanceKey()).isNull();
+  }
+
+  @Test
+  void shouldKeepProtectionModesOfRedactedVariable() {
+    // given -- the broker already replaced the value with null before the record got here
+    final Record<VariableRecordValue> variableRecord =
+        factory.generateRecord(
+            ValueType.VARIABLE,
+            r ->
+                r.withIntent(VariableIntent.CREATED)
+                    .withValue(
+                        ImmutableVariableRecordValue.builder()
+                            .from(factory.generateObject(VariableRecordValue.class))
+                            .withValue("null")
+                            .withProtectionModes(Set.of(ProtectionMode.REDACT))
+                            .build()));
+
+    // when
+    final VariableEntity variableEntity = new VariableEntity();
+    underTest.updateEntity(variableRecord, variableEntity);
+
+    // then -- readers tell a redacted value from a genuine null by the modes
+    assertThat(variableEntity.getValue()).isEqualTo("null");
+    assertThat(variableEntity.getProtectionModes()).containsExactly("REDACT");
   }
 
   @Test
