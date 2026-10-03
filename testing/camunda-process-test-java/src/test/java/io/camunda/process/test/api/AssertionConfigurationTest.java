@@ -24,13 +24,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import io.camunda.client.api.search.enums.IncidentErrorType;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.process.test.api.assertions.DecisionSelectors;
+import io.camunda.process.test.api.assertions.IncidentSelectors;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.utils.DecisionInstanceBuilder;
 import io.camunda.process.test.utils.ElementInstanceBuilder;
+import io.camunda.process.test.utils.IncidentBuilder;
 import io.camunda.process.test.utils.MessageSubscriptionBuilder;
 import io.camunda.process.test.utils.ProcessInstanceBuilder;
 import io.camunda.process.test.utils.UserTaskBuilder;
@@ -364,6 +367,39 @@ public class AssertionConfigurationTest {
       final InOrder inOrder = inOrder(globalAwaitBehavior, overrideAwaitBehavior);
       inOrder.verify(overrideAwaitBehavior, times(1)).untilAsserted(any());
       inOrder.verify(globalAwaitBehavior, times(1)).untilAsserted(any());
+    }
+  }
+
+  @Nested
+  class IncidentAssertionTests {
+
+    private static final String ELEMENT_ID = "payment";
+
+    @BeforeEach
+    void configureDataSource() {
+      // given
+      lenient()
+          .when(camundaDataSource.findIncidents(any()))
+          .thenReturn(
+              Collections.singletonList(
+                  IncidentBuilder.newActiveIncident(
+                          IncidentErrorType.JOB_NO_RETRIES, "Payment failed")
+                      .setElementId(ELEMENT_ID)
+                      .build()));
+    }
+
+    @Test
+    void shouldOverrideTimeoutForIncidentAssertions() {
+      // when
+      CamundaAssert.assertThatIncident(IncidentSelectors.byElementId(ELEMENT_ID))
+          .withAssertionTimeout(ASSERTION_TIMEOUT_OVERRIDE)
+          .isActive()
+          .hasErrorType(IncidentErrorType.JOB_NO_RETRIES);
+
+      // then
+      verify(globalAwaitBehavior).withAssertionTimeout(ASSERTION_TIMEOUT_OVERRIDE);
+      verify(overrideAwaitBehavior, times(2)).untilAsserted(any());
+      verifyNoMoreInteractions(globalAwaitBehavior);
     }
   }
 
