@@ -50,7 +50,8 @@ public class FeelCycleFunctionTest {
     final var context = Map.of("repetitions", MsgPackUtil.asMsgPack("3"));
     final var evaluationResult =
         evaluateExpression(
-            "cycle(repetitions, duration(\"PT1H\"))", name -> Either.left(context.get(name)));
+            "cycle(repetitions, duration(\"PT1H\"))",
+            name -> Either.left(ContextValue.msgPack(context.get(name))));
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
     assertThat(evaluationResult.getString()).isEqualTo("R3/PT1H");
@@ -61,7 +62,8 @@ public class FeelCycleFunctionTest {
     final var context = Map.of("repetitions", MsgPackUtil.asMsgPack("3"));
     final var evaluationResult =
         evaluateExpression(
-            "cycle(repetitions, duration(\"P2M\"))", name -> Either.left(context.get(name)));
+            "cycle(repetitions, duration(\"P2M\"))",
+            name -> Either.left(ContextValue.msgPack(context.get(name))));
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
     assertThat(evaluationResult.getString()).isEqualTo("R3/P2M");
@@ -72,7 +74,8 @@ public class FeelCycleFunctionTest {
     final var context = Map.of("repetitions", MsgPackUtil.asMsgPack("null"));
     final var evaluationResult =
         evaluateExpression(
-            "cycle(repetitions, duration(\"PT1H\"))", name -> Either.left(context.get(name)));
+            "cycle(repetitions, duration(\"PT1H\"))",
+            name -> Either.left(ContextValue.msgPack(context.get(name))));
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
     assertThat(evaluationResult.getString()).isEqualTo("R/PT1H");
@@ -83,7 +86,8 @@ public class FeelCycleFunctionTest {
     final var context = Map.of("repetitions", MsgPackUtil.asMsgPack("null"));
     final var evaluationResult =
         evaluateExpression(
-            "cycle(repetitions, duration(\"P2M\"))", name -> Either.left(context.get(name)));
+            "cycle(repetitions, duration(\"P2M\"))",
+            name -> Either.left(ContextValue.msgPack(context.get(name))));
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
     assertThat(evaluationResult.getString()).isEqualTo("R/P2M");
