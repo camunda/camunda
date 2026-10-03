@@ -840,7 +840,7 @@ jobs:
               "docker-file": "camunda.Dockerfile",
               "owner": "@camunda/zeebe-distributed-platform",
               "module": "Zeebe",
-              "test-filter": "io.camunda.zeebe.it.cluster.**,!io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsTest,!**/*${DOLLAR}*.java",
+              "test-filter": "io.camunda.zeebe.it.cluster.**,!io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsBackupRestoreTest,!**/*${DOLLAR}*.java",
               "allow-stress": true,
               "stressRun": 1
             },
@@ -853,7 +853,7 @@ jobs:
               "runs-on": "gcp-perf-core-8-default",
               "owner": "@camunda/zeebe-distributed-platform",
               "module": "Zeebe",
-              "test-filter": "io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsTest",
+              "test-filter": "io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsBackupRestoreTest",
               "stressRun": 1
             },
             {
