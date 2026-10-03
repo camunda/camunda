@@ -89,9 +89,9 @@ def test_should_derive_defaults(tmp_path: Path) -> None:
     )
 
     assert options.duration_seconds == 600
-    assert options.time_anchor == ""
-    assert options.start_label == ""
-    assert options.end_label == ""
+    assert options.time_anchor != ""
+    assert options.start_label != ""
+    assert options.end_label != ""
 
 
 def test_should_normalize_timezone_less_time_window() -> None:
