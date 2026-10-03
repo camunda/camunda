@@ -1114,6 +1114,7 @@
 					"parentInstanceId": "Key has to be a 16 to 19 digit number",
 					"batchOperationKey": "Key has to be a 16 to 19 digit number or a UUID",
 					"time": "Time has to be in the format hh:mm:ss",
+					"date": "Date has to be in the format YYYY-MM-DD",
 					"timeRange": "\"From time\" is after \"To time\""
 				},
 				"tenantField": {
