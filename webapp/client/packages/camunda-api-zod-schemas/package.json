@@ -817,7 +817,7 @@
 	},
 	"packageManager": "npm@12.2.0",
 	"devDependencies": {
-		"@types/node": "26.6.3",
+		"@types/node": "26.6.4",
 		"changelogen": "0.6.2",
 		"typescript": "7.0.2",
 		"vite": "8.3.2",
