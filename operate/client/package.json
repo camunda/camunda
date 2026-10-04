@@ -105,7 +105,7 @@
     "eslint-plugin-react-hooks": "7.1.1",
     "eslint-plugin-react-refresh": "0.5.3",
     "eslint-plugin-testing-library": "7.16.2",
-    "globals": "17.12.0",
+    "globals": "17.13.0",
     "jsdom": "26.1.0",
     "knip": "6.39.0",
     "monaco-editor": "0.55.1",
