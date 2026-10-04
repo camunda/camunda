@@ -147,6 +147,16 @@ final class RaftRebalanceValidationTest {
   }
 
   @Test
+  void shouldRejectNegativeMaxTargetCpuUsage() {
+    // given
+    final var rebalance = new Rebalance();
+
+    // when / then
+    assertThatThrownBy(() -> rebalance.setMaxTargetCpuUsage(-0.1))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
   void shouldRejectZeroLoadWindow() {
     // given
     final var rebalance = new Rebalance();

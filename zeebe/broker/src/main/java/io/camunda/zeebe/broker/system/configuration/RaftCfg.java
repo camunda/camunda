@@ -19,7 +19,8 @@ public final class RaftCfg implements ConfigurationEntry {
   public static final Duration DEFAULT_REBALANCE_REPLICATION_TIMEOUT = Duration.ofSeconds(10);
   public static final int DEFAULT_REBALANCE_MAX_TRANSFER_ATTEMPTS = 3;
   public static final Duration DEFAULT_REBALANCE_LEADER_WAIT_TIMEOUT = Duration.ofMinutes(1);
-  public static final Duration DEFAULT_REBALANCE_LOAD_WINDOW = Duration.ofMinutes(5);
+  public static final Duration DEFAULT_REBALANCE_LOAD_WINDOW = Duration.ofMinutes(1);
+  public static final double DEFAULT_REBALANCE_MAX_TARGET_CPU_USAGE = 0.2;
   private static final FlushConfig DEFAULT_FLUSH_CONFIG = new FlushConfig(true, Duration.ZERO);
 
   private boolean enablePriorityElection = DEFAULT_ENABLE_PRIORITY_ELECTION;
@@ -32,6 +33,7 @@ public final class RaftCfg implements ConfigurationEntry {
   private String rebalanceSchedule = Schedule.NONE;
   private @Nullable Double rebalanceMaxProcessInstancesPerSecond;
   private @Nullable Double rebalanceMaxCommandsPerSecond;
+  private @Nullable Double rebalanceMaxTargetCpuUsage = DEFAULT_REBALANCE_MAX_TARGET_CPU_USAGE;
   private Duration rebalanceLoadWindow = DEFAULT_REBALANCE_LOAD_WINDOW;
 
   public boolean isEnablePriorityElection() {
@@ -108,6 +110,14 @@ public final class RaftCfg implements ConfigurationEntry {
     this.rebalanceMaxCommandsPerSecond = rebalanceMaxCommandsPerSecond;
   }
 
+  public @Nullable Double getRebalanceMaxTargetCpuUsage() {
+    return rebalanceMaxTargetCpuUsage;
+  }
+
+  public void setRebalanceMaxTargetCpuUsage(final @Nullable Double rebalanceMaxTargetCpuUsage) {
+    this.rebalanceMaxTargetCpuUsage = rebalanceMaxTargetCpuUsage;
+  }
+
   public Duration getRebalanceLoadWindow() {
     return rebalanceLoadWindow;
   }
@@ -137,6 +147,8 @@ public final class RaftCfg implements ConfigurationEntry {
         + rebalanceMaxProcessInstancesPerSecond
         + ", rebalanceMaxCommandsPerSecond="
         + rebalanceMaxCommandsPerSecond
+        + ", rebalanceMaxTargetCpuUsage="
+        + rebalanceMaxTargetCpuUsage
         + ", rebalanceLoadWindow="
         + rebalanceLoadWindow
         + '}';

@@ -171,6 +171,30 @@ public enum ClusterRebalanceMetricsDoc implements ExtendedMeterDocumentation {
     public KeyName[] getKeyNames() {
       return new KeyName[] {ClusterRebalanceKeyNames.MEASURE};
     }
+  },
+
+  /** Each broker's CPU usage the coordinator last measured for a scheduled rebalance. */
+  SCHEDULED_CPU_USAGE {
+    @Override
+    public String getName() {
+      return "zeebe.cluster.rebalance.scheduled.cpu.usage";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public String getDescription() {
+      return "CPU usage of each broker, as a share of its CPUs, last measured for a scheduled"
+          + " rebalance";
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {ClusterRebalanceKeyNames.MEMBER};
+    }
   };
 
   public enum ClusterRebalanceKeyNames implements KeyName {
@@ -187,6 +211,14 @@ public enum ClusterRebalanceMetricsDoc implements ExtendedMeterDocumentation {
       @Override
       public String asString() {
         return "measure";
+      }
+    },
+
+    /** The broker a value is for. */
+    MEMBER {
+      @Override
+      public String asString() {
+        return "member";
       }
     }
   }

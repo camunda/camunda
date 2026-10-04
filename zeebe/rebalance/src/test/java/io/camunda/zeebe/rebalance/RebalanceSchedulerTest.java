@@ -34,6 +34,7 @@ final class RebalanceSchedulerTest {
   private static final Duration WINDOW = Duration.ofMinutes(5);
   private static final MemberId COORDINATOR = MemberId.from("0");
   private static final MemberId OTHER = MemberId.from("1");
+  private static final MemberId THIRD = MemberId.from("2");
   private static final RebalanceStatus UNBALANCED =
       new RebalanceStatus(null, null, new ClusterLeadershipStatus(State.UNBALANCED, List.of()));
 
@@ -165,6 +166,92 @@ final class RebalanceSchedulerTest {
     // then
     assertThat(coordinator.triggered).isZero();
     assertThat(runs(ScheduledRebalanceOutcome.BUSY)).isOne();
+  }
+
+  @Test
+  void shouldStartMeasuringOneWindowBeforeDueWhenOnlyTheCpuIsLimited() {
+    // given
+    final var scheduler = scheduler(Map.of(), 0.2, WINDOW);
+
+    // when
+    scheduler.start();
+
+    // then
+    assertThat(executor.delays).containsExactly(INTERVAL.minus(WINDOW));
+  }
+
+  @Test
+  void shouldStartWhenEveryNewLeaderIsWithinItsCpuLimit() {
+    // given
+    startedScheduler(Map.of(), 0.2, WINDOW);
+    coordinator.status = moving(0);
+    loadSource.load = cpuLoad(Map.of(COORDINATOR, 0.9, OTHER, 0.2, THIRD, 0.9));
+
+    // when
+    executor.runDue();
+
+    // then
+    assertThat(coordinator.triggered).isOne();
+    assertThat(runs(ScheduledRebalanceOutcome.STARTED)).isOne();
+  }
+
+  @Test
+  void shouldSkipWhenANewLeaderIsBusierThanItsCpuLimit() {
+    // given
+    startedScheduler(Map.of(), 0.2, WINDOW);
+    coordinator.status = moving(0);
+    loadSource.load = cpuLoad(Map.of(COORDINATOR, 0.0, OTHER, 0.21, THIRD, 0.0));
+
+    // when
+    executor.runDue();
+
+    // then
+    assertThat(coordinator.triggered).isZero();
+    assertThat(runs(ScheduledRebalanceOutcome.BUSY)).isOne();
+  }
+
+  @Test
+  void shouldRaiseTheCpuLimitOfANewLeaderForEachPartitionItAlreadyLeads() {
+    // given
+    startedScheduler(Map.of(), 0.2, WINDOW);
+    coordinator.status = moving(2);
+    loadSource.load = cpuLoad(Map.of(COORDINATOR, 0.0, OTHER, 0.27, THIRD, 0.0));
+
+    // when
+    executor.runDue();
+
+    // then
+    assertThat(coordinator.triggered).isOne();
+  }
+
+  @Test
+  void shouldSkipWhenANewLeaderIsBusierThanItsRaisedCpuLimit() {
+    // given
+    startedScheduler(Map.of(), 0.2, WINDOW);
+    coordinator.status = moving(2);
+    loadSource.load = cpuLoad(Map.of(COORDINATOR, 0.0, OTHER, 0.29, THIRD, 0.0));
+
+    // when
+    executor.runDue();
+
+    // then
+    assertThat(coordinator.triggered).isZero();
+    assertThat(runs(ScheduledRebalanceOutcome.BUSY)).isOne();
+  }
+
+  @Test
+  void shouldSkipWhenANewLeaderDidNotReportItsCpu() {
+    // given
+    startedScheduler(Map.of(), 0.2, WINDOW);
+    coordinator.status = moving(0);
+    loadSource.load = cpuLoad(Map.of(COORDINATOR, 0.0, THIRD, 0.0));
+
+    // when
+    executor.runDue();
+
+    // then
+    assertThat(coordinator.triggered).isZero();
+    assertThat(runs(ScheduledRebalanceOutcome.LOAD_UNKNOWN)).isOne();
   }
 
   @Test
@@ -322,7 +409,14 @@ final class RebalanceSchedulerTest {
 
   private RebalanceScheduler startedScheduler(
       final Map<LoadMeasure, Double> maxRates, final Duration window) {
-    final var scheduler = scheduler(maxRates, window);
+    return startedScheduler(maxRates, null, window);
+  }
+
+  private RebalanceScheduler startedScheduler(
+      final Map<LoadMeasure, Double> maxRates,
+      final Double maxTargetCpuUsage,
+      final Duration window) {
+    final var scheduler = scheduler(maxRates, maxTargetCpuUsage, window);
     scheduler.onClusterConfigurationUpdated(clusterOf(COORDINATOR, OTHER));
     scheduler.start();
     coordinator.status = UNBALANCED;
@@ -335,6 +429,13 @@ final class RebalanceSchedulerTest {
 
   private RebalanceScheduler scheduler(
       final Map<LoadMeasure, Double> maxRates, final Duration window) {
+    return scheduler(maxRates, null, window);
+  }
+
+  private RebalanceScheduler scheduler(
+      final Map<LoadMeasure, Double> maxRates,
+      final Double maxTargetCpuUsage,
+      final Duration window) {
     metrics.startCoordinating();
     return new RebalanceScheduler(
         executor,
@@ -342,6 +443,7 @@ final class RebalanceSchedulerTest {
         coordinator,
         loadSource,
         maxRates,
+        maxTargetCpuUsage,
         window,
         clock,
         metrics);
@@ -366,6 +468,27 @@ final class RebalanceSchedulerTest {
   private static ClusterLoad load(
       final Map<LoadMeasure, Double> rates, final Set<MemberId> unaccounted) {
     return new ClusterLoad(rates, unaccounted);
+  }
+
+  private static ClusterLoad cpuLoad(final Map<MemberId, Double> cpuUsage) {
+    return new ClusterLoad(Map.of(), Set.of(), cpuUsage);
+  }
+
+  /** Partition 1 moves from the coordinator to OTHER; THIRD keeps leading partition 2. */
+  private static RebalanceStatus moving(final int partitionsOtherLeads) {
+    final var partitions = new ArrayList<PartitionLeadershipStatus>();
+    partitions.add(
+        new PartitionLeadershipStatus(
+            "default", 1, COORDINATOR, OTHER, PartitionLeadershipStatus.State.UNBALANCED));
+    partitions.add(
+        new PartitionLeadershipStatus(
+            "default", 2, THIRD, THIRD, PartitionLeadershipStatus.State.BALANCED));
+    for (int i = 0; i < partitionsOtherLeads; i++) {
+      partitions.add(
+          new PartitionLeadershipStatus(
+              "default", 3 + i, OTHER, OTHER, PartitionLeadershipStatus.State.BALANCED));
+    }
+    return new RebalanceStatus(null, null, ClusterLeadershipStatus.aggregateOf(partitions));
   }
 
   private static final class RecordingExecutor extends TestConcurrencyControl {

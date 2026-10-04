@@ -50,6 +50,8 @@ final class ScheduledRebalanceIT {
                         rebalance.setSchedule("PT10S");
                         rebalance.setLoadWindow(Duration.ofSeconds(20));
                         rebalance.setMaxProcessInstancesPerSecond(MAX_PROCESS_INSTANCES_PER_SECOND);
+                        // the brokers share this JVM, so each would report the CPU of all three
+                        rebalance.setMaxTargetCpuUsage(null);
                       }))
           .build();
 

@@ -478,8 +478,9 @@ public class Raft {
 
     /**
      * When to rebalance automatically: a cron expression, an ISO-8601 interval, or {@code none}. A
-     * due rebalance is skipped if the cluster is already balanced, or busier than {@code
-     * max-process-instances-per-second} or {@code max-commands-per-second}.
+     * due rebalance is skipped if the cluster is already balanced, busier than {@code
+     * max-process-instances-per-second} or {@code max-commands-per-second}, or a broker that would
+     * take over leadership is busier than {@code max-target-cpu-usage} allows.
      */
     private String schedule = "none";
 
@@ -495,8 +496,15 @@ public class Raft {
      */
     private Double maxCommandsPerSecond;
 
+    /**
+     * The share of its CPUs, averaged over {@code load-window}, above which a broker that leads no
+     * partitions may not take over leadership in a scheduled rebalance. The limit rises by a fifth
+     * for each partition the broker already leads. Unset means no limit.
+     */
+    private Double maxTargetCpuUsage = 0.2;
+
     /** How far back the load is averaged when deciding whether to run a scheduled rebalance. */
-    private Duration loadWindow = Duration.ofMinutes(5);
+    private Duration loadWindow = Duration.ofMinutes(1);
 
     public DataSize getReplicationLagThreshold() {
       return replicationLagThreshold;
@@ -569,6 +577,14 @@ public class Raft {
 
     public void setMaxCommandsPerSecond(final Double maxCommandsPerSecond) {
       this.maxCommandsPerSecond = requireNonNegative("maxCommandsPerSecond", maxCommandsPerSecond);
+    }
+
+    public Double getMaxTargetCpuUsage() {
+      return maxTargetCpuUsage;
+    }
+
+    public void setMaxTargetCpuUsage(final Double maxTargetCpuUsage) {
+      this.maxTargetCpuUsage = requireNonNegative("maxTargetCpuUsage", maxTargetCpuUsage);
     }
 
     public Duration getLoadWindow() {

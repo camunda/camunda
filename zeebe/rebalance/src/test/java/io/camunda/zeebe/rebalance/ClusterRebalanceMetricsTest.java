@@ -126,12 +126,36 @@ final class ClusterRebalanceMetricsTest {
   }
 
   @Test
+  void shouldPublishEachBrokersCpuUsageEvenIfNotEveryBrokerReported() {
+    // given
+    metrics.startCoordinating();
+    final var load =
+        new ClusterLoad(Map.of(), Set.of(MemberId.from("2")), Map.of(MemberId.from("1"), 0.25));
+
+    // when
+    metrics.observeScheduledLoad(load);
+
+    // then
+    assertThat(
+            registry
+                .get("zeebe.cluster.rebalance.scheduled.cpu.usage")
+                .tag("member", "1")
+                .gauge()
+                .value())
+        .isEqualTo(0.25);
+    assertThat(registry.find("zeebe.cluster.rebalance.scheduled.load").gauges()).isEmpty();
+  }
+
+  @Test
   void shouldDeregisterScheduledRebalanceMetersWhenCoordinationStops() {
     // given
     metrics.startCoordinating();
     metrics.observeScheduledRun(ScheduledRebalanceOutcome.BUSY);
     metrics.observeScheduledLoad(
-        new ClusterLoad(Map.of(LoadMeasure.ROOT_PROCESS_INSTANCES, 5.0), Set.of()));
+        new ClusterLoad(
+            Map.of(LoadMeasure.ROOT_PROCESS_INSTANCES, 5.0),
+            Set.of(),
+            Map.of(MemberId.from("1"), 0.25)));
 
     // when
     metrics.stopCoordinating();
@@ -139,6 +163,7 @@ final class ClusterRebalanceMetricsTest {
     // then
     assertThat(registry.find("zeebe.cluster.rebalance.scheduled.total").counters()).isEmpty();
     assertThat(registry.find("zeebe.cluster.rebalance.scheduled.load").gauges()).isEmpty();
+    assertThat(registry.find("zeebe.cluster.rebalance.scheduled.cpu.usage").gauges()).isEmpty();
   }
 
   @Test

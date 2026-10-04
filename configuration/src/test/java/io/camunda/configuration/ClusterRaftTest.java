@@ -58,6 +58,7 @@ public class ClusterRaftTest {
         "camunda.cluster.raft.rebalance.schedule=PT1H",
         "camunda.cluster.raft.rebalance.max-process-instances-per-second=50",
         "camunda.cluster.raft.rebalance.max-commands-per-second=2000",
+        "camunda.cluster.raft.rebalance.max-target-cpu-usage=0.3",
         "camunda.cluster.raft.rebalance.load-window=10m"
       })
   class WithOnlyUnifiedConfigSet {
@@ -130,6 +131,7 @@ public class ClusterRaftTest {
           .returns(new IntervalSchedule(Duration.ofHours(1)), RaftCfg::getRebalanceSchedule)
           .returns(50.0, RaftCfg::getRebalanceMaxProcessInstancesPerSecond)
           .returns(2000.0, RaftCfg::getRebalanceMaxCommandsPerSecond)
+          .returns(0.3, RaftCfg::getRebalanceMaxTargetCpuUsage)
           .returns(Duration.ofMinutes(10), RaftCfg::getRebalanceLoadWindow);
     }
   }

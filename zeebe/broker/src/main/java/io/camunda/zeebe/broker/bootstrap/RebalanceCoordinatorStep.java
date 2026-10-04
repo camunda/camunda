@@ -223,12 +223,17 @@ public class RebalanceCoordinatorStep implements StartupStep<BrokerStartupContex
             Objects.requireNonNull(rebalanceCoordinator),
             Objects.requireNonNull(loadCollector),
             maxRates,
+            raftCfg.getRebalanceMaxTargetCpuUsage(),
             loadWindow,
             Clock.systemUTC(),
             rebalanceMetrics);
     brokerStartupContext.getClusterConfigurationService().addUpdateListener(rebalanceScheduler);
     rebalanceScheduler.start();
-    LOGGER.info("Scheduling rebalances on {} with load limits {}", schedule, maxRates);
+    LOGGER.info(
+        "Scheduling rebalances on {} with load limits {} and target CPU usage limit {}",
+        schedule,
+        maxRates,
+        raftCfg.getRebalanceMaxTargetCpuUsage());
   }
 
   private void stopScheduler(final BrokerStartupContext brokerStartupContext) {

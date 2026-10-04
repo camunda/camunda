@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.rebalance;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.rebalance.ClusterRebalanceMetricsDoc.ClusterRebalanceKeyNames;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
@@ -32,6 +33,7 @@ public final class ClusterRebalanceMetrics {
   private final Map<ScheduledRebalanceOutcome, Counter> scheduledRuns =
       new EnumMap<>(ScheduledRebalanceOutcome.class);
   private final Map<LoadMeasure, StatefulGauge> scheduledLoad = new EnumMap<>(LoadMeasure.class);
+  private final Map<MemberId, StatefulGauge> scheduledCpuUsage = new HashMap<>();
   private boolean coordinating;
 
   public ClusterRebalanceMetrics(final MeterRegistry registry) {
@@ -108,6 +110,8 @@ public final class ClusterRebalanceMetrics {
     scheduledRuns.clear();
     scheduledLoad.values().forEach(registry::remove);
     scheduledLoad.clear();
+    scheduledCpuUsage.values().forEach(registry::remove);
+    scheduledCpuUsage.clear();
   }
 
   /** Counts what came of a due scheduled rebalance, unless this member stopped coordinating. */
@@ -119,15 +123,25 @@ public final class ClusterRebalanceMetrics {
 
   /**
    * Publishes the load measured for a scheduled rebalance, unless this member stopped coordinating.
-   * Only a load every broker reported is accurate enough to publish.
+   * Only a load every broker reported is accurate enough to publish as the cluster's rates; each
+   * broker's CPU usage is published as far as it is known.
    */
   public void observeScheduledLoad(final ClusterLoad load) {
-    if (coordinating && load.isComplete()) {
+    if (!coordinating) {
+      return;
+    }
+    if (load.isComplete()) {
       load.ratesPerSecond()
           .forEach(
               (measure, rate) ->
                   scheduledLoad.computeIfAbsent(measure, this::registerScheduledLoad).set(rate));
     }
+    load.cpuUsage()
+        .forEach(
+            (member, usage) ->
+                scheduledCpuUsage
+                    .computeIfAbsent(member, this::registerScheduledCpuUsage)
+                    .set(usage));
   }
 
   /**
@@ -177,6 +191,13 @@ public final class ClusterRebalanceMetrics {
     return StatefulGauge.builder(ClusterRebalanceMetricsDoc.SCHEDULED_LOAD.getName())
         .description(ClusterRebalanceMetricsDoc.SCHEDULED_LOAD.getDescription())
         .tag(ClusterRebalanceKeyNames.MEASURE.asString(), measure.name())
+        .register(registry);
+  }
+
+  private StatefulGauge registerScheduledCpuUsage(final MemberId member) {
+    return StatefulGauge.builder(ClusterRebalanceMetricsDoc.SCHEDULED_CPU_USAGE.getName())
+        .description(ClusterRebalanceMetricsDoc.SCHEDULED_CPU_USAGE.getDescription())
+        .tag(ClusterRebalanceKeyNames.MEMBER.asString(), member.id())
         .register(registry);
   }
 

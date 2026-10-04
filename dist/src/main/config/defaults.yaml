@@ -304,13 +304,17 @@ camunda: # Type: io.camunda.configuration.Camunda
         # up with `NO_LEADER`.
         leader-wait-timeout: "1m" # Type: Duration, Env: CAMUNDA_CLUSTER_RAFT_REBALANCE_LEADERWAITTIMEOUT
         # How far back the load is averaged when deciding whether to run a scheduled rebalance.
-        load-window: "5m" # Type: Duration, Env: CAMUNDA_CLUSTER_RAFT_REBALANCE_LOADWINDOW
+        load-window: "1m" # Type: Duration, Env: CAMUNDA_CLUSTER_RAFT_REBALANCE_LOADWINDOW
         # The cluster-wide commands processed per second, averaged over `load-window`, above which a scheduled
         # rebalance is skipped. Unset means no limit.
         max-commands-per-second: null # Type: Double, Env: CAMUNDA_CLUSTER_RAFT_REBALANCE_MAXCOMMANDSPERSECOND
         # The cluster-wide root process instances activated per second, averaged over `load-window`, above
         # which a scheduled rebalance is skipped. Unset means no limit.
         max-process-instances-per-second: null # Type: Double, Env: CAMUNDA_CLUSTER_RAFT_REBALANCE_MAXPROCESSINSTANCESPERSECOND
+        # The share of its CPUs, averaged over `load-window`, above which a broker that leads no partitions
+        # may not take over leadership in a scheduled rebalance. The limit rises by a fifth for each partition
+        # the broker already leads. Unset means no limit.
+        max-target-cpu-usage: 0.2 # Type: Double, Env: CAMUNDA_CLUSTER_RAFT_REBALANCE_MAXTARGETCPUUSAGE
         # The maximum number of TimeoutNow requests the current leader sends (including the initial request)
         # before reporting `TIMEOUT_NOW_EXHAUSTED`.
         max-transfer-attempts: 3 # Type: Integer, Env: CAMUNDA_CLUSTER_RAFT_REBALANCE_MAXTRANSFERATTEMPTS
@@ -322,8 +326,9 @@ camunda: # Type: io.camunda.configuration.Camunda
         # replicating. If exceeded, the transfer is cancelled with `REPLICATION_TIMED_OUT`.
         replication-timeout: "10s" # Type: Duration, Env: CAMUNDA_CLUSTER_RAFT_REBALANCE_REPLICATIONTIMEOUT
         # When to rebalance automatically: a cron expression, an ISO-8601 interval, or `none`. A due rebalance
-        # is skipped if the cluster is already balanced, or busier than `max-process-instances-per-second` or
-        # `max-commands-per-second`.
+        # is skipped if the cluster is already balanced, busier than `max-process-instances-per-second` or
+        # `max-commands-per-second`, or a broker that would take over leadership is busier than
+        # `max-target-cpu-usage` allows.
         schedule: "none" # Type: String, Env: CAMUNDA_CLUSTER_RAFT_REBALANCE_SCHEDULE
       
       # Sets the timeout for all requests sent by raft leaders and followers. When modifying the values for

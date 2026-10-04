@@ -14,9 +14,15 @@ public enum ScheduledRebalanceOutcome {
   ALREADY_RUNNING,
   /** Every partition was already led by its desired leader. */
   ALREADY_BALANCED,
-  /** The cluster was busier than a configured threshold. */
+  /**
+   * The cluster was busier than a configured threshold, or a broker that would take over leadership
+   * was busier than its CPU limit.
+   */
   BUSY,
-  /** Not every broker reported its load over the whole window. */
+  /**
+   * Not every broker reported its load over the whole window, or a broker that would take over
+   * leadership did not report its CPU usage.
+   */
   LOAD_UNKNOWN,
   CONFIGURATION_CHANGE_IN_PROGRESS,
   FAILED

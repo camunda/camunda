@@ -701,6 +701,10 @@ public class BrokerBasedPropertiesOverride {
         .getCluster()
         .getRaft()
         .setRebalanceMaxCommandsPerSecond(raft.getRebalance().getMaxCommandsPerSecond());
+    override
+        .getCluster()
+        .getRaft()
+        .setRebalanceMaxTargetCpuUsage(raft.getRebalance().getMaxTargetCpuUsage());
     override.getCluster().getRaft().setRebalanceLoadWindow(raft.getRebalance().getLoadWindow());
     override
         .getExperimental()

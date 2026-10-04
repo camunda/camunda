@@ -21,6 +21,8 @@ import io.camunda.zeebe.util.schedule.Schedule;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.InstantSource;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
@@ -29,9 +31,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Starts a rebalance each time the schedule is due, unless the cluster is already balanced or
- * busier than any configured threshold, in which case it waits for the next time. The load is
- * measured over the window leading up to each due time, and whether the cluster is balanced is
- * checked once it is due.
+ * busier than any configured threshold, or a broker that would take over leadership is busier than
+ * its CPU limit, in which case it waits for the next time. The load is measured over the window
+ * leading up to each due time, and whether the cluster is balanced is checked once it is due.
  *
  * <p>Runs on every member, but only the coordinator gets past the first status check; the others
  * skip quietly.
@@ -40,11 +42,19 @@ public final class RebalanceScheduler implements ClusterConfigurationUpdateListe
 
   private static final Logger LOG = LoggerFactory.getLogger(RebalanceScheduler.class);
 
+  /**
+   * How much a broker's CPU limit rises for each partition it already leads. A broker reads busier
+   * for every partition it leads without its new partitions being disrupted any more: in load
+   * tests, by about a fifth of the limit per partition.
+   */
+  static final double CPU_ALLOWANCE_PER_LED_PARTITION = 0.2;
+
   private final ConcurrencyControl executor;
   private final Schedule schedule;
   private final RebalanceApi coordinator;
   private final ClusterLoadSource loadSource;
   private final Map<LoadMeasure, Double> maxRatesPerSecond;
+  private final @Nullable Double maxTargetCpuUsage;
   private final Duration loadWindow;
   private final InstantSource clock;
   private final ClusterRebalanceMetrics metrics;
@@ -57,6 +67,8 @@ public final class RebalanceScheduler implements ClusterConfigurationUpdateListe
   /**
    * @param maxRatesPerSecond the cluster-wide rate of each measure above which a due rebalance is
    *     skipped; measures without an entry are not limited
+   * @param maxTargetCpuUsage the CPU usage, as a share of its CPUs, above which a broker that leads
+   *     no partitions may not take over leadership, or {@code null} for no limit
    * @param loadWindow the window the load is averaged over
    */
   public RebalanceScheduler(
@@ -65,6 +77,7 @@ public final class RebalanceScheduler implements ClusterConfigurationUpdateListe
       final RebalanceApi coordinator,
       final ClusterLoadSource loadSource,
       final Map<LoadMeasure, Double> maxRatesPerSecond,
+      final @Nullable Double maxTargetCpuUsage,
       final Duration loadWindow,
       final InstantSource clock,
       final ClusterRebalanceMetrics metrics) {
@@ -73,6 +86,7 @@ public final class RebalanceScheduler implements ClusterConfigurationUpdateListe
     this.coordinator = coordinator;
     this.loadSource = loadSource;
     this.maxRatesPerSecond = Map.copyOf(maxRatesPerSecond);
+    this.maxTargetCpuUsage = maxTargetCpuUsage;
     this.loadWindow = loadWindow;
     this.clock = clock;
     this.metrics = metrics;
@@ -120,7 +134,7 @@ public final class RebalanceScheduler implements ClusterConfigurationUpdateListe
       return;
     }
     final var now = clock.instant();
-    final var lead = maxRatesPerSecond.isEmpty() ? Duration.ZERO : loadWindow;
+    final var lead = measuresLoad() ? loadWindow : Duration.ZERO;
     var due = schedule.nextExecution(lastDue != null ? lastDue : now);
     while (due.isPresent() && due.get().minus(lead).isBefore(now)) {
       final var next = schedule.nextExecution(due.get());
@@ -142,7 +156,7 @@ public final class RebalanceScheduler implements ClusterConfigurationUpdateListe
     timer = null;
     lastDue = due;
     scheduleNext();
-    if (maxRatesPerSecond.isEmpty()) {
+    if (!measuresLoad()) {
       triggerIfDue(null);
       return;
     }
@@ -193,12 +207,12 @@ public final class RebalanceScheduler implements ClusterConfigurationUpdateListe
           } else if (load == null) {
             trigger();
           } else {
-            triggerIfQuiet(load);
+            triggerIfQuiet(load, status.leadershipStatus());
           }
         });
   }
 
-  private void triggerIfQuiet(final ClusterLoad load) {
+  private void triggerIfQuiet(final ClusterLoad load, final ClusterLeadershipStatus leadership) {
     if (!load.isComplete()) {
       LOG.info(
           "Skipping scheduled rebalance, no load report over the last {} from {}",
@@ -220,7 +234,62 @@ public final class RebalanceScheduler implements ClusterConfigurationUpdateListe
         return;
       }
     }
+    if (maxTargetCpuUsage != null) {
+      final var outcome = checkTargetCpu(load, leadership, maxTargetCpuUsage);
+      if (outcome != null) {
+        finish(outcome, null);
+        return;
+      }
+    }
     trigger();
+  }
+
+  /**
+   * Checks every broker that would take over leadership against its CPU limit, which rises with the
+   * partitions it already leads.
+   *
+   * @return why the rebalance must be skipped, or {@code null} if every such broker is within its
+   *     limit
+   */
+  private @Nullable ScheduledRebalanceOutcome checkTargetCpu(
+      final ClusterLoad load, final ClusterLeadershipStatus leadership, final double maxUsage) {
+    final Map<MemberId, Integer> led = new HashMap<>();
+    final Set<MemberId> targets = new HashSet<>();
+    for (final var partition : leadership.partitions()) {
+      final var currentLeader = partition.currentLeader();
+      if (currentLeader == null) {
+        targets.add(partition.desiredLeader());
+        continue;
+      }
+      led.merge(currentLeader, 1, Integer::sum);
+      if (!partition.desiredLeader().equals(currentLeader)) {
+        targets.add(partition.desiredLeader());
+      }
+    }
+    for (final var target : targets) {
+      final var usage = load.cpuUsage().get(target);
+      if (usage == null) {
+        LOG.info(
+            "Skipping scheduled rebalance, the CPU usage of {} over the last {} is unknown",
+            target,
+            loadWindow);
+        return ScheduledRebalanceOutcome.LOAD_UNKNOWN;
+      }
+      final int partitionsLed = led.getOrDefault(target, 0);
+      final double limit = maxUsage * (1 + CPU_ALLOWANCE_PER_LED_PARTITION * partitionsLed);
+      if (usage > limit) {
+        LOG.info(
+            "Skipping scheduled rebalance, {} used {}% of its CPU over the last {}, above its limit"
+                + " of {}% while leading {} partitions",
+            target, Math.round(usage * 100), loadWindow, Math.round(limit * 100), partitionsLed);
+        return ScheduledRebalanceOutcome.BUSY;
+      }
+    }
+    return null;
+  }
+
+  private boolean measuresLoad() {
+    return !maxRatesPerSecond.isEmpty() || maxTargetCpuUsage != null;
   }
 
   private void trigger() {

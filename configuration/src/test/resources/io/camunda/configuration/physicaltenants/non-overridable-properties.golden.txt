@@ -82,6 +82,7 @@ cluster.raft.rebalance.leader-wait-timeout
 cluster.raft.rebalance.load-window
 cluster.raft.rebalance.max-commands-per-second
 cluster.raft.rebalance.max-process-instances-per-second
+cluster.raft.rebalance.max-target-cpu-usage
 cluster.raft.rebalance.max-transfer-attempts
 cluster.raft.rebalance.replication-lag-threshold
 cluster.raft.rebalance.replication-timeout
