@@ -18,11 +18,22 @@ import java.util.Set;
  *     at both ends of the window
  * @param unaccounted brokers that missed either end of the window, or restarted in between, so
  *     {@code ratesPerSecond} may understate the load
+ * @param cpuUsage each accounted broker's CPU time over the window as a share of the CPUs it may
+ *     use, for those that know it
  */
-public record ClusterLoad(Map<LoadMeasure, Double> ratesPerSecond, Set<MemberId> unaccounted) {
+public record ClusterLoad(
+    Map<LoadMeasure, Double> ratesPerSecond,
+    Set<MemberId> unaccounted,
+    Map<MemberId, Double> cpuUsage) {
   public ClusterLoad {
     ratesPerSecond = Map.copyOf(ratesPerSecond);
     unaccounted = Set.copyOf(unaccounted);
+    cpuUsage = Map.copyOf(cpuUsage);
+  }
+
+  public ClusterLoad(
+      final Map<LoadMeasure, Double> ratesPerSecond, final Set<MemberId> unaccounted) {
+    this(ratesPerSecond, unaccounted, Map.of());
   }
 
   public boolean isComplete() {

@@ -42,6 +42,7 @@ import org.junit.jupiter.api.Test;
 final class ClusterLoadCollectorTest {
 
   private static final Duration WINDOW = Duration.ofMinutes(1);
+  private static final int CPUS = 4;
   private static final List<MemberId> BROKERS =
       List.of(MemberId.from("0"), MemberId.from("1"), MemberId.from("2"));
 
@@ -123,6 +124,41 @@ final class ClusterLoadCollectorTest {
   }
 
   @Test
+  void shouldMeasureEachBrokersCpuUsageAsAShareOfItsCpus() {
+    // given
+    counters.forEach(c -> c.cpuTimeNanos.set(Duration.ofHours(1).toNanos()));
+    final var load = collectors.getFirst().collect(BROKERS, WINDOW);
+    final var endOfWindow = awaitWindowStart();
+
+    // when
+    counters.get(0).cpuTimeNanos.addAndGet(WINDOW.multipliedBy(CPUS).toNanos());
+    counters.get(1).cpuTimeNanos.addAndGet(WINDOW.toNanos());
+    endWindow(endOfWindow);
+
+    // then
+    final var cpuUsage = await(load).cpuUsage();
+    assertThat(cpuUsage.get(BROKERS.get(0))).isCloseTo(1.0, within(1e-9));
+    assertThat(cpuUsage.get(BROKERS.get(1))).isCloseTo(0.25, within(1e-9));
+    assertThat(cpuUsage.get(BROKERS.get(2))).isCloseTo(0.0, within(1e-9));
+  }
+
+  @Test
+  void shouldLeaveCpuUsageUnknownForABrokerThatCannotReadIt() {
+    // given
+    counters.get(2).cpuTimeNanos.set(-1);
+    final var load = collectors.getFirst().collect(BROKERS, WINDOW);
+    final var endOfWindow = awaitWindowStart();
+
+    // when
+    endWindow(endOfWindow);
+
+    // then
+    final var measured = await(load);
+    assertThat(measured.isComplete()).isTrue();
+    assertThat(measured.cpuUsage()).containsOnlyKeys(BROKERS.get(0), BROKERS.get(1));
+  }
+
+  @Test
   void shouldMarkABrokerThatDoesNotAnswerAsUnaccounted() {
     // given
     final var absent = MemberId.from("absent");
@@ -160,6 +196,7 @@ final class ClusterLoadCollectorTest {
             BROKERS.get(index),
             index == 0 ? coordinatorExecutor : new TestConcurrencyControl(),
             counters.get(index)::total,
+            new ProcessCpu(counters.get(index).cpuTimeNanos::get, CPUS),
             NODES.get(index).getCommunicationService(),
             clock);
     collector.start();
@@ -192,6 +229,7 @@ final class ClusterLoadCollectorTest {
 
   private static final class FakeCounters {
     private final Map<LoadMeasure, AtomicLong> totals = new EnumMap<>(LoadMeasure.class);
+    private final AtomicLong cpuTimeNanos = new AtomicLong();
 
     private FakeCounters() {
       for (final var measure : LoadMeasure.values()) {

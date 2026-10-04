@@ -171,4 +171,8 @@ message LoadTotals {
   // compared.
   uint64 incarnation = 1;
   repeated Total totals = 2;
+  // The CPU time the broker's process has used since it started; unknown if cpus is 0.
+  uint64 cpu_time_nanos = 3;
+  // The CPUs the broker's process may use, or 0 if unknown.
+  uint32 cpus = 4;
 }

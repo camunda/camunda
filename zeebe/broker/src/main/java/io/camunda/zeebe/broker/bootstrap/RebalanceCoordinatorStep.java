@@ -16,6 +16,7 @@ import io.camunda.zeebe.rebalance.ClusterRebalanceMetrics;
 import io.camunda.zeebe.rebalance.LoadMeasure;
 import io.camunda.zeebe.rebalance.PartitionBalanceMetrics;
 import io.camunda.zeebe.rebalance.PartitionBalancePlanner;
+import io.camunda.zeebe.rebalance.ProcessCpu;
 import io.camunda.zeebe.rebalance.ProtoBufRebalanceSerializer;
 import io.camunda.zeebe.rebalance.RebalanceCoordinator;
 import io.camunda.zeebe.rebalance.RebalanceRequestServer;
@@ -136,6 +137,7 @@ public class RebalanceCoordinatorStep implements StartupStep<BrokerStartupContex
                       localMember,
                       rebalanceCoordinatorActor,
                       brokerStartupContext.getLoadCounters(),
+                      ProcessCpu.ofThisProcess(),
                       brokerStartupContext.getClusterServices().getCommunicationService(),
                       Clock.systemUTC());
               loadCollector.start();

@@ -42,6 +42,7 @@ public final class ClusterLoadCollector implements ClusterLoadSource, AutoClosea
   private final MemberId localMemberId;
   private final ConcurrencyControl executor;
   private final LoadCounters counters;
+  private final ProcessCpu cpu;
   private final ClusterCommunicationService communicationService;
   private final InstantSource clock;
   private final long incarnation = ThreadLocalRandom.current().nextLong();
@@ -50,11 +51,13 @@ public final class ClusterLoadCollector implements ClusterLoadSource, AutoClosea
       final MemberId localMemberId,
       final ConcurrencyControl executor,
       final LoadCounters counters,
+      final ProcessCpu cpu,
       final ClusterCommunicationService communicationService,
       final InstantSource clock) {
     this.localMemberId = localMemberId;
     this.executor = executor;
     this.counters = counters;
+    this.cpu = cpu;
     this.communicationService = communicationService;
     this.clock = clock;
   }
@@ -105,7 +108,7 @@ public final class ClusterLoadCollector implements ClusterLoadSource, AutoClosea
     for (final var measure : LoadMeasure.values()) {
       totals.put(measure, counters.total(measure));
     }
-    return new LoadTotals(incarnation, totals);
+    return new LoadTotals(incarnation, totals, cpu.cpuTimeNanos().getAsLong(), cpu.cpus());
   }
 
   /** Reads every member's totals, then passes on those that answered, on the executor. */
@@ -156,19 +159,36 @@ public final class ClusterLoadCollector implements ClusterLoadSource, AutoClosea
       rates.put(measure, 0.0);
     }
     final Set<MemberId> unaccounted = new HashSet<>();
+    final Map<MemberId, Double> cpuUsage = new HashMap<>();
     final double seconds = Math.max(elapsed.toMillis(), 1) / 1000.0;
     for (final var member : members) {
       final var start = before.get(member);
       final var end = after.get(member);
-      final var increases = increases(start, end);
-      if (increases == null) {
+      final var increases = start != null && end != null ? increases(start, end) : null;
+      if (start == null || end == null || increases == null) {
         unaccounted.add(member);
         continue;
       }
       increases.forEach(
           (measure, increase) -> rates.merge(measure, increase / seconds, Double::sum));
+      final var usage = cpuUsage(start, end, seconds);
+      if (usage != null) {
+        cpuUsage.put(member, usage);
+      }
     }
-    return new ClusterLoad(rates, unaccounted);
+    return new ClusterLoad(rates, unaccounted, cpuUsage);
+  }
+
+  /** The broker's CPU time between the two reads as a share of its CPUs, if it reported both. */
+  private static @Nullable Double cpuUsage(
+      final LoadTotals start, final LoadTotals end, final double seconds) {
+    if (start.cpus() <= 0
+        || end.cpus() != start.cpus()
+        || start.cpuTimeNanos() < 0
+        || end.cpuTimeNanos() < start.cpuTimeNanos()) {
+      return null;
+    }
+    return (end.cpuTimeNanos() - start.cpuTimeNanos()) / 1e9 / (seconds * end.cpus());
   }
 
   /**
@@ -176,8 +196,8 @@ public final class ClusterLoadCollector implements ClusterLoadSource, AutoClosea
    * the same incarnation and hold every measure.
    */
   private static @Nullable Map<LoadMeasure, Long> increases(
-      final @Nullable LoadTotals start, final @Nullable LoadTotals end) {
-    if (start == null || end == null || start.incarnation() != end.incarnation()) {
+      final LoadTotals start, final LoadTotals end) {
+    if (start.incarnation() != end.incarnation()) {
       return null;
     }
     final Map<LoadMeasure, Long> increases = new EnumMap<>(LoadMeasure.class);

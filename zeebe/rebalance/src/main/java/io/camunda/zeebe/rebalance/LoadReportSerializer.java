@@ -19,6 +19,9 @@ final class LoadReportSerializer {
 
   static byte[] encodeTotals(final LoadTotals totals) {
     final var builder = Rebalance.LoadTotals.newBuilder().setIncarnation(totals.incarnation());
+    if (totals.cpuTimeNanos() >= 0 && totals.cpus() > 0) {
+      builder.setCpuTimeNanos(totals.cpuTimeNanos()).setCpus(totals.cpus());
+    }
     totals
         .totals()
         .forEach(
@@ -30,7 +33,10 @@ final class LoadReportSerializer {
     return builder.build().toByteArray();
   }
 
-  /** Measures this version does not know are dropped, so the totals look incomplete. */
+  /**
+   * Measures this version does not know are dropped, so the totals look incomplete. A broker that
+   * does not report its CPU leaves it unknown.
+   */
   static LoadTotals decodeTotals(final byte[] encoded) {
     final Rebalance.LoadTotals decoded;
     try {
@@ -47,7 +53,10 @@ final class LoadReportSerializer {
         default -> {}
       }
     }
-    return new LoadTotals(decoded.getIncarnation(), totals);
+    return decoded.getCpus() > 0
+        ? new LoadTotals(
+            decoded.getIncarnation(), totals, decoded.getCpuTimeNanos(), decoded.getCpus())
+        : new LoadTotals(decoded.getIncarnation(), totals, -1, 0);
   }
 
   private static Rebalance.LoadTotals.LoadMeasure encodeMeasure(final LoadMeasure measure) {
