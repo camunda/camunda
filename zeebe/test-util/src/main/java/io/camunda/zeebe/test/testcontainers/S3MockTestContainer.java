@@ -12,7 +12,7 @@ import org.testcontainers.lifecycle.Startable;
 
 public final class S3MockTestContainer implements Startable {
 
-  private static final String DEFAULT_TAG = "4.11.0";
+  private static final String DEFAULT_TAG = "5.2.3";
   private static final String DEFAULT_REGION = "us-east-1";
   private static final String DEFAULT_ACCESS_KEY = "accessKey";
   private static final String DEFAULT_SECRET_KEY = "secretKey";
