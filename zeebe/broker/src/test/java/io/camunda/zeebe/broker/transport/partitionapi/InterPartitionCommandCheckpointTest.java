@@ -205,6 +205,24 @@ final class InterPartitionCommandCheckpointTest {
   }
 
   @Test
+  void shouldReleaseSnapshotReservationIfCheckpointWriteThrows() {
+    // given
+    when(logStreamWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
+        .thenThrow(new IllegalStateException("expected"));
+    when(snapshotStore.reserveLatestSnapshot(anyLong()))
+        .thenReturn(CompletableActorFuture.completed(Optional.of("latest")));
+    sender.setCheckpointInfo(17, CheckpointType.MANUAL_BACKUP);
+
+    // when
+    final var handled = sendAndReceive(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
+
+    // then
+    assertThat(handled).isDone();
+    assertThat(handled.isCompletedExceptionally()).isTrue();
+    verify(snapshotStore).releaseReservation(17L, "latest");
+  }
+
+  @Test
   void shouldHandleMissingCheckpoints() {
     // given
     when(logStreamWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
