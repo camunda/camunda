@@ -1,5 +1,6 @@
 import buildlogic.registerTestPortSlotService
 import buildlogic.requiredVersion
+import com.diffplug.gradle.spotless.SpotlessCheck
 import com.diffplug.gradle.spotless.SpotlessExtension
 import io.camunda.gradle.flags.asEnabledFlag
 import net.ltgt.gradle.errorprone.errorprone
@@ -55,6 +56,9 @@ extensions.configure<SpotlessExtension> {
     googleJavaFormat(googleJavaFormatVersion).style("GOOGLE")
   }
 }
+
+// Maven -Dquickly skips format checks; do the same for the per-module Spotless checks.
+tasks.withType<SpotlessCheck>().configureEach { enabled = !quickly.get() }
 
 publishing { publications.create<MavenPublication>("maven") { from(components["java"]) } }
 
