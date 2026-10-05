@@ -44,8 +44,6 @@ defaults:
 
 env:
   TEST_OWNER: '@camunda/reliability-testing'
-  REUSE_TAG: ${{ inputs.reuse-tag }}
-  GCS_LOAD_TEST_RESULTS_BUCKET: camunda-benchmark-load-test-results-prod
 
 jobs:
   benchmark-data:
@@ -61,6 +59,8 @@ jobs:
           persist-credentials: false
       - name: Collect benchmark data
         id: data
+        env:
+          REUSE_TAG: ${{ inputs.reuse-tag }}
         run: |
           if [[ -z "${REUSE_TAG}" ]]; then
             echo "Creating new daily load test benchmark"
@@ -259,7 +259,7 @@ jobs:
           timeout_minutes: 2
           shell: bash
           command: |
-            target="gs://${GCS_LOAD_TEST_RESULTS_BUCKET}/automated/daily/stress/${BENCHMARK}/"
+            target="gs://camunda-benchmark-load-test-results-prod/automated/daily/stress/${BENCHMARK}/"
             gcloud storage cp -r data/* "${target}"
       - name: Observe build status
         if: always()

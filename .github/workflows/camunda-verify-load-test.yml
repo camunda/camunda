@@ -17,7 +17,6 @@ env:
   TEST_OWNER: '@camunda/reliability-testing'
   CLUSTER: camunda-benchmark-prod
   TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
-  NAMESPACE: ${{ inputs.namespace }}
 
 jobs:
   verify:
@@ -41,6 +40,8 @@ jobs:
           token: ${{ env.TELEPORT_JOIN_TOKEN }}
           kubernetes-cluster: ${{ env.CLUSTER }}
       - name: Verify Load test
+        env:
+          NAMESPACE: ${{ inputs.namespace }}
         run: load-tests/docs/scripts/verify-test.sh "${NAMESPACE}"
       - name: Observe build status
         if: always()

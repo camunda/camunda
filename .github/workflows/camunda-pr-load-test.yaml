@@ -111,14 +111,14 @@ jobs:
 
   verify-install:
     name: Verify Install
-    needs: [sanitize-branch-name, create-benchmark]
+    needs: [create-benchmark]
     permissions:
       contents: read
       id-token: write
     uses: ./.github/workflows/camunda-verify-load-test.yml
     secrets: inherit
     with:
-      namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+      namespace: ${{ needs.create-benchmark.outputs.namespace }}
 
   await-benchmark:
     name: Await Benchmark
@@ -147,11 +147,11 @@ jobs:
 
   run-profiling:
     name: Run Profiling
-    needs: [sanitize-branch-name, await-benchmark]
+    needs: [create-benchmark, await-benchmark]
     uses: ./.github/workflows/profile-load-test.yml
     secrets: inherit
     with:
-      name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+      name: ${{ needs.create-benchmark.outputs.namespace }}
 
   resolve-daily-namespace:
     name: Resolve last completed daily-on-main run
@@ -186,11 +186,11 @@ jobs:
 
   get-pr-metrics:
     name: Collect PR namespace metrics
-    needs: [sanitize-branch-name, await-benchmark]
+    needs: [create-benchmark, await-benchmark]
     uses: ./.github/workflows/camunda-load-test-metrics.yaml
     secrets: inherit
     with:
-      namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+      namespace: ${{ needs.create-benchmark.outputs.namespace }}
       duration-seconds: '1800'
 
   get-daily-metrics:
@@ -207,7 +207,7 @@ jobs:
 
   render-comparison:
     name: Render PR vs Daily comparison
-    needs: [sanitize-branch-name, resolve-daily-namespace, get-pr-metrics, get-daily-metrics]
+    needs: [sanitize-branch-name, create-benchmark, resolve-daily-namespace, get-pr-metrics, get-daily-metrics]
     # Run when get-pr-metrics actually executed (success or failure) so a
     # partial metrics fetch still posts a comment with `n/a` / `-` placeholders.
     # Skips naturally on unlabel / close events because get-pr-metrics is then
@@ -220,7 +220,7 @@ jobs:
     outputs:
       comparison-md: ${{ steps.render.outputs.comparison-md }}
     env:
-      NAMESPACE: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+      NAMESPACE: ${{ needs.create-benchmark.outputs.namespace }}
       DAILY_NAMESPACE: ${{ needs.resolve-daily-namespace.outputs.daily-namespace }}
       DAILY_AT: ${{ needs.resolve-daily-namespace.outputs.daily-at }}
       DURATION_SECONDS: '1800'
@@ -296,7 +296,7 @@ jobs:
 
   auto-delete-benchmark:
     name: Auto cleanup after metrics
-    needs: [sanitize-branch-name, comment-comparison-pr, run-profiling]
+    needs: [create-benchmark, comment-comparison-pr, run-profiling]
     # Wait for both the metrics post and profiling to terminate before tearing
     # the namespace down — otherwise `run-profiling` loses its target pods
     # mid-`kubectl cp` and no flamegraphs are produced. `!cancelled()` lets this
@@ -311,7 +311,7 @@ jobs:
     uses: ./.github/workflows/camunda-delete-load-test.yml
     secrets: inherit
     with:
-      namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+      namespace: ${{ needs.create-benchmark.outputs.namespace }}
 
   comment-pr:
     name: Comment on PR with profiling results

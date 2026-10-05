@@ -64,7 +64,6 @@ env:
   TEST_OWNER: '@camunda/reliability-testing'
   CLUSTER: camunda-benchmark-prod
   TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
-  TARGET_VERSION: ${{ inputs.target-version }}
 
 defaults:
   run:
@@ -92,6 +91,7 @@ jobs:
         env:
           AUTHOR: ${{ steps.sanitize-author.outputs.branch_name || github.actor }}
           PR_NUMBER: ${{ github.event.pull_request.number || github.run_id }}
+          TARGET_VERSION: ${{ inputs.target-version }}
         run: |
           author="${AUTHOR}"
           pr_number="${PR_NUMBER}"
@@ -139,18 +139,18 @@ jobs:
 
   verify-install:
     name: Verify Install
-    needs: [sanitize-branch-name, smoke-install]
+    needs: [smoke-install]
     permissions:
       contents: 'read'
       id-token: 'write'
     uses: ./.github/workflows/camunda-verify-load-test.yml
     secrets: inherit
     with:
-      namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-install
+      namespace: ${{ needs.smoke-install.outputs.namespace }}
 
   cleanup-install:
     name: Cleanup (install chain)
-    needs: [sanitize-branch-name, verify-install]
+    needs: [smoke-install, verify-install]
     if: always()
     permissions:
       contents: read
@@ -158,7 +158,7 @@ jobs:
     uses: ./.github/workflows/camunda-delete-load-test.yml
     secrets: inherit
     with:
-      namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-install
+      namespace: ${{ needs.smoke-install.outputs.namespace }}
 
   # ---------------------------------------------------------------------------
   # Upgrade chain: deploys base-ref's setup code (the version already on main
@@ -183,14 +183,14 @@ jobs:
 
   verify-upgrade-install:
     name: Verify Upgrade Install
-    needs: [sanitize-branch-name, smoke-upgrade-install]
+    needs: [smoke-upgrade-install]
     permissions:
       contents: 'read'
       id-token: 'write'
     uses: ./.github/workflows/camunda-verify-load-test.yml
     secrets: inherit
     with:
-      namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-upgrade
+      namespace: ${{ needs.smoke-upgrade-install.outputs.namespace }}
 
   smoke-upgrade-update:
     name: Smoke Upgrade - Update (PR ref)
@@ -208,18 +208,18 @@ jobs:
 
   verify-upgrade-update:
     name: Verify Upgrade Update
-    needs: [sanitize-branch-name, smoke-upgrade-update]
+    needs: [smoke-upgrade-update]
     permissions:
       contents: 'read'
       id-token: 'write'
     uses: ./.github/workflows/camunda-verify-load-test.yml
     secrets: inherit
     with:
-      namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-upgrade
+      namespace: ${{ needs.smoke-upgrade-update.outputs.namespace }}
 
   cleanup-upgrade:
     name: Cleanup (upgrade chain)
-    needs: [sanitize-branch-name, verify-upgrade-update]
+    needs: [smoke-upgrade-install, verify-upgrade-update]
     if: always()
     permissions:
       contents: read
@@ -227,4 +227,4 @@ jobs:
     uses: ./.github/workflows/camunda-delete-load-test.yml
     secrets: inherit
     with:
-      namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-upgrade
+      namespace: ${{ needs.smoke-upgrade-install.outputs.namespace }}

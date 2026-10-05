@@ -135,6 +135,7 @@ on:
         type: string
         default: ""
         required: false
+
   workflow_call:
     inputs:
       ref:
@@ -246,6 +247,10 @@ on:
         type: string
         default: ""
         required: false
+    outputs:
+      namespace:
+        description: The name of the namespace created
+        value: ${{ jobs.show-summary.outputs.namespace }}
 
 env:
   TEST_OWNER: '@camunda/reliability-testing'
@@ -256,12 +261,10 @@ env:
   CLUSTER: camunda-benchmark-prod  # change this to "camunda-benchmark-dev" when experimenting
   TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe  # change this to "infra-benchmark-dev-github-action-zeebe" when experimenting
 
-  BUILD_FRONTEND: ${{ inputs.build-frontend }}
   CONNECTORS_TAG: ${{ inputs.connectors-tag }}
   ENABLE_CHAOS: ${{ inputs.enable-chaos }}
   ENABLE_OPTIMIZE: ${{ inputs.enable-optimize }}
   ENABLE_OPTIMIZE_METRICS: ${{ inputs.enable-optimize-report-metrics }}
-  HELM_CHART: camunda-platform-8.10
   IDENTITY_TAG: ${{ inputs.identity-tag }}
   IMAGE_REPOSITORY: registry.camunda.cloud/team-zeebe
   LOAD_TEST_LOAD: ${{ inputs.load-test-load }}
@@ -272,11 +275,8 @@ env:
   PERFORM_READ_BENCHMARKS: ${{ inputs.perform-read-benchmarks }}
   PHYSICAL_TENANT_COUNT: ${{ inputs.physical-tenant-count }}
   PLATFORM_HELM_VALUES: ${{ inputs.platform-helm-values }}
-  REF: ${{ inputs.ref }}
-  REUSE_TAG: ${{ inputs.reuse-tag}}
   SCENARIO: ${{ inputs.scenario }}
   SECONDARY_STORAGE_TYPE: ${{ inputs.secondary-storage-type }}
-  STABLE_VMS: ${{ inputs.stable-vms }}
   TARGET_VERSION: ${{ inputs.target-version }}
   TTL: ${{ inputs.ttl }}
 
@@ -291,8 +291,18 @@ jobs:
     name: Summarize workflow inputs
     runs-on: ubuntu-latest
     permissions: {}
+    outputs:
+      namespace: ${{ steps.namespace.outputs.namespace }}
     steps:
+      - name: Output namespace
+        id: namespace
+        run: echo "namespace=${NAMESPACE}" >> "$GITHUB_OUTPUT"
       - name: Show summary
+        env:
+          BUILD_FRONTEND: ${{ inputs.build-frontend }}
+          REF: ${{ inputs.ref }}
+          REUSE_TAG: ${{ inputs.reuse-tag }}
+          STABLE_VMS: ${{ inputs.stable-vms }}
         run: |-
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
           ## Load test: \`${NAMESPACE}\`

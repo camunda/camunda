@@ -15,7 +15,6 @@ on:
         required: false
 
 env:
-  DATE: ${{ inputs.date }}
   TEST_OWNER: '@camunda/reliability-testing'
   CLUSTER: camunda-benchmark-prod
   TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
@@ -51,6 +50,8 @@ jobs:
           location: europe-west1-b
       - name: Delete namespaces eligible for deletion
         id: delete-namespaces
+        env:
+          DATE: ${{ inputs.date }}
         run: .github/scripts/clean-up-load-test-namespaces.sh --execute "${DATE}"
       - name: Import Slack webhook from Vault
         id: slack-secrets
@@ -128,6 +129,8 @@ jobs:
           kubernetes-cluster: ${{ env.CLUSTER }}
       - name: Delete namespaces eligible for deletion
         id: delete-namespaces
+        env:
+          DATE: ${{ inputs.date }}
         run: .github/scripts/clean-up-load-test-namespaces.sh --execute "${DATE}"
       - name: Import Slack webhook from Vault
         id: slack-secrets
