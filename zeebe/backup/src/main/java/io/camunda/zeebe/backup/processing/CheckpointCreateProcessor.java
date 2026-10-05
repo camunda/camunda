@@ -49,7 +49,7 @@ public final class CheckpointCreateProcessor {
     if (checkpointState.getCheckpointId() < checkpointId) {
       // Only take a checkpoint if it is newer
       final var checkpointPosition = record.getPosition();
-      backupManager.takeBackup(checkpointId, checkpointPosition);
+      backupManager.takeBackup(checkpointId, checkpointPosition, checkpointRecord.getSnapshotId());
       checkpointState.setCheckpointInfo(checkpointId, checkpointPosition);
 
       // Notify listeners immediately
@@ -60,11 +60,13 @@ public final class CheckpointCreateProcessor {
       final var followupRecord =
           new CheckpointRecord()
               .setCheckpointId(checkpointId)
-              .setCheckpointPosition(checkpointPosition);
+              .setCheckpointPosition(checkpointPosition)
+              .setSnapshotId(checkpointRecord.getSnapshotId());
       return createFollowUpAndResponse(
           record, CheckpointIntent.CREATED, followupRecord, resultBuilder);
     } else {
       metrics.ignored();
+      releaseSnapshotReserved(checkpointRecord);
       // A checkpoint already exists. Ignore the command. Use the latest checkpoint info in
       // the record so that the response sent contains the latest checkpointId. This is useful to
       // return useful information back to the client.
@@ -75,6 +77,13 @@ public final class CheckpointCreateProcessor {
               .setCheckpointId(checkpointState.getCheckpointId())
               .setCheckpointPosition(checkpointState.getCheckpointPosition()),
           resultBuilder);
+    }
+  }
+
+  private void releaseSnapshotReserved(final CheckpointRecord checkpointRecord) {
+    final var snapshotId = checkpointRecord.getSnapshotId();
+    if (!snapshotId.isEmpty()) {
+      backupManager.releaseSnapshotReservation(checkpointRecord.getCheckpointId(), snapshotId);
     }
   }
 
