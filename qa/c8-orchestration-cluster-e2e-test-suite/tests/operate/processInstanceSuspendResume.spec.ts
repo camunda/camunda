@@ -496,10 +496,15 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     ).toBeVisible({timeout: UI_REFRESH_TIMEOUT});
 
     // Off the toolbar's own request: the newest batch could be another spec's.
+    // The submit is driven through a toolbar-unmount retry loop with a 120s
+    // budget, so the POST can fire well after the default 10s response wait —
+    // match that budget here, otherwise the wait expires before the retried
+    // submit ever reaches the network.
     const cancellationResponse = page.waitForResponse(
       (response) =>
         response.url().includes('/process-instances/cancellation') &&
         response.request().method() === 'POST',
+      {timeout: 120_000},
     );
     await operateProcessesPage.cancelAllProcessInstancesInBatch();
     const batchOperationKey = String(
