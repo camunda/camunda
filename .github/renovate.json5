@@ -754,7 +754,7 @@
       // Disable automerge for all the load test updates, by default.
       // Automerge can be turned on, on a case by case basis, as needed, until
       // the teams are more confident about the updates received.
-      matchFileNames: ["load-tests/**"],
+      matchFileNames: ["load-tests/setup/**"],
       automerge: false,
       prBodyNotes: [
         "**:warning: Manual verification required before merging :warning:**",
