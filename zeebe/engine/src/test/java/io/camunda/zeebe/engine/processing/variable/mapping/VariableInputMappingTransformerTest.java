@@ -213,7 +213,7 @@ final class VariableInputMappingTransformerTest {
           name -> {
             final var accumulated = resultBuilder.getVariable(name);
             return Either.left(
-                accumulated != null ? accumulated : ContextValue.msgPack(variables.get(name)));
+                accumulated != null ? accumulated : ContextValue.ofNullable(variables.get(name)));
           };
       final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
       resultBuilder.put(mapping.targetPath(), new ContextValue.MsgPack(result.toBuffer()));
@@ -265,7 +265,7 @@ final class VariableInputMappingTransformerTest {
           name -> {
             final var accumulated = resultBuilder.getVariable(name);
             return Either.left(
-                accumulated != null ? accumulated : ContextValue.msgPack(variables.get(name)));
+                accumulated != null ? accumulated : ContextValue.ofNullable(variables.get(name)));
           };
       final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
       resultBuilder.put(mapping.targetPath(), new ContextValue.MsgPack(result.toBuffer()));
@@ -308,7 +308,7 @@ final class VariableInputMappingTransformerTest {
           name -> {
             final var accumulated = resultBuilder.getVariable(name);
             return Either.left(
-                accumulated != null ? accumulated : ContextValue.msgPack(variables.get(name)));
+                accumulated != null ? accumulated : ContextValue.ofNullable(variables.get(name)));
           };
       final var result = language.evaluateExpression(mapping.source(), context);
       resultBuilder.put(mapping.targetPath(), new ContextValue.MsgPack(result.toBuffer()));

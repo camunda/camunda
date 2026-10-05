@@ -39,7 +39,7 @@ public final class TenantScopeClusterVariableEvaluationContext implements Scoped
   @Override
   public Either<ContextValue, EvaluationContext> getVariable(final String variableName) {
     return Either.left(
-        ContextValue.msgPack(
+        ContextValue.ofNullable(
             clusterVariableState
                 .getTenantScopedClusterVariable(BufferUtil.wrapString(variableName), tenantId)
                 .filter(instance -> instance.getValueBuffer().capacity() > 0)

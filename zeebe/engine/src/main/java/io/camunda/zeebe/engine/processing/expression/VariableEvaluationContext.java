@@ -42,7 +42,7 @@ public final class VariableEvaluationContext implements ScopedEvaluationContext 
       return Either.left(null);
     }
     return Either.left(
-        ContextValue.msgPack(
+        ContextValue.ofNullable(
             variableState.getVariable(scopeKey, BufferUtil.wrapString(variableName))));
   }
 }

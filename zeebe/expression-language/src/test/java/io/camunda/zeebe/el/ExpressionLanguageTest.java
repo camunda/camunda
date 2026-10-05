@@ -163,7 +163,8 @@ public class ExpressionLanguageTest {
     final var evaluationResult =
         expressionLanguage.evaluateExpression(
             expression,
-            name -> Either.left(ContextValue.msgPack(Map.of("x", asMsgPack("\"x\"")).get(name))));
+            name ->
+                Either.left(ContextValue.ofNullable(Map.of("x", asMsgPack("\"x\"")).get(name))));
 
     assertThat(evaluationResult).isNotNull();
     assertThat(evaluationResult.isFailure()).isFalse();

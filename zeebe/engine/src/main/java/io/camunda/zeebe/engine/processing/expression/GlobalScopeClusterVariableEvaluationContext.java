@@ -29,7 +29,7 @@ public final class GlobalScopeClusterVariableEvaluationContext implements Scoped
   @Override
   public Either<ContextValue, EvaluationContext> getVariable(final String variableName) {
     return Either.left(
-        ContextValue.msgPack(
+        ContextValue.ofNullable(
             clusterVariableState
                 .getGloballyScopedClusterVariable(BufferUtil.wrapString(variableName))
                 .filter(instance -> instance.getValueBuffer().capacity() > 0)

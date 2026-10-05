@@ -219,7 +219,7 @@ public final class VariableOutputMappingTransformerTest {
           name -> {
             final var accumulated = resultBuilder.getVariable(name);
             return Either.left(
-                accumulated != null ? accumulated : ContextValue.msgPack(variables.get(name)));
+                accumulated != null ? accumulated : ContextValue.ofNullable(variables.get(name)));
           };
       final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
       assertThat(result.isFailure())
@@ -254,7 +254,7 @@ public final class VariableOutputMappingTransformerTest {
           name -> {
             final var accumulated = resultBuilder.getVariable(name);
             return Either.left(
-                accumulated != null ? accumulated : ContextValue.msgPack(variables.get(name)));
+                accumulated != null ? accumulated : ContextValue.ofNullable(variables.get(name)));
           };
       final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
       if (result.isFailure()) {
@@ -295,7 +295,7 @@ public final class VariableOutputMappingTransformerTest {
           name -> {
             final var accumulated = resultBuilder.getVariable(name);
             return Either.left(
-                accumulated != null ? accumulated : ContextValue.msgPack(variables.get(name)));
+                accumulated != null ? accumulated : ContextValue.ofNullable(variables.get(name)));
           };
       final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
       resultBuilder.put(mapping.targetPath(), new ContextValue.MsgPack(result.toBuffer()));
@@ -329,7 +329,7 @@ public final class VariableOutputMappingTransformerTest {
           name -> {
             final var accumulated = resultBuilder.getVariable(name);
             return Either.left(
-                accumulated != null ? accumulated : ContextValue.msgPack(variables.get(name)));
+                accumulated != null ? accumulated : ContextValue.ofNullable(variables.get(name)));
           };
       final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
       resultBuilder.put(mapping.targetPath(), new ContextValue.MsgPack(result.toBuffer()));
@@ -364,7 +364,7 @@ public final class VariableOutputMappingTransformerTest {
     final var result =
         expressionLanguage.evaluateExpression(
             outputMappings.combinedExpression(),
-            name -> Either.left(ContextValue.msgPack(scope.get(name))));
+            name -> Either.left(ContextValue.ofNullable(scope.get(name))));
 
     // then: same result as ORDERED for non-overlapping targets
     assertThat(result.isFailure()).isFalse();

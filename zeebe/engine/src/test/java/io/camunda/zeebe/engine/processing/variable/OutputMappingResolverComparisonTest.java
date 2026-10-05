@@ -108,7 +108,7 @@ class OutputMappingResolverComparisonTest {
       final var ej = encode(jobVars);
       final var ee = encode(elementScope);
       final ScopedEvaluationContext ctx =
-          name -> Either.left(ContextValue.msgPack(ee.getOrDefault(name, ej.get(name))));
+          name -> Either.left(ContextValue.ofNullable(ee.getOrDefault(name, ej.get(name))));
       final var ctx2 = new MappingContext(BufferUtil.wrapString("t"), -1L, -1L, -1L, "");
       return new MappingExpressionProcessor(
           new ExpressionProcessor(EXPRESSION_LANGUAGE, ctx, DEFAULT_TIMEOUT), ctx2);

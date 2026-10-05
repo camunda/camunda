@@ -110,7 +110,7 @@ public class EvaluationContextTest {
     final var evaluationResult =
         expressionLanguage.evaluateExpression(
             parseExpression,
-            name -> Either.left(ContextValue.msgPack(Map.of("x", variable).get(name))));
+            name -> Either.left(ContextValue.ofNullable(Map.of("x", variable).get(name))));
 
     assertThat(evaluationResult.isFailure())
         .describedAs(evaluationResult.getFailureMessage())

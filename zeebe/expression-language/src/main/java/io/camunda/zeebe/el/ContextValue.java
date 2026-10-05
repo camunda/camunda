@@ -27,10 +27,12 @@ import org.jspecify.annotations.Nullable;
 public sealed interface ContextValue {
 
   /**
-   * Wraps a MessagePack buffer, mapping a {@code null} or empty buffer to {@code null} — the value
-   * {@link EvaluationContext#getVariable(String)} uses to signal that a name is absent.
+   * Wraps a MessagePack buffer that may be absent, mapping a {@code null} or empty buffer to {@code
+   * null} — the value {@link EvaluationContext#getVariable(String)} uses to signal that a name is
+   * absent. Use this for a buffer read from storage; when the buffer is known to hold a value, use
+   * the {@link MsgPack} constructor directly.
    */
-  static @Nullable ContextValue msgPack(final @Nullable DirectBuffer buffer) {
+  static @Nullable ContextValue ofNullable(final @Nullable DirectBuffer buffer) {
     return buffer != null && buffer.capacity() > 0 ? new MsgPack(buffer) : null;
   }
 

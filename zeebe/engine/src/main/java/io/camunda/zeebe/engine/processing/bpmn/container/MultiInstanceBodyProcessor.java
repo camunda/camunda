@@ -419,7 +419,8 @@ public final class MultiInstanceBodyProcessor
         expressionBehavior.prependContext(
             (variableName ->
                 Either.left(
-                    ContextValue.msgPack(getVariable(context.getFlowScopeKey(), variableName)))));
+                    ContextValue.ofNullable(
+                        getVariable(context.getFlowScopeKey(), variableName)))));
     if (completionCondition.isPresent()) {
       return primaryContextExpressionProcessor.evaluateBooleanExpression(
           completionCondition.get(), context.getElementInstanceKey(), context.getTenantId());

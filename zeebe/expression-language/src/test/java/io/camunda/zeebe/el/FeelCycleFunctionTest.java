@@ -51,7 +51,7 @@ public class FeelCycleFunctionTest {
     final var evaluationResult =
         evaluateExpression(
             "cycle(repetitions, duration(\"PT1H\"))",
-            name -> Either.left(ContextValue.msgPack(context.get(name))));
+            name -> Either.left(ContextValue.ofNullable(context.get(name))));
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
     assertThat(evaluationResult.getString()).isEqualTo("R3/PT1H");
@@ -63,7 +63,7 @@ public class FeelCycleFunctionTest {
     final var evaluationResult =
         evaluateExpression(
             "cycle(repetitions, duration(\"P2M\"))",
-            name -> Either.left(ContextValue.msgPack(context.get(name))));
+            name -> Either.left(ContextValue.ofNullable(context.get(name))));
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
     assertThat(evaluationResult.getString()).isEqualTo("R3/P2M");
@@ -75,7 +75,7 @@ public class FeelCycleFunctionTest {
     final var evaluationResult =
         evaluateExpression(
             "cycle(repetitions, duration(\"PT1H\"))",
-            name -> Either.left(ContextValue.msgPack(context.get(name))));
+            name -> Either.left(ContextValue.ofNullable(context.get(name))));
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
     assertThat(evaluationResult.getString()).isEqualTo("R/PT1H");
@@ -87,7 +87,7 @@ public class FeelCycleFunctionTest {
     final var evaluationResult =
         evaluateExpression(
             "cycle(repetitions, duration(\"P2M\"))",
-            name -> Either.left(ContextValue.msgPack(context.get(name))));
+            name -> Either.left(ContextValue.ofNullable(context.get(name))));
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
     assertThat(evaluationResult.getString()).isEqualTo("R/P2M");

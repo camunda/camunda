@@ -37,7 +37,7 @@ public class FeelFromAiFunctionTest {
     final var evaluationResult =
         evaluateSuccessfulExpression(
             testCase.expression(),
-            name -> Either.left(ContextValue.msgPack(CONTEXT_VALUES.get(name))));
+            name -> Either.left(ContextValue.ofNullable(CONTEXT_VALUES.get(name))));
     assertThat(evaluationResult.getType()).isEqualTo(testCase.expectedResultType);
     assertThat(testCase.resultExtractor.apply(evaluationResult)).isEqualTo(testCase.expectedResult);
   }
@@ -124,7 +124,7 @@ public class FeelFromAiFunctionTest {
       final String expression, final int parameterCount) {
     final var evaluationResult =
         evaluateSuccessfulExpression(
-            expression, name -> Either.left(ContextValue.msgPack(CONTEXT_VALUES.get(name))));
+            expression, name -> Either.left(ContextValue.ofNullable(CONTEXT_VALUES.get(name))));
 
     assertThat(evaluationResult.isFailure()).isFalse();
     assertThat(evaluationResult.getWarnings())
@@ -149,7 +149,7 @@ public class FeelFromAiFunctionTest {
     final var evaluationResult =
         evaluateSuccessfulExpression(
             "fromAi(toolCall.c)",
-            name -> Either.left(ContextValue.msgPack(CONTEXT_VALUES.get(name))));
+            name -> Either.left(ContextValue.ofNullable(CONTEXT_VALUES.get(name))));
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.NULL);
   }
 

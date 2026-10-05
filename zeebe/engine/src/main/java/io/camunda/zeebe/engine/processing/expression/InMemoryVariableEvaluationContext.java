@@ -26,7 +26,7 @@ public final class InMemoryVariableEvaluationContext implements ScopedEvaluation
     if (variables.containsKey(variableName)) {
       final var value = variables.get(variableName);
       final var msgPackBytes = MsgPackConverter.convertToMsgPack(value);
-      return Either.left(ContextValue.msgPack(BufferUtil.wrapArray(msgPackBytes)));
+      return Either.left(ContextValue.ofNullable(BufferUtil.wrapArray(msgPackBytes)));
     }
     return Either.left(null);
   }

@@ -711,7 +711,7 @@ class InputMappingResolverComparisonTest {
             for (final var scope : encoded) {
               final var value = scope.get(name);
               if (value != null) {
-                return Either.left(ContextValue.msgPack(value));
+                return Either.left(ContextValue.ofNullable(value));
               }
             }
             return Either.left(null);
