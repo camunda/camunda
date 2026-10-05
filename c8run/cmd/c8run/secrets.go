@@ -16,10 +16,13 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/camunda/camunda/c8run/internal/physicaltenants"
 	localsecrets "github.com/camunda/camunda/c8run/internal/secrets"
 )
 
 type secretsCommand struct {
+	// tenantScoped is the physical tenant whose secrets are managed, empty for default.
+	tenantScoped string
 	input        io.Reader
 	output       io.Writer
 	errorOutput  io.Writer
@@ -28,6 +31,9 @@ type secretsCommand struct {
 }
 
 func (c *secretsCommand) warnPathChanged(baseDir string) {
+	if c.tenantScoped != "" {
+		return
+	}
 	current, err := localsecrets.ResolveDirectory(baseDir)
 	if err != nil {
 		return
@@ -54,6 +60,13 @@ func newSecretsCommand() *secretsCommand {
 }
 
 func (c *secretsCommand) run(baseDir string, args []string) error {
+	args, tenant, err := extractTenantArgument(args)
+	if err != nil {
+		return err
+	}
+	if tenant != "" {
+		return c.runForTenant(baseDir, tenant, args)
+	}
 	if len(args) == 0 {
 		return errors.New("usage: c8run secrets <set|list|path|delete|import>")
 	}
@@ -95,6 +108,60 @@ func (c *secretsCommand) run(baseDir string, args []string) error {
 	default:
 		return fmt.Errorf("unsupported secrets operation: %s", args[0])
 	}
+}
+
+// extractTenantArgument removes `--tenant <id>` / `--tenant=<id>` from anywhere in args.
+func extractTenantArgument(args []string) ([]string, string, error) {
+	rest := make([]string, 0, len(args))
+	tenant := ""
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		value, isTenant := "", false
+		switch {
+		case arg == "--tenant":
+			if i+1 >= len(args) {
+				return nil, "", errors.New("--tenant requires a physical tenant ID")
+			}
+			i++
+			value, isTenant = args[i], true
+		case strings.HasPrefix(arg, "--tenant="):
+			value, isTenant = strings.TrimPrefix(arg, "--tenant="), true
+		}
+		if !isTenant {
+			rest = append(rest, arg)
+			continue
+		}
+		if tenant != "" {
+			return nil, "", errors.New("--tenant may only be specified once")
+		}
+		if err := physicaltenants.ValidateID(value); err != nil {
+			return nil, "", err
+		}
+		tenant = value
+	}
+	return rest, tenant, nil
+}
+
+// runForTenant runs a secrets operation against one physical tenant's own secret directory.
+func (c *secretsCommand) runForTenant(baseDir, tenant string, args []string) error {
+	directory, err := localsecrets.TenantDirectory(baseDir, tenant)
+	if err != nil {
+		return err
+	}
+	previous, hadPrevious := os.LookupEnv(localsecrets.DirectoryEnv)
+	if err := os.Setenv(localsecrets.DirectoryEnv, directory); err != nil {
+		return err
+	}
+	defer func() {
+		if hadPrevious {
+			_ = os.Setenv(localsecrets.DirectoryEnv, previous)
+		} else {
+			_ = os.Unsetenv(localsecrets.DirectoryEnv)
+		}
+	}()
+	quiet := *c
+	quiet.tenantScoped = tenant
+	return quiet.run(baseDir, args)
 }
 
 func (c *secretsCommand) set(store *localsecrets.Store, args []string) error {
@@ -197,7 +264,7 @@ func parseSetArguments(args []string) ([]string, bool, error) {
 }
 
 func (c *secretsCommand) printSecretSaved(name string) {
-	_, _ = fmt.Fprintf(c.output, "Secret %s saved.\n\nReference it in Process Models with:\n%s\n", name, feelReference(name))
+	_, _ = fmt.Fprintf(c.output, "Secret %s saved%s.\n\nReference it in Process Models with:\n%s\n", name, c.tenantSuffix(), feelReference(name))
 }
 
 func (c *secretsCommand) printCacheWarning(subject string) {
@@ -376,12 +443,15 @@ const secretsHelp = `Usage:
   c8run secrets path
   c8run secrets delete (<name>|--all) [--yes]
   c8run secrets import [dotenv-file]
+  c8run secrets --tenant <id> <set|list|path|delete|import> ...
 
 Secret names may contain letters, numbers, underscores, and dashes.
 Use backticks around names containing dashes in FEEL expressions.
 Import reads dotenv input from stdin when no file is specified.
 The default directory is shared across c8run versions and projects for the current OS user.
 C8RUN_SECRETS_DIR selects another directory; relative paths use the current working directory.
+Each physical tenant has its own secrets; use --tenant <id> to manage them. A tenant never
+sees the default tenant's secrets or another tenant's.
 C8RUN_SECRETS_MODE defaults to local; external disables local secret commands.
 Overwrites and deletions may remain cached until c8run restarts or the cache expires.
 Local secret commands do not manage stores configured explicitly through --config, such as AWS or GCP.
@@ -393,4 +463,11 @@ var secretsCommandHelp = map[string]string{
 	"path":   "Usage: c8run secrets path\nShows the c8run-managed local directory without creating it.\n",
 	"delete": "Usage: c8run secrets delete (<name>|--all) [--yes]\nInteractive use asks for confirmation. Non-interactive use requires --yes.\n",
 	"import": "Usage: c8run secrets import [dotenv-file]\nImports dotenv entries from a file, or from stdin when no file is provided. Import is additive.\n",
+}
+
+func (c *secretsCommand) tenantSuffix() string {
+	if c.tenantScoped == "" {
+		return ""
+	}
+	return " for physical tenant " + c.tenantScoped
 }

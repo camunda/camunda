@@ -74,6 +74,33 @@ func Mode() (string, error) {
 	return mode, nil
 }
 
+// TenantDirectoryName holds one local secret directory per physical tenant, next to the
+// default tenant's directory (never inside it, so it can't shadow a secret name).
+const TenantDirectoryName = "tenant-secrets"
+
+// TenantDirectory returns the local secret directory of a physical tenant.
+func TenantDirectory(baseDir, tenantID string) (string, error) {
+	directory, err := ResolveDirectory(baseDir)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(filepath.Dir(directory), TenantDirectoryName, tenantID), nil
+}
+
+// WriteOwnerOnlyFile atomically writes a file that only the current user (plus SYSTEM and
+// Administrators on Windows) can access: mode 0600 on Unix, a protected DACL on Windows.
+func WriteOwnerOnlyFile(path string, content []byte) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return err
+	}
+	return atomicWrite(path, content)
+}
+
+// NewInDirectory returns a store rooted at an explicit directory.
+func NewInDirectory(directory string) *Store {
+	return &Store{directory: filepath.Clean(directory)}
+}
+
 func DefaultDirectory() (string, error) {
 	return defaultDirectory()
 }

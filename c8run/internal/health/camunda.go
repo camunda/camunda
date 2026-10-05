@@ -17,6 +17,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/camunda/camunda/c8run/internal/physicaltenants"
 	"github.com/camunda/camunda/c8run/internal/startupurl"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/rs/zerolog/log"
@@ -53,9 +54,10 @@ type StartupSummary struct {
 }
 
 var (
-	isRunningFunc   = isRunning
-	printStatusFunc = PrintStatus
-	markSeenStartup = startupurl.MarkSeen
+	isRunningFunc    = isRunning
+	printStatusFunc  = PrintStatus
+	markSeenStartup  = startupurl.MarkSeen
+	probeTenantsFunc = physicaltenants.Probe
 )
 
 func QueryCamunda(ctx context.Context, c8 opener, name string, settings types.C8RunSettings, retries int) error {
@@ -70,18 +72,51 @@ func QueryCamunda(ctx context.Context, c8 opener, name string, settings types.C8
 			log.Err(err).Msg("Failed to print status")
 			return err
 		}
-		if !settings.NoBrowser {
-			if err := markSeenStartup(settings.StartupMarkerPath); err != nil {
-				log.Warn().Err(err).Str("path", settings.StartupMarkerPath).Msg("Failed to persist quickstart marker")
+		if len(settings.PhysicalTenants) > 0 {
+			results := probeTenantsFunc(ctx, settings, 12, 5*time.Second)
+			physicaltenants.PrintSummary(os.Stdout, settings, results, inboundConnectorsPort)
+			var notReady []string
+			for _, r := range results {
+				if !r.Ready {
+					notReady = append(notReady, r.ID)
+				}
+			}
+			if len(notReady) > 0 {
+				markStartupSeen(settings)
+				return &TenantsNotReadyError{IDs: notReady}
 			}
 		}
+		markStartupSeen(settings)
 		return nil
 	}
 	return fmt.Errorf("queryCamunda: %s did not start", name)
 }
 
+// TenantsNotReadyError means Camunda is healthy but some physical tenants are not ready.
+type TenantsNotReadyError struct {
+	IDs []string
+}
+
+func (e *TenantsNotReadyError) Error() string {
+	return "physical tenant(s) not ready: " + strings.Join(e.IDs, ", ")
+}
+
+func markStartupSeen(settings types.C8RunSettings) {
+	if settings.NoBrowser {
+		return
+	}
+	if err := markSeenStartup(settings.StartupMarkerPath); err != nil {
+		log.Warn().Err(err).Str("path", settings.StartupMarkerPath).Msg("Failed to persist quickstart marker")
+	}
+}
+
 func QueryConnectors(ctx context.Context, name string, retries int) error {
-	healthEndpoint := fmt.Sprintf("http://localhost:%d/actuator/health", inboundConnectorsPort)
+	return QueryConnectorsOnPort(ctx, name, inboundConnectorsPort, retries)
+}
+
+// QueryConnectorsOnPort waits for a connectors runtime listening on the given port.
+func QueryConnectorsOnPort(ctx context.Context, name string, port int, retries int) error {
+	healthEndpoint := fmt.Sprintf("http://localhost:%d/actuator/health", port)
 	if isRunningFunc(ctx, name, healthEndpoint, retries, 14*time.Second) {
 		return nil
 	}
