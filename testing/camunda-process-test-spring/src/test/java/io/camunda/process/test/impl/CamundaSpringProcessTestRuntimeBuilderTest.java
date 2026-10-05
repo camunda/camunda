@@ -152,9 +152,7 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
   }
 
   @ParameterizedTest
-  @EnumSource(
-      value = CamundaProcessTestRuntimeMode.class,
-      names = {"MANAGED", "SHARED"})
+  @EnumSource(CamundaProcessTestRuntimeMode.class)
   void shouldConfigureClusterSecrets(final CamundaProcessTestRuntimeMode runtimeMode) {
     // given
     final CamundaProcessTestRuntimeBuilder runtimeBuilder = new CamundaProcessTestRuntimeBuilder();
