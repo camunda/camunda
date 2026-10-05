@@ -482,24 +482,44 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     await navigateToAppHome(page, 'operate');
     await expect(operateHomePage.operateBanner).toBeVisible();
     await operateHomePage.clickProcessesTab();
-    // Active and Incidents stay on: that combination builds the filter that
-    // loses suspended instances. Suspended alone would not reproduce it.
-    await operateFiltersPanelPage.applySuspendedFilter();
+    // Add the Process Instance Key filter before ticking Suspended: ticking a
+    // state filter while the Processes form is still initialising from the URL
+    // lets the form overwrite the URL and drop the just-ticked Suspended box,
+    // so the suspended instance never lists. Active and Incidents stay on —
+    // that combination is what #64086 regressed; Suspended alone would not
+    // reproduce it.
     await operateFiltersPanelPage.displayOptionalFilter(
       'Process Instance Key(s)',
     );
     await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
       subject.processInstanceKey,
     );
-    await expect(
-      page.getByText(subject.processInstanceKey, {exact: false}).first(),
-    ).toBeVisible({timeout: UI_REFRESH_TIMEOUT});
+    // Assert the actual result row, not any matching text: the key also shows
+    // in the filter input, so a page-wide text match passes even on an empty
+    // list. Re-apply the Suspended filter until the row is really listed.
+    const subjectRow = page
+      .getByTestId('data-list')
+      .getByRole('row')
+      .filter({hasText: subject.processInstanceKey});
+    await waitForAssertion({
+      assertion: async () => {
+        await operateFiltersPanelPage.applySuspendedFilter();
+        await expect(subjectRow).toBeVisible({timeout: UI_REFRESH_TIMEOUT});
+      },
+      onFailure: async () => {
+        await page.reload();
+      },
+    });
 
     // Off the toolbar's own request: the newest batch could be another spec's.
+    // Allow the full batch-operation retry budget: selecting all, the list
+    // re-query and the confirmation dialog routinely take longer than the
+    // default 10s before the cancellation POST is sent.
     const cancellationResponse = page.waitForResponse(
       (response) =>
         response.url().includes('/process-instances/cancellation') &&
         response.request().method() === 'POST',
+      {timeout: 120_000},
     );
     await operateProcessesPage.cancelAllProcessInstancesInBatch();
     const batchOperationKey = String(
@@ -521,13 +541,18 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
           /completed/i,
           {timeout: UI_REFRESH_TIMEOUT},
         );
+        // Assert the item count under the same reload retry: it lands on the
+        // same non-refreshing detail view (#52021) and lags the state badge.
+        await expect(operateOperationsDetailsPage.summaryOfItems).toHaveText(
+          '1',
+          {timeout: UI_REFRESH_TIMEOUT},
+        );
       },
       // The detail view does not refresh itself (#52021).
       onFailure: async () => {
         await page.reload();
       },
     });
-    await expect(operateOperationsDetailsPage.summaryOfItems).toHaveText('1');
     await expect(
       operateOperationsDetailsPage.getProcessInstanceLink(
         subject.processInstanceKey,
