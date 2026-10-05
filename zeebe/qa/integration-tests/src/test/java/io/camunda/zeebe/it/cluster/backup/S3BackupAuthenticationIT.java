@@ -37,7 +37,7 @@ final class S3BackupAuthenticationIT {
   @Container private static final S3MockTestContainer S3 = new S3MockTestContainer();
 
   static {
-    S3.withNetwork(NETWORK).withNetworkAliases(S3_NETWORK_ALIAS);
+    S3.container().withNetwork(NETWORK).withNetworkAliases(S3_NETWORK_ALIAS);
   }
 
   @BeforeAll

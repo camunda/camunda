@@ -37,7 +37,8 @@ public class S3BackupRetentionAcceptanceIT implements BackupRetentionAcceptance 
 
   @RegisterExtension
   @SuppressWarnings("unused")
-  final ContainerLogsDumper logsWatcher = new ContainerLogsDumper(() -> Map.of("minio", minio));
+  final ContainerLogsDumper logsWatcher =
+      new ContainerLogsDumper(() -> Map.of("minio", minio.container()));
 
   private BackupStore backupStore;
 
