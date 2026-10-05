@@ -170,6 +170,54 @@ public final class VariableBehavior {
       final DirectBuffer document,
       final VariableMetadataLookup metadataLookup)
       throws VariableValidationException {
+    mergeDocument(
+        scopeKey,
+        processDefinitionKey,
+        processInstanceKey,
+        rootProcessInstanceKey,
+        storageOrdinal,
+        bpmnProcessId,
+        tenantId,
+        document,
+        false);
+  }
+
+  public void mergeDocumentForMultiInstance(
+      final long scopeKey,
+      final long processDefinitionKey,
+      final long processInstanceKey,
+      final long rootProcessInstanceKey,
+      final int storageOrdinal,
+      final DirectBuffer bpmnProcessId,
+      final String tenantId,
+      final DirectBuffer document,
+      final VariableMetadataLookup metadataLookup)
+      throws VariableValidationException {
+    mergeDocument(
+        scopeKey,
+        processDefinitionKey,
+        processInstanceKey,
+        rootProcessInstanceKey,
+        storageOrdinal,
+        bpmnProcessId,
+        tenantId,
+        document,
+        metadataLookup,
+        true);
+  }
+
+  private void mergeDocument(
+      final long scopeKey,
+      final long processDefinitionKey,
+      final long processInstanceKey,
+      final long rootProcessInstanceKey,
+      final int storageOrdinal,
+      final DirectBuffer bpmnProcessId,
+      final String tenantId,
+      final DirectBuffer document,
+      final VariableMetadataLookup metadataLookup,
+      final boolean isMultiInstance)
+      throws VariableValidationException {
     validateBuffer(scopeKey, document);
     indexedDocument.index(document);
     if (indexedDocument.isEmpty()) {
@@ -204,9 +252,17 @@ public final class VariableBehavior {
         final Optional<VariableEvent> variableEvent =
             updateVariable(
                 variableInstance, variableRecord, metadataLookup.forVariable(entry.getName()));
-        variableEvent.ifPresent(variableEvents::add);
-        // Remove the entry from the document so it won't be propagated to the parent scope
-        entryIterator.remove();
+        variableEvent.ifPresent(e -> {
+          variableEvents.add(e);
+          // Remove the entry from the document so it won't be propagated to the parent scope
+          entryIterator.remove();
+        });
+        if (variableEvent.isEmpty() && !isMultiInstance || scopeKey != currentScope) {
+          // If the variable exists in the current scope and is equal to the value in the
+          // document, we don't need to propagate it to the parent scope. Except if we are in a
+          // multi-instance scope, in which case we want to propagate it to the parent scope.
+          entryIterator.remove();
+        }
       }
 
       currentScope = parentScope;
