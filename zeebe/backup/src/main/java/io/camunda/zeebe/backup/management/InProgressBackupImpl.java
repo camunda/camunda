@@ -47,6 +47,7 @@ final class InProgressBackupImpl implements InProgressBackup {
   private final BackupIdentifier backupId;
   private final long checkpointPosition;
   private final int numberOfPartitions;
+  private final Optional<String> checkpointSnapshotId;
   private final ConcurrencyControl concurrencyControl;
 
   private final Path segmentsDirectory;
@@ -66,6 +67,7 @@ final class InProgressBackupImpl implements InProgressBackup {
       final BackupIdentifier backupId,
       final long checkpointPosition,
       final int numberOfPartitions,
+      final Optional<String> checkpointSnapshotId,
       final ConcurrencyControl concurrencyControl,
       final Path segmentsDirectory,
       final JournalInfoProvider journalInfoProvider) {
@@ -73,6 +75,7 @@ final class InProgressBackupImpl implements InProgressBackup {
     this.backupId = backupId;
     this.checkpointPosition = checkpointPosition;
     this.numberOfPartitions = numberOfPartitions;
+    this.checkpointSnapshotId = checkpointSnapshotId;
     this.concurrencyControl = concurrencyControl;
     this.segmentsDirectory = segmentsDirectory;
     this.journalInfoProvider = journalInfoProvider;
@@ -95,6 +98,33 @@ final class InProgressBackupImpl implements InProgressBackup {
 
   @Override
   public ActorFuture<Void> findValidSnapshot() {
+    return checkpointSnapshotId
+        .map(this::useCheckpointSnapshot)
+        .orElseGet(this::searchValidSnapshot);
+  }
+
+  private ActorFuture<Void> useCheckpointSnapshot(final String snapshotId) {
+    return snapshotStore
+        .getReservedSnapshot(backupId.checkpointId(), snapshotId)
+        .andThen(
+            (snapshot, error) -> {
+              if (error == null && snapshot.isPresent() && isValid(snapshot.get())) {
+                LOG.trace(
+                    "Using snapshot {} reserved for checkpoint {}", snapshotId, checkpointId());
+                availableValidSnapshots = Set.of(snapshot.get());
+                return concurrencyControl.createCompletedFuture();
+              }
+              LOG.debug(
+                  "Snapshot {} of checkpoint {} is not reserved or not valid, searching for one",
+                  snapshotId,
+                  checkpointId(),
+                  error);
+              return searchValidSnapshot();
+            },
+            concurrencyControl);
+  }
+
+  private ActorFuture<Void> searchValidSnapshot() {
     final ActorFuture<Void> result = concurrencyControl.createFuture();
     snapshotStore
         .getAvailableSnapshots()
@@ -226,6 +256,10 @@ final class InProgressBackupImpl implements InProgressBackup {
 
   @Override
   public void close() {
+    // the reservation was made for this checkpoint before it was written, so it must be released
+    // even if this backup never got to use it
+    checkpointSnapshotId.ifPresent(
+        snapshotId -> snapshotStore.releaseReservation(backupId.checkpointId(), snapshotId));
     if (snapshotReservation != null) {
       snapshotReservation.release();
       LOG.debug("Released reservation for snapshot {}", reservedSnapshot.getId());
@@ -234,11 +268,7 @@ final class InProgressBackupImpl implements InProgressBackup {
 
   private Either<String, Set<PersistedSnapshot>> findValidSnapshot(
       final Set<PersistedSnapshot> snapshots) {
-    final var validSnapshots =
-        snapshots.stream()
-            .filter(s -> s.getMetadata().processedPosition() < checkpointPosition) // &&
-            .filter(s -> s.getMetadata().lastFollowupEventPosition() < checkpointPosition)
-            .collect(Collectors.toSet());
+    final var validSnapshots = snapshots.stream().filter(this::isValid).collect(Collectors.toSet());
 
     if (validSnapshots.isEmpty()) {
       return Either.left(
@@ -247,6 +277,11 @@ final class InProgressBackupImpl implements InProgressBackup {
     } else {
       return Either.right(validSnapshots);
     }
+  }
+
+  private boolean isValid(final PersistedSnapshot snapshot) {
+    return snapshot.getMetadata().processedPosition() < checkpointPosition
+        && snapshot.getMetadata().lastFollowupEventPosition() < checkpointPosition;
   }
 
   private void tryReserveAnySnapshot(
