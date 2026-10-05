@@ -117,7 +117,7 @@ function useInstanceDiagramData(instance: ProcessInstance, hasDiagram: boolean) 
 	const agents = useQuery({
 		...instanceAgentInstancesQuery(processInstanceKey),
 		refetchInterval,
-		enabled: hasDiagram && isRunning,
+		enabled: hasDiagram,
 	});
 	const refetchStatistics = statistics.refetch;
 	const refetchSequenceFlows = sequenceFlows.refetch;

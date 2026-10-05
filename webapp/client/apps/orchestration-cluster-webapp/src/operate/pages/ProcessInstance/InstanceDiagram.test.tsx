@@ -519,6 +519,19 @@ describe('<InstanceDiagram />', () => {
 		expect(processInstanceSearchSchema.parse(screen.router.state.location.search).elementInstanceKey).toBeUndefined();
 	});
 
+	it('should show agent overlays for a finished process instance', async ({worker}) => {
+		worker.use(...handlers({agents: [createAgentInstance({elementId: 'call_1'})]}));
+		const screen = await renderLoadedPage({nextInstanceState: 'COMPLETED'});
+
+		await screen.router.navigate({
+			to: '/operate/processes/$processInstanceId/details',
+			params: {processInstanceId: 'instance-2'},
+			search: {},
+		});
+
+		await expect.element(screen.getByTestId('instance-agent-call_1')).toHaveTextContent('Thinking...');
+	});
+
 	it('should clear the previous selection when navigating to a different process instance', async ({worker}) => {
 		worker.use(...handlers());
 

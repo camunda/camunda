@@ -10,17 +10,20 @@ import {z} from 'zod';
 import type {DecisionsSearch} from './decisionsFilter';
 
 const decisionsSearchSchema = z.object({
-	decisionDefinitionId: z.string().optional(),
-	decisionDefinitionVersion: z.union([z.number().int().positive(), z.literal('all')]).optional(),
+	decisionDefinitionId: z.coerce.string().optional(),
+	decisionDefinitionVersion: z
+		.union([z.number().int().positive(), z.literal('all')])
+		.optional()
+		.catch(undefined),
 	tenantId: z.coerce.string().optional(),
-	evaluated: z.boolean().optional(),
-	failed: z.boolean().optional(),
+	evaluated: z.boolean().optional().catch(undefined),
+	failed: z.boolean().optional().catch(undefined),
 	decisionEvaluationInstanceKey: z.coerce.string().optional(),
 	processInstanceKey: z.coerce.string().optional(),
-	businessId: z.string().optional(),
-	evaluationDateFrom: z.string().optional(),
-	evaluationDateTo: z.string().optional(),
-	sort: z.string().optional(),
+	businessId: z.coerce.string().optional(),
+	evaluationDateFrom: z.coerce.string().optional(),
+	evaluationDateTo: z.coerce.string().optional(),
+	sort: z.coerce.string().optional(),
 });
 
 function validateDecisionsSearch(search: unknown): DecisionsSearch {

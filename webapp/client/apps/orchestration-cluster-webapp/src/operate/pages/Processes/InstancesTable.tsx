@@ -446,7 +446,7 @@ const InstancesTable: React.FC<Props> = ({
 									}
 									const errors = operationItems?.failures.get(row.processInstanceKey);
 									const message = errors
-										?.map((error) => error || t('operate.processes.instancesTable.operationFailed'))
+										?.map((error) => error ?? t('operate.processes.instancesTable.operationFailed'))
 										.join('\n');
 									return !message
 										? null
