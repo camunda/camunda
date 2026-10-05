@@ -47,6 +47,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import javax.sql.DataSource;
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -95,6 +96,31 @@ public class UserTaskIT {
 
     final var instance = rdbmsService.getUserTaskReader().findOne(userTask.userTaskKey()).get();
     assertUserTaskEntity(instance, userTask);
+  }
+
+  @TestTemplate
+  public void shouldFindUserTaskWithoutSuspensionStateAsNotSuspended(
+      final CamundaRdbmsTestApplication testApplication) throws Exception {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final UserTaskDbModel userTask = UserTaskFixtures.createRandomized();
+    createAndSaveUserTask(rdbmsService, userTask);
+
+    // tasks written before the column existed, or by an older node during a rolling upgrade,
+    // hold NULL there
+    try (final var connection = testApplication.bean(DataSource.class).getConnection();
+        final var statement =
+            connection.prepareStatement(
+                "UPDATE USER_TASK SET IS_SUSPENDED = NULL WHERE USER_TASK_KEY = ?")) {
+      statement.setLong(1, userTask.userTaskKey());
+      statement.executeUpdate();
+    }
+
+    // when
+    final var instance = rdbmsService.getUserTaskReader().findOne(userTask.userTaskKey()).get();
+
+    // then
+    assertThat(instance.isSuspended()).isFalse();
   }
 
   @TestTemplate

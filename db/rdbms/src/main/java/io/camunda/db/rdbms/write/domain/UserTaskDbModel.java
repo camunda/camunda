@@ -43,6 +43,7 @@ public record UserTaskDbModel(
     String serializedCustomHeaders,
     Integer priority,
     Set<String> tags,
+    boolean isSuspended,
     int partitionId)
     implements Copyable<UserTaskDbModel> {
 
@@ -56,7 +57,9 @@ public record UserTaskDbModel(
   // Matches searchResultMap's <constructor>, which omits candidateGroups/candidateUsers/tags --
   // populated separately via the sibling <collection> elements -- and partitionId, which the
   // search query never selects (matching the pre-record behavior of always defaulting to 0 for
-  // search-hydrated instances).
+  // search-hydrated instances). isSuspended is boxed because rows written before the column
+  // existed,
+  // or by an older node during a rolling upgrade, hold NULL there.
   public UserTaskDbModel(
       final Long userTaskKey,
       final String elementId,
@@ -78,7 +81,8 @@ public record UserTaskDbModel(
       final String externalFormReference,
       final Integer processDefinitionVersion,
       final String serializedCustomHeaders,
-      final Integer priority) {
+      final Integer priority,
+      final Boolean isSuspended) {
     this(
         userTaskKey,
         elementId,
@@ -104,6 +108,7 @@ public record UserTaskDbModel(
         serializedCustomHeaders,
         priority,
         null,
+        Boolean.TRUE.equals(isSuspended),
         0);
   }
 
@@ -142,6 +147,7 @@ public record UserTaskDbModel(
         .processDefinitionVersion(processDefinitionVersion)
         .priority(priority)
         .tags(tags)
+        .isSuspended(isSuspended)
         .partitionId(partitionId);
   }
 
@@ -171,6 +177,7 @@ public record UserTaskDbModel(
     private String serializedCustomHeaders;
     private Integer priority;
     private Set<String> tags;
+    private boolean isSuspended;
     private int partitionId;
 
     // Public constructor to initialize the builder
@@ -311,6 +318,11 @@ public record UserTaskDbModel(
       return this;
     }
 
+    public Builder isSuspended(final boolean isSuspended) {
+      this.isSuspended = isSuspended;
+      return this;
+    }
+
     public Builder partitionId(final int partitionId) {
       this.partitionId = partitionId;
       return this;
@@ -344,6 +356,7 @@ public record UserTaskDbModel(
           serializedCustomHeaders,
           priority,
           tags,
+          isSuspended,
           partitionId);
     }
   }
