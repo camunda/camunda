@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.cleanup;
 
+import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -126,6 +127,70 @@ public class EngineDataProcessCleanupServiceIT extends AbstractBrokerlessZeebeCC
     assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
 
     assertProcessInstanceDataExists(unaffectedProcessInstances);
+  }
+
+  @Test
+  public void shouldDeleteOnlyProcessInstanceIndicesEmptiedByCleanup() {
+    // given
+    final var emptiedDefinitionKey = KEY_GENERATOR.generate(10);
+    final var retainedDefinitionKey = KEY_GENERATOR.generate(10);
+
+    getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
+
+    final var endDateForCleanup = getEndTimeLessThanGlobalTtl();
+    final ProcessInstanceDto unaffectedProcessInstance =
+        processInstanceWithEndDate(retainedDefinitionKey, LocalDateUtil.getCurrentDateTime());
+
+    persistProcessInstances(
+        List.of(
+            processInstanceWithEndDate(emptiedDefinitionKey, endDateForCleanup),
+            processInstanceWithEndDate(emptiedDefinitionKey, endDateForCleanup),
+            processInstanceWithEndDate(retainedDefinitionKey, endDateForCleanup),
+            unaffectedProcessInstance));
+
+    // when
+    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    assertThat(
+            databaseIntegrationTestExtension.indexExists(
+                getProcessInstanceIndexAliasName(emptiedDefinitionKey)))
+        .isFalse();
+    assertThat(
+            databaseIntegrationTestExtension.indexExists(
+                getProcessInstanceIndexAliasName(retainedDefinitionKey)))
+        .isTrue();
+    assertProcessInstanceDataExists(List.of(unaffectedProcessInstance));
+  }
+
+  @Test
+  public void shouldRecreateDeletedProcessInstanceIndexWhenNewInstancesAreImported() {
+    // given
+    final var processDefinitionKey = KEY_GENERATOR.generate(10);
+
+    getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
+
+    persistProcessInstances(
+        List.of(processInstanceWithEndDate(processDefinitionKey, getEndTimeLessThanGlobalTtl())));
+    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+    assertThat(
+            databaseIntegrationTestExtension.indexExists(
+                getProcessInstanceIndexAliasName(processDefinitionKey)))
+        .isFalse();
+
+    // when
+    final ProcessInstanceDto newProcessInstance =
+        processInstanceWithEndDate(processDefinitionKey, LocalDateUtil.getCurrentDateTime());
+    persistProcessInstances(List.of(newProcessInstance));
+
+    // then
+    assertThat(
+            databaseIntegrationTestExtension.indexExists(
+                getProcessInstanceIndexAliasName(processDefinitionKey)))
+        .isTrue();
+    assertProcessInstanceDataExists(List.of(newProcessInstance));
   }
 
   @Test
