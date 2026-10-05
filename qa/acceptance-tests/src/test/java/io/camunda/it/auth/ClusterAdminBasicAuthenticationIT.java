@@ -50,6 +50,7 @@ public class ClusterAdminBasicAuthenticationIT {
   public static final String PATH_CLUSTER_RUNTIME_BACKUP_STATE = "cluster/v2/backups/runtime/state";
   public static final String PATH_CLUSTER_REBALANCE = "cluster/v2/rebalance";
   public static final String PATH_V2_AUTHENTICATION_ME = "v2/authentication/me";
+  public static final String PATH_WELL_KNOWN_WEBAPPS = ".well-known/camunda/webapps";
 
   private static final String CLUSTER_ADMIN_USER = "cluster-operator";
   private static final String CLUSTER_ADMIN_PASSWORD = "cluster-secret";
@@ -69,7 +70,12 @@ public class ClusterAdminBasicAuthenticationIT {
               "camunda.security.cluster-admin.basic.users[0].password", CLUSTER_ADMIN_PASSWORD)
           .withProperty("camunda.security.cluster-admin.basic.users[1].name", CLUSTER_ADMIN_USER_2)
           .withProperty(
-              "camunda.security.cluster-admin.basic.users[1].password", CLUSTER_ADMIN_PASSWORD_2);
+              "camunda.security.cluster-admin.basic.users[1].password", CLUSTER_ADMIN_PASSWORD_2)
+          // an explicit webapp location, announced even though this broker serves no webapp
+          // profiles — the standalone-gateway deployment model
+          .withProperty("camunda.webapps.operate.url", "http://operate.example.test")
+          // the broker runs no Tasklist profile, so it must not be announced
+          .withUnifiedConfig(cfg -> cfg.getWebapps().getTasklist().setEnabled(false));
 
   // A real, secondary-storage-backed user — used to prove it cannot reach the cluster-admin chain.
   @UserDefinition
@@ -191,6 +197,31 @@ public class ClusterAdminBasicAuthenticationIT {
 
     // then — cluster-admin users exist only for /cluster/v2/**
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
+  }
+
+  @Test
+  void shouldAllowWebappsDiscoveryEndpointWithoutCredentials() throws Exception {
+    // when — the webapps discovery document is fetched with no credentials. This broker serves no
+    // webapp profiles, but an explicit location makes discovery announce it anyway: the deployment
+    // model where a bare gateway points at webapps hosted elsewhere.
+    final HttpResponse<String> response = send(clusterUri(PATH_WELL_KNOWN_WEBAPPS), null);
+
+    // then
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+    final var body = new ObjectMapper().readTree(response.body());
+    assertThat(body.get("operateUrl").asText()).isEqualTo("http://operate.example.test");
+    assertThat(body.has("tasklistUrl")).isFalse();
+  }
+
+  @Test
+  void shouldAllowWebappsDiscoveryEndpointWithWrongCredentials() throws Exception {
+    // when — a discovery client sends credentials a Basic chain would reject if it inspected them
+    final HttpResponse<String> response =
+        send(clusterUri(PATH_WELL_KNOWN_WEBAPPS), basicAuth(CLUSTER_ADMIN_USER, "wrong-password"));
+
+    // then — the unprotected chain installs no authentication filter, so the header is ignored.
+    // Discovery must work before a client knows how (or whether) to authenticate.
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
   }
 
   @Test
