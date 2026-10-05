@@ -291,8 +291,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       final Map<String, String> exclusionFilters,
       final Executor executor) {
 
-    final ArchiveByIdTaskSupplier taskSupplier =
-        new ArchiveByIdTaskSupplier(
+    final ArchiveByIdPipeline taskSupplier =
+        new ArchiveByIdPipeline(
             config,
             sourceIndexName,
             destinationIndexName,
