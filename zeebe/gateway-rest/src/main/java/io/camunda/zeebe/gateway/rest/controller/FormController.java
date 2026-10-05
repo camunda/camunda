@@ -71,8 +71,7 @@ public class FormController {
               .orElseThrow(
                   () ->
                       new ServiceException(
-                          "Form with ID '%s' not found for tenant '%s'"
-                              .formatted(formId, tenantId),
+                          "Form with ID '%s' not found for tenant '%s'".formatted(formId, tenantId),
                           Status.NOT_FOUND));
 
       return ResponseEntity.ok().body(SearchQueryResponseMapper.toFormItem(form));
