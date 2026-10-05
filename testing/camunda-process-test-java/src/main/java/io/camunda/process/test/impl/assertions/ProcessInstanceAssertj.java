@@ -51,7 +51,7 @@ public class ProcessInstanceAssertj
 
   private final ElementAssertj elementAssertj;
   private final VariableAssertj variableAssertj;
-  private final IncidentAssertj incidentAssertj;
+  private final ProcessInstanceIncidentAssertj incidentAssertj;
   private final MessageSubscriptionAssertj messageSubscriptionAssertj;
   private final String failureMessagePrefix;
   private final Function<String, ElementSelector> elementSelector;
@@ -99,7 +99,9 @@ public class ProcessInstanceAssertj
             judgeConfig,
             semanticSimilarityConfig,
             failureMessagePrefix);
-    incidentAssertj = new IncidentAssertj(dataSource, this::getAwaitBehavior, failureMessagePrefix);
+    incidentAssertj =
+        new ProcessInstanceIncidentAssertj(
+            dataSource, this::getAwaitBehavior, failureMessagePrefix);
     messageSubscriptionAssertj =
         new MessageSubscriptionAssertj(dataSource, this::getAwaitBehavior, failureMessagePrefix);
   }

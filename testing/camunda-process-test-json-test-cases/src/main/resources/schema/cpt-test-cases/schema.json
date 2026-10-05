@@ -57,6 +57,9 @@
           "$ref": "#/definitions/AssertElementInstancesInstruction"
         },
         {
+          "$ref": "#/definitions/AssertIncidentInstruction"
+        },
+        {
           "$ref": "#/definitions/AssertProcessInstanceInstruction"
         },
         {
@@ -530,6 +533,66 @@
         "processInstanceSelector",
         "elementSelectors",
         "state"
+      ],
+      "additionalProperties": false
+    },
+    "AssertIncidentInstruction": {
+      "description": "An instruction to assert an incident.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "ASSERT_INCIDENT"
+        },
+        "incidentSelector": {
+          "description": "The selector to identify the incident.",
+          "$ref": "#/definitions/IncidentSelector"
+        },
+        "state": {
+          "description": "The expected state of the incident. Optional.",
+          "type": "string",
+          "enum": [
+            "IS_ACTIVE",
+            "IS_RESOLVED"
+          ]
+        },
+        "errorType": {
+          "description": "The expected error type of the incident. Optional.",
+          "type": "string",
+          "enum": [
+            "UNSPECIFIED",
+            "UNKNOWN",
+            "IO_MAPPING_ERROR",
+            "JOB_NO_RETRIES",
+            "EXECUTION_LISTENER_NO_RETRIES",
+            "TASK_LISTENER_NO_RETRIES",
+            "AD_HOC_SUB_PROCESS_NO_RETRIES",
+            "CONDITION_ERROR",
+            "EXTRACT_VALUE_ERROR",
+            "CALLED_ELEMENT_ERROR",
+            "UNHANDLED_ERROR_EVENT",
+            "MESSAGE_SIZE_EXCEEDED",
+            "CALLED_DECISION_ERROR",
+            "DECISION_EVALUATION_ERROR",
+            "FORM_NOT_FOUND",
+            "RESOURCE_NOT_FOUND",
+            "SECRET_RESOLUTION_ERROR",
+            "UNKNOWN_ENUM_VALUE"
+          ]
+        },
+        "errorMessage": {
+          "description": "The expected error message of the incident. Optional.",
+          "type": "string"
+        },
+        "elementId": {
+          "description": "The expected BPMN element ID of the incident. Optional.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "incidentSelector"
       ],
       "additionalProperties": false
     },
