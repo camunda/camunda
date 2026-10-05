@@ -343,9 +343,11 @@ public class BusinessValueOverviewResponseDto {
      */
     NOT_APPLICABLE("notApplicable"),
     /**
-     * The target exists but no overview row does, so the definition has never been measured: the
-     * write-time measurement failed, or the sweep is switched off. Transient — the next successful
-     * compute moves the entry to one of the other statuses.
+     * The target exists but no overview row does, so the definition has never been measured. In
+     * practice that means a definition imported since the last sweep: once any sweep has written a
+     * row for it, {@code alreadyComputed} stops a row being synthesized, and a target saved against
+     * it waits for the next sweep instead of appearing here. Transient either way — the next
+     * successful compute moves the entry to one of the other statuses.
      */
     NOT_MEASURED("notMeasured");
 
@@ -358,18 +360,6 @@ public class BusinessValueOverviewResponseDto {
     @JsonValue
     public String getId() {
       return id;
-    }
-
-    public static OffTargetStatus fromId(final String id) {
-      for (final OffTargetStatus status : values()) {
-        if (status.id.equals(id)) {
-          return status;
-        }
-      }
-      throw new IllegalArgumentException(
-          "Unknown offTarget status id ["
-              + id
-              + "]; must be one of: offTarget, noCompletedInstances, notApplicable, notMeasured");
     }
   }
 
