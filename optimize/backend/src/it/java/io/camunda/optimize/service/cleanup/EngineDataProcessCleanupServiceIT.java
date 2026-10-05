@@ -136,6 +136,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractBrokerlessZeebeCC
     final var retainedDefinitionKey = KEY_GENERATOR.generate(10);
 
     getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
+    getProcessDataCleanupConfiguration().setDeleteEmptyIndices(true);
 
     final var endDateForCleanup = getEndTimeLessThanGlobalTtl();
     final ProcessInstanceDto unaffectedProcessInstance =
@@ -165,11 +166,33 @@ public class EngineDataProcessCleanupServiceIT extends AbstractBrokerlessZeebeCC
   }
 
   @Test
+  public void shouldKeepEmptiedProcessInstanceIndexWhenDeletingEmptyIndicesIsDisabled() {
+    // given
+    final var processDefinitionKey = KEY_GENERATOR.generate(10);
+
+    getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
+
+    persistProcessInstances(
+        List.of(processInstanceWithEndDate(processDefinitionKey, getEndTimeLessThanGlobalTtl())));
+
+    // when
+    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    assertThat(
+            databaseIntegrationTestExtension.indexExists(
+                getProcessInstanceIndexAliasName(processDefinitionKey)))
+        .isTrue();
+  }
+
+  @Test
   public void shouldRecreateDeletedProcessInstanceIndexWhenNewInstancesAreImported() {
     // given
     final var processDefinitionKey = KEY_GENERATOR.generate(10);
 
     getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
+    getProcessDataCleanupConfiguration().setDeleteEmptyIndices(true);
 
     persistProcessInstances(
         List.of(processInstanceWithEndDate(processDefinitionKey, getEndTimeLessThanGlobalTtl())));
