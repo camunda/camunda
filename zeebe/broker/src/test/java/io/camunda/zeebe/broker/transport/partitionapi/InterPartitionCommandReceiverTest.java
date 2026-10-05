@@ -10,7 +10,9 @@ package io.camunda.zeebe.broker.transport.partitionapi;
 import static io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderImpl.TOPIC_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -30,7 +32,11 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.util.Either;
+import java.util.Optional;
 import org.agrona.ExpandableArrayBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
@@ -56,7 +62,9 @@ final class InterPartitionCommandReceiverTest {
             new MessageSubscriptionRecord().setProcessInstanceKey(1).setElementInstanceKey(1));
 
     final LogStreamWriter logStreamWriter = getLogStreamWriter();
-    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
+    final var receiver =
+        new InterPartitionCommandReceiverImpl(
+            logStreamWriter, snapshotStore(), new TestConcurrencyControl());
 
     // when
     receiver.handleMessage(new MemberId("0"), sentMessage);
@@ -88,7 +96,9 @@ final class InterPartitionCommandReceiverTest {
             new MessageSubscriptionRecord().setProcessInstanceKey(1).setElementInstanceKey(1));
 
     final LogStreamWriter logStreamWriter = getLogStreamWriter();
-    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
+    final var receiver =
+        new InterPartitionCommandReceiverImpl(
+            logStreamWriter, snapshotStore(), new TestConcurrencyControl());
 
     // when
     receiver.setDiskSpaceAvailable(false);
@@ -116,7 +126,9 @@ final class InterPartitionCommandReceiverTest {
             new MessageSubscriptionRecord().setProcessInstanceKey(1).setElementInstanceKey(1));
 
     final LogStreamWriter logStreamWriter = getLogStreamWriter();
-    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
+    final var receiver =
+        new InterPartitionCommandReceiverImpl(
+            logStreamWriter, snapshotStore(), new TestConcurrencyControl());
 
     // when
     receiver.handleMessage(new MemberId("0"), sentMessage);
@@ -153,7 +165,9 @@ final class InterPartitionCommandReceiverTest {
             recordValue);
 
     final LogStreamWriter logStreamWriter = getLogStreamWriter();
-    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
+    final var receiver =
+        new InterPartitionCommandReceiverImpl(
+            logStreamWriter, snapshotStore(), new TestConcurrencyControl());
 
     // when
     receiver.handleMessage(new MemberId("0"), sentMessage);
@@ -183,7 +197,9 @@ final class InterPartitionCommandReceiverTest {
             new MessageSubscriptionRecord().setProcessInstanceKey(1).setElementInstanceKey(1));
 
     final LogStreamWriter logStreamWriter = getLogStreamWriter();
-    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
+    final var receiver =
+        new InterPartitionCommandReceiverImpl(
+            logStreamWriter, snapshotStore(), new TestConcurrencyControl());
     final var entryCaptor = ArgumentCaptor.forClass(LogAppendEntry.class);
 
     // when
@@ -209,7 +225,9 @@ final class InterPartitionCommandReceiverTest {
             new MessageSubscriptionRecord().setProcessInstanceKey(1).setElementInstanceKey(1));
 
     final LogStreamWriter logStreamWriter = getLogStreamWriter();
-    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
+    final var receiver =
+        new InterPartitionCommandReceiverImpl(
+            logStreamWriter, snapshotStore(), new TestConcurrencyControl());
     final var entryCaptor = ArgumentCaptor.forClass(LogAppendEntry.class);
 
     // when
@@ -254,5 +272,13 @@ final class InterPartitionCommandReceiverTest {
             eq(true));
 
     return messageCaptor.getValue();
+  }
+
+  private static PersistedSnapshotStore snapshotStore() {
+    final var snapshotStore = mock(PersistedSnapshotStore.class);
+    lenient()
+        .when(snapshotStore.reserveLatestSnapshot(anyLong()))
+        .thenReturn(CompletableActorFuture.completed(Optional.empty()));
+    return snapshotStore;
   }
 }

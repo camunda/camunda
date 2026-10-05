@@ -59,11 +59,14 @@ public final class BackupApiRequestHandlerStep implements PartitionTransitionSte
       final LogStreamWriter logStreamWriter) {
     final var isBackupEnabled =
         !context.getBrokerCfg().getData().getBackup().getStore().equals(BackupStoreType.NONE);
+    final var snapshotDirector = context.getSnapshotDirector();
     final var requestHandler =
         new BackupApiRequestHandler(
             context.getGatewayBrokerTransport(),
             logStreamWriter,
             context.getBackupManager(),
+            context.getPersistedSnapshotStore(),
+            () -> snapshotDirector.forceSnapshot(),
             context.getPartitionId(),
             isBackupEnabled);
     context.getActorSchedulingService().submitActor(requestHandler).onComplete(installed);

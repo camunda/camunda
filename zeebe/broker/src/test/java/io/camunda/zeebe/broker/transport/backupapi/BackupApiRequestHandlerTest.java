@@ -10,6 +10,8 @@ package io.camunda.zeebe.broker.transport.backupapi;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -22,17 +24,23 @@ import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRequest;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
+import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.management.BackupRequestType;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.camunda.zeebe.protocol.management.BackupStatusResponseEncoder;
 import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
+import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.ServerResponse;
@@ -53,6 +61,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Answers;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -68,19 +77,31 @@ final class BackupApiRequestHandlerTest {
   LogStreamWriter logStreamWriter;
 
   @Mock BackupManager backupManager;
+  @Mock PersistedSnapshotStore snapshotStore;
+  @Mock PersistedSnapshot freshSnapshot;
+  @Mock SnapshotTrigger snapshotTrigger;
 
   BackupApiRequestHandler handler;
+  private ActorFuture<PersistedSnapshot> takenSnapshot =
+      CompletableActorFuture.completedExceptionally(new IllegalStateException("not configured"));
   private ResponseReader serverOutput;
   private CompletableFuture<Either<ErrorResponse, BufferReader>> responseFuture;
 
   @BeforeEach
   void setup() {
-    handler = new BackupApiRequestHandler(transport, logStreamWriter, backupManager, 1, true);
+    handler =
+        new BackupApiRequestHandler(
+            transport, logStreamWriter, backupManager, snapshotStore, snapshotTrigger, 1, true);
     scheduler.submitActor(handler);
     scheduler.workUntilDone();
 
     serverOutput = new ResponseReader();
     responseFuture = new CompletableFuture<>();
+
+    lenient().when(snapshotTrigger.forceSnapshot()).thenAnswer(invocation -> takenSnapshot);
+    lenient()
+        .when(snapshotStore.reserveLatestSnapshot(anyLong()))
+        .thenReturn(CompletableActorFuture.completed(Optional.empty()));
   }
 
   @Test
@@ -146,22 +167,27 @@ final class BackupApiRequestHandlerTest {
   @Test
   void shouldWriteWhenDiskSpaceAvailableAgain() {
     // given
-    final var request =
-        new BackupRequest()
-            .setType(BackupRequestType.TAKE_BACKUP)
-            .setPartitionId(1)
-            .setBackupId(10);
-
+    final var writtenEntry = captureWrittenEntry(Either.right(1L));
     handler.onDiskSpaceNotAvailable();
     scheduler.workUntilDone();
-    handler.onDiskSpaceAvailable();
-    scheduler.workUntilDone();
+    handleRequest(takeBackupRequest());
+    assertThat(responseFuture)
+        .succeedsWithin(Duration.ofMinutes(1))
+        .matches(Either::isLeft)
+        .extracting(Either::getLeft)
+        .extracting(ErrorResponse::getErrorCode)
+        .isEqualTo(ErrorCode.RESOURCE_EXHAUSTED);
+    verify(logStreamWriter, never()).tryWrite(any(WriteContext.class), any(LogAppendEntry.class));
 
     // when
-    handleRequest(request);
+    handler.onDiskSpaceAvailable();
+    scheduler.workUntilDone();
+    responseFuture = new CompletableFuture<>();
+    handleRequest(takeBackupRequest());
 
-    // then
-    assertThat(responseFuture).succeedsWithin(Duration.ofMillis(100));
+    // then - the checkpoint is written; the response is sent once it is processed
+    assertThat(writtenCheckpoint(writtenEntry).getCheckpointId()).isEqualTo(10);
+    assertThat(responseFuture).isNotDone();
   }
 
   @Test
@@ -400,6 +426,131 @@ final class BackupApiRequestHandlerTest {
         .extracting(Either::getLeft)
         .returns(ErrorCode.INTERNAL_ERROR, ErrorResponse::getErrorCode)
         .returns("Expected failure", error -> BufferUtil.bufferAsString(error.getErrorData()));
+  }
+
+  @Test
+  void shouldWriteCheckpointWithFreshlyTakenSnapshot() {
+    // given
+    givenFreshSnapshot("fresh");
+    when(snapshotStore.reserveSnapshot(10L, "fresh"))
+        .thenReturn(CompletableActorFuture.completed(null));
+    final var writtenEntry = captureWrittenEntry(Either.right(1L));
+
+    // when
+    handleRequest(takeBackupRequest());
+
+    // then - the snapshot is taken and reserved before the checkpoint is written, so it is strictly
+    // before the checkpoint and still exists when the backup is taken
+    assertThat(writtenCheckpoint(writtenEntry).getSnapshotId()).isEqualTo("fresh");
+    final var inOrder = inOrder(snapshotTrigger, snapshotStore, logStreamWriter);
+    inOrder.verify(snapshotTrigger).forceSnapshot();
+    inOrder.verify(snapshotStore).reserveSnapshot(10L, "fresh");
+    inOrder.verify(logStreamWriter).tryWrite(any(WriteContext.class), any(LogAppendEntry.class));
+    verify(snapshotStore, never()).reserveLatestSnapshot(anyLong());
+  }
+
+  @Test
+  void shouldReserveLatestSnapshotWhenFreshSnapshotIsSkipped() {
+    // given
+    takenSnapshot = CompletableActorFuture.completed(null);
+    givenLatestSnapshot("latest");
+    final var writtenEntry = captureWrittenEntry(Either.right(1L));
+
+    // when
+    handleRequest(takeBackupRequest());
+
+    // then
+    assertThat(writtenCheckpoint(writtenEntry).getSnapshotId()).isEqualTo("latest");
+  }
+
+  @Test
+  void shouldReserveLatestSnapshotWhenFreshSnapshotFails() {
+    // given
+    takenSnapshot = CompletableActorFuture.completedExceptionally(new RuntimeException("expected"));
+    givenLatestSnapshot("latest");
+    final var writtenEntry = captureWrittenEntry(Either.right(1L));
+
+    // when
+    handleRequest(takeBackupRequest());
+
+    // then
+    assertThat(writtenCheckpoint(writtenEntry).getSnapshotId()).isEqualTo("latest");
+  }
+
+  @Test
+  void shouldReserveLatestSnapshotWhenFreshSnapshotCannotBeReserved() {
+    // given
+    givenFreshSnapshot("fresh");
+    when(snapshotStore.reserveSnapshot(10L, "fresh"))
+        .thenReturn(
+            CompletableActorFuture.completedExceptionally(
+                new SnapshotNotFoundException("expected")));
+    givenLatestSnapshot("latest");
+    final var writtenEntry = captureWrittenEntry(Either.right(1L));
+
+    // when
+    handleRequest(takeBackupRequest());
+
+    // then
+    assertThat(writtenCheckpoint(writtenEntry).getSnapshotId()).isEqualTo("latest");
+  }
+
+  @Test
+  void shouldWriteCheckpointWithoutSnapshotWhenNoneCanBeReserved() {
+    // given
+    takenSnapshot = CompletableActorFuture.completed(null);
+    final var writtenEntry = captureWrittenEntry(Either.right(1L));
+
+    // when
+    handleRequest(takeBackupRequest());
+
+    // then
+    assertThat(writtenCheckpoint(writtenEntry).getSnapshotId()).isEmpty();
+  }
+
+  @Test
+  void shouldReleaseSnapshotReservationWhenCheckpointCannotBeWritten() {
+    // given
+    givenFreshSnapshot("fresh");
+    when(snapshotStore.reserveSnapshot(10L, "fresh"))
+        .thenReturn(CompletableActorFuture.completed(null));
+    captureWrittenEntry(Either.left(WriteFailure.WRITE_LIMIT_EXHAUSTED));
+
+    // when
+    handleRequest(takeBackupRequest());
+
+    // then
+    assertThat(responseFuture).succeedsWithin(Duration.ofMinutes(1)).matches(Either::isLeft);
+    verify(snapshotStore).releaseReservation(10L, "fresh");
+  }
+
+  private BackupRequest takeBackupRequest() {
+    return new BackupRequest()
+        .setType(BackupRequestType.TAKE_BACKUP)
+        .setPartitionId(1)
+        .setBackupId(10);
+  }
+
+  private void givenFreshSnapshot(final String snapshotId) {
+    when(freshSnapshot.getId()).thenReturn(snapshotId);
+    takenSnapshot = CompletableActorFuture.completed(freshSnapshot);
+  }
+
+  private void givenLatestSnapshot(final String snapshotId) {
+    when(snapshotStore.reserveLatestSnapshot(10L))
+        .thenReturn(CompletableActorFuture.completed(Optional.of(snapshotId)));
+  }
+
+  private ArgumentCaptor<LogAppendEntry> captureWrittenEntry(
+      final Either<WriteFailure, Long> writeResult) {
+    final var captor = ArgumentCaptor.forClass(LogAppendEntry.class);
+    when(logStreamWriter.tryWrite(any(WriteContext.class), captor.capture()))
+        .thenReturn(writeResult);
+    return captor;
+  }
+
+  private static CheckpointRecord writtenCheckpoint(final ArgumentCaptor<LogAppendEntry> entry) {
+    return (CheckpointRecord) entry.getValue().recordValue();
   }
 
   private void handleRequest(final BackupRequest request) {

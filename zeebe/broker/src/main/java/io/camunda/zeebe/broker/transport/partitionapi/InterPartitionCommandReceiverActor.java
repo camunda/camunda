@@ -17,6 +17,9 @@ import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import java.util.Map;
 import org.slf4j.Logger;
 
@@ -33,14 +36,16 @@ public final class InterPartitionCommandReceiverActor extends Actor
   private final ClusterCommunicationService communicationService;
   private final int partitionId;
   private final InterPartitionCommandReceiverImpl receiver;
+  private ActorFuture<Void> previousMessageHandled = CompletableActorFuture.completed();
 
   public InterPartitionCommandReceiverActor(
       final int partitionId,
       final ClusterCommunicationService communicationService,
-      final LogStreamWriter logStreamWriter) {
+      final LogStreamWriter logStreamWriter,
+      final PersistedSnapshotStore snapshotStore) {
     this.partitionId = partitionId;
     this.communicationService = communicationService;
-    receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
+    receiver = new InterPartitionCommandReceiverImpl(logStreamWriter, snapshotStore, actor);
     actorName = buildActorName(getClass().getSimpleName(), partitionId);
   }
 
@@ -85,11 +90,29 @@ public final class InterPartitionCommandReceiverActor extends Actor
     actor.run(() -> receiver.setCheckpointId(checkpointId));
   }
 
+  /**
+   * Handles messages one after the other. A message whose checkpoint first needs a snapshot
+   * reserved delays the ones after it, so no command is written before the checkpoint it depends
+   * on.
+   */
   private void tryHandleMessage(final MemberId memberId, final byte[] message) {
+    if (previousMessageHandled.isDone()) {
+      previousMessageHandled = handleMessage(memberId, message);
+    } else {
+      previousMessageHandled =
+          previousMessageHandled.andThen(
+              (ignored, previousError) -> handleMessage(memberId, message), actor::submit);
+    }
+  }
+
+  private ActorFuture<Void> handleMessage(final MemberId memberId, final byte[] message) {
     try {
-      receiver.handleMessage(memberId, message);
+      final var handled = receiver.handleMessage(memberId, message);
+      handled.onError(error -> LOG.error("Error while handling message", error), actor);
+      return handled;
     } catch (final RuntimeException e) {
       LOG.error("Error while handling message", e);
+      return CompletableActorFuture.completed();
     }
   }
 }
