@@ -234,7 +234,7 @@
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>10.10</version.nimbus-jose-jwt>
     <version.nimbus-sdk>11.38.2</version.nimbus-sdk>
-    <version.keycloak>26.7.5</version.keycloak>
+    <version.keycloak>26.8.0</version.keycloak>
     <!-- renovate: datasource=docker depName=docker.io/camunda/keycloak versioning=regex:^quay-(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)$ -->
     <version.keycloak.container>quay-26.7.5@sha256:fd07eb3b6b5bb68be99c2cd7fbc51966b4c1a8ea671fa0314472c53a9a453bbd</version.keycloak.container>
     <version.keycloak-client>26.0.12</version.keycloak-client>
