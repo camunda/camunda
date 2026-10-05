@@ -259,6 +259,7 @@ runs:
           - '.github/workflows/**'
           - '.github/actionlint*'
           - '.github/conftest-*.rego'
+          - '.github/scripts/download-with-retry.sh'
 
         renovate-config-change:
           - '**/renovate.json'
