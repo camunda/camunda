@@ -165,7 +165,7 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
    */
   private static void validateSecretName(final String name) {
     if (name == null
-        || name.isEmpty()
+        || name.chars().allMatch(Character::isWhitespace)
         || name.startsWith(".")
         || name.contains("/")
         || name.contains("\\")
