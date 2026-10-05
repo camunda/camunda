@@ -281,6 +281,32 @@ public class RoleSpecificFilterIT {
   }
 
   @Test
+  public void shouldTreatEmptyOrFilterGroupAsMatchingEverything() {
+    final var matchingRoleId = Strings.newRandomValidIdentityId();
+    createAndSaveRole(rdbmsWriters, RoleFixtures.createRandomized(b -> b.roleId(matchingRoleId)));
+
+    final var searchResult =
+        roleReader.search(
+            new RoleQuery(
+                new RoleFilter.Builder()
+                    .roleId(matchingRoleId)
+                    .orFilters(
+                        List.of(
+                            new RoleFilter.Builder().build(),
+                            new RoleFilter.Builder()
+                                .roleId(Strings.newRandomValidIdentityId())
+                                .build()))
+                    .build(),
+                RoleSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    // an empty $or group has no criteria of its own, so it matches everything; the whole $or
+    // clause collapses into a no-op instead of narrowing to the other, non-matching branch
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).extracting(RoleEntity::roleId).containsExactly(matchingRoleId);
+  }
+
+  @Test
   public void shouldFilterRolesByRoleIdLike() {
     final var matchingRoleId = "like-test-" + Strings.newRandomValidIdentityId();
     final var nonMatchingRoleId = Strings.newRandomValidIdentityId();

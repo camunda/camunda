@@ -44,7 +44,34 @@ public record UserTaskFilter(
     Set<String> tags,
     String type,
     List<UserTaskFilter> orFilters)
-    implements FilterBase {
+    implements OrFilter<UserTaskFilter> {
+
+  @Override
+  public boolean isEmpty() {
+    return !FilterUtil.hasAnyNonEmpty(
+        userTaskKeys,
+        elementIds,
+        nameOperations,
+        processDefinitionIdOperations,
+        assigneeOperations,
+        businessIdOperations,
+        priorityOperations,
+        stateOperations,
+        processInstanceKeyOperations,
+        processDefinitionKeyOperations,
+        candidateUserOperations,
+        candidateGroupOperations,
+        tenantIdOperations,
+        processInstanceVariableFilter,
+        localVariableFilters,
+        elementInstanceKeys,
+        creationDateOperations,
+        completionDateOperations,
+        followUpDateOperations,
+        dueDateOperations,
+        tags,
+        type);
+  }
 
   public static final class Builder implements ObjectBuilder<UserTaskFilter> {
 
