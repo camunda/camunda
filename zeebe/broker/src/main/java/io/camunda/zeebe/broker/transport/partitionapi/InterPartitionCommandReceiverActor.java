@@ -110,14 +110,13 @@ public final class InterPartitionCommandReceiverActor extends Actor
   }
 
   private ActorFuture<Void> handleMessage(final MemberId memberId, final byte[] message) {
-    final ActorFuture<Void> handled;
     try {
-      handled = receiver.handleMessage(memberId, message);
+      final var handled = receiver.handleMessage(memberId, message);
+      handled.onError(error -> LOG.error("Error while handling message", error), actor);
+      return handled;
     } catch (final RuntimeException e) {
       LOG.error("Error while handling message", e);
       return CompletableActorFuture.completed();
     }
-    handled.onError(error -> LOG.error("Error while handling message", error), actor);
-    return handled;
   }
 }
