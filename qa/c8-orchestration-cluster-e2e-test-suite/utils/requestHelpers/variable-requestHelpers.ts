@@ -9,7 +9,7 @@
 import type {APIRequestContext} from 'playwright-core';
 import {expect, test} from '@playwright/test';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
-import {extendedAssertionOptions} from '../constants';
+import {defaultAssertionOptions, extendedAssertionOptions} from '../constants';
 import {validateResponse} from '../../json-body-assertions';
 import {createInstances} from '../zeebeClient';
 
