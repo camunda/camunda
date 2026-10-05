@@ -263,6 +263,7 @@ jobs:
       # reuses the compilation output instead of compiling the repository again.
       - name: Compile, package, and verify Gradle cache reuse
         run: |
+          set -euo pipefail
           ./gradlew --console=plain --parallel -Pskip.fe.build \
             testClasses :camunda-zeebe:distZip
 
@@ -271,8 +272,12 @@ jobs:
           ./gradlew --console=plain --parallel -Pskip.fe.build \
             testClasses 2>&1 | tee "$verification_log"
 
-          summary="$(grep -E '^[0-9]+ actionable tasks:' "$verification_log" | tail -1)"
-          grep -q '^BUILD SUCCESSFUL' "$verification_log"
+          summary="$(grep -E '^[0-9]+ actionable tasks?:' "$verification_log" | tail -1 || true)"
+
+          if ! grep -q '^BUILD SUCCESSFUL' "$verification_log"; then
+            echo "Cache verification failed: BUILD SUCCESSFUL was not found"
+            exit 1
+          fi
 
           if [[ -z "$summary" ]]; then
             echo "Cache verification failed: Gradle task summary was not found"
