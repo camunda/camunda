@@ -16,10 +16,13 @@
 package io.camunda.process.test.impl.containers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.utility.DockerImageName;
 
 class CamundaContainerTest {
@@ -66,6 +69,22 @@ class CamundaContainerTest {
     assertThat(container.getCopyToFileContainerPathMap().values())
         .containsExactlyInAnyOrder(
             "/tmp/camunda-cluster-secrets/MY_API_KEY", "/tmp/camunda-cluster-secrets/OTHER");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"../escape", "/tmp/escape", "dir/secret", "dir\\secret", ".hidden", ".."})
+  void shouldRejectClusterSecretNameThatIsNotASinglePathSegment(final String name) {
+    // given
+    final CamundaContainer container =
+        new CamundaContainer(DockerImageName.parse("camunda/camunda:SNAPSHOT"));
+    final Map<String, String> secrets = new HashMap<>();
+    secrets.put(name, "value");
+
+    // when / then
+    assertThatThrownBy(() -> container.withClusterSecrets(secrets))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining(name);
+    assertThat(container.getCopyToFileContainerPathMap()).isEmpty();
   }
 
   @Test
