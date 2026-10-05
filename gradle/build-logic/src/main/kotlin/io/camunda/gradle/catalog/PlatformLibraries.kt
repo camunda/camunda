@@ -116,6 +116,8 @@ internal fun VersionCatalogBuilder.catalogPlatformLibraries() {
     .versionRef("opentelemetry")
   library("io-opentelemetry-opentelemetry-api", "io.opentelemetry", "opentelemetry-api")
     .withoutVersion()
+  library("io-opentelemetry-opentelemetry-context", "io.opentelemetry", "opentelemetry-context")
+    .withoutVersion()
   library("io-opentelemetry-opentelemetry-sdk", "io.opentelemetry", "opentelemetry-sdk")
     .withoutVersion()
   library(
