@@ -9,6 +9,8 @@ package io.camunda.optimize.service.db.writer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -16,12 +18,17 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueTargetDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import io.camunda.optimize.service.db.repository.BusinessValueTargetRepository;
+import io.camunda.optimize.service.exceptions.OptimizeBulkFailureException;
+import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.importing.ZeebeConstants;
 import java.time.OffsetDateTime;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class BusinessValueTargetWriterTest {
 
@@ -247,5 +254,65 @@ class BusinessValueTargetWriterTest {
     dto.setUpdatedBy("sherrin@camunda.com");
     assertThat(dto.getTenantId()).isNotNull();
     return dto;
+  }
+
+  @Test
+  void shouldDeleteTheTargetOfADefinitionByItsDocumentId() {
+    // when
+    writer.deleteForDefinition(ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID, "invoice-automation");
+
+    // then
+    verify(repository)
+        .deleteByIds(List.of(ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID + "::invoice-automation"));
+  }
+
+  /**
+   * A target cannot be saved without a tenant or a key, so there is nothing to delete. Returning
+   * rather than letting documentId throw matters because the caller is the shared
+   * process-definition deletion cascade, where single-tenant setups pass a null tenantId for every
+   * definition.
+   */
+  @ParameterizedTest
+  @NullAndEmptySource
+  @ValueSource(strings = {" "})
+  void shouldNotTouchTheRepositoryWhenTheTenantIsMissing(final String tenantId) {
+    // when
+    writer.deleteForDefinition(tenantId, "invoice-automation");
+
+    // then
+    verifyNoInteractions(repository);
+  }
+
+  @ParameterizedTest
+  @NullAndEmptySource
+  @ValueSource(strings = {" "})
+  void shouldNotTouchTheRepositoryWhenTheProcessDefinitionKeyIsMissing(final String processKey) {
+    // when
+    writer.deleteForDefinition(ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID, processKey);
+
+    // then
+    verifyNoInteractions(repository);
+  }
+
+  /**
+   * The database clients raise a bare OptimizeRuntimeException when a bulk reports per-item
+   * failures, and the deletion job only retries a known set of types. Translating it here is what
+   * makes a transient rejection retryable instead of failing the job on the first attempt.
+   */
+  @Test
+  void shouldTranslateABulkFailureIntoARetryableException() {
+    // given
+    doThrow(new OptimizeRuntimeException("rejected execution"))
+        .when(repository)
+        .deleteByIds(anyList());
+
+    // when / then
+    assertThatThrownBy(
+            () ->
+                writer.deleteForDefinition(
+                    ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID, "invoice-automation"))
+        .isInstanceOf(OptimizeBulkFailureException.class)
+        .hasMessageContaining("invoice-automation")
+        .hasRootCauseMessage("rejected execution");
   }
 }
