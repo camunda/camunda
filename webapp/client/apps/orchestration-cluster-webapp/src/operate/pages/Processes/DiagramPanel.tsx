@@ -294,5 +294,5 @@ const DiagramPanel: React.FC<Props> = ({
 	);
 };
 
-export {DiagramPanel};
+export {StatisticsOverlays, DiagramPanel};
 export type {ProcessDefinitionSelection};

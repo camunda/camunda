@@ -6,6 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const ENABLE_PROCESS_MIGRATION = false;
+const ENABLE_PROCESS_MIGRATION = true;
 
 export {ENABLE_PROCESS_MIGRATION};
