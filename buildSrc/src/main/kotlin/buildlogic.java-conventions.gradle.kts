@@ -156,7 +156,8 @@ tasks.withType<Test>().configureEach {
     systemProperty("junit.jupiter.execution.parallel.mode.classes.default", "same_thread")
   }
 
-  systemProperty("junit.jupiter.execution.timeout.default", "5 m")
+  // Gradle-only for now: Maven has no default JUnit timeout. Re-enable together with a Maven setting.
+  // systemProperty("junit.jupiter.execution.timeout.default", "5 m")
 
   useJUnitPlatform()
 }
