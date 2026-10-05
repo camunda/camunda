@@ -2204,7 +2204,8 @@ module.exports = require("node:fs");
 /******/ 	}
 /******/ 	
 /************************************************************************/
-/******/ 	/* webpack/runtime/asset-relocator-loader */
+/******/ 	/* webpack/runtime/compat */
+/******/ 	
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
 /******/ 	
 /************************************************************************/
