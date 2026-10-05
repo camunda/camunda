@@ -44,6 +44,9 @@ import io.camunda.optimize.service.variable.ProcessVariableService;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class DashboardImportServiceTest {
 
@@ -145,6 +148,28 @@ public class DashboardImportServiceTest {
         .isInstanceOf(OptimizeImportFileInvalidException.class)
         .hasMessageContaining("invalid filters")
         .hasMessageContaining("All filters need to supply Filter data");
+  }
+
+  @ParameterizedTest
+  @NullAndEmptySource
+  @ValueSource(strings = {" "})
+  public void shouldStillRejectImportedDashboardWithVariableFilterWithoutName(
+      final String variableName) {
+    // given
+    final DashboardDefinitionExportDto dashboard =
+        dashboardWithFilters(
+            List.of(
+                variableFilter(
+                    new DashboardStringVariableFilterDataDto(
+                        variableName,
+                        new DashboardVariableFilterSubDataDto(null, List.of(), true),
+                        List.of()))));
+
+    // when / then
+    assertThatThrownBy(() -> underTest.validateAllDashboardsOrFail(USER_ID, List.of(dashboard)))
+        .isInstanceOf(OptimizeImportFileInvalidException.class)
+        .hasMessageContaining("invalid filters")
+        .hasMessageContaining("require a variable name");
   }
 
   private static DashboardDefinitionExportDto dashboardWithFilters(
