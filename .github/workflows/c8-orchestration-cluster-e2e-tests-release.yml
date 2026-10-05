@@ -91,6 +91,8 @@ jobs:
             base="stable/8.8"
           elif [[ "$major_minor" == "8.9" ]]; then
             base="stable/8.9"
+          elif [[ "$major_minor" == "8.10" ]]; then
+            base="stable/8.10"
           else
             base="main"
           fi
@@ -130,6 +132,10 @@ jobs:
               exit 1
             fi
           fi
+          # Throwaway rerun branch: test the dispatched branch (8.10.1-rc1
+          # tag + #64804 test fixes) instead of the resolved release ref.
+          echo "Overriding resolved ref $ref with dispatched ref $GITHUB_REF"
+          ref="$GITHUB_REF"
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
 
       - name: Observe build status
@@ -254,8 +260,48 @@ jobs:
         id: wait-for-services
         run: |
           echo "Checking if services are up..."
+          if [[ "$NON_STANDALONE" == "true" ]]; then
+            app_containers=(zeebe tasklist operate)
+          else
+            app_containers=(camunda)
+          fi
           ready=false
+          declare -A non_running
           for i in {1..90}; do
+            # Fail fast if an app container crashed, instead of waiting out the
+            # full ~15 min timeout. Resolve the container through compose rather
+            # than by bare name: some branches set container_name to
+            # operate-${DATABASE}, so `docker inspect operate` matches nothing
+            # there. --all is required or compose omits an already-exited
+            # container. Test Running rather than a status allowlist so a crash
+            # loop is caught too (restart: always surfaces as `restarting`, never
+            # `exited`) along with a container that was never created at all. Two
+            # consecutive observations keep a single legitimate restart from
+            # failing the job.
+            for c in "${app_containers[@]}"; do
+              cid="$(DATABASE=elasticsearch docker compose ps --all --quiet "$c" 2>/dev/null || true)"
+              running=""
+              if [[ -n "$cid" ]]; then
+                running="$(docker inspect -f '{{.State.Running}}' "$cid" 2>/dev/null || true)"
+              fi
+              if [[ "$running" == "true" ]]; then
+                non_running["$c"]=0
+                continue
+              fi
+              non_running["$c"]=$(( ${non_running["$c"]:-0} + 1 ))
+              if (( ${non_running["$c"]} >= 2 )); then
+                if [[ -z "$cid" ]]; then
+                  echo "No container for service '$c' on two consecutive checks; it was never created or has been removed."
+                else
+                  echo "Container for service '$c' is not running on two consecutive checks; it will never become ready."
+                  docker inspect "$cid" --format 'Container {{.Name}}: status={{.State.Status}} exitCode={{.State.ExitCode}} oomKilled={{.State.OOMKilled}} restartCount={{.RestartCount}}' || true
+                fi
+                DATABASE=elasticsearch docker compose logs --tail 200 "$c" || true
+                echo "Services failed to start: service '$c' is not running."
+                exit 1
+              fi
+            done
+
             if [[ "$NON_STANDALONE" == "true" ]]; then
               tasklist_status=$(curl -s -m 5 http://localhost:8080 || echo "Failed")
               operate_status=$(curl -s -m 5 http://localhost:8081 || echo "Failed")
@@ -291,20 +337,24 @@ jobs:
       - name: Print Docker logs before failing
         shell: bash
         if: failure()
+        # DATABASE must be set: docker-compose.yml interpolates it into the
+        # camunda service's depends_on / env_file, so an unset value makes the
+        # compose project invalid ("depends on undefined service") and this
+        # diagnostic step errors out instead of printing the container logs.
         run: |
           if [[ "$NON_STANDALONE" == "true" ]]; then
-            docker compose logs zeebe
-            docker compose logs tasklist
-            docker compose logs operate
+            DATABASE=elasticsearch docker compose logs zeebe
+            DATABASE=elasticsearch docker compose logs tasklist
+            DATABASE=elasticsearch docker compose logs operate
           else
-            docker compose logs camunda
+            DATABASE=elasticsearch docker compose logs camunda
           fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24
+          node-version: 26
           cache: npm
           cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
 
@@ -315,28 +365,10 @@ jobs:
           npm install
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false # we rely on step outputs, no need for environment variables
-          secrets: |
-            secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
-            secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
-
       - name: Install Playwright Browsers
         shell: bash
         run: npx playwright install --with-deps chromium
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
-
-      - name: Python setup
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.x"
 
       - name: Run API tests
         shell: bash
@@ -360,26 +392,6 @@ jobs:
           npm run test -- --project=api-tests
 
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
-
-      - name: Publish test results to TestRail
-        if: always()
-        shell: bash
-        env:
-          TESTRAIL_HOST: "https://camunda.testrail.com/"
-          TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }} # Use the imported secret
-          TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }} # Use the imported secret
-          JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
-        run: |
-          pip install trcli==1.14.1
-          trcli -y -h "$TESTRAIL_HOST" \
-            --project 'C8' \
-            --username "$TESTRAIL_USERNAME" \
-            --key "$TESTRAIL_KEY" \
-            --batch-size 500 \
-            parse_junit --suite-id 17050 \
-            --title "Release C8 Orchestration Cluster API Test Run Results - v${{ needs.validate-release.outputs.release_version }} - $(date '+%Y-%m-%d %H:%M:%S')" \
-            --close-run \
-            -f "$JUNIT_RESULTS_FILE"
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
@@ -408,7 +420,13 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   build-rdbms-dist:
-    if: ${{ needs.validate-release.outputs.base == 'stable/8.9' || needs.validate-release.outputs.base == 'main' }}
+    # RDBMS exists from 8.9 onwards. Listed as an exclusion of the branches
+    # that predate it rather than an allow-list of the ones that have it, so a
+    # newly cut stable branch gets these tests by default: stable/8.10 silently
+    # skipped this whole matrix on 8.10.0-alpha5-rc1 (run 32859395813) because
+    # the allow-list still named only 8.9 and main, while every earlier 8.10 RC
+    # had run it by falling through to base=main.
+    if: ${{ !contains(fromJSON('["stable/8.6","stable/8.7","stable/8.8"]'), needs.validate-release.outputs.base) }}
     name: "Build Camunda distribution"
     needs: [validate-release]
     runs-on: gcp-perf-core-16-default
@@ -480,7 +498,13 @@ jobs:
   c8-orchestration-cluster-api-tests-rdbms:
     name: API Tests (RDBMS) (${{ needs.validate-release.outputs.base }} / ${{ matrix.database.database-name }})
     needs: [validate-release, build-rdbms-dist]
-    if: ${{ needs.validate-release.outputs.base == 'stable/8.9' || needs.validate-release.outputs.base == 'main' }}
+    # RDBMS exists from 8.9 onwards. Listed as an exclusion of the branches
+    # that predate it rather than an allow-list of the ones that have it, so a
+    # newly cut stable branch gets these tests by default: stable/8.10 silently
+    # skipped this whole matrix on 8.10.0-alpha5-rc1 (run 32859395813) because
+    # the allow-list still named only 8.9 and main, while every earlier 8.10 RC
+    # had run it by falling through to base=main.
+    if: ${{ !contains(fromJSON('["stable/8.6","stable/8.7","stable/8.8"]'), needs.validate-release.outputs.base) }}
     runs-on: gcp-perf-core-16-default
     timeout-minutes: 60
     permissions: {}
@@ -600,7 +624,7 @@ jobs:
           fi
 
       - name: Setup Java
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: temurin
           java-version: '21'
@@ -767,7 +791,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24
+          node-version: 26
           cache: npm
           cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
 
@@ -938,10 +962,51 @@ jobs:
 
       - name: Wait for services to be ready
         id: wait-for-services
+        shell: bash
         run: |
           echo "Checking if services are up..."
+          if [[ "$NON_STANDALONE" == "true" ]]; then
+            app_containers=(zeebe tasklist operate)
+          else
+            app_containers=(camunda)
+          fi
           ready=false
+          declare -A non_running
           for i in {1..90}; do
+            # Fail fast if an app container crashed, instead of waiting out the
+            # full ~15 min timeout. Resolve the container through compose rather
+            # than by bare name: some branches set container_name to
+            # operate-${DATABASE}, so `docker inspect operate` matches nothing
+            # there. --all is required or compose omits an already-exited
+            # container. Test Running rather than a status allowlist so a crash
+            # loop is caught too (restart: always surfaces as `restarting`, never
+            # `exited`) along with a container that was never created at all. Two
+            # consecutive observations keep a single legitimate restart from
+            # failing the job.
+            for c in "${app_containers[@]}"; do
+              cid="$(DATABASE=elasticsearch docker compose ps --all --quiet "$c" 2>/dev/null || true)"
+              running=""
+              if [[ -n "$cid" ]]; then
+                running="$(docker inspect -f '{{.State.Running}}' "$cid" 2>/dev/null || true)"
+              fi
+              if [[ "$running" == "true" ]]; then
+                non_running["$c"]=0
+                continue
+              fi
+              non_running["$c"]=$(( ${non_running["$c"]:-0} + 1 ))
+              if (( ${non_running["$c"]} >= 2 )); then
+                if [[ -z "$cid" ]]; then
+                  echo "No container for service '$c' on two consecutive checks; it was never created or has been removed."
+                else
+                  echo "Container for service '$c' is not running on two consecutive checks; it will never become ready."
+                  docker inspect "$cid" --format 'Container {{.Name}}: status={{.State.Status}} exitCode={{.State.ExitCode}} oomKilled={{.State.OOMKilled}} restartCount={{.RestartCount}}' || true
+                fi
+                DATABASE=elasticsearch docker compose logs --tail 200 "$c" || true
+                echo "Services failed to start: service '$c' is not running."
+                exit 1
+              fi
+            done
+
             if [[ "$NON_STANDALONE" == "true" ]]; then
               tasklist_status=$(curl -s -m 5 http://localhost:8080 || echo "Failed")
               operate_status=$(curl -s -m 5 http://localhost:8081 || echo "Failed")
@@ -976,20 +1041,25 @@ jobs:
 
       - name: Print Docker logs before failing
         if: failure()
+        shell: bash
+        # DATABASE must be set: docker-compose.yml interpolates it into the
+        # camunda service's depends_on / env_file, so an unset value makes the
+        # compose project invalid ("depends on undefined service") and this
+        # diagnostic step errors out instead of printing the container logs.
         run: |
           if [[ "$NON_STANDALONE" == "true" ]]; then
-            docker compose logs zeebe
-            docker compose logs tasklist
-            docker compose logs operate
+            DATABASE=elasticsearch docker compose logs zeebe
+            DATABASE=elasticsearch docker compose logs tasklist
+            DATABASE=elasticsearch docker compose logs operate
           else
-            docker compose logs camunda
+            DATABASE=elasticsearch docker compose logs camunda
           fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24
+          node-version: 26
           cache: npm
           cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
 
@@ -1000,28 +1070,10 @@ jobs:
           npm install
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false # we rely on step outputs, no need for environment variables
-          secrets: |
-            secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
-            secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
-
       - name: Install Playwright Browsers
         shell: bash
         run: npx playwright install --with-deps chromium
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
-
-      - name: Python setup
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.x"
 
       - name: Run tests
         shell: bash
@@ -1047,15 +1099,18 @@ jobs:
             elif [[ "${{ matrix.tasklist_mode }}" == "v2" ]]; then
               export CAMUNDA_TASKLIST_V2_MODE_ENABLED=true
               echo "Running V2 mode tests"
-              if [[ "${{ needs.validate-release.outputs.base }}" == "main" ]]; then
-                # main: V1 directories removed, run all tests
-                TEST_ARGS+=(tests/)
-              elif [[ "${{ needs.validate-release.outputs.base }}" == "stable/8.8" ]]; then
+              if [[ "${{ needs.validate-release.outputs.base }}" == "stable/8.8" ]]; then
                 # stable/8.8: run all tests excluding @v1-only tagged tests
                 TEST_ARGS+=(tests/ --grep-invert '@v1-only')
-              else
+              elif [[ "${{ needs.validate-release.outputs.base }}" == "stable/8.9" ]]; then
                 # stable/8.9: run all tests excluding v1/ directories
                 TEST_ARGS+=(tests/ --grep-invert 'v1/')
+              else
+                # main and stable/8.10+: V1 directories removed, run all tests.
+                # Was the 8.9 arm's else, so stable/8.10 inherited a pointless
+                # --grep-invert 'v1/'; harmless here (verified: 281 tests
+                # collected either way) but wrong by accident.
+                TEST_ARGS+=(tests/)
               fi
             else
               if [[ "${{ needs.validate-release.outputs.base }}" == "stable/8.8" || "${{ needs.validate-release.outputs.base }}" == "stable/8.9" ]]; then
@@ -1074,26 +1129,6 @@ jobs:
           echo "Running tests with args: ${TEST_ARGS[*]}"
           npm run test -- "${TEST_ARGS[@]}"
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
-
-      - name: Publish test results to TestRail
-        if: always()
-        shell: bash
-        env:
-          TESTRAIL_HOST: "https://camunda.testrail.com/"
-          TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }} # Use the imported secret
-          TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }} # Use the imported secret
-          JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
-        run: |
-          pip install trcli==1.14.1
-          trcli -y -h "$TESTRAIL_HOST" \
-            --project 'C8' \
-            --username "$TESTRAIL_USERNAME" \
-            --key "$TESTRAIL_KEY" \
-            --batch-size 500 \
-            parse_junit --suite-id 17050 \
-            --title "Release C8 Orchestration Cluster Test Run Results - v${{ needs.validate-release.outputs.release_version }} (Tasklist ${{ matrix.tasklist_mode }} mode) - $(date '+%Y-%m-%d %H:%M:%S')" \
-            --close-run \
-            -f "$JUNIT_RESULTS_FILE"
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
