@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +45,7 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
   private final List<Class<? extends Throwable>> retryableExceptions;
   private final List<Class<? extends Throwable>> batchReductionExceptions;
   private final Runnable retryRecorder;
+  private final Consumer<PipelineStats> statsConsumer;
 
   private final AtomicReference<DocumentBatch<DocType, SearchAfterFieldType>> lastSearchResponse =
       new AtomicReference<>(null);
@@ -65,6 +67,7 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
     retryableExceptions = builder.retryableExceptions;
     batchReductionExceptions = builder.batchReductionExceptions;
     retryRecorder = builder.retryRecorder;
+    statsConsumer = builder.statsConsumer;
     currentBatchSize = builder.batchSize;
   }
 
@@ -76,9 +79,14 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
 
   CompletableFuture<PipelineStats> execute() {
     return AsyncRepeatUntil.repeatUntil(this::processNextBatch, ignored -> finished.get())
-        .thenApply(
-            ignore ->
-                new PipelineStats(totalRead.get(), totalProcessed.get(), totalTimeTakenMs.get()));
+        .thenApply(ignore -> pipelineStats())
+        // let callers get stats even if exception thrown (for logging etc)
+        .whenComplete(
+            (stats, throwable) -> {
+              if (throwable != null) {
+                pipelineStats();
+              }
+            });
   }
 
   CompletableFuture<Integer> processNextBatch() {
@@ -217,6 +225,13 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
     return exceptions.stream().anyMatch(clazz -> clazz.isInstance(thr));
   }
 
+  private PipelineStats pipelineStats() {
+    final var stats =
+        new PipelineStats(totalRead.get(), totalProcessed.get(), totalTimeTakenMs.get());
+    statsConsumer.accept(stats);
+    return stats;
+  }
+
   public record DocumentBatch<D, T>(List<D> documents, T searchAfter) {
     public static <D, T> DocumentBatch<D, T> empty() {
       return new DocumentBatch<>(List.of(), null);
@@ -246,6 +261,10 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
         new ArrayList<>(DEFAULT_BATCH_REDUCTION_EXCEPTIONS);
     private Runnable retryRecorder =
         () -> {
+          /* no-op */
+        };
+    private Consumer<PipelineStats> statsConsumer =
+        stats -> {
           /* no-op */
         };
 
@@ -323,6 +342,12 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
 
     public Builder<DocType, SearchAfterFieldType> retryRecorder(final Runnable retryRecorder) {
       this.retryRecorder = retryRecorder;
+      return this;
+    }
+
+    public Builder<DocType, SearchAfterFieldType> statsConsumer(
+        final Consumer<PipelineStats> statsConsumer) {
+      this.statsConsumer = statsConsumer;
       return this;
     }
 
