@@ -188,13 +188,17 @@ public final class VariableBehavior {
         final VariableInstance variableInstance =
             variableState.getVariableInstanceLocal(currentScope, entry.getName());
 
-        if (variableInstance != null && !variableInstance.getValue().equals(entry.getValue())) {
-          applyEntryToRecord(entry);
-          stateWriter.appendFollowUpEvent(
-              variableInstance.getKey(), VariableIntent.UPDATED, variableRecord);
-          variableEvents.add(
-              new VariableEvent(
-                  currentScope, VariableIntent.UPDATED, getVariableRecordCopy(variableRecord)));
+        if (variableInstance != null) {
+          // If the variable exists in the current scope, we update it
+          if (!variableInstance.getValue().equals(entry.getValue())) {
+            applyEntryToRecord(entry);
+            stateWriter.appendFollowUpEvent(
+                variableInstance.getKey(), VariableIntent.UPDATED, variableRecord);
+            variableEvents.add(
+                new VariableEvent(
+                    currentScope, VariableIntent.UPDATED, getVariableRecordCopy(variableRecord)));
+          }
+          // Remove the entry from the document so it won't be propagated to the parent scope
           entryIterator.remove();
         }
       }
@@ -203,6 +207,7 @@ public final class VariableBehavior {
     }
 
     variableRecord.setScopeKey(currentScope);
+    // For the remaining entries in the document, we create new variables in the parent scope
     for (final DocumentEntry entry : indexedDocument) {
       applyEntryToRecord(entry);
       final Optional<VariableEvent> variableEvent = setLocalVariable(variableRecord);
