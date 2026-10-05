@@ -316,6 +316,7 @@ const Processes: React.FC<Props> = ({
 		return (
 			<MigrationView
 				source={migration.source}
+				scope={migration.scope}
 				onExit={() => {
 					setMigration(null);
 					setMode('list');

@@ -32,6 +32,7 @@ import {
 	type CreateDecisionInstancesDeletionBatchOperationRequestBody,
 	type CreateCancellationBatchOperationRequestBody,
 	type CreateModificationBatchOperationRequestBody,
+	type CreateMigrationBatchOperationRequestBody,
 	type CreateIncidentResolutionBatchOperationRequestBody,
 	type CreateDeletionBatchOperationRequestBody,
 	type SuspendProcessInstancesBatchOperationRequestBody,
@@ -411,6 +412,14 @@ const endpoints = {
 		new Request(getFullURL(unifiedAPIEndpoints.createModificationBatchOperation.getUrl()), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.createModificationBatchOperation.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createMigrationBatchOperation: (body: CreateMigrationBatchOperationRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createMigrationBatchOperation.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createMigrationBatchOperation.method,
 			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),

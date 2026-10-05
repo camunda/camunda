@@ -43,6 +43,7 @@ import {
 
 type Props = {
 	isTargetSelected: boolean;
+	isSummaryStep: boolean;
 	hasSourceXml: boolean;
 	sourceElements: MigrationElements;
 	targetElements?: MigrationElements;
@@ -55,6 +56,7 @@ type Props = {
 
 function MigrationMappingTable({
 	isTargetSelected,
+	isSummaryStep,
 	hasSourceXml,
 	sourceElements,
 	targetElements,
@@ -168,7 +170,7 @@ function MigrationMappingTable({
 											<TableCell>
 												<Stack orientation="horizontal" gap={4}>
 													<MigrationTargetSelect
-														disabled={choices.length === 0}
+														disabled={isSummaryStep || choices.length === 0}
 														size="sm"
 														hideLabel
 														labelText={t('operate.processes.migration.targetFor', {name})}

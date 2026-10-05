@@ -366,6 +366,11 @@ const mockCreateModificationBatchOperationEndpoint = createEndpointMock({
 	method: endpoints.createModificationBatchOperation.method,
 });
 
+const mockCreateMigrationBatchOperationEndpoint = createEndpointMock({
+	endpoint: endpoints.createMigrationBatchOperation.getUrl(),
+	method: endpoints.createMigrationBatchOperation.method,
+});
+
 const mockQueryUsersEndpoint = createEndpointMock({
 	endpoint: endpoints.queryUsers.getUrl(),
 	method: endpoints.queryUsers.method,
@@ -393,6 +398,7 @@ const mockDeleteUserEndpoint = createEndpointMock({
 
 export {
 	mockCreateCancellationBatchOperationEndpoint,
+	mockCreateMigrationBatchOperationEndpoint,
 	mockCreateIncidentResolutionBatchOperationEndpoint,
 	mockCreateDeletionBatchOperationEndpoint,
 	mockCreateSuspensionBatchOperationEndpoint,

@@ -15,22 +15,29 @@ import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.11';
 import {ProcessesLayout} from './ProcessesLayout';
 import {MigrationDiagrams} from './MigrationDiagrams';
 import {MigrationMappingTable} from './MigrationMappingTable';
-import {MigrationFooter} from './MigrationFooter';
+import {MigrationFooter, type MigrationStep} from './MigrationFooter';
+import {MigrationDetails} from './MigrationDetails';
 import {useDiagramXml} from './useDiagramXml';
 import {useInitialMigrationTarget} from './useMigrationTargetDefinitions';
+import {useMigrationStatistics} from './useMigrationStatistics';
 import {getAutoMapping, getMigrationElements} from './migrationMapping';
+import {getSourceSummaryOverlays, getTargetSummaryOverlays} from './migrationSummaryOverlays';
+import type {MigrationScope} from './getMigrationFilter';
+import {MigrationSummary, MigrationSummaryNotification} from './styled';
 
 type Props = {
 	source: ProcessDefinition;
+	scope: MigrationScope;
 	onExit: () => void;
 };
 
-function MigrationView({source, onExit}: Props) {
+function MigrationView({source, scope, onExit}: Props) {
 	const {t} = useTranslation();
 	const [target, setTarget] = useState<ProcessDefinition | null>();
 	const [editedMapping, setEditedMapping] = useState<Record<string, string>>();
 	const [selectedSourceElementId, setSelectedSourceElementId] = useState<string>();
 	const [selectedTargetElementId, setSelectedTargetElementId] = useState<string>();
+	const [step, setStep] = useState<MigrationStep>('elementMapping');
 	const {data: initialTarget} = useInitialMigrationTarget(source);
 	if (target === undefined && initialTarget !== undefined) {
 		setTarget(initialTarget);
@@ -57,6 +64,24 @@ function MigrationView({source, onExit}: Props) {
 		[sourceXml.data, sourceElements, targetElements],
 	);
 	const mapping = editedMapping ?? autoMapping;
+	const isSummaryStep = step === 'summary';
+	const statistics = useMigrationStatistics({
+		processDefinitionKey: source.processDefinitionKey,
+		filter: scope.statisticsFilter,
+		enabled: isSummaryStep && scope.selectedCount > 0,
+	});
+	const sourceBusinessObjects = sourceXml.data?.businessObjects;
+	const sourceOverlays = useMemo(
+		() =>
+			statistics === undefined || sourceBusinessObjects === undefined
+				? []
+				: getSourceSummaryOverlays(statistics, sourceBusinessObjects),
+		[statistics, sourceBusinessObjects],
+	);
+	const targetOverlays = useMemo(
+		() => (statistics === undefined ? [] : getTargetSummaryOverlays(statistics, mapping)),
+		[statistics, mapping],
+	);
 	const blocker = useBlocker({
 		shouldBlockFn: ({current, next}) =>
 			current.pathname !== next.pathname || JSON.stringify(current.search) !== JSON.stringify(next.search),
@@ -96,7 +121,22 @@ function MigrationView({source, onExit}: Props) {
 		<ProcessesLayout
 			type="migrate"
 			title={t('operate.processes.migration.pageTitle')}
-			frame={{headerTitle: t('operate.processes.migration.frameTitle')}}
+			frame={{
+				headerTitle: t(
+					isSummaryStep ? 'operate.processes.migration.summaryFrameTitle' : 'operate.processes.migration.frameTitle',
+				),
+			}}
+			additionalTopContent={
+				isSummaryStep && targetDefinition !== null ? (
+					<MigrationSummaryNotification kind="info" title="" lowContrast hideCloseButton>
+						<MigrationSummary orientation="vertical" gap={5}>
+							<MigrationDetails source={source} target={targetDefinition} scope={scope} />
+							<p>{t('operate.processes.migration.summaryProgress')}</p>
+							<p>{t('operate.processes.migration.summaryMapping')}</p>
+						</MigrationSummary>
+					</MigrationSummaryNotification>
+				) : undefined
+			}
 			topPanel={
 				<MigrationDiagrams
 					source={source}
@@ -110,11 +150,15 @@ function MigrationView({source, onExit}: Props) {
 					onSourceElementSelection={selectSourceElement}
 					onTargetElementSelection={selectTargetElement}
 					onTargetChange={changeTarget}
+					isSummaryStep={isSummaryStep}
+					sourceOverlays={sourceOverlays}
+					targetOverlays={targetOverlays}
 				/>
 			}
 			bottomPanel={
 				<MigrationMappingTable
 					isTargetSelected={targetDefinition !== null}
+					isSummaryStep={isSummaryStep}
 					hasSourceXml={sourceXml.data?.diagramModel !== undefined}
 					sourceElements={sourceElements}
 					targetElements={targetElements}
@@ -127,7 +171,15 @@ function MigrationView({source, onExit}: Props) {
 			}
 			footer={
 				<>
-					<MigrationFooter onExit={onExit} />
+					<MigrationFooter
+						source={source}
+						target={targetDefinition}
+						scope={scope}
+						mapping={mapping}
+						step={step}
+						onStepChange={setStep}
+						onExit={onExit}
+					/>
 					{createPortal(
 						<Modal
 							open={blocker.status === 'blocked'}
