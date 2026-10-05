@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
+import {afterEach, beforeAll, beforeEach, describe, expect, vi} from 'vitest';
 import {userEvent, type Locator} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
@@ -40,6 +40,11 @@ async function renderModal() {
 }
 
 describe('<VariableFilterModal />', () => {
+	// The first editor render pays for the whole Monaco bundle; loading it here keeps that cost out of the tests' own timeouts.
+	beforeAll(async () => {
+		await Promise.all([import('#/shared/monaco/loadMonaco'), import('#/operate/shared/Editors/MonacoEditor')]);
+	}, 120_000);
+
 	beforeEach(() => {
 		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout'], shouldAdvanceTime: true});
 	});
