@@ -19,12 +19,12 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 
 /**
- * The executor a job worker hands its jobs to, with the two things the worker needs on top of a
- * plain {@link Executor}: how much work it can take right now, and a way to hand over a job that
- * never waits.
+ * The executor a job worker hands its jobs to, with the things the worker needs on top of a plain
+ * {@link Executor}: how much work it can take right now, a way to hand over a job that never waits,
+ * and a way to learn when capacity frees up.
  *
- * <p>An executor that does not limit how much work it takes needs neither, which is why both come
- * with a default.
+ * <p>An executor that does not limit how much work it takes needs none of them, which is why they
+ * all come with a default.
  */
 @FunctionalInterface
 interface JobExecutor extends Executor {
@@ -38,6 +38,16 @@ interface JobExecutor extends Executor {
   }
 
   /**
+   * @return true if the executor is running no jobs right now, so that a worker that has stopped
+   *     acquiring can tell it has drained. An executor that does not limit how much work it takes
+   *     keeps no count of what it is running, so it cannot tell, and answers false rather than
+   *     claim a drain it cannot vouch for.
+   */
+  default boolean hasNoJobsInFlight() {
+    return false;
+  }
+
+  /**
    * Hands a job over, refusing it right away when there is no capacity for it instead of waiting
    * for capacity to free up.
    *
@@ -46,4 +56,16 @@ interface JobExecutor extends Executor {
   default void executeWithoutWaiting(final Runnable command) {
     execute(command);
   }
+
+  /**
+   * Registers a callback the executor runs right after it frees a unit of capacity, so a worker can
+   * poll again as soon as, and no sooner than, a slot actually reopens. Reading {@link
+   * #freeCapacity()} from the callback is guaranteed to see the freed slot.
+   *
+   * <p>An executor that does not limit how much work it takes never frees capacity in this sense
+   * and so never runs the callback, which is why the default does nothing.
+   *
+   * @param listener the callback to run when capacity frees up
+   */
+  default void onCapacityAvailable(final Runnable listener) {}
 }
