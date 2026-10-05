@@ -55,7 +55,10 @@ export {
   type Authorization,
   expectAuthorizationCanNotBeFound,
 } from './authorization-requestHelpers';
-export {searchVariableByNameAndProcessInstanceKey} from './variable-requestHelpers';
+export {
+  searchVariableByNameAndProcessInstanceKey,
+  expectVariableValue,
+} from './variable-requestHelpers';
 export {assertRoleInResponse} from './role-requestHelpers';
 export {assertClientsInResponse} from './clients-requestHelpers';
 export {
@@ -69,6 +72,7 @@ export {
   countJobsByType,
   expectJobsByType,
   getLast24HoursRange,
+  updateJobRetries,
   type StatisticsJobItem,
   type ActivatedJob,
   type ActivatedJobWithVars,

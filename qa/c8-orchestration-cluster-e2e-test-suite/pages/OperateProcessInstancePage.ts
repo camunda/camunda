@@ -10,6 +10,20 @@ import {Page, Locator, expect} from '@playwright/test';
 import {sleep} from 'utils/sleep';
 import {waitForAssertion} from 'utils/waitForAssertion';
 
+type InstanceHeaderAction = 'suspend' | 'resume' | 'cancel';
+
+// The header names an operation by menu label or by test id depending on
+// viewport; pairing both spellings lets callers ask for the action instead.
+const INSTANCE_HEADER_ACTIONS: ReadonlyArray<{
+  action: InstanceHeaderAction;
+  testId: string;
+  menuItem: RegExp;
+}> = [
+  {action: 'suspend', testId: 'suspend-operation', menuItem: /^suspend$/i},
+  {action: 'resume', testId: 'resume-operation', menuItem: /^resume$/i},
+  {action: 'cancel', testId: 'cancel-operation', menuItem: /^cancel$/i},
+];
+
 class OperateProcessInstancePage {
   private page: Page;
   readonly diagram: Locator;
@@ -29,6 +43,7 @@ class OperateProcessInstancePage {
   readonly incidentsTable: Locator;
   readonly incidentsTableOperationSpinner: Locator;
   readonly incidentsTableRows: Locator;
+  readonly firstIncidentRetryButton: Locator;
   readonly incidentsTab: Locator;
   readonly variablePanelEmptyText: Locator;
   readonly addVariableButton: Locator;
@@ -159,6 +174,10 @@ class OperateProcessInstancePage {
     this.incidentsTableOperationSpinner =
       this.incidentsTable.getByTestId('operation-spinner');
     this.incidentsTableRows = this.incidentsTable.getByRole('row');
+    // A locator, not a click helper: the suspended case asserts it is disabled.
+    this.firstIncidentRetryButton = this.incidentsTableRows
+      .getByRole('button', {name: 'Retry Incident'})
+      .first();
     this.incidentsTab = page
       .getByLabel('Process Instance Bottom Panel Tabs')
       .getByRole('link', {name: /^Incidents$/i});
@@ -892,12 +911,28 @@ class OperateProcessInstancePage {
     );
   }
 
-  /**
-   * The header renders its actions either as direct buttons or behind an
-   * Actions menu, so callers asserting which actions are offered have to read
-   * whichever layout is present rather than assuming one.
-   */
-  async instanceHeaderActionNames(): Promise<string[]> {
+  // The tab appears only once the incident reaches Operate's view, and the
+  // table only once the tab is open — so wait for the tab, don't probe it.
+  async openIncidentsTab(): Promise<void> {
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(this.incidentsTab).toBeVisible({timeout: 15_000});
+        await this.incidentsTab.click();
+        await expect(this.incidentsTable).toBeVisible({timeout: 15_000});
+      },
+      onFailure: async () => {
+        await this.page.reload();
+      },
+    });
+  }
+
+  operationsLogEntry(operationType: string): Locator {
+    return this.operationsLogTableRow
+      .getByText(operationType, {exact: false})
+      .first();
+  }
+
+  async instanceHeaderActions(): Promise<InstanceHeaderAction[]> {
     const actionsMenuButton = this.instanceHeader.getByRole('button', {
       name: 'Actions',
     });
@@ -909,19 +944,14 @@ class OperateProcessInstancePage {
       await actionsMenuButton.click();
       const names = await this.page.getByRole('menuitem').allInnerTexts();
       await this.page.keyboard.press('Escape');
-      return names.map((name) => name.trim());
+      return INSTANCE_HEADER_ACTIONS.filter(({menuItem}) =>
+        names.some((name) => menuItem.test(name.trim())),
+      ).map(({action}) => action);
     }
-    const testIds = [
-      'suspend-operation',
-      'resume-operation',
-      'cancel-operation',
-      'retry-operation',
-      'enter-modification-mode',
-    ];
-    const present: string[] = [];
-    for (const testId of testIds) {
+    const present: InstanceHeaderAction[] = [];
+    for (const {action, testId} of INSTANCE_HEADER_ACTIONS) {
       if (await this.instanceHeader.getByTestId(testId).isVisible()) {
-        present.push(testId);
+        present.push(action);
       }
     }
     return present;
@@ -1195,3 +1225,4 @@ class OperateProcessInstancePage {
 }
 
 export {OperateProcessInstancePage};
+export type {InstanceHeaderAction};

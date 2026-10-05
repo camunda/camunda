@@ -319,16 +319,19 @@ export class OperateFiltersPanelPage {
     await expect(this.processInstanceKeysFilter).toBeVisible();
     await expect(this.processInstanceKeysFilter).toBeEnabled();
     await this.processInstanceKeysFilter.click();
-    // Clear any existing content first: pressSequentially appends, so typing
-    // on a retry or a reused filter without clearing produces a doubled value
-    // (e.g. "45034503"). fill('') clears and fires the controlled input's
-    // onChange; pressSequentially then types char-by-char so the value sticks.
-    await this.processInstanceKeysFilter.fill('');
-    await this.processInstanceKeysFilter.pressSequentially(processInstanceKey);
-    await expect(this.processInstanceKeysFilter).toHaveValue(
-      processInstanceKey,
-      {timeout: 30000},
-    );
+    // Clear before each attempt: pressSequentially appends, so retyping over a
+    // partial value would double it. The retry is for the first keystroke,
+    // which the controlled input can drop before it has settled.
+    await expect(async () => {
+      await this.processInstanceKeysFilter.fill('');
+      await this.processInstanceKeysFilter.pressSequentially(
+        processInstanceKey,
+      );
+      await expect(this.processInstanceKeysFilter).toHaveValue(
+        processInstanceKey,
+        {timeout: 10000},
+      );
+    }).toPass({timeout: 60000});
   }
 
   async fillParentProcessInstanceKeyFilter(parentProcessInstanceKey: string) {
@@ -413,9 +416,16 @@ export class OperateFiltersPanelPage {
   /** Reads the URL rather than clicking blindly: a click on an already-checked
    * box turns the filter off. */
   async applySuspendedFilter(): Promise<void> {
-    if (new URL(this.page.url()).searchParams.get('suspended') !== 'true') {
-      await this.clickSuspendedInstancesCheckbox();
-    }
+    // Retried until the URL carries it: a click issued while the Processes
+    // tab is still navigating is undone when that navigation lands.
+    await expect(async () => {
+      if (new URL(this.page.url()).searchParams.get('suspended') !== 'true') {
+        await this.clickSuspendedInstancesCheckbox();
+      }
+      expect(new URL(this.page.url()).searchParams.get('suspended')).toBe(
+        'true',
+      );
+    }).toPass({timeout: 30000});
   }
 
   async clickSuspendedInstancesCheckbox(): Promise<void> {

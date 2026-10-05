@@ -9,7 +9,7 @@
 import type {APIRequestContext} from 'playwright-core';
 import {expect, test} from '@playwright/test';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
-import {extendedAssertionOptions} from '../constants';
+import {defaultAssertionOptions, extendedAssertionOptions} from '../constants';
 import {validateResponse} from '../../json-body-assertions';
 import {createInstances} from '../zeebeClient';
 
@@ -66,6 +66,32 @@ export async function searchVariableByNameAndProcessInstanceKey(
     scopeKey?: string;
     isTruncated?: boolean;
   };
+}
+
+// Polls on the value, not on the variable's existence: an edit lands on a name
+// that is already there, so waiting for the name returns the old value.
+export async function expectVariableValue(
+  request: APIRequestContext,
+  {
+    processInstanceKey,
+    name,
+  }: {
+    processInstanceKey: string;
+    name: string;
+  },
+  expectedValue: string,
+  assertionOptions = defaultAssertionOptions,
+): Promise<void> {
+  await expect(async () => {
+    const res = await request.post(buildUrl('/variables/search'), {
+      headers: jsonHeaders(),
+      data: {filter: {processInstanceKey, name}},
+    });
+    await assertStatusCode(res, 200);
+    const items = (await res.json()).items ?? [];
+    expect(items).toHaveLength(1);
+    expect(items[0].value).toBe(expectedValue);
+  }).toPass(assertionOptions);
 }
 
 export async function setupVariableTest(
