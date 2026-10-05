@@ -26,7 +26,7 @@ import java.util.function.BiFunction;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.slf4j.Logger;
 
-public class ArchiveByIdTaskSupplier {
+public class ArchiveByIdPipeline {
 
   private static final int MINIMUM_BATCH_SIZE = 50;
   private static final double BATCH_SIZE_REDUCTION_FACTOR = 0.5;
@@ -58,7 +58,7 @@ public class ArchiveByIdTaskSupplier {
   private final AtomicLong totalArchived = new AtomicLong(0);
   private final AtomicLong totalTimeTakenMs = new AtomicLong(0);
 
-  public ArchiveByIdTaskSupplier(
+  public ArchiveByIdPipeline(
       final HistoryConfiguration config,
       final String sourceIdx,
       final String destinationIdx,
