@@ -116,8 +116,6 @@ val testPortSlots = registerTestPortSlotService()
 
 val itPatterns = listOf("**/IT*.class", "**/*IT.class", "**/*ITCase.class")
 
-// If multiple reflection fixtures need this workaround, apply the Maven-equivalent global rule:
-// tasks.withType<Test>().configureEach { exclude("**/*\$*.class") }
 tasks.withType<Test>().configureEach {
   enabled = !quickly.get()
   maxParallelForks = testMaxForks
