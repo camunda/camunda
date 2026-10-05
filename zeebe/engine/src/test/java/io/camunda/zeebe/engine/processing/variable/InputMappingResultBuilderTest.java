@@ -105,8 +105,7 @@ final class InputMappingResultBuilderTest {
 
     // when + then
     assertEquality(
-        MappingResultBuilder.toMsgPack((ContextValue.Structure) builder.getVariable("a")),
-        "{'b': 1}");
+        MsgPackBoundary.toMsgPack((ContextValue.Structure) builder.getVariable("a")), "{'b': 1}");
   }
 
   @Test
@@ -151,7 +150,7 @@ final class InputMappingResultBuilderTest {
 
     // then: the read layers the mapped key over the shadowed value ...
     assertEquality(
-        MappingResultBuilder.toMsgPack((ContextValue.Structure) builder.getVariable("x")),
+        MsgPackBoundary.toMsgPack((ContextValue.Structure) builder.getVariable("x")),
         "{'a': 3, 'b': 2}");
     // ... but the document keeps only what was mapped
     assertEquality(builder.toDocument(), "{'x': {'a': 3}}");
@@ -169,7 +168,7 @@ final class InputMappingResultBuilderTest {
 
     // then: unmapped keys survive at every level, which a top-level-only merge would not do
     assertEquality(
-        MappingResultBuilder.toMsgPack((ContextValue.Structure) builder.getVariable("x")),
+        MsgPackBoundary.toMsgPack((ContextValue.Structure) builder.getVariable("x")),
         "{'a': {'b': 9, 'c': 2}, 'd': 4}");
     assertEquality(builder.toDocument(), "{'x': {'a': {'b': 9}}}");
   }
@@ -201,8 +200,7 @@ final class InputMappingResultBuilderTest {
 
     // then: the total shadow persists — b does not come back
     assertEquality(
-        MappingResultBuilder.toMsgPack((ContextValue.Structure) builder.getVariable("x")),
-        "{'a': 2}");
+        MsgPackBoundary.toMsgPack((ContextValue.Structure) builder.getVariable("x")), "{'a': 2}");
   }
 
   @Test
@@ -218,7 +216,7 @@ final class InputMappingResultBuilderTest {
 
     // then: a stays totally shadowed, but x's untouched sibling d still falls through
     assertEquality(
-        MappingResultBuilder.toMsgPack((ContextValue.Structure) builder.getVariable("x")),
+        MsgPackBoundary.toMsgPack((ContextValue.Structure) builder.getVariable("x")),
         "{'a': {'c': 2}, 'd': 4}");
   }
 
@@ -233,8 +231,7 @@ final class InputMappingResultBuilderTest {
 
     // then: nothing to fall through to — and no POISON either, that is output-mapping-only
     assertEquality(
-        MappingResultBuilder.toMsgPack((ContextValue.Structure) builder.getVariable("x")),
-        "{'a': 1}");
+        MsgPackBoundary.toMsgPack((ContextValue.Structure) builder.getVariable("x")), "{'a': 1}");
     assertEquality(builder.toDocument(), "{'x': {'a': 1}}");
   }
 
@@ -248,8 +245,7 @@ final class InputMappingResultBuilderTest {
 
     // then
     assertEquality(
-        MappingResultBuilder.toMsgPack((ContextValue.Structure) builder.getVariable("x")),
-        "{'a': 1}");
+        MsgPackBoundary.toMsgPack((ContextValue.Structure) builder.getVariable("x")), "{'a': 1}");
   }
 
   @Test
@@ -262,7 +258,7 @@ final class InputMappingResultBuilderTest {
 
     // when: the layered read happens between two puts that build x
     assertEquality(
-        MappingResultBuilder.toMsgPack((ContextValue.Structure) builder.getVariable("x")),
+        MsgPackBoundary.toMsgPack((ContextValue.Structure) builder.getVariable("x")),
         "{'a': 3, 'b': 2}");
     builder.put(List.of("x", "c"), msgPack("9"));
 

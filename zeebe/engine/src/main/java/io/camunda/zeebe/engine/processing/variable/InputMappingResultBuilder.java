@@ -28,7 +28,7 @@ import org.jspecify.annotations.Nullable;
  * assigned to the whole name shadows it totally and stops the fall-through for its whole subtree.
  */
 @NullMarked
-public final class InputMappingResultBuilder extends MappingResultBuilder {
+public final class InputMappingResultBuilder implements MappingResultBuilder {
 
   /**
    * Insertion-ordered deliberately. This order becomes the order the VARIABLE records are written
@@ -59,7 +59,7 @@ public final class InputMappingResultBuilder extends MappingResultBuilder {
     for (int i = 0; i < targetPath.size() - 1; i++) {
       current = descendInto(current, targetPath.get(i)).entries();
     }
-    current.put(targetPath.getLast(), new Entry.Mapped(copyIfMsgPack(value)));
+    current.put(targetPath.getLast(), new Entry.Mapped(MsgPackBoundary.copyIfMsgPack(value)));
   }
 
   /**
@@ -82,7 +82,11 @@ public final class InputMappingResultBuilder extends MappingResultBuilder {
   }
 
   @Override
-  protected ContextValue.Structure snapshot() {
+  public DirectBuffer toDocument() {
+    return MsgPackBoundary.toMsgPack(snapshot());
+  }
+
+  private ContextValue.Structure snapshot() {
     return resolve(entries, null);
   }
 
@@ -111,11 +115,11 @@ public final class InputMappingResultBuilder extends MappingResultBuilder {
    *
    * <p>The copy is deep, and it has to be: a later mapping may still write into a partial context,
    * and a value an earlier mapping already read must not see that write. It is iterative for the
-   * same reason {@link MappingResultBuilder}'s writer is — a {@code zeebe:input} target path can
-   * have an unbounded number of '.'-separated segments (ZeebeExpressionValidator's path pattern
-   * doesn't cap it), and plain recursion here previously let a deeply-nested target throw an
-   * uncaught StackOverflowError before NestingDepthValidator ever got a chance to reject the
-   * document gracefully.
+   * same reason {@link MsgPackBoundary}'s writer is — a {@code zeebe:input} target path can have an
+   * unbounded number of '.'-separated segments (ZeebeExpressionValidator's path pattern doesn't cap
+   * it), and plain recursion here previously let a deeply-nested target throw an uncaught
+   * StackOverflowError before NestingDepthValidator ever got a chance to reject the document
+   * gracefully.
    *
    * @param accumulated what the mappings put under the name being resolved
    * @param valueFromState the whole variable this name resolves to in the element's scope chain,
@@ -131,7 +135,7 @@ public final class InputMappingResultBuilder extends MappingResultBuilder {
 
     while (!pending.isEmpty()) {
       final var next = pending.pop();
-      final var scopeProperties = propertiesOf(next.scopeValue());
+      final var scopeProperties = MsgPackBoundary.propertiesOf(next.scopeValue());
       // the scope's properties first: a name the mappings also defined then overwrites one in
       // place, keeping the position the scope gave it
       scopeProperties.forEach(

@@ -29,7 +29,7 @@ import org.jspecify.annotations.Nullable;
  * document.
  */
 @NullMarked
-public final class OutputMappingResultBuilder extends MappingResultBuilder {
+public final class OutputMappingResultBuilder implements MappingResultBuilder {
 
   /**
    * The value a poisoned entry evaluates to: null, matching FEEL's {@code context
@@ -64,7 +64,7 @@ public final class OutputMappingResultBuilder extends MappingResultBuilder {
       }
       current = next.entries();
     }
-    current.put(targetPath.getLast(), new Entry.Value(copyIfMsgPack(value)));
+    current.put(targetPath.getLast(), new Entry.Value(MsgPackBoundary.copyIfMsgPack(value)));
   }
 
   /**
@@ -90,7 +90,11 @@ public final class OutputMappingResultBuilder extends MappingResultBuilder {
   }
 
   @Override
-  protected ContextValue.Structure snapshot() {
+  public DirectBuffer toDocument() {
+    return MsgPackBoundary.toMsgPack(snapshot());
+  }
+
+  private ContextValue.Structure snapshot() {
     return materialize(entries);
   }
 
@@ -131,7 +135,7 @@ public final class OutputMappingResultBuilder extends MappingResultBuilder {
   /** The top level of a msgpack map as accumulated entries, for seeding a context. */
   private static Map<String, Entry> seedFrom(final DirectBuffer scopeValue) {
     final Map<String, Entry> seeded = new LinkedHashMap<>();
-    propertiesOf(scopeValue)
+    MsgPackBoundary.propertiesOf(scopeValue)
         .forEach((key, value) -> seeded.put(key, new Entry.Value(new ContextValue.MsgPack(value))));
     return seeded;
   }
@@ -143,7 +147,7 @@ public final class OutputMappingResultBuilder extends MappingResultBuilder {
   /**
    * Materializes a context (and its nested contexts) as an immutable snapshot. Not layered — the
    * merge with the scope value already happened while accumulating, so reading it back is a plain
-   * copy. It is iterative for the same reason {@link MappingResultBuilder}'s writer is — a {@code
+   * copy. It is iterative for the same reason {@link MsgPackBoundary}'s writer is — a {@code
    * zeebe:output} target path can have an unbounded number of '.'-separated segments
    * (ZeebeExpressionValidator's path pattern doesn't cap it), and plain recursion here previously
    * let a deeply-nested target throw an uncaught StackOverflowError before NestingDepthValidator
