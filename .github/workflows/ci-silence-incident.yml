@@ -1,0 +1,115 @@
+# description: Silences a monorepo CI alert in Grafana for the length of a fix and posts an FYI to Slack.
+# type: CI Helper
+# owner: @camunda/engineering-operations
+---
+name: ci-silence-incident
+
+on:
+  # Schedule and PR triggers only do dry runs (test integration with Vault, LDAP,
+  # Grafana and Slack without side effects)
+  schedule:
+    - cron: '17 6 * * 1'
+  pull_request:
+    paths:
+      - .github/workflows/ci-silence-incident.yml
+      - .github/scripts/ci-silence-incident.py
+  workflow_dispatch:
+    inputs:
+      workflow_job:
+        description: 'Value of the alert''s workflow_job label, copied verbatim from the alert (e.g. "Optimize E2E Smoke: * (@camunda/optimize)")'
+        required: true
+        type: string
+      incident:
+        description: 'Incident this silence belongs to, e.g. INC-8362'
+        required: true
+        type: string
+      days:
+        description: 'How long to silence, in days (maximum 7)'
+        required: false
+        default: '3'
+        type: string
+      alertname:
+        description: 'Alert rule to silence'
+        required: false
+        default: 'base-branch-unsuccessful-job'
+        type: string
+      grafana:
+        description: 'Which Grafana to silence in (always prod, unless testing)'
+        required: false
+        default: 'prod'
+        type: choice
+        options:
+          - prod
+          - dev
+
+env:
+  TEST_OWNER: '@camunda/engineering-operations'
+  TEST_PRODUCT: Camunda
+  TEST_TYPE: CI Helper
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  cancel-in-progress: false
+  group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name, github.ref) }}
+
+jobs:
+  silence:
+    # Fork PRs cannot read the Vault secrets, so a dry run there would only ever fail.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+
+      - name: Import secrets
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false # we rely on step outputs, no need for environment variables
+          # NEXUS_USR/PSW are the ci-github-actions LDAP machine account, named for the
+          # service it was first used against. It holds the Editor role in Grafana.
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN;
+            secret/data/github.com/organizations/camunda NEXUS_USR | grafana-user;
+            secret/data/github.com/organizations/camunda NEXUS_PSW | grafana-password;
+
+      - name: Create silence
+        env:
+          DRY_RUN: ${{ github.event_name != 'workflow_dispatch' }}
+          GRAFANA_URL: ${{ inputs.grafana == 'dev' && 'https://dev.api-dashboard.int.camunda.com' || 'https://api-dashboard.int.camunda.com' }}
+          GRAFANA_USER: ${{ steps.secrets.outputs.grafana-user }}
+          GRAFANA_PASSWORD: ${{ steps.secrets.outputs.grafana-password }}
+          SLACK_BOT_TOKEN: ${{ steps.secrets.outputs.SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: 'C07NZ85EF1Q' # #monorepo-ci-alerts
+          # A dry run has no inputs, and still exercises the validation rules.
+          WORKFLOW_JOB: ${{ inputs.workflow_job || 'Dry run - no such job' }}
+          INCIDENT: ${{ inputs.incident || 'INC-0' }}
+          DAYS: ${{ inputs.days || 1 }}
+          ALERTNAME: ${{ inputs.alertname || 'dry-run' }}
+          ACTOR: ${{ github.actor }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: .github/scripts/ci-silence-incident.py
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
