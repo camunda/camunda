@@ -1,9 +1,9 @@
-import http from 'k6/http';
 import { check, sleep } from 'k6';
 
-import * as auth from './lib.auth.js';
-import * as helpers from './lib.helpers.js';
-import * as camunda from './lib.camunda.js';
+import { Client } from './lib.camunda.js';
+
+// Module-level code runs once per VU, so each VU has its own client.
+const client = new Client();
 
 /* Tests reading data from Camunda, which requires a secondary storage.
  * This test is disabled when running with `secondary_storage=none`. */
@@ -27,57 +27,31 @@ export const options = {
 };
 
 export async function setup() {
-  const context = await helpers.setupContext();
+  await client.waitUntilReady();
 
   // Process definition to search process instances for. Retries until one exists.
   const waitTime = 10; // seconds
-  while (context.processDefinitionId === undefined) {
-    auth.renew(context.token);
-    const response = await camunda.listProcessDefinitions(context);
-    if (response.status !== 200) {
-      console.error(`Unable to list process definitions (will retry in ${waitTime}s), got HTTP status=${response.status}`);
-    } else {
+  let processDefinitionId;
+  while (processDefinitionId === undefined) {
+    const response = await client.searchProcessDefinitions();
+    if (response.status == 200) {
       const items = response.json().items;
       if (items.length > 0) {
-        context.processDefinitionId = items[0].processDefinitionId;
+        processDefinitionId = items[0].processDefinitionId;
         break;
       }
       console.info(`No process definition found yet (will retry in ${waitTime}s).`);
+    } else {
+      console.error(`Unable to list process definitions (will retry in ${waitTime}s), got HTTP status=${response.status}`);
     }
     sleep(waitTime);
   }
-  console.log(`Will search process instances from process definition ${context.processDefinitionId}.`);
+  console.log(`Will search process instances from process definition ${processDefinitionId}.`);
 
-  return context;
+  return { processDefinitionId };
 }
 
-// https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/search-process-instances/
-export async function searchProcessInstances(context) {
-  const token = auth.renew(context.token);
-
-  const endpoint = '/v2/process-instances/search';
-  const params = {
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': "Bearer " + token.accessToken,
-    },
-    tags: { name: endpoint },
-  };
-  const payload = {
-    sort: [
-      {field: "startDate", order: "DESC"},
-    ],
-    filter: {
-      processDefinitionId: context.processDefinitionId,
-      $or: [
-        { state: "ACTIVE" },
-        { hasIncident: true },
-      ],
-    },
-    page: {
-      limit: 100,
-    },
-  };
-  const response = http.post(context.baseURL + endpoint, JSON.stringify(payload), params);
+export async function searchProcessInstances(data) {
+  const response = await client.searchProcessInstances(data.processDefinitionId);
   check(response, { 'status is 200': (r) => r.status === 200 });
 };

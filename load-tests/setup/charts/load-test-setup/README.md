@@ -209,23 +209,16 @@ CAMUNDA_BASE_URL=http://localhost:8080 k6 run k6/scripts/test.mytest.js
 
 ### Reusing common helpers
 
-[`k6/scripts/lib.helpers.js`](k6/scripts/lib.helpers.js) and
-[`k6/scripts/lib.auth.js`](k6/scripts/lib.auth.js) provide shared helpers:
+[`k6/scripts/lib.camunda.js`](k6/scripts/lib.camunda.js) provides the shared Camunda client:
 
 ```js
-import * as auth from './lib.auth.js';
-import * as helpers from './lib.helpers.js';
+import { Client } from './lib.camunda.js';
 ```
 
-* `helpers.setupContext()` — call in `setup()` and return its result. It checks the environment
-  variables, creates the token and waits for Camunda to be ready.
-* `auth.renew(token)` — call at the start of each test function with the context's token; it
-  refreshes the token if it's about to expire.
-
-[`k6/scripts/lib.camunda.js`](k6/scripts/lib.camunda.js) wraps parts of the Camunda REST
-API to make it easier to write and read k6 tests, it can be extended as needed.
-It doesn't aim to cover the entire API, just the parts that are useful for load
-testing.
+* `new Client()` — create it at module level in the test script, so that each VU has its own
+  client. It checks the environment variables, fetches and renews the token by itself, and has one
+  method per endpoint (e.g. `topology()`), plus `get()` and `post()` to add new ones.
+* `client.waitUntilReady()` — call in `setup()` to wait for Camunda to be ready.
 
 ## Caveats
 

@@ -1,8 +1,9 @@
 import { check } from 'k6';
 
-import * as auth from './lib.auth.js';
-import * as helpers from './lib.helpers.js';
-import * as camunda from './lib.camunda.js';
+import { Client } from './lib.camunda.js';
+
+// Module-level code runs once per VU, so each VU has its own client.
+const client = new Client();
 
 export const options = {
   // Give enough time for Camunda to be ready before continuing with the test.
@@ -23,11 +24,10 @@ export const options = {
 };
 
 export async function setup() {
-  return helpers.setupContext();
+  await client.waitUntilReady();
 }
 
-export async function checkTopology(context) {
-  auth.renew(context.token);
-  const response = await camunda.topology(context);
+export async function checkTopology() {
+  const response = await client.topology();
   check(response, { 'status is 200': (r) => r.status === 200 });
 };
