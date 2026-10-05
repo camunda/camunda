@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">CI Runbooks | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-64398/ci-runbooks/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="CI Runbooks | Camunda Platform"><meta data-rh="true" name="description" content="This page collects information on CI incident runbooks and alerts that affect"><meta data-rh="true" property="og:description" content="This page collects information on CI incident runbooks and alerts that affect"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-64398/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-64398/ci-runbooks/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-64398/ci-runbooks/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-64398/ci-runbooks/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"CI","item":"https://camunda.github.io/camunda/pr-preview/pr-64398/ci"},{"@type":"ListItem","position":2,"name":"CI Runbooks","item":"https://camunda.github.io/camunda/pr-preview/pr-64398/ci-runbooks"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-64398/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-64398/assets/js/runtime~main.73829c23.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-64398/assets/js/main.4ad69fa8.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-64398/assets/js/runtime~main.00e65b09.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-64398/assets/js/main.e2ac49db.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -128,7 +128,7 @@ to remove you from the <code>Bypass list</code> and save.</li>
 <p>The rules it enforces:</p>
 <ul>
 <li class=""><strong>Unified CI can never be silenced.</strong> It gates every merge, so muting it hides breakage for the whole repository — find a mitigation instead.</li>
-<li class=""><strong>Seven days maximum</strong>, 3 by default. If the fix needs longer, silence it again and say why — a silence that renews itself unnoticed is how a job quietly stops being watched.</li>
+<li class=""><strong>Seven days maximum</strong>, 3 by default. If the fix needs longer, run the workflow again once the silence has expired, or ask the Monorepo CI medic to expire it early so you can renew it. A silence that renews itself unnoticed is how a job quietly stops being watched.</li>
 <li class=""><strong>An incident reference is required</strong>, and lands in the silence comment so an active silence can always be traced back to the work that justified it.</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="alert-runbooks">Alert Runbooks<a href="#alert-runbooks" class="hash-link" aria-label="Direct link to Alert Runbooks" title="Direct link to Alert Runbooks" translate="no">​</a></h2>
@@ -245,7 +245,7 @@ sign that alerting is broken.</p>
 <ul>
 <li class="">Monitor the <a href="https://dashboard.int.camunda.com/d/ch6qgkj/ci-job-trends-camunda-camunda" target="_blank" rel="noopener noreferrer" class="">Job Trends dashboard</a> to confirm the fix reduces the failure rate.</li>
 <li class="">Ensure the job remains stable across multiple successful runs before closing the incident.</li>
-<li class="">Remove any silences for the job.</li>
+<li class="">If the job was <a href="#silencing-while-you-fix-it" class="">silenced</a>, ask the Monorepo CI medic to expire the silence (medics are Grafana Viewers and cannot), or let it run out.</li>
 </ul>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="known-problems">Known Problems<a href="#known-problems" class="hash-link" aria-label="Direct link to Known Problems" title="Direct link to Known Problems" translate="no">​</a></h4>
 <h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="duplicate-push-event-cancels-runs-on-the-same-commit">Duplicate push event cancels runs on the same commit<a href="#duplicate-push-event-cancels-runs-on-the-same-commit" class="hash-link" aria-label="Direct link to Duplicate push event cancels runs on the same commit" title="Direct link to Duplicate push event cancels runs on the same commit" translate="no">​</a></h5>
