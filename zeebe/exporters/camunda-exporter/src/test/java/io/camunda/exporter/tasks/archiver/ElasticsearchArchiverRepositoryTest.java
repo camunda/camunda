@@ -364,7 +364,7 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
     // when
     ((ElasticsearchArchiverRepository) repository)
         .getArchiveDocIdsBatch(
-            "source-index", Map.of("key", List.of("1")), Map.of(), Map.of(), List.of(), 10)
+            "source-index", Map.of("key", List.of("1")), Map.of(), Map.of(), null, 10)
         .join();
 
     // then
