@@ -9,8 +9,7 @@
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 
 function getElementName({businessObjects, elementId}: {businessObjects?: BusinessObjects; elementId?: string}) {
-	const name = (elementId ? businessObjects?.[elementId] : undefined)?.name;
-	return name?.trim() ? name : (elementId ?? '');
+	return (elementId ? businessObjects?.[elementId] : undefined)?.name ?? elementId ?? '';
 }
 
 export {getElementName};

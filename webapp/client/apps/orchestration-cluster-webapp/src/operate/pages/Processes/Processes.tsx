@@ -27,7 +27,7 @@ import {
 	CheckmarkOutline,
 	PauseOutlineFilled,
 } from '#/operate/shared/StateIcon/styled';
-import {IndentedGroup, CanceledIcon, TenantFilterGroup} from './styled';
+import {IndentedGroup, CanceledIcon} from './styled';
 import {
 	OptionalFiltersFormGroup,
 	type OptionalFilter,
@@ -39,7 +39,6 @@ import {InstancesTable} from './InstancesTable';
 import {useDiagramXml} from './useDiagramXml';
 import {selectedDefinitionsQuery} from '#/operate/shared/queries/processDefinitions.queries';
 import type {BatchModificationScope} from './useBatchModificationStatistics';
-import {processesSearchSchema} from './processesFilter';
 import {setVariableConditions, useVariableConditions} from './VariablesFilter/variableFilterStore';
 
 type FiltersFormValues = OptionalFilterValues & VariableFieldValues & {tenantId?: string};
@@ -58,15 +57,6 @@ type Props = {
 } & OptionalFilterValues & {tenantId?: string};
 
 type ProcessItem = {id: string; label: string};
-
-function getModeIdentity(search: unknown) {
-	const parsed = processesSearchSchema.safeParse(search);
-	if (!parsed.success) {
-		return null;
-	}
-	const {tenantId, process, version, elementId} = parsed.data;
-	return JSON.stringify([tenantId, process, version, elementId]);
-}
 
 const SESSION_FILTER_FIELDS = new Set(['variableName', 'variableValues']);
 
@@ -129,14 +119,8 @@ const Processes: React.FC<Props> = ({
 	const [selectedTargetElementId, setSelectedTargetElementId] = useState<string>();
 	const [selectionScope, setSelectionScope] = useState<BatchModificationScope | null>(null);
 	const blocker = useBlocker({
-		shouldBlockFn: ({current, next}) => {
-			if (current.pathname !== next.pathname) {
-				return true;
-			}
-			const currentIdentity = getModeIdentity(current.search);
-			const nextIdentity = getModeIdentity(next.search);
-			return currentIdentity === null || nextIdentity === null || currentIdentity !== nextIdentity;
-		},
+		// Like legacy, only a change of page interrupts the mode; search-only changes, such as browser back, pass.
+		shouldBlockFn: ({current, next}) => current.pathname !== next.pathname,
 		withResolver: true,
 		disabled: mode !== 'batch-modification',
 	});
@@ -358,9 +342,8 @@ const Processes: React.FC<Props> = ({
 									{getClientConfig().deployment.isMultiTenancyEnabled && (
 										<div>
 											<Title>{t('operate.processes.filters.tenant')}</Title>
-											<TenantFilterGroup disabled={mode !== 'list'}>
-												<TenantField />
-											</TenantFilterGroup>
+											{/* Like legacy, the tenant filter stays usable in the mode; only process, version and element lock. */}
+											<TenantField />
 										</div>
 									)}
 									<div>

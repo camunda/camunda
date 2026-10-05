@@ -18,8 +18,8 @@ describe('getElementName', () => {
 	it.for([
 		{description: 'the element name', name: 'Check order', expected: 'Check order'},
 		{description: 'the element id when the name is missing', name: undefined, expected: 'task'},
-		{description: 'the element id when the name is empty', name: '', expected: 'task'},
-		{description: 'the element id when the name is blank', name: '   ', expected: 'task'},
+		{description: 'an empty name as it is, like legacy', name: '', expected: ''},
+		{description: 'a blank name as it is, like legacy', name: '   ', expected: '   '},
 	])('should return $description', ({name, expected}) => {
 		expect(getElementName({businessObjects: businessObjectsWithName(name), elementId: 'task'})).toBe(expected);
 	});

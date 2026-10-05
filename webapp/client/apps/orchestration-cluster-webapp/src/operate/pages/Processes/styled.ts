@@ -17,12 +17,6 @@ const IndentedGroup = styled.div`
 	padding-left: var(--cds-spacing-06);
 `;
 
-const TenantFilterGroup = styled.fieldset`
-	border: 0;
-	padding: 0;
-	margin: 0;
-`;
-
 const CanceledIcon = styled(BaseError)`
 	flex-shrink: 0;
 	fill: var(--cds-icon-secondary);
@@ -175,7 +169,6 @@ const VisuallyHiddenStatus = styled.span`
 export {
 	HeaderActions,
 	IndentedGroup,
-	TenantFilterGroup,
 	CanceledIcon,
 	Section,
 	PanelHeader,

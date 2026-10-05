@@ -407,7 +407,9 @@ describe('Processes batch modification', () => {
 		});
 	});
 
-	it('should ask to exit before leaving the page or changing the process', async ({worker}) => {
+	it('should ask to exit before leaving the page but not when only the search changes, like legacy', async ({
+		worker,
+	}) => {
 		mockPage(worker);
 		const screen = await renderPage();
 		await enterMode(screen);
@@ -420,14 +422,6 @@ describe('Processes batch modification', () => {
 		await userEvent.click(exitDialog.getByRole('button', {name: 'Cancel'}));
 
 		expect(screen.router.state.location.pathname).toBe('/operate/processes');
-
-		void screen.router.navigate({to: '.', search: (prev) => ({...prev, version: 2})});
-
-		await expect.element(exitDialog).toBeVisible();
-
-		await userEvent.click(exitDialog.getByRole('button', {name: 'Cancel'}));
-
-		expect(screen.router.state.location.search).toMatchObject({version: 1});
 
 		await screen.router.navigate({to: '.', search: (prev) => ({...prev, sort: 'startDate+asc'})});
 
