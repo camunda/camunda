@@ -164,6 +164,12 @@ public class BusinessValueOverviewReadService {
       // means the definition produced no bucket — nothing completed in the range. A row this
       // service synthesized has never been measured at all. Both are unmet targets, but only the
       // first is a statement about the process rather than about our own bookkeeping.
+      //
+      // One exception, accepted rather than handled: with overviewComputeEnabled=false the sweep
+      // writes rows it never measured, and a later target save applies the target to one of them
+      // through applyTargetToExistingRows. Such a row reads as NO_COMPLETED_INSTANCES though
+      // nothing measured it. It takes an operator disabling compute, and the next enabled sweep
+      // corrects it.
       final OffTargetStatus noMeasurementStatus =
           assembled
                   .synthesized()
@@ -194,11 +200,9 @@ public class BusinessValueOverviewReadService {
           // the JSON contract. Front-end target validation is the source of truth; this guard
           // survives if a zero target slips past it, for every status.
           //
-          // met is null rather than false when there is no measured value, so this branch covers a
-          // measured miss and an unmeasured target alike. Omitting the latter is what let a
-          // consumer
-          // read an unmet target as met. The extra value check only guards the met/value pair the
-          // writer rejects, so an impossible row degrades instead of throwing.
+          // met is null, not false, when there is no measured value, so this branch covers a
+          // measured miss and an unmeasured target alike. The extra value check guards only the
+          // met/value pair the writer rejects, so an impossible row degrades instead of throwing.
           offTarget.add(
               Boolean.FALSE.equals(cycleTime.getMet()) && cycleTime.getValue() != null
                   ? measuredMiss(
@@ -261,17 +265,23 @@ public class BusinessValueOverviewReadService {
       triggerFullScopeBackstop();
     }
 
-    // Measured misses lead, worst gap first — that ranking is the point of the list. The
-    // no-measurement entries have no gap to rank by, so they follow in a deterministic order
-    // instead of an arbitrary one. comparingDouble would unbox a null gapPct and throw.
+    // Measured misses lead, worst gap first — that ranking is the point of the list. nullsLast
+    // puts the no-measurement entries after them; comparingDouble would unbox a null gapPct and
+    // throw.
+    //
+    // Process name alone does not break ties: two tenants, or two definitions, may share a display
+    // name, and the repository query imposes no order of its own. Tenant and key finish the job, so
+    // two reads of unchanged data return the same sequence.
     offTarget.sort(
-        Comparator.comparing((final OffTargetEntryDto entry) -> entry.getGapPct() == null)
-            .thenComparing(
+        Comparator.comparing(
                 OffTargetEntryDto::getGapPct, Comparator.nullsLast(Comparator.reverseOrder()))
             .thenComparing(
                 OffTargetEntryDto::getProcessName, Comparator.nullsLast(Comparator.naturalOrder()))
             .thenComparing(
-                OffTargetEntryDto::getKpi, Comparator.nullsLast(Comparator.naturalOrder())));
+                OffTargetEntryDto::getTenantId, Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(
+                OffTargetEntryDto::getProcessKey, Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(OffTargetEntryDto::getKpi));
 
     return new BusinessValueOverviewResponseDto(
         processesWithTarget > 0,
@@ -384,9 +394,11 @@ public class BusinessValueOverviewReadService {
    *
    * <p>A safety net rather than the usual path: {@link
    * BusinessValueOverviewComputeService#computeRowsForTarget} measures the definition and writes
-   * its rows when the target is saved, so this only catches the cases where that did not happen —
-   * the write-time measurement failed, or the sweep is switched off and the definition had no rows
-   * to fall back on. Cheap enough to be worth keeping for those.
+   * its rows when the target is saved, so this only catches the cases where that did not happen. In
+   * practice it is a definition imported since the last sweep: once any sweep has written a row,
+   * {@code alreadyComputed} excludes it here, so a target saved against it after a failed
+   * write-time measurement waits for the next sweep rather than being synthesized. Cheap enough to
+   * be worth keeping for the case it does cover.
    *
    * <p>The entry carries the target and no values, which is what it is: the target is known, the
    * measurement is not. It contributes to coverage and to the targets-set count, and appears in the

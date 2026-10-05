@@ -53,6 +53,7 @@ class BusinessValueOverviewReadServiceTest {
 
   private static final String USER = "user-1";
   private static final String TENANT_A = "tenant-a";
+  private static final String TENANT_B = "tenant-b";
   private static final long REFRESH_INTERVAL_SECONDS = 86_400L;
   private static final OffsetDateTime NOW = OffsetDateTime.now(ZoneOffset.UTC);
 
@@ -430,11 +431,42 @@ class BusinessValueOverviewReadServiceTest {
   }
 
   @Test
+  void shouldOrderEntriesDeterministicallyWhenProcessNamesCollide() {
+    // Two tenants can run a definition of the same display name, and readByRange imposes no order,
+    // so name alone leaves the sequence up to the repository. Tenant and key settle it.
+    // given two rows that tie on every earlier key
+    stubCurrentDefinitions(new DefKey(TENANT_A, "b-key"), new DefKey(TENANT_B, "a-key"));
+    final BusinessValueOverviewDto first =
+        fresh(row(TENANT_B, "a-key", cyc(null, 8_000L, null), autoNull(), 1, 0));
+    final BusinessValueOverviewDto second =
+        fresh(row(TENANT_A, "b-key", cyc(null, 8_000L, null), autoNull(), 1, 0));
+    first.setProcessDefinitionName("Shared Name");
+    second.setProcessDefinitionName("Shared Name");
+    when(tenantService.getTenantIdsForUser(USER)).thenReturn(List.of(TENANT_A, TENANT_B));
+    when(overviewRepository.readByRange(eq(MetricRange.THIRTY_DAYS), any()))
+        .thenReturn(List.of(first, second))
+        .thenReturn(List.of(second, first));
+
+    // when the repository returns them in opposite orders on two reads
+    final List<String> firstRead =
+        readService.getOverview(USER, MetricRange.THIRTY_DAYS).getOffTarget().stream()
+            .map(OffTargetEntryDto::getTenantId)
+            .toList();
+    final List<String> secondRead =
+        readService.getOverview(USER, MetricRange.THIRTY_DAYS).getOffTarget().stream()
+            .map(OffTargetEntryDto::getTenantId)
+            .toList();
+
+    // then the response order does not follow the repository's
+    assertThat(firstRead).containsExactly(TENANT_A, TENANT_B);
+    assertThat(secondRead).isEqualTo(firstRead);
+  }
+
+  @Test
   void shouldSkipAnUnmeasuredEntryWhenTheTargetIsZero() {
     // The zero-target guard predates this list and exists because gapPct would divide by zero. It
-    // gates the unmeasured entries on the same terms, so a zero target reads as no target whether
-    // or
-    // not a measurement exists — rather than appearing only in the branch that cannot divide.
+    // gates the unmeasured entries on the same terms, so a zero target reads as no target with or
+    // without a measurement, rather than appearing only in the branch that cannot divide.
     // given
     seedRows(
         MetricRange.THIRTY_DAYS,
