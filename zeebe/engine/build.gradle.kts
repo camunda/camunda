@@ -36,6 +36,8 @@ dependencies {
   api(libs.org.camunda.bpm.extension.dmn.scala.dmn.engine)
   implementation(libs.org.apache.commons.commons.lang3)
   implementation(libs.com.cronutils.cron.utils)
+  implementation(libs.com.github.ben.manes.caffeine.caffeine)
+  implementation(libs.org.scala.lang.scala.library)
   api(libs.com.google.guava.guava)
   api(libs.org.camunda.feel.feel.engine)
   api(libs.org.springframework.security.spring.security.crypto)
