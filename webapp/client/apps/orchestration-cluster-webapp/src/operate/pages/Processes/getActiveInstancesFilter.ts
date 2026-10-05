@@ -20,12 +20,12 @@ function canMatchActive(state: NonNullable<SelectionFilter['state']>) {
 }
 
 /**
- * Only active instances can be moved, so the selection is narrowed to its active instances.
+ * Only active instances can be moved or migrated, so the selection is narrowed to its active instances.
  * Top-level criteria AND with `$or`, so the top-level `state` intersects every branch. Returns
  * `null` when the selection's state criteria, top-level or in every `$or` branch, exclude active
  * instances, as the API has no way to express a filter that matches nothing.
  */
-function getActiveModificationFilter(filter: SelectionFilter): SelectionFilter | null {
+function getActiveInstancesFilter(filter: SelectionFilter): SelectionFilter | null {
 	const canSelectionMatchActive =
 		(filter.state === undefined || canMatchActive(filter.state)) &&
 		(filter.$or === undefined ||
@@ -36,4 +36,4 @@ function getActiveModificationFilter(filter: SelectionFilter): SelectionFilter |
 	return {...filter, state: {$eq: 'ACTIVE'}};
 }
 
-export {getActiveModificationFilter};
+export {getActiveInstancesFilter};

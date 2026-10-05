@@ -8,7 +8,7 @@
 
 import {z} from 'zod';
 
-type LegacySharedStateFlag = 'hideMoveModificationHelperModal';
+type LegacySharedStateFlag = 'hideMoveModificationHelperModal' | 'hideMigrationHelperModal';
 
 function getLegacySharedStateFlag(key: LegacySharedStateFlag) {
 	try {

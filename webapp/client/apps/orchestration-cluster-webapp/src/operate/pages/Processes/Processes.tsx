@@ -36,9 +36,13 @@ import {
 } from './OptionalFiltersFormGroup';
 import {DiagramPanel, type ProcessDefinitionSelection} from './DiagramPanel';
 import {InstancesTable} from './InstancesTable';
+import {MigrationView} from './MigrationView';
+import {ENABLE_PROCESS_MIGRATION} from '#/shared/feature-flags';
+import type {MigrationScope} from './getMigrationFilter';
 import {useDiagramXml} from './useDiagramXml';
 import {selectedDefinitionsQuery} from '#/operate/shared/queries/processDefinitions.queries';
 import type {BatchModificationScope} from './useBatchModificationStatistics';
+import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.11';
 import {setVariableConditions, useVariableConditions} from './VariablesFilter/variableFilterStore';
 
 type FiltersFormValues = OptionalFilterValues & VariableFieldValues & {tenantId?: string};
@@ -118,6 +122,7 @@ const Processes: React.FC<Props> = ({
 	const [mode, setMode] = useState<ProcessesMode>('list');
 	const [selectedTargetElementId, setSelectedTargetElementId] = useState<string>();
 	const [selectionScope, setSelectionScope] = useState<BatchModificationScope | null>(null);
+	const [migration, setMigration] = useState<{source: ProcessDefinition; scope: MigrationScope} | null>(null);
 	const blocker = useBlocker({
 		// Like legacy, only a change of page interrupts the mode; search-only changes, such as browser back, pass.
 		shouldBlockFn: ({current, next}) => current.pathname !== next.pathname,
@@ -306,6 +311,18 @@ const Processes: React.FC<Props> = ({
 			}),
 		});
 	};
+
+	if (mode === 'migration' && migration !== null) {
+		return (
+			<MigrationView
+				source={migration.source}
+				onExit={() => {
+					setMigration(null);
+					setMode('list');
+				}}
+			/>
+		);
+	}
 
 	return (
 		<ProcessesLayout
@@ -617,6 +634,14 @@ const Processes: React.FC<Props> = ({
 					processDefinitionSelection={processDefinitionSelection}
 					selectedTargetElementId={selectedTargetElementId}
 					onEnterMode={setMode}
+					onMigrationEnter={
+						ENABLE_PROCESS_MIGRATION
+							? (source, scope) => {
+									setMigration({source, scope});
+									setMode('migration');
+								}
+							: undefined
+					}
 					onSelectionScopeChange={setSelectionScope}
 					onExitMode={() => {
 						blocker.proceed?.();

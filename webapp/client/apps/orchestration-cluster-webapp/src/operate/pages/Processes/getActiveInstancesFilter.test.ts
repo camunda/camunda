@@ -8,11 +8,11 @@
 
 import {describe, expect} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
-import {getActiveModificationFilter} from './getActiveModificationFilter';
+import {getActiveInstancesFilter} from './getActiveInstancesFilter';
 
 const selected = {processInstanceKey: {$in: ['1', '2'], $notIn: ['3']}, processDefinitionId: {$eq: 'order'}};
 
-describe('getActiveModificationFilter', () => {
+describe('getActiveInstancesFilter', () => {
 	it.for([
 		{
 			description: 'active only',
@@ -60,7 +60,7 @@ describe('getActiveModificationFilter', () => {
 			},
 		},
 	])('should narrow a selection with $description to its active instances', ({filter, expected}) => {
-		expect(getActiveModificationFilter(filter)).toEqual(expected);
+		expect(getActiveInstancesFilter(filter)).toEqual(expected);
 	});
 
 	it.for([
@@ -85,6 +85,6 @@ describe('getActiveModificationFilter', () => {
 			},
 		},
 	])('should match nothing for a selection with $description', ({filter}) => {
-		expect(getActiveModificationFilter(filter)).toBeNull();
+		expect(getActiveInstancesFilter(filter)).toBeNull();
 	});
 });

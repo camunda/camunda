@@ -84,6 +84,10 @@ class OperateProcessesPage extends BasePage {
 		return this.page.getByRole('button', {name: 'Move'});
 	}
 
+	get migrateButton() {
+		return this.page.getByRole('button', {name: 'Migrate'});
+	}
+
 	get reviewModificationButton() {
 		return this.page.getByRole('button', {name: 'Review Modification'});
 	}
