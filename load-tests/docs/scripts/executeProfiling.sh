@@ -60,7 +60,7 @@ then
   tar -xzvf profiler.tar.gz
 fi
 
-if ! kubectl exec "$pod_name" -- test -f data/libasyncProfiler.so;
+if ! kubectl exec "$pod_name" -- test -f "$containerPath/libasyncProfiler.so";
 then
   # Copy async profiler to pod
   kubectl cp async-profiler-4.0-linux-x64/bin/asprof "$pod_name":"$containerPath/asprof"
@@ -82,7 +82,7 @@ filename="${prefix}${profiler_event}.html"
 PID=$(kubectl exec "$pod_name" -- ps -ax | awk '$5 ~ /java/ {print $1}')
 
 # Run profiling
-kubectl exec "$pod_name" -- ./data/asprof -e "$profiler_event" -d "${PROFILING_DURATION:-100}" -f "$containerPath/$filename" --libpath "$containerPath/libasyncProfiler.so" $additional_options "$PID"
+kubectl exec "$pod_name" -- "$containerPath/asprof" -e "$profiler_event" -d "${PROFILING_DURATION:-100}" -f "$containerPath/$filename" --libpath "$containerPath/libasyncProfiler.so" $additional_options "$PID"
 
 # Copy result into specified output directory.
 mkdir -p "$OUTPUT_DIR"
