@@ -53,7 +53,7 @@ tasks.named<ProcessResources>("processResources") {
     this,
     "processTestJavaResourceTokens",
     mapOf(
-      "version.elasticsearch" to libs.versions.elasticsearch.get(),
+      "version.elasticsearch.container" to libs.versions.parent.elasticsearch.container.get(),
       "io.camunda.process.test.camundaDockerImageName" to "camunda/camunda",
       "io.camunda.process.test.camundaDockerImageVersion" to project.version.toString(),
       "io.camunda.process.test.connectorsDockerImageName" to "camunda/connectors-bundle",
