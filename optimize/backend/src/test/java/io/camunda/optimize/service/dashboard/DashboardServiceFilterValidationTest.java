@@ -36,6 +36,9 @@ import io.camunda.optimize.service.variable.ProcessVariableService;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class DashboardServiceFilterValidationTest {
 
@@ -83,6 +86,21 @@ public class DashboardServiceFilterValidationTest {
     // when / then
     assertThatCode(() -> underTest.validateDashboardFilters(USER_ID, variableFilters(), tiles()))
         .doesNotThrowAnyException();
+  }
+
+  @ParameterizedTest
+  @NullAndEmptySource
+  @ValueSource(strings = {" "})
+  public void shouldRejectVariableFilterWithoutName(final String variableName) {
+    // given
+    final DashboardVariableFilterDto filter = new DashboardVariableFilterDto();
+    filter.setData(
+        new DashboardStringVariableFilterDataDto(
+            variableName, new DashboardVariableFilterSubDataDto(null, List.of(), true), List.of()));
+
+    // when / then
+    assertThatThrownBy(() -> underTest.validateDashboardFilters(USER_ID, List.of(filter), tiles()))
+        .isInstanceOf(InvalidDashboardVariableFilterException.class);
   }
 
   private static List<DashboardFilterDto<?>> variableFilters() {
