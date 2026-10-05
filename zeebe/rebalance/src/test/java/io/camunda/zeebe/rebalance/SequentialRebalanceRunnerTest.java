@@ -568,6 +568,45 @@ final class SequentialRebalanceRunnerTest {
   }
 
   @Test
+  void shouldDrainABrokerBeforeTransferringLeadershipOntoIt() {
+    // given
+    final var groupLeaders = leaders.computeIfAbsent(GROUP, ignored -> new HashMap<>());
+    groupLeaders.put(1, MEMBER_1);
+    groupLeaders.put(2, MEMBER_2);
+    final var configuration =
+        configurationOf(
+            Map.of(
+                GROUP,
+                Map.of(
+                    MEMBER_1, Map.of(1, active(1)),
+                    MEMBER_2, Map.of(1, active(2), 2, active(1)),
+                    MEMBER_3, Map.of(2, active(2)))));
+    start(configuration);
+    final var initiatedFirst = transfers.lastInitiated();
+    transfers.accept();
+
+    // when
+    transfers.report(LeadershipTransferResult.TRANSFERRED);
+
+    // then
+    assertThat(initiatedFirst.partitionId()).isEqualTo(2);
+    assertThat(transfers.lastInitiated().partitionId()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldTransferAPartitionWithALeaderBeforeOneStillWithoutALeader() {
+    // given
+    leaders.computeIfAbsent(GROUP, ignored -> new HashMap<>()).put(2, MEMBER_1);
+
+    // when
+    final var rebalance = start(twoPartitionsConfiguration());
+
+    // then
+    assertThat(transfers.initiated).map(initiated -> initiated.partitionId()).containsExactly(2);
+    assertThat(rebalance.partition(0).progress()).isEqualTo(PartitionRebalanceProgress.PENDING);
+  }
+
+  @Test
   void shouldRecordLeadershipMovingToTheDesiredLeader() {
     // given
     leaders.computeIfAbsent(GROUP, ignored -> new HashMap<>()).put(1, MEMBER_1);
