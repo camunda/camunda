@@ -142,7 +142,7 @@ mwnw*                       @camunda/engineering-operations
 ################################
 
 # Identity application
-/identity/                  @camunda/identity-frontend
+/identity/                  @camunda/operate-admin-pod
 /authentication/            @camunda/identity
 /security/                  @camunda/identity
 
