@@ -43,6 +43,8 @@ public class EmptyProcessInstanceIndexReaper {
         return;
       }
       final String index = indices.iterator().next();
+      // the cleanup deletes instances without a refresh, so the count would still see them
+      databaseClient.refresh(alias);
       if (databaseClient.countWithoutPrefix(index) > 0) {
         return;
       }
