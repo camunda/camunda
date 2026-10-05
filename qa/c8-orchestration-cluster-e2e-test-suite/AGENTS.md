@@ -425,10 +425,10 @@ Severity follows [CONTRIBUTING.md](https://github.com/camunda/camunda/blob/main/
 - `severity/critical` — **data loss** (user data deleted, lost or corrupted, for example entities
   gone after an upgrade) or **unauthorized access** (a user without the permission reaches data or
   actions). There is no workaround.
-- `severity/high` — a user-facing flow is blocked and no workaround is known (a login fails, an
-  action in the UI cannot complete).
-- `severity/mid` — a noticeable impact with a known workaround (the same action works through the
-  REST API, another UI path, or another filter). Name the workaround in the body.
+- `severity/high` — a user-facing flow is blocked and no workaround is known, or the only
+  workaround is very complex (a login fails, an action in the UI cannot complete).
+- `severity/mid` — a noticeable impact with a known, simple workaround (the same action works
+  through the REST API, another UI path, or another filter). Name the workaround in the body.
 - `severity/low` — little impact on users: a wrong status code for invalid input, a cosmetic
   defect, log noise.
 - `severity/unknown` — only when you cannot tell without a deep investigation. Do not use it to
