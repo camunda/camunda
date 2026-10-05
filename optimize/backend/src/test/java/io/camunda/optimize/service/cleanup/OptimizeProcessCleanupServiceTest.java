@@ -14,6 +14,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -89,6 +90,38 @@ public class OptimizeProcessCleanupServiceTest {
     // then
     assertDeleteProcessInstancesExecutedFor(
         processDefinitionKeys, getCleanupConfiguration().getTtl());
+  }
+
+  @Test
+  public void shouldNotDeleteEmptyIndicesByDefault() {
+    // given
+    final List<String> processDefinitionKeys = generateRandomDefinitionsKeys(2);
+    mockProcessDefinitions(processDefinitionKeys);
+    mockGetProcessInstanceIdsForProcessInstanceDelete(processDefinitionKeys);
+    mockNextPageOfEntities();
+
+    // when
+    doCleanup(createOptimizeCleanupServiceToTest());
+
+    // then
+    verify(emptyProcessInstanceIndexReaper, never()).deleteIfEmpty(anyString());
+  }
+
+  @Test
+  public void shouldDeleteEmptyIndicesOfEveryCleanedKeyWhenEnabled() {
+    // given
+    getCleanupConfiguration().getProcessDataCleanupConfiguration().setDeleteEmptyIndices(true);
+    final List<String> processDefinitionKeys = generateRandomDefinitionsKeys(2);
+    mockProcessDefinitions(processDefinitionKeys);
+    mockGetProcessInstanceIdsForProcessInstanceDelete(processDefinitionKeys);
+    mockNextPageOfEntities();
+
+    // when
+    doCleanup(createOptimizeCleanupServiceToTest());
+
+    // then
+    processDefinitionKeys.forEach(
+        key -> verify(emptyProcessInstanceIndexReaper).deleteIfEmpty(key));
   }
 
   @Test
