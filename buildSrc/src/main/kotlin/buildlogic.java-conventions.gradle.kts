@@ -127,11 +127,7 @@ tasks.withType<Test>().configureEach {
   doFirst { systemProperty("testForkNumber", slots.get().acquire(path)) }
   jvmArgs(
     "--add-opens=java.base/java.io=ALL-UNNAMED",
-    "--add-opens=java.base/java.lang=ALL-UNNAMED",
-    "--add-opens=java.base/java.nio=ALL-UNNAMED",
-    "--add-opens=java.base/java.util=ALL-UNNAMED",
     "--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED",
-    "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED",
     "--enable-native-access=ALL-UNNAMED",
   )
 
