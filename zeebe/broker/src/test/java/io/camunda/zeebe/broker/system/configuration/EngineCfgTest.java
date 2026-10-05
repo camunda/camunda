@@ -73,6 +73,8 @@ final class EngineCfgTest {
         .isEqualTo(EngineConfiguration.DEFAULT_GROUP_NAME_CACHE_CAPACITY);
     assertThat(configuration.isCandidateGroupNameResolution())
         .isEqualTo(EngineConfiguration.DEFAULT_CANDIDATE_GROUP_NAME_RESOLUTION);
+    assertThat(configuration.isProcessCacheSoftValues())
+        .isEqualTo(EngineConfiguration.DEFAULT_PROCESS_CACHE_SOFT_VALUES);
     assertThat(configuration.getSecretResolutionInterval())
         .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_INTERVAL);
     assertThat(configuration.getSecretResolutionRetryMaxAttempts())
