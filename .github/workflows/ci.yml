@@ -131,7 +131,11 @@ jobs:
             unexpected key "queue" for "concurrency" section\. expected one of "cancel-in-progress", "group"
           use_shellcheck: true
       - run: |
-          curl -s -L "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" | tar xvz conftest
+          curl --fail --silent --show-error --location \
+               --proto '=https' --proto-redir '=https' --retry 3 \
+               --output conftest.tar.gz \
+               "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz"
+          tar xzf conftest.tar.gz conftest
           ./conftest test --rego-version v0 -o github --policy .github .github/workflows/*.y*ml
       - name: Observe build status
         if: always()
