@@ -192,12 +192,24 @@ public final class BpmnVariableMappingBehavior {
       if (resolveResult.isLeft()) {
         return Either.left(resolveResult.getLeft());
       }
-      return propagateVariables(
-          context,
-          element,
-          getVariableScopeKey(context),
-          resolveResult.get(),
-          outputVariableBehavior);
+
+      final var isMultiInstanceActivity =
+          elementInstanceState.getInstance(elementInstanceKey).getMultiInstanceLoopCounter() > 0;
+      if (isMultiInstanceActivity) {
+        return propagateVariablesMultiInstance(
+            context,
+            element,
+            getVariableScopeKey(context),
+            resolveResult.get(),
+            outputVariableBehavior);
+      } else {
+        return propagateVariables(
+            context,
+            element,
+            getVariableScopeKey(context),
+            resolveResult.get(),
+            outputVariableBehavior);
+      }
 
     } else if (hasVariables) {
       // merge/propagate the event variables by default
@@ -235,6 +247,34 @@ public final class BpmnVariableMappingBehavior {
     final ProcessInstanceRecord record = context.getRecordValue();
     try {
       outputVariableBehavior.mergeDocument(
+          scopeKey,
+          record.getProcessDefinitionKey(),
+          record.getProcessInstanceKey(),
+          context.getRootProcessInstanceKey(),
+          context.getStorageOrdinal(),
+          context.getBpmnProcessId(),
+          context.getTenantId(),
+          result);
+      return Either.right(null);
+    } catch (final ValidationException e) {
+      return Either.left(
+          new Failure(
+              String.format(
+                  "Failed to merge variables for element '%s' with key '%d': %s",
+                  element.getId(), context.getElementInstanceKey(), e.getMessage()),
+              ErrorType.IO_MAPPING_ERROR));
+    }
+  }
+
+  private @NonNull Either<Failure, Void> propagateVariablesMultiInstance(
+      final BpmnElementContext context,
+      final ExecutableFlowNode element,
+      final long scopeKey,
+      final DirectBuffer result,
+      final VariableBehavior outputVariableBehavior) {
+    final ProcessInstanceRecord record = context.getRecordValue();
+    try {
+      outputVariableBehavior.mergeDocumentForMultiInstance(
           scopeKey,
           record.getProcessDefinitionKey(),
           record.getProcessInstanceKey(),

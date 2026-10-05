@@ -162,6 +162,51 @@ public final class VariableBehavior {
       final String tenantId,
       final DirectBuffer document)
       throws VariableValidationException {
+    mergeDocument(
+        scopeKey,
+        processDefinitionKey,
+        processInstanceKey,
+        rootProcessInstanceKey,
+        storageOrdinal,
+        bpmnProcessId,
+        tenantId,
+        document,
+        false);
+  }
+
+  public void mergeDocumentForMultiInstance(
+      final long scopeKey,
+      final long processDefinitionKey,
+      final long processInstanceKey,
+      final long rootProcessInstanceKey,
+      final int storageOrdinal,
+      final DirectBuffer bpmnProcessId,
+      final String tenantId,
+      final DirectBuffer document)
+      throws VariableValidationException {
+    mergeDocument(
+        scopeKey,
+        processDefinitionKey,
+        processInstanceKey,
+        rootProcessInstanceKey,
+        storageOrdinal,
+        bpmnProcessId,
+        tenantId,
+        document,
+        true);
+  }
+
+  private void mergeDocument(
+      final long scopeKey,
+      final long processDefinitionKey,
+      final long processInstanceKey,
+      final long rootProcessInstanceKey,
+      final int storageOrdinal,
+      final DirectBuffer bpmnProcessId,
+      final String tenantId,
+      final DirectBuffer document,
+      final boolean isMultiInstance)
+      throws VariableValidationException {
     validateBuffer(scopeKey, document);
     indexedDocument.index(document);
     if (indexedDocument.isEmpty()) {
@@ -189,17 +234,28 @@ public final class VariableBehavior {
             variableState.getVariableInstanceLocal(currentScope, entry.getName());
 
         if (variableInstance != null) {
-          // If the variable exists in the current scope, we update it
-          if (!variableInstance.getValue().equals(entry.getValue())) {
+          if (variableInstance.getValue().equals(entry.getValue())) {
+            // The variable exists in the current scope and is equal to the value in the document
+            if (!isMultiInstance || scopeKey != currentScope) {
+              // If the variable exists in the current scope and is equal to the value in the
+              // document, we don't need to propagate it to the parent scope. Except if we are in a
+              // multi-instance scope, in which case we want to propagate it to the parent scope.
+              entryIterator.remove();
+            }
+
+          } else {
+            // If the variable exists in the current scope but is not equal to the value in the
+            // document,
+            // we update the variable in the current scope and don't propagate it to the parent
+            // scope.
             applyEntryToRecord(entry);
             stateWriter.appendFollowUpEvent(
                 variableInstance.getKey(), VariableIntent.UPDATED, variableRecord);
             variableEvents.add(
                 new VariableEvent(
                     currentScope, VariableIntent.UPDATED, getVariableRecordCopy(variableRecord)));
+            entryIterator.remove();
           }
-          // Remove the entry from the document so it won't be propagated to the parent scope
-          entryIterator.remove();
         }
       }
 
