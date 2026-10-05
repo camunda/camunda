@@ -75,6 +75,32 @@ public class TestFileBasedSnapshotStore implements ReceivableSnapshotStore {
   }
 
   @Override
+  public ActorFuture<Optional<String>> reserveLatestSnapshot(final long checkpointId) {
+    return snapshotStore.reserveLatestSnapshot(checkpointId);
+  }
+
+  @Override
+  public ActorFuture<Void> reserveSnapshot(final long checkpointId, final String snapshotId) {
+    return snapshotStore.reserveSnapshot(checkpointId, snapshotId);
+  }
+
+  @Override
+  public ActorFuture<Optional<PersistedSnapshot>> getReservedSnapshot(
+      final long checkpointId, final String snapshotId) {
+    return snapshotStore.getReservedSnapshot(checkpointId, snapshotId);
+  }
+
+  @Override
+  public void releaseReservation(final long checkpointId, final String snapshotId) {
+    snapshotStore.releaseReservation(checkpointId, snapshotId);
+  }
+
+  @Override
+  public void releaseAllReservations() {
+    snapshotStore.releaseAllReservations();
+  }
+
+  @Override
   public ActorFuture<Void> abortPendingSnapshots() {
     return snapshotStore.abortPendingSnapshots();
   }
