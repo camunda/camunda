@@ -273,9 +273,11 @@ public final class JobWorkerBuilderImpl
       jobExecutor = new BlockingExecutor(jobHandlingExecutor, maxJobsActive, timeout);
     } else {
       jobStreamer = JobStreamer.noop();
-      // without job push nothing else takes the executor's capacity, so the worker's own count of
-      // the jobs it activated is all it needs to keep within maxJobsActive
-      jobExecutor = jobHandlingExecutor::execute;
+      // A worker without job push still bounds its work through the executor, so its poll sizing
+      // and its close condition read one and the same capacity count as a streaming worker does.
+      // Nothing else takes capacity here, so a poll sized to the free capacity always fits and the
+      // executor never actually refuses a job.
+      jobExecutor = new BlockingExecutor(jobHandlingExecutor, maxJobsActive, timeout);
     }
 
     final JobWorkerImpl jobWorker =
