@@ -44,8 +44,8 @@ func newTenantsCommand() *tenantsCommand {
 	}
 	return &tenantsCommand{
 		input:        os.Stdin,
-		output:       os.Stdout,
-		errorOutput:  os.Stderr,
+		output:       brandWriter(os.Stdout),
+		errorOutput:  brandWriter(os.Stderr),
 		isTerminal:   stdinIsTerminal,
 		readPassword: readSecretFromTerminal,
 		port:         port,

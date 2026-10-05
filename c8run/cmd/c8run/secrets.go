@@ -52,8 +52,8 @@ func (c *secretsCommand) warnPathChanged(baseDir string) {
 func newSecretsCommand() *secretsCommand {
 	return &secretsCommand{
 		input:        os.Stdin,
-		output:       os.Stdout,
-		errorOutput:  os.Stderr,
+		output:       brandWriter(os.Stdout),
+		errorOutput:  brandWriter(os.Stderr),
 		isTerminal:   stdinIsTerminal,
 		readPassword: readSecretFromTerminal,
 	}
