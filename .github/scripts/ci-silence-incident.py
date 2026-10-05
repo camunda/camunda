@@ -14,8 +14,7 @@ silence, invisible from the rule it mutes. `workflow_job` is the alert's notific
 so the silence covers every future firing for that job.
 
 The UID is resolved from the rule title inside the monorepo CI folder and nowhere else, which is
-what keeps this token away from infrastructure alerts. Separate `grafana_folder` and `alertname`
-matchers would be redundant — the UID already names both.
+what keeps this token away from infrastructure alerts.
 
 A silence suppresses *delivery* only: the rule keeps evaluating and the CI health dashboards
 keep recording every failure.
@@ -105,12 +104,7 @@ def request(url, credentials, method="GET", body=None):
 
 
 def alert_rule_uid(base_url, credentials, alertname):
-    """Resolve an alert rule's UID from its title, searching the monorepo CI folder only.
-
-    Scoping the lookup to one folder is a stronger guarantee than the `grafana_folder` matcher it
-    replaces: a matcher narrows what an existing silence suppresses, whereas a rule this script
-    cannot resolve is a rule it cannot silence at all.
-    """
+    """Resolve an alert rule's UID from its title, searching the monorepo CI folder only."""
     namespaces = request(f"{base_url}/api/ruler/grafana/api/v1/rules", credentials) or {}
     if GRAFANA_FOLDER not in namespaces:
         # Nested folders are keyed by their full path, so a rename upstream shows up here as a
