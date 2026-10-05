@@ -95,7 +95,7 @@ dependencies {
   compileOnly(libs.io.micrometer.micrometer.core)
   testImplementation(libs.io.micrometer.micrometer.core)
   implementation(project(":zeebe-gateway-protocol-impl"))
-  api(libs.org.springframework.boot.spring.boot.actuator.autoconfigure)
+  testImplementation(libs.org.springframework.boot.spring.boot.actuator.autoconfigure)
   api(libs.org.springframework.boot.spring.boot.actuator)
   api(libs.org.springframework.boot.spring.boot.health)
   api(libs.io.grpc.grpc.api)
