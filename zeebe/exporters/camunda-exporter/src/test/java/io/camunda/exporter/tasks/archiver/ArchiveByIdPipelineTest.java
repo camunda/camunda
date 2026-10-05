@@ -35,9 +35,9 @@ import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-class ArchiveByIdTaskSupplierTest {
+class ArchiveByIdPipelineTest {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ArchiveByIdTaskSupplierTest.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ArchiveByIdPipelineTest.class);
   private static final Executor DIRECT_EXECUTOR = Runnable::run;
 
   private final CamundaExporterMetrics metrics = mock(CamundaExporterMetrics.class);
@@ -63,7 +63,7 @@ class ArchiveByIdTaskSupplierTest {
     final var reindexCallCount = new AtomicInteger(0);
 
     final var taskSupplier =
-        new ArchiveByIdTaskSupplier(
+        new ArchiveByIdPipeline(
             historyConfigWithMaxRetry(3),
             "source-idx",
             "destination-idx",
@@ -112,7 +112,7 @@ class ArchiveByIdTaskSupplierTest {
     final var retryableError = new CompletionException(new SocketTimeoutException("timeout"));
 
     final var taskSupplier =
-        new ArchiveByIdTaskSupplier(
+        new ArchiveByIdPipeline(
             historyConfigWithMaxRetry(1),
             "source-idx",
             "destination-idx",
@@ -145,7 +145,7 @@ class ArchiveByIdTaskSupplierTest {
     final var nonRetryableError = new CompletionException(new IllegalStateException("bad state"));
 
     final var taskSupplier =
-        new ArchiveByIdTaskSupplier(
+        new ArchiveByIdPipeline(
             historyConfigWithMaxRetry(3),
             "source-idx",
             "destination-idx",
@@ -171,7 +171,7 @@ class ArchiveByIdTaskSupplierTest {
     // given - reindex reports processing only 1 of the 2 expected docs
     final var logger = mock(Logger.class);
     final var taskSupplier =
-        new ArchiveByIdTaskSupplier(
+        new ArchiveByIdPipeline(
             historyConfigWithMaxRetry(3),
             "source-idx",
             "destination-idx",
@@ -203,7 +203,7 @@ class ArchiveByIdTaskSupplierTest {
     // (processedCount < expectedCount) is treated as a mismatch
     final var logger = mock(Logger.class);
     final var taskSupplier =
-        new ArchiveByIdTaskSupplier(
+        new ArchiveByIdPipeline(
             historyConfigWithMaxRetry(3),
             "source-idx",
             "destination-idx",
@@ -231,7 +231,7 @@ class ArchiveByIdTaskSupplierTest {
     // given - delete reports processing more docs than were sent
     final var logger = mock(Logger.class);
     final var taskSupplier =
-        new ArchiveByIdTaskSupplier(
+        new ArchiveByIdPipeline(
             historyConfigWithMaxRetry(3),
             "source-idx",
             "destination-idx",
@@ -259,7 +259,7 @@ class ArchiveByIdTaskSupplierTest {
     // given - reindex and delete both process exactly the expected number of docs
     final var logger = mock(Logger.class);
     final var taskSupplier =
-        new ArchiveByIdTaskSupplier(
+        new ArchiveByIdPipeline(
             historyConfigWithMaxRetry(3),
             "source-idx",
             "destination-idx",
@@ -284,7 +284,7 @@ class ArchiveByIdTaskSupplierTest {
   void shouldCompleteWhenResponseIsEmpty() {
     // given
     final var taskSupplier =
-        new ArchiveByIdTaskSupplier(
+        new ArchiveByIdPipeline(
             historyConfigWithMaxRetry(3),
             "source-idx",
             "destination-idx",
@@ -339,7 +339,7 @@ class ArchiveByIdTaskSupplierTest {
     final var reindexCallCount = new AtomicInteger(0);
 
     final var taskSupplier =
-        new ArchiveByIdTaskSupplier(
+        new ArchiveByIdPipeline(
             historyConfigWithMaxRetry(2),
             "source-idx",
             "destination-idx",
@@ -398,7 +398,7 @@ class ArchiveByIdTaskSupplierTest {
     final var batchSize = new AtomicInteger(0);
 
     final var taskSupplier =
-        new ArchiveByIdTaskSupplier(
+        new ArchiveByIdPipeline(
             historyConfigWithMaxRetry(3),
             "source-idx",
             "destination-idx",
@@ -456,7 +456,7 @@ class ArchiveByIdTaskSupplierTest {
     config.setReindexBatchSize(100);
 
     final var taskSupplier =
-        new ArchiveByIdTaskSupplier(
+        new ArchiveByIdPipeline(
             config,
             "source-idx",
             "destination-idx",
@@ -502,7 +502,7 @@ class ArchiveByIdTaskSupplierTest {
     final var batchSize = new AtomicInteger(0);
 
     final var taskSupplier =
-        new ArchiveByIdTaskSupplier(
+        new ArchiveByIdPipeline(
             historyConfigWithMaxRetry(3),
             "source-idx",
             "destination-idx",
@@ -544,7 +544,7 @@ class ArchiveByIdTaskSupplierTest {
     config.setArchiveByIdRetryDelayMs(500); // 500ms delay for testing
 
     final var taskSupplier =
-        new ArchiveByIdTaskSupplier(
+        new ArchiveByIdPipeline(
             config,
             "source-idx",
             "destination-idx",
