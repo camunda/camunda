@@ -7,202 +7,140 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
-import co.elastic.clients.elasticsearch._types.ElasticsearchException;
-import com.google.common.base.Stopwatch;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.util.AsyncDocumentPipeline;
+import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.BatchSupplier;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.DocumentBatch;
+import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.PipelineStats;
 import io.camunda.zeebe.util.function.TriFunction;
-import java.net.SocketTimeoutException;
+import io.micrometer.core.instrument.Timer;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
-import org.opensearch.client.opensearch._types.OpenSearchException;
+import java.util.function.Function;
 import org.slf4j.Logger;
 
 public class ArchiveByIdPipeline {
-
   private static final int MINIMUM_BATCH_SIZE = 50;
-  private static final double BATCH_SIZE_REDUCTION_FACTOR = 0.5;
-  private static final List<Class<? extends Throwable>> RETRYABLE_EXCEPTIONS =
-      List.of(
-          SocketTimeoutException.class,
-          ElasticsearchException.class,
-          OpenSearchException.class,
-          BatchCountMismatchException.class);
 
   private final HistoryConfiguration config;
-  private final String sourceIdx;
-  private final String destinationIdx;
-  private final BiFunction<
-          SearchAfter, Integer, CompletableFuture<DocumentBatch<IdWithRouting, SearchAfter>>>
-      idsSupplier;
-  private final TriFunction<String, String, List<IdWithRouting>, CompletableFuture<Long>> reindexer;
-  private final BiFunction<String, List<IdWithRouting>, CompletableFuture<Long>> deleter;
-  private final Executor executor;
+  private final TriFunction<String, String, List<IdWithRouting>, CompletableFuture<Integer>>
+      reindexer;
+  private final BiFunction<String, List<IdWithRouting>, CompletableFuture<Integer>> deleter;
+  private final Function<String, CompletableFuture<Void>> setIndexLifeCycle;
   private final CamundaExporterMetrics metrics;
   private final Logger logger;
 
-  private final AtomicReference<DocumentBatch<IdWithRouting, SearchAfter>> lastSearchResponse =
-      new AtomicReference<>(null);
-  private final AtomicBoolean finished = new AtomicBoolean(false);
-  private final AtomicInteger retryCount = new AtomicInteger(0);
-  private final AtomicInteger batchSize;
-
-  private final AtomicLong totalArchived = new AtomicLong(0);
-  private final AtomicLong totalTimeTakenMs = new AtomicLong(0);
-
   public ArchiveByIdPipeline(
       final HistoryConfiguration config,
-      final String sourceIdx,
-      final String destinationIdx,
-      final BiFunction<
-              SearchAfter, Integer, CompletableFuture<DocumentBatch<IdWithRouting, SearchAfter>>>
-          idsSupplier,
-      final TriFunction<String, String, List<IdWithRouting>, CompletableFuture<Long>> reindexer,
-      final BiFunction<String, List<IdWithRouting>, CompletableFuture<Long>> deleter,
-      final Executor executor,
+      final TriFunction<String, String, List<IdWithRouting>, CompletableFuture<Integer>> reindexer,
+      final BiFunction<String, List<IdWithRouting>, CompletableFuture<Integer>> deleter,
+      final Function<String, CompletableFuture<Void>> setIndexLifeCycle,
       final CamundaExporterMetrics metrics,
       final Logger logger) {
     this.config = config;
-    this.sourceIdx = sourceIdx;
-    this.destinationIdx = destinationIdx;
-    this.idsSupplier = idsSupplier;
     this.reindexer = reindexer;
     this.deleter = deleter;
-    this.executor = executor;
+    this.setIndexLifeCycle = setIndexLifeCycle;
     this.metrics = metrics;
     this.logger = logger;
-    batchSize = new AtomicInteger(config.getReindexBatchSize());
   }
 
-  public boolean isComplete() {
-    return finished.get();
-  }
-
-  public long getTotalArchived() {
-    return totalArchived.get();
-  }
-
-  public long getTotalTimeTakenMs() {
-    return totalTimeTakenMs.get();
-  }
-
-  public CompletableFuture<Long> moveNextBatch() {
-    final Stopwatch stopwatch = Stopwatch.createStarted();
-    final var batchSizeForBatch = batchSize.get();
-    return idsSupplier
-        .apply(getLastSearchPosition(), batchSizeForBatch)
+  public CompletableFuture<Void> moveBetweenIndexes(
+      final BatchSupplier<IdWithRouting, SearchAfter> idsSupplier,
+      final String sourceIdx,
+      final String destinationIdx,
+      final Executor executor) {
+    final var timer = Timer.start();
+    final var statsConsumer = new AtomicReference<PipelineStats>();
+    return AsyncDocumentPipeline.builder(
+            idsSupplier, batch -> move(sourceIdx, destinationIdx, batch))
+        .statsConsumer(statsConsumer::set)
+        .logger(logger)
+        .executor(executor)
+        .addRetryableException(BatchCountMismatchException.class)
+        .minBatchSize(MINIMUM_BATCH_SIZE)
+        .batchSize(config.getReindexBatchSize())
+        .maxRetryAttempts(config.getArchiveByIdMaxRetryAttempts())
+        .retryDelayMs(config.getArchiveByIdRetryDelayMs())
+        .retryRecorder(metrics::recordArchiverBatchRetry)
+        .buildAndExecute()
         .thenComposeAsync(
-            response -> {
-              if (response.isEmpty()) {
-                finished.set(true);
-                return CompletableFuture.completedFuture(0L);
-              }
-
-              return reindex(response)
-                  .thenCompose(reindexedCount -> delete(response))
-                  .thenApply(
-                      deletedCount -> {
-                        // advance search position only after both archive steps completed
-                        // successfully
-                        lastSearchResponse.set(response);
-                        totalArchived.accumulateAndGet(deletedCount, Long::sum);
-                        retryCount.set(0);
-                        // batch was below page size, so that implies there should
-                        // not be another batch to read, so now that we've processed
-                        // this batch we can finish
-                        if (response.documents.size() < batchSizeForBatch) {
-                          finished.set(true);
-                        }
-                        return deletedCount;
-                      })
-                  .exceptionallyCompose(
-                      ex -> {
-                        if (isRetryableError(ex)
-                            && retryCount.incrementAndGet()
-                                <= config.getArchiveByIdMaxRetryAttempts()) {
-                          metrics.recordArchiverBatchRetry();
-                          adjustBatchSize(ex);
-
-                          logger.trace(
-                              "Encountered retryable error when archiving docs from '{}' to '{}', "
-                                  + "retrying the batch (attempt {}/{}). Next batch size {}. Error: {}",
-                              sourceIdx,
-                              destinationIdx,
-                              retryCount.get(),
-                              config.getArchiveByIdMaxRetryAttempts(),
-                              batchSize.get(),
-                              ex.getMessage());
-
-                          // Whilst this is crude, we exploit the fact the ES/OS visibility is
-                          // around 2 second, and incrementing delay (default=1000ms) should give a
-                          // fighting chance to complete in the next attempt. If not will fail and
-                          // the next retry should take this over the full 2-second refresh interval
-                          final int retryDelayMs =
-                              config.getArchiveByIdRetryDelayMs() * retryCount.get();
-                          return CompletableFuture.supplyAsync(
-                              () -> 0L,
-                              CompletableFuture.delayedExecutor(
-                                  retryDelayMs, TimeUnit.MILLISECONDS, executor));
-                        }
-                        // reset retry count so the next batch starts with fresh retries
-                        retryCount.set(0);
-                        // re-throw unexpected exceptions
-                        throw ex instanceof final RuntimeException re
-                            ? re
-                            : new RuntimeException(ex);
-                      });
+            stats -> {
+              // always trigger set life cycle, which checks whether the policy was previously
+              // applied and, if so, skips it. If nothing moved and the destination index is
+              // not present, we already set .allowNoIndices(true), which prevents it from erroring.
+              // However, if nothing moved because we previously moved them, but the call errored
+              // at the put policy stage, this will reapply the policy and ensure no index is
+              // left without the ILM policy.
+              return setIndexLifeCycle.apply(destinationIdx).thenApply(ignore -> stats);
             },
             executor)
-        .whenCompleteAsync(
-            (val, err) ->
-                totalTimeTakenMs.accumulateAndGet(
-                    stopwatch.stop().elapsed(TimeUnit.MILLISECONDS), Long::sum),
-            executor);
+        .thenAccept(
+            stats -> {
+              logger.trace(
+                  "Successfully completed archiving {} to the {} index, moved {} docs in {}s",
+                  sourceIdx,
+                  destinationIdx,
+                  stats.totalDocumentsProcessed(),
+                  stats.totalTimeTakenMs() / 1000);
+
+              metrics.measureArchiveIndexDuration(
+                  sourceIdx, timer, stats.totalDocumentsProcessed());
+            })
+        .whenComplete(
+            (val, err) -> {
+              if (err != null) {
+                final var stats = statsConsumer.get();
+                logger.warn(
+                    "Failed archiving {} to the {} index, moved {} docs so far in {}s, error={}",
+                    sourceIdx,
+                    destinationIdx,
+                    stats.totalDocumentsProcessed(),
+                    stats.totalTimeTakenMs() / 1000,
+                    err.getMessage(),
+                    err);
+              }
+            });
   }
 
-  private SearchAfter getLastSearchPosition() {
-    final var lstResponse = lastSearchResponse.get();
-    return lstResponse == null ? null : lstResponse.searchAfter();
+  private CompletableFuture<Integer> move(
+      final String sourceIdx,
+      final String destinationIdx,
+      final DocumentBatch<IdWithRouting, SearchAfter> batch) {
+    return reindex(sourceIdx, destinationIdx, batch)
+        .thenCompose(reindexedCount -> delete(sourceIdx, batch));
   }
 
-  private void adjustBatchSize(final Throwable ex) {
-    if (batchSize.get() <= MINIMUM_BATCH_SIZE) {
-      return;
-    }
-
-    if (shouldReduceBatchSize(ex)) {
-      batchSize.set(
-          (int) Math.max(MINIMUM_BATCH_SIZE, batchSize.get() * BATCH_SIZE_REDUCTION_FACTOR));
-    }
-  }
-
-  private CompletableFuture<Long> reindex(
-      final DocumentBatch<IdWithRouting, SearchAfter> response) {
+  private CompletableFuture<Integer> reindex(
+      final String sourceIdx,
+      final String destinationIdx,
+      final DocumentBatch<IdWithRouting, SearchAfter> batch) {
     return reindexer
-        .apply(sourceIdx, destinationIdx, response.documents())
+        .apply(sourceIdx, destinationIdx, batch.documents())
         .thenApply(
             reindexCount ->
-                validateProcessedCount("reindex", reindexCount, response.documents().size()));
+                validateProcessedCount(
+                    sourceIdx, "reindex", reindexCount, batch.documents().size()));
   }
 
-  private CompletableFuture<Long> delete(final DocumentBatch<IdWithRouting, SearchAfter> response) {
+  private CompletableFuture<Integer> delete(
+      final String sourceIdx, final DocumentBatch<IdWithRouting, SearchAfter> batch) {
     return deleter
-        .apply(sourceIdx, response.documents())
+        .apply(sourceIdx, batch.documents())
         .thenApply(
             deleteCount ->
-                validateProcessedCount("delete", deleteCount, response.documents().size()));
+                validateProcessedCount(sourceIdx, "delete", deleteCount, batch.documents().size()));
   }
 
-  private long validateProcessedCount(
-      final String operation, final long processedCount, final int expectedCount) {
+  private Integer validateProcessedCount(
+      final String sourceIdx,
+      final String operation,
+      final int processedCount,
+      final int expectedCount) {
     if (processedCount < expectedCount) {
       throw new BatchCountMismatchException(
           operation,
@@ -219,19 +157,5 @@ public class ArchiveByIdPipeline {
           expectedCount);
     }
     return processedCount;
-  }
-
-  private boolean shouldReduceBatchSize(final Throwable thr) {
-    return matchesThrowableOrCause(thr, SocketTimeoutException.class);
-  }
-
-  private boolean isRetryableError(final Throwable thr) {
-    return RETRYABLE_EXCEPTIONS.stream().anyMatch(clazz -> matchesThrowableOrCause(thr, clazz));
-  }
-
-  private boolean matchesThrowableOrCause(
-      final Throwable thr, final Class<? extends Throwable> throwableClass) {
-    return thr != null
-        && (throwableClass.isInstance(thr) || throwableClass.isInstance(thr.getCause()));
   }
 }

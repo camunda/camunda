@@ -20,7 +20,6 @@ import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.DocumentBatch;
-import io.camunda.exporter.tasks.util.AsyncRepeatUntil;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.util.OpensearchRepository;
 import io.camunda.search.schema.config.RetentionConfiguration;
@@ -91,6 +90,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private final CamundaExporterMetrics metrics;
   private final OpenSearchGenericClient genericClient;
   private final Cache<String, String> lifeCyclePolicyApplied;
+  private final ArchiveByIdPipeline archiveByIdPipeline;
 
   public OpenSearchArchiverRepository(
       final int partitionId,
@@ -120,6 +120,15 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     this.metrics = metrics;
     this.genericClient = genericClient;
     lifeCyclePolicyApplied = buildLifeCycleAppliedCache(config.getRetention(), logger);
+
+    archiveByIdPipeline =
+        new ArchiveByIdPipeline(
+            config,
+            this::reindexDocumentsById,
+            this::deleteDocumentsById,
+            this::setIndexLifeCycle,
+            metrics,
+            logger);
   }
 
   private static Cache<String, String> buildLifeCycleAppliedCache(
@@ -379,65 +388,18 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       final Map<String, String> exclusionFilters,
       final Executor executor) {
 
-    final ArchiveByIdPipeline taskSupplier =
-        new ArchiveByIdPipeline(
-            config,
-            sourceIndexName,
-            destinationIndexName,
-            (searchAfter, size) ->
-                getArchiveDocIdsBatch(
-                    sourceIndexName,
-                    keysByField,
-                    inclusionFilters,
-                    exclusionFilters,
-                    searchAfter,
-                    size),
-            this::reindexDocumentsById,
-            this::deleteDocumentsById,
-            executor,
-            metrics,
-            logger);
-
-    final var timer = Timer.start();
-    return AsyncRepeatUntil.repeatUntil(
-            taskSupplier::moveNextBatch, count -> taskSupplier.isComplete())
-        .thenComposeAsync(
-            ignored -> {
-              // always trigger set life cycle, which checks whether the policy was previously
-              // applied and, if so, skips it. If nothing moved and the destination index is
-              // not present, we already set .allowNoIndices(true), which prevents it from erroring.
-              // However, if nothing moved because we previously moved them, but the call errored
-              // at the put policy stage, this will reapply the policy and ensure no index is
-              // left without the ILM policy.
-              return setIndexLifeCycle(destinationIndexName);
-            },
-            executor)
-        .thenApply(
-            ignored -> {
-              logger.trace(
-                  "Successfully completed archiving {} to the {} index, moved {} docs in {}s",
-                  sourceIndexName,
-                  destinationIndexName,
-                  taskSupplier.getTotalArchived(),
-                  taskSupplier.getTotalTimeTakenMs() / 1000);
-
-              metrics.measureArchiveIndexDuration(
-                  sourceIndexName, timer, taskSupplier.getTotalArchived());
-              return ignored;
-            })
-        .whenComplete(
-            (val, err) -> {
-              if (err != null) {
-                logger.warn(
-                    "Failed archiving {} to the {} index, moved {} docs so far in {}s, error={}",
-                    sourceIndexName,
-                    destinationIndexName,
-                    taskSupplier.getTotalArchived(),
-                    taskSupplier.getTotalTimeTakenMs() / 1000,
-                    err.getMessage(),
-                    err);
-              }
-            });
+    return archiveByIdPipeline.moveBetweenIndexes(
+        (searchAfter, size) ->
+            getArchiveDocIdsBatch(
+                sourceIndexName,
+                keysByField,
+                inclusionFilters,
+                exclusionFilters,
+                searchAfter,
+                size),
+        sourceIndexName,
+        destinationIndexName,
+        executor);
   }
 
   @Override
@@ -505,12 +467,12 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   }
 
   @VisibleForTesting
-  CompletableFuture<Long> reindexDocumentsById(
+  CompletableFuture<Integer> reindexDocumentsById(
       final String sourceIndexName,
       final String destinationIndexName,
       final List<IdWithRouting> docs) {
     if (docs.isEmpty()) {
-      return CompletableFuture.completedFuture(0L);
+      return CompletableFuture.completedFuture(0);
     }
 
     final var docIds = docs.stream().map(IdWithRouting::id).toList();
@@ -532,8 +494,8 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
               return getReindexedDocumentsCount(response);
             },
             executor)
-        .whenCompleteAsync(
-            (total, error) -> metrics.measureArchiverReindex(total, timer), executor);
+        .whenCompleteAsync((total, error) -> metrics.measureArchiverReindex(total, timer), executor)
+        .thenApply(Math::toIntExact);
   }
 
   private static void validateReindexResponse(
@@ -556,10 +518,10 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   }
 
   @VisibleForTesting
-  CompletableFuture<Long> deleteDocumentsById(
+  CompletableFuture<Integer> deleteDocumentsById(
       final String sourceIndexName, final List<IdWithRouting> docs) {
     if (docs.isEmpty()) {
-      return CompletableFuture.completedFuture(0L);
+      return CompletableFuture.completedFuture(0);
     }
 
     final var operations =
@@ -574,7 +536,8 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     return sendRequestAsync(() -> client.bulk(request))
         .thenApplyAsync(response -> getDeletedDocCount(sourceIndexName, response), executor)
         .whenCompleteAsync(
-            (idsSize, error) -> metrics.measureArchiverDelete(idsSize, timer), executor);
+            (idsSize, error) -> metrics.measureArchiverDelete(idsSize, timer), executor)
+        .thenApply(Math::toIntExact);
   }
 
   private long getDeletedDocCount(final String sourceIndex, final BulkResponse response) {
