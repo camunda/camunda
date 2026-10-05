@@ -12,6 +12,9 @@ import {sleep} from '../utils/sleep';
 import {checkUpdateOnVersion} from 'utils/zeebeClient';
 import {waitForAssertion} from '../utils/waitForAssertion';
 
+const ROW_ACTION_TIMEOUT = 15_000;
+const TABLE_SETTLE_TIMEOUT = 15_000;
+
 class OperateProcessesPage {
   private page: Page;
   readonly processResultCount: Locator;
@@ -48,6 +51,8 @@ class OperateProcessesPage {
   readonly migrateButton: Locator;
   readonly selectAllRowsCheckbox: Locator;
   readonly retryButton: Locator;
+  readonly suspendButton: Locator;
+  readonly resumeButton: Locator;
   readonly cancelButton: Locator;
   readonly applyButton: Locator;
   readonly resultsCount: Locator;
@@ -69,7 +74,9 @@ class OperateProcessesPage {
       | 'Resolve Incident'
       | 'Retry'
       | 'Cancel Process Instance'
-      | 'Delete Process Instance',
+      | 'Delete Process Instance'
+      | 'Suspend Process Instance'
+      | 'Resume Process Instance',
   ) => Locator;
   readonly processCouldNotBeFoundMessage: Locator;
   readonly goToOperationDetailsButton: Locator;
@@ -168,6 +175,13 @@ class OperateProcessesPage {
       name: 'Select all rows',
     });
     this.retryButton = page.getByRole('button', {name: 'Retry', exact: true});
+    // Exact: row actions are named "Suspend Instance <key>", which a substring
+    // match would hit instead of the toolbar.
+    this.suspendButton = page.getByRole('button', {
+      name: 'Suspend',
+      exact: true,
+    });
+    this.resumeButton = page.getByRole('button', {name: 'Resume', exact: true});
     this.cancelButton = page.getByRole('button', {name: 'Cancel', exact: true});
     this.applyButton = page.getByRole('button', {name: 'Apply'});
     this.resultsCount = page.getByText(/\d+ results/);
@@ -201,7 +215,9 @@ class OperateProcessesPage {
         | 'Resolve Incident'
         | 'Retry'
         | 'Cancel Process Instance'
-        | 'Delete Process Instance',
+        | 'Delete Process Instance'
+        | 'Suspend Process Instance'
+        | 'Resume Process Instance',
     ) =>
       page.getByText(
         `Batch operation \"${batchOperationType}\" has been started`,
@@ -431,6 +447,80 @@ class OperateProcessesPage {
         'Cancel Process Instance',
       ),
     });
+  }
+
+  async suspendAllProcessInstancesInBatch(): Promise<void> {
+    await this.applyBatchOperationToAllInstances({
+      toolbarButton: this.suspendButton,
+      confirmButton: this.batchOperationDialogButton('Apply'),
+      startedMessage: this.batchOperationStartedMessage(
+        'Suspend Process Instance',
+      ),
+    });
+  }
+
+  async resumeAllProcessInstancesInBatch(): Promise<void> {
+    await this.applyBatchOperationToAllInstances({
+      toolbarButton: this.resumeButton,
+      confirmButton: this.batchOperationDialogButton('Apply'),
+      startedMessage: this.batchOperationStartedMessage(
+        'Resume Process Instance',
+      ),
+    });
+  }
+
+  processInstanceRow(processInstanceKey: string): Locator {
+    return this.page
+      .getByTestId('data-list')
+      .getByRole('row')
+      .filter({hasText: processInstanceKey});
+  }
+
+  /**
+   * The count settles before the rows do, and Select all takes the rows — so a
+   * batch started on a settled count alone can still run against the list the
+   * filter replaced.
+   */
+  async expectInstancesTableToHoldExactly(
+    processInstanceKeys: string[],
+  ): Promise<void> {
+    await expect(this.resultsCount).toHaveText(
+      new RegExp(`\\b${processInstanceKeys.length} results$`),
+      {timeout: TABLE_SETTLE_TIMEOUT},
+    );
+    await expect(
+      this.page.getByTestId('data-list').getByRole('row'),
+    ).toHaveCount(processInstanceKeys.length, {timeout: TABLE_SETTLE_TIMEOUT});
+    for (const processInstanceKey of processInstanceKeys) {
+      await expect(this.processInstanceRow(processInstanceKey)).toBeVisible({
+        timeout: TABLE_SETTLE_TIMEOUT,
+      });
+    }
+  }
+
+  async clickSuspendRowAction(processInstanceKey: string): Promise<void> {
+    await this.clickRowAction(processInstanceKey, 'suspend-operation');
+  }
+
+  async clickResumeRowAction(processInstanceKey: string): Promise<void> {
+    await this.clickRowAction(processInstanceKey, 'resume-operation');
+  }
+
+  private async clickRowAction(
+    processInstanceKey: string,
+    testId: 'suspend-operation' | 'resume-operation',
+  ): Promise<void> {
+    const action =
+      this.processInstanceRow(processInstanceKey).getByTestId(testId);
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(action).toBeVisible({timeout: ROW_ACTION_TIMEOUT});
+      },
+      onFailure: async () => {
+        await this.page.reload();
+      },
+    });
+    await action.click();
   }
 
   async deleteSelectedInstancesInBatch(): Promise<void> {

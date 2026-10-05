@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {Locator, Page} from '@playwright/test';
+import {expect, type Locator, type Page} from '@playwright/test';
+import {waitForAssertion} from '../utils/waitForAssertion';
 
 export class OperateOperationsDetailsPage {
   private page: Page;
@@ -58,6 +59,18 @@ export class OperateOperationsDetailsPage {
   async clickCancelFromOptionsMenu(): Promise<void> {
     await this.optionsMenuButton.click();
     await this.page.getByRole('menuitem', {name: /^Cancel\b/i}).click();
+  }
+
+  // Reloads between attempts: the detail view does not refresh itself (#52021).
+  async expectState(state: string | RegExp): Promise<void> {
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(this.state).toHaveText(state, {timeout: 15_000});
+      },
+      onFailure: async () => {
+        await this.page.reload();
+      },
+    });
   }
 
   async getBatchOperationStatus(): Promise<string> {
