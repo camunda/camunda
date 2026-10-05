@@ -411,7 +411,7 @@ const InstancesTable: React.FC<Props> = ({
 										}
 										onMigrationEnter(processDefinitionSelection.definition, {
 											filter: migrationFilter,
-											selectedCount: selection.mode === 'INCLUDE' ? selection.runningCount : selection.selectedCount,
+											selectedCount: selection.selectedCount,
 											isCountTruncated: selection.isCountTruncated,
 										});
 									}}
