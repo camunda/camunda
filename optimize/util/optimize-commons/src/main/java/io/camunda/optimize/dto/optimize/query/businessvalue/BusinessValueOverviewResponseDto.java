@@ -336,6 +336,13 @@ public class BusinessValueOverviewResponseDto {
      */
     NO_COMPLETED_INSTANCES("noCompletedInstances"),
     /**
+     * Instances completed, but the KPI does not apply to this process, so it can never produce a
+     * value however long it runs. Automation rate is the only v1 KPI that can land here: it divides
+     * over task flow nodes, so a process built only from events, gateways or sub-process containers
+     * has nothing to automate and the interpreter returns null.
+     */
+    NOT_APPLICABLE("notApplicable"),
+    /**
      * The target exists but no overview row does, so the definition has never been measured: the
      * write-time measurement failed, or the sweep is switched off. Transient — the next successful
      * compute moves the entry to one of the other statuses.
@@ -362,7 +369,7 @@ public class BusinessValueOverviewResponseDto {
       throw new IllegalArgumentException(
           "Unknown offTarget status id ["
               + id
-              + "]; must be one of: offTarget, noCompletedInstances, notMeasured");
+              + "]; must be one of: offTarget, noCompletedInstances, notApplicable, notMeasured");
     }
   }
 
