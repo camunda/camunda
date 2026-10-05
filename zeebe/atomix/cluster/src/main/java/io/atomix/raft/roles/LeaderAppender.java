@@ -129,7 +129,7 @@ final class LeaderAppender {
     final IndexedRaftLogEntry prevEntry = member.getCurrentEntry();
 
     final DefaultRaftMember leader = raft.getLeader();
-    return builderWithPreviousEntry(prevEntry)
+    return builderWithPreviousEntry(prevEntry, member.getNextIndex())
         .withTerm(raft.getTerm())
         .withLeader(leader.memberId())
         .withEntries(Collections.emptyList())
@@ -138,14 +138,17 @@ final class LeaderAppender {
   }
 
   private VersionedAppendRequest.Builder builderWithPreviousEntry(
-      final IndexedRaftLogEntry prevEntry) {
+      final IndexedRaftLogEntry prevEntry, final long nextIndex) {
     long prevIndex = 0;
     long prevTerm = 0;
 
     if (prevEntry != null) {
       prevIndex = prevEntry.index();
       prevTerm = prevEntry.term();
-    } else {
+    } else if (nextIndex != 1) {
+      // if next index is 1, it is the very first log entry. So keep the previous term and index 0.
+      // Otherwise, we are going to send the next entry after a snapshot. So set the previous index
+      // and term to the snapshot's index and term.
       final var currentSnapshot = raft.getCurrentSnapshot();
       if (currentSnapshot != null) {
         prevIndex = currentSnapshot.getIndex();
@@ -162,7 +165,7 @@ final class LeaderAppender {
 
     final DefaultRaftMember leader = raft.getLeader();
     final VersionedAppendRequest.Builder builder =
-        builderWithPreviousEntry(prevEntry)
+        builderWithPreviousEntry(prevEntry, member.getNextIndex())
             .withTerm(raft.getTerm())
             .withLeader(leader.memberId())
             .withCommitIndex(raft.getCommitIndex());
