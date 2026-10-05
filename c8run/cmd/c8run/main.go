@@ -527,21 +527,22 @@ func main() {
 
 	baseCommand, err := getBaseCommand()
 	if err != nil {
-		log.Err(err).Msg("There is an issue with getting the base command")
+		// Plain text: wrappers (c8ctl) match this message to suggest an upgrade.
+		fmt.Fprintln(os.Stderr, withCLIName(err.Error()+" (run `c8run help` for usage)", cliName()))
 		os.Exit(1)
 	}
 
 	baseDir, _ := os.Getwd()
 	if baseCommand == "tenants" {
 		if err := newTenantsCommand().run(baseDir, os.Args[2:]); err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			fmt.Fprintln(os.Stderr, withCLIName(err.Error(), cliName()))
 			os.Exit(1)
 		}
 		return
 	}
 	if baseCommand == "secrets" {
 		if err := newSecretsCommand().run(baseDir, os.Args[2:]); err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			fmt.Fprintln(os.Stderr, withCLIName(err.Error(), cliName()))
 			os.Exit(1)
 		}
 		return
@@ -617,9 +618,9 @@ func main() {
 	select {
 	case <-workDone:
 		if len(state.NotReadyTenants) > 0 {
-			fmt.Fprintf(os.Stderr, "\nCamunda is running, but physical tenant(s) %s did not become ready.\n"+
+			fmt.Fprint(os.Stderr, withCLIName(fmt.Sprintf("\nCamunda is running, but physical tenant(s) %s did not become ready.\n"+
 				"Check log/camunda.log for physical tenant errors, fix them, then run `./c8run stop && ./c8run start`.\n",
-				strings.Join(state.NotReadyTenants, ", "))
+				strings.Join(state.NotReadyTenants, ", ")), cliName()))
 			os.Exit(1)
 		}
 		log.Info().Msg("All processes are running and healthy, exiting script...")
