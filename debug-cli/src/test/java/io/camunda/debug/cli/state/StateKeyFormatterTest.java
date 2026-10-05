@@ -8,6 +8,7 @@
 package io.camunda.debug.cli.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -17,6 +18,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class StateKeyFormatterTest {
@@ -112,6 +114,17 @@ class StateKeyFormatterTest {
                 .put("abc".getBytes())
                 .array(),
             "42:abc"));
+  }
+
+  @ParameterizedTest
+  @EnumSource(ZbColumnFamilies.class)
+  void shouldNeverFailOnAMalformedKeyOfAnyColumnFamily(final ZbColumnFamilies columnFamily) {
+    // given
+    final byte[] key = {0, 0, 0, 0, 0, 0, 0, 1, (byte) 0xff};
+
+    // when / then
+    assertThatCode(() -> StateKeyFormatters.forColumnFamily(columnFamily, "default").format(key))
+        .doesNotThrowAnyException();
   }
 
   @Test

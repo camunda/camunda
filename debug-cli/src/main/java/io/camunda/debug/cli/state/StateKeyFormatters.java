@@ -24,17 +24,17 @@ final class StateKeyFormatters {
     return StateKeyFormatter.databaseValues(keyFormat);
   }
 
-  static String defaultFormatFor(final ZbColumnFamilies columnFamily) {
+  private static String defaultFormatFor(final ZbColumnFamilies columnFamily) {
     return switch (columnFamily) {
-      case DEFAULT, KEY, EXPORTER -> "s";
+      case DEFAULT, KEY, EXPORTER, MIGRATIONS_STATE, MESSAGE_STATS, ROLES, CLAIM_BY_ID -> "s";
       case ELEMENT_INSTANCE_PARENT_CHILD,
           TIMERS,
           JOB_DEADLINES,
           EVENT_TRIGGER,
           JOB_BACKOFF,
-          PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY ->
+          PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY,
+          MESSAGE_DEADLINES ->
           "ll";
-      case NUMBER_OF_TAKEN_SEQUENCE_FLOWS -> "lss";
       case ELEMENT_INSTANCE_KEY,
           ELEMENT_INSTANCE_CHILD_PARENT,
           DEPLOYMENT_RAW,
@@ -54,7 +54,6 @@ final class StateKeyFormatters {
           AUTHORIZATIONS ->
           "l";
       case VARIABLES, MESSAGE_CORRELATED, MESSAGE_SUBSCRIPTION_BY_KEY -> "ls";
-      case MESSAGE_DEADLINES -> "ll";
       case TIMER_DUE_DATES -> "lll";
       case PENDING_DEPLOYMENT, PENDING_DISTRIBUTION -> "li";
       case MESSAGE_IDS -> "ssss";
@@ -62,31 +61,30 @@ final class StateKeyFormatters {
           PROCESS_VERSION,
           PROCESS_CACHE_DIGEST_BY_ID,
           FORM_VERSION,
-          MAPPING_RULES ->
+          MAPPING_RULES,
+          DMN_LATEST_DECISION_BY_ID,
+          DMN_LATEST_DECISION_REQUIREMENTS_BY_ID,
+          AUTHORIZATION_KEYS_BY_OWNER ->
           "ss";
-      case PROCESS_CACHE, FORMS, DMN_DECISIONS -> "sl";
-      case DMN_DECISION_REQUIREMENTS -> "sl";
-      case DMN_LATEST_DECISION_BY_ID, DMN_LATEST_DECISION_REQUIREMENTS_BY_ID -> "ss";
+      case PROCESS_CACHE, FORMS, DMN_DECISIONS, DMN_DECISION_REQUIREMENTS -> "sl";
       case DMN_DECISION_KEY_BY_DECISION_REQUIREMENTS_KEY -> "slsl";
       case DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION,
           DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION ->
           "ssi";
       case PROCESS_CACHE_BY_ID_AND_VERSION, FORM_BY_ID_AND_VERSION -> "ssl";
-      case MESSAGES -> "sssl";
+      case MESSAGES, MESSAGE_SUBSCRIPTION_BY_NAME_AND_CORRELATION_KEY -> "sssl";
       case MESSAGE_START_EVENT_SUBSCRIPTION_BY_NAME_AND_KEY, SIGNAL_SUBSCRIPTION_BY_NAME_AND_KEY ->
           "ssl";
       case JOB_ACTIVATABLE -> "sls";
-      case MESSAGE_START_EVENT_SUBSCRIPTION_BY_KEY_AND_NAME, SIGNAL_SUBSCRIPTION_BY_KEY_AND_NAME ->
+      case MESSAGE_START_EVENT_SUBSCRIPTION_BY_KEY_AND_NAME,
+          SIGNAL_SUBSCRIPTION_BY_KEY_AND_NAME,
+          PROCESS_SUBSCRIPTION_BY_KEY,
+          NUMBER_OF_TAKEN_SEQUENCE_FLOWS ->
           "lss";
-      case MESSAGE_SUBSCRIPTION_BY_NAME_AND_CORRELATION_KEY -> "sssl";
-      case PROCESS_SUBSCRIPTION_BY_KEY -> "lss";
       case USAGE_METRICS -> "b";
-      case MIGRATIONS_STATE, MESSAGE_STATS -> "s";
       case COMPENSATION_SUBSCRIPTION -> "sll";
       case ENTITIES_BY_RELATION, RELATIONS_BY_ENTITY -> "bsbs";
-      case ROLES, CLAIM_BY_ID -> "s";
       case PERMISSIONS -> "sss";
-      case AUTHORIZATION_KEYS_BY_OWNER -> "ss";
       case DEPRECATED_PROCESS_VERSION,
           DEPRECATED_PROCESS_CACHE,
           DEPRECATED_PROCESS_CACHE_BY_ID_AND_VERSION,
