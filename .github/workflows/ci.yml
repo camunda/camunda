@@ -234,7 +234,7 @@ jobs:
     timeout-minutes: 30
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -324,7 +324,7 @@ jobs:
       actions: read
       contents: read
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
