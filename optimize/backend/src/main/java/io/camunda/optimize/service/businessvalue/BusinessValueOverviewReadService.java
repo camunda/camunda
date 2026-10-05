@@ -240,7 +240,7 @@ public class BusinessValueOverviewReadService {
                       Kpi.AUTOMATION_RATE,
                       automationRate.getTarget().doubleValue(),
                       AUTOMATION_RATE_DISPLAY_UNIT,
-                      noMeasurementStatus));
+                      automationRateNoMeasurementStatus(row, noMeasurementStatus)));
         }
       }
 
@@ -303,6 +303,32 @@ public class BusinessValueOverviewReadService {
         verdict.gapPct(),
         verdict.direction()); // verdict.direction() is "over"/"under" — matches
     // OffTargetEntryDto.comparison
+  }
+
+  /**
+   * Why an automation-rate target has no value.
+   *
+   * <p>A null automation rate does not imply an idle process. The rate divides over task flow
+   * nodes, so {@code ProcessViewAutomationRateInterpreter} returns null both when nothing completed
+   * and when the process has no automatable tasks at all — a process built only from events,
+   * gateways or sub-process containers never produces a rate however many instances it runs.
+   *
+   * <p>Cycle time separates the two. It comes from a duration aggregation over completed instances,
+   * so it is null only when none completed. A row with a cycle time but no automation rate
+   * therefore ran and simply has nothing to automate, which is a permanent property of the model
+   * rather than a gap in the data.
+   *
+   * <p>A synthesized row has never been measured at all, so that verdict wins over both.
+   */
+  private static OffTargetStatus automationRateNoMeasurementStatus(
+      final BusinessValueOverviewDto row, final OffTargetStatus noMeasurementStatus) {
+    if (noMeasurementStatus == OffTargetStatus.NOT_MEASURED) {
+      return OffTargetStatus.NOT_MEASURED;
+    }
+    final CycleTimeBlock cycleTime = row.getCycleTime();
+    return cycleTime != null && cycleTime.getValue() != null
+        ? OffTargetStatus.NOT_APPLICABLE
+        : OffTargetStatus.NO_COMPLETED_INSTANCES;
   }
 
   /**

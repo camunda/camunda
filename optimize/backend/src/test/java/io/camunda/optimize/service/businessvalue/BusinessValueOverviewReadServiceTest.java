@@ -368,6 +368,68 @@ class BusinessValueOverviewReadServiceTest {
   }
 
   @Test
+  void shouldReportAnUnmeasurableAutomationRateAsNotApplicableRatherThanIdle() {
+    // A process of only events and gateways has no task flow nodes, so the automation-rate
+    // interpreter divides by zero candidates and returns null however many instances completed.
+    // Reading that as "no completed instances" contradicts the cycle time on the very same row.
+    // given a row that plainly ran: cycle time measured and missing its target
+    seedRows(
+        MetricRange.THIRTY_DAYS,
+        fresh(row(TENANT_A, "events-only", cyc(2_213L, 1_500L, false), aut(null, 90, null), 2, 0)));
+
+    // when
+    final BusinessValueOverviewResponseDto response =
+        readService.getOverview(USER, MetricRange.THIRTY_DAYS);
+
+    // then
+    assertThat(response.getOffTarget())
+        .extracting(OffTargetEntryDto::getKpi, OffTargetEntryDto::getStatus)
+        .containsExactly(
+            tuple("cycleTime", OffTargetStatus.OFF_TARGET),
+            tuple("automationRate", OffTargetStatus.NOT_APPLICABLE));
+  }
+
+  @Test
+  void shouldStillReportNoCompletedInstancesWhenNeitherKpiHasAValue() {
+    // Both null is the genuinely idle case: nothing completed, so neither KPI could be measured.
+    // given
+    seedRows(
+        MetricRange.THIRTY_DAYS,
+        fresh(row(TENANT_A, "idle", cyc(null, 1_500L, null), aut(null, 90, null), 2, 0)));
+
+    // when
+    final BusinessValueOverviewResponseDto response =
+        readService.getOverview(USER, MetricRange.THIRTY_DAYS);
+
+    // then
+    assertThat(response.getOffTarget())
+        .extracting(OffTargetEntryDto::getKpi, OffTargetEntryDto::getStatus)
+        .containsExactlyInAnyOrder(
+            tuple("cycleTime", OffTargetStatus.NO_COMPLETED_INSTANCES),
+            tuple("automationRate", OffTargetStatus.NO_COMPLETED_INSTANCES));
+  }
+
+  @Test
+  void shouldPreferNotMeasuredOverNotApplicableForASynthesizedRow() {
+    // A target-only definition has no measurement of either KPI, so there is no cycle time to
+    // conclude anything from. Claiming the model has nothing to automate would be a guess.
+    // given
+    when(overviewRepository.readByRange(eq(MetricRange.THIRTY_DAYS), any())).thenReturn(List.of());
+    stubCurrentDefinitions(new DefKey(TENANT_A, "fresh-import"));
+    when(targetRepository.readByTenants(any()))
+        .thenReturn(List.of(target(TENANT_A, "fresh-import", 1_000L, 90)));
+
+    // when
+    final BusinessValueOverviewResponseDto response =
+        readService.getOverview(USER, MetricRange.THIRTY_DAYS);
+
+    // then
+    assertThat(response.getOffTarget())
+        .extracting(OffTargetEntryDto::getStatus)
+        .containsOnly(OffTargetStatus.NOT_MEASURED);
+  }
+
+  @Test
   void shouldSkipAnUnmeasuredEntryWhenTheTargetIsZero() {
     // The zero-target guard predates this list and exists because gapPct would divide by zero. It
     // gates the unmeasured entries on the same terms, so a zero target reads as no target whether
@@ -753,27 +815,6 @@ class BusinessValueOverviewReadServiceTest {
     assertThat(response.getOffTarget())
         .extracting(OffTargetEntryDto::getProcessKey)
         .containsExactly("big-gap", "small-gap", "a-unmeasured", "b-unmeasured");
-  }
-
-  @Test
-  void shouldListBothAMeasuredMissAndAnUnmeasuredTargetForTheSameProcess() {
-    // One process, one KPI measured and missing, the other with no measurement. A consumer groups
-    // these under one process, so both have to arrive carrying their own status.
-    // given
-    seedRows(
-        MetricRange.THIRTY_DAYS,
-        fresh(row(TENANT_A, "mixed", cyc(9_000L, 8_000L, false), aut(null, 90, null), 2, 0)));
-
-    // when
-    final BusinessValueOverviewResponseDto response =
-        readService.getOverview(USER, MetricRange.THIRTY_DAYS);
-
-    // then
-    assertThat(response.getOffTarget())
-        .extracting(OffTargetEntryDto::getKpi, OffTargetEntryDto::getStatus)
-        .containsExactly(
-            tuple("cycleTime", OffTargetStatus.OFF_TARGET),
-            tuple("automationRate", OffTargetStatus.NO_COMPLETED_INSTANCES));
   }
 
   /**
