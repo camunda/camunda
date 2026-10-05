@@ -72,7 +72,8 @@ class CamundaContainerTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"../escape", "/tmp/escape", "dir/secret", "dir\\secret", ".hidden", ".."})
+  @ValueSource(
+      strings = {"../escape", "/tmp/escape", "dir/secret", "dir\\secret", ".hidden", "..", "", " "})
   void shouldRejectClusterSecretNameThatIsNotASinglePathSegment(final String name) {
     // given
     final CamundaContainer container =
