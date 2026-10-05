@@ -632,6 +632,10 @@ public class DashboardService implements ReportReferencingService, CollectionRef
             if (filterData == null) {
               throw new BadRequestException("Variable dashboard filters require additional data");
             }
+            if (StringUtils.isBlank(filterData.getName())) {
+              throw new InvalidDashboardVariableFilterException(
+                  "Variable dashboard filters require a variable name");
+            }
             final VariableType variableType = filterData.getType();
             if ((variableType.equals(VariableType.DATE)
                     || variableType.equals(VariableType.BOOLEAN))
