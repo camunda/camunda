@@ -14,8 +14,9 @@ on:
         default: false
         description: >-
           When true, skip uploading the distball/m2 tarball to the GitHub artifact API.
-          Only ci.yml's docker-checks job consumes that artifact; standalone callers with no
-          such consumer should set this to true to skip the unused upload.
+          Only ci.yml's docker-checks and Gradle distribution parity jobs consume that artifact;
+          standalone callers with no such consumer should set this to true to skip the unused
+          upload.
 
 env:
   GCS_BUILD_CACHE_BUCKET: camunda-monorepo-ci-artifacts
