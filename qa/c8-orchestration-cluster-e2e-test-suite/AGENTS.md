@@ -390,6 +390,56 @@ Orchestration-suite failures almost always trace to a module inside this same re
 | c8Run setup / packaging             | `camunda/camunda`               | `c8run/`                                    |
 | Helm chart / deploy config          | `camunda/camunda-platform-helm` | `charts/`                                   |
 
+### Labels for issues in `camunda/camunda`
+
+`camunda/camunda` triages bugs by their labels. Its `opened_issue_labeler.yml` reads only the
+markers of the bug-report form, and the body this agent writes has none, so no automation adds
+these labels for you. Set **all** of them on `gh issue create`. When you reuse, reopen, or append a
+fingerprint to an existing issue, add the ones it is missing (see step 1).
+
+|         Label         |                                                                                               Value                                                                                               |
+|-----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `kind/bug`            | Always.                                                                                                                                                                                           |
+| `qa/automation-found` | Always. Use it instead of `nightly-detected`, which does not exist in `camunda/camunda`.                                                                                                          |
+| `component/<x>`       | From the component table below.                                                                                                                                                                   |
+| `severity/<x>`        | From the severity rules below.                                                                                                                                                                    |
+| `likelihood/<x>`      | `likelihood/high`, because Gate A already proved the failure is deterministic. Use `likelihood/mid` only when it fails in some scenarios or on some nights of the same version and not in others. |
+| `affects/<X.Y>`       | The version of the failing run (`8.10` → `affects/8.10`). Omit it for `main`.                                                                                                                     |
+
+|                    Failure surface                    |       `component/` label        |
+|-------------------------------------------------------|---------------------------------|
+| Identity, Admin UI, authorizations, RBA (8.10+)       | `component/identity`            |
+| Management Identity (Self-Managed)                    | `component/management-identity` |
+| Operate                                               | `component/operate`             |
+| Tasklist                                              | `component/tasklist`            |
+| Optimize                                              | `component/optimize`            |
+| REST API v2 contract (status codes, filters, OpenAPI) | `component/c8-api`              |
+| Engine behavior (BPMN/DMN execution, process state)   | `component/zeebe-engine`        |
+| Broker, cluster, partitions, backups                  | `component/zeebe-platform`      |
+| Exporters, secondary storage (ES/OS/RDBMS), import    | `component/data-layer`          |
+| c8Run packaging or startup                            | `component/c8run`               |
+| Cannot tell                                           | `needs component label`         |
+
+Severity follows [CONTRIBUTING.md](https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#severity-and-likelihood-bugs):
+
+- `severity/critical` — **data loss** (user data deleted, lost or corrupted, for example entities
+  gone after an upgrade) or **unauthorized access** (a user without the permission reaches data or
+  actions). There is no workaround.
+- `severity/high` — a user-facing flow is blocked and no workaround is known (a login fails, an
+  action in the UI cannot complete).
+- `severity/mid` — a noticeable impact with a known workaround (the same action works through the
+  REST API, another UI path, or another filter). Name the workaround in the body.
+- `severity/low` — little impact on users: a wrong status code for invalid input, a cosmetic
+  defect, log noise.
+- `severity/unknown` — only when you cannot tell without a deep investigation. Do not use it to
+  avoid a choice.
+
+When you hesitate between two severities, take the higher one. Give the reason in the
+`**Severity:**` line of the body.
+
+Never change a `component/`, `severity/` or `likelihood/` label that a person already set on an
+existing issue. Add only the categories that are missing.
+
 ### Filing the bug ticket (dedupe FIRST)
 
 > **Token:** use the default `GH_TOKEN` (the qa-processes App token) for ALL `gh` calls FIRST —
@@ -430,13 +480,21 @@ Orchestration-suite failures almost always trace to a module inside this same re
 
      Put its URL in `fix-meta.json`.
 
+   - In `camunda/camunda`, in each case above, also add the labels the issue is missing (see
+     **Labels for issues in `camunda/camunda`**):
+     `gh issue edit <n> --repo camunda/camunda --add-label <label>,<label>`.
+
 2. **File the issue** when none exists. You MAY use the repo's `create-issue` skill (bug template +
    component label), but the body MUST contain the fingerprint line below so dedupe works:
 
    ```bash
+   # every label from "Labels for issues in camunda/camunda"
+   LABELS=(--label kind/bug --label qa/automation-found --label component/<x> \
+     --label severity/<x> --label likelihood/<x> --label affects/<X.Y>)
+
    gh issue create --repo camunda/camunda \
      --title "<module>: <one-line symptom> (nightly <version>)" \
-     --label "kind/bug" --label "nightly-detected" \
+     "${LABELS[@]}" \
      --body "$(cat <<'BODY'
    Detected by orchestration-cluster nightly triage. The failing test is **correct** and the failure
    is **not flaky** — it traces to a recent product change.
@@ -444,6 +502,7 @@ Orchestration-suite failures almost always trace to a module inside this same re
    - **Failing test:** `<file>` › `<test_name>` (<test_type>, <version>)
    - **Symptom:** <what the screenshot / error shows>
    - **Suspected change:** <commit sha + subject, or PR #, or docs reference>
+   - **Severity:** <severity label> — <one-line reason; name the workaround if one exists>
    - **Nightly run(s):** <e2e / api run URLs>
    - **Triage run:** <triage_run_url>
 
@@ -452,8 +511,9 @@ Orchestration-suite failures almost always trace to a module inside this same re
    )"
    ```
 
-   The `Fingerprint:` line is **mandatory**. `kind/bug` / `nightly-detected` are defaults — drop a
-   label the repo rejects rather than failing.
+   The `Fingerprint:` line is **mandatory**. If a label is rejected, check its name against the
+   tables above and retry; drop only an `affects/<X.Y>` label that does not exist yet. For an
+   issue in `camunda/camunda-platform-helm`, use `--label kind/bug` only.
 
 3. **Skip the failing test with a bug-linked annotation**, static `test.skip(...)` form, with the
    annotation comment on the line directly above — exact format, no deviation:
@@ -1050,7 +1110,8 @@ actually fixed, or something regressed since — then:
 2. **Leave the test un-skipped and failing.** Do NOT re-add `test.skip(`, do NOT mask
    it with a longer timeout, a viewport pin, or a weakened assertion. The PR is
    *supposed* to go red here: that is the signal a human needs.
-3. Reopen the closed issue the marker referenced (`gh issue reopen`) — or file a new
+3. Reopen the closed issue the marker referenced (`gh issue reopen`) and add the labels
+   it is missing (see "### Labels for issues in `camunda/camunda`") — or file a new
    one per "### Filing the bug ticket (dedupe FIRST)" when the original is not the
    right home — and comment on it linking this verification run.
 4. Comment on the unskip PR (`gh pr comment $PR_NUMBER --repo $REPO`) with the test,
