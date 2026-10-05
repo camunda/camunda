@@ -49,6 +49,14 @@ configurations.all {
   )
 }
 
+// Maven's optimize/pom.xml extends the shared surefire argLine with these two opens.
+tasks.withType<Test>().configureEach {
+  jvmArgs(
+    "--add-opens=java.base/java.lang=ALL-UNNAMED",
+    "--add-opens=java.base/java.util=ALL-UNNAMED",
+  )
+}
+
 // Dedicated per-suite unit-test tasks: testCoreFeatures and testDataLayer.
 //
 // Optimize splits its backend unit tests into two owner-aligned JUnit Platform @Suite classes —
