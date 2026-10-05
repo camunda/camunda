@@ -660,8 +660,10 @@ public class CamundaProcessTestExtension
    * Add a secret to the cluster's secret store. The secret can be referenced in process resources
    * as {@code =camunda.secrets.<NAME>}.
    *
-   * <p>Only applies to the managed and shared runtime modes. With a remote runtime, the secret is
-   * ignored because the remote cluster owns its secret store.
+   * <p>Only applies when the extension starts its own runtime. With a remote runtime, the secret is
+   * ignored because the remote cluster owns its secret store. With the shared runtime, the secret
+   * only takes effect if this extension is the first to start the shared runtime; later test
+   * classes reuse the already running cluster and its secrets.
    *
    * @param name the name of the secret
    * @param value the value of the secret
