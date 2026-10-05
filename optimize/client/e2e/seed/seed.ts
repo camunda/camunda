@@ -146,7 +146,12 @@ async function runIncident(camunda: Camunda, incident: 'open' | 'resolved') {
       CONSISTENCY
     );
     await camunda.updateJob({jobKey: job.jobKey, changeset: {retries: 1}});
-    await camunda.resolveIncident({incidentKey: first(items, 'incident').incidentKey});
+    // The 8.8 SDK types every search result field as optional.
+    const {incidentKey} = first(items, 'incident');
+    if (!incidentKey) {
+      throw new Error('The incident search returned no incident key');
+    }
+    await camunda.resolveIncident({incidentKey});
     await completeNextJob(camunda, 'e2e-charge-card');
   }
 }
@@ -180,8 +185,8 @@ async function completeNextJob(camunda: Camunda, type: string) {
   await camunda.completeJob({jobKey: job.jobKey});
 }
 
-function first<T>(items: T[], what: string): T {
-  if (!items[0]) {
+function first<T>(items: T[] | undefined, what: string): T {
+  if (!items?.[0]) {
     throw new Error(`Expected a ${what} but found none`);
   }
   return items[0];

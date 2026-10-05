@@ -1357,11 +1357,12 @@
     react-error-boundary "4.0.13"
     react-markdown "8.0.7"
 
-"@camunda8/orchestration-cluster-api@9.1.5":
-  version "9.1.5"
-  resolved "https://registry.yarnpkg.com/@camunda8/orchestration-cluster-api/-/orchestration-cluster-api-9.1.5.tgz#a58f768170e5ee42c060cd24881d6840a2b45b85"
-  integrity sha512-xl3E89SQI56vJBqIbprQEfuXLfW+RgqYQ8BQxkTfqjQTDLzq5kZeEKfcDOIZCPH58gokgV441v/vrvi8U9hnUA==
+"@camunda8/orchestration-cluster-api@8.8.5":
+  version "8.8.5"
+  resolved "https://registry.yarnpkg.com/@camunda8/orchestration-cluster-api/-/orchestration-cluster-api-8.8.5.tgz#e355dc1fbc49092be9ee157bc8f359b2cfda7235"
+  integrity sha512-ORT8LzWq7gAsni6lC4VXAZ91JIjdFC7WyttIDGI7qsslgv63LeALMZ50LmWeMixTKviScXW1yAbllUn8Y4N1Hw==
   dependencies:
+    p-retry "^7.1.1"
     typed-env "^2.0.0"
     zod "^4"
 
@@ -8742,6 +8743,11 @@ is-negative-zero@^2.0.3:
   resolved "https://registry.yarnpkg.com/is-negative-zero/-/is-negative-zero-2.0.3.tgz#ced903a027aca6381b777a5743069d7376a49747"
   integrity sha512-5KoIu2Ngpyek75jXodFvnafB6DJgr3u8uuK0LEZJjrU19DrMD3EVERaR8sjz8CCGgpZvxPl9SuE1GMVPFHx1mw==
 
+is-network-error@^1.1.0:
+  version "1.3.2"
+  resolved "https://registry.yarnpkg.com/is-network-error/-/is-network-error-1.3.2.tgz#9460bc30f8419a4bca77114f4de88a3ee5e0c519"
+  integrity sha512-PhBY86zaxNZUuWP6h13Vu5oFe0XY6/UlKzQnYFELzGVHygP3MxmvTfYSG7GN3aIab/iWudSMgjSnG9Dq+nHrgA==
+
 is-number-object@^1.0.4:
   version "1.0.7"
   resolved "https://registry.yarnpkg.com/is-number-object/-/is-number-object-1.0.7.tgz#59d50ada4c45251784e9904f5246c742f07a42fc"
@@ -11358,6 +11364,13 @@ p-retry@^4.5.0:
   dependencies:
     "@types/retry" "0.12.0"
     retry "^0.13.1"
+
+p-retry@^7.1.1:
+  version "7.1.1"
+  resolved "https://registry.yarnpkg.com/p-retry/-/p-retry-7.1.1.tgz#7470fdecb1152ba50f1334e48378c9e401330e24"
+  integrity sha512-J5ApzjyRkkf601HpEeykoiCvzHQjWxPAHhyjFcEUP2SWq0+35NKh8TLhpLw+Dkq5TZBFvUM6UigdE9hIVYTl5w==
+  dependencies:
+    is-network-error "^1.1.0"
 
 p-try@^2.0.0:
   version "2.2.0"
