@@ -22,7 +22,6 @@ import picocli.CommandLine.Command;
     description = "State management commands",
     subcommands = {
       StateListCommand.class,
-      StateSummaryCommand.class,
       StateUpdateKeyCommand.class,
       StateResetIncidentPositionCommand.class
     })
