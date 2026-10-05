@@ -112,7 +112,9 @@ public class EngineDataProcessCleanupService extends CleanupService {
         throw new IllegalStateException(
             "Unsupported cleanup mode " + cleanupConfigurationForKey.getCleanupMode());
     }
-    emptyProcessInstanceIndexReaper.deleteIfEmpty(currentProcessDefinitionKey);
+    if (getCleanupConfiguration().getProcessDataCleanupConfiguration().isDeleteEmptyIndices()) {
+      emptyProcessInstanceIndexReaper.deleteIfEmpty(currentProcessDefinitionKey);
+    }
 
     LOG.info(
         "Finished cleanup on process instances for processDefinitionKey: {}, with ttl: {} and mode:{}",
