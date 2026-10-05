@@ -369,8 +369,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       final Map<String, String> exclusionFilters,
       final Executor executor) {
 
-    final ArchiveByIdTaskSupplier<FieldValue> taskSupplier =
-        new ArchiveByIdTaskSupplier<>(
+    final ArchiveByIdTaskSupplier taskSupplier =
+        new ArchiveByIdTaskSupplier(
             config,
             sourceIndexName,
             destinationIndexName,
@@ -449,12 +449,12 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   }
 
   @VisibleForTesting
-  CompletableFuture<ArchiveDocIdsBatch<FieldValue>> getArchiveDocIdsBatch(
+  CompletableFuture<ArchiveDocIdsBatch> getArchiveDocIdsBatch(
       final String sourceIndexName,
       final Map<String, List<String>> keysByField,
       final Map<String, String> inclusionFilters,
       final Map<String, String> exclusionFilters,
-      final List<FieldValue> searchAfter,
+      final SearchAfter searchAfter,
       final int size) {
     final Query query = buildFilterQuery(keysByField, inclusionFilters, exclusionFilters);
     final Builder requestBuilder =
@@ -470,8 +470,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             .source(s -> s.fetch(false))
             .sort(SortOptions.of(s -> s.field(f -> f.field("id").order(SortOrder.Asc))));
 
-    if (searchAfter != null && !searchAfter.isEmpty()) {
-      requestBuilder.searchAfter(searchAfter);
+    if (searchAfter != null) {
+      ((SearchAfterImpl) searchAfter).apply(requestBuilder);
     }
 
     final var timer = Timer.start();
@@ -487,7 +487,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
               }
               return ArchiveDocIdsBatch.from(
                   hits.stream().map(h -> new IdWithRouting(h.id(), h.routing())).toList(),
-                  hits.getLast().sort());
+                  new SearchAfterImpl(hits.getLast().sort()));
             });
   }
 
@@ -918,5 +918,13 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         .sort(sort -> sort.field(field -> field.field(sortField).order(SortOrder.Asc)))
         .size(size)
         .build();
+  }
+
+  record SearchAfterImpl(List<FieldValue> values) implements SearchAfter {
+    void apply(final Builder requestBuilder) {
+      if (values != null && !values.isEmpty()) {
+        requestBuilder.searchAfter(values);
+      }
+    }
   }
 }

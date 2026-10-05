@@ -25,7 +25,7 @@ import java.util.function.BiFunction;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.slf4j.Logger;
 
-public class ArchiveByIdTaskSupplier<SortFieldType> {
+public class ArchiveByIdTaskSupplier {
 
   private static final int MINIMUM_BATCH_SIZE = 50;
   private static final double BATCH_SIZE_REDUCTION_FACTOR = 0.5;
@@ -39,16 +39,14 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
   private final HistoryConfiguration config;
   private final String sourceIdx;
   private final String destinationIdx;
-  private final BiFunction<
-          List<SortFieldType>, Integer, CompletableFuture<ArchiveDocIdsBatch<SortFieldType>>>
-      idsSupplier;
+  private final BiFunction<SearchAfter, Integer, CompletableFuture<ArchiveDocIdsBatch>> idsSupplier;
   private final TriFunction<String, String, List<IdWithRouting>, CompletableFuture<Long>> reindexer;
   private final BiFunction<String, List<IdWithRouting>, CompletableFuture<Long>> deleter;
   private final Executor executor;
   private final CamundaExporterMetrics metrics;
   private final Logger logger;
 
-  private final AtomicReference<ArchiveDocIdsBatch<SortFieldType>> lastSearchResponse =
+  private final AtomicReference<ArchiveDocIdsBatch> lastSearchResponse =
       new AtomicReference<>(null);
   private final AtomicBoolean finished = new AtomicBoolean(false);
   private final AtomicInteger retryCount = new AtomicInteger(0);
@@ -61,9 +59,7 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
       final HistoryConfiguration config,
       final String sourceIdx,
       final String destinationIdx,
-      final BiFunction<
-              List<SortFieldType>, Integer, CompletableFuture<ArchiveDocIdsBatch<SortFieldType>>>
-          idsSupplier,
+      final BiFunction<SearchAfter, Integer, CompletableFuture<ArchiveDocIdsBatch>> idsSupplier,
       final TriFunction<String, String, List<IdWithRouting>, CompletableFuture<Long>> reindexer,
       final BiFunction<String, List<IdWithRouting>, CompletableFuture<Long>> deleter,
       final Executor executor,
@@ -167,9 +163,9 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
             executor);
   }
 
-  private List<SortFieldType> getLastSearchPosition() {
-    final ArchiveDocIdsBatch<SortFieldType> lstResponse = lastSearchResponse.get();
-    return lstResponse == null ? List.of() : lstResponse.searchAfter();
+  private SearchAfter getLastSearchPosition() {
+    final ArchiveDocIdsBatch lstResponse = lastSearchResponse.get();
+    return lstResponse == null ? null : lstResponse.searchAfter();
   }
 
   private void adjustBatchSize(final Throwable ex) {
@@ -183,7 +179,7 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
     }
   }
 
-  private CompletableFuture<Long> reindex(final ArchiveDocIdsBatch<SortFieldType> response) {
+  private CompletableFuture<Long> reindex(final ArchiveDocIdsBatch response) {
     return reindexer
         .apply(sourceIdx, destinationIdx, response.documents())
         .thenApply(
@@ -191,7 +187,7 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
                 validateProcessedCount("reindex", reindexCount, response.documents().size()));
   }
 
-  private CompletableFuture<Long> delete(final ArchiveDocIdsBatch<SortFieldType> response) {
+  private CompletableFuture<Long> delete(final ArchiveDocIdsBatch response) {
     return deleter
         .apply(sourceIdx, response.documents())
         .thenApply(
@@ -233,19 +229,18 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
         && (throwableClass.isInstance(thr) || throwableClass.isInstance(thr.getCause()));
   }
 
-  public record ArchiveDocIdsBatch<T>(List<IdWithRouting> documents, List<T> searchAfter) {
-    static <T> ArchiveDocIdsBatch<T> empty() {
-      return new ArchiveDocIdsBatch<>(List.of(), List.of());
+  public record ArchiveDocIdsBatch(List<IdWithRouting> documents, SearchAfter searchAfter) {
+    static ArchiveDocIdsBatch empty() {
+      return new ArchiveDocIdsBatch(List.of(), null);
     }
 
-    static <T> ArchiveDocIdsBatch<T> from(
-        final List<IdWithRouting> documents, final List<T> searchAfter) {
-      return new ArchiveDocIdsBatch<>(documents, searchAfter);
+    static ArchiveDocIdsBatch from(
+        final List<IdWithRouting> documents, final SearchAfter searchAfter) {
+      return new ArchiveDocIdsBatch(documents, searchAfter);
     }
 
     public boolean isEmpty() {
       return documents.isEmpty();
     }
   }
-
 }

@@ -20,6 +20,7 @@ import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.ArchiveDocIdsBatch;
+import io.camunda.exporter.tasks.archiver.ElasticsearchArchiverRepository.SearchAfterImpl;
 import io.camunda.exporter.tasks.util.AsyncRepeatUntil;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.util.OpensearchRepository;
@@ -379,8 +380,8 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       final Map<String, String> exclusionFilters,
       final Executor executor) {
 
-    final ArchiveByIdTaskSupplier<FieldValue> taskSupplier =
-        new ArchiveByIdTaskSupplier<>(
+    final ArchiveByIdTaskSupplier taskSupplier =
+        new ArchiveByIdTaskSupplier(
             config,
             sourceIndexName,
             destinationIndexName,
@@ -463,12 +464,12 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   }
 
   @VisibleForTesting
-  CompletableFuture<ArchiveDocIdsBatch<FieldValue>> getArchiveDocIdsBatch(
+  CompletableFuture<ArchiveDocIdsBatch> getArchiveDocIdsBatch(
       final String sourceIndexName,
       final Map<String, List<String>> keysByField,
       final Map<String, String> inclusionFilters,
       final Map<String, String> exclusionFilters,
-      final List<FieldValue> searchAfter,
+      final SearchAfter searchAfter,
       final int size) {
     final Query query = buildFilterQuery(keysByField, inclusionFilters, exclusionFilters);
     final Builder requestBuilder =
@@ -484,8 +485,8 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             .source(s -> s.fetch(false))
             .sort(sort -> sort.field(field -> field.field("id").order(SortOrder.Asc)));
 
-    if (searchAfter != null && !searchAfter.isEmpty()) {
-      requestBuilder.searchAfter(searchAfter);
+    if (searchAfter != null) {
+      ((SearchAfterImpl) searchAfter).apply(requestBuilder);
     }
 
     final var timer = Timer.start();
@@ -500,7 +501,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
               }
               return ArchiveDocIdsBatch.from(
                   hits.stream().map(h -> new IdWithRouting(h.id(), h.routing())).toList(),
-                  hits.getLast().sort());
+                  new SearchAfterImpl(hits.getLast().sort()));
             });
   }
 
@@ -1055,6 +1056,14 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         .sort(sort -> sort.field(field -> field.field(sortField).order(SortOrder.Asc)))
         .size(size)
         .build();
+  }
+
+  record SearchAfterImpl(List<FieldValue> values) implements SearchAfter {
+    void apply(final Builder requestBuilder) {
+      if (values != null && !values.isEmpty()) {
+        requestBuilder.searchAfter(values);
+      }
+    }
   }
 
   private record AddPolicyRequestBody(@JsonProperty("policy_id") String policyId) {}
