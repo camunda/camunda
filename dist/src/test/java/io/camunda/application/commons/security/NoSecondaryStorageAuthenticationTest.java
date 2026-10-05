@@ -28,6 +28,7 @@ import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.MapPropertySource;
 
 /**
  * Integration test for authentication behavior in no-database mode. This test validates that the
@@ -42,12 +43,15 @@ public class NoSecondaryStorageAuthenticationTest {
     final var context = new AnnotationConfigApplicationContext();
     context
         .getEnvironment()
-        .getSystemProperties()
-        .put(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, CAMUNDA_DATABASE_TYPE_NONE);
-    context
-        .getEnvironment()
-        .getSystemProperties()
-        .put("camunda.security.authentication.method", "basic");
+        .getPropertySources()
+        .addFirst(
+            new MapPropertySource(
+                "test",
+                Map.of(
+                    UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE,
+                    CAMUNDA_DATABASE_TYPE_NONE,
+                    "camunda.security.authentication.method",
+                    "basic")));
 
     // when - trying to start application with basic auth in no-db mode
     context.register(WebSecurityConfig.BasicAuthenticationNoDbConfiguration.class);
@@ -65,12 +69,15 @@ public class NoSecondaryStorageAuthenticationTest {
     final var context = new AnnotationConfigApplicationContext();
     context
         .getEnvironment()
-        .getSystemProperties()
-        .put(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, "none");
-    context
-        .getEnvironment()
-        .getSystemProperties()
-        .put("camunda.security.authentication.method", "oidc");
+        .getPropertySources()
+        .addFirst(
+            new MapPropertySource(
+                "test",
+                Map.of(
+                    UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE,
+                    "none",
+                    "camunda.security.authentication.method",
+                    "oidc")));
 
     // when - starting application with OIDC auth in no-db mode
     context.register(TestOidcAuthConfiguration.class);
