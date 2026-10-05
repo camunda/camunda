@@ -1,3 +1,4 @@
+import buildlogic.registerTestPortSlotService
 import buildlogic.requiredVersion
 import com.diffplug.gradle.spotless.SpotlessExtension
 import io.camunda.gradle.flags.asEnabledFlag
@@ -107,6 +108,8 @@ val testMaxForks = providers.gradleProperty("test.max.forks").orNull?.toInt() ?:
 val testRetryMaxRetries =
   providers.gradleProperty("test.max.retries").map { it.toInt() }.getOrElse(0)
 
+val testPortSlots = registerTestPortSlotService()
+
 val itPatterns = listOf("**/IT*.class", "**/*IT.class", "**/*ITCase.class")
 
 // If multiple reflection fixtures need this workaround, apply the Maven-equivalent global rule:
@@ -118,12 +121,10 @@ tasks.withType<Test>().configureEach {
     maxRetries.set(testRetryMaxRetries)
     failOnPassedAfterRetry.set(false)
   }
-  // Tell SocketUtil to use OS-assigned ports because Gradle worker IDs are global across tasks
-  // and cannot safely be used as slots in the bounded Maven port layout.
-  systemProperty(
-    "test.gradleWorkerIdProperty",
-    org.gradle.api.internal.tasks.testing.worker.TestWorker.WORKER_ID_SYS_PROPERTY,
-  )
+  // Give each running test task its own SocketUtil port range, like Maven's per-fork number.
+  usesService(testPortSlots)
+  val slots = testPortSlots
+  doFirst { systemProperty("testForkNumber", slots.get().acquire(path)) }
   jvmArgs(
     "--add-opens=java.base/java.io=ALL-UNNAMED",
     "--add-opens=java.base/java.lang=ALL-UNNAMED",
