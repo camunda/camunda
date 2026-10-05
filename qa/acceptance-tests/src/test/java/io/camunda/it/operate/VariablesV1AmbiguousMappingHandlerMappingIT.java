@@ -32,7 +32,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
  * StandaloneCamunda}'s single Spring context — make {@code GET /v1/variables/1} ambiguous unless
  * one side opts out via its {@code @ConditionalOnProperty} gate.
  */
-class VariablesV1AmbiguousMappingHandlerMappingTest {
+class VariablesV1AmbiguousMappingHandlerMappingIT {
 
   private static final String TASKLIST_PROPERTY = "camunda.tasklist.v1-variable-by-id-enabled";
   private static final String OPERATE_PROPERTY = "camunda.operate.v1-variable-by-key-enabled";

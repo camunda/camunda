@@ -34,7 +34,7 @@ import org.springframework.http.HttpStatus;
  * /v1/variables/{id}} ambiguous-mapping collision in favor of Tasklist's V1 controller.
  */
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class VariablesV1OperateOptOutIT {
 
