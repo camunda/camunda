@@ -71,7 +71,6 @@ public final class ContainerElementVariablePropagationTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/55491")
   public void
       shouldNotPropagateLocalVariablesWithSameValueIfNoOutputMappingOnMultiInstanceSubProcess() {
     // given
@@ -255,7 +254,6 @@ public final class ContainerElementVariablePropagationTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/55491")
   public void shouldNotPropagateLocalVariablesWithSameValueIfNoOutputMappingOnSubProcess() {
     // given
     final var processId = "processId";
@@ -476,7 +474,6 @@ public final class ContainerElementVariablePropagationTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/55491")
   public void shouldNotPropagateLocalVariablesWithSameValueIfNoOutputMappingOnAdHocSubProcess() {
     // given
     final var processId = "processId";
@@ -570,7 +567,6 @@ public final class ContainerElementVariablePropagationTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/55491")
   public void shouldNotPropagateLocalVariablesWithSameValueIfNoOutputMappingOnEventSubProcess() {
     // given
     final var processId = "processId";
