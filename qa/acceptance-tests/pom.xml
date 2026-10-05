@@ -215,6 +215,12 @@
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-webmvc</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-data-jdbc-test</artifactId>
       <scope>test</scope>
     </dependency>
@@ -286,6 +292,21 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-webmvc</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tomcat.embed</groupId>
+      <artifactId>tomcat-embed-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -707,6 +728,11 @@
             <dep>io.camunda:zeebe-opensearch-exporter</dep>
             <dep>io.camunda:camunda-exporter</dep>
             <dep>org.springframework.boot:spring-boot-starter-log4j2</dep>
+            <!-- tomcat-embed-core and jakarta.servlet-api provide overlapping servlet-API
+                 classes; the analyzer credits only one of the two per run depending on
+                 classpath order, so both must be declared and both excused here. -->
+            <dep>org.apache.tomcat.embed:tomcat-embed-core</dep>
+            <dep>jakarta.servlet:jakarta.servlet-api</dep>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>
