@@ -38,6 +38,8 @@ function MigrateAction({mode, isSubmitting, hasActiveScope, selection, processDe
 			? processDefinitionSelection.definition.processDefinitionKey
 			: undefined;
 	const {data, isError} = useDiagramXml(definitionKey);
+	// Like legacy, an EXCLUDE selection is judged by the state filters alone (none, or active/incidents), not by which
+	// instances the exclusions leave. Do not gate it on a count of the remaining active instances.
 	const disabledReason =
 		mode !== 'list'
 			? t('operate.processes.toolbar.actionMode')
