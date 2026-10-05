@@ -355,13 +355,21 @@ public class OpensearchEngineClient implements SearchEngineClient {
    * descriptor schema json file.
    *
    * @param indexTemplateDescriptor of the index template to have its settings overwritten.
+   * @param sameVersion whether the stored schema version equals the running version. When {@code
+   *     true}, only the settings runtime configuration owns (shards/replicas/refresh_interval/
+   *     priority) are diffed before writing, since the rest of the settings block (e.g. an {@code
+   *     analysis} block) cannot be compared reliably against the search engine's normalized
+   *     rendering. When {@code false} the settings are written unconditionally, since a version
+   *     change may have altered that JSON-owned part of the settings block.
    */
   @Override
   public void updateIndexTemplateSettings(
       final IndexTemplateDescriptor indexTemplateDescriptor,
-      final IndexConfiguration indexConfiguration) {
+      final IndexConfiguration indexConfiguration,
+      final boolean sameVersion) {
     final var maybeRequest =
-        buildTemplateSettingsUpdateRequestIfChanged(indexTemplateDescriptor, indexConfiguration);
+        buildTemplateSettingsUpdateRequestIfChanged(
+            indexTemplateDescriptor, indexConfiguration, sameVersion);
 
     // If settings are equal, no update is needed
     if (maybeRequest.isEmpty()) {
@@ -778,7 +786,8 @@ public class OpensearchEngineClient implements SearchEngineClient {
 
   private Optional<PutIndexTemplateRequest> buildTemplateSettingsUpdateRequestIfChanged(
       final IndexTemplateDescriptor indexTemplateDescriptor,
-      final IndexConfiguration indexConfiguration) {
+      final IndexConfiguration indexConfiguration,
+      final boolean sameVersion) {
     try (final var templateFile =
         getClass().getResourceAsStream(indexTemplateDescriptor.getMappingsClasspathFilename())) {
       final var currentTemplate = getIndexTemplateState(indexTemplateDescriptor);
@@ -789,7 +798,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
               .withRefreshInterval(indexConfiguration.getRefreshInterval());
       final var configuredPriority = indexConfiguration.getTemplatePriority();
       if (areTemplateSettingsEqualToConfigured(
-          currentTemplate, configuredSettings, configuredPriority)) {
+          currentTemplate, configuredSettings, configuredPriority, sameVersion)) {
         LOG.debug(
             "Index template settings for [{}] are already up to date",
             indexTemplateDescriptor.getTemplateName());
@@ -836,10 +845,18 @@ public class OpensearchEngineClient implements SearchEngineClient {
   private boolean areTemplateSettingsEqualToConfigured(
       final IndexTemplate currentTemplate,
       final SchemaSettingsAppender configuredSettings,
-      final Integer configuredPriority) {
+      final Integer configuredPriority,
+      final boolean sameVersion) {
+    if (!sameVersion) {
+      // The schema version changed, so the JSON-owned part of the settings block (e.g. an
+      // analysis block) may have changed in a way runtime config cannot see. Skip the comparison
+      // and always rewrite rather than risk missing that change.
+      return false;
+    }
     return Objects.equals(
             convertValue(configuredPriority, Long::valueOf), currentTemplate.priority())
-        && configuredSettings.equalsSettings(serializeAsMap(currentTemplate.template().settings()));
+        && configuredSettings.equalsManagedSettings(
+            serializeAsMap(currentTemplate.template().settings()));
   }
 
   private IndexTemplate getIndexTemplateState(

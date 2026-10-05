@@ -71,9 +71,14 @@ public interface SearchEngineClient extends CloseableSilently {
 
   void putIndexMeta(final String indexName, Map<String, Object> meta);
 
+  /**
+   * @param sameVersion whether the stored schema version equals the running version. See the
+   *     implementations for what this changes about the comparison performed before writing.
+   */
   void updateIndexTemplateSettings(
       final IndexTemplateDescriptor indexTemplateDescriptor,
-      final IndexConfiguration indexConfiguration);
+      final IndexConfiguration indexConfiguration,
+      final boolean sameVersion);
 
   void deleteIndex(final String indexName);
 
