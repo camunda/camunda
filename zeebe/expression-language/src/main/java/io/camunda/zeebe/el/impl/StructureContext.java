@@ -10,6 +10,7 @@ package io.camunda.zeebe.el.impl;
 import io.camunda.zeebe.el.ContextValue;
 import java.util.Map;
 import org.camunda.feel.context.CustomContext;
+import org.camunda.feel.context.FunctionProvider;
 import org.camunda.feel.context.VariableProvider;
 import scala.Option;
 import scala.collection.Iterable;
@@ -41,6 +42,11 @@ final class StructureContext extends CustomContext {
   @Override
   public VariableProvider variableProvider() {
     return new StructureVariableProvider();
+  }
+
+  @Override
+  public FunctionProvider functionProvider() {
+    return FeelVariableContext.functionsFrom(variableProvider());
   }
 
   private final class StructureVariableProvider implements VariableProvider {

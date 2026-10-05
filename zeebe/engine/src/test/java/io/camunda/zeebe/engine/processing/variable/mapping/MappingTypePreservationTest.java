@@ -313,42 +313,54 @@ public final class MappingTypePreservationTest {
   }
 
   // ---------------------------------------------------------------------------------------------
-  // T11 — a function value newly survives between mappings where it used to arrive as null.
-  //
-  // Measured directly rather than guessed, per the design's own warning that the obvious
-  // consuming expression might not demonstrate anything. Invoking the function positionally
-  // (`x(1)`) turns out to be a dead end unrelated to this fix: it evaluates to null both before
-  // and after, because feel-scala does not resolve a function invocation through a
-  // VariableProvider-backed context the way it does through a native context literal — confirmed
-  // with `{x: function(a) a + 1, y: x(1)}.y`, which *does* call it (returns 2) when x is bound
-  // natively instead of through our EvaluationContext bridge. `is defined(x)` sidesteps that and
-  // asks the question this rule is actually about: is x still a value at all, or has it silently
-  // become null. Measured against cf439c1deb7 (parent of the fix) and this branch's tip:
-  // before, x round-trips through MessagePack as nil and `is defined(x)` is false; after, x
-  // carries the live FEEL function value across the mapping boundary and `is defined(x)` is true.
-  // The stored x is nil either way — MessagePack still has no representation for a function —
-  // which is why x itself is asserted as "null" in both directions here, unchanged from before.
+  // T11 — a function value survives between mappings and can be invoked there. It used to arrive
+  // as null, so `x(1)` was null; now it is the live FEEL function and evaluates to 2. The stored x
+  // is nil either way — MessagePack has no representation for a function — which is why x itself
+  // is asserted as "null" in both directions here, unchanged from before.
   // ---------------------------------------------------------------------------------------------
 
   @Test
-  public void shouldKeepFunctionValueRecognizableAcrossInputMappings() {
+  public void shouldInvokeFunctionValueAcrossInputMappings() {
+    assertInputMapping(
+        "{}",
+        b -> b.zeebeInputExpression("function(a) a + 1", "x").zeebeInputExpression("x(1)", "y"),
+        variable("x", "null"),
+        variable("y", "2"));
+  }
+
+  @Test
+  public void shouldInvokeFunctionValueAcrossOutputMappings() {
+    assertOutputMapping(
+        "{}",
+        b -> b.zeebeOutputExpression("function(a) a + 1", "x").zeebeOutputExpression("x(1)", "y"),
+        variable("x", "null"),
+        variable("y", "2"));
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // T12 — a number keeps its full precision between mappings. FEEL numbers are BigDecimal, but the
+  // stored variable is a double; the next mapping must still see the BigDecimal, not the double.
+  // ---------------------------------------------------------------------------------------------
+
+  @Test
+  public void shouldKeepNumberPrecisionAcrossInputMappings() {
     assertInputMapping(
         "{}",
         b ->
-            b.zeebeInputExpression("function(a) a + 1", "x")
-                .zeebeInputExpression("is defined(x)", "y"),
-        variable("x", "null"),
+            b.zeebeInputExpression("0.1234567890123456789", "x")
+                .zeebeInputExpression("x = 0.1234567890123456789", "y"),
+        variable("x", "0.12345678901234568"),
         variable("y", "true"));
   }
 
   @Test
-  public void shouldKeepFunctionValueRecognizableAcrossOutputMappings() {
+  public void shouldKeepNumberPrecisionAcrossOutputMappings() {
     assertOutputMapping(
         "{}",
         b ->
-            b.zeebeOutputExpression("function(a) a + 1", "x")
-                .zeebeOutputExpression("is defined(x)", "y"),
-        variable("x", "null"),
+            b.zeebeOutputExpression("0.1234567890123456789", "x")
+                .zeebeOutputExpression("x = 0.1234567890123456789", "y"),
+        variable("x", "0.12345678901234568"),
         variable("y", "true"));
   }
 

@@ -10,12 +10,16 @@ package io.camunda.zeebe.el.impl;
 import io.camunda.zeebe.el.ContextValue;
 import io.camunda.zeebe.el.EvaluationContext;
 import org.camunda.feel.context.CustomContext;
+import org.camunda.feel.context.FunctionProvider;
 import org.camunda.feel.context.VariableProvider;
 import org.camunda.feel.syntaxtree.ValContext;
+import org.camunda.feel.syntaxtree.ValFunction;
 import org.jspecify.annotations.Nullable;
 import scala.Option;
 import scala.collection.Iterable;
+import scala.collection.immutable.List;
 import scala.collection.immutable.List$;
+import scala.jdk.javaapi.CollectionConverters;
 
 final class FeelVariableContext extends CustomContext {
   private final EvaluationContext context;
@@ -27,6 +31,11 @@ final class FeelVariableContext extends CustomContext {
   @Override
   public VariableProvider variableProvider() {
     return new EvaluationContextWrapper();
+  }
+
+  @Override
+  public FunctionProvider functionProvider() {
+    return functionsFrom(variableProvider());
   }
 
   /**
@@ -53,6 +62,34 @@ final class FeelVariableContext extends CustomContext {
       }
       case ContextValue.Structure(final var entries) ->
           new ValContext(new StructureContext(entries));
+    };
+  }
+
+  /**
+   * Lets FEEL invoke a function value held in a variable: FEEL resolves an invocation through the
+   * context's function provider, never its variables, so this provider looks the name up there.
+   *
+   * <p>Example: once {@code x} holds {@code function(a) a + 1}, evaluating {@code x(1)} asks this
+   * provider for functions named {@code x}, gets that function back, and FEEL calls it to get
+   * {@code 2}. A name that holds anything else yields no function, so FEEL moves on to its
+   * built-ins.
+   */
+  static FunctionProvider functionsFrom(final VariableProvider variables) {
+    return new FunctionProvider() {
+      @Override
+      public List<ValFunction> getFunctions(final String name) {
+        final var variable = variables.getVariable(name);
+        final var functions =
+            variable.isDefined() && variable.get() instanceof final ValFunction function
+                ? java.util.List.of(function)
+                : java.util.List.<ValFunction>of();
+        return CollectionConverters.asScala(functions).toList();
+      }
+
+      @Override
+      public Iterable<String> functionNames() {
+        return CollectionConverters.asScala(java.util.List.of());
+      }
     };
   }
 
