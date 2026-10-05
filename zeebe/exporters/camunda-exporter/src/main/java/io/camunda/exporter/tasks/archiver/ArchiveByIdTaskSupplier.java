@@ -11,6 +11,7 @@ import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import com.google.common.base.Stopwatch;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.DocumentBatch;
 import io.camunda.zeebe.util.function.TriFunction;
 import java.net.SocketTimeoutException;
 import java.util.List;
@@ -39,14 +40,16 @@ public class ArchiveByIdTaskSupplier {
   private final HistoryConfiguration config;
   private final String sourceIdx;
   private final String destinationIdx;
-  private final BiFunction<SearchAfter, Integer, CompletableFuture<ArchiveDocIdsBatch>> idsSupplier;
+  private final BiFunction<
+          SearchAfter, Integer, CompletableFuture<DocumentBatch<IdWithRouting, SearchAfter>>>
+      idsSupplier;
   private final TriFunction<String, String, List<IdWithRouting>, CompletableFuture<Long>> reindexer;
   private final BiFunction<String, List<IdWithRouting>, CompletableFuture<Long>> deleter;
   private final Executor executor;
   private final CamundaExporterMetrics metrics;
   private final Logger logger;
 
-  private final AtomicReference<ArchiveDocIdsBatch> lastSearchResponse =
+  private final AtomicReference<DocumentBatch<IdWithRouting, SearchAfter>> lastSearchResponse =
       new AtomicReference<>(null);
   private final AtomicBoolean finished = new AtomicBoolean(false);
   private final AtomicInteger retryCount = new AtomicInteger(0);
@@ -59,7 +62,9 @@ public class ArchiveByIdTaskSupplier {
       final HistoryConfiguration config,
       final String sourceIdx,
       final String destinationIdx,
-      final BiFunction<SearchAfter, Integer, CompletableFuture<ArchiveDocIdsBatch>> idsSupplier,
+      final BiFunction<
+              SearchAfter, Integer, CompletableFuture<DocumentBatch<IdWithRouting, SearchAfter>>>
+          idsSupplier,
       final TriFunction<String, String, List<IdWithRouting>, CompletableFuture<Long>> reindexer,
       final BiFunction<String, List<IdWithRouting>, CompletableFuture<Long>> deleter,
       final Executor executor,
@@ -164,7 +169,7 @@ public class ArchiveByIdTaskSupplier {
   }
 
   private SearchAfter getLastSearchPosition() {
-    final ArchiveDocIdsBatch lstResponse = lastSearchResponse.get();
+    final var lstResponse = lastSearchResponse.get();
     return lstResponse == null ? null : lstResponse.searchAfter();
   }
 
@@ -179,7 +184,8 @@ public class ArchiveByIdTaskSupplier {
     }
   }
 
-  private CompletableFuture<Long> reindex(final ArchiveDocIdsBatch response) {
+  private CompletableFuture<Long> reindex(
+      final DocumentBatch<IdWithRouting, SearchAfter> response) {
     return reindexer
         .apply(sourceIdx, destinationIdx, response.documents())
         .thenApply(
@@ -187,7 +193,7 @@ public class ArchiveByIdTaskSupplier {
                 validateProcessedCount("reindex", reindexCount, response.documents().size()));
   }
 
-  private CompletableFuture<Long> delete(final ArchiveDocIdsBatch response) {
+  private CompletableFuture<Long> delete(final DocumentBatch<IdWithRouting, SearchAfter> response) {
     return deleter
         .apply(sourceIdx, response.documents())
         .thenApply(
@@ -227,20 +233,5 @@ public class ArchiveByIdTaskSupplier {
       final Throwable thr, final Class<? extends Throwable> throwableClass) {
     return thr != null
         && (throwableClass.isInstance(thr) || throwableClass.isInstance(thr.getCause()));
-  }
-
-  public record ArchiveDocIdsBatch(List<IdWithRouting> documents, SearchAfter searchAfter) {
-    static ArchiveDocIdsBatch empty() {
-      return new ArchiveDocIdsBatch(List.of(), null);
-    }
-
-    static ArchiveDocIdsBatch from(
-        final List<IdWithRouting> documents, final SearchAfter searchAfter) {
-      return new ArchiveDocIdsBatch(documents, searchAfter);
-    }
-
-    public boolean isEmpty() {
-      return documents.isEmpty();
-    }
   }
 }

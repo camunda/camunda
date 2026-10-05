@@ -18,7 +18,7 @@ import static org.mockito.Mockito.verify;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
-import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.ArchiveDocIdsBatch;
+import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.DocumentBatch;
 import java.net.SocketTimeoutException;
 import java.util.List;
 import java.util.Set;
@@ -67,7 +67,7 @@ class ArchiveByIdTaskSupplierTest {
             "destination-idx",
             (searchAfter, size) ->
                 CompletableFuture.completedFuture(
-                    ArchiveDocIdsBatch.from(
+                    DocumentBatch.from(
                         List.of(IdWithRouting.of("doc1"), IdWithRouting.of("doc2")),
                         mock(SearchAfter.class))),
             (source, dest, ids) -> {
@@ -116,8 +116,7 @@ class ArchiveByIdTaskSupplierTest {
             "destination-idx",
             (searchAfter, size) ->
                 CompletableFuture.completedFuture(
-                    ArchiveDocIdsBatch.from(
-                        List.of(IdWithRouting.of("doc1")), mock(SearchAfter.class))),
+                    DocumentBatch.from(List.of(IdWithRouting.of("doc1")), mock(SearchAfter.class))),
             (source, dest, ids) -> CompletableFuture.failedFuture(retryableError),
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             DIRECT_EXECUTOR,
@@ -150,8 +149,7 @@ class ArchiveByIdTaskSupplierTest {
             "destination-idx",
             (searchAfter, size) ->
                 CompletableFuture.completedFuture(
-                    ArchiveDocIdsBatch.from(
-                        List.of(IdWithRouting.of("doc1")), mock(SearchAfter.class))),
+                    DocumentBatch.from(List.of(IdWithRouting.of("doc1")), mock(SearchAfter.class))),
             (source, dest, ids) -> CompletableFuture.failedFuture(nonRetryableError),
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             DIRECT_EXECUTOR,
@@ -177,7 +175,7 @@ class ArchiveByIdTaskSupplierTest {
             "destination-idx",
             (searchAfter, size) ->
                 CompletableFuture.completedFuture(
-                    ArchiveDocIdsBatch.from(
+                    DocumentBatch.from(
                         List.of(IdWithRouting.of("doc1"), IdWithRouting.of("doc2")),
                         mock(SearchAfter.class))),
             (source, dest, ids) -> CompletableFuture.completedFuture(1L),
@@ -209,8 +207,7 @@ class ArchiveByIdTaskSupplierTest {
             "destination-idx",
             (searchAfter, size) ->
                 CompletableFuture.completedFuture(
-                    ArchiveDocIdsBatch.from(
-                        List.of(IdWithRouting.of("doc1")), mock(SearchAfter.class))),
+                    DocumentBatch.from(List.of(IdWithRouting.of("doc1")), mock(SearchAfter.class))),
             (source, dest, ids) -> CompletableFuture.completedFuture(2L),
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             DIRECT_EXECUTOR,
@@ -238,8 +235,7 @@ class ArchiveByIdTaskSupplierTest {
             "destination-idx",
             (searchAfter, size) ->
                 CompletableFuture.completedFuture(
-                    ArchiveDocIdsBatch.from(
-                        List.of(IdWithRouting.of("doc1")), mock(SearchAfter.class))),
+                    DocumentBatch.from(List.of(IdWithRouting.of("doc1")), mock(SearchAfter.class))),
             (source, dest, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             (source, ids) -> CompletableFuture.completedFuture(2L),
             DIRECT_EXECUTOR,
@@ -267,8 +263,7 @@ class ArchiveByIdTaskSupplierTest {
             "destination-idx",
             (searchAfter, size) ->
                 CompletableFuture.completedFuture(
-                    ArchiveDocIdsBatch.from(
-                        List.of(IdWithRouting.of("doc1")), mock(SearchAfter.class))),
+                    DocumentBatch.from(List.of(IdWithRouting.of("doc1")), mock(SearchAfter.class))),
             (source, dest, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             DIRECT_EXECUTOR,
@@ -291,7 +286,7 @@ class ArchiveByIdTaskSupplierTest {
             historyConfigWithMaxRetry(3),
             "source-idx",
             "destination-idx",
-            (searchAfter, size) -> CompletableFuture.completedFuture(ArchiveDocIdsBatch.empty()),
+            (searchAfter, size) -> CompletableFuture.completedFuture(DocumentBatch.empty()),
             (source, dest, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             DIRECT_EXECUTOR,
@@ -348,8 +343,7 @@ class ArchiveByIdTaskSupplierTest {
             "destination-idx",
             (searchAfter, size) ->
                 CompletableFuture.completedFuture(
-                    ArchiveDocIdsBatch.from(
-                        List.of(IdWithRouting.of("doc1")), mock(SearchAfter.class))),
+                    DocumentBatch.from(List.of(IdWithRouting.of("doc1")), mock(SearchAfter.class))),
             (source, dest, ids) -> {
               final int call = reindexCallCount.incrementAndGet();
               if (call != 2 && call != 7) {
@@ -409,8 +403,7 @@ class ArchiveByIdTaskSupplierTest {
             (searchAfter, size) -> {
               batchSize.set(size);
               return CompletableFuture.completedFuture(
-                  ArchiveDocIdsBatch.from(
-                      List.of(IdWithRouting.of("doc1")), mock(SearchAfter.class)));
+                  DocumentBatch.from(List.of(IdWithRouting.of("doc1")), mock(SearchAfter.class)));
             },
             (source, dest, ids) -> {
               if (Set.of(1, 2, 5).contains(reindexCallCount.incrementAndGet())) {
@@ -468,8 +461,7 @@ class ArchiveByIdTaskSupplierTest {
             (searchAfter, size) -> {
               batchSize.set(size);
               return CompletableFuture.completedFuture(
-                  ArchiveDocIdsBatch.from(
-                      List.of(IdWithRouting.of("doc1")), mock(SearchAfter.class)));
+                  DocumentBatch.from(List.of(IdWithRouting.of("doc1")), mock(SearchAfter.class)));
             },
             (source, dest, ids) -> {
               if (reindexCallCount.incrementAndGet() <= 3) {
@@ -515,8 +507,7 @@ class ArchiveByIdTaskSupplierTest {
             (searchAfter, size) -> {
               batchSize.set(size);
               return CompletableFuture.completedFuture(
-                  ArchiveDocIdsBatch.from(
-                      List.of(IdWithRouting.of("doc1")), mock(SearchAfter.class)));
+                  DocumentBatch.from(List.of(IdWithRouting.of("doc1")), mock(SearchAfter.class)));
             },
             (source, dest, ids) -> {
               if (reindexCallCount.incrementAndGet() <= 2) {
@@ -557,8 +548,7 @@ class ArchiveByIdTaskSupplierTest {
             "destination-idx",
             (searchAfter, size) ->
                 CompletableFuture.completedFuture(
-                    ArchiveDocIdsBatch.from(
-                        List.of(IdWithRouting.of("doc1")), mock(SearchAfter.class))),
+                    DocumentBatch.from(List.of(IdWithRouting.of("doc1")), mock(SearchAfter.class))),
             (source, dest, ids) -> {
               if (reindexCallCount.incrementAndGet() == 1) {
                 return CompletableFuture.failedFuture(retryableError);

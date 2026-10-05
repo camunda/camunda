@@ -44,7 +44,7 @@ import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.Pro
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
-import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.ArchiveDocIdsBatch;
+import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.DocumentBatch;
 import io.camunda.exporter.tasks.util.AsyncRepeatUntil;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
@@ -449,7 +449,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   }
 
   @VisibleForTesting
-  CompletableFuture<ArchiveDocIdsBatch> getArchiveDocIdsBatch(
+  CompletableFuture<DocumentBatch<IdWithRouting, SearchAfter>> getArchiveDocIdsBatch(
       final String sourceIndexName,
       final Map<String, List<String>> keysByField,
       final Map<String, String> inclusionFilters,
@@ -483,9 +483,9 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             response -> {
               final List<Hit<Void>> hits = response.hits().hits();
               if (hits.isEmpty()) {
-                return ArchiveDocIdsBatch.empty();
+                return DocumentBatch.empty();
               }
-              return ArchiveDocIdsBatch.from(
+              return DocumentBatch.from(
                   hits.stream().map(h -> new IdWithRouting(h.id(), h.routing())).toList(),
                   new SearchAfterImpl(hits.getLast().sort()));
             });
