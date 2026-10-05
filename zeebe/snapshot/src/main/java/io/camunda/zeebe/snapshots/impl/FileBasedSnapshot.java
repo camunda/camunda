@@ -24,7 +24,6 @@ import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -148,7 +147,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
    *
    * @return the reservation, or null if the snapshot is deleted
    */
-  @Nullable FileBasedSnapshotReservation reserveOnActor() {
+  FileBasedSnapshotReservation reserveOnActor() {
     if (deleted) {
       return null;
     }
