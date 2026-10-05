@@ -132,7 +132,7 @@ final class LeaderAppender {
 
     final DefaultRaftMember leader = raft.getLeader();
     final var request =
-        builderWithPreviousEntry(prevEntry, member.getNextIndex())
+        builderWithPreviousEntry(prevEntry)
             .withTerm(raft.getTerm())
             .withLeader(leader.memberId())
             .withEntries(Collections.emptyList())
@@ -142,17 +142,14 @@ final class LeaderAppender {
   }
 
   private VersionedAppendRequest.Builder builderWithPreviousEntry(
-      final IndexedRaftLogEntry prevEntry, final long nextIndex) {
+      final IndexedRaftLogEntry prevEntry) {
     long prevIndex = 0;
     long prevTerm = 0;
 
     if (prevEntry != null) {
       prevIndex = prevEntry.index();
       prevTerm = prevEntry.term();
-    } else if (nextIndex != 1) {
-      // if next index is 1, it is the very first log entry. So keep the previous term and index 0.
-      // Otherwise, we are going to send the next entry after a snapshot. So set the previous index
-      // and term to the snapshot's index and term.
+    } else {
       final var currentSnapshot = raft.getCurrentSnapshot();
       if (currentSnapshot != null) {
         prevIndex = currentSnapshot.getIndex();
@@ -169,7 +166,7 @@ final class LeaderAppender {
 
     final DefaultRaftMember leader = raft.getLeader();
     final VersionedAppendRequest.Builder builder =
-        builderWithPreviousEntry(prevEntry, member.getNextIndex())
+        builderWithPreviousEntry(prevEntry)
             .withTerm(raft.getTerm())
             .withLeader(leader.memberId())
             .withCommitIndex(raft.getCommitIndex());
@@ -1024,13 +1021,23 @@ final class LeaderAppender {
       return false;
     }
 
-    if (raft.getLog().getFirstIndex() > member.getNextIndex()) {
+    final long nextIndex = member.getNextIndex();
+    if (nextIndex <= 1) {
+      // The member has no entries. The snapshot may contain state that is not in the log, e.g. the
+      // bootstrap snapshot of a partition created by scaling up, so the log cannot rebuild it.
+      return true;
+    }
+    if (raft.getLog().getFirstIndex() > nextIndex) {
       // Necessary events are not available anymore, we have to use the snapshot
+      return true;
+    }
+    if (member.getCurrentEntry() == null && nextIndex != persistedSnapshot.getIndex() + 1) {
+      // The previous entry of the next append is neither in the log nor the snapshot
       return true;
     }
     // Only use the snapshot if the number of events that would have to be replicated
     // is above the threshold
-    final var memberLag = persistedSnapshot.getIndex() - (member.getNextIndex() - 1);
+    final var memberLag = persistedSnapshot.getIndex() - (nextIndex - 1);
     return memberLag > raft.getPreferSnapshotReplicationThreshold();
   }
 
