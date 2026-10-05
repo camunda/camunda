@@ -15,7 +15,7 @@ class OptionalDependenciesPomAction(private val optionalDependencies: Map<String
   private fun Node.optionalize(optionalDependencies: Map<String, String>) {
     val dependenciesNode =
       children().filterIsInstance<Node>().firstOrNull { it.hasName("dependencies") }
-        ?: error("Published POM has no dependencies element")
+        ?: appendNode("dependencies")
     val publishedDependencies =
       dependenciesNode.children().filterIsInstance<Node>().associateBy {
         "${it.childText("groupId")}:${it.childText("artifactId")}"
