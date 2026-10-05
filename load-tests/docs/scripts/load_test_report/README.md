@@ -33,8 +33,9 @@ Common options:
 - `--sample-step <dur>`: sample resolution for window summaries. Default: `1m`.
 - `--queries <path>`: YAML query file path. Default: packaged
   `report-queries.yaml`.
-- `--start <time>`: exact reporting window. The report window starts at this RFC3339
-  or Unix timestamp. The duration is added to the start time to derive the end time.
+- `--start <time>`: start of the reporting window as an RFC3339 or Unix timestamp. The
+  duration is added to it to derive the end time, which must not be in the future.
+  Default: now minus `--duration-seconds`, so the window ends now.
 - `--endpoint <url>`: Prometheus base URL. Default: `http://localhost:9090`.
 - `--user <user> --password <password>`: basic auth credentials for Prometheus.
 - `--format json|csv|tsv`: output format. Default: `json`.
@@ -161,7 +162,7 @@ minute, combining a stable rate with finer temporal resolution.
 
 #### Packaged query semantics
 
-The report window ends with `--start` plus `--duration-seconds`.
+The report window ends with `--start` plus `--duration-seconds`, which is now when `--start` is omitted.
 
 Different column types use that window differently:
 
