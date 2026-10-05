@@ -200,6 +200,8 @@
 /.agents/skills/ci-validation/**                 @camunda/engineering-operations
 /.agents/skills/ci-workflow-authoring/**         @camunda/engineering-operations
 /.agents/skills/gradle-build-parity/**           @camunda/engineering-operations
+
+
 # Engine-expert skill
 /.agents/skills/engine-expert/  @korthout @camunda/core-features
 

@@ -49,6 +49,20 @@ commitlint*                 @camunda/orchestration-cluster
 .suppressions.xml           @camunda/orchestration-cluster
 camunda.Dockerfile          @camunda/orchestration-cluster
 
+# Gradle build (parallel path to Maven)
+/build.gradle.kts           @camunda/orchestration-cluster
+/settings.gradle.kts        @camunda/orchestration-cluster
+/gradle.properties          @camunda/orchestration-cluster
+/gradlew                    @camunda/orchestration-cluster
+/gradlew.bat                @camunda/orchestration-cluster
+/gradle/                    @camunda/orchestration-cluster
+/buildSrc/                  @camunda/orchestration-cluster
+# Convention-plugin exceptions (domain team owns, last match wins)
+/buildSrc/src/main/kotlin/buildlogic.sbe-conventions.gradle.kts              @camunda/zeebe-distributed-platform
+/buildSrc/src/main/kotlin/buildlogic.netty-tcnative-runtime-conventions.gradle.kts @camunda/zeebe-distributed-platform
+/buildSrc/src/main/kotlin/buildlogic.frontend-webjar-conventions.gradle.kts  @camunda/core-features
+/buildSrc/src/main/kotlin/buildlogic.client-conventions.gradle.kts           @camunda/core-features
+
 # Zeebe shared ownership modules
 zeebe/README.md             @camunda/orchestration-cluster
 zeebe/docker/utils/         @camunda/orchestration-cluster
@@ -91,21 +105,6 @@ buf.yaml                    @camunda/orchestration-cluster
 /bom-deprecated/            @camunda/engineering-operations
 /scripts/                   @camunda/engineering-operations
 /monorepo-docs-site/        @camunda/engineering-operations
-
-
-# Gradle build (parallel path to Maven)
-/build.gradle.kts           @camunda/orchestration-cluster
-/settings.gradle.kts        @camunda/orchestration-cluster
-/gradle.properties          @camunda/orchestration-cluster
-/gradlew                    @camunda/orchestration-cluster
-/gradlew.bat                @camunda/orchestration-cluster
-/gradle/                    @camunda/orchestration-cluster
-/buildSrc/                  @camunda/orchestration-cluster
-# Convention-plugin exceptions (domain team owns, last match wins)
-/buildSrc/src/main/kotlin/buildlogic.sbe-conventions.gradle.kts              @camunda/zeebe-distributed-platform
-/buildSrc/src/main/kotlin/buildlogic.netty-tcnative-runtime-conventions.gradle.kts @camunda/zeebe-distributed-platform
-/buildSrc/src/main/kotlin/buildlogic.frontend-webjar-conventions.gradle.kts  @camunda/core-features
-/buildSrc/src/main/kotlin/buildlogic.client-conventions.gradle.kts           @camunda/core-features
 
 .fossa.yml                  @camunda/engineering-operations
 .hadolint.yaml              @camunda/engineering-operations
