@@ -190,6 +190,15 @@ tasks.named<ProcessResources>("processResources") {
   )
 }
 
+tasks.named<ProcessResources>("processTestResources") {
+  filterMavenResources(
+    this,
+    "clientJavaTestResourceTokens",
+    mapOf("version.keycloak.container" to libs.versions.parent.keycloak.container.get()),
+    matching = "client-java-testcontainers.properties",
+  )
+}
+
 dependencies {
   discriminatorToolClasspath(libs.org.jboss.forge.roaster.roaster.api)
   discriminatorToolClasspath(libs.org.jboss.forge.roaster.roaster.jdt)
