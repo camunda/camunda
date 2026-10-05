@@ -95,18 +95,15 @@ final class InterPartitionCommandReceiverImpl {
 
   private void writeCheckpointAndCommand(
       final MemberId memberId, final DecodedMessage decoded, final Optional<String> snapshotId) {
-    if (!isNewCheckpoint(decoded)) {
-      // created meanwhile, e.g. by the backup request sent to all partitions: the reservation
-      // isn't carried by any checkpoint
+    if (isNewCheckpoint(decoded)) {
+      final var checkpointWritten = writeCheckpoint(decoded, snapshotId);
+      if (checkpointWritten.isLeft()) {
+        // It's unsafe to write this record without first writing the checkpoint, bail out early.
+        logCheckpointFailure(memberId, decoded, checkpointWritten);
+        return;
+      }
+    } else {
       releaseSnapshotReservation(decoded.checkpointId, snapshotId);
-    }
-    final var checkpointWritten = writeCheckpoint(decoded, snapshotId);
-
-    if (checkpointWritten.isLeft()) {
-      // It's unsafe to write this record without first writing the checkpoint, bail out early.
-      logCheckpointFailure(memberId, decoded, checkpointWritten);
-      releaseSnapshotReservation(decoded.checkpointId, snapshotId);
-      return;
     }
 
     writeCommand(decoded).ifLeft(failure -> logWriteFailure(memberId, decoded, failure));
@@ -149,13 +146,12 @@ final class InterPartitionCommandReceiverImpl {
     snapshotId.ifPresent(id -> snapshotStore.releaseReservation(checkpointId, id));
   }
 
+  /**
+   * Writes the checkpoint create record, which takes over the snapshot reservation. If the record
+   * isn't written, the reservation is released, as nothing else would release it.
+   */
   private Either<WriteFailure, Long> writeCheckpoint(
       final DecodedMessage decoded, final Optional<String> snapshotId) {
-    if (!isNewCheckpoint(decoded)) {
-      // No need to write a new checkpoint create record
-      return Either.right(checkpointId);
-    }
-
     LOG.debug(
         "Received command with checkpoint id {} and type {} , current checkpoint id {} and type {}",
         decoded.checkpointId,
@@ -172,11 +168,20 @@ final class InterPartitionCommandReceiverImpl {
             .setCheckpointId(decoded.checkpointId)
             .setCheckpointType(decoded.checkpointType)
             .setSnapshotId(snapshotId.orElse(""));
-    final var written =
-        logStreamWriter.tryWrite(
-            WriteContext.interPartition(), LogAppendEntry.of(metadata, checkpointRecord));
+    final Either<WriteFailure, Long> written;
+    try {
+      written =
+          logStreamWriter.tryWrite(
+              WriteContext.interPartition(), LogAppendEntry.of(metadata, checkpointRecord));
+    } catch (final RuntimeException e) {
+      releaseSnapshotReservation(decoded.checkpointId, snapshotId);
+      throw e;
+    }
+
     if (written.isRight()) {
       inFlightCheckpointId = decoded.checkpointId;
+    } else {
+      releaseSnapshotReservation(decoded.checkpointId, snapshotId);
     }
     return written;
   }
