@@ -89,7 +89,8 @@ public final class CheckpointCreateProcessor {
         new CheckpointRecord()
             .setCheckpointId(checkpointId)
             .setCheckpointPosition(checkpointPosition)
-            .setCheckpointType(checkpointType);
+            .setCheckpointType(checkpointType)
+            .setSnapshotId(checkpointRecord.getSnapshotId());
 
     // Checkpoint should be created even if we don't take a backup for checkpoint-consistency
     metrics.created(checkpointId, checkpointPosition);
@@ -111,6 +112,7 @@ public final class CheckpointCreateProcessor {
       final TypedRecord<CheckpointRecord> record, final ProcessingResultBuilder resultBuilder) {
 
     metrics.ignored();
+    releaseSnapshotReserved(record.getValue());
     // Use the latest checkpoint info in the response for client information
     final var latestCheckpointRecord =
         new CheckpointRecord()
@@ -120,6 +122,13 @@ public final class CheckpointCreateProcessor {
 
     return createFollowUpAndResponse(
         record, CheckpointIntent.IGNORED, latestCheckpointRecord, resultBuilder);
+  }
+
+  private void releaseSnapshotReserved(final CheckpointRecord checkpointRecord) {
+    final var snapshotId = checkpointRecord.getSnapshotId();
+    if (!snapshotId.isEmpty()) {
+      backupManager.releaseSnapshotReservation(checkpointRecord.getCheckpointId(), snapshotId);
+    }
   }
 
   private void appendCheckpointCreatedEvent(

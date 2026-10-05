@@ -68,6 +68,7 @@ public final class BackupApiRequestHandlerStep implements PartitionTransitionSte
         new DbCheckpointMetadataState(context.getZeebeDb(), context.getZeebeDb().createContext());
     final var backupRangeState =
         new DbBackupRangeState(context.getZeebeDb(), context.getZeebeDb().createContext());
+    final var snapshotDirector = context.getSnapshotDirector();
     final var requestHandler =
         new BackupApiRequestHandler(
             context.getGatewayBrokerTransport(),
@@ -76,6 +77,8 @@ public final class BackupApiRequestHandlerStep implements PartitionTransitionSte
             checkpointState,
             checkpointMetadataState,
             backupRangeState,
+            context.getPersistedSnapshotStore(),
+            () -> snapshotDirector.forceSnapshot(),
             context.getPartitionId(),
             isBackupEnabled);
     context.getActorSchedulingService().submitActor(requestHandler).onComplete(installed);

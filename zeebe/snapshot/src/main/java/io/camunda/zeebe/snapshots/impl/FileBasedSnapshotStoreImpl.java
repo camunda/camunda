@@ -23,6 +23,7 @@ import io.camunda.zeebe.snapshots.SnapshotException;
 import io.camunda.zeebe.snapshots.SnapshotException.CorruptedSnapshotException;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotCopyForBootstrapException;
+import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId.SnapshotParseResult.Invalid;
@@ -34,6 +35,7 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.Map;
@@ -72,6 +74,7 @@ public final class FileBasedSnapshotStoreImpl {
 
   private final Set<PersistableSnapshot> pendingSnapshots = new HashSet<>();
   private final Set<FileBasedSnapshot> availableSnapshots = new HashSet<>();
+  private final CheckpointReservations checkpointReservations = new CheckpointReservations();
 
   public FileBasedSnapshotStoreImpl(
       final int brokerId,
@@ -240,6 +243,44 @@ public final class FileBasedSnapshotStoreImpl {
   public ActorFuture<Set<PersistedSnapshot>> getAvailableSnapshots() {
     // return a new set so that caller cannot modify availableSnapshot
     return actor.call(() -> Collections.unmodifiableSet(availableSnapshots));
+  }
+
+  public ActorFuture<Optional<String>> reserveLatestSnapshot(final long checkpointId) {
+    return actor.call(
+        () ->
+            availableSnapshots.stream()
+                .max(Comparator.comparing(FileBasedSnapshot::getSnapshotId))
+                .filter(snapshot -> checkpointReservations.reserve(checkpointId, snapshot))
+                .map(FileBasedSnapshot::getId));
+  }
+
+  public ActorFuture<Void> reserveSnapshot(final long checkpointId, final String snapshotId) {
+    return actor.call(
+        () -> {
+          final var reserved =
+              availableSnapshots.stream()
+                  .filter(snapshot -> snapshot.getId().equals(snapshotId))
+                  .findFirst()
+                  .filter(snapshot -> checkpointReservations.reserve(checkpointId, snapshot));
+          if (reserved.isEmpty()) {
+            throw new SnapshotNotFoundException(
+                "Expected to reserve snapshot %s, but it does not exist".formatted(snapshotId));
+          }
+          return null;
+        });
+  }
+
+  public ActorFuture<Optional<PersistedSnapshot>> getReservedSnapshot(
+      final long checkpointId, final String snapshotId) {
+    return actor.call(() -> checkpointReservations.get(checkpointId, snapshotId));
+  }
+
+  public void releaseReservation(final long checkpointId, final String snapshotId) {
+    actor.run(() -> checkpointReservations.release(checkpointId, snapshotId));
+  }
+
+  public void releaseAllReservations() {
+    actor.run(checkpointReservations::releaseAll);
   }
 
   public ActorFuture<Long> getCompactionBound() {
