@@ -22,7 +22,7 @@ const RUNNING_INSTANCES_REFETCH_INTERVAL_MS = 5000;
  * `useProcessInstancesPaginated`. Polls only while a running-instance state is selected — a list
  * of finished instances cannot change underneath the user.
  */
-function useProcessInstancesSearch(search: ProcessesSearch) {
+function useProcessInstancesSearch(search: ProcessesSearch, isPollingEnabled = true) {
 	const filter = mapProcessInstancesFilter(search);
 	const sort = mapProcessInstancesSort(search.sort);
 	const isShowingRunningInstances = search.active || search.incidents || search.suspended;
@@ -31,7 +31,7 @@ function useProcessInstancesSearch(search: ProcessesSearch) {
 		queryKey: ['processInstances', filter, sort] as const,
 		enabled: filter !== undefined,
 		staleTime: 5000,
-		refetchInterval: isShowingRunningInstances ? RUNNING_INSTANCES_REFETCH_INTERVAL_MS : false,
+		refetchInterval: isPollingEnabled && isShowingRunningInstances ? RUNNING_INSTANCES_REFETCH_INTERVAL_MS : false,
 		queryFn: async ({pageParam}): Promise<QueryProcessInstancesResponseBody> => {
 			const {response, error} = await request(
 				endpoints.queryProcessInstances({filter, sort, page: {from: pageParam, limit: PAGE_LIMIT}}),

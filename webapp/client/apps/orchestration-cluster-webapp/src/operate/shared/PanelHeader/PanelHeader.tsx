@@ -26,17 +26,19 @@ const PanelHeader = forwardRef<HTMLElement, Props>(
 		const {t} = useTranslation();
 		return (
 			<Header className={className} ref={ref} $size={size}>
-				<PanelTitle>
-					{title}
-					{count > 0 && (
-						<>
-							{title === undefined ? null : <>&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;</>}
-							{hasMoreTotalItems
-								? t('operate.shared.panelHeader.resultCountMore', {count})
-								: t('operate.shared.panelHeader.resultCount', {count})}
-						</>
-					)}
-				</PanelTitle>
+				{(title !== undefined || count > 0) && (
+					<PanelTitle>
+						{title}
+						{count > 0 && (
+							<>
+								{title === undefined ? null : <>&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;</>}
+								{hasMoreTotalItems
+									? t('operate.shared.panelHeader.resultCountMore', {count})
+									: t('operate.shared.panelHeader.resultCount', {count})}
+							</>
+						)}
+					</PanelTitle>
+				)}
 				{children}
 			</Header>
 		);

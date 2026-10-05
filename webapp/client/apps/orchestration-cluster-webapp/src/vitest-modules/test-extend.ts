@@ -7,7 +7,7 @@
  */
 
 import {inject, it as itBase} from 'vitest';
-import {isCommonAssetRequest} from 'msw';
+import {http, HttpResponse, isCommonAssetRequest} from 'msw';
 import {setupWorker} from 'msw/browser';
 import {cleanup} from 'vitest-browser-react';
 
@@ -35,6 +35,11 @@ const it = itBase.extend<{
 			await use(worker);
 
 			await cleanup();
+			// Requests still crossing the service worker when a short test ends would be matched after the handlers are
+			// reset, or after the next test installs its own listener. Requests reach the page in order, so once this
+			// sentinel is answered every earlier one has been matched against the handlers that were active for it.
+			worker.use(http.get('/__msw-flush', () => new HttpResponse(null, {status: 204})));
+			await fetch('/__msw-flush');
 			worker.resetHandlers();
 			worker.stop();
 

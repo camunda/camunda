@@ -154,6 +154,7 @@ describe('<DiagramPanel />', () => {
 
 	it('should count the instances the list filters select, including variables and business ID', async ({worker}) => {
 		worker.use(
+			...PROCESS_OPERATIONS_HANDLERS,
 			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
 			mockGetProcessDefinitionStatisticsEndpoint({
 				schema: z.object({

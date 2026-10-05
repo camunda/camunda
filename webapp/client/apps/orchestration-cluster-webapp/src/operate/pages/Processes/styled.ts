@@ -6,11 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 import {styles} from '@carbon/type';
-import {Link} from '@carbon/react';
+import {Button, InlineNotification, Link, Stack, TableHeader} from '@carbon/react';
 import {createLink} from '@tanstack/react-router';
-import {Error as BaseError} from '@carbon/react/icons';
+import {Add, Error as BaseError, Subtract} from '@carbon/react/icons';
 import {PanelHeader as BasePanelHeader} from '#/operate/shared/PanelHeader/PanelHeader';
 
 const IndentedGroup = styled.div`
@@ -69,6 +69,79 @@ const InstancesTableContainer = styled.section`
 	flex-direction: column;
 `;
 
+const BatchModificationActions = styled(Stack)`
+	background-color: var(--cds-layer);
+	width: 100%;
+	justify-content: flex-end;
+	padding: var(--cds-spacing-03) var(--cds-spacing-05);
+	border-top: 1px solid var(--cds-border-subtle-01);
+`;
+
+const SummaryTitle = styled.h3`
+	${styles.productiveHeading01};
+	margin-top: var(--cds-spacing-08);
+	margin-bottom: var(--cds-spacing-06);
+`;
+
+const SummaryTableHeader = styled(TableHeader)<{$width: string}>`
+	width: ${({$width}) => $width};
+`;
+
+const BatchModificationNotificationContainer = styled.div`
+	position: relative;
+`;
+
+const BatchModificationInlineNotification = styled(InlineNotification)`
+	min-block-size: 32px;
+	max-block-size: 32px;
+	max-inline-size: unset;
+
+	.cds--inline-notification__icon {
+		margin-block-start: unset;
+	}
+
+	.cds--inline-notification__text-wrapper {
+		padding: unset;
+	}
+
+	.cds--inline-notification__details {
+		align-items: center;
+	}
+`;
+
+const UndoButton: typeof Button = styled(Button)`
+	position: absolute;
+	top: 0;
+	right: 0;
+`;
+
+const Modifications = styled.div`
+	${styles.label01};
+	font-weight: bold;
+	padding: var(--cds-spacing-02) var(--cds-spacing-04);
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	border-radius: 12px;
+	transform: translateX(-50%);
+	background-color: var(--cds-background-brand);
+	color: var(--cds-text-on-color);
+`;
+
+const modificationIconStyles = css`
+	width: 18px;
+	height: 18px;
+	color: var(--cds-icon-on-color);
+`;
+
+const PlusIcon = styled(Add)`
+	${modificationIconStyles}
+`;
+
+const MinusIcon = styled(Subtract)`
+	${modificationIconStyles}
+`;
+
 const ProcessName = styled.div`
 	display: flex;
 	align-items: center;
@@ -103,6 +176,15 @@ export {
 	DescriptionTitle,
 	DescriptionData,
 	InstancesTableContainer,
+	BatchModificationActions,
+	SummaryTitle,
+	SummaryTableHeader,
+	BatchModificationNotificationContainer,
+	BatchModificationInlineNotification,
+	UndoButton,
+	Modifications,
+	PlusIcon,
+	MinusIcon,
 	ProcessName,
 	InstanceLink,
 	VisuallyHiddenStatus,

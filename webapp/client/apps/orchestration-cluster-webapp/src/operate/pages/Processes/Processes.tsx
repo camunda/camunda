@@ -9,14 +9,14 @@
 import {useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useQuery, useSuspenseQuery} from '@tanstack/react-query';
-import {useNavigate} from '@tanstack/react-router';
+import {useBlocker, useNavigate} from '@tanstack/react-router';
 import {Form} from 'react-final-form';
 import {Button, Checkbox, ComboBox, Dropdown, Stack} from '@carbon/react';
 import {queries} from '#/shared/http/queries';
 import {ForbiddenError} from '#/shared/errors';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
-import {ProcessesLayout} from './ProcessesLayout';
+import {ProcessesLayout, type ProcessesMode} from './ProcessesLayout';
 import {FiltersPanel} from '#/operate/shared/FiltersPanel/FiltersPanel';
 import {Title, Form as StyledForm} from '#/operate/shared/FiltersPanel/styled';
 import {AutoSubmit} from '#/operate/shared/AutoSubmit/AutoSubmit';
@@ -38,6 +38,7 @@ import {DiagramPanel, type ProcessDefinitionSelection} from './DiagramPanel';
 import {InstancesTable} from './InstancesTable';
 import {useDiagramXml} from './useDiagramXml';
 import {selectedDefinitionsQuery} from '#/operate/shared/queries/processDefinitions.queries';
+import type {BatchModificationScope} from './useBatchModificationStatistics';
 import {setVariableConditions, useVariableConditions} from './VariablesFilter/variableFilterStore';
 
 type FiltersFormValues = OptionalFilterValues & VariableFieldValues & {tenantId?: string};
@@ -114,6 +115,15 @@ const Processes: React.FC<Props> = ({
 	const isDefinitionsReady =
 		Boolean(process) && selectedDefinitions !== undefined && !isDefinitionsLoading && !isDefinitionsError;
 	const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
+	const [mode, setMode] = useState<ProcessesMode>('list');
+	const [selectedTargetElementId, setSelectedTargetElementId] = useState<string>();
+	const [selectionScope, setSelectionScope] = useState<BatchModificationScope | null>(null);
+	const blocker = useBlocker({
+		// Like legacy, only a change of page interrupts the mode; search-only changes, such as browser back, pass.
+		shouldBlockFn: ({current, next}) => current.pathname !== next.pathname,
+		withResolver: true,
+		disabled: mode !== 'batch-modification',
+	});
 	const variable = useVariableConditions();
 	const inlineVariableCondition = variable.length === 1 && variable[0]?.operator === 'equals' ? variable[0] : undefined;
 
@@ -201,7 +211,11 @@ const Processes: React.FC<Props> = ({
 		if (definition === undefined) {
 			return {kind: 'no-match'};
 		}
-		if (!specificTenantId && matchingDefinitions.some((candidate) => candidate.tenantId !== definition.tenantId)) {
+		const tenantCandidates =
+			version === undefined
+				? matchingDefinitions
+				: matchingDefinitions.filter((candidate) => candidate.version === version);
+		if (!specificTenantId && tenantCandidates.some((candidate) => candidate.tenantId !== definition.tenantId)) {
 			return {
 				kind: 'multiple-tenants',
 				definition: {name: definition.name, processDefinitionId: definition.processDefinitionId},
@@ -243,6 +257,7 @@ const Processes: React.FC<Props> = ({
 	);
 	const isElementDisabled =
 		!isDefinitionsReady || selectedDefinitionKey === undefined || isXmlError || elementItems.length === 0;
+	const notChangeableTitle = mode === 'list' ? undefined : t('operate.processes.batchModification.notChangeable');
 
 	const runningChecked = active && incidents && suspended;
 	const runningIndeterminate = !runningChecked && (active || incidents || suspended);
@@ -295,6 +310,10 @@ const Processes: React.FC<Props> = ({
 	return (
 		<ProcessesLayout
 			type="process"
+			frame={{
+				isVisible: mode === 'batch-modification',
+				headerTitle: t('operate.processes.batchModification.frameTitle'),
+			}}
 			leftPanel={
 				<Form<FiltersFormValues>
 					onSubmit={handleFiltersSubmit}
@@ -311,7 +330,7 @@ const Processes: React.FC<Props> = ({
 							<AutoSubmit fieldsToSkipTimeout={['tenantId', 'hasRetriesLeft']} />
 							<FiltersPanel
 								localStorageKey="isProcessesFiltersCollapsed"
-								isResetButtonDisabled={isResetDisabled}
+								isResetButtonDisabled={isResetDisabled || mode !== 'list'}
 								onResetClick={() => {
 									setVariableConditions([]);
 									form.reset();
@@ -323,6 +342,7 @@ const Processes: React.FC<Props> = ({
 									{getClientConfig().deployment.isMultiTenancyEnabled && (
 										<div>
 											<Title>{t('operate.processes.filters.tenant')}</Title>
+											{/* Like legacy, the tenant filter stays usable in the mode; only process, version and element lock. */}
 											<TenantField />
 										</div>
 									)}
@@ -336,6 +356,8 @@ const Processes: React.FC<Props> = ({
 												items={processItems}
 												itemToString={(item) => item?.label ?? ''}
 												selectedItem={selectedProcess}
+												disabled={mode !== 'list'}
+												title={notChangeableTitle}
 												size="sm"
 												onChange={({selectedItem}) => {
 													if (selectedItem?.id === process) {
@@ -364,7 +386,7 @@ const Processes: React.FC<Props> = ({
 														: String(item)
 												}
 												selectedItem={process ? selectedVersion : version}
-												disabled={!isDefinitionsReady || versionNumbers.length === 0}
+												disabled={!isDefinitionsReady || versionNumbers.length === 0 || mode !== 'list'}
 												size="sm"
 												onChange={({selectedItem}) => {
 													if (selectedItem === null || selectedItem === undefined) {
@@ -402,7 +424,8 @@ const Processes: React.FC<Props> = ({
 													inputValue !== null && item.label.toLowerCase().includes(inputValue.toLowerCase())
 												}
 												selectedItem={selectedElement}
-												disabled={isElementDisabled}
+												disabled={isElementDisabled || mode !== 'list'}
+												title={notChangeableTitle}
 												size="sm"
 												onChange={({selectedItem}) => {
 													void navigate({
@@ -555,6 +578,10 @@ const Processes: React.FC<Props> = ({
 					isDefinitionSelectionLoading={isDefinitionsLoading}
 					isDefinitionSelectionError={isDefinitionsError}
 					elementId={elementId}
+					mode={mode}
+					modificationScope={selectionScope ?? undefined}
+					selectedTargetElementId={selectedTargetElementId}
+					onTargetElementSelection={setSelectedTargetElementId}
 					onElementSelection={(selectedElementId) => {
 						void navigate({
 							to: '.',
@@ -585,6 +612,17 @@ const Processes: React.FC<Props> = ({
 			}
 			bottomPanel={
 				<InstancesTable
+					mode={mode}
+					navigationBlocker={blocker}
+					processDefinitionSelection={processDefinitionSelection}
+					selectedTargetElementId={selectedTargetElementId}
+					onEnterMode={setMode}
+					onSelectionScopeChange={setSelectionScope}
+					onExitMode={() => {
+						blocker.proceed?.();
+						setSelectedTargetElementId(undefined);
+						setMode('list');
+					}}
 					search={{
 						process,
 						version,

@@ -22,6 +22,7 @@ import {
 	mockQueryProcessInstancesEndpoint,
 	mockSystemConfigurationEndpoint,
 	mockCreateCancellationBatchOperationEndpoint,
+	mockCreateModificationBatchOperationEndpoint,
 	mockGetBatchOperationEndpoint,
 	mockGetProcessDefinitionXmlEndpoint,
 	mockGetProcessDefinitionStatisticsEndpoint,
@@ -49,8 +50,11 @@ import {
 	createQueryBatchOperationItemsResponse,
 } from '#/shared-test-modules/api-mocks/batch-operations';
 import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
-import {createGetProcessDefinitionStatisticsResponse} from '#/shared-test-modules/api-mocks/process-definition-statistics';
 import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
+import {
+	createGetProcessDefinitionStatisticsResponse,
+	createProcessDefinitionStatistic,
+} from '#/shared-test-modules/api-mocks/process-definition-statistics';
 
 const PROCESS_INSTANCE_XML =
 	'<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"><process id="order-process"><callActivity id="call-activity" /></process></definitions>';
@@ -121,6 +125,87 @@ test.beforeEach(({network}) => {
 });
 
 test.describe('Operate processes page', () => {
+	test('should move a selected process instance and keep the filters and selection', async ({
+		network,
+		page,
+		operateProcessesPage,
+	}) => {
+		network.use(
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: [
+							createProcessDefinition({
+								processDefinitionId: 'my_simple_process',
+								processDefinitionKey: '123',
+								name: 'Invoice process',
+								version: 1,
+							}),
+						],
+					}),
+				),
+			}),
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+			mockGetProcessDefinitionStatisticsEndpoint({
+				successResponse: HttpResponse.json(
+					createGetProcessDefinitionStatisticsResponse([
+						createProcessDefinitionStatistic({elementId: 'task-1', active: 1}),
+					]),
+				),
+			}),
+			mockCreateModificationBatchOperationEndpoint({
+				successResponse: HttpResponse.json(
+					{batchOperationKey: 'batch-modification-1', batchOperationType: 'MODIFY_PROCESS_INSTANCE'},
+					{status: 202},
+				),
+			}),
+			mockGetBatchOperationEndpoint({successResponse: HttpResponse.json(createBatchOperation())}),
+		);
+		const frameTitle = page.getByTestId('frame-container').getByText('Batch Modification Mode', {exact: true});
+
+		await test.step('enter batch modification mode', async () => {
+			await operateProcessesPage.goto('?process=my_simple_process&version=1&elementId=task-1');
+			await page.getByRole('checkbox', {name: 'Select instance 1001'}).check({force: true});
+			await operateProcessesPage.moveButton.click();
+			await page.getByRole('dialog').getByRole('button', {name: 'Continue'}).click();
+
+			await expect(frameTitle).toBeVisible();
+			await expect(operateProcessesPage.reviewModificationButton).toBeDisabled();
+		});
+
+		await test.step('select the target and stay in the mode when leaving is cancelled', async () => {
+			await operateProcessesPage.targetElement('end_event').click();
+
+			await expect(operateProcessesPage.reviewModificationButton).toBeEnabled();
+
+			await page.getByRole('link', {name: 'View instance 1001'}).click({force: true});
+			const exitConfirmation = page.getByRole('dialog', {name: 'Exit batch modification mode'});
+			await exitConfirmation.getByRole('button', {name: 'Cancel'}).click();
+
+			await expect(frameTitle).toBeVisible();
+			await expect(page).toHaveURL(/process=my_simple_process.*version=1.*elementId=task-1/);
+		});
+
+		await test.step('apply the move', async () => {
+			await operateProcessesPage.reviewModificationButton.click();
+			await expect(page.getByRole('dialog')).toContainText('Invoice process');
+			const submitted = page.waitForRequest((request) => request.url().endsWith('/v2/process-instances/modification'));
+			await page.getByRole('dialog').getByRole('button', {name: 'Apply'}).click();
+
+			expect((await submitted).postDataJSON()).toMatchObject({
+				filter: {
+					processDefinitionId: {$eq: 'my_simple_process'},
+					processInstanceKey: {$in: ['1001']},
+					state: {$eq: 'ACTIVE'},
+				},
+				moveInstructions: [{sourceElementId: 'task-1', targetElementId: 'end_event'}],
+			});
+			await expect(frameTitle).not.toBeVisible();
+			await expect(page).toHaveURL(/process=my_simple_process.*version=1.*elementId=task-1/);
+			await expect(page.getByRole('checkbox', {name: 'Select instance 1001'})).toBeChecked();
+		});
+	});
+
 	test('should recover from a forbidden deletion, then delete and show the deleted definition', async ({
 		network,
 		page,

@@ -18,9 +18,20 @@ import {useDiagramXml} from './useDiagramXml';
 import {useDiagramStatisticsOverlays} from './useDiagramStatisticsOverlays';
 import {getStatisticsFilter} from './getStatisticsFilter';
 import {getProcessDefinitionName} from './getProcessDefinitionName';
+import {MODIFICATIONS_BADGE} from '#/operate/shared/utils/badgePositions';
+import {
+	Section,
+	BatchModificationNotificationContainer,
+	BatchModificationInlineNotification,
+	UndoButton,
+} from './styled';
+import {isMoveTarget} from './batchModificationTargets';
+import type {ProcessesMode} from './ProcessesLayout';
+import {useBatchModificationStatistics, type BatchModificationScope} from './useBatchModificationStatistics';
+import {getElementName} from './getElementName';
+import {ModificationBadgeOverlay} from './ModificationBadgeOverlay';
 import type {VariableCondition} from './VariablesFilter/variableConditions';
 import type {ProcessesSearch} from './processesFilter';
-import {Section} from './styled';
 
 type ProcessDefinitionSelection =
 	| {kind: 'no-match'}
@@ -39,10 +50,28 @@ function isStatisticsPayload(
 	);
 }
 
+function isModificationBadgePayload(
+	payload: unknown,
+): payload is {newTokenCount?: number; cancelledTokenCount?: number} {
+	return (
+		typeof payload === 'object' && payload !== null && ('newTokenCount' in payload || 'cancelledTokenCount' in payload)
+	);
+}
+
 function StatisticsOverlays() {
 	const overlays = useContext(DiagramOverlayContext);
 
-	return overlays.map(({container, payload, elementId}) => {
+	return overlays.map(({container, payload, elementId, type}) => {
+		if (type === 'batchModificationsBadge' && isModificationBadgePayload(payload)) {
+			return (
+				<ModificationBadgeOverlay
+					key={`${elementId}-${type}`}
+					container={container}
+					newTokenCount={payload.newTokenCount ?? 0}
+					cancelledTokenCount={payload.cancelledTokenCount ?? 0}
+				/>
+			);
+		}
 		if (!isStatisticsPayload(payload)) {
 			return null;
 		}
@@ -64,6 +93,10 @@ type Props = {
 	isDefinitionSelectionError?: boolean;
 	elementId?: string;
 	onElementSelection: (elementId?: string) => void;
+	mode?: ProcessesMode;
+	modificationScope?: BatchModificationScope;
+	selectedTargetElementId?: string;
+	onTargetElementSelection?: (elementId?: string) => void;
 	active: boolean;
 	incidents: boolean;
 	completed: boolean;
@@ -93,6 +126,10 @@ const DiagramPanel: React.FC<Props> = ({
 	isDefinitionSelectionError = false,
 	elementId,
 	onElementSelection,
+	mode = 'list',
+	modificationScope,
+	selectedTargetElementId,
+	onTargetElementSelection,
 	active,
 	incidents,
 	completed,
@@ -112,6 +149,34 @@ const DiagramPanel: React.FC<Props> = ({
 			: t('operate.processes.diagramHeader.title');
 
 	const {data: diagramData, isFetching: isXmlFetching, isError: isXmlError} = useDiagramXml(selectedDefinitionKey);
+	const isModificationMode = mode === 'batch-modification';
+	const modificationCount = useBatchModificationStatistics({
+		definitionKey: isModificationMode ? selectedDefinitionKey : undefined,
+		sourceElementId: isModificationMode ? elementId : undefined,
+		scope: isModificationMode ? modificationScope : undefined,
+	});
+	const modificationOverlays =
+		elementId !== undefined && selectedTargetElementId !== undefined && modificationCount !== undefined
+			? [
+					{
+						payload: {cancelledTokenCount: modificationCount},
+						type: 'batchModificationsBadge',
+						elementId,
+						position: MODIFICATIONS_BADGE,
+					},
+					{
+						payload: {newTokenCount: modificationCount},
+						type: 'batchModificationsBadge',
+						elementId: selectedTargetElementId,
+						position: MODIFICATIONS_BADGE,
+					},
+				]
+			: [];
+	const sourceElementName = getElementName({businessObjects: diagramData?.businessObjects, elementId});
+	const targetElementName = getElementName({
+		businessObjects: diagramData?.businessObjects,
+		elementId: selectedTargetElementId,
+	});
 
 	const statisticsFilter = getStatisticsFilter({
 		active,
@@ -171,15 +236,60 @@ const DiagramPanel: React.FC<Props> = ({
 					<Diagram
 						key={selectedDefinitionKey}
 						xml={diagramData.xml}
-						selectedElementIds={elementId ? [elementId] : undefined}
-						onElementSelection={onElementSelection}
-						overlaysData={overlaysData}
-						selectableElements={diagramData.selectableElements}
+						selectedElementIds={
+							isModificationMode
+								? [elementId, selectedTargetElementId].filter((id): id is string => id !== undefined)
+								: elementId
+									? [elementId]
+									: undefined
+						}
+						onElementSelection={isModificationMode ? onTargetElementSelection : onElementSelection}
+						overlaysData={
+							isModificationMode
+								? [
+										...(overlaysData?.filter(
+											({payload}) => isStatisticsPayload(payload) && payload.count !== undefined,
+										) ?? []),
+										...modificationOverlays,
+									]
+								: overlaysData
+						}
+						selectableElements={
+							isModificationMode
+								? diagramData.selectableElements.filter(
+										(id) => id !== elementId && isMoveTarget(diagramData.businessObjects[id]),
+									)
+								: diagramData.selectableElements
+						}
 					>
 						<StatisticsOverlays />
 					</Diagram>
 				)}
 			</DiagramShell>
+			{isModificationMode && (
+				<BatchModificationNotificationContainer>
+					<BatchModificationInlineNotification
+						hideCloseButton
+						lowContrast
+						kind="info"
+						title=""
+						subtitle={
+							sourceElementName === '' || targetElementName === ''
+								? t('operate.processes.batchModification.selectTarget')
+								: t('operate.processes.batchModification.targetScheduled', {
+										count: modificationCount ?? 0,
+										source: sourceElementName,
+										target: targetElementName,
+									})
+						}
+					/>
+					{selectedTargetElementId && (
+						<UndoButton kind="ghost" size="sm" onClick={() => onTargetElementSelection?.(undefined)}>
+							{t('operate.processes.batchModification.undo')}
+						</UndoButton>
+					)}
+				</BatchModificationNotificationContainer>
+			)}
 		</Section>
 	);
 };

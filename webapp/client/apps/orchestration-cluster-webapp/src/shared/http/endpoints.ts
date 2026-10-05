@@ -31,6 +31,7 @@ import {
 	type DeleteResourceRequestBody,
 	type CreateDecisionInstancesDeletionBatchOperationRequestBody,
 	type CreateCancellationBatchOperationRequestBody,
+	type CreateModificationBatchOperationRequestBody,
 	type CreateIncidentResolutionBatchOperationRequestBody,
 	type CreateDeletionBatchOperationRequestBody,
 	type SuspendProcessInstancesBatchOperationRequestBody,
@@ -360,6 +361,14 @@ const endpoints = {
 		new Request(getFullURL(unifiedAPIEndpoints.createCancellationBatchOperation.getUrl()), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.createCancellationBatchOperation.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createModificationBatchOperation: (body: CreateModificationBatchOperationRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createModificationBatchOperation.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createModificationBatchOperation.method,
 			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),
