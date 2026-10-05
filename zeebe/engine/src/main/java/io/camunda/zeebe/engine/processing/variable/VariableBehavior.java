@@ -200,19 +200,20 @@ public final class VariableBehavior {
         }
 
         applyEntryToRecord(entry);
+        // If the variable exists in the current scope, we update it
         final Optional<VariableEvent> variableEvent =
             updateVariable(
                 variableInstance, variableRecord, metadataLookup.forVariable(entry.getName()));
-        if (variableEvent.isPresent()) {
-          variableEvents.add(variableEvent.get());
-          entryIterator.remove();
-        }
+        variableEvent.ifPresent(variableEvents::add);
+        // Remove the entry from the document so it won't be propagated to the parent scope
+        entryIterator.remove();
       }
 
       currentScope = parentScope;
     }
 
     variableRecord.setScopeKey(currentScope);
+    // For the remaining entries in the document, we create new variables in the parent scope
     for (final DocumentEntry entry : indexedDocument) {
       applyEntryToRecord(entry);
       final Optional<VariableEvent> variableEvent =
