@@ -223,6 +223,25 @@ final class InterPartitionCommandCheckpointTest {
   }
 
   @Test
+  void shouldNotReleaseSnapshotReservationCarriedByWrittenCheckpoint() {
+    // given - the checkpoint is written, but the command is not
+    when(logStreamWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
+        .thenReturn(Either.right(1L), Either.left(WriteFailure.WRITE_LIMIT_EXHAUSTED));
+    when(snapshotStore.reserveLatestSnapshot(anyLong()))
+        .thenReturn(CompletableActorFuture.completed(Optional.of("latest")));
+    sender.setCheckpointInfo(17, CheckpointType.MANUAL_BACKUP);
+
+    // when
+    sendAndReceive(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
+
+    // then - the reservation is released by the backup taken for the checkpoint
+    verify(logStreamWriter)
+        .tryWrite(
+            any(WriteContext.class), matchesCheckpoint(17, CheckpointType.MANUAL_BACKUP, "latest"));
+    verify(snapshotStore, never()).releaseReservation(anyLong(), any());
+  }
+
+  @Test
   void shouldHandleMissingCheckpoints() {
     // given
     when(logStreamWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
@@ -298,6 +317,8 @@ final class InterPartitionCommandCheckpointTest {
             any(WriteContext.class),
             matchesMetadata(ValueType.DEPLOYMENT, DeploymentIntent.CREATE));
     verifyNoMoreInteractions(logStreamWriter);
+    verify(snapshotStore, never()).reserveLatestSnapshot(anyLong());
+    verify(snapshotStore, never()).releaseReservation(anyLong(), any());
   }
 
   @Test
@@ -317,6 +338,8 @@ final class InterPartitionCommandCheckpointTest {
             any(WriteContext.class),
             matchesMetadata(ValueType.DEPLOYMENT, DeploymentIntent.CREATE));
     verifyNoMoreInteractions(logStreamWriter);
+    verify(snapshotStore, never()).reserveLatestSnapshot(anyLong());
+    verify(snapshotStore, never()).releaseReservation(anyLong(), any());
   }
 
   @Test
