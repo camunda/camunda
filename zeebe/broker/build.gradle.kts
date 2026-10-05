@@ -56,7 +56,7 @@ dependencies {
   implementation(project(":zeebe-cluster-config"))
   implementation(project(":zeebe-restore"))
   implementation(libs.io.netty.netty.common)
-  implementation(libs.io.camunda.identity.sdk)
+  testImplementation(libs.io.camunda.identity.sdk)
   implementation(libs.io.micrometer.micrometer.core)
   implementation(libs.io.micrometer.micrometer.commons)
   implementation(libs.org.slf4j.slf4j.api)
