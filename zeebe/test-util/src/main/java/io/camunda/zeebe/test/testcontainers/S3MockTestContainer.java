@@ -8,8 +8,9 @@
 package io.camunda.zeebe.test.testcontainers;
 
 import com.adobe.testing.s3mock.testcontainers.S3MockContainer;
+import org.testcontainers.lifecycle.Startable;
 
-public final class S3MockTestContainer extends S3MockContainer {
+public final class S3MockTestContainer implements Startable {
 
   private static final String DEFAULT_TAG = "4.11.0";
   private static final String DEFAULT_REGION = "us-east-1";
@@ -17,16 +18,36 @@ public final class S3MockTestContainer extends S3MockContainer {
   private static final String DEFAULT_SECRET_KEY = "secretKey";
   private static final int INTERNAL_HTTP_PORT = 9090;
 
+  private final S3MockContainer container;
+
   public S3MockTestContainer() {
     this(DEFAULT_TAG);
   }
 
   public S3MockTestContainer(final String tag) {
-    super(tag);
+    container = new S3MockContainer(tag);
+  }
+
+  @Override
+  public void start() {
+    container.start();
+  }
+
+  @Override
+  public void stop() {
+    container.stop();
+  }
+
+  public S3MockContainer container() {
+    return container;
+  }
+
+  public int getHttpServerPort() {
+    return container.getHttpServerPort();
   }
 
   public String externalEndpoint() {
-    return getHttpEndpoint();
+    return container.getHttpEndpoint();
   }
 
   public String internalEndpoint(final String networkAlias) {

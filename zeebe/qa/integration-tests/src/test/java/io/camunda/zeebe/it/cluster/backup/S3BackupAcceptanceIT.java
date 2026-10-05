@@ -49,7 +49,8 @@ final class S3BackupAcceptanceIT implements BackupAcceptance {
 
   @RegisterExtension
   @SuppressWarnings("unused")
-  final ContainerLogsDumper logsWatcher = new ContainerLogsDumper(() -> Map.of("minio", minio));
+  final ContainerLogsDumper logsWatcher =
+      new ContainerLogsDumper(() -> Map.of("minio", minio.container()));
 
   // cannot auto start, as we need minio to be started before we can configure the brokers
   @TestZeebe(autoStart = false)
