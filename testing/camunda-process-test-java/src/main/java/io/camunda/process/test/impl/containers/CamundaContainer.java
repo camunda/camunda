@@ -128,11 +128,14 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
    *
    * @param secrets the secrets by name; does nothing if empty
    * @return this container
+   * @throws IllegalArgumentException if a secret name is not a single visible path segment
    */
   public CamundaContainer withClusterSecrets(final Map<String, String> secrets) {
     if (secrets.isEmpty()) {
       return this;
     }
+
+    secrets.keySet().forEach(CamundaContainer::validateSecretName);
 
     try {
       final Path directory = Files.createTempDirectory("camunda-cluster-secrets");
@@ -154,6 +157,25 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
     return withEnv(
         ContainerRuntimeEnvs.CAMUNDA_ENV_SECRETS_STORES_FILE_DEFAULT_PATH,
         CLUSTER_SECRETS_DIRECTORY);
+  }
+
+  /**
+   * The name becomes a file name on the host and in the container, so it must not be able to
+   * address any other path. Hidden names are rejected as the file store does not read them.
+   */
+  private static void validateSecretName(final String name) {
+    if (name == null
+        || name.isEmpty()
+        || name.startsWith(".")
+        || name.contains("/")
+        || name.contains("\\")
+        || name.indexOf('\0') >= 0) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Invalid cluster secret name '%s': it must be a single visible path segment "
+                  + "without path separators and must not start with a dot.",
+              name));
+    }
   }
 
   public CamundaContainer withH2() {
