@@ -7,9 +7,15 @@ never be silenced, a silence expires within a week, and it names the incident it
 It also creates an audit trail in Slack.
 Invoked by `.github/workflows/ci-silence-incident.yml`.
 
-Matchers are `grafana_folder`, `alertname` and `workflow_job` — the alert's notification group
-key, so the silence covers every future firing for that job. `grafana_folder` is pinned to the
-monorepo CI folder, which keeps the token from touching infrastructure alerts.
+Matchers are `__alert_rule_uid__` and `workflow_job`. The UID is the reserved label Grafana
+binds a silence to a rule with: it is what the silence list shows under "Alert rule targeted",
+and it scopes the silence's permissions to the rule's folder. A silence without it is a general
+silence, invisible from the rule it mutes. `workflow_job` is the alert's notification group key,
+so the silence covers every future firing for that job.
+
+The UID is resolved from the rule title inside the monorepo CI folder and nowhere else, which is
+what keeps this token away from infrastructure alerts. Separate `grafana_folder` and `alertname`
+matchers would be redundant — the UID already names both.
 
 A silence suppresses *delivery* only: the rule keeps evaluating and the CI health dashboards
 keep recording every failure.
@@ -24,7 +30,7 @@ Required environment variables:
   INCIDENT            Incident this silence belongs to, e.g. INC-8362.
   ACTOR               GitHub login of the requesting medic.
   RUN_URL             URL of the workflow run, for the audit trail.
-  ALERTNAME           Alert rule to silence.
+  ALERTNAME           Title of the alert rule to silence, resolved to its UID in the CI folder.
   DAYS                Duration in days, at most 7.
 
 Optional environment variables:
@@ -98,10 +104,41 @@ def request(url, credentials, method="GET", body=None):
         fail(f"{method} {url} is unreachable: {error.reason}")
 
 
-def matchers(alertname, workflow_job):
+def alert_rule_uid(base_url, credentials, alertname):
+    """Resolve an alert rule's UID from its title, searching the monorepo CI folder only.
+
+    Scoping the lookup to one folder is a stronger guarantee than the `grafana_folder` matcher it
+    replaces: a matcher narrows what an existing silence suppresses, whereas a rule this script
+    cannot resolve is a rule it cannot silence at all.
+    """
+    namespaces = request(f"{base_url}/api/ruler/grafana/api/v1/rules", credentials) or {}
+    if GRAFANA_FOLDER not in namespaces:
+        # Nested folders are keyed by their full path, so a rename upstream shows up here as a
+        # missing folder rather than as a missing rule.
+        visible = ", ".join(sorted(namespaces)) or "none"
+        fail(f"Grafana has no alert rule folder '{GRAFANA_FOLDER}'. Folders this account sees: {visible}")
+
+    rules = [
+        rule.get("grafana_alert", {})
+        for group in namespaces[GRAFANA_FOLDER]
+        for rule in group.get("rules", [])
+    ]
+    uids = {rule["uid"] for rule in rules if rule.get("title") == alertname}
+    if not uids:
+        titles = ", ".join(sorted({rule["title"] for rule in rules if rule.get("title")})) or "none"
+        fail(f"No alert rule titled '{alertname}' in {GRAFANA_FOLDER}. Rules there: {titles}")
+    if len(uids) > 1:
+        # Silencing an arbitrary one of them would mute the wrong alert and look like it worked.
+        fail(
+            f"{len(uids)} rules in {GRAFANA_FOLDER} share the title '{alertname}': "
+            f"{', '.join(sorted(uids))}"
+        )
+    return uids.pop()
+
+
+def matchers(rule_uid, workflow_job):
     return [
-        {"name": "grafana_folder", "value": GRAFANA_FOLDER, "isRegex": False, "isEqual": True},
-        {"name": "alertname", "value": alertname, "isRegex": False, "isEqual": True},
+        {"name": "__alert_rule_uid__", "value": rule_uid, "isRegex": False, "isEqual": True},
         {"name": "workflow_job", "value": workflow_job, "isRegex": False, "isEqual": True},
     ]
 
@@ -142,12 +179,12 @@ def check_slack_token(token):
     return result.get("user", "unknown")
 
 
-def dry_run(base_url, credentials, slack_token):
+def dry_run(base_url, credentials, slack_token, alertname):
     """Walk every dependency the real run has, stopping short of the silence itself.
 
     The failure this guards against is silent: credentials rotate, an LDAP account is
-    disabled, a Grafana role is reset, and nobody finds out until a medic needs the tool
-    during an incident.
+    disabled, a Grafana role is reset, a folder or rule is renamed, and nobody finds out until a
+    medic needs the tool during an incident.
     """
     user = request(f"{base_url}/api/user", credentials)
     orgs = request(f"{base_url}/api/user/orgs", credentials) or []
@@ -157,12 +194,14 @@ def dry_run(base_url, credentials, slack_token):
             f"{user.get('login')} authenticates but holds {roles or 'no role'} in Grafana. "
             f"Creating a silence needs Editor, so a real run would fail with a 403."
         )
-    # Read-only, and it is what the real run calls before writing.
+    # Read-only, and both are what the real run calls before writing.
     request(f"{base_url}/api/alertmanager/grafana/api/v2/silences", credentials)
+    rule_uid = alert_rule_uid(base_url, credentials, alertname)
     slack_user = check_slack_token(slack_token)
     print(
         f"Dry run OK — Grafana user `{user.get('login')}` holds {roles}, the silence API answers, "
-        f"and the Slack bot authenticates as `{slack_user}`. No silence was created."
+        f"alert rule `{alertname}` resolves to `{rule_uid}` in {GRAFANA_FOLDER}, and the Slack bot "
+        f"authenticates as `{slack_user}`. No silence was created."
     )
 
 
@@ -225,12 +264,12 @@ def main():
         fail(f"DAYS must be between 1 and {MAX_DAYS}, got {days}")
 
     if os.environ.get("DRY_RUN", "").lower() == "true":
-        dry_run(base_url, credentials, slack_token)
+        dry_run(base_url, credentials, slack_token, alertname)
         return
 
     starts_at = datetime.now(timezone.utc)
     ends_at = starts_at + timedelta(days=days)
-    wanted = matchers(alertname, workflow_job)
+    wanted = matchers(alert_rule_uid(base_url, credentials, alertname), workflow_job)
 
     already = existing_silence(base_url, credentials, wanted)
     if already:

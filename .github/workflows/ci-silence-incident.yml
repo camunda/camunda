@@ -95,11 +95,13 @@ jobs:
           GRAFANA_PASSWORD: ${{ steps.secrets.outputs.grafana-password }}
           SLACK_BOT_TOKEN: ${{ steps.secrets.outputs.SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN }}
           SLACK_CHANNEL_ID: 'C07NZ85EF1Q' # #monorepo-ci-alerts
-          # A dry run has no inputs, and still exercises the validation rules.
+          # A dry run has no inputs, and still exercises the validation rules. Its alertname is
+          # the real default rule, not a placeholder, so the dry run also proves that the rule
+          # still resolves to a UID — the lookup the silence now depends on.
           WORKFLOW_JOB: ${{ inputs.workflow_job || 'Dry run - no such job' }}
           INCIDENT: ${{ inputs.incident || 'INC-0' }}
           DAYS: ${{ inputs.days || 1 }}
-          ALERTNAME: ${{ inputs.alertname || 'dry-run' }}
+          ALERTNAME: ${{ inputs.alertname || 'base-branch-unsuccessful-job' }}
           ACTOR: ${{ github.actor }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: .github/scripts/ci-silence-incident.py
