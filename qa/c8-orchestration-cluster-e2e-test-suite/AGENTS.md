@@ -415,7 +415,7 @@ fingerprint to an existing issue, add the ones it is missing (see step 1).
 | Optimize                                              | `component/optimize`            |
 | REST API v2 contract (status codes, filters, OpenAPI) | `component/c8-api`              |
 | Engine behavior (BPMN/DMN execution, process state)   | `component/zeebe-engine`        |
-| Broker, cluster, partitions, backups                  | `component/zeebe-platform`      |
+| Broker, cluster, partitions, backups                  | `component/zeebe`               |
 | Exporters, secondary storage (ES/OS/RDBMS), import    | `component/data-layer`          |
 | c8Run packaging or startup                            | `component/c8run`               |
 | Cannot tell                                           | `needs component label`         |
@@ -482,15 +482,16 @@ existing issue. Add only the categories that are missing.
 
    - In `camunda/camunda`, in each case above, also add the labels the issue is missing (see
      **Labels for issues in `camunda/camunda`**):
-     `gh issue edit <n> --repo camunda/camunda --add-label <label>,<label>`.
+     `gh issue edit <n> --repo camunda/camunda --add-label "<label>,<label>"`.
 
 2. **File the issue** when none exists. You MAY use the repo's `create-issue` skill (bug template +
    component label), but the body MUST contain the fingerprint line below so dedupe works:
 
    ```bash
    # every label from "Labels for issues in camunda/camunda"
-   LABELS=(--label kind/bug --label qa/automation-found --label component/<x> \
-     --label severity/<x> --label likelihood/<x> --label affects/<X.Y>)
+   # Quote each label: `needs component label` holds spaces.
+   LABELS=(--label kind/bug --label qa/automation-found --label "component/<x>" \
+     --label "severity/<x>" --label "likelihood/<x>" --label "affects/<X.Y>")
 
    gh issue create --repo camunda/camunda \
      --title "<module>: <one-line symptom> (nightly <version>)" \
