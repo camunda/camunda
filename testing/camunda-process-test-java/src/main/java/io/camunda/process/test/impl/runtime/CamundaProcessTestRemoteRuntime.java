@@ -49,6 +49,13 @@ public class CamundaProcessTestRemoteRuntime implements CamundaProcessTestRuntim
     camundaRestApiAddress = clientConfiguration.getRestAddress();
     camundaGrpcApiAddress = clientConfiguration.getGrpcAddress();
 
+    if (!builder.getClusterSecrets().isEmpty()) {
+      LOGGER.warn(
+          "Cluster secrets detected, but ignored. Providing cluster secrets with a remote "
+              + "Camunda runtime has no effect because the remote cluster owns its secret store. "
+              + "Instead, configure the secret store of the remote cluster.");
+    }
+
     if (builder.isMultiTenancyEnabled()) {
       LOGGER.warn(
           "Multitenancy detected, but not enabled. Activating multitenancy with a remote "

@@ -47,6 +47,7 @@ public class CamundaSpringProcessTestRuntimeBuilder {
         .withCamundaDockerImageVersion(runtimeConfiguration.getCamundaDockerImageVersion())
         .withCamundaDockerImageName(runtimeConfiguration.getCamundaDockerImageName())
         .withCamundaEnv(runtimeConfiguration.getCamundaEnvVars())
+        .withClusterSecrets(runtimeConfiguration.getClusterSecrets())
         .withCamundaLogger(runtimeConfiguration.getCamundaLoggerName())
         .withMultiTenancyEnabled(runtimeConfiguration.isMultiTenancyEnabled());
 
