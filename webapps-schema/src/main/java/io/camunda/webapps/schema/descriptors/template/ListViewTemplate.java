@@ -84,4 +84,10 @@ public class ListViewTemplate extends AbstractTemplateDescriptor implements Prio
   public String getComponentName() {
     return OPERATE.toString();
   }
+
+  @Override
+  public boolean hasCustomSettings() {
+    // a path_hierarchy tokenizer/analyzer and a lowercase normalizer for case-insensitive fields
+    return true;
+  }
 }
