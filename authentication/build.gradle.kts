@@ -16,7 +16,7 @@ dependencies {
   api(libs.io.micrometer.micrometer.observation)
   api(libs.io.micrometer.micrometer.commons)
   api(libs.org.springframework.spring.context)
-  api(libs.com.fasterxml.jackson.core.jackson.databind)
+  testImplementation(libs.com.fasterxml.jackson.core.jackson.databind)
   api(libs.jakarta.annotation.jakarta.annotation.api)
   api(libs.jakarta.servlet.jakarta.servlet.api)
   api(libs.org.eclipse.parsson.parsson)

@@ -20,8 +20,8 @@ dependencies {
   implementation(libs.org.testcontainers.testcontainers.elasticsearch)
   implementation(libs.org.opensearch.opensearch.testcontainers)
   implementation(libs.org.junit.jupiter.junit.jupiter.api)
-  implementation(libs.org.mockito.mockito.core)
-  implementation(libs.org.assertj.assertj.core)
+  testImplementation(libs.org.mockito.mockito.core)
+  testImplementation(libs.org.assertj.assertj.core)
   implementation(project(":zeebe-test-util"))
 }
 

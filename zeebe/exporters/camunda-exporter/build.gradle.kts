@@ -14,7 +14,7 @@ dependencies {
   implementation(project(":camunda-search-domain"))
   implementation(libs.io.camunda.security.library.api)
   implementation(project(":camunda-security-protocol"))
-  implementation(project(":zeebe-bpmn-model"))
+  testImplementation(project(":zeebe-bpmn-model"))
   implementation(project(":camunda-search-client-connect"))
   implementation(project(":camunda-schema-manager"))
   implementation(project(":webapps-schema"))
