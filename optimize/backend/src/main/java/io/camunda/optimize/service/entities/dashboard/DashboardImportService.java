@@ -74,7 +74,7 @@ public class DashboardImportService {
         exportedDto -> {
           dashboardService.validateDashboardDescription(exportedDto.getDescription());
           dashboardService.validateDashboardName(exportedDto.getName());
-          validateDashboardFiltersOrFail(userId, exportedDto);
+          validateDashboardFiltersOrFail(exportedDto);
         });
 
     if (!indexMismatches.isEmpty()) {
@@ -142,10 +142,12 @@ public class DashboardImportService {
   }
 
   private void validateDashboardFiltersOrFail(
-      final String userId, final DashboardDefinitionExportDto dashboardToImport) {
+      final DashboardDefinitionExportDto dashboardToImport) {
     try {
-      dashboardService.validateDashboardFilters(
-          userId, dashboardToImport.getAvailableFilters(), dashboardToImport.getTiles());
+      // Whether variable filters exist in the dashboard's reports is deliberately not checked:
+      // validation runs before the reports are imported, so the tiles still point to the report
+      // IDs of the source environment and no variable names can be resolved for them.
+      dashboardService.validateDashboardFilterStructure(dashboardToImport.getAvailableFilters());
     } catch (final Exception e) {
       throw new OptimizeImportFileInvalidException(
           "The provided file includes at least one dashboard with invalid filters. Error: "
