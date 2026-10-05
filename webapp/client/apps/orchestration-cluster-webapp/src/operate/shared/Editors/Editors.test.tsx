@@ -31,7 +31,7 @@ describe('Editors', () => {
 		const monaco = await import('monaco-editor');
 		const models = monaco.editor.getModels().filter((model) => model.getLanguageId() === 'json');
 		if (models.length > 0) {
-			const getWorker = await monaco.languages.json.getWorker();
+			const getWorker = await monaco.json.getWorker();
 			await Promise.all(
 				models.map(async (model) => {
 					const worker = await getWorker(model.uri);

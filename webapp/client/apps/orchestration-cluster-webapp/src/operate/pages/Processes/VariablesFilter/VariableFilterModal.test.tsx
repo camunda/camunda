@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, beforeAll, beforeEach, describe, expect, vi} from 'vitest';
+import {afterEach, beforeAll, describe, expect} from 'vitest';
 import {userEvent, type Locator} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
@@ -20,11 +20,6 @@ function storeConditions(conditions: unknown[]) {
 
 function getStoredConditions(): unknown {
 	return JSON.parse(sessionStorage.getItem(STORAGE_KEY) ?? 'null');
-}
-
-// Closing Monaco before its word highlighter fires leaves an unhandled "Canceled" rejection.
-function settleEditor() {
-	return vi.advanceTimersByTimeAsync(300);
 }
 
 // Monaco loads lazily; slower runners need longer than the default element timeout.
@@ -45,12 +40,7 @@ describe('<VariableFilterModal />', () => {
 		await Promise.all([import('#/shared/monaco/loadMonaco'), import('#/operate/shared/Editors/MonacoEditor')]);
 	}, 120_000);
 
-	beforeEach(() => {
-		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout'], shouldAdvanceTime: true});
-	});
-
 	afterEach(() => {
-		vi.useRealTimers();
 		sessionStorage.clear();
 	});
 
@@ -201,7 +191,6 @@ describe('<VariableFilterModal />', () => {
 
 		await userEvent.fill(dialog.getByRole('textbox', {name: 'Name'}), 'status');
 		await userEvent.click(dialog.getByRole('tab', {name: 'JSON'}));
-		await settleEditor();
 		await userEvent.click(dialog.getByRole('tab', {name: 'Fields'}));
 
 		await expect.element(dialog.getByRole('textbox', {name: 'Name'})).toHaveValue('status');
@@ -215,7 +204,6 @@ describe('<VariableFilterModal />', () => {
 			.not.toBeInTheDocument();
 
 		await userEvent.click(dialog.getByRole('tab', {name: 'JSON'}));
-		await settleEditor();
 		await userEvent.click(dialog.getByRole('button', {name: 'Apply'}));
 
 		await expect.element(dialog.getByRole('alert')).toMatchTextContent('Could not apply JSON');
@@ -231,13 +219,11 @@ describe('<VariableFilterModal />', () => {
 
 		await userEvent.click(dialog.getByRole('tab', {name: 'JSON'}));
 		await expect.element(await waitForEditor(dialog, 'JSON')).toBeInTheDocument();
-		await settleEditor();
 		await userEvent.click(dialog.getByRole('button', {name: 'Apply'}));
 
 		await expect.element(dialog.getByRole('alert').filter({hasText: 'Could not apply JSON'})).toBeVisible();
 		expect(router.state.location.pathname).toBe('/operate/processes/filters/variables');
 		expect(getStoredConditions()).toBeNull();
-		await settleEditor();
 	});
 
 	it('should keep the rows and warn when switching back to Fields from invalid JSON', async () => {
@@ -246,13 +232,10 @@ describe('<VariableFilterModal />', () => {
 
 		await userEvent.click(dialog.getByRole('tab', {name: 'JSON'}));
 		await expect.element(await waitForEditor(dialog, 'JSON')).toHaveFocus();
-		await settleEditor();
 		await userEvent.keyboard('x');
-		await settleEditor();
 		await userEvent.click(dialog.getByRole('button', {name: 'Apply'}));
 
 		await expect.element(dialog.getByRole('alert').filter({hasText: 'Invalid JSON syntax'})).toBeVisible();
-		await settleEditor();
 
 		await userEvent.click(dialog.getByRole('tab', {name: 'Fields'}));
 
@@ -273,7 +256,6 @@ describe('<VariableFilterModal />', () => {
 		await userEvent.fill(dialog.getByRole('textbox', {name: 'Name'}), 'total');
 		await userEvent.fill(dialog.getByRole('textbox', {name: 'Value'}), '42');
 		await userEvent.click(dialog.getByRole('tab', {name: 'JSON'}));
-		await settleEditor();
 		await userEvent.click(dialog.getByRole('button', {name: 'Apply'}));
 
 		await expect.poll(() => router.state.location.pathname).toBe('/operate/processes');
@@ -287,7 +269,6 @@ describe('<VariableFilterModal />', () => {
 		await userEvent.clear(dialog.getByRole('textbox', {name: 'Name'}));
 		await userEvent.clear(dialog.getByRole('textbox', {name: 'Value'}));
 		await userEvent.click(dialog.getByRole('tab', {name: 'JSON'}));
-		await settleEditor();
 		await userEvent.click(dialog.getByRole('button', {name: 'Apply'}));
 
 		await expect.poll(() => router.state.location.pathname).toBe('/operate/processes');
@@ -304,7 +285,6 @@ describe('<VariableFilterModal />', () => {
 		await expect.element(dialog.getByRole('heading', {name: `Edit value: ${'n'.repeat(47)}...`})).toBeVisible();
 		await expect.element(dialog.getByText('Filter by variable')).toBeVisible();
 		await expect.element(await waitForEditor(dialog, 'Value')).toHaveFocus();
-		await settleEditor();
 
 		await userEvent.click(dialog.getByRole('button', {name: 'Cancel'}));
 
@@ -313,7 +293,6 @@ describe('<VariableFilterModal />', () => {
 
 		await userEvent.click(dialog.getByRole('button', {name: 'Open JSON editor'}));
 		await expect.element(await waitForEditor(dialog, 'Value')).toHaveFocus();
-		await settleEditor();
 		await userEvent.click(dialog.getByRole('button', {name: 'Save'}));
 
 		await expect.element(dialog.getByRole('textbox', {name: 'Value'})).toHaveValue('{\t"a": 1}');

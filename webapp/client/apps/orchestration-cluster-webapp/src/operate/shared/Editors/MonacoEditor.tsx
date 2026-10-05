@@ -71,7 +71,7 @@ const MonacoEditor = observer(
 			if (!monaco || !jsonSchema || language !== 'json') {
 				return;
 			}
-			const defaults = monaco.languages.json.jsonDefaults;
+			const defaults = monaco.json.jsonDefaults;
 			defaults.setDiagnosticsOptions({
 				...defaults.diagnosticsOptions,
 				schemas: [
