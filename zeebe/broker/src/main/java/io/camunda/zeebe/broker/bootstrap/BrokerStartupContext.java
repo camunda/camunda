@@ -19,6 +19,7 @@ import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
+import io.camunda.zeebe.broker.partitioning.BrokerLoadCounters;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
@@ -134,6 +135,9 @@ public interface BrokerStartupContext {
    * broker and shared across every physical tenant's partition manager.
    */
   RocksDbResources getRocksDbResources();
+
+  /** Totals of the work every partition on this broker has done since it started. */
+  BrokerLoadCounters getLoadCounters();
 
   void setRocksDbResources(RocksDbResources sharedRocksDbResources);
 

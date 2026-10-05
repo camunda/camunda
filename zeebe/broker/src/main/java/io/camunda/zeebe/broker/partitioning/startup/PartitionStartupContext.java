@@ -12,6 +12,7 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.partitioning.BrokerLoadCounters.PartitionLoadCounters;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
@@ -53,6 +54,7 @@ public class PartitionStartupContext {
   private FileBasedSnapshotStore snapshotStore;
   private RaftPartition raftPartition;
   private ZeebePartition zeebePartition;
+  private @Nullable PartitionLoadCounters loadCounters;
   private @Nullable CommandApiServiceImpl commandApiService;
   private SnapshotTransfer snapshotTransfer;
 
@@ -173,6 +175,15 @@ public class PartitionStartupContext {
 
   public ZeebePartition zeebePartition() {
     return zeebePartition;
+  }
+
+  public PartitionStartupContext loadCounters(final @Nullable PartitionLoadCounters loadCounters) {
+    this.loadCounters = loadCounters;
+    return this;
+  }
+
+  public @Nullable PartitionLoadCounters loadCounters() {
+    return loadCounters;
   }
 
   public PartitionStartupContext commandApiService(

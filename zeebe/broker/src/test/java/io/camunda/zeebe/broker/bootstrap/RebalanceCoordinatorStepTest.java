@@ -42,6 +42,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.rebalance.RebalanceCoordinator;
 import io.camunda.zeebe.rebalance.RebalanceOverrides;
+import io.camunda.zeebe.rebalance.RebalanceScheduler;
 import io.camunda.zeebe.rebalance.TriggerRebalanceRequest;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -157,8 +158,36 @@ class RebalanceCoordinatorStepTest {
       assertThat(startupFuture).succeedsWithin(TIME_OUT);
       verify(clusterConfigurationService, timeout(TIME_OUT.toMillis()))
           .addUpdateListener(any(RebalanceCoordinator.class));
-      verify(communicationService, timeout(TIME_OUT.toMillis()).times(3))
+      verify(communicationService, timeout(TIME_OUT.toMillis()).times(4))
           .replyTo(any(), any(), any(), any());
+    }
+
+    @Test
+    void shouldNotScheduleRebalancesByDefault() {
+      // when
+      final var startupFuture = sut.startup(testBrokerStartupContext);
+
+      // then
+      assertThat(startupFuture).succeedsWithin(TIME_OUT);
+      verify(clusterConfigurationService, never()).addUpdateListener(any(RebalanceScheduler.class));
+    }
+
+    @Test
+    void shouldScheduleRebalancesWhenConfigured() {
+      // given
+      testBrokerStartupContext
+          .getBrokerConfiguration()
+          .getCluster()
+          .getRaft()
+          .setRebalanceSchedule("PT1H");
+
+      // when
+      final var startupFuture = sut.startup(testBrokerStartupContext);
+
+      // then
+      assertThat(startupFuture).succeedsWithin(TIME_OUT);
+      verify(clusterConfigurationService, timeout(TIME_OUT.toMillis()))
+          .addUpdateListener(any(RebalanceScheduler.class));
     }
   }
 
@@ -193,8 +222,30 @@ class RebalanceCoordinatorStepTest {
 
       // then
       assertThat(shutdownFuture).succeedsWithin(TIME_OUT);
-      verify(communicationService, times(3)).unsubscribe(any());
+      verify(communicationService, times(4)).unsubscribe(any());
       verify(clusterConfigurationService).removeUpdateListener(registeredCoordinator);
+    }
+
+    @Test
+    void shouldStopSchedulingRebalances() {
+      // given
+      testBrokerStartupContext
+          .getBrokerConfiguration()
+          .getCluster()
+          .getRaft()
+          .setRebalanceSchedule("PT1H");
+      assertThat(sut.startup(testBrokerStartupContext)).succeedsWithin(TIME_OUT);
+      final ArgumentCaptor<RebalanceScheduler> schedulerCaptor =
+          ArgumentCaptor.forClass(RebalanceScheduler.class);
+      verify(clusterConfigurationService, timeout(TIME_OUT.toMillis()))
+          .addUpdateListener(schedulerCaptor.capture());
+
+      // when
+      final var shutdownFuture = sut.shutdown(testBrokerStartupContext);
+
+      // then
+      assertThat(shutdownFuture).succeedsWithin(TIME_OUT);
+      verify(clusterConfigurationService).removeUpdateListener(schedulerCaptor.getValue());
     }
 
     @Test
@@ -267,12 +318,12 @@ class RebalanceCoordinatorStepTest {
       verify(communicationService, timeout(TIME_OUT.toMillis()))
           .send(any(), any(), any(), any(), eq(member1), any());
       final ArgumentCaptor<Function> resultHandlerCaptor = ArgumentCaptor.forClass(Function.class);
-      verify(communicationService, timeout(TIME_OUT.toMillis()).times(4))
+      verify(communicationService, timeout(TIME_OUT.toMillis()).times(5))
           .replyTo(any(), any(), resultHandlerCaptor.capture(), any());
       @SuppressWarnings("unchecked")
       final Function<
               LeadershipTransferResultRequest, CompletableFuture<LeadershipTransferResultResponse>>
-          firstTransferResultHandler = resultHandlerCaptor.getAllValues().get(3);
+          firstTransferResultHandler = resultHandlerCaptor.getAllValues().get(4);
 
       // when
       final var shutdownFuture = sut.shutdown(testBrokerStartupContext);

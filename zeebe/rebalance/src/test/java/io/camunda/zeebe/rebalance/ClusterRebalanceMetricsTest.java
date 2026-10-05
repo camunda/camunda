@@ -15,6 +15,8 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
@@ -121,6 +123,38 @@ final class ClusterRebalanceMetricsTest {
                 .timer()
                 .count())
         .isEqualTo(1);
+  }
+
+  @Test
+  void shouldDeregisterScheduledRebalanceMetersWhenCoordinationStops() {
+    // given
+    metrics.startCoordinating();
+    metrics.observeScheduledRun(ScheduledRebalanceOutcome.BUSY);
+    metrics.observeScheduledLoad(
+        new ClusterLoad(Map.of(LoadMeasure.ROOT_PROCESS_INSTANCES, 5.0), Set.of()));
+
+    // when
+    metrics.stopCoordinating();
+
+    // then
+    assertThat(registry.find("zeebe.cluster.rebalance.scheduled.total").counters()).isEmpty();
+    assertThat(registry.find("zeebe.cluster.rebalance.scheduled.load").gauges()).isEmpty();
+  }
+
+  @Test
+  void shouldIgnoreScheduledRebalanceObservationsOnceCoordinationStops() {
+    // given
+    metrics.startCoordinating();
+    metrics.stopCoordinating();
+
+    // when
+    metrics.observeScheduledRun(ScheduledRebalanceOutcome.BUSY);
+    metrics.observeScheduledLoad(
+        new ClusterLoad(Map.of(LoadMeasure.ROOT_PROCESS_INSTANCES, 5.0), Set.of()));
+
+    // then
+    assertThat(registry.find("zeebe.cluster.rebalance.scheduled.total").counters()).isEmpty();
+    assertThat(registry.find("zeebe.cluster.rebalance.scheduled.load").gauges()).isEmpty();
   }
 
   private double state(final int partitionId) {

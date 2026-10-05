@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.backup.schedule;
+package io.camunda.zeebe.util.schedule;
 
 import com.cronutils.model.Cron;
 import com.cronutils.model.CronType;
@@ -31,7 +31,7 @@ public sealed interface Schedule {
   Optional<Instant> nextExecution(Instant from);
 
   /*
-   * In reality the previous execution will be acquired from the checkpoint state
+   * Provide the latest execution of the scheduler before the given instant
    */
   Optional<Instant> previousExecution(Instant from);
 

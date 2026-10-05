@@ -109,6 +109,7 @@ public final class PartitionManagerImpl
       final MeterRegistry meterRegistry,
       final BrokerClient brokerClient,
       final RocksDbResources rocksDbResources,
+      final BrokerLoadCounters loadCounters,
       final EngineSecurityConfig securityConfig,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
@@ -157,6 +158,7 @@ public final class PartitionManagerImpl
             brokerRequestAuthorizationConverter,
             clusterConfigurationService,
             rocksDbResources,
+            loadCounters,
             secretStoreRegistry);
     managementService =
         new DefaultPartitionManagementService(
