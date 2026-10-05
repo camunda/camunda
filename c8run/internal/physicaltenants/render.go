@@ -16,6 +16,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/camunda/camunda/c8run/internal/springconfig"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"gopkg.in/yaml.v3"
 )
@@ -42,6 +43,11 @@ func StoragePrefix(id, storageType string) (key, value string) {
 // Render produces the Spring config declaring every tenant's storage isolation. Logins are
 // passed through the environment (see CredentialEnv) so passwords never touch disk here.
 func Render(tenants []types.PhysicalTenant, storageType string) ([]byte, error) {
+	switch strings.ToLower(strings.TrimSpace(storageType)) {
+	case "", "rdbms", "elasticsearch", "opensearch", "none":
+	default:
+		return nil, fmt.Errorf("cannot isolate physical tenants for secondary storage type %q; use rdbms, elasticsearch, opensearch or none", storageType)
+	}
 	perTenant := map[string]any{}
 	for _, t := range tenants {
 		tenant := map[string]any{}
@@ -90,6 +96,63 @@ func CredentialEnv(tenants []types.PhysicalTenant) map[string]string {
 	return env
 }
 
+// SecretStoreEnv is the property that points a tenant's file secret store at its directory.
+func SecretStoreEnv(id string) string {
+	return "CAMUNDA_PHYSICALTENANTS_" + strings.ToUpper(id) + "_SECRETS_STORES_FILE_DEFAULT_PATH"
+}
+
+// TenantEnvPrefix prefixes every per-tenant property c8run passes to Camunda.
+const TenantEnvPrefix = "CAMUNDA_PHYSICALTENANTS_"
+
+// ScrubTenantEnv drops all per-tenant Camunda properties from an environment, so a child
+// runtime (connectors, custom connector code) cannot read other tenants' logins.
+func ScrubTenantEnv(env []string) []string {
+	out := make([]string, 0, len(env))
+	for _, kv := range env {
+		if strings.HasPrefix(strings.ToUpper(kv), TenantEnvPrefix) {
+			continue
+		}
+		out = append(out, kv)
+	}
+	return out
+}
+
+// GeneratedConfigPath is where the generated tenant config lives.
+func GeneratedConfigPath(baseDir string) string {
+	return filepath.Join(baseDir, "configuration", GeneratedConfigName)
+}
+
+// RenderForPort renders the generated config with the start port recorded; nil for no tenants.
+func RenderForPort(tenants []types.PhysicalTenant, storageType string, port int) ([]byte, error) {
+	if len(tenants) == 0 {
+		return nil, nil
+	}
+	content, err := Render(tenants, storageType)
+	if err != nil {
+		return nil, err
+	}
+	if port > 0 {
+		content = append([]byte(fmt.Sprintf("%s%d\n", portMarker, port)), content...)
+	}
+	return content, nil
+}
+
+// ApplyGeneratedConfig writes content to the generated config path, or removes the file when
+// content is empty, so a stale file from an earlier start never leaks into this one.
+func ApplyGeneratedConfig(baseDir string, content []byte) error {
+	path := GeneratedConfigPath(baseDir)
+	if len(content) == 0 {
+		if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return err
+		}
+		return nil
+	}
+	if err := atomicWrite(path, content, 0o644); err != nil {
+		return fmt.Errorf("failed to write %s: %w", path, err)
+	}
+	return nil
+}
+
 // WriteGeneratedConfig writes (or, with no tenants, removes) the generated config file.
 func WriteGeneratedConfig(baseDir string, tenants []types.PhysicalTenant, storageType string) (string, error) {
 	return WriteGeneratedConfigForPort(baseDir, tenants, storageType, 0)
@@ -122,9 +185,22 @@ func WriteGeneratedConfigForPort(baseDir string, tenants []types.PhysicalTenant,
 
 // ConfigDeclaresTenants reports whether a Spring YAML file declares camunda.physical-tenants.
 func ConfigDeclaresTenants(path string) bool {
+	if root, ok := springconfig.Load(path); ok {
+		if _, ok := springconfig.Lookup(root, "camunda", "physical-tenants"); ok {
+			return true
+		}
+		if _, ok := springconfig.Lookup(root, "camunda", "physicalTenants"); ok {
+			return true
+		}
+		return false
+	}
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return false
+	}
+	if strings.HasSuffix(path, ".properties") {
+		return strings.Contains(string(content), "camunda.physical-tenants.") ||
+			strings.Contains(string(content), "camunda.physicalTenants.")
 	}
 	var root map[string]any
 	if yaml.Unmarshal(content, &root) != nil {
@@ -148,6 +224,10 @@ func ConfigDeclaresTenants(path string) bool {
 
 // ResolveInput is everything Resolve needs; it keeps the function free of globals for tests.
 type ResolveInput struct {
+	// EnvDeclaresTenants is true when CAMUNDA_PHYSICALTENANTS_* is set outside c8run.
+	EnvDeclaresTenants bool
+	// ReservedPorts are never assigned to a tenant connectors runtime.
+	ReservedPorts   map[int]bool
 	Store           *Store
 	FlagIDs         []string
 	DefaultUsername string
@@ -183,13 +263,22 @@ func Resolve(in ResolveInput) (Resolution, error) {
 		}
 	}
 
+	if in.EnvDeclaresTenants {
+		if len(in.FlagIDs) > 0 {
+			return res, fmt.Errorf("--physical-tenants cannot be combined with CAMUNDA_PHYSICALTENANTS_* environment variables; use one or the other")
+		}
+		res.Notices = append(res.Notices, "Physical tenants are declared through CAMUNDA_PHYSICALTENANTS_* environment variables; tenants managed with `c8run tenants` are not applied.")
+		return res, nil
+	}
+
 	var stored []Tenant
+	creds := map[string]string{}
 	if len(in.FlagIDs) > 0 {
 		for _, id := range in.FlagIDs {
 			stored = append(stored, Tenant{ID: id})
 		}
 	} else if mode == "local" && in.Store != nil {
-		if stored, err = in.Store.List(); err != nil {
+		if stored, creds, err = in.Store.Snapshot(); err != nil {
 			return res, err
 		}
 	}
@@ -198,18 +287,18 @@ func Resolve(in ResolveInput) (Resolution, error) {
 	for _, st := range stored {
 		t := types.PhysicalTenant{ID: st.ID, Username: in.DefaultUsername, Password: in.DefaultPassword}
 		if st.Username != "" {
-			pw, ok, err := in.Store.Password(st.ID)
-			if err != nil {
-				return res, err
-			}
+			pw, ok := creds[st.ID]
 			if !ok {
 				return res, fmt.Errorf("physical tenant %q has user %q but no stored password; run `c8run tenants remove %s` and add it again", st.ID, st.Username, st.ID)
 			}
 			t.Username, t.Password = st.Username, pw
 		}
 		if in.ConnectorsEnabled && !st.NoConnectors {
-			for in.PortFree != nil && !in.PortFree(port) && port < 65535 {
+			for port <= 65535 && (in.ReservedPorts[port] || (in.PortFree != nil && !in.PortFree(port))) {
 				port++
+			}
+			if port > 65535 {
+				return res, fmt.Errorf("no free port left for the connectors runtime of physical tenant %q; free some ports or add it with --no-connectors", st.ID)
 			}
 			t.Connectors, t.ConnectorsPort = true, port
 			port++

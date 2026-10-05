@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -17,6 +18,7 @@ import (
 	"github.com/camunda/camunda/c8run/internal/health"
 	"github.com/camunda/camunda/c8run/internal/jre"
 	"github.com/camunda/camunda/c8run/internal/overrides"
+	"github.com/camunda/camunda/c8run/internal/physicaltenants"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/rs/zerolog/log"
 )
@@ -378,6 +380,11 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 		os.Exit(1)
 	}
 
+	if err := physicaltenants.ApplyGeneratedConfig(parentDir, settings.PhysicalTenantsConfig); err != nil {
+		fmt.Printf("Failed to write physical tenant configuration: %v\n", err)
+		os.Exit(1)
+	}
+
 	err = overrides.SetEnvVars()
 	if err != nil {
 		fmt.Println("Failed to set envVars:", err)
@@ -457,6 +464,7 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 
 	s.ProcessHandler.AttemptToStartProcess(processInfo.Camunda.PidPath, "Camunda", func() {
 		camundaCmd := c8.CamundaCmd(ctx, processInfo.Camunda.Version, parentDir, extraArgs, javaOpts)
+		camundaCmd.Env = withTenantEnv(camundaCmd.Env, settings.PhysicalTenantsEnv)
 		camundaLogPath := filepath.Join(parentDir, "log", "camunda.log")
 		err := s.startApplication(camundaCmd, processInfo.Camunda.PidPath, camundaLogPath, stop)
 		if err != nil {
@@ -465,7 +473,15 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 			return
 		}
 	}, func() error {
-		return health.QueryCamunda(ctx, c8, "Camunda", settings, startupHealthCheckRetries)
+		err := health.QueryCamunda(ctx, c8, "Camunda", settings, startupHealthCheckRetries)
+		var notReady *health.TenantsNotReadyError
+		if errors.As(err, &notReady) {
+			// Camunda and the other tenants are usable; keep them running and report the
+			// failed tenants once startup finishes instead of tearing everything down.
+			state.NotReadyTenants = notReady.IDs
+			return nil
+		}
+		return err
 	}, stop)
 
 	if ctx.Err() != nil {
@@ -498,6 +514,7 @@ func (s *StartupHandler) startConnectors(ctx context.Context, stop context.Cance
 	processInfo := state.ProcessInfo
 	s.ProcessHandler.AttemptToStartProcess(processInfo.Connectors.PidPath, "Connectors", func() {
 		connectorsCmd := state.C8.ConnectorsCmd(ctx, javaBinary, parentDir, processInfo.Connectors.Version, state.Settings.Port)
+		connectorsCmd.Env = connectorsEnv(connectorsCmd.Env)
 		connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
 		err := s.startApplication(connectorsCmd, processInfo.Connectors.PidPath, connectorsLogPath, stop)
 		if err != nil {
@@ -508,15 +525,50 @@ func (s *StartupHandler) startConnectors(ctx context.Context, stop context.Cance
 		return health.QueryConnectors(ctx, "Connectors", startupHealthCheckRetries)
 	}, connectorsFailed)
 
+	// Tenant runtimes start and are health-checked concurrently, so one slow or broken
+	// runtime never delays the others and the total wait does not grow with tenant count.
+	var wg sync.WaitGroup
 	for _, tenant := range state.Settings.PhysicalTenants {
 		if ctx.Err() != nil {
-			return
+			break
 		}
 		if !tenant.Connectors {
 			continue
 		}
-		s.startTenantConnectors(ctx, stop, state, parentDir, javaBinary, tenant)
+		wg.Add(1)
+		go func(tenant types.PhysicalTenant) {
+			defer wg.Done()
+			s.startTenantConnectors(ctx, stop, state, parentDir, javaBinary, tenant)
+		}(tenant)
 	}
+	wg.Wait()
+}
+
+// withTenantEnv adds the per-tenant properties to the Camunda process environment only.
+func withTenantEnv(env []string, tenantEnv map[string]string) []string {
+	if len(tenantEnv) == 0 {
+		return env
+	}
+	if env == nil {
+		env = os.Environ()
+	}
+	keys := make([]string, 0, len(tenantEnv))
+	for key := range tenantEnv {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		env = append(env, key+"="+tenantEnv[key])
+	}
+	return env
+}
+
+// connectorsEnv returns a connectors runtime environment without any per-tenant properties.
+func connectorsEnv(env []string) []string {
+	if env == nil {
+		env = os.Environ()
+	}
+	return physicaltenants.ScrubTenantEnv(env)
 }
 
 // TenantConnectorsPidPath is the PID file of a physical tenant's connectors runtime.
@@ -538,10 +590,7 @@ func (s *StartupHandler) startTenantConnectors(ctx context.Context, stop context
 	}
 	s.ProcessHandler.AttemptToStartProcess(pidPath, name, func() {
 		cmd := state.C8.ConnectorsCmd(ctx, javaBinary, parentDir, state.ProcessInfo.Connectors.Version, state.Settings.Port)
-		if cmd.Env == nil {
-			cmd.Env = os.Environ()
-		}
-		cmd.Env = append(cmd.Env, TenantConnectorsEnv(tenant, state.Settings)...)
+		cmd.Env = append(connectorsEnv(cmd.Env), TenantConnectorsEnv(tenant, state.Settings)...)
 		logPath := filepath.Join(parentDir, "log", "connectors-"+tenant.ID+".log")
 		if err := s.startApplication(cmd, pidPath, logPath, stop); err != nil {
 			log.Err(err).Str("tenant", tenant.ID).Msg("Failed to start tenant Connectors process")

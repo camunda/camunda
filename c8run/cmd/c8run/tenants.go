@@ -20,6 +20,7 @@ import (
 	"text/tabwriter"
 
 	pt "github.com/camunda/camunda/c8run/internal/physicaltenants"
+	"github.com/camunda/camunda/c8run/internal/types"
 	"gopkg.in/yaml.v3"
 )
 
@@ -31,6 +32,9 @@ type tenantsCommand struct {
 	readPassword func() ([]byte, error)
 	// port is the main Camunda port used to render URLs in `list`.
 	port int
+	// storageType resolves the secondary storage type `c8run start` would use, so `add`
+	// rejects ids that storage cannot hold.
+	storageType func(baseDir string) (string, error)
 }
 
 func newTenantsCommand() *tenantsCommand {
@@ -45,11 +49,16 @@ func newTenantsCommand() *tenantsCommand {
 		isTerminal:   stdinIsTerminal,
 		readPassword: readSecretFromTerminal,
 		port:         port,
+		storageType:  defaultStorageType,
 	}
 }
 
-func isTenantsCommand(name string) bool {
-	return name == "tenants" || name == "physical-tenants" || name == "pt"
+// defaultStorageType resolves the storage type from the default configuration and the
+// environment, the same way startup does without --config.
+func defaultStorageType(baseDir string) (string, error) {
+	var settings types.C8RunSettings
+	applySecondaryStorageDefaults(baseDir, &settings)
+	return effectiveStorageType(settings.SecondaryStorageType)
 }
 
 func (c *tenantsCommand) run(baseDir string, args []string) error {
@@ -166,6 +175,15 @@ func (c *tenantsCommand) add(baseDir string, store *pt.Store, args []string) err
 	opts, err := parseAddArguments(args)
 	if err != nil {
 		return err
+	}
+	storageType, err := c.storageType(baseDir)
+	if err != nil {
+		return err
+	}
+	for _, id := range opts.ids {
+		if err := pt.ValidateIDForStorage(id, storageType); err != nil {
+			return err
+		}
 	}
 	passwords := map[string]string{}
 	if opts.username != "" {
@@ -324,7 +342,7 @@ func (c *tenantsCommand) remove(baseDir string, store *pt.Store, args []string) 
 		return err
 	}
 	_, _ = fmt.Fprintf(c.output, "Removed physical tenant(s): %s.\n", strings.Join(ids, ", "))
-	_, _ = fmt.Fprintln(c.output, "Their data is kept in secondary storage under the tenant's prefix; adding the same ID again restores access to it.")
+	_, _ = fmt.Fprintln(c.output, "Their data is kept in secondary storage under the tenant's prefix. Adding the same ID again restores it, including the users created in that tenant.")
 	c.printRestartHint(baseDir, "stop", 0)
 	return nil
 }
@@ -414,7 +432,8 @@ its own data in secondary storage, its own users, and its own Operate, Tasklist 
 http://localhost:8080/physical-tenants/<id>/. The "default" tenant always exists and is
 served at the unprefixed URLs.
 
-Tenant IDs use lowercase letters and digits only (max 64), e.g. "sales" or "team2".
+Tenant IDs use lowercase letters and digits only (max 64; max 8 with RDBMS/H2 storage),
+e.g. "sales" or "team2".
 Tenants are saved for the current OS user and applied on every ` + "`c8run start`" + `.
 Use ` + "`c8run start --physical-tenants a,b`" + ` to run with tenants for one run without saving them.
 

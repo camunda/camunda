@@ -75,15 +75,39 @@ func QueryCamunda(ctx context.Context, c8 opener, name string, settings types.C8
 		if len(settings.PhysicalTenants) > 0 {
 			results := probeTenantsFunc(ctx, settings, 12, 5*time.Second)
 			physicaltenants.PrintSummary(os.Stdout, settings, results, inboundConnectorsPort)
-		}
-		if !settings.NoBrowser {
-			if err := markSeenStartup(settings.StartupMarkerPath); err != nil {
-				log.Warn().Err(err).Str("path", settings.StartupMarkerPath).Msg("Failed to persist quickstart marker")
+			var notReady []string
+			for _, r := range results {
+				if !r.Ready {
+					notReady = append(notReady, r.ID)
+				}
+			}
+			if len(notReady) > 0 {
+				markStartupSeen(settings)
+				return &TenantsNotReadyError{IDs: notReady}
 			}
 		}
+		markStartupSeen(settings)
 		return nil
 	}
 	return fmt.Errorf("queryCamunda: %s did not start", name)
+}
+
+// TenantsNotReadyError means Camunda is healthy but some physical tenants are not ready.
+type TenantsNotReadyError struct {
+	IDs []string
+}
+
+func (e *TenantsNotReadyError) Error() string {
+	return "physical tenant(s) not ready: " + strings.Join(e.IDs, ", ")
+}
+
+func markStartupSeen(settings types.C8RunSettings) {
+	if settings.NoBrowser {
+		return
+	}
+	if err := markSeenStartup(settings.StartupMarkerPath); err != nil {
+		log.Warn().Err(err).Str("path", settings.StartupMarkerPath).Msg("Failed to persist quickstart marker")
+	}
 }
 
 func QueryConnectors(ctx context.Context, name string, retries int) error {

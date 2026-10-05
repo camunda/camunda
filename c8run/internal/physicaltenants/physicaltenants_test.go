@@ -9,14 +9,19 @@ package physicaltenants
 
 import (
 	"bytes"
-	"errors"
+	"context"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/stretchr/testify/assert"
@@ -72,15 +77,6 @@ func TestStoreAddListRemove(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, "s3cret", pw)
 
-	content, err := os.ReadFile(store.Path())
-	require.NoError(t, err)
-	assert.NotContains(t, string(content), "s3cret", "passwords must never be written to the tenants file")
-	if runtime.GOOS != "windows" {
-		info, err := os.Stat(store.Path() + credentialsSuffix)
-		require.NoError(t, err)
-		assert.Equal(t, os.FileMode(0o600), info.Mode().Perm())
-	}
-
 	assert.ErrorContains(t, store.Add([]Tenant{{ID: "sales"}}, nil), "already exists")
 	assert.ErrorContains(t, store.Remove([]string{"nope"}), "unknown physical tenant")
 
@@ -88,8 +84,9 @@ func TestStoreAddListRemove(t *testing.T) {
 	_, ok, err = store.Password("hr")
 	require.NoError(t, err)
 	assert.False(t, ok)
-	_, err = os.Stat(store.Path() + credentialsSuffix)
-	assert.True(t, os.IsNotExist(err), "credentials file is removed when empty")
+	content, err := os.ReadFile(store.Path())
+	require.NoError(t, err)
+	assert.NotContains(t, string(content), "s3cret", "a removed tenant's password is deleted")
 
 	require.NoError(t, store.Reset())
 	tenants, err = store.List()
@@ -244,6 +241,7 @@ func TestPrintSummary(t *testing.T) {
 	assert.Contains(t, out, "NOT READY")
 	assert.Contains(t, out, "hr did not become ready: HTTP 404")
 	assert.Contains(t, out, "Camunda-Physical-Tenant: sales")
+	assert.Contains(t, out, "secrets --tenant sales")
 
 	buf.Reset()
 	PrintSummary(&buf, types.C8RunSettings{}, nil, 8086)
@@ -280,22 +278,189 @@ func TestStoreConcurrentAddsAreNotLost(t *testing.T) {
 	}
 }
 
-func TestStoreRollsBackCredentialsWhenTenantWriteFails(t *testing.T) {
+func TestStoreKeepsTenantsAndPasswordsInOneOwnerOnlyFile(t *testing.T) {
+	dir := t.TempDir()
+	store := NewStore(filepath.Join(dir, FileName))
+	require.NoError(t, store.Add([]Tenant{{ID: "hr", Username: "alice"}}, map[string]string{"hr": "pw"}))
+	entries, err := os.ReadDir(dir)
+	require.NoError(t, err)
+	var names []string
+	for _, e := range entries {
+		names = append(names, e.Name())
+	}
+	assert.ElementsMatch(t, []string{FileName, FileName + lockSuffix}, names, "one data file, so every change is one atomic rename")
+	if runtime.GOOS != "windows" {
+		info, err := os.Stat(store.Path())
+		require.NoError(t, err)
+		assert.Equal(t, os.FileMode(0o600), info.Mode().Perm())
+	}
+
+	// A rejected change writes nothing.
+	before, err := os.ReadFile(store.Path())
+	require.NoError(t, err)
+	assert.Error(t, store.Remove([]string{"hr", "missing"}))
+	after, err := os.ReadFile(store.Path())
+	require.NoError(t, err)
+	assert.Equal(t, before, after)
+}
+
+func TestStoreRejectsDuplicateIDs(t *testing.T) {
+	path := filepath.Join(t.TempDir(), FileName)
+	require.NoError(t, os.WriteFile(path, []byte("version: 1\ntenants:\n  - id: a\n  - id: a\n"), 0o644))
+	_, err := NewStore(path).List()
+	assert.ErrorContains(t, err, "more than once")
+}
+
+func TestSnapshotIsConsistent(t *testing.T) {
 	store := NewStore(filepath.Join(t.TempDir(), FileName))
 	require.NoError(t, store.Add([]Tenant{{ID: "hr", Username: "alice"}}, map[string]string{"hr": "pw"}))
-
-	original := writeTenantsFunc
-	writeTenantsFunc = func(*Store, []Tenant) error { return errors.New("disk full") }
-	t.Cleanup(func() { writeTenantsFunc = original })
-
-	assert.ErrorContains(t, store.Remove([]string{"hr"}), "disk full")
-	pw, ok, err := store.Password("hr")
+	tenants, creds, err := store.Snapshot()
 	require.NoError(t, err)
-	assert.True(t, ok, "remove must not drop the password of a tenant that is still configured")
-	assert.Equal(t, "pw", pw)
+	assert.Len(t, tenants, 1)
+	assert.Equal(t, "pw", creds["hr"])
+}
 
-	assert.ErrorContains(t, store.Add([]Tenant{{ID: "ops", Username: "bob"}}, map[string]string{"ops": "x"}), "disk full")
-	_, ok, err = store.Password("ops")
+func TestScrubTenantEnv(t *testing.T) {
+	env := ScrubTenantEnv([]string{"PATH=/bin", "CAMUNDA_PHYSICALTENANTS_HR_SECURITY_INITIALIZATION_USERS_0_PASSWORD=x", "camunda_physicaltenants_a_b=y", "CAMUNDA_CLIENT_X=1"})
+	assert.Equal(t, []string{"PATH=/bin", "CAMUNDA_CLIENT_X=1"}, env)
+}
+
+func TestProbeRunsTenantsConcurrentlyUnderOneDeadline(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer server.Close()
+	u, _ := url.Parse(server.URL)
+	port, _ := strconv.Atoi(u.Port())
+	settings := types.C8RunSettings{Port: port}
+	for _, id := range []string{"a", "b", "c", "d", "e"} {
+		settings.PhysicalTenants = append(settings.PhysicalTenants, types.PhysicalTenant{ID: id})
+	}
+	start := time.Now()
+	results := Probe(context.Background(), settings, 3, 100*time.Millisecond)
+	elapsed := time.Since(start)
+	require.Len(t, results, 5)
+	for i, r := range results {
+		assert.Equal(t, settings.PhysicalTenants[i].ID, r.ID)
+		assert.False(t, r.Ready)
+	}
+	assert.Less(t, elapsed, 1200*time.Millisecond, "five failing tenants must share one deadline, not wait in sequence")
+}
+
+func TestSnapshotWithoutFileCreatesNothing(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "absent")
+	tenants, creds, err := NewStore(filepath.Join(dir, FileName)).Snapshot()
 	require.NoError(t, err)
-	assert.False(t, ok, "a failed add must not leave an orphaned password")
+	assert.Empty(t, tenants)
+	assert.Empty(t, creds)
+	assert.NoDirExists(t, dir)
+}
+
+func TestResolveSkipsReservedPorts(t *testing.T) {
+	store := NewStore(filepath.Join(t.TempDir(), FileName))
+	require.NoError(t, store.Add([]Tenant{{ID: "a"}, {ID: "b"}}, nil))
+	res, err := Resolve(ResolveInput{
+		Store: store, ConnectorsEnabled: true, FirstConnectorsPort: 8087,
+		ReservedPorts: map[int]bool{8087: true},
+		PortFree:      func(int) bool { return true },
+	})
+	require.NoError(t, err)
+	assert.Equal(t, 8088, res.Tenants[0].ConnectorsPort, "the Camunda port must never be given to a connectors runtime")
+	assert.Equal(t, 8089, res.Tenants[1].ConnectorsPort)
+}
+
+func TestResolveDefersToEnvironmentTenants(t *testing.T) {
+	store := NewStore(filepath.Join(t.TempDir(), FileName))
+	require.NoError(t, store.Add([]Tenant{{ID: "a"}}, nil))
+	res, err := Resolve(ResolveInput{Store: store, EnvDeclaresTenants: true})
+	require.NoError(t, err)
+	assert.Empty(t, res.Tenants)
+	require.Len(t, res.Notices, 1)
+	_, err = Resolve(ResolveInput{Store: store, EnvDeclaresTenants: true, FlagIDs: []string{"b"}})
+	assert.ErrorContains(t, err, "cannot be combined")
+}
+
+func TestApplyGeneratedConfig(t *testing.T) {
+	base := t.TempDir()
+	content, err := RenderForPort([]types.PhysicalTenant{{ID: "a"}}, "rdbms", 8090)
+	require.NoError(t, err)
+	require.NoError(t, ApplyGeneratedConfig(base, content))
+	assert.Equal(t, 8090, LastStartPort(base))
+	require.NoError(t, ApplyGeneratedConfig(base, nil))
+	assert.NoFileExists(t, GeneratedConfigPath(base))
+	empty, err := RenderForPort(nil, "rdbms", 8090)
+	require.NoError(t, err)
+	assert.Nil(t, empty)
+}
+
+func TestProbeTreatsAuthRejectionAsReady(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/physical-tenants/missing/") {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	defer server.Close()
+	u, _ := url.Parse(server.URL)
+	port, _ := strconv.Atoi(u.Port())
+
+	oidc := types.C8RunSettings{Port: port, OIDC: true, PhysicalTenants: []types.PhysicalTenant{{ID: "sales"}, {ID: "missing"}}}
+	results := Probe(context.Background(), oidc, 2, 10*time.Millisecond)
+	assert.True(t, results[0].Ready, "under OIDC a 401 still proves the tenant is up")
+	assert.True(t, results[0].Unverified, "but storage readiness is not claimed")
+	assert.Contains(t, results[0].Warning, "OIDC")
+	assert.False(t, results[1].Ready, "an unknown tenant is a 404")
+
+	basic := types.C8RunSettings{Port: port, PhysicalTenants: []types.PhysicalTenant{{ID: "sales", Username: "alice"}}}
+	results = Probe(context.Background(), basic, 1, 10*time.Millisecond)
+	assert.True(t, results[0].Ready)
+	assert.True(t, results[0].Unverified)
+	assert.Contains(t, results[0].Warning, "login for alice was rejected")
+
+	var buf bytes.Buffer
+	PrintSummary(&buf, basic, results, 8086)
+	assert.Contains(t, buf.String(), "up (unverified)")
+}
+
+func TestResolveFailsWhenPortsAreExhausted(t *testing.T) {
+	store := NewStore(filepath.Join(t.TempDir(), FileName))
+	require.NoError(t, store.Add([]Tenant{{ID: "a"}, {ID: "b"}}, nil))
+	_, err := Resolve(ResolveInput{
+		Store: store, ConnectorsEnabled: true, FirstConnectorsPort: 65535,
+		PortFree: func(int) bool { return true },
+	})
+	assert.ErrorContains(t, err, "no free port left")
+}
+
+func TestProbeWaitsForSecondaryStorage(t *testing.T) {
+	calls := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodPost, r.Method)
+		assert.True(t, strings.HasSuffix(r.URL.Path, "/process-definitions/search"))
+		calls++
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer server.Close()
+	u, _ := url.Parse(server.URL)
+	port, _ := strconv.Atoi(u.Port())
+	results := Probe(context.Background(), types.C8RunSettings{Port: port, PhysicalTenants: []types.PhysicalTenant{{ID: "a"}}}, 2, 10*time.Millisecond)
+	assert.False(t, results[0].Ready, "a tenant whose storage answers 503 is not ready")
+	assert.Contains(t, results[0].Err, "secondary storage is not ready")
+}
+
+func TestRenderRejectsUnknownStorageType(t *testing.T) {
+	_, err := Render([]types.PhysicalTenant{{ID: "a"}}, "${STORAGE_TYPE}")
+	assert.ErrorContains(t, err, "cannot isolate physical tenants")
+}
+
+func TestValidateIDForStorage(t *testing.T) {
+	for _, storage := range []string{"rdbms", "", "RDBMS"} {
+		assert.NoError(t, ValidateIDForStorage("abcdefgh", storage), storage)
+		assert.ErrorContains(t, ValidateIDForStorage("abcdefghi", storage), "at most 8", storage)
+	}
+	for _, storage := range []string{"elasticsearch", "opensearch", "none"} {
+		assert.NoError(t, ValidateIDForStorage(strings.Repeat("a", MaxIDLength), storage), storage)
+	}
+	assert.ErrorContains(t, ValidateIDForStorage("Bad-ID", "elasticsearch"), "lowercase")
 }

@@ -11,10 +11,13 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
+	"github.com/camunda/camunda/c8run/internal/overrides"
 	pt "github.com/camunda/camunda/c8run/internal/physicaltenants"
+	localsecrets "github.com/camunda/camunda/c8run/internal/secrets"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -34,7 +37,8 @@ func testTenantsCommand(t *testing.T, input string, terminal bool, passwords ...
 			i++
 			return []byte(pw), nil
 		},
-		port: 8080,
+		port:        8080,
+		storageType: func(string) (string, error) { return "rdbms", nil },
 	}, out, errOut
 }
 
@@ -65,7 +69,7 @@ func TestTenantsAddListRemove(t *testing.T) {
 	out.Reset()
 	require.NoError(t, cmd.run(base, []string{"remove", "hr"}))
 	assert.Contains(t, out.String(), "Removed physical tenant(s): hr.")
-	assert.Contains(t, out.String(), "restores access")
+	assert.Contains(t, out.String(), "including the users")
 }
 
 func TestTenantsAddRejectsInvalidAndDuplicate(t *testing.T) {
@@ -140,17 +144,257 @@ func TestTenantsExternalMode(t *testing.T) {
 func TestApplyPhysicalTenantsFromFlag(t *testing.T) {
 	base := t.TempDir()
 	t.Setenv(pt.FileEnv, filepath.Join(t.TempDir(), pt.FileName))
-	settings := types.C8RunSettings{Username: "demo", Password: "demo", DisableConnectors: true, PhysicalTenantsFlag: []string{"a,b"}, SecondaryStorageType: "rdbms"}
+	settings := types.C8RunSettings{Port: 8080, Username: "demo", Password: "demo", DisableConnectors: true, PhysicalTenantsFlag: []string{"a,b"}, SecondaryStorageType: "rdbms"}
 	require.NoError(t, applyPhysicalTenants(base, "8.10.0", &settings))
 	assert.Len(t, settings.PhysicalTenants, 2)
 	assert.Equal(t, filepath.Join(base, "configuration", pt.GeneratedConfigName), settings.PhysicalTenantsConfigPath)
-	assert.Equal(t, "demo", os.Getenv("CAMUNDA_PHYSICALTENANTS_A_SECURITY_INITIALIZATION_USERS_0_USERNAME"))
-	t.Cleanup(func() {
-		for key := range pt.CredentialEnv(settings.PhysicalTenants) {
-			_ = os.Unsetenv(key)
-		}
-	})
+	assert.NoFileExists(t, settings.PhysicalTenantsConfigPath, "nothing is written until startup passes the port check")
+	assert.Contains(t, string(settings.PhysicalTenantsConfig), "c8run-port")
+	assert.Equal(t, "demo", settings.PhysicalTenantsEnv["CAMUNDA_PHYSICALTENANTS_A_SECURITY_INITIALIZATION_USERS_0_USERNAME"])
+	_, exported := os.LookupEnv("CAMUNDA_PHYSICALTENANTS_A_SECURITY_INITIALIZATION_USERS_0_USERNAME")
+	assert.False(t, exported, "tenant logins must not leak into c8run's own environment")
 
 	old := types.C8RunSettings{PhysicalTenantsFlag: []string{"a"}}
 	assert.ErrorContains(t, applyPhysicalTenants(base, "8.9.1", &old), "8.10 or newer")
+}
+
+func TestSecretsTenantFlagUsesTenantDirectory(t *testing.T) {
+	baseDir := t.TempDir()
+	command, output, _ := testSecretsCommand("tenant-value\n", false)
+	require.NoError(t, command.run(baseDir, []string{"--tenant", "sales", "set", "API_KEY", "--stdin"}))
+	assert.Contains(t, output.String(), "for physical tenant sales")
+
+	tenantDir, err := localsecrets.TenantDirectory(baseDir, "sales")
+	require.NoError(t, err)
+	content, err := os.ReadFile(filepath.Join(tenantDir, "API_KEY"))
+	require.NoError(t, err)
+	assert.Equal(t, "tenant-value", string(content))
+	_, err = os.Stat(filepath.Join(baseDir, "secrets", "API_KEY"))
+	assert.True(t, os.IsNotExist(err), "tenant secret must not land in the default store")
+
+	_, _, err = extractTenantArgument([]string{"--tenant", "Bad-Id", "list"})
+	assert.ErrorContains(t, err, "lowercase")
+	_, _, err = extractTenantArgument([]string{"--tenant=a", "--tenant=b"})
+	assert.ErrorContains(t, err, "only be specified once")
+}
+
+func TestConfigureTenantSecretStores(t *testing.T) {
+	baseDir := t.TempDir()
+	settings := types.C8RunSettings{PhysicalTenants: []types.PhysicalTenant{{ID: "a"}, {ID: "b"}}}
+	require.NoError(t, configureTenantSecretStores(baseDir, &settings))
+	a := settings.PhysicalTenantsEnv[pt.SecretStoreEnv("a")]
+	b := settings.PhysicalTenantsEnv[pt.SecretStoreEnv("b")]
+	assert.DirExists(t, a)
+	assert.NotEqual(t, a, b)
+	assert.NotEqual(t, filepath.Join(baseDir, "secrets"), a)
+}
+
+func TestEffectiveStorageTypePrecedence(t *testing.T) {
+	t.Setenv("JAVA_OPTS", "")
+	t.Setenv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "")
+	t.Setenv("CAMUNDA_DATA_SECONDARY_STORAGE_TYPE", "")
+	got, _ := effectiveStorageType("rdbms")
+	assert.Equal(t, "rdbms", got)
+	t.Setenv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "elasticsearch")
+	got, _ = effectiveStorageType("rdbms")
+	assert.Equal(t, "elasticsearch", got)
+	t.Setenv("JDK_JAVA_OPTIONS", "-Dcamunda.data.secondary-storage.type=elasticsearch -Dcamunda.data.secondary-storage.type=opensearch")
+	got, _ = effectiveStorageType("rdbms")
+	assert.Equal(t, "opensearch", got, "JDK_JAVA_OPTIONS beats env vars; the last -D wins")
+	t.Setenv("JAVA_OPTS", "-Xmx1g -Dcamunda.data.secondary-storage.type=rdbms")
+	got, _ = effectiveStorageType("elasticsearch")
+	assert.Equal(t, "rdbms", got, "JAVA_OPTS is on the command line and beats JDK_JAVA_OPTIONS")
+}
+
+func TestApplyPhysicalTenantsUsesEffectiveStorageType(t *testing.T) {
+	base := t.TempDir()
+	t.Setenv(pt.FileEnv, filepath.Join(t.TempDir(), pt.FileName))
+	t.Setenv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "elasticsearch")
+	settings := types.C8RunSettings{DisableConnectors: true, PhysicalTenantsFlag: []string{"a"}, SecondaryStorageType: "rdbms"}
+	require.NoError(t, applyEffectiveRuntimeSettings(&settings))
+	assert.Equal(t, "elasticsearch", settings.SecondaryStorageType, "driver checks and cleanup see the effective type too")
+	require.NoError(t, applyPhysicalTenants(base, "8.10.0", &settings))
+	content := settings.PhysicalTenantsConfig
+	assert.Contains(t, string(content), "index-prefix: a")
+	assert.NotContains(t, string(content), "rdbms")
+}
+
+func TestEnvDeclaresTenants(t *testing.T) {
+	t.Setenv("JAVA_OPTS", "")
+	assert.False(t, envDeclaresTenants())
+	t.Setenv("CAMUNDA_PHYSICALTENANTS_X_DATA_FOO", "1")
+	assert.True(t, envDeclaresTenants())
+}
+
+func TestReservedPortsIncludeCamundaPort(t *testing.T) {
+	reserved := reservedPorts(8087)
+	assert.True(t, reserved[8087])
+	assert.True(t, reserved[8086])
+	assert.True(t, reserved[26500])
+}
+
+func TestAuthenticationIsOIDC(t *testing.T) {
+	t.Setenv("JAVA_OPTS", "")
+	t.Setenv("JDK_JAVA_OPTIONS", "")
+	t.Setenv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD", "")
+	cfg := filepath.Join(t.TempDir(), "app.yaml")
+	require.NoError(t, os.WriteFile(cfg, []byte("camunda:\n  security:\n    authentication:\n      method: oidc\n"), 0o644))
+	assert.True(t, authenticationIsOIDC([]string{cfg}))
+	assert.False(t, authenticationIsOIDC(nil))
+	t.Setenv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD", "basic")
+	assert.False(t, authenticationIsOIDC([]string{cfg}), "the environment beats config files")
+}
+
+func TestApplyPhysicalTenantsFailsWhenSavedTenantsCannotBeFound(t *testing.T) {
+	t.Setenv(pt.FileEnv, "")
+	if runtime.GOOS == "windows" {
+		t.Setenv("APPDATA", "")
+	} else {
+		t.Setenv("HOME", "")
+		t.Setenv("XDG_CONFIG_HOME", "")
+	}
+	settings := types.C8RunSettings{DisableConnectors: true}
+	err := applyPhysicalTenants(t.TempDir(), "8.10.0", &settings)
+	if err == nil {
+		t.Skip("the platform still resolves a user config directory")
+	}
+	assert.ErrorContains(t, err, "cannot find your saved physical tenants")
+	assert.ErrorContains(t, err, pt.FileEnv)
+}
+
+func TestResolveConfigPathsIncludesEveryStandardFileInADirectory(t *testing.T) {
+	base := t.TempDir()
+	dir := filepath.Join(base, "cfg")
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "application.yml"), []byte("camunda:\n  physical-tenants:\n    x: {}\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "application.properties"), []byte("camunda.physical-tenants.y.foo=1\n"), 0o644))
+	paths := resolveConfigPaths(base, "cfg")
+	assert.Contains(t, paths, filepath.Join(dir, "application.yml"))
+	assert.Contains(t, paths, filepath.Join(dir, "application.properties"))
+	assert.True(t, pt.ConfigDeclaresTenants(filepath.Join(dir, "application.yml")))
+	assert.True(t, pt.ConfigDeclaresTenants(filepath.Join(dir, "application.properties")))
+}
+
+func TestStartRejectsExplicitlyEmptyPhysicalTenantsFlag(t *testing.T) {
+	original := os.Args
+	t.Cleanup(func() { os.Args = original })
+	for _, value := range []string{"--physical-tenants=,", "--physical-tenants= "} {
+		os.Args = []string{"c8run", "start", value}
+		_, _, err := getBaseCommandSettings("start")
+		assert.ErrorContains(t, err, "needs at least one tenant ID", value)
+	}
+}
+
+func TestConfigDirectoryFollowsSpringPrecedence(t *testing.T) {
+	base := t.TempDir()
+	dir := filepath.Join(base, "cfg")
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "application.yml"),
+		[]byte("camunda:\n  security:\n    authentication:\n      unprotected-api: true\n  data:\n    secondary-storage:\n      type: rdbms\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "application.properties"),
+		[]byte("camunda.security.authentication.unprotected-api=false\ncamunda.data.secondary-storage.type=elasticsearch\n"), 0o644))
+	for _, key := range []string{"JAVA_OPTS", "JDK_JAVA_OPTIONS", "CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED",
+		"CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTED_API",
+		"CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "CAMUNDA_DATA_SECONDARY_STORAGE_TYPE"} {
+		t.Setenv(key, "")
+	}
+
+	paths := resolveConfigPaths(base, "cfg")
+	assert.Equal(t, filepath.Join(dir, "application.properties"), paths[0], ".properties wins over YAML in one location")
+	assert.True(t, overrides.ConnectorsAuthRequired(paths), "the protecting .properties value must win, so connectors get credentials")
+
+	settings := types.C8RunSettings{Config: "cfg"}
+	applySecondaryStorageDefaults(base, &settings)
+	assert.Equal(t, "elasticsearch", settings.SecondaryStorageType, "tenant isolation must follow the .properties storage type")
+}
+
+func TestExternalTenantConfigDoesNotNeedTheSavedTenantsFile(t *testing.T) {
+	t.Setenv(pt.FileEnv, "")
+	t.Setenv("JAVA_OPTS", "")
+	if runtime.GOOS == "windows" {
+		t.Setenv("APPDATA", "")
+	} else {
+		t.Setenv("HOME", "")
+		t.Setenv("XDG_CONFIG_HOME", "")
+	}
+	cfg := filepath.Join(t.TempDir(), "app.yaml")
+	require.NoError(t, os.WriteFile(cfg, []byte("camunda:\n  physical-tenants:\n    x: {}\n"), 0o644))
+	settings := types.C8RunSettings{DisableConnectors: true, ConfigPaths: []string{cfg}}
+	require.NoError(t, applyPhysicalTenants(t.TempDir(), "8.10.0", &settings))
+	assert.Empty(t, settings.PhysicalTenants)
+
+	t.Setenv(pt.ModeEnv, "external")
+	settings = types.C8RunSettings{DisableConnectors: true}
+	require.NoError(t, applyPhysicalTenants(t.TempDir(), "8.10.0", &settings))
+}
+
+func TestTenantsAddRejectsIDsTooLongForRDBMS(t *testing.T) {
+	base := t.TempDir()
+	cmd, _, _ := testTenantsCommand(t, "", false, "")
+	assert.ErrorContains(t, cmd.run(base, []string{"add", "salesemea1"}), `at most 8 characters (try "saleseme")`)
+	tenants, err := pt.NewStore(os.Getenv(pt.FileEnv)).List()
+	require.NoError(t, err)
+	assert.Empty(t, tenants, "a rejected id must not be saved")
+	require.NoError(t, cmd.run(base, []string{"add", "saleseme"}))
+
+	cmd.storageType = func(string) (string, error) { return "elasticsearch", nil }
+	require.NoError(t, cmd.run(base, []string{"add", "salesemea1"}))
+}
+
+func TestApplyPhysicalTenantsRejectsIDsTooLongForRDBMS(t *testing.T) {
+	base := t.TempDir()
+	t.Setenv(pt.FileEnv, filepath.Join(t.TempDir(), pt.FileName))
+	settings := types.C8RunSettings{DisableConnectors: true, PhysicalTenantsFlag: []string{"salesemea1"}, SecondaryStorageType: "rdbms"}
+	assert.ErrorContains(t, applyPhysicalTenants(base, "8.10.0", &settings), "c8run tenants remove salesemea1")
+
+	es := types.C8RunSettings{DisableConnectors: true, PhysicalTenantsFlag: []string{"salesemea1"}, SecondaryStorageType: "elasticsearch"}
+	require.NoError(t, applyPhysicalTenants(base, "8.10.0", &es))
+}
+
+func TestDetectSecondaryStorageTypeUsesSpringConfigLoader(t *testing.T) {
+	dir := t.TempDir()
+	write := func(name, content string) string {
+		path := filepath.Join(dir, name)
+		require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
+		return path
+	}
+	cases := map[string]struct{ file, content, want string }{
+		"flat dotted YAML key":    {"flat.yaml", "camunda.data.secondary-storage.type: elasticsearch\n", "elasticsearch"},
+		"placeholder default":     {"placeholder.yaml", "camunda:\n  data:\n    secondary-storage:\n      type: ${C8RUN_TEST_STORAGE:elasticsearch}\n", "elasticsearch"},
+		"camelCase YAML":          {"camel.yaml", "camunda:\n  data:\n    secondaryStorage:\n      type: opensearch\n", "opensearch"},
+		"camelCase properties":    {"camel.properties", "camunda.data.secondaryStorage.type=elasticsearch\n", "elasticsearch"},
+		"kebab-case properties":   {"kebab.properties", "camunda.data.secondary-storage.type=rdbms\n", "rdbms"},
+		"no storage type present": {"empty.yaml", "camunda:\n  data: {}\n", ""},
+	}
+	for name, tc := range cases {
+		got, err := detectSecondaryStorageType(write(tc.file, tc.content))
+		require.NoError(t, err, name)
+		assert.Equal(t, tc.want, got, name)
+	}
+
+	t.Setenv("C8RUN_TEST_STORAGE", "opensearch")
+	got, err := detectSecondaryStorageType(filepath.Join(dir, "placeholder.yaml"))
+	require.NoError(t, err)
+	assert.Equal(t, "opensearch", got, "the environment overrides the placeholder default")
+}
+
+func TestFlatYAMLStorageTypeIsolatesTenantsByIndexPrefix(t *testing.T) {
+	base := t.TempDir()
+	t.Setenv(pt.FileEnv, filepath.Join(t.TempDir(), pt.FileName))
+	t.Setenv("JAVA_OPTS", "")
+	t.Setenv("JDK_JAVA_OPTIONS", "")
+	for _, key := range storageTypeEnv {
+		t.Setenv(key, "")
+	}
+	cfg := filepath.Join(base, "user.yaml")
+	require.NoError(t, os.WriteFile(cfg, []byte("camunda.data.secondary-storage.type: elasticsearch\n"), 0o644))
+
+	settings := types.C8RunSettings{Config: "user.yaml", DisableConnectors: true, PhysicalTenantsFlag: []string{"sales"}}
+	applySecondaryStorageDefaults(base, &settings)
+	require.NoError(t, applyEffectiveRuntimeSettings(&settings))
+	require.NoError(t, applyPhysicalTenants(base, "8.10.0", &settings))
+
+	content := string(settings.PhysicalTenantsConfig)
+	assert.Contains(t, content, "index-prefix: sales")
+	assert.NotContains(t, content, "rdbms")
 }

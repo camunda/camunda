@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"flag"
@@ -19,6 +18,7 @@ import (
 	"github.com/camunda/camunda/c8run/internal/processmanagement"
 	localsecrets "github.com/camunda/camunda/c8run/internal/secrets"
 	"github.com/camunda/camunda/c8run/internal/shutdown"
+	"github.com/camunda/camunda/c8run/internal/springconfig"
 	"github.com/camunda/camunda/c8run/internal/start"
 	"github.com/camunda/camunda/c8run/internal/startupurl"
 	"github.com/camunda/camunda/c8run/internal/types"
@@ -27,7 +27,6 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"gopkg.in/yaml.v3"
 )
 
 func getC8RunPlatform() types.C8Run {
@@ -163,8 +162,12 @@ func getBaseCommandSettings(baseCommand string) (types.C8RunSettings, bool, erro
 		if err := validatePort(settings.Port); err != nil {
 			return settings, startupURLProvided, err
 		}
-		if _, err := physicaltenants.ParseIDList(settings.PhysicalTenantsFlag); err != nil {
+		ids, err := physicaltenants.ParseIDList(settings.PhysicalTenantsFlag)
+		if err != nil {
 			return settings, startupURLProvided, fmt.Errorf("--physical-tenants: %w", err)
+		}
+		if flagPassed(startFlagSet, "physical-tenants") && len(ids) == 0 {
+			return settings, startupURLProvided, errors.New("--physical-tenants needs at least one tenant ID (e.g. --physical-tenants sales,hr); omit it to start your saved tenants")
 		}
 	case "stop":
 		err := stopFlagSet.Parse(os.Args[2:])
@@ -228,6 +231,10 @@ func initialize(baseCommand string, baseDir string) *types.State {
 	}
 
 	applySecondaryStorageDefaults(baseDir, &settings)
+	if err := applyEffectiveRuntimeSettings(&settings); err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
 	if baseCommand == "start" {
 		if err := applyPhysicalTenants(baseDir, camundaVersion, &settings); err != nil {
 			fmt.Println(err.Error())
@@ -325,11 +332,9 @@ func resolveConfigPaths(baseDir string, userConfig string) []string {
 	var paths []string
 	if userConfig != "" {
 		candidate := filepath.Join(baseDir, userConfig)
-		if info, err := os.Stat(candidate); err == nil {
-			if info.IsDir() {
-				candidate = filepath.Join(candidate, "application.yaml")
-			}
-			paths = append(paths, candidate)
+		if _, err := os.Stat(candidate); err == nil {
+			// Every file Spring loads from the location, in Spring's precedence order.
+			paths = append(paths, springconfig.FilesIn(candidate)...)
 		}
 	}
 	defaultConfig := filepath.Join(baseDir, "configuration", "application.yaml")
@@ -337,72 +342,54 @@ func resolveConfigPaths(baseDir string, userConfig string) []string {
 	return paths
 }
 
+// detectSecondaryStorageType reads camunda.data.secondary-storage.type (or the camelCase
+// secondaryStorage spelling Spring also binds) through the shared Spring config loader, so YAML
+// and .properties files, flat dotted keys and ${VAR:default} placeholders all resolve the way
+// Spring resolves them. A directory is read in Spring's file precedence.
 func detectSecondaryStorageType(path string) (string, error) {
-	info, err := os.Stat(path)
-	if err != nil {
+	if _, err := os.Stat(path); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return "", nil
 		}
 		return "", err
 	}
-	if info.IsDir() {
-		return detectSecondaryStorageType(filepath.Join(path, "application.yaml"))
-	}
-
-	content, err := os.ReadFile(path)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return "", nil
+	for _, file := range springconfig.FilesIn(path) {
+		ext := strings.ToLower(filepath.Ext(file))
+		if ext != ".yaml" && ext != ".yml" && ext != ".properties" {
+			continue
 		}
-		return "", err
+		if _, err := os.Stat(file); err != nil {
+			continue
+		}
+		root, ok := springconfig.Load(file)
+		if !ok {
+			return "", fmt.Errorf("unable to parse %s", file)
+		}
+		if value := storageTypeFromMap(root); value != "" {
+			return value, nil
+		}
 	}
-
-	ext := strings.ToLower(filepath.Ext(path))
-	if ext != ".yaml" && ext != ".yml" {
-		return "", nil
-	}
-	return parseSecondaryStorageTypeFromYAML(content)
+	return "", nil
 }
 
-func parseSecondaryStorageTypeFromYAML(content []byte) (string, error) {
-	if len(bytes.TrimSpace(content)) == 0 {
-		return "", nil
-	}
-
-	var root map[string]any
-	if err := yaml.Unmarshal(content, &root); err != nil {
-		return "", err
-	}
-	return extractSecondaryStorageTypeFromMap(root), nil
-}
-
-func extractSecondaryStorageTypeFromMap(root map[string]any) string {
-	camunda, ok := root["camunda"].(map[string]any)
-	if !ok {
-		return ""
-	}
-	data, ok := camunda["data"].(map[string]any)
-	if !ok {
-		return ""
-	}
-	secondary, ok := data["secondary-storage"].(map[string]any)
-	if !ok {
-		return ""
-	}
-	if typ, ok := secondary["type"].(string); ok {
-		return typ
+func storageTypeFromMap(root map[string]any) string {
+	for _, section := range []string{"secondary-storage", "secondaryStorage"} {
+		if typ, ok := springconfig.Lookup(root, "camunda", "data", section, "type"); ok {
+			if value, ok := typ.(string); ok && strings.TrimSpace(value) != "" {
+				return strings.TrimSpace(value)
+			}
+		}
 	}
 	return ""
 }
 
 func detectRdbmsURLFromConfig(path string) (string, error) {
-	content, err := os.ReadFile(path)
-	if err != nil {
+	if _, err := os.Stat(path); err != nil {
 		return "", err
 	}
-	var root map[string]any
-	if err := yaml.Unmarshal(content, &root); err != nil {
-		return "", err
+	root, ok := springconfig.Load(path)
+	if !ok {
+		return "", fmt.Errorf("unable to parse %s", path)
 	}
 	return extractRdbmsURLFromMap(root), nil
 }
@@ -566,6 +553,12 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
+		if mode != "local" && len(state.Settings.PhysicalTenants) > 0 {
+			fmt.Fprintf(os.Stderr, "Physical tenants managed by c8run need their own secret stores, which c8run only sets up when %s=local.\n"+
+				"Either unset %s, or declare the tenants and their secret stores in your --config "+
+				"(camunda.physical-tenants.<id>.secrets.stores.*).\n", localsecrets.ModeEnv, localsecrets.ModeEnv)
+			os.Exit(1)
+		}
 		if mode == "local" {
 			secretDirectory, err := localsecrets.ResolveDirectory(baseDir)
 			if err != nil {
@@ -582,6 +575,10 @@ func main() {
 			}
 			if err := os.Setenv("CAMUNDA_SECRETS_STORES_FILE_DEFAULT_PATH", secretDirectory); err != nil {
 				fmt.Fprintln(os.Stderr, "failed to configure Camunda secret store")
+				os.Exit(1)
+			}
+			if err := configureTenantSecretStores(baseDir, &state.Settings); err != nil {
+				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}
 		}
@@ -619,6 +616,12 @@ func main() {
 
 	select {
 	case <-workDone:
+		if len(state.NotReadyTenants) > 0 {
+			fmt.Fprintf(os.Stderr, "\nCamunda is running, but physical tenant(s) %s did not become ready.\n"+
+				"Check log/camunda.log for physical tenant errors, fix them, then run `./c8run stop && ./c8run start`.\n",
+				strings.Join(state.NotReadyTenants, ", "))
+			os.Exit(1)
+		}
 		log.Info().Msg("All processes are running and healthy, exiting script...")
 	case <-shutdownWorkDone:
 		log.Info().Msg("All processes have been shut down, exiting script...")

@@ -232,3 +232,17 @@ func writeConfig(t *testing.T, path string, content string) {
 	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
 	require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
 }
+
+func TestShouldDeleteDataDirReadsPropertiesInConfigDirectory(t *testing.T) {
+	t.Setenv("CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_URL", "")
+	baseDir := t.TempDir()
+	cfg := filepath.Join(baseDir, "cfg")
+	require.NoError(t, os.MkdirAll(cfg, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(cfg, "application.properties"),
+		[]byte("camunda.data.secondary-storage.rdbms.url=jdbc:h2:mem:testdb\n"), 0o644))
+	paths := resolveConfigPaths(baseDir, "cfg")
+	require.Equal(t, filepath.Join(cfg, "application.properties"), paths[0])
+	url, err := detectRdbmsURL(paths[0])
+	require.NoError(t, err)
+	require.Equal(t, "jdbc:h2:mem:testdb", url)
+}

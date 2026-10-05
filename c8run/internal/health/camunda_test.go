@@ -3,6 +3,7 @@ package health
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -10,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/camunda/camunda/c8run/internal/physicaltenants"
 	"github.com/camunda/camunda/c8run/internal/types"
 )
 
@@ -262,5 +264,31 @@ func TestShouldReturnErrorWhenConnectorsHealthEndpointDoesNotStart(t *testing.T)
 	}
 	if !strings.Contains(err.Error(), "queryConnectors: Connectors did not start") {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestQueryCamundaReportsTenantsThatAreNotReady(t *testing.T) {
+	settings := types.C8RunSettings{
+		NoBrowser:       true,
+		PhysicalTenants: []types.PhysicalTenant{{ID: "good"}, {ID: "bad"}},
+	}
+	originalIsRunningFunc, originalPrintStatusFunc, originalProbe := isRunningFunc, printStatusFunc, probeTenantsFunc
+	t.Cleanup(func() {
+		isRunningFunc, printStatusFunc, probeTenantsFunc = originalIsRunningFunc, originalPrintStatusFunc, originalProbe
+	})
+	isRunningFunc = func(context.Context, string, string, int, time.Duration) bool { return true }
+	printStatusFunc = func(types.C8RunSettings) error { return nil }
+	probeTenantsFunc = func(context.Context, types.C8RunSettings, int, time.Duration) []physicaltenants.ProbeResult {
+		return []physicaltenants.ProbeResult{{ID: "good", Ready: true}, {ID: "bad", Err: "HTTP 404"}}
+	}
+
+	err := QueryCamunda(context.Background(), &stubOpener{}, "Camunda", settings, 0)
+
+	var notReady *TenantsNotReadyError
+	if !errors.As(err, &notReady) {
+		t.Fatalf("expected TenantsNotReadyError, got %v", err)
+	}
+	if len(notReady.IDs) != 1 || notReady.IDs[0] != "bad" {
+		t.Fatalf("expected only tenant bad to be reported, got %v", notReady.IDs)
 	}
 }

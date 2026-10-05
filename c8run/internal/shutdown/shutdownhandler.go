@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/camunda/camunda/c8run/internal/processmanagement"
+	"github.com/camunda/camunda/c8run/internal/springconfig"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
@@ -186,11 +187,9 @@ func resolveConfigPaths(baseDir string, userConfig string) []string {
 	var paths []string
 	if userConfig != "" {
 		candidate := filepath.Join(baseDir, userConfig)
-		if info, err := os.Stat(candidate); err == nil {
-			if info.IsDir() {
-				candidate = filepath.Join(candidate, "application.yaml")
-			}
-			paths = append(paths, candidate)
+		if _, err := os.Stat(candidate); err == nil {
+			// Same files and precedence as startup, so stop agrees with what start ran.
+			paths = append(paths, springconfig.FilesIn(candidate)...)
 		}
 	}
 	defaultConfig := filepath.Join(baseDir, "configuration", "application.yaml")
@@ -207,7 +206,13 @@ func detectRdbmsURL(path string) (string, error) {
 		return "", err
 	}
 	if info.IsDir() {
-		return detectRdbmsURL(filepath.Join(path, "application.yaml"))
+		return detectRdbmsURL(springconfig.FilesIn(path)[0])
+	}
+	if strings.EqualFold(filepath.Ext(path), ".properties") {
+		root, _ := springconfig.Load(path)
+		url, _ := springconfig.Lookup(root, "camunda", "data", "secondary-storage", "rdbms", "url")
+		value, _ := url.(string)
+		return strings.TrimSpace(springconfig.ResolvePlaceholders(value)), nil
 	}
 
 	content, err := os.ReadFile(path)
@@ -246,7 +251,7 @@ func detectRdbmsURL(path string) (string, error) {
 		return "", nil
 	}
 	if url, ok := rdbmsNode["url"].(string); ok {
-		return strings.TrimSpace(url), nil
+		return strings.TrimSpace(springconfig.ResolvePlaceholders(url)), nil
 	}
 	return "", nil
 }

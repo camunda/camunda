@@ -14,6 +14,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"text/tabwriter"
 	"time"
 
@@ -46,21 +47,48 @@ type ProbeResult struct {
 	ID    string
 	Ready bool
 	Err   string
+	// Warning is set when the tenant is up but the seeded login could not be confirmed.
+	Warning string
+	// Unverified means the tenant answered but authentication stopped the request before its
+	// secondary storage could be checked (e.g. under OIDC). It does not fail startup.
+	Unverified bool
 }
 
 // Probe checks each tenant's topology endpoint so a tenant that failed to come up is named
 // explicitly instead of hiding behind the cluster-wide health check.
+// Tenants are probed concurrently under one deadline (attempts*delay), so the total wait
+// does not grow with the number of tenants.
 func Probe(ctx context.Context, settings types.C8RunSettings, attempts int, delay time.Duration) []ProbeResult {
 	client := &http.Client{
 		Timeout:   5 * time.Second,
 		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
 	}
-	results := make([]ProbeResult, 0, len(settings.PhysicalTenants))
-	for _, t := range settings.PhysicalTenants {
-		url := EndpointsFor(t.ID, settings.GetProtocol(), settings.Port).REST + "topology"
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(attempts)*delay)
+	defer cancel()
+	results := make([]ProbeResult, len(settings.PhysicalTenants))
+	var wg sync.WaitGroup
+	for i, t := range settings.PhysicalTenants {
+		wg.Add(1)
+		go func(i int, t types.PhysicalTenant) {
+			defer wg.Done()
+			results[i] = probeOne(ctx, client, settings, t, attempts, delay)
+		}(i, t)
+	}
+	wg.Wait()
+	return results
+}
+
+func probeOne(ctx context.Context, client *http.Client, settings types.C8RunSettings, t types.PhysicalTenant, attempts int, delay time.Duration) ProbeResult {
+	{
+		// A search endpoint is gated on the tenant's secondary storage (503 until its schema is
+		// ready), so this checks the tenant can actually serve requests, not just its topology.
+		url := EndpointsFor(t.ID, settings.GetProtocol(), settings.Port).REST + "process-definitions/search"
 		result := ProbeResult{ID: t.ID}
 		for i := 0; i < attempts; i++ {
-			req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+			req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(`{"page":{"limit":1}}`))
+			if err == nil {
+				req.Header.Set("Content-Type", "application/json")
+			}
 			if err != nil {
 				result.Err = err.Error()
 				break
@@ -70,25 +98,42 @@ func Probe(ctx context.Context, settings types.C8RunSettings, attempts int, dela
 			if err == nil {
 				_ = resp.Body.Close()
 				if resp.StatusCode < 300 {
-					result.Ready, result.Err = true, ""
+					result.Ready, result.Err, result.Warning = true, "", ""
 					break
 				}
-				result.Err = fmt.Sprintf("GET %s returned HTTP %d", url, resp.StatusCode)
-				if resp.StatusCode == http.StatusNotFound {
+				// Unknown tenants are rejected with 404 before security runs, so 401/403 proves the
+				// tenant is configured and serving. Security runs before the storage check, though,
+				// so its storage readiness is reported as unverified rather than claimed.
+				if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+					result.Ready, result.Unverified, result.Err = true, true, ""
+					if settings.OIDC {
+						result.Warning = "storage readiness can't be checked without an OIDC token; open its Operate URL to confirm"
+					} else {
+						result.Warning = fmt.Sprintf("the login for %s was rejected (HTTP %d), so storage readiness was not checked; if this tenant ID was used before, it keeps the users from that time", t.Username, resp.StatusCode)
+					}
+					break
+				}
+				result.Err = fmt.Sprintf("POST %s returned HTTP %d", url, resp.StatusCode)
+				switch resp.StatusCode {
+				case http.StatusNotFound:
 					result.Err += " (the tenant is not configured; check log/camunda.log for physical tenant validation errors)"
+				case http.StatusServiceUnavailable:
+					result.Err += " (its secondary storage is not ready; check log/camunda.log for schema errors)"
 				}
 			} else {
 				result.Err = err.Error()
 			}
 			select {
 			case <-ctx.Done():
-				return append(results, result)
+				if result.Err == "" {
+					result.Err = "timed out waiting for the tenant"
+				}
+				return result
 			case <-time.After(delay):
 			}
 		}
-		results = append(results, result)
+		return result
 	}
-	return results
 }
 
 // PrintSummary writes the physical tenant section of the startup summary.
@@ -101,45 +146,52 @@ func PrintSummary(w io.Writer, settings types.C8RunSettings, results []ProbeResu
 		status[r.ID] = r
 	}
 	protocol := settings.GetProtocol()
-	fmt.Fprintln(w, "Physical tenants:")
+	_, _ = fmt.Fprintln(w, "Physical tenants:")
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(tw, "  TENANT\tSTATUS\tLOGIN\tOPERATE\tORCHESTRATION API\tCONNECTORS")
+	_, _ = fmt.Fprintln(tw, "  TENANT\tSTATUS\tLOGIN\tOPERATE\tORCHESTRATION API\tCONNECTORS")
 	defaultConnectors := "disabled"
 	if !settings.DisableConnectors {
 		defaultConnectors = fmt.Sprintf("http://localhost:%d/", inboundPort)
 	}
 	d := EndpointsFor(DefaultID, protocol, settings.Port)
-	fmt.Fprintf(tw, "  %s\t%s\t%s\t%s\t%s\t%s\n", DefaultID, "ready", orDemo(settings.Username), d.Operate, d.REST, defaultConnectors)
+	_, _ = fmt.Fprintf(tw, "  %s\t%s\t%s\t%s\t%s\t%s\n", DefaultID, "ready", orDemo(settings.Username), d.Operate, d.REST, defaultConnectors)
 	for _, t := range settings.PhysicalTenants {
 		e := EndpointsFor(t.ID, protocol, settings.Port)
 		state := "ready"
-		if r, ok := status[t.ID]; ok && !r.Ready {
-			state = "NOT READY"
+		if r, ok := status[t.ID]; ok {
+			switch {
+			case !r.Ready:
+				state = "NOT READY"
+			case r.Unverified:
+				state = "up (unverified)"
+			}
 		}
 		conn := "disabled"
 		if t.Connectors {
 			conn = fmt.Sprintf("http://localhost:%d/", t.ConnectorsPort)
 		}
-		fmt.Fprintf(tw, "  %s\t%s\t%s\t%s\t%s\t%s\n", t.ID, state, t.Username, e.Operate, e.REST, conn)
+		_, _ = fmt.Fprintf(tw, "  %s\t%s\t%s\t%s\t%s\t%s\n", t.ID, state, t.Username, e.Operate, e.REST, conn)
 	}
 	_ = tw.Flush()
-	fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w)
 	for _, r := range results {
 		if !r.Ready {
-			fmt.Fprintf(w, "  ! %s did not become ready: %s\n", r.ID, r.Err)
+			_, _ = fmt.Fprintf(w, "  ! %s did not become ready: %s\n", r.ID, r.Err)
+		} else if r.Warning != "" {
+			_, _ = fmt.Fprintf(w, "  ! %s is up, but %s\n", r.ID, r.Warning)
 		}
 	}
 	example := settings.PhysicalTenants[0]
 	ex := EndpointsFor(example.ID, protocol, settings.Port)
-	fmt.Fprintln(w, "Connect to a physical tenant:")
-	fmt.Fprintf(w, "  - Desktop Modeler: cluster endpoint %s\n", ex.REST)
-	fmt.Fprintf(w, "  - REST:            prefix paths with /physical-tenants/<id> (e.g. %stopology)\n", ex.REST)
-	fmt.Fprintf(w, "  - gRPC (:26500):   send header \"Camunda-Physical-Tenant: %s\"\n", example.ID)
-	fmt.Fprintf(w, "  - Java/Spring:     camunda.client.physical-tenant-id=%s\n", example.ID)
-	fmt.Fprintf(w, "  - MCP:             %s\n", ex.MCP)
-	fmt.Fprintln(w, "Local secrets (camunda.secrets.*) are shared by all physical tenants.")
-	fmt.Fprintln(w, "Manage tenants with `c8run tenants list|add|remove`.")
-	fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w, "Connect to a physical tenant:")
+	_, _ = fmt.Fprintf(w, "  - Desktop Modeler: cluster endpoint %s\n", ex.REST)
+	_, _ = fmt.Fprintf(w, "  - REST:            prefix paths with /physical-tenants/<id> (e.g. %stopology)\n", ex.REST)
+	_, _ = fmt.Fprintf(w, "  - gRPC (:26500):   send header \"Camunda-Physical-Tenant: %s\"\n", example.ID)
+	_, _ = fmt.Fprintf(w, "  - Java/Spring:     camunda.client.physical-tenant-id=%s\n", example.ID)
+	_, _ = fmt.Fprintf(w, "  - MCP:             %s\n", ex.MCP)
+	_, _ = fmt.Fprintf(w, "Each tenant has its own local secrets: `c8run secrets --tenant %s set <NAME>`.\n", example.ID)
+	_, _ = fmt.Fprintln(w, "Manage tenants with `c8run tenants list|add|remove`.")
+	_, _ = fmt.Fprintln(w)
 }
 
 func orDemo(v string) string {

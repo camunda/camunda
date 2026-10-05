@@ -202,11 +202,14 @@ jobs:
         run: ./api_tests.sh
         working-directory: ./c8run/e2e_tests
 
-      - name: Restart c8run with a physical tenant
+      - name: Restart c8run with a physical tenant (own user, own secrets, authorizations on)
         shell: bash
         run: |
           ./c8run stop
-          ./c8run start --physical-tenants pt1 --no-browser
+          cp "$GITHUB_WORKSPACE/c8run/e2e_tests/physical-tenants-auth.yaml" .
+          printf '%s' 'pt1-e2e-password' | ./c8run tenants add pt1 --username alice --password-stdin
+          printf '%s' 'pt1-only-secret-value' | ./c8run secrets --tenant pt1 set C8RUN_E2E_SECRET --stdin
+          ./c8run start --no-browser --config physical-tenants-auth.yaml
         working-directory: ${{ env.C8RUN_E2E_DIR }}
 
       - name: Run physical tenant isolation test
@@ -214,6 +217,9 @@ jobs:
         run: ./physical_tenants_tests.sh
         env:
           PHYSICAL_TENANT: pt1
+          C8RUN_AUTH: alice:pt1-e2e-password
+          C8RUN_DEFAULT_AUTH: demo:demo
+          TENANT_SECRET_VALUE: pt1-only-secret-value
           CHECK_CONNECTORS: "1"
           C8RUN_DIR: ${{ env.C8RUN_E2E_DIR }}
         working-directory: ./c8run/e2e_tests

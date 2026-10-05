@@ -24,12 +24,11 @@ const (
 	FileEnv            = "C8RUN_TENANTS_FILE"
 	ModeEnv            = "C8RUN_TENANTS_MODE"
 	FileName           = "physical-tenants.yaml"
-	credentialsSuffix  = ".credentials"
 	lockSuffix         = ".lock"
 	currentFileVersion = 1
 )
 
-// Tenant is a persisted physical tenant. Passwords are never stored here.
+// Tenant is a persisted physical tenant.
 type Tenant struct {
 	ID string `yaml:"id"`
 	// Username is empty when the tenant reuses the --username/--password login.
@@ -38,12 +37,16 @@ type Tenant struct {
 	NoConnectors bool `yaml:"noConnectors,omitempty"`
 }
 
+// document is the whole tenants file. Tenants and their passwords live in one document so
+// every change is a single atomic rename: no crash can leave them disagreeing. The file is
+// therefore always written with owner-only permissions.
 type document struct {
-	Version int      `yaml:"version"`
-	Tenants []Tenant `yaml:"tenants"`
+	Version   int               `yaml:"version"`
+	Tenants   []Tenant          `yaml:"tenants"`
+	Passwords map[string]string `yaml:"passwords,omitempty"`
 }
 
-// Store persists tenants in a YAML file and per-tenant passwords in a sibling 0600 file.
+// Store persists tenants and per-tenant passwords in one owner-only YAML file.
 type Store struct {
 	path string
 }
@@ -80,28 +83,46 @@ func NewStore(path string) *Store { return &Store{path: path} }
 
 func (s *Store) Path() string { return s.path }
 
-func (s *Store) credentialsPath() string { return s.path + credentialsSuffix }
+// read loads and validates the file. A missing file is an empty document.
+func (s *Store) read() (document, error) {
+	doc := document{Version: currentFileVersion, Passwords: map[string]string{}}
+	content, err := os.ReadFile(s.path)
+	if errors.Is(err, os.ErrNotExist) {
+		return doc, nil
+	}
+	if err != nil {
+		return doc, fmt.Errorf("failed to read %s: %w", s.path, err)
+	}
+	if err := yaml.Unmarshal(content, &doc); err != nil {
+		return doc, fmt.Errorf("%s is not valid YAML (fix or delete it, or run `c8run tenants reset`): %w", s.path, err)
+	}
+	seen := map[string]bool{}
+	for _, t := range doc.Tenants {
+		if err := ValidateID(t.ID); err != nil {
+			return doc, fmt.Errorf("%s: %w", s.path, err)
+		}
+		if seen[t.ID] {
+			return doc, fmt.Errorf("%s: physical tenant %q is listed more than once; remove the duplicate entry", s.path, t.ID)
+		}
+		seen[t.ID] = true
+	}
+	if doc.Passwords == nil {
+		doc.Passwords = map[string]string{}
+	}
+	sort.Slice(doc.Tenants, func(i, j int) bool { return doc.Tenants[i].ID < doc.Tenants[j].ID })
+	return doc, nil
+}
 
 // List returns the persisted tenants sorted by id. A missing file means no tenants.
 func (s *Store) List() ([]Tenant, error) {
-	content, err := os.ReadFile(s.path)
-	if errors.Is(err, os.ErrNotExist) {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("failed to read %s: %w", s.path, err)
-	}
-	var doc document
-	if err := yaml.Unmarshal(content, &doc); err != nil {
-		return nil, fmt.Errorf("%s is not valid YAML (fix or delete it, or run `c8run tenants reset`): %w", s.path, err)
-	}
-	for _, t := range doc.Tenants {
-		if err := ValidateID(t.ID); err != nil {
-			return nil, fmt.Errorf("%s: %w", s.path, err)
-		}
-	}
-	sort.Slice(doc.Tenants, func(i, j int) bool { return doc.Tenants[i].ID < doc.Tenants[j].ID })
-	return doc.Tenants, nil
+	doc, err := s.read()
+	return doc.Tenants, err
+}
+
+// Snapshot returns the tenants and their stored passwords from one read of one file.
+func (s *Store) Snapshot() ([]Tenant, map[string]string, error) {
+	doc, err := s.read()
+	return doc.Tenants, doc.Passwords, err
 }
 
 // Get returns one tenant.
@@ -120,107 +141,95 @@ func (s *Store) Get(id string) (Tenant, bool, error) {
 
 // Add persists new tenants. It fails without writing anything if any id already exists.
 func (s *Store) Add(newTenants []Tenant, passwords map[string]string) error {
-	return s.locked(func() error { return s.addUnlocked(newTenants, passwords) })
+	return s.update(func(doc *document) error {
+		existing := map[string]bool{}
+		for _, t := range doc.Tenants {
+			existing[t.ID] = true
+		}
+		for _, t := range newTenants {
+			if err := ValidateID(t.ID); err != nil {
+				return err
+			}
+			if existing[t.ID] {
+				return fmt.Errorf("physical tenant %q already exists; remove it first or pick another ID", t.ID)
+			}
+			existing[t.ID] = true
+		}
+		doc.Tenants = append(doc.Tenants, newTenants...)
+		for id, pw := range passwords {
+			doc.Passwords[id] = pw
+		}
+		return nil
+	})
 }
 
-func (s *Store) addUnlocked(newTenants []Tenant, passwords map[string]string) error {
-	tenants, err := s.List()
-	if err != nil {
-		return err
-	}
-	existing := map[string]bool{}
-	for _, t := range tenants {
-		existing[t.ID] = true
-	}
-	for _, t := range newTenants {
-		if err := ValidateID(t.ID); err != nil {
+// Remove deletes tenants and their stored passwords. Unknown ids are an error.
+func (s *Store) Remove(ids []string) error {
+	return s.update(func(doc *document) error {
+		drop := map[string]bool{}
+		for _, id := range ids {
+			drop[id] = true
+		}
+		kept := make([]Tenant, 0, len(doc.Tenants))
+		for _, t := range doc.Tenants {
+			if drop[t.ID] {
+				delete(drop, t.ID)
+				continue
+			}
+			kept = append(kept, t)
+		}
+		if len(drop) > 0 {
+			var missing []string
+			for id := range drop {
+				missing = append(missing, id)
+			}
+			sort.Strings(missing)
+			return fmt.Errorf("unknown physical tenant(s): %s (run `c8run tenants list`)", strings.Join(missing, ", "))
+		}
+		doc.Tenants = kept
+		for _, id := range ids {
+			delete(doc.Passwords, id)
+		}
+		return nil
+	})
+}
+
+// Reset removes every tenant and stored password.
+func (s *Store) Reset() error {
+	return s.locked(func() error {
+		if err := os.Remove(s.path); err != nil && !errors.Is(err, os.ErrNotExist) {
 			return err
 		}
-		if existing[t.ID] {
-			return fmt.Errorf("physical tenant %q already exists; remove it first or pick another ID", t.ID)
-		}
-		existing[t.ID] = true
-	}
-	if len(passwords) == 0 {
-		return s.write(append(tenants, newTenants...))
-	}
-	previous, err := s.readCredentials()
+		return nil
+	})
+}
+
+// Password returns the stored password for a tenant with its own login.
+func (s *Store) Password(id string) (string, bool, error) {
+	doc, err := s.read()
 	if err != nil {
-		return err
+		return "", false, err
 	}
-	creds := make(map[string]string, len(previous)+len(passwords))
-	for id, pw := range previous {
-		creds[id] = pw
-	}
-	for id, pw := range passwords {
-		creds[id] = pw
-	}
-	return s.commit(creds, previous, append(tenants, newTenants...))
+	pw, ok := doc.Passwords[id]
+	return pw, ok, nil
 }
 
-// Remove deletes tenants (and their stored passwords). Unknown ids are an error.
-func (s *Store) Remove(ids []string) error {
-	return s.locked(func() error { return s.removeUnlocked(ids) })
-}
-
-func (s *Store) removeUnlocked(ids []string) error {
-	tenants, err := s.List()
-	if err != nil {
-		return err
-	}
-	drop := map[string]bool{}
-	for _, id := range ids {
-		drop[id] = true
-	}
-	kept := tenants[:0]
-	for _, t := range tenants {
-		if drop[t.ID] {
-			delete(drop, t.ID)
-			continue
+// update applies a change to the whole document under the lock and commits it with one
+// atomic rename; nothing is written if the change returns an error.
+func (s *Store) update(change func(*document) error) error {
+	return s.locked(func() error {
+		doc, err := s.read()
+		if err != nil {
+			return err
 		}
-		kept = append(kept, t)
-	}
-	if len(drop) > 0 {
-		var missing []string
-		for id := range drop {
-			missing = append(missing, id)
+		if err := change(&doc); err != nil {
+			return err
 		}
-		sort.Strings(missing)
-		return fmt.Errorf("unknown physical tenant(s): %s (run `c8run tenants list`)", strings.Join(missing, ", "))
-	}
-	previous, err := s.readCredentials()
-	if err != nil {
-		return err
-	}
-	creds := make(map[string]string, len(previous))
-	for id, pw := range previous {
-		creds[id] = pw
-	}
-	for _, id := range ids {
-		delete(creds, id)
-	}
-	return s.commit(creds, previous, kept)
+		return s.write(doc)
+	})
 }
 
-// commit writes credentials and then the tenant list as one unit: if the tenant list
-// cannot be written, the credentials file is restored so the two never disagree.
-func (s *Store) commit(creds, previous map[string]string, tenants []Tenant) error {
-	if err := s.writeCredentials(creds); err != nil {
-		return err
-	}
-	if err := writeTenantsFunc(s, tenants); err != nil {
-		if rollbackErr := s.writeCredentials(previous); rollbackErr != nil {
-			return fmt.Errorf("%w (and restoring tenant credentials failed: %v)", err, rollbackErr)
-		}
-		return err
-	}
-	return nil
-}
-
-// writeTenantsFunc is swapped in tests to simulate a failing tenant-list write.
-var writeTenantsFunc = (*Store).write
-
-// locked serializes every mutation of the tenants and credentials files across processes.
+// locked serializes every mutation of the tenants file across processes.
 func (s *Store) locked(operation func() error) error {
 	if err := os.MkdirAll(filepath.Dir(s.path), 0o700); err != nil {
 		return fmt.Errorf("failed to create %s: %w", filepath.Dir(s.path), err)
@@ -233,71 +242,19 @@ func (s *Store) locked(operation func() error) error {
 	return operation()
 }
 
-// Reset removes every tenant and stored credential.
-func (s *Store) Reset() error {
-	return s.locked(s.resetUnlocked)
-}
-
-func (s *Store) resetUnlocked() error {
-	for _, p := range []string{s.path, s.credentialsPath()} {
-		if err := os.Remove(p); err != nil && !errors.Is(err, os.ErrNotExist) {
-			return err
-		}
+func (s *Store) write(doc document) error {
+	sort.Slice(doc.Tenants, func(i, j int) bool { return doc.Tenants[i].ID < doc.Tenants[j].ID })
+	doc.Version = currentFileVersion
+	if len(doc.Passwords) == 0 {
+		doc.Passwords = nil
 	}
-	return nil
-}
-
-// Password returns the stored password for a tenant with its own login.
-func (s *Store) Password(id string) (string, bool, error) {
-	creds, err := s.readCredentials()
-	if err != nil {
-		return "", false, err
-	}
-	pw, ok := creds[id]
-	return pw, ok, nil
-}
-
-func (s *Store) write(tenants []Tenant) error {
-	sort.Slice(tenants, func(i, j int) bool { return tenants[i].ID < tenants[j].ID })
-	content, err := yaml.Marshal(document{Version: currentFileVersion, Tenants: tenants})
+	content, err := yaml.Marshal(doc)
 	if err != nil {
 		return err
 	}
-	header := "# Physical tenants managed by `c8run tenants`. Edit with the CLI rather than by hand.\n"
-	return atomicWrite(s.path, append([]byte(header), content...), 0o644)
-}
-
-func (s *Store) readCredentials() (map[string]string, error) {
-	creds := map[string]string{}
-	content, err := os.ReadFile(s.credentialsPath())
-	if errors.Is(err, os.ErrNotExist) {
-		return creds, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("failed to read tenant credentials: %w", err)
-	}
-	if err := yaml.Unmarshal(content, &creds); err != nil {
-		return nil, fmt.Errorf("tenant credentials file %s is corrupt: %w", s.credentialsPath(), err)
-	}
-	if creds == nil {
-		creds = map[string]string{}
-	}
-	return creds, nil
-}
-
-func (s *Store) writeCredentials(creds map[string]string) error {
-	if len(creds) == 0 {
-		err := os.Remove(s.credentialsPath())
-		if errors.Is(err, os.ErrNotExist) {
-			return nil
-		}
-		return err
-	}
-	content, err := yaml.Marshal(creds)
-	if err != nil {
-		return err
-	}
-	return atomicWrite(s.credentialsPath(), content, 0o600)
+	header := "# Physical tenants managed by `c8run tenants`. Edit with the CLI rather than by hand.\n" +
+		"# Readable only by you: it holds the passwords of tenants with their own login.\n"
+	return localsecrets.WriteOwnerOnlyFile(s.path, append([]byte(header), content...))
 }
 
 func atomicWrite(path string, content []byte, perm os.FileMode) error {
