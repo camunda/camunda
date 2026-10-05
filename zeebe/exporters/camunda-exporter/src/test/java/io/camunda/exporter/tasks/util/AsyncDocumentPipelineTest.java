@@ -20,6 +20,7 @@ import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.BatchProcessor;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.BatchSupplier;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.DocumentBatch;
+import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.PipelineStats;
 import java.net.SocketTimeoutException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -423,6 +425,57 @@ class AsyncDocumentPipelineTest {
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(10), 10));
 
     inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
+  void shouldConsumeStatsWhenExecutionSucceeds() {
+    final BatchProcessor<Integer, Integer> batchProcessor = mock(BatchProcessor.class);
+    when(batchProcessor.process(any())).then(returnBatchSize());
+
+    final AtomicReference<PipelineStats> statsConsumer = new AtomicReference<>(null);
+
+    final var builder =
+        AsyncDocumentPipeline.builder(batchSupplier(1, 10), batchProcessor)
+            .statsConsumer(statsConsumer::set)
+            .minBatchSize(1)
+            .batchSize(3)
+            .maxRetryAttempts(2);
+
+    final var future = builder.buildAndExecute();
+    assertThat(future).succeedsWithin(Duration.ofSeconds(5));
+
+    final var stats = statsConsumer.get();
+
+    assertThat(stats)
+        .isNotNull()
+        .extracting("totalDocumentsRead", "totalDocumentsProcessed")
+        .containsExactly(10L, 10L);
+  }
+
+  @Test
+  void shouldConsumeStatsWhenExecutionFails() {
+    final BatchProcessor<Integer, Integer> batchProcessor = mock(BatchProcessor.class);
+    when(batchProcessor.process(any())).thenThrow(new RetryableException());
+
+    final AtomicReference<PipelineStats> statsConsumer = new AtomicReference<>(null);
+
+    final var builder =
+        AsyncDocumentPipeline.builder(batchSupplier(1, 10), batchProcessor)
+            .statsConsumer(statsConsumer::set)
+            .minBatchSize(1)
+            .batchSize(3)
+            .maxRetryAttempts(2)
+            .retryDelayMs(1);
+
+    final var future = builder.buildAndExecute();
+    assertThat(future).failsWithin(Duration.ofSeconds(5));
+
+    final var stats = statsConsumer.get();
+
+    assertThat(stats)
+        .isNotNull()
+        .extracting("totalDocumentsRead", "totalDocumentsProcessed")
+        .containsExactly(3L, 0L);
   }
 
   static Stream<Throwable> retryableErrors() {
