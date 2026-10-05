@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState.State;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.PendingSubscription;
@@ -105,6 +106,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
   public void processRecord(final TypedRecord<ProcessMessageSubscriptionRecord> command) {
 
     final var record = command.getValue();
+    final var marker = suspensionState.getSuspensionState(record.getProcessInstanceKey());
     final var elementInstanceKey = record.getElementInstanceKey();
     final String messageName = record.getMessageName();
     final String tenantId = record.getTenantId();
@@ -144,12 +146,11 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
       sendAcknowledgeCommand(record);
       return;
 
-    } else if (suspensionState.getSuspensionState(record.getProcessInstanceKey())
-        == SuspensionState.State.SUSPENDED) {
+    } else if (marker == State.SUSPENDING || marker == State.SUSPENDED) {
       // Race window: SUSPEND already deleted the message-side subscription, but this CORRELATE
       // was already in flight. Reject to release the message-side lock — another active
-      // subscriber can then correlate, or the message returns 404. Gated on exact SUSPENDED, not
-      // isSuspended(); see onSuspended() below for why RESUMING must fall through instead.
+      // subscriber can then correlate, or the message returns 404. RESUMING must fall through;
+      // see onSuspended() below.
       // Checked last so a stale or duplicate correlate goes through those paths instead, without
       // releasing a live replacement's correlation lock.
       if (subscription.isOpening()) {
@@ -328,7 +329,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
   @Override
   public SuspensionAction onSuspended(final TypedRecord<ProcessMessageSubscriptionRecord> record) {
     // Process unconditionally — buffering would keep the message-partition lock held
-    // indefinitely while the instance is suspended or resuming. The exact-SUSPENDED check
+    // indefinitely while the instance is suspending, suspended, or resuming. The marker check
     // inside processRecord rejects a CORRELATE that arrives during the narrow suspend/close
     // race window. During RESUMING it must fall through instead: an early reopened subscription
     // can correlate a still-buffered message while later REOPEN commands are still draining.

@@ -20,7 +20,8 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 /**
  * Invoked by the primary suspension gate (see {@code Engine#process}) in place of a command's usual
  * {@link TypedRecordProcessor}, whenever the command is classified {@code BUFFER} (see {@code
- * SuspensionAware}) and its target process instance is currently {@code SUSPENDED}.
+ * SuspensionAware}) and its target process instance is currently {@code SUSPENDING} or {@code
+ * SUSPENDED}.
  *
  * <p>Buffers the command, in FIFO order, as a {@link BufferedCommandRecord}; it is written back to
  * the log verbatim once the process instance is drained during resume. No client response is
