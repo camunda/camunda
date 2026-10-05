@@ -9,6 +9,8 @@
  * Convention plugin for modules that generate code from SBE (Simple Binary Encoding) definitions
  */
 
+import buildlogic.SbeOutputDirArgument
+import buildlogic.SbeSchemaArguments
 import buildlogic.requiredVersion
 import org.gradle.api.provider.ListProperty
 
@@ -43,7 +45,6 @@ val generateSbe =
     classpath = configurations.getByName("sbeTool")
 
     val outputDir = layout.buildDirectory.dir("generated-sources/sbe")
-    val workingDir = layout.buildDirectory.dir("generated-sources")
 
     // Configure inputs and outputs for caching
     inputs
@@ -51,7 +52,9 @@ val generateSbe =
       .withPropertyName("sbeInputFiles")
       .withPathSensitivity(PathSensitivity.RELATIVE)
 
-    args(sbeExtension.schemaFiles)
+    argumentProviders.add(
+      objects.newInstance<SbeSchemaArguments>().apply { schemaFiles.from(sbeExtension.schemaFiles) }
+    )
     outputs.dir(outputDir).withPropertyName("sbeOutputDir")
 
     // JavaExec is not cacheable by default; opt in so unchanged inputs hit the
@@ -66,14 +69,15 @@ val generateSbe =
       "java.base/jdk.internal.misc=ALL-UNNAMED",
     )
 
+    jvmArgumentProviders.add(
+      objects.newInstance<SbeOutputDirArgument>().apply { outputDirectory.set(outputDir) }
+    )
+
     // System properties for SBE tool configuration
-    systemProperty("sbe.output.dir", outputDir.get().asFile.absolutePath)
     systemProperty("sbe.java.generate.interfaces", "true")
     systemProperty("sbe.decode.unknown.enum.values", "true")
     systemProperty("sbe.xinclude.aware", "true")
     systemProperty("sbe.generate.ir", "true")
-
-    workingDir(workingDir)
 
     val filesToDelete = sbeExtension.generatedFilesToDelete
     inputs.property("sbeGeneratedFilesToDelete", filesToDelete)
@@ -83,7 +87,6 @@ val generateSbe =
       // Java directory before each execution so removed types cannot survive incrementally.
       outputDir.get().asFile.deleteRecursively()
       outputDir.get().asFile.mkdirs()
-      workingDir.get().asFile.mkdirs()
     }
 
     // Remove colliding generated files as part of the generation itself, so the declared output
