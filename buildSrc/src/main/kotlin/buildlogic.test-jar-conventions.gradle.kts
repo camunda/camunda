@@ -20,7 +20,10 @@ val tests =
 artifacts { add("tests", testsJar) }
 
 extensions.configure<PublishingExtension> {
-  publications.withType(MavenPublication::class.java).named("maven") { artifact(testsJar) }
+  // configureEach also covers the "maven" publication when java-conventions creates it later.
+  publications.withType(MavenPublication::class.java).configureEach {
+    if (name == "maven") artifact(testsJar)
+  }
 }
 
 afterEvaluate {
