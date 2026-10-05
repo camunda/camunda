@@ -55,6 +55,8 @@ val jnaPlatformVersion = versionCatalog.requiredVersion("jna-platform")
 val kotlinStdlibVersion = versionCatalog.requiredVersion("kotlin-stdlib")
 val objenesisVersion = versionCatalog.requiredVersion("objenesis")
 val tomcatVersion = versionCatalog.requiredVersion("tomcat")
+val protoGoogleCommonProtosVersion =
+  versionCatalog.requiredVersion("com-google-api-grpc-proto-google-common-protos")
 
 dependencies {
   // Mirror the parent POM's imported BOMs. Platforms add version constraints only; they do not
@@ -106,6 +108,7 @@ configurations.all {
     "com.google.code.gson:gson:$gsonVersion",
     "org.elasticsearch.client:elasticsearch-rest-client:$elasticsearchVersion",
     "com.google.guava:guava:$guavaVersion",
+    "com.google.api.grpc:proto-google-common-protos:$protoGoogleCommonProtosVersion",
     "com.jayway.jsonpath:json-path:$jsonPathVersion",
     "net.bytebuddy:byte-buddy:$byteBuddyVersion",
     "org.jetbrains:annotations:$jetbrainsAnnotationsVersion",
