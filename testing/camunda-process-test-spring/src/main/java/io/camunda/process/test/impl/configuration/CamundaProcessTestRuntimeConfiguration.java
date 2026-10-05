@@ -37,6 +37,7 @@ public class CamundaProcessTestRuntimeConfiguration {
   private String camundaDockerImageVersion =
       CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_VERSION;
   private Map<String, String> camundaEnvVars = Collections.emptyMap();
+  private Map<String, String> clusterSecrets = Collections.emptyMap();
   private List<Integer> camundaExposedPorts = Collections.emptyList();
 
   private boolean connectorsEnabled = false;
@@ -184,6 +185,14 @@ public class CamundaProcessTestRuntimeConfiguration {
 
   public void setConnectorsEnvVars(final Map<String, String> connectorsEnvVars) {
     this.connectorsEnvVars = connectorsEnvVars;
+  }
+
+  public Map<String, String> getClusterSecrets() {
+    return clusterSecrets;
+  }
+
+  public void setClusterSecrets(final Map<String, String> clusterSecrets) {
+    this.clusterSecrets = clusterSecrets;
   }
 
   public Map<String, String> getConnectorsSecrets() {
