@@ -108,4 +108,7 @@ public class NoopBackupManager implements BackupManager {
     return CompletableActorFuture.completedExceptionally(
         new UnsupportedOperationException(errorMessage));
   }
+
+  @Override
+  public void releaseSnapshotReservation(final long checkpointId, final String snapshotId) {}
 }
