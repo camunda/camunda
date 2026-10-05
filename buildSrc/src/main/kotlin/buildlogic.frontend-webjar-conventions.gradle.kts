@@ -25,6 +25,8 @@ val parentPomVersions =
   PomResolver(providers.fileContents(layout.settingsDirectory.file("parent/pom.xml")).asText.get())
     .properties()
 
+val nodeExtension = extensions.getByType<NodeExtension>()
+
 extensions.configure<NodeExtension> {
   download.set(true)
   version.set(resolvePomProperty("version.node", parentPomVersions).removePrefix("v"))
@@ -91,6 +93,9 @@ val npmBuild =
       )
       .withPropertyName("sourceFiles")
       .withPathSensitivity(PathSensitivity.RELATIVE)
+    // The build output depends on the toolchain, so a Node/npm bump must not restore a cached build.
+    inputs.property("nodeVersion", nodeExtension.version)
+    inputs.property("npmVersion", nodeExtension.npmVersion)
     outputs.dir(frontendBuildDirectory)
     outputs.cacheIf { true }
   }
