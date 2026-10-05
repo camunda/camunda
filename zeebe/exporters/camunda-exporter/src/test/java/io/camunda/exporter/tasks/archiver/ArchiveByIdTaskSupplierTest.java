@@ -20,7 +20,6 @@ import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.ArchiveDocIdsBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.BatchCountMismatchException;
-import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.IdWithRouting;
 import java.net.SocketTimeoutException;
 import java.util.List;
 import java.util.Set;

@@ -249,12 +249,6 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
     }
   }
 
-  public record IdWithRouting(String id, String routing, Long seqNo, Long primaryTerm) {
-    public static IdWithRouting of(final String id) {
-      return new IdWithRouting(id, null, null, null);
-    }
-  }
-
   /**
    * Used when the number of documents processed by a reindex or delete operation does not match the
    * expected count. This is caught in the future chain to end the current execution gracefully so
