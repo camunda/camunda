@@ -40,6 +40,7 @@ function MigrateAction({mode, isSubmitting, hasActiveScope, selection, processDe
 	const {data, isError} = useDiagramXml(definitionKey);
 	// Like legacy, an EXCLUDE selection is judged by the state filters alone (none, or active/incidents), not by which
 	// instances the exclusions leave. Do not gate it on a count of the remaining active instances.
+	// Like legacy, only a failed or empty diagram request disables Migrate; it stays enabled while the diagram loads.
 	const disabledReason =
 		mode !== 'list'
 			? t('operate.processes.toolbar.actionMode')
