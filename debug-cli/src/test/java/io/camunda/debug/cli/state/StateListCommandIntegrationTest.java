@@ -73,7 +73,7 @@ class StateListCommandIntegrationTest {
     assertThat(entry.path("key").textValue()).isEqualTo("42");
     assertThat(entry.path("keyHex").textValue()).isEqualTo(hex(longKey(42)));
     assertThat(entry.path("value")).isEqualTo(OBJECT_MAPPER.readTree("{\"message\":\"failed\"}"));
-    assertThat(entry.has("valueHex")).isFalse();
+    assertThat(entry.path("valueHex").isNull()).isTrue();
   }
 
   @ParameterizedTest
