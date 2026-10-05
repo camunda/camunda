@@ -63,7 +63,7 @@ class ArchiveByIdTaskSupplierTest {
     final var reindexCallCount = new AtomicInteger(0);
 
     final var taskSupplier =
-        new ArchiveByIdTaskSupplier<>(
+        new ArchiveByIdTaskSupplier(
             historyConfigWithMaxRetry(3),
             "source-idx",
             "destination-idx",
@@ -71,7 +71,7 @@ class ArchiveByIdTaskSupplierTest {
                 CompletableFuture.completedFuture(
                     ArchiveDocIdsBatch.from(
                         List.of(IdWithRouting.of("doc1"), IdWithRouting.of("doc2")),
-                        List.of("after1"))),
+                        mock(SearchAfter.class))),
             (source, dest, ids) -> {
               if (reindexCallCount.incrementAndGet() <= 2) {
                 return CompletableFuture.failedFuture(retryableError);
@@ -112,13 +112,14 @@ class ArchiveByIdTaskSupplierTest {
     final var retryableError = new CompletionException(new SocketTimeoutException("timeout"));
 
     final var taskSupplier =
-        new ArchiveByIdTaskSupplier<>(
+        new ArchiveByIdTaskSupplier(
             historyConfigWithMaxRetry(1),
             "source-idx",
             "destination-idx",
             (searchAfter, size) ->
                 CompletableFuture.completedFuture(
-                    ArchiveDocIdsBatch.from(List.of(IdWithRouting.of("doc1")), List.of("after1"))),
+                    ArchiveDocIdsBatch.from(
+                        List.of(IdWithRouting.of("doc1")), mock(SearchAfter.class))),
             (source, dest, ids) -> CompletableFuture.failedFuture(retryableError),
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             DIRECT_EXECUTOR,
@@ -145,13 +146,14 @@ class ArchiveByIdTaskSupplierTest {
     final var nonRetryableError = new CompletionException(new IllegalStateException("bad state"));
 
     final var taskSupplier =
-        new ArchiveByIdTaskSupplier<>(
+        new ArchiveByIdTaskSupplier(
             historyConfigWithMaxRetry(3),
             "source-idx",
             "destination-idx",
             (searchAfter, size) ->
                 CompletableFuture.completedFuture(
-                    ArchiveDocIdsBatch.from(List.of(IdWithRouting.of("doc1")), List.of("after1"))),
+                    ArchiveDocIdsBatch.from(
+                        List.of(IdWithRouting.of("doc1")), mock(SearchAfter.class))),
             (source, dest, ids) -> CompletableFuture.failedFuture(nonRetryableError),
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             DIRECT_EXECUTOR,
@@ -171,7 +173,7 @@ class ArchiveByIdTaskSupplierTest {
     // given - reindex reports processing only 1 of the 2 expected docs
     final var logger = mock(Logger.class);
     final var taskSupplier =
-        new ArchiveByIdTaskSupplier<>(
+        new ArchiveByIdTaskSupplier(
             historyConfigWithMaxRetry(3),
             "source-idx",
             "destination-idx",
@@ -179,7 +181,7 @@ class ArchiveByIdTaskSupplierTest {
                 CompletableFuture.completedFuture(
                     ArchiveDocIdsBatch.from(
                         List.of(IdWithRouting.of("doc1"), IdWithRouting.of("doc2")),
-                        List.of("after1"))),
+                        mock(SearchAfter.class))),
             (source, dest, ids) -> CompletableFuture.completedFuture(1L),
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             DIRECT_EXECUTOR,
@@ -203,13 +205,14 @@ class ArchiveByIdTaskSupplierTest {
     // (processedCount < expectedCount) is treated as a mismatch
     final var logger = mock(Logger.class);
     final var taskSupplier =
-        new ArchiveByIdTaskSupplier<>(
+        new ArchiveByIdTaskSupplier(
             historyConfigWithMaxRetry(3),
             "source-idx",
             "destination-idx",
             (searchAfter, size) ->
                 CompletableFuture.completedFuture(
-                    ArchiveDocIdsBatch.from(List.of(IdWithRouting.of("doc1")), List.of("after1"))),
+                    ArchiveDocIdsBatch.from(
+                        List.of(IdWithRouting.of("doc1")), mock(SearchAfter.class))),
             (source, dest, ids) -> CompletableFuture.completedFuture(2L),
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             DIRECT_EXECUTOR,
@@ -231,13 +234,14 @@ class ArchiveByIdTaskSupplierTest {
     // given - delete reports processing more docs than were sent
     final var logger = mock(Logger.class);
     final var taskSupplier =
-        new ArchiveByIdTaskSupplier<>(
+        new ArchiveByIdTaskSupplier(
             historyConfigWithMaxRetry(3),
             "source-idx",
             "destination-idx",
             (searchAfter, size) ->
                 CompletableFuture.completedFuture(
-                    ArchiveDocIdsBatch.from(List.of(IdWithRouting.of("doc1")), List.of("after1"))),
+                    ArchiveDocIdsBatch.from(
+                        List.of(IdWithRouting.of("doc1")), mock(SearchAfter.class))),
             (source, dest, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             (source, ids) -> CompletableFuture.completedFuture(2L),
             DIRECT_EXECUTOR,
@@ -259,13 +263,14 @@ class ArchiveByIdTaskSupplierTest {
     // given - reindex and delete both process exactly the expected number of docs
     final var logger = mock(Logger.class);
     final var taskSupplier =
-        new ArchiveByIdTaskSupplier<>(
+        new ArchiveByIdTaskSupplier(
             historyConfigWithMaxRetry(3),
             "source-idx",
             "destination-idx",
             (searchAfter, size) ->
                 CompletableFuture.completedFuture(
-                    ArchiveDocIdsBatch.from(List.of(IdWithRouting.of("doc1")), List.of("after1"))),
+                    ArchiveDocIdsBatch.from(
+                        List.of(IdWithRouting.of("doc1")), mock(SearchAfter.class))),
             (source, dest, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             DIRECT_EXECUTOR,
@@ -284,7 +289,7 @@ class ArchiveByIdTaskSupplierTest {
   void shouldCompleteWhenResponseIsEmpty() {
     // given
     final var taskSupplier =
-        new ArchiveByIdTaskSupplier<>(
+        new ArchiveByIdTaskSupplier(
             historyConfigWithMaxRetry(3),
             "source-idx",
             "destination-idx",
@@ -339,13 +344,14 @@ class ArchiveByIdTaskSupplierTest {
     final var reindexCallCount = new AtomicInteger(0);
 
     final var taskSupplier =
-        new ArchiveByIdTaskSupplier<>(
+        new ArchiveByIdTaskSupplier(
             historyConfigWithMaxRetry(2),
             "source-idx",
             "destination-idx",
             (searchAfter, size) ->
                 CompletableFuture.completedFuture(
-                    ArchiveDocIdsBatch.from(List.of(IdWithRouting.of("doc1")), List.of("after1"))),
+                    ArchiveDocIdsBatch.from(
+                        List.of(IdWithRouting.of("doc1")), mock(SearchAfter.class))),
             (source, dest, ids) -> {
               final int call = reindexCallCount.incrementAndGet();
               if (call != 2 && call != 7) {
@@ -398,7 +404,7 @@ class ArchiveByIdTaskSupplierTest {
     final var batchSize = new AtomicInteger(0);
 
     final var taskSupplier =
-        new ArchiveByIdTaskSupplier<>(
+        new ArchiveByIdTaskSupplier(
             historyConfigWithMaxRetry(3),
             "source-idx",
             "destination-idx",
@@ -406,7 +412,7 @@ class ArchiveByIdTaskSupplierTest {
               batchSize.set(size);
               return CompletableFuture.completedFuture(
                   ArchiveDocIdsBatch.from(
-                      List.of(IdWithRouting.of("doc1")), List.of(IdWithRouting.of("after1"))));
+                      List.of(IdWithRouting.of("doc1")), mock(SearchAfter.class)));
             },
             (source, dest, ids) -> {
               if (Set.of(1, 2, 5).contains(reindexCallCount.incrementAndGet())) {
@@ -457,7 +463,7 @@ class ArchiveByIdTaskSupplierTest {
     config.setReindexBatchSize(100);
 
     final var taskSupplier =
-        new ArchiveByIdTaskSupplier<>(
+        new ArchiveByIdTaskSupplier(
             config,
             "source-idx",
             "destination-idx",
@@ -465,7 +471,7 @@ class ArchiveByIdTaskSupplierTest {
               batchSize.set(size);
               return CompletableFuture.completedFuture(
                   ArchiveDocIdsBatch.from(
-                      List.of(IdWithRouting.of("doc1")), List.of(IdWithRouting.of("after1"))));
+                      List.of(IdWithRouting.of("doc1")), mock(SearchAfter.class)));
             },
             (source, dest, ids) -> {
               if (reindexCallCount.incrementAndGet() <= 3) {
@@ -504,7 +510,7 @@ class ArchiveByIdTaskSupplierTest {
     final var batchSize = new AtomicInteger(0);
 
     final var taskSupplier =
-        new ArchiveByIdTaskSupplier<>(
+        new ArchiveByIdTaskSupplier(
             historyConfigWithMaxRetry(3),
             "source-idx",
             "destination-idx",
@@ -512,7 +518,7 @@ class ArchiveByIdTaskSupplierTest {
               batchSize.set(size);
               return CompletableFuture.completedFuture(
                   ArchiveDocIdsBatch.from(
-                      List.of(IdWithRouting.of("doc1")), List.of(IdWithRouting.of("after1"))));
+                      List.of(IdWithRouting.of("doc1")), mock(SearchAfter.class)));
             },
             (source, dest, ids) -> {
               if (reindexCallCount.incrementAndGet() <= 2) {
@@ -547,13 +553,14 @@ class ArchiveByIdTaskSupplierTest {
     config.setArchiveByIdRetryDelayMs(500); // 500ms delay for testing
 
     final var taskSupplier =
-        new ArchiveByIdTaskSupplier<>(
+        new ArchiveByIdTaskSupplier(
             config,
             "source-idx",
             "destination-idx",
             (searchAfter, size) ->
                 CompletableFuture.completedFuture(
-                    ArchiveDocIdsBatch.from(List.of(IdWithRouting.of("doc1")), List.of("after1"))),
+                    ArchiveDocIdsBatch.from(
+                        List.of(IdWithRouting.of("doc1")), mock(SearchAfter.class))),
             (source, dest, ids) -> {
               if (reindexCallCount.incrementAndGet() == 1) {
                 return CompletableFuture.failedFuture(retryableError);
