@@ -132,11 +132,14 @@ jobs:
           use_shellcheck: true
       - run: |
           curl --fail --silent --show-error --location \
-               --proto '=https' --proto-redir '=https' --retry 3 \
-               --output conftest.tar.gz \
+               --proto '=https' --proto-redir '=https' \
+               --connect-timeout 10 --max-time 60 \
+               --retry 5 --retry-delay 2 --retry-max-time 60 --retry-all-errors \
+               --output "${RUNNER_TEMP}/conftest.tar.gz" \
                "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz"
-          tar xzf conftest.tar.gz conftest
-          ./conftest test --rego-version v0 -o github --policy .github .github/workflows/*.y*ml
+          tar xzf "${RUNNER_TEMP}/conftest.tar.gz" -C "${RUNNER_TEMP}" conftest
+          rm -f "${RUNNER_TEMP}/conftest.tar.gz"
+          "${RUNNER_TEMP}/conftest" test --rego-version v0 -o github --policy .github .github/workflows/*.y*ml
       - name: Observe build status
         if: always()
         continue-on-error: true
