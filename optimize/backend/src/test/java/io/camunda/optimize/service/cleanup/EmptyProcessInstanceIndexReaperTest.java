@@ -50,6 +50,8 @@ class EmptyProcessInstanceIndexReaperTest {
 
     // then - the index is only recounted and deleted once no write can land in it anymore
     final var order = inOrder(databaseClient);
+    order.verify(databaseClient).refresh("process-instance-some-process");
+    order.verify(databaseClient).countWithoutPrefix(INDEX);
     order.verify(databaseClient).addWriteBlock(INDEX);
     order.verify(databaseClient).refresh("process-instance-some-process");
     order.verify(databaseClient).countWithoutPrefix(INDEX);
