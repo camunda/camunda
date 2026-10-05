@@ -266,7 +266,7 @@ public final class FileBasedSnapshotStoreImpl {
             throw new SnapshotNotFoundException(
                 "Expected to reserve snapshot %s, but it does not exist".formatted(snapshotId));
           }
-          return unit();
+          return null;
         });
   }
 

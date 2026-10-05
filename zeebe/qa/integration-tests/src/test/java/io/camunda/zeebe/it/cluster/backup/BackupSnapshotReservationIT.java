@@ -10,13 +10,14 @@ package io.camunda.zeebe.it.cluster.backup;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Filesystem;
 import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.management.backups.PartitionBackupInfo;
 import io.camunda.management.backups.StateCode;
+import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
+import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -122,10 +123,12 @@ final class BackupSnapshotReservationIT {
   }
 
   private Path snapshotsDirectory() {
-    return InProcessRestoreTestUtil.partitionDirectory(
-            broker.getWorkingDirectory(),
-            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
-            PARTITION_ID)
+    return broker
+        .getWorkingDirectory()
+        .resolve(DataCfg.DEFAULT_DIRECTORY)
+        .resolve(PartitionManagerImpl.GROUP_NAME)
+        .resolve("partitions")
+        .resolve(String.valueOf(PARTITION_ID))
         .resolve(FileBasedSnapshotStoreImpl.SNAPSHOTS_DIRECTORY);
   }
 

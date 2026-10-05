@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerExtension;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
-import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
@@ -20,6 +19,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,7 +40,7 @@ final class FileBasedSnapshotStoreCheckpointReservationsTest {
 
   @BeforeEach
   void setUp() {
-    store = new FileBasedSnapshotStore(0, 1, root, path -> SnapshotFilesInfo.none(), meterRegistry);
+    store = new FileBasedSnapshotStore(0, 1, root, path -> Map.of(), meterRegistry);
     actorScheduler.submitActor(store).join();
   }
 

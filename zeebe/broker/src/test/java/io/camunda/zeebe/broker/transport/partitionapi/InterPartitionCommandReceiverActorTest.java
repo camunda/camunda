@@ -20,8 +20,6 @@ import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.camunda.cluster.PartitionId;
-import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
@@ -36,7 +34,6 @@ import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerExtension;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
-import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.util.Either;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -45,6 +42,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.function.BiConsumer;
@@ -69,8 +67,7 @@ final class InterPartitionCommandReceiverActorTest {
   void shouldWriteCheckpointWithLatestSnapshotReservedOnAnotherActor() {
     // given
     final var snapshotStore =
-        new FileBasedSnapshotStore(
-            0, 1, root, path -> SnapshotFilesInfo.none(), new SimpleMeterRegistry());
+        new FileBasedSnapshotStore(0, 1, root, path -> Map.of(), new SimpleMeterRegistry());
     actorScheduler.submitActor(snapshotStore).join();
     final var snapshot = persistSnapshot(snapshotStore);
 
@@ -80,11 +77,7 @@ final class InterPartitionCommandReceiverActorTest {
     final var communication = mock(ClusterCommunicationService.class);
     final var receiver =
         new InterPartitionCommandReceiverActor(
-            new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
-            communication,
-            logStreamWriter,
-            snapshotStore,
-            List.of(LEGACY_TOPIC_PREFIX + 1));
+            1, communication, logStreamWriter, snapshotStore, List.of(LEGACY_TOPIC_PREFIX + 1));
     actorScheduler.submitActor(receiver).join();
 
     final var handler = ArgumentCaptor.forClass(BiConsumer.class);
@@ -218,11 +211,7 @@ final class InterPartitionCommandReceiverActorTest {
     final var communication = mock(ClusterCommunicationService.class);
     final var receiver =
         new InterPartitionCommandReceiverActor(
-            new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
-            communication,
-            logStreamWriter,
-            snapshotStore,
-            List.of(LEGACY_TOPIC_PREFIX + 1));
+            1, communication, logStreamWriter, snapshotStore, List.of(LEGACY_TOPIC_PREFIX + 1));
     actorScheduler.submitActor(receiver).join();
 
     final var handler = ArgumentCaptor.forClass(BiConsumer.class);
@@ -256,7 +245,7 @@ final class InterPartitionCommandReceiverActorTest {
       final long checkpointId, final CheckpointType checkpointType, final ValueType valueType) {
     final var communication = mock(ClusterCommunicationService.class);
     final var sender = new InterPartitionCommandSenderImpl(communication, LEGACY_TOPIC_PREFIX);
-    sender.setCurrentLeader(1, MemberId.from("1"));
+    sender.setCurrentLeader(1, 1);
     sender.setCheckpointInfo(checkpointId, checkpointType);
     if (valueType == ValueType.JOB) {
       sender.sendCommand(1, ValueType.JOB, JobIntent.COMPLETE, new JobRecord());

@@ -12,8 +12,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.atomix.cluster.BrokerMemberId;
-import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
@@ -44,8 +42,8 @@ final class BackupServiceTest {
   void setUp() {
     backupService =
         new BackupService(
-            BrokerMemberId.from(null, 1),
-            new PartitionId("raft", 1),
+            1,
+            1,
             backupStore,
             snapshotStore,
             segmentsDirectory,

@@ -154,8 +154,7 @@ public final class BackupApiRequestHandler
               } else {
                 snapshotReserver.release(checkpointId, snapshotId);
                 result.complete(
-                    Either.left(
-                        errorWriter.mapWriteError(partitionId, written.getLeft())));
+                    Either.left(errorWriter.mapWriteError(partitionId, written.getLeft())));
               }
             },
             actor);
