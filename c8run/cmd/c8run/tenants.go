@@ -334,7 +334,11 @@ func (c *tenantsCommand) remove(baseDir string, store *pt.Store, args []string) 
 			return errors.New("the default physical tenant cannot be removed")
 		}
 	}
-	if !c.confirm(confirmed, fmt.Sprintf("Remove physical tenant(s) %s?", strings.Join(ids, ", "))) {
+	ok, err := c.confirm(confirmed, fmt.Sprintf("Remove physical tenant(s) %s?", strings.Join(ids, ", ")))
+	if err != nil {
+		return err
+	}
+	if !ok {
 		_, _ = fmt.Fprintln(c.output, "No tenants removed.")
 		return nil
 	}
@@ -352,7 +356,11 @@ func (c *tenantsCommand) reset(baseDir string, store *pt.Store, args []string) e
 	if len(args) > 0 && !confirmed {
 		return errors.New("usage: c8run tenants reset [--yes]")
 	}
-	if !c.confirm(confirmed, "Remove all physical tenants and their stored logins?") {
+	ok, err := c.confirm(confirmed, "Remove all physical tenants and their stored logins?")
+	if err != nil {
+		return err
+	}
+	if !ok {
 		_, _ = fmt.Fprintln(c.output, "No tenants removed.")
 		return nil
 	}
@@ -364,21 +372,22 @@ func (c *tenantsCommand) reset(baseDir string, store *pt.Store, args []string) e
 	return nil
 }
 
-func (c *tenantsCommand) confirm(confirmed bool, question string) bool {
+// confirm returns an error when no prompt is possible so scripts cannot mistake a
+// skipped removal for success; a user answering "no" is not an error.
+func (c *tenantsCommand) confirm(confirmed bool, question string) (bool, error) {
 	if confirmed {
-		return true
+		return true, nil
 	}
 	if !c.isTerminal() {
-		_, _ = fmt.Fprintln(c.errorOutput, "Non-interactive use requires --yes.")
-		return false
+		return false, errors.New("non-interactive use requires --yes")
 	}
 	_, _ = fmt.Fprintf(c.errorOutput, "%s [y/N]: ", question)
 	answer, err := bufio.NewReader(c.input).ReadString('\n')
 	if err != nil && !errors.Is(err, io.EOF) {
-		return false
+		return false, nil
 	}
 	answer = strings.TrimSpace(answer)
-	return strings.EqualFold(answer, "y") || strings.EqualFold(answer, "yes")
+	return strings.EqualFold(answer, "y") || strings.EqualFold(answer, "yes"), nil
 }
 
 func (c *tenantsCommand) printRestartHint(baseDir, verb string, count int) {
