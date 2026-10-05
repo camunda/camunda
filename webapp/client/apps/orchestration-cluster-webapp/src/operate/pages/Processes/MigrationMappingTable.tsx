@@ -172,7 +172,7 @@ function MigrationMappingTable({
 														size="sm"
 														hideLabel
 														labelText={t('operate.processes.migration.targetFor', {name})}
-														id={sourceElement.id}
+														id={`migration-target-${sourceElement.id}`}
 														value={targetElementId}
 														onClick={(event) => event.stopPropagation()}
 														onChange={({target}) => onMappingChange(sourceElement.id, target.value)}
