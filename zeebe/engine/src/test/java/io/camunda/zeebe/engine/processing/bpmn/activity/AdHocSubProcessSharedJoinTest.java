@@ -295,6 +295,71 @@ public final class AdHocSubProcessSharedJoinTest {
   }
 
   @Test
+  public void shouldCompensateActivityThatLedIntoSharedJoinAfterAdHocSubProcess() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .adHocSubProcess(
+                AD_HOC_SUB_PROCESS_ELEMENT_ID,
+                adHocSubProcess -> {
+                  adHocSubProcess.zeebeActiveElementsCollectionExpression("[\"task1\",\"task2\"]");
+                  final var task1 = adHocSubProcess.manualTask("task1");
+                  task1.boundaryEvent().compensation(c -> c.manualTask("undo1"));
+                  task1.parallelGateway("join").manualTask("task3");
+                  adHocSubProcess.manualTask("task2").connectTo("join");
+                })
+            .intermediateThrowEvent("throw")
+            .compensateEventDefinition()
+            .compensateEventDefinitionDone()
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    assertThat(recordsUntilCompleted(processInstanceKey))
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .contains(
+            tuple("undo1", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldCompensateActivityOfAdHocSubProcessWithoutJoin() {
+    // given - baseline: compensation after the ad-hoc sub-process without a shared join
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .adHocSubProcess(
+                AD_HOC_SUB_PROCESS_ELEMENT_ID,
+                adHocSubProcess -> {
+                  adHocSubProcess.zeebeActiveElementsCollectionExpression("[\"task1\",\"task2\"]");
+                  final var task1 = adHocSubProcess.manualTask("task1");
+                  task1.boundaryEvent().compensation(c -> c.manualTask("undo1"));
+                  adHocSubProcess.manualTask("task2");
+                })
+            .intermediateThrowEvent("throw")
+            .compensateEventDefinition()
+            .compensateEventDefinitionDone()
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    assertThat(recordsUntilCompleted(processInstanceKey))
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .contains(
+            tuple("undo1", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
   public void shouldMigrateTokenWaitingAtSharedJoin() {
     // given
     final String targetProcessId = processId + "-target";

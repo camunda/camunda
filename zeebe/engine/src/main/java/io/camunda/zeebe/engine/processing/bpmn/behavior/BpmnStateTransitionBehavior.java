@@ -66,6 +66,7 @@ public final class BpmnStateTransitionBehavior {
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
   private final BpmnAdHocSubProcessBehavior adHocSubProcessBehavior;
+  private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
 
   public BpmnStateTransitionBehavior(
       final KeyGenerator keyGenerator,
@@ -75,6 +76,7 @@ public final class BpmnStateTransitionBehavior {
       final BpmnIncidentBehavior incidentBehavior,
       final BpmnUserTaskBehavior userTaskBehavior,
       final BpmnAdHocSubProcessBehavior adHocSubProcessBehavior,
+      final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour,
       final ProcessEngineMetrics metrics,
       final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
           processorLookUp,
@@ -90,6 +92,7 @@ public final class BpmnStateTransitionBehavior {
     this.eventSubscriptionBehavior = eventSubscriptionBehavior;
     this.incidentBehavior = incidentBehavior;
     this.adHocSubProcessBehavior = adHocSubProcessBehavior;
+    this.compensationSubscriptionBehaviour = compensationSubscriptionBehaviour;
   }
 
   public void continueTerminating(final BpmnElementContext context) {
@@ -435,7 +438,7 @@ public final class BpmnStateTransitionBehavior {
    * Completes the inner instance after its last token moved to a shared join. The execution path
    * continues at the join, so the ad-hoc sub-process is not notified about a completed path: no
    * completion condition, output collection, or new job, the same as for a token that moves on
-   * inside the ad-hoc sub-process.
+   * inside the ad-hoc sub-process. Compensation is handled like for a regular completion.
    */
   private void closeInnerInstanceIfNothingIsLeft(
       final BpmnElementContext context, final ExecutableFlowElementContainer innerInstanceElement) {
@@ -445,7 +448,10 @@ public final class BpmnStateTransitionBehavior {
       final var completing =
           transitionTo(
               stateBehavior.getFlowScopeContext(context), ProcessInstanceIntent.ELEMENT_COMPLETING);
+      compensationSubscriptionBehaviour.createCompensationSubscription(
+          innerInstanceElement, completing);
       final var completed = transitionTo(completing, ProcessInstanceIntent.ELEMENT_COMPLETED);
+      compensationSubscriptionBehaviour.completeCompensationHandler(completed);
       metrics.elementInstanceCompleted(completed, innerInstanceElement.getEventType());
     }
   }
