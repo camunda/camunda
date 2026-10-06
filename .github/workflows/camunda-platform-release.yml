@@ -315,11 +315,13 @@ jobs:
             "${{ runner.temp }}/git-remote-probe.log"; do
             [ -f "${source}" ] || continue
             destination="${DIAGNOSTICS_DIR}/$(basename "${source}")"
-            sed -E \
+            # Keep only the last 5 MB: the failure is at the end of the trace, and
+            # the artifact stays bounded however verbose git gets.
+            tail -c 5M "${source}" | sed -E \
               -e 's#//[^@/[:space:]]*@#//***@#g' \
               -e 's#(authorization|AUTHORIZATION): .*#\1: ***#gI' \
               -e 's#(x-access-token|ghs_|github_pat_)[A-Za-z0-9_]*#\1***#g' \
-              "${source}" > "${destination}"
+              > "${destination}"
           done
 
       - name: Upload git remote diagnostics
