@@ -16,10 +16,10 @@ import java.util.List;
  *
  * <p><b>Nothing executes this any more.</b> Every scope — the global configuration and every
  * partition group — runs a {@link DependencyChangePlan} instead, so what survives here is the shape
- * the legacy {@code ClusterTopology} message can carry, and only that: a broker without the graph
- * model reads that message from gossip and from a v1 configuration file, and its {@code
- * currentChange} field is typed as this record. A live change is rendered into it by {@link
- * #flatten(ChangePlan)} at that encode, and decoding it is the only way one comes back.
+ * the legacy {@code ClusterTopology} message can carry, and only that: a broker reading a legacy
+ * persisted configuration file uses its {@code currentChange} field as this record. A live change
+ * is rendered into it by {@link #flatten(ChangePlan)} when that file is encoded, and decoding such
+ * a file is the only way one comes back.
  *
  * <p>{@code version} starts at 1 and increments once per completed operation, which is what a
  * broker on that legacy path merges by ({@link #merge}) to choose between two copies it sees out of
@@ -63,11 +63,11 @@ public record ClusterChangePlan(
    * nothing here tries to.
    *
    * <p><b>Only call this where the queue shape is actually required</b> — today that is encoding
-   * the legacy {@code ClusterTopology} message, which a broker without the graph model reads from
-   * gossip and from a v1 configuration file, and whose {@code currentChange} field is typed as this
-   * record. A receiver on that path merges what it decodes with {@link #merge}, using the version
-   * above, and would execute the flattened queue one operation at a time. Every consumer that only
-   * reads a change should take a {@link ChangePlan} instead and see the real one.
+   * the legacy {@code ClusterTopology} message in a persisted configuration file, whose {@code
+   * currentChange} field is typed as this record. A reader on that path merges what it decodes with
+   * {@link #merge}, using the version above, and executes the flattened queue one operation at a
+   * time. Every consumer that only reads a change should take a {@link ChangePlan} instead and see
+   * the real one.
    */
   public static ClusterChangePlan flatten(final ChangePlan plan) {
     if (plan instanceof final ClusterChangePlan queue) {

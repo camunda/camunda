@@ -127,7 +127,7 @@ final class ClusterConfigurationInitializerTest {
     final TestClusterConfigurationNotifier topologyNotifier =
         new TestClusterConfigurationNotifier();
     final var initializer =
-        new GossipInitializer<>(
+        new GossipInitializer(
             topologyNotifier,
             persistedClusterConfiguration::getConfiguration,
             ignore -> {},
@@ -152,7 +152,7 @@ final class ClusterConfigurationInitializerTest {
     final Function<MemberId, ActorFuture<CurrentClusterConfiguration>> syncRequester =
         id -> syncResponseFuture;
     final var initializer =
-        new SyncInitializer<>(
+        new SyncInitializer(
             Duration.ofSeconds(5),
             new TestClusterConfigurationNotifier(),
             () -> knownMembers,
@@ -185,7 +185,7 @@ final class ClusterConfigurationInitializerTest {
         id -> syncResponseFuture;
     final var concurrencyControl = new TestConcurrencyControl(true);
     final var initializer =
-        new SyncInitializer<>(
+        new SyncInitializer(
             Duration.ofSeconds(5),
             new TestClusterConfigurationNotifier(),
             () -> knownMembers,
@@ -217,7 +217,7 @@ final class ClusterConfigurationInitializerTest {
     final var syncResponses =
         Map.of(uninitializedMember, uninitializedResponse, initializedMember, initializedResponse);
     final var initializer =
-        new SyncInitializer<>(
+        new SyncInitializer(
             Duration.ofSeconds(5),
             new TestClusterConfigurationNotifier(),
             () -> List.of(uninitializedMember, initializedMember),
@@ -247,7 +247,7 @@ final class ClusterConfigurationInitializerTest {
     final var concurrencyControl = new TestConcurrencyControl(true);
     final var bootstrapTimeout = Duration.ofSeconds(1);
     final var initializer =
-        new SyncInitializer<>(
+        new SyncInitializer(
             Duration.ofSeconds(1),
             new TestClusterConfigurationNotifier(),
             () -> List.of(unresponsiveMember),
@@ -286,7 +286,7 @@ final class ClusterConfigurationInitializerTest {
     final var uninitializedResponse = new TestActorFuture<CurrentClusterConfiguration>();
     final var syncResponses = Map.of(unresponsiveMember, uninitializedResponse);
     final var initializer =
-        new SyncInitializer<>(
+        new SyncInitializer(
             Duration.ofSeconds(5),
             new TestClusterConfigurationNotifier(),
             () -> List.of(unresponsiveMember),
@@ -327,7 +327,7 @@ final class ClusterConfigurationInitializerTest {
         };
     final var concurrencyControl = new TestConcurrencyControl(true);
     final var initializer =
-        new SyncInitializer<>(
+        new SyncInitializer(
             Duration.ofSeconds(5),
             new TestClusterConfigurationNotifier(),
             () -> List.of(unreachableMember, recoveringMember),
@@ -351,7 +351,7 @@ final class ClusterConfigurationInitializerTest {
   void shouldCompleteImmediatelyWithNoKnownMembersToSync() {
     // given - a single-node cluster: the coordinator has no other members to sync with
     final var initializer =
-        new SyncInitializer<>(
+        new SyncInitializer(
             Duration.ofSeconds(5),
             new TestClusterConfigurationNotifier(),
             List::of,
@@ -379,7 +379,7 @@ final class ClusterConfigurationInitializerTest {
     final var concurrencyControl = new TestConcurrencyControl(true);
     final var bootstrapTimeout = Duration.ofSeconds(1);
     final var initializer =
-        new SyncInitializer<>(
+        new SyncInitializer(
             Duration.ofMillis(50),
             new TestClusterConfigurationNotifier(),
             () -> List.of(nullRespondingMember),
@@ -421,7 +421,7 @@ final class ClusterConfigurationInitializerTest {
     final var concurrencyControl = new TestConcurrencyControl(true);
     final var bootstrapTimeout = Duration.ofSeconds(30);
     final var initializer =
-        new SyncInitializer<>(
+        new SyncInitializer(
             Duration.ofMillis(50),
             new TestClusterConfigurationNotifier(),
             () -> List.of(slowMember, fastMember),
@@ -494,7 +494,7 @@ final class ClusterConfigurationInitializerTest {
       final var fileInitializer =
           FileInitializer.fromPersistedConfiguration(topologyFile, new ProtoBufSerializer())
               .orThen(
-                  new GossipInitializer<>(
+                  new GossipInitializer(
                       new TestClusterConfigurationNotifier(),
                       persistedClusterConfiguration::getConfiguration,
                       ignore -> {},
@@ -518,7 +518,7 @@ final class ClusterConfigurationInitializerTest {
       final var initializer =
           FileInitializer.fromPersistedConfiguration(topologyFile, new ProtoBufSerializer())
               .orThen(
-                  new GossipInitializer<>(
+                  new GossipInitializer(
                       topologyUpdateNotifier,
                       persistedClusterConfiguration::getConfiguration,
                       gossipedConfiguration::set,
@@ -548,7 +548,7 @@ final class ClusterConfigurationInitializerTest {
       final var initializer =
           FileInitializer.fromPersistedConfiguration(topologyFile, new ProtoBufSerializer())
               .orThen(
-                  new GossipInitializer<>(
+                  new GossipInitializer(
                       topologyUpdateNotifier,
                       persistedClusterConfiguration::getConfiguration,
                       gossipedConfiguration::set,
@@ -572,7 +572,7 @@ final class ClusterConfigurationInitializerTest {
       final Function<MemberId, ActorFuture<CurrentClusterConfiguration>> syncRequester =
           id -> syncResponseFuture;
       final var syncInitializer =
-          new SyncInitializer<>(
+          new SyncInitializer(
               Duration.ofSeconds(5),
               new TestClusterConfigurationNotifier(),
               () -> knownMembers,
@@ -605,7 +605,7 @@ final class ClusterConfigurationInitializerTest {
           id -> syncResponseFuture;
       final var concurrencyControl = new TestConcurrencyControl(true);
       final var syncInitializer =
-          new SyncInitializer<>(
+          new SyncInitializer(
               Duration.ofSeconds(5),
               new TestClusterConfigurationNotifier(),
               () -> knownMembers,

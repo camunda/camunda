@@ -152,7 +152,7 @@ public final class ClusterConfigurationManagerService
     return FileInitializer.fromPersistedConfiguration(configurationFile, new ProtoBufSerializer())
         .recover(
             PersistedConfigurationIsBroken.class,
-            new SyncInitializer<>(
+            new SyncInitializer(
                 gossiperConfig.syncInitializerDelay(),
                 clusterConfigurationGossiper,
                 otherKnownMembers,
@@ -161,7 +161,7 @@ public final class ClusterConfigurationManagerService
                 gossiperConfig.bootstrapTimeout(),
                 CurrentClusterConfiguration.uninitialized()))
         .orThen(
-            new GossipInitializer<>(
+            new GossipInitializer(
                 clusterConfigurationGossiper,
                 persistedCurrentClusterConfiguration::getConfiguration,
                 clusterConfigurationGossiper::updateCurrentClusterConfiguration,
@@ -189,7 +189,7 @@ public final class ClusterConfigurationManagerService
     final Supplier<List<MemberId>> otherKnownMembers = initializationMembers(staticConfiguration);
     return FileInitializer.fromPersistedConfiguration(configurationFile, new ProtoBufSerializer())
         .orThen(
-            new SyncInitializer<>(
+            new SyncInitializer(
                 gossiperConfig.syncInitializerDelay(),
                 clusterConfigurationGossiper,
                 otherKnownMembers,
