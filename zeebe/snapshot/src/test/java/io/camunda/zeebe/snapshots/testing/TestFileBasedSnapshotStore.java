@@ -143,13 +143,25 @@ public class TestFileBasedSnapshotStore implements ReceivableSnapshotStore {
   }
 
   public void newSnapshot(final long index, final long term, final int size, final Random random) {
+    newSnapshot(index, term, index, index, size, random);
+  }
+
+  public void newSnapshot(
+      final long index,
+      final long term,
+      final long processedPosition,
+      final long exportedPosition,
+      final int size,
+      final Random random) {
     final var chunks =
         IntStream.range(0, size)
             .boxed()
             .map(i -> "chunk-" + i)
             .collect(Collectors.toMap(k -> k, v -> String.valueOf(random.nextLong())));
     final var transientSnapshot =
-        snapshotStore.newTransientSnapshot(index, term, index, index, false).get();
+        snapshotStore
+            .newTransientSnapshot(index, term, processedPosition, exportedPosition, false)
+            .get();
     transientSnapshot.take(p -> writeSnapshot(p, chunks)).join();
     transientSnapshot.persist().join();
   }

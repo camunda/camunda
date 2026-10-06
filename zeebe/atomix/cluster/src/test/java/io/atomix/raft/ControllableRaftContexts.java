@@ -454,6 +454,14 @@ public final class ControllableRaftContexts {
     }
   }
 
+  /**
+   * Takes a snapshot like the bootstrap snapshot of a partition created by scaling up: at index 1
+   * and term 1, with positions 0. Its state is not in the log.
+   */
+  public void takeBootstrapSnapshot(final MemberId memberId) {
+    snapshotStores.get(memberId).newSnapshot(1, 1, 0, 0, 1, random);
+  }
+
   public void snapshotAndCompact(final MemberId memberId) {
     final RaftContext raftContext = raftServers.get(memberId);
     // Take snapshot at an index between lastSnapshotIndex and current commitIndex
