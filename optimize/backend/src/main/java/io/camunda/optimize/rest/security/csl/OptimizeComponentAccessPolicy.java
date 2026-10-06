@@ -17,8 +17,8 @@ import io.camunda.security.api.model.Either;
  *
  * <p>An implementation that verifies the access token also answers right when the token has
  * expired: the webapp chain renews it, and denying here would lock out a user for a reason that is
- * not about their permissions. A revoked user therefore keeps API access until the token is
- * renewed, at most for its remaining lifetime, and is denied on the next web app request. Any other
+ * not about their permissions. The API chain does not renew the token, so a revoked user keeps API
+ * access with the expired token until the next web app request renews it and denies them. Any other
  * verification failure is a denial.
  */
 public interface OptimizeComponentAccessPolicy {
